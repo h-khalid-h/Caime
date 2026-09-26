@@ -493,6 +493,31 @@ describe('realtime', () => {
     watcher.ws.close();
   });
 
+  it('accepts a cookie session only from the app’s own origin', async () => {
+    const address = t.app.server.address() as { port: number };
+    const login = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { identifier: sarah.user.handle, password: 'correct horse battery', client: 'web' },
+    });
+    const cookie = login.cookies.find((c) => c.name === 'caishy_session')!.value;
+    const connect = (origin: string) =>
+      new Promise<number | 'hello'>((resolve) => {
+        const ws = new WebSocket(`ws://127.0.0.1:${address.port}/v1/realtime`, {
+          headers: { cookie: `caishy_session=${cookie}`, origin },
+        });
+        ws.on('message', (raw) => {
+          if (JSON.parse(String(raw)).type === 'hello') {
+            resolve('hello');
+            ws.close();
+          }
+        });
+        ws.on('close', (code) => resolve(code));
+      });
+    expect(await connect('https://evil.example')).toBe(4403);
+    expect(await connect(new URL(t.ctx.config.PUBLIC_URL).origin)).toBe('hello');
+  });
+
   it('refuses a socket without a valid session', async () => {
     const address = t.app.server.address() as { port: number };
     const ws = new WebSocket(`ws://127.0.0.1:${address.port}/v1/realtime`);

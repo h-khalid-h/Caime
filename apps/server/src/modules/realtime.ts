@@ -174,8 +174,20 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
     for (const c of hub.all()) c.socket.close(1001, 'server shutting down');
   });
 
+  // Browsers send the session cookie with any WebSocket handshake to this host, so a cookie
+  // session must come from the app's own origin (cross-site WebSocket hijacking).
+  const allowedOrigins = new Set([
+    new URL(ctx.config.PUBLIC_URL).origin,
+    ...ctx.config.corsOrigins,
+  ]);
+
   app.get('/realtime', { websocket: true }, (socket, req) => {
     let client: Client | null = null;
+    const origin = req.headers.origin;
+    if (req.auth?.via === 'cookie' && origin && !allowedOrigins.has(origin)) {
+      socket.close(4403, 'origin not allowed');
+      return;
+    }
 
     const attach = async (userId: string) => {
       client = { socket, userId, alive: true };

@@ -56,6 +56,14 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       : {
           level: config.LOG_LEVEL,
           redact: ['req.headers.authorization', 'req.headers.cookie', 'body.password'],
+          serializers: {
+            // Query strings carry search terms and handles: log the path only.
+            req: (req: { method: string; url: string; ip?: string }) => ({
+              method: req.method,
+              url: req.url.split('?')[0],
+              remoteAddress: req.ip,
+            }),
+          },
         },
     trustProxy: config.TRUST_PROXY,
     bodyLimit: 1_048_576,

@@ -8,3 +8,10 @@ nodeLinker: hoisted
 # Dependencies allowed to run install scripts (pnpm 10 blocks them by default).
 onlyBuiltDependencies:
   - esbuild
+
+# Security overrides. Each names the advisory and when it can go (docs/SECURITY.md).
+overrides:
+  # GHSA-vcc3-ghjq-m6fr: the fix is ESM-only and query-string@7 (expo-router) requires it from CJS.
+  decode-uri-component: file:./vendor/decode-uri-component
+  # GHSA-w5hq-g745-h8pq: xcode (iOS prebuild tooling) only calls uuid.v4, which 11.x keeps in CJS.
+  xcode>uuid: ^11.1.1
