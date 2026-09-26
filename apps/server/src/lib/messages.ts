@@ -9,7 +9,11 @@ import {
   assessLink,
   type FileView,
   isMinor,
+  KIT_MODES,
+  kitHeadline,
   type MessageView,
+  type Mode,
+  prepareKitFields,
   type SendMessageBodyT,
   messagePreview as sharedPreview,
   uuidv7,
@@ -230,7 +234,11 @@ export async function sendMessage(
   senderId: string,
   conversationId: string,
   body: SendMessageBodyT,
-  opts: { forwardedFromId?: string | null } = {},
+  opts: {
+    forwardedFromId?: string | null;
+    /** The server's own cards (task requests) are sent as built, not as a client's kit card. */
+    trusted?: boolean;
+  } = {},
 ): Promise<SendResult> {
   const existing = await ctx.db
     .selectFrom('messages')
@@ -354,8 +362,43 @@ export async function sendMessage(
         phones: analysis.phones,
       }
     : {};
+  // Kit cards (PRD §41): the sender picks the kit and fills its fields; the server decides what
+  // the card says and where it starts, and only POST /messages/:id/kit moves it on.
+  let payload = body.payload ?? {};
+  let kitMode: Mode | null = null;
+  if (body.kind === 'kit' && !opts.trusted) {
+    const raw = (body.payload ?? {}) as { kit?: unknown; fields?: unknown };
+    const card = prepareKitFields(raw.kit, raw.fields);
+    if (!card.ok) throw badRequest(card.error);
+    if (conversation.kind !== 'direct' && !card.def.groups)
+      throw badRequest(`${card.def.name} cards are for one-to-one conversations.`);
+    if (card.def.adultsOnly) {
+      const people = await ctx.db
+        .selectFrom('users')
+        .select('birth_year')
+        .where(
+          'id',
+          'in',
+          members.map((p) => p.user_id),
+        )
+        .execute();
+      if (people.some((u) => isMinor(u.birth_year, ctx.now())))
+        throw forbidden(`${card.def.name} cards aren’t available in this conversation.`);
+    }
+    payload = {
+      kit: card.kit,
+      label: card.def.name,
+      title: kitHeadline(card.kit, card.fields, sender.locale),
+      fields: card.fields,
+      state: card.def.states[0],
+      history: [],
+    };
+    kitMode = KIT_MODES[card.kit];
+  }
+
   const mode =
     body.mode ??
+    kitMode ??
     analysis?.mode ??
     (body.kind === 'poll' ? 'ask' : body.kind === 'location' || files.length ? 'share' : 'talk');
 
@@ -380,7 +423,7 @@ export async function sendMessage(
           client_id: body.clientId,
           kind: body.kind,
           body: text || null,
-          payload: JSON.stringify(body.payload ?? {}),
+          payload: JSON.stringify(payload),
           mode,
           mode_source: body.mode ? 'user' : 'auto',
           entities: JSON.stringify(entities),

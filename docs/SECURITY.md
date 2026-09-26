@@ -28,6 +28,7 @@ a control without a test is listed as a gap, not a control. Reviewed 2026-09-26.
 | Relationships | Owner-only reads and writes; `mutualFit` only when both sides shared | `connections.test.ts` |
 | Blocking | Blocked people can't message or find you; a profile of someone who blocked you looks like it doesn't exist | `connections.test.ts`, `actions.test.ts` |
 | Minors | Discoverability, email and message-request rules | `privacy-safety.test.ts`, `auth.test.ts`, `connections.test.ts` |
+| Kit cards | The server decides what a card says and where it starts; a client's `state` or extra fields are dropped. A card moves only along its kit's flow, by the person each move belongs to, and only if nobody moved it first. Money cards (invoice, purchase order, payment request) never involve anyone under 18 | `kits.test.ts` |
 | Uploads | Type from the bytes, not the name; non-media downloads as attachments with `CSP: sandbox`; photo EXIF and GPS stripped; 100 MB cap; per-user rate limit | `files.test.ts` |
 | Files | Readable only by participants of a conversation they were shared in; avatars follow the owner's photo privacy | `files.test.ts` |
 | Links | Suspicious links (IP hosts, lookalikes) are flagged; the app asks before opening them | `privacy-safety.test.ts`, `messaging.test.ts` |

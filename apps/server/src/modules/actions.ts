@@ -276,19 +276,25 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         : '';
       if (body.conversationId) {
         // The structured request appears in the conversation as a live card (PRD §21).
-        const sent = await sendMessage(ctx, me, body.conversationId, {
-          clientId: body.clientId ?? `req:${uuidv4()}`,
-          kind: 'kit',
-          payload: {
-            kit: 'request',
-            fields: {},
-            taskId: task.id,
-            title: task.title,
-            dueAt: task.due_at?.toISOString() ?? null,
-            state: 'open',
-            assigneeId: assignee,
+        const sent = await sendMessage(
+          ctx,
+          me,
+          body.conversationId,
+          {
+            clientId: body.clientId ?? `req:${uuidv4()}`,
+            kind: 'kit',
+            payload: {
+              kit: 'request',
+              fields: {},
+              taskId: task.id,
+              title: task.title,
+              dueAt: task.due_at?.toISOString() ?? null,
+              state: 'open',
+              assigneeId: assignee,
+            },
           },
-        });
+          { trusted: true },
+        );
         if (sent.created) {
           await ctx.db
             .updateTable('tasks')

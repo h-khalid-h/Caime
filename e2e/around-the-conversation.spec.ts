@@ -124,6 +124,7 @@ test.describe
       // While offline the browser logs the failed requests; nothing else may go wrong.
       const offlineNoise = /ERR_INTERNET_DISCONNECTED|WebSocket|Failed to load resource/;
       expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
+      alex.errors.length = 0; // The page lives on into the next tests; its offline noise doesn't.
       expect(noor.errors).toEqual([]);
     });
 
@@ -217,6 +218,40 @@ test.describe
       await expect.poll(path).toBe('/search');
       await expect(page.getByTestId('search-input')).toBeFocused();
       expect(errors).toEqual([]);
+    });
+
+    test('a card fits the relationship, and moves when the other person answers it', async () => {
+      await noor.page.goto(`/c/${convo}`);
+      await alex.page.goto(`/c/${convo}`);
+      const { page } = noor;
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      // Noor knows Alex from work: Approval and Review are offered, invoices are not.
+      await expect(page.getByTestId('kit-option-approval')).toBeVisible();
+      await expect(page.getByTestId('kit-option-document_review')).toBeVisible();
+      await expect(page.getByTestId('kit-option-invoice')).toHaveCount(0);
+      await page.getByTestId('kit-option-meeting').click();
+      await page.getByLabel('Title').fill('Venue walkthrough');
+      await page.getByLabel('When').fill('Friday 3pm');
+      await expect(visible(page, /^Fri, .*3:00/)).toBeVisible();
+      await page.getByRole('button', { name: '45 min', exact: true }).click();
+      await page.getByLabel('Where (optional)').fill('Cairo Opera House');
+      await page.getByTestId('kit-send').click();
+
+      const mine = page.getByTestId('kit-meeting').filter({ hasText: 'Venue walkthrough' });
+      await expect(mine).toContainText('Proposed');
+      await expect(mine).toContainText('45 min');
+      // Noor proposed it; only Alex can answer.
+      await expect(mine.getByRole('button', { name: 'Accept' })).toHaveCount(0);
+
+      const theirs = alex.page
+        .getByTestId('kit-meeting')
+        .filter({ hasText: 'Venue walkthrough', visible: true });
+      await theirs.getByRole('button', { name: 'Accept', exact: true }).click();
+      await expect(theirs).toContainText('Accepted');
+      await expect(mine).toContainText('Accepted');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-kit-meeting.png' });
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-kit-meeting.png' });
+      expect([...noor.errors, ...alex.errors]).toEqual([]);
     });
 
     test('every settings page opens, and a chosen theme follows you', async () => {

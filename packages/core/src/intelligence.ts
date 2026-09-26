@@ -441,7 +441,9 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
             .split(/\s+/)[0]
             ?.toLowerCase()
             .replace(/[^a-z]/g, '') ?? '';
-        if (IMPERATIVE_VERBS.has(first) && !endsWithQuestion) {
+        // A verb and only a number ("Update 55") is a label, not something to do.
+        const named = /\p{L}/u.test(s.text.split(/\s+/).slice(1).join(' '));
+        if (IMPERATIVE_VERBS.has(first) && !endsWithQuestion && named) {
           const clause = clauseFrom(s.text, 0, s.index, dates);
           request = toAction(clause, s.text, firstDateIn(dates, s.index, s.text.length), false);
         }

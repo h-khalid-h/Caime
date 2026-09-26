@@ -4,6 +4,7 @@ export * from './format';
 export * from './history';
 export * from './ids';
 export * from './intelligence';
+export * from './kit-cards';
 export * from './kits';
 export * from './locale';
 export * from './policy';

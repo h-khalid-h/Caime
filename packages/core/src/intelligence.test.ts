@@ -87,6 +87,14 @@ describe('imperatives and modes', () => {
     expect(s).toMatchObject({ kind: 'task', title: 'Send file' });
   });
 
+  it('a verb and only a number is a label, not something to do', () => {
+    expect(analyzeMessage('Update 55', opts).isRequest).toBe(false);
+    expect(suggestFromAnalysis(analyzeMessage('Update 55', opts), me)).toEqual([]);
+    const [deck] = suggestFromAnalysis(analyzeMessage('Update the deck by Friday', opts), sarah);
+    expect(deck).toMatchObject({ kind: 'task', title: 'Update deck' });
+    expect(analyzeMessage('Send 2 copies to Sarah', opts).isRequest).toBe(true);
+  });
+
   it('get back to you → waiting for a reply', () => {
     const [s] = suggestFromAnalysis(analyzeMessage("I'll get back to you on Monday", opts), sarah);
     expect(s).toMatchObject({ kind: 'waiting', title: 'Reply' });

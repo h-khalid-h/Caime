@@ -18,6 +18,7 @@ export type EventType =
   | 'message.edited'
   | 'message.deleted'
   | 'message.read'
+  | 'kit.moved'
   | 'context.created'
   | 'task.created'
   | 'task.updated'

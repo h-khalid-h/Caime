@@ -221,7 +221,7 @@ export function messagePreview(m: {
   deleted: boolean;
 }): string {
   if (m.deleted) return 'Message deleted';
-  const payload = (m.payload ?? {}) as { question?: unknown; title?: unknown };
+  const payload = (m.payload ?? {}) as { question?: unknown; title?: unknown; label?: unknown };
   switch (m.kind) {
     case 'text':
       return previewText(m.body ?? '');
@@ -240,7 +240,13 @@ export function messagePreview(m: {
     case 'sticker':
       return 'Sticker';
     case 'kit':
-      return previewText(String(payload.title ?? 'Card'), 80);
+      // Kit cards carry their kit's name ("Meeting: Venue walkthrough"); request cards don't.
+      return previewText(
+        payload.label
+          ? `${String(payload.label)}: ${String(payload.title ?? '')}`
+          : String(payload.title ?? 'Card'),
+        80,
+      );
     default:
       return previewText(m.body ?? '');
   }

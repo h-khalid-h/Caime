@@ -6,12 +6,15 @@ import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from '
 import { Platform, TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
+import { KIT_ICONS } from '@/features/kits/icons';
+import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
 import { useOutbox } from '@/state/outbox';
+import { useMe } from '@/state/session';
 import { fontFamily } from '@/theme/fonts';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
@@ -62,6 +65,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [height, setHeight] = useState(MIN_H);
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
+  const [kit, setKit] = useState<KitChoice | null>(null);
+  const me = useMe();
+  const kits = kitsOffered(conversation, me.minor);
   const [uploading, setUploading] = useState<string | null>(null);
   const [editText, setEditText] = useState<string | null>(null);
   const input = useRef<TextInput>(null);
@@ -239,7 +245,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       >
         <IconButton
           icon={Paperclip}
-          label="Attach a photo or file"
+          label="Share a photo, a file or a card"
           onPress={() => setAttach(true)}
           disabled={Boolean(editing)}
         />
@@ -346,8 +352,33 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             subtitle="Documents, PDFs, anything up to 100 MB"
             onPress={() => void pickFiles()}
           />
+          {kits.length ? (
+            <>
+              <Text
+                variant="overline"
+                color="textTertiary"
+                style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}
+              >
+                Cards
+              </Text>
+              {kits.map((k) => (
+                <ListRow
+                  key={k.id}
+                  icon={KIT_ICONS[k.id as KitChoice]}
+                  title={k.name}
+                  subtitle={k.description}
+                  testID={`kit-option-${k.id}`}
+                  onPress={() => {
+                    setAttach(false);
+                    setKit(k.id as KitChoice);
+                  }}
+                />
+              ))}
+            </>
+          ) : null}
         </View>
       </Sheet>
+      <KitForm conversation={conversation} kit={kit} onClose={() => setKit(null)} />
     </View>
   );
 });

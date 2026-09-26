@@ -85,7 +85,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       store and play; transcription ⛔ needs a speech-to-text provider
 - [ ] Organizations and DNS verification; Business inbox; org accounts
 - [ ] Spaces
-- [ ] Connect Kits (approval, meeting, order, delivery, invoice, payment request)
+- [x] Connect Kits as cards: approval, meeting, review, order, delivery, invoice, purchase
+      order, payment request, support ticket, appointment, and polls; offered only where they fit
+      the relationship, moved by the right person, live (`kits.test.ts`, E2E). [ ] Location,
+      shared album and checklist kits
 - [ ] AI assist with Anthropic provider and heuristic fallback
 - [x] Export and account deletion (`account.test.ts`, E2E); others keep their conversations,
       shared files and the actions they were waiting on
@@ -100,7 +103,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (409.5 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (414.4 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -132,4 +135,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   never hears the network return). Alerts read "sent 56 messages (56)" and
   "outside 08:00–20:00" on a Saturday; they now read "sent 56 messages" and "outside Mon–Fri
   08:00–20:00". Keyboard shortcuts; their test found that editing your last message left the
-  old text in the inbox preview. Tests: 115 core, 49 brand, 79 server, 10 E2E.
+  old text in the inbox preview. Connect Kits as live cards; the server now owns what a card
+  says and where it stands (it used to store whatever a client sent, "approved" included). Its
+  test's frames showed 55 "Update N" messages each suggesting a task titled with the number: a
+  verb and only a number is no longer a request. Tests: 124 core, 49 brand, 84 server, 11 E2E.

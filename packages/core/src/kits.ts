@@ -41,6 +41,8 @@ export interface KitField {
   type: KitFieldType;
   required?: boolean;
   placeholder?: string;
+  /** For `options`: the one value to pick. */
+  choices?: Array<{ value: number | string; label: string }>;
 }
 
 export interface KitDef {
@@ -85,7 +87,18 @@ export const KITS: Record<KitId, KitDef> = {
     fields: [
       { key: 'title', label: 'Title', type: 'text', required: true },
       { key: 'start', label: 'When', type: 'datetime', required: true },
-      { key: 'durationMinutes', label: 'Duration', type: 'options' },
+      {
+        key: 'durationMinutes',
+        label: 'Duration',
+        type: 'options',
+        choices: [
+          { value: 15, label: '15 min' },
+          { value: 30, label: '30 min' },
+          { value: 45, label: '45 min' },
+          { value: 60, label: '1 hour' },
+          { value: 90, label: '1½ hours' },
+        ],
+      },
       { key: 'place', label: 'Where', type: 'text', placeholder: 'Place or link' },
     ],
     states: ['proposed', 'accepted', 'declined', 'cancelled'],
@@ -159,7 +172,7 @@ export const KITS: Record<KitId, KitDef> = {
       { key: 'summary', label: 'Items', type: 'longtext' },
       { key: 'amount', label: 'Total', type: 'amount' },
     ],
-    states: ['draft', 'sent', 'accepted', 'fulfilled', 'cancelled'],
+    states: ['sent', 'accepted', 'fulfilled', 'cancelled'],
   },
   payment_request: {
     id: 'payment_request',
@@ -201,7 +214,7 @@ export const KITS: Record<KitId, KitDef> = {
       { key: 'start', label: 'When', type: 'datetime', required: true },
       { key: 'place', label: 'Where', type: 'text' },
     ],
-    states: ['requested', 'confirmed', 'rescheduled', 'cancelled', 'done'],
+    states: ['requested', 'confirmed', 'done', 'cancelled'],
   },
   location: {
     id: 'location',
@@ -227,7 +240,7 @@ export const KITS: Record<KitId, KitDef> = {
     id: 'poll',
     name: 'Poll',
     description: 'Ask everyone to choose',
-    icon: 'bar-chart-3',
+    icon: 'chart-bar',
     spheres: null,
     groups: true,
     fields: [

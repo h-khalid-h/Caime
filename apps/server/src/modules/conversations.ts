@@ -7,6 +7,10 @@ import {
   CreateConversationBody,
   EditMessageBody,
   ForwardBody,
+  isCardKit,
+  KITS,
+  kitMoves,
+  kitStateLabel,
   MembersBody,
   PollPayload,
   ReactionBody,
@@ -22,7 +26,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Participant } from '../db/schema';
 import { ensureDirectConversation } from '../lib/conversations';
-import { badRequest, forbidden, notFound } from '../lib/errors';
+import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { afterMessage } from '../lib/message-effects';
 import {
@@ -33,6 +37,7 @@ import {
   participantsOf,
   sendMessage,
 } from '../lib/messages';
+import { notify } from '../lib/notify';
 import {
   activeRelationships,
   between,
@@ -720,6 +725,68 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
       { type: 'message.updated', data: { ...view, clientId: null } },
     );
+    return { message: view };
+  });
+
+  // Moving a kit card along (PRD §41): approve, accept, mark paid. Who may make which move is the
+  // kit's flow in core (kit-cards.ts); the move is applied only if nobody moved the card first.
+  app.post('/messages/:id/kit', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { to } = parse(z.object({ to: z.string().min(1).max(40) }), req.body);
+    const m = await ctx.db
+      .selectFrom('messages')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m) throw notFound('That message');
+    await membership(ctx, auth.userId, m.conversation_id);
+    const card = (m.payload ?? {}) as {
+      kit?: unknown;
+      state?: string;
+      title?: string;
+      history?: Array<{ state: string; by: string; at: string }>;
+    };
+    if (m.kind !== 'kit' || m.deleted_at || !isCardKit(card.kit))
+      throw badRequest('That isn’t a card that can change.');
+    const from = card.state ?? '';
+    const move = kitMoves(card.kit, from, m.sender_id === auth.userId).find((x) => x.to === to);
+    if (!move) throw forbidden('You can’t make that change to this card.');
+    const updated = await ctx.db
+      .updateTable('messages')
+      .set({
+        payload: JSON.stringify({
+          ...card,
+          state: to,
+          history: [...(card.history ?? []), { state: to, by: auth.userId, at: ctx.now() }],
+        }),
+      })
+      .where('id', '=', id)
+      .where(sql<boolean>`payload->>'state' = ${from}`)
+      .returningAll()
+      .executeTakeFirst();
+    if (!updated) throw new AppError(409, 'conflict', 'Someone just changed this card.');
+    const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
+    const [view] = await messageViews(ctx.db, [updated], auth.userId);
+    await recordEvent(ctx.db, 'kit.moved', auth.userId, { messageId: id, kit: card.kit, to });
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    const mover = await ctx.db
+      .selectFrom('users')
+      .select('display_name')
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    // Everyone else hears it; an answer to what the sender asked matters more than an update.
+    for (const userId of members) {
+      if (userId === auth.userId) continue;
+      await notify(ctx, {
+        userId,
+        kind: 'kit',
+        level: userId === m.sender_id ? 'attention' : 'activity',
+        title: `${mover.display_name}: ${kitStateLabel(to)}`,
+        body: `${KITS[card.kit].name} · ${card.title ?? ''}`,
+        data: { conversationId: m.conversation_id, messageId: id },
+      });
+    }
     return { message: view };
   });
 

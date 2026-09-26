@@ -5,6 +5,7 @@ import { memo } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
+import { KitCard } from '@/features/kits/KitCard';
 import { stickerById } from '@/features/stickers/pack';
 import { linkify, openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
@@ -90,10 +91,14 @@ export const MessageBubble = memo(function MessageBubble({
   const t = useTheme();
   const r = t.radii.bubble;
   const tail = t.radii.bubbleTail;
-  const bg = delivery === 'failed' ? t.c.danger : mine ? t.bubble.bg : t.c.bubbleOther;
-  const fg = delivery === 'failed' ? '#FFFFFF' : mine ? t.bubble.fg : t.c.onBubbleOther;
-  const meta = delivery === 'failed' ? '#FFFFFF' : mine ? t.bubble.meta : t.c.textTertiary;
   const deleted = m.deletedAt !== null;
+  // Kit cards sit on a neutral card on both sides, so their buttons read the same everywhere.
+  const card = m.kind === 'kit' && !deleted && delivery !== 'failed';
+  const bg =
+    delivery === 'failed' ? t.c.danger : card ? t.c.surface : mine ? t.bubble.bg : t.c.bubbleOther;
+  const fg =
+    delivery === 'failed' ? '#FFFFFF' : card ? t.c.text : mine ? t.bubble.fg : t.c.onBubbleOther;
+  const meta = delivery === 'failed' ? '#FFFFFF' : card || !mine ? t.c.textTertiary : t.bubble.meta;
   const sticker =
     m.kind === 'sticker' && !deleted
       ? stickerById((m.payload as { sticker?: string }).sticker)
@@ -279,18 +284,7 @@ export const MessageBubble = memo(function MessageBubble({
       </View>
     );
   } else if (m.kind === 'kit') {
-    const p = m.payload as { title?: string; kit?: string; fields?: Record<string, unknown> };
-    content = (
-      <View style={{ gap: 4, minWidth: 200 }}>
-        <Text variant="overline" color={meta}>
-          {p.kit ?? 'Card'}
-        </Text>
-        <Text variant="label" color={fg}>
-          {p.title ?? 'Card'}
-        </Text>
-        {bodyText}
-      </View>
-    );
+    content = <KitCard m={m} mine={mine} />;
   } else {
     content = bodyText;
   }
@@ -318,7 +312,7 @@ export const MessageBubble = memo(function MessageBubble({
         <DeliveryIcon
           delivery={delivery}
           color={meta}
-          readColor={mine && t.bubble.fg === '#FFFFFF' ? '#FFD6E7' : t.c.accentStrong}
+          readColor={mine && !card && t.bubble.fg === '#FFFFFF' ? '#FFD6E7' : t.c.accentStrong}
         />
       ) : null}
     </View>
@@ -387,9 +381,10 @@ export const MessageBubble = memo(function MessageBubble({
                 style={{
                   backgroundColor: bg,
                   paddingHorizontal: 12,
-                  paddingTop: 8,
+                  paddingTop: card ? 10 : 8,
                   paddingBottom: 6,
                   flexShrink: 1,
+                  ...(card ? { borderWidth: 1, borderColor: t.c.border } : {}),
                   ...radius,
                 }}
               >

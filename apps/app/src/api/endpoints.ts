@@ -184,6 +184,9 @@ export const endpoints = {
     api.del<Ok>(`/messages/${id}/reactions/${encodeURIComponent(emoji)}`),
   vote: (id: string, optionIds: string[]) =>
     api.post<{ message: MessageView }>(`/messages/${id}/vote`, { optionIds }),
+  /** Move a kit card along: approve, accept, mark paid (core kit-cards.ts says who may). */
+  moveKit: (id: string, to: string) =>
+    api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
   receipts: (id: string, body: { read?: number; delivered?: number }) =>
     api.post<Ok>(`/conversations/${id}/receipts`, body),
   dismissAttention: (id: string) => api.post<Ok>(`/conversations/${id}/dismiss`),
