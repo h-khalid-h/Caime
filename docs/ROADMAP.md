@@ -199,9 +199,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
 - [ ] EAS config and store builds ⛔ Apple and Google developer accounts, `EXPO_ACCESS_TOKEN`
-- [ ] Deploy to EasyPanel ⛔ needs the app created there from the image (`docs/DEPLOY.md`) and the
-      `EASYPANEL_DEPLOY_WEBHOOK` repository secret, or `EASYPANEL_URL` and
-      `EASYPANEL_API_TOKEN` in the environment settings
+- [x] Deployed to EasyPanel: https://caishy-caishy.0hqwb7.easypanel.host (project `caishy`,
+      services `caishy` and `db`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
+      readiness, the page and its headers, and a sign-up whose realtime socket connected
+      through EasyPanel's proxy before the account deleted itself. Only what passed CI is
+      deployed: a green run fast-forwards the `production` branch, which EasyPanel builds from;
+      AI assist is on there (`ANTHROPIC_API_KEY`)
 
 ## Log
 

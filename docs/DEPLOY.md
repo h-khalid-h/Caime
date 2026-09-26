@@ -19,7 +19,7 @@ Deployed 2026-09-26 on EasyPanel.
 | Project | `caishy` |
 | Services | `caishy` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
 | Source | **GitHub** `h-khalid-h/Caishy`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caishy/caishy:latest`) |
-| Auto deploy | On, from `production`: a push to `main` reaches production only once CI is green. The old container serves until the new one passes its `/v1/readyz` health check. |
+| Auto deploy | On, from `production`: every move of `production` rebuilds and redeploys `caishy`, and only a green CI run moves it (below). The old container serves until the new one passes its `/v1/readyz` health check. |
 | Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (set in EasyPanel only), so AI assist is available |
 | Panel | https://host.datac.com |
 
@@ -32,7 +32,12 @@ Switched to `production` on 2026-09-26 and redeployed with `ANTHROPIC_API_KEY`: 
 back as branch `production` with auto deploy on, `/v1/readyz` answers 200, and a throwaway
 account's `GET /v1/ai` answered `"available": true` before it deleted itself.
 
-CI releases by moving `production`, so no webhook secret is needed.
+Only what passed CI is deployed. A push to `main` runs every check (lint, typecheck, the tests on
+real Postgres, the web budget, the end-to-end suite, then the image's smoke test); the last step
+of a green run fast-forwards `production` to that commit (`.github/workflows/ci.yml`, "Release to
+production"), and EasyPanel builds from `production`. A red run moves nothing, so production keeps
+the last commit that passed. `EASYPANEL_DEPLOY_WEBHOOK` stays unset for this service: with it,
+CI's deploy step would only trigger a second, redundant rebuild.
 
 ## EasyPanel
 

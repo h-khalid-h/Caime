@@ -207,6 +207,8 @@ organizations writing first as requests), apps for organizations (scoped tokens,
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
 CI are built and verified, and so are an organization's AI support agent and 1:1 web calls.
-Remaining: billing (⛔ Stripe), a TURN relay for calls (⛔), group calls and calls in the phone
-apps, a third-party penetration test, store builds, and the EasyPanel deploy (⛔ needs
-`EASYPANEL_URL` and `EASYPANEL_API_TOKEN` in the environment settings, `docs/DEPLOY.md`).
+It's live on EasyPanel at https://caishy-caishy.0hqwb7.easypanel.host (`docs/DEPLOY.md`); sessions
+in this environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
+billing (⛔ Stripe), a TURN relay for calls (⛔), group calls and calls in the phone apps, a
+third-party penetration test, and store builds. Production is only what passed CI: a green run
+on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).
