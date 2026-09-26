@@ -18,6 +18,22 @@ export function urlFor(database: string): string {
   return u.toString();
 }
 
+/**
+ * Drop a test database, waiting out an autovacuum worker that is in it for a moment: those run
+ * as the superuser, and a role that isn't one (the local development cluster's) can't end them.
+ */
+export async function dropDatabase(admin: pg.Client, name: string): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await admin.query(`drop database if exists ${name} with (force)`);
+      return;
+    } catch (err) {
+      if ((err as { code?: string }).code !== '42501' || attempt >= 50) throw err;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+}
+
 export default async function setup() {
   const admin = new pg.Client({ connectionString: adminUrl() });
   await admin.connect();
@@ -27,7 +43,7 @@ export default async function setup() {
   );
   for (const row of stale.rows)
     await admin.query(`drop database if exists ${row.datname} with (force)`).catch(() => {});
-  await admin.query(`drop database if exists ${TEMPLATE} with (force)`);
+  await dropDatabase(admin, TEMPLATE);
   await admin.query(`create database ${TEMPLATE}`);
   await admin.end();
   const pool = new pg.Pool({ connectionString: urlFor(TEMPLATE), max: 1 });

@@ -4,7 +4,7 @@ import pg from 'pg';
 import { buildApp } from '../src/app';
 import { loadConfig } from '../src/config';
 import type { AppContext } from '../src/context';
-import { adminUrl, TEMPLATE, urlFor } from './global-setup';
+import { adminUrl, dropDatabase, TEMPLATE, urlFor } from './global-setup';
 
 export interface TestApp {
   app: FastifyInstance;
@@ -47,7 +47,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
       await app.close();
       const a = new pg.Client({ connectionString: adminUrl() });
       await a.connect();
-      await a.query(`drop database if exists ${name} with (force)`);
+      await dropDatabase(a, name);
       await a.end();
     },
   };

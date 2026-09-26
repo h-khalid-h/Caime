@@ -135,6 +135,10 @@ These are rules, not preferences.
   `sendMessage` (`apps/server/src/lib/messages.ts`) owns the rules: one message until answered,
   declined reads to the sender as unanswered, replying accepts. The team writes first through
   `POST /orgs/:id/threads`, which sends through `sendMessage` too.
+- In a business conversation, anything filed for the customer (suggestions, tasks, AI
+  follow-ups) names the organization and points at nobody on its team: no team member's id as a
+  subject or `decidedBy`. `suggestBusiness` (`apps/server/src/lib/message-effects.ts`) and the
+  mask in `ai.ts` are where that's decided.
 - E2E verifies organizations' domains for real: `e2e/dns-stub.mjs` answers the server's TXT
   lookups (`DNS_SERVERS`), and `publishTxt()` (`e2e/helpers.ts`) publishes a record. A verified
   domain belongs to one organization, so a test uses a domain of its own each run.

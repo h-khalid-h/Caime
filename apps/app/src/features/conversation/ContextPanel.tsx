@@ -260,12 +260,7 @@ export function ContextPanel({
               <Text variant="body" color="textSecondary">
                 {m.summary}
               </Text>
-              {aiReady ? (
-                <AssistTools
-                  conversationId={conversation.id}
-                  followUps={conversation.kind !== 'business'}
-                />
-              ) : null}
+              {aiReady ? <AssistTools conversationId={conversation.id} /> : null}
             </Section>
             {m.openItems.length ? (
               <Section title={`Open · ${m.openItems.length}`}>

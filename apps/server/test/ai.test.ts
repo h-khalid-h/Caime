@@ -383,9 +383,45 @@ describe('AI assist with an organization (R15)', () => {
     const transcript = last().body.messages[0].content as string;
     expect(transcript).toContain('Rivera Tiles: We do! 40 boxes.');
     expect(transcript).not.toContain('Sam Rivera');
-    // What's open with an organization is its inbox's to track.
-    const follow = await dina.req('POST', `/v1/conversations/${conversationId}/ai/actions`, {});
-    expect(follow.json().error.code).toBe('ai_business');
+
+    // Follow-ups too: what the shop asked of her, and decided, as the shop's; what she waits for
+    // from it is the conversation's own state, so no waiting item points at who wrote.
+    await say(sam, conversationId, 'Can you send us a photo of the floor plan by Friday?');
+    // The heuristics' own suggestions are written after the response: clear them once they're in.
+    await t.ctx.flush();
+    await t.ctx.db.deleteFrom('suggestions').where('user_id', '=', dina.user.id).execute();
+    replies.push(
+      message(
+        JSON.stringify({
+          items: [
+            {
+              kind: 'task',
+              title: 'Send a photo of the floor plan',
+              who: null,
+              due: 'Friday',
+              line: 3,
+            },
+            {
+              kind: 'waiting',
+              title: 'Hold the blue tiles',
+              who: 'Rivera Tiles',
+              due: null,
+              line: 2,
+            },
+            { kind: 'decision', title: 'Go with the blue tiles', who: null, due: null, line: 2 },
+          ],
+        }),
+      ),
+    );
+    const { found } = await dina.post(`/v1/conversations/${conversationId}/ai/actions`, {});
+    expect(found.map((x: any) => x.kind).sort()).toEqual(['decision', 'task']);
+    expect(found.find((x: any) => x.kind === 'task')).toMatchObject({
+      rationale: 'Rivera Tiles wrote “Can you send us a photo of the floor plan by Friday?”',
+      subjectUserId: null,
+    });
+    expect(found.find((x: any) => x.kind === 'decision').payload.decidedBy).toBeUndefined();
+    expect(JSON.stringify(found)).not.toContain(sam.user.id);
+    expect(JSON.stringify(found)).not.toContain('Sam');
   });
 });
 

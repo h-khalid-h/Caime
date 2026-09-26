@@ -777,7 +777,21 @@ test.describe
         // Answered, it's an ordinary conversation with the team.
         await expect(page.getByTestId('thread-state')).toHaveText('Customer waiting');
         await expect(page.getByTestId('request-outgoing')).toHaveCount(0);
-        await expect(page.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+        await page
+          .getByTestId('composer-input')
+          .filter({ visible: true })
+          .fill('Please bring your insurance card on Thursday.');
+        await page.getByTestId('composer-send').filter({ visible: true }).click();
+
+        // What the clinic asks of Sam is theirs to do, said in the clinic's name, not Noor's.
+        const offer = phone.getByLabel('Suggestion: Bring insurance card');
+        await expect(offer).toContainText(
+          `${orgName} asked “Please bring your insurance card on Thursday.”`,
+        );
+        await expect(offer).not.toContainText('Noor');
+        await phone.screenshot({ path: 'e2e/screenshots/phone-business-suggestion.png' });
+        await offer.getByRole('button', { name: 'Add to actions' }).click();
+        await expect(visible(phone, 'Added to your actions')).toBeVisible();
         expect([...errors, ...sam.errors]).toEqual([]);
       } finally {
         await samContext.close();

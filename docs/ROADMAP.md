@@ -119,8 +119,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       verifies a domain end to end against a DNS stand-in). Customers under 18 write only to an
       organization that has verified who it is (a school, a club, a clinic) and are told its team
       will know; the team sees "Under 18", no card about money is offered or accepted, and its
-      apps' webhooks say so too (`business-minors.test.ts`, E2E). [ ] AI follow-ups and requests
-      across it
+      apps' webhooks say so too (`business-minors.test.ts`, E2E). What either side asks or promises
+      is offered as a follow-up, by the heuristics or Find follow-ups: to the customer in the
+      organization's name, pointing at nobody on its team; to whoever on the team has the
+      conversation (`business-suggestions.test.ts`, `ai.test.ts`, E2E)
 - [x] Spaces: a family, team, project, community or school with its people and conversations.
       Everyone is in its General conversation (which goes by the space's name); its other
       conversations are open to join; a topic that keeps coming up in General becomes one.
@@ -339,3 +341,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   conversation, cards about money aren't offered (the server refuses them, as before), and
   webhooks carry it so an integration never treats them as a customer to market to. Tests: 148
   core, 49 brand, 165 server, 8 app, 28 E2E.
+- 2026-09-26 — Session 2 (cont.): follow-ups with organizations. What an organization asks of a
+  customer ("Please bring your insurance card on Thursday") is offered to them as something to
+  do, said as the organization's, never as the person on its team who wrote it; what a customer
+  asks goes to whoever on the team has the conversation, and each side's own promises become
+  their reminders. Find follow-ups works there too, on the same terms, and nothing comes of a
+  request the customer hasn't accepted. Its test found a race of my own: a follow-up the
+  heuristics write after the response could land in the middle of the AI's, and was taken for a
+  duplicate; the test now waits for it. Local test runs could also fail at the end of a file
+  when an autovacuum worker was in its database, which the local role may not end; dropping
+  waits it out. Tests: 148 core, 49 brand, 168 server, 8 app, 28 E2E.

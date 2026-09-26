@@ -14,14 +14,7 @@ import { catchUp, useCatchUps } from './catchUp';
  * AI assist for a whole conversation (PRD §45): catch me up, and find its follow-ups. Both are
  * suggestions: the summary is labelled, and follow-ups arrive as offers to accept or dismiss.
  */
-export function AssistTools({
-  conversationId,
-  followUps = true,
-}: {
-  conversationId: string;
-  /** Off with an organization: its Business inbox tracks what's open there (PRD §38). */
-  followUps?: boolean;
-}) {
+export function AssistTools({ conversationId }: { conversationId: string }) {
   const t = useTheme();
   const qc = useQueryClient();
   const result = useCatchUps((s) => s.byId[conversationId]);
@@ -53,17 +46,15 @@ export function AssistTools({
           onPress={() => void catchUp(conversationId)}
           testID="assist-catch-up"
         />
-        {followUps ? (
-          <Button
-            label="Find follow-ups"
-            icon={ListChecks}
-            size="sm"
-            variant="secondary"
-            loading={finding}
-            onPress={() => void find()}
-            testID="assist-find"
-          />
-        ) : null}
+        <Button
+          label="Find follow-ups"
+          icon={ListChecks}
+          size="sm"
+          variant="secondary"
+          loading={finding}
+          onPress={() => void find()}
+          testID="assist-find"
+        />
       </View>
       {result && result.state !== 'loading' ? (
         <View

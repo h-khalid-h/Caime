@@ -386,13 +386,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { ai, me } = await gate(auth.userId);
     const { conversation, me: seat } = await readable(auth.userId, id);
-    // What's open with an organization is its Business inbox's to track (PRD §38).
-    if (conversation.kind === 'business')
-      throw new AppError(
-        403,
-        'ai_business',
-        'Follow-ups aren’t found in conversations with organizations yet.',
-      );
+    // A customer's follow-ups never point at who on an organization's team wrote (R15), and what
+    // they wait for from it is the conversation's own state; the team's are ordinary ones.
+    const mask = conversation.kind === 'business' ? await maskFor(ctx.db, id, auth.userId) : null;
     const { transcript, lines } = await transcriptOf(
       auth.userId,
       id,
@@ -425,6 +421,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!line) continue;
       let subject: string | null = null;
       if (item.kind === 'waiting') {
+        if (mask) continue;
         subject =
           personNamed(item.who) ??
           (line.senderId && line.senderId !== auth.userId ? line.senderId : null) ??
@@ -465,7 +462,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
               workweek: me.workweek,
             })
           : undefined;
-      const speaker = line.speaker === 'You' ? 'You' : firstName(line.speaker);
+      // An organization is named in full; a person by their first name.
+      const speaker =
+        line.speaker === 'You' ? 'You' : mask ? line.speaker : firstName(line.speaker);
       const suggestionId = await createSuggestion(ctx, {
         userId: auth.userId,
         kind: item.kind,
@@ -475,7 +474,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
         payload: {
           source: 'ai',
           dueHasTime: Boolean(when?.time),
-          ...(item.kind === 'decision' && line.senderId ? { decidedBy: line.senderId } : {}),
+          ...(item.kind === 'decision' && line.senderId && (!mask || line.senderId === auth.userId)
+            ? { decidedBy: line.senderId }
+            : {}),
         },
         subjectUserId: subject,
         conversationId: id,

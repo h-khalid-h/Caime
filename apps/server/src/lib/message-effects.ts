@@ -60,8 +60,10 @@ export async function afterMessage(
     : null;
   const recipients = members.filter((m) => m.user_id !== sender.id);
   if (conversation.kind === 'business') {
-    // The Business inbox tracks what's open there, so no suggestions, topics or follow-ups.
+    // The Business inbox tracks whose turn it is, so no topics or follow-up nudges; what each
+    // side asked and promised is still worth a suggestion (R15 decides how it's said).
     await notifyBusiness(ctx, conversation, message, sender, recipients, replyToSender ?? null);
+    await suggestBusiness(ctx, conversation, message, analysis, sender);
     return;
   }
   const addressed = (userId: string) =>
@@ -430,6 +432,103 @@ async function suggest(
       });
     }
   }
+}
+
+/**
+ * Suggestions in a conversation with an organization (R15). The customer's come from what the
+ * organization asked and decided, said as the organization's and pointing at nobody on its team;
+ * what they wait for from it is the conversation's own state. The team's go to whoever has the
+ * thread, and to whoever on it made a promise or asked something. None while it's a request the
+ * customer hasn't accepted (R14).
+ */
+async function suggestBusiness(
+  ctx: AppContext,
+  conversation: Conversation,
+  message: Message,
+  analysis: Analysis | null,
+  sender: { id: string; display_name: string },
+): Promise<void> {
+  if (!analysis || conversation.privacy_class === 'private') return;
+  const thread = await ctx.db
+    .selectFrom('business_threads as t')
+    .innerJoin('organizations as o', 'o.id', 't.org_id')
+    .innerJoin('participants as p', (j) =>
+      j
+        .onRef('p.conversation_id', '=', 't.conversation_id')
+        .onRef('p.user_id', '=', 't.customer_id'),
+    )
+    .innerJoin('users as u', 'u.id', 't.customer_id')
+    .select([
+      't.customer_id',
+      't.assignee_id',
+      'o.name as org_name',
+      'p.request_state',
+      'u.display_name as customer_name',
+    ])
+    .where('t.conversation_id', '=', conversation.id)
+    .executeTakeFirst();
+  if (!thread?.customer_id) return;
+  if (thread.request_state === 'pending' || thread.request_state === 'declined') return;
+  const customerId = thread.customer_id;
+  const senderKind = (
+    await ctx.db
+      .selectFrom('users')
+      .select('kind')
+      .where('id', '=', sender.id)
+      .executeTakeFirstOrThrow()
+  ).kind;
+  const file = (
+    userId: string,
+    s: ReturnType<typeof suggestFromAnalysis>[number],
+    opts: { subject: string | null; decidedBy: string | null },
+  ) =>
+    createSuggestion(ctx, {
+      userId,
+      kind: s.kind,
+      title: s.title,
+      rationale: s.rationale,
+      confidence: s.confidence,
+      payload: {
+        dueHasTime: Boolean(analysisDateHasTime(analysis, s.dueText)),
+        ...(opts.decidedBy ? { decidedBy: opts.decidedBy } : {}),
+      },
+      subjectUserId: opts.subject,
+      conversationId: conversation.id,
+      messageId: message.id,
+      dueAt: s.dueAt,
+      dueText: s.dueText,
+      fingerprint: `msg:${message.id}:${s.kind}`,
+    });
+
+  if (sender.id === customerId) {
+    // What they promised or decided themselves.
+    for (const s of suggestFromAnalysis(analysis, {
+      senderIsMe: true,
+      senderName: sender.display_name,
+    }))
+      if (s.kind !== 'waiting') await file(customerId, s, { subject: null, decidedBy: sender.id });
+    // What they asked of the team, or promised it: for whoever has the thread.
+    if (thread.assignee_id)
+      for (const s of suggestFromAnalysis(analysis, {
+        senderIsMe: false,
+        senderName: firstName(sender.display_name),
+      }))
+        await file(thread.assignee_id, s, { subject: customerId, decidedBy: customerId });
+    return;
+  }
+  // Someone on the team (or its app's bot) wrote: their own promises and questions to the customer.
+  if (senderKind === 'human')
+    for (const s of suggestFromAnalysis(analysis, {
+      senderIsMe: true,
+      senderName: sender.display_name,
+    }))
+      await file(sender.id, s, {
+        subject: s.kind === 'waiting' ? customerId : null,
+        decidedBy: sender.id,
+      });
+  // And what the organization asked of the customer, in its name.
+  for (const s of suggestFromAnalysis(analysis, { senderIsMe: false, senderName: thread.org_name }))
+    if (s.kind !== 'waiting') await file(customerId, s, { subject: null, decidedBy: null });
 }
 
 function analysisDateHasTime(a: Analysis, dueText: string | null): boolean {
