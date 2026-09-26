@@ -28,6 +28,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
 import { audit } from '../lib/audit';
+import { orgBlocked } from '../lib/blocks';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { handleTaken } from '../lib/handles';
@@ -125,7 +126,15 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
         }
       : null;
   const plan = seat && canManageOrg(seat.role) ? await orgPlanView(ctx, org.id) : null;
-  return { ...summary, createdAt: org.created_at.toISOString(), members, domain, plan };
+  const blockedByMe = await orgBlocked(ctx.db, viewerId, org.id);
+  return {
+    ...summary,
+    createdAt: org.created_at.toISOString(),
+    members,
+    domain,
+    plan,
+    blockedByMe,
+  };
 }
 
 async function adult(ctx: AppContext, userIds: string[]): Promise<boolean> {

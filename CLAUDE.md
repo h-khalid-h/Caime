@@ -121,6 +121,10 @@ These are rules, not preferences.
 - Outbound requests to addresses someone else chose (webhooks) go through `postWebhook`: https,
   no private addresses (checked on the URL and on every DNS answer), one deadline for the whole
   exchange. Test them with `WEBHOOKS_ALLOW_PRIVATE=true` and a local server.
+- Anything that writes into a conversation (send, edit, react, vote, move a card, type) calls
+  `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
+  customer's block of an organization both stop at it. New write routes do the same, with a
+  case in `blocking.test.ts`.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;

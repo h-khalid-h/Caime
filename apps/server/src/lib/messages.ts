@@ -22,6 +22,7 @@ import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
+import { assertCanWrite } from './blocks';
 import { maskFor, maskMessage, recordBusinessMessage } from './business';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
@@ -287,6 +288,8 @@ export async function sendMessage(
       .where('id', '=', conversation.org_id)
       .executeTakeFirst();
     if (!org || org.archived_at) throw forbidden('This organization has closed on Caishy.');
+    // Its customer blocked it: closed both ways until they unblock (PRD §55).
+    await assertCanWrite(ctx, conversationId, senderId);
   }
 
   let acceptRequest = false;

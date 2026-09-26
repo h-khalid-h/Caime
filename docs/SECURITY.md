@@ -26,7 +26,7 @@ a control without a test is listed as a gap, not a control. Reviewed 2026-09-26.
 | Realtime | A cookie session opens a WebSocket only from the app's own origin (cross-site WebSocket hijacking); native clients authenticate in the first frame; 64 KB frames; typing rate-limited | `messaging.test.ts` |
 | Read receipts | One check, `readReceiptVisibleTo`, for the conversation view and the live event | `messaging.test.ts` |
 | Relationships | Owner-only reads and writes; `mutualFit` only when both sides shared | `connections.test.ts` |
-| Blocking | Blocked people can't message or find you; a profile of someone who blocked you looks like it doesn't exist | `connections.test.ts`, `actions.test.ts` |
+| Blocking | Blocked people can't message or find you; a profile of someone who blocked you looks like it doesn't exist. A block stops every way of reaching the other side in your conversation, not only sending: editing, reacting, voting, moving a card and typing all ask one check first (`lib/blocks.ts`), both ways. A customer can block an organization: its team and its apps' bots can no longer write to them, the conversation closes (resolved for the team, "Closed by the customer"; archived for the customer), and they can't be written to again until they unblock it; nobody on a team can block their own organization | `connections.test.ts`, `actions.test.ts`, `blocking.test.ts`, `e2e/around-the-conversation.spec.ts` |
 | Minors | Discoverability, email and message-request rules | `privacy-safety.test.ts`, `auth.test.ts`, `connections.test.ts` |
 | Kit cards | The server decides what a card says and where it starts; a client's `state` or extra fields are dropped. A card moves only along its kit's flow, by the person each move belongs to, and only if nobody moved it first. Money cards (invoice, purchase order, payment request) never involve anyone under 18 | `kits.test.ts` |
 | Uploads | Type from the bytes, not the name; non-media downloads as attachments with `CSP: sandbox`; photo EXIF and GPS stripped; 100 MB cap; per-user rate limit | `files.test.ts` |
@@ -67,8 +67,9 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
 - **`TRUST_PROXY` is on by default** for EasyPanel's proxy. Run without a proxy and clients can
   choose the address rate limits see; set `TRUST_PROXY=false` there.
 - **No penetration test** by a third party yet.
-- **A customer can't block an organization** yet, only archive or mute its conversation.
-  Organizations can't start conversations with anyone, which is what keeps that safe for now.
+- **Organizations can't start conversations** with anyone yet; customers always write first. When
+  they can, a message from an organization a customer hasn't written to should arrive as a
+  request, as a stranger's does (R14).
 - **Webhooks carry what customers write** to the organization's own endpoint, which is the
   point of them, and the organization then holds that copy under its own policies. Customers
   see that the organization answers through an app ("Automated"), not where its webhooks go.

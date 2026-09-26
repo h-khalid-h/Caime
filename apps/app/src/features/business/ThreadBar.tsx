@@ -79,7 +79,7 @@ export function ThreadBar({
       testID="thread-bar"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <StateChip state={thread.state} testID="thread-state" />
+        <StateChip state={thread.state} closed={thread.closed} testID="thread-state" />
         <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
           {[
             thread.waitingSince
@@ -100,50 +100,53 @@ export function ThreadBar({
           {thread.escalated.note ? `: “${thread.escalated.note}”` : ''}
         </Text>
       ) : null}
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        {resolved ? (
-          <Button
-            label="Reopen"
-            size="sm"
-            variant="secondary"
-            loading={busy}
-            onPress={() => void act(() => endpoints.reopenThread(conversation.id), 'Reopened')}
-            testID="thread-reopen"
-          />
-        ) : (
-          <>
-            {!mine ? (
-              <Button
-                label="Take it"
-                size="sm"
-                icon={UserRound}
-                loading={busy}
-                onPress={() =>
-                  void act(() => endpoints.assignThread(conversation.id, me.id), 'It’s yours')
-                }
-                testID="thread-take"
-              />
-            ) : null}
+      {/* Closed by the customer: there's nothing left for the team to do in it. */}
+      {thread.closed ? null : (
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {resolved ? (
             <Button
-              label="Resolve"
+              label="Reopen"
               size="sm"
-              icon={Check}
-              variant={mine ? 'primary' : 'secondary'}
+              variant="secondary"
               loading={busy}
-              onPress={() => void act(() => endpoints.resolveThread(conversation.id), 'Resolved')}
-              testID="thread-resolve"
+              onPress={() => void act(() => endpoints.reopenThread(conversation.id), 'Reopened')}
+              testID="thread-reopen"
             />
-          </>
-        )}
-        <Button
-          label="More"
-          size="sm"
-          icon={Ellipsis}
-          variant="ghost"
-          onPress={() => setMenu('more')}
-          testID="thread-more"
-        />
-      </View>
+          ) : (
+            <>
+              {!mine ? (
+                <Button
+                  label="Take it"
+                  size="sm"
+                  icon={UserRound}
+                  loading={busy}
+                  onPress={() =>
+                    void act(() => endpoints.assignThread(conversation.id, me.id), 'It’s yours')
+                  }
+                  testID="thread-take"
+                />
+              ) : null}
+              <Button
+                label="Resolve"
+                size="sm"
+                icon={Check}
+                variant={mine ? 'primary' : 'secondary'}
+                loading={busy}
+                onPress={() => void act(() => endpoints.resolveThread(conversation.id), 'Resolved')}
+                testID="thread-resolve"
+              />
+            </>
+          )}
+          <Button
+            label="More"
+            size="sm"
+            icon={Ellipsis}
+            variant="ghost"
+            onPress={() => setMenu('more')}
+            testID="thread-more"
+          />
+        </View>
+      )}
 
       <Sheet
         open={menu !== null}

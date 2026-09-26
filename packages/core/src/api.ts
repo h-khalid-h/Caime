@@ -484,6 +484,8 @@ export interface BusinessThreadView {
   } | null;
   unreadCount: number;
   lastActivityAt: string;
+  /** Its customer blocked the organization: closed until they unblock it. */
+  closed: boolean;
 }
 
 export interface ConversationBusinessView {
@@ -493,6 +495,8 @@ export interface ConversationBusinessView {
   deliveredSeq: number;
   /** For the team only: the thread's state, who has it, and why it's escalated. */
   thread: BusinessThreadView | null;
+  /** The customer blocked the organization: nobody writes in it until they unblock it. */
+  closed: boolean;
 }
 
 export interface BusinessInboxView {
@@ -587,6 +591,8 @@ export interface OrgView extends OrgSummaryView {
   domain: OrgDomainView | null;
   /** Its plan and what it uses of it, for its owner and admins. */
   plan: OrgPlanView | null;
+  /** You blocked it: it can't write to you, and your conversation with it is closed. */
+  blockedByMe: boolean;
 }
 
 /** An organization's plan (PRD §84): what it includes and how much of it is in use. */

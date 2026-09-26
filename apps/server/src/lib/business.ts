@@ -343,7 +343,7 @@ export async function threadViews(
       ),
     ),
   ];
-  const [customers, names, lastMessages, mine] = await Promise.all([
+  const [customers, names, lastMessages, mine, blocked] = await Promise.all([
     personViewsFor(
       ctx,
       viewerId,
@@ -377,7 +377,17 @@ export async function threadViews(
       .where('p.user_id', '=', viewerId)
       .where('p.conversation_id', 'in', ids)
       .execute(),
+    // Customers who blocked the organization (PRD §55): those threads are closed.
+    ctx.db
+      .selectFrom('business_threads as t')
+      .innerJoin('org_blocks as b', (j) =>
+        j.onRef('b.user_id', '=', 't.customer_id').onRef('b.org_id', '=', 't.org_id'),
+      )
+      .select('t.conversation_id')
+      .where('t.conversation_id', 'in', ids)
+      .execute(),
   ]);
+  const closed = new Set(blocked.map((b) => b.conversation_id));
   const nameOf = (id: string | null) =>
     id ? (names.find((n) => n.id === id)?.display_name ?? null) : null;
   return threads.map((t) => {
@@ -409,6 +419,7 @@ export async function threadViews(
         : null,
       unreadCount: mine.find((m) => m.conversation_id === t.conversation_id)?.unread ?? 0,
       lastActivityAt: (last?.created_at ?? t.updated_at).toISOString(),
+      closed: closed.has(t.conversation_id),
     };
   });
 }

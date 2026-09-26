@@ -118,7 +118,7 @@ function ThreadRow({
           <Badge count={thread.unreadCount} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <StateChip state={thread.state} />
+          <StateChip state={thread.state} closed={thread.closed} />
           <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
             {thread.assignee ? thread.assignee.displayName : 'Nobody has it'}
           </Text>

@@ -434,6 +434,12 @@ export interface BlocksTable {
   created_at: Generated<Date>;
 }
 
+export interface OrgBlocksTable {
+  user_id: string;
+  org_id: string;
+  created_at: Generated<Date>;
+}
+
 export interface ReportsTable {
   id: string;
   reporter_id: string | null;
@@ -662,6 +668,7 @@ export interface Database {
   notifications: NotificationsTable;
   push_subscriptions: PushSubscriptionsTable;
   blocks: BlocksTable;
+  org_blocks: OrgBlocksTable;
   reports: ReportsTable;
   domain_events: DomainEventsTable;
   jobs: JobsTable;

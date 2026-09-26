@@ -199,6 +199,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['requests'], 'requests');
       invalidate(['person'], 'person');
       invalidate(qk.inbox, 'inbox');
+      // An organization blocked or unblocked: its page and your conversation with it change.
+      invalidate(['org'], 'org');
+      invalidate(['conversation'], 'conversation');
       return;
     case 'connection.request':
     case 'connection.request.resolved':

@@ -672,6 +672,42 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('a customer blocks an organization, and its team can no longer write to them', async () => {
+      const handle = `nile.dental.${stamp}`;
+      const orgName = `Nile Dental ${stamp}`;
+      const customer = lina.page;
+      await customer.goto(`/o/${handle}`);
+      await customer.getByTestId('org-block').click();
+      await customer.getByTestId('org-block-confirm').click();
+      await expect(customer.getByTestId('org-blocked')).toContainText(`You blocked ${orgName}.`);
+      await expect(customer.getByTestId('org-message')).toHaveCount(0);
+
+      // The team finds it closed, with nothing to write in.
+      const { page, errors } = noor;
+      const orgId = (await (await noorContext.request.get(`/v1/orgs/by-handle/${handle}`)).json())
+        .org.id;
+      const { threads } = await (
+        await noorContext.request.get(`/v1/orgs/${orgId}/inbox?view=resolved`)
+      ).json();
+      const conversationId = (threads as Array<{ closed: boolean; conversationId: string }>).find(
+        (x) => x.closed,
+      )?.conversationId;
+      await page.goto(`/c/${conversationId}?inbox=${handle}`);
+      await expect(page.getByTestId('thread-state')).toHaveText('Closed by the customer');
+      await expect(page.getByTestId('thread-reopen')).toHaveCount(0);
+      await expect(visible(page, 'The customer closed this conversation.')).toBeVisible();
+      await expect(page.getByTestId('composer-input').filter({ visible: true })).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-business-closed.png' });
+
+      // The customer can open it again from the conversation itself.
+      await customer.goto(`/c/${conversationId}`);
+      await expect(visible(customer, `You blocked ${orgName}.`)).toBeVisible();
+      await customer.screenshot({ path: 'e2e/screenshots/phone-org-blocked.png' });
+      await customer.getByTestId('composer-unblock-org').click();
+      await expect(customer.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+      expect([...errors, ...lina.errors]).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [

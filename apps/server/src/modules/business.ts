@@ -22,8 +22,9 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { BusinessThread } from '../db/schema';
 import { emitWebhook } from '../lib/apps';
+import { orgBlocked } from '../lib/blocks';
 import { factsOf, orgRef, publishThread, teamOf, threadViews } from '../lib/business';
-import { badRequest, forbidden, notFound } from '../lib/errors';
+import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { notify } from '../lib/notify';
 import { orgById, orgSeat } from '../lib/orgs';
@@ -47,6 +48,79 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
   const idParam = z.object({ id: z.string().uuid() });
   const threadParam = z.object({ conversationId: z.string().uuid() });
 
+  /**
+   * Block an organization (PRD §55): its team and its apps can no longer write to you, and your
+   * conversation with it closes (resolved for the team, archived for you) until you unblock it.
+   */
+  app.post('/orgs/:id/block', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    await orgById(ctx.db, id);
+    if (await orgSeat(ctx.db, auth.userId, id))
+      throw badRequest('You’re on its team. Leave the team instead.');
+    await ctx.db
+      .insertInto('org_blocks')
+      .values({ user_id: auth.userId, org_id: id, created_at: ctx.now() })
+      .onConflict((oc) => oc.doNothing())
+      .execute();
+    const thread = await ctx.db
+      .selectFrom('business_threads')
+      .select(['conversation_id', 'resolved_at'])
+      .where('org_id', '=', id)
+      .where('customer_id', '=', auth.userId)
+      .executeTakeFirst();
+    if (thread) {
+      if (!thread.resolved_at)
+        await ctx.db
+          .updateTable('business_threads')
+          .set({
+            resolved_at: ctx.now(),
+            resolved_by: null,
+            escalated_at: null,
+            escalated_by: null,
+            escalation_note: null,
+            updated_at: ctx.now(),
+          })
+          .where('conversation_id', '=', thread.conversation_id)
+          .execute();
+      await ctx.db
+        .updateTable('participants')
+        .set({ archived_at: ctx.now() })
+        .where('conversation_id', '=', thread.conversation_id)
+        .where('user_id', '=', auth.userId)
+        .execute();
+      await publishThread(ctx, id, thread.conversation_id);
+    }
+    await ctx.bus.publish([auth.userId], {
+      type: 'block.changed',
+      data: { orgId: id, blocked: true },
+    });
+    return { ok: true };
+  });
+
+  app.delete('/orgs/:id/block', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    await ctx.db
+      .deleteFrom('org_blocks')
+      .where('user_id', '=', auth.userId)
+      .where('org_id', '=', id)
+      .execute();
+    const thread = await ctx.db
+      .selectFrom('business_threads')
+      .select('conversation_id')
+      .where('org_id', '=', id)
+      .where('customer_id', '=', auth.userId)
+      .executeTakeFirst();
+    // It stays resolved until they write again, as any resolved conversation does.
+    if (thread) await publishThread(ctx, id, thread.conversation_id);
+    await ctx.bus.publish([auth.userId], {
+      type: 'block.changed',
+      data: { orgId: id, blocked: false },
+    });
+    return { ok: true };
+  });
+
   /** A customer's conversation with an organization: theirs if it exists, else a new one. */
   app.post('/orgs/:id/conversations', async (req, reply) => {
     const auth = requireAuth(req);
@@ -61,6 +135,12 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     if (isMinor(me.birth_year, ctx.now()))
       throw forbidden('Messaging organizations is for people over 18 for now.');
+    if (await orgBlocked(ctx.db, auth.userId, id))
+      throw new AppError(
+        403,
+        'org_blocked',
+        `You blocked ${org.name}. Unblock it to write to it again.`,
+      );
     const existing = await ctx.db
       .selectFrom('business_threads')
       .select('conversation_id')

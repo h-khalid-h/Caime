@@ -25,6 +25,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Participant } from '../db/schema';
+import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
 import { ensureDirectConversation } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -215,6 +216,7 @@ export async function conversationView(
           .executeTakeFirst()
       : undefined;
     if (thread && org) {
+      const closed = Boolean(await businessClosed(ctx.db, conversation.id));
       if (thread.customer_id === userId) {
         // The customer talks to the organization: nobody on its team is named (R15).
         shown = participants.filter((p) => p.userId === userId);
@@ -224,11 +226,18 @@ export async function conversationView(
           readSeq: Number(thread.team_read_seq) || null,
           deliveredSeq: Number(conversation.last_seq),
           thread: null,
+          closed,
         };
       } else {
         const [view] = await threadViews(ctx, userId, [thread]);
         title = view?.customer?.displayName ?? 'Deleted account';
-        business = { org: orgRef(org), readSeq: null, deliveredSeq: 0, thread: view ?? null };
+        business = {
+          org: orgRef(org),
+          readSeq: null,
+          deliveredSeq: 0,
+          thread: view ?? null,
+          closed,
+        };
       }
     }
   }
@@ -672,6 +681,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     await membership(ctx, auth.userId, id);
+    await assertCanWrite(ctx, id, auth.userId);
     ctx.limiter.hit(`typing:${auth.userId}:${id}`, 30, 60_000);
     const members = await participantsOf(ctx.db, id);
     await ctx.bus.publish(
@@ -794,6 +804,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (!m) throw notFound('That message');
     await membership(ctx, auth.userId, m.conversation_id);
     if (m.sender_id !== auth.userId) throw forbidden('You can only edit your own messages.');
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
     if (m.deleted_at) throw badRequest('That message was deleted.');
     if (body.body !== undefined && m.kind !== 'text')
       throw badRequest('Only text messages can be edited.');
@@ -828,6 +839,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .executeTakeFirst();
     if (!m) throw notFound('That message');
     await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const card = (m.payload ?? {}) as {
       kit?: unknown;
       state?: string;
@@ -947,6 +959,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .executeTakeFirst();
     if (!m || m.deleted_at) throw notFound('That message');
     await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
     await ctx.db
       .insertInto('reactions')
       .values({ message_id: id, user_id: auth.userId, emoji })
@@ -1014,6 +1027,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .executeTakeFirst();
     if (m?.kind !== 'poll' || m.deleted_at) throw notFound('That poll');
     await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const poll = PollPayload.parse(m.payload);
     const valid = new Set(poll.options.map((o) => o.id));
     if (optionIds.some((o) => !valid.has(o))) throw badRequest('That option isn’t in the poll.');

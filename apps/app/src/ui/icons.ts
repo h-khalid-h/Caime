@@ -6,6 +6,7 @@ export { default as ArchiveIcon } from 'lucide-react-native/icons/archive';
 export { default as ArrowLeft } from 'lucide-react-native/icons/arrow-left';
 export { default as AtSign } from 'lucide-react-native/icons/at-sign';
 export { default as BadgeCheck } from 'lucide-react-native/icons/badge-check';
+export { default as Ban } from 'lucide-react-native/icons/ban';
 export { default as Bell } from 'lucide-react-native/icons/bell';
 export { default as BellOff } from 'lucide-react-native/icons/bell-off';
 export { default as Bot } from 'lucide-react-native/icons/bot';

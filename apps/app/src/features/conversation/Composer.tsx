@@ -20,6 +20,7 @@ import { useMe } from '@/state/session';
 import { fontFamily } from '@/theme/fonts';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
+import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
 import {
   FileText,
@@ -48,6 +49,8 @@ export interface ComposerProps {
   editing: MessageView | null;
   onDoneEditing: () => void;
   disabled?: string | null;
+  /** Something to do about why it's disabled (unblock, accept). */
+  disabledAction?: { label: string; onPress: () => void; testID?: string };
   replyName?: string | null;
   /** ↑ in an empty box: edit the last message you sent (web). */
   onEditLast?: () => void;
@@ -66,6 +69,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     editing,
     onDoneEditing,
     disabled,
+    disabledAction,
     replyName,
     onEditLast,
     placeholder,
@@ -222,6 +226,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         <Text variant="body" color="textSecondary" align="center">
           {disabled}
         </Text>
+        {disabledAction ? (
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <Button
+              label={disabledAction.label}
+              size="sm"
+              variant="secondary"
+              style={{ alignSelf: 'center' }}
+              onPress={disabledAction.onPress}
+              testID={disabledAction.testID}
+            />
+          </View>
+        ) : null}
       </View>
     );
   }

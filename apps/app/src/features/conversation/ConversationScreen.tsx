@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useConversation, useMessages } from '@/api/hooks';
+import { qk } from '@/api/keys';
 import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
 import { catchUp } from '@/features/assist/catchUp';
 import { useAiReady } from '@/features/assist/ready';
@@ -34,6 +35,7 @@ import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { toast } from '@/ui/Toast';
 import { Composer, type ComposerHandle } from './Composer';
 import { ContextPanel } from './ContextPanel';
 import { MessageActions, toggleReaction } from './MessageActions';
@@ -481,12 +483,34 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           .displayName ?? null)
     : null;
 
-  const disabled =
-    conversation?.request === 'incoming'
+  // Closed by a block (PRD §55): the customer blocked the organization.
+  const closed = business?.closed ?? false;
+  const disabled = closed
+    ? thread
+      ? 'The customer closed this conversation.'
+      : `You blocked ${org?.name ?? 'this organization'}.`
+    : conversation?.request === 'incoming'
       ? 'Accept the request to reply.'
       : conversation && !conversation.participants.some((p) => p.userId === me.id)
         ? 'You’re no longer in this conversation.'
         : null;
+  const disabledAction =
+    closed && !thread && org
+      ? {
+          label: `Unblock ${org.name}`,
+          testID: 'composer-unblock-org',
+          onPress: () =>
+            void (async () => {
+              try {
+                await endpoints.unblockOrg(org.id);
+                void qc.invalidateQueries({ queryKey: qk.conversation(id) });
+                void qc.invalidateQueries({ queryKey: ['org'] });
+              } catch (e) {
+                toast((e as Error).message, { tone: 'danger' });
+              }
+            })(),
+        }
+      : undefined;
 
   const main = (
     <KeyboardAvoidingView
@@ -507,6 +531,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           editing={editing}
           onDoneEditing={() => setEditing(null)}
           disabled={disabled}
+          disabledAction={disabledAction}
           replyName={replyName}
           placeholder={thread && org ? `Reply as ${org.name}` : undefined}
           onEditLast={() => {

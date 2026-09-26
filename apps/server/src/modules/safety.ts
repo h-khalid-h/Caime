@@ -19,12 +19,25 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('blocks.blocker_id', '=', auth.userId)
       .orderBy('blocks.created_at', 'desc')
       .execute();
+    const orgs = await ctx.db
+      .selectFrom('org_blocks as b')
+      .innerJoin('organizations as o', 'o.id', 'b.org_id')
+      .select(['o.id', 'o.name', 'o.handle', 'b.created_at'])
+      .where('b.user_id', '=', auth.userId)
+      .orderBy('b.created_at', 'desc')
+      .execute();
     return {
       blocked: rows.map((r) => ({
         id: r.id,
         displayName: r.display_name,
         handle: r.handle,
         since: r.created_at.toISOString(),
+      })),
+      orgs: orgs.map((o) => ({
+        id: o.id,
+        name: o.name,
+        handle: o.handle,
+        since: o.created_at.toISOString(),
       })),
     };
   });

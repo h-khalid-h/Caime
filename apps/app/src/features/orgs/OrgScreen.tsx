@@ -29,6 +29,7 @@ import { IconButton } from '@/ui/IconButton';
 import {
   ArrowLeft,
   BadgeCheck,
+  Ban,
   Globe,
   Inbox,
   LogOut,
@@ -169,6 +170,7 @@ export function OrgScreen({ handle }: { handle: string }) {
   if (managing) lastManaged.current = managing;
   const shown = managing ?? lastManaged.current;
   const [leaving, setLeaving] = useState(false);
+  const [blocking, setBlocking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
   const minor = useSession((s) => s.user?.minor ?? false);
@@ -293,7 +295,23 @@ export function OrgScreen({ handle }: { handle: string }) {
               onPress={() => openLink(org.website ?? '')}
             />
           ) : null}
-          {org.myRole ? null : minor ? (
+          {org.myRole ? null : org.blockedByMe ? (
+            <View style={{ alignItems: 'center', gap: 8, marginTop: 6 }} testID="org-blocked">
+              <Text variant="caption" color="textSecondary" align="center">
+                {`You blocked ${org.name}. It can’t write to you, and your conversation with it is closed.`}
+              </Text>
+              <Button
+                label={`Unblock ${org.name}`}
+                variant="secondary"
+                size="sm"
+                loading={busy}
+                onPress={() =>
+                  void run(() => endpoints.unblockOrg(org.id), `${org.name} is unblocked`)
+                }
+                testID="org-unblock"
+              />
+            </View>
+          ) : minor ? (
             <Text variant="caption" color="textTertiary" align="center">
               Messaging organizations is for people over 18 for now.
             </Text>
@@ -427,7 +445,48 @@ export function OrgScreen({ handle }: { handle: string }) {
               : 'Caishy hasn’t verified who runs this organization. Be careful with links and payments.'}
           </Text>
         )}
+        {!org.members && !org.blockedByMe ? (
+          <View style={{ marginHorizontal: 16, marginTop: 20 }}>
+            <Card padded={false}>
+              <ListRow
+                icon={Ban}
+                title={`Block ${org.name}`}
+                subtitle="It stops being able to write to you"
+                destructive
+                onPress={() => setBlocking(true)}
+                testID="org-block"
+              />
+            </Card>
+          </View>
+        ) : null}
       </ScrollView>
+
+      <Sheet
+        open={blocking}
+        onClose={() => setBlocking(false)}
+        title={`Block ${org.name}?`}
+        subtitle="It won’t be able to write to you, and your conversation with it closes. Unblock it here whenever you like."
+        footer={
+          <Button
+            label="Block"
+            variant="danger"
+            block
+            size="lg"
+            loading={busy}
+            testID="org-block-confirm"
+            onPress={() =>
+              void (async () => {
+                if (await run(() => endpoints.blockOrg(org.id), `${org.name} is blocked`)) {
+                  setBlocking(false);
+                  void qc.invalidateQueries({ queryKey: qk.inbox });
+                }
+              })()
+            }
+          />
+        }
+      >
+        <View />
+      </Sheet>
 
       <Sheet
         open={adding}

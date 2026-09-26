@@ -356,6 +356,8 @@ export const endpoints = {
   resetPolicies: () => api.post<Ok>('/policies/reset'),
   block: (userId: string) => api.post<Ok>('/blocks', { userId }),
   unblock: (userId: string) => api.del<Ok>(`/blocks/${userId}`),
+  blockOrg: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/block`),
+  unblockOrg: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/block`),
   report: (body: {
     userId?: string;
     messageId?: string;

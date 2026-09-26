@@ -109,8 +109,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       it on; escalating tells the owner and admins; resolving holds until the customer writes.
       States come from the order of messages, never timestamps. It's on the desktop rail and at
       the top of Chats for anyone on a team, and team members' own chats never fill with it
-      (`business.test.ts`, E2E). [ ] Blocking an organization; organizations starting
-      conversations; customers under 18; AI follow-ups and requests across it
+      (`business.test.ts`, E2E). A customer can block an organization: its team and bots can no
+      longer write to them and the conversation closes until they unblock it (`blocking.test.ts`,
+      E2E). [ ] Organizations starting conversations; customers under 18; AI follow-ups and
+      requests across it
 - [x] Spaces: a family, team, project, community or school with its people and conversations.
       Everyone is in its General conversation (which goes by the space's name); its other
       conversations are open to join; a topic that keeps coming up in General becomes one.
@@ -157,7 +159,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.2 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.3 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -279,3 +281,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   app's bot. Building it found that a business conversation's start was stamped by the database's
   clock rather than the app's, unlike the rest of it. Tests: 142 core, 49 brand, 146 server, 8
   app, 23 E2E.
+- 2026-09-26 — Session 2 (cont.): blocking an organization. A customer blocks it from its page;
+  its team and its apps' bots can no longer write to them, the team sees the conversation "Closed
+  by the customer" with nothing left to do in it, and the customer can unblock it from the page or
+  the conversation. Building it found that a block only ever stopped sending: in a blocked
+  person's conversation they could still react, edit what they'd written, vote, move a card and
+  show as typing. All of them now ask one check first, and each fails its test when removed. CI
+  failed once on a test of mine that read the AI allowance before the call's record had landed
+  (it's written after the response); reproduced by slowing the record, fixed by waiting for it.
+  Tests: 142 core, 49 brand, 149 server, 8 app, 24 E2E.

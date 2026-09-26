@@ -7,6 +7,7 @@ import { canSee, resolvePolicy, type Sphere } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { AppContext } from '../context';
+import { assertCanWrite } from '../lib/blocks';
 import { loadPolicies } from '../lib/relations';
 import { privacyOf } from '../lib/users';
 import { resolveSession } from '../plugins/auth';
@@ -250,6 +251,12 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
           return;
         }
         if (!(await isMember(userId, msg.conversationId))) return;
+        // Typing reaches the other side too: not past a block (PRD §55).
+        try {
+          await assertCanWrite(ctx, msg.conversationId, userId);
+        } catch {
+          return;
+        }
         const members = await ctx.db
           .selectFrom('participants')
           .select('user_id')
