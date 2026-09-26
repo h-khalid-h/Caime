@@ -104,5 +104,7 @@ variables exist: `ANTHROPIC_API_KEY` (AI assist), `EXPO_ACCESS_TOKEN` (mobile pu
 
 ## Current state
 
-See `docs/ROADMAP.md`. In one line: core, server, the universal app, the image and CI are built
-and verified end to end; expansion features (M6) and store builds remain.
+See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
+native bundles export), Connect Kits, your-data controls, the image and CI are built and
+verified. Remaining: Spaces, organizations and the business inbox, AI assist, the platform API,
+store builds, and the EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).
