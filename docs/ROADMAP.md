@@ -12,8 +12,8 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Monorepo (pnpm, hoisted), TypeScript, Biome, shared configs
 - [x] Docs: PRD, product review, brand, competitive strategy, architecture, roadmap, goal
 - [x] CLAUDE.md operating manual
-- [ ] GitHub repository `h-khalid-h/caishy` ⛔ the GitHub integration cannot create repositories;
-      the owner creates an empty repo and grants the Claude GitHub App access
+- [x] GitHub repository [`h-khalid-h/Caishy`](https://github.com/h-khalid-h/Caishy), `main`
+- [x] One API contract (`packages/core/src/api.ts`); server views annotated against it
 
 ## M1 — Core domain (`packages/core`)
 
@@ -56,14 +56,23 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 ## M5 — App (iOS, Android, Web)
 
-- [ ] Design system from `BRAND.md`, light and dark, Playful and Minimal
-- [ ] Auth and onboarding (relationship defaults in one tap)
-- [ ] Chats (Attention), conversation, composer, suggestions inline
-- [ ] Connect flow (≤ 3 taps), relationship profile, People
-- [ ] Actions, Search, Spaces, You/Settings
-- [ ] Desktop web three-column layout with collapsible context panel, keyboard shortcuts
-- [ ] Offline outbox and cache; realtime client
-- [ ] Stickers (Caishy Friends)
+- [x] Design system from `BRAND.md`: theme, primitives, wordmark, characters; light and dark
+      verified in screenshots. [~] Minimal intensity implemented, not yet reviewed on screen
+- [x] Auth and onboarding: sign-up with live handle checks, sign-in, recovery codes, relationship
+      defaults, find people (E2E)
+- [x] Attention inbox, conversation, composer, inline suggestions, typing, presence, reciprocal
+      read ticks (E2E, phone and desktop)
+- [x] Connect flow in ≤ 3 taps (sphere, role, done), accept with a label, People (E2E)
+- [~] Person profile, relationship change and history: built, not yet covered by E2E
+- [~] Actions, Search, Notifications, You/Settings: built; Actions and You render in E2E
+      screenshots; search and settings pages not yet exercised end to end
+- [ ] Spaces
+- [x] Desktop web: rail, list, detail and context panel (E2E screenshots). [ ] Keyboard
+      shortcuts beyond Enter to send
+- [x] Realtime client with reconnect and catch-up (E2E); on-device cache with revalidation.
+      [~] Offline outbox: implemented, offline path not yet tested
+- [~] Stickers (Caishy Friends, 16): implemented, not yet covered by E2E
+- [ ] Native builds run on iOS and Android devices (only the web target has been run)
 
 ## M6 — Expansion
 
@@ -81,11 +90,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 ## M7 — Ship
 
-- [ ] Dockerfile (single image) and CI workflow
-- [ ] Playwright E2E with screenshots; performance budgets
+- [~] Dockerfile (one image: API, realtime, web) and CI workflow: written and pushed; the image
+      has not been built yet outside CI (no Docker daemon in the build sandbox)
+- [x] Playwright E2E against the production bundle; web budget checked in CI (initial JS
+      409 KB gzip against 450 KB)
 - [ ] Security review
-- [ ] Native bundles export (iOS, Android); EAS config ⛔ store accounts
-- [ ] Deploy to EasyPanel ⛔ needs `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` in the environment
+- [ ] Native bundles export (iOS, Android); EAS config ⛔ store accounts for store builds
+- [ ] Deploy to EasyPanel ⛔ needs `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` in the environment,
+      or the `EASYPANEL_DEPLOY_WEBHOOK` repository secret after a first manual setup
+      (`docs/DEPLOY.md`)
 
 ## Log
 
@@ -94,3 +107,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - 2026-09-26 — Session 1 (cont.): core engines (105 tests), brand tokens (49 tests), server M2–M4
   and files (71 integration tests on real Postgres). GitHub repository still unreachable, so all
   commits are local to the container. Next: the Expo app (M5).
+- 2026-09-26 — Session 2: pushed to GitHub. Shared API contract. The universal app (auth,
+  onboarding, attention inbox, conversations, people, connect, actions, search, settings, desktop
+  three-column layout, realtime, outbox, stickers). Driving it end to end found and fixed: live
+  read receipts bypassing the reciprocal rule, a device locale ("en-US@posix") that broke every
+  date, a restored cache that hid new conversations, a vague commitment titled "It" plus a
+  duplicate suggestion. Server bundle, Dockerfile, CI, E2E suite and deploy guide. Tests: 111
+  core, 49 brand, 74 server, 2 E2E.

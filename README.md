@@ -13,13 +13,27 @@ follow-ups, search and privacy.
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Status: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
+- Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md)
+
+## What's here
+
+| | |
+| --- | --- |
+| `apps/app` | The app for iOS, Android and the web (Expo). |
+| `apps/server` | API, realtime and background jobs (Fastify, PostgreSQL); serves the web app. |
+| `packages/core` | Domain logic and the API contract, shared by both. |
+| `packages/brand` | Tokens, wordmark and the Caishy Friends characters, as code. |
+
 ## Develop
 
-Requires Node 22+ and pnpm 10.
+Requires Node 22+, pnpm 10 and PostgreSQL 16.
 
 ```sh
 pnpm install
 pnpm check        # lint, typecheck, tests
+pnpm dev:server   # API on :8787
+pnpm dev:app      # the app; press w for web
+pnpm build && pnpm e2e
 ```
 
 See [`CLAUDE.md`](CLAUDE.md) for commands and conventions.
