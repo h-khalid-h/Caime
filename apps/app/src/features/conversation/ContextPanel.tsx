@@ -120,7 +120,12 @@ function BusinessCard({ conversation }: { conversation: ConversationView }) {
         A customer of {org.name}. They see {org.name}, not who on the team answers.
       </Text>
       <Text variant="caption" color="textTertiary" align="center">
-        Team: {team.map((p) => p.person.displayName).join(', ')}
+        Team:{' '}
+        {team
+          .map((p) =>
+            p.person.kind === 'human' ? p.person.displayName : `${p.person.displayName} (bot)`,
+          )
+          .join(', ')}
       </Text>
     </View>
   );

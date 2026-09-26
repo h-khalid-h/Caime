@@ -1,4 +1,5 @@
 export * from './api';
+export * from './apps';
 export * from './assist';
 export * from './attention';
 export * from './business';

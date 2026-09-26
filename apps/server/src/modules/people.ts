@@ -100,6 +100,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       ])
       .where('u.id', '<>', auth.userId)
       .where('u.deleted_at', 'is', null)
+      .where('u.kind', '=', 'human')
       .where((eb) =>
         eb.not(
           eb.exists(

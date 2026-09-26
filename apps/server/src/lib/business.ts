@@ -17,6 +17,7 @@ import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { BusinessThread, Database, Organization } from '../db/schema';
+import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
 import { messagePreview } from './messages';
 import { personViewsFor } from './people-batch';
@@ -235,13 +236,21 @@ export async function leaveThreads(db: Q, orgId: string, userId: string, now: Da
 
 /**
  * A message moves its thread: the customer writing reopens it and puts it on the team; the team
- * writing puts it back with the customer, and whoever answers an unassigned thread takes it.
+ * writing puts it back with the customer, and whoever answers an unassigned thread takes it. A
+ * bot's answer does neither: the customer is still waiting for a person until one answers, or
+ * until the bot resolves it (R16). Apps hear what customers write (PRD §73).
  */
 export async function recordBusinessMessage(
   ctx: AppContext,
   conversationId: string,
   senderId: string,
-  message: { seq: string | number; created_at: Date },
+  message: {
+    id: string;
+    seq: string | number;
+    created_at: Date;
+    kind: string;
+    body: string | null;
+  },
 ): Promise<void> {
   const at = message.created_at;
   const seq = Number(message.seq);
@@ -251,6 +260,15 @@ export async function recordBusinessMessage(
     .where('conversation_id', '=', conversationId)
     .executeTakeFirst();
   if (!thread) return;
+  const sender = await ctx.db
+    .selectFrom('users')
+    .select(['kind', 'display_name', 'handle'])
+    .where('id', '=', senderId)
+    .executeTakeFirst();
+  if (sender && sender.kind !== 'human') {
+    await publishThread(ctx, thread.org_id, conversationId);
+    return;
+  }
   if (senderId === thread.customer_id)
     await ctx.db
       .updateTable('business_threads')
@@ -275,6 +293,18 @@ export async function recordBusinessMessage(
       .where('conversation_id', '=', conversationId)
       .execute();
   await publishThread(ctx, thread.org_id, conversationId);
+  if (senderId === thread.customer_id && sender)
+    await emitWebhook(ctx, thread.org_id, 'business.message', {
+      conversationId,
+      message: {
+        id: message.id,
+        seq,
+        kind: message.kind,
+        body: message.body,
+        createdAt: at.toISOString(),
+      },
+      customer: { id: senderId, displayName: sender.display_name, handle: sender.handle },
+    });
 }
 
 /** Tell the team a thread changed (the customer never hears how the team works it). */

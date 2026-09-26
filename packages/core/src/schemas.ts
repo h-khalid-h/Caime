@@ -3,6 +3,7 @@
  * body with these; clients use the same schemas for forms, so a rule changes in one place.
  */
 import { z } from 'zod';
+import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { ORG_KINDS } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
@@ -548,3 +549,31 @@ export const AssignThreadBody = z.object({ userId: z.string().uuid().nullable() 
 export const EscalateThreadBody = z
   .object({ note: z.string().trim().max(300).optional() })
   .strict();
+
+// --- Apps (PRD §73–75) ------------------------------------------------------------------------
+
+const WebhookUrl = z
+  .string()
+  .trim()
+  .url('Enter the full address, starting with https://')
+  .max(500)
+  .refine((u) => /^https?:\/\//i.test(u), 'Enter the full address, starting with https://');
+
+export const CreateOrgAppBody = z
+  .object({
+    name: z.string().trim().min(1).max(60),
+    scopes: z.array(z.enum(API_SCOPES)).max(API_SCOPES.length).default([]),
+    webhookUrl: WebhookUrl.nullable().optional(),
+    events: z.array(z.enum(WEBHOOK_EVENTS)).max(WEBHOOK_EVENTS.length).default([]),
+  })
+  .strict();
+
+export const UpdateOrgAppBody = z
+  .object({
+    name: z.string().trim().min(1).max(60).optional(),
+    scopes: z.array(z.enum(API_SCOPES)).max(API_SCOPES.length).optional(),
+    webhookUrl: WebhookUrl.nullable().optional(),
+    events: z.array(z.enum(WEBHOOK_EVENTS)).max(WEBHOOK_EVENTS.length).optional(),
+  })
+  .strict()
+  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');

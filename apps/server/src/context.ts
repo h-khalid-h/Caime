@@ -32,6 +32,8 @@ export interface Auth {
   sessionId: string;
   kind: 'web' | 'native' | 'api';
   via: 'cookie' | 'bearer';
+  /** Set when an app's token made the request: it acts as the app's bot (lib/apps.ts). */
+  app?: { id: string; orgId: string; scopes: string[] };
 }
 
 declare module 'fastify' {

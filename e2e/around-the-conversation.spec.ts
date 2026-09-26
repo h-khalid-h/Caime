@@ -569,6 +569,48 @@ test.describe
       expect([...errors, ...lina.errors, ...alex.errors]).toEqual([]);
     });
 
+    test('an app’s bot answers a customer as the organization, and says it’s automated', async () => {
+      const handle = `nile.dental.${stamp}`;
+      const { page, errors } = noor;
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-app-add').click();
+      await page.getByTestId('org-app-name').fill('Nile Assistant');
+      await page.getByTestId('org-app-scope-messages:write').click();
+      await page.getByTestId('org-app-create').click();
+      const token = ((await page.getByTestId('org-app-token').textContent()) ?? '').trim();
+      expect(token).toMatch(/^cai_[\w-]{32}$/);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-org-app-token.png' });
+      await page.getByTestId('org-app-secrets-done').click();
+      await expect(page.getByTestId('org-app-Nile Assistant')).toBeVisible();
+      await expect(visible(page, 'Bot · an app’s, labelled automated')).toBeVisible();
+
+      // The app answers through its token, as its bot, in the customer's conversation.
+      const orgId = (await (await noorContext.request.get(`/v1/orgs/by-handle/${handle}`)).json())
+        .org.id;
+      const { conversationId } = await (
+        await linaContext!.request.post(`/v1/orgs/${orgId}/conversations`, { headers: CLIENT })
+      ).json();
+      const sent = await noorContext.request.post(`/v1/conversations/${conversationId}/messages`, {
+        headers: { authorization: `Bearer ${token}` },
+        data: { clientId: randomUUID(), body: 'Thanks! A dentist will confirm your time shortly.' },
+      });
+      expect(sent.status()).toBe(201);
+      // The token reaches nothing else.
+      const elsewhere = await noorContext.request.get('/v1/me', {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(elsewhere.status()).toBe(403);
+
+      const customer = lina.page;
+      await customer.goto(`/c/${conversationId}`);
+      await expect(visible(customer, 'A dentist will confirm your time shortly.')).toBeVisible();
+      await expect(
+        customer.getByTestId('message-automated').filter({ visible: true }),
+      ).toBeVisible();
+      await customer.screenshot({ path: 'e2e/screenshots/phone-business-automated.png' });
+      expect([...errors, ...lina.errors]).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [

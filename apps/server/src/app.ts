@@ -15,6 +15,7 @@ import type { AppContext } from './context';
 import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
 import { createAiAssist } from './lib/ai';
+import { registerWebhookJob } from './lib/apps';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { AppError } from './lib/errors';
@@ -23,6 +24,7 @@ import { RateLimiter } from './lib/rate-limit';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
 import { aiRoutes } from './modules/ai';
+import { appRoutes } from './modules/apps';
 import { authRoutes } from './modules/auth';
 import { businessRoutes } from './modules/business';
 import { connectionRoutes } from './modules/connections';
@@ -188,6 +190,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await orgRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
+      await appRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);
@@ -197,6 +200,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   web = await registerWeb(app, ctx);
 
   registerWorkers();
+  registerWebhookJob();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
 
   app.addHook('onClose', async () => {

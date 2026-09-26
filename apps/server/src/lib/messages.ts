@@ -77,7 +77,8 @@ export async function messageViews(
   if (rows.length === 0) return [];
   const ids = rows.map((m) => m.id);
   const replyIds = rows.map((m) => m.reply_to_id).filter((x): x is string => Boolean(x));
-  const [reactions, files, replies, votes] = await Promise.all([
+  const senderIds = [...new Set(rows.map((m) => m.sender_id).filter((x): x is string => !!x))];
+  const [reactions, files, replies, votes, senders] = await Promise.all([
     db
       .selectFrom('reactions')
       .selectAll()
@@ -107,7 +108,12 @@ export async function messageViews(
       ? db.selectFrom('messages').selectAll().where('id', 'in', replyIds).execute()
       : Promise.resolve([] as Message[]),
     db.selectFrom('poll_votes').selectAll().where('message_id', 'in', ids).execute(),
+    senderIds.length
+      ? db.selectFrom('users').select(['id', 'kind']).where('id', 'in', senderIds).execute()
+      : Promise.resolve([] as Array<{ id: string; kind: string }>),
   ]);
+  // Bots and agents say so wherever their messages go (R16).
+  const automatedSenders = new Set(senders.filter((u) => u.kind !== 'human').map((u) => u.id));
   const views = rows.map((m): MessageView => {
     const deleted = m.deleted_at !== null;
     const byEmoji = new Map<string, string[]>();
@@ -132,6 +138,7 @@ export async function messageViews(
       seq: Number(m.seq),
       clientId: m.sender_id === viewerId ? m.client_id : null,
       senderId: m.sender_id,
+      automated: m.kind !== 'system' && m.sender_id !== null && automatedSenders.has(m.sender_id),
       kind: m.kind,
       body: deleted ? null : m.body,
       payload: deleted ? {} : (m.payload ?? {}),

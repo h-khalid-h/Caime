@@ -3,8 +3,10 @@
  * `X-Caishy-Client` on state-changing requests — a cross-site form cannot set custom headers, so
  * this stops CSRF. Native sends a Bearer token.
  */
+import { isApiToken } from '@caishy/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext, Auth } from '../context';
+import { API_ROUTES, resolveApiToken } from '../lib/apps';
 import { hashToken } from '../lib/crypto';
 import { AppError, unauthorized } from '../lib/errors';
 
@@ -49,6 +51,10 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     req.auth = null;
     const found = tokenFrom(req);
     if (!found) return;
+    if (found.via === 'bearer' && isApiToken(found.token)) {
+      await authenticateApp(ctx, req, found.token);
+      return;
+    }
     const session = await resolveSession(ctx, found.token);
     if (!session) return;
     if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caishy-client']) {
@@ -56,6 +62,27 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     }
     req.auth = { ...session, via: found.via };
   });
+}
+
+/**
+ * An app's token (PRD §73): it acts as the app's bot, only on the routes in API_ROUTES and
+ * only with the scope each needs. Anything else is refused before the route runs.
+ */
+async function authenticateApp(ctx: AppContext, req: FastifyRequest, token: string) {
+  const app = await resolveApiToken(ctx, token);
+  if (!app) return;
+  const scope = API_ROUTES[`${req.method} ${req.routeOptions.url ?? ''}`];
+  if (!scope) throw new AppError(403, 'token_route', 'An app’s token can’t do this.');
+  if (!app.scopes.includes(scope))
+    throw new AppError(403, 'token_scope', `This app needs the “${scope}” permission for that.`);
+  ctx.limiter.hit(`api:${app.tokenId}`, ctx.config.isTest ? 10_000 : 600, 60_000);
+  req.auth = {
+    userId: app.botUserId,
+    sessionId: app.tokenId,
+    kind: 'api',
+    via: 'bearer',
+    app: { id: app.appId, orgId: app.orgId, scopes: app.scopes },
+  };
 }
 
 export function requireAuth(req: FastifyRequest): Auth {

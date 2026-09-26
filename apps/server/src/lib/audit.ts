@@ -18,7 +18,12 @@ export type AuditAction =
   | 'org.members_added'
   | 'org.member_removed'
   | 'org.left'
-  | 'org.verified';
+  | 'org.verified'
+  | 'app.created'
+  | 'app.updated'
+  | 'app.token_replaced'
+  | 'app.secret_replaced'
+  | 'app.revoked';
 
 export async function audit(
   db: Kysely<Database>,

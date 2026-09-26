@@ -7,7 +7,6 @@ import {
   orgKindName,
 } from '@caishy/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -23,12 +22,12 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
+import { CopyRow } from '@/ui/CopyRow';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import {
   ArrowLeft,
   BadgeCheck,
-  Copy,
   Globe,
   Inbox,
   LogOut,
@@ -46,41 +45,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
-
-function CopyRow({ label, value, testID }: { label: string; value: string; testID?: string }) {
-  const t = useTheme();
-  return (
-    <View style={{ gap: 4 }}>
-      <Text variant="captionStrong" color="textSecondary">
-        {label}
-      </Text>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingLeft: 12,
-          borderRadius: 12,
-          backgroundColor: t.c.surfaceMuted,
-        }}
-      >
-        <Text
-          variant="body"
-          selectable
-          style={{ flex: 1, fontFamily: 'monospace' }}
-          testID={testID}
-        >
-          {value}
-        </Text>
-        <IconButton
-          icon={Copy}
-          label={`Copy the ${label.toLowerCase()}`}
-          onPress={() => void Clipboard.setStringAsync(value).then(() => toast(`${label} copied`))}
-        />
-      </View>
-    </View>
-  );
-}
+import { OrgApps } from './OrgApps';
 
 /** Verify the domain (PRD §55): one TXT record, then "Check now". */
 function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) => void }) {
@@ -395,8 +360,11 @@ export function OrgScreen({ handle }: { handle: string }) {
             >
               {org.members.map((m) => {
                 const self = m.userId === me;
+                // An app's bot says so (R16), and is managed with its app, not here.
+                const bot = m.person.kind !== 'human';
                 const manageable =
                   !self &&
+                  !bot &&
                   org.myRole !== null &&
                   (canRemoveFromOrg(org.myRole, m.role) || canChangeOrgRole(org.myRole, m.role));
                 return (
@@ -411,11 +379,15 @@ export function OrgScreen({ handle }: { handle: string }) {
                       />
                     }
                     title={self ? `${m.person.displayName} (you)` : m.person.displayName}
-                    subtitle={[m.title, ORG_ROLE_LABELS[m.role]].filter(Boolean).join(' · ')}
+                    subtitle={
+                      bot
+                        ? 'Bot · an app’s, labelled automated'
+                        : [m.title, ORG_ROLE_LABELS[m.role]].filter(Boolean).join(' · ')
+                    }
                     onPress={
                       manageable
                         ? () => setManaging(m)
-                        : self
+                        : self || bot
                           ? undefined
                           : () => router.navigate({ pathname: '/p/[id]', params: { id: m.userId } })
                     }
@@ -423,6 +395,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                 );
               })}
             </View>
+            {manager ? <OrgApps org={org} /> : null}
             <View style={{ marginHorizontal: 16, marginTop: 16 }}>
               <Card padded={false}>
                 <ListRow

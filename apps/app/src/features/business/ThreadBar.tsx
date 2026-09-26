@@ -38,7 +38,10 @@ export function ThreadBar({
   if (menu) shownMenu.current = menu;
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const team = conversation.participants.filter((p) => p.role === 'agent');
+  // People take conversations; an app's bot answers without taking one (R16).
+  const team = conversation.participants.filter(
+    (p) => p.role === 'agent' && p.person.kind === 'human',
+  );
   const mine = thread.assignee?.userId === me.id;
   const resolved = thread.state === 'resolved';
 

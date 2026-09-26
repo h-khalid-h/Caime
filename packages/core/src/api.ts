@@ -5,6 +5,7 @@
  * zod schemas in ./schemas; everything here is a response. Types only: nothing here ships code.
  */
 import type { z } from 'zod';
+import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { BusinessView, ThreadState } from './business';
 import type { OrgKind, OrgRole } from './orgs';
@@ -235,6 +236,8 @@ export interface MessageView {
   /** Only for the sender's own messages: the id their device chose, for reconciling echoes. */
   clientId: string | null;
   senderId: string | null;
+  /** Sent by a bot or an agent, never a person, and says so wherever it's shown (R16). */
+  automated: boolean;
   kind: MessageKind;
   body: string | null;
   payload: Record<string, unknown>;
@@ -501,6 +504,39 @@ export interface BusinessInboxView {
 /** Each of your organizations' inboxes, with what needs its team (R7: only what needs you). */
 export interface BusinessSummaryView {
   orgs: Array<{ org: OrgRef; waiting: number; unassigned: number; mine: number }>;
+}
+
+/** An organization's app (PRD §73–75): its token, its bot, its webhook. Managers only. */
+export interface OrgAppView {
+  id: string;
+  name: string;
+  /** The bot it answers customers as, if it does (R16: always labelled automated). */
+  bot: { userId: string; displayName: string; handle: string } | null;
+  scopes: ApiScope[];
+  webhookUrl: string | null;
+  events: WebhookEvent[];
+  /** The start of its token, to tell tokens apart; the whole token is shown once. */
+  tokenPrefix: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+/** What's shown once, when an app is made or its token or secret is replaced. */
+export interface OrgAppSecretsView {
+  app: OrgAppView;
+  token: string | null;
+  webhookSecret: string | null;
+}
+
+export interface WebhookDeliveryView {
+  id: string;
+  event: string;
+  status: 'pending' | 'delivered' | 'failed';
+  attempts: number;
+  lastStatus: number | null;
+  lastError: string | null;
+  createdAt: string;
+  deliveredAt: string | null;
 }
 
 /** What an @handle link opens: handles are one namespace, a person's or an organization's. */

@@ -21,6 +21,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { BusinessThread } from '../db/schema';
+import { emitWebhook } from '../lib/apps';
 import { factsOf, orgRef, publishThread, teamOf, threadViews } from '../lib/business';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -234,6 +235,12 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     await publishThread(ctx, thread.org_id, thread.conversation_id);
     const [view] = await threadViews(ctx, userId, [thread]);
+    await emitWebhook(ctx, thread.org_id, 'business.thread', {
+      conversationId: thread.conversation_id,
+      change,
+      state: view!.state,
+      assignee: view!.assignee,
+    });
     return { thread: view! };
   }
 
@@ -257,8 +264,17 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const { conversationId } = parse(threadParam, req.params);
     const { userId } = parse(AssignThreadBody, req.body);
     const { thread } = await teamThread(auth.userId, conversationId);
-    if (userId && !(await orgSeat(ctx.db, userId, thread.org_id)))
-      throw badRequest('They aren’t on the team.');
+    if (userId) {
+      const person = await ctx.db
+        .selectFrom('users')
+        .select('kind')
+        .where('id', '=', userId)
+        .executeTakeFirst();
+      if (!person || !(await orgSeat(ctx.db, userId, thread.org_id)))
+        throw badRequest('They aren’t on the team.');
+      // A bot answers, but only a person takes a conversation (R16).
+      if (person.kind !== 'human') throw badRequest('That’s an app’s bot: give it to a person.');
+    }
     await ctx.db
       .updateTable('business_threads')
       .set({ assignee_id: userId, updated_at: ctx.now() })

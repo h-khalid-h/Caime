@@ -147,6 +147,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('id', '=', body.toUserId)
       .where('deleted_at', 'is', null)
+      .where('kind', '=', 'human') // An app's bot is nobody to connect with.
       .executeTakeFirst();
     if (!target) throw notFound('That person');
     const b = await between(ctx.db, auth.userId, target.id);

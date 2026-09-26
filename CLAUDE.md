@@ -25,7 +25,7 @@ without re-deriving decisions.
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
 | `scripts/` | `bundle-budget.mjs` (the web JS budget). |
-| `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy. |
+| `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, and the developer guide for organizations' apps (`API.md`). |
 
 ## Commands
 
@@ -113,6 +113,14 @@ These are rules, not preferences.
   `apps/server/src/lib/business.ts`. New endpoints that return user ids or names for a
   conversation must apply `maskFor`; `business.test.ts` checks the customer's responses for
   any team id or name, so extend it with the new endpoint.
+- Apps' bots are users of kind `'bot'` on an organization's team. Anything that picks or
+  counts people (assignees, heirs, who is notified, the team's size, search, connections)
+  takes `kind = 'human'` only; a bot's messages are `automated` and never move a thread. An
+  app's token reaches only the routes in `API_ROUTES` (`apps/server/src/lib/apps.ts`): add a
+  route there, with its scope, before an app can use it, and document it in `docs/API.md`.
+- Outbound requests to addresses someone else chose (webhooks) go through `postWebhook`: https,
+  no private addresses (checked on the URL and on every DNS answer), one deadline for the whole
+  exchange. Test them with `WEBHOOKS_ALLOW_PRIVATE=true` and a local server.
 - Watch the web budget when a screen is used by a second route: shared modules move into the
   startup chunk. Open it through its own route instead (the desktop Business inbox is a list
   pane beside `/c/[id]`, not a screen that embeds the conversation).
@@ -130,6 +138,7 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
 native bundles export), Connect Kits, AI assist, Spaces, Organizations with DNS verification,
-the Business inbox, share links, your-data controls, the image and CI are built and verified.
-Remaining: the platform API, metrics and plan entitlements, store builds, and the EasyPanel
-deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).
+the Business inbox, apps for organizations (scoped tokens, bots, signed webhooks), share links,
+your-data controls, the image and CI are built and verified. Remaining: metrics and plan
+entitlements, personal tokens and OAuth, store builds, and the EasyPanel deploy (⛔ needs
+EasyPanel access, `docs/DEPLOY.md`).

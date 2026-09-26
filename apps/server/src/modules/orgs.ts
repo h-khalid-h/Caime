@@ -42,11 +42,12 @@ const ROLE_ORDER: Record<OrgRole, number> = { owner: 0, admin: 1, agent: 2 };
 
 async function team(ctx: AppContext, orgId: string) {
   return ctx.db
-    .selectFrom('org_members')
-    .select(['user_id', 'role', 'title', 'joined_at'])
-    .where('org_id', '=', orgId)
-    .where('left_at', 'is', null)
-    .orderBy('joined_at')
+    .selectFrom('org_members as m')
+    .innerJoin('users as u', 'u.id', 'm.user_id')
+    .select(['m.user_id', 'm.role', 'm.title', 'm.joined_at', 'u.kind'])
+    .where('m.org_id', '=', orgId)
+    .where('m.left_at', 'is', null)
+    .orderBy('m.joined_at')
     .execute();
 }
 
@@ -318,6 +319,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const members = await team(ctx, id);
     const target = members.find((m) => m.user_id === userId);
     if (!target) throw notFound('That person on the team');
+    if (target.kind !== 'human') throw badRequest('That’s an app’s bot: remove the app instead.');
+    // Only people run an organization: a bot never inherits it, nor keeps it open alone.
+    const people = members.filter((m) => m.kind === 'human');
     const leaving = userId === auth.userId;
     if (!leaving && !canRemoveFromOrg(seat.role, target.role))
       throw forbidden(
@@ -328,7 +332,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const heir =
       target.role === 'owner'
         ? nextOwner(
-            members.map((m) => ({
+            people.map((m) => ({
               userId: m.user_id,
               role: m.role,
               joinedAt: m.joined_at.toISOString(),
@@ -352,7 +356,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('user_id', '=', heir)
           .execute();
       // Nobody left to run it: it closes, and stops showing anyone as verified.
-      if (members.length === 1)
+      if (people.length === 1)
         await trx
           .updateTable('organizations')
           .set({ archived_at: ctx.now() })
@@ -377,6 +381,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const seat = await managerSeat(ctx, auth.userId, id);
     const target = (await team(ctx, id)).find((m) => m.user_id === userId);
     if (!target) throw notFound('That person on the team');
+    if (target.kind !== 'human') throw badRequest('That’s an app’s bot: change the app instead.');
     if (body.role !== undefined && !canChangeOrgRole(seat.role, target.role))
       throw forbidden('Only the owner makes admins.');
     await ctx.db

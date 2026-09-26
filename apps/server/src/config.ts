@@ -42,6 +42,11 @@ const Env = z.object({
   ANTHROPIC_BASE_URL: z.string().url().optional(),
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
+  /**
+   * Let webhooks reach private and loopback addresses, and plain http. For tests and local
+   * development only: in production it would let an app probe the server's own network.
+   */
+  WEBHOOKS_ALLOW_PRIVATE: bool.default(false),
 });
 
 export type Config = z.infer<typeof Env> & {

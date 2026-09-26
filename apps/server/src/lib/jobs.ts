@@ -4,8 +4,9 @@
  * held notifications, retention) that are idempotent by construction.
  */
 import { hostname } from 'node:os';
-import { sql } from 'kysely';
+import { type Selectable, sql } from 'kysely';
 import type { AppContext } from '../context';
+import type { JobsTable } from '../db/schema';
 
 export type JobHandler = (ctx: AppContext, payload: Record<string, unknown>) => Promise<void>;
 export type PeriodicTask = {
@@ -45,6 +46,8 @@ export async function enqueue(
 }
 
 const WORKER_ID = `${hostname()}:${process.pid}`;
+/** Jobs run side by side, so one that waits on the network (a slow webhook) holds only its slot. */
+const CONCURRENCY = 8;
 
 /** Claim and run every job that is due. Returns how many ran. */
 export async function runDueJobs(ctx: AppContext, limit = 50): Promise<number> {
@@ -73,31 +76,41 @@ export async function runDueJobs(ctx: AppContext, limit = 50): Promise<number> {
     )
     .returningAll()
     .execute();
-  for (const job of claimed) {
-    const handler = handlers.get(job.kind);
-    try {
-      if (!handler) throw new Error(`no handler for ${job.kind}`);
-      await handler(ctx, (job.payload ?? {}) as Record<string, unknown>);
-      await ctx.db
-        .updateTable('jobs')
-        .set({ done_at: ctx.now(), locked_at: null, last_error: null })
-        .where('id', '=', job.id)
-        .execute();
-    } catch (err) {
-      const backoff = Math.min(60 * 60_000, 2 ** job.attempts * 15_000);
-      await ctx.db
-        .updateTable('jobs')
-        .set({
-          locked_at: null,
-          last_error: String((err as Error).message ?? err).slice(0, 500),
-          run_at: new Date(ctx.now().getTime() + backoff),
-        })
-        .where('id', '=', job.id)
-        .execute();
-      ctx.log.warn({ err, kind: job.kind }, 'job failed');
-    }
-  }
+  let next = 0;
+  const slot = async () => {
+    for (let job = claimed[next++]; job; job = claimed[next++]) await runJob(ctx, job);
+  };
+  const slots = await Promise.allSettled(
+    Array.from({ length: Math.min(CONCURRENCY, claimed.length) }, slot),
+  );
+  const failed = slots.find((s) => s.status === 'rejected');
+  if (failed) throw failed.reason;
   return claimed.length;
+}
+
+async function runJob(ctx: AppContext, job: Selectable<JobsTable>): Promise<void> {
+  const handler = handlers.get(job.kind);
+  try {
+    if (!handler) throw new Error(`no handler for ${job.kind}`);
+    await handler(ctx, (job.payload ?? {}) as Record<string, unknown>);
+    await ctx.db
+      .updateTable('jobs')
+      .set({ done_at: ctx.now(), locked_at: null, last_error: null })
+      .where('id', '=', job.id)
+      .execute();
+  } catch (err) {
+    const backoff = Math.min(60 * 60_000, 2 ** job.attempts * 15_000);
+    await ctx.db
+      .updateTable('jobs')
+      .set({
+        locked_at: null,
+        last_error: String((err as Error).message ?? err).slice(0, 500),
+        run_at: new Date(ctx.now().getTime() + backoff),
+      })
+      .where('id', '=', job.id)
+      .execute();
+    ctx.log.warn({ err, kind: job.kind }, 'job failed');
+  }
 }
 
 export async function runPeriodic(ctx: AppContext): Promise<void> {

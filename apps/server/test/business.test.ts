@@ -23,7 +23,11 @@ const send = (c: Client, body: string, extra = {}) =>
   c.post(`/v1/conversations/${convo}/messages`, { clientId: uuidv4(), body, ...extra });
 const thread = async (c: Client) => (await c.get(`/v1/conversations/${convo}`)).conversation;
 const inbox = (c: Client, view: string) => c.get(`/v1/orgs/${orgId}/inbox?view=${view}`);
-const alerts = async (c: Client) => (await c.get('/v1/notifications')).notifications;
+/** Notifications are written after the response (ctx.defer): wait for them first. */
+const alerts = async (c: Client) => {
+  await t.ctx.flush();
+  return (await c.get('/v1/notifications')).notifications;
+};
 /** Only what's about the business conversation: Lina knows Omar, so other alerts may name him. */
 const aboutIt = async (c: Client) =>
   (await alerts(c)).filter((n: any) => n.data?.conversationId === convo);

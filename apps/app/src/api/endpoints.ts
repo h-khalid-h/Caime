@@ -26,6 +26,8 @@ import type {
   MessageView,
   MeView,
   NotificationsResponse,
+  OrgAppSecretsView,
+  OrgAppView,
   OrgSummaryView,
   OrgView,
   PeopleSearchResult,
@@ -41,7 +43,9 @@ import type {
   TasksResponse,
   TaskView,
   TaxonomyResponse,
+  WebhookDeliveryView,
 } from '@caishy/core/api';
+import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
 import type { RewriteStyle } from '@caishy/core/assist';
 import type { BusinessView } from '@caishy/core/business';
 import type { OrgKind } from '@caishy/core/orgs';
@@ -276,6 +280,32 @@ export const endpoints = {
     ),
   deescalateThread: (conversationId: string) =>
     api.del<{ thread: BusinessThreadView }>(`/business/${conversationId}/escalation`),
+
+  // Apps (PRD §73–75): an organization's integrations, managed by its owner and admins
+  orgApps: (orgId: string) => api.get<{ apps: OrgAppView[] }>(`/orgs/${orgId}/apps`),
+  createOrgApp: (
+    orgId: string,
+    body: { name: string; scopes: ApiScope[]; webhookUrl?: string | null; events: WebhookEvent[] },
+  ) => api.post<OrgAppSecretsView>(`/orgs/${orgId}/apps`, body),
+  updateOrgApp: (
+    orgId: string,
+    appId: string,
+    body: Partial<{
+      name: string;
+      scopes: ApiScope[];
+      webhookUrl: string | null;
+      events: WebhookEvent[];
+    }>,
+  ) => api.patch<{ app: OrgAppView }>(`/orgs/${orgId}/apps/${appId}`, body),
+  replaceAppToken: (orgId: string, appId: string) =>
+    api.post<OrgAppSecretsView>(`/orgs/${orgId}/apps/${appId}/token`),
+  replaceAppSecret: (orgId: string, appId: string) =>
+    api.post<OrgAppSecretsView>(`/orgs/${orgId}/apps/${appId}/secret`),
+  pingApp: (orgId: string, appId: string) =>
+    api.post<{ deliveryId: string }>(`/orgs/${orgId}/apps/${appId}/ping`),
+  appDeliveries: (orgId: string, appId: string) =>
+    api.get<{ deliveries: WebhookDeliveryView[] }>(`/orgs/${orgId}/apps/${appId}/deliveries`),
+  removeOrgApp: (orgId: string, appId: string) => api.del<Ok>(`/orgs/${orgId}/apps/${appId}`),
 
   // AI assist: every answer is a suggestion, used only when the person taps it (R17)
   ai: () => api.get<AiStatusView>('/ai'),

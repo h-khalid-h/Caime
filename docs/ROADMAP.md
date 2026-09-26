@@ -132,7 +132,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Retention: disappearing messages per conversation (24 hours to 1 year), set from the
       conversation's details, announced to everyone in it (`system-messages.test.ts`, E2E)
 - [x] Block, report, rate limits, link safety
-- [ ] API tokens, webhooks, bots and agents
+- [x] Apps for organizations (R16): an owner or admin adds an app, which gets a bot on the
+      team, a token shown once and limited to the routes and permissions it was given, and a
+      webhook signed with a secret shown once, retried with its deliveries listed on the app's
+      sheet. The bot answers customers as the organization and every reply says "Automated";
+      it never takes a conversation or counts as the team's answer (`apps.test.ts`, E2E; the
+      developer guide is `docs/API.md`). [ ] Personal access tokens, OAuth for third-party apps,
+      AI agents
 - [ ] Metrics and plan entitlements
 - [ ] Calls (WebRTC 1:1 on web) ⛔ TURN relay needed for reliable production calls
 
@@ -140,7 +146,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (427.6 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (427.9 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -229,3 +235,17 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   the inbox route moved it into the shared startup chunk (460 KB against 450), so on desktop
   the inbox is a list pane beside the conversation's own route, as Chats is. Tests: 135 core,
   49 brand, 121 server, 8 app, 20 E2E.
+- 2026-09-26 — Session 2 (cont.): apps for organizations: scoped tokens, bots that always say
+  they're automated, and signed webhooks (`docs/API.md`). A bot is on the team but never takes a
+  conversation, moves whose turn it is, signs in, or inherits an organization when its owner
+  leaves. Reviewing it before shipping found four holes, each now closed with a test that fails
+  without the fix. A thread could be assigned to a bot, by a person or by an app's own token,
+  which would have taken a new customer out of the team's New view and its waiting count. An IPv4
+  address written as IPv6 (`[::ffff:127.0.0.1]`, which the URL parser turns into hex groups)
+  passed the private-network check, and Node skips the DNS guard for a literal address (checked),
+  so on a host with IPv6 a webhook could have reached the server's own loopback (this container
+  has no IPv6 to show that last step); the check now reads every IPv6 form that carries an IPv4
+  address. An endpoint that answered one byte at a time never tripped the socket's idle timeout
+  and could hold the job queue indefinitely; a delivery now has 10 seconds in all. And jobs ran
+  one after another, so one slow endpoint delayed every other job; they run eight at a time.
+  Tests: 137 core, 49 brand, 132 server, 8 app, 21 E2E.

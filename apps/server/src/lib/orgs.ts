@@ -84,11 +84,14 @@ export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<v
     .where('role', '=', 'owner')
     .execute();
   for (const { org_id } of owned) {
+    // People only: an app's bot never inherits an organization.
     const members = await trx
-      .selectFrom('org_members')
-      .select(['user_id', 'role', 'joined_at'])
-      .where('org_id', '=', org_id)
-      .where('left_at', 'is', null)
+      .selectFrom('org_members as m')
+      .innerJoin('users as u', 'u.id', 'm.user_id')
+      .select(['m.user_id', 'm.role', 'm.joined_at'])
+      .where('m.org_id', '=', org_id)
+      .where('m.left_at', 'is', null)
+      .where('u.kind', '=', 'human')
       .execute();
     const heir = nextOwner(
       members.map((m) => ({

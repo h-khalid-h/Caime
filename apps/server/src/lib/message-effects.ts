@@ -112,10 +112,17 @@ async function notifyBusiness(
     .where('t.conversation_id', '=', conversation.id)
     .executeTakeFirst();
   if (!thread) return;
+  const kinds = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'kind'])
+    .where('id', 'in', [sender.id, ...recipients.map((r) => r.user_id)])
+    .execute();
+  const human = (id: string) => kinds.find((k) => k.id === id)?.kind === 'human';
   if (sender.id === thread.customer_id) {
-    const team = thread.assignee_id
-      ? recipients.filter((r) => r.user_id === thread.assignee_id)
-      : recipients;
+    // People hear it; the organization's bots hear it through their webhooks.
+    const team = (
+      thread.assignee_id ? recipients.filter((r) => r.user_id === thread.assignee_id) : recipients
+    ).filter((r) => human(r.user_id));
     await Promise.all(
       team.map((r) =>
         notifyRecipient(ctx, conversation, message, sender, r, true, replyToSender === r.user_id, {
@@ -131,7 +138,11 @@ async function notifyBusiness(
       ctx,
       conversation,
       message,
-      { id: thread.org_id, display_name: thread.org_name },
+      {
+        id: thread.org_id,
+        // A bot's answer says so, even in a notification (R16).
+        display_name: human(sender.id) ? thread.org_name : `${thread.org_name} (automated)`,
+      },
       customer,
       true,
       replyToSender === customer.user_id,

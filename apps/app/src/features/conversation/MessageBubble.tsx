@@ -383,6 +383,12 @@ export const MessageBubble = memo(function MessageBubble({
       }}
     >
       {m.forwarded ? <Forward size={11} color={meta} /> : null}
+      {m.automated ? (
+        // A bot's message always says so (R16), for the customer and the team alike.
+        <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-automated">
+          Automated ·
+        </Text>
+      ) : null}
       {m.editedAt && !deleted ? (
         <Text variant="caption" color={meta} style={{ fontSize: 11 }}>
           edited
@@ -403,6 +409,7 @@ export const MessageBubble = memo(function MessageBubble({
 
   const accessibleText = [
     mine ? 'You' : (senderName ?? ''),
+    m.automated ? 'automated' : '',
     deleted ? 'Message deleted' : (m.body ?? sticker?.label ?? m.kind),
     time,
     delivery && mine ? delivery : '',

@@ -591,6 +591,43 @@ export interface BusinessThreadsTable {
   updated_at: Generated<Date>;
 }
 
+export interface OrgAppsTable {
+  id: string;
+  org_id: string;
+  name: string;
+  bot_user_id: string | null;
+  scopes: Defaulted<string[]>;
+  webhook_url: string | null;
+  webhook_secret: string;
+  events: Defaulted<string[]>;
+  created_by: string | null;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
+export interface ApiTokensTable {
+  id: string;
+  app_id: string;
+  prefix: string;
+  token_hash: Buffer;
+  last_used_at: NullableTimestamp;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
+export interface WebhookDeliveriesTable {
+  id: string;
+  app_id: string;
+  event: string;
+  payload: Json;
+  status: Defaulted<'pending' | 'delivered' | 'failed'>;
+  attempts: Defaulted<number>;
+  last_status: number | null;
+  last_error: string | null;
+  created_at: Generated<Date>;
+  delivered_at: NullableTimestamp;
+}
+
 export interface ServerSettingsTable {
   key: string;
   value: Json;
@@ -636,6 +673,9 @@ export interface Database {
   organizations: OrganizationsTable;
   org_members: OrgMembersTable;
   business_threads: BusinessThreadsTable;
+  org_apps: OrgAppsTable;
+  api_tokens: ApiTokensTable;
+  webhook_deliveries: WebhookDeliveriesTable;
 }
 
 export type User = Selectable<UsersTable>;
@@ -650,5 +690,6 @@ export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;
 export type OrgMember = Selectable<OrgMembersTable>;
 export type BusinessThread = Selectable<BusinessThreadsTable>;
+export type OrgApp = Selectable<OrgAppsTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;

@@ -189,7 +189,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     const ok = await verifyPassword(body.password, user?.password_hash ?? (await decoyHash()));
-    if (!user || !ok) {
+    // Bots act only through their app's token, never a session (R16).
+    if (!user || !ok || user.kind !== 'human') {
       await audit(ctx.db, {
         actorId: user?.id ?? null,
         action: 'auth.login_failed',
