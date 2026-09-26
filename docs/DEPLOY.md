@@ -29,8 +29,8 @@ Verified after the deploy (first on the published image, then again on the GitHu
 throwaway account signed up and deleted itself through the API.
 
 Switched to `production` on 2026-09-26 and redeployed with `ANTHROPIC_API_KEY`: the source reads
-back as branch `production` with auto deploy on, and `/v1/readyz` answers 200. Not yet checked:
-`GET /v1/ai` answering `"available": true` for a signed-in account.
+back as branch `production` with auto deploy on, `/v1/readyz` answers 200, and a throwaway
+account's `GET /v1/ai` answered `"available": true` before it deleted itself.
 
 CI releases by moving `production`, so no webhook secret is needed.
 
