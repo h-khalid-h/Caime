@@ -14,6 +14,7 @@ export * from './rules';
 export * from './safety';
 export * from './schemas';
 export * from './search';
+export * from './spaces';
 export * from './taxonomy';
 export * from './time';
 export * from './trust';

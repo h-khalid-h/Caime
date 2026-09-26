@@ -7,6 +7,7 @@ import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { NavRail } from '@/features/shell/NavRail';
 import { useSection } from '@/features/shell/sections';
 import { KeyboardShortcuts } from '@/features/shell/shortcuts';
+import { SpacesList } from '@/features/spaces/SpacesList';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { useLayout } from '@/ui/layout';
@@ -47,6 +48,8 @@ function DesktopShell() {
       <InboxList pane />
     ) : section === 'people' ? (
       <PeopleList pane />
+    ) : section === 'spaces' ? (
+      <SpacesList pane />
     ) : section === 'you' ? (
       <SettingsMenu pane />
     ) : null;

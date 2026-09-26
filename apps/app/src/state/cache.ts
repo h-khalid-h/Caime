@@ -10,10 +10,31 @@ import type {
   MessageView,
 } from '@caishy/core/api';
 import { messagePreview } from '@caishy/core/format';
-import type { InfiniteData, QueryClient } from '@tanstack/react-query';
+import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import { qk } from '@/api/keys';
 
 export type MessagePages = InfiniteData<MessagesPage, unknown>;
+
+/**
+ * Write a live change into cached data without calling that data up to date. TanStack treats a
+ * write as fresh: a copy restored on the device, already marked for a refetch, would stop
+ * refetching, and whatever it lacks (a message sent just before a reload) would stay missing.
+ * So the write keeps the data's own fetch time and its mark.
+ */
+export function patchCache<T>(
+  qc: QueryClient,
+  key: QueryKey,
+  updater: (data: T | undefined) => T | undefined,
+): void {
+  const before = qc.getQueryState(key);
+  qc.setQueryData<T>(
+    key,
+    updater,
+    before?.dataUpdatedAt ? { updatedAt: before.dataUpdatedAt } : undefined,
+  );
+  if (before?.isInvalidated)
+    void qc.invalidateQueries({ queryKey: key, exact: true, refetchType: 'none' });
+}
 
 const bySeq = (a: MessageView, b: MessageView) => a.seq - b.seq;
 
@@ -63,7 +84,7 @@ export function upsertMessage(qc: QueryClient, m: MessageView): void {
 }
 
 function upsertNow(qc: QueryClient, m: MessageView): void {
-  qc.setQueryData<MessagePages>(qk.messages(m.conversationId), (data) => {
+  patchCache<MessagePages>(qc, qk.messages(m.conversationId), (data) => {
     if (!data || data.pages.length === 0) return data;
     let found = false;
     const pages = data.pages.map((p) => {
@@ -102,7 +123,7 @@ function patchNow(
   id: string,
   fn: (m: MessageView) => MessageView,
 ): void {
-  qc.setQueryData<MessagePages>(qk.messages(conversationId), (data) => {
+  patchCache<MessagePages>(qc, qk.messages(conversationId), (data) => {
     if (!data) return data;
     return {
       ...data,
@@ -116,7 +137,7 @@ function patchNow(
 }
 
 export function removeMessage(qc: QueryClient, conversationId: string, id: string): void {
-  qc.setQueryData<MessagePages>(qk.messages(conversationId), (data) => {
+  patchCache<MessagePages>(qc, qk.messages(conversationId), (data) => {
     if (!data) return data;
     return {
       ...data,
@@ -131,7 +152,7 @@ function patchItems(
   fn: (item: InboxItemView) => InboxItemView,
 ): boolean {
   let found = false;
-  qc.setQueryData<InboxResponse>(qk.inbox, (data) => {
+  patchCache<InboxResponse>(qc, qk.inbox, (data) => {
     if (!data) return data;
     return {
       ...data,
@@ -145,7 +166,7 @@ function patchItems(
       })),
     };
   });
-  qc.setQueryData<InboxAllResponse>(qk.inboxAll, (data) => {
+  patchCache<InboxAllResponse>(qc, qk.inboxAll, (data) => {
     if (!data) return data;
     return {
       ...data,

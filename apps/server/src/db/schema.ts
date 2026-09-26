@@ -506,6 +506,36 @@ export interface HiddenMessagesTable {
   created_at: Generated<Date>;
 }
 
+export type SpaceKind =
+  | 'family'
+  | 'friends'
+  | 'team'
+  | 'project'
+  | 'community'
+  | 'school'
+  | 'other';
+export type SpaceRole = 'owner' | 'admin' | 'member';
+
+export interface SpacesTable {
+  id: string;
+  name: string;
+  purpose: string | null;
+  kind: SpaceKind;
+  created_by: string | null;
+  archived_at: NullableTimestamp;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface SpaceMembersTable {
+  space_id: string;
+  user_id: string;
+  role: Defaulted<SpaceRole>;
+  added_by: string | null;
+  joined_at: Generated<Date>;
+  left_at: NullableTimestamp;
+}
+
 export interface ServerSettingsTable {
   key: string;
   value: Json;
@@ -546,6 +576,8 @@ export interface Database {
   server_settings: ServerSettingsTable;
   poll_votes: PollVotesTable;
   hidden_messages: HiddenMessagesTable;
+  spaces: SpacesTable;
+  space_members: SpaceMembersTable;
 }
 
 export type User = Selectable<UsersTable>;
@@ -555,5 +587,7 @@ export type Relationship = Selectable<RelationshipsTable>;
 export type Conversation = Selectable<ConversationsTable>;
 export type Participant = Selectable<ParticipantsTable>;
 export type Message = Selectable<MessagesTable>;
+export type Space = Selectable<SpacesTable>;
+export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;

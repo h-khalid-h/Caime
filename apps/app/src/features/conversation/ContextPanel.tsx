@@ -15,7 +15,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { Calendar, CircleCheck, FileText, Link, Lock, Star, X } from '@/ui/icons';
+import { Calendar, CircleCheck, FileText, LayoutGrid, Link, Lock, Star, X } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -153,6 +153,24 @@ export function ContextPanel({
           </Pressable>
         ) : (
           <Section title={`${conversation.participants.length} people`}>
+            {conversation.space ? (
+              <Pressable
+                accessibilityRole="link"
+                onPress={() =>
+                  router.navigate({
+                    pathname: '/s/[id]',
+                    params: { id: conversation.space?.id ?? '' },
+                  })
+                }
+                testID="open-space"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 4 }}
+              >
+                <LayoutGrid size={16} color={t.c.accentStrong} />
+                <Text variant="captionStrong" color="link" style={{ flex: 1 }} numberOfLines={1}>
+                  In {conversation.space.name} · open the space
+                </Text>
+              </Pressable>
+            ) : null}
             {conversation.participants.map((p) => (
               <View key={p.userId} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Avatar

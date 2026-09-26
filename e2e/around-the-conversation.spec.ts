@@ -343,6 +343,61 @@ test.describe
       expect(noor.errors).toEqual([]);
     });
 
+    test('a space keeps a team together: its people, General, and conversations for everyone', async () => {
+      const { page, errors } = noor;
+      await page.goto('/spaces');
+      await expect(visible(page, 'Keep a group together')).toBeVisible();
+      await page.getByTestId('spaces-new').click();
+      await page.getByTestId('space-name').fill('Venue team');
+      await page.getByTestId('space-kind-team').click();
+      await page.getByTestId(`pick-alex.${stamp}`).click();
+      await page.getByTestId('space-create').click();
+      await expect(visible(page, 'Team · 2 people')).toBeVisible();
+      await expect(page.getByTestId('space-conversation-General')).toContainText(
+        'You started the space “Venue team”',
+      );
+
+      // On the phone it's under Spaces; Alex starts a conversation for everyone in it.
+      const phone = alex.page;
+      await phone.goto('/spaces');
+      await phone.getByTestId('space-row-Venue team').filter({ visible: true }).click();
+      await phone.getByTestId('space-new-conversation').filter({ visible: true }).click();
+      await phone.getByTestId('space-conversation-title').fill('Budget');
+      await phone.getByTestId('space-conversation-create').click();
+      await expect(visible(phone, 'Venue team · Budget')).toBeVisible();
+      // A team's conversations offer work cards, as a colleague's would.
+      await phone.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await expect(phone.getByTestId('kit-option-approval')).toBeVisible();
+      await expect(async () => {
+        await phone.keyboard.press('Escape');
+        await expect(phone.getByTestId('kit-option-approval')).toBeHidden({ timeout: 500 });
+      }).toPass();
+      await phone.getByTestId('composer-input').fill('Budget draft is in the drive.');
+      await phone.getByTestId('composer-send').click();
+
+      // Noor is in it already, and sees it arrive on the space.
+      await expect(page.getByTestId('space-conversation-Budget')).toContainText(
+        'Alex Chen: Budget draft is in the drive.',
+      );
+      // Noor makes Alex an admin.
+      await page
+        .getByRole('button', { name: /^Alex Chen/ })
+        .filter({ visible: true })
+        .click();
+      await page.getByTestId('space-toggle-admin').click();
+      await expect(visible(page, 'Alex Chen is an admin')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Alex Chen, Admin' })).toBeVisible();
+      // The sheet has faded out (its backdrop is a "Close" button).
+      await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-space.png' });
+      await phone.goto('/spaces');
+      await expect(
+        phone.getByTestId('space-row-Venue team').filter({ visible: true }),
+      ).toBeVisible();
+      await phone.screenshot({ path: 'e2e/screenshots/phone-spaces.png' });
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [

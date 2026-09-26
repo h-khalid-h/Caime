@@ -12,6 +12,7 @@ import { audit } from '../lib/audit';
 import { verifyPassword } from '../lib/crypto';
 import { AppError, notFound } from '../lib/errors';
 import { relationshipView } from '../lib/relations';
+import { handOverSpaces } from '../lib/spaces';
 import { diskStorage } from '../lib/storage';
 import { meView } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -43,6 +44,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       files,
       sessions,
       aiRuns,
+      spaces,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -103,6 +105,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .select(['feature', 'model', 'outcome', 'created_at'])
         .where('user_id', '=', me)
         .orderBy('created_at')
+        .execute(),
+      ctx.db
+        .selectFrom('space_members as m')
+        .innerJoin('spaces as s', 's.id', 'm.space_id')
+        .select(['s.name', 's.kind', 'm.role', 'm.joined_at', 'm.left_at'])
+        .where('m.user_id', '=', me)
+        .orderBy('m.joined_at')
         .execute(),
     ]);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
@@ -177,6 +186,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         signedInAt: s.created_at.toISOString(),
         lastSeenAt: s.last_seen_at.toISOString(),
       })),
+      spaces: spaces.map((sp) => ({
+        name: sp.name,
+        kind: sp.kind,
+        role: sp.role,
+        joinedAt: sp.joined_at.toISOString(),
+        leftAt: sp.left_at?.toISOString() ?? null,
+      })),
       // When AI assist was used and for what; what it read and wrote is never stored.
       aiAssist: aiRuns.map((r) => ({
         feature: r.feature,
@@ -230,6 +246,8 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute(),
     ]);
     await ctx.db.transaction().execute(async (trx) => {
+      // Spaces it owned stay with the people in them.
+      await handOverSpaces(trx, me, ctx.now());
       // The account first (its avatar points at a file), then the files only it could see.
       await trx.deleteFrom('users').where('id', '=', me).execute();
       if (orphanFiles.length)

@@ -5,7 +5,7 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
-import { Bell, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
+import { Bell, LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { type Section, useSection } from './sections';
@@ -101,6 +101,7 @@ const ITEMS: Array<{
 }> = [
   { section: 'chats', label: 'Chats', icon: MessageCircle, href: '/', badge: 'chats' },
   { section: 'people', label: 'People', icon: Users, href: '/people', badge: 'people' },
+  { section: 'spaces', label: 'Spaces', icon: LayoutGrid, href: '/spaces' },
   { section: 'actions', label: 'Actions', icon: ListChecks, href: '/actions', badge: 'actions' },
   { section: 'search', label: 'Search', icon: Search, href: '/search' },
 ];

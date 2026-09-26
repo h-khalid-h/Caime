@@ -232,6 +232,12 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
   switch (p.event) {
     case 'group_created':
       return p.title ? `${by} created “${p.title}”` : `${by} created the group`;
+    case 'space_created':
+      return p.title ? `${by} started the space “${p.title}”` : `${by} started the space`;
+    case 'space_renamed':
+      return p.title ? `${by} renamed the space “${p.title}”` : `${by} renamed the space`;
+    case 'member_joined':
+      return `${p.name ?? by} joined`;
     case 'members_added':
       return p.names?.length ? `${by} added ${joinNames(p.names)}` : `${by} added people`;
     case 'member_left':

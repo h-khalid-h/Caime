@@ -19,6 +19,7 @@ import { enqueue } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
 import { activeRelationships, loadPolicies, policyTargetFor, relationshipView } from './relations';
+import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion } from './suggest';
 
 const BURST_WINDOW_MS = 10 * 60_000;
@@ -137,7 +138,12 @@ async function notifyRecipient(
       );
 
   const isGroup = conversation.kind !== 'direct';
-  const groupTitle = conversation.title ?? 'Group';
+  const space = conversation.space_id
+    ? (await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id)
+    : undefined;
+  const groupTitle = space
+    ? spaceConversationTitle(space, conversation)
+    : (conversation.title ?? 'Group');
   const preview =
     conversation.privacy_class === 'private' ? 'New message' : messagePreview(message);
   const groupKey = `conv:${conversation.id}`;

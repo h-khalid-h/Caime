@@ -7,6 +7,7 @@ import { REWRITE_STYLES } from './assist';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
+import { SPACE_KINDS } from './spaces';
 import { SPHERES } from './taxonomy';
 
 export const Handle = z
@@ -455,5 +456,38 @@ export const AiTranslateBody = z
     messageId: z.string().uuid(),
     /** A BCP 47 language; the reader's own language when absent. */
     to: z.string().trim().min(2).max(35).optional(),
+  })
+  .strict();
+
+/** Spaces (PRD §40). */
+const SpaceName = z.string().trim().min(1, 'Give the space a name.').max(80);
+const SpacePurpose = z.string().trim().max(280).nullable();
+
+export const CreateSpaceBody = z
+  .object({
+    name: SpaceName,
+    kind: z.enum(SPACE_KINDS),
+    purpose: SpacePurpose.optional(),
+    memberIds: z.array(z.string().uuid()).max(200).default([]),
+  })
+  .strict();
+
+export const UpdateSpaceBody = z
+  .object({
+    name: SpaceName.optional(),
+    kind: z.enum(SPACE_KINDS).optional(),
+    purpose: SpacePurpose.optional(),
+  })
+  .strict()
+  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+
+export const SpaceRoleBody = z.object({ role: z.enum(['admin', 'member']) }).strict();
+
+export const CreateSpaceConversationBody = z
+  .object({
+    title: z.string().trim().min(1, 'Name the conversation.').max(80),
+    purpose: z.string().trim().max(280).nullable().optional(),
+    /** Everyone in the space, or just you until others join. */
+    everyone: z.boolean().default(false),
   })
   .strict();

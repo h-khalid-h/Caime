@@ -4,6 +4,7 @@ import { uuidv4 } from '@caishy/core/ids';
 import { extractAmounts } from '@caishy/core/intelligence';
 import { CARD_KITS, type CardKitId, prepareKitFields } from '@caishy/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caishy/core/kits';
+import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
 import { firstFutureWhen } from '@caishy/core/when';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -21,9 +22,14 @@ import { TextField } from '@/ui/TextField';
 
 export type KitChoice = CardKitId | 'poll';
 
-/** The kits this conversation offers, most specific to the relationship first (core kits.ts). */
+/**
+ * The kits this conversation offers, most specific to the relationship first (core kits.ts). In
+ * a space, the space's kind stands in for the relationship: a team space offers work cards.
+ */
 export function kitsOffered(conversation: ConversationView, viewerIsMinor: boolean): KitDef[] {
-  const sphere = conversation.other?.relationship?.sphere;
+  const sphere =
+    conversation.other?.relationship?.sphere ??
+    (conversation.space ? SPACE_KIND_DEFS[conversation.space.kind].sphere : undefined);
   const offered = new Set<string>([...CARD_KITS, 'poll']);
   return kitsFor({
     spheres: sphere ? [sphere] : [],

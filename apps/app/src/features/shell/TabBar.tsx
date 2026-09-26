@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
-import { CircleUser, ListChecks, MessageCircle, Users } from '@/ui/icons';
+import { CircleUser, LayoutGrid, ListChecks, MessageCircle, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { useBadges } from './useBadges';
@@ -14,6 +14,8 @@ const TABS: Record<
 > = {
   index: { label: 'Chats', icon: MessageCircle, badge: 'chats' },
   people: { label: 'People', icon: Users, badge: 'people' },
+  // No badge: a space's unread shows in the list; what needs you is already on Chats (R7).
+  spaces: { label: 'Spaces', icon: LayoutGrid },
   actions: { label: 'Actions', icon: ListChecks, badge: 'actions' },
   you: { label: 'You', icon: CircleUser },
 };

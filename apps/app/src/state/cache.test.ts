@@ -64,4 +64,21 @@ describe('live messages and loading pages', () => {
     await load.done;
     expect(seqs(qc)).toEqual([1, 2, 3]);
   });
+  it('a live message doesn’t make a copy restored on the device look complete', async () => {
+    const qc = new QueryClient();
+    // Restored from the device, then marked for a refetch (the app does this after restoring).
+    qc.setQueryData<MessagePages>(qk.messages(id), {
+      pages: [page(1, 2)],
+      pageParams: [undefined],
+    });
+    const fetchedAt = qc.getQueryState(qk.messages(id))?.dataUpdatedAt;
+    await qc.invalidateQueries({ queryKey: qk.messages(id), refetchType: 'none' });
+    // Seq 3 was sent just before the reload; 4 arrives live before the conversation opens.
+    upsertMessage(qc, msg(4));
+    expect(seqs(qc)).toEqual([1, 2, 4]);
+    const state = qc.getQueryState(qk.messages(id));
+    // Still due for its refetch, which brings 3; its age is still the fetch's.
+    expect(state?.isInvalidated).toBe(true);
+    expect(state?.dataUpdatedAt).toBe(fetchedAt);
+  });
 });

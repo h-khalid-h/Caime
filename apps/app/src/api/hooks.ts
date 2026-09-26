@@ -77,3 +77,8 @@ export const usePolicies = () => useQuery({ queryKey: qk.policies, queryFn: endp
 /** Whether this server offers AI assist, and whether this person turned it on. */
 export const useAiStatus = () =>
   useQuery({ queryKey: qk.ai, queryFn: endpoints.ai, staleTime: 10 * 60_000 });
+
+export const useSpaces = () => useQuery({ queryKey: qk.spaces, queryFn: endpoints.spaces });
+
+export const useSpace = (id: string) =>
+  useQuery({ queryKey: qk.space(id), queryFn: () => endpoints.space(id), enabled: Boolean(id) });

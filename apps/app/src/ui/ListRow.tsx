@@ -22,6 +22,8 @@ export interface ListRowProps {
   style?: ViewStyle;
   testID?: string;
   accessibilityLabel?: string;
+  /** A row that picks something reads as a checkbox. */
+  checked?: boolean;
 }
 
 export function ListRow({
@@ -39,6 +41,7 @@ export function ListRow({
   style,
   testID,
   accessibilityLabel,
+  checked,
 }: ListRowProps) {
   const t = useTheme();
   const content = (hovered: boolean, pressed: boolean) => (
@@ -95,7 +98,8 @@ export function ListRow({
   return (
     <Pressable
       testID={testID}
-      accessibilityRole="button"
+      accessibilityRole={checked === undefined ? 'button' : 'checkbox'}
+      accessibilityState={checked === undefined ? undefined : { checked }}
       accessibilityLabel={accessibilityLabel ?? (subtitle ? `${title}, ${subtitle}` : title)}
       onPress={onPress}
       focusRadius={8}

@@ -36,6 +36,7 @@ import { realtimeRoutes } from './modules/realtime';
 import { relationshipRoutes } from './modules/relationships';
 import { safetyRoutes } from './modules/safety';
 import { searchRoutes } from './modules/search';
+import { spaceRoutes } from './modules/spaces';
 import { suggestionRoutes } from './modules/suggestions';
 import { registerWorkers } from './modules/workers';
 import { registerAuth } from './plugins/auth';
@@ -170,6 +171,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await memoryRoutes(v1, ctx);
       await aiRoutes(v1, ctx);
       await searchRoutes(v1, ctx);
+      await spaceRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);

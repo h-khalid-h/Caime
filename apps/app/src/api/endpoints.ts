@@ -29,12 +29,15 @@ import type {
   RelationshipView,
   SearchResponse,
   SessionResponse,
+  SpaceSummaryView,
+  SpaceView,
   SuggestionView,
   TasksResponse,
   TaskView,
   TaxonomyResponse,
 } from '@caishy/core/api';
 import type { RewriteStyle } from '@caishy/core/assist';
+import type { SpaceKind } from '@caishy/core/spaces';
 import type { Sphere } from '@caishy/core/taxonomy';
 import { api, request } from './client';
 
@@ -198,6 +201,24 @@ export const endpoints = {
     api.post<Ok>(`/conversations/${id}/receipts`, body),
   dismissAttention: (id: string) => api.post<Ok>(`/conversations/${id}/dismiss`),
   memory: (id: string) => api.get<MemoryView>(`/conversations/${id}/memory`),
+
+  // Spaces (PRD §40)
+  spaces: () => api.get<{ spaces: SpaceSummaryView[] }>('/spaces'),
+  space: (id: string) => api.get<{ space: SpaceView }>(`/spaces/${id}`),
+  createSpace: (body: { name: string; kind: SpaceKind; purpose?: string; memberIds: string[] }) =>
+    api.post<{ space: SpaceView }>('/spaces', body),
+  updateSpace: (id: string, body: { name?: string; kind?: SpaceKind; purpose?: string | null }) =>
+    api.patch<{ space: SpaceView }>(`/spaces/${id}`, body),
+  addToSpace: (id: string, userIds: string[]) => api.post<Ok>(`/spaces/${id}/members`, { userIds }),
+  removeFromSpace: (id: string, userId: string) => api.del<Ok>(`/spaces/${id}/members/${userId}`),
+  setSpaceRole: (id: string, userId: string, role: 'admin' | 'member') =>
+    api.patch<Ok>(`/spaces/${id}/members/${userId}`, { role }),
+  createSpaceConversation: (id: string, body: { title: string; everyone: boolean }) =>
+    api.post<{ conversation: ConversationView }>(`/spaces/${id}/conversations`, body),
+  joinSpaceConversation: (id: string, conversationId: string) =>
+    api.post<{ conversation: ConversationView }>(
+      `/spaces/${id}/conversations/${conversationId}/join`,
+    ),
 
   // AI assist: every answer is a suggestion, used only when the person taps it (R17)
   ai: () => api.get<AiStatusView>('/ai'),

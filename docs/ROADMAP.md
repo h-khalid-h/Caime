@@ -71,7 +71,8 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Actions: add one in words ("by Friday" becomes its due date), finish it, undo; a request
       from someone lands in Asked me (E2E)
 - [x] Alerts: requests and message bursts arrive, each with why it was held or sent (E2E)
-- [ ] Spaces
+- [x] Spaces tab (phones) and rail item (desktop): your spaces busiest first, start one, open
+      one (E2E, screenshots)
 - [x] Desktop web: rail, list, detail and context panel (E2E screenshots); keyboard shortcuts:
       Ctrl/⌘ K search, Alt ↑/↓ between conversations, ↑ edits your last message, ? lists them
       (E2E)
@@ -85,7 +86,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [~] Files, images (metadata stripped, thumbnails), resumable uploads, ranges done; voice notes
       store and play; transcription ⛔ needs a speech-to-text provider
 - [ ] Organizations and DNS verification; Business inbox; org accounts
-- [ ] Spaces
+- [x] Spaces: a family, team, project, community or school with its people and conversations.
+      Everyone is in its General conversation (which goes by the space's name); its other
+      conversations are open to join; a topic that keeps coming up in General becomes one.
+      People join only through someone inside who is connected with them; owners and admins
+      manage it; an owner who leaves or deletes their account hands it on; the last one out
+      closes it. Its kind picks the cards its conversations offer (`spaces.test.ts`, E2E)
 - [x] Connect Kits as cards: approval, meeting, review, order, delivery, invoice, purchase
       order, payment request, support ticket, appointment, and polls; offered only where they fit
       the relationship, moved by the right person, live (`kits.test.ts`, E2E). [ ] Location,
@@ -109,7 +115,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (415.6 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (419.2 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -168,3 +174,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   socket back to prove it). Each AI call is recorded without its text (feature, model, tokens,
   time, outcome) and is in the person's export. Tests: 126 core, 49 brand, 94 server, 3 app,
   16 E2E.
+- 2026-09-26 — Session 2 (cont.): Spaces, with the Spaces tab. Building them found two more
+  bugs. A system line in a conversation preview read "You: Noor Haddad started…" instead of
+  "You started…". And the flaky right-to-left test was real: after a reload, a live message
+  written into the restored cache made TanStack treat that cache as fresh, so the conversation
+  never refetched and a message sent just before the reload stayed missing. Live writes now
+  keep the data's fetch time and its refetch mark (unit-tested; fails without the fix). A
+  sheet that emptied itself while closing now keeps its content until it's gone. Tests: 129
+  core, 49 brand, 101 server, 4 app, 17 E2E.

@@ -11,6 +11,7 @@ import {
   currentPriority,
   resolvePolicy,
   SECTION_LABELS,
+  systemText,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -24,6 +25,7 @@ import {
   policyTargetFor,
   relationshipView,
 } from '../lib/relations';
+import { spaceConversationTitle, spaceRefs } from '../lib/spaces';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -53,6 +55,7 @@ export async function buildInbox(
       'c.last_message_at',
       'c.created_at',
       'c.privacy_class',
+      'c.space_id',
       'p.last_read_seq',
       'p.attention',
       'p.muted_until',
@@ -179,6 +182,10 @@ export async function buildInbox(
       .execute(),
   ]);
   const myMessageIds = new Set(mySentReplies.map((m) => m.id));
+  const spaces = await spaceRefs(
+    ctx.db,
+    rows.map((r) => r.space_id),
+  );
 
   const conversations = rows.map((r): InboxItemView => {
     const last = lastMessages.find((m) => m.conversation_id === r.id);
@@ -243,15 +250,18 @@ export async function buildInbox(
           : null,
     };
     const result = classifyAttention(input, now);
+    const space = r.space_id ? (spaces.get(r.space_id) ?? null) : null;
     return {
       id: r.id,
       kind: r.kind,
-      title:
-        r.kind === 'direct'
+      title: space
+        ? spaceConversationTitle(space, r)
+        : r.kind === 'direct'
           ? r.is_general
             ? (other?.displayName ?? 'Deleted account')
             : (r.title ?? 'Topic')
           : (r.title ?? 'Group'),
+      space,
       topic: r.kind === 'direct' && !r.is_general ? r.title : null,
       isGeneral: r.is_general,
       parentId: r.parent_id,
@@ -266,8 +276,13 @@ export async function buildInbox(
             seq: Number(last.seq),
             senderId: last.sender_id,
             kind: last.kind,
-            preview: r.privacy_class === 'private' ? 'Encrypted message' : messagePreview(last),
-            mine: last.sender_id === userId,
+            preview:
+              r.privacy_class === 'private'
+                ? 'Encrypted message'
+                : last.kind === 'system'
+                  ? systemText(last.payload, userId)
+                  : messagePreview(last),
+            mine: last.kind !== 'system' && last.sender_id === userId,
             createdAt: last.created_at.toISOString(),
           }
         : null,

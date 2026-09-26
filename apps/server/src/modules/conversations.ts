@@ -46,10 +46,12 @@ import {
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
+import { spaceConversationTitle, spaceRefs } from '../lib/spaces';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { identityShownTo } from './people';
+import { createSpaceConversation } from './spaces';
 
 export async function membership(
   ctx: AppContext,
@@ -186,15 +188,20 @@ export async function conversationView(
         .executeTakeFirst()
     : undefined;
   const otherRequest = conversation.kind === 'direct' ? others[0]?.member_request_state : null;
+  const space = conversation.space_id
+    ? ((await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id) ?? null)
+    : null;
   return {
     id: conversation.id,
     kind: conversation.kind,
-    title:
-      conversation.kind === 'direct'
+    title: space
+      ? spaceConversationTitle(space, conversation)
+      : conversation.kind === 'direct'
         ? conversation.is_general
           ? (other?.person.displayName ?? 'Deleted account')
           : (conversation.title ?? 'Topic')
         : (conversation.title ?? 'Group'),
+    space,
     topic: conversation.kind === 'direct' && !conversation.is_general ? conversation.title : null,
     purpose: conversation.purpose,
     isGeneral: conversation.is_general,
@@ -239,6 +246,9 @@ export async function createTopicConversation(
   title: string,
 ) {
   const { conversation } = await membership(ctx, userId, parentId);
+  // In a space, a topic that keeps coming up in General becomes a conversation for everyone.
+  if (conversation.space_id && conversation.is_general)
+    return createSpaceConversation(ctx, userId, conversation.space_id, { title, everyone: true });
   if (conversation.kind !== 'direct' || !conversation.direct_key)
     throw badRequest('Topics branch off a direct conversation.');
   const members = await participantsOf(ctx.db, parentId);
@@ -383,6 +393,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (body.title !== undefined) {
         if (conversation.kind === 'direct' && conversation.is_general)
           throw badRequest('The general conversation takes the person’s name.');
+        if (conversation.space_id && conversation.is_general)
+          throw badRequest('General takes the space’s name. Rename the space instead.');
         shared.title = body.title;
       }
       if (body.purpose !== undefined) shared.purpose = body.purpose;
@@ -453,16 +465,30 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { conversation, me } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct') throw badRequest('Start a group to add people.');
     if (!['owner', 'admin'].includes(me.role)) throw forbidden('Only admins can add people.');
-    const connected = await ctx.db
-      .selectFrom('connection_sides as s')
-      .innerJoin('connections as c', 'c.id', 's.connection_id')
-      .select('s.other_id')
-      .where('s.owner_id', '=', auth.userId)
-      .where('s.other_id', 'in', body.userIds)
-      .where('c.status', '=', 'active')
-      .execute();
-    if (connected.length !== new Set(body.userIds).size)
-      throw badRequest('You can add people you’re connected with.');
+    if (conversation.space_id) {
+      // A space's conversations hold its people: General all of them, the others who join.
+      if (conversation.is_general) throw badRequest('Add people to the space instead.');
+      const inSpace = await ctx.db
+        .selectFrom('space_members')
+        .select('user_id')
+        .where('space_id', '=', conversation.space_id)
+        .where('user_id', 'in', body.userIds)
+        .where('left_at', 'is', null)
+        .execute();
+      if (inSpace.length !== new Set(body.userIds).size)
+        throw badRequest('Add them to the space first.');
+    } else {
+      const connected = await ctx.db
+        .selectFrom('connection_sides as s')
+        .innerJoin('connections as c', 'c.id', 's.connection_id')
+        .select('s.other_id')
+        .where('s.owner_id', '=', auth.userId)
+        .where('s.other_id', 'in', body.userIds)
+        .where('c.status', '=', 'active')
+        .execute();
+      if (connected.length !== new Set(body.userIds).size)
+        throw badRequest('You can add people you’re connected with.');
+    }
     for (const userId of body.userIds) {
       await ctx.db
         .insertInto('participants')
@@ -494,6 +520,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { conversation, me } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct')
       throw badRequest('You can archive a direct conversation instead.');
+    if (conversation.space_id && conversation.is_general)
+      throw badRequest(
+        userId === auth.userId
+          ? 'Leave the space to leave its General conversation.'
+          : 'Remove them from the space instead.',
+      );
     if (userId !== auth.userId && !['owner', 'admin'].includes(me.role))
       throw forbidden('Only admins can remove people.');
     await ctx.db

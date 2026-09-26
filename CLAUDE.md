@@ -99,6 +99,10 @@ These are rules, not preferences.
 - On the web, a pressable inside another ends the outer one's hover (React Native Web's
   `contain`), so anything shown on hover belongs beside the thing hovered, not inside it.
 - Hold the socket in E2E with `page.routeWebSocket` to test what happens before it connects.
+- Write live changes into the query cache with `patchCache` (`state/cache.ts`), never a bare
+  `setQueryData`: a bare write marks the data fresh, and a restored copy then never refetches.
+- A sheet whose content depends on the state that closes it should keep the last content while
+  it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
 
 ## Credentials and environment
 
@@ -112,6 +116,6 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 ## Current state
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
-native bundles export), Connect Kits, AI assist, your-data controls, the image and CI are built
-and verified. Remaining: Spaces, organizations and the business inbox, the platform API, store
-builds, and the EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).
+native bundles export), Connect Kits, AI assist, Spaces, your-data controls, the image and CI
+are built and verified. Remaining: organizations and the business inbox, the platform API,
+store builds, and the EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).

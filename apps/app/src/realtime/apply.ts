@@ -9,6 +9,7 @@ import { qk } from '@/api/keys';
 import {
   applyEditToInbox,
   applyMessageToInbox,
+  patchCache,
   patchMessage,
   removeMessage,
   upsertMessage,
@@ -69,6 +70,15 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         () => void qc.invalidateQueries({ queryKey: qk.memory(m.conversationId) }),
         1500,
       );
+      // A space shows its conversations' unread counts: refresh whichever space is on screen.
+      soon(
+        'spaces',
+        () => {
+          void qc.invalidateQueries({ queryKey: qk.spaces });
+          void qc.invalidateQueries({ queryKey: ['space'] });
+        },
+        1500,
+      );
       return;
     }
     case 'message.updated':
@@ -119,7 +129,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     case 'receipts': {
       const { conversationId, userId, readSeq, deliveredSeq } = event.data;
-      qc.setQueryData(qk.conversation(conversationId), (data: unknown) => {
+      patchCache(qc, qk.conversation(conversationId), (data: unknown) => {
         const d = data as
           | {
               conversation?: {
@@ -203,6 +213,20 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'suggestion.resolved':
       invalidate(['suggestions'], 'suggestions');
       return;
+    case 'space.updated': {
+      const id = typeof event.data.spaceId === 'string' ? event.data.spaceId : null;
+      invalidate(qk.spaces, 'spaces');
+      if (id) invalidate(qk.space(id), `space:${id}`);
+      return;
+    }
+    case 'space.removed': {
+      const id = typeof event.data.spaceId === 'string' ? event.data.spaceId : null;
+      if (id) qc.removeQueries({ queryKey: qk.space(id) });
+      invalidate(qk.spaces, 'spaces');
+      invalidate(qk.inbox, 'inbox');
+      invalidate(qk.inboxAll, 'inbox-all');
+      return;
+    }
     case 'task.created':
     case 'task.updated':
     case 'task.deleted':

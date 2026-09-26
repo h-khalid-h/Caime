@@ -10,6 +10,7 @@ import type { NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
 import type { Preferences } from './schemas';
 import type { ParsedQuery } from './search';
+import type { SpaceKind, SpaceRole } from './spaces';
 import type { Fit, Sphere, SphereGroup } from './taxonomy';
 import type { Trust } from './trust';
 
@@ -279,10 +280,18 @@ export interface ContextRef {
 
 export type RequestDirection = 'incoming' | 'outgoing';
 
+/** The space a conversation belongs to. */
+export interface SpaceRef {
+  id: string;
+  name: string;
+  kind: SpaceKind;
+}
+
 export interface ConversationView {
   id: string;
   kind: ConversationKind;
   title: string;
+  space: SpaceRef | null;
   topic: string | null;
   purpose: string | null;
   isGeneral: boolean;
@@ -318,6 +327,7 @@ export interface InboxItemView {
   id: string;
   kind: ConversationKind;
   title: string;
+  space: SpaceRef | null;
   topic: string | null;
   isGeneral: boolean;
   parentId: string | null;
@@ -434,6 +444,49 @@ export interface SuggestionView {
   dueAt: string | null;
   dueText: string | null;
   createdAt: string;
+}
+
+/** A space in the list (PRD §40). */
+export interface SpaceSummaryView {
+  id: string;
+  name: string;
+  kind: SpaceKind;
+  purpose: string | null;
+  memberCount: number;
+  /** Unread messages across the space's conversations you're in. */
+  unreadCount: number;
+  lastActivityAt: string;
+  myRole: SpaceRole;
+}
+
+export interface SpaceMemberView {
+  userId: string;
+  role: SpaceRole;
+  person: PersonView;
+  /** How you know them, when you've said (private to you). */
+  relationship: { label: string; sphere: Sphere } | null;
+  joinedAt: string;
+}
+
+export interface SpaceConversationView {
+  id: string;
+  title: string;
+  purpose: string | null;
+  isGeneral: boolean;
+  /** You're in it. Open conversations in a space can be joined by anyone in it. */
+  joined: boolean;
+  memberCount: number;
+  unreadCount: number;
+  lastMessageAt: string | null;
+  /** Only for conversations you're in. */
+  lastMessage: { preview: string; senderName: string | null; mine: boolean } | null;
+}
+
+export interface SpaceView extends SpaceSummaryView {
+  createdAt: string;
+  generalId: string;
+  members: SpaceMemberView[];
+  conversations: SpaceConversationView[];
 }
 
 /** AI assist for this account: the server has a provider, the person turned it on, and may. */
@@ -643,6 +696,8 @@ export type RealtimeDataEvent =
 
 /** Events that only say what changed; the client refetches. */
 export type RealtimeSignalType =
+  | 'space.updated'
+  | 'space.removed'
   | 'conversation.created'
   | 'conversation.updated'
   | 'connection.created'

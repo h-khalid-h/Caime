@@ -2,6 +2,8 @@
 export const qk = {
   me: ['me'] as const,
   ai: ['ai'] as const,
+  spaces: ['spaces'] as const,
+  space: (id: string) => ['space', id] as const,
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,
   conversation: (id: string) => ['conversation', id] as const,
