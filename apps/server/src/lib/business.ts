@@ -160,6 +160,9 @@ export function maskMessage(view: MessageView, mask: CustomerMask): MessageView 
       return { ...r, userIds, count: userIds.length };
     }),
     payload: maskPayload(view.payload, mask),
+    // An app a team member uses has their own name for it ("Sara's inbox helper"): the
+    // customer is told software sent it, never which.
+    sentVia: view.sentVia && view.senderId !== mask.customerId ? 'an app' : view.sentVia,
   };
 }
 
@@ -302,9 +305,14 @@ export async function recordBusinessMessage(
         last_customer_at: at,
         resolved_at: null,
         resolved_by: null,
-        // Writing again after it was resolved starts over: its AI agent may answer again.
+        // Writing again after it was resolved starts over: its AI agent may answer again. Unless
+        // a person on the team wrote since it was resolved: then this answers them.
         agent_handed_over_at: sql<Date | null>`case when resolved_at is null then agent_handed_over_at end`,
-        reopened_at: sql<Date | null>`case when resolved_at is null then reopened_at else ${at} end`,
+        reopened_at: sql<Date | null>`case
+          when resolved_at is null then reopened_at
+          when coalesce(last_team_at, '-infinity') > resolved_at then null
+          else ${at}
+        end`,
         updated_at: at,
       })
       .where('conversation_id', '=', conversationId)

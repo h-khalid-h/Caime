@@ -489,12 +489,17 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       change,
     });
     await publishThread(ctx, thread.org_id, thread.conversation_id);
-    const [view] = await threadViews(ctx, userId, [thread]);
+    const [[view], actor] = await Promise.all([
+      threadViews(ctx, userId, [thread]),
+      ctx.db.selectFrom('users').select('kind').where('id', '=', userId).executeTakeFirst(),
+    ]);
     await emitWebhook(ctx, thread.org_id, 'business.thread', {
       conversationId: thread.conversation_id,
       change,
       state: view!.state,
       assignee: view!.assignee,
+      // A person on the team, or an app's bot through its token.
+      by: actor?.kind === 'human' ? 'person' : 'app',
     });
     return { thread: view! };
   }
@@ -528,11 +533,14 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!person || !(await orgSeat(ctx.db, userId, thread.org_id)))
         throw badRequest('They aren’t on the team.');
       // A bot answers, but only a person takes a conversation (R16).
+      if (person.kind === 'agent') throw badRequest('That’s the AI agent: give it to a person.');
       if (person.kind !== 'human') throw badRequest('That’s an app’s bot: give it to a person.');
     }
     await ctx.db
       .updateTable('business_threads')
-      .set({ assignee_id: userId, updated_at: ctx.now() })
+      // Given to someone (or to nobody) now: whatever reopening it meant for the AI agent, this
+      // decides it (lib/agent.ts, noPersonOnIt).
+      .set({ assignee_id: userId, reopened_at: null, updated_at: ctx.now() })
       .where('conversation_id', '=', conversationId)
       .execute();
     if (userId && userId !== auth.userId) {

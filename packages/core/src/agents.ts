@@ -25,6 +25,12 @@ export const AGENT_KNOWLEDGE_MAX = 8000;
  */
 export const AGENT_REPLIES_PER_CONVERSATION = 10;
 
+/**
+ * And it thinks at most this many times in one: every model call counts, answered or not, so
+ * a customer writing again and again while it thinks can't keep it thinking.
+ */
+export const AGENT_CALLS_PER_CONVERSATION = 2 * AGENT_REPLIES_PER_CONVERSATION;
+
 /** Its name, unless the organization gives it another. */
 export const defaultAgentName = (orgName: string) =>
   `${orgName.trim()} Assistant`.slice(0, AGENT_NAME_MAX);

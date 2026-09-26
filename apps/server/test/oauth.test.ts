@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { uuidv4 } from '@caishy/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { tooMany } from '../src/lib/errors';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -350,5 +351,212 @@ describe('OAuth for third-party apps (PRD §74)', () => {
     // Its own app gives it back.
     expect((await revoke({ token: given.access_token, client_id: mine })).statusCode).toBe(200);
     expect(await works()).toBe(401);
+  });
+});
+
+describe('OAuth, as the review left it', () => {
+  const SPA = 'https://spa.example';
+  const exchange = (code: string, verifier: string, headers: Record<string, string> = {}) =>
+    token(
+      {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT,
+        client_id: clientId,
+        code_verifier: verifier,
+      },
+      headers,
+    );
+
+  it('only the token and revocation endpoints take forms, so no cross-site form signs anyone in', async () => {
+    const form = (url: string, fields: Record<string, string>) =>
+      t.app.inject({
+        method: 'POST',
+        url,
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        payload: new URLSearchParams(fields).toString(),
+      });
+    const login = await form('/v1/auth/login', {
+      identifier: noor.user.handle,
+      password: 'correct horse battery',
+    });
+    expect(login.statusCode).toBe(415);
+    expect(login.headers['set-cookie']).toBeUndefined();
+    expect(
+      (await form('/v1/oauth/authorize', { ...request(pkce().challenge), decision: 'allow' }))
+        .statusCode,
+    ).toBe(415);
+    // A body the token endpoint doesn't take is answered as RFC 6749 says, not in Caishy's shape.
+    const xml = await t.app.inject({
+      method: 'POST',
+      url: '/v1/oauth/token',
+      headers: { 'content-type': 'application/xml' },
+      payload: '<grant_type>refresh_token</grant_type>',
+    });
+    expect(xml.statusCode).toBe(415);
+    expect(xml.json()).toEqual({ error: 'invalid_request', error_description: expect.any(String) });
+  });
+
+  it('recovering the account ends the apps it let in, like its sessions and tokens', async () => {
+    const lost = await signup(t, { displayName: 'Lina Lost' });
+    const app = await signedIn(lost, 'profile:read');
+    expect((await as(app.access_token, 'GET', '/v1/me')).statusCode).toBe(200);
+    const recovered = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/recover',
+      payload: {
+        identifier: lost.user.handle,
+        code: lost.recoveryCodes[0],
+        newPassword: 'a brand new passphrase',
+        client: 'native',
+      },
+    });
+    expect(recovered.statusCode).toBe(200);
+    expect((await as(app.access_token, 'GET', '/v1/me')).statusCode).toBe(401);
+    const refreshed = await token({
+      grant_type: 'refresh_token',
+      refresh_token: app.refresh_token,
+      client_id: clientId,
+    });
+    expect(refreshed.json().error).toBe('invalid_grant');
+    const apps = await t.app.inject({
+      method: 'GET',
+      url: '/v1/me/connected-apps',
+      headers: { authorization: `Bearer ${recovered.json().token}` },
+    });
+    expect(apps.json().apps).toEqual([]);
+  });
+
+  it('allowed again for less, the tokens it already holds narrow to match', async () => {
+    const post = (bearer: string) =>
+      as(bearer, 'POST', `/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        body: 'From the app',
+      });
+    const wide = await signedIn(noor);
+    expect((await post(wide.access_token)).statusCode).toBe(201);
+    // A code from when it allowed more, not yet traded.
+    const early = pkce();
+    const { code } = await allow(noor, request(early.challenge));
+    await signedIn(noor, 'messages:read');
+
+    expect((await post(wide.access_token)).json().error.code).toBe('token_scope');
+    expect((await as(wide.access_token, 'GET', `/v1/conversations/${convo}`)).statusCode).toBe(200);
+    const turned = (
+      await token({
+        grant_type: 'refresh_token',
+        refresh_token: wide.refresh_token,
+        client_id: clientId,
+      })
+    ).json();
+    expect(turned.scope).toBe('messages:read');
+    expect((await post(turned.access_token)).json().error.code).toBe('token_scope');
+    const late = (await exchange(code, early.verifier)).json();
+    expect(late.scope).toBe('messages:read');
+    expect((await post(late.access_token)).json().error.code).toBe('token_scope');
+  });
+
+  it('two first allows at once both answer, as one grant', async () => {
+    for (let round = 0; round < 3; round++) {
+      const fresh = await signup(t, { displayName: `Ola Twice ${round}` });
+      const once = () =>
+        fresh.req('POST', '/v1/oauth/authorize', {
+          ...request(pkce().challenge),
+          decision: 'allow',
+        });
+      const both = await Promise.all([once(), once()]);
+      expect(both.map((r) => r.statusCode)).toEqual([200, 200]);
+      expect((await fresh.get('/v1/me/connected-apps')).apps).toHaveLength(1);
+    }
+  });
+
+  it('a code replayed after it expired is refused without ending what the person allowed', async () => {
+    const { verifier, challenge } = pkce();
+    const { code } = await allow(noor, request(challenge));
+    const live = (await exchange(code, verifier)).json();
+    t.clock.advance(11 * 60_000);
+    const replay = await exchange(code, verifier);
+    expect(replay.json().error_description).toBe('That code has expired.');
+    expect((await as(live.access_token, 'GET', `/v1/conversations/${convo}`)).statusCode).toBe(200);
+  });
+
+  it('a browser app on any site can trade its code and read the discovery document; nothing else opens to it', async () => {
+    const preflight = await t.app.inject({
+      method: 'OPTIONS',
+      url: '/v1/oauth/token',
+      headers: {
+        origin: SPA,
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type',
+      },
+    });
+    expect(preflight.statusCode).toBe(204);
+    expect(preflight.headers['access-control-allow-origin']).toBe('*');
+    expect(preflight.headers['access-control-allow-methods']).toContain('POST');
+    expect(String(preflight.headers['access-control-allow-headers'])).toMatch(/content-type/i);
+    expect(preflight.headers['access-control-allow-credentials']).toBeUndefined();
+
+    const { verifier, challenge } = pkce();
+    const { code } = await allow(noor, request(challenge));
+    const traded = await exchange(code, verifier, { origin: SPA });
+    expect(traded.statusCode).toBe(200);
+    expect(traded.headers['access-control-allow-origin']).toBe('*');
+    // Refusals too, so the library can read why.
+    const refused = await token({ grant_type: 'password', client_id: clientId }, { origin: SPA });
+    expect(refused.json().error).toBe('unsupported_grant_type');
+    expect(refused.headers['access-control-allow-origin']).toBe('*');
+    const back = await t.app.inject({
+      method: 'POST',
+      url: '/v1/oauth/revoke',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: SPA },
+      payload: new URLSearchParams({ token: 'nothing', client_id: clientId }).toString(),
+    });
+    expect(back.headers['access-control-allow-origin']).toBe('*');
+    const discovery = await t.app.inject({
+      method: 'GET',
+      url: '/.well-known/oauth-authorization-server',
+      headers: { origin: SPA },
+    });
+    expect(discovery.headers['access-control-allow-origin']).toBe('*');
+
+    // The rest of the API stays closed to other sites.
+    const login = await t.app.inject({
+      method: 'OPTIONS',
+      url: '/v1/auth/login',
+      headers: { origin: SPA, 'access-control-request-method': 'POST' },
+    });
+    expect(login.headers['access-control-allow-origin']).toBeUndefined();
+    const me = await t.app.inject({
+      method: 'GET',
+      url: '/v1/me',
+      headers: { origin: SPA, authorization: `Bearer ${noor.token}` },
+    });
+    expect(me.statusCode).toBe(200);
+    expect(me.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('too many token requests are answered as OAuth libraries expect', async () => {
+    const limiter = t.ctx.limiter;
+    const real = limiter.hit.bind(limiter);
+    limiter.hit = (key, limit, windowMs, now) => {
+      if (key.startsWith('oauth-token:')) throw tooMany(30);
+      real(key, limit, windowMs, now);
+    };
+    try {
+      const res = await token({
+        grant_type: 'refresh_token',
+        refresh_token: 'car_nothing',
+        client_id: clientId,
+      });
+      expect(res.statusCode).toBe(429);
+      expect(res.headers['retry-after']).toBe('30');
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(res.json()).toEqual({
+        error: 'temporarily_unavailable',
+        error_description: expect.any(String),
+      });
+    } finally {
+      delete (limiter as { hit?: unknown }).hit;
+    }
   });
 });

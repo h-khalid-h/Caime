@@ -28,8 +28,9 @@ import type { AppContext } from '../context';
 import type { OAuthClientsTable } from '../db/schema';
 import { audit } from '../lib/audit';
 import { hashToken } from '../lib/crypto';
-import { badRequest, forbidden, notFound } from '../lib/errors';
+import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import {
+  allowedNow,
   CODE_TTL_MS,
   issueTokens,
   newClientId,
@@ -62,6 +63,9 @@ function oauthError(reply: FastifyReply, status: number, error: string, descript
   return { error, error_description: description };
 }
 
+const nothingLeft = (reply: FastifyReply) =>
+  oauthError(reply, 400, 'invalid_grant', 'The person no longer allows what this was for.');
+
 /** A client's id and secret, from HTTP Basic or the body (RFC 6749 §2.3.1). */
 function clientCredentials(req: FastifyRequest, body: Record<string, unknown>) {
   const basic = req.headers.authorization?.match(/^Basic\s+(.+)$/i)?.[1];
@@ -85,15 +89,6 @@ function clientCredentials(req: FastifyRequest, body: Record<string, unknown>) {
 }
 
 export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
-  // The token and revocation endpoints take forms, as OAuth clients send them.
-  app.addContentTypeParser(
-    'application/x-www-form-urlencoded',
-    { parseAs: 'string', bodyLimit: 16_384 },
-    (_req, body, done) => {
-      done(null, Object.fromEntries(new URLSearchParams(body as string)));
-    },
-  );
-
   // --- Apps a developer registers -------------------------------------------------------------
 
   app.get('/me/oauth-apps', async (req): Promise<{ apps: OAuthAppView[] }> => {
@@ -239,28 +234,25 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     if (isMinor(me.birth_year, ctx.now())) throw forbidden('Apps act for people over 18.');
     ctx.limiter.hit(`oauth-allow:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
-    // One grant per app and person: allowing again replaces what it may do.
-    const live = await ctx.db
-      .selectFrom('oauth_grants')
-      .select('id')
-      .where('client_id', '=', client.id)
-      .where('user_id', '=', auth.userId)
-      .where('revoked_at', 'is', null)
-      .executeTakeFirst();
-    const grantId = live?.id ?? uuidv7();
-    if (live)
-      await ctx.db.updateTable('oauth_grants').set({ scopes }).where('id', '=', grantId).execute();
-    else
-      await ctx.db
-        .insertInto('oauth_grants')
-        .values({
-          id: grantId,
-          client_id: client.id,
-          user_id: auth.userId,
-          scopes,
-          created_at: ctx.now(),
-        })
-        .execute();
+    // One grant per app and person: allowing again replaces what it may do, and tokens it
+    // already holds narrow to match (resolveOAuthAccess). One statement, so two at once agree.
+    const { id: grantId } = await ctx.db
+      .insertInto('oauth_grants')
+      .values({
+        id: uuidv7(),
+        client_id: client.id,
+        user_id: auth.userId,
+        scopes,
+        created_at: ctx.now(),
+      })
+      .onConflict((oc) =>
+        oc
+          .columns(['client_id', 'user_id'])
+          .where('revoked_at', 'is', null)
+          .doUpdateSet({ scopes }),
+      )
+      .returning('id')
+      .executeTakeFirstOrThrow();
     const code = newCode();
     await ctx.db
       .insertInto('oauth_codes')
@@ -300,139 +292,182 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
   const unknownClient = (reply: FastifyReply) =>
     oauthError(reply, 401, 'invalid_client', 'That app isn’t known, or its secret is wrong.');
 
-  app.post('/oauth/token', async (req, reply) => {
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    reply.header('cache-control', 'no-store');
-    ctx.limiter.hit(`oauth-token:${req.ip}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-    const client = await callingClient(req, body);
-    if (!client) return unknownClient(reply);
-
-    if (body.grant_type === 'authorization_code') {
-      const code = typeof body.code === 'string' ? body.code : '';
-      const found = await ctx.db
-        .selectFrom('oauth_codes as k')
-        .innerJoin('oauth_grants as g', 'g.id', 'k.grant_id')
-        .select([
-          'k.code_hash',
-          'k.grant_id',
-          'k.redirect_uri',
-          'k.code_challenge',
-          'k.scopes',
-          'k.expires_at',
-          'k.used_at',
-          'g.client_id',
-          'g.revoked_at',
-        ])
-        .where('k.code_hash', '=', hashToken(code))
-        .executeTakeFirst();
-      if (!found || found.client_id !== client.id || found.revoked_at)
-        return oauthError(reply, 400, 'invalid_grant', 'That code isn’t valid.');
-      if (found.used_at) {
-        // A code used twice was taken: end what it gave (RFC 6749 §4.1.2).
-        await revokeGrant(ctx, found.grant_id);
-        return oauthError(reply, 400, 'invalid_grant', 'That code was already used.');
-      }
-      if (found.expires_at <= ctx.now())
-        return oauthError(reply, 400, 'invalid_grant', 'That code has expired.');
-      if (body.redirect_uri !== found.redirect_uri)
-        return oauthError(reply, 400, 'invalid_grant', 'The return address doesn’t match.');
-      const verifier = typeof body.code_verifier === 'string' ? body.code_verifier : '';
-      if (!pkceMatches(verifier, found.code_challenge))
-        return oauthError(reply, 400, 'invalid_grant', 'The PKCE verifier doesn’t match.');
-      const claimed = await ctx.db
-        .updateTable('oauth_codes')
-        .set({ used_at: ctx.now() })
-        .where('code_hash', '=', found.code_hash)
-        .where('used_at', 'is', null)
-        .returning('grant_id')
-        .executeTakeFirst();
-      if (!claimed) return oauthError(reply, 400, 'invalid_grant', 'That code was already used.');
-      return issueTokens(ctx, found.grant_id, found.scopes);
-    }
-
-    if (body.grant_type === 'refresh_token') {
-      const token = typeof body.refresh_token === 'string' ? body.refresh_token : '';
-      if (!token.startsWith(OAUTH_REFRESH_PREFIX))
-        return oauthError(reply, 400, 'invalid_grant', 'That refresh token isn’t valid.');
-      const found = await ctx.db
-        .selectFrom('oauth_tokens as k')
-        .innerJoin('oauth_grants as g', 'g.id', 'k.grant_id')
-        .select([
-          'k.id',
-          'k.grant_id',
-          'k.scopes',
-          'k.expires_at',
-          'k.used_at',
-          'k.revoked_at',
-          'g.client_id',
-          'g.revoked_at as grant_revoked_at',
-        ])
-        .where('k.token_hash', '=', hashToken(token))
-        .where('k.kind', '=', 'refresh')
-        .executeTakeFirst();
-      if (!found || found.client_id !== client.id || found.grant_revoked_at || found.revoked_at)
-        return oauthError(reply, 400, 'invalid_grant', 'That refresh token isn’t valid.');
-      if (found.used_at) {
-        // Used twice: one of the two is a thief's. End the grant for both.
-        await revokeGrant(ctx, found.grant_id);
-        return oauthError(reply, 400, 'invalid_grant', 'That refresh token was already used.');
-      }
-      if (found.expires_at <= ctx.now())
-        return oauthError(reply, 400, 'invalid_grant', 'That refresh token has expired.');
-      const claimed = await ctx.db
-        .updateTable('oauth_tokens')
-        .set({ used_at: ctx.now() })
-        .where('id', '=', found.id)
-        .where('used_at', 'is', null)
-        .returning('id')
-        .executeTakeFirst();
-      if (!claimed) {
-        await revokeGrant(ctx, found.grant_id);
-        return oauthError(reply, 400, 'invalid_grant', 'That refresh token was already used.');
-      }
-      return issueTokens(ctx, found.grant_id, found.scopes);
-    }
-
-    return oauthError(
-      reply,
-      400,
-      'unsupported_grant_type',
-      'Use authorization_code or refresh_token.',
+  // Only these two take forms, as OAuth clients send them, and they answer every refusal the
+  // way RFC 6749 does. A form anywhere else would let any site post to Caishy: a login, say.
+  await app.register(async (forms) => {
+    forms.addContentTypeParser(
+      'application/x-www-form-urlencoded',
+      { parseAs: 'string', bodyLimit: 16_384 },
+      (_req, body, done) => {
+        done(null, Object.fromEntries(new URLSearchParams(body as string)));
+      },
     );
+    forms.setErrorHandler((error, req, reply) => {
+      const err = error as Error & { statusCode?: number };
+      if (err instanceof AppError && err.code === 'rate_limited') {
+        const retry = (err.details as { retryAfterSeconds?: number } | undefined)
+          ?.retryAfterSeconds;
+        if (retry) reply.header('retry-after', String(retry));
+        return reply.send(
+          oauthError(reply, 429, 'temporarily_unavailable', 'Too many requests. Try again soon.'),
+        );
+      }
+      const status = err instanceof AppError ? err.status : err.statusCode;
+      if (status && status >= 400 && status < 500)
+        return reply.send(oauthError(reply, status, 'invalid_request', err.message));
+      req.log.error({ err }, 'unhandled error');
+      return reply.send(
+        oauthError(reply, 500, 'server_error', 'Something went wrong on our side.'),
+      );
+    });
+    await tokenEndpoints(forms);
   });
 
-  /**
-   * RFC 7009: the app gives a token back. Only its own: another app's token, or one that isn't
-   * a token at all, answers "ok" all the same, so nothing is learned from asking.
-   */
-  app.post('/oauth/revoke', async (req, reply) => {
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    reply.header('cache-control', 'no-store');
-    ctx.limiter.hit(`oauth-revoke:${req.ip}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-    const client = await callingClient(req, body);
-    if (!client) return unknownClient(reply);
-    const token = typeof body.token === 'string' ? body.token : '';
-    const found = token
-      ? await ctx.db
+  async function tokenEndpoints(app: FastifyInstance) {
+    app.post('/oauth/token', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      reply.header('cache-control', 'no-store');
+      // Generous: a server-side app refreshes for everyone it acts for, from one address.
+      ctx.limiter.hit(`oauth-token:${req.ip}`, ctx.config.isTest ? 10_000 : 600, 60_000);
+      const client = await callingClient(req, body);
+      if (!client) return unknownClient(reply);
+
+      if (body.grant_type === 'authorization_code') {
+        const code = typeof body.code === 'string' ? body.code : '';
+        const found = await ctx.db
+          .selectFrom('oauth_codes as k')
+          .innerJoin('oauth_grants as g', 'g.id', 'k.grant_id')
+          .select([
+            'k.code_hash',
+            'k.grant_id',
+            'k.redirect_uri',
+            'k.code_challenge',
+            'k.scopes',
+            'k.expires_at',
+            'k.used_at',
+            'g.client_id',
+            'g.revoked_at',
+            'g.scopes as grant_scopes',
+          ])
+          .where('k.code_hash', '=', hashToken(code))
+          .executeTakeFirst();
+        if (!found || found.client_id !== client.id || found.revoked_at)
+          return oauthError(reply, 400, 'invalid_grant', 'That code isn’t valid.');
+        // Expired first: a dead code turning up later (from a log, a history) harms nothing, so
+        // it ends nothing either.
+        if (found.expires_at <= ctx.now())
+          return oauthError(reply, 400, 'invalid_grant', 'That code has expired.');
+        if (found.used_at) {
+          // A code used twice in its ten minutes was taken: end what it gave (RFC 6749 §4.1.2).
+          await revokeGrant(ctx, found.grant_id);
+          return oauthError(reply, 400, 'invalid_grant', 'That code was already used.');
+        }
+        if (body.redirect_uri !== found.redirect_uri)
+          return oauthError(reply, 400, 'invalid_grant', 'The return address doesn’t match.');
+        const verifier = typeof body.code_verifier === 'string' ? body.code_verifier : '';
+        if (!pkceMatches(verifier, found.code_challenge))
+          return oauthError(reply, 400, 'invalid_grant', 'The PKCE verifier doesn’t match.');
+        const claimed = await ctx.db
+          .updateTable('oauth_codes')
+          .set({ used_at: ctx.now() })
+          .where('code_hash', '=', found.code_hash)
+          .where('used_at', 'is', null)
+          .returning('grant_id')
+          .executeTakeFirst();
+        if (!claimed) return oauthError(reply, 400, 'invalid_grant', 'That code was already used.');
+        // Allowed again for less since this code was made: the person's latest answer holds.
+        const scopes = allowedNow(found.scopes, found.grant_scopes);
+        if (!scopes.length) return nothingLeft(reply);
+        return issueTokens(ctx, found.grant_id, scopes);
+      }
+
+      if (body.grant_type === 'refresh_token') {
+        const token = typeof body.refresh_token === 'string' ? body.refresh_token : '';
+        if (!token.startsWith(OAUTH_REFRESH_PREFIX))
+          return oauthError(reply, 400, 'invalid_grant', 'That refresh token isn’t valid.');
+        const found = await ctx.db
           .selectFrom('oauth_tokens as k')
           .innerJoin('oauth_grants as g', 'g.id', 'k.grant_id')
-          .select(['k.id', 'k.grant_id', 'k.kind'])
+          .select([
+            'k.id',
+            'k.grant_id',
+            'k.scopes',
+            'k.expires_at',
+            'k.used_at',
+            'k.revoked_at',
+            'g.client_id',
+            'g.revoked_at as grant_revoked_at',
+            'g.scopes as grant_scopes',
+          ])
           .where('k.token_hash', '=', hashToken(token))
-          .where('g.client_id', '=', client.id)
-          .executeTakeFirst()
-      : undefined;
-    if (found) {
-      // Giving back the refresh token ends the grant; an access token, only itself.
-      if (found.kind === 'refresh') await revokeGrant(ctx, found.grant_id);
-      else
-        await ctx.db
+          .where('k.kind', '=', 'refresh')
+          .executeTakeFirst();
+        if (!found || found.client_id !== client.id || found.grant_revoked_at || found.revoked_at)
+          return oauthError(reply, 400, 'invalid_grant', 'That refresh token isn’t valid.');
+        if (found.used_at) {
+          // Used twice: one of the two is a thief's. End the grant for both.
+          await revokeGrant(ctx, found.grant_id);
+          return oauthError(reply, 400, 'invalid_grant', 'That refresh token was already used.');
+        }
+        if (found.expires_at <= ctx.now())
+          return oauthError(reply, 400, 'invalid_grant', 'That refresh token has expired.');
+        const claimed = await ctx.db
           .updateTable('oauth_tokens')
-          .set({ revoked_at: ctx.now() })
+          .set({ used_at: ctx.now() })
           .where('id', '=', found.id)
-          .execute();
-    }
-    return {};
-  });
+          .where('used_at', 'is', null)
+          .returning('id')
+          .executeTakeFirst();
+        if (!claimed) {
+          await revokeGrant(ctx, found.grant_id);
+          return oauthError(reply, 400, 'invalid_grant', 'That refresh token was already used.');
+        }
+        const scopes = allowedNow(found.scopes, found.grant_scopes);
+        if (!scopes.length) return nothingLeft(reply);
+        return issueTokens(ctx, found.grant_id, scopes);
+      }
+
+      return oauthError(
+        reply,
+        400,
+        'unsupported_grant_type',
+        'Use authorization_code or refresh_token.',
+      );
+    });
+
+    /**
+     * RFC 7009: the app gives a token back. Only its own: another app's token, or one that isn't
+     * a token at all, answers "ok" all the same, so nothing is learned from asking.
+     */
+    app.post('/oauth/revoke', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      reply.header('cache-control', 'no-store');
+      ctx.limiter.hit(`oauth-revoke:${req.ip}`, ctx.config.isTest ? 10_000 : 120, 60_000);
+      const client = await callingClient(req, body);
+      if (!client) return unknownClient(reply);
+      const token = typeof body.token === 'string' ? body.token : '';
+      const found = token
+        ? await ctx.db
+            .selectFrom('oauth_tokens as k')
+            .innerJoin('oauth_grants as g', 'g.id', 'k.grant_id')
+            .select(['k.id', 'k.grant_id', 'k.kind'])
+            .where('k.token_hash', '=', hashToken(token))
+            .where('g.client_id', '=', client.id)
+            .executeTakeFirst()
+        : undefined;
+      if (found) {
+        // Giving back the refresh token ends the grant; an access token, only itself.
+        if (found.kind === 'refresh') await revokeGrant(ctx, found.grant_id);
+        else
+          await ctx.db
+            .updateTable('oauth_tokens')
+            .set({ revoked_at: ctx.now() })
+            .where('id', '=', found.id)
+            .execute();
+      }
+      return {};
+    });
+  }
 
   // --- Apps someone let in ----------------------------------------------------------------------
 

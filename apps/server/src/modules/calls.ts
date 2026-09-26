@@ -4,6 +4,7 @@
  * up. The work is in lib/calls.ts; the media never reaches the server.
  */
 import {
+  CALL_RING_SECONDS,
   CallDeviceBody,
   CallSignalBody,
   type CallView,
@@ -22,11 +23,13 @@ import {
   liveCallOf,
   otherSide,
   publishCall,
+  ringStopped,
   stillThere,
 } from '../lib/calls';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { participantsOf } from '../lib/messages';
 import { notify } from '../lib/notify';
+import { personViewsFor } from '../lib/people-batch';
 import { isBlockedEitherWay } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -89,7 +92,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       throw forbidden('You can’t call this person.');
     const callee = await ctx.db
       .selectFrom('users')
-      .select(['display_name', 'kind'])
+      .select(['display_name', 'kind', 'presence'])
       .where('id', '=', other.user_id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
@@ -97,24 +100,34 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
     if (await liveCallOf(ctx, auth.userId))
       throw new AppError(409, 'in_call', 'You’re already in a call.');
-    if (await liveCallOf(ctx, other.user_id))
-      throw new AppError(409, 'busy', `${callee.display_name} is on another call.`);
+    const record = () =>
+      ctx.db
+        .insertInto('calls')
+        .values({
+          id: uuidv7(),
+          conversation_id: id,
+          caller_id: auth.userId,
+          callee_id: other.user_id,
+          kind: body.kind,
+          state: 'ringing',
+          caller_device: body.deviceId,
+          created_at: ctx.now(),
+          seen_at: ctx.now(),
+          caller_seen_at: ctx.now(),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+    if (await liveCallOf(ctx, other.user_id)) {
+      // "On another call" says they're around right now: only to someone who may see that.
+      const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
+      if (shown?.presence != null && callee.presence !== 'invisible')
+        throw new AppError(409, 'busy', `${callee.display_name} is on another call.`);
+      // To anyone else it's a call they didn't answer, and it's among their missed calls.
+      await endCall(ctx, await record(), 'missed');
+      throw new AppError(409, 'no_answer', `${callee.display_name} didn’t answer.`);
+    }
 
-    const call = await ctx.db
-      .insertInto('calls')
-      .values({
-        id: uuidv7(),
-        conversation_id: id,
-        caller_id: auth.userId,
-        callee_id: other.user_id,
-        kind: body.kind,
-        state: 'ringing',
-        caller_device: body.deviceId,
-        created_at: ctx.now(),
-        seen_at: ctx.now(),
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    const call = await record();
     await publishCall(ctx, call, 'call.ringing');
     const me = await ctx.db
       .selectFrom('users')
@@ -129,6 +142,9 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       body: body.kind === 'video' ? 'Video call' : 'Voice call',
       data: { conversationId: id, callId: call.id },
       groupKey: `call:${call.id}`,
+      // It's news only while it rings; and the phone apps can't answer a call yet.
+      ttlSeconds: CALL_RING_SECONDS,
+      pushTo: 'web',
     });
     reply.status(201);
     return { call: await callView(ctx, call, auth.userId) };
@@ -143,12 +159,20 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     if (call.callee_id !== auth.userId) throw forbidden('Only the person called can answer.');
     const answered = await ctx.db
       .updateTable('calls')
-      .set({ state: 'active', callee_device: deviceId, answered_at: ctx.now(), seen_at: ctx.now() })
+      .set({
+        state: 'active',
+        callee_device: deviceId,
+        answered_at: ctx.now(),
+        seen_at: ctx.now(),
+        caller_seen_at: ctx.now(),
+        callee_seen_at: ctx.now(),
+      })
       .where('id', '=', id)
       .where('state', '=', 'ringing')
       .returningAll()
       .executeTakeFirst();
     if (!answered) throw over();
+    await ringStopped(ctx, answered);
     await publishCall(ctx, answered);
     return { call: await callView(ctx, answered, auth.userId) };
   });
@@ -198,6 +222,9 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.deviceId !== myDevice || !theirDevice)
       throw forbidden('This device isn’t in that call.');
     ctx.limiter.hit(`call-signal:${id}:${auth.userId}`, ctx.config.isTest ? 10_000 : 300, 60_000);
+    // An offer or an answer is large and rare (one each, and one more per reconnect); only a
+    // candidate is many. Large ones pass through the database (lib/bus.ts), so few of them.
+    if (body.sdp) ctx.limiter.hit(`call-sdp:${id}:${auth.userId}`, 20, 10 * 60_000);
     const to = otherSide(call, auth.userId);
     if (to)
       await ctx.bus.publish([to], {
@@ -221,13 +248,21 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  /** Still here: a call both sides stop saying this about is ended by the sweep. */
-  app.post('/calls/:id/alive', async (req) => {
+  /**
+   * Still here, from the device in the call: a call either side stops saying this about is
+   * ended by the sweep. It answers with how the call stands, for a device that missed an event.
+   */
+  app.post('/calls/:id/alive', async (req): Promise<{ call: CallView }> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
+    const { deviceId } = parse(CallDeviceBody, req.body);
     const call = await mine(auth.userId, id);
     if (call.state === 'ended') throw over();
-    await stillThere(ctx, id);
-    return { ok: true };
+    const caller = call.caller_id === auth.userId;
+    if (deviceId !== (caller ? call.caller_device : call.callee_device))
+      throw forbidden('This device isn’t in that call.');
+    const now = await stillThere(ctx, id, caller ? 'caller' : 'callee');
+    if (!now) throw over();
+    return { call: await callView(ctx, now, auth.userId) };
   });
 }

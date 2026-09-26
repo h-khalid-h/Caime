@@ -351,7 +351,9 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       outcome: 'ok',
       at: expect.any(String),
     });
+    // Which conversation the AI agent answered in, as an id: never what was said.
     expect(Object.keys(runs[0]!).sort()).toEqual([
+      'conversation_id',
       'created_at',
       'feature',
       'id',

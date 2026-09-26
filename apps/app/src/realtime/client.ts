@@ -10,6 +10,7 @@ import { getAuthToken } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
+import { checkLiveCall } from '@/features/calls/engine';
 import { WS_URL } from '@/lib/config';
 import { onNetworkChange } from '@/lib/network';
 import { type MessagePages, maxSeq, upsertMessage } from '@/state/cache';
@@ -188,6 +189,8 @@ class RealtimeClient {
     if (afterGap) {
       void queryClient.invalidateQueries({ queryKey: qk.inbox });
       void queryClient.invalidateQueries({ queryKey: qk.notifications });
+      // A call that rang while the socket was down still rings.
+      void checkLiveCall();
     }
     const cached = queryClient.getQueryCache().findAll({ queryKey: ['messages'] });
     const active = cached.filter((q) => q.getObserversCount() > 0);

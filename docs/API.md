@@ -42,8 +42,9 @@ Business inbox, and it reaches them as a message request (R14).
 
 An organization can also turn on Caishy's own **AI agent** (the organization's page → AI agent),
 which answers customers first from what the organization tells it. Its messages arrive like a
-bot's, with `"automated": true` and `"aiAgent": true`, and it never takes a conversation, so an
-app sees the same thread states whether or not the agent answered.
+bot's, with `"automated": true` and `"aiAgent": true`. It is never given a conversation and never
+counts as the team's answer, but it can hand one to the team (`handed_over`) or close one the
+customer is done with (`resolved`): `business.thread` says who moved the thread in `by`.
 
 Responses are the same JSON the Caishy apps read (`packages/core/src/api.ts`). Errors are
 `{ "error": { "code": "…", "message": "…" } }`.
@@ -55,7 +56,7 @@ Caishy `POST`s JSON to the app's address (https only) for the events it listens 
 | Event | When | `data` |
 | --- | --- | --- |
 | `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
-| `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee` |
+| `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee`, `by` (`person`, `app` or `ai_agent`) |
 | `ping` | You pressed "Send a test delivery" | `appId` |
 
 Every body is `{ "id", "event", "orgId", "createdAt", "data" }`, with the headers
@@ -161,8 +162,11 @@ grant_type=authorization_code&code=…&redirect_uri=…&client_id=app_…&code_v
 ```
 
 Call the routes in the table above with `Authorization: Bearer cao_…`, within the permissions
-they allowed; a message the app sends shows "via" its name. There is no CORS on these
-endpoints, so an app that runs only in a browser trades the code on a server of its own.
+they allow now: letting the app in again for less narrows the tokens it already holds, and the
+`scope` of a refreshed pair says what's left. A message the app sends shows "via" its name (to a
+business customer, "via an app"). The token and revocation endpoints and the discovery document
+answer any origin (CORS, without credentials), so an app that runs only in a browser can trade
+its code itself.
 
 ### 3. Refresh
 
@@ -178,8 +182,10 @@ and with `cache-control: no-store`:
 | `error` | Status | When |
 | --- | --- | --- |
 | `invalid_client` | 401 | An unknown or removed app, or a confidential one without its secret |
-| `invalid_grant` | 400 | A code or refresh token that isn't valid, was used or has expired; a `redirect_uri` or verifier that doesn't match. A code used twice ends what it gave |
+| `invalid_grant` | 400 | A code or refresh token that isn't valid, was used or has expired; a `redirect_uri` or verifier that doesn't match; nothing left of what the person allowed. A code used twice within its ten minutes ends what it gave; one turning up after it expired only is refused |
 | `unsupported_grant_type` | 400 | Anything but `authorization_code` and `refresh_token` |
+| `invalid_request` | 400, 413, 415 | A body that isn't a form (or JSON) the endpoint can read |
+| `temporarily_unavailable` | 429 | Too many requests from one address (600 a minute); `retry-after` says when to try again |
 
 Each comes with an `error_description` a developer can read.
 
@@ -191,6 +197,8 @@ Each comes with an `error_description` a developer can read.
 - The person removes the app in **You → Connected apps**, where they see what it may do and
   when it last acted; its tokens stop at once.
 - Removing the app in **Your apps** ends it for everyone who let it in.
+- Recovering an account with a recovery code ends every app it let in, as it ends its sessions
+  and personal tokens: whoever lost it may not be the one who allowed them.
 
 ## Not yet
 

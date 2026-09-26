@@ -2,6 +2,7 @@ import type { OAuthAppView } from '@caishy/core/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
+import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { WEB_URL } from '@/lib/config';
@@ -71,7 +72,13 @@ export function OAuthApps() {
   const [website, setWebsite] = useState('');
   const [redirects, setRedirects] = useState('');
   const [kind, setKind] = useState<Kind>('public');
-  const [error, setError] = useState<string | null>(null);
+  // Each field's own refusal under it; anything else under the form.
+  const [errors, setErrors] = useState<{
+    name?: string;
+    website?: string;
+    redirects?: string;
+    form?: string;
+  }>({});
   // The secret lives only as long as it's on screen, and fades with its sheet.
   const [made, setMade] = useState<{ app: OAuthAppView; clientSecret: string | null } | null>(null);
   const [open, setOpen] = useState<OAuthAppView | null>(null);
@@ -89,12 +96,12 @@ export function OAuthApps() {
       setWebsite('');
       setRedirects('');
       setKind('public');
-      setError(null);
+      setErrors({});
     }, 400);
   };
   const create = async () => {
     setBusy(true);
-    setError(null);
+    setErrors({});
     try {
       const r = await endpoints.createOAuthApp({
         name: name.trim(),
@@ -108,7 +115,14 @@ export function OAuthApps() {
       setMade(r);
       void qc.invalidateQueries({ queryKey: qk.oauthApps });
     } catch (e) {
-      setError((e as Error).message);
+      const fields = e instanceof ApiError ? e.fieldErrors() : {};
+      // redirectUris.2 is the third address: it's still the addresses field.
+      const at = (key: string) =>
+        Object.entries(fields).find(([path]) => path === key || path.startsWith(`${key}.`))?.[1];
+      const mapped = { name: at('name'), website: at('website'), redirects: at('redirectUris') };
+      setErrors(
+        mapped.name || mapped.website || mapped.redirects ? mapped : { form: (e as Error).message },
+      );
     } finally {
       setBusy(false);
     }
@@ -216,6 +230,7 @@ export function OAuthApps() {
               onChangeText={setName}
               maxLength={60}
               placeholder="Weekly digest"
+              error={errors.name}
               testID="oauth-app-name"
             />
             <TextField
@@ -226,6 +241,7 @@ export function OAuthApps() {
               autoCorrect={false}
               keyboardType="url"
               placeholder="https://digest.example"
+              error={errors.website}
               testID="oauth-app-website"
             />
             <TextField
@@ -237,7 +253,7 @@ export function OAuthApps() {
               multiline
               placeholder="https://digest.example/callback"
               hint="Where people go back to after choosing, one per line: https, http://localhost while you build it, or your app’s own scheme."
-              error={error}
+              error={errors.redirects}
               testID="oauth-app-redirects"
             />
             <Segmented
@@ -251,6 +267,16 @@ export function OAuthApps() {
                 ? 'An app on a phone or in a browser can’t keep a secret, so it proves itself with PKCE each time.'
                 : 'A server keeps a secret. It gets one, and sends it with PKCE when it trades a code.'}
             </Text>
+            {errors.form ? (
+              <Text
+                variant="bodyStrong"
+                color="danger"
+                accessibilityLiveRegion="assertive"
+                testID="oauth-app-error"
+              >
+                {errors.form}
+              </Text>
+            ) : null}
           </View>
         )}
       </Sheet>

@@ -7,7 +7,7 @@ import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { Character } from '@/brand/Character';
 import { handleLink } from '@/lib/config';
-import { handleIn } from '@/lib/paths';
+import { handleIn, isAuthorizeLink } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
 import { peekLink, takeLink } from '@/state/pendingLink';
 import { useMe, useSession } from '@/state/session';
@@ -41,8 +41,11 @@ export default function Onboarding() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const name = me.displayName.split(' ')[0] ?? me.displayName;
-  // Came through someone's link: the last step offers to open it.
-  const [linkHandle] = useState(() => handleIn(peekLink()));
+  // Came through someone's link, or an app asking to act for them: the last step opens it.
+  const [pending] = useState(() => peekLink());
+  const linkHandle = handleIn(pending);
+  const forApp = isAuthorizeLink(pending);
+  const linked = Boolean(linkHandle || forApp);
 
   const finish = async (next: '/' | '/connect' | 'link') => {
     setBusy(true);
@@ -223,14 +226,16 @@ export default function Onboarding() {
                 Now, your people
               </Text>
               <Text variant="body" color="textSecondary" align="center">
-                {linkHandle
-                  ? `You came here for @${linkHandle}. Find others by @handle or email any time.`
-                  : `Find someone by @handle or email, or share your link: @${me.handle}`}
+                {forApp
+                  ? 'An app asked to act for you. See what it asks first; find people by @handle or email any time.'
+                  : linkHandle
+                    ? `You came here for @${linkHandle}. Find others by @handle or email any time.`
+                    : `Find someone by @handle or email, or share your link: @${me.handle}`}
               </Text>
             </View>
-            {linkHandle ? (
+            {linked ? (
               <Button
-                label={`See @${linkHandle}`}
+                label={forApp ? 'See what the app asks' : `See @${linkHandle}`}
                 size="lg"
                 block
                 loading={busy}
@@ -240,14 +245,14 @@ export default function Onboarding() {
             ) : null}
             <Button
               label="Find people"
-              variant={linkHandle ? 'secondary' : 'primary'}
+              variant={linked ? 'secondary' : 'primary'}
               size="lg"
               block
-              loading={busy && !linkHandle}
+              loading={busy && !linked}
               onPress={() => void finish('/connect')}
               testID="onboarding-find"
             />
-            {linkHandle ? null : (
+            {linked ? null : (
               <>
                 <Button
                   label="Share your link"

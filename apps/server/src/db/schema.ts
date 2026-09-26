@@ -508,6 +508,8 @@ export interface AiRunsTable {
   output_tokens: number | null;
   latency_ms: number | null;
   outcome: string;
+  /** The conversation the AI agent was answering in, for its per-conversation bound. */
+  conversation_id: string | null;
   created_at: Generated<Date>;
 }
 
@@ -633,7 +635,11 @@ export interface CallsTable {
   created_at: Date;
   answered_at: NullableTimestamp;
   ended_at: NullableTimestamp;
+  /** The last time either side said it was there. */
   seen_at: Date;
+  /** Each side on its own: a call ends when either stops saying it's there. */
+  caller_seen_at: Generated<Date>;
+  callee_seen_at: NullableTimestamp;
 }
 
 /** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */

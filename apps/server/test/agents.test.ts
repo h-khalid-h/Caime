@@ -1,6 +1,6 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { uuidv4, uuidv7 } from '@caishy/core';
+import { AGENT_CALLS_PER_CONVERSATION, uuidv4, uuidv7 } from '@caishy/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { agentReply } from '../src/lib/agent';
 import { runDueJobs } from '../src/lib/jobs';
@@ -9,6 +9,8 @@ import { type Client, createTestApp, signup, type TestApp } from './helpers';
 /** A stand-in for the Messages API: records each request and answers from a queue. */
 const requests: any[] = [];
 const replies: Array<{ status: number; json: unknown }> = [];
+/** What happens while the model is thinking: the customer writing again, say. */
+let whileThinking: (() => Promise<void>) | null = null;
 let stub: Server;
 const agentSays = (action: string, message: string) => ({
   status: 200,
@@ -57,6 +59,7 @@ beforeAll(async () => {
     let raw = '';
     for await (const chunk of req) raw += chunk;
     requests.push(raw ? JSON.parse(raw) : null);
+    if (whileThinking) await whileThinking();
     const r = replies.shift() ?? {
       status: 500,
       json: { type: 'error', error: { type: 'api_error', message: 'no reply queued' } },
@@ -95,7 +98,18 @@ afterAll(async () => {
 beforeEach(() => {
   replies.length = 0;
   requests.length = 0;
+  whileThinking = null;
 });
+const repliesToday = async () =>
+  (await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday as number;
+const runsIn = (conversationId: string) =>
+  t.ctx.db
+    .selectFrom('ai_runs')
+    .select('outcome')
+    .where('conversation_id', '=', conversationId)
+    .orderBy('outcome')
+    .execute();
+const PASSED_ON = 'I’ve passed this to the team at Nile Dental. Someone will answer here.';
 
 describe('an organization’s AI agent (PRD §74–75)', () => {
   it('its owner or admins set it up; it joins the team as an AI, and everyone can see it answers first', async () => {
@@ -161,6 +175,12 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(thread.assignee).toBeNull();
     const plan = (await noor.get(`/v1/orgs/${orgId}`)).org.plan;
     expect(plan.used.agentRepliesToday).toBe(1);
+    // Even a notification says it was the AI (PRD §75).
+    const told = (await lina.get('/v1/notifications')).notifications.find(
+      (n: any) => n.data?.conversationId === convo,
+    );
+    expect(told.title).toBe('Nile Dental (AI agent)');
+    expect(await runsIn(convo)).toEqual([{ outcome: 'ok' }]);
 
     // Each message once: the job running again, as a retry would, says and asks nothing more.
     await agentReply(t.ctx, { conversationId: convo, seq: asking.seq });
@@ -194,6 +214,11 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await t.ctx.flush();
     const said = (await messages(racing.c, racing.conversationId)).filter((m) => m.aiAgent);
     expect(said).toHaveLength(1);
+    // The answer thrown away isn't one the plan counts.
+    expect(await runsIn(racing.conversationId)).toEqual([
+      { outcome: 'discarded' },
+      { outcome: 'ok' },
+    ]);
   });
 
   it('hands over what needs a person, tells the team, and stays out until it’s resolved', async () => {
@@ -259,6 +284,87 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await send(lina, 'Great, and on Friday?');
     await agentTurn();
     expect(requests).toHaveLength(2);
+  });
+
+  it('a person who wrote since it was resolved, or took it since, keeps it', async () => {
+    // Omar answered and resolved it; later he writes first. Her reply is to him, not a new question.
+    const salma = await newCustomer('Salma Reply');
+    await send(salma.c, 'Is my crown ready?', salma.conversationId);
+    await send(omar, 'Not yet, Salma: I’ll tell you when it is.', salma.conversationId);
+    await agentTurn();
+    await omar.post(`/v1/business/${salma.conversationId}/resolve`, {});
+    t.clock.advance(3_600_000);
+    await send(omar, 'Your crown is ready. Can you come on Tuesday at 10?', salma.conversationId);
+    t.clock.advance(600_000);
+    await send(salma.c, 'Yes, Tuesday works.', salma.conversationId);
+    await agentTurn();
+    expect(requests).toHaveLength(0);
+
+    // The agent closed it; she asks something new, and Noor takes it: it's hers from then on.
+    const hadi = await newCustomer('Hadi Taken');
+    await send(hadi.c, 'Thanks, that’s all.', hadi.conversationId);
+    replies.push(agentSays('resolve', 'You’re welcome!'));
+    await agentTurn();
+    t.clock.advance(3_600_000);
+    await send(hadi.c, 'Actually, my crown came off.', hadi.conversationId);
+    replies.push(agentSays('answer', 'I’m sorry to hear that.'));
+    await agentTurn();
+    expect(requests).toHaveLength(2);
+    t.clock.advance(60_000);
+    await noor.post(`/v1/business/${hadi.conversationId}/assign`, { userId: noor.user.id });
+    t.clock.advance(60_000);
+    await send(hadi.c, 'It really hurts.', hadi.conversationId);
+    await agentTurn();
+    expect(requests).toHaveLength(2);
+  });
+
+  it('stays out of an escalated conversation, and is never given one', async () => {
+    const urgent = await newCustomer('Mona Urgent');
+    await noor.post(`/v1/business/${urgent.conversationId}/escalate`, { note: 'VIP' });
+    await send(urgent.c, 'Are you open on Saturday?', urgent.conversationId);
+    await agentTurn();
+    expect(requests).toHaveLength(0);
+    const bot = (
+      await t.ctx.db
+        .selectFrom('org_agents')
+        .select('bot_user_id')
+        .where('org_id', '=', orgId)
+        .executeTakeFirstOrThrow()
+    ).bot_user_id;
+    const given = await noor.req('POST', `/v1/business/${urgent.conversationId}/assign`, {
+      userId: bot,
+    });
+    expect(given.statusCode).toBe(400);
+    expect(given.json().error.message).toBe('That’s the AI agent: give it to a person.');
+    // It can't sign in, whatever is tried.
+    const handle = (
+      await t.ctx.db
+        .selectFrom('users')
+        .select('handle')
+        .where('id', '=', bot)
+        .executeTakeFirstOrThrow()
+    ).handle;
+    for (const password of ['!', '', 'correct horse battery'])
+      expect(
+        (
+          await t.app.inject({
+            method: 'POST',
+            url: '/v1/auth/login',
+            payload: { identifier: handle, password, client: 'native' },
+          })
+        ).statusCode,
+      ).toBeGreaterThanOrEqual(400);
+  });
+
+  it('knows what day it is where the customer is', async () => {
+    // Wednesday afternoon in UTC is already Thursday in Kiribati.
+    expect(t.clock.now.toISOString().slice(0, 10)).toBe('2026-09-23');
+    const far = await signup(t, { displayName: 'Tala Far', timeZone: 'Pacific/Kiritimati' });
+    const conversationId = (await far.post(`/v1/orgs/${orgId}/conversations`, {})).conversationId;
+    await send(far, 'Are you open tomorrow?', conversationId);
+    replies.push(agentSays('answer', 'Yes, from 9am to 6pm.'));
+    await agentTurn();
+    expect(requests[0].system).toContain('Today is Thursday 24 September 2026.');
   });
 
   it('never answers anyone under 18, a private conversation, or while it’s paused', async () => {
@@ -353,11 +459,39 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(requests).toHaveLength(10);
     await send(chatty.c, 'Question 11?', chatty.conversationId);
     await agentTurn();
-    // No eleventh answer, and no model call: the team has it.
+    // No eleventh answer, and no model call: the team has it, and the customer is told so.
     expect(requests).toHaveLength(10);
     expect((await threadOf(noor, chatty.conversationId)).agentHandedOverAt).not.toBeNull();
     const said = (await messages(chatty.c, chatty.conversationId)).filter((m) => m.aiAgent);
-    expect(said).toHaveLength(10);
+    expect(said).toHaveLength(11);
+    expect(said.at(-1).body).toBe(PASSED_ON);
+  });
+
+  it('counts every model call in a conversation, so writing in bursts can’t keep it thinking', async () => {
+    const burst = await newCustomer('Bassem Burst');
+    const before = await repliesToday();
+    await send(burst.c, 'Hello?', burst.conversationId);
+    // Each time it thinks, the customer writes again, so each answer is thrown away.
+    whileThinking = async () => {
+      await send(burst.c, 'And another thing', burst.conversationId);
+    };
+    for (let i = 0; i < AGENT_CALLS_PER_CONVERSATION; i++) {
+      replies.push(agentSays('answer', 'Thrown away.'));
+      await agentTurn();
+    }
+    expect(requests).toHaveLength(AGENT_CALLS_PER_CONVERSATION);
+    whileThinking = null;
+    await agentTurn();
+    // Past its calls for the day: no more thinking, the team has it, the customer is told.
+    expect(requests).toHaveLength(AGENT_CALLS_PER_CONVERSATION);
+    expect((await threadOf(noor, burst.conversationId)).agentHandedOverAt).not.toBeNull();
+    const said = (await messages(burst.c, burst.conversationId)).filter((m) => m.aiAgent);
+    expect(said.map((m) => m.body)).toEqual([PASSED_ON]);
+    // None of it is an answer the plan counts.
+    expect(await repliesToday()).toBe(before);
+    const runs = await runsIn(burst.conversationId);
+    expect(runs).toHaveLength(AGENT_CALLS_PER_CONVERSATION);
+    expect(runs.every((r) => r.outcome === 'discarded')).toBe(true);
   });
 
   it('is tried on a question before it answers anyone, by the owner and admins only', async () => {
@@ -367,6 +501,14 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       question: 'Do you take walk-ins?',
     };
     expect((await omar.req('POST', `/v1/orgs/${orgId}/agent/try`, question)).statusCode).toBe(403);
+    // The day where the person trying it is: Noor, travelling, is a day ahead.
+    const zoneOf = (timeZone: string) =>
+      t.ctx.db
+        .updateTable('users')
+        .set({ time_zone: timeZone })
+        .where('id', '=', noor.user.id)
+        .execute();
+    await zoneOf('Pacific/Kiritimati');
     replies.push(
       agentSays(
         'hand_over',
@@ -379,8 +521,30 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       message: 'I’ve passed this to the team at Nile Dental. Someone will answer here.',
     });
     expect(requests[0].messages[0].content).toContain('[1] Customer: Do you take walk-ins?');
+    expect(requests[0].system).toContain('Today is Thursday 24 September 2026.');
+    await zoneOf('America/New_York');
     // A try isn't an answer to anyone, and doesn't count as one.
     expect((await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday).toBe(10);
+
+    // It is one of the person's own AI assists, though: past their plan's, it waits.
+    await t.ctx.db
+      .insertInto('ai_runs')
+      .values(
+        Array.from({ length: 10 }, () => ({
+          id: uuidv7(),
+          user_id: noor.user.id,
+          feature: 'rewrite',
+          provider: 'anthropic',
+          outcome: 'ok',
+          created_at: t.clock.now,
+        })),
+      )
+      .execute();
+    const over = await noor.req('POST', `/v1/orgs/${orgId}/agent/try`, question);
+    expect(over.statusCode).toBe(403);
+    expect(over.json().error.code).toBe('plan_limit');
+    expect(requests).toHaveLength(1);
+    await t.ctx.db.deleteFrom('ai_runs').where('user_id', '=', noor.user.id).execute();
   });
 
   it('removed, it leaves the team at once, and what it wrote stays under its name', async () => {
@@ -393,5 +557,21 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await send(lina, 'Are you there?');
     await agentTurn();
     expect(requests).toHaveLength(0);
+    // Every change to it is in the audit log.
+    const logged = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['action', 'actor_id'])
+      .where('target', '=', orgId)
+      .where('action', 'like', 'agent.%')
+      .orderBy('created_at')
+      .orderBy('id')
+      .execute();
+    expect(logged.map((l) => l.action)).toEqual([
+      'agent.created',
+      'agent.updated',
+      'agent.updated',
+      'agent.removed',
+    ]);
+    expect(logged.every((l) => l.actor_id === noor.user.id)).toBe(true);
   });
 });

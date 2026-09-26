@@ -16,6 +16,10 @@ export interface NotifyInput {
   delivery?: 'push' | 'silent' | 'held';
   holdUntil?: Date | null;
   reason?: string | null;
+  /** How long a push is worth delivering to a device that's offline (default a day). */
+  ttlSeconds?: number;
+  /** Which devices it goes to as a push: all of them, or browsers only. */
+  pushTo?: 'all' | 'web';
 }
 
 export type NotifyHook = (ctx: AppContext, id: string, input: NotifyInput) => Promise<void>;

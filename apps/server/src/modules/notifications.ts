@@ -83,6 +83,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectFrom('push_subscriptions')
       .selectAll()
       .where('user_id', '=', input.userId)
+      .$if(input.pushTo === 'web', (q) => q.where('kind', '=', 'webpush'))
       .execute();
     if (subs.length === 0) return;
     const payload = JSON.stringify({
@@ -102,7 +103,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
             { endpoint: s.endpoint, keys: s.keys as { p256dh: string; auth: string } },
             payload,
             {
-              TTL: 24 * 3600,
+              TTL: input.ttlSeconds ?? 24 * 3600,
               urgency:
                 input.level === 'urgency' ? 'high' : input.level === 'attention' ? 'normal' : 'low',
               topic:
@@ -124,6 +125,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
               body: input.body ?? '',
               data: { id, ...(input.data ?? {}) },
               priority: input.level === 'urgency' ? 'high' : 'default',
+              ...(input.ttlSeconds ? { ttl: input.ttlSeconds } : {}),
             }),
           });
           if (!res.ok)

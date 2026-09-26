@@ -1,4 +1,4 @@
-import { createElement, useCallback, useEffect, useState } from 'react';
+import { createElement, type Ref, useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useCall } from '@/state/calls';
 import { useSession } from '@/state/session';
@@ -60,6 +60,7 @@ function Round({
   onPress,
   tone = 'plain',
   on = false,
+  focusRef,
   testID,
 }: {
   icon: IconComponent;
@@ -67,12 +68,15 @@ function Round({
   onPress: () => void;
   tone?: 'plain' | 'end' | 'go';
   on?: boolean;
+  /** The button focus goes to when the screen changes. */
+  focusRef?: Ref<View>;
   testID: string;
 }) {
   const bg = tone === 'end' ? '#E5484D' : tone === 'go' ? '#30A46C' : on ? '#FFFFFF' : '#FFFFFF29';
   return (
     <View style={{ alignItems: 'center', gap: 6 }}>
       <Pressable
+        ref={focusRef}
         accessibilityRole="button"
         accessibilityLabel={label}
         onPress={onPress}
@@ -94,6 +98,45 @@ function Round({
       </Text>
     </View>
   );
+}
+
+/**
+ * A soft two-note ring while a call rings for this person, so a tab in the background is heard.
+ * Where the browser won't let a page play sound yet, it stays quiet: the screen still shows it.
+ */
+function useRingtone(ringing: boolean) {
+  useEffect(() => {
+    if (!ringing || typeof window === 'undefined' || !('AudioContext' in window)) return;
+    let audio: AudioContext;
+    try {
+      audio = new AudioContext();
+    } catch {
+      return;
+    }
+    const ring = () => {
+      if (audio.state === 'closed') return;
+      const at = audio.currentTime;
+      const gain = audio.createGain();
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.06, at + 0.05);
+      gain.gain.setValueAtTime(0.06, at + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 1);
+      gain.connect(audio.destination);
+      for (const frequency of [440, 480]) {
+        const tone = audio.createOscillator();
+        tone.frequency.value = frequency;
+        tone.connect(gain);
+        tone.start(at);
+        tone.stop(at + 1);
+      }
+    };
+    ring();
+    const every = setInterval(ring, 3000);
+    return () => {
+      clearInterval(every);
+      void audio.close().catch(() => {});
+    };
+  }, [ringing]);
 }
 
 /** "0:42", "12:05", "1:02:05": how long it's been since it was answered. */
@@ -122,6 +165,13 @@ export function CallLayer() {
     if (me) void checkLiveCall(me);
   }, [me]);
   const elapsed = useElapsed(call?.answeredAt ?? null, phase === 'active');
+  useRingtone(phase === 'incoming');
+  // Keyboard and screen reader users land on what to do now: answer, or hang up.
+  const primary = useRef<View>(null);
+  useEffect(() => {
+    if (phase === 'incoming' || phase === 'outgoing' || phase === 'active')
+      (primary.current as unknown as HTMLElement | null)?.focus?.();
+  }, [phase]);
   if (!call || !phase || phase === 'starting') return null;
 
   const other = call.caller.id === me ? call.callee : call.caller;
@@ -142,9 +192,13 @@ export function CallLayer() {
               ? (note ?? 'Call ended')
               : elapsed;
 
+  const hasCamera = Boolean(local?.getVideoTracks().length);
+
   return (
     <View
-      accessibilityViewIsModal
+      role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
+      aria-modal
+      aria-label={`${video ? 'Video' : 'Voice'} call with ${other.displayName}`}
       testID="call-screen"
       style={{
         position: 'fixed' as 'absolute',
@@ -176,11 +230,16 @@ export function CallLayer() {
         <Text variant="title" style={{ color: '#FFFFFF', ...OVER_VIDEO }} numberOfLines={1}>
           {other.displayName}
         </Text>
-        <Text variant="body" style={{ color: '#FFFFFFDD', ...OVER_VIDEO }} testID="call-status">
+        <Text
+          variant="body"
+          style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
+          aria-live="assertive"
+          testID="call-status"
+        >
           {phase === 'incoming' ? `${status} · calling you` : status}
         </Text>
       </View>
-      {video && local && !cameraOff && phase !== 'incoming' && phase !== 'ended' ? (
+      {video && local && hasCamera && !cameraOff && phase !== 'incoming' && phase !== 'ended' ? (
         <View
           style={{
             position: 'absolute',
@@ -223,6 +282,7 @@ export function CallLayer() {
                 label="Answer"
                 tone="go"
                 onPress={() => void answer()}
+                focusRef={primary}
                 testID="call-accept"
               />
             </>
@@ -235,7 +295,7 @@ export function CallLayer() {
                 onPress={toggleMute}
                 testID="call-mute"
               />
-              {video ? (
+              {video && hasCamera ? (
                 <Round
                   icon={cameraOff ? VideoOff : Video}
                   label={cameraOff ? 'Camera on' : 'Camera off'}
@@ -249,6 +309,7 @@ export function CallLayer() {
                 label={phase === 'outgoing' ? 'Cancel' : 'Hang up'}
                 tone="end"
                 onPress={() => void hangUp()}
+                focusRef={primary}
                 testID="call-hangup"
               />
             </>

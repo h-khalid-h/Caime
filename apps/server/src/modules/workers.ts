@@ -41,6 +41,12 @@ export function registerWorkers(): void {
   });
 
   registerPeriodic({
+    name: 'realtime-large',
+    everyMs: 60_000,
+    run: (ctx) => ctx.bus.sweep(),
+  });
+
+  registerPeriodic({
     name: 'reminders',
     everyMs: 30_000,
     run: async (ctx) => {

@@ -22,7 +22,7 @@ import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
-import { agentRepliesToday } from '../lib/plans';
+import { agentRepliesToday, assertAiAllowance } from '../lib/plans';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -195,15 +195,22 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
     const org = await manager(auth.userId, id);
     if (!ctx.ai) throw unavailable();
     ctx.limiter.hit(`agent-try:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
+    // Trying it is one of the person's own AI assists, counted where theirs are.
+    await assertAiAllowance(ctx, auth.userId);
+    const me = await ctx.db
+      .selectFrom('users')
+      .select('time_zone')
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
     const reply = await askAgent(ctx, 'agent_try', auth.userId, {
       orgName: org.name,
       agentName: body.name,
       knowledge: body.knowledge,
       conversation: `[1] Customer: ${body.question.replace(/\s+/g, ' ')}`,
       introduced: false,
-      today: todayForAgent(ctx.now()),
+      today: todayForAgent(ctx.now(), me.time_zone),
     });
     if (!reply) throw new AppError(503, 'ai_busy', 'It didn’t answer this time. Try again.');
-    return reply;
+    return { action: reply.action, message: reply.message };
   });
 }

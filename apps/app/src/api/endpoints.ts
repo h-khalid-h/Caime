@@ -325,7 +325,8 @@ export const endpoints = {
       candidate?: RTCIceCandidateInit;
     },
   ) => api.post<Ok>(`/calls/${id}/signal`, body),
-  callAlive: (id: string, deviceId: string) => api.post<Ok>(`/calls/${id}/alive`, { deviceId }),
+  callAlive: (id: string, deviceId: string) =>
+    api.post<{ call: CallView }>(`/calls/${id}/alive`, { deviceId }),
   // Live location (R29): the sharer's device moves it; only they stop it
   moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
     api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),

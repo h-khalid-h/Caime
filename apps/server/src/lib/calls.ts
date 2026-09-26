@@ -4,8 +4,9 @@
  * between exactly the two devices in the call; the media goes between them directly, encrypted.
  * Each call leaves one line in the conversation ("Video call · 4 min", "Missed voice call").
  *
- * A call nobody answers is missed after CALL_RING_SECONDS; one both sides stopped saying
- * they're in (a closed tab, a lost connection) is ended by the sweep, so nobody stays "busy".
+ * A call nobody answers is missed after CALL_RING_SECONDS; one either side stopped saying it's
+ * in (a closed tab, a lost connection) is ended by the sweep, so nobody stays "busy", and the
+ * other side can't keep it going alone. Blocking ends any call between the two at once.
  */
 import { createHmac } from 'node:crypto';
 import {
@@ -22,7 +23,7 @@ import { notify } from './notify';
 import { personViewsFor } from './people-batch';
 import { avatarUrl } from './users';
 
-/** A live call stops counting when neither side has said it's there for this long. */
+/** A live call stops counting when either side hasn't said it's there for this long. */
 export const CALL_SEEN_MS = 90_000;
 const TURN_TTL_S = 12 * 3600;
 
@@ -80,9 +81,10 @@ export async function publishCall(
   }
 }
 
-/** A call someone is in or being rung for now, if any. */
+/** A call someone is in or being rung for now, if any: both sides still there. */
 export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call | undefined> {
   const now = ctx.now().getTime();
+  const fresh = new Date(now - CALL_SEEN_MS);
   return ctx.db
     .selectFrom('calls')
     .selectAll()
@@ -93,7 +95,11 @@ export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call 
           eb('state', '=', 'ringing'),
           eb('created_at', '>', new Date(now - CALL_RING_SECONDS * 1000)),
         ]),
-        eb.and([eb('state', '=', 'active'), eb('seen_at', '>', new Date(now - CALL_SEEN_MS))]),
+        eb.and([
+          eb('state', '=', 'active'),
+          eb('caller_seen_at', '>', fresh),
+          eb('callee_seen_at', '>', fresh),
+        ]),
       ]),
     )
     .orderBy('created_at', 'desc')
@@ -101,14 +107,36 @@ export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call 
 }
 
 /**
+ * It isn't ringing any more: the person called has their "is calling" read on every device, so
+ * it neither stays in their list nor counts as unread.
+ */
+export async function ringStopped(ctx: AppContext, call: Call): Promise<void> {
+  if (!call.callee_id) return;
+  const read = await ctx.db
+    .updateTable('notifications')
+    .set({ read_at: ctx.now() })
+    .where('user_id', '=', call.callee_id)
+    .where('group_key', '=', `call:${call.id}`)
+    .where('read_at', 'is', null)
+    .returning('id')
+    .execute();
+  if (read.length)
+    await ctx.bus.publish([call.callee_id], {
+      type: 'notifications.read',
+      data: { ids: read.map((r) => r.id), all: false },
+    });
+}
+
+/**
  * End a call, once: both sides hear it, and the conversation gets its line. A missed call
- * reaches the person called as a notification too.
+ * reaches the person called as a notification too, unless it ended `quiet` (a block).
  */
 export async function endCall(
   ctx: AppContext,
   call: Call,
   outcome: CallOutcome,
   endedAt: Date = ctx.now(),
+  { quiet = false }: { quiet?: boolean } = {},
 ): Promise<Call | null> {
   const ended = await ctx.db
     .updateTable('calls')
@@ -118,6 +146,7 @@ export async function endCall(
     .returningAll()
     .executeTakeFirst();
   if (!ended) return null;
+  await ringStopped(ctx, ended);
   await publishCall(ctx, ended);
   const seconds =
     outcome === 'completed' && ended.answered_at
@@ -135,7 +164,12 @@ export async function endCall(
       { type: 'message.created', data: view },
     );
   }
-  if ((outcome === 'missed' || outcome === 'cancelled') && ended.callee_id && ended.caller_id) {
+  if (
+    !quiet &&
+    (outcome === 'missed' || outcome === 'cancelled') &&
+    ended.callee_id &&
+    ended.caller_id
+  ) {
     const caller = await ctx.db
       .selectFrom('users')
       .select('display_name')
@@ -165,15 +199,49 @@ export async function sweepCalls(ctx: AppContext): Promise<void> {
     .limit(200)
     .execute();
   for (const c of unanswered) await endCall(ctx, c, 'missed');
+  const stale = new Date(now - CALL_SEEN_MS);
   const abandoned = await ctx.db
     .selectFrom('calls')
     .selectAll()
     .where('state', '=', 'active')
-    .where('seen_at', '<=', new Date(now - CALL_SEEN_MS))
+    .where((eb) =>
+      eb.or([
+        eb('caller_seen_at', '<=', stale),
+        eb(eb.fn.coalesce('callee_seen_at', 'answered_at'), '<=', stale),
+      ]),
+    )
     .limit(200)
     .execute();
-  // It lasted until the last time either side was there.
-  for (const c of abandoned) await endCall(ctx, c, 'completed', c.seen_at);
+  // It lasted until the one who left was last there.
+  for (const c of abandoned) {
+    const callee = c.callee_seen_at ?? c.answered_at ?? c.caller_seen_at;
+    const left = Math.min(c.caller_seen_at.getTime(), callee.getTime());
+    await endCall(ctx, c, 'completed', new Date(left));
+  }
+}
+
+/**
+ * One of the two blocked the other: whatever call is between them ends now, without telling
+ * anyone they missed it. A call still ringing reads as turned down, or called off, by whoever
+ * blocked; one under way, as over.
+ */
+export async function endCallsBetween(ctx: AppContext, blockerId: string, otherId: string) {
+  const calls = await ctx.db
+    .selectFrom('calls')
+    .selectAll()
+    .where('state', '<>', 'ended')
+    .where((eb) =>
+      eb.or([
+        eb.and([eb('caller_id', '=', blockerId), eb('callee_id', '=', otherId)]),
+        eb.and([eb('caller_id', '=', otherId), eb('callee_id', '=', blockerId)]),
+      ]),
+    )
+    .execute();
+  for (const c of calls) {
+    const outcome: CallOutcome =
+      c.state === 'active' ? 'completed' : c.callee_id === blockerId ? 'declined' : 'cancelled';
+    await endCall(ctx, c, outcome, ctx.now(), { quiet: true });
+  }
 }
 
 export function registerCallSweep(): void {
@@ -200,12 +268,21 @@ export function iceConfig(ctx: AppContext, userId: string): IceConfigView {
 export const otherSide = (call: Call, userId: string) =>
   call.caller_id === userId ? call.callee_id : call.caller_id;
 
-/** Mark that a side is still in the call. */
-export async function stillThere(ctx: AppContext, callId: string): Promise<void> {
-  await ctx.db
+/** Mark that one side is still in the call, and say how the call stands now. */
+export async function stillThere(
+  ctx: AppContext,
+  callId: string,
+  side: 'caller' | 'callee',
+): Promise<Call | undefined> {
+  return ctx.db
     .updateTable('calls')
-    .set({ seen_at: ctx.now() })
+    .set(
+      side === 'caller'
+        ? { caller_seen_at: ctx.now(), seen_at: ctx.now() }
+        : { callee_seen_at: ctx.now(), seen_at: ctx.now() },
+    )
     .where('id', '=', callId)
     .where('state', '<>', 'ended')
-    .execute();
+    .returningAll()
+    .executeTakeFirst();
 }

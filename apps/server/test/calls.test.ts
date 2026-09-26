@@ -1,8 +1,10 @@
 import { createHmac } from 'node:crypto';
 import { uuidv4 } from '@caishy/core';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
 import { endCall, iceConfig, sweepCalls } from '../src/lib/calls';
+import { type NotifyInput, onNotification } from '../src/lib/notify';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -12,6 +14,8 @@ let omar: Client; // knows Sam too
 let convo: string;
 let omarSam: string;
 const heard: BusMessage[] = [];
+/** What went to devices as a push, as notify was asked. */
+const pushed: NotifyInput[] = [];
 
 async function connect(a: Client, b: Client) {
   const r = await a.post('/v1/connections/requests', { toUserId: b.user.id });
@@ -37,6 +41,9 @@ const lines = async (c: Client, conversationId = convo) =>
 beforeAll(async () => {
   t = await createTestApp();
   t.ctx.bus.subscribe((m) => heard.push(m));
+  onNotification(async (_ctx, _id, input) => {
+    pushed.push(input);
+  });
   noor = await signup(t, { displayName: 'Noor Haddad' });
   sam = await signup(t, { displayName: 'Sam Rivera' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
@@ -86,6 +93,26 @@ describe('calls (PRD §47)', () => {
     const busy = await call(omar, omarSam, 'voice', 'omar-phone-1');
     expect(busy.statusCode).toBe(409);
     expect(busy.json().error.message).toBe('Sam Rivera is on another call.');
+
+    // Someone who hides that they're online isn't given away by it: to the caller it's an
+    // unanswered call, and Sam finds it among his missed calls.
+    await sam.patch('/v1/me', { presence: 'invisible' });
+    const hidden = await call(omar, omarSam, 'voice', 'omar-phone-1');
+    expect(hidden.statusCode).toBe(409);
+    expect(hidden.json().error).toMatchObject({
+      code: 'no_answer',
+      message: 'Sam Rivera didn’t answer.',
+    });
+    expect((await lines(sam, omarSam)).at(-1).payload).toMatchObject({ outcome: 'missed' });
+    await t.ctx.flush();
+    expect(
+      (await sam.get('/v1/notifications')).notifications.find(
+        (n: any) => n.body === 'from Omar Farouk',
+      ),
+    ).toMatchObject({ title: 'Missed voice call' });
+    // Noor's call still rings for him.
+    expect((await sam.get('/v1/calls/live')).call.id).toBe(id);
+    await sam.patch('/v1/me', { presence: 'auto' });
   });
 
   it('answered on one device, signals pass only between the two devices in it', async () => {
@@ -206,23 +233,140 @@ describe('calls (PRD §47)', () => {
     expect((await lines(sam)).at(-1).payload.outcome).toBe('cancelled');
   });
 
-  it('a call both sides left is ended, lasting until they were last there', async () => {
+  it('each side says it’s still there for itself: one side can’t keep a call the other left', async () => {
     const left = (await call(noor, convo)).json().call.id;
     await sam.post(`/v1/calls/${left}/accept`, { deviceId: 'sam-phone-1' });
+    // Only a device in the call says so, and it hears how the call stands.
+    expect(
+      (await sam.req('POST', `/v1/calls/${left}/alive`, { deviceId: 'sam-laptop-1' })).statusCode,
+    ).toBe(403);
     t.clock.advance(60_000);
-    await noor.post(`/v1/calls/${left}/alive`, {});
-    t.clock.advance(80_000);
+    const alive = await noor.post(`/v1/calls/${left}/alive`, { deviceId: 'noor-tab-1' });
+    expect(alive.call).toMatchObject({ id: left, state: 'active' });
+    await sam.post(`/v1/calls/${left}/alive`, { deviceId: 'sam-phone-1' });
+    // Sam's tab is gone; Noor's goes on saying she's there.
+    t.clock.advance(50_000);
+    await noor.post(`/v1/calls/${left}/alive`, { deviceId: 'noor-tab-1' });
+    t.clock.advance(35_000);
     await sweepCalls(t.ctx);
-    // Still there 80 seconds ago: not over yet.
+    // Sam was there 85 seconds ago: not over yet.
     expect((await noor.get('/v1/calls/live')).call.id).toBe(left);
-    t.clock.advance(15_000);
+    t.clock.advance(10_000);
+    await noor.post(`/v1/calls/${left}/alive`, { deviceId: 'noor-tab-1' });
+    // Past 90 seconds without Sam, it isn't a call anyone is busy with, even before the sweep.
+    expect((await noor.get('/v1/calls/live')).call).toBeNull();
+    expect((await sam.get('/v1/calls/live')).call).toBeNull();
     await sweepCalls(t.ctx);
     expect((await noor.get('/v1/calls/live')).call).toBeNull();
+    // It lasted until Sam was last there.
     expect((await lines(sam)).at(-1).payload).toMatchObject({ outcome: 'completed', seconds: 60 });
+    expect(
+      (await noor.req('POST', `/v1/calls/${left}/alive`, { deviceId: 'noor-tab-1' })).statusCode,
+    ).toBe(409);
     // And neither is busy now.
     const next = await call(noor, convo);
     expect(next.statusCode).toBe(201);
     await noor.post(`/v1/calls/${next.json().call.id}/end`, {});
+  });
+
+  it('blocking ends a call between the two at once, and quietly', async () => {
+    const ringing = (await call(noor, convo)).json().call.id;
+    await sam.post('/v1/blocks', { userId: noor.user.id });
+    expect((await sam.get('/v1/calls/live')).call).toBeNull();
+    expect((await noor.get('/v1/calls/live')).call).toBeNull();
+    expect((await lines(noor)).at(-1).payload.outcome).toBe('declined');
+    await sam.req('DELETE', `/v1/blocks/${noor.user.id}`);
+
+    const talking = (await call(noor, convo)).json().call.id;
+    await sam.post(`/v1/calls/${talking}/accept`, { deviceId: 'sam-phone-1' });
+    await noor.post('/v1/blocks', { userId: sam.user.id });
+    expect((await sam.get('/v1/calls/live')).call).toBeNull();
+    expect(
+      (await sam.req('POST', `/v1/calls/${talking}/alive`, { deviceId: 'sam-phone-1' })).statusCode,
+    ).toBe(409);
+    expect(
+      (await signal(sam, talking, 'sam-phone-1', { kind: 'offer', sdp: 'v=0 x' })).statusCode,
+    ).toBe(409);
+    await noor.req('DELETE', `/v1/blocks/${sam.user.id}`);
+
+    // Blocked while it rang, the person called isn't told they missed it.
+    const quiet = (await call(noor, convo)).json().call.id;
+    await noor.post('/v1/blocks', { userId: sam.user.id });
+    await t.ctx.flush();
+    expect(
+      (await sam.get('/v1/notifications')).notifications.some(
+        (n: any) => n.data?.callId === quiet && n.title.startsWith('Missed'),
+      ),
+    ).toBe(false);
+    await noor.req('DELETE', `/v1/blocks/${sam.user.id}`);
+    expect(ringing).not.toBe(talking);
+  });
+
+  it('the ring is read once it stops, and its push lasts only as long as it rings', async () => {
+    const ring = async (callId: string) => {
+      await t.ctx.flush();
+      return (await sam.get('/v1/notifications')).notifications.find(
+        (n: any) => n.data?.callId === callId && n.title.endsWith('is calling'),
+      );
+    };
+    const answered = (await call(noor, convo)).json().call.id;
+    expect((await ring(answered)).read).toBe(false);
+    // The phone apps can't answer yet: it goes to browsers only.
+    expect(pushed.find((p) => p.data?.callId === answered)).toMatchObject({
+      ttlSeconds: 45,
+      pushTo: 'web',
+    });
+    heard.length = 0;
+    await sam.post(`/v1/calls/${answered}/accept`, { deviceId: 'sam-phone-1' });
+    expect((await ring(answered)).read).toBe(true);
+    expect((await heardSoon('notifications.read', 1))[0]?.userIds).toEqual([sam.user.id]);
+    await noor.post(`/v1/calls/${answered}/end`, { deviceId: 'noor-tab-1' });
+
+    const declined = (await call(noor, convo)).json().call.id;
+    await sam.post(`/v1/calls/${declined}/decline`, {});
+    expect((await ring(declined)).read).toBe(true);
+
+    const missed = (await call(noor, convo, 'voice')).json().call.id;
+    t.clock.advance(46_000);
+    await sweepCalls(t.ctx);
+    expect((await ring(missed)).read).toBe(true);
+    const told = (await sam.get('/v1/notifications')).notifications.find(
+      (n: any) => n.data?.callId === missed && n.title.startsWith('Missed'),
+    );
+    expect(told.read).toBe(false);
+  });
+
+  it('a large signal passes through without staying in the database; offers are few', async () => {
+    const big = (await call(noor, convo)).json().call.id;
+    await sam.post(`/v1/calls/${big}/accept`, { deviceId: 'sam-phone-1' });
+    const stored = async () =>
+      (
+        await t.ctx.db
+          .selectFrom('domain_events')
+          .select('id')
+          .where('type', '=', 'realtime.large')
+          .execute()
+      ).length;
+    const before = await stored();
+    const sdp = `v=0 ${'a'.repeat(9000)}`;
+    expect((await signal(noor, big, 'noor-tab-1', { kind: 'offer', sdp })).statusCode).toBe(200);
+    expect(((await heardSoon('call.signal', 1))[0]!.event.data as any).sdp).toBe(sdp);
+    expect(await stored()).toBe(before + 1);
+    // Once nothing could still be reading it, it goes.
+    await t.ctx.db
+      .updateTable('domain_events')
+      .set({ created_at: sql<Date>`now() - interval '11 minutes'` })
+      .where('type', '=', 'realtime.large')
+      .execute();
+    await t.ctx.bus.sweep();
+    expect(await stored()).toBe(0);
+    // Offers and answers are few in a call; candidates are many, and small.
+    for (let i = 0; i < 19; i++)
+      await signal(noor, big, 'noor-tab-1', { kind: 'offer', sdp: 'v=0 again' });
+    expect(
+      (await signal(noor, big, 'noor-tab-1', { kind: 'offer', sdp: 'v=0 more' })).statusCode,
+    ).toBe(429);
+    await noor.post(`/v1/calls/${big}/end`, {});
   });
 
   it('only between two people who can already write to each other', async () => {

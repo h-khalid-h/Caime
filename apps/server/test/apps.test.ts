@@ -195,7 +195,10 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     expect(failing).toMatchObject({ status: 'pending', attempts: 1, lastStatus: 500 });
     t.clock.advance(60_000);
     await deliver();
-    expect(JSON.parse(received.at(-1)!.body).data).toMatchObject({ change: 'resolved' });
+    expect(JSON.parse(received.at(-1)!.body).data).toMatchObject({
+      change: 'resolved',
+      by: 'person',
+    });
     const done = (await noor.get(`/v1/orgs/${orgId}/apps/${appId}/deliveries`)).deliveries[0];
     expect(done).toMatchObject({ status: 'delivered', attempts: 2, lastStatus: 200 });
   });

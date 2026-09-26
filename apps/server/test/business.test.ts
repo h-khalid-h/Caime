@@ -313,4 +313,46 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     });
     expect(request.statusCode).toBe(403);
   });
+
+  it('what a team member’s app sent says “an app” to the customer, never the app’s name', async () => {
+    const made = await sara.post('/v1/me/tokens', {
+      name: 'Sara’s inbox helper',
+      scopes: ['messages:read', 'messages:write'],
+    });
+    const sent = await t.app.inject({
+      method: 'POST',
+      url: `/v1/conversations/${convo}/messages`,
+      headers: { authorization: `Bearer ${made.token}` },
+      payload: { clientId: uuidv4(), body: 'Your order is on its way.' },
+    });
+    expect(sent.statusCode).toBe(201);
+    const id = sent.json().message.id;
+    const seenBy = async (c: Client) =>
+      (await c.get(`/v1/conversations/${convo}/messages`)).messages.find((m: any) => m.id === id);
+    expect((await seenBy(lina)).sentVia).toBe('an app');
+    expect((await seenBy(noor)).sentVia).toBe('Sara’s inbox helper');
+    // Live, too.
+    const live = () =>
+      heard.find(
+        (m) =>
+          m.userIds.includes(lina.user.id) &&
+          m.event.type === 'message.created' &&
+          (m.event.data as any).id === id,
+      );
+    await until(() => Boolean(live()), 'the customer heard it');
+    expect(JSON.stringify(live())).not.toContain('Sara');
+    expect((live()!.event.data as any).sentVia).toBe('an app');
+    // What she sends through an app of her own keeps its name: it's hers.
+    const own = await lina.post('/v1/me/tokens', {
+      name: 'Lina’s notes',
+      scopes: ['messages:write'],
+    });
+    const mine = await t.app.inject({
+      method: 'POST',
+      url: `/v1/conversations/${convo}/messages`,
+      headers: { authorization: `Bearer ${own.token}` },
+      payload: { clientId: uuidv4(), body: 'Thanks!' },
+    });
+    expect(mine.json().message.sentVia).toBe('Lina’s notes');
+  });
 });

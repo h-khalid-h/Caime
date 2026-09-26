@@ -34,6 +34,7 @@ import {
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { handleTaken } from '../lib/handles';
+import { revokeGrantsOf } from '../lib/oauth';
 import { meView, regionFromLocale, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth, setSessionCookie, tokenFrom } from '../plugins/auth';
@@ -397,13 +398,15 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', user.id)
       .where('revoked_at', 'is', null)
       .execute();
-    // Someone who lost their account may not be the one who made its tokens: they go too.
+    // Someone who lost their account may not be the one who made its tokens, or let its apps
+    // in: they go too.
     await ctx.db
       .updateTable('personal_tokens')
       .set({ revoked_at: ctx.now() })
       .where('user_id', '=', user.id)
       .where('revoked_at', 'is', null)
       .execute();
+    await revokeGrantsOf(ctx, user.id);
     const remaining = await ctx.db
       .selectFrom('recovery_codes')
       .select(sql<number>`count(*)::int`.as('n'))

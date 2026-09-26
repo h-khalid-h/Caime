@@ -69,6 +69,13 @@ export interface BuildOptions {
   skipMigrations?: boolean;
 }
 
+/** The OAuth endpoints a browser app elsewhere calls (see the CORS registration below). */
+const OPEN_TO_ANY_SITE = new Set([
+  '/v1/oauth/token',
+  '/v1/oauth/revoke',
+  '/.well-known/oauth-authorization-server',
+]);
+
 export async function buildApp(config: Config, options: BuildOptions = {}): Promise<BuiltApp> {
   const app = Fastify({
     logger: config.isTest
@@ -141,9 +148,25 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'same-site' },
   });
-  if (config.corsOrigins.length > 0) {
-    await app.register(cors, { origin: config.corsOrigins, credentials: true });
-  }
+  // Apps on any site may trade codes and read where everything is: nothing there rides on a
+  // cookie. The rest of the API is for CORS_ORIGINS alone, credentials and all.
+  await app.register(cors, {
+    delegator: (req, done) => {
+      if (OPEN_TO_ANY_SITE.has(req.url.split('?')[0] ?? ''))
+        return done(null, {
+          origin: '*',
+          methods: ['GET', 'POST'],
+          allowedHeaders: ['authorization', 'content-type'],
+          maxAge: 86_400,
+        });
+      done(
+        null,
+        config.corsOrigins.length
+          ? { origin: config.corsOrigins, credentials: true }
+          : { origin: false },
+      );
+    },
+  });
   await app.register(websocket, { options: { maxPayload: 64 * 1024 } });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024, files: 10 } });
 

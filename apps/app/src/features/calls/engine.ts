@@ -12,4 +12,4 @@ export async function hangUp(_note: string | null = null, _failed = false): Prom
 export function toggleMute(): void {}
 export function toggleCamera(): void {}
 export function onCallEvent(_event: RealtimeEvent): void {}
-export async function checkLiveCall(_me: string): Promise<void> {}
+export async function checkLiveCall(_me?: string): Promise<void> {}

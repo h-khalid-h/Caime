@@ -3,44 +3,89 @@
  * signalling through the server. The caller makes the offer once the other side answers; ICE
  * candidates trickle both ways, and any that arrive before the other side's description wait
  * for it. The media goes device to device; the server only rings and relays.
+ *
+ * The device in a call says so every few seconds and hears back how the call stands, so an
+ * event lost on the way (a socket reconnecting) never leaves either side waiting. Only the
+ * server saying it's over ends it: a moment offline, or the server restarting, doesn't.
  */
 
 import type { CallSignalView, CallView, RealtimeEvent } from '@caishy/core/api';
 import type { CallKind } from '@caishy/core/calls';
+import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
 import { DEVICE_ID, useCall } from '@/state/calls';
+import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
 
 export const callsSupported =
   typeof window !== 'undefined' && 'RTCPeerConnection' in window && Boolean(navigator.mediaDevices);
+
+/** While it rings or connects, a beat this often; once the two are talking, a slower one. */
+const BEAT_MS = 5000;
+const TALKING_BEAT_MS = 20_000;
+/** Answered, the two devices find each other in this long, or the call couldn't connect. */
+const CONNECT_MS = 30_000;
 
 let pc: RTCPeerConnection | null = null;
 let remoteDescribed = false;
 let waiting: RTCIceCandidateInit[] = [];
 /** Signals that came before this device's connection existed. */
 let early: CallSignalView[] = [];
-let alive: ReturnType<typeof setInterval> | null = null;
+let beat: ReturnType<typeof setInterval> | null = null;
+let lastBeat = 0;
 let dropTimer: ReturnType<typeof setTimeout> | null = null;
+let connectTimer: ReturnType<typeof setTimeout> | null = null;
 
 const store = () => useCall.getState();
 const current = () => store().call;
+const me = () => useSession.getState().user?.id ?? '';
 const mineOn = (c: CallView) =>
   c.callerDevice === DEVICE_ID || (c.calleeDevice !== null && c.calleeDevice === DEVICE_ID);
 
-function media(kind: CallKind): Promise<MediaStream> {
-  return navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true },
-    video: kind === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
-  });
+/**
+ * The microphone, and for a video call the camera. Without a camera (none, or another app has
+ * it) a video call goes ahead with the voice alone; a refusal stays a refusal.
+ */
+async function media(kind: CallKind): Promise<{ stream: MediaStream; cameraOff: boolean }> {
+  const audio = { echoCancellation: true, noiseSuppression: true };
+  const voiceOnly = () => navigator.mediaDevices.getUserMedia({ audio, video: false });
+  if (kind === 'voice') return { stream: await voiceOnly(), cameraOff: false };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio,
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+    });
+    return { stream, cameraOff: false };
+  } catch (e) {
+    const name = e instanceof DOMException ? e.name : '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') throw e;
+    return { stream: await voiceOnly(), cameraOff: true };
+  }
+}
+
+/** Why the microphone or camera couldn't be used, and what to do about it. */
+function mediaTrouble(e: unknown, kind: CallKind): string {
+  const name = e instanceof DOMException ? e.name : '';
+  if (name === 'NotAllowedError' || name === 'SecurityError')
+    return kind === 'video'
+      ? 'Allow Caishy to use your camera and microphone in your browser’s site settings, then try again.'
+      : 'Allow Caishy to use your microphone in your browser’s site settings, then try again.';
+  if (name === 'NotFoundError' || name === 'OverconstrainedError')
+    return 'Caishy can’t find a microphone on this device.';
+  if (name === 'NotReadableError' || name === 'AbortError')
+    return 'Another app is using your microphone. Close it, then try again.';
+  return 'Caishy couldn’t use your microphone.';
 }
 
 /** Everything this device holds for the call, let go of. */
 function release(): void {
-  if (alive) clearInterval(alive);
+  if (beat) clearInterval(beat);
   if (dropTimer) clearTimeout(dropTimer);
-  alive = null;
+  if (connectTimer) clearTimeout(connectTimer);
+  beat = null;
   dropTimer = null;
+  connectTimer = null;
   pc?.close();
   pc = null;
   remoteDescribed = false;
@@ -49,23 +94,64 @@ function release(): void {
   for (const t of store().local?.getTracks() ?? []) t.stop();
 }
 
-/** Show that it ended for a moment, then clear the screen. */
+/** Show that it ended for a moment, then clear the screen, and look for a call ringing now. */
 function finish(note: string | null): void {
   release();
   store().patch({ phase: 'ended', note, local: null, remote: null });
   const call = current();
   setTimeout(() => {
-    if (current()?.id === call?.id) store().reset();
+    if (current()?.id !== call?.id) return;
+    store().reset();
+    void checkLiveCall();
   }, 1800);
+}
+
+/**
+ * Say this device is still in the call, and catch up on what it missed: answered, turned down,
+ * over. Only the server saying it's over (or that this device isn't in it) ends it here.
+ */
+function heartbeat(callId: string): void {
+  if (beat) clearInterval(beat);
+  lastBeat = 0;
+  beat = setInterval(() => {
+    const phase = store().phase;
+    if (current()?.id !== callId || !phase || phase === 'ended') return;
+    if (phase === 'active' && Date.now() - lastBeat < TALKING_BEAT_MS) return;
+    lastBeat = Date.now();
+    endpoints.callAlive(callId, DEVICE_ID).then(
+      ({ call }) => onCallEvent({ type: 'call.updated', data: call } as RealtimeEvent),
+      (e) => {
+        // Offline for a moment, or the server restarting: the next beat tries again, and the
+        // server waits 90 seconds for one.
+        if (e instanceof ApiError && [403, 404, 409].includes(e.status) && current()?.id === callId)
+          finish(null);
+      },
+    );
+  }, BEAT_MS);
+}
+
+/** Answered: the two devices find each other soon, or the call couldn't connect. */
+function connectBy(): void {
+  if (connectTimer) clearTimeout(connectTimer);
+  connectTimer = setTimeout(() => {
+    if (store().phase === 'connecting') void hangUp('The call couldn’t connect.', true);
+  }, CONNECT_MS);
 }
 
 const signal = (kind: 'offer' | 'answer' | 'candidate', rest: object) => {
   const call = current();
-  if (call)
-    void endpoints.signalCall(call.id, { deviceId: DEVICE_ID, kind, ...rest }).catch(() => {});
+  if (!call) return;
+  const send = (tries: number): Promise<unknown> =>
+    endpoints.signalCall(call.id, { deviceId: DEVICE_ID, kind, ...rest }).catch((e) => {
+      // An offer or an answer is the call itself: try it again. A candidate has others behind it.
+      const again = !(e instanceof ApiError) || e.status >= 500 || e.status === 429;
+      if (kind !== 'candidate' && again && tries > 1 && current()?.id === call.id)
+        return new Promise((r) => setTimeout(r, 1000)).then(() => send(tries - 1));
+    });
+  void send(3);
 };
 
-async function connect(call: CallView, local: MediaStream): Promise<RTCPeerConnection> {
+async function connect(local: MediaStream): Promise<RTCPeerConnection> {
   const { iceServers } = await endpoints.callIce().catch(() => ({ iceServers: [] }));
   const peer = new RTCPeerConnection({ iceServers });
   const remote = new MediaStream();
@@ -81,6 +167,7 @@ async function connect(call: CallView, local: MediaStream): Promise<RTCPeerConne
     const state = peer.connectionState;
     if (state === 'connected') {
       if (dropTimer) clearTimeout(dropTimer);
+      if (connectTimer) clearTimeout(connectTimer);
       store().patch({ phase: 'active' });
     } else if (state === 'disconnected') {
       store().patch({ phase: 'reconnecting' });
@@ -91,9 +178,6 @@ async function connect(call: CallView, local: MediaStream): Promise<RTCPeerConne
     }
   };
   pc = peer;
-  alive = setInterval(() => {
-    void endpoints.callAlive(call.id, DEVICE_ID).catch(() => finish(null));
-  }, 20_000);
   for (const s of early.splice(0)) await onSignal(s);
   return peer;
 }
@@ -123,25 +207,27 @@ async function onSignal(s: CallSignalView): Promise<void> {
 export async function startCall(conversationId: string, kind: CallKind): Promise<void> {
   if (store().phase) return;
   store().patch({ phase: 'starting', note: null });
-  let local: MediaStream;
+  let got: Awaited<ReturnType<typeof media>>;
   try {
-    local = await media(kind);
-  } catch {
+    got = await media(kind);
+  } catch (e) {
     store().reset();
-    toast(
-      kind === 'video'
-        ? 'Allow Caishy to use your camera and microphone to call.'
-        : 'Allow Caishy to use your microphone to call.',
-      { tone: 'danger' },
-    );
+    toast(mediaTrouble(e, kind), { tone: 'danger' });
+    void checkLiveCall();
     return;
   }
   try {
     const { call } = await endpoints.startCall(conversationId, { kind, deviceId: DEVICE_ID });
-    store().patch({ call, phase: 'outgoing', local });
+    store().patch({ call, phase: 'outgoing', local: got.stream, cameraOff: got.cameraOff });
+    heartbeat(call.id);
   } catch (e) {
-    for (const t of local.getTracks()) t.stop();
+    for (const t of got.stream.getTracks()) t.stop();
     store().reset();
+    // Rung by them while this was starting: that call is the one to show.
+    if (e instanceof ApiError && e.code === 'in_call') {
+      await checkLiveCall();
+      if (store().phase) return;
+    }
     toast((e as Error).message, { tone: 'danger' });
   }
 }
@@ -151,17 +237,31 @@ export async function answer(): Promise<void> {
   const call = current();
   if (!call || store().phase !== 'incoming') return;
   store().patch({ phase: 'connecting' });
+  let got: Awaited<ReturnType<typeof media>>;
   try {
-    const local = await media(call.kind);
-    store().patch({ local });
-    await connect(call, local);
+    got = await media(call.kind);
+  } catch (e) {
+    // Still ringing: fix it and answer, or decline. It isn't turned down for them.
+    if (current()?.id === call.id && store().phase === 'connecting')
+      store().patch({ phase: 'incoming' });
+    toast(mediaTrouble(e, call.kind), { tone: 'danger' });
+    return;
+  }
+  // It stopped ringing while the browser asked: nothing to answer.
+  if (current()?.id !== call.id || store().phase !== 'connecting') {
+    for (const t of got.stream.getTracks()) t.stop();
+    return;
+  }
+  try {
+    store().patch({ local: got.stream, cameraOff: got.cameraOff });
+    await connect(got.stream);
     const { call: answered } = await endpoints.acceptCall(call.id, DEVICE_ID);
     store().patch({ call: answered });
+    heartbeat(answered.id);
+    connectBy();
   } catch (e) {
-    const devices = e instanceof DOMException;
-    finish(devices ? 'Caishy couldn’t use your microphone or camera.' : null);
-    if (devices) void endpoints.declineCall(call.id).catch(() => {});
-    else toast((e as Error).message, { tone: 'danger' });
+    finish(null);
+    toast((e as Error).message, { tone: 'danger' });
   }
 }
 
@@ -189,7 +289,7 @@ export function toggleCamera(): void {
   store().patch({ cameraOff });
 }
 
-/** What the server says about calls, from the realtime connection. */
+/** What the server says about calls, from the realtime connection or a heartbeat. */
 export function onCallEvent(event: RealtimeEvent): void {
   if (event.type === 'call.signal') {
     void onSignal(event.data as CallSignalView);
@@ -199,16 +299,26 @@ export function onCallEvent(event: RealtimeEvent): void {
   const call = event.data as CallView;
   const mine = current();
   if (event.type === 'call.ringing') {
+    // Busy with another here (or just ending one): it's looked for again once this is over.
     if (!store().phase) store().patch({ call, phase: 'incoming', note: null });
     return;
   }
   // Once this device has hung up, what comes after is old news.
   if (mine?.id !== call.id || store().phase === 'ended') return;
   if (call.state === 'ended') {
+    const iCalled = call.caller.id === me();
+    // Turned down on another of my devices: this one just stops ringing.
+    if (!iCalled && call.outcome === 'declined') {
+      release();
+      store().reset();
+      return;
+    }
     finish(
-      call.outcome === 'declined' || call.outcome === 'missed'
+      iCalled && (call.outcome === 'declined' || call.outcome === 'missed')
         ? `${call.callee.displayName} didn’t answer.`
-        : null,
+        : !iCalled && (call.outcome === 'missed' || call.outcome === 'cancelled')
+          ? 'Missed call'
+          : null,
     );
     return;
   }
@@ -219,12 +329,13 @@ export function onCallEvent(event: RealtimeEvent): void {
     return;
   }
   store().patch({ call });
-  // The other side answered: the caller's device makes the offer.
-  if (call.state === 'active' && call.callerDevice === DEVICE_ID && !pc) {
+  // The other side answered: the caller's device makes the offer, once.
+  if (call.state === 'active' && call.callerDevice === DEVICE_ID && store().phase === 'outgoing') {
     const local = store().local;
     if (!local) return;
     store().patch({ phase: 'connecting' });
-    void connect(call, local)
+    connectBy();
+    void connect(local)
       .then(async (peer) => {
         await peer.setLocalDescription(await peer.createOffer());
         signal('offer', { sdp: peer.localDescription?.sdp });
@@ -233,24 +344,27 @@ export function onCallEvent(event: RealtimeEvent): void {
   }
 }
 
-/** A page opened while a call rings for its person still rings. */
-export async function checkLiveCall(me: string): Promise<void> {
+/** A page opened while a call rings for its person still rings; so does one that was busy. */
+export async function checkLiveCall(person: string = me()): Promise<void> {
+  if (!person || store().phase) return;
   const { call } = await endpoints.liveCall().catch(() => ({ call: null }));
-  if (call && call.state === 'ringing' && call.callee.id === me && !store().phase)
-    store().patch({ call, phase: 'incoming' });
+  if (call && call.state === 'ringing' && call.callee.id === person && !store().phase)
+    store().patch({ call, phase: 'incoming', note: null });
 }
 
-// Closing the tab mid-call hangs up, so nobody is left waiting on it.
+// Closing the tab mid-call hangs up, so nobody is left waiting on it. A tab only ringing does
+// nothing: the call goes on ringing on the person's other devices.
 if (typeof window !== 'undefined')
   window.addEventListener('pagehide', () => {
     const call = current();
-    if (!call || !store().phase || store().phase === 'ended') return;
-    const incoming = store().phase === 'incoming';
-    void fetch(`${API_URL}/v1/calls/${call.id}/${incoming ? 'decline' : 'end'}`, {
+    const phase = store().phase;
+    if (!call || !phase || phase === 'incoming' || phase === 'ended' || phase === 'starting')
+      return;
+    void fetch(`${API_URL}/v1/calls/${call.id}/end`, {
       method: 'POST',
       keepalive: true,
       credentials: 'include',
       headers: { 'content-type': 'application/json', 'x-caishy-client': 'web' },
-      body: incoming ? '{}' : JSON.stringify({ deviceId: DEVICE_ID }),
+      body: JSON.stringify({ deviceId: DEVICE_ID }),
     }).catch(() => {});
   });

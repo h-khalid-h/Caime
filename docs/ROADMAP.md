@@ -439,3 +439,27 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   fragment the schema didn't expect) and that the other camera stayed black once a voice became
   a picture; both are fixed. A TURN relay for strict networks is configuration (⛔). Tests: 156
   core, 49 brand, 205 server, 9 app, 33 E2E.
+- 2026-09-26 — Session 2 (cont.): a review of OAuth, the AI agent and calls, with every confirmed
+  finding fixed and a test that failed first. OAuth: only the token and revocation endpoints take
+  form posts (every `/v1` route did, so another site could sign someone in to its own account);
+  recovering an account ends the apps it let in; allowing an app again for less narrows the
+  tokens it already holds; two first allows at once no longer fail; a code turning up after it
+  expired ends nothing; browser apps can trade their code (CORS on token, revocation and
+  discovery, without credentials); a rate limit answers as OAuth libraries expect; a business
+  customer sees "via an app", never a team member's app's name; and someone who signs up from an
+  app's link ends onboarding on its question. The AI agent: every model call counts against a
+  conversation (twenty a day), so writing while it thinks can't keep it thinking; an answer
+  thrown away isn't counted against the plan; a person who wrote since a conversation was
+  resolved, or took it since the customer came back, keeps it; it knows the day where the
+  customer is; a try is one of the person's own AI assists; at its cap it tells the customer
+  it passed them on; and `business.thread` says who moved a thread (`by`). Calls: each side says
+  for itself that it's still there, so one side can't keep a call the other left; blocking ends a
+  call at once; "on another call" is said only to someone who may see that person is online;
+  the ring's notification is read once it stops, its push lives only while it rings and reaches
+  browsers only; large signals leave the database within ten minutes, and offers are limited. On
+  the web, a failed heartbeat no longer ends a working call, a lost event can't leave either side
+  waiting (the heartbeat reconciles, and a call that can't connect in 30 seconds ends), closing
+  one ringing tab no longer declines everywhere, a ring that arrives while starting a call
+  isn't lost, a video call without a camera goes ahead with the voice, and the call screen is a
+  dialog with a name, focus on what to do, its status announced and a ring. Every new guard was
+  mutated and its test failed. Tests: 156 core, 49 brand, 220 server, 9 app, 33 E2E.

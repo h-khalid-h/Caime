@@ -91,6 +91,16 @@ export class Bus {
     await this.pool.query('select pg_notify($1, $2)', [CHANNEL, payload]);
   }
 
+  /**
+   * A large payload is kept only until every instance has read it (well under a second), not
+   * for good: a call's offers, say, carry both people's devices and addresses.
+   */
+  async sweep(): Promise<void> {
+    await this.pool.query(
+      `delete from domain_events where type = 'realtime.large' and created_at < now() - interval '10 minutes'`,
+    );
+  }
+
   async stop(): Promise<void> {
     this.closed = true;
     if (this.listener) {

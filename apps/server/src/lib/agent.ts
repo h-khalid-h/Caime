@@ -9,10 +9,12 @@
  * It stays out of a conversation a person on the team has taken, one it handed over (until
  * that's resolved), one that's escalated or private (R18), and anyone under 18; it deals with
  * each customer message once, answers at most AGENT_REPLIES_PER_CONVERSATION times in a
- * conversation a day, and stops for the day at what the plan includes. Whenever it stays out,
- * the team answers as it would without one.
+ * conversation a day and thinks at most AGENT_CALLS_PER_CONVERSATION times (answered or not),
+ * and stops for the day at what the plan includes. Whenever it stays out, the team answers as
+ * it would without one.
  */
 import {
+  AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
   type AgentAction,
   isMinor,
@@ -70,21 +72,24 @@ export async function queueAgent(
 }
 
 /** One model call for the agent, recorded in `ai_runs` as every AI call is (never the text). */
-function recordRun(
+async function recordRun(
   ctx: AppContext,
   feature: 'agent' | 'agent_try',
   userId: string,
+  conversationId: string | null,
   started: number,
   outcome: string,
   usage: AiUsage | null,
-) {
+): Promise<string> {
   ctx.metrics.ai.inc({ feature, outcome });
   ctx.metrics.aiSeconds.observe({ feature }, (Date.now() - started) / 1000);
-  return ctx.db
+  const id = uuidv7();
+  await ctx.db
     .insertInto('ai_runs')
     .values({
-      id: uuidv7(),
+      id,
       user_id: userId,
+      conversation_id: conversationId,
       feature,
       provider: 'anthropic',
       model: usage?.model ?? ctx.ai?.model ?? null,
@@ -95,31 +100,39 @@ function recordRun(
       created_at: ctx.now(),
     })
     .execute();
+  return id;
 }
+
+/** An answer it thought of but never sent: no plan counts it, though the call still happened. */
+const discard = (ctx: AppContext, runId: string) =>
+  ctx.db.updateTable('ai_runs').set({ outcome: 'discarded' }).where('id', '=', runId).execute();
 
 /**
  * Ask the model, as the agent. Failing, it says nothing and the team answers; `null` then. The
- * run is recorded either way, and counts against the plan only when it answered.
+ * run is recorded either way, against the conversation it's for, and counts against the plan
+ * only when what it answered is sent (an answer thrown away is marked so: `discard`).
  */
 export async function askAgent(
   ctx: AppContext,
   feature: 'agent' | 'agent_try',
   runBy: string,
   input: Parameters<NonNullable<AppContext['ai']>['supportAgent']>[0],
-): Promise<{ action: AgentAction; message: string } | null> {
+  conversationId: string | null = null,
+): Promise<{ action: AgentAction; message: string; runId: string } | null> {
   const ai = ctx.ai;
   if (!ai) return null;
   const started = Date.now();
   try {
     const r = await ai.supportAgent(input);
-    await recordRun(ctx, feature, runBy, started, 'ok', r.usage);
-    return r.value;
+    const runId = await recordRun(ctx, feature, runBy, conversationId, started, 'ok', r.usage);
+    return { ...r.value, runId };
   } catch (err) {
     const reason = err instanceof AiError ? err.reason : 'error';
     await recordRun(
       ctx,
       feature,
       runBy,
+      conversationId,
       started,
       reason,
       err instanceof AiError ? err.usage : null,
@@ -172,15 +185,32 @@ async function transcriptFor(
   };
 }
 
-/** "Friday 26 September 2026", for the model to know what day it is. */
-export const todayForAgent = (now: Date) =>
-  new Intl.DateTimeFormat('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(now);
+/**
+ * "Friday 26 September 2026" where the customer is, for the model to know what "today" and
+ * "tomorrow" mean to them. Built from its parts, so it reads the same on every ICU version.
+ */
+export function todayForAgent(now: Date, timeZone = 'UTC'): string {
+  const day = (zone: string) => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: zone,
+    }).formatToParts(now);
+    const part = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+    return `${part('weekday')} ${part('day')} ${part('month')} ${part('year')}`;
+  };
+  try {
+    return day(timeZone);
+  } catch {
+    return day('UTC');
+  }
+}
+
+/** What it tells the customer when it passes a conversation on without asking the model. */
+const passedOn = (orgName: string) =>
+  `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
 
 /** Post as the agent, as any message is: stored, sent live, notified, recorded on the thread. */
 async function postAs(ctx: AppContext, senderId: string, conversationId: string, body: string) {
@@ -226,6 +256,7 @@ async function threadMoved(
     change,
     state: view!.state,
     assignee: view!.assignee,
+    by: 'ai_agent',
   });
 }
 
@@ -317,7 +348,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (!agent) return;
   const customer = await ctx.db
     .selectFrom('users')
-    .select('birth_year')
+    .select(['birth_year', 'time_zone'])
     .where('id', '=', thread.customer_id)
     .executeTakeFirst();
   // A person answers anyone under 18 (R29).
@@ -343,16 +374,32 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       .returning('conversation_id')
       .executeTakeFirst();
 
-  // A long conversation is a person's to finish.
-  const recent = await ctx.db
-    .selectFrom('messages')
-    .select(sql<number>`count(*)::int`.as('n'))
-    .where('conversation_id', '=', conversationId)
-    .where('sender_id', '=', agent.bot_user_id)
-    .where('created_at', '>', new Date(ctx.now().getTime() - DAY_MS))
-    .executeTakeFirstOrThrow();
-  if (recent.n >= AGENT_REPLIES_PER_CONVERSATION) {
-    if (await claim()) await handOver(ctx, thread.org_id, conversationId, agent);
+  // A long conversation is a person's to finish: after so many answers, or so many calls to
+  // the model however they ended (a customer writing while it thinks throws its answer away).
+  const dayAgo = new Date(ctx.now().getTime() - DAY_MS);
+  const [answered, thought] = await Promise.all([
+    ctx.db
+      .selectFrom('messages')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .where('conversation_id', '=', conversationId)
+      .where('sender_id', '=', agent.bot_user_id)
+      .where('created_at', '>', dayAgo)
+      .executeTakeFirstOrThrow(),
+    ctx.db
+      .selectFrom('ai_runs')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .where('conversation_id', '=', conversationId)
+      .where('feature', '=', 'agent')
+      .where('created_at', '>', dayAgo)
+      .executeTakeFirstOrThrow(),
+  ]);
+  if (answered.n >= AGENT_REPLIES_PER_CONVERSATION || thought.n >= AGENT_CALLS_PER_CONVERSATION) {
+    if (!(await claim())) return;
+    // Said without the model, so the customer isn't left wondering who answers now.
+    await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name)).catch((err) =>
+      ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
+    );
+    await handOver(ctx, thread.org_id, conversationId, agent);
     return;
   }
 
@@ -362,21 +409,33 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     thread.customer_id,
     agent.bot_user_id,
   );
-  const reply = await askAgent(ctx, 'agent', agent.bot_user_id, {
-    orgName: thread.org_name,
-    agentName: agent.name,
-    knowledge: agent.knowledge,
-    conversation: transcript.text,
-    introduced: transcript.introduced,
-    today: todayForAgent(ctx.now()),
-  });
-  // Nothing to say, or the conversation moved on while it thought: the team has it.
-  if (!reply || !(await claim())) return;
+  const reply = await askAgent(
+    ctx,
+    'agent',
+    agent.bot_user_id,
+    {
+      orgName: thread.org_name,
+      agentName: agent.name,
+      knowledge: agent.knowledge,
+      conversation: transcript.text,
+      introduced: transcript.introduced,
+      today: todayForAgent(ctx.now(), customer.time_zone),
+    },
+    conversationId,
+  );
+  if (!reply) return;
+  // The conversation moved on while it thought (they wrote again, a person answered): the
+  // answer goes nowhere, and the next message, if any, is looked at on its own.
+  if (!(await claim())) {
+    await discard(ctx, reply.runId);
+    return;
+  }
   try {
     await postAs(ctx, agent.bot_user_id, conversationId, reply.message);
   } catch (err) {
     // The customer blocked the organization, or it closed: nobody writes there now.
     ctx.log.warn({ err, conversationId }, 'ai agent could not post');
+    await discard(ctx, reply.runId);
     return;
   }
   if (reply.action === 'hand_over') await handOver(ctx, thread.org_id, conversationId, agent);

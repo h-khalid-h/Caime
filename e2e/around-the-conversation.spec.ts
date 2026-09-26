@@ -1238,9 +1238,40 @@ test.describe
         headers: { authorization: `Bearer ${token}` },
       });
       expect(after.status()).toBe(401);
+
+      // Someone new follows the same link: the account they make ends on the app's question.
+      const theirs = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      await theirs.route('https://digest.example/**', (r) =>
+        r.fulfill({ contentType: 'text/html', body: '<p>Not connected</p>' }),
+      );
+      const fresh = await newPerson(theirs);
+      const freshHandle = `omar.oauth.${stamp}`;
+      await fresh.page.goto(authorize);
+      await fresh.page.getByTestId('welcome-sign-up').click();
+      await fresh.page.getByTestId('signup-name').fill('Omar Nabil');
+      await fresh.page.getByTestId('signup-handle').fill(freshHandle);
+      await fresh.page.getByTestId('signup-email').fill(`${freshHandle}@example.com`);
+      await fresh.page.getByTestId('signup-password').fill(PASSWORD);
+      await fresh.page.getByTestId('signup-birth-year').fill('1990');
+      await expect(fresh.page.getByText('Available')).toBeVisible();
+      await fresh.page.getByTestId('signup-submit').click();
+      await fresh.page.waitForURL('**/onboarding');
+      await fresh.page.getByText('Copy the codes').click();
+      await fresh.page.getByTestId('onboarding-codes-next').click();
+      await fresh.page.getByTestId('onboarding-rules-next').click();
+      await expect(visible(fresh.page, 'An app asked to act for you.')).toBeVisible();
+      await fresh.page.getByTestId('onboarding-link').click();
+      await expect(fresh.page.getByTestId('oauth-consent')).toContainText(
+        'Weekly digest wants to act for you',
+      );
+      await fresh.page.getByTestId('oauth-deny').click();
+      await fresh.page.waitForURL(/^https:\/\/digest\.example\/callback\?/);
+      expect(new URL(fresh.page.url()).searchParams.get('error')).toBe('access_denied');
+
       await digest.dispose();
       await phone.close();
-      expect([...errors, ...app.errors]).toEqual([]);
+      await theirs.close();
+      expect([...errors, ...app.errors, ...fresh.errors]).toEqual([]);
     });
 
     test('the clinic’s AI agent answers first, says it’s an AI, and hands over to a person', async () => {
@@ -1346,6 +1377,11 @@ test.describe
       // It rings wherever Alex is in the app.
       await expect(alex.page.getByTestId('call-incoming')).toBeVisible();
       await expect(alex.page.getByTestId('call-status')).toHaveText('Video call · calling you');
+      // A dialog with a name, and the keyboard is on Answer.
+      await expect(
+        alex.page.getByRole('alertdialog', { name: 'Video call with Noor Haddad' }),
+      ).toBeVisible();
+      await expect(alex.page.getByTestId('call-accept')).toBeFocused();
       await expect(page.getByTestId('call-status')).toHaveText('Calling…');
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-incoming.png' });
       await alex.page.getByTestId('call-accept').click();
@@ -1373,8 +1409,18 @@ test.describe
       await alex.page.goto(`/c/${convo}`);
       await expect(visible(alex.page, 'Video call · under a minute')).toBeVisible();
 
-      // Turned down, the caller hears so, and each side reads it their way.
+      // It rings in both of Alex's tabs; closing one leaves the other ringing.
+      const second = await alexContext.newPage();
+      await second.goto('/');
       await page.getByTestId('call-voice').click();
+      await expect(second.getByTestId('call-incoming')).toBeVisible();
+      await expect(alex.page.getByTestId('call-incoming')).toBeVisible();
+      await second.close();
+      await alex.page.waitForTimeout(1500);
+      await expect(alex.page.getByTestId('call-incoming')).toBeVisible();
+      await expect(page.getByTestId('call-status')).toHaveText('Calling…');
+
+      // Turned down, the caller hears so, and each side reads it their way.
       await alex.page.getByTestId('call-decline').click();
       await expect(page.getByTestId('call-status')).toHaveText('Alex Chen didn’t answer.');
       await expect(visible(page, 'Voice call · no answer')).toBeVisible();

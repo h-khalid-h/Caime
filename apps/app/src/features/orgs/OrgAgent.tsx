@@ -8,6 +8,7 @@ import type { AgentTryView, OrgView } from '@caishy/core/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
@@ -37,6 +38,8 @@ export function OrgAgent({ org }: { org: OrgView }) {
   const [question, setQuestion] = useState('');
   const [tried, setTried] = useState<AgentTryView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The server says what's wrong with a field (knowledge too short, say), under that field.
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; knowledge?: string }>({});
   const [busy, setBusy] = useState<'save' | 'try' | 'pause' | 'remove' | null>(null);
   const [removing, setRemoving] = useState(false);
 
@@ -53,16 +56,21 @@ export function OrgAgent({ org }: { org: OrgView }) {
     setQuestion('');
     setTried(null);
     setError(null);
+    setFieldErrors({});
     setRemoving(false);
     setOpen(true);
   };
   const work = async (kind: NonNullable<typeof busy>, fn: () => Promise<void>) => {
     setBusy(kind);
     setError(null);
+    setFieldErrors({});
     try {
       await fn();
     } catch (e) {
-      setError((e as Error).message);
+      const fields = e instanceof ApiError ? e.fieldErrors() : {};
+      if (fields.name || fields.knowledge)
+        setFieldErrors({ name: fields.name, knowledge: fields.knowledge });
+      else setError((e as Error).message);
     } finally {
       setBusy(null);
     }
@@ -192,7 +200,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
               block
               size="lg"
               loading={busy === 'save'}
-              disabled={!name.trim() || knowledge.trim().length < 20}
+              disabled={!name.trim() || !knowledge.trim()}
               onPress={() => void save()}
               testID="org-agent-save"
             />
@@ -206,6 +214,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
             onChangeText={setName}
             maxLength={AGENT_NAME_MAX}
             hint="Customers see it on everything it writes, with “AI agent”."
+            error={fieldErrors.name}
             testID="org-agent-name"
           />
           <TextField
@@ -215,7 +224,8 @@ export function OrgAgent({ org }: { org: OrgView }) {
             multiline
             maxLength={AGENT_KNOWLEDGE_MAX}
             placeholder="Open Sunday to Thursday 9 to 6, Saturday 9 to 1. A check-up is 400 EGP. Book by calling 02 2345 6789."
-            hint="Hours, services, prices, how to book, what you don’t do. It answers only from this."
+            hint="Hours, services, prices, how to book, what you don’t do: a few sentences at least. It answers only from this."
+            error={fieldErrors.knowledge}
             testID="org-agent-knowledge"
           />
           <Text variant="caption" color="textTertiary">
@@ -256,7 +266,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
             ) : null}
           </View>
           {error ? (
-            <Text variant="caption" color="danger">
+            <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
               {error}
             </Text>
           ) : null}

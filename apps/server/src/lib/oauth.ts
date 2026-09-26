@@ -39,6 +39,13 @@ export function secretMatches(secret: string | undefined, hash: Buffer | null): 
   return given.length === hash.length && timingSafeEqual(given, hash);
 }
 
+/**
+ * What a token may do now: what it was made with, within what the person allows today. Allowing
+ * an app again for less narrows the tokens it already holds, never only the next ones.
+ */
+export const allowedNow = (tokenScopes: string[], grantScopes: string[]) =>
+  tokenScopes.filter((s) => grantScopes.includes(s));
+
 /** A fresh pair for a grant: an access token for an hour, a refresh token for a month. */
 export async function issueTokens(ctx: AppContext, grantId: string, scopes: string[]) {
   const access = `${OAUTH_ACCESS_PREFIX}${randomBytes(24).toString('base64url')}`;
@@ -92,6 +99,17 @@ export async function revokeGrant(ctx: AppContext, grantId: string): Promise<voi
     .execute();
 }
 
+/** Every app a person let in, let go of: when they recover their account, say. */
+export async function revokeGrantsOf(ctx: AppContext, userId: string): Promise<void> {
+  const live = await ctx.db
+    .selectFrom('oauth_grants')
+    .select('id')
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .execute();
+  for (const g of live) await revokeGrant(ctx, g.id);
+}
+
 const TOUCH_EVERY_MS = 5 * 60_000;
 
 /** Whom an app's access token acts for, and what it may do, if all of it is still live. */
@@ -105,7 +123,14 @@ export async function resolveOAuthAccess(
     .innerJoin('oauth_grants as g', 'g.id', 'k.grant_id')
     .innerJoin('oauth_clients as c', 'c.id', 'g.client_id')
     .innerJoin('users as u', 'u.id', 'g.user_id')
-    .select(['g.id as grant_id', 'g.user_id', 'g.last_used_at', 'c.name', 'k.scopes'])
+    .select([
+      'g.id as grant_id',
+      'g.user_id',
+      'g.last_used_at',
+      'g.scopes as grant_scopes',
+      'c.name',
+      'k.scopes',
+    ])
     .where('k.token_hash', '=', hashToken(token))
     .where('k.kind', '=', 'access')
     .where('k.revoked_at', 'is', null)
@@ -123,6 +148,11 @@ export async function resolveOAuthAccess(
       .execute();
   return {
     userId: row.user_id,
-    grant: { kind: 'oauth', id: row.grant_id, name: row.name, scopes: row.scopes },
+    grant: {
+      kind: 'oauth',
+      id: row.grant_id,
+      name: row.name,
+      scopes: allowedNow(row.scopes, row.grant_scopes),
+    },
   };
 }

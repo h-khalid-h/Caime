@@ -1,10 +1,11 @@
 import * as Haptics from 'expo-haptics';
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import {
   Platform,
   Pressable as RNPressable,
   type PressableProps as RNPressableProps,
   type StyleProp,
+  type View,
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -24,6 +25,8 @@ export interface PressableProps extends Omit<RNPressableProps, 'style' | 'childr
   /** Draw the keyboard focus ring (web). Default true. */
   focusRing?: boolean;
   focusRadius?: number;
+  /** To move focus to it (a prop in React 19). */
+  ref?: Ref<View>;
 }
 
 /**
