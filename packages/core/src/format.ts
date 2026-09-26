@@ -205,6 +205,50 @@ export function snippetParts(snippet: string): Array<{ text: string; match: bool
   return parts;
 }
 
+/** How long messages last: "24 hours", "7 days", "1 year". */
+export function retentionText(days: number): string {
+  if (days === 1) return '24 hours';
+  if (days === 365) return '1 year';
+  return `${days} days`;
+}
+
+/**
+ * What a system message says ("You added Lina and Omar"). The server records names when it
+ * writes the event, so the line reads the same later, even after someone leaves.
+ */
+export function systemText(payload: unknown, viewerId?: string | null): string {
+  const p = (payload ?? {}) as {
+    event?: string;
+    byId?: string;
+    by?: string;
+    title?: string;
+    names?: string[];
+    name?: string;
+    userId?: string;
+    days?: number | null;
+  };
+  const by = p.byId && p.byId === viewerId ? 'You' : (p.by ?? 'Someone');
+  const them = p.userId && p.userId === viewerId ? 'you' : (p.name ?? 'someone');
+  switch (p.event) {
+    case 'group_created':
+      return p.title ? `${by} created “${p.title}”` : `${by} created the group`;
+    case 'members_added':
+      return p.names?.length ? `${by} added ${joinNames(p.names)}` : `${by} added people`;
+    case 'member_left':
+      return `${p.name ?? by} left`;
+    case 'member_removed':
+      return `${by} removed ${them}`;
+    case 'decision_recorded':
+      return p.title ? `${by} recorded a decision: ${p.title}` : `${by} recorded a decision`;
+    case 'retention_changed':
+      return typeof p.days === 'number'
+        ? `${by} set messages to disappear after ${retentionText(p.days)}`
+        : `${by} turned off disappearing messages`;
+    default:
+      return 'Conversation updated';
+  }
+}
+
 /** A message preview for lists and notifications: first line, trimmed. */
 export function previewText(text: string, max = 90): string {
   return truncate(text.replace(/\s+/g, ' ').trim(), max);
@@ -239,6 +283,8 @@ export function messagePreview(m: {
       return `📊 ${previewText(String(payload.question ?? 'Poll'), 80)}`;
     case 'sticker':
       return 'Sticker';
+    case 'system':
+      return previewText(systemText(m.payload), 80);
     case 'kit':
       // Kit cards carry their kit's name ("Meeting: Venue walkthrough"); request cards don't.
       return previewText(

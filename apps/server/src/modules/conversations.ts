@@ -393,19 +393,25 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .set({ ...shared, updated_at: ctx.now() })
         .where('id', '=', id)
         .execute();
+      // Everyone sees when messages start or stop disappearing.
+      if (body.retentionDays !== undefined && body.retentionDays !== conversation.retention_days)
+        await sendSystem(ctx, id, auth.userId, 'retention_changed', { days: body.retentionDays });
     }
-    await ctx.db
-      .updateTable('participants')
-      .set({
-        ...(body.attention !== undefined ? { attention: body.attention } : {}),
-        ...(body.mutedUntil !== undefined ? { muted_until: body.mutedUntil } : {}),
-        ...(body.archived !== undefined ? { archived_at: body.archived ? ctx.now() : null } : {}),
-        ...(body.pinned !== undefined ? { pinned_at: body.pinned ? ctx.now() : null } : {}),
-        ...(body.draft !== undefined ? { draft: body.draft, draft_updated_at: ctx.now() } : {}),
-      })
-      .where('conversation_id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .execute();
+    const mine = {
+      ...(body.attention !== undefined ? { attention: body.attention } : {}),
+      ...(body.mutedUntil !== undefined ? { muted_until: body.mutedUntil } : {}),
+      ...(body.archived !== undefined ? { archived_at: body.archived ? ctx.now() : null } : {}),
+      ...(body.pinned !== undefined ? { pinned_at: body.pinned ? ctx.now() : null } : {}),
+      ...(body.draft !== undefined ? { draft: body.draft, draft_updated_at: ctx.now() } : {}),
+    };
+    // Only what was sent: an empty SET is invalid SQL (renaming a group used to fail here).
+    if (Object.keys(mine).length)
+      await ctx.db
+        .updateTable('participants')
+        .set(mine)
+        .where('conversation_id', '=', id)
+        .where('user_id', '=', auth.userId)
+        .execute();
     const everyone = Object.keys(shared).length > 0;
     const recipients = everyone
       ? (await participantsOf(ctx.db, id)).map((p) => p.user_id)

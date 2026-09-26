@@ -538,6 +538,23 @@ export async function insertSystemMessage(
   event: string,
   data: Record<string, unknown>,
 ): Promise<Message> {
+  // Names are recorded with the event, so the line reads the same later (core systemText).
+  const userIds = Array.isArray(data.userIds) ? (data.userIds as string[]) : [];
+  const userId = typeof data.userId === 'string' ? data.userId : null;
+  const people = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'display_name'])
+    .where('id', 'in', [...new Set([actorId, ...userIds, ...(userId ? [userId] : [])])])
+    .execute();
+  const nameOf = (id: string) => people.find((u) => u.id === id)?.display_name;
+  const payload = {
+    event,
+    ...data,
+    byId: actorId,
+    by: nameOf(actorId) ?? data.by ?? null,
+    ...(userIds.length ? { names: userIds.map(nameOf).filter(Boolean) } : {}),
+    ...(userId ? { name: nameOf(userId) ?? null } : {}),
+  };
   return ctx.db.transaction().execute(async (trx) => {
     const bumped = await trx
       .updateTable('conversations')
@@ -555,7 +572,7 @@ export async function insertSystemMessage(
         client_id: null,
         kind: 'system',
         body: null,
-        payload: JSON.stringify({ event, ...data }),
+        payload: JSON.stringify(payload),
         created_at: ctx.now(),
       })
       .returningAll()

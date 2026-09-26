@@ -1,5 +1,5 @@
 import type { MessageView } from '@caishy/core/api';
-import { formatBytes, formatClock } from '@caishy/core/format';
+import { formatBytes, formatClock, systemText } from '@caishy/core/format';
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { View } from 'react-native';
@@ -8,6 +8,7 @@ import { Character } from '@/brand/Character';
 import { KitCard } from '@/features/kits/KitCard';
 import { stickerById } from '@/features/stickers/pack';
 import { linkify, openLink } from '@/lib/links';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import {
   Check,
@@ -89,6 +90,7 @@ export const MessageBubble = memo(function MessageBubble({
   highlighted,
 }: BubbleProps) {
   const t = useTheme();
+  const meId = useSession((s) => s.user?.id ?? null);
   const r = t.radii.bubble;
   const tail = t.radii.bubbleTail;
   const deleted = m.deletedAt !== null;
@@ -117,7 +119,7 @@ export const MessageBubble = memo(function MessageBubble({
           }}
         >
           <Text variant="caption" color="textSecondary" align="center">
-            {m.body}
+            {m.body ?? systemText(m.payload, meId)}
           </Text>
         </View>
       </View>

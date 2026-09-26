@@ -6,6 +6,7 @@ import {
   MATCH_END,
   MATCH_START,
   snippetParts,
+  systemText,
 } from './format';
 import { safeLocale } from './locale';
 
@@ -38,5 +39,31 @@ describe('snippetParts', () => {
     ]);
     expect(snippetParts('no match here')).toEqual([{ text: 'no match here', match: false }]);
     expect(snippetParts('')).toEqual([]);
+  });
+});
+
+describe('systemText', () => {
+  it('says what happened, by name, and "you" to the person it happened to', () => {
+    const add = { event: 'members_added', byId: 'u1', by: 'Noor', names: ['Lina', 'Omar'] };
+    expect(systemText(add)).toBe('Noor added Lina and Omar');
+    expect(systemText(add, 'u1')).toBe('You added Lina and Omar');
+    expect(systemText({ event: 'group_created', byId: 'u1', by: 'Noor', title: 'Trip' })).toBe(
+      'Noor created “Trip”',
+    );
+    expect(
+      systemText(
+        { event: 'member_removed', byId: 'u1', by: 'Noor', userId: 'u2', name: 'Omar' },
+        'u2',
+      ),
+    ).toBe('Noor removed you');
+    expect(systemText({ event: 'retention_changed', byId: 'u1', by: 'Noor', days: 7 })).toBe(
+      'Noor set messages to disappear after 7 days',
+    );
+    expect(
+      systemText({ event: 'retention_changed', byId: 'u1', by: 'Noor', days: null }, 'u1'),
+    ).toBe('You turned off disappearing messages');
+    // Events written before names were recorded still read as a sentence.
+    expect(systemText({ event: 'members_added', userIds: ['u3'] })).toBe('Someone added people');
+    expect(systemText(null)).toBe('Conversation updated');
   });
 });

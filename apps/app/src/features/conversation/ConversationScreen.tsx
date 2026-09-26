@@ -27,6 +27,7 @@ import { ArrowLeft, ChevronDown, Lock, MessageCircle, PanelRight, Users } from '
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
+import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { Composer, type ComposerHandle } from './Composer';
 import { ContextPanel } from './ContextPanel';
@@ -45,7 +46,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const t = useTheme();
   const me = useMe();
   const qc = useQueryClient();
-  const { desktop, wide } = useLayout();
+  const { desktop, wide, height } = useLayout();
   const conv = useConversation(id);
   const msgs = useMessages(id);
   const conversation = conv.data?.conversation;
@@ -57,6 +58,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const [panel, setPanel] = useState(wide);
+  const [details, setDetails] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageView | null>(null);
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
@@ -220,7 +222,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         accessibilityLabel={`${conversation?.title ?? ''}, details`}
         onPress={() => {
           if (desktop) setPanel(true);
-          else if (other) router.push({ pathname: '/p/[id]', params: { id: other.userId } });
+          else setDetails(true);
         }}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
       >
@@ -472,6 +474,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           </View>
         ) : null}
       </View>
+      {!desktop && conversation ? (
+        <Sheet open={details} onClose={() => setDetails(false)} scroll={false}>
+          <View style={{ height: height * 0.8 }}>
+            <ContextPanel conversation={conversation} onClose={() => setDetails(false)} />
+          </View>
+        </Sheet>
+      ) : null}
       <MessageActions
         m={actionsFor}
         me={me.id}

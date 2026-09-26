@@ -1,5 +1,5 @@
 import type { ConversationView, TaskView } from '@caishy/core/api';
-import { formatDue } from '@caishy/core/format';
+import { formatDue, retentionText } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
@@ -7,6 +7,7 @@ import { endpoints } from '@/api/endpoints';
 import { useMemory } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { taskWho } from '@/features/actions/TaskRow';
+import { Choice } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -247,7 +248,54 @@ export function ContextPanel({
             ) : null}
           </>
         ) : null}
+        <Disappearing conversation={conversation} />
       </ScrollView>
     </View>
+  );
+}
+
+const KEEP = ['off', '1', '7', '30', '90', '365'] as const;
+
+/** Messages here can disappear after a while; everyone in the conversation is told (R25). */
+function Disappearing({ conversation }: { conversation: ConversationView }) {
+  const qc = useQueryClient();
+  const days = conversation.retentionDays;
+  const canChange =
+    conversation.kind === 'direct' || ['owner', 'admin'].includes(conversation.me.role);
+  const current = (days === null ? 'off' : String(days)) as (typeof KEEP)[number];
+  const set = async (value: (typeof KEEP)[number]) => {
+    try {
+      await endpoints.updateConversation(conversation.id, {
+        retentionDays: value === 'off' ? null : Number(value),
+      });
+      void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
+      toast(
+        value === 'off'
+          ? 'Messages stay'
+          : `Messages disappear after ${retentionText(Number(value))}`,
+      );
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  };
+  return (
+    <Section title="Disappearing messages">
+      {canChange ? (
+        <Choice
+          label="Disappearing messages"
+          value={KEEP.includes(current) ? current : 'off'}
+          onChange={(v) => void set(v)}
+          options={KEEP.map((v) =>
+            v === 'off'
+              ? { value: v, label: 'Off', detail: 'Messages stay until someone deletes them' }
+              : { value: v, label: retentionText(Number(v)) },
+          )}
+        />
+      ) : (
+        <Text variant="body" color="textSecondary">
+          {days === null ? 'Off' : `After ${retentionText(days)}`}
+        </Text>
+      )}
+    </Section>
   );
 }

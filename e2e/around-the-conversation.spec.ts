@@ -254,6 +254,23 @@ test.describe
       expect([...noor.errors, ...alex.errors]).toEqual([]);
     });
 
+    test('on a phone, the details open from the header; disappearing messages are announced', async () => {
+      await noor.page.goto(`/c/${convo}`);
+      const { page } = alex;
+      await page.goto(`/c/${convo}`);
+      await page.getByRole('button', { name: /, details$/ }).click();
+      await expect(visible(page, 'About this conversation')).toBeVisible();
+      await page.getByRole('radio', { name: '7 days', exact: true }).click();
+      await expect(visible(page, 'Messages disappear after 7 days')).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/phone-details.png' });
+      await page.getByRole('button', { name: 'Close panel' }).click();
+      await expect(visible(page, 'You set messages to disappear after 7 days')).toBeVisible();
+      await expect(
+        visible(noor.page, 'Alex Chen set messages to disappear after 7 days'),
+      ).toBeVisible();
+      expect([...noor.errors, ...alex.errors]).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [
