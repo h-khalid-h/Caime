@@ -438,6 +438,7 @@ describe('AI assist and plans (PRD §84, R23)', () => {
     expect((await ava.get('/v1/me/plan')).used.aiToday).toBe(9);
     replies.push(message('Can we move it to 3?'));
     expect((await rewrite()).statusCode).toBe(200);
+    await t.ctx.flush(); // Each call is recorded after its response.
     expect((await rewrite()).statusCode).toBe(403);
   });
 });
