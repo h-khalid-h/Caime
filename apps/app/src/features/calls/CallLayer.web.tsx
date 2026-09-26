@@ -139,6 +139,42 @@ function useRingtone(ringing: boolean) {
   }, [ringing]);
 }
 
+/**
+ * While the call screen is up, the keyboard stays in it (Tab and Shift+Tab go round its
+ * buttons, never to the app hidden behind), and when it closes, focus goes back where it was.
+ */
+function useFocusInside(shown: boolean) {
+  const root = useRef<View>(null);
+  useEffect(() => {
+    if (!shown || typeof document === 'undefined') return;
+    const before = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => {
+      const el = root.current as unknown as HTMLElement | null;
+      if (e.key !== 'Tab' || !el) return;
+      const stops = [
+        ...el.querySelectorAll<HTMLElement>(
+          'button, [href], input, [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter((x) => !x.hasAttribute('disabled') && x.offsetParent !== null);
+      if (!stops.length) return;
+      const first = stops[0]!;
+      const last = stops[stops.length - 1]!;
+      const at = document.activeElement as HTMLElement | null;
+      const outside = !at || !el.contains(at);
+      if (e.shiftKey ? outside || at === first : outside || at === last) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (before?.isConnected) before.focus();
+    };
+  }, [shown]);
+  return root;
+}
+
 /** "0:42", "12:05", "1:02:05": how long it's been since it was answered. */
 function useElapsed(since: string | null, running: boolean): string {
   const [now, setNow] = useState(Date.now());
@@ -172,6 +208,8 @@ export function CallLayer() {
     if (phase === 'incoming' || phase === 'outgoing' || phase === 'active')
       (primary.current as unknown as HTMLElement | null)?.focus?.();
   }, [phase]);
+  const shown = Boolean(call && phase && phase !== 'starting');
+  const root = useFocusInside(shown);
   if (!call || !phase || phase === 'starting') return null;
 
   const other = call.caller.id === me ? call.callee : call.caller;
@@ -196,6 +234,7 @@ export function CallLayer() {
 
   return (
     <View
+      ref={root}
       role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
       aria-modal
       aria-label={`${video ? 'Video' : 'Voice'} call with ${other.displayName}`}
@@ -233,7 +272,9 @@ export function CallLayer() {
         <Text
           variant="body"
           style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
-          aria-live="assertive"
+          // What's happening is said (calling, connecting, how it ended); the running clock isn't.
+          aria-live={phase === 'active' ? 'off' : 'polite'}
+          role={phase === 'active' ? 'timer' : undefined}
           testID="call-status"
         >
           {phase === 'incoming' ? `${status} · calling you` : status}

@@ -10,7 +10,7 @@
  */
 
 import type { CallSignalView, CallView, RealtimeEvent } from '@caishy/core/api';
-import type { CallKind } from '@caishy/core/calls';
+import { CALL_RING_SECONDS, type CallKind } from '@caishy/core/calls';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
@@ -36,6 +36,11 @@ let beat: ReturnType<typeof setInterval> | null = null;
 let lastBeat = 0;
 let dropTimer: ReturnType<typeof setTimeout> | null = null;
 let connectTimer: ReturnType<typeof setTimeout> | null = null;
+/** When a ring this device shows has run its time, it asks whether it still rings. */
+let ringTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** How far along a call is: a view never moves one back. */
+const STAGE = { ringing: 0, active: 1, ended: 2 } as const;
 
 const store = () => useCall.getState();
 const current = () => store().call;
@@ -78,14 +83,34 @@ function mediaTrouble(e: unknown, kind: CallKind): string {
   return 'Caishy couldn’t use your microphone.';
 }
 
+/**
+ * Signed out (here, or from another device): whatever call this device holds is let go of, so
+ * no camera or microphone goes on without a call screen. The session is gone, so the server
+ * hears nothing more from this side and ends the call within 90 seconds. Watched from the
+ * first call, never at load: the session store and this engine import each other.
+ */
+let watching = false;
+function watchSignOut(): void {
+  if (watching) return;
+  watching = true;
+  useSession.subscribe((s, before) => {
+    if (before.user && !s.user && current()) {
+      release();
+      store().reset();
+    }
+  });
+}
+
 /** Everything this device holds for the call, let go of. */
 function release(): void {
   if (beat) clearInterval(beat);
   if (dropTimer) clearTimeout(dropTimer);
   if (connectTimer) clearTimeout(connectTimer);
+  if (ringTimer) clearTimeout(ringTimer);
   beat = null;
   dropTimer = null;
   connectTimer = null;
+  ringTimer = null;
   pc?.close();
   pc = null;
   remoteDescribed = false;
@@ -118,24 +143,40 @@ function heartbeat(callId: string): void {
     if (current()?.id !== callId || !phase || phase === 'ended') return;
     if (phase === 'active' && Date.now() - lastBeat < TALKING_BEAT_MS) return;
     lastBeat = Date.now();
+    // What comes back after this device's call ended, or for another call, is old news.
+    const stillOn = () => current()?.id === callId && store().phase !== 'ended';
     endpoints.callAlive(callId, DEVICE_ID).then(
-      ({ call }) => onCallEvent({ type: 'call.updated', data: call } as RealtimeEvent),
+      ({ call }) => {
+        if (stillOn()) onCallEvent({ type: 'call.updated', data: call } as RealtimeEvent);
+      },
       (e) => {
+        if (!stillOn() || !(e instanceof ApiError)) return;
+        // Over, and how it ended: shown as if the event had come.
+        const ended = e.details?.call as CallView | undefined;
+        if (e.status === 409 && ended) onCallEvent({ type: 'call.updated', data: ended });
+        // Signed out, or not in this call any more.
+        else if ([401, 403, 404, 409].includes(e.status)) finish(null);
         // Offline for a moment, or the server restarting: the next beat tries again, and the
         // server waits 90 seconds for one.
-        if (e instanceof ApiError && [403, 404, 409].includes(e.status) && current()?.id === callId)
-          finish(null);
       },
     );
   }, BEAT_MS);
 }
 
 /** Answered: the two devices find each other soon, or the call couldn't connect. */
-function connectBy(): void {
+function connectBy(callId: string): void {
   if (connectTimer) clearTimeout(connectTimer);
   connectTimer = setTimeout(() => {
-    if (store().phase === 'connecting') void hangUp('The call couldn’t connect.', true);
+    if (current()?.id === callId && store().phase === 'connecting')
+      void hangUp('The call couldn’t connect.', true);
   }, CONNECT_MS);
+}
+
+/** A ring shown here asks, once its time is up, whether it's still ringing (an event lost). */
+function ringUntil(call: CallView): void {
+  if (ringTimer) clearTimeout(ringTimer);
+  const left = Date.parse(call.createdAt) + CALL_RING_SECONDS * 1000 - Date.now();
+  ringTimer = setTimeout(() => void checkLiveCall(), Math.max(0, left) + 3000);
 }
 
 const signal = (kind: 'offer' | 'answer' | 'candidate', rest: object) => {
@@ -206,6 +247,7 @@ async function onSignal(s: CallSignalView): Promise<void> {
 /** Call the other person in a direct conversation. */
 export async function startCall(conversationId: string, kind: CallKind): Promise<void> {
   if (store().phase) return;
+  watchSignOut();
   store().patch({ phase: 'starting', note: null });
   let got: Awaited<ReturnType<typeof media>>;
   try {
@@ -256,10 +298,13 @@ export async function answer(): Promise<void> {
     store().patch({ local: got.stream, cameraOff: got.cameraOff });
     await connect(got.stream);
     const { call: answered } = await endpoints.acceptCall(call.id, DEVICE_ID);
+    // It ended meanwhile (the event came before the answer): nothing to start.
+    if (current()?.id !== call.id || store().phase !== 'connecting') return;
     store().patch({ call: answered });
     heartbeat(answered.id);
-    connectBy();
+    connectBy(answered.id);
   } catch (e) {
+    if (current()?.id !== call.id || store().phase === 'ended') return;
     finish(null);
     toast((e as Error).message, { tone: 'danger' });
   }
@@ -300,11 +345,13 @@ export function onCallEvent(event: RealtimeEvent): void {
   const mine = current();
   if (event.type === 'call.ringing') {
     // Busy with another here (or just ending one): it's looked for again once this is over.
-    if (!store().phase) store().patch({ call, phase: 'incoming', note: null });
+    if (!store().phase) ring(call);
     return;
   }
-  // Once this device has hung up, what comes after is old news.
+  // Once this device has hung up, what comes after is old news; so is a view older than the
+  // one held (a beat's answer from before it was answered, arriving after).
   if (mine?.id !== call.id || store().phase === 'ended') return;
+  if (STAGE[call.state] < STAGE[mine.state]) return;
   if (call.state === 'ended') {
     const iCalled = call.caller.id === me();
     // Turned down on another of my devices: this one just stops ringing.
@@ -334,9 +381,12 @@ export function onCallEvent(event: RealtimeEvent): void {
     const local = store().local;
     if (!local) return;
     store().patch({ phase: 'connecting' });
-    connectBy();
+    connectBy(call.id);
     void connect(local)
       .then(async (peer) => {
+        // A video call from a device without a camera still receives the other's.
+        if (call.kind === 'video' && !local.getVideoTracks().length)
+          peer.addTransceiver('video', { direction: 'recvonly' });
         await peer.setLocalDescription(await peer.createOffer());
         signal('offer', { sdp: peer.localDescription?.sdp });
       })
@@ -344,22 +394,44 @@ export function onCallEvent(event: RealtimeEvent): void {
   }
 }
 
-/** A page opened while a call rings for its person still rings; so does one that was busy. */
-export async function checkLiveCall(person: string = me()): Promise<void> {
-  if (!person || store().phase) return;
-  const { call } = await endpoints.liveCall().catch(() => ({ call: null }));
-  if (call && call.state === 'ringing' && call.callee.id === person && !store().phase)
-    store().patch({ call, phase: 'incoming', note: null });
+/** Show a call ringing for this person, until it stops. */
+function ring(call: CallView): void {
+  watchSignOut();
+  store().patch({ call, phase: 'incoming', note: null });
+  ringUntil(call);
 }
 
-// Closing the tab mid-call hangs up, so nobody is left waiting on it. A tab only ringing does
-// nothing: the call goes on ringing on the person's other devices.
+/**
+ * What rings for this person now, from the server: a page opened (or a tab that was busy) shows
+ * a call still ringing, and a ring shown here whose end it never heard of stops.
+ */
+export async function checkLiveCall(person: string = me()): Promise<void> {
+  const phase = store().phase;
+  if (!person || (phase && phase !== 'incoming')) return;
+  const shown = phase === 'incoming' ? current() : null;
+  const got = await endpoints.liveCall().catch(() => undefined);
+  if (!got) return;
+  const { call } = got;
+  const ringing = call?.state === 'ringing' && call.callee.id === person ? call : null;
+  if (shown) {
+    // Answered elsewhere, turned down, called off or missed while this tab wasn't listening.
+    if (current()?.id === shown.id && store().phase === 'incoming' && ringing?.id !== shown.id) {
+      release();
+      store().reset();
+    }
+    return;
+  }
+  if (ringing && !store().phase) ring(ringing);
+}
+
+// Closing the tab mid-call hangs up, so nobody is left waiting on it. A tab only ringing (or
+// answering, not yet in the call) does nothing: the call goes on ringing on the other devices.
 if (typeof window !== 'undefined')
   window.addEventListener('pagehide', () => {
     const call = current();
     const phase = store().phase;
-    if (!call || !phase || phase === 'incoming' || phase === 'ended' || phase === 'starting')
-      return;
+    // Only the device in the call: the caller's, or the callee's once it answered.
+    if (!call || !phase || phase === 'ended' || !mineOn(call)) return;
     void fetch(`${API_URL}/v1/calls/${call.id}/end`, {
       method: 'POST',
       keepalive: true,

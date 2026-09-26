@@ -100,34 +100,42 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
     if (await liveCallOf(ctx, auth.userId))
       throw new AppError(409, 'in_call', 'You’re already in a call.');
-    const record = () =>
-      ctx.db
-        .insertInto('calls')
-        .values({
-          id: uuidv7(),
-          conversation_id: id,
-          caller_id: auth.userId,
-          callee_id: other.user_id,
-          kind: body.kind,
-          state: 'ringing',
-          caller_device: body.deviceId,
-          created_at: ctx.now(),
-          seen_at: ctx.now(),
-          caller_seen_at: ctx.now(),
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
+    let rung = true;
     if (await liveCallOf(ctx, other.user_id)) {
       // "On another call" says they're around right now: only to someone who may see that.
       const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
       if (shown?.presence != null && callee.presence !== 'invisible')
         throw new AppError(409, 'busy', `${callee.display_name} is on another call.`);
-      // To anyone else it's a call they didn't answer, and it's among their missed calls.
-      await endCall(ctx, await record(), 'missed');
-      throw new AppError(409, 'no_answer', `${callee.display_name} didn’t answer.`);
+      // To anyone else it rings like any call nobody answers, and is missed like one: they
+      // aren't rung, and find it among their missed calls.
+      rung = false;
     }
 
-    const call = await record();
+    const call = await ctx.db
+      .insertInto('calls')
+      .values({
+        id: uuidv7(),
+        conversation_id: id,
+        caller_id: auth.userId,
+        callee_id: other.user_id,
+        kind: body.kind,
+        state: 'ringing',
+        caller_device: body.deviceId,
+        created_at: ctx.now(),
+        seen_at: ctx.now(),
+        caller_seen_at: ctx.now(),
+        callee_rung: rung,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    reply.status(201);
+    if (!rung) {
+      await ctx.bus.publish([auth.userId], {
+        type: 'call.updated',
+        data: await callView(ctx, call, auth.userId),
+      });
+      return { call: await callView(ctx, call, auth.userId) };
+    }
     await publishCall(ctx, call, 'call.ringing');
     const me = await ctx.db
       .selectFrom('users')
@@ -146,7 +154,6 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       ttlSeconds: CALL_RING_SECONDS,
       pushTo: 'web',
     });
-    reply.status(201);
     return { call: await callView(ctx, call, auth.userId) };
   });
 
@@ -157,6 +164,8 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const { deviceId } = parse(CallDeviceBody, req.body);
     const call = await mine(auth.userId, id);
     if (call.callee_id !== auth.userId) throw forbidden('Only the person called can answer.');
+    // Never rung for them (they were on another call): nothing to answer.
+    if (!call.callee_rung) throw over();
     const answered = await ctx.db
       .updateTable('calls')
       .set({
@@ -257,12 +266,22 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
     const call = await mine(auth.userId, id);
-    if (call.state === 'ended') throw over();
     const caller = call.caller_id === auth.userId;
     if (deviceId !== (caller ? call.caller_device : call.callee_device))
       throw forbidden('This device isn’t in that call.');
-    const now = await stillThere(ctx, id, caller ? 'caller' : 'callee');
-    if (!now) throw over();
+    const now =
+      call.state === 'ended' ? undefined : await stillThere(ctx, id, caller ? 'caller' : 'callee');
+    // Over: say how it ended, for a device that missed the event.
+    if (!now) {
+      const ended = await ctx.db
+        .selectFrom('calls')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow();
+      throw new AppError(409, 'call_ended', 'That call has ended.', {
+        call: await callView(ctx, ended, auth.userId),
+      });
+    }
     return { call: await callView(ctx, now, auth.userId) };
   });
 }

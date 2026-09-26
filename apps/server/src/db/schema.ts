@@ -642,6 +642,8 @@ export interface CallsTable {
   /** Each side on its own: a call ends when either stops saying it's there. */
   caller_seen_at: Generated<Date>;
   callee_seen_at: NullableTimestamp;
+  /** False for a call placed while they were busy and hidden: it rings only for the caller. */
+  callee_rung: Generated<boolean>;
 }
 
 /** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */

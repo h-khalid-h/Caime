@@ -93,26 +93,6 @@ describe('calls (PRD §47)', () => {
     const busy = await call(omar, omarSam, 'voice', 'omar-phone-1');
     expect(busy.statusCode).toBe(409);
     expect(busy.json().error.message).toBe('Sam Rivera is on another call.');
-
-    // Someone who hides that they're online isn't given away by it: to the caller it's an
-    // unanswered call, and Sam finds it among his missed calls.
-    await sam.patch('/v1/me', { presence: 'invisible' });
-    const hidden = await call(omar, omarSam, 'voice', 'omar-phone-1');
-    expect(hidden.statusCode).toBe(409);
-    expect(hidden.json().error).toMatchObject({
-      code: 'no_answer',
-      message: 'Sam Rivera didn’t answer.',
-    });
-    expect((await lines(sam, omarSam)).at(-1).payload).toMatchObject({ outcome: 'missed' });
-    await t.ctx.flush();
-    expect(
-      (await sam.get('/v1/notifications')).notifications.find(
-        (n: any) => n.body === 'from Omar Farouk',
-      ),
-    ).toMatchObject({ title: 'Missed voice call' });
-    // Noor's call still rings for him.
-    expect((await sam.get('/v1/calls/live')).call.id).toBe(id);
-    await sam.patch('/v1/me', { presence: 'auto' });
   });
 
   it('answered on one device, signals pass only between the two devices in it', async () => {
@@ -260,9 +240,10 @@ describe('calls (PRD §47)', () => {
     expect((await noor.get('/v1/calls/live')).call).toBeNull();
     // It lasted until Sam was last there.
     expect((await lines(sam)).at(-1).payload).toMatchObject({ outcome: 'completed', seconds: 60 });
-    expect(
-      (await noor.req('POST', `/v1/calls/${left}/alive`, { deviceId: 'noor-tab-1' })).statusCode,
-    ).toBe(409);
+    // Over, it says how it ended, for a device that missed the event.
+    const after = await noor.req('POST', `/v1/calls/${left}/alive`, { deviceId: 'noor-tab-1' });
+    expect(after.statusCode).toBe(409);
+    expect(after.json().error.details.call).toMatchObject({ state: 'ended', outcome: 'completed' });
     // And neither is busy now.
     const next = await call(noor, convo);
     expect(next.statusCode).toBe(201);
@@ -367,6 +348,45 @@ describe('calls (PRD §47)', () => {
       (await signal(noor, big, 'noor-tab-1', { kind: 'offer', sdp: 'v=0 more' })).statusCode,
     ).toBe(429);
     await noor.post(`/v1/calls/${big}/end`, {});
+  });
+
+  it('someone who hides that they’re online isn’t given away by being on a call', async () => {
+    const talking = (await call(noor, convo)).json().call.id;
+    await sam.post(`/v1/calls/${talking}/accept`, { deviceId: 'sam-phone-1' });
+    await sam.patch('/v1/me', { presence: 'invisible' });
+    heard.length = 0;
+    // A moment later, so the call Omar starts is the newer one.
+    t.clock.advance(1000);
+    // To Omar it's any call: it rings, for as long as calls ring.
+    const rung = await call(omar, omarSam, 'voice', 'omar-phone-1');
+    expect(rung.statusCode).toBe(201);
+    const held = rung.json().call;
+    expect(held).toMatchObject({ state: 'ringing' });
+    expect((await omar.get('/v1/calls/live')).call.id).toBe(held.id);
+    // Sam isn't rung, on any device; the call he's in is still his.
+    await heardSoon('call.updated', 1);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(events('call.ringing')).toEqual([]);
+    expect((await sam.get('/v1/calls/live')).call.id).toBe(talking);
+    expect(
+      (await sam.req('POST', `/v1/calls/${held.id}/accept`, { deviceId: 'sam-laptop-1' }))
+        .statusCode,
+    ).toBe(409);
+    await t.ctx.flush();
+    const aboutIt = async () =>
+      (await sam.get('/v1/notifications')).notifications.filter(
+        (n: any) => n.data?.callId === held.id,
+      );
+    expect(await aboutIt()).toEqual([]);
+    // Unanswered, it's missed, and Sam finds it among his missed calls.
+    t.clock.advance(46_000);
+    await sweepCalls(t.ctx);
+    expect((await omar.get('/v1/calls/live')).call).toBeNull();
+    expect((await lines(sam, omarSam)).at(-1).payload).toMatchObject({ outcome: 'missed' });
+    await t.ctx.flush();
+    expect((await aboutIt()).map((n: any) => n.title)).toEqual(['Missed voice call']);
+    await sam.patch('/v1/me', { presence: 'auto' });
+    await noor.post(`/v1/calls/${talking}/end`, { deviceId: 'noor-tab-1' });
   });
 
   it('only between two people who can already write to each other', async () => {

@@ -463,4 +463,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   one ringing tab no longer declines everywhere, a ring that arrives while starting a call
   isn't lost, a video call without a camera goes ahead with the voice, and the call screen is a
   dialog with a name, focus on what to do, its status announced and a ring. Every new guard was
-  mutated and its test failed. Tests: 156 core, 49 brand, 220 server, 9 app, 33 E2E.
+  mutated and its test failed. A second review of those fixes found more, now fixed too:
+  allowing an app again only adds to its grant (it replaced it, so an app asking for one more
+  thing lost the rest); a push reaches only devices still signed in (a device signed out from
+  elsewhere kept getting previews); the agent's notice follows the customer's language; a call
+  to someone busy and hidden rings for the caller like any unanswered call (it answered at once,
+  which gave them away); and on the web, signing out mid-call stops the camera and microphone,
+  a ring whose end was lost stops when its time is up, a caller without a camera still gets the
+  other camera, the clock isn't read out every second, the keyboard stays in the call screen,
+  a tab answering but not yet in the call never declines it, and late answers can't end the
+  next call (`engine.web.test.ts` drives the engine with fake WebRTC for these). Tests: 156 core,
+  49 brand, 223 server, 20 app, 33 E2E.

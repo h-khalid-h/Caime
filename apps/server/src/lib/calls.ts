@@ -81,14 +81,22 @@ export async function publishCall(
   }
 }
 
-/** A call someone is in or being rung for now, if any: both sides still there. */
+/**
+ * A call someone is in or being rung for now, if any: both sides still there. A call they
+ * weren't rung for (it came while they were busy and hidden) is only the caller's.
+ */
 export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call | undefined> {
   const now = ctx.now().getTime();
   const fresh = new Date(now - CALL_SEEN_MS);
   return ctx.db
     .selectFrom('calls')
     .selectAll()
-    .where((eb) => eb.or([eb('caller_id', '=', userId), eb('callee_id', '=', userId)]))
+    .where((eb) =>
+      eb.or([
+        eb('caller_id', '=', userId),
+        eb.and([eb('callee_id', '=', userId), eb('callee_rung', '=', true)]),
+      ]),
+    )
     .where((eb) =>
       eb.or([
         eb.and([

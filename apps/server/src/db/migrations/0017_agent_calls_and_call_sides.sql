@@ -14,3 +14,7 @@ alter table calls add column callee_seen_at timestamptz;
 update calls
 set caller_seen_at = seen_at,
     callee_seen_at = case when answered_at is not null then seen_at end;
+
+-- Whether the person called was rung: not when they're on another call and the caller may not
+-- see they're online. To the caller it rings like any call; to them it's a missed call.
+alter table calls add column callee_rung boolean not null default true;

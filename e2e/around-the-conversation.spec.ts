@@ -1398,6 +1398,16 @@ test.describe
       await expect.poll(() => seeing(alex.page)).toBe(true);
       await page.getByTestId('call-mute').click();
       await expect(page.getByTestId('call-mute')).toHaveAccessibleName('Unmute');
+      // The keyboard stays in the call: past Hang up, Tab comes back round, never behind it.
+      await page.getByTestId('call-hangup').focus();
+      await page.keyboard.press('Tab');
+      expect(
+        await page.evaluate(() =>
+          Boolean(document.activeElement?.closest('[data-testid="call-screen"]')),
+        ),
+      ).toBe(true);
+      // The running clock isn't read out every second.
+      await expect(page.getByTestId('call-status')).toHaveAttribute('aria-live', 'off');
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-active.png' });
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-active.png' });
 
