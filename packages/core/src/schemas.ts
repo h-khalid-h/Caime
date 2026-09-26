@@ -361,3 +361,84 @@ export const ForwardBody = z.object({
   clientId: z.string().min(8).max(64),
 });
 export const MembersBody = z.object({ userIds: z.array(z.string().uuid()).min(1).max(100) });
+
+// --- Actions, decisions, contexts --------------------------------------------------------------
+
+export const CreateTaskBody = z.object({
+  title: z.string().trim().min(1, 'What needs doing?').max(200),
+  notes: z.string().trim().max(4000).nullable().optional(),
+  dueAt: z.string().datetime().nullable().optional(),
+  dueHasTime: z.boolean().optional(),
+  remindAt: z.string().datetime().nullable().optional(),
+  /** Someone else: with `shared` it's a request they see; without, a private waiting item. */
+  assigneeId: z.string().uuid().optional(),
+  shared: z.boolean().optional(),
+  conversationId: z.string().uuid().optional(),
+  messageId: z.string().uuid().optional(),
+  contextId: z.string().uuid().optional(),
+  clientId: z.string().min(8).max(64).optional(),
+});
+
+export const UpdateTaskBody = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+    notes: z.string().trim().max(4000).nullable().optional(),
+    dueAt: z.string().datetime().nullable().optional(),
+    dueHasTime: z.boolean().optional(),
+    remindAt: z.string().datetime().nullable().optional(),
+    status: z.enum(['open', 'accepted', 'declined', 'done', 'cancelled']).optional(),
+  })
+  .strict();
+
+export const CreateDecisionBody = z.object({
+  conversationId: z.string().uuid(),
+  title: z.string().trim().min(1).max(300),
+  notes: z.string().trim().max(4000).nullable().optional(),
+  messageId: z.string().uuid().optional(),
+  contextId: z.string().uuid().optional(),
+});
+
+export const CONTEXT_KINDS = [
+  'project',
+  'order',
+  'trip',
+  'appointment',
+  'school',
+  'event',
+  'contract',
+  'issue',
+  'family',
+  'other',
+] as const;
+
+export const CreateContextBody = z.object({
+  kind: z.enum(CONTEXT_KINDS),
+  title: z.string().trim().min(1).max(120),
+  purpose: z.string().trim().max(300).nullable().optional(),
+  deadlineAt: z.string().datetime().nullable().optional(),
+  externalRef: z.string().trim().max(120).nullable().optional(),
+  conversationId: z.string().uuid().optional(),
+});
+
+export const UpdateContextBody = CreateContextBody.omit({ conversationId: true })
+  .partial()
+  .extend({ status: z.enum(['active', 'done', 'archived']).optional() });
+
+export const PushSubscriptionBody = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('webpush'),
+    subscription: z.object({
+      endpoint: z.string().url().max(1000),
+      keys: z.object({ p256dh: z.string().max(200), auth: z.string().max(100) }),
+    }),
+  }),
+  z.object({ kind: z.literal('expo'), token: z.string().min(10).max(200) }),
+]);
+
+export const ReportBody = z.object({
+  userId: z.string().uuid().optional(),
+  messageId: z.string().uuid().optional(),
+  conversationId: z.string().uuid().optional(),
+  reason: z.enum(['spam', 'scam', 'harassment', 'impersonation', 'inappropriate', 'other']),
+  details: z.string().trim().max(2000).optional(),
+});

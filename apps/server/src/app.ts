@@ -17,16 +17,21 @@ import { Bus } from './lib/bus';
 import { AppError } from './lib/errors';
 import { startWorkers } from './lib/jobs';
 import { RateLimiter } from './lib/rate-limit';
+import { actionRoutes } from './modules/actions';
 import { authRoutes } from './modules/auth';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
 import { healthRoutes } from './modules/health';
 import { inboxRoutes } from './modules/inbox';
 import { meRoutes } from './modules/me';
+import { memoryRoutes } from './modules/memory';
+import { notificationRoutes } from './modules/notifications';
 import { peopleRoutes } from './modules/people';
 import { policyRoutes } from './modules/policies';
 import { realtimeRoutes } from './modules/realtime';
 import { relationshipRoutes } from './modules/relationships';
+import { safetyRoutes } from './modules/safety';
+import { searchRoutes } from './modules/search';
 import { suggestionRoutes } from './modules/suggestions';
 import { registerWorkers } from './modules/workers';
 import { registerAuth } from './plugins/auth';
@@ -144,6 +149,11 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await conversationRoutes(v1, ctx);
       await inboxRoutes(v1, ctx);
       await realtimeRoutes(v1, ctx);
+      await actionRoutes(v1, ctx);
+      await memoryRoutes(v1, ctx);
+      await searchRoutes(v1, ctx);
+      await notificationRoutes(v1, ctx);
+      await safetyRoutes(v1, ctx);
     },
     { prefix: '/v1' },
   );
