@@ -18,19 +18,21 @@ Deployed 2026-09-26 on EasyPanel.
 | Public URL | https://caishy-caishy.0hqwb7.easypanel.host (EasyPanel's default service domain, HTTPS) |
 | Project | `caishy` |
 | Services | `caishy` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
-| Source | **GitHub** `h-khalid-h/Caishy`, branch `main`, built by EasyPanel from the `Dockerfile` (image `easypanel/caishy/caishy:latest`) |
-| Auto deploy | On: every push to `main` rebuilds and redeploys `caishy`. The old container serves until the new one passes its `/v1/readyz` health check. |
-| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN` (set in EasyPanel only); no `ANTHROPIC_API_KEY`, so AI assist is off |
+| Source | **GitHub** `h-khalid-h/Caishy`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caishy/caishy:latest`) |
+| Auto deploy | On, from `production`: a push to `main` reaches production only once CI is green. The old container serves until the new one passes its `/v1/readyz` health check. |
+| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (set in EasyPanel only), so AI assist is available |
+| Panel | https://host.datac.com |
 
 Verified after the deploy (first on the published image, then again on the GitHub build):
 `/v1/readyz` answers `{"ok":true}`, `/` serves the web app with its Content-Security-Policy
 (`connect-src` allows `wss://` on the public origin) and `x-content-type-options: nosniff`, and a
 throwaway account signed up and deleted itself through the API.
 
-Auto deploy builds from GitHub, so a push reaches production without waiting for CI. That's why
-`EASYPANEL_DEPLOY_WEBHOOK` stays unset for this service: with it, CI's deploy step would only
-trigger a second, redundant rebuild. To deploy only what CI passed instead, switch the source back
-to the image `ghcr.io/h-khalid-h/caishy:latest`, turn auto deploy off, and set the secret (below).
+Switched to `production` on 2026-09-26 and redeployed with `ANTHROPIC_API_KEY`: the source reads
+back as branch `production` with auto deploy on, and `/v1/readyz` answers 200. Not yet checked:
+`GET /v1/ai` answering `"available": true` for a signed-in account.
+
+CI releases by moving `production`, so no webhook secret is needed.
 
 ## EasyPanel
 
