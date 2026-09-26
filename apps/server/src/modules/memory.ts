@@ -2,6 +2,8 @@
  * Context and memory (PRD §17, §24, §27, §57): what a conversation is about, and what it holds —
  * people, decisions, open items, dates, documents, links, amounts — without scrolling.
  */
+
+import type { MemoryView } from '@caishy/core';
 import { CreateContextBody, formatDue, joinNames, UpdateContextBody, uuidv7 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -219,7 +221,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Conversation memory (PRD §24). */
-  app.get('/conversations/:id/memory', async (req) => {
+  app.get('/conversations/:id/memory', async (req): Promise<MemoryView> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { conversation } = await membership(ctx, auth.userId, id);

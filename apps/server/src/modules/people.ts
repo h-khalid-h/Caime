@@ -1,6 +1,8 @@
 /**
  * Finding people and the relationship profile (PRD §25 "People", §50, §54, §67).
  */
+
+import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caishy/core';
 import { ADULT_AGE, isMinor } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -19,7 +21,7 @@ import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
-export function connectionState(b: Awaited<ReturnType<typeof between>>) {
+export function connectionState(b: Awaited<ReturnType<typeof between>>): ConnectionStateView {
   return {
     state: b.connected
       ? 'connected'
@@ -30,7 +32,7 @@ export function connectionState(b: Awaited<ReturnType<typeof between>>) {
           : 'none',
     connectionId: b.connectionId,
     requestId: b.outgoingRequestId ?? b.incomingRequestId,
-  } as const;
+  };
 }
 
 export async function identityShownTo(ctx: AppContext, ownerId: string, viewerId: string) {
@@ -59,7 +61,7 @@ export async function identityShownTo(ctx: AppContext, ownerId: string, viewerId
 }
 
 export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/people/search', async (req) => {
+  app.get('/people/search', async (req): Promise<{ results: PeopleSearchResult[] }> => {
     const auth = requireAuth(req);
     const { q, limit } = parse(
       z.object({
@@ -176,7 +178,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     return { results };
   });
 
-  app.get('/people/:id', async (req) => {
+  app.get('/people/:id', async (req): Promise<PersonProfileView> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const user = await ctx.db

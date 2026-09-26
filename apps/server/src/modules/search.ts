@@ -2,6 +2,8 @@
  * Search as a communication knowledge layer (PRD §25): people, relationships, organizations,
  * messages, meaning-shaped questions, assets, actions and contexts, from one box.
  */
+
+import type { SearchResponse, SearchResults } from '@caishy/core';
 import { type ParsedQuery, parseSearchQuery } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -50,12 +52,17 @@ async function resolvePeople(ctx: AppContext, me: string, name: string): Promise
   return rows.map((r) => r.id);
 }
 
-export async function runSearch(ctx: AppContext, me: string, parsed: ParsedQuery, limit = 20) {
+export async function runSearch(
+  ctx: AppContext,
+  me: string,
+  parsed: ParsedQuery,
+  limit = 20,
+): Promise<SearchResponse> {
   const scope = parsed.scope;
   const want = (s: ParsedQuery['scope']) => scope === 'all' || scope === s;
   const personIds = parsed.person ? await resolvePeople(ctx, me, parsed.person) : null;
   const text = parsed.text;
-  const results: Record<string, unknown[]> = {};
+  const results: SearchResults = {};
 
   if (want('people') && (text || parsed.relationship)) {
     const rels = await ctx.db
@@ -112,18 +119,14 @@ export async function runSearch(ctx: AppContext, me: string, parsed: ParsedQuery
       ...new Set([...rels.map((r) => r.subject_id), ...unclassified.map((u) => u.id)]),
     ].slice(0, limit);
     const views = await personViewsFor(ctx, me, ids);
-    results.people = ids
-      .map((id) => ({
-        person: views.get(id),
-        relationship:
-          rels.find((r) => r.subject_id === id && r.is_primary) ??
-          rels.find((r) => r.subject_id === id),
-      }))
-      .filter((x) => x.person)
-      .map((x) => ({
-        person: x.person,
-        relationship: x.relationship ? relationshipView(x.relationship) : null,
-      }));
+    results.people = ids.flatMap((id) => {
+      const person = views.get(id);
+      if (!person) return [];
+      const rel =
+        rels.find((r) => r.subject_id === id && r.is_primary) ??
+        rels.find((r) => r.subject_id === id);
+      return [{ person, relationship: rel ? relationshipView(rel) : null }];
+    });
     // Organizations are the "org" part of relationships: "DATA C" finds everyone there.
     if (text && !parsed.relationship) {
       const orgs = await ctx.db

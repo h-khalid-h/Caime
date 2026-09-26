@@ -434,12 +434,11 @@ describe('message features', () => {
 });
 
 describe('realtime', () => {
-  it('delivers a new message to the other side over WebSocket', async () => {
-    const address = await t.app.listen({ port: 0, host: '127.0.0.1' });
+  async function socketFor(address: string, token: string) {
     const ws = new WebSocket(`${address.replace('http', 'ws')}/v1/realtime`);
     const frames: any[] = [];
     await new Promise<void>((resolve, reject) => {
-      ws.on('open', () => ws.send(JSON.stringify({ type: 'auth', token: sarah.token })));
+      ws.on('open', () => ws.send(JSON.stringify({ type: 'auth', token })));
       ws.on('message', (raw) => {
         const f = JSON.parse(String(raw));
         frames.push(f);
@@ -447,18 +446,31 @@ describe('realtime', () => {
       });
       ws.on('error', reject);
     });
-    const m = await send(hassan, convo, 'Live?');
-    const deadline = Date.now() + 3000;
-    while (
-      !frames.some((f) => f.event?.type === 'message.created' && f.event.data.id === m.id) &&
-      Date.now() < deadline
-    ) {
-      await new Promise((r) => setTimeout(r, 25));
-    }
-    expect(
-      frames.some((f) => f.event?.type === 'message.created' && f.event.data.id === m.id),
-    ).toBe(true);
-    ws.close();
+    const created = async (id: string) => {
+      const deadline = Date.now() + 3000;
+      const find = () =>
+        frames.find((f) => f.event?.type === 'message.created' && f.event.data.id === id);
+      while (!find() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
+      return find()?.event.data;
+    };
+    return { ws, created };
+  }
+
+  it('delivers a new message to both sides; only the sender’s echo carries its clientId', async () => {
+    const address = await t.app.listen({ port: 0, host: '127.0.0.1' });
+    const theirs = await socketFor(address, sarah.token);
+    const mine = await socketFor(address, hassan.token);
+    const clientId = uuidv4();
+    const sent = await hassan.post(`/v1/conversations/${convo}/messages`, {
+      clientId,
+      body: 'Live?',
+    });
+    const received = await theirs.created(sent.message.id);
+    expect(received).toMatchObject({ body: 'Live?', clientId: null });
+    const echo = await mine.created(sent.message.id);
+    expect(echo).toMatchObject({ body: 'Live?', clientId });
+    theirs.ws.close();
+    mine.ws.close();
   });
 
   it('refuses a socket without a valid session', async () => {

@@ -2,6 +2,8 @@
  * Relationship policies (PRODUCT-REVIEW R11): one screen answers "how should Caishy treat my
  * customers?" for notifications, inbox priority, privacy, tone and follow-up.
  */
+
+import type { PolicyView } from '@caishy/core';
 import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -13,7 +15,7 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/policies', async (req) => {
+  app.get('/policies', async (req): Promise<{ policies: PolicyView[] }> => {
     const auth = requireAuth(req);
     const policies = await loadPolicies(ctx.db, auth.userId);
     return {

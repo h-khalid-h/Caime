@@ -2,6 +2,8 @@
  * Actions (PRD §28–§30; PRODUCT-REVIEW R13): tasks, waiting items, requests and decisions, each
  * keeping the conversation, message and relationship it came from.
  */
+
+import type { DecisionView, TaskDirection, TasksResponse, TaskView } from '@caishy/core';
 import {
   CreateDecisionBody,
   CreateTaskBody,
@@ -24,7 +26,7 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { membership, sendSystem } from './conversations';
 
-export type TaskDirection = 'mine' | 'waiting' | 'asked_me' | 'i_asked';
+export type { TaskDirection };
 
 export function directionOf(
   t: Pick<Task, 'owner_id' | 'assignee_id' | 'shared'>,
@@ -35,7 +37,7 @@ export function directionOf(
   return 'asked_me';
 }
 
-export async function taskViews(ctx: AppContext, rows: Task[], me: string) {
+export async function taskViews(ctx: AppContext, rows: Task[], me: string): Promise<TaskView[]> {
   const userIds = [...new Set(rows.flatMap((t) => [t.owner_id, t.assignee_id]))];
   const messageIds = rows.map((t) => t.message_id).filter((x): x is string => Boolean(x));
   const [users, messages] = await Promise.all([
@@ -122,7 +124,7 @@ async function syncRequestCard(ctx: AppContext, t: Task): Promise<void> {
 }
 
 export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/tasks', async (req) => {
+  app.get('/tasks', async (req): Promise<TasksResponse> => {
     const auth = requireAuth(req);
     const q = parse(
       z.object({
@@ -402,7 +404,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Decisions (PRD §30) ------------------------------------------------------------------
 
-  app.get('/decisions', async (req) => {
+  app.get('/decisions', async (req): Promise<{ decisions: DecisionView[] }> => {
     const auth = requireAuth(req);
     const q = parse(
       z.object({

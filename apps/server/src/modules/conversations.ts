@@ -1,6 +1,8 @@
 /**
  * Conversations and messages (PRD §15–§22, §26, §56; R14).
  */
+
+import type { ConversationView, MessagesPage } from '@caishy/core';
 import {
   CreateConversationBody,
   EditMessageBody,
@@ -127,7 +129,7 @@ export async function conversationView(
   userId: string,
   conversation: Conversation,
   me: Participant,
-) {
+): Promise<ConversationView> {
   const now = ctx.now();
   const members = await ctx.db
     .selectFrom('participants as p')
@@ -169,7 +171,7 @@ export async function conversationView(
         person: personView(m, relation, now, identity),
         relationship: rel ? relationshipView(rel) : null,
         readSeq,
-        deliveredSeq: m.id === userId ? Number(m.last_delivered_seq) : Number(m.last_delivered_seq),
+        deliveredSeq: Number(m.last_delivered_seq),
       };
     }),
   );
@@ -356,7 +358,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
   });
 
-  app.get('/conversations/:id', async (req) => {
+  app.get('/conversations/:id', async (req): Promise<{ conversation: ConversationView }> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { conversation, me } = await membership(ctx, auth.userId, id);
@@ -587,7 +589,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.get('/conversations/:id/messages', async (req) => {
+  app.get('/conversations/:id/messages', async (req): Promise<MessagesPage> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const q = parse(
@@ -655,9 +657,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       reply.status(201);
       const members = await participantsOf(ctx.db, id);
       await ctx.bus.publish(
-        members.map((m) => m.user_id),
+        members.map((m) => m.user_id).filter((u) => u !== auth.userId),
         { type: 'message.created', data: { ...view, clientId: null } },
       );
+      // The sender's other devices and this one get the echo with its clientId (ADR-8).
+      await ctx.bus.publish([auth.userId], { type: 'message.created', data: view });
       await ctx.bus.publish([auth.userId], {
         type: 'message.sent',
         data: { conversationId: id, clientId: body.clientId, id: view!.id, seq: view!.seq },

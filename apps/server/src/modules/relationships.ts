@@ -3,6 +3,8 @@
  * unless shared, and versioned: a change supersedes the old record instead of overwriting it
  * (PRD §13), so history is preserved.
  */
+
+import type { RelationshipHistoryView, TaxonomyResponse } from '@caishy/core';
 import {
   ChangeRelationshipBody,
   CreateRelationshipBody,
@@ -189,7 +191,7 @@ async function event(
 }
 
 export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/relationships/taxonomy', async (req) => {
+  app.get('/relationships/taxonomy', async (req): Promise<TaxonomyResponse> => {
     const auth = requireAuth(req);
     const custom = await ctx.db
       .selectFrom('custom_roles')
@@ -464,7 +466,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     return { relationship: relationshipView(keep) };
   });
 
-  app.get('/people/:id/relationships', async (req) => {
+  app.get('/people/:id/relationships', async (req): Promise<RelationshipHistoryView> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const rows = await ctx.db

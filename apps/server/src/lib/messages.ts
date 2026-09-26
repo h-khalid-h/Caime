@@ -7,7 +7,9 @@ import {
   type Analysis,
   analyzeMessage,
   assessLink,
+  type FileView,
   isMinor,
+  type MessageView,
   previewText,
   type SendMessageBodyT,
   uuidv7,
@@ -23,49 +25,7 @@ import { privacyOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
-export interface FileView {
-  id: string;
-  name: string;
-  mime: string;
-  size: number;
-  kind: string;
-  width: number | null;
-  height: number | null;
-  durationMs: number | null;
-  url: string;
-  thumbUrl: string | null;
-}
-
-export interface MessageView {
-  id: string;
-  conversationId: string;
-  seq: number;
-  clientId: string | null;
-  senderId: string | null;
-  kind: Message['kind'];
-  body: string | null;
-  payload: Record<string, unknown>;
-  mode: string;
-  entities: Record<string, unknown>;
-  mentions: string[];
-  replyTo: {
-    id: string;
-    seq: number;
-    senderId: string | null;
-    preview: string;
-    kind: string;
-  } | null;
-  forwarded: boolean;
-  urgent: boolean;
-  isQuestion: boolean;
-  isRequest: boolean;
-  reactions: Array<{ emoji: string; count: number; mine: boolean; userIds: string[] }>;
-  files: FileView[];
-  poll: { counts: Record<string, number>; mine: string[]; voters: number } | null;
-  editedAt: string | null;
-  deletedAt: string | null;
-  createdAt: string;
-}
+export type { FileView, MessageView };
 
 export function fileView(f: {
   id: string;

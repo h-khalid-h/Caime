@@ -1,6 +1,8 @@
 /**
  * Suggestions (PRODUCT-REVIEW R12): inferences that become facts only when accepted.
  */
+
+import type { SuggestionView } from '@caishy/core';
 import { AcceptSuggestionBody, type RelationshipInputT } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -15,7 +17,7 @@ import { requireAuth } from '../plugins/auth';
 import { createTopicConversation } from './conversations';
 import { createRelationship } from './relationships';
 
-export function suggestionView(s: Suggestion) {
+export function suggestionView(s: Suggestion): SuggestionView {
   return {
     id: s.id,
     kind: s.kind,
@@ -33,7 +35,7 @@ export function suggestionView(s: Suggestion) {
 }
 
 export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/suggestions', async (req) => {
+  app.get('/suggestions', async (req): Promise<{ suggestions: SuggestionView[] }> => {
     const auth = requireAuth(req);
     const q = parse(
       z.object({

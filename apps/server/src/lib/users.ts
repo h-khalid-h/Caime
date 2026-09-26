@@ -8,9 +8,12 @@ import {
   defaultPrivacy,
   defaultWorkweek,
   isMinor,
+  type MeView,
+  type PersonView,
   type PrivacySettings,
   type Sphere,
   trustFor,
+  type UserPreferences,
   uuidv7,
 } from '@caishy/core';
 import type { Kysely, Transaction } from 'kysely';
@@ -39,7 +42,9 @@ export function avatarUrl(user: Pick<User, 'id' | 'avatar_file_id'>): string | n
     : null;
 }
 
-export function meView(user: User, now: Date) {
+export type { MeView, PersonView };
+
+export function meView(user: User, now: Date): MeView {
   return {
     id: user.id,
     email: user.email,
@@ -62,14 +67,12 @@ export function meView(user: User, now: Date) {
     statusEmoji: user.status_emoji,
     presence: user.presence,
     privacy: privacyOf(user, now),
-    preferences: user.preferences ?? {},
+    preferences: (user.preferences ?? {}) as UserPreferences,
     aiEnabled: user.ai_enabled,
     onboarded: user.onboarded_at !== null,
     createdAt: user.created_at.toISOString(),
   };
 }
-
-export type MeView = ReturnType<typeof meView>;
 
 export interface ViewerRelation {
   isSelf: boolean;
@@ -99,7 +102,7 @@ export function personView(
   viewer: ViewerRelation,
   now: Date,
   identity?: { displayName: string; headline: string | null; orgName: string | null } | null,
-) {
+): PersonView {
   const privacy = privacyOf(user, now);
   const v = { ...viewer };
   const see = (field: Parameters<typeof canSee>[1]) => canSee(privacy, field, v);
@@ -131,8 +134,6 @@ export function personView(
     }),
   };
 }
-
-export type PersonView = ReturnType<typeof personView>;
 
 /** Region from a locale like "ar-EG" (used for workweek defaults, R31). */
 export function regionFromLocale(locale: string | undefined): string | null {

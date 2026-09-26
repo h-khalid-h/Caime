@@ -2,6 +2,8 @@
  * Notifications API and device delivery (PRD §31–§33; ADR-14). Web Push uses VAPID keys the
  * server generates and stores on first boot; Expo push needs an Expo access token for production.
  */
+
+import type { NotificationLevel, NotificationsResponse, NotificationView } from '@caishy/core';
 import { PushSubscriptionBody, uuidv7 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -41,7 +43,7 @@ export async function vapidKeys(
 function notificationView(n: {
   id: string;
   kind: string;
-  level: string;
+  level: NotificationLevel;
   title: string;
   body: string | null;
   data: unknown;
@@ -51,14 +53,14 @@ function notificationView(n: {
   read_at: Date | null;
   created_at: Date;
   updated_at: Date;
-}) {
+}): NotificationView {
   return {
     id: n.id,
     kind: n.kind,
     level: n.level,
     title: n.title,
     body: n.body,
-    data: n.data,
+    data: (n.data ?? {}) as Record<string, unknown>,
     count: n.count,
     delivery: n.delivery,
     reason: n.reason,
@@ -154,7 +156,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
         .execute();
   });
 
-  app.get('/notifications', async (req) => {
+  app.get('/notifications', async (req): Promise<NotificationsResponse> => {
     const auth = requireAuth(req);
     const q = parse(
       z.object({

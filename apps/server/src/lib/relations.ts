@@ -4,8 +4,10 @@
  * evaluating that owner's own privacy rules and never sends them anywhere.
  */
 import {
+  type MutualFit,
   type PolicyTarget,
   type RelationshipPolicy,
+  type RelationshipView,
   relationshipFit,
   relationshipLabel,
   resolvePolicy,
@@ -188,7 +190,7 @@ export async function viewerRelation(
   };
 }
 
-export function relationshipView(r: Relationship) {
+export function relationshipView(r: Relationship): RelationshipView {
   return {
     id: r.id,
     sphere: r.sphere as Sphere,
@@ -212,13 +214,18 @@ export function relationshipView(r: Relationship) {
   };
 }
 
-export type RelationshipView = ReturnType<typeof relationshipView>;
+export type { RelationshipView };
 
 /**
  * Mutual confirmation (PRD §53): only when both sides chose to share their classification.
  * Returns their label (which they shared) and how the two views fit.
  */
-export async function mutualFit(db: Q, me: string, other: string, mine: Relationship | undefined) {
+export async function mutualFit(
+  db: Q,
+  me: string,
+  other: string,
+  mine: Relationship | undefined,
+): Promise<MutualFit | null> {
   if (!mine?.shared) return null;
   const theirs = await db
     .selectFrom('relationships')

@@ -2,6 +2,8 @@
  * The Attention inbox (PRD §19–§20, §63; PRODUCT-REVIEW R7, R8). Gathers every signal for every
  * conversation in a fixed number of queries, then runs the same attention engine the clients run.
  */
+
+import type { InboxAllResponse, InboxItemView, InboxResponse, Sphere } from '@caishy/core';
 import {
   type AttentionInput,
   attentionHeadline,
@@ -25,7 +27,10 @@ import {
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
-export async function buildInbox(ctx: AppContext, userId: string) {
+export async function buildInbox(
+  ctx: AppContext,
+  userId: string,
+): Promise<InboxResponse & { conversations: InboxItemView[] }> {
   const now = ctx.now();
   const me = await ctx.db
     .selectFrom('users')
@@ -175,7 +180,7 @@ export async function buildInbox(ctx: AppContext, userId: string) {
   ]);
   const myMessageIds = new Set(mySentReplies.map((m) => m.id));
 
-  const conversations = rows.map((r) => {
+  const conversations = rows.map((r): InboxItemView => {
     const last = lastMessages.find((m) => m.conversation_id === r.id);
     const t = tasks.find((x) => x.conversation_id === r.id);
     const other = r.other_id && r.kind === 'direct' ? people.get(r.other_id) : undefined;
@@ -251,7 +256,9 @@ export async function buildInbox(ctx: AppContext, userId: string) {
       isGeneral: r.is_general,
       parentId: r.parent_id,
       other: other ?? null,
-      relationship: rel ? { label: relationshipView(rel).label, sphere: rel.sphere } : null,
+      relationship: rel
+        ? { label: relationshipView(rel).label, sphere: rel.sphere as Sphere }
+        : null,
       memberCount: r.member_count,
       lastMessage: last
         ? {
@@ -306,7 +313,7 @@ export async function buildInbox(ctx: AppContext, userId: string) {
 }
 
 export async function inboxRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/inbox', async (req) => {
+  app.get('/inbox', async (req): Promise<InboxResponse | InboxAllResponse> => {
     const auth = requireAuth(req);
     const { view } = parse(
       z.object({ view: z.enum(['attention', 'all']).default('attention') }),

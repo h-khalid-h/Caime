@@ -1,6 +1,8 @@
 /**
  * Accounts and sessions (PRD §35, §55; PRODUCT-REVIEW R24, R29; ADR-7).
  */
+
+import type { AuthResponse, DeviceSessionView, SessionResponse } from '@caishy/core';
 import {
   ChangePasswordBody,
   defaultPrivacy,
@@ -96,7 +98,7 @@ async function storeRecoveryCodes(ctx: AppContext, userId: string): Promise<stri
 }
 
 export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.post('/auth/signup', async (req, reply) => {
+  app.post('/auth/signup', async (req, reply): Promise<AuthResponse> => {
     const { ip } = clientInfo(req);
     ctx.limiter.hit(`signup:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const body = parse(SignupBody, req.body);
@@ -167,7 +169,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { user: meView(user, now), token, recoveryCodes: codes };
   });
 
-  app.post('/auth/login', async (req, reply) => {
+  app.post('/auth/login', async (req, reply): Promise<AuthResponse> => {
     const { ip, userAgent } = clientInfo(req);
     const body = parse(LoginBody, req.body);
     const identifier = body.identifier.toLowerCase().replace(/^@/, '');
@@ -214,7 +216,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.get('/auth/session', async (req) => {
+  app.get('/auth/session', async (req): Promise<SessionResponse> => {
     const auth = requireAuth(req);
     const user = await ctx.db
       .selectFrom('users')
@@ -225,7 +227,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { user: meView(user, ctx.now()), session: { id: auth.sessionId, kind: auth.kind } };
   });
 
-  app.get('/auth/sessions', async (req) => {
+  app.get('/auth/sessions', async (req): Promise<{ sessions: DeviceSessionView[] }> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('sessions')

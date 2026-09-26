@@ -1,6 +1,8 @@
 /**
  * Connections and connection requests (PRD §5.2, §11, §52; PRODUCT-REVIEW R4, R14, R29).
  */
+
+import type { ConnectionRequestView, ConnectionView } from '@caishy/core';
 import {
   AcceptRequestBody,
   ConnectionRequestBody,
@@ -241,7 +243,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { status: 'requested', requestId: id };
   });
 
-  app.get('/connections/requests', async (req) => {
+  app.get('/connections/requests', async (req): Promise<{ requests: ConnectionRequestView[] }> => {
     const auth = requireAuth(req);
     const { direction } = parse(
       z.object({ direction: z.enum(['incoming', 'outgoing']).default('incoming') }),
@@ -276,7 +278,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
           // Context the requester chose to share (PRD §52). Their private classification never is.
           context: row.context_sphere
             ? {
-                sphere: row.context_sphere,
+                sphere: row.context_sphere as Sphere,
                 label: SPHERE_DEFS[row.context_sphere as Sphere]?.label ?? row.context_sphere,
                 orgName: row.context_org_name,
               }
@@ -339,7 +341,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Connections ---------------------------------------------------------------------------
 
-  app.get('/connections', async (req) => {
+  app.get('/connections', async (req): Promise<{ connections: ConnectionView[] }> => {
     const auth = requireAuth(req);
     const { sphere, q } = parse(
       z.object({ sphere: z.string().optional(), q: z.string().trim().max(100).optional() }),
