@@ -4,15 +4,17 @@ import { Character } from '@/brand/Character';
 import { Wordmark } from '@/brand/Wordmark';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { openLink } from '@/lib/links';
+import { useTheme } from '@/theme/theme';
 import { Globe, Info, Lock } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Text } from '@/ui/Text';
 
 export default function About() {
+  const t = useTheme();
   return (
     <SettingsPage title="About Caishy">
       <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
-        <Character name="caishy" size={120} />
+        {t.playful ? <Character name="caishy" size={120} /> : null}
         <Wordmark height={34} />
         <Text variant="body" color="textSecondary" align="center">
           Messaging that understands your relationships.

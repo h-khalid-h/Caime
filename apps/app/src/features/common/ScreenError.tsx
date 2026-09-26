@@ -1,8 +1,9 @@
 import { type ErrorBoundaryProps, router } from 'expo-router';
 import { View } from 'react-native';
-import { Character } from '@/brand/Character';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { Guide } from '@/ui/Guide';
+import { CircleAlert } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 
 /** What a screen shows if it breaks: an apology, a retry, and a way home. Never a blank page. */
@@ -20,7 +21,7 @@ export function ScreenError({ error, retry }: ErrorBoundaryProps) {
         backgroundColor: t.c.canvas,
       }}
     >
-      <Character name="panda" expression="sad" size={120} />
+      <Guide character="panda" expression="sad" icon={CircleAlert} size={120} />
       <Text variant="headline" align="center">
         Something went wrong on this screen
       </Text>

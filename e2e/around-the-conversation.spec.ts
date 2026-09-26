@@ -271,6 +271,24 @@ test.describe
       expect([...noor.errors, ...alex.errors]).toEqual([]);
     });
 
+    test('the Minimal style swaps the characters for simple icons', async () => {
+      const { page, errors } = alex;
+      await page.goto('/search');
+      await expect(page.getByTestId('guide-character').filter({ visible: true })).toBeVisible();
+      await page.goto('/settings/appearance');
+      await page.getByRole('radio', { name: /^Minimal,/ }).click();
+      await page.goto('/search');
+      await expect(page.getByTestId('guide-icon').filter({ visible: true })).toBeVisible();
+      await expect(page.getByTestId('guide-character')).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/phone-search-minimal.png' });
+      await page.goto('/actions');
+      await page.getByRole('tab', { name: /^Done/ }).click();
+      await expect(visible(page, 'Nothing finished yet')).toBeVisible();
+      await expect(page.getByTestId('guide-icon').filter({ visible: true })).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/phone-actions-minimal.png' });
+      expect(errors).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [

@@ -6,11 +6,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { Character } from '@/brand/Character';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
+import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
 import {
   ArrowLeft,
@@ -111,7 +111,7 @@ export default function Search() {
         </View>
         {!debounced ? (
           <View style={{ alignItems: 'center', gap: 12, padding: 24 }}>
-            <Character name="pico" expression="curious" size={100} />
+            <Guide character="pico" expression="curious" icon={SearchIcon} size={100} />
             <Text variant="body" color="textSecondary" align="center">
               Search the way you think about people. Try:
             </Text>

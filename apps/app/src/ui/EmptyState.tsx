@@ -2,8 +2,8 @@ import type { Character as CharacterName, Expression } from '@caishy/brand/chara
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { Character } from '@/brand/Character';
-import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
+import { Guide } from './Guide';
 import { Text } from './Text';
 
 export interface EmptyStateProps {
@@ -26,8 +26,6 @@ export function EmptyState({
   action,
   compact,
 }: EmptyStateProps) {
-  const t = useTheme();
-  const showCharacter = character && (t.playful || !Icon);
   return (
     <View
       style={{
@@ -40,21 +38,15 @@ export function EmptyState({
         alignSelf: 'center',
       }}
     >
-      {showCharacter ? (
+      {character && Icon ? (
+        <Guide
+          character={character}
+          expression={expression}
+          icon={Icon}
+          size={compact ? 88 : 132}
+        />
+      ) : character ? (
         <Character name={character} expression={expression} size={compact ? 88 : 132} />
-      ) : Icon ? (
-        <View
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 32,
-            backgroundColor: t.c.surfaceMuted,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon size={28} color={t.c.textSecondary} />
-        </View>
       ) : null}
       <Text variant="headline" align="center">
         {title}

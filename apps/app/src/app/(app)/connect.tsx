@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { FlatList, Share, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { Character } from '@/brand/Character';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
 import { ConnectSheet } from '@/features/people/ConnectSheet';
 import { useMe } from '@/state/session';
@@ -13,8 +12,9 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
+import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, Search } from '@/ui/icons';
+import { ArrowLeft, Search, UserPlus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -158,7 +158,7 @@ export default function Connect() {
             </View>
           ) : (
             <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
-              <Character name="pico" expression="curious" size={96} />
+              <Guide character="pico" expression="curious" icon={UserPlus} size={96} />
               <Text variant="body" color="textSecondary" align="center">
                 Search by @handle or email address. People under 18 can only be found by people they
                 already know.
