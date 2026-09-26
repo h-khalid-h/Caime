@@ -1408,6 +1408,17 @@ test.describe
       ).toBe(true);
       // The running clock isn't read out every second.
       await expect(page.getByTestId('call-status')).toHaveAttribute('aria-live', 'off');
+      // Noor shows her screen instead of her camera, and Alex is told, with her mute.
+      await expect(alex.page.getByTestId('call-theirs')).toHaveText('Muted');
+      await page.getByTestId('call-share').click();
+      await expect(alex.page.getByTestId('call-theirs')).toHaveText(
+        'Noor is sharing their screen · Muted',
+      );
+      await expect(page.getByTestId('call-you-share')).toBeVisible();
+      await expect.poll(() => seeing(alex.page)).toBe(true);
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-screen-shared.png' });
+      await page.getByTestId('call-share').click();
+      await expect(alex.page.getByTestId('call-theirs')).toHaveText('Muted');
       await page.screenshot({ path: 'e2e/screenshots/desktop-call-active.png' });
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-active.png' });
 
@@ -1418,6 +1429,18 @@ test.describe
       await expect(visible(page, 'Video call · under a minute')).toBeVisible();
       await alex.page.goto(`/c/${convo}`);
       await expect(visible(alex.page, 'Video call · under a minute')).toBeVisible();
+
+      // A voice call can show a screen too: video went both ways from the start.
+      await page.getByTestId('call-voice').click();
+      await alex.page.getByTestId('call-accept').click();
+      await expect(page.getByTestId('call-status')).toHaveText(/^0:\d\d$/, { timeout: 20_000 });
+      await expect(alex.page.getByTestId('call-remote')).toHaveCount(1);
+      await page.getByTestId('call-share').click();
+      await expect(alex.page.getByTestId('call-theirs')).toHaveText('Noor is sharing their screen');
+      await expect.poll(() => seeing(alex.page)).toBe(true);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-voice-call-sharing.png' });
+      await page.getByTestId('call-hangup').click();
+      await expect(alex.page.getByTestId('call-screen')).toHaveCount(0);
 
       // It rings in both of Alex's tabs; closing one leaves the other ringing.
       const second = await alexContext.newPage();

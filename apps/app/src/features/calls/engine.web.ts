@@ -7,6 +7,10 @@
  * The device in a call says so every few seconds and hears back how the call stands, so an
  * event lost on the way (a socket reconnecting) never leaves either side waiting. Only the
  * server saying it's over ends it: a moment offline, or the server restarting, doesn't.
+ *
+ * Every call carries video both ways from the start, even a voice call with nothing to send
+ * yet, so sharing a screen is a swap of what's sent (never a renegotiation); and a data channel
+ * between the two devices says what each shows: its camera or not, its screen, muted.
  */
 
 import type { CallSignalView, CallView, RealtimeEvent } from '@caishy/core/api';
@@ -20,6 +24,9 @@ import { toast } from '@/ui/Toast';
 
 export const callsSupported =
   typeof window !== 'undefined' && 'RTCPeerConnection' in window && Boolean(navigator.mediaDevices);
+/** Where a page can share its screen (desktop browsers; not phones). */
+export const screenShareSupported =
+  callsSupported && typeof navigator.mediaDevices.getDisplayMedia === 'function';
 
 /** While it rings or connects, a beat this often; once the two are talking, a slower one. */
 const BEAT_MS = 5000;
@@ -38,6 +45,10 @@ let dropTimer: ReturnType<typeof setTimeout> | null = null;
 let connectTimer: ReturnType<typeof setTimeout> | null = null;
 /** When a ring this device shows has run its time, it asks whether it still rings. */
 let ringTimer: ReturnType<typeof setTimeout> | null = null;
+/** The two devices' own line: what each shows (camera, screen, muted). */
+let control: RTCDataChannel | null = null;
+/** The screen being shown instead of the camera, while it is. */
+let screen: MediaStreamTrack | null = null;
 
 /** How far along a call is: a view never moves one back. */
 const STAGE = { ringing: 0, active: 1, ended: 2 } as const;
@@ -111,6 +122,13 @@ function release(): void {
   dropTimer = null;
   connectTimer = null;
   ringTimer = null;
+  if (screen) {
+    screen.onended = null;
+    screen.stop();
+  }
+  screen = null;
+  control?.close();
+  control = null;
   pc?.close();
   pc = null;
   remoteDescribed = false;
@@ -192,11 +210,46 @@ const signal = (kind: 'offer' | 'answer' | 'candidate', rest: object) => {
   void send(3);
 };
 
+/** The sender that carries this device's picture: its camera, its screen, or nothing yet. */
+const videoSender = () =>
+  pc?.getTransceivers().find((t) => t.receiver.track.kind === 'video')?.sender ?? null;
+
+/** Tell the other device what this one shows, whenever that changes and once it can hear. */
+function tellState(): void {
+  if (control?.readyState !== 'open') return;
+  const { cameraOff, sharing, muted, local } = store();
+  control.send(
+    JSON.stringify({
+      camera: Boolean(local?.getVideoTracks().length) && !cameraOff,
+      sharing,
+      muted,
+    }),
+  );
+}
+
 async function connect(local: MediaStream): Promise<RTCPeerConnection> {
   const { iceServers } = await endpoints.callIce().catch(() => ({ iceServers: [] }));
   const peer = new RTCPeerConnection({ iceServers });
   const remote = new MediaStream();
   for (const track of local.getTracks()) peer.addTrack(track, local);
+  // Created the same way on both devices (negotiated, id 0), so neither waits for the other's.
+  const channel = peer.createDataChannel('state', { negotiated: true, id: 0 });
+  channel.onopen = tellState;
+  channel.onmessage = (e) => {
+    try {
+      const m = JSON.parse(String(e.data)) as Record<string, unknown>;
+      store().patch({
+        theirs: {
+          camera: m.camera !== false,
+          sharing: m.sharing === true,
+          muted: m.muted === true,
+        },
+      });
+    } catch {
+      // Not something this version says: ignored.
+    }
+  };
+  control = channel;
   peer.ontrack = (e) => {
     remote.addTrack(e.track);
     store().patch({ remote });
@@ -239,6 +292,9 @@ async function onSignal(s: CallSignalView): Promise<void> {
   remoteDescribed = true;
   for (const c of waiting.splice(0)) await pc.addIceCandidate(c).catch(() => {});
   if (s.kind === 'offer') {
+    // With no camera to send yet, video still goes both ways, so a screen can be shown later.
+    for (const t of pc.getTransceivers())
+      if (t.receiver.track.kind === 'video' && t.direction === 'recvonly') t.direction = 'sendrecv';
     await pc.setLocalDescription(await pc.createAnswer());
     signal('answer', { sdp: pc.localDescription?.sdp });
   }
@@ -326,12 +382,55 @@ export function toggleMute(): void {
   const muted = !store().muted;
   for (const t of store().local?.getAudioTracks() ?? []) t.enabled = !muted;
   store().patch({ muted });
+  tellState();
 }
 
 export function toggleCamera(): void {
   const cameraOff = !store().cameraOff;
   for (const t of store().local?.getVideoTracks() ?? []) t.enabled = !cameraOff;
   store().patch({ cameraOff });
+  tellState();
+}
+
+/** Show this screen (a window, a tab) instead of the camera, until it's stopped. */
+export async function startSharing(): Promise<void> {
+  const call = current();
+  if (!call || !videoSender() || store().sharing || store().phase !== 'active') return;
+  let shown: MediaStream;
+  try {
+    shown = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+  } catch (e) {
+    // Choosing nothing is fine; anything else is said.
+    if (!(e instanceof DOMException && e.name === 'NotAllowedError'))
+      toast('Caishy couldn’t share your screen.', { tone: 'danger' });
+    return;
+  }
+  const track = shown.getVideoTracks()[0];
+  const sender = videoSender();
+  if (!track || !sender || current()?.id !== call.id) {
+    for (const t of shown.getTracks()) t.stop();
+    return;
+  }
+  await sender.replaceTrack(track);
+  screen = track;
+  // The browser's own "Stop sharing" ends it too.
+  track.onended = () => void stopSharing();
+  store().patch({ sharing: true });
+  tellState();
+}
+
+/** Back to the camera (or to nothing, in a voice call). */
+export async function stopSharing(): Promise<void> {
+  const track = screen;
+  if (!track) return;
+  screen = null;
+  track.onended = null;
+  track.stop();
+  await videoSender()
+    ?.replaceTrack(store().local?.getVideoTracks()[0] ?? null)
+    .catch(() => {});
+  store().patch({ sharing: false });
+  tellState();
 }
 
 /** What the server says about calls, from the realtime connection or a heartbeat. */
@@ -384,9 +483,9 @@ export function onCallEvent(event: RealtimeEvent): void {
     connectBy(call.id);
     void connect(local)
       .then(async (peer) => {
-        // A video call from a device without a camera still receives the other's.
-        if (call.kind === 'video' && !local.getVideoTracks().length)
-          peer.addTransceiver('video', { direction: 'recvonly' });
+        // No camera to send (a voice call, or no camera here): video goes both ways all the same,
+        // so the other's camera arrives, and a screen can be shown later without renegotiating.
+        if (!local.getVideoTracks().length) peer.addTransceiver('video', { direction: 'sendrecv' });
         await peer.setLocalDescription(await peer.createOffer());
         signal('offer', { sdp: peer.localDescription?.sdp });
       })

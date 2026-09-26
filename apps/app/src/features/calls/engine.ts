@@ -6,10 +6,13 @@ import type { RealtimeEvent } from '@caishy/core/api';
 import type { CallKind } from '@caishy/core/calls';
 
 export const callsSupported = false;
+export const screenShareSupported = false;
 export async function startCall(_conversationId: string, _kind: CallKind): Promise<void> {}
 export async function answer(): Promise<void> {}
 export async function hangUp(_note: string | null = null, _failed = false): Promise<void> {}
 export function toggleMute(): void {}
 export function toggleCamera(): void {}
+export async function startSharing(): Promise<void> {}
+export async function stopSharing(): Promise<void> {}
 export function onCallEvent(_event: RealtimeEvent): void {}
 export async function checkLiveCall(_me?: string): Promise<void> {}

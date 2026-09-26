@@ -4,10 +4,28 @@ import { useCall } from '@/state/calls';
 import { useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
-import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from '@/ui/icons';
+import {
+  Mic,
+  MicOff,
+  Phone,
+  PhoneOff,
+  ScreenShare,
+  ScreenShareOff,
+  Video,
+  VideoOff,
+} from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
-import { answer, checkLiveCall, hangUp, toggleCamera, toggleMute } from './engine';
+import {
+  answer,
+  checkLiveCall,
+  hangUp,
+  screenShareSupported,
+  startSharing,
+  stopSharing,
+  toggleCamera,
+  toggleMute,
+} from './engine';
 
 const INK = '#0B0B12';
 /** Readable over whatever the other camera shows. */
@@ -22,11 +40,14 @@ function Media({
   stream,
   video,
   mine,
+  fit = 'cover',
   testID,
 }: {
   stream: MediaStream;
   video: boolean;
   mine?: boolean;
+  /** A camera fills the screen; a shared screen is shown whole. */
+  fit?: 'cover' | 'contain';
   testID: string;
 }) {
   // A callback ref: when the voice becomes a picture, the new element gets the stream too.
@@ -46,7 +67,7 @@ function Media({
       ? {
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
+          objectFit: fit,
           transform: mine ? 'scaleX(-1)' : undefined,
           display: 'block',
         }
@@ -196,7 +217,7 @@ function useElapsed(since: string | null, running: boolean): string {
  */
 export function CallLayer() {
   const me = useSession((s) => s.user?.id ?? '');
-  const { call, phase, local, remote, muted, cameraOff, note } = useCall();
+  const { call, phase, local, remote, muted, cameraOff, sharing, theirs, note } = useCall();
   useEffect(() => {
     if (me) void checkLiveCall(me);
   }, [me]);
@@ -214,7 +235,12 @@ export function CallLayer() {
 
   const other = call.caller.id === me ? call.callee : call.caller;
   const video = call.kind === 'video';
-  const seeThem = video && phase === 'active' && remote?.getVideoTracks().length;
+  // Their screen when they share it; their camera in a video call, unless they turned it off.
+  const theyShare = Boolean(theirs?.sharing);
+  const seeThem =
+    phase === 'active' &&
+    Boolean(remote?.getVideoTracks().length) &&
+    (theyShare || (video && theirs?.camera !== false));
   const status =
     phase === 'incoming'
       ? video
@@ -251,7 +277,12 @@ export function CallLayer() {
     >
       {remote && phase !== 'ended' ? (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-          <Media stream={remote} video={Boolean(seeThem)} testID="call-remote" />
+          <Media
+            stream={remote}
+            video={seeThem}
+            fit={theyShare ? 'contain' : 'cover'}
+            testID="call-remote"
+          />
         </View>
       ) : null}
       <View
@@ -269,6 +300,20 @@ export function CallLayer() {
         <Text variant="title" style={{ color: '#FFFFFF', ...OVER_VIDEO }} numberOfLines={1}>
           {other.displayName}
         </Text>
+        {phase === 'active' && (theyShare || theirs?.muted) ? (
+          <Text
+            variant="caption"
+            style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
+            testID="call-theirs"
+          >
+            {[
+              theyShare ? `${other.displayName.split(' ')[0]} is sharing their screen` : null,
+              theirs?.muted ? 'Muted' : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        ) : null}
         <Text
           variant="body"
           style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
@@ -280,7 +325,24 @@ export function CallLayer() {
           {phase === 'incoming' ? `${status} · calling you` : status}
         </Text>
       </View>
-      {video && local && hasCamera && !cameraOff && phase !== 'incoming' && phase !== 'ended' ? (
+      {sharing && phase === 'active' ? (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 140,
+            right: 16,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 999,
+            backgroundColor: '#FFFFFF29',
+          }}
+          testID="call-you-share"
+        >
+          <Text variant="caption" style={{ color: '#FFFFFF' }}>
+            You’re sharing your screen
+          </Text>
+        </View>
+      ) : video && local && hasCamera && !cameraOff && phase !== 'incoming' && phase !== 'ended' ? (
         <View
           style={{
             position: 'absolute',
@@ -336,6 +398,15 @@ export function CallLayer() {
                 onPress={toggleMute}
                 testID="call-mute"
               />
+              {screenShareSupported && phase === 'active' ? (
+                <Round
+                  icon={sharing ? ScreenShareOff : ScreenShare}
+                  label={sharing ? 'Stop sharing' : 'Share screen'}
+                  on={sharing}
+                  onPress={() => void (sharing ? stopSharing() : startSharing())}
+                  testID="call-share"
+                />
+              ) : null}
               {video && hasCamera ? (
                 <Round
                   icon={cameraOff ? VideoOff : Video}

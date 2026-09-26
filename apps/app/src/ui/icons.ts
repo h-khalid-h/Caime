@@ -83,6 +83,8 @@ export { default as Plus } from 'lucide-react-native/icons/plus';
 export { default as Receipt } from 'lucide-react-native/icons/receipt';
 export { default as RefreshCw } from 'lucide-react-native/icons/refresh-cw';
 export { default as Reply } from 'lucide-react-native/icons/reply';
+export { default as ScreenShare } from 'lucide-react-native/icons/screen-share';
+export { default as ScreenShareOff } from 'lucide-react-native/icons/screen-share-off';
 export { default as Search } from 'lucide-react-native/icons/search';
 export { default as SendHorizontal } from 'lucide-react-native/icons/send-horizontal';
 export { default as Settings } from 'lucide-react-native/icons/settings';

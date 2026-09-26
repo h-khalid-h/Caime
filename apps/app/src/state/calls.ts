@@ -16,6 +16,13 @@ export type CallPhase =
   | 'reconnecting'
   | 'ended';
 
+/** What the other device says it's doing, peer to peer (null until it has said). */
+export interface TheirState {
+  camera: boolean;
+  sharing: boolean;
+  muted: boolean;
+}
+
 interface CallStore {
   call: CallView | null;
   phase: CallPhase | null;
@@ -23,6 +30,9 @@ interface CallStore {
   remote: MediaStream | null;
   muted: boolean;
   cameraOff: boolean;
+  /** This device is showing its screen instead of its camera. */
+  sharing: boolean;
+  theirs: TheirState | null;
   /** Why it ended, when there's something to say. */
   note: string | null;
   patch: (p: Partial<Omit<CallStore, 'patch' | 'reset'>>) => void;
@@ -36,6 +46,8 @@ const idle = {
   remote: null,
   muted: false,
   cameraOff: false,
+  sharing: false,
+  theirs: null,
   note: null,
 };
 

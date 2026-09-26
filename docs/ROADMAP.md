@@ -188,7 +188,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       only to those who may see that someone is online), ended when either side leaves or one
       blocks the other, and each call leaves its line in the conversation ("Video call ·
       4 min", "Missed voice call") (`calls.test.ts`, E2E with Chromium's fake camera).
-      [ ] Group calls, screen sharing, call summaries, calls in the phone apps.
+      Screen sharing on desktop browsers, in a video call or a voice one, with no renegotiation
+      (video goes both ways from the start); the two devices tell each other what they show, so
+      the other side sees the screen whole, the avatar rather than black when a camera is off,
+      and a muted mark (`engine.web.test.ts`, E2E with Chromium's fake screen).
+      [ ] Group calls, calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
       ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
 
 ## M7 — Ship
@@ -474,3 +478,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   a tab answering but not yet in the call never declines it, and late answers can't end the
   next call (`engine.web.test.ts` drives the engine with fake WebRTC for these). Tests: 156 core,
   49 brand, 223 server, 20 app, 33 E2E.
+- 2026-09-26 — Session 2 (cont.): screen sharing in calls on the web. In a call on a desktop
+  browser, "Share screen" shows a window, a tab or the whole screen instead of the camera, in a
+  voice call too: every call carries video both ways from the start, so nothing is renegotiated,
+  and "Stop sharing" (or the browser's own bar) puts the camera back. The two devices tell each
+  other what they show over a data channel of their own, so the other side sees the screen whole
+  ("Noor is sharing their screen"), the avatar instead of black frames when a camera is off, and
+  when someone is muted. Tests: 156 core, 49 brand, 223 server, 25 app, 33 E2E (the call test now
+  shares a screen in a video call and in a voice one).

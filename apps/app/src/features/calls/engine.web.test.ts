@@ -78,23 +78,80 @@ class FakeStream {
     this.tracks.push(t);
   }
 }
+class FakeSender {
+  replaced: Array<FakeTrack | null> = [];
+  constructor(public track: FakeTrack | null) {}
+  async replaceTrack(track: FakeTrack | null) {
+    this.replaced.push(track);
+    this.track = track;
+  }
+}
+class FakeTransceiver {
+  sender: FakeSender;
+  receiver: { track: { kind: string } };
+  constructor(
+    kind: string,
+    public direction: string,
+    track: FakeTrack | null,
+  ) {
+    this.sender = new FakeSender(track);
+    this.receiver = { track: { kind } };
+  }
+}
+class FakeChannel {
+  readyState = 'connecting';
+  sent: Array<Record<string, unknown>> = [];
+  onopen: (() => void) | null = null;
+  onmessage: ((e: { data: string }) => void) | null = null;
+  constructor(
+    public label: string,
+    public init: Record<string, unknown>,
+  ) {}
+  send(m: string) {
+    this.sent.push(JSON.parse(m));
+  }
+  close() {
+    this.readyState = 'closed';
+  }
+  open() {
+    this.readyState = 'open';
+    this.onopen?.();
+  }
+}
 const pcs: FakePC[] = [];
 class FakePC {
   closed = false;
   connectionState = 'new';
   localDescription: unknown = null;
-  transceivers: Array<{ kind: string; direction: string }> = [];
+  transceivers: FakeTransceiver[] = [];
+  channels: FakeChannel[] = [];
   offered = false;
+  /** What it said it would send and receive when it answered. */
+  answered: Array<{ kind: string; direction: string }> | null = null;
   onconnectionstatechange: (() => void) | null = null;
   ontrack: unknown = null;
   onicecandidate: unknown = null;
   constructor() {
     pcs.push(this);
   }
-  addTrack() {}
+  addTrack(track: FakeTrack) {
+    this.transceivers.push(new FakeTransceiver(track.kind, 'sendrecv', track));
+  }
   addTransceiver(kind: string, init: { direction: string }) {
     if (this.offered) throw new Error('added after the offer');
-    this.transceivers.push({ kind, direction: init.direction });
+    this.transceivers.push(new FakeTransceiver(kind, init.direction, null));
+  }
+  getTransceivers() {
+    return this.transceivers;
+  }
+  createDataChannel(label: string, init: Record<string, unknown>) {
+    const channel = new FakeChannel(label, init);
+    this.channels.push(channel);
+    return channel;
+  }
+  /** Of what it sends and receives, in order. */
+  media() {
+    return this.transceivers.map((t) => ({ kind: t.receiver.track.kind, direction: t.direction }));
   }
   close() {
     this.closed = true;
@@ -104,18 +161,24 @@ class FakePC {
     return { type: 'offer', sdp: 'v=0' };
   }
   async createAnswer() {
+    this.answered = this.media();
     return { type: 'answer', sdp: 'v=0' };
   }
   async setLocalDescription(d: unknown) {
     this.localDescription = d;
   }
-  async setRemoteDescription() {}
+  async setRemoteDescription(d: { type: string }) {
+    // An offer with video meets a device with no camera: it only receives, until told otherwise.
+    if (d.type === 'offer' && !this.transceivers.some((t) => t.receiver.track.kind === 'video'))
+      this.transceivers.push(new FakeTransceiver('video', 'recvonly', null));
+  }
   async addIceCandidate() {}
 }
 
 const listeners: Record<string, Array<() => void>> = {};
 const fetched: string[] = [];
 let media: (constraints: { video: unknown }) => Promise<FakeStream>;
+let display: () => Promise<FakeStream>;
 let n = 0;
 
 type Engine = typeof import('./engine.web');
@@ -170,7 +233,10 @@ beforeAll(async () => {
     RTCPeerConnection: FakePC,
   });
   vi.stubGlobal('navigator', {
-    mediaDevices: { getUserMedia: (c: { video: unknown }) => media(c) },
+    mediaDevices: {
+      getUserMedia: (c: { video: unknown }) => media(c),
+      getDisplayMedia: () => display(),
+    },
   });
   vi.stubGlobal('RTCPeerConnection', FakePC);
   vi.stubGlobal('MediaStream', FakeStream);
@@ -203,6 +269,7 @@ beforeEach(() => {
       new FakeTrack('audio', `mic-${++n}`),
       ...(c.video ? [new FakeTrack('video', `cam-${n}`)] : []),
     ]);
+  display = async () => new FakeStream([new FakeTrack('video', `screen-${++n}`)]);
 });
 afterEach(async () => {
   await vi.runOnlyPendingTimersAsync().catch(() => {});
@@ -323,7 +390,10 @@ describe('the web call engine, when the network misbehaves', () => {
       data: placed({ kind: 'video', state: 'active', calleeDevice: 'dev-callee-00' }),
     });
     await settle();
-    expect(pcs.at(-1)!.transceivers).toEqual([{ kind: 'video', direction: 'recvonly' }]);
+    expect(pcs.at(-1)!.media()).toEqual([
+      { kind: 'audio', direction: 'sendrecv' },
+      { kind: 'video', direction: 'sendrecv' },
+    ]);
   });
 
   it('closing a tab that pressed Answer but isn’t in the call yet turns nothing down', async () => {
@@ -365,5 +435,96 @@ describe('the web call engine, when the network misbehaves', () => {
     expect(h.endpoints.endCall).not.toHaveBeenCalled();
     expect(h.endpoints.declineCall).not.toHaveBeenCalled();
     expect(phase()).toBe('connecting');
+  });
+});
+
+describe('sharing a screen in a call', () => {
+  /** Placed, answered and connected, with the two devices' own line open. */
+  async function connected(kind: 'voice' | 'video') {
+    h.endpoints.startCall.mockResolvedValue({ call: placed({ kind }) });
+    await engine.startCall('conv-1', kind);
+    engine.onCallEvent({
+      type: 'call.updated',
+      data: placed({ kind, state: 'active', calleeDevice: 'dev-callee-00' }),
+    });
+    await settle();
+    const pc = pcs.at(-1)!;
+    pc.connectionState = 'connected';
+    pc.onconnectionstatechange?.();
+    const channel = pc.channels[0]!;
+    channel.open();
+    return { pc, channel };
+  }
+
+  it('a voice call is offered with video both ways and the two devices’ own line', async () => {
+    const { pc, channel } = await connected('voice');
+    expect(pc.media()).toEqual([
+      { kind: 'audio', direction: 'sendrecv' },
+      { kind: 'video', direction: 'sendrecv' },
+    ]);
+    expect(channel.init).toEqual({ negotiated: true, id: 0 });
+    // Once open, it says what this device shows.
+    expect(channel.sent).toEqual([{ camera: false, sharing: false, muted: false }]);
+  });
+
+  it('answering a voice call, video goes both ways too, so either side can share later', async () => {
+    engine.onCallEvent({ type: 'call.ringing', data: view() });
+    h.endpoints.acceptCall.mockResolvedValue({
+      call: view({ state: 'active', calleeDevice: DEVICE_ID }),
+    });
+    await engine.answer();
+    engine.onCallEvent({
+      type: 'call.signal',
+      data: {
+        callId: 'call-1',
+        from: 'dev-caller-00',
+        to: DEVICE_ID,
+        kind: 'offer',
+        sdp: 'v=0',
+        candidate: null,
+      },
+    });
+    await settle();
+    expect(pcs.at(-1)!.answered).toEqual([
+      { kind: 'audio', direction: 'sendrecv' },
+      { kind: 'video', direction: 'sendrecv' },
+    ]);
+  });
+
+  it('shares in place of the camera, and the browser’s own stop puts the camera back', async () => {
+    const { pc, channel } = await connected('video');
+    const camera = useCall.getState().local!.getVideoTracks()[0];
+    await engine.startSharing();
+    const sender = pc.transceivers.find((t) => t.receiver.track.kind === 'video')!.sender;
+    expect(sender.track?.id).toMatch(/^screen-/);
+    expect(useCall.getState().sharing).toBe(true);
+    expect(channel.sent.at(-1)).toEqual({ camera: true, sharing: true, muted: false });
+    // The browser's "Stop sharing" bar.
+    const screen = sender.track as unknown as FakeTrack & { onended: (() => void) | null };
+    screen.onended?.();
+    await settle();
+    expect(sender.track).toBe(camera);
+    expect(stopped).toContain(screen.id);
+    expect(useCall.getState().sharing).toBe(false);
+    expect(channel.sent.at(-1)).toEqual({ camera: true, sharing: false, muted: false });
+  });
+
+  it('choosing nothing to share changes nothing and says nothing', async () => {
+    await connected('video');
+    display = async () => {
+      throw new DOMException('Cancelled', 'NotAllowedError');
+    };
+    await engine.startSharing();
+    expect(useCall.getState().sharing).toBe(false);
+    expect(h.toasts).toEqual([]);
+  });
+
+  it('what the other side says it shows is kept for the screen to draw', async () => {
+    const { channel } = await connected('video');
+    channel.onmessage?.({ data: JSON.stringify({ camera: false, sharing: true, muted: true }) });
+    expect(useCall.getState().theirs).toEqual({ camera: false, sharing: true, muted: true });
+    // Something it doesn't understand is ignored.
+    channel.onmessage?.({ data: 'not json' });
+    expect(useCall.getState().theirs).toEqual({ camera: false, sharing: true, muted: true });
   });
 });
