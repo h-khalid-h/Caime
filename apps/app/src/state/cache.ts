@@ -31,7 +31,38 @@ export function maxSeq(data: MessagePages | undefined): number {
   return max;
 }
 
+/**
+ * A live change that lands while a conversation's page is loading would be lost: there is nothing
+ * to apply it to yet, or the response in flight was read before it and replaces it. Such changes
+ * are applied now and again once that response is in.
+ */
+const afterLoad = new WeakMap<QueryClient, Map<string, Array<() => void>>>();
+
+function applyLive(qc: QueryClient, conversationId: string, change: () => void): void {
+  change();
+  if (qc.getQueryState(qk.messages(conversationId))?.fetchStatus !== 'fetching') return;
+  let waiting = afterLoad.get(qc);
+  if (!waiting) {
+    const byConversation = new Map<string, Array<() => void>>();
+    waiting = byConversation;
+    afterLoad.set(qc, byConversation);
+    qc.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.action.type !== 'success') return;
+      const [scope, id] = event.query.queryKey as [string, string];
+      const changes = scope === 'messages' ? byConversation.get(id) : undefined;
+      if (!changes) return;
+      byConversation.delete(id);
+      for (const again of changes) again();
+    });
+  }
+  waiting.set(conversationId, [...(waiting.get(conversationId) ?? []), change]);
+}
+
 export function upsertMessage(qc: QueryClient, m: MessageView): void {
+  applyLive(qc, m.conversationId, () => upsertNow(qc, m));
+}
+
+function upsertNow(qc: QueryClient, m: MessageView): void {
   qc.setQueryData<MessagePages>(qk.messages(m.conversationId), (data) => {
     if (!data || data.pages.length === 0) return data;
     let found = false;
@@ -57,6 +88,15 @@ export function upsertMessage(qc: QueryClient, m: MessageView): void {
 }
 
 export function patchMessage(
+  qc: QueryClient,
+  conversationId: string,
+  id: string,
+  fn: (m: MessageView) => MessageView,
+): void {
+  applyLive(qc, conversationId, () => patchNow(qc, conversationId, id, fn));
+}
+
+function patchNow(
   qc: QueryClient,
   conversationId: string,
   id: string,

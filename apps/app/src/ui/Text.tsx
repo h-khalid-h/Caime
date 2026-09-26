@@ -10,8 +10,11 @@ export interface TextProps extends RNTextProps {
   color?: keyof ThemeColors | (string & {});
   weight?: 400 | 500 | 600 | 700 | 800 | 900;
   align?: TextStyle['textAlign'];
-  /** Set direction and alignment from the content (user-written text: names, messages). */
-  auto?: boolean;
+  /**
+   * Set direction and alignment from the content (user-written text: names, messages). Pass the
+   * text itself when the children are split into parts, as linkified messages are.
+   */
+  auto?: boolean | string;
 }
 
 /** Headings stop growing sooner than body text so layouts survive large accessibility sizes. */
@@ -35,7 +38,9 @@ export function Text({
   const t = useTheme();
   const spec = t.type[variant];
   const resolved = (t.c as unknown as Record<string, string>)[color] ?? color;
-  const dir = auto && typeof children === 'string' ? textDirection(children) : undefined;
+  const source =
+    typeof auto === 'string' ? auto : auto && typeof children === 'string' ? children : undefined;
+  const dir = source ? textDirection(source) : undefined;
   return (
     <RNText
       maxFontSizeMultiplier={MAX_SCALE[variant] ?? 1.8}

@@ -104,7 +104,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (415.0 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (415.2 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -144,4 +144,8 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   showed as blank pills, that any conversation change touching only shared settings (renaming a
   group) failed with a 500, and that phones had no way into a group's details. Reviewing the
   Minimal style found characters it didn't replace (Connect, Search, About, the error screen).
-  Tests: 125 core, 49 brand, 86 server, 13 E2E.
+  Arabic messages now align right on every platform (they relied on the browser's own
+  direction, which iOS doesn't do). A flaky E2E run traced to a real race: a message arriving
+  while a conversation's first page loaded was dropped; the app now applies live changes again
+  once the page lands (unit-tested; the app has unit tests now). Tests: 125 core, 49 brand,
+  86 server, 3 app, 14 E2E.

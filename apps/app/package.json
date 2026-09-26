@@ -55,7 +55,7 @@
     "build:web": "expo export --platform web --output-dir dist",
     "export:native": "expo export --platform ios --platform android --output-dir dist-native",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"app: covered by e2e\""
+    "test": "vitest run"
   },
   "private": true
 }

@@ -32,7 +32,7 @@ without re-deriving decisions.
 ```sh
 pnpm install                 # once; hoisted node_modules (ADR-1)
 pnpm check                   # lint + typecheck + all tests: run before every commit
-pnpm test                    # all packages (server tests need Postgres: TEST_DATABASE_URL,
+pnpm test                    # all packages, app logic included (server tests need Postgres: TEST_DATABASE_URL,
                              #   default postgres://caishy:caishy-dev@127.0.0.1:5432/postgres)
 pnpm dev:server              # API on :8787 (DATABASE_URL; see apps/server/.env.example)
 pnpm dev:app                 # Expo dev server; press w for web (talks to :8787)

@@ -156,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
     (m.entities as { links?: Array<{ url: string; suspicious?: boolean }> }).links ?? [];
   const suspicious = (url: string) => links.some((l) => l.url === url && l.suspicious);
   const bodyText = m.body ? (
-    <Text variant="message" color={fg} selectable auto>
+    <Text variant="message" color={fg} selectable auto={m.body}>
       {linkify(m.body).map((part) =>
         part.url ? (
           <Text

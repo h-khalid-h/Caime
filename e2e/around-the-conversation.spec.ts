@@ -289,6 +289,29 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('Arabic messages align right, English left', async () => {
+      const arabic = 'هل تستطيع إرسال التقرير غدًا؟';
+      const english = 'Can you send the report tomorrow?';
+      await noor.page.goto(`/c/${convo}`);
+      for (const body of [arabic, english]) {
+        const sent = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+          headers: CLIENT,
+          data: { clientId: randomUUID(), body },
+        });
+        expect(sent.ok(), await sent.text()).toBe(true);
+      }
+      // The browser finds the direction itself (dir="auto"); the alignment is ours, and it is
+      // what iOS needs, where text otherwise aligns to the device's language.
+      const align = async (text: string) => {
+        const el = visible(noor.page, text);
+        await expect(el).toBeVisible();
+        return el.evaluate((node) => getComputedStyle(node).textAlign);
+      };
+      expect(await align(arabic)).toBe('right');
+      expect(await align(english)).not.toBe('right');
+      expect(noor.errors).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [
