@@ -1,0 +1,21 @@
+node_modules/
+dist/
+build/
+coverage/
+.expo/
+.expo-shared/
+web-build/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# local data written by the server in development
+/data/
+apps/server/data/
+# native projects are generated (Continuous Native Generation)
+apps/app/ios/
+apps/app/android/
+playwright-report/
+test-results/

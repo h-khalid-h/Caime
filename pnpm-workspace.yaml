@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Some React Native libraries still fail under isolated installs (docs/ARCHITECTURE.md ADR-1).
+nodeLinker: hoisted
