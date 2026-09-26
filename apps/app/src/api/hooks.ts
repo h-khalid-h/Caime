@@ -48,6 +48,13 @@ export const useMessages = (id: string) =>
 export const usePerson = (id: string) =>
   useQuery({ queryKey: qk.person(id), queryFn: () => endpoints.person(id), enabled: Boolean(id) });
 
+export const useRelationshipHistory = (id: string) =>
+  useQuery({
+    queryKey: qk.relationshipHistory(id),
+    queryFn: () => endpoints.relationshipHistory(id),
+    enabled: Boolean(id),
+  });
+
 export const useTaxonomy = () =>
   useQuery({ queryKey: qk.taxonomy, queryFn: endpoints.taxonomy, staleTime: 10 * 60_000 });
 

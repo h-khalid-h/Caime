@@ -1,3 +1,4 @@
+import { describeRelationshipEvent } from '@caishy/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -148,13 +149,18 @@ describe('relationships evolve without losing history (PRD §13)', () => {
     expect(restored.relationship.status).toBe('active');
     const history = await hassan.get(`/v1/people/${sarah.user.id}/relationships`);
     expect(history.history.map((r: any) => r.status)).toEqual(['superseded', 'active']);
+    // One line per thing that happened: the change is one event, not an addition plus a change.
     expect(history.events.map((e: any) => e.kind)).toEqual([
       'created',
       'shared',
-      'created',
       'changed',
       'ended',
       'restored',
+    ]);
+    expect(history.events.map((e: any) => describeRelationshipEvent(e, 'Sarah')).slice(2)).toEqual([
+      '“Manager · DATA C” became “Colleague · DATA C”',
+      '“Colleague · DATA C” ended',
+      'Restored “Colleague · DATA C”',
     ]);
   });
 

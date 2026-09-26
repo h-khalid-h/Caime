@@ -87,6 +87,12 @@ These are rules, not preferences.
   a relaunch shows the cache instantly and then refreshes it.
 - Playwright: text also appears in off-screen screens on phones (tabs stay mounted), so assert
   with `.filter({ visible: true })`.
+- E2E people: `apiSignUp` (`e2e/helpers.ts`) creates and onboards someone through the API.
+  Production mode allows 10 sign-ups per address per hour, so a spec shares one pair of people
+  across `test.describe.serial` tests rather than signing up per test.
+- Network state comes from `src/lib/network.ts`: the browser's `online`/`offline` events on the
+  web, NetInfo on native (`network.native.ts`). NetInfo's web build listens to
+  `navigator.connection`, which Chromium doesn't fire when the network returns.
 
 ## Credentials and environment
 

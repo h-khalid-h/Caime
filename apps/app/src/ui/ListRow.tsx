@@ -9,6 +9,8 @@ import { Text } from './Text';
 export interface ListRowProps {
   title: string;
   subtitle?: string | null;
+  /** The subtitle again, in runs; matched runs are emphasised (search results). */
+  subtitleParts?: Array<{ text: string; match: boolean }>;
   icon?: IconComponent;
   iconColor?: string;
   left?: ReactNode;
@@ -25,6 +27,7 @@ export interface ListRowProps {
 export function ListRow({
   title,
   subtitle,
+  subtitleParts,
   icon: Icon,
   iconColor,
   left,
@@ -69,7 +72,18 @@ export function ListRow({
         </Text>
         {subtitle ? (
           <Text variant="caption" color="textSecondary" numberOfLines={2}>
-            {subtitle}
+            {subtitleParts
+              ? subtitleParts.map((part, i) =>
+                  part.match ? (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: runs have no identity but their order
+                    <Text key={i} variant="captionStrong" color="text">
+                      {part.text}
+                    </Text>
+                  ) : (
+                    part.text
+                  ),
+                )
+              : subtitle}
           </Text>
         ) : null}
       </View>

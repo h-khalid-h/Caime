@@ -87,7 +87,13 @@ export async function createRelationship(
   ownerId: string,
   subjectId: string,
   input: RelationshipInputT,
-  opts: { source: Relationship['source']; connectionId?: string | null; primary?: boolean } = {
+  opts: {
+    source: Relationship['source'];
+    connectionId?: string | null;
+    primary?: boolean;
+    /** False when this row supersedes another: the caller records one "changed" event instead. */
+    recordCreated?: boolean;
+  } = {
     source: 'user',
   },
 ): Promise<Relationship> {
@@ -142,17 +148,18 @@ export async function createRelationship(
     })
     .returningAll()
     .executeTakeFirstOrThrow();
-  await db
-    .insertInto('relationship_events')
-    .values({
-      id: uuidv7(),
-      relationship_id: row.id,
-      owner_id: ownerId,
-      kind: 'created',
-      after: JSON.stringify(snapshot(row)),
-      at: ctx.now(),
-    })
-    .execute();
+  if (opts.recordCreated !== false)
+    await db
+      .insertInto('relationship_events')
+      .values({
+        id: uuidv7(),
+        relationship_id: row.id,
+        owner_id: ownerId,
+        kind: 'created',
+        after: JSON.stringify(snapshot(row)),
+        at: ctx.now(),
+      })
+      .execute();
   await recordEvent(db, 'relationship.assigned', ownerId, { relationshipId: row.id, subjectId });
   return row;
 }
@@ -328,6 +335,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
         source: current.source,
         connectionId: current.connection_id,
         primary: current.is_primary,
+        recordCreated: false,
       });
       await trx
         .updateTable('relationships')
@@ -486,6 +494,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
             rows.map((r) => r.id),
           )
           .orderBy('at', 'asc')
+          .orderBy('id', 'asc')
           .execute()
       : [];
     const primary = rows.find((r) => r.status === 'active' && r.is_primary);

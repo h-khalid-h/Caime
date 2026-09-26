@@ -180,6 +180,31 @@ export function truncate(text: string, max: number): string {
         .trimEnd()}…`;
 }
 
+/**
+ * Search snippets mark the matched words with two private-use characters (the server removes
+ * them from the text first, so a typed «quote» is never mistaken for a match).
+ */
+export const MATCH_START = '\uE000';
+export const MATCH_END = '\uE001';
+
+/** A snippet as plain and matched runs, for emphasis; the joined text is the plain snippet. */
+export function snippetParts(snippet: string): Array<{ text: string; match: boolean }> {
+  const parts: Array<{ text: string; match: boolean }> = [];
+  let match = false;
+  let run = '';
+  for (const ch of snippet) {
+    if (ch !== MATCH_START && ch !== MATCH_END) {
+      run += ch;
+      continue;
+    }
+    if (run) parts.push({ text: run, match });
+    run = '';
+    match = ch === MATCH_START;
+  }
+  if (run) parts.push({ text: run, match });
+  return parts;
+}
+
 /** A message preview for lists and notifications: first line, trimmed. */
 export function previewText(text: string, max = 90): string {
   return truncate(text.replace(/\s+/g, ' ').trim(), max);

@@ -4,7 +4,7 @@
  */
 
 import type { SearchResponse, SearchResults } from '@caishy/core';
-import { type ParsedQuery, parseSearchQuery } from '@caishy/core';
+import { MATCH_END, MATCH_START, type ParsedQuery, parseSearchQuery } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -15,6 +15,8 @@ import { relationshipView } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
+
+const SNIPPET_MARKS = MATCH_START + MATCH_END;
 
 const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
@@ -162,7 +164,9 @@ export async function runSearch(
           'c.title as conversation_title',
           'c.kind as conversation_kind',
           text
-            ? sql<string>`ts_headline('simple', coalesce(m.body, ''), websearch_to_tsquery('simple', ${text}), 'StartSel=«,StopSel=»,MaxWords=18,MinWords=6')`.as(
+            ? // Matches are marked with two private-use characters, removed from the text first so
+              // nothing a person typed can be mistaken for a marker (core format.ts snippetParts).
+              sql<string>`ts_headline('simple', translate(coalesce(m.body, ''), ${SNIPPET_MARKS}, ''), websearch_to_tsquery('simple', ${text}), ${`StartSel=${MATCH_START},StopSel=${MATCH_END},MaxWords=18,MinWords=6`})`.as(
                 'snippet',
               )
             : sql<string>`left(coalesce(m.body, ''), 140)`.as('snippet'),

@@ -42,6 +42,8 @@ export interface BubbleProps {
   onReact?: (m: MessageView, emoji: string) => void;
   onRetry?: (m: MessageView) => void;
   onOpenReactions?: (m: MessageView) => void;
+  /** Briefly marked: the message someone jumped to from search. */
+  highlighted?: boolean;
 }
 
 function DeliveryIcon({
@@ -83,6 +85,7 @@ export const MessageBubble = memo(function MessageBubble({
   onReply,
   onReact,
   onRetry,
+  highlighted,
 }: BubbleProps) {
   const t = useTheme();
   const r = t.radii.bubble;
@@ -337,7 +340,9 @@ export const MessageBubble = memo(function MessageBubble({
         paddingTop: first ? 6 : 1,
         paddingBottom: last ? 4 : 1,
         alignItems: mine ? 'flex-end' : 'flex-start',
+        backgroundColor: highlighted ? t.c.accentSoft : 'transparent',
       }}
+      testID={highlighted ? 'message-highlighted' : undefined}
     >
       {first && senderName && !mine ? (
         <Text

@@ -4,13 +4,13 @@
  * backoff, and after every reconnect it catches up on whatever it missed while away.
  */
 import type { RealtimeFrame } from '@caishy/core/api';
-import NetInfo from '@react-native-community/netinfo';
 import { AppState, Platform } from 'react-native';
 import { getAuthToken } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
 import { WS_URL } from '@/lib/config';
+import { onNetworkChange } from '@/lib/network';
 import { type MessagePages, maxSeq, upsertMessage } from '@/state/cache';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
@@ -28,6 +28,8 @@ class RealtimeClient {
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private lastFrameAt = 0;
   private everConnected = false;
+  /** The server said hello on the current socket. */
+  private ready = false;
   private typingSentAt = new Map<string, number>();
   private unsubscribers: Array<() => void> = [];
 
@@ -44,6 +46,7 @@ class RealtimeClient {
     this.wanted = false;
     this.me = null;
     this.everConnected = false;
+    this.ready = false;
     for (const u of this.unsubscribers) u();
     this.unsubscribers = [];
     this.clearTimers();
@@ -64,7 +67,16 @@ class RealtimeClient {
   /** Reconnect immediately (the app came back to the foreground, or the network returned). */
   nudge(): void {
     if (!this.wanted) return;
-    if (this.ws && Date.now() - this.lastFrameAt < STALE_MS) return;
+    if (this.ws && Date.now() - this.lastFrameAt < STALE_MS) {
+      // The socket outlived a short network blip. Say it's back, fetch anything the blip may
+      // have dropped, and send what queued meanwhile instead of waiting out the outbox's backoff.
+      if (this.ready && this.ws.readyState === 1 && useLive.getState().connection === 'offline') {
+        useLive.getState().setConnection('open');
+        void this.catchUp();
+      }
+      useOutbox.getState().flush();
+      return;
+    }
     this.ws?.close();
     this.ws = null;
     this.attempt = 0;
@@ -77,8 +89,8 @@ class RealtimeClient {
 
   private listen(): void {
     this.unsubscribers.push(
-      NetInfo.addEventListener((s) => {
-        if (s.isConnected === false) useLive.getState().setConnection('offline');
+      onNetworkChange((online) => {
+        if (!online) useLive.getState().setConnection('offline');
         else this.nudge();
       }),
     );
@@ -133,6 +145,7 @@ class RealtimeClient {
     ws.onclose = () => {
       if (this.ws !== ws) return;
       this.ws = null;
+      this.ready = false;
       this.clearTimers();
       if (this.wanted) {
         useLive.getState().setConnection('connecting');
@@ -146,6 +159,7 @@ class RealtimeClient {
 
   private onHello(): void {
     this.attempt = 0;
+    this.ready = true;
     useLive.getState().setConnection('open');
     this.pingTimer = setInterval(() => {
       if (Date.now() - this.lastFrameAt > STALE_MS) {

@@ -490,6 +490,7 @@ export interface SearchMessageHit {
   senderId: string | null;
   senderName: string | null;
   conversationTitle: string | null;
+  /** The text around the match; matched words are marked for `snippetParts` (format.ts). */
   snippet: string;
   createdAt: string;
 }

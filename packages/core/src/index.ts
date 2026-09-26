@@ -1,6 +1,7 @@
 export * from './api';
 export * from './attention';
 export * from './format';
+export * from './history';
 export * from './ids';
 export * from './intelligence';
 export * from './kits';

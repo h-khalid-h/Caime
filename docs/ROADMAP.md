@@ -63,16 +63,19 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Attention inbox, conversation, composer, inline suggestions, typing, presence, reciprocal
       read ticks (E2E, phone and desktop)
 - [x] Connect flow in ≤ 3 taps (sphere, role, done), accept with a label, People (E2E)
-- [~] Person profile, relationship change and history: built, not yet covered by E2E
-- [~] Actions, Search, Notifications, You/Settings: built; Actions and You render in E2E
-      screenshots; search and settings pages not yet exercised end to end
+- [x] Person profile, relationship change and its history, one line per change (E2E)
+- [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
+- [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
+      download your data and delete your account (E2E)
+- [~] Actions and Notifications: built and rendered in E2E screenshots; their flows are not
+      yet exercised end to end
 - [ ] Spaces
 - [x] Desktop web: rail, list, detail and context panel (E2E screenshots). [ ] Keyboard
       shortcuts beyond Enter to send
-- [x] Realtime client with reconnect and catch-up (E2E); on-device cache with revalidation.
-      [~] Offline outbox: implemented, offline path not yet tested
-- [~] Stickers (Caishy Friends, 16): implemented, not yet covered by E2E
-- [ ] Native builds run on iOS and Android devices (only the web target has been run)
+- [x] Realtime client with reconnect and catch-up; on-device cache with revalidation; offline
+      outbox: a message written offline sends the moment the network returns (E2E)
+- [x] Stickers (Caishy Friends, 16): sent, and arrive live (E2E)
+- [~] Native: iOS and Android bundles export (Hermes); not yet run on a device or simulator
 
 ## M6 — Expansion
 
@@ -82,7 +85,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [ ] Spaces
 - [ ] Connect Kits (approval, meeting, order, delivery, invoice, payment request)
 - [ ] AI assist with Anthropic provider and heuristic fallback
-- [ ] Export, account deletion, retention
+- [x] Export and account deletion (`account.test.ts`, E2E); others keep their conversations,
+      shared files and the actions they were waiting on
+- [~] Retention: per-conversation message retention in the API and a worker; no setting in the
+      app yet
 - [x] Block, report, rate limits, link safety
 - [ ] API tokens, webhooks, bots and agents
 - [ ] Metrics and plan entitlements
@@ -90,15 +96,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 ## M7 — Ship
 
-- [~] Dockerfile (one image: API, realtime, web) and CI workflow: written and pushed; the image
-      has not been built yet outside CI (no Docker daemon in the build sandbox)
-- [x] Playwright E2E against the production bundle; web budget checked in CI (initial JS
-      409 KB gzip against 450 KB)
-- [ ] Security review
-- [ ] Native bundles export (iOS, Android); EAS config ⛔ store accounts for store builds
-- [ ] Deploy to EasyPanel ⛔ needs `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` in the environment,
-      or the `EASYPANEL_DEPLOY_WEBHOOK` repository secret after a first manual setup
-      (`docs/DEPLOY.md`)
+- [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
+      smoke-tested by CI on every push to `main` (readiness, the page, security headers)
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (408 KB gzip against 450 KB),
+      Playwright E2E against the production bundle
+- [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
+      gaps. [ ] Third-party penetration test
+- [ ] EAS config and store builds ⛔ Apple and Google developer accounts, `EXPO_ACCESS_TOKEN`
+- [ ] Deploy to EasyPanel ⛔ needs the app created there from the image (`docs/DEPLOY.md`) and the
+      `EASYPANEL_DEPLOY_WEBHOOK` repository secret, or `EASYPANEL_URL` and
+      `EASYPANEL_API_TOKEN` in the environment settings
 
 ## Log
 
@@ -114,3 +121,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   date, a restored cache that hid new conversations, a vague commitment titled "It" plus a
   duplicate suggestion. Server bundle, Dockerfile, CI, E2E suite and deploy guide. Tests: 111
   core, 49 brand, 74 server, 2 E2E.
+- 2026-09-26 — Session 2 (cont.): the image builds, pushes and passes its smoke test in CI.
+  Account export and deletion (a deleted account no longer takes other people's waiting actions
+  with it: migration 0003). Relationship history on profiles, one event per change. Search opens
+  the message it found. A second E2E spec (history, search, stickers, offline, settings) found
+  and fixed: raw highlight markers in search results, a change recorded as an addition plus a
+  change, and the app staying "offline" after a network blip on Chromium (NetInfo's web build
+  never hears the network return). Tests: 114 core, 49 brand, 79 server, 8 E2E.

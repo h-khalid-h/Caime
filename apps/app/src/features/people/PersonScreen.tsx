@@ -35,6 +35,7 @@ import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { ConnectSheet } from './ConnectSheet';
+import { RelationshipHistory } from './RelationshipHistory';
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
@@ -300,6 +301,8 @@ export function PersonScreen({ id }: { id: string }) {
             </View>
           </Card>
         ) : null}
+
+        {!self ? <RelationshipHistory personId={id} name={name} /> : null}
 
         {state === 'connected' ? (
           <Card>

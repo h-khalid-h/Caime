@@ -4,11 +4,11 @@
  * cached inbox < 150 ms, cached conversation < 100 ms).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
 import type { PersistedClient } from '@tanstack/react-query-persist-client';
 import { AppState, Platform } from 'react-native';
+import { onNetworkChange } from '@/lib/network';
 import { ApiError, NetworkError } from './client';
 
 export const queryClient = new QueryClient({
@@ -65,12 +65,8 @@ export const persister = createAsyncStoragePersister({
 
 export const PERSIST_MAX_AGE = 7 * 24 * 60 * 60_000;
 
-// Online and focus signals: NetInfo on every platform, AppState on native.
-onlineManager.setEventListener((setOnline) =>
-  NetInfo.addEventListener((state) => {
-    setOnline(state.isConnected !== false);
-  }),
-);
+// Online and focus signals: lib/network on every platform, AppState on native.
+onlineManager.setEventListener((setOnline) => onNetworkChange(setOnline));
 
 if (Platform.OS !== 'web') {
   focusManager.setEventListener((handleFocus) => {

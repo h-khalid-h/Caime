@@ -97,6 +97,11 @@ jobs:
           for i in $(seq 1 60); do curl -fsS http://localhost:8787/v1/readyz && break; sleep 1; done
           curl -fsS http://localhost:8787/v1/readyz
           curl -fsS http://localhost:8787/ | grep -q '<div id="root">'
+          # The web app's security headers (docs/SECURITY.md, "Web app").
+          curl -fsSI http://localhost:8787/ > headers.txt
+          grep -qi "^content-security-policy:.*script-src 'self'" headers.txt
+          grep -qi "^content-security-policy:.*frame-ancestors 'none'" headers.txt
+          grep -qi '^cache-control: no-cache' headers.txt
           docker logs app | tail -20
       - name: Deploy to EasyPanel
         env:

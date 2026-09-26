@@ -37,7 +37,11 @@ import { buildRows, type Row } from './rows';
 import { SuggestionBar } from './SuggestionBar';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
 
-export function ConversationScreen({ id }: { id: string }) {
+/**
+ * `focusSeq` opens the conversation at one message (from search): older pages load until it's
+ * there, the list scrolls to it, and it's marked for a moment.
+ */
+export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: number }) {
   const t = useTheme();
   const me = useMe();
   const qc = useQueryClient();
@@ -75,7 +79,9 @@ export function ConversationScreen({ id }: { id: string }) {
       conversation.lastSeq > conversation.me.lastReadSeq ? conversation.me.lastReadSeq + 1 : null;
   }
 
-  const messages = flatMessages(msgs.data);
+  const messages = useMemo(() => flatMessages(msgs.data), [msgs.data]);
+  const [focus, setFocus] = useState<number | null>(focusSeq ?? null);
+  const [marked, setMarked] = useState<number | null>(null);
   const rows = useMemo(
     () =>
       buildRows({
@@ -90,6 +96,31 @@ export function ConversationScreen({ id }: { id: string }) {
       }),
     [messages, pending, conversation, me.id, now, timeZone, locale],
   );
+
+  useEffect(() => {
+    if (focus === null || !msgs.data) return;
+    if (!messages.some((m) => m.seq === focus)) {
+      const oldest = messages[0]?.seq ?? 0;
+      if (msgs.hasNextPage && oldest > focus) {
+        if (!msgs.isFetchingNextPage) void msgs.fetchNextPage();
+      } else {
+        setFocus(null); // Deleted, or from before this person joined: stay at the newest.
+      }
+      return;
+    }
+    const index = rows.findIndex((r) => r.type === 'message' && r.m.seq === focus);
+    if (index < 0) return;
+    setFocus(null);
+    setMarked(focus);
+    requestAnimationFrame(() =>
+      list.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false }),
+    );
+  }, [focus, msgs, messages, rows]);
+  useEffect(() => {
+    if (marked === null) return;
+    const timer = setTimeout(() => setMarked(null), 2500);
+    return () => clearTimeout(timer);
+  }, [marked]);
 
   // This conversation is on screen: arriving messages here are read, not unread.
   useFocusEffect(
@@ -310,6 +341,7 @@ export function ConversationScreen({ id }: { id: string }) {
         onReply={onReply}
         onReact={onReact}
         onRetry={onRetry}
+        highlighted={marked !== null && item.m.seq === marked}
       />
     );
   };
@@ -330,6 +362,22 @@ export function ConversationScreen({ id }: { id: string }) {
           if (msgs.hasNextPage && !msgs.isFetchingNextPage) void msgs.fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
+        onScrollToIndexFailed={(info) => {
+          // Not measured yet: get near it, then aim again once the rows around it have rendered.
+          list.current?.scrollToOffset({
+            offset: info.averageItemLength * info.index,
+            animated: false,
+          });
+          setTimeout(
+            () =>
+              list.current?.scrollToIndex({
+                index: info.index,
+                viewPosition: 0.5,
+                animated: false,
+              }),
+            120,
+          );
+        }}
         onScroll={(e) => setAtBottom(e.nativeEvent.contentOffset.y < 120)}
         scrollEventThrottle={64}
         keyboardDismissMode="interactive"

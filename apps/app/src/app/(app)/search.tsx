@@ -1,4 +1,4 @@
-import { formatListTime } from '@caishy/core/format';
+import { formatListTime, snippetParts } from '@caishy/core/format';
 import { parseSearchQuery } from '@caishy/core/search';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -184,17 +184,27 @@ export default function Search() {
         {r?.messages?.length ? (
           <>
             <SectionTitle>Messages</SectionTitle>
-            {r.messages.map((m) => (
-              <ListRow
-                key={m.id}
-                icon={MessageCircle}
-                title={m.senderName ?? 'Message'}
-                subtitle={`${m.snippet.replace(/<\/?b>/g, '')} · ${formatListTime(m.createdAt, now, timeZone, locale)}`}
-                onPress={() =>
-                  router.navigate({ pathname: '/c/[id]', params: { id: m.conversationId } })
-                }
-              />
-            ))}
+            {r.messages.map((m) => {
+              const parts = [
+                ...snippetParts(m.snippet),
+                { text: ` · ${formatListTime(m.createdAt, now, timeZone, locale)}`, match: false },
+              ];
+              return (
+                <ListRow
+                  key={m.id}
+                  icon={MessageCircle}
+                  title={m.senderName ?? 'Message'}
+                  subtitle={parts.map((p) => p.text).join('')}
+                  subtitleParts={parts}
+                  onPress={() =>
+                    router.navigate({
+                      pathname: '/c/[id]',
+                      params: { id: m.conversationId, seq: String(m.seq) },
+                    })
+                  }
+                />
+              );
+            })}
           </>
         ) : null}
         {r?.files?.length ? (

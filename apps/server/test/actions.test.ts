@@ -199,7 +199,7 @@ describe('search (PRD §25)', () => {
     ],
     [
       'what did Sarah say about the budget?',
-      (r: any) => expect(r.results.messages[0].snippet).toContain('«Budget»'),
+      (r: any) => expect(r.results.messages[0].snippet).toContain('\uE000Budget\uE001'),
     ],
     ['decisions about blue', (r: any) => expect(r.results.decisions).toHaveLength(1)],
     ['PDFs from Sarah', (r: any) => expect(r.results.files).toEqual([])],

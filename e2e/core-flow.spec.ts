@@ -2,24 +2,11 @@
  * The core promise, end to end: two people sign up (phone and desktop), connect with private
  * labels, and talk in real time; Caishy offers one suggestion from the exchange, not two.
  */
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+import { newPerson, visible } from './helpers';
 
 const stamp = Date.now().toString(36).slice(-6);
 const SHOTS = 'e2e/screenshots';
-
-async function newPerson(context: BrowserContext): Promise<{ page: Page; errors: string[] }> {
-  const page = await context.newPage();
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(`console: ${m.text()}`);
-  });
-  page.on('response', (r) => {
-    if (r.status() >= 400 && r.url().includes('/v1/'))
-      errors.push(`${r.status()} ${r.request().method()} ${r.url()}`);
-  });
-  return { page, errors };
-}
 
 async function signUp(page: Page, name: string, handle: string) {
   await page.goto('/welcome');
@@ -42,9 +29,6 @@ async function onboard(page: Page, shot: string, findPeople: boolean) {
   await page.getByTestId('onboarding-rules-next').click();
   await page.getByTestId(findPeople ? 'onboarding-find' : 'onboarding-skip').click();
 }
-
-const visible = (page: Page, text: string) =>
-  page.getByText(text).filter({ visible: true }).first();
 
 test('two people connect with private labels and talk in real time', async ({ browser }) => {
   const phone = await browser.newContext({
