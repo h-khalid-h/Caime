@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { useOrg } from '@/api/hooks';
+import { useBusinessSummary, useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { handleLink } from '@/lib/config';
@@ -25,7 +25,18 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, BadgeCheck, Copy, Globe, LogOut, Settings, Share, UserPlus } from '@/ui/icons';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Copy,
+  Globe,
+  Inbox,
+  LogOut,
+  MessageCircle,
+  Settings,
+  Share,
+  UserPlus,
+} from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -191,6 +202,24 @@ export function OrgScreen({ handle }: { handle: string }) {
   const shown = managing ?? lastManaged.current;
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const minor = useSession((s) => s.user?.minor ?? false);
+  const teams = useBusinessSummary(Boolean(org?.myRole)).data?.orgs;
+  const waiting = teams?.find((x) => x.org.id === org?.id);
+
+  /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
+  const message = async (orgId: string) => {
+    setStarting(true);
+    try {
+      const { conversationId } = await endpoints.messageOrg(orgId);
+      void qc.invalidateQueries({ queryKey: qk.inbox });
+      router.push({ pathname: '/c/[id]', params: { id: conversationId } });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setStarting(false);
+    }
+  };
 
   const put = (o: OrgView) => {
     qc.setQueryData(qk.org(handle), { org: o });
@@ -294,7 +323,41 @@ export function OrgScreen({ handle }: { handle: string }) {
               onPress={() => openLink(org.website ?? '')}
             />
           ) : null}
+          {org.myRole ? null : minor ? (
+            <Text variant="caption" color="textTertiary" align="center">
+              Messaging organizations is for people over 18 for now.
+            </Text>
+          ) : (
+            <Button
+              label={`Message ${org.name}`}
+              icon={MessageCircle}
+              loading={starting}
+              style={{ alignSelf: 'center', marginTop: 6 }}
+              onPress={() => void message(org.id)}
+              testID="org-message"
+            />
+          )}
         </View>
+
+        {org.myRole ? (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+            <Card padded={false}>
+              <ListRow
+                icon={Inbox}
+                title="Inbox"
+                subtitle={
+                  waiting?.waiting
+                    ? `${waiting.waiting} customer${waiting.waiting === 1 ? '' : 's'} waiting${waiting.mine ? ` · ${waiting.mine} yours` : ''}`
+                    : 'Customers’ conversations with the team'
+                }
+                onPress={() =>
+                  router.push({ pathname: '/o/[handle]/inbox', params: { handle: org.handle } })
+                }
+                testID="org-inbox"
+              />
+            </Card>
+          </View>
+        ) : null}
 
         {manager ? (
           <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>

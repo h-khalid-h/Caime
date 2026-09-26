@@ -572,6 +572,25 @@ export interface OrgMembersTable {
   left_at: NullableTimestamp;
 }
 
+export interface BusinessThreadsTable {
+  conversation_id: string;
+  org_id: string;
+  customer_id: string | null;
+  assignee_id: string | null;
+  escalated_at: NullableTimestamp;
+  escalated_by: string | null;
+  escalation_note: string | null;
+  resolved_at: NullableTimestamp;
+  resolved_by: string | null;
+  last_customer_seq: ColumnType<string, string | number | undefined, string | number>;
+  last_team_seq: ColumnType<string, string | number | undefined, string | number>;
+  last_customer_at: NullableTimestamp;
+  last_team_at: NullableTimestamp;
+  team_read_seq: ColumnType<string, string | number | undefined, string | number>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface ServerSettingsTable {
   key: string;
   value: Json;
@@ -616,6 +635,7 @@ export interface Database {
   space_members: SpaceMembersTable;
   organizations: OrganizationsTable;
   org_members: OrgMembersTable;
+  business_threads: BusinessThreadsTable;
 }
 
 export type User = Selectable<UsersTable>;
@@ -629,5 +649,6 @@ export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;
 export type OrgMember = Selectable<OrgMembersTable>;
+export type BusinessThread = Selectable<BusinessThreadsTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;

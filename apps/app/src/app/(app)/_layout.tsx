@@ -1,12 +1,13 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
+import { BusinessInbox } from '@/features/business/BusinessInbox';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
 import { PeopleList } from '@/features/people/PeopleList';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { NavRail } from '@/features/shell/NavRail';
-import { useSection } from '@/features/shell/sections';
+import { useInboxHandle, useSection } from '@/features/shell/sections';
 import { KeyboardShortcuts } from '@/features/shell/shortcuts';
 import { SpacesList } from '@/features/spaces/SpacesList';
 import { takeLink } from '@/state/pendingLink';
@@ -52,8 +53,11 @@ export default function AppLayout() {
 function DesktopShell() {
   const t = useTheme();
   const section = useSection();
+  const inboxHandle = useInboxHandle();
   const pane =
-    section === 'chats' ? (
+    section === 'business' && inboxHandle ? (
+      <BusinessInbox pane handle={inboxHandle} key={inboxHandle} />
+    ) : section === 'chats' ? (
       <InboxList pane />
     ) : section === 'people' ? (
       <PeopleList pane />

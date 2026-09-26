@@ -9,6 +9,7 @@ import { qk } from '@/api/keys';
 import { taskWho } from '@/features/actions/TaskRow';
 import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
+import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { Choice } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
@@ -68,6 +69,63 @@ function TaskLine({ task, onToggle }: { task: TaskView; onToggle: (t: TaskView) 
   );
 }
 
+/** Who's on the other side of a business conversation (R15): the organization, or the customer. */
+function BusinessCard({ conversation }: { conversation: ConversationView }) {
+  const business = conversation.business;
+  if (!business) return null;
+  const { org, thread } = business;
+  const customer = thread?.customer;
+  if (!thread)
+    return (
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`${org.name}, profile`}
+        onPress={() => router.navigate({ pathname: '/o/[handle]', params: { handle: org.handle } })}
+        style={{ alignItems: 'center', gap: 8, padding: 20 }}
+      >
+        <OrgMark kind={org.kind} size={72} />
+        <Text variant="headline" align="center">
+          {org.name}
+        </Text>
+        <VerifiedLine org={org} />
+        <Text variant="caption" color="textSecondary" align="center">
+          A business conversation. Its team answers as {org.name}.
+        </Text>
+        <Text variant="captionStrong" color="link">
+          See its profile
+        </Text>
+      </Pressable>
+    );
+  const team = conversation.participants.filter((p) => p.role === 'agent');
+  return (
+    <View style={{ alignItems: 'center', gap: 8, padding: 20 }}>
+      {customer ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.navigate({ pathname: '/p/[id]', params: { id: customer.id } })}
+          style={{ alignItems: 'center', gap: 8 }}
+        >
+          <Avatar id={customer.id} name={customer.displayName} url={customer.avatarUrl} size={72} />
+          <Text variant="headline" align="center">
+            {customer.displayName}
+          </Text>
+          <Text variant="caption" color="textSecondary">
+            @{customer.handle} · {customer.trust.label}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text variant="headline">Deleted account</Text>
+      )}
+      <Text variant="caption" color="textSecondary" align="center">
+        A customer of {org.name}. They see {org.name}, not who on the team answers.
+      </Text>
+      <Text variant="caption" color="textTertiary" align="center">
+        Team: {team.map((p) => p.person.displayName).join(', ')}
+      </Text>
+    </View>
+  );
+}
+
 /** What this conversation knows (PRD §24): the relationship, open items, decisions, dates, files. */
 export function ContextPanel({
   conversation,
@@ -112,7 +170,9 @@ export function ContextPanel({
         {onClose ? <IconButton icon={X} label="Close panel" onPress={onClose} /> : null}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-        {other ? (
+        {conversation.business ? (
+          <BusinessCard conversation={conversation} />
+        ) : other ? (
           <Pressable
             accessibilityRole="link"
             onPress={() => router.navigate({ pathname: '/p/[id]', params: { id: other.userId } })}
@@ -195,7 +255,12 @@ export function ContextPanel({
               <Text variant="body" color="textSecondary">
                 {m.summary}
               </Text>
-              {aiReady ? <AssistTools conversationId={conversation.id} /> : null}
+              {aiReady ? (
+                <AssistTools
+                  conversationId={conversation.id}
+                  followUps={conversation.kind !== 'business'}
+                />
+              ) : null}
             </Section>
             {m.openItems.length ? (
               <Section title={`Open · ${m.openItems.length}`}>

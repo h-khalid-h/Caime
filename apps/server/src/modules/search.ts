@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { maskId, masksFor } from '../lib/business';
 import { fileView } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { relationshipView } from '../lib/relations';
@@ -183,20 +184,38 @@ export async function runSearch(
             ]),
           ),
         )
-        .$if(Boolean(personIds?.length), (qb) => qb.where('m.sender_id', 'in', personIds!))
+        .$if(Boolean(personIds?.length), (qb) =>
+          qb
+            .where('m.sender_id', 'in', personIds!)
+            // "From Sara" mustn't tell a customer who on an organization's team wrote (R15).
+            .where((eb) => eb.or([eb('c.kind', '<>', 'business'), eb('p.role', '=', 'agent')])),
+        )
         .orderBy('m.created_at', 'desc')
         .limit(limit)
         .execute();
-      results.messages = rows.map((r) => ({
-        id: r.id,
-        conversationId: r.conversation_id,
-        seq: Number(r.seq),
-        senderId: r.sender_id,
-        senderName: r.sender_name,
-        conversationTitle: r.conversation_kind === 'direct' ? null : r.conversation_title,
-        snippet: r.snippet,
-        createdAt: r.created_at.toISOString(),
-      }));
+      const masks = await masksFor(
+        ctx,
+        me,
+        rows.filter((r) => r.conversation_kind === 'business').map((r) => r.conversation_id),
+      );
+      results.messages = rows.map((r) => {
+        const mask = masks.get(r.conversation_id);
+        const masked = mask && r.sender_id !== me;
+        return {
+          id: r.id,
+          conversationId: r.conversation_id,
+          seq: Number(r.seq),
+          senderId: mask ? maskId(mask, r.sender_id) : r.sender_id,
+          senderName: masked ? mask.orgName : r.sender_name,
+          conversationTitle: mask
+            ? mask.orgName
+            : r.conversation_kind === 'direct'
+              ? null
+              : r.conversation_title,
+          snippet: r.snippet,
+          createdAt: r.created_at.toISOString(),
+        };
+      });
     }
   }
 
@@ -246,7 +265,23 @@ export async function runSearch(
         .where('a.kind', 'in', kinds as never)
         .where('p.left_at', 'is', null)
         .$if(parsed.fileKind === 'pdf', (qb) => qb.where('f.mime', '=', 'application/pdf'))
-        .$if(Boolean(personIds?.length), (qb) => qb.where('a.sender_id', 'in', personIds!))
+        .$if(Boolean(personIds?.length), (qb) =>
+          qb
+            .where('a.sender_id', 'in', personIds!)
+            .where((eb) =>
+              eb.or([
+                eb.not(
+                  eb.exists(
+                    eb
+                      .selectFrom('business_threads as t')
+                      .select('t.conversation_id')
+                      .whereRef('t.conversation_id', '=', 'a.conversation_id'),
+                  ),
+                ),
+                eb('p.role', '=', 'agent'),
+              ]),
+            ),
+        )
         .$if(Boolean(text) && scope === 'all', (qb) =>
           qb.where((eb) =>
             eb.or([eb('a.title', 'ilike', like(text)), eb('a.url', 'ilike', like(text))]),
@@ -255,6 +290,11 @@ export async function runSearch(
         .orderBy('a.created_at', 'desc')
         .limit(limit)
         .execute();
+      const fileMasks = await masksFor(
+        ctx,
+        me,
+        rows.map((r) => r.conversation_id),
+      );
       results.files = rows.map((r) => ({
         id: r.id,
         kind: r.kind,
@@ -263,7 +303,10 @@ export async function runSearch(
         title: r.title,
         conversationId: r.conversation_id,
         messageId: r.message_id,
-        senderId: r.sender_id,
+        senderId: (() => {
+          const mask = fileMasks.get(r.conversation_id);
+          return mask ? maskId(mask, r.sender_id) : r.sender_id;
+        })(),
         createdAt: r.created_at.toISOString(),
         file: r.file_id
           ? fileView({

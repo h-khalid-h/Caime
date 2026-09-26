@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
 import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
+import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useBadges } from '@/features/shell/useBadges';
 import { useNow, useUserClock } from '@/lib/time';
@@ -107,6 +108,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
         />
       </View>
       <ConnectionBanner />
+      <TeamInboxes />
       {caughtUp ? (
         <View
           style={{

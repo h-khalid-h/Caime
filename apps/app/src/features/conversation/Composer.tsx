@@ -51,13 +51,25 @@ export interface ComposerProps {
   replyName?: string | null;
   /** ↑ in an empty box: edit the last message you sent (web). */
   onEditLast?: () => void;
+  /** What the empty box says: "Reply as DATA C" for an organization's team (R15). */
+  placeholder?: string;
 }
 
 const MIN_H = 44;
 const MAX_H = 150;
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
-  { conversation, replyTo, onClearReply, editing, onDoneEditing, disabled, replyName, onEditLast },
+  {
+    conversation,
+    replyTo,
+    onClearReply,
+    editing,
+    onDoneEditing,
+    disabled,
+    replyName,
+    onEditLast,
+    placeholder,
+  },
   ref,
 ) {
   const t = useTheme();
@@ -268,7 +280,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             ref={input}
             testID="composer-input"
             accessibilityLabel={editing ? 'Edit message' : `Message ${conversation.title}`}
-            placeholder={editing ? 'Edit message' : 'Message'}
+            placeholder={editing ? 'Edit message' : (placeholder ?? 'Message')}
             placeholderTextColor={t.c.textTertiary}
             value={value}
             onChangeText={onChange}

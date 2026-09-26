@@ -3,7 +3,7 @@
  * conversation in a fixed number of queries, then runs the same attention engine the clients run.
  */
 
-import type { InboxAllResponse, InboxItemView, InboxResponse, Sphere } from '@caishy/core';
+import type { InboxAllResponse, InboxItemView, InboxResponse, OrgRef, Sphere } from '@caishy/core';
 import {
   type AttentionInput,
   attentionHeadline,
@@ -17,6 +17,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { maskPayload, orgRef } from '../lib/business';
 import { messagePreview } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import {
@@ -91,6 +92,8 @@ export async function buildInbox(
     ])
     .where('p.user_id', '=', userId)
     .where('p.left_at', 'is', null)
+    // An organization's conversations are in its Business inbox, not its team's own (PRD §38).
+    .where('p.role', '<>', 'agent')
     .execute();
 
   const ids = rows.map((r) => r.id);
@@ -182,6 +185,25 @@ export async function buildInbox(
       .execute(),
   ]);
   const myMessageIds = new Set(mySentReplies.map((m) => m.id));
+  // A customer's conversations with organizations: the organization is who they talk to (R15).
+  const businessIds = rows.filter((r) => r.kind === 'business').map((r) => r.id);
+  const orgs = new Map<string, OrgRef>();
+  if (businessIds.length)
+    for (const o of await ctx.db
+      .selectFrom('business_threads as t')
+      .innerJoin('organizations as g', 'g.id', 't.org_id')
+      .select([
+        't.conversation_id',
+        'g.id',
+        'g.name',
+        'g.handle',
+        'g.kind',
+        'g.domain',
+        'g.verified_at',
+      ])
+      .where('t.conversation_id', 'in', businessIds)
+      .execute())
+      orgs.set(o.conversation_id, orgRef(o));
   const spaces = await spaceRefs(
     ctx.db,
     rows.map((r) => r.space_id),
@@ -198,6 +220,7 @@ export async function buildInbox(
       (m) =>
         m.conversation_id === r.id &&
         (m.kind === 'direct' ||
+          m.kind === 'business' ||
           m.mentions.includes(userId) ||
           (m.reply_to_id !== null && myMessageIds.has(m.reply_to_id))),
     );
@@ -251,17 +274,23 @@ export async function buildInbox(
     };
     const result = classifyAttention(input, now);
     const space = r.space_id ? (spaces.get(r.space_id) ?? null) : null;
+    const org = orgs.get(r.id) ?? null;
+    // Anyone but me in a customer's conversation reads as the organization.
+    const shownSender = (id: string | null) => (org && id !== null && id !== userId ? org.id : id);
     return {
       id: r.id,
       kind: r.kind,
-      title: space
-        ? spaceConversationTitle(space, r)
-        : r.kind === 'direct'
-          ? r.is_general
-            ? (other?.displayName ?? 'Deleted account')
-            : (r.title ?? 'Topic')
-          : (r.title ?? 'Group'),
+      title: org
+        ? org.name
+        : space
+          ? spaceConversationTitle(space, r)
+          : r.kind === 'direct'
+            ? r.is_general
+              ? (other?.displayName ?? 'Deleted account')
+              : (r.title ?? 'Topic')
+            : (r.title ?? 'Group'),
       space,
+      org,
       topic: r.kind === 'direct' && !r.is_general ? r.title : null,
       isGeneral: r.is_general,
       parentId: r.parent_id,
@@ -274,13 +303,23 @@ export async function buildInbox(
         ? {
             id: last.id,
             seq: Number(last.seq),
-            senderId: last.sender_id,
+            senderId: shownSender(last.sender_id),
             kind: last.kind,
             preview:
               r.privacy_class === 'private'
                 ? 'Encrypted message'
                 : last.kind === 'system'
-                  ? systemText(last.payload, userId)
+                  ? systemText(
+                      org
+                        ? maskPayload(last.payload, {
+                            conversationId: r.id,
+                            orgId: org.id,
+                            orgName: org.name,
+                            customerId: userId,
+                          })
+                        : last.payload,
+                      userId,
+                    )
                   : messagePreview(last),
             mine: last.kind !== 'system' && last.sender_id === userId,
             createdAt: last.created_at.toISOString(),

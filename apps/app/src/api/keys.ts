@@ -5,6 +5,8 @@ export const qk = {
   spaces: ['spaces'] as const,
   orgs: ['orgs'] as const,
   org: (handle: string) => ['org', handle] as const,
+  orgInbox: (orgId: string, view: string) => ['org-inbox', orgId, view] as const,
+  businessSummary: ['business-summary'] as const,
   space: (id: string) => ['space', id] as const,
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,

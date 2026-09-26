@@ -1,4 +1,5 @@
 /** Query hooks shared by screens, the shell's badges and the desktop panes. */
+import type { BusinessView } from '@caishy/core/business';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { endpoints, type TaskViewFilter } from './endpoints';
 import { qk } from './keys';
@@ -84,6 +85,17 @@ export const useSpace = (id: string) =>
   useQuery({ queryKey: qk.space(id), queryFn: () => endpoints.space(id), enabled: Boolean(id) });
 
 export const useOrgs = () => useQuery({ queryKey: qk.orgs, queryFn: endpoints.orgs });
+
+export const useOrgInbox = (orgId: string | undefined, view: BusinessView) =>
+  useQuery({
+    queryKey: qk.orgInbox(orgId ?? '', view),
+    queryFn: () => endpoints.orgInbox(orgId ?? '', view),
+    enabled: Boolean(orgId),
+  });
+
+/** Your organizations' inboxes, only when you're on a team (R7: only what needs you). */
+export const useBusinessSummary = (enabled = true) =>
+  useQuery({ queryKey: qk.businessSummary, queryFn: endpoints.businessSummary, enabled });
 
 export const useOrg = (handle: string) =>
   useQuery({

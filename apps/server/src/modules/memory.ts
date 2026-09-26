@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { maskFor } from '../lib/business';
 import { notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { participantsOf } from '../lib/messages';
@@ -330,10 +331,18 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     ]
       .filter(Boolean)
       .join(' ');
+    // A customer talks with an organization, not with the people on its team (R15).
+    const mask = await maskFor(ctx.db, id, auth.userId);
+    const shown = mask
+      ? [
+          ...people.filter((p) => p.id === auth.userId),
+          { id: mask.orgId, display_name: mask.orgName, role: 'org' },
+        ]
+      : people;
     return {
       summary,
-      people: people.map((p) => ({ id: p.id, displayName: p.display_name, role: p.role })),
-      peopleLine: joinNames(people.filter((p) => p.id !== auth.userId).map((p) => p.display_name)),
+      people: shown.map((p) => ({ id: p.id, displayName: p.display_name, role: p.role })),
+      peopleLine: joinNames(shown.filter((p) => p.id !== auth.userId).map((p) => p.display_name)),
       decisions: decisions.map((d) => ({
         id: d.id,
         title: d.title,

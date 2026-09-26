@@ -365,3 +365,26 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     ]);
   });
 });
+
+describe('AI assist with an organization (R15)', () => {
+  it('a customer’s catch-up names the organization, never who on its team wrote', async () => {
+    const dina = await signup(t, { displayName: 'Dina Customer' });
+    await dina.patch('/v1/me', { aiEnabled: true });
+    const { org } = await sam.post('/v1/orgs', {
+      name: 'Rivera Tiles',
+      handle: 'rivera.tiles',
+      kind: 'shop',
+    });
+    const { conversationId } = await dina.post(`/v1/orgs/${org.id}/conversations`);
+    await say(dina, conversationId, 'Do you have the blue tiles in stock?');
+    await say(sam, conversationId, 'We do! 40 boxes. Want me to hold some?');
+    replies.push(message('Rivera Tiles has the blue tiles in stock and offered to hold some.'));
+    await dina.post(`/v1/conversations/${conversationId}/catch-up`, {});
+    const transcript = last().body.messages[0].content as string;
+    expect(transcript).toContain('Rivera Tiles: We do! 40 boxes.');
+    expect(transcript).not.toContain('Sam Rivera');
+    // What's open with an organization is its inbox's to track.
+    const follow = await dina.req('POST', `/v1/conversations/${conversationId}/ai/actions`, {});
+    expect(follow.json().error.code).toBe('ai_business');
+  });
+});

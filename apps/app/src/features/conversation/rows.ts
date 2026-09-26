@@ -52,7 +52,17 @@ function deliveryOf(
   conversation: ConversationView | undefined,
   me: string,
 ): Delivery {
-  const others = conversation?.participants.filter((p) => p.userId !== me) ?? [];
+  const business = conversation?.business;
+  // A customer's messages reach the organization; someone on its team reading is "read" (R15).
+  if (business && !business.thread) {
+    if (business.readSeq !== null && business.readSeq >= m.seq) return 'read';
+    return business.deliveredSeq >= m.seq ? 'delivered' : 'sent';
+  }
+  // For the team, only the customer's side counts, not each other's.
+  const others =
+    conversation?.participants.filter(
+      (p) => p.userId !== me && !(business && p.role === 'agent'),
+    ) ?? [];
   if (others.length === 0) return 'sent';
   const read = others.every((p) => p.readSeq !== null && p.readSeq >= m.seq);
   if (read) return 'read';
@@ -85,7 +95,9 @@ export function buildRows(opts: {
       .filter((p) => !known.has(p.clientId))
       .map((p) => ({ m: pendingAsMessage(p, me), delivery: p.status as Delivery })),
   ];
-  const isGroup = conversation?.kind !== 'direct';
+  // A customer talks one-to-one with an organization; its team sees who wrote what.
+  const isGroup =
+    conversation?.kind !== 'direct' && !(conversation?.business && !conversation.business.thread);
   const names = new Map(
     conversation?.participants.map((p) => [p.userId, p.person.displayName]) ?? [],
   );

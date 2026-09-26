@@ -2,12 +2,13 @@ import type { InboxItemView } from '@caishy/core/api';
 import { formatListTime, joinNames } from '@caishy/core/format';
 import { memo } from 'react';
 import { View } from 'react-native';
+import { OrgMark } from '@/features/orgs/kinds';
 import { typingIn, useLive } from '@/state/live';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
-import { RelationshipChip } from '@/ui/Chip';
-import { BellOff, Pin, Users } from '@/ui/icons';
+import { Chip, RelationshipChip } from '@/ui/Chip';
+import { BadgeCheck, BellOff, Briefcase, Pin, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
@@ -108,7 +109,9 @@ export const ConversationRow = memo(function ConversationRow({
                   : 'transparent',
           }}
         >
-          {item.kind === 'direct' && item.other ? (
+          {item.org ? (
+            <OrgMark kind={item.org.kind} size={52} />
+          ) : item.kind === 'direct' && item.other ? (
             <Avatar
               id={item.other.id}
               name={item.other.displayName}
@@ -168,10 +171,19 @@ export const ConversationRow = memo(function ConversationRow({
                 mention={item.unreadMentions > 0}
               />
             </View>
-            {item.relationship || reason ? (
+            {item.relationship || reason || item.org ? (
               <View
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}
               >
+                {item.org ? (
+                  // Business is visibly business (R15), and says whether that's proven.
+                  <Chip
+                    size="sm"
+                    label={item.org.verified ? 'Verified business' : 'Business'}
+                    icon={item.org.verified ? BadgeCheck : Briefcase}
+                    tone={item.org.verified ? 'success' : 'neutral'}
+                  />
+                ) : null}
                 {item.relationship ? (
                   <RelationshipChip
                     label={item.relationship.label}

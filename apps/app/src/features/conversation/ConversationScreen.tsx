@@ -15,7 +15,9 @@ import { useConversation, useMessages } from '@/api/hooks';
 import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
 import { catchUp } from '@/features/assist/catchUp';
 import { useAiReady } from '@/features/assist/ready';
+import { ThreadBar } from '@/features/business/ThreadBar';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { flatMessages, type MessagePages, markInboxRead, maxSeq } from '@/state/cache';
 import { useLive } from '@/state/live';
@@ -170,6 +172,11 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   }, [newest, conversation, id, qc]);
 
   const other = conversation?.other;
+  // With an organization (R15): the customer sees who it is; its team sees the customer.
+  const business = conversation?.business ?? null;
+  const org = business?.org ?? null;
+  const thread = business?.thread ?? null;
+  const customer = thread?.customer ?? null;
   const onReply = useCallback((m: MessageView) => {
     setEditing(null);
     setReplyTo(m);
@@ -201,13 +208,19 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
 
   const subtitle = typingNames.length
     ? 'typing…'
-    : other
-      ? (presence ?? other.person.presence) === 'online'
-        ? 'Online'
-        : (other.relationship?.label ?? `@${other.person.handle}`)
-      : conversation
-        ? `${conversation.participants.length} people`
-        : '';
+    : org && !thread
+      ? org.verified
+        ? `Business · Verified · ${org.verifiedDomain}`
+        : 'Business · Not verified yet'
+      : thread && org
+        ? `Customer of ${org.name}`
+        : other
+          ? (presence ?? other.person.presence) === 'online'
+            ? 'Online'
+            : (other.relationship?.label ?? `@${other.person.handle}`)
+          : conversation
+            ? `${conversation.participants.length} people`
+            : '';
 
   const header = (
     <TopBar
@@ -239,7 +252,11 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         }}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
       >
-        {other ? (
+        {org && !thread ? (
+          <OrgMark kind={org.kind} size={38} />
+        ) : customer ? (
+          <Avatar id={customer.id} name={customer.displayName} url={customer.avatarUrl} size={38} />
+        ) : other ? (
           <Avatar
             id={other.userId}
             name={other.person.displayName}
@@ -280,6 +297,18 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const start =
     conversation && !msgs.hasNextPage ? (
       <View style={{ alignItems: 'center', gap: 8, paddingVertical: 28, paddingHorizontal: 24 }}>
+        {org && !thread ? (
+          <>
+            <OrgMark kind={org.kind} size={64} />
+            <Text variant="headline" align="center">
+              {org.name}
+            </Text>
+            <VerifiedLine org={org} />
+            <Text variant="caption" color="textTertiary" align="center">
+              A business conversation: {org.name}’s team answers as {org.name}.
+            </Text>
+          </>
+        ) : null}
         {other ? (
           <Avatar
             id={other.userId}
@@ -288,10 +317,12 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             size={64}
           />
         ) : null}
-        <Text variant="headline" align="center">
-          {conversation.topic ? conversation.topic : conversation.title}
-        </Text>
-        {other?.relationship ? (
+        {org && !thread ? null : (
+          <Text variant="headline" align="center">
+            {conversation.topic ? conversation.topic : conversation.title}
+          </Text>
+        )}
+        {org && !thread ? null : other?.relationship ? (
           <>
             <RelationshipChip
               label={other.relationship.label}
@@ -364,6 +395,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const body = (
     <View style={{ flex: 1, backgroundColor: t.c.canvas }}>
       <ConnectionBanner />
+      {conversation && thread ? <ThreadBar conversation={conversation} thread={thread} /> : null}
       {conversation ? <RequestBanner conversation={conversation} /> : null}
       {offerCatchUp ? (
         <CatchUpBanner
@@ -476,6 +508,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           onDoneEditing={() => setEditing(null)}
           disabled={disabled}
           replyName={replyName}
+          placeholder={thread && org ? `Reply as ${org.name}` : undefined}
           onEditLast={() => {
             const last = messages.findLast(
               (m) => m.senderId === me.id && m.kind === 'text' && m.deletedAt === null,

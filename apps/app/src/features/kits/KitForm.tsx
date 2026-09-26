@@ -27,13 +27,17 @@ export type KitChoice = CardKitId | 'poll';
  * a space, the space's kind stands in for the relationship: a team space offers work cards.
  */
 export function kitsOffered(conversation: ConversationView, viewerIsMinor: boolean): KitDef[] {
-  const sphere =
-    conversation.other?.relationship?.sphere ??
-    (conversation.space ? SPACE_KIND_DEFS[conversation.space.kind].sphere : undefined);
+  // With an organization, the relationship is a customer's: tickets, appointments, orders (R15).
+  const business = conversation.kind === 'business';
+  const sphere = business
+    ? 'customer'
+    : (conversation.other?.relationship?.sphere ??
+      (conversation.space ? SPACE_KIND_DEFS[conversation.space.kind].sphere : undefined));
   const offered = new Set<string>([...CARD_KITS, 'poll']);
   return kitsFor({
     spheres: sphere ? [sphere] : [],
-    isGroup: conversation.kind !== 'direct',
+    // One customer, one organization: its cards are one-to-one cards.
+    isGroup: conversation.kind !== 'direct' && !business,
     viewerIsMinor,
   }).filter((k) => offered.has(k.id));
 }

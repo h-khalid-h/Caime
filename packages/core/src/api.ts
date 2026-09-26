@@ -6,6 +6,7 @@
  */
 import type { z } from 'zod';
 import type { AttentionReason, AttentionSection } from './attention';
+import type { BusinessView, ThreadState } from './business';
 import type { OrgKind, OrgRole } from './orgs';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
@@ -302,6 +303,8 @@ export interface ConversationView {
   context: ContextRef | null;
   participants: ParticipantView[];
   other: ParticipantView | null;
+  /** A conversation with an organization (R15): who it is; for its team, the thread. */
+  business: ConversationBusinessView | null;
   me: {
     role: string;
     lastReadSeq: number;
@@ -333,6 +336,8 @@ export interface InboxItemView {
   isGeneral: boolean;
   parentId: string | null;
   other: PersonView | null;
+  /** The organization, in a customer's conversation with one (R15). */
+  org: OrgRef | null;
   relationship: { label: string; sphere: Sphere } | null;
   memberCount: number;
   lastMessage: {
@@ -445,6 +450,57 @@ export interface SuggestionView {
   dueAt: string | null;
   dueText: string | null;
   createdAt: string;
+}
+
+/** An organization where a conversation shows it (R15): who it is, and whether that's proven. */
+export interface OrgRef {
+  id: string;
+  name: string;
+  handle: string;
+  kind: OrgKind;
+  verified: boolean;
+  verifiedDomain: string | null;
+}
+
+/** A customer's conversation with an organization, as its team works it (PRD §38). */
+export interface BusinessThreadView {
+  conversationId: string;
+  state: ThreadState;
+  customer: PersonView | null;
+  assignee: { userId: string; displayName: string } | null;
+  escalated: { at: string; byName: string | null; note: string | null } | null;
+  resolvedAt: string | null;
+  /** Since when the customer has been waiting for an answer. */
+  waitingSince: string | null;
+  lastMessage: {
+    preview: string;
+    senderName: string | null;
+    fromCustomer: boolean;
+    createdAt: string;
+  } | null;
+  unreadCount: number;
+  lastActivityAt: string;
+}
+
+export interface ConversationBusinessView {
+  org: OrgRef;
+  /** For the customer: how far the organization has read and received their messages. */
+  readSeq: number | null;
+  deliveredSeq: number;
+  /** For the team only: the thread's state, who has it, and why it's escalated. */
+  thread: BusinessThreadView | null;
+}
+
+export interface BusinessInboxView {
+  org: OrgRef;
+  view: BusinessView;
+  threads: BusinessThreadView[];
+  counts: Record<BusinessView, number>;
+}
+
+/** Each of your organizations' inboxes, with what needs its team (R7: only what needs you). */
+export interface BusinessSummaryView {
+  orgs: Array<{ org: OrgRef; waiting: number; unassigned: number; mine: number }>;
 }
 
 /** What an @handle link opens: handles are one namespace, a person's or an organization's. */
@@ -765,7 +821,8 @@ export type RealtimeSignalType =
   | 'decision.updated'
   | 'notifications.read'
   | 'block.changed'
-  | 'me.updated';
+  | 'me.updated'
+  | 'business.updated';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

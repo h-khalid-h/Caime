@@ -1,11 +1,12 @@
 import { type Href, router } from 'expo-router';
 import { View } from 'react-native';
+import { useBusinessSummary } from '@/api/hooks';
 import { HeartMark } from '@/brand/Wordmark';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
-import { Bell, LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
+import { Bell, Briefcase, LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { type Section, useSection } from './sections';
@@ -112,6 +113,9 @@ export function NavRail() {
   const section = useSection();
   const badges = useBadges();
   const user = useSession((s) => s.user);
+  // On a team: its inbox, first of yours, and how many customers wait on someone like you.
+  const teams = useBusinessSummary().data?.orgs ?? [];
+  const first = teams[0]?.org.handle;
   return (
     <View
       role="navigation"
@@ -138,6 +142,15 @@ export function NavRail() {
           count={i.badge ? badges[i.badge] : undefined}
         />
       ))}
+      {first ? (
+        <RailItem
+          icon={Briefcase}
+          label="Business"
+          href={{ pathname: '/o/[handle]/inbox', params: { handle: first } }}
+          active={section === 'business'}
+          count={teams.reduce((n, o) => n + o.waiting, 0)}
+        />
+      ) : null}
       <View style={{ flex: 1 }} />
       <RailItem
         icon={Bell}

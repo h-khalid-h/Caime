@@ -36,6 +36,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
 import { AiError, type AiResult, type AiUsage, languageName, type Transcript } from '../lib/ai';
+import { maskFor, maskId, maskPayload } from '../lib/business';
 import { AppError, notFound } from '../lib/errors';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion } from '../lib/suggest';
@@ -225,6 +226,8 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('seq', 'desc')
       .limit(TRANSCRIPT_MESSAGES)
       .execute()) as Message[];
+    // A customer's transcript names the organization, never who on its team wrote (R15).
+    const mask = await maskFor(ctx.db, conversationId, viewerId);
     const senderIds = [...new Set(rows.map((m) => m.sender_id).filter((x): x is string => !!x))];
     const names = new Map(
       senderIds.length
@@ -244,7 +247,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     for (const m of rows) {
       const text =
         m.kind === 'system'
-          ? systemText(m.payload, viewerId)
+          ? systemText(mask ? maskPayload(m.payload, mask) : m.payload, viewerId)
           : m.kind === 'text'
             ? (m.body ?? '').slice(0, MESSAGE_CHARS)
             : messagePreview({ kind: m.kind, body: m.body, payload: m.payload, deleted: false });
@@ -254,7 +257,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
           ? 'Caishy'
           : m.sender_id === viewerId
             ? 'You'
-            : (names.get(m.sender_id ?? '') ?? 'Someone');
+            : mask
+              ? mask.orgName
+              : (names.get(m.sender_id ?? '') ?? 'Someone');
       budget -= text.length + speaker.length + 32;
       if (budget < 0 && kept.length > 0) break;
       kept.push({ m, text, speaker });
@@ -264,7 +269,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const lines: Line[] = kept.map((k, i) => ({
       n: i + 1,
       messageId: k.m.id,
-      senderId: k.m.sender_id,
+      senderId: mask ? maskId(mask, k.m.sender_id) : k.m.sender_id,
       speaker: k.speaker,
       text: k.text,
       at: k.m.created_at,
@@ -376,6 +381,13 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { ai, me } = await gate(auth.userId);
     const { conversation, me: seat } = await readable(auth.userId, id);
+    // What's open with an organization is its Business inbox's to track (PRD §38).
+    if (conversation.kind === 'business')
+      throw new AppError(
+        403,
+        'ai_business',
+        'Follow-ups aren’t found in conversations with organizations yet.',
+      );
     const { transcript, lines } = await transcriptOf(
       auth.userId,
       id,

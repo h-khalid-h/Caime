@@ -109,6 +109,13 @@ These are rules, not preferences.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caishy are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
+- Business conversations (R15): anything a customer is sent about one goes through the mask in
+  `apps/server/src/lib/business.ts`. New endpoints that return user ids or names for a
+  conversation must apply `maskFor`; `business.test.ts` checks the customer's responses for
+  any team id or name, so extend it with the new endpoint.
+- Watch the web budget when a screen is used by a second route: shared modules move into the
+  startup chunk. Open it through its own route instead (the desktop Business inbox is a list
+  pane beside `/c/[id]`, not a screen that embeds the conversation).
 
 ## Credentials and environment
 
@@ -123,6 +130,6 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
 native bundles export), Connect Kits, AI assist, Spaces, Organizations with DNS verification,
-share links, your-data controls, the image and CI are built and verified. Remaining: the
-business inbox, the platform API, store builds, and the EasyPanel deploy (⛔ needs EasyPanel
-access, `docs/DEPLOY.md`).
+the Business inbox, share links, your-data controls, the image and CI are built and verified.
+Remaining: the platform API, metrics and plan entitlements, store builds, and the EasyPanel
+deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).

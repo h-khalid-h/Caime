@@ -1,0 +1,287 @@
+import type { BusinessThreadView } from '@caishy/core/api';
+import {
+  BUSINESS_VIEW_LABELS,
+  BUSINESS_VIEWS,
+  type BusinessView,
+  waitedFor,
+} from '@caishy/core/business';
+import { formatListTime } from '@caishy/core/format';
+import { router, usePathname } from 'expo-router';
+import { useState } from 'react';
+import { FlatList, ScrollView, View } from 'react-native';
+import { useOrg, useOrgInbox } from '@/api/hooks';
+import { OrgMark } from '@/features/orgs/kinds';
+import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
+import { useNow, useUserClock } from '@/lib/time';
+import { useTheme } from '@/theme/theme';
+import { Avatar } from '@/ui/Avatar';
+import { Badge } from '@/ui/Badge';
+import { Chip } from '@/ui/Chip';
+import { EmptyState } from '@/ui/EmptyState';
+import { IconButton } from '@/ui/IconButton';
+import { ArrowLeft, Inbox } from '@/ui/icons';
+import { useLayout } from '@/ui/layout';
+import { Pressable } from '@/ui/Pressable';
+import { Screen, TopBar } from '@/ui/Screen';
+import { SkeletonRows } from '@/ui/Skeleton';
+import { Text } from '@/ui/Text';
+import { StateChip } from './states';
+
+const EMPTY: Record<BusinessView, { title: string; body: string }> = {
+  customer_waiting: {
+    title: 'Nobody is waiting',
+    body: 'When a customer writes, their conversation comes here until someone answers.',
+  },
+  new: { title: 'Nothing new', body: 'Conversations nobody has answered yet show up here.' },
+  mine: {
+    title: 'Nothing is yours right now',
+    body: 'Answer a conversation, or take one, and it’s yours.',
+  },
+  waiting: { title: 'No one to hear back from', body: 'Answered conversations wait here.' },
+  escalated: { title: 'Nothing escalated', body: 'Conversations that need an owner or admin.' },
+  resolved: { title: 'Nothing resolved yet', body: 'Resolved conversations stay here.' },
+};
+
+function ThreadRow({
+  thread,
+  active,
+  onPress,
+}: {
+  thread: BusinessThreadView;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const t = useTheme();
+  const now = useNow();
+  const { timeZone, locale } = useUserClock();
+  const name = thread.customer?.displayName ?? 'Deleted account';
+  const last = thread.lastMessage;
+  const preview = last
+    ? last.fromCustomer
+      ? last.preview
+      : `${last.senderName ?? 'Your team'}: ${last.preview}`
+    : '';
+  const unread = thread.unreadCount > 0;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${name}, ${thread.state.replace('_', ' ')}`}
+      onPress={onPress}
+      testID={`thread-row-${thread.customer?.handle ?? thread.conversationId}`}
+      style={({ hovered, pressed }) => ({
+        flexDirection: 'row',
+        gap: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginHorizontal: 6,
+        borderRadius: 14,
+        backgroundColor:
+          active || pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : 'transparent',
+      })}
+    >
+      <Avatar
+        id={thread.customer?.id ?? thread.conversationId}
+        name={name}
+        url={thread.customer?.avatarUrl ?? null}
+        size={46}
+      />
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text
+            variant={unread ? 'label' : 'bodyStrong'}
+            numberOfLines={1}
+            style={{ flex: 1 }}
+            auto
+          >
+            {name}
+          </Text>
+          <Text
+            variant="caption"
+            color={thread.waitingSince ? 'warning' : 'textTertiary'}
+            weight={thread.waitingSince ? 600 : 500}
+          >
+            {thread.waitingSince
+              ? waitedFor(thread.waitingSince, now)
+              : formatListTime(thread.lastActivityAt, now, timeZone, locale)}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text
+            variant="body"
+            color={unread ? 'text' : 'textSecondary'}
+            numberOfLines={1}
+            style={{ flex: 1 }}
+            auto
+          >
+            {preview}
+          </Text>
+          <Badge count={thread.unreadCount} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <StateChip state={thread.state} />
+          <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {thread.assignee ? thread.assignee.displayName : 'Nobody has it'}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * An organization's Business inbox (PRD §38): its customers' conversations by what they need,
+ * longest wait first. On desktop it's the shell's list pane (`pane`), and a conversation opens
+ * beside it through its own route, as Chats does; on phones it's a screen of its own.
+ */
+export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean }) {
+  const { desktop } = useLayout();
+  const pathname = usePathname();
+  const open = pathname.startsWith('/c/') ? pathname.slice(3) : null;
+  const org = useOrg(handle);
+  const summary = org.data?.org;
+  const [view, setView] = useState<BusinessView>('customer_waiting');
+  const inbox = useOrgInbox(summary?.myRole ? summary.id : undefined, view);
+  const threads = inbox.data?.threads ?? [];
+  const counts = inbox.data?.counts;
+
+  // On desktop the list is the shell's pane; the route itself is the empty detail beside it.
+  if (desktop && !pane)
+    return (
+      <DetailPlaceholder
+        character="pico"
+        icon={Inbox}
+        title="Pick a conversation"
+        body="Customers waiting longest are at the top."
+      />
+    );
+
+  if (org.isError || (summary && !summary.myRole))
+    return (
+      <Screen edges={desktop ? [] : ['top', 'bottom']}>
+        <TopBar title="Inbox" />
+        <EmptyState
+          title="This inbox isn’t yours"
+          body="Only an organization’s team sees its conversations."
+        />
+      </Screen>
+    );
+
+  const list = (
+    <View style={{ flex: 1 }}>
+      <View style={{ paddingVertical: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        >
+          {BUSINESS_VIEWS.map((v) => {
+            const n = counts?.[v] ?? 0;
+            return (
+              <Chip
+                key={v}
+                label={
+                  n && v !== 'resolved'
+                    ? `${BUSINESS_VIEW_LABELS[v]} · ${n}`
+                    : BUSINESS_VIEW_LABELS[v]
+                }
+                selected={view === v}
+                tone={
+                  v === 'customer_waiting' && n
+                    ? 'warning'
+                    : v === 'escalated' && n
+                      ? 'danger'
+                      : 'neutral'
+                }
+                onPress={() => setView(v)}
+                testID={`inbox-view-${v}`}
+              />
+            );
+          })}
+        </ScrollView>
+      </View>
+      {inbox.isPending && !inbox.data ? (
+        <SkeletonRows />
+      ) : (
+        <FlatList
+          data={threads}
+          keyExtractor={(x) => x.conversationId}
+          renderItem={({ item }) => (
+            <ThreadRow
+              thread={item}
+              active={desktop && open === item.conversationId}
+              onPress={() =>
+                desktop
+                  ? // The inbox stays beside it: the shell reads `inbox` (features/shell/sections).
+                    router.navigate({
+                      pathname: '/c/[id]',
+                      params: { id: item.conversationId, inbox: handle },
+                    })
+                  : router.push({ pathname: '/c/[id]', params: { id: item.conversationId } })
+              }
+            />
+          )}
+          ListEmptyComponent={
+            <EmptyState
+              compact
+              icon={Inbox}
+              character="pico"
+              expression="happy"
+              title={EMPTY[view].title}
+              body={EMPTY[view].body}
+            />
+          }
+          contentContainerStyle={{ paddingBottom: 24 }}
+        />
+      )}
+    </View>
+  );
+
+  const header = (
+    <TopBar
+      left={
+        desktop ? undefined : (
+          <IconButton
+            icon={ArrowLeft}
+            label="Back"
+            onPress={() =>
+              router.canGoBack()
+                ? router.back()
+                : router.replace({ pathname: '/o/[handle]', params: { handle } })
+            }
+          />
+        )
+      }
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${summary?.name ?? ''}, profile`}
+        onPress={() => router.push({ pathname: '/o/[handle]', params: { handle } })}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+      >
+        {summary ? <OrgMark kind={summary.kind} size={34} /> : null}
+        <View>
+          <Text variant="label" numberOfLines={1}>
+            Inbox
+          </Text>
+          <Text variant="caption" color="textSecondary" numberOfLines={1}>
+            {summary?.name ?? ''}
+          </Text>
+        </View>
+      </Pressable>
+    </TopBar>
+  );
+
+  if (pane)
+    return (
+      <View style={{ flex: 1 }}>
+        {header}
+        {list}
+      </View>
+    );
+  return (
+    <Screen edges={['top', 'bottom']}>
+      {header}
+      {list}
+    </Screen>
+  );
+}

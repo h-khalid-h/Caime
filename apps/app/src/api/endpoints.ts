@@ -10,6 +10,9 @@ import type {
   AiStatusView,
   AiTranslationView,
   AuthResponse,
+  BusinessInboxView,
+  BusinessSummaryView,
+  BusinessThreadView,
   ConnectionRequestView,
   ConnectionView,
   ConversationView,
@@ -40,6 +43,7 @@ import type {
   TaxonomyResponse,
 } from '@caishy/core/api';
 import type { RewriteStyle } from '@caishy/core/assist';
+import type { BusinessView } from '@caishy/core/business';
 import type { OrgKind } from '@caishy/core/orgs';
 import type { SpaceKind } from '@caishy/core/spaces';
 import type { Sphere } from '@caishy/core/taxonomy';
@@ -252,6 +256,26 @@ export const endpoints = {
     request<{ org: OrgView }>('PUT', `/orgs/${id}/domain`, { body: { domain } }),
   checkOrgDomain: (id: string) => api.post<{ org: OrgView }>(`/orgs/${id}/domain/check`),
   removeOrgDomain: (id: string) => api.del<{ org: OrgView }>(`/orgs/${id}/domain`),
+
+  // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
+  messageOrg: (orgId: string) =>
+    api.post<{ conversationId: string; created: boolean }>(`/orgs/${orgId}/conversations`),
+  orgInbox: (orgId: string, view: BusinessView) =>
+    api.get<BusinessInboxView>(`/orgs/${orgId}/inbox${q({ view })}`),
+  businessSummary: () => api.get<BusinessSummaryView>('/business/summary'),
+  assignThread: (conversationId: string, userId: string | null) =>
+    api.post<{ thread: BusinessThreadView }>(`/business/${conversationId}/assign`, { userId }),
+  resolveThread: (conversationId: string) =>
+    api.post<{ thread: BusinessThreadView }>(`/business/${conversationId}/resolve`),
+  reopenThread: (conversationId: string) =>
+    api.post<{ thread: BusinessThreadView }>(`/business/${conversationId}/reopen`),
+  escalateThread: (conversationId: string, note?: string) =>
+    api.post<{ thread: BusinessThreadView }>(
+      `/business/${conversationId}/escalate`,
+      note ? { note } : {},
+    ),
+  deescalateThread: (conversationId: string) =>
+    api.del<{ thread: BusinessThreadView }>(`/business/${conversationId}/escalation`),
 
   // AI assist: every answer is a suggestion, used only when the person taps it (R17)
   ai: () => api.get<AiStatusView>('/ai'),

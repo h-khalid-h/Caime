@@ -2,7 +2,7 @@
  * Conversations and messages (PRD §15–§22, §26, §56; R14).
  */
 
-import type { ConversationView, MessagesPage } from '@caishy/core';
+import type { ConversationBusinessView, ConversationView, MessagesPage } from '@caishy/core';
 import {
   CreateConversationBody,
   EditMessageBody,
@@ -25,6 +25,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Participant } from '../db/schema';
+import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
 import { ensureDirectConversation } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -191,16 +192,50 @@ export async function conversationView(
   const space = conversation.space_id
     ? ((await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id) ?? null)
     : null;
+  let title = space
+    ? spaceConversationTitle(space, conversation)
+    : conversation.kind === 'direct'
+      ? conversation.is_general
+        ? (other?.person.displayName ?? 'Deleted account')
+        : (conversation.title ?? 'Topic')
+      : (conversation.title ?? 'Group');
+  let shown = participants;
+  let business: ConversationBusinessView | null = null;
+  if (conversation.kind === 'business') {
+    const thread = await ctx.db
+      .selectFrom('business_threads')
+      .selectAll()
+      .where('conversation_id', '=', conversation.id)
+      .executeTakeFirst();
+    const org = thread
+      ? await ctx.db
+          .selectFrom('organizations')
+          .selectAll()
+          .where('id', '=', thread.org_id)
+          .executeTakeFirst()
+      : undefined;
+    if (thread && org) {
+      if (thread.customer_id === userId) {
+        // The customer talks to the organization: nobody on its team is named (R15).
+        shown = participants.filter((p) => p.userId === userId);
+        title = org.name;
+        business = {
+          org: orgRef(org),
+          readSeq: Number(thread.team_read_seq) || null,
+          deliveredSeq: Number(conversation.last_seq),
+          thread: null,
+        };
+      } else {
+        const [view] = await threadViews(ctx, userId, [thread]);
+        title = view?.customer?.displayName ?? 'Deleted account';
+        business = { org: orgRef(org), readSeq: null, deliveredSeq: 0, thread: view ?? null };
+      }
+    }
+  }
   return {
     id: conversation.id,
     kind: conversation.kind,
-    title: space
-      ? spaceConversationTitle(space, conversation)
-      : conversation.kind === 'direct'
-        ? conversation.is_general
-          ? (other?.person.displayName ?? 'Deleted account')
-          : (conversation.title ?? 'Topic')
-        : (conversation.title ?? 'Group'),
+    title,
     space,
     topic: conversation.kind === 'direct' && !conversation.is_general ? conversation.title : null,
     purpose: conversation.purpose,
@@ -218,8 +253,9 @@ export async function conversationView(
           deadlineAt: context.deadline_at?.toISOString() ?? null,
         }
       : null,
-    participants,
+    participants: shown,
     other: other ?? null,
+    business,
     me: {
       role: me.role,
       lastReadSeq: Number(me.last_read_seq),
@@ -464,6 +500,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const body = parse(MembersBody, req.body);
     const { conversation, me } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct') throw badRequest('Start a group to add people.');
+    if (conversation.kind === 'business')
+      throw badRequest('Its team is the organization’s: add people to the team instead.');
     if (!['owner', 'admin'].includes(me.role)) throw forbidden('Only admins can add people.');
     if (conversation.space_id) {
       // A space's conversations hold its people: General all of them, the others who join.
@@ -518,8 +556,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       req.params,
     );
     const { conversation, me } = await membership(ctx, auth.userId, id);
-    if (conversation.kind === 'direct')
-      throw badRequest('You can archive a direct conversation instead.');
+    if (conversation.kind === 'direct' || conversation.kind === 'business')
+      throw badRequest('You can archive this conversation instead.');
     if (conversation.space_id && conversation.is_general)
       throw badRequest(
         userId === auth.userId
@@ -567,6 +605,13 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('conversation_id', '=', id)
       .where('user_id', '=', auth.userId)
       .execute();
+    // The organization has read it when someone on its team has (R15): the customer's "read".
+    if (conversation.kind === 'business' && me.role === 'agent' && patch.last_read_seq)
+      await ctx.db
+        .updateTable('business_threads')
+        .set({ team_read_seq: sql`greatest(team_read_seq, ${patch.last_read_seq})` })
+        .where('conversation_id', '=', id)
+        .execute();
     if (patch.last_read_seq !== undefined) {
       // Reading a conversation clears its notification.
       await ctx.db
@@ -609,9 +654,13 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const now = ctx.now();
     const allowed: string[] = [auth.userId];
     const withheld: string[] = [];
+    const teamReadsForCustomer = conversation.kind === 'business' && me.role === 'agent';
     for (const viewer of users) {
       if (viewer.id === auth.userId) continue;
-      const visible = reader ? await readReceiptVisibleTo(ctx.db, now, reader, viewer) : false;
+      const customer = members.find((m) => m.user_id === viewer.id)?.role === 'member';
+      const visible =
+        (teamReadsForCustomer && customer) ||
+        (reader ? await readReceiptVisibleTo(ctx.db, now, reader, viewer) : false);
       (visible ? allowed : withheld).push(viewer.id);
     }
     await ctx.bus.publish(allowed, event(patch.last_read_seq));
@@ -788,7 +837,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (m.kind !== 'kit' || m.deleted_at || !isCardKit(card.kit))
       throw badRequest('That isn’t a card that can change.');
     const from = card.state ?? '';
-    const move = kitMoves(card.kit, from, m.sender_id === auth.userId).find((x) => x.to === to);
+    // In a business conversation the team is one side: anyone on it acts for a card it sent.
+    const business = await customerMask(ctx.db, m.conversation_id);
+    const onTeam = (userId: string | null) => Boolean(business && userId !== business.customerId);
+    const senderSide = m.sender_id === auth.userId || (onTeam(m.sender_id) && onTeam(auth.userId));
+    const move = kitMoves(card.kit, from, senderSide).find((x) => x.to === to);
     if (!move) throw forbidden('You can’t make that change to this card.');
     const updated = await ctx.db
       .updateTable('messages')
@@ -814,13 +867,16 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     // Everyone else hears it; an answer to what the sender asked matters more than an update.
+    // In a business conversation, the other side does: the customer hears the organization.
     for (const userId of members) {
       if (userId === auth.userId) continue;
+      if (business && onTeam(userId) === onTeam(auth.userId)) continue;
+      if (business && onTeam(userId) && userId !== m.sender_id) continue;
       await notify(ctx, {
         userId,
         kind: 'kit',
         level: userId === m.sender_id ? 'attention' : 'activity',
-        title: `${mover.display_name}: ${kitStateLabel(to)}`,
+        title: `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${kitStateLabel(to)}`,
         body: `${KITS[card.kit].name} · ${card.title ?? ''}`,
         data: { conversationId: m.conversation_id, messageId: id },
       });
@@ -1077,6 +1133,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('conversation_id', '=', id)
       .groupBy('kind')
       .execute();
+    const mask = await maskFor(ctx.db, id, auth.userId);
     return {
       counts: Object.fromEntries(counts.map((c) => [c.kind, c.n])),
       assets: rows.map((r) => ({
@@ -1086,7 +1143,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         title: r.title,
         host: r.host,
         messageId: r.message_id,
-        senderId: r.sender_id,
+        senderId: mask ? maskId(mask, r.sender_id) : r.sender_id,
         createdAt: r.created_at.toISOString(),
         file: r.file_id
           ? fileView({

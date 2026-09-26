@@ -22,6 +22,7 @@ import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
+import { maskFor, maskMessage, recordBusinessMessage } from './business';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { isBlockedEitherWay, shareAConnection } from './relations';
@@ -107,7 +108,7 @@ export async function messageViews(
       : Promise.resolve([] as Message[]),
     db.selectFrom('poll_votes').selectAll().where('message_id', 'in', ids).execute(),
   ]);
-  return rows.map((m) => {
+  const views = rows.map((m): MessageView => {
     const deleted = m.deleted_at !== null;
     const byEmoji = new Map<string, string[]>();
     for (const r of reactions.filter((x) => x.message_id === m.id)) {
@@ -162,6 +163,14 @@ export async function messageViews(
       deletedAt: m.deleted_at?.toISOString() ?? null,
       createdAt: m.created_at.toISOString(),
     };
+  });
+  // A business conversation's customer sees the organization where the team would be (R15).
+  const masks = new Map<string, Awaited<ReturnType<typeof maskFor>>>();
+  for (const id of new Set(rows.map((r) => r.conversation_id)))
+    masks.set(id, await maskFor(db, id, viewerId));
+  return views.map((v) => {
+    const mask = masks.get(v.conversationId);
+    return mask ? maskMessage(v, mask) : v;
   });
 }
 
@@ -263,6 +272,14 @@ export async function sendMessage(
   if (!me) throw notFound('That conversation');
   if (conversation.kind === 'broadcast' && !['owner', 'admin'].includes(me.role)) {
     throw forbidden('Only admins can post here.');
+  }
+  if (conversation.kind === 'business' && conversation.org_id) {
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select('archived_at')
+      .where('id', '=', conversation.org_id)
+      .executeTakeFirst();
+    if (!org || org.archived_at) throw forbidden('This organization has closed on Caishy.');
   }
 
   let acceptRequest = false;
@@ -370,7 +387,8 @@ export async function sendMessage(
     const raw = (body.payload ?? {}) as { kit?: unknown; fields?: unknown };
     const card = prepareKitFields(raw.kit, raw.fields);
     if (!card.ok) throw badRequest(card.error);
-    if (conversation.kind !== 'direct' && !card.def.groups)
+    // A business conversation is one-to-one: a customer and the organization (R15).
+    if (conversation.kind !== 'direct' && conversation.kind !== 'business' && !card.def.groups)
       throw badRequest(`${card.def.name} cards are for one-to-one conversations.`);
     if (card.def.adultsOnly) {
       const people = await ctx.db
@@ -527,6 +545,9 @@ export async function sendMessage(
     }
     throw err;
   }
+  // A business thread moves with each message: whose turn it is, and who has it (PRD §38).
+  if (conversation.kind === 'business')
+    await recordBusinessMessage(ctx, conversationId, senderId, message);
   return { message, created: true, analysis };
 }
 

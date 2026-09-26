@@ -16,6 +16,7 @@ import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
 import { createAiAssist } from './lib/ai';
 import { Bus } from './lib/bus';
+import { businessRealtime } from './lib/business';
 import { AppError } from './lib/errors';
 import { startWorkers } from './lib/jobs';
 import { RateLimiter } from './lib/rate-limit';
@@ -23,6 +24,7 @@ import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
 import { aiRoutes } from './modules/ai';
 import { authRoutes } from './modules/auth';
+import { businessRoutes } from './modules/business';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
 import { fileRoutes } from './modules/files';
@@ -82,6 +84,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   if (!options.skipMigrations) await migrate(database.pool, (m) => app.log.info(m));
   const bus = new Bus(database.pool);
   await bus.start();
+  // A business conversation's customer hears the organization, never who on its team (R15).
+  bus.transform = businessRealtime({ db: database.db });
 
   const pending = new Set<Promise<unknown>>();
   const ctx: AppContext = {
@@ -183,6 +187,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await spaceRoutes(v1, ctx);
       await orgRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
+      await businessRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);

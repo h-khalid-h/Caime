@@ -100,8 +100,17 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       until the new one is proven. The team is made of adult connections; owners and admins
       manage it and the domain; an owner who leaves or deletes their account hands it on; the
       last one out closes it (`orgs.test.ts`, E2E)
-- [ ] Business inbox: customers message an organization, the team assigns, answers as the
-      organization, escalates and resolves
+- [x] Business inbox: a customer messages an organization from its page (found in Connect or
+      by its link) and gets one conversation with it; the whole team is in it and answers as the
+      organization, so the customer never sees who (masked in every view, search, notification,
+      live event and AI transcript). The inbox sorts its conversations by what they need
+      (customer waiting, new, assigned to me, waiting on customer, escalated, resolved), longest
+      wait first; whoever answers an unassigned conversation has it; anyone on the team can hand
+      it on; escalating tells the owner and admins; resolving holds until the customer writes.
+      States come from the order of messages, never timestamps. It's on the desktop rail and at
+      the top of Chats for anyone on a team, and team members' own chats never fill with it
+      (`business.test.ts`, E2E). [ ] Blocking an organization; organizations starting
+      conversations; customers under 18; AI follow-ups and requests across it
 - [x] Spaces: a family, team, project, community or school with its people and conversations.
       Everyone is in its General conversation (which goes by the space's name); its other
       conversations are open to join; a topic that keeps coming up in General becomes one.
@@ -131,7 +140,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (422.8 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (427.6 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -210,3 +219,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   and a link survives signing up: the welcome page says whose link it is, onboarding ends on it,
   and Back goes home. Sharing on a desktop browser used to do nothing (there's no share sheet);
   it copies the link now. Tests: 133 core, 49 brand, 112 server, 8 app, 19 E2E.
+- 2026-09-26 — Session 2 (cont.): the Business inbox. The hard part was R15's "staff reply as
+  the organization": a customer's view of a conversation passes through one mask (every id but
+  theirs reads as the organization's), applied where messages are built and on the realtime
+  bus, and tested against every place the team could leak (views, live events, typing, reads,
+  search, memory, shared links, cards, notifications); each protection fails its test when
+  removed. Two bugs found on the way: whose turn it was compared timestamps, which tie within a
+  millisecond, so it reads the order of messages now; and embedding the conversation screen in
+  the inbox route moved it into the shared startup chunk (460 KB against 450), so on desktop
+  the inbox is a list pane beside the conversation's own route, as Chats is. Tests: 135 core,
+  49 brand, 121 server, 8 app, 20 E2E.

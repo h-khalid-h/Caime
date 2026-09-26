@@ -29,7 +29,8 @@ export type EventType =
   | 'task.completed'
   | 'decision.recorded'
   | 'suggestion.accepted'
-  | 'notification.created';
+  | 'notification.created'
+  | 'business.thread_updated';
 
 export async function recordEvent(
   db: Kysely<Database> | Transaction<Database>,

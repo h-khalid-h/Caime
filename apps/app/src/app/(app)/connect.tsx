@@ -6,6 +6,7 @@ import { FlatList, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
+import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { ConnectSheet } from '@/features/people/ConnectSheet';
 import { handleLink } from '@/lib/config';
 import { shareLink } from '@/lib/share';
@@ -44,6 +45,13 @@ export default function Connect() {
     queryFn: () => endpoints.searchPeople(debounced),
     enabled: debounced.length >= 2,
   });
+  // Businesses, clinics and schools are found here too, and messaged from their page (R15).
+  const orgResults = useQuery({
+    queryKey: ['org-search', debounced],
+    queryFn: () => endpoints.searchOrgs(debounced),
+    enabled: debounced.length >= 2,
+  });
+  const orgs = debounced.length >= 2 ? (orgResults.data?.orgs ?? []) : [];
 
   const renderItem = ({ item }: { item: PeopleSearchResult }) => {
     const state = item.connection.state;
@@ -147,8 +155,51 @@ export default function Connect() {
         renderItem={renderItem}
         style={{ maxWidth: 640, width: '100%', alignSelf: 'center' }}
         keyboardShouldPersistTaps="handled"
+        ListFooterComponent={
+          orgs.length ? (
+            <View style={{ paddingTop: 8 }}>
+              <Text
+                variant="overline"
+                color="textTertiary"
+                style={{ paddingHorizontal: 16, paddingVertical: 6 }}
+              >
+                Organizations
+              </Text>
+              {orgs.map((o) => (
+                <Pressable
+                  key={o.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${o.name}, organization`}
+                  onPress={() =>
+                    router.push({ pathname: '/o/[handle]', params: { handle: o.handle } })
+                  }
+                  testID={`connect-org-${o.handle}`}
+                  style={({ hovered }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    backgroundColor: hovered ? t.c.surfaceHover : 'transparent',
+                  })}
+                >
+                  <OrgMark kind={o.kind} size={46} />
+                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                    <Text variant="bodyStrong" numberOfLines={1} auto>
+                      {o.name}
+                    </Text>
+                    <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                      @{o.handle}
+                    </Text>
+                    <VerifiedLine org={o} />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
-          debounced.length >= 2 && results.isFetched ? (
+          orgs.length ? null : debounced.length >= 2 && results.isFetched ? (
             <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
               <Text variant="body" color="textSecondary" align="center">
                 No one found for “{debounced}”. They may not be on Caishy yet, or they keep their

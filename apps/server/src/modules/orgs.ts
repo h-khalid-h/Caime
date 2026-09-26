@@ -28,6 +28,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
 import { audit } from '../lib/audit';
+import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { handleTaken } from '../lib/handles';
 import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
@@ -296,6 +297,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           }),
         )
         .execute();
+    // The team answers every one of the organization's conversations.
+    for (const userId of adding) await joinThreads(ctx.db, id, userId);
+    await ctx.bus.publish(adding, { type: 'business.updated', data: { orgId: id } });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.members_added',
@@ -339,6 +343,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('org_id', '=', id)
         .where('user_id', '=', userId)
         .execute();
+      await leaveThreads(trx, id, userId, ctx.now());
       if (heir)
         await trx
           .updateTable('org_members')
@@ -354,6 +359,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('id', '=', id)
           .execute();
     });
+    await ctx.bus.publish([userId], { type: 'business.updated', data: { orgId: id } });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: leaving ? 'org.left' : 'org.member_removed',

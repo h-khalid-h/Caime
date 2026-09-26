@@ -93,6 +93,7 @@ export { default as Sun } from 'lucide-react-native/icons/sun';
 export { default as Tag } from 'lucide-react-native/icons/tag';
 export { default as Target } from 'lucide-react-native/icons/target';
 export { default as Trash } from 'lucide-react-native/icons/trash';
+export { default as TriangleAlert } from 'lucide-react-native/icons/triangle-alert';
 export { default as Truck } from 'lucide-react-native/icons/truck';
 export { default as UserPlus } from 'lucide-react-native/icons/user-plus';
 export { default as UserRound } from 'lucide-react-native/icons/user-round';

@@ -540,3 +540,11 @@ export const OrgMemberBody = z
   .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
 
 export const OrgDomainBody = z.object({ domain: z.string().trim().min(3).max(260) }).strict();
+
+// --- Business inbox (PRD §38) ----------------------------------------------------------------
+
+export const AssignThreadBody = z.object({ userId: z.string().uuid().nullable() }).strict();
+
+export const EscalateThreadBody = z
+  .object({ note: z.string().trim().max(300).optional() })
+  .strict();

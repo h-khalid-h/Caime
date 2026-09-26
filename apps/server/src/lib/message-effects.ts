@@ -59,6 +59,11 @@ export async function afterMessage(
       )?.sender_id
     : null;
   const recipients = members.filter((m) => m.user_id !== sender.id);
+  if (conversation.kind === 'business') {
+    // The Business inbox tracks what's open there, so no suggestions, topics or follow-ups.
+    await notifyBusiness(ctx, conversation, message, sender, recipients, replyToSender ?? null);
+    return;
+  }
   const addressed = (userId: string) =>
     conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
 
@@ -80,19 +85,68 @@ export async function afterMessage(
   ]);
 }
 
+type Recipient = {
+  user_id: string;
+  request_state: string | null;
+  muted_until: Date | null;
+  attention: string;
+};
+
+/**
+ * A business conversation (R15): the customer hears from the organization, never who on its
+ * team wrote; the team hears from the customer, but only whoever has the thread, or everyone
+ * while nobody does.
+ */
+async function notifyBusiness(
+  ctx: AppContext,
+  conversation: Conversation,
+  message: Message,
+  sender: { id: string; display_name: string },
+  recipients: Recipient[],
+  replyToSender: string | null,
+): Promise<void> {
+  const thread = await ctx.db
+    .selectFrom('business_threads as t')
+    .innerJoin('organizations as o', 'o.id', 't.org_id')
+    .select(['t.customer_id', 't.assignee_id', 'o.id as org_id', 'o.name as org_name'])
+    .where('t.conversation_id', '=', conversation.id)
+    .executeTakeFirst();
+  if (!thread) return;
+  if (sender.id === thread.customer_id) {
+    const team = thread.assignee_id
+      ? recipients.filter((r) => r.user_id === thread.assignee_id)
+      : recipients;
+    await Promise.all(
+      team.map((r) =>
+        notifyRecipient(ctx, conversation, message, sender, r, true, replyToSender === r.user_id, {
+          context: thread.org_name,
+        }),
+      ),
+    );
+    return;
+  }
+  const customer = recipients.find((r) => r.user_id === thread.customer_id);
+  if (customer)
+    await notifyRecipient(
+      ctx,
+      conversation,
+      message,
+      { id: thread.org_id, display_name: thread.org_name },
+      customer,
+      true,
+      replyToSender === customer.user_id,
+    );
+}
+
 async function notifyRecipient(
   ctx: AppContext,
   conversation: Conversation,
   message: Message,
   sender: { id: string; display_name: string },
-  recipient: {
-    user_id: string;
-    request_state: string | null;
-    muted_until: Date | null;
-    attention: string;
-  },
+  recipient: Recipient,
   addressed: boolean,
   isReplyToThem: boolean,
+  opts: { context?: string } = {},
 ): Promise<void> {
   const user = await ctx.db
     .selectFrom('users')
@@ -137,7 +191,9 @@ async function notifyRecipient(
         },
       );
 
-  const isGroup = conversation.kind !== 'direct';
+  // A business conversation is one-to-one: a customer and an organization.
+  const isGroup = conversation.kind !== 'direct' && conversation.kind !== 'business';
+  const context = opts.context ? ` · ${opts.context}` : '';
   const space = conversation.space_id
     ? (await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id)
     : undefined;
@@ -172,7 +228,7 @@ async function notifyRecipient(
     const salient = kind !== 'message' || !(existing.data as { salient?: boolean }).salient;
     const title = isGroup
       ? `${count} new messages in ${groupTitle}`
-      : `${sender.display_name} sent ${count} messages`;
+      : `${sender.display_name} sent ${count} messages${context}`;
     await ctx.db
       .updateTable('notifications')
       .set({
@@ -198,7 +254,7 @@ async function notifyRecipient(
     userId: recipient.user_id,
     kind: pendingRequest ? 'message_request' : kind,
     level: decision.level,
-    title: isGroup ? `${sender.display_name} · ${groupTitle}` : sender.display_name,
+    title: isGroup ? `${sender.display_name} · ${groupTitle}` : `${sender.display_name}${context}`,
     body: preview,
     data: { ...data, salient: kind !== 'message' },
     groupKey,

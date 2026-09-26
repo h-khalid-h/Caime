@@ -1,4 +1,4 @@
-import { usePathname } from 'expo-router';
+import { useGlobalSearchParams, usePathname } from 'expo-router';
 
 export type Section =
   | 'chats'
@@ -7,9 +7,21 @@ export type Section =
   | 'actions'
   | 'search'
   | 'notifications'
+  | 'business'
   | 'you';
 
-export function sectionOf(pathname: string): Section {
+/**
+ * The organization whose inbox the desktop shell lists: on its inbox, and on a conversation
+ * opened from it (`/c/<id>?inbox=<handle>`), so the list stays beside it.
+ */
+export function inboxHandleOf(pathname: string, inbox?: string): string | null {
+  const m = pathname.match(/^\/o\/([^/]+)\/inbox$/);
+  if (m?.[1]) return decodeURIComponent(m[1]);
+  return pathname.startsWith('/c/') && inbox ? inbox : null;
+}
+
+export function sectionOf(pathname: string, inbox?: string): Section {
+  if (inboxHandleOf(pathname, inbox)) return 'business';
   if (pathname === '/' || pathname.startsWith('/c/') || pathname === '/new-group') return 'chats';
   if (
     pathname.startsWith('/people') ||
@@ -26,6 +38,15 @@ export function sectionOf(pathname: string): Section {
   return 'you';
 }
 
+function useInboxParam(): string | undefined {
+  const { inbox } = useGlobalSearchParams<{ inbox?: string }>();
+  return typeof inbox === 'string' ? inbox : undefined;
+}
+
 export function useSection(): Section {
-  return sectionOf(usePathname());
+  return sectionOf(usePathname(), useInboxParam());
+}
+
+export function useInboxHandle(): string | null {
+  return inboxHandleOf(usePathname(), useInboxParam());
 }

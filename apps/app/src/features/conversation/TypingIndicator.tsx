@@ -17,8 +17,14 @@ export function useTypingNames(conversation: ConversationView | undefined): stri
   }, [ids]);
   if (!conversation || !ids) return [];
   const live = typingIn(useLive.getState(), conversation.id);
+  // A customer sees the organization typing, never who on its team (R15).
+  const org = conversation.business?.org;
   return live
-    .map((id) => conversation.participants.find((p) => p.userId === id)?.person.displayName)
+    .map(
+      (id) =>
+        conversation.participants.find((p) => p.userId === id)?.person.displayName ??
+        (org && id === org.id ? org.name : undefined),
+    )
     .filter((n): n is string => Boolean(n));
 }
 

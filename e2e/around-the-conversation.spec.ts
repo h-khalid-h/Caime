@@ -22,6 +22,9 @@ test.describe
     let noorId: string;
     let alexId: string;
     let convo: string;
+    /** Someone new, from the link test on: the organization's customer. */
+    let linaContext: BrowserContext | undefined;
+    let lina: { page: Page; errors: string[] };
 
     test.beforeAll(async ({ browser }) => {
       noorContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -51,6 +54,7 @@ test.describe
     test.afterAll(async () => {
       await noorContext?.close();
       await alexContext?.close();
+      await linaContext?.close();
     });
 
     test('a relationship changes, and its history says how', async () => {
@@ -483,8 +487,8 @@ test.describe
       expect(page.context().pages()).toHaveLength(1);
 
       // Someone new opens Noor's link, signs up, and lands on Noor, ready to connect.
-      const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-      const lina = await newPerson(context);
+      linaContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      lina = await newPerson(linaContext);
       const linaHandle = `lina.${stamp}`;
       await lina.page.goto(`/@noor.${stamp}`);
       await expect(lina.page.getByTestId('welcome-link')).toHaveText(
@@ -515,7 +519,54 @@ test.describe
       expect(errors.filter((e) => !/handles\/nobody\.|status of 404/.test(e))).toEqual([]);
       errors.length = 0;
       expect(lina.errors).toEqual([]);
-      await context.close();
+    });
+
+    test('a customer writes to an organization, and its team answers as the organization', async () => {
+      const handle = `nile.dental.${stamp}`;
+      const orgName = `Nile Dental ${stamp}`;
+      const customer = lina.page;
+      await customer.goto(`/@${handle}`);
+      await customer.getByTestId('org-message').click();
+      await expect(visible(customer, 'Business · Not verified yet')).toBeVisible();
+      await customer.getByTestId('composer-input').fill('Can I book a cleaning on Thursday?');
+      await customer.getByTestId('composer-send').click();
+
+      // Noor, on the team, sees it waiting: on the rail and in the organization's inbox.
+      const { page, errors } = noor;
+      await page.goto('/');
+      await expect(page.getByRole('link', { name: 'Business, 1' })).toBeVisible();
+      await page.getByRole('link', { name: 'Business, 1' }).click();
+      await page.getByTestId(`thread-row-lina.${stamp}`).click();
+      await expect(page.getByTestId('thread-state')).toHaveText('New');
+      await page
+        .getByTestId('composer-input')
+        .filter({ visible: true })
+        .fill('Yes! We have 10:00 or 15:30 on Thursday. Which suits you?');
+      await page.getByTestId('composer-send').filter({ visible: true }).click();
+      await expect(page.getByTestId('thread-state')).toHaveText('Waiting on customer');
+      await expect(page.getByTestId('thread-bar')).toContainText('You have it');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-business-inbox.png' });
+
+      // The customer hears from the organization; nobody on its team is named.
+      await expect(visible(customer, 'Which suits you?')).toBeVisible();
+      await expect(customer.getByText('Noor Haddad')).toHaveCount(0);
+      await customer.screenshot({ path: 'e2e/screenshots/phone-business-customer.png' });
+      await customer.goto('/');
+      await expect(visible(customer, orgName)).toBeVisible();
+      await expect(visible(customer, 'Business')).toBeVisible();
+
+      // Alex, on the team too, finds it in the inbox, not among their own chats.
+      const phone = alex.page;
+      await phone.goto('/');
+      await expect(
+        phone.getByTestId(`team-inbox-${handle}`).filter({ visible: true }),
+      ).toContainText('Nobody is waiting');
+      await expect(phone.getByText('Can I book a cleaning on Thursday?')).toHaveCount(0);
+
+      // Resolved, it waits until the customer writes again.
+      await page.getByTestId('thread-resolve').click();
+      await expect(page.getByTestId('thread-state')).toHaveText('Resolved');
+      expect([...errors, ...lina.errors, ...alex.errors]).toEqual([]);
     });
 
     test('every settings page opens, and a chosen theme follows you', async () => {

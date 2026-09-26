@@ -17,6 +17,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
+import { customerMask } from '../lib/business';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { messagePreview, messageViews, participantsOf, sendMessage } from '../lib/messages';
@@ -244,6 +245,14 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     if (body.conversationId) await membership(ctx, me, body.conversationId);
     if (body.shared && assignee === me) throw badRequest('A request goes to someone else.');
+    // A request across a business conversation would name who on the team asked (R15).
+    const business = body.conversationId ? await customerMask(ctx.db, body.conversationId) : null;
+    if (
+      business &&
+      assignee !== me &&
+      (me === business.customerId) !== (assignee === business.customerId)
+    )
+      throw forbidden('Requests between a customer and an organization aren’t available yet.');
     const task = await ctx.db.transaction().execute((trx) =>
       createTask(trx, ctx, {
         ownerId: me,

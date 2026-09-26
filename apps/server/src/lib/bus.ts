@@ -16,6 +16,11 @@ export interface BusMessage {
 }
 
 type Handler = (msg: BusMessage) => void;
+/** A last step before delivery that may split the recipients (the business mask, R15). */
+export type BusTransform = (
+  userIds: string[],
+  event: RealtimeEvent,
+) => Promise<Array<[string[], RealtimeEvent]>>;
 
 const CHANNEL = 'caishy_realtime';
 const MAX_INLINE = 7000;
@@ -24,6 +29,7 @@ export class Bus {
   private handlers = new Set<Handler>();
   private listener: pg.PoolClient | null = null;
   private closed = false;
+  transform: BusTransform | null = null;
 
   constructor(private readonly pool: pg.Pool) {}
 
@@ -69,7 +75,11 @@ export class Bus {
   async publish(userIds: string[], event: RealtimeEvent): Promise<void> {
     const unique = [...new Set(userIds)];
     if (unique.length === 0) return;
-    const msg: BusMessage = { userIds: unique, event };
+    const parts = this.transform ? await this.transform(unique, event) : [[unique, event] as const];
+    for (const [ids, ev] of parts) if (ids.length) await this.send({ userIds: ids, event: ev });
+  }
+
+  private async send(msg: BusMessage): Promise<void> {
     let payload = JSON.stringify(msg);
     if (payload.length > MAX_INLINE) {
       const row = await this.pool.query<{ id: string }>(

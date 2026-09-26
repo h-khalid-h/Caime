@@ -138,14 +138,22 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
                   readSeq: number | null;
                   deliveredSeq: number;
                 }>;
+                business: { org: { id: string }; readSeq: number | null } | null;
               };
             }
           | undefined;
         if (!d?.conversation) return data;
+        // A customer hears the organization read it, as the organization (R15).
+        const business = d.conversation.business;
+        const orgRead =
+          business && business.org.id === userId && readSeq
+            ? { ...business, readSeq: Math.max(business.readSeq ?? 0, readSeq) }
+            : business;
         return {
           ...d,
           conversation: {
             ...d.conversation,
+            business: orgRead,
             participants: d.conversation.participants.map((p) =>
               p.userId !== userId
                 ? p
@@ -245,5 +253,13 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'me.updated':
       invalidate(qk.me);
       return;
+    case 'business.updated': {
+      // A thread moved (a customer wrote, someone took it, it was resolved): the team's views.
+      const id = typeof event.data.threadId === 'string' ? event.data.threadId : null;
+      invalidate(['org-inbox'], 'org-inbox');
+      invalidate(qk.businessSummary, 'business-summary');
+      if (id) invalidate(qk.conversation(id));
+      return;
+    }
   }
 }
