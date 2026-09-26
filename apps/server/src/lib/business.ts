@@ -132,6 +132,17 @@ export function maskPayload(
     out.history = (out.history as Array<Record<string, unknown>>).map((h) =>
       other(h.by) ? { ...h, by: mask.orgId } : h,
     );
+  // A card's own lists name who did what: a checklist's items (who added, who ticked).
+  const fields = out.fields as Record<string, unknown> | undefined;
+  if (fields && Array.isArray(fields.items))
+    out.fields = {
+      ...fields,
+      items: (fields.items as Array<Record<string, unknown>>).map((i) => ({
+        ...i,
+        ...(other(i.addedBy) ? { addedBy: mask.orgId } : {}),
+        ...(other(i.doneBy) ? { doneBy: mask.orgId } : {}),
+      })),
+    };
   return out;
 }
 

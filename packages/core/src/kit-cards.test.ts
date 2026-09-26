@@ -22,7 +22,9 @@ describe('kit flows', () => {
         for (const move of moves)
           expect(kit.states, `${id}: ${from} → ${move.to}`).toContain(move.to);
       }
-      expect(flows[kit.states[0]!]?.length, `${id} starts stuck`).toBeGreaterThan(0);
+      // A checklist moves by its items being ticked, not by buttons (checklistState).
+      if (id !== 'checklist')
+        expect(flows[kit.states[0]!]?.length, `${id} starts stuck`).toBeGreaterThan(0);
     }
   });
 
@@ -99,7 +101,7 @@ describe('prepareKitFields', () => {
   });
 
   it('refuses kits that aren’t cards, including the server’s own request card', () => {
-    for (const kit of ['request', 'poll', 'checklist', 'nope', 7]) {
+    for (const kit of ['request', 'poll', 'location', 'shared_album', 'nope', 7]) {
       expect(prepareKitFields(kit, { title: 'x' })).toEqual({
         ok: false,
         error: 'That card isn’t available.',

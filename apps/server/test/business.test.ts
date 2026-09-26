@@ -208,6 +208,17 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     expect(card.payload.history).toEqual([expect.objectContaining({ by: orgId })]);
     expect((await aboutIt(lina)).map((n: any) => n.title)).toContain('DATA C: In progress');
     expect(teamNamed(JSON.stringify(await aboutIt(lina)))).toBe(false);
+
+    // Only the cards a customer relationship offers: a family checklist isn't one of them.
+    const list = await omar.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: { kit: 'checklist', fields: { title: 'Groceries', items: ['Milk'] } },
+    });
+    expect(list.statusCode).toBe(400);
+    expect(list.json().error.message).toBe(
+      'Checklist cards aren’t for conversations with an organization.',
+    );
   });
 
   it('once it has someone, only they hear the customer; they can hand it on', async () => {

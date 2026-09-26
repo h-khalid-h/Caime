@@ -9,13 +9,15 @@ import {
   FileCheck,
   HandCoins,
   LifeBuoy,
+  ListChecks,
+  MapPin,
   Package,
   Receipt,
   Truck,
 } from '@/ui/icons';
 
 /** Each kit's icon (the registry's Lucide names, mapped to the icons the bundle carries). */
-export const KIT_ICONS: Record<CardKitId | 'poll', IconComponent> = {
+export const KIT_ICONS: Record<CardKitId | 'poll' | 'location', IconComponent> = {
   approval: BadgeCheck,
   meeting: CalendarClock,
   document_review: FileCheck,
@@ -26,5 +28,7 @@ export const KIT_ICONS: Record<CardKitId | 'poll', IconComponent> = {
   payment_request: HandCoins,
   support_ticket: LifeBuoy,
   appointment: CalendarCheck,
+  checklist: ListChecks,
   poll: ChartBar,
+  location: MapPin,
 };

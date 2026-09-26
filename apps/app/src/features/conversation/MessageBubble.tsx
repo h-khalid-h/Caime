@@ -339,21 +339,33 @@ export const MessageBubble = memo(function MessageBubble({
   } else if (m.kind === 'poll' && m.poll) {
     content = <PollBody m={m} fg={fg} meta={meta} mine={mine} />;
   } else if (m.kind === 'location') {
-    const p = m.payload as { label?: string; lat?: number; lng?: number };
+    const p = m.payload as { label?: string; lat?: number; lng?: number; accuracy?: number };
+    // Where someone was (a point on the map), or a place by name (looked up on the map).
+    const point = typeof p.lat === 'number' && typeof p.lng === 'number';
+    const url = point
+      ? `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=17/${p.lat}/${p.lng}`
+      : `https://www.openstreetmap.org/search?query=${encodeURIComponent(p.label ?? '')}`;
     content = (
       <Pressable
         accessibilityRole="link"
-        onPress={() =>
-          openLink(
-            `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=16/${p.lat}/${p.lng}`,
-          )
-        }
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+        accessibilityLabel={`${p.label ?? 'A location'}, open the map`}
+        onPress={() => openLink(url)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+        testID="message-location"
       >
-        <MapPin size={18} color={fg} />
-        <Text variant="message" color={fg}>
-          {p.label ?? 'Location'}
-        </Text>
+        <MapPin size={20} color={fg} />
+        <View style={{ flexShrink: 1 }}>
+          <Text variant="message" color={fg}>
+            {p.label ?? (mine ? 'Where you were' : 'Where they were')}
+          </Text>
+          <Text variant="caption" color={meta}>
+            {point
+              ? p.accuracy
+                ? `Within ${p.accuracy} m · Open the map`
+                : 'Open the map'
+              : 'Look it up on the map'}
+          </Text>
+        </View>
       </Pressable>
     );
   } else if (m.kind === 'contact') {

@@ -125,6 +125,11 @@ These are rules, not preferences.
   `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
   customer's block of an organization both stop at it. New write routes do the same, with a
   case in `blocking.test.ts`.
+- React Native Web drops `accessibilityState`; the app's `Pressable` (`src/ui/Pressable.tsx`)
+  turns it into ARIA on the web. Use that `Pressable`, and assert state in E2E with
+  `toBeChecked()` and friends rather than by styling.
+- A kit's field checks (`prepareKitFields`) run in the app before sending and again on the
+  server over what was sent, so they must be idempotent: a checked value checks the same.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;

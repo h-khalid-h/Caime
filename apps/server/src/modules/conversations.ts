@@ -4,7 +4,11 @@
 
 import type { ConversationBusinessView, ConversationView, MessagesPage } from '@caishy/core';
 import {
+  applyChecklistOp,
+  ChecklistOpBody,
   CreateConversationBody,
+  checklistItems,
+  checklistState,
   EditMessageBody,
   ForwardBody,
   isCardKit,
@@ -891,6 +895,81 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         title: `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${kitStateLabel(to)}`,
         body: `${KITS[card.kit].name} · ${card.title ?? ''}`,
         data: { conversationId: m.conversation_id, messageId: id },
+      });
+    }
+    return { message: view };
+  });
+
+  /**
+   * A checklist card (PRD §41): anyone in the conversation ticks and adds; whoever added an item,
+   * or made the list, changes or removes it. Changes are applied one at a time (the card's row is
+   * locked), so two people ticking at once never undo each other.
+   */
+  app.post('/messages/:id/checklist', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const op = parse(ChecklistOpBody, req.body);
+    const found = await ctx.db
+      .selectFrom('messages')
+      .select('conversation_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!found) throw notFound('That message');
+    await membership(ctx, auth.userId, found.conversation_id);
+    await assertCanWrite(ctx, found.conversation_id, auth.userId);
+    const { updated, before, card } = await ctx.db.transaction().execute(async (trx) => {
+      const m = await trx
+        .selectFrom('messages')
+        .selectAll()
+        .where('id', '=', id)
+        .forUpdate()
+        .executeTakeFirstOrThrow();
+      const card = (m.payload ?? {}) as {
+        kit?: unknown;
+        state?: string;
+        title?: string;
+        fields?: Record<string, unknown>;
+      };
+      if (m.kind !== 'kit' || m.deleted_at || card.kit !== 'checklist')
+        throw badRequest('That isn’t a checklist.');
+      const applied = applyChecklistOp(checklistItems(card.fields ?? {}), op, {
+        userId: auth.userId,
+        isCreator: m.sender_id === auth.userId,
+      });
+      if (!applied.ok)
+        throw applied.forbidden ? forbidden(applied.error) : badRequest(applied.error);
+      const updated = await trx
+        .updateTable('messages')
+        .set({
+          payload: JSON.stringify({
+            ...card,
+            fields: { ...card.fields, items: applied.items },
+            state: checklistState(applied.items),
+          }),
+        })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      return { updated, before: card.state, card: { ...card, creatorId: m.sender_id } };
+    });
+    const members = (await participantsOf(ctx.db, found.conversation_id)).map((p) => p.user_id);
+    const [view] = await messageViews(ctx.db, [updated], auth.userId);
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    // Finishing the list is news for whoever made it; each tick isn't.
+    const state = (updated.payload as { state?: string }).state;
+    if (before !== 'done' && state === 'done' && card.creatorId && card.creatorId !== auth.userId) {
+      const who = await ctx.db
+        .selectFrom('users')
+        .select('display_name')
+        .where('id', '=', auth.userId)
+        .executeTakeFirstOrThrow();
+      await notify(ctx, {
+        userId: card.creatorId,
+        kind: 'kit',
+        level: 'activity',
+        title: `${who.display_name} finished ${card.title ?? 'the list'}`,
+        body: 'Everything on it is ticked.',
+        data: { conversationId: found.conversation_id, messageId: id },
       });
     }
     return { message: view };

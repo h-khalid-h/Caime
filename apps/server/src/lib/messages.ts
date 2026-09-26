@@ -11,6 +11,7 @@ import {
   isMinor,
   KIT_MODES,
   kitHeadline,
+  kitsFor,
   type MessageView,
   type Mode,
   prepareKitFields,
@@ -360,9 +361,12 @@ export async function sendMessage(
 
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['time_zone', 'locale', 'workweek'])
+    .select(['time_zone', 'locale', 'workweek', 'birth_year'])
     .where('id', '=', senderId)
     .executeTakeFirstOrThrow();
+  // Under-18 accounts don't share where they are (R29).
+  if (body.kind === 'location' && isMinor(sender.birth_year, ctx.now()))
+    throw forbidden('Sharing a location is for people over 18.');
   const text = body.body?.trim() ?? '';
   const analysis = text
     ? analyzeMessage(text, {
@@ -400,6 +404,14 @@ export async function sendMessage(
     // A business conversation is one-to-one: a customer and the organization (R15).
     if (conversation.kind !== 'direct' && conversation.kind !== 'business' && !card.def.groups)
       throw badRequest(`${card.def.name} cards are for one-to-one conversations.`);
+    // With an organization, only the cards a customer relationship offers (orders, tickets…).
+    if (
+      conversation.kind === 'business' &&
+      !kitsFor({ spheres: [], isGroup: false, viewerIsMinor: false, isBusiness: true }).some(
+        (k) => k.id === card.kit,
+      )
+    )
+      throw badRequest(`${card.def.name} cards aren’t for conversations with an organization.`);
     if (card.def.adultsOnly) {
       const people = await ctx.db
         .selectFrom('users')

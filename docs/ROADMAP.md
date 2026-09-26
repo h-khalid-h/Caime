@@ -121,8 +121,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       closes it. Its kind picks the cards its conversations offer (`spaces.test.ts`, E2E)
 - [x] Connect Kits as cards: approval, meeting, review, order, delivery, invoice, purchase
       order, payment request, support ticket, appointment, and polls; offered only where they fit
-      the relationship, moved by the right person, live (`kits.test.ts`, E2E). [ ] Location,
-      shared album and checklist kits
+      the relationship, moved by the right person, live (`kits.test.ts`, E2E). Checklists anyone
+      in the conversation ticks and adds to, done when all is ticked; a place, or where you are
+      right now, shared once and never by under-18s (`kits.test.ts`, `checklists.test.ts`, E2E).
+      [ ] Shared album; live location
 - [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
       private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
       relationship's tone), translate a message, catch me up (offered when ten or more are
@@ -159,7 +161,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.3 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.5 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -290,3 +292,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   failed once on a test of mine that read the AI allowance before the call's record had landed
   (it's written after the response); reproduced by slowing the record, fixed by waiting for it.
   Tests: 142 core, 49 brand, 149 server, 8 app, 24 E2E.
+- 2026-09-26 — Session 2 (cont.): location and checklist kits. A checklist card that anyone in the
+  conversation ticks and adds to, done when everything is ticked; a place, or where you are right
+  now (asked once, shown with how precise it was), never live and never from someone under 18. The
+  end-to-end test found two bugs. Checking a card's fields twice, as the app does before sending
+  and the server does on arrival, broke a checklist's items; checking is idempotent now, with a
+  test. And React Native Web drops accessibility state: every checkbox, radio, tab and toggle in
+  the app read as unchecked and unselected to screen readers on the web; the shared Pressable now
+  says it as ARIA. Under-18s' location, and simultaneous ticks under a row lock, each fail their
+  test when removed. Tests: 148 core, 49 brand, 152 server, 8 app, 25 E2E.

@@ -172,3 +172,79 @@ describe('kit cards (PRD §41)', () => {
     });
   });
 });
+
+describe('checklists (PRD §41)', () => {
+  const op = (c: Client, messageId: string, body: Record<string, unknown>) =>
+    c.req('POST', `/v1/messages/${messageId}/checklist`, body);
+
+  it('are ticked, added to and trimmed by the conversation, and finish when all is ticked', async () => {
+    const res = await card(noor, convo, 'checklist', {
+      title: 'Groceries',
+      items: ['Milk', 'Bread'],
+    });
+    expect(res.statusCode).toBe(201);
+    const list = res.json().message;
+    expect(list.payload).toMatchObject({ state: 'open', title: 'Groceries' });
+    expect(list.payload.fields.items.map((i: any) => i.text)).toEqual(['Milk', 'Bread']);
+
+    const ticked = (await op(sam, list.id, { op: 'toggle', itemId: 'i1', done: true })).json()
+      .message;
+    expect(ticked.payload.fields.items[0]).toMatchObject({ done: true, doneBy: sam.user.id });
+    const added = (await op(sam, list.id, { op: 'add', text: 'Eggs' })).json().message;
+    expect(added.payload.fields.items[2]).toMatchObject({
+      id: 'i3',
+      text: 'Eggs',
+      addedBy: sam.user.id,
+    });
+    // Sam didn't make the list or add the bread, so it isn't Sam's to take off.
+    expect((await op(sam, list.id, { op: 'remove', itemId: 'i2' })).statusCode).toBe(403);
+    expect((await op(noor, list.id, { op: 'remove', itemId: 'i2' })).statusCode).toBe(200);
+    expect((await op(sam, list.id, { op: 'toggle', itemId: 'i2', done: true })).statusCode).toBe(
+      400,
+    );
+    expect((await op(outsider, list.id, { op: 'add', text: 'Hi' })).statusCode).toBe(404);
+
+    const done = (await op(sam, list.id, { op: 'toggle', itemId: 'i3', done: true })).json()
+      .message;
+    expect(done.payload.state).toBe('done');
+    await t.ctx.flush();
+    const titles = (await noor.get('/v1/notifications')).notifications.map((n: any) => n.title);
+    expect(titles).toContain('Sam Rivera finished Groceries');
+  });
+
+  it('never loses a change when people add at the same time', async () => {
+    const list = (await card(noor, convo, 'checklist', { title: 'Party' })).json().message;
+    const results = await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        op(i % 2 ? sam : noor, list.id, { op: 'add', text: `Thing ${i}` }),
+      ),
+    );
+    expect(results.map((r) => r.statusCode)).toEqual(Array(8).fill(200));
+    const { messages } = await noor.get(`/v1/conversations/${convo}/messages`);
+    const items = messages.find((m: any) => m.id === list.id).payload.fields.items;
+    expect(items).toHaveLength(8);
+    expect(new Set(items.map((i: any) => i.id)).size).toBe(8);
+  });
+});
+
+describe('locations (R29)', () => {
+  const place = (c: Client, conversationId: string, payload: unknown) =>
+    c.req('POST', `/v1/conversations/${conversationId}/messages`, {
+      clientId: uuidv4(),
+      kind: 'location',
+      payload,
+    });
+
+  it('share a place by name or where you are, and never from someone under 18', async () => {
+    expect(
+      (await place(noor, convo, { lat: 30.0444, lng: 31.2357, accuracy: 12 })).statusCode,
+    ).toBe(201);
+    expect((await place(noor, convo, { label: 'Café Riche, Downtown' })).statusCode).toBe(201);
+    expect((await place(noor, convo, { lat: 30.0444 })).statusCode).toBe(400);
+    const teen = await signup(t, { displayName: 'Rami Teen', birthYear: 2011 });
+    const withTeen = await connect(teen, noor);
+    const refused = await place(teen, withTeen, { label: 'Home' });
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().error.message).toBe('Sharing a location is for people over 18.');
+  });
+});

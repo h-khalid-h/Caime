@@ -7,20 +7,22 @@ import { KITS, type KitDef, type KitField, kitsFor } from '@caishy/core/kits';
 import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
 import { firstFutureWhen } from '@caishy/core/when';
 import { useQueryClient } from '@tanstack/react-query';
+import * as Location from 'expo-location';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useUserClock } from '@/lib/time';
 import { applyMessageToInbox, upsertMessage } from '@/state/cache';
 import { useMe } from '@/state/session';
+import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { Plus } from '@/ui/icons';
+import { MapPin, Plus } from '@/ui/icons';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 
-export type KitChoice = CardKitId | 'poll';
+export type KitChoice = CardKitId | 'poll' | 'location';
 
 /**
  * The kits this conversation offers, most specific to the relationship first (core kits.ts). In
@@ -33,7 +35,7 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
     ? 'customer'
     : (conversation.other?.relationship?.sphere ??
       (conversation.space ? SPACE_KIND_DEFS[conversation.space.kind].sphere : undefined));
-  const offered = new Set<string>([...CARD_KITS, 'poll']);
+  const offered = new Set<string>([...CARD_KITS, 'poll', 'location']);
   return kitsFor({
     spheres: sphere ? [sphere] : [],
     // One customer, one organization: its cards are one-to-one cards.
@@ -96,6 +98,7 @@ export function KitForm({
   kit: KitChoice | null;
   onClose: () => void;
 }) {
+  const t = useTheme();
   const qc = useQueryClient();
   const me = useMe();
   const { timeZone, locale } = useUserClock();
@@ -106,6 +109,9 @@ export function KitForm({
   const [multiple, setMultiple] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Location: where the device says this person is, once, when they ask.
+  const [spot, setSpot] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const close = () => {
     setTexts({});
@@ -113,13 +119,43 @@ export function KitForm({
     setOptions(['', '']);
     setMultiple(false);
     setError(null);
+    setSpot(null);
     onClose();
+  };
+
+  const locate = async () => {
+    setLocating(true);
+    setError(null);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Caishy can’t see where you are. Allow it in your settings, or type a place.');
+        return;
+      }
+      const { coords } = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const round = (n: number) => Math.round(n * 1e6) / 1e6;
+      setSpot({
+        lat: round(coords.latitude),
+        lng: round(coords.longitude),
+        ...(coords.accuracy ? { accuracy: Math.round(coords.accuracy) } : {}),
+      });
+    } catch {
+      setError('Couldn’t find where you are just now. Try again, or type a place.');
+    } finally {
+      setLocating(false);
+    }
   };
 
   const send = async () => {
     if (!kit) return;
-    let body: { kind: 'kit' | 'poll'; payload: unknown };
-    if (kit === 'poll') {
+    let body: { kind: 'kit' | 'poll' | 'location'; payload: unknown };
+    if (kit === 'location') {
+      const label = (texts.label ?? '').trim();
+      if (!spot && !label) return setError('Share where you are, or type a place.');
+      body = { kind: 'location', payload: { ...(spot ?? {}), ...(label ? { label } : {}) } };
+    } else if (kit === 'poll') {
       const question = (texts.question ?? '').trim();
       const choices = options.map((o) => o.trim()).filter(Boolean);
       if (!question) return setError('Ask a question.');
@@ -135,6 +171,11 @@ export function KitForm({
     } else {
       const fields: Record<string, unknown> = {};
       for (const field of KITS[kit].fields) {
+        if (field.type === 'items') {
+          const lines = options.map((o) => o.trim()).filter(Boolean);
+          if (lines.length) fields[field.key] = lines;
+          continue;
+        }
         if (field.type === 'options') {
           if (picked[field.key] !== undefined) fields[field.key] = picked[field.key];
           continue;
@@ -162,7 +203,7 @@ export function KitForm({
     }
   };
 
-  const def = kit && kit !== 'poll' ? KITS[kit] : kit === 'poll' ? KITS.poll : null;
+  const def = kit ? KITS[kit] : null;
   return (
     <Sheet
       open={kit !== null}
@@ -180,7 +221,38 @@ export function KitForm({
         />
       }
     >
-      {kit === 'poll' ? (
+      {kit === 'location' ? (
+        <View style={{ gap: 12 }}>
+          <Text variant="caption" color="textSecondary">
+            Only this moment is shared, never where you go after.
+          </Text>
+          {spot ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <MapPin size={18} color={t.c.success} />
+              <Text variant="body" style={{ flex: 1 }} testID="location-found">
+                {spot.accuracy ? `Found you, within ${spot.accuracy} m.` : 'Found you.'}
+              </Text>
+              <Button label="Clear" size="sm" variant="ghost" onPress={() => setSpot(null)} />
+            </View>
+          ) : (
+            <Button
+              label="Use where I am now"
+              icon={MapPin}
+              variant="secondary"
+              loading={locating}
+              onPress={() => void locate()}
+              testID="location-here"
+            />
+          )}
+          <TextField
+            label={spot ? 'Name it (optional)' : 'Or type a place'}
+            placeholder={spot ? 'Home, the office…' : 'Café Riche, Downtown'}
+            value={texts.label ?? ''}
+            onChangeText={(v) => setTexts((s) => ({ ...s, label: v }))}
+            testID="location-label"
+          />
+        </View>
+      ) : kit === 'poll' ? (
         <View style={{ gap: 12 }}>
           <TextField
             label="Question"
@@ -215,7 +287,29 @@ export function KitForm({
       ) : def ? (
         <View style={{ gap: 12 }}>
           {def.fields.map((field, i) =>
-            field.type === 'options' ? (
+            field.type === 'items' ? (
+              <View key={field.key} style={{ gap: 8 }}>
+                <Text variant="label">{field.label}</Text>
+                {options.map((o, j) => (
+                  <TextField
+                    // biome-ignore lint/suspicious/noArrayIndexKey: items are positional while typed
+                    key={j}
+                    accessibilityLabel={`Item ${j + 1}`}
+                    placeholder={j === 0 ? 'Milk' : j === 1 ? 'Bread' : ''}
+                    value={o}
+                    onChangeText={(v) => setOptions((all) => all.map((x, k) => (k === j ? v : x)))}
+                    testID={`checklist-item-input-${j}`}
+                  />
+                ))}
+                {options.length < 100 ? (
+                  <Chip
+                    label="Add an item"
+                    icon={Plus}
+                    onPress={() => setOptions((all) => [...all, ''])}
+                  />
+                ) : null}
+              </View>
+            ) : field.type === 'options' ? (
               <View key={field.key} style={{ gap: 6 }}>
                 <Text variant="label">{field.label}</Text>
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>

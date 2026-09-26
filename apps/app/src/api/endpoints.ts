@@ -50,6 +50,7 @@ import type {
 import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
 import type { RewriteStyle } from '@caishy/core/assist';
 import type { BusinessView } from '@caishy/core/business';
+import type { ChecklistOp } from '@caishy/core/kit-cards';
 import type { OrgKind } from '@caishy/core/orgs';
 import type { SpaceKind } from '@caishy/core/spaces';
 import type { Sphere } from '@caishy/core/taxonomy';
@@ -212,6 +213,8 @@ export const endpoints = {
   /** Move a kit card along: approve, accept, mark paid (core kit-cards.ts says who may). */
   moveKit: (id: string, to: string) =>
     api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
+  checklist: (id: string, op: ChecklistOp) =>
+    api.post<{ message: MessageView }>(`/messages/${id}/checklist`, op),
   receipts: (id: string, body: { read?: number; delivered?: number }) =>
     api.post<Ok>(`/conversations/${id}/receipts`, body),
   dismissAttention: (id: string) => api.post<Ok>(`/conversations/${id}/dismiss`),

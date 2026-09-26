@@ -61,7 +61,15 @@
       "expo-font",
       "expo-secure-store",
       "expo-audio",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Caishy uses your location only when you choose to share it in a conversation, once, never in the background.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

@@ -9,8 +9,8 @@ import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
 
 /**
- * The kits posted as cards. Poll is posted as a poll message; location, album and checklist are
- * not built yet, so nothing offers them.
+ * The kits posted as cards. Poll is posted as a poll message and location as a location
+ * message; the shared album isn't built yet, so nothing offers it.
  */
 export const CARD_KITS = [
   'approval',
@@ -23,6 +23,7 @@ export const CARD_KITS = [
   'payment_request',
   'support_ticket',
   'appointment',
+  'checklist',
 ] as const satisfies readonly KitId[];
 export type CardKitId = (typeof CARD_KITS)[number];
 
@@ -42,6 +43,7 @@ export const KIT_MODES: Record<CardKitId, Mode> = {
   payment_request: 'pay',
   support_ticket: 'request',
   appointment: 'plan',
+  checklist: 'plan',
 };
 
 /** Who may move a card: whoever posted it, the others in the conversation, or anyone there. */
@@ -124,6 +126,8 @@ export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
     requested: [m('confirmed', 'Confirm', 'others'), m('cancelled', 'Cancel', 'anyone')],
     confirmed: [m('done', 'Done', 'anyone'), m('cancelled', 'Cancel', 'anyone')],
   },
+  // A checklist has no buttons to press: it's done when everything on it is ticked.
+  checklist: {},
 };
 
 /** The moves this person may make on a card in this state. */
@@ -188,6 +192,79 @@ export interface KitAmount {
 
 const LIMITS = { text: 200, longtext: 2000 } as const;
 
+// --- Checklists ---------------------------------------------------------------------------------
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+  /** Who ticked it. */
+  doneBy: string | null;
+  /** Who put it on the list; null for the list's first items. */
+  addedBy: string | null;
+}
+
+export const CHECKLIST_MAX_ITEMS = 100;
+export const CHECKLIST_ITEM_MAX = 200;
+
+export function checklistItems(fields: Record<string, unknown>): ChecklistItem[] {
+  return Array.isArray(fields.items) ? (fields.items as ChecklistItem[]) : [];
+}
+
+/** Done once there's something on it and all of it is ticked. */
+export function checklistState(items: ChecklistItem[]): 'open' | 'done' {
+  return items.length > 0 && items.every((i) => i.done) ? 'done' : 'open';
+}
+
+export type ChecklistOp =
+  | { op: 'add'; text: string }
+  | { op: 'toggle'; itemId: string; done: boolean }
+  | { op: 'edit'; itemId: string; text: string }
+  | { op: 'remove'; itemId: string };
+
+const nextItemId = (items: ChecklistItem[]) =>
+  `i${1 + items.reduce((n, i) => Math.max(n, Number(i.id.slice(1)) || 0), 0)}`;
+
+/**
+ * One change to a checklist, by someone in the conversation. Anyone there ticks and adds;
+ * changing or removing an item is for whoever added it, or whoever made the list.
+ */
+export function applyChecklistOp(
+  items: ChecklistItem[],
+  op: ChecklistOp,
+  actor: { userId: string; isCreator: boolean },
+): { ok: true; items: ChecklistItem[] } | { ok: false; error: string; forbidden?: true } {
+  const text = 'text' in op ? op.text.trim() : '';
+  if ('text' in op && !text) return { ok: false, error: 'Write something to add.' };
+  if (text.length > CHECKLIST_ITEM_MAX)
+    return { ok: false, error: `Keep an item under ${CHECKLIST_ITEM_MAX} characters.` };
+  if (op.op === 'add') {
+    if (items.length >= CHECKLIST_MAX_ITEMS)
+      return { ok: false, error: `A list holds ${CHECKLIST_MAX_ITEMS} items.` };
+    const item = { id: nextItemId(items), text, done: false, doneBy: null, addedBy: actor.userId };
+    return { ok: true, items: [...items, item] };
+  }
+  const item = items.find((i) => i.id === op.itemId);
+  if (!item) return { ok: false, error: 'That item isn’t on the list anymore.' };
+  if (op.op === 'toggle')
+    return {
+      ok: true,
+      items: items.map((i) =>
+        i.id === item.id ? { ...i, done: op.done, doneBy: op.done ? actor.userId : null } : i,
+      ),
+    };
+  const mayChange = actor.isCreator || item.addedBy === actor.userId;
+  if (!mayChange)
+    return {
+      ok: false,
+      error: 'Only whoever added it, or made the list, can change it.',
+      forbidden: true,
+    };
+  if (op.op === 'edit')
+    return { ok: true, items: items.map((i) => (i.id === item.id ? { ...i, text } : i)) };
+  return { ok: true, items: items.filter((i) => i.id !== item.id) };
+}
+
 type Cleaned = { value: unknown } | { error: string } | null;
 
 function clean(field: KitField, raw: unknown): Cleaned {
@@ -233,6 +310,37 @@ function clean(field: KitField, raw: unknown): Cleaned {
       return field.choices?.some((c) => c.value === raw)
         ? { value: raw }
         : { error: `${field.label}: pick one of the choices.` };
+    case 'items': {
+      // Lines as typed, or items already made from them: checking twice changes nothing.
+      const texts = Array.isArray(raw)
+        ? raw.map((x) =>
+            typeof x === 'string'
+              ? x
+              : typeof (x as { text?: unknown } | null)?.text === 'string'
+                ? (x as { text: string }).text
+                : null,
+          )
+        : null;
+      if (!texts || texts.some((x) => x === null))
+        return { error: `${field.label}: one line each.` };
+      const lines = (texts as string[]).map((x) => x.trim()).filter(Boolean);
+      if (!lines.length) return null;
+      if (lines.length > CHECKLIST_MAX_ITEMS)
+        return { error: `${field.label}: up to ${CHECKLIST_MAX_ITEMS}.` };
+      if (lines.some((l) => l.length > CHECKLIST_ITEM_MAX))
+        return { error: `${field.label}: keep each under ${CHECKLIST_ITEM_MAX} characters.` };
+      return {
+        value: lines.map(
+          (text, i): ChecklistItem => ({
+            id: `i${i + 1}`,
+            text,
+            done: false,
+            doneBy: null,
+            addedBy: null,
+          }),
+        ),
+      };
+    }
     default:
       return { error: `${field.label} isn’t supported yet.` };
   }
@@ -323,7 +431,8 @@ export function kitDetails(
   fields: Record<string, unknown>,
   opts: { now: Date; timeZone: string; locale: string },
 ): Array<{ label: string; value: string }> {
-  const skip = new Set(['title', ...(IN_HEADLINE[kit] ?? [])]);
+  // A checklist's items are the card itself, not a detail of it.
+  const skip = new Set(['title', 'items', ...(IN_HEADLINE[kit] ?? [])]);
   const out: Array<{ label: string; value: string }> = [];
   for (const field of KITS[kit].fields) {
     if (skip.has(field.key) || fields[field.key] === undefined) continue;

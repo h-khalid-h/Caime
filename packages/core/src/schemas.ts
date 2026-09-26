@@ -266,12 +266,21 @@ export const UpdateConversationBody = z
   .strict();
 
 const StickerPayload = z.object({ pack: z.string().max(40), sticker: z.string().max(40) });
-const LocationPayload = z.object({
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
-  label: z.string().max(200).optional(),
-  live: z.boolean().optional(),
-});
+/**
+ * A place: where someone is (coordinates, and how sure the device was, in metres), or a place by
+ * name to look up ("Café Riche, Downtown"). Never live: one moment, shared on purpose.
+ */
+export const LocationPayload = z
+  .object({
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
+    accuracy: z.number().min(0).max(100_000).optional(),
+    label: z.string().trim().max(200).optional(),
+  })
+  .strict()
+  .refine((p) => (p.lat === undefined) === (p.lng === undefined), 'A place needs both coordinates.')
+  .refine((p) => p.lat !== undefined || Boolean(p.label), 'Choose a place.');
+export type LocationPayloadT = z.infer<typeof LocationPayload>;
 const ContactPayload = z.union([
   z.object({ userId: z.string().uuid() }),
   z.object({
@@ -577,3 +586,11 @@ export const UpdateOrgAppBody = z
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+
+/** One change to a checklist card (core kit-cards.ts applies it). */
+export const ChecklistOpBody = z.discriminatedUnion('op', [
+  z.object({ op: z.literal('add'), text: z.string().max(400) }),
+  z.object({ op: z.literal('toggle'), itemId: z.string().max(10), done: z.boolean() }),
+  z.object({ op: z.literal('edit'), itemId: z.string().max(10), text: z.string().max(400) }),
+  z.object({ op: z.literal('remove'), itemId: z.string().max(10) }),
+]);

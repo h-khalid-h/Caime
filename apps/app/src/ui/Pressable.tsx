@@ -26,6 +26,25 @@ export interface PressableProps extends Omit<RNPressableProps, 'style' | 'childr
   focusRadius?: number;
 }
 
+/**
+ * React Native Web turns accessibilityRole into a role but drops accessibilityState, so a
+ * checkbox never says it's ticked and a tab never says it's the one showing. Say it as ARIA.
+ */
+function ariaOf(
+  role: RNPressableProps['accessibilityRole'],
+  s: RNPressableProps['accessibilityState'],
+) {
+  if (!s || Platform.OS !== 'web') return {};
+  const aria: Record<string, boolean> = {};
+  if (s.checked !== undefined && s.checked !== 'mixed') aria['aria-checked'] = s.checked;
+  if (s.selected !== undefined)
+    aria[role === 'button' ? 'aria-pressed' : 'aria-selected'] = s.selected;
+  if (s.disabled) aria['aria-disabled'] = true;
+  if (s.busy) aria['aria-busy'] = true;
+  if (s.expanded !== undefined) aria['aria-expanded'] = s.expanded;
+  return aria;
+}
+
 /** Pressable with hover and keyboard-focus states on the web and haptics on phones. */
 export function Pressable({
   style,
@@ -41,6 +60,7 @@ export function Pressable({
   return (
     <RNPressable
       {...rest}
+      {...ariaOf(rest.accessibilityRole, rest.accessibilityState)}
       onPress={(e) => {
         if (haptic && Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => {});
         onPress?.(e);

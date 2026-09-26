@@ -825,4 +825,60 @@ test.describe
       expect(await stub()).toEqual(['catch-up', 'actions', 'translate', 'rewrite']);
       expect(errors).toEqual([]);
     });
+
+    test('a checklist both of them tick, and a place shared where it fits', async () => {
+      const { page, errors } = noor;
+      await page.goto(`/c/${convo}`);
+      await alex.page.goto(`/c/${convo}`);
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      // Noor knows Alex from work: a checklist fits, sharing where she is doesn't (yet).
+      await expect(page.getByTestId('kit-option-location')).toHaveCount(0);
+      await page.getByTestId('kit-option-checklist').click();
+      await page.getByLabel('List name').fill('Venue prep');
+      await page.getByTestId('checklist-item-input-0').fill('Chairs');
+      await page.getByTestId('checklist-item-input-1').fill('Sound check');
+      await page.getByTestId('kit-send').click();
+      const mine = page.getByTestId('kit-checklist').filter({ hasText: 'Venue prep' });
+      await expect(mine).toContainText('0 of 2');
+
+      // Alex ticks one and adds one; Noor sees both as they happen.
+      const theirs = alex.page
+        .getByTestId('kit-checklist')
+        .filter({ hasText: 'Venue prep', visible: true });
+      await theirs.getByRole('checkbox', { name: 'Chairs' }).click();
+      await theirs.getByTestId('checklist-add').fill('Flowers');
+      await theirs.getByTestId('checklist-add').press('Enter');
+      await expect(mine).toContainText('1 of 3');
+      await expect(mine.getByRole('checkbox', { name: 'Chairs' })).toBeChecked();
+      await mine.getByRole('checkbox', { name: 'Sound check' }).click();
+      await mine.getByRole('checkbox', { name: 'Flowers' }).click();
+      await expect(theirs).toContainText('Done');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-kit-checklist.png' });
+
+      // They're friends too, now: Noor shares where she is, once.
+      const friend = await noorContext.request.post('/v1/relationships', {
+        headers: CLIENT,
+        data: { userId: alexId, sphere: 'friend', role: 'friend' },
+      });
+      expect(friend.status()).toBe(201);
+      const { relationship } = await friend.json();
+      await noorContext.request.post(`/v1/relationships/${relationship.id}/primary`, {
+        headers: CLIENT,
+      });
+      await noorContext.grantPermissions(['geolocation']);
+      await noorContext.setGeolocation({ latitude: 30.0444, longitude: 31.2357, accuracy: 15 });
+      await page.reload();
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await page.getByTestId('kit-option-location').click();
+      await page.getByTestId('location-here').click();
+      await expect(page.getByTestId('location-found')).toHaveText('Found you, within 15 m.');
+      await page.getByTestId('location-label').fill('The venue');
+      await page.getByTestId('kit-send').click();
+      const shared = alex.page
+        .getByTestId('message-location')
+        .filter({ hasText: 'The venue', visible: true });
+      await expect(shared).toContainText('Within 15 m');
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-kit-location.png' });
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
   });

@@ -33,7 +33,9 @@ export type KitFieldType =
   | 'amount'
   | 'options'
   | 'location'
-  | 'people';
+  | 'people'
+  /** A list of short lines, each its own item: a checklist's things to do. */
+  | 'items';
 
 export interface KitField {
   key: string;
@@ -219,10 +221,12 @@ export const KITS: Record<KitId, KitDef> = {
   location: {
     id: 'location',
     name: 'Location',
-    description: 'Share where you are',
+    description: 'Share a place, or where you are right now',
     icon: 'map-pin',
     spheres: ['family', 'friend', 'service_provider'],
     groups: true,
+    // Under-18 accounts don't share locations (R29).
+    adultsOnly: true,
     fields: [{ key: 'place', label: 'Place', type: 'location', required: true }],
     states: ['shared'],
   },
@@ -258,7 +262,7 @@ export const KITS: Record<KitId, KitDef> = {
     groups: true,
     fields: [
       { key: 'title', label: 'List name', type: 'text', required: true },
-      { key: 'items', label: 'Items', type: 'options' },
+      { key: 'items', label: 'Items', type: 'items' },
     ],
     states: ['open', 'done'],
   },
