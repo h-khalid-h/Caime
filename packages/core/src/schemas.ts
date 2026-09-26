@@ -559,6 +559,15 @@ export const EscalateThreadBody = z
   .object({ note: z.string().trim().max(300).optional() })
   .strict();
 
+/** Someone on the team writes to a person first, found by their handle (R14). */
+export const StartThreadBody = z
+  .object({
+    handle: z.string().trim().min(1).max(64),
+    clientId: z.string().min(8).max(64),
+    body: z.string().trim().min(1).max(4000),
+  })
+  .strict();
+
 // --- Apps (PRD §73–75) ------------------------------------------------------------------------
 
 const WebhookUrl = z

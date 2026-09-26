@@ -131,8 +131,8 @@ describe('plans (PRD §84, R23)', () => {
     expect(org.memberCount).toBe(3);
     expect(org.plan).toEqual({
       plan: 'free',
-      allowance: { teamSize: 3, apps: 1, insights: false },
-      used: { teamSize: 3, apps: 1 },
+      allowance: { teamSize: 3, apps: 1, insights: false, startsPerDay: 20 },
+      used: { teamSize: 3, apps: 1, startsToday: 0 },
       upgradeUrl: PLANS_URL,
     });
     // Only its owner and admins see its plan.
@@ -150,7 +150,7 @@ describe('plans (PRD §84, R23)', () => {
 
     await operator('/v1/admin/orgs/tiles.co/plan', { plan: 'free' });
     const { org } = await noor.get(`/v1/orgs/${orgId}`);
-    expect(org.plan.used).toEqual({ teamSize: 4, apps: 2 });
+    expect(org.plan.used).toEqual({ teamSize: 4, apps: 2, startsToday: 0 });
     expect(org.members.filter((m: any) => m.person.kind === 'human')).toHaveLength(4);
     const apps = (await noor.get(`/v1/orgs/${orgId}/apps`)).apps;
     expect(apps).toHaveLength(2);

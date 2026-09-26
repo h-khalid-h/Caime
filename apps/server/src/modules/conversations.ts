@@ -198,7 +198,13 @@ export async function conversationView(
         .where('id', '=', conversation.context_id)
         .executeTakeFirst()
     : undefined;
-  const otherRequest = conversation.kind === 'direct' ? others[0]?.member_request_state : null;
+  // Who the viewer is waiting on: the other person, or for a team the customer it wrote to first.
+  const otherRequest =
+    conversation.kind === 'direct'
+      ? others[0]?.member_request_state
+      : conversation.kind === 'business' && me.role === 'agent'
+        ? others.find((o) => o.member_role === 'member')?.member_request_state
+        : null;
   const space = conversation.space_id
     ? ((await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id) ?? null)
     : null;
@@ -284,9 +290,16 @@ export async function conversationView(
       draft: me.draft,
       requestState: me.request_state,
     },
-    /** "incoming": someone you're not connected with wrote to you. "outgoing": you wrote first. */
+    /**
+     * "incoming": someone you're not connected with wrote to you. "outgoing": you wrote first,
+     * and it's still unanswered to you even once they've declined it.
+     */
     request:
-      me.request_state === 'pending' ? 'incoming' : otherRequest === 'pending' ? 'outgoing' : null,
+      me.request_state === 'pending'
+        ? 'incoming'
+        : otherRequest === 'pending' || otherRequest === 'declined'
+          ? 'outgoing'
+          : null,
     lastSeq: Number(conversation.last_seq),
     lastMessageAt: conversation.last_message_at?.toISOString() ?? null,
     createdAt: conversation.created_at.toISOString(),

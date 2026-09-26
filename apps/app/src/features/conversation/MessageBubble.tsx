@@ -48,6 +48,8 @@ export interface BubbleProps {
   onOpenReactions?: (m: MessageView) => void;
   /** Briefly marked: the message someone jumped to from search. */
   highlighted?: boolean;
+  /** In a message request not yet accepted, links read as text and open nothing (R14). */
+  inertLinks?: boolean;
 }
 
 function DeliveryIcon({
@@ -148,6 +150,7 @@ export const MessageBubble = memo(function MessageBubble({
   onReact,
   onRetry,
   highlighted,
+  inertLinks = false,
 }: BubbleProps) {
   const t = useTheme();
   const meId = useSession((s) => s.user?.id ?? null);
@@ -239,7 +242,7 @@ export const MessageBubble = memo(function MessageBubble({
   const bodyText = m.body ? (
     <Text variant="message" color={fg} selectable auto={m.body}>
       {linkify(m.body).map((part) =>
-        part.url ? (
+        part.url && !inertLinks ? (
           <Text
             key={`${part.start}`}
             variant="message"

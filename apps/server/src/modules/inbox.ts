@@ -336,7 +336,7 @@ export async function buildInbox(
       request:
         r.request_state === 'pending'
           ? 'incoming'
-          : r.other_request_state === 'pending'
+          : r.other_request_state === 'pending' || r.other_request_state === 'declined'
             ? 'outgoing'
             : null,
       lastSeq: Number(r.last_seq),

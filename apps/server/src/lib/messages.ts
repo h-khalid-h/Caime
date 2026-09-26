@@ -331,12 +331,36 @@ export async function sendMessage(
   }
 
   let acceptRequest = false;
+  const unanswered = (message: string) => new AppError(403, 'awaiting_acceptance', message);
+  if (conversation.kind === 'business') {
+    // The team wrote first (R14): one message until the customer answers or accepts it, and a
+    // declined one reads to the team as still unanswered.
+    const customer = members.find((p) => p.role === 'member');
+    if (customer?.user_id === senderId) {
+      if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
+    } else if (customer?.request_state === 'declined') {
+      throw unanswered('You can write again once they answer.');
+    } else if (customer?.request_state === 'pending') {
+      const sent = await ctx.db
+        .selectFrom('messages')
+        .select(sql<number>`count(*)::int`.as('n'))
+        .where('conversation_id', '=', conversationId)
+        .where('sender_id', '<>', customer.user_id)
+        .where('kind', '<>', 'system')
+        .executeTakeFirstOrThrow();
+      if (sent.n >= 1) throw unanswered('You can write again once they answer.');
+    }
+  }
   if (conversation.kind === 'direct') {
     const other = members.find((p) => p.user_id !== senderId);
     if (other) {
       if (await isBlockedEitherWay(ctx.db, senderId, other.user_id))
         throw forbidden('You can’t message this person.');
-      if (me.request_state === 'pending') acceptRequest = true; // replying accepts their request
+      // Replying accepts their request, even one declined before.
+      if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
+      // Declined, it reads to the sender as still unanswered, as a connection request does.
+      if (other.request_state === 'declined')
+        throw unanswered('You can send more once they accept your message request.');
       if (other.request_state === 'pending') {
         const sent = await ctx.db
           .selectFrom('messages')
@@ -572,7 +596,7 @@ export async function sendMessage(
           last_delivered_seq: seq,
           draft: null,
           draft_updated_at: null,
-          ...(acceptRequest ? { request_state: 'accepted' as const } : {}),
+          ...(acceptRequest ? { request_state: 'accepted' as const, archived_at: null } : {}),
         })
         .where('conversation_id', '=', conversationId)
         .where('user_id', '=', senderId)

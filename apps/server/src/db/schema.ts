@@ -602,6 +602,8 @@ export interface BusinessThreadsTable {
   last_customer_at: NullableTimestamp;
   last_team_at: NullableTimestamp;
   team_read_seq: ColumnType<string, string | number | undefined, string | number>;
+  /** The team wrote first (R14); counted against the plan's starts. */
+  started_by_team: Defaulted<boolean>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }

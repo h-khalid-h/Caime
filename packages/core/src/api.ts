@@ -501,6 +501,19 @@ export interface BusinessThreadView {
   lastActivityAt: string;
   /** Its customer blocked the organization: closed until they unblock it. */
   closed: boolean;
+  /**
+   * The team wrote first and the customer hasn't answered or accepted: to them it's a message
+   * request (R14), and the team can write again once they do.
+   */
+  awaitingAcceptance: boolean;
+}
+
+/** What the team gets back from writing to someone first (R14). */
+export interface StartThreadResult {
+  conversationId: string;
+  /** A new conversation, not the one the customer already had with the organization. */
+  created: boolean;
+  message: MessageView;
 }
 
 export interface ConversationBusinessView {
@@ -614,7 +627,7 @@ export interface OrgView extends OrgSummaryView {
 export interface OrgPlanView {
   plan: OrgPlan;
   allowance: OrgAllowance;
-  used: { teamSize: number; apps: number };
+  used: { teamSize: number; apps: number; startsToday: number };
   /** Where to see plans and upgrade, when the operator has set one up. */
   upgradeUrl: string | null;
 }

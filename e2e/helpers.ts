@@ -7,6 +7,17 @@ export const PASSWORD = 'a long enough passphrase';
 /** The E2E server's operator tokens (playwright.config.ts): plans, and /metrics. */
 export const ADMIN_TOKEN = 'e2e-operator-token-0123456789abcdef';
 export const METRICS_TOKEN = 'e2e-metrics-token-0123456789abcdef';
+/** The DNS stand-in (e2e/dns-stub.mjs) organizations verify their domains against. */
+export const DNS_STUB = `http://127.0.0.1:${Number(process.env.E2E_DNS_STUB_PORT ?? 8797)}`;
+
+/** Publish a TXT record where the server will look for it. */
+export async function publishTxt(name: string, values: string[]) {
+  const res = await fetch(`${DNS_STUB}/records`, {
+    method: 'POST',
+    body: JSON.stringify({ name, values }),
+  });
+  expect(res.ok).toBe(true);
+}
 
 /** A page that records every script error, console error and failed API call. */
 export async function newPerson(

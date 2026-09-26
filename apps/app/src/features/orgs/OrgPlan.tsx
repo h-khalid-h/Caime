@@ -44,6 +44,9 @@ export function OrgPlan({ plan }: { plan: OrgPlanView }) {
           of={plan.allowance.teamSize}
           label={`People on the team: ${plan.used.teamSize} of ${plan.allowance.teamSize}`}
         />
+        <Text variant="caption" color="textSecondary">
+          {`${plan.used.startsToday} of ${plan.allowance.startsPerDay.toLocaleString('en-US')} conversations started by the team today. Customers writing first are never counted.`}
+        </Text>
         {line ? (
           <Text variant="caption" color="textSecondary">
             {plan.upgradeUrl ? line : `${line} It can’t be bought here yet.`}

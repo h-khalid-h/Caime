@@ -180,7 +180,9 @@ async function notifyRecipient(
           ? 'question'
           : 'message';
   const now = ctx.now();
-  const pendingRequest = recipient.request_state === 'pending';
+  // A request they haven't accepted, or declined, never interrupts them (R14).
+  const pendingRequest =
+    recipient.request_state === 'pending' || recipient.request_state === 'declined';
   const decision = pendingRequest
     ? {
         deliver: 'silent' as const,
@@ -391,7 +393,8 @@ async function suggest(
   });
   for (const r of recipients) {
     // Strangers' messages (pending requests) don't create work for you (R14).
-    if (r.request_state === 'pending' || !addressed(r.user_id)) continue;
+    if (r.request_state === 'pending' || r.request_state === 'declined' || !addressed(r.user_id))
+      continue;
     for (const s of theirs) {
       // "I'll send it Thursday" answering my request: the waiting item, now with a date.
       if (

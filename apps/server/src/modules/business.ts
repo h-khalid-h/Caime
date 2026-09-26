@@ -12,8 +12,12 @@ import {
   type BusinessView,
   canManageOrg,
   EscalateThreadBody,
+  handleError,
   inBusinessView,
   isMinor,
+  normalizeHandle,
+  StartThreadBody,
+  type StartThreadResult,
   uuidv7,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
@@ -26,8 +30,13 @@ import { orgBlocked } from '../lib/blocks';
 import { factsOf, orgRef, publishThread, teamOf, threadViews } from '../lib/business';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { afterMessage } from '../lib/message-effects';
+import { messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { orgById, orgSeat } from '../lib/orgs';
+import { assertStartRoom } from '../lib/plans';
+import { isBlockedEitherWay } from '../lib/relations';
+import { privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -212,6 +221,162 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     return { conversationId, created: true };
   });
 
+  /**
+   * Someone on the team writes to a person first (R14). Unless they've written to the
+   * organization before, it reaches them as a message request: in Requests, silent, its links
+   * inert, and one message until they answer or accept it. Only a verified organization writes
+   * first, only a person on its team does, and never to anyone under 18, anyone who blocked it,
+   * or anyone who only takes messages from people they know.
+   */
+  app.post('/orgs/:id/threads', async (req, reply): Promise<StartThreadResult> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const body = parse(StartThreadBody, req.body);
+    const org = await orgById(ctx.db, id);
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    const writer = await ctx.db
+      .selectFrom('users')
+      .select('kind')
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    if (writer.kind !== 'human')
+      throw forbidden('A person on the team writes first; an app answers customers.');
+    ctx.limiter.hit(`business-reach:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
+    // Nobody by that handle, and somebody the organization can't write to, answer the same.
+    const nobody = () =>
+      new AppError(404, 'not_found', `Nobody by that handle can hear from ${org.name}.`);
+    const wanted = normalizeHandle(body.handle);
+    if (handleError(wanted)) throw nobody();
+    const target = await ctx.db
+      .selectFrom('users')
+      .selectAll()
+      .where('handle', '=', wanted)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!target || target.kind !== 'human') throw nobody();
+    if (await orgSeat(ctx.db, target.id, id))
+      throw badRequest('They’re on the team: write to them directly.');
+
+    const existing = await ctx.db
+      .selectFrom('business_threads')
+      .select('conversation_id')
+      .where('org_id', '=', id)
+      .where('customer_id', '=', target.id)
+      .executeTakeFirst();
+    let conversationId = existing?.conversation_id;
+    let created = false;
+    if (!conversationId) {
+      const now = ctx.now();
+      if (!org.verified_at)
+        throw forbidden(
+          `Verify ${org.name}’s domain first: only a verified organization writes to someone first.`,
+        );
+      const privacy = privacyOf(target, now);
+      if (
+        !privacy.discoverByHandle ||
+        isMinor(target.birth_year, now) ||
+        (await orgBlocked(ctx.db, target.id, id)) ||
+        (await isBlockedEitherWay(ctx.db, auth.userId, target.id))
+      )
+        throw nobody();
+      if (privacy.messageRequests !== 'everyone')
+        throw new AppError(
+          403,
+          'not_accepting_requests',
+          `${target.display_name} only takes messages from people they know.`,
+        );
+      await assertStartRoom(ctx, id, auth.userId);
+      const fresh = uuidv7();
+      const team = await teamOf(ctx.db, id);
+      try {
+        await ctx.db.transaction().execute(async (trx) => {
+          await trx
+            .insertInto('conversations')
+            .values({ id: fresh, kind: 'business', org_id: id, created_by: auth.userId })
+            .execute();
+          await trx
+            .insertInto('participants')
+            .values([
+              {
+                conversation_id: fresh,
+                user_id: target.id,
+                role: 'member',
+                request_state: 'pending',
+              },
+              ...team.map((userId) => ({
+                conversation_id: fresh,
+                user_id: userId,
+                role: 'agent' as const,
+              })),
+            ])
+            .execute();
+          await trx
+            .insertInto('business_threads')
+            .values({
+              conversation_id: fresh,
+              org_id: id,
+              customer_id: target.id,
+              started_by_team: true,
+              created_at: now,
+              updated_at: now,
+            })
+            .execute();
+          await recordEvent(trx, 'conversation.created', auth.userId, {
+            conversationId: fresh,
+            kind: 'business',
+            orgId: id,
+            startedByTeam: true,
+          });
+        });
+        conversationId = fresh;
+        created = true;
+      } catch (err) {
+        // Two of the team at once, or the customer just then: one conversation, theirs.
+        if ((err as { code?: string }).code !== '23505') throw err;
+        conversationId = (
+          await ctx.db
+            .selectFrom('business_threads')
+            .select('conversation_id')
+            .where('org_id', '=', id)
+            .where('customer_id', '=', target.id)
+            .executeTakeFirstOrThrow()
+        ).conversation_id;
+      }
+    }
+
+    let result: Awaited<ReturnType<typeof sendMessage>>;
+    try {
+      result = await sendMessage(ctx, auth.userId, conversationId, {
+        clientId: body.clientId,
+        kind: 'text',
+        body: body.body,
+      });
+    } catch (err) {
+      // Nothing is left behind, nor counted, when the first message can't go.
+      if (created)
+        await ctx.db.deleteFrom('conversations').where('id', '=', conversationId).execute();
+      throw err;
+    }
+    const [view] = await messageViews(ctx.db, [result.message], auth.userId);
+    if (result.created) {
+      const members = await participantsOf(ctx.db, conversationId);
+      if (created)
+        await ctx.bus.publish([target.id], {
+          type: 'conversation.created',
+          data: { conversationId },
+        });
+      await ctx.bus.publish(
+        members.map((m) => m.user_id).filter((u) => u !== auth.userId),
+        { type: 'message.created', data: { ...view!, clientId: null } },
+      );
+      await ctx.bus.publish([auth.userId], { type: 'message.created', data: view! });
+      const { analysis, message } = result;
+      ctx.defer('after-message', () => afterMessage(ctx, message, analysis));
+    }
+    reply.status(created ? 201 : 200);
+    return { conversationId, created, message: view! };
+  });
+
   app.get('/orgs/:id/inbox', async (req): Promise<BusinessInboxView> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
@@ -221,12 +386,13 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     const org = await orgById(ctx.db, id);
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
-    // A conversation shows up once its customer has written; the newest few hundred are plenty.
+    // A conversation shows up once someone has written in it: the customer, or the team first
+    // (R14). The newest few hundred are plenty.
     const threads = await ctx.db
       .selectFrom('business_threads')
       .selectAll()
       .where('org_id', '=', id)
-      .where('last_customer_seq', '>', '0')
+      .where((eb) => eb.or([eb('last_customer_seq', '>', '0'), eb('last_team_seq', '>', '0')]))
       .orderBy('updated_at', 'desc')
       .limit(500)
       .execute();
@@ -260,7 +426,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('m.joined_at')
       .execute();
     if (orgs.length === 0) return { orgs: [] };
-    const open = sql<boolean>`t.resolved_at is null and t.last_customer_seq > 0`;
+    const open = sql<boolean>`t.resolved_at is null and (t.last_customer_seq > 0 or t.last_team_seq > 0)`;
     const theirTurn = sql<boolean>`t.last_customer_seq > t.last_team_seq`;
     const counts = await ctx.db
       .selectFrom('business_threads as t')

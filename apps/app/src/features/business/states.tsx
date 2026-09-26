@@ -17,18 +17,23 @@ const TONES: Record<ThreadState, Tone> = {
   resolved: { bg: 'successSoft', fg: 'success' },
 };
 
-/** A conversation its customer closed by blocking the organization reads "Closed", in grey. */
+/**
+ * A conversation its customer closed by blocking the organization reads "Closed", in grey; one
+ * the team wrote first that they haven't answered reads "Request sent" (R14).
+ */
 export function StateChip({
   state,
   closed = false,
+  request = false,
   testID,
 }: {
   state: ThreadState;
   closed?: boolean;
+  request?: boolean;
   testID?: string;
 }) {
   const t = useTheme();
-  const tone: Tone = closed ? { bg: 'surfaceMuted', fg: 'textSecondary' } : TONES[state];
+  const tone: Tone = closed || request ? { bg: 'surfaceMuted', fg: 'textSecondary' } : TONES[state];
   return (
     <View
       style={{
@@ -41,7 +46,7 @@ export function StateChip({
       testID={testID}
     >
       <Text variant="captionStrong" color={tone.fg}>
-        {closed ? 'Closed by the customer' : THREAD_STATE_LABELS[state]}
+        {closed ? 'Closed by the customer' : request ? 'Request sent' : THREAD_STATE_LABELS[state]}
       </Text>
     </View>
   );

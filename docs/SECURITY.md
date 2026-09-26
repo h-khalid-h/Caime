@@ -10,8 +10,10 @@ a control without a test is listed as a gap, not a control. Reviewed 2026-09-26.
    privacy rules and never forwards them.
 2. **Profile fields and read positions follow the owner's rules**, reciprocally for read
    receipts (R25), on every path: API views and live events.
-3. **Strangers can't intrude.** Messages from people you're not connected with are requests; they
-   never notify, never create work, and reading one never tells the sender (R14).
+3. **Strangers can't intrude.** Messages from people you're not connected with, or from an
+   organization you haven't written to, are requests; they never notify, never create work, their
+   links are inert until accepted, reading one never tells the sender, and a declined one stays
+   shut while reading to its sender as unanswered (R14).
 4. **Younger people are protected by rules in code** (R29): adults can't find under-18 accounts
    they don't know, email discovery is off, message requests are limited.
 
@@ -27,8 +29,9 @@ a control without a test is listed as a gap, not a control. Reviewed 2026-09-26.
 | Read receipts | One check, `readReceiptVisibleTo`, for the conversation view and the live event | `messaging.test.ts` |
 | Relationships | Owner-only reads and writes; `mutualFit` only when both sides shared | `connections.test.ts` |
 | Blocking | Blocked people can't message or find you; a profile of someone who blocked you looks like it doesn't exist. A block stops every way of reaching the other side in your conversation, not only sending: editing, reacting, voting, moving a card and typing all ask one check first (`lib/blocks.ts`), both ways. A customer can block an organization: its team and its apps' bots can no longer write to them, the conversation closes (resolved for the team, "Closed by the customer"; archived for the customer), and they can't be written to again until they unblock it; nobody on a team can block their own organization | `connections.test.ts`, `actions.test.ts`, `blocking.test.ts`, `e2e/around-the-conversation.spec.ts` |
-| Minors | Discoverability, email and message-request rules | `privacy-safety.test.ts`, `auth.test.ts`, `connections.test.ts` |
+| Minors | Discoverability, email and message-request rules; organizations never write to them first | `privacy-safety.test.ts`, `auth.test.ts`, `connections.test.ts`, `business-start.test.ts` |
 | Kit cards | The server decides what a card says and where it starts; a client's `state` or extra fields are dropped. A card moves only along its kit's flow, by the person each move belongs to, and only if nobody moved it first. Money cards (invoice, purchase order, payment request) never involve anyone under 18. A checklist changes one step at a time under a row lock, so simultaneous ticks never undo each other; anyone in the conversation ticks and adds, only whoever added an item or made the list removes it. With an organization, only the cards a customer relationship offers are accepted. Locations are shared once, on purpose (never live), and never by anyone under 18 (R29, refused by the server). An album takes only photos and videos the person adding them uploaded, never a file they were merely shown; whoever added a photo, or made the album, takes it out; nobody adds to a closed album | `kits.test.ts`, `checklists.test.ts`, `business.test.ts`, `albums.test.ts` |
+| Organizations writing first | Only a verified organization, and only a person on its team (never an app), writes to someone first, found by a handle they can be found by. It reaches them as a message request: silent, in Requests, links inert, one message until they answer or accept; they can decline (it stays shut, and the team isn't told) or block the organization. Never to anyone under 18, anyone who blocked it or the writer, or anyone who only takes messages from people they know; any of those reads the same as nobody by that handle. A plan's starts a day limit it, and a customer writing first is never counted | `business-start.test.ts`, `messaging.test.ts`, E2E |
 | Uploads | Type from the bytes, not the name; non-media downloads as attachments with `CSP: sandbox`; photo EXIF and GPS stripped; 100 MB cap; per-user rate limit | `files.test.ts` |
 | Files | Readable only by participants of a conversation they were shared in, or whose album holds them; a photo taken out of an album, or in an album that was deleted, is its owner's alone again; avatars follow the owner's photo privacy | `files.test.ts`, `albums.test.ts` |
 | Links | Suspicious links (IP hosts, lookalikes) are flagged; the app asks before opening them | `privacy-safety.test.ts`, `messaging.test.ts` |
@@ -67,9 +70,6 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
 - **`TRUST_PROXY` is on by default** for EasyPanel's proxy. Run without a proxy and clients can
   choose the address rate limits see; set `TRUST_PROXY=false` there.
 - **No penetration test** by a third party yet.
-- **Organizations can't start conversations** with anyone yet; customers always write first. When
-  they can, a message from an organization a customer hasn't written to should arrive as a
-  request, as a stranger's does (R14).
 - **Webhooks carry what customers write** to the organization's own endpoint, which is the
   point of them, and the organization then holds that copy under its own policies. Customers
   see that the organization answers through an app ("Automated"), not where its webhooks go.

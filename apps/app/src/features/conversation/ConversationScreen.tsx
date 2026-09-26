@@ -390,6 +390,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         onReact={onReact}
         onRetry={onRetry}
         highlighted={marked !== null && item.m.seq === marked}
+        inertLinks={conversation?.request === 'incoming'}
       />
     );
   };
@@ -491,9 +492,11 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       : `You blocked ${org?.name ?? 'this organization'}.`
     : conversation?.request === 'incoming'
       ? 'Accept the request to reply.'
-      : conversation && !conversation.participants.some((p) => p.userId === me.id)
-        ? 'You’re no longer in this conversation.'
-        : null;
+      : thread?.awaitingAcceptance
+        ? 'You can write again once they answer.'
+        : conversation && !conversation.participants.some((p) => p.userId === me.id)
+          ? 'You’re no longer in this conversation.'
+          : null;
   const disabledAction =
     closed && !thread && org
       ? {

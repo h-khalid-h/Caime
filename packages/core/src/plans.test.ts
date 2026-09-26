@@ -30,6 +30,7 @@ describe('plans', () => {
       if (below) {
         expect(a.teamSize).toBeGreaterThan(ORG_ALLOWANCES[below].teamSize);
         expect(a.apps).toBeGreaterThan(ORG_ALLOWANCES[below].apps);
+        expect(a.startsPerDay).toBeGreaterThan(ORG_ALLOWANCES[below].startsPerDay);
         expect(a.insights || !ORG_ALLOWANCES[below].insights).toBe(true);
       }
     }

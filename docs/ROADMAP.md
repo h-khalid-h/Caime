@@ -42,7 +42,8 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls; forward
 - [x] Realtime hub (WebSocket + pg NOTIFY), typing, presence
 - [x] Attention inbox API
-- [x] Message requests from non-connections (R14)
+- [x] Message requests from non-connections (R14): links inert until accepted; declined, one stays
+      shut and reads to its sender as unanswered (`messaging.test.ts`, E2E)
 
 ## M4 — Memory, action, notification
 
@@ -111,8 +112,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       the top of Chats for anyone on a team, and team members' own chats never fill with it
       (`business.test.ts`, E2E). A customer can block an organization: its team and bots can no
       longer write to them and the conversation closes until they unblock it (`blocking.test.ts`,
-      E2E). [ ] Organizations starting conversations; customers under 18; AI follow-ups and
-      requests across it
+      E2E). A verified organization's team writes to someone first by their handle, and it
+      arrives as a message request: silent, in Requests, links inert, one message until they
+      answer; they accept, decline or block it. Never to anyone under 18 or who only hears from
+      people they know, and limited by plan per day (`business-start.test.ts`, E2E, which also
+      verifies a domain end to end against a DNS stand-in). [ ] Customers under 18; AI follow-ups
+      and requests across it
 - [x] Spaces: a family, team, project, community or school with its people and conversations.
       Everyone is in its General conversation (which goes by the space's name); its other
       conversations are open to join; a topic that keeps coming up in General becomes one.
@@ -163,7 +168,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.9 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (431.1 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -313,3 +318,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   drawn under it, behind the scrim and out of reach; toasts now show in the topmost sheet.
   Access, ownership, closing and removal each fail their test when removed. Tests: 148 core, 49
   brand, 155 server, 8 app, 26 E2E.
+- 2026-09-26 — Session 2 (cont.): organizations write first. Someone on a verified organization's
+  team writes to a person by their handle, from the Business inbox; unless they've written to it
+  before, it reaches them as a message request from the organization: silent, in Requests, one
+  message until they answer, and they accept, decline or block it. Never to anyone under 18,
+  anyone who blocked it, or anyone who only takes messages from people they know, and a plan's
+  starts a day limit it. Building it found two gaps in message requests. A declined request
+  stayed open: its sender could keep writing, and each message notified the person who had
+  declined it; it now stays shut and reads to its sender as unanswered, as a connection request
+  does. And links in a request were clickable, though R14 says they wait until it's accepted;
+  they're text until then. End-to-end tests now verify a domain for real, against a DNS
+  stand-in. Tests: 148 core, 49 brand, 163 server, 8 app, 27 E2E.

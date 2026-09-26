@@ -155,6 +155,44 @@ export async function assertAppRoom(ctx: AppContext, orgId: string) {
   );
 }
 
+/** Conversations the team started in the last 24 hours, and when the oldest stops counting. */
+async function teamStarts(ctx: AppContext, orgId: string) {
+  const row = await ctx.db
+    .selectFrom('business_threads')
+    .select([sql<number>`count(*)::int`.as('n'), sql<Date | null>`min(created_at)`.as('oldest')])
+    .where('org_id', '=', orgId)
+    .where('started_by_team', '=', true)
+    .where('created_at', '>', new Date(ctx.now().getTime() - DAY_MS))
+    .executeTakeFirstOrThrow();
+  return { used: row.n, oldest: row.oldest };
+}
+
+/** Room for the team to start one more conversation today (R14); `userId` reads the time. */
+export async function assertStartRoom(ctx: AppContext, orgId: string, userId: string) {
+  const org = await orgPlanRow(ctx, orgId);
+  const { startsPerDay } = ORG_ALLOWANCES[org.plan];
+  const { used, oldest } = await teamStarts(ctx, orgId);
+  if (used < startsPerDay) return;
+  const me = await ctx.db
+    .selectFrom('users')
+    .select(['locale', 'time_zone'])
+    .where('id', '=', userId)
+    .executeTakeFirstOrThrow();
+  const nextAt = oldest ? new Date(oldest.getTime() + DAY_MS) : null;
+  const ready = nextAt
+    ? ` The next can start ${formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale))}.`
+    : '';
+  const next = nextOrgPlan(org.plan);
+  const more = next
+    ? ` ${PLAN_NAMES[next]} includes ${ORG_ALLOWANCES[next].startsPerDay.toLocaleString('en-US')} a day.`
+    : '';
+  throw limit(
+    ctx,
+    `${org.name} has started today’s ${startsPerDay} new conversations.${ready}${more}`,
+    { nextAt: nextAt?.toISOString() ?? null },
+  );
+}
+
 /** Insights (PRD §71) come with Business and Enterprise. */
 export async function assertInsights(ctx: AppContext, orgId: string) {
   const org = await orgPlanRow(ctx, orgId);
@@ -183,11 +221,15 @@ export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUs
 
 export async function orgPlanView(ctx: AppContext, orgId: string): Promise<OrgPlanView> {
   const org = await orgPlanRow(ctx, orgId);
-  const [size, apps] = await Promise.all([teamSize(ctx, orgId), appCount(ctx, orgId)]);
+  const [size, apps, starts] = await Promise.all([
+    teamSize(ctx, orgId),
+    appCount(ctx, orgId),
+    teamStarts(ctx, orgId),
+  ]);
   return {
     plan: org.plan,
     allowance: ORG_ALLOWANCES[org.plan],
-    used: { teamSize: size, apps },
+    used: { teamSize: size, apps, startsToday: starts.used },
     upgradeUrl: upgrade(ctx),
   };
 }

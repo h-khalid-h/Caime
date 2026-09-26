@@ -33,7 +33,7 @@ export async function ensureDirectConversation(
         .updateTable('participants')
         .set({ request_state: 'accepted' })
         .where('conversation_id', '=', existing.id)
-        .where('request_state', '=', 'pending')
+        .where('request_state', 'in', ['pending', 'declined'])
         .execute();
     }
     return { id: existing.id, created: false };

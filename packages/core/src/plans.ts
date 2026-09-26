@@ -34,6 +34,11 @@ export interface OrgAllowance {
   apps: number;
   /** How fast the team answers, how many customers write, what's still open (PRD §71). */
   insights: boolean;
+  /**
+   * Conversations the team starts with someone in any 24 hours (R14). A conversation the
+   * customer starts is never counted.
+   */
+  startsPerDay: number;
 }
 
 const GB = 1024 ** 3;
@@ -47,9 +52,9 @@ export const PERSON_ALLOWANCES: Readonly<Record<Plan, PersonAllowance>> = {
 };
 
 export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
-  free: { teamSize: 3, apps: 1, insights: false },
-  business: { teamSize: 100, apps: 25, insights: true },
-  enterprise: { teamSize: 10_000, apps: 200, insights: true },
+  free: { teamSize: 3, apps: 1, insights: false, startsPerDay: 20 },
+  business: { teamSize: 100, apps: 25, insights: true, startsPerDay: 1000 },
+  enterprise: { teamSize: 10_000, apps: 200, insights: true, startsPerDay: 20_000 },
 };
 
 export const PLAN_NAMES: Readonly<Record<Plan | OrgPlan, string>> = {

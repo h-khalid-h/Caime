@@ -37,6 +37,9 @@ answers `401`.
 | `threads:write` | `POST /v1/business/:id/resolve`, `…/reopen`, `…/escalate` | Escalate takes an optional `{ "note": "…" }` and tells the owner and admins |
 | `threads:write` | `DELETE /v1/business/:id/escalation` | Stop escalating |
 
+An app answers customers; it never writes to someone first. A person on the team does, from the
+Business inbox, and it reaches them as a message request (R14).
+
 Responses are the same JSON the Caishy apps read (`packages/core/src/api.ts`). Errors are
 `{ "error": { "code": "…", "message": "…" } }`.
 

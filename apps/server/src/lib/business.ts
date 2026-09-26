@@ -354,7 +354,7 @@ export async function threadViews(
       ),
     ),
   ];
-  const [customers, names, lastMessages, mine, blocked] = await Promise.all([
+  const [customers, names, lastMessages, mine, blocked, requests] = await Promise.all([
     personViewsFor(
       ctx,
       viewerId,
@@ -397,8 +397,21 @@ export async function threadViews(
       .select('t.conversation_id')
       .where('t.conversation_id', 'in', ids)
       .execute(),
+    // Customers the team wrote to first who haven't answered (R14); declined reads the same.
+    ctx.db
+      .selectFrom('business_threads as t')
+      .innerJoin('participants as p', (j) =>
+        j
+          .onRef('p.conversation_id', '=', 't.conversation_id')
+          .onRef('p.user_id', '=', 't.customer_id'),
+      )
+      .select('t.conversation_id')
+      .where('t.conversation_id', 'in', ids)
+      .where('p.request_state', 'in', ['pending', 'declined'])
+      .execute(),
   ]);
   const closed = new Set(blocked.map((b) => b.conversation_id));
+  const awaiting = new Set(requests.map((r) => r.conversation_id));
   const nameOf = (id: string | null) =>
     id ? (names.find((n) => n.id === id)?.display_name ?? null) : null;
   return threads.map((t) => {
@@ -431,6 +444,7 @@ export async function threadViews(
       unreadCount: mine.find((m) => m.conversation_id === t.conversation_id)?.unread ?? 0,
       lastActivityAt: (last?.created_at ?? t.updated_at).toISOString(),
       closed: closed.has(t.conversation_id),
+      awaitingAcceptance: awaiting.has(t.conversation_id),
     };
   });
 }

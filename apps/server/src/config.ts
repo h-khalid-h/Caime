@@ -25,6 +25,11 @@ const Env = z.object({
   SESSION_DAYS: z.coerce.number().int().positive().default(90),
   TRUST_PROXY: bool.default(true),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  /**
+   * DNS servers for checking organizations' domains, e.g. `1.1.1.1,8.8.8.8` (a port may follow
+   * each, as `127.0.0.1:8853`). Without it, the system's.
+   */
+  DNS_SERVERS: z.string().optional(),
   /** Bearer token for GET /metrics. Without it the endpoint is disabled. */
   METRICS_TOKEN: z.string().optional(),
   /** Minimum age at sign-up (R29): 13 by default, 16 where local law requires. */

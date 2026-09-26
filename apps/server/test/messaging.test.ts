@@ -273,6 +273,39 @@ describe('message requests from people you are not connected with (R14)', () => 
     await send(zed, id, 'Great, thanks!');
   });
 
+  it('declined, it stays shut and unanswered to its sender; writing back opens it', async () => {
+    const zed = await signup(t, { displayName: 'Persistent Stranger' });
+    const opened = await zed.post('/v1/conversations', { kind: 'direct', userId: sarah.user.id });
+    const id = opened.conversation.id;
+    await send(zed, id, 'Hi Sarah, quick question about your talk.');
+    await sarah.post(`/v1/conversations/${id}/request`, { decision: 'decline' });
+    const again = await zed.req('POST', `/v1/conversations/${id}/messages`, {
+      clientId: uuidv4(),
+      kind: 'text',
+      body: 'Why did you decline?',
+    });
+    expect(again.statusCode).toBe(403);
+    expect(again.json().error.code).toBe('awaiting_acceptance');
+    // Zed isn't told, here or by opening it again; Sarah hears nothing more.
+    const reopened = await zed.post('/v1/conversations', { kind: 'direct', userId: sarah.user.id });
+    expect(reopened.conversation).toMatchObject({ id, request: 'outgoing' });
+    const row = (await inbox(zed)).sections
+      .flatMap((x: { items: Array<{ id: string; request: string | null }> }) => x.items)
+      .find((i: { id: string }) => i.id === id);
+    expect(row?.request).toBe('outgoing');
+    await t.ctx.flush();
+    const heard = (await sarah.get('/v1/notifications')).notifications.filter((n: any) =>
+      String(n.body).includes('Why did you decline'),
+    );
+    expect(heard).toEqual([]);
+
+    // Sarah changes her mind: writing to Zed accepts it and brings it back for her.
+    await send(sarah, id, 'Sorry, I was travelling. Ask away!');
+    const mine = (await sarah.get(`/v1/conversations/${id}`)).conversation;
+    expect(mine).toMatchObject({ request: null, me: { archived: false } });
+    expect((await send(zed, id, 'Thanks!')).seq).toBeGreaterThan(0);
+  });
+
   it('nobody can start one when requests are off', async () => {
     const quiet = await signup(t, { displayName: 'Quiet Person' });
     await quiet.req('PUT', '/v1/me/privacy', { messageRequests: 'nobody' });

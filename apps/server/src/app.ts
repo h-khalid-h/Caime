@@ -93,6 +93,11 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   bus.transform = businessRealtime({ db: database.db });
 
   const pending = new Set<Promise<unknown>>();
+  const dnsServers = config.DNS_SERVERS?.split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+  // A mistyped server fails at start, not at the first organization's check.
+  if (dnsServers?.length) new Resolver().setServers(dnsServers);
   const ctx: AppContext = {
     config,
     db: database.db,
@@ -104,6 +109,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     dns: {
       resolveTxt: (hostname) => {
         const resolver = new Resolver({ timeout: 4000, tries: 2 });
+        if (dnsServers) resolver.setServers(dnsServers);
         return resolver.resolveTxt(hostname);
       },
     },

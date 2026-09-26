@@ -79,7 +79,12 @@ export function ThreadBar({
       testID="thread-bar"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <StateChip state={thread.state} closed={thread.closed} testID="thread-state" />
+        <StateChip
+          state={thread.state}
+          closed={thread.closed}
+          request={thread.awaitingAcceptance}
+          testID="thread-state"
+        />
         <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
           {[
             thread.waitingSince

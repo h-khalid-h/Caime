@@ -14,6 +14,7 @@ import {
   METRICS_TOKEN,
   newPerson,
   photo,
+  publishTxt,
   visible,
 } from './helpers';
 
@@ -427,11 +428,11 @@ test.describe
       await expect(visible(page, `Clinic or practice · @${handle}`)).toBeVisible();
       await expect(page.getByTestId('org-unverified')).toBeVisible();
 
-      await page.getByTestId('org-domain').fill('https://www.NileDental.example/about');
+      // A domain of its own each run: a verified domain belongs to one organization.
+      const domain = `niledental-${stamp}.example`;
+      await page.getByTestId('org-domain').fill(`https://www.NileDental-${stamp}.example/about`);
       await page.getByTestId('org-domain-set').click();
-      await expect(page.getByTestId('org-record-name')).toHaveText(
-        '_caishy-verify.niledental.example',
-      );
+      await expect(page.getByTestId('org-record-name')).toHaveText(`_caishy-verify.${domain}`);
       await expect(page.getByTestId('org-record-value')).toHaveText(/^caishy-verify=[\w-]{20,}$/);
       // Nothing is published at that name: it says so, and stays unverified.
       const checked = page.waitForResponse((r) => r.url().endsWith('/domain/check'));
@@ -439,6 +440,11 @@ test.describe
       expect((await checked).status()).toBe(422);
       await expect(visible(page, /couldn’t find the record yet/)).toBeVisible();
       await expect(page.getByTestId('org-unverified')).toBeVisible();
+      // Published among the domain's other records, it verifies.
+      const value = (await page.getByTestId('org-record-value').textContent()) ?? '';
+      await publishTxt(`_caishy-verify.${domain}`, ['v=spf1 -all', value]);
+      await page.getByTestId('org-domain-check').click();
+      await expect(page.getByTestId('org-verified')).toHaveText(`Verified · ${domain}`);
 
       // The team is made of connections.
       await page.getByTestId('org-add-people').click();
@@ -535,7 +541,9 @@ test.describe
       const customer = lina.page;
       await customer.goto(`/@${handle}`);
       await customer.getByTestId('org-message').click();
-      await expect(visible(customer, 'Business · Not verified yet')).toBeVisible();
+      await expect(
+        visible(customer, `Business · Verified · niledental-${stamp}.example`),
+      ).toBeVisible();
       await customer.getByTestId('composer-input').fill('Can I book a cleaning on Thursday?');
       await customer.getByTestId('composer-send').click();
 
@@ -714,6 +722,66 @@ test.describe
       await customer.getByTestId('composer-unblock-org').click();
       await expect(customer.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
       expect([...errors, ...lina.errors]).toEqual([]);
+    });
+
+    test('a verified organization writes to someone first, and it arrives as a request', async ({
+      browser,
+    }) => {
+      const handle = `nile.dental.${stamp}`;
+      const orgName = `Nile Dental ${stamp}`;
+      const samContext = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+      });
+      try {
+        await apiSignUp(samContext, 'Sam Rivera', `sam.${stamp}`);
+        const sam = await newPerson(samContext);
+        const { page, errors } = noor;
+        await page.goto(`/o/${handle}/inbox`);
+        await page.getByTestId('business-write-first').click();
+        await page.getByTestId('write-first-handle').fill(`@sam.${stamp}`);
+        await page
+          .getByTestId('write-first-body')
+          .fill(
+            `Hello Sam, this is ${orgName}. Your new patient forms are ready: https://niledental-${stamp}.example/forms`,
+          );
+        await page.screenshot({ path: 'e2e/screenshots/desktop-business-write-first.png' });
+        await page.getByTestId('write-first-send').click();
+
+        // It waits on Sam, and nobody on the team writes again until they answer.
+        await expect(page.getByTestId('thread-state')).toHaveText('Request sent');
+        await expect(page.getByTestId('request-outgoing')).toHaveText(
+          `Sam Rivera will see this as a message request from ${orgName}.`,
+        );
+        await expect(visible(page, /^You can write again once they answer\.$/)).toBeVisible();
+        await expect(page.getByTestId('composer-input').filter({ visible: true })).toHaveCount(0);
+
+        // Sam finds it among their requests: from the organization, verified, its link inert.
+        const phone = sam.page;
+        await phone.goto('/');
+        await visible(phone, 'Message requests · 1').click();
+        await visible(phone, orgName).click();
+        const banner = phone.getByTestId('request-incoming');
+        await expect(banner).toContainText(`${orgName} wrote to you first`);
+        await expect(banner).toContainText(`Verified · niledental-${stamp}.example`);
+        await expect(phone.getByRole('link', { name: /\/forms$/ })).toHaveCount(0);
+        await phone.screenshot({ path: 'e2e/screenshots/phone-business-request.png' });
+        await banner.getByRole('button', { name: 'Accept' }).click();
+        await expect(phone.getByRole('link', { name: /\/forms$/ })).toHaveCount(1);
+        await phone
+          .getByTestId('composer-input')
+          .filter({ visible: true })
+          .fill('Thanks, I’ll fill them in tonight.');
+        await phone.getByTestId('composer-send').filter({ visible: true }).click();
+
+        // Answered, it's an ordinary conversation with the team.
+        await expect(page.getByTestId('thread-state')).toHaveText('Customer waiting');
+        await expect(page.getByTestId('request-outgoing')).toHaveCount(0);
+        await expect(page.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+        expect([...errors, ...sam.errors]).toEqual([]);
+      } finally {
+        await samContext.close();
+      }
     });
 
     test('every settings page opens, and a chosen theme follows you', async () => {

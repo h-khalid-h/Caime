@@ -19,13 +19,14 @@ import { Badge } from '@/ui/Badge';
 import { Chip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, Inbox } from '@/ui/icons';
+import { ArrowLeft, Inbox, SquarePen } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { StateChip } from './states';
+import { WriteFirstSheet } from './WriteFirstSheet';
 
 const EMPTY: Record<BusinessView, { title: string; body: string }> = {
   customer_waiting: {
@@ -118,7 +119,11 @@ function ThreadRow({
           <Badge count={thread.unreadCount} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <StateChip state={thread.state} closed={thread.closed} />
+          <StateChip
+            state={thread.state}
+            closed={thread.closed}
+            request={thread.awaitingAcceptance}
+          />
           <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
             {thread.assignee ? thread.assignee.displayName : 'Nobody has it'}
           </Text>
@@ -140,6 +145,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
   const org = useOrg(handle);
   const summary = org.data?.org;
   const [view, setView] = useState<BusinessView>('customer_waiting');
+  const [writing, setWriting] = useState(false);
   const inbox = useOrgInbox(summary?.myRole ? summary.id : undefined, view);
   const threads = inbox.data?.threads ?? [];
   const counts = inbox.data?.counts;
@@ -238,6 +244,16 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
 
   const header = (
     <TopBar
+      right={
+        summary?.myRole ? (
+          <IconButton
+            icon={SquarePen}
+            label="Write to someone"
+            onPress={() => setWriting(true)}
+            testID="business-write-first"
+          />
+        ) : undefined
+      }
       left={
         desktop ? undefined : (
           <IconButton
@@ -271,17 +287,22 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
     </TopBar>
   );
 
+  const write = summary ? (
+    <WriteFirstSheet org={summary} open={writing} onClose={() => setWriting(false)} />
+  ) : null;
   if (pane)
     return (
       <View style={{ flex: 1 }}>
         {header}
         {list}
+        {write}
       </View>
     );
   return (
     <Screen edges={['top', 'bottom']}>
       {header}
       {list}
+      {write}
     </Screen>
   );
 }

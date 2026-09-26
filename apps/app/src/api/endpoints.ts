@@ -42,6 +42,7 @@ import type {
   SessionResponse,
   SpaceSummaryView,
   SpaceView,
+  StartThreadResult,
   SuggestionView,
   TasksResponse,
   TaskView,
@@ -276,6 +277,9 @@ export const endpoints = {
   // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
   messageOrg: (orgId: string) =>
     api.post<{ conversationId: string; created: boolean }>(`/orgs/${orgId}/conversations`),
+  /** Someone on the team writes to a person first: a message request to them (R14). */
+  startThread: (orgId: string, body: { handle: string; body: string; clientId: string }) =>
+    api.post<StartThreadResult>(`/orgs/${orgId}/threads`, body),
   orgInbox: (orgId: string, view: BusinessView) =>
     api.get<BusinessInboxView>(`/orgs/${orgId}/inbox${q({ view })}`),
   businessSummary: () => api.get<BusinessSummaryView>('/business/summary'),

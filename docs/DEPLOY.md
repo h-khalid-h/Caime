@@ -49,6 +49,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `MINIMUM_AGE` | `13` | Minimum age at sign-up; set `16` where local law requires. |
 | `SESSION_DAYS` | `90` | How long a signed-in device stays signed in without use. |
 | `METRICS_TOKEN` | — | Enables `GET /metrics` (below) behind this bearer token. |
+| `DNS_SERVERS` | the system's | Resolvers for checking organizations' domains, comma-separated (`1.1.1.1,8.8.8.8`). Set it if the host's resolver caches a new record too long. |
 | `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
 | `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits; without it, it says upgrades can't be bought yet. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |

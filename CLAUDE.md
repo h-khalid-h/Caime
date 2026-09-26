@@ -130,6 +130,14 @@ These are rules, not preferences.
   `toBeChecked()` and friends rather than by styling.
 - A kit's field checks (`prepareKitFields`) run in the app before sending and again on the
   server over what was sent, so they must be idempotent: a checked value checks the same.
+- Message requests live on the recipient's `participants.request_state` (pending, accepted,
+  declined), for a stranger's direct message and an organization's first message alike.
+  `sendMessage` (`apps/server/src/lib/messages.ts`) owns the rules: one message until answered,
+  declined reads to the sender as unanswered, replying accepts. The team writes first through
+  `POST /orgs/:id/threads`, which sends through `sendMessage` too.
+- E2E verifies organizations' domains for real: `e2e/dns-stub.mjs` answers the server's TXT
+  lookups (`DNS_SERVERS`), and `publishTxt()` (`e2e/helpers.ts`) publishes a record. A verified
+  domain belongs to one organization, so a test uses a domain of its own each run.
 - A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
   and its Undo can't be pressed. Anything else that must show over a sheet goes inside it.

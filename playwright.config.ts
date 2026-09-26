@@ -5,12 +5,13 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { ADMIN_TOKEN, METRICS_TOKEN } from './e2e/helpers';
+import { ADMIN_TOKEN, DNS_STUB, METRICS_TOKEN } from './e2e/helpers';
 
 const PORT = Number(process.env.E2E_PORT ?? 8787);
 const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 /** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */
 const AI_STUB = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}`;
+const DNS_PORT = Number(process.env.E2E_DNS_PORT ?? 8853);
 
 export default defineConfig({
   testDir: './e2e',
@@ -36,6 +37,12 @@ export default defineConfig({
           env: { PORT: new URL(AI_STUB).port },
         },
         {
+          command: 'node e2e/dns-stub.mjs',
+          url: `${DNS_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(DNS_STUB).port, DNS_PORT: String(DNS_PORT) },
+        },
+        {
           command: 'node --enable-source-maps apps/server/dist/server.js',
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
@@ -55,6 +62,7 @@ export default defineConfig({
             ANTHROPIC_BASE_URL: AI_STUB,
             ADMIN_TOKEN,
             METRICS_TOKEN,
+            DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
           },
         },
       ],
