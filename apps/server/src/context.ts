@@ -5,6 +5,7 @@ import type { Config } from './config';
 import type { Database } from './db/schema';
 import type { AiAssist } from './lib/ai';
 import type { Bus } from './lib/bus';
+import type { Metrics } from './lib/metrics';
 import type { TxtResolver } from './lib/orgs';
 import type { RateLimiter } from './lib/rate-limit';
 
@@ -14,6 +15,8 @@ export interface AppContext {
   pool: pg.Pool;
   bus: Bus;
   limiter: RateLimiter;
+  /** Operational counts and timings for GET /metrics (PRD §81); never content. */
+  metrics: Metrics;
   /** AI assist, when the operator configured a provider (R17). */
   ai: AiAssist | null;
   /** DNS TXT lookups for domain verification (tests stand in for them). */

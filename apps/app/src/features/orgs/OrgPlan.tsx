@@ -18,7 +18,8 @@ export function nextOrgPlanLine(plan: OrgPlanView): string | null {
   const next = nextOrgPlan(plan.plan);
   if (!next) return null;
   const a = ORG_ALLOWANCES[next];
-  return `${PLAN_NAMES[next]} has room for ${a.teamSize} people and ${apps(a.apps)}.`;
+  const insights = a.insights && !plan.allowance.insights;
+  return `${PLAN_NAMES[next]} has room for ${a.teamSize} people and ${apps(a.apps)}${insights ? ', with insights into how fast the team answers' : ''}.`;
 }
 
 /** An organization's plan, for its owner and admins: what it includes and what's in use. */

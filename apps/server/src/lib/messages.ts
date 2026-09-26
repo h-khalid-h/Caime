@@ -552,6 +552,7 @@ export async function sendMessage(
     }
     throw err;
   }
+  ctx.metrics.messages.inc({ kind: body.kind });
   // A business thread moves with each message: whose turn it is, and who has it (PRD §38).
   if (conversation.kind === 'business')
     await recordBusinessMessage(ctx, conversationId, senderId, message);

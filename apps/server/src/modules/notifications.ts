@@ -130,6 +130,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
             throw Object.assign(new Error(`expo push ${res.status}`), { statusCode: res.status });
         }
         delivered = true;
+        c.metrics.push.inc({ channel: s.kind, outcome: 'delivered' });
         await c.db
           .updateTable('push_subscriptions')
           .set({ last_success_at: c.now(), failures: 0 })
@@ -137,7 +138,9 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
           .execute();
       } catch (err) {
         const status = (err as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) {
+        const gone = status === 404 || status === 410;
+        c.metrics.push.inc({ channel: s.kind, outcome: gone ? 'expired' : 'failed' });
+        if (gone) {
           await c.db.deleteFrom('push_subscriptions').where('id', '=', s.id).execute();
         } else {
           await c.db

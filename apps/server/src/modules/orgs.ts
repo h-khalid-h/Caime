@@ -4,7 +4,7 @@
  * so, and nobody on its team shows as verified. Organizations and their teams are for adults.
  */
 
-import type { OrgMemberView, OrgSummaryView, OrgView } from '@caishy/core';
+import type { OrgInsightsView, OrgMemberView, OrgSummaryView, OrgView } from '@caishy/core';
 import {
   CreateOrgBody,
   canChangeOrgRole,
@@ -31,9 +31,10 @@ import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { handleTaken } from '../lib/handles';
+import { orgInsights } from '../lib/insights';
 import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
-import { assertTeamRoom, orgPlanView } from '../lib/plans';
+import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -265,6 +266,25 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .execute();
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
+  });
+
+  /** How its inbox is doing, for its owner and admins on a plan with insights (PRD §71). */
+  app.get('/orgs/:id/insights', async (req): Promise<{ insights: OrgInsightsView }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const { days } = parse(
+      z.object({
+        days: z.coerce
+          .number()
+          .pipe(z.union([z.literal(7), z.literal(30)]))
+          .default(7),
+      }),
+      req.query,
+    );
+    await orgById(ctx.db, id);
+    await managerSeat(ctx, auth.userId, id);
+    await assertInsights(ctx, id);
+    return { insights: await orgInsights(ctx, id, days) };
   });
 
   app.post('/orgs/:id/members', async (req) => {

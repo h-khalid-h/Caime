@@ -323,6 +323,9 @@ export function registerWebhookJob(): void {
       })
       .where('id', '=', delivery.id)
       .execute();
+    ctx.metrics.webhooks.inc({
+      outcome: !error ? 'delivered' : attempts < WEBHOOK_ATTEMPTS ? 'retrying' : 'failed',
+    });
     // Thrown, the queue tries again later, waiting longer each time.
     if (error && attempts < WEBHOOK_ATTEMPTS) throw new Error(error);
   });

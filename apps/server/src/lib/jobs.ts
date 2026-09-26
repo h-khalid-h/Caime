@@ -90,6 +90,9 @@ export async function runDueJobs(ctx: AppContext, limit = 50): Promise<number> {
 
 async function runJob(ctx: AppContext, job: Selectable<JobsTable>): Promise<void> {
   const handler = handlers.get(job.kind);
+  const started = performance.now();
+  const took = () =>
+    ctx.metrics.jobSeconds.observe({ kind: job.kind }, (performance.now() - started) / 1000);
   try {
     if (!handler) throw new Error(`no handler for ${job.kind}`);
     await handler(ctx, (job.payload ?? {}) as Record<string, unknown>);
@@ -98,7 +101,11 @@ async function runJob(ctx: AppContext, job: Selectable<JobsTable>): Promise<void
       .set({ done_at: ctx.now(), locked_at: null, last_error: null })
       .where('id', '=', job.id)
       .execute();
+    took();
+    ctx.metrics.jobs.inc({ kind: job.kind, outcome: 'done' });
   } catch (err) {
+    took();
+    ctx.metrics.jobs.inc({ kind: job.kind, outcome: 'failed' });
     const backoff = Math.min(60 * 60_000, 2 ** job.attempts * 15_000);
     await ctx.db
       .updateTable('jobs')

@@ -155,6 +155,16 @@ export async function assertAppRoom(ctx: AppContext, orgId: string) {
   );
 }
 
+/** Insights (PRD §71) come with Business and Enterprise. */
+export async function assertInsights(ctx: AppContext, orgId: string) {
+  const org = await orgPlanRow(ctx, orgId);
+  if (ORG_ALLOWANCES[org.plan].insights) return;
+  throw limit(
+    ctx,
+    `Insights come with Business: how fast ${org.name}’s team answers, how many customers write, and what’s still open.`,
+  );
+}
+
 export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUsageView> {
   const plan = await planOf(ctx, userId);
   const allowance = PERSON_ALLOWANCES[plan];

@@ -47,6 +47,7 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
 import { OrgApps } from './OrgApps';
+import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
 
 /** Verify the domain (PRD §55): one TXT record, then "Check now". */
@@ -331,6 +332,7 @@ export function OrgScreen({ handle }: { handle: string }) {
         {manager ? (
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>
             <Verification org={org} refresh={put} />
+            {org.plan?.allowance.insights ? <OrgInsights orgId={org.id} /> : null}
             {org.plan ? <OrgPlan plan={org.plan} /> : null}
           </View>
         ) : null}

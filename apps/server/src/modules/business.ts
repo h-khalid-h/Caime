@@ -99,7 +99,13 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
         await trx
           .insertInto('business_threads')
-          .values({ conversation_id: conversationId, org_id: id, customer_id: auth.userId })
+          .values({
+            conversation_id: conversationId,
+            org_id: id,
+            customer_id: auth.userId,
+            created_at: ctx.now(),
+            updated_at: ctx.now(),
+          })
           .execute();
         await recordEvent(trx, 'conversation.created', auth.userId, {
           conversationId,

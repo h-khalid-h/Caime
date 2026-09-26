@@ -149,7 +149,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     work: () => Promise<AiResult<T>>,
   ): Promise<T> {
     const started = Date.now();
-    const record = (outcome: string, usage: AiUsage | null) =>
+    const record = (outcome: string, usage: AiUsage | null) => {
+      ctx.metrics.ai.inc({ feature, outcome });
+      ctx.metrics.aiSeconds.observe({ feature }, (Date.now() - started) / 1000);
       ctx.defer('ai run', () =>
         ctx.db
           .insertInto('ai_runs')
@@ -166,6 +168,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
           })
           .execute(),
       );
+    };
     try {
       const result = await work();
       record('ok', result.usage);

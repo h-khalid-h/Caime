@@ -3,6 +3,9 @@ import { type BrowserContext, expect, type Page } from '@playwright/test';
 /** Cookie-authenticated writes need this header (docs/SECURITY.md, CSRF). */
 export const CLIENT = { 'x-caishy-client': 'web' };
 export const PASSWORD = 'a long enough passphrase';
+/** The E2E server's operator tokens (playwright.config.ts): plans, and /metrics. */
+export const ADMIN_TOKEN = 'e2e-operator-token-0123456789abcdef';
+export const METRICS_TOKEN = 'e2e-metrics-token-0123456789abcdef';
 
 /** A page that records every script error, console error and failed API call. */
 export async function newPerson(

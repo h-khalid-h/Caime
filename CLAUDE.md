@@ -125,6 +125,12 @@ These are rules, not preferences.
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
   `plans.test.ts` is where limits are tested.
+- Count what the server does with `ctx.metrics` (`apps/server/src/lib/metrics.ts`). Label values
+  come from fixed sets only (a route as declared, a kind, an outcome), never ids, handles or
+  text; `metrics.test.ts` scrapes after real traffic and checks for them.
+- Many inserts take the database's clock (`created_at default now()`), not `ctx.now()`. A test
+  that depends on those timestamps sets its clock to real time and stamps what it needs (see
+  `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.
 - Watch the web budget when a screen is used by a second route: shared modules move into the
   startup chunk. Open it through its own route instead (the desktop Business inbox is a list
   pane beside `/c/[id]`, not a screen that embeds the conversation).
@@ -143,6 +149,7 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
 native bundles export), Connect Kits, AI assist, Spaces, Organizations with DNS verification,
 the Business inbox, apps for organizations (scoped tokens, bots, signed webhooks), plan
-entitlements, share links, your-data controls, the image and CI are built and verified.
-Remaining: metrics, billing (⛔ Stripe), personal tokens and OAuth, store builds, and the
+entitlements, metrics (operations, product, organizations' insights), share links, your-data
+controls, the image and CI are built and verified. Remaining: billing (⛔ Stripe), personal
+tokens and OAuth, calls (⛔ TURN), the location, album and checklist kits, store builds, and the
 EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).

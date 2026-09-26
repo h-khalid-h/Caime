@@ -20,6 +20,7 @@ import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { AppError } from './lib/errors';
 import { startWorkers } from './lib/jobs';
+import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
@@ -36,6 +37,7 @@ import { healthRoutes } from './modules/health';
 import { inboxRoutes } from './modules/inbox';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
+import { metricsRoutes } from './modules/metrics';
 import { notificationRoutes } from './modules/notifications';
 import { orgRoutes } from './modules/orgs';
 import { peopleRoutes } from './modules/people';
@@ -97,6 +99,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     pool: database.pool,
     bus,
     limiter: new RateLimiter(),
+    metrics: createMetrics(database.pool),
     ai: createAiAssist(config),
     dns: {
       resolveTxt: (hostname) => {
@@ -168,6 +171,13 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   });
 
   registerAuth(app, ctx);
+  // Every answer, by the route as declared (never the path as requested) and its status.
+  app.addHook('onResponse', async (req, reply) => {
+    const route = req.routeOptions.url ?? (reply.statusCode === 404 ? 'unmatched' : 'web');
+    ctx.metrics.http.inc({ method: req.method, route, status: String(reply.statusCode) });
+    ctx.metrics.httpSeconds.observe({ method: req.method, route }, reply.elapsedTime / 1000);
+  });
+  await metricsRoutes(app, ctx);
 
   await app.register(
     async (v1) => {
@@ -207,6 +217,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
 
   app.addHook('onClose', async () => {
     stopWorkers();
+    ctx.metrics.stop();
     await ctx.flush();
     await bus.stop();
     await database.close();

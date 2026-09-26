@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BUSINESS_VIEWS,
   inBusinessView,
+  replyTimeText,
   type ThreadFacts,
   threadState,
   waitedFor,
@@ -52,5 +53,14 @@ describe('business threads', () => {
     expect(waitedFor('2026-09-26T09:30:00Z', now)).toBe('2 h');
     expect(waitedFor('2026-09-25T11:00:00Z', now)).toBe('1 day');
     expect(waitedFor('2026-09-22T12:00:00Z', now)).toBe('4 days');
+  });
+
+  it('writes a reply time the way a person would say it', () => {
+    expect(replyTimeText(0.4)).toBe('under a minute');
+    expect(replyTimeText(12.3)).toBe('12 min');
+    expect(replyTimeText(60)).toBe('1 h');
+    expect(replyTimeText(125)).toBe('2 h 5 min');
+    expect(replyTimeText(26 * 60)).toBe('1 day');
+    expect(replyTimeText(3 * 24 * 60)).toBe('3 days');
   });
 });

@@ -48,8 +48,8 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | --- | --- | --- |
 | `MINIMUM_AGE` | `13` | Minimum age at sign-up; set `16` where local law requires. |
 | `SESSION_DAYS` | `90` | How long a signed-in device stays signed in without use. |
-| `METRICS_TOKEN` | — | Enables `GET /metrics` behind this bearer token. |
-| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans (below). At least 24 characters; without it those routes don't exist. |
+| `METRICS_TOKEN` | — | Enables `GET /metrics` (below) behind this bearer token. |
+| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
 | `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits; without it, it says upgrades can't be bought yet. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@caishy.com` | Contact for push services. |
@@ -92,6 +92,37 @@ curl -X PUT https://caishy.example.com/v1/admin/orgs/nile.dental/plan \
   -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"plan":"business"}'                # free, business, enterprise
 ```
+
+## Metrics
+
+**Operations** (PRD §81). With `METRICS_TOKEN` set, `GET /metrics` answers in Prometheus's text
+format, per instance: requests and their duration by route (as declared, `/v1/conversations/:id`,
+never the path as requested) and status, open realtime connections, messages sent by kind,
+background jobs, webhook deliveries, AI assist calls and push notifications by outcome, the
+database pool, memory, uptime and event-loop delay. Counts and timings only: never a message, a
+name, an id or a query. A scrape job:
+
+```yaml
+scrape_configs:
+  - job_name: caishy
+    scheme: https
+    authorization: { credentials: <METRICS_TOKEN> }
+    static_configs: [{ targets: ['caishy.example.com'] }]
+```
+
+**The product** (PRD §82–83). With `ADMIN_TOKEN`, `GET /v1/admin/metrics?days=28` answers with
+activation (signed up, connected, messaged, classified, activated within a day), engagement,
+the core rates (connection completion, relationship completion, waiting and attention
+resolution, notification efficiency, week-1 and week-4 retention), AI use and how fast Business
+inboxes answer. Aggregates only, never about anyone in particular; what it can't measure yet
+is listed in `notMeasured`.
+
+```sh
+curl -H "Authorization: Bearer $ADMIN_TOKEN" 'https://caishy.example.com/v1/admin/metrics?days=28'
+```
+
+**Organizations** on Business see their own inbox's insights on their page: customers who
+wrote, how fast the team first answered, who's waiting and what's resolved, for the whole team.
 
 ## Scaling
 

@@ -7,7 +7,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { ADMIN_TOKEN, apiSignUp, CLIENT, METRICS_TOKEN, newPerson, visible } from './helpers';
 
 const stamp = Date.now().toString(36).slice(-6);
 /** The Messages API stand-in the server talks to (playwright.config.ts). */
@@ -637,6 +637,38 @@ test.describe
       await page.waitForTimeout(400); // the sheet's fade-in, for the screenshot only
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-plan.png' });
       await page.keyboard.press('Escape');
+      expect(errors).toEqual([]);
+    });
+
+    test('on Business, an organization sees how its inbox is doing', async () => {
+      const { page, errors } = noor;
+      const handle = `nile.dental.${stamp}`;
+      // The operator moves it to Business (billing isn't connected yet).
+      const upgraded = await noorContext.request.put(`/v1/admin/orgs/${handle}/plan`, {
+        headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
+        data: { plan: 'business' },
+      });
+      expect(upgraded.status()).toBe(200);
+      await page.goto(`/o/${handle}`);
+      await expect(page.getByTestId('org-plan')).toContainText('Business plan');
+      await expect(page.getByTestId('org-app-add')).toBeVisible();
+      // Lina wrote to it, and the team answered her.
+      await expect(page.getByTestId('insight-conversations')).toContainText(
+        /Customers\s*1\s*Up from 0/,
+      );
+      await expect(page.getByTestId('insight-reply')).toContainText('1 of 1 within an hour');
+      await page.getByTestId('org-insights').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-org-insights.png' });
+
+      // The operator's metrics: counts by route, behind their own token.
+      const scraped = await noorContext.request.get('/metrics', {
+        headers: { authorization: `Bearer ${METRICS_TOKEN}` },
+      });
+      expect(scraped.status()).toBe(200);
+      expect(await scraped.text()).toContain(
+        'caishy_http_requests_total{method="GET",route="/v1/orgs/:id/insights",status="200"}',
+      );
+      expect((await noorContext.request.get('/metrics')).status()).toBe(401);
       expect(errors).toEqual([]);
     });
 

@@ -145,14 +145,19 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       organization's owner and admins see its plan on its page. The operator sets plans with
       `ADMIN_TOKEN` (`docs/DEPLOY.md`) until billing is connected (`plans.test.ts`, `ai.test.ts`,
       E2E). [ ] Billing ⛔ Stripe
-- [ ] Metrics: `/metrics` for operators, product metrics (PRD §82–83), insights for organizations
+- [x] Metrics: `/metrics` for the operator's scraper (PRD §81), product metrics from what Caishy
+      already keeps (PRD §82–83: activation, engagement, the core rates, retention), and insights
+      for organizations on Business (PRD §71: customers who wrote, first answer, waiting,
+      resolved), all counts and times, never content (`metrics.test.ts`,
+      `product-metrics.test.ts`, `insights.test.ts`, E2E). [ ] Needs You precision, time to find
+      something, invite attribution: not recorded yet
 - [ ] Calls (WebRTC 1:1 on web) ⛔ TURN relay needed for reliable production calls
 
 ## M7 — Ship
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.0 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.2 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -265,3 +270,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   room before anyone tries. The operator sets plans until billing is connected. Building it found
   that an organization's member count included its apps' bots; it counts people now. Tests: 141
   core, 49 brand, 138 server, 8 app, 22 E2E.
+- 2026-09-26 — Session 2 (cont.): metrics. `GET /metrics` was documented in DEPLOY.md but never
+  built; it is now, in Prometheus's format behind METRICS_TOKEN: requests by route as declared,
+  realtime connections, messages, jobs, webhooks, AI calls, pushes, the database pool and the
+  event loop. The operator's product metrics (PRD §82–83) are computed from what Caishy already
+  keeps, with no new tracking of anyone, and say what they can't measure yet. Organizations on
+  Business see how their inbox is doing; a customer's wait ends when a person answers, never an
+  app's bot. Building it found that a business conversation's start was stamped by the database's
+  clock rather than the app's, unlike the rest of it. Tests: 142 core, 49 brand, 146 server, 8
+  app, 23 E2E.

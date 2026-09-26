@@ -28,6 +28,7 @@ import type {
   NotificationsResponse,
   OrgAppSecretsView,
   OrgAppView,
+  OrgInsightsView,
   OrgSummaryView,
   OrgView,
   PeopleSearchResult,
@@ -285,6 +286,8 @@ export const endpoints = {
 
   // Apps (PRD §73–75): an organization's integrations, managed by its owner and admins
   orgApps: (orgId: string) => api.get<{ apps: OrgAppView[] }>(`/orgs/${orgId}/apps`),
+  orgInsights: (orgId: string, days: 7 | 30) =>
+    api.get<{ insights: OrgInsightsView }>(`/orgs/${orgId}/insights?days=${days}`),
   createOrgApp: (
     orgId: string,
     body: { name: string; scopes: ApiScope[]; webhookUrl?: string | null; events: WebhookEvent[] },

@@ -195,6 +195,7 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
         if (client) client.alive = true;
       });
       const first = hub.add(client);
+      ctx.metrics.realtime.inc();
       await ctx.db
         .updateTable('users')
         .set({ last_active_at: ctx.now() })
@@ -266,6 +267,7 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
     socket.on('close', () => {
       clearTimeout(timer);
       if (!client) return;
+      ctx.metrics.realtime.dec();
       const last = hub.remove(client);
       const userId = client.userId;
       if (last) {

@@ -1,34 +1,33 @@
 /**
- * The operator's routes, behind `ADMIN_TOKEN`: setting plans until a billing integration does it
- * (R25). Without the token configured, none of this exists: every route answers the same 404 as
- * a route that was never there.
+ * The operator's routes, behind `ADMIN_TOKEN`: the product's metrics, and setting plans until a
+ * billing integration does it (R25). Without the token configured, none of this exists: every
+ * route answers the same 404 as a route that was never there.
  */
-import { createHash, timingSafeEqual } from 'node:crypto';
-import { ORG_PLANS, PERSON_PLANS } from '@caishy/core';
+import { ORG_PLANS, PERSON_PLANS, type ProductMetricsView } from '@caishy/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
-import { AppError, notFound, unauthorized } from '../lib/errors';
+import { notFound } from '../lib/errors';
+import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
+import { productMetrics } from '../lib/product-metrics';
 import { parse } from '../lib/validate';
 
-const digest = (s: string) => createHash('sha256').update(s).digest();
-
 export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
-  function operator(req: FastifyRequest) {
-    const expected = ctx.config.ADMIN_TOKEN;
-    if (!expected)
-      throw new AppError(404, 'not_found', `No route for ${req.method} ${req.url.split('?')[0]}`);
-    ctx.limiter.hit(`admin:${req.ip}`, ctx.config.isTest ? 1000 : 30, 60_000);
-    const header = req.headers.authorization ?? '';
-    const given = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-    // Equal-length digests, so the comparison takes the same time whatever was sent.
-    if (!timingSafeEqual(digest(given), digest(expected)))
-      throw unauthorized('That isn’t this server’s operator token.');
-  }
+  const operator = (req: FastifyRequest) => requireOperator(ctx, req, ctx.config.ADMIN_TOKEN);
 
   const handleParam = z.object({ handle: z.string().trim().min(1).max(64) });
+
+  /** The product's health (PRD §82–83): aggregates only, over the last `days`. */
+  app.get('/admin/metrics', async (req): Promise<{ metrics: ProductMetricsView }> => {
+    operator(req);
+    const { days } = parse(
+      z.object({ days: z.coerce.number().int().min(1).max(365).default(28) }),
+      req.query,
+    );
+    return { metrics: await productMetrics(ctx, days) };
+  });
 
   app.put('/admin/people/:handle/plan', async (req) => {
     operator(req);

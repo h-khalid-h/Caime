@@ -5,6 +5,7 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { ADMIN_TOKEN, METRICS_TOKEN } from './e2e/helpers';
 
 const PORT = Number(process.env.E2E_PORT ?? 8787);
 const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
@@ -52,6 +53,8 @@ export default defineConfig({
             LOG_LEVEL: 'warn',
             ANTHROPIC_API_KEY: 'e2e-stub',
             ANTHROPIC_BASE_URL: AI_STUB,
+            ADMIN_TOKEN,
+            METRICS_TOKEN,
           },
         },
       ],

@@ -598,6 +598,88 @@ export interface OrgPlanView {
   upgradeUrl: string | null;
 }
 
+/** How fast the team answers, over customers' waits that started in a period (PRD §71). */
+export interface ReplyTimesView {
+  /** Median time to the team's first answer, in minutes; null with nothing answered yet. */
+  medianMinutes: number | null;
+  answered: number;
+  withinHour: number;
+  /** Waits that started in the period and nobody on the team has answered yet. */
+  unanswered: number;
+}
+
+/** An organization's insights, for its owner and admins on Business (PRD §71, §84). */
+export interface OrgInsightsView {
+  days: number;
+  from: string;
+  to: string;
+  /** Conversations a customer wrote in. */
+  conversations: number;
+  /** Conversations that started. */
+  newConversations: number;
+  reply: ReplyTimesView;
+  /** Customers waiting for an answer right now. */
+  waitingNow: number;
+  resolved: number;
+  escalated: number;
+  /** The same for the period before, to compare. */
+  previous: {
+    conversations: number;
+    newConversations: number;
+    medianReplyMinutes: number | null;
+    resolved: number;
+  };
+}
+
+/** A share: how many of how many, and the rate when there are any. */
+export interface Rate {
+  count: number;
+  of: number;
+  rate: number | null;
+}
+
+/**
+ * The product's health for its operator (PRD §82–83): aggregate counts and rates only, never
+ * about anyone in particular and never what anyone said.
+ */
+export interface ProductMetricsView {
+  window: { from: string; to: string; days: number };
+  people: { total: number; active7d: number; active28d: number };
+  /** Of the people who signed up in the window. */
+  activation: {
+    signedUp: number;
+    connected: Rate;
+    messaged: Rate;
+    classified: Rate;
+    /** Classified a connection and sent a first message within a day of signing up. */
+    activated: Rate;
+  };
+  engagement: {
+    messages: number;
+    activePeople: number;
+    activeConversations: number;
+    activeConnections: number;
+  };
+  core: {
+    connectionCompletion: Rate;
+    relationshipCompletion: Rate;
+    waitingResolution: Rate;
+    attentionResolution: Rate;
+    notificationEfficiency: Rate;
+    retention: { day7: Rate; day28: Rate };
+  };
+  value: { tasksFromMessages: number; suggestionsAccepted: Rate };
+  ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
+  business: {
+    organizations: number;
+    activeOrganizations: number;
+    customerConversations: number;
+    reply: ReplyTimesView;
+  };
+  /** What these numbers can't say yet, so nobody reads a gap as a zero. */
+  notMeasured: string[];
+}
+
 /** Your own plan: what it includes, and what you've used of it. */
 export interface PlanUsageView {
   plan: Plan;

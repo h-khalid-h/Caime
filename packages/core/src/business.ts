@@ -93,6 +93,17 @@ export function waitingSince(t: ThreadFacts): string | null {
 }
 
 /** "4 min", "2 h", "3 days": how long, for a row that has little room. */
+/** A reply time for a person to read: "under a minute", "12 min", "2 h 5 min", "3 days". */
+export function replyTimeText(minutes: number): string {
+  if (minutes < 1) return 'under a minute';
+  const m = Math.round(minutes);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? '1 day' : `${d} days`;
+}
+
 export function waitedFor(since: string, now: Date): string {
   const minutes = Math.max(0, Math.floor((now.getTime() - Date.parse(since)) / 60_000));
   if (minutes < 1) return 'just now';
