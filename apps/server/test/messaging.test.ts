@@ -446,14 +446,15 @@ describe('realtime', () => {
       });
       ws.on('error', reject);
     });
-    const created = async (id: string) => {
+    const waitFor = async (pred: (event: any) => boolean) => {
       const deadline = Date.now() + 3000;
-      const find = () =>
-        frames.find((f) => f.event?.type === 'message.created' && f.event.data.id === id);
+      const find = () => frames.find((f) => f.type === 'event' && pred(f.event));
       while (!find() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
       return find()?.event.data;
     };
-    return { ws, created };
+    const created = (id: string) =>
+      waitFor((e) => e.type === 'message.created' && e.data.id === id);
+    return { ws, created, waitFor };
   }
 
   it('delivers a new message to both sides; only the sender’s echo carries its clientId', async () => {
@@ -471,6 +472,25 @@ describe('realtime', () => {
     expect(echo).toMatchObject({ body: 'Live?', clientId });
     theirs.ws.close();
     mine.ws.close();
+  });
+
+  it('sends a read position live only to people allowed to see it (reciprocal, R25)', async () => {
+    const address = t.app.server.address() as { port: number };
+    const base = `http://127.0.0.1:${address.port}`;
+    const watcher = await socketFor(base, hassan.token);
+    await sarah.req('PUT', '/v1/me/privacy', { fields: { readReceipts: { kind: 'nobody' } } });
+    const m = await send(hassan, convo, 'Did you read this?');
+    await sarah.post(`/v1/conversations/${convo}/receipts`, { read: m.seq });
+    const receipt = await watcher.waitFor(
+      (e) =>
+        e.type === 'receipts' && e.data.userId === sarah.user.id && e.data.deliveredSeq === m.seq,
+    );
+    expect(receipt).toMatchObject({ readSeq: null, deliveredSeq: m.seq });
+    const view = await hassan.get(`/v1/conversations/${convo}`);
+    const theirs = view.conversation.participants.find((p: any) => p.userId === sarah.user.id);
+    expect(theirs.readSeq).toBeNull();
+    await sarah.req('PUT', '/v1/me/privacy', { fields: { readReceipts: { kind: 'everyone' } } });
+    watcher.ws.close();
   });
 
   it('refuses a socket without a valid session', async () => {

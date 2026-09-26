@@ -279,3 +279,32 @@ describe('safety (PRD §55)', () => {
     expect(r.ok).toBe(true);
   });
 });
+
+describe('a reply that points back ("I’ll send it Thursday") updates what it answers', () => {
+  it('moves the due date on both sides instead of offering vaguer copies', async () => {
+    const topic = (
+      await hassan.post('/v1/conversations', {
+        kind: 'direct',
+        userId: sarah.user.id,
+        title: 'Q3 numbers',
+      })
+    ).conversation.id;
+    await send(hassan, topic, 'Can you send me the Q3 report by Friday?');
+    await t.ctx.flush();
+    const waitingBefore = (await hassan.get(`/v1/suggestions?conversationId=${topic}`)).suggestions;
+    const taskBefore = (await sarah.get(`/v1/suggestions?conversationId=${topic}`)).suggestions;
+    expect(waitingBefore.map((s: any) => s.kind)).toEqual(['waiting']);
+    expect(taskBefore.map((s: any) => s.kind)).toEqual(['task']);
+    expect(waitingBefore[0].dueText).toMatch(/Friday/);
+
+    await send(sarah, topic, 'Sure — I’ll send it Thursday.');
+    await t.ctx.flush();
+    const waitingAfter = (await hassan.get(`/v1/suggestions?conversationId=${topic}`)).suggestions;
+    const taskAfter = (await sarah.get(`/v1/suggestions?conversationId=${topic}`)).suggestions;
+    expect(waitingAfter).toHaveLength(1);
+    expect(waitingAfter[0]).toMatchObject({ id: waitingBefore[0].id, dueText: 'Thursday' });
+    expect(waitingAfter[0].rationale).toContain('Sarah wrote');
+    expect(taskAfter).toHaveLength(1);
+    expect(taskAfter[0]).toMatchObject({ id: taskBefore[0].id, dueText: 'Thursday' });
+  });
+});

@@ -7,6 +7,7 @@ import {
   isMinor,
   isValidTimeZone,
   PrivacyBody,
+  safeLocale,
   UpdateMeBody,
   uuidv7,
 } from '@caishy/core';
@@ -52,7 +53,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!isValidTimeZone(body.timeZone)) throw badRequest('Unknown time zone.');
       patch.time_zone = body.timeZone;
     }
-    if (body.locale !== undefined) patch.locale = body.locale;
+    if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
     if (body.region !== undefined) patch.region = body.region;
     if (body.workweek !== undefined)
       patch.workweek = [...new Set(body.workweek)].sort((a, b) => a - b);
@@ -106,18 +107,41 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     return { privacy: next };
   });
 
+  /**
+   * Public, so sign-up can check a handle as it's typed. Handles are public identifiers, but the
+   * endpoint is rate-limited per address so it can't be used to list accounts.
+   */
   app.get('/me/handle-available', async (req) => {
-    requireAuth(req);
-    const { handle } = parse(z.object({ handle: z.string() }), req.query);
+    ctx.limiter.hit(`handle:ip:${req.ip}`, ctx.config.isTest ? 10_000 : 60, 60_000);
+    const { handle } = parse(z.object({ handle: z.string().max(60) }), req.query);
     const parsed = Handle.safeParse(handle);
     if (!parsed.success)
-      return { available: false, reason: parsed.error.issues[0]?.message ?? 'Invalid handle.' };
-    const taken = await ctx.db
-      .selectFrom('users')
-      .select('id')
-      .where('handle', '=', parsed.data)
-      .executeTakeFirst();
-    return { available: !taken, reason: taken ? 'That handle is taken.' : null };
+      return {
+        available: false,
+        reason: parsed.error.issues[0]?.message ?? 'Invalid handle.',
+        suggestion: null,
+      };
+    const wanted = parsed.data;
+    const base = wanted.slice(0, 26);
+    const candidates = [
+      wanted,
+      ...Array.from({ length: 6 }, () => `${base}${Math.floor(10 + Math.random() * 990)}`),
+    ];
+    const taken = new Set(
+      (
+        await ctx.db
+          .selectFrom('users')
+          .select('handle')
+          .where('handle', 'in', candidates)
+          .execute()
+      ).map((r) => String(r.handle)),
+    );
+    if (!taken.has(wanted)) return { available: true, reason: null, suggestion: null };
+    return {
+      available: false,
+      reason: 'That handle is taken.',
+      suggestion: candidates.slice(1).find((c) => !taken.has(c)) ?? null,
+    };
   });
 
   // --- Identities (PRD §35): how I appear to different people ---------------------------------

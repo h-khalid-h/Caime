@@ -13,6 +13,7 @@ import {
   plausibleBirthYear,
   RecoverBody,
   SignupBody,
+  safeLocale,
   uuidv7,
 } from '@caishy/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -33,7 +34,7 @@ import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/e
 import { recordEvent } from '../lib/events';
 import { meView, regionFromLocale, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
-import { clearSessionCookie, requireAuth, setSessionCookie } from '../plugins/auth';
+import { clearSessionCookie, requireAuth, setSessionCookie, tokenFrom } from '../plugins/auth';
 
 function clientInfo(req: FastifyRequest) {
   return {
@@ -123,8 +124,9 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw conflict('handle_taken', 'That handle is taken. Try another.');
     }
     const id = uuidv7();
-    const region = regionFromLocale(body.locale);
-    const workweek = workweekFor(region, body.locale);
+    const locale = safeLocale(body.locale);
+    const region = regionFromLocale(locale);
+    const workweek = workweekFor(region, locale);
     const timeZone = body.timeZone && isValidTimeZone(body.timeZone) ? body.timeZone : 'UTC';
     const passwordHash = await hashPassword(body.password);
     await ctx.db.transaction().execute(async (trx) => {
@@ -137,7 +139,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
           password_hash: passwordHash,
           display_name: body.displayName,
           birth_year: body.birthYear,
-          locale: body.locale ?? 'en',
+          locale,
           time_zone: timeZone,
           region,
           workweek,
@@ -216,8 +218,16 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.get('/auth/session', async (req): Promise<SessionResponse> => {
-    const auth = requireAuth(req);
+  app.get('/auth/session', async (req, reply): Promise<SessionResponse> => {
+    // No credentials at all is a normal state (a signed-out browser), not an error.
+    const presented = tokenFrom(req);
+    if (!presented) return { user: null, session: null };
+    if (!req.auth) {
+      // A stale cookie from a revoked or expired session: clear it so it stops being sent.
+      if (presented.via === 'cookie') clearSessionCookie(reply, ctx);
+      throw unauthorized();
+    }
+    const auth = req.auth;
     const user = await ctx.db
       .selectFrom('users')
       .selectAll()

@@ -36,6 +36,7 @@ import { searchRoutes } from './modules/search';
 import { suggestionRoutes } from './modules/suggestions';
 import { registerWorkers } from './modules/workers';
 import { registerAuth } from './plugins/auth';
+import { registerWeb, type WebApp } from './plugins/static';
 
 export interface BuiltApp {
   app: FastifyInstance;
@@ -126,7 +127,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       .status(500)
       .send({ error: { code: 'internal', message: 'Something went wrong on our side.' } });
   });
+  let web: WebApp | null = null;
   app.setNotFoundHandler((req, reply) => {
+    if (web?.handles(req)) return web.serve(reply);
     reply.status(404).send({
       error: {
         code: 'not_found',
@@ -159,6 +162,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     },
     { prefix: '/v1' },
   );
+  web = await registerWeb(app, ctx);
 
   registerWorkers();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};

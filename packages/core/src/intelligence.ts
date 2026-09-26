@@ -507,6 +507,22 @@ export interface SuggestionDraft {
   /** Plain-language reason shown with the suggestion (R12). */
   rationale: string;
   confidence: number;
+  /**
+   * The words don't say what the thing is ("I'll send it Thursday"). The server first looks for
+   * an open suggestion this answers and updates that instead of offering a second one.
+   */
+  vague?: boolean;
+}
+
+/** Objects that point back at something said earlier rather than naming it. */
+const POINTING = /^(it|this|that|them|these|those|one|the same|the rest)$/i;
+
+function isVague(c: ActionClause): boolean {
+  return !c.object || POINTING.test(c.object.trim());
+}
+
+function lowerFirst(s: string): string {
+  return s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
 }
 
 function quote(s: string): string {
@@ -530,6 +546,7 @@ export function suggestFromAnalysis(
   });
 
   if (a.commitment) {
+    const vague = isVague(a.commitment);
     if (ctx.senderIsMe) {
       out.push({
         kind: 'reminder',
@@ -537,14 +554,19 @@ export function suggestFromAnalysis(
         ...due(a.commitment),
         rationale: `You wrote ${quote(a.commitment.quote)}`,
         confidence: a.commitment.when ? 0.9 : 0.75,
+        vague,
       });
     } else {
       out.push({
         kind: 'waiting',
-        title: a.commitment.object ?? a.commitment.title,
+        // "Q3 report" when they named it; "Sarah will send it" when they only pointed at it.
+        title: vague
+          ? `${ctx.senderName} will ${lowerFirst(a.commitment.title)}`
+          : (a.commitment.object ?? a.commitment.title),
         ...due(a.commitment),
         rationale: `${ctx.senderName} wrote ${quote(a.commitment.quote)}`,
         confidence: a.commitment.when ? 0.9 : 0.75,
+        vague,
       });
     }
   }
@@ -553,7 +575,7 @@ export function suggestFromAnalysis(
     if (ctx.senderIsMe) {
       out.push({
         kind: 'waiting',
-        title: a.request.object ?? a.request.title,
+        title: isVague(a.request) ? a.request.title : (a.request.object ?? a.request.title),
         ...due(a.request),
         rationale: `You asked ${quote(a.request.quote)}`,
         confidence: 0.7,

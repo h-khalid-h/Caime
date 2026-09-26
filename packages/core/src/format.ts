@@ -2,6 +2,7 @@
  * Formatting shared by every client and by notifications. Locale-aware through Intl; names are
  * treated as opaque strings in any script (PRODUCT-REVIEW R28).
  */
+import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
 
 /** One or two letters for an avatar: "Sarah Smith" → "SS", "سارة" → "س", "李明" → "李". */
@@ -26,7 +27,9 @@ export function joinNames(names: string[], max = 3, locale = 'en'): string {
   if (names.length === 0) return '';
   if (names.length <= max) {
     try {
-      return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(names);
+      return new Intl.ListFormat(safeLocale(locale), { style: 'long', type: 'conjunction' }).format(
+        names,
+      );
     } catch {
       return names.length === 1
         ? names[0]!
@@ -68,9 +71,7 @@ export function formatListTime(iso: string, now: Date, timeZone: string, locale 
   const p = zonedParts(t, timeZone);
   const n = zonedParts(now, timeZone);
   if (sameDay(p, n)) {
-    return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(
-      t,
-    );
+    return dateFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(t);
   }
   const yesterday = new Date(Date.UTC(n.year, n.month - 1, n.day - 1));
   if (
@@ -83,11 +84,11 @@ export function formatListTime(iso: string, now: Date, timeZone: string, locale 
     return 'Yesterday';
   }
   if (diff > 0 && diff < 6 * 86_400_000) {
-    return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone }).format(t);
+    return dateFormat(locale, { weekday: 'short', timeZone }).format(t);
   }
   if (p.year === n.year)
-    return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
-  return new Intl.DateTimeFormat(locale, {
+    return dateFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
+  return dateFormat(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -106,8 +107,8 @@ export function formatDayHeading(iso: string, now: Date, timeZone: string, local
     return 'Yesterday';
   const diff = now.getTime() - t.getTime();
   if (diff > 0 && diff < 6 * 86_400_000)
-    return new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone }).format(t);
-  return new Intl.DateTimeFormat(locale, {
+    return dateFormat(locale, { weekday: 'long', timeZone }).format(t);
+  return dateFormat(locale, {
     day: 'numeric',
     month: 'long',
     year: p.year === n.year ? undefined : 'numeric',
@@ -117,9 +118,7 @@ export function formatDayHeading(iso: string, now: Date, timeZone: string, local
 
 /** Message time inside a bubble: "3:42 PM". */
 export function formatClock(iso: string, timeZone: string, locale = 'en'): string {
-  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(
-    new Date(iso),
-  );
+  return dateFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(new Date(iso));
 }
 
 /** Due dates: "Today", "Tomorrow 3:00 PM", "Fri", "Oct 15", "2 days ago". */
@@ -140,9 +139,8 @@ export function formatDue(
   if (days === 1) return `Tomorrow${clock}`;
   if (days === -1) return 'Yesterday';
   if (days < -1) return `${-days} days ago`;
-  if (days < 7)
-    return `${new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone }).format(t)}${clock}`;
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
+  if (days < 7) return `${dateFormat(locale, { weekday: 'short', timeZone }).format(t)}${clock}`;
+  return dateFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
 }
 
 export function formatBytes(bytes: number): string {
@@ -158,11 +156,11 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatAmount(value: number, currency: string | null, locale = 'en'): string {
-  if (!currency) return new Intl.NumberFormat(locale).format(value);
+  if (!currency) return numberFormat(locale).format(value);
   try {
-    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+    return numberFormat(locale, { style: 'currency', currency }).format(value);
   } catch {
-    return `${new Intl.NumberFormat(locale).format(value)} ${currency}`;
+    return `${numberFormat(locale).format(value)} ${currency}`;
   }
 }
 
@@ -185,4 +183,40 @@ export function truncate(text: string, max: number): string {
 /** A message preview for lists and notifications: first line, trimmed. */
 export function previewText(text: string, max = 90): string {
   return truncate(text.replace(/\s+/g, ' ').trim(), max);
+}
+
+/**
+ * The one-line preview of a message for inbox rows, notifications and replies. Shared so the
+ * server's inbox and the client's live update always read the same.
+ */
+export function messagePreview(m: {
+  kind: string;
+  body: string | null;
+  payload: unknown;
+  deleted: boolean;
+}): string {
+  if (m.deleted) return 'Message deleted';
+  const payload = (m.payload ?? {}) as { question?: unknown; title?: unknown };
+  switch (m.kind) {
+    case 'text':
+      return previewText(m.body ?? '');
+    case 'media':
+      return m.body ? `📷 ${previewText(m.body, 80)}` : '📷 Photo';
+    case 'file':
+      return m.body ? `📎 ${previewText(m.body, 80)}` : '📎 File';
+    case 'voice':
+      return '🎙 Voice message';
+    case 'location':
+      return '📍 Location';
+    case 'contact':
+      return '👤 Contact';
+    case 'poll':
+      return `📊 ${previewText(String(payload.question ?? 'Poll'), 80)}`;
+    case 'sticker':
+      return 'Sticker';
+    case 'kit':
+      return previewText(String(payload.title ?? 'Card'), 80);
+    default:
+      return previewText(m.body ?? '');
+  }
 }

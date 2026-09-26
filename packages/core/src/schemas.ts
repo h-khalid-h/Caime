@@ -5,23 +5,21 @@
 import { z } from 'zod';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
+import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
 import { SPHERES } from './taxonomy';
 
 export const Handle = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(
-    /^[a-z0-9](?:[a-z0-9._]{1,28}[a-z0-9])$/,
-    'Use 3–30 letters, numbers, dots or underscores.',
-  )
-  .refine((h) => !/[._]{2}/.test(h), 'Dots and underscores can’t be next to each other.');
+  .regex(HANDLE_PATTERN, HANDLE_RULE)
+  .refine((h) => !/[._]{2}/.test(h), HANDLE_REPEAT_RULE);
 
 export const Email = z.string().trim().toLowerCase().email('Enter a valid email address.').max(254);
 
 export const Password = z
   .string()
-  .min(10, 'Use at least 10 characters.')
+  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`)
   .max(200, 'That password is too long.')
   .refine((p) => new Set(p).size >= 5, 'Use a less repetitive password.');
 

@@ -543,10 +543,10 @@ export interface AuthResponse {
   recoveryCodes?: string[];
 }
 
-export interface SessionResponse {
-  user: MeView;
-  session: { id: string; kind: string };
-}
+/** A signed-out client with no credentials gets nulls, not a 401. */
+export type SessionResponse =
+  | { user: MeView; session: { id: string; kind: string } }
+  | { user: null; session: null };
 
 export interface DeviceSessionView {
   id: string;

@@ -326,9 +326,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
       mineCount ? `${mineCount} open for you.` : null,
       waitingCount ? `Waiting on ${waitingCount}.` : null,
       decisions[0] ? `Last decision: ${decisions[0].title}.` : null,
-      next
-        ? `Next date: ${next.text} (${formatDue(next.at, now, me.time_zone, me.locale)}).`
-        : null,
+      next ? `Next date: ${formatDue(next.at, now, me.time_zone, me.locale)}.` : null,
     ]
       .filter(Boolean)
       .join(' ');

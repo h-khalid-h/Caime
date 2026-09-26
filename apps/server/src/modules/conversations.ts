@@ -11,7 +11,6 @@ import {
   PollPayload,
   ReactionBody,
   ReceiptsBody,
-  readReceiptsVisible,
   SendMessageBody,
   UpdateConversationBody,
   uuidv7,
@@ -38,10 +37,11 @@ import {
   activeRelationships,
   between,
   pairKey,
+  readReceiptVisibleTo,
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
-import { personView, privacyOf } from '../lib/users';
+import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { identityShownTo } from './people';
@@ -158,11 +158,7 @@ export async function conversationView(
       const rel = rels.find((r) => r.subject_id === m.id);
       let readSeq: number | null = null;
       if (m.id !== userId && meUser) {
-        const theirView = await viewerRelation(ctx.db, userId, m.id);
-        const visible = readReceiptsVisible(
-          { settings: privacyOf(m, now), viewerAsSeenByOwner: relation },
-          { settings: privacyOf(meUser, now), ownerAsSeenByViewer: theirView },
-        );
+        const visible = await readReceiptVisibleTo(ctx.db, now, m, meUser);
         readSeq = visible ? Number(m.last_read_seq) : null;
       }
       return {
@@ -543,18 +539,40 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       });
     }
     const members = await participantsOf(ctx.db, id);
-    await ctx.bus.publish(
-      members.map((m) => m.user_id),
-      {
-        type: 'receipts',
-        data: {
-          conversationId: id,
-          userId: auth.userId,
-          readSeq: patch.last_read_seq ?? null,
-          deliveredSeq: patch.last_delivered_seq ?? null,
-        },
+    const event = (readSeq: number | null) => ({
+      type: 'receipts',
+      data: {
+        conversationId: id,
+        userId: auth.userId,
+        readSeq,
+        deliveredSeq: patch.last_delivered_seq ?? null,
       },
-    );
+    });
+    const others = members.map((m) => m.user_id).filter((u) => u !== auth.userId);
+    if (patch.last_read_seq === undefined || others.length === 0) {
+      await ctx.bus.publish(
+        members.map((m) => m.user_id),
+        event(null),
+      );
+      return { ok: true };
+    }
+    // Read positions are private unless both sides share them (R25): check each recipient.
+    const users = await ctx.db
+      .selectFrom('users')
+      .selectAll()
+      .where('id', 'in', [auth.userId, ...others])
+      .execute();
+    const reader = users.find((u) => u.id === auth.userId);
+    const now = ctx.now();
+    const allowed: string[] = [auth.userId];
+    const withheld: string[] = [];
+    for (const viewer of users) {
+      if (viewer.id === auth.userId) continue;
+      const visible = reader ? await readReceiptVisibleTo(ctx.db, now, reader, viewer) : false;
+      (visible ? allowed : withheld).push(viewer.id);
+    }
+    await ctx.bus.publish(allowed, event(patch.last_read_seq));
+    if (withheld.length) await ctx.bus.publish(withheld, event(null));
     return { ok: true };
   });
 

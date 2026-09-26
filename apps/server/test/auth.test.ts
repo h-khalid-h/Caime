@@ -91,6 +91,25 @@ describe('sign-up', () => {
   });
 });
 
+describe('handle availability', () => {
+  it('works before sign-up and offers a free alternative when taken', async () => {
+    const check = async (handle: string) =>
+      (
+        await t.app.inject({ method: 'GET', url: `/v1/me/handle-available?handle=${handle}` })
+      ).json();
+    expect(await check('nobody.has.this')).toEqual({
+      available: true,
+      reason: null,
+      suggestion: null,
+    });
+    const taken = await check(base.handle);
+    expect(taken).toMatchObject({ available: false, reason: 'That handle is taken.' });
+    expect(taken.suggestion).toMatch(new RegExp(`^${base.handle.slice(0, 26)}\\d+$`));
+    expect((await check(taken.suggestion)).available).toBe(true);
+    expect(await check('a')).toMatchObject({ available: false, suggestion: null });
+  });
+});
+
 describe('sign-in and sessions', () => {
   it('signs in by email or @handle and rejects wrong passwords without saying which part was wrong', async () => {
     const byHandle = await t.app.inject({
@@ -150,6 +169,11 @@ describe('sign-in and sessions', () => {
       cookies: { caishy_session: cookie.value },
     });
     expect(after.statusCode).toBe(401);
+    // The stale cookie is cleared, and with no cookie at all the answer is "signed out", not an error.
+    expect(after.cookies.find((c) => c.name === 'caishy_session')?.value).toBe('');
+    const anonymous = await t.app.inject({ method: 'GET', url: '/v1/auth/session' });
+    expect(anonymous.statusCode).toBe(200);
+    expect(anonymous.json()).toEqual({ user: null, session: null });
   });
 
   it('lists and revokes devices; changing the password signs out other devices', async () => {

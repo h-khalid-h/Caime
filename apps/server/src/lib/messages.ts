@@ -10,8 +10,8 @@ import {
   type FileView,
   isMinor,
   type MessageView,
-  previewText,
   type SendMessageBodyT,
+  messagePreview as sharedPreview,
   uuidv7,
 } from '@caishy/core';
 import type { Kysely, Transaction } from 'kysely';
@@ -55,32 +55,12 @@ export function fileView(f: {
 export function messagePreview(
   m: Pick<Message, 'kind' | 'body' | 'payload' | 'deleted_at'>,
 ): string {
-  if (m.deleted_at) return 'Message deleted';
-  switch (m.kind) {
-    case 'text':
-      return previewText(m.body ?? '');
-    case 'media':
-      return m.body ? `📷 ${previewText(m.body, 80)}` : '📷 Photo';
-    case 'file':
-      return m.body ? `📎 ${previewText(m.body, 80)}` : '📎 File';
-    case 'voice':
-      return '🎙 Voice message';
-    case 'location':
-      return '📍 Location';
-    case 'contact':
-      return '👤 Contact';
-    case 'poll':
-      return `📊 ${previewText(String((m.payload as { question?: string }).question ?? 'Poll'), 80)}`;
-    case 'sticker':
-      return 'Sticker';
-    case 'kit':
-      return previewText(
-        String((m.payload as { title?: string; kit?: string }).title ?? 'Card'),
-        80,
-      );
-    default:
-      return previewText(m.body ?? '');
-  }
+  return sharedPreview({
+    kind: m.kind,
+    body: m.body,
+    payload: m.payload,
+    deleted: m.deleted_at !== null,
+  });
 }
 
 /** Load full views for a set of message rows, as seen by `viewerId`. */

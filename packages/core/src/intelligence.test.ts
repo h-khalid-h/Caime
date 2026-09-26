@@ -155,3 +155,18 @@ describe('topics', () => {
     expect(detectEmergingTopic(recent.slice(0, 2))).toBeNull();
   });
 });
+
+describe('suggestions from vague commitments', () => {
+  it('names the person when they only point at the thing, and flags it for merging', () => {
+    const a = analyzeMessage('Sure — I’ll send it Thursday.', opts);
+    const [s] = suggestFromAnalysis(a, { senderIsMe: false, senderName: 'Sarah' });
+    expect(s).toMatchObject({ kind: 'waiting', title: 'Sarah will send it', vague: true });
+    expect(s?.dueText).toBe('Thursday');
+    const named = suggestFromAnalysis(analyzeMessage("I'll send the proposal tomorrow.", opts), {
+      senderIsMe: false,
+      senderName: 'Sarah',
+    });
+    expect(named[0]).toMatchObject({ kind: 'waiting', vague: false });
+    expect(named[0]?.title.toLowerCase()).toContain('proposal');
+  });
+});

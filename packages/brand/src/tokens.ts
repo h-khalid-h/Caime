@@ -204,7 +204,7 @@ export const sphereStyles: Record<Sphere, SphereStyle> = {
     light: { fill: '#FFF3D1', strong: '#8A5A00' },
     dark: { fill: '#352A12', strong: '#FFD98A' },
     solid: '#FFD166',
-    icon: 'smile',
+    icon: 'face-slightly-smiling',
   },
   acquaintance: {
     light: { fill: '#FBF1DE', strong: '#76613D' },
@@ -252,7 +252,7 @@ export const sphereStyles: Record<Sphere, SphereStyle> = {
     light: { fill: '#E6E8FE', strong: '#4338CA' },
     dark: { fill: '#1E2140', strong: '#B4BCFF' },
     solid: '#A5B4FC',
-    icon: 'building-2',
+    icon: 'building',
   },
   public: {
     light: { fill: '#EEF0F3', strong: '#4B5563' },

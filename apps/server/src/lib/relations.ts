@@ -8,14 +8,15 @@ import {
   type PolicyTarget,
   type RelationshipPolicy,
   type RelationshipView,
+  readReceiptsVisible,
   relationshipFit,
   relationshipLabel,
   resolvePolicy,
   type Sphere,
 } from '@caishy/core';
 import type { Kysely, Transaction } from 'kysely';
-import type { Database, Relationship } from '../db/schema';
-import type { ViewerRelation } from './users';
+import type { Database, Relationship, User } from '../db/schema';
+import { privacyOf, type ViewerRelation } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -250,4 +251,25 @@ export async function mutualFit(
       orgName: theirs.org_name,
     }),
   };
+}
+
+/**
+ * Whether `viewer` may see `reader`'s read position. Reciprocal (R25): both must share read
+ * receipts with each other under their own rules. Every path that reveals a read position —
+ * the conversation view and the live receipts event — goes through this one check.
+ */
+export async function readReceiptVisibleTo(
+  db: Q,
+  now: Date,
+  reader: User,
+  viewer: User,
+): Promise<boolean> {
+  const [readerSeesViewer, viewerSeesReader] = await Promise.all([
+    viewerRelation(db, reader.id, viewer.id),
+    viewerRelation(db, viewer.id, reader.id),
+  ]);
+  return readReceiptsVisible(
+    { settings: privacyOf(reader, now), viewerAsSeenByOwner: readerSeesViewer },
+    { settings: privacyOf(viewer, now), ownerAsSeenByViewer: viewerSeesReader },
+  );
 }

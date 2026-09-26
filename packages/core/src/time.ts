@@ -18,8 +18,7 @@ const formatterCache = new Map<string, Intl.DateTimeFormat>();
 function formatter(timeZone: string): Intl.DateTimeFormat {
   let f = formatterCache.get(timeZone);
   if (!f) {
-    f = new Intl.DateTimeFormat('en-US', {
-      timeZone,
+    const options: Intl.DateTimeFormatOptions = {
       hourCycle: 'h23',
       year: 'numeric',
       month: '2-digit',
@@ -28,7 +27,13 @@ function formatter(timeZone: string): Intl.DateTimeFormat {
       minute: '2-digit',
       second: '2-digit',
       weekday: 'short',
-    });
+    };
+    try {
+      f = new Intl.DateTimeFormat('en-US', { ...options, timeZone });
+    } catch {
+      // An unknown zone (a stale device setting) reads as UTC rather than breaking a screen.
+      f = new Intl.DateTimeFormat('en-US', { ...options, timeZone: 'UTC' });
+    }
     formatterCache.set(timeZone, f);
   }
   return f;

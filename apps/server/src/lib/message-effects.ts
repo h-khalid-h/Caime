@@ -202,6 +202,68 @@ async function notifyRecipient(
   });
 }
 
+/**
+ * "I'll send it Thursday" names nothing, but usually answers something open between the same two
+ * people in the same conversation: my request, or their commitment. Update that one (the due date
+ * is news) rather than offering a second, vaguer copy. Returns true when it was absorbed.
+ */
+async function absorbVague(
+  ctx: AppContext,
+  opts: {
+    userId: string;
+    conversationId: string;
+    subjectUserId: string | null;
+    kinds: string[];
+    dueAt: string | null;
+    dueText: string | null;
+    rationale: string;
+  },
+): Promise<boolean> {
+  if (!opts.subjectUserId) return false;
+  const since = new Date(ctx.now().getTime() - 14 * 86_400_000);
+  const open = await ctx.db
+    .selectFrom('suggestions')
+    .select(['id', 'due_at'])
+    .where('user_id', '=', opts.userId)
+    .where('conversation_id', '=', opts.conversationId)
+    .where('subject_user_id', '=', opts.subjectUserId)
+    .where('kind', 'in', opts.kinds)
+    .where('status', '=', 'pending')
+    .where('created_at', '>', since)
+    .orderBy('created_at', 'desc')
+    .executeTakeFirst();
+  if (open) {
+    await ctx.db
+      .updateTable('suggestions')
+      .set({
+        rationale: opts.rationale,
+        ...(opts.dueAt ? { due_at: new Date(opts.dueAt), due_text: opts.dueText } : {}),
+      })
+      .where('id', '=', open.id)
+      .execute();
+    await ctx.bus.publish([opts.userId], {
+      type: 'suggestion.created',
+      data: { id: open.id, conversationId: opts.conversationId },
+    });
+    return true;
+  }
+  // Already tracked as an action between them: nothing new to offer.
+  const tracked = await ctx.db
+    .selectFrom('tasks')
+    .select('id')
+    .where('conversation_id', '=', opts.conversationId)
+    .where('status', 'in', ['open', 'accepted'])
+    .where('created_at', '>', since)
+    .where((eb) =>
+      eb.or([
+        eb.and([eb('owner_id', '=', opts.userId), eb('assignee_id', '=', opts.subjectUserId!)]),
+        eb.and([eb('owner_id', '=', opts.subjectUserId!), eb('assignee_id', '=', opts.userId)]),
+      ]),
+    )
+    .executeTakeFirst();
+  return Boolean(tracked);
+}
+
 async function suggest(
   ctx: AppContext,
   conversation: Conversation,
@@ -217,6 +279,21 @@ async function suggest(
   const mine = suggestFromAnalysis(analysis, { senderIsMe: true, senderName: sender.display_name });
   for (const s of mine) {
     if (s.kind === 'waiting' && !counterpartForSender) continue;
+    // "I'll do it Thursday" in reply to their request: it's that task, now with a date.
+    if (
+      s.vague &&
+      s.kind === 'reminder' &&
+      (await absorbVague(ctx, {
+        userId: sender.id,
+        conversationId: conversation.id,
+        subjectUserId: counterpartForSender ?? null,
+        kinds: ['task', 'reminder'],
+        dueAt: s.dueAt,
+        dueText: s.dueText,
+        rationale: s.rationale,
+      }))
+    )
+      continue;
     await createSuggestion(ctx, {
       userId: sender.id,
       kind: s.kind,
@@ -243,6 +320,21 @@ async function suggest(
     // Strangers' messages (pending requests) don't create work for you (R14).
     if (r.request_state === 'pending' || !addressed(r.user_id)) continue;
     for (const s of theirs) {
+      // "I'll send it Thursday" answering my request: the waiting item, now with a date.
+      if (
+        s.vague &&
+        s.kind === 'waiting' &&
+        (await absorbVague(ctx, {
+          userId: r.user_id,
+          conversationId: conversation.id,
+          subjectUserId: sender.id,
+          kinds: ['waiting'],
+          dueAt: s.dueAt,
+          dueText: s.dueText,
+          rationale: s.rationale,
+        }))
+      )
+        continue;
       await createSuggestion(ctx, {
         userId: r.user_id,
         kind: s.kind,

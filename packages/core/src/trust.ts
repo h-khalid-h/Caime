@@ -55,7 +55,8 @@ export function trustFor(input: TrustInput): Trust {
   }
   return {
     level: 'unknown',
-    label: 'Not verified',
-    detail: 'Caishy has not verified who this is. Be careful with links and payments.',
+    label: 'New to you',
+    detail:
+      'You’re not connected, and Caishy hasn’t verified who this is. Be careful with links and payments.',
   };
 }
