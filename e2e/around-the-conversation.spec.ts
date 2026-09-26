@@ -501,6 +501,15 @@ test.describe
       expect(page.context().pages()).toHaveLength(1);
 
       // Someone new opens Noor's link, signs up, and lands on Noor, ready to connect.
+      const invited = async () =>
+        (
+          await (
+            await noorContext.request.get('/v1/admin/metrics?days=28', {
+              headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
+            })
+          ).json()
+        ).metrics.growth.invited.count as number;
+      const invitedBefore = await invited();
       linaContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
       lina = await newPerson(linaContext);
       const linaHandle = `lina.${stamp}`;
@@ -518,6 +527,8 @@ test.describe
       await expect(lina.page.getByText('Available')).toBeVisible();
       await lina.page.getByTestId('signup-submit').click();
       await lina.page.waitForURL('**/onboarding');
+      // The operator counts that Noor's link brought someone (PRD §82); nobody is told.
+      expect(await invited()).toBe(invitedBefore + 1);
       await lina.page.getByText('Copy the codes').click();
       await lina.page.getByTestId('onboarding-codes-next').click();
       await lina.page.getByTestId('onboarding-rules-next').click();

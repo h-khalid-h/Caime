@@ -516,6 +516,33 @@ export async function sendMessage(
     }
   }
 
+  // Needs you was right (PRD §83): this answers something in it that asked the sender, since they
+  // last wrote and since they said it didn't need them. Read now, as it stands before sending;
+  // counted, never who or where.
+  const answersNeed =
+    me.role !== 'agent' &&
+    me.request_state !== 'pending' &&
+    Boolean(
+      (
+        await sql<{ answered: boolean }>`
+          select exists (
+            select 1 from messages m
+            join participants p on p.conversation_id = m.conversation_id and p.user_id = ${senderId}
+            where m.conversation_id = ${conversationId}
+              and m.sender_id is distinct from ${senderId}
+              and m.seq > p.dismissed_seq
+              and m.seq > coalesce((select max(x.seq) from messages x
+                where x.conversation_id = m.conversation_id and x.sender_id = ${senderId}), 0)
+              and (m.is_question or m.is_request) and m.deleted_at is null
+              and (${conversation.kind} in ('direct', 'business')
+                or ${senderId}::uuid = any(m.mentions)
+                or m.reply_to_id in (select y.id from messages y
+                  where y.conversation_id = m.conversation_id and y.sender_id = ${senderId}))
+          ) as answered
+        `.execute(ctx.db)
+      ).rows[0]?.answered,
+    );
+
   const mode =
     body.mode ??
     kitMode ??
@@ -627,6 +654,7 @@ export async function sendMessage(
           .where('connection_id', '=', conversation.connection_id)
           .execute();
       }
+      if (answersNeed) await recordEvent(trx, 'attention.answered', null, {});
       await recordEvent(trx, 'message.sent', senderId, {
         messageId: id,
         conversationId,

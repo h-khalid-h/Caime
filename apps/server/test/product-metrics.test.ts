@@ -53,6 +53,29 @@ beforeAll(async () => {
   t.clock.set(new Date(t0.getTime() + 8 * DAY).toISOString());
   await say(sam, dm, 'Still there?');
 
+  // Needs you asked Noor something she answered, and one she said didn't need her.
+  await say(sam, dm, 'Can you send me the plan?');
+  await say(noor, dm, 'Here it is.');
+  await noor.post(`/v1/conversations/${dm}/dismiss`, {});
+  // Three searches in the app: two opened something, after 4 and 10 seconds.
+  for (const outcome of [
+    { found: true, ms: 4_000 },
+    { found: true, ms: 10_000 },
+    { found: false, ms: 20_000 },
+  ])
+    await noor.post('/v1/search/outcome', outcome);
+  // Ivy came through Noor's link, Cara through the shop's.
+  await t.ctx.db
+    .updateTable('users')
+    .set({ invited_by: noor.user.id })
+    .where('id', '=', ivy.user.id)
+    .execute();
+  await t.ctx.db
+    .updateTable('users')
+    .set({ invited_by_org: org.id })
+    .where('id', '=', cara.user.id)
+    .execute();
+
   // Tasks, suggestions, notifications and AI calls, exactly (the flows above made some too,
   // some of them after their response).
   await t.ctx.flush();
@@ -149,7 +172,8 @@ const metrics = async () =>
 describe('product metrics (PRD §82–83)', () => {
   it('reads activation, engagement, the core rates and retention from what Caishy keeps', async () => {
     const m = await metrics();
-    expect(m.people).toEqual({ total: 4, active7d: 1, active28d: 3 });
+    // Sam and Noor wrote in the last week; Cara three weeks ago.
+    expect(m.people).toEqual({ total: 4, active7d: 2, active28d: 3 });
     expect(m.activation).toEqual({
       signedUp: 4,
       connected: { count: 2, of: 4, rate: 0.5 },
@@ -159,7 +183,7 @@ describe('product metrics (PRD §82–83)', () => {
       activated: { count: 1, of: 4, rate: 0.25 },
     });
     expect(m.engagement).toEqual({
-      messages: 5,
+      messages: 7,
       activePeople: 3,
       activeConversations: 2,
       activeConnections: 1,
@@ -171,9 +195,18 @@ describe('product metrics (PRD §82–83)', () => {
       attentionResolution: { count: 1, of: 2, rate: 0.5 },
       notificationEfficiency: { count: 2, of: 3, rate: 0.667 },
       retention: {
-        day7: { count: 1, of: 4, rate: 0.25 },
+        // Sam, and Noor, who answered him a week on.
+        day7: { count: 2, of: 4, rate: 0.5 },
         day28: { count: 0, of: 0, rate: null },
       },
+      needsYouPrecision: { count: 1, of: 2, rate: 0.5 },
+      informationRetrieval: { found: { count: 2, of: 3, rate: 0.667 }, medianSeconds: 7 },
+    });
+    // Two of the four came through a link, one of them a person's, and three people were active.
+    expect(m.growth).toEqual({
+      invited: { count: 2, of: 4, rate: 0.5 },
+      viaOrganizations: 1,
+      kFactor: 0.333,
     });
     expect(m.value).toEqual({
       tasksFromMessages: 2,
@@ -191,6 +224,52 @@ describe('product metrics (PRD §82–83)', () => {
       reply: { medianMinutes: 15, answered: 1, withinHour: 1, unanswered: 0 },
     });
     expect(m.notMeasured.length).toBeGreaterThan(0);
+  });
+
+  it('knows whose link brought someone, and tells nobody', async () => {
+    const via = async (invite: string, handle: string) => {
+      const res = await t.app.inject({
+        method: 'POST',
+        url: '/v1/auth/signup',
+        payload: {
+          email: `${handle}@example.com`,
+          password: 'correct horse battery',
+          displayName: 'New Person',
+          handle,
+          birthYear: 1990,
+          client: 'native',
+          invite,
+        },
+      });
+      expect(res.statusCode).toBe(201);
+      return t.ctx.db
+        .selectFrom('users')
+        .select(['invited_by', 'invited_by_org'])
+        .where('handle', '=', handle)
+        .executeTakeFirstOrThrow();
+    };
+    const shop = await t.ctx.db
+      .selectFrom('organizations')
+      .select('id')
+      .where('handle', '=', 'tiles.pm')
+      .executeTakeFirstOrThrow();
+    expect(await via(`@${noor.user.handle}`, 'from.noor')).toEqual({
+      invited_by: noor.user.id,
+      invited_by_org: null,
+    });
+    expect(await via('tiles.pm', 'from.tiles')).toEqual({
+      invited_by: null,
+      invited_by_org: shop.id,
+    });
+    expect(await via('nobody.here', 'from.nowhere')).toEqual({
+      invited_by: null,
+      invited_by_org: null,
+    });
+    await t.ctx.flush();
+    const told = (await noor.get('/v1/notifications')).notifications.filter((n: any) =>
+      JSON.stringify(n).includes('New Person'),
+    );
+    expect(told).toEqual([]);
   });
 
   it('is about nobody in particular', async () => {

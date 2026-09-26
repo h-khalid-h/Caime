@@ -168,8 +168,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       already keeps (PRD §82–83: activation, engagement, the core rates, retention), and insights
       for organizations on Business (PRD §71: customers who wrote, first answer, waiting,
       resolved), all counts and times, never content (`metrics.test.ts`,
-      `product-metrics.test.ts`, `insights.test.ts`, E2E). [ ] Needs You precision, time to find
-      something, invite attribution: not recorded yet
+      `product-metrics.test.ts`, `insights.test.ts`, E2E). Needs you precision (answered, against
+      "doesn't need me"), time to find something (from the first letter of a search in the apps
+      to opening a result) and invites (sign-ups through someone's @handle link, and the
+      K-factor), each recorded without anyone's id or what anyone wrote or searched for
+      (`product-metrics.test.ts`, E2E)
 - [ ] Calls (WebRTC 1:1 on web) ⛔ TURN relay needed for reliable production calls
 
 ## M7 — Ship
@@ -360,3 +363,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   pill says "Sharing your location live · until 6:04 PM" wherever they are in the app, with
   Stop, and the card has Stop sharing too. Under-18s can't share one and it's never shared with
   an organization. Tests: 149 core, 49 brand, 171 server, 8 app, 29 E2E.
+- 2026-09-26 — Session 2 (cont.): the last three product metrics. Needs you precision counts the
+  times someone answered what Needs you asked of them against the times they said it didn't
+  need them; time to find runs from the first letter typed in the apps' search to opening a
+  result, or to leaving with nothing; and a sign-up through someone's @handle link records whose
+  it was, for invites and the K-factor. None of it keeps anyone's id beside the event, or what
+  was written or searched for, and nobody is told who came through their link. Its test found
+  that "answered" was decided after the response, when a quick "doesn't need me" had already
+  moved the line it's measured from; it's decided as the message is sent now. Tests: 149 core,
+  49 brand, 172 server, 8 app, 29 E2E.

@@ -4,12 +4,19 @@
  */
 
 import type { SearchResponse, SearchResults } from '@caishy/core';
-import { MATCH_END, MATCH_START, type ParsedQuery, parseSearchQuery } from '@caishy/core';
+import {
+  MATCH_END,
+  MATCH_START,
+  type ParsedQuery,
+  parseSearchQuery,
+  SearchOutcomeBody,
+} from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { maskId, masksFor } from '../lib/business';
+import { recordEvent } from '../lib/events';
 import { fileView } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { relationshipView } from '../lib/relations';
@@ -429,6 +436,18 @@ export async function runSearch(
 }
 
 export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
+  /**
+   * How long finding something took (PRD §83, information retrieval), from the app's search: a
+   * time and whether anything was opened. Kept without anyone's id, and nothing searched for.
+   */
+  app.post('/search/outcome', async (req) => {
+    const auth = requireAuth(req);
+    const body = parse(SearchOutcomeBody, req.body);
+    ctx.limiter.hit(`search-outcome:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 3_600_000);
+    await recordEvent(ctx.db, 'search.outcome', null, body);
+    return { ok: true };
+  });
+
   app.get('/search', async (req) => {
     const auth = requireAuth(req);
     const { q, limit } = parse(

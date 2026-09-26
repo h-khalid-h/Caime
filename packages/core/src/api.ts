@@ -708,8 +708,19 @@ export interface ProductMetricsView {
     attentionResolution: Rate;
     notificationEfficiency: Rate;
     retention: { day7: Rate; day28: Rate };
+    /** Of what Needs you asked people that they dealt with: answered, not "doesn't need me". */
+    needsYouPrecision: Rate;
+    /** Searches in the app that ended with something opened, and the median time it took. */
+    informationRetrieval: { found: Rate; medianSeconds: number | null };
   };
   value: { tasksFromMessages: number; suggestionsAccepted: Rate };
+  /** Of the people who signed up in the window, those who came through someone's link. */
+  growth: {
+    invited: Rate;
+    viaOrganizations: number;
+    /** Sign-ups through a person's link, per person active in the window. */
+    kFactor: number | null;
+  };
   ai: { calls: number; ok: number; byFeature: Record<string, { ok: number; other: number }> };
   business: {
     organizations: number;

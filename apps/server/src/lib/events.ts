@@ -30,7 +30,11 @@ export type EventType =
   | 'decision.recorded'
   | 'suggestion.accepted'
   | 'notification.created'
-  | 'business.thread_updated';
+  | 'business.thread_updated'
+  // Measures (PRD §82–83), recorded without anyone's id or anything anyone wrote.
+  | 'attention.answered'
+  | 'attention.dismissed'
+  | 'search.outcome';
 
 export async function recordEvent(
   db: Kysely<Database> | Transaction<Database>,

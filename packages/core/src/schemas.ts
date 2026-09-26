@@ -51,9 +51,17 @@ export const SignupBody = z.object({
   locale: z.string().max(35).optional(),
   client: z.enum(['web', 'native']).default('web'),
   deviceName: z.string().max(80).optional(),
-  /** Invite link token that brought this person here (R1). */
+  /** The @handle whose link brought them here, a person's or an organization's (PRD §82). */
   invite: z.string().max(200).optional(),
 });
+
+/**
+ * How a search ended (PRD §83, information retrieval): whether something was opened, and how
+ * long after the first letter. Nothing about what was searched for, or found.
+ */
+export const SearchOutcomeBody = z
+  .object({ found: z.boolean(), ms: z.number().int().min(0).max(3_600_000) })
+  .strict();
 
 export const LoginBody = z.object({
   identifier: z.string().trim().min(1, 'Enter your email or handle.').max(254),

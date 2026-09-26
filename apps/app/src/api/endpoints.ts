@@ -365,6 +365,9 @@ export const endpoints = {
 
   // Search, notifications, policies, safety
   search: (term: string) => api.get<SearchResponse>(`/search${q({ q: term })}`),
+  /** How a search ended: found or not, and how long it took. Never what was searched for. */
+  searchOutcome: (outcome: { found: boolean; ms: number }) =>
+    api.post<Ok>('/search/outcome', outcome),
   notifications: () => api.get<NotificationsResponse>('/notifications'),
   markNotificationsRead: (body: { ids?: string[]; all?: boolean }) =>
     api.post<Ok>('/notifications/read', body),

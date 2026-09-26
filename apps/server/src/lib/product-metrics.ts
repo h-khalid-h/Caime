@@ -142,6 +142,37 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       (select count(*)::int from p where created_at > ${ago(56)} and created_at <= ${ago(28)}) as d28_of
   `);
 
+  // Recorded as they happen, without anyone's id: Needs you answered or waved off, and how
+  // searches in the app ended (PRD §83).
+  const measures = await q<{
+    answered: number;
+    dismissed: number;
+    searches: number;
+    found: number;
+    median_ms: number | null;
+  }>(sql`
+    with e as (select type, payload from domain_events
+      where type in ('attention.answered', 'attention.dismissed', 'search.outcome')
+        and created_at > ${from} and created_at <= ${to})
+    select
+      count(*) filter (where type = 'attention.answered')::int as answered,
+      count(*) filter (where type = 'attention.dismissed')::int as dismissed,
+      count(*) filter (where type = 'search.outcome')::int as searches,
+      count(*) filter (where type = 'search.outcome' and (payload->>'found')::boolean)::int as found,
+      (percentile_cont(0.5) within group (order by (payload->>'ms')::int)
+        filter (where type = 'search.outcome' and (payload->>'found')::boolean))::float8 as median_ms
+    from e
+  `);
+
+  const invites = await q<{ invited: number; via_people: number; via_orgs: number }>(sql`
+    select
+      count(*) filter (where invited_by is not null or invited_by_org is not null)::int as invited,
+      count(*) filter (where invited_by is not null)::int as via_people,
+      count(*) filter (where invited_by is null and invited_by_org is not null)::int as via_orgs
+    from users
+    where kind = 'human' and deleted_at is null and created_at > ${from} and created_at <= ${to}
+  `);
+
   const suggestions = await q<{ accepted: number; decided: number }>(sql`
     select count(*) filter (where status = 'accepted')::int as accepted,
       count(*) filter (where status in ('accepted', 'dismissed'))::int as decided
@@ -200,10 +231,24 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
         day7: rate(retention.d7, retention.d7_of),
         day28: rate(retention.d28, retention.d28_of),
       },
+      needsYouPrecision: rate(measures.answered, measures.answered + measures.dismissed),
+      informationRetrieval: {
+        found: rate(measures.found, measures.searches),
+        medianSeconds:
+          measures.median_ms == null ? null : Math.round(measures.median_ms / 100) / 10,
+      },
     },
     value: {
       tasksFromMessages: core.from_messages,
       suggestionsAccepted: rate(suggestions.accepted, suggestions.decided),
+    },
+    growth: {
+      invited: rate(invites.invited, activation.signed_up),
+      viaOrganizations: invites.via_orgs,
+      kFactor:
+        engagement.people > 0
+          ? Math.round((invites.via_people / engagement.people) * 1000) / 1000
+          : null,
     },
     ai: {
       calls: ai.reduce((n, r) => n + r.n, 0),
@@ -217,9 +262,9 @@ export async function productMetrics(ctx: AppContext, days: number): Promise<Pro
       reply: await replyTimes(ctx, { orgId: null, from, to }),
     },
     notMeasured: [
-      'Information retrieval (time to find something): searches aren’t recorded, by design.',
-      'Needs You precision: dismissing an inbox placement isn’t recorded yet.',
-      'Invite acceptance and K-factor: shared links aren’t attributed to sign-ups yet.',
+      'Time to find counts searches in the apps only; what was searched for is never kept.',
+      'Needs you precision counts answers and “doesn’t need me”; something left alone says nothing.',
+      'Invites count sign-ups through someone’s @handle link; a link that was opened and not followed isn’t seen.',
     ],
   };
 }

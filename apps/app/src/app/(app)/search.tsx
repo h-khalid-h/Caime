@@ -2,7 +2,7 @@ import { formatListTime, snippetParts } from '@caishy/core/format';
 import { parseSearchQuery } from '@caishy/core/search';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -44,6 +44,24 @@ export default function Search() {
   const { timeZone, locale } = useUserClock();
   const [term, setTerm] = useState('');
   const [debounced, setDebounced] = useState('');
+  // How long finding something takes (PRD §83): from the first letter to opening a result, or
+  // leaving with nothing opened. Only that is sent, never what was searched for.
+  const started = useRef<number | null>(null);
+  useEffect(() => {
+    if (!term.trim()) started.current = null;
+    else started.current ??= Date.now();
+  }, [term]);
+  const report = useRef((found: boolean) => {
+    if (started.current === null) return;
+    const ms = Math.min(3_600_000, Date.now() - started.current);
+    started.current = null;
+    void endpoints.searchOutcome({ found, ms }).catch(() => {});
+  }).current;
+  useEffect(() => () => report(false), [report]);
+  const open = (go: () => void) => {
+    report(true);
+    go();
+  };
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(term.trim()), 250);
     return () => clearTimeout(timer);
@@ -161,7 +179,7 @@ export default function Search() {
                   ) : null
                 }
                 onPress={() =>
-                  router.navigate({ pathname: '/p/[id]', params: { id: p.person.id } })
+                  open(() => router.navigate({ pathname: '/p/[id]', params: { id: p.person.id } }))
                 }
               />
             ))}
@@ -197,10 +215,12 @@ export default function Search() {
                   subtitle={parts.map((p) => p.text).join('')}
                   subtitleParts={parts}
                   onPress={() =>
-                    router.navigate({
-                      pathname: '/c/[id]',
-                      params: { id: m.conversationId, seq: String(m.seq) },
-                    })
+                    open(() =>
+                      router.navigate({
+                        pathname: '/c/[id]',
+                        params: { id: m.conversationId, seq: String(m.seq) },
+                      }),
+                    )
                   }
                 />
               );
@@ -217,7 +237,9 @@ export default function Search() {
                 title={f.title ?? f.file?.name ?? f.host ?? 'File'}
                 subtitle={f.host ?? formatListTime(f.createdAt, now, timeZone, locale)}
                 onPress={() =>
-                  router.navigate({ pathname: '/c/[id]', params: { id: f.conversationId } })
+                  open(() =>
+                    router.navigate({ pathname: '/c/[id]', params: { id: f.conversationId } }),
+                  )
                 }
               />
             ))}
@@ -232,7 +254,7 @@ export default function Search() {
                 icon={ListChecks}
                 title={task.title}
                 subtitle={task.relationship ?? undefined}
-                onPress={() => router.navigate('/actions')}
+                onPress={() => open(() => router.navigate('/actions'))}
               />
             ))}
           </>
@@ -247,7 +269,9 @@ export default function Search() {
                 title={d.title}
                 subtitle={formatListTime(d.decidedAt, now, timeZone, locale)}
                 onPress={() =>
-                  router.navigate({ pathname: '/c/[id]', params: { id: d.conversationId } })
+                  open(() =>
+                    router.navigate({ pathname: '/c/[id]', params: { id: d.conversationId } }),
+                  )
                 }
               />
             ))}
@@ -263,7 +287,9 @@ export default function Search() {
                 title={c.title ?? 'Conversation'}
                 subtitle={c.context?.title ?? undefined}
                 onPress={() =>
-                  router.navigate({ pathname: '/c/[id]', params: { id: c.conversationId } })
+                  open(() =>
+                    router.navigate({ pathname: '/c/[id]', params: { id: c.conversationId } }),
+                  )
                 }
               />
             ))}

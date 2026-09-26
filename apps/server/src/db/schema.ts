@@ -43,6 +43,9 @@ export interface UsersTable {
   preferences: JsonDefaulted<Record<string, unknown>>;
   ai_enabled: Defaulted<boolean>;
   onboarded_at: NullableTimestamp;
+  /** The @handle link that brought them: a person's, or an organization's. */
+  invited_by: string | null;
+  invited_by_org: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
   deleted_at: NullableTimestamp;

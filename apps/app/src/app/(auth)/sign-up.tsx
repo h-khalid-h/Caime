@@ -13,6 +13,8 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { AuthLayout } from '@/features/auth/AuthLayout';
 import { deviceInfo } from '@/features/auth/device';
+import { handleIn } from '@/lib/paths';
+import { peekLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -100,6 +102,8 @@ export default function SignUp() {
         password,
         birthYear: Number(birthYear),
         ...deviceInfo(),
+        // Whose @handle link brought them, counted for the operator and told to nobody.
+        ...(handleIn(peekLink()) ? { invite: handleIn(peekLink()) ?? undefined } : {}),
       });
       await useSession.getState().signedIn(res);
     } catch (err) {

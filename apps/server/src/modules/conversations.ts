@@ -730,6 +730,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('conversation_id', '=', id)
       .where('user_id', '=', auth.userId)
       .execute();
+    // Needs you got it wrong for them (PRD §83): counted, never who or where.
+    await recordEvent(ctx.db, 'attention.dismissed', null, {});
     await ctx.bus.publish([auth.userId], {
       type: 'conversation.updated',
       data: { conversationId: id },

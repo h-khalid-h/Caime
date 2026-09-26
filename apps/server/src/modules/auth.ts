@@ -10,6 +10,7 @@ import {
   isValidTimeZone,
   LoginBody,
   meetsMinimumAge,
+  normalizeHandle,
   plausibleBirthYear,
   RecoverBody,
   SignupBody,
@@ -133,6 +134,26 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const workweek = workweekFor(region, locale);
     const timeZone = body.timeZone && isValidTimeZone(body.timeZone) ? body.timeZone : 'UTC';
     const passwordHash = await hashPassword(body.password);
+    // The link that brought them, if it named someone (PRD §82); a handle that names nobody
+    // is simply not counted.
+    const via = body.invite ? normalizeHandle(body.invite) : null;
+    const [inviter, inviterOrg] = via
+      ? await Promise.all([
+          ctx.db
+            .selectFrom('users')
+            .select('id')
+            .where('handle', '=', via)
+            .where('kind', '=', 'human')
+            .where('deleted_at', 'is', null)
+            .executeTakeFirst(),
+          ctx.db
+            .selectFrom('organizations')
+            .select('id')
+            .where('handle', '=', via)
+            .where('archived_at', 'is', null)
+            .executeTakeFirst(),
+        ])
+      : [undefined, undefined];
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .insertInto('users')
@@ -148,6 +169,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
           region,
           workweek,
           privacy: JSON.stringify(defaultPrivacy({ minor: isMinor(body.birthYear, now) })),
+          invited_by: inviter?.id ?? null,
+          invited_by_org: inviterOrg?.id ?? null,
         })
         .execute();
       await trx
