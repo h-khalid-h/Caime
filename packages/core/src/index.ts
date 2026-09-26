@@ -6,6 +6,7 @@ export * from './kits';
 export * from './policy';
 export * from './privacy';
 export * from './safety';
+export * from './schemas';
 export * from './search';
 export * from './taxonomy';
 export * from './time';

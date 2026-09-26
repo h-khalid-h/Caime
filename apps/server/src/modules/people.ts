@@ -1,0 +1,297 @@
+/**
+ * Finding people and the relationship profile (PRD §25 "People", §50, §54, §67).
+ */
+import { ADULT_AGE, isMinor } from '@caishy/core';
+import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
+import { z } from 'zod';
+import type { AppContext } from '../context';
+import { notFound } from '../lib/errors';
+import {
+  activeRelationships,
+  between,
+  mutualFit,
+  pairKey,
+  relationshipView,
+  viewerRelation,
+} from '../lib/relations';
+import { personView } from '../lib/users';
+import { parse } from '../lib/validate';
+import { requireAuth } from '../plugins/auth';
+
+export function connectionState(b: Awaited<ReturnType<typeof between>>) {
+  return {
+    state: b.connected
+      ? 'connected'
+      : b.outgoingRequestId
+        ? 'outgoing'
+        : b.incomingRequestId
+          ? 'incoming'
+          : 'none',
+    connectionId: b.connectionId,
+    requestId: b.outgoingRequestId ?? b.incomingRequestId,
+  } as const;
+}
+
+export async function identityShownTo(ctx: AppContext, ownerId: string, viewerId: string) {
+  const side = await ctx.db
+    .selectFrom('connection_sides')
+    .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
+    .select(['identities.display_name', 'identities.headline', 'identities.org_name'])
+    .where('connection_sides.owner_id', '=', ownerId)
+    .where('connection_sides.other_id', '=', viewerId)
+    .executeTakeFirst();
+  const identity =
+    side ??
+    (await ctx.db
+      .selectFrom('identities')
+      .select(['display_name', 'headline', 'org_name'])
+      .where('user_id', '=', ownerId)
+      .where('is_default', '=', true)
+      .executeTakeFirst());
+  return identity
+    ? {
+        displayName: identity.display_name,
+        headline: identity.headline,
+        orgName: identity.org_name,
+      }
+    : null;
+}
+
+export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
+  app.get('/people/search', async (req) => {
+    const auth = requireAuth(req);
+    const { q, limit } = parse(
+      z.object({
+        q: z.string().trim().min(1).max(100),
+        limit: z.coerce.number().int().min(1).max(50).default(20),
+      }),
+      req.query,
+    );
+    ctx.limiter.hit(`people-search:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 60_000);
+    const me = await ctx.db
+      .selectFrom('users')
+      .select(['birth_year'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    const now = ctx.now();
+    const viewerIsMinor = isMinor(me.birth_year, now);
+    const term = q.replace(/^@/, '').toLowerCase();
+    const like = `${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const contains = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const year = now.getUTCFullYear();
+
+    const rows = await ctx.db
+      .selectFrom('users as u')
+      .leftJoin('connection_sides as s', (j) =>
+        j.onRef('s.other_id', '=', 'u.id').on('s.owner_id', '=', auth.userId),
+      )
+      .leftJoin('connections as c', (j) =>
+        j.onRef('c.id', '=', 's.connection_id').on('c.status', '=', 'active'),
+      )
+      .selectAll('u')
+      .select([
+        sql<boolean>`c.id is not null`.as('is_connection'),
+        sql<number>`greatest(similarity(u.display_name, ${term}), similarity(u.handle::text, ${term}), coalesce(similarity(s.nickname, ${term}), 0))`.as(
+          'score',
+        ),
+      ])
+      .where('u.id', '<>', auth.userId)
+      .where('u.deleted_at', 'is', null)
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('blocks')
+              .select('blocker_id')
+              .where((b) =>
+                b.or([
+                  b.and([b('blocker_id', '=', auth.userId), b('blocked_id', '=', b.ref('u.id'))]),
+                  b.and([b('blocker_id', '=', b.ref('u.id')), b('blocked_id', '=', auth.userId)]),
+                ]),
+              ),
+          ),
+        ),
+      )
+      .where((eb) =>
+        eb.or([
+          // People I'm connected to are always findable by me, including by my nickname for them.
+          eb.and([
+            sql<boolean>`c.id is not null`,
+            eb.or([
+              eb('u.display_name', 'ilike', contains),
+              sql<boolean>`u.handle::text ilike ${like}`,
+              eb('s.nickname', 'ilike', contains),
+            ]),
+          ]),
+          // Everyone else, only as their privacy allows.
+          eb.and([
+            sql<boolean>`coalesce((u.privacy->>'discoverByHandle')::boolean, true)`,
+            eb.or([
+              sql<boolean>`u.handle::text ilike ${like}`,
+              sql<boolean>`similarity(u.display_name, ${term}) > 0.35`,
+              eb('u.display_name', 'ilike', contains),
+            ]),
+          ]),
+          eb.and([
+            sql<boolean>`coalesce((u.privacy->>'discoverByEmail')::boolean, false)`,
+            sql<boolean>`u.email = ${term}`,
+          ]),
+        ]),
+      )
+      // Adults never find under-18 accounts (R29) unless already connected.
+      .$if(!viewerIsMinor, (qb) =>
+        qb.where((eb) =>
+          eb.or([
+            sql<boolean>`c.id is not null`,
+            eb('u.birth_year', 'is', null),
+            sql<boolean>`${year} - u.birth_year > ${ADULT_AGE}`,
+          ]),
+        ),
+      )
+      .orderBy(sql`c.id is not null`, 'desc')
+      .orderBy(sql`u.handle::text = ${term}`, 'desc')
+      .orderBy(sql`u.handle::text ilike ${like}`, 'desc')
+      .orderBy('score', 'desc')
+      .limit(limit)
+      .execute();
+
+    const ids = rows.map((r) => r.id);
+    const mine = await activeRelationships(ctx.db, auth.userId, ids);
+    const results = await Promise.all(
+      rows.map(async (u) => {
+        const [relation, b, identity] = await Promise.all([
+          viewerRelation(ctx.db, u.id, auth.userId),
+          between(ctx.db, auth.userId, u.id),
+          identityShownTo(ctx, u.id, auth.userId),
+        ]);
+        const rel = mine.find((r) => r.subject_id === u.id);
+        return {
+          person: personView(u, relation, now, identity),
+          connection: connectionState(b),
+          relationship: rel ? relationshipView(rel) : null,
+        };
+      }),
+    );
+    return { results };
+  });
+
+  app.get('/people/:id', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const user = await ctx.db
+      .selectFrom('users')
+      .selectAll()
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!user) throw notFound('That person');
+    const [relation, b, identity, mine] = await Promise.all([
+      viewerRelation(ctx.db, id, auth.userId),
+      between(ctx.db, auth.userId, id),
+      identityShownTo(ctx, id, auth.userId),
+      id === auth.userId ? Promise.resolve([]) : activeRelationships(ctx.db, auth.userId, [id]),
+    ]);
+    // Being blocked by them looks exactly like not existing.
+    if (b.blockedMe) throw notFound('That person');
+    const now = ctx.now();
+    const { key } = pairKey(auth.userId, id);
+    const conversations = await ctx.db
+      .selectFrom('conversations as cv')
+      .innerJoin('participants as p', (j) =>
+        j.onRef('p.conversation_id', '=', 'cv.id').on('p.user_id', '=', auth.userId),
+      )
+      .select(['cv.id', 'cv.title', 'cv.is_general', 'cv.last_message_at', 'cv.context_id'])
+      .where('cv.direct_key', '=', key)
+      .orderBy('cv.is_general', 'desc')
+      .orderBy('cv.last_message_at', sql`desc nulls last`)
+      .execute();
+    const conversationIds = conversations.map((c) => c.id);
+    const counts = conversationIds.length
+      ? await ctx.db
+          .selectNoFrom([
+            (eb) =>
+              eb
+                .selectFrom('messages')
+                .select(sql<number>`count(*)::int`.as('n'))
+                .where('conversation_id', 'in', conversationIds)
+                .where('deleted_at', 'is', null)
+                .as('messages'),
+            (eb) =>
+              eb
+                .selectFrom('assets')
+                .select(sql<number>`count(*)::int`.as('n'))
+                .where('conversation_id', 'in', conversationIds)
+                .where('kind', 'in', ['photo', 'video', 'document', 'audio'])
+                .as('files'),
+            (eb) =>
+              eb
+                .selectFrom('assets')
+                .select(sql<number>`count(*)::int`.as('n'))
+                .where('conversation_id', 'in', conversationIds)
+                .where('kind', '=', 'link')
+                .as('links'),
+            (eb) =>
+              eb
+                .selectFrom('decisions')
+                .select(sql<number>`count(*)::int`.as('n'))
+                .where('conversation_id', 'in', conversationIds)
+                .where('status', '=', 'active')
+                .as('decisions'),
+          ])
+          .executeTakeFirstOrThrow()
+      : { messages: 0, files: 0, links: 0, decisions: 0 };
+    const actions = await ctx.db
+      .selectNoFrom([
+        (eb) =>
+          eb
+            .selectFrom('tasks')
+            .select(sql<number>`count(*)::int`.as('n'))
+            .where('owner_id', '=', auth.userId)
+            .where('assignee_id', '=', id)
+            .where('status', 'in', ['open', 'accepted'])
+            .as('waiting'),
+        (eb) =>
+          eb
+            .selectFrom('tasks')
+            .select(sql<number>`count(*)::int`.as('n'))
+            .where('assignee_id', '=', auth.userId)
+            .where((w) =>
+              w.or([
+                w.and([w('owner_id', '=', id), w('shared', '=', true)]),
+                w.and([
+                  w('owner_id', '=', auth.userId),
+                  conversationIds.length
+                    ? w('conversation_id', 'in', conversationIds)
+                    : sql<boolean>`false`,
+                ]),
+              ]),
+            )
+            .where('status', 'in', ['open', 'accepted'])
+            .as('open'),
+      ])
+      .executeTakeFirstOrThrow();
+    const primary = mine[0];
+    return {
+      person: personView(user, relation, now, identity),
+      connection: connectionState(b),
+      blockedByMe: b.blockedByMe,
+      relationships: mine.map(relationshipView),
+      mutual: primary ? await mutualFit(ctx.db, auth.userId, id, primary) : null,
+      conversations: conversations.map((c) => ({
+        id: c.id,
+        title: c.is_general ? 'General' : (c.title ?? 'Topic'),
+        isGeneral: c.is_general,
+        lastMessageAt: c.last_message_at?.toISOString() ?? null,
+      })),
+      summary: {
+        messages: Number(counts.messages ?? 0),
+        files: Number(counts.files ?? 0),
+        links: Number(counts.links ?? 0),
+        decisions: Number(counts.decisions ?? 0),
+        openActions: Number(actions.open ?? 0),
+        waiting: Number(actions.waiting ?? 0),
+      },
+    };
+  });
+}
