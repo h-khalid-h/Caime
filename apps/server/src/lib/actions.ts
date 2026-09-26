@@ -70,6 +70,8 @@ export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Ta
       context_id: t.contextId ?? null,
       relationship_snapshot: snapshot ? JSON.stringify({ ...snapshot, userId: counterpart }) : null,
       source: t.source ?? 'manual',
+      created_at: ctx.now(),
+      updated_at: ctx.now(),
     })
     .returningAll()
     .executeTakeFirstOrThrow();

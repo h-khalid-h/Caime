@@ -38,7 +38,6 @@ import { createRelationship } from './relationships';
 const DECLINE_COOLDOWN_DAYS = 30;
 
 async function formConnection(
-  ctx: AppContext,
   trx: Transaction<Database>,
   a: string,
   b: string,
@@ -516,7 +515,7 @@ export async function acceptRequest(
       .set({ status: 'accepted', responded_at: ctx.now() })
       .where('id', '=', requestId)
       .execute();
-    result = await formConnection(ctx, trx, request.from_user, userId, {
+    result = await formConnection(trx, request.from_user, userId, {
       requesterIdentityId: request.from_identity_id,
     });
     const theirs = request.pending_relationship as RelationshipInputT | null;

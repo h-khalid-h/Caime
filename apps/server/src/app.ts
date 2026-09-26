@@ -103,14 +103,12 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       .send({ error: { code: 'internal', message: 'Something went wrong on our side.' } });
   });
   app.setNotFoundHandler((req, reply) => {
-    reply
-      .status(404)
-      .send({
-        error: {
-          code: 'not_found',
-          message: `No route for ${req.method} ${req.url.split('?')[0]}`,
-        },
-      });
+    reply.status(404).send({
+      error: {
+        code: 'not_found',
+        message: `No route for ${req.method} ${req.url.split('?')[0]}`,
+      },
+    });
   });
 
   registerAuth(app, ctx);

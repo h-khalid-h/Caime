@@ -70,7 +70,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('id', '=', body.avatarFileId)
           .where('owner_id', '=', auth.userId)
           .executeTakeFirst();
-        if (!file || file.kind !== 'image') throw badRequest('Choose an image you uploaded.');
+        if (file?.kind !== 'image') throw badRequest('Choose an image you uploaded.');
       }
       patch.avatar_file_id = body.avatarFileId;
     }

@@ -66,7 +66,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!s || s.status !== 'pending') throw notFound('That suggestion');
+    if (s?.status !== 'pending') throw notFound('That suggestion');
     const title = edits.title ?? s.title;
     const dueAt = edits.dueAt !== undefined ? edits.dueAt : (s.due_at?.toISOString() ?? null);
     const payload = (s.payload ?? {}) as Record<string, unknown>;
