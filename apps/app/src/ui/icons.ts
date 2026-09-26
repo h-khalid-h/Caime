@@ -79,6 +79,7 @@ export { default as Search } from 'lucide-react-native/icons/search';
 export { default as SendHorizontal } from 'lucide-react-native/icons/send-horizontal';
 export { default as Settings } from 'lucide-react-native/icons/settings';
 export { default as Shapes } from 'lucide-react-native/icons/shapes';
+export { default as Share } from 'lucide-react-native/icons/share';
 export { default as Shield } from 'lucide-react-native/icons/shield';
 export { default as ShieldCheck } from 'lucide-react-native/icons/shield-check';
 export { default as Smartphone } from 'lucide-react-native/icons/smartphone';

@@ -19,6 +19,7 @@ import { PERSIST_MAX_AGE, persister, queryClient } from '@/api/queryClient';
 import { HeartMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
 import { useOutbox } from '@/state/outbox';
+import { useRememberLinks } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 import { ToastHost } from '@/ui/Toast';
@@ -42,6 +43,7 @@ export default function RootLayout() {
     Inter_700Bold,
   });
   const status = useSession((s) => s.status);
+  useRememberLinks(status);
   // A slow font never holds the app hostage: after 2.5 s we render with the system font.
   const [fontTimeout, setFontTimeout] = useState(false);
   useEffect(() => {

@@ -6,6 +6,10 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { Character } from '@/brand/Character';
+import { handleLink } from '@/lib/config';
+import { handleIn } from '@/lib/paths';
+import { shareLink } from '@/lib/share';
+import { peekLink, takeLink } from '@/state/pendingLink';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -37,15 +41,20 @@ export default function Onboarding() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const name = me.displayName.split(' ')[0] ?? me.displayName;
+  // Came through someone's link: the last step offers to open it.
+  const [linkHandle] = useState(() => handleIn(peekLink()));
 
-  const finish = async (next: '/' | '/connect') => {
+  const finish = async (next: '/' | '/connect' | 'link') => {
     setBusy(true);
     try {
       const res = await endpoints.updateMe({ onboarded: true });
+      // Taken before the account reads as onboarded, so the signed-in layout doesn't open it too.
+      const link = takeLink();
       useSession.getState().clearRecoveryCodes();
       useSession.getState().setUser(res.user);
       router.replace('/');
-      if (next === '/connect') setTimeout(() => router.push('/connect'), 0);
+      const then = next === 'link' ? link : next === '/connect' ? '/connect' : null;
+      if (then) setTimeout(() => router.push(then), 0);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -214,24 +223,51 @@ export default function Onboarding() {
                 Now, your people
               </Text>
               <Text variant="body" color="textSecondary" align="center">
-                Find someone by @handle or email, or share yours: @{me.handle}
+                {linkHandle
+                  ? `You came here for @${linkHandle}. Find others by @handle or email any time.`
+                  : `Find someone by @handle or email, or share your link: @${me.handle}`}
               </Text>
             </View>
+            {linkHandle ? (
+              <Button
+                label={`See @${linkHandle}`}
+                size="lg"
+                block
+                loading={busy}
+                onPress={() => void finish('link')}
+                testID="onboarding-link"
+              />
+            ) : null}
             <Button
               label="Find people"
+              variant={linkHandle ? 'secondary' : 'primary'}
               size="lg"
               block
-              loading={busy}
+              loading={busy && !linkHandle}
               onPress={() => void finish('/connect')}
               testID="onboarding-find"
             />
-            <Button
-              label="I’ll do it later"
-              variant="ghost"
-              block
-              onPress={() => void finish('/')}
-              testID="onboarding-skip"
-            />
+            {linkHandle ? null : (
+              <>
+                <Button
+                  label="Share your link"
+                  variant="secondary"
+                  size="lg"
+                  block
+                  onPress={() =>
+                    void shareLink(`I’m on Caishy as @${me.handle}.`, handleLink(me.handle))
+                  }
+                  testID="onboarding-share"
+                />
+                <Button
+                  label="I’ll do it later"
+                  variant="ghost"
+                  block
+                  onPress={() => void finish('/')}
+                  testID="onboarding-skip"
+                />
+              </>
+            )}
           </>
         )}
       </ScrollView>

@@ -15,6 +15,7 @@ import type {
   ConversationView,
   DecisionView,
   DeviceSessionView,
+  HandleView,
   InboxAllResponse,
   InboxResponse,
   MemoryView,
@@ -227,6 +228,8 @@ export const endpoints = {
   orgs: () => api.get<{ orgs: OrgSummaryView[] }>('/orgs'),
   searchOrgs: (term: string) =>
     api.get<{ orgs: OrgSummaryView[] }>(`/orgs/search${q({ q: term })}`),
+  /** What an @handle link opens: a person or an organization (one namespace). */
+  openHandle: (handle: string) => api.get<HandleView>(`/handles/${encodeURIComponent(handle)}`),
   orgByHandle: (handle: string) =>
     api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),
   createOrg: (body: {

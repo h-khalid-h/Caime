@@ -26,6 +26,7 @@ import { authRoutes } from './modules/auth';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
 import { fileRoutes } from './modules/files';
+import { handleRoutes } from './modules/handles';
 import { healthRoutes } from './modules/health';
 import { inboxRoutes } from './modules/inbox';
 import { meRoutes } from './modules/me';
@@ -181,6 +182,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await searchRoutes(v1, ctx);
       await spaceRoutes(v1, ctx);
       await orgRoutes(v1, ctx);
+      await handleRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);

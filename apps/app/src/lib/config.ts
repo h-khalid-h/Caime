@@ -17,9 +17,12 @@ function resolveApiUrl(): string {
 }
 
 export const API_URL = resolveApiUrl();
-export const WS_URL = (
-  API_URL || (typeof window !== 'undefined' ? window.location.origin : '')
-).replace(/^http/, 'ws');
+/** Where links to Caishy point: the web app is served from the API's origin. */
+export const WEB_URL = API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+export const WS_URL = WEB_URL.replace(/^http/, 'ws');
 export const isWeb = Platform.OS === 'web';
 export const isIOS = Platform.OS === 'ios';
 export const isAndroid = Platform.OS === 'android';
+
+/** A person's or an organization's link (handles are one namespace). */
+export const handleLink = (handle: string) => `${WEB_URL}/@${handle}`;

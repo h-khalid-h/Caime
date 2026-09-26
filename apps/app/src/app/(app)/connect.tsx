@@ -2,11 +2,13 @@ import type { PeopleSearchResult } from '@caishy/core/api';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Share, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
 import { ConnectSheet } from '@/features/people/ConnectSheet';
+import { handleLink } from '@/lib/config';
+import { shareLink } from '@/lib/share';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -112,9 +114,7 @@ export default function Connect() {
   };
 
   const shareHandle = () =>
-    void Share.share({
-      message: `I’m on Caishy as @${me.handle}. Find me there: https://caishy.app/@${me.handle}`,
-    }).catch(() => {});
+    void shareLink(`I’m on Caishy as @${me.handle}. Find me there:`, handleLink(me.handle));
 
   return (
     <Screen edges={desktop ? [] : ['top']}>

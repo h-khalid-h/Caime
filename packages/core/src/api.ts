@@ -447,6 +447,13 @@ export interface SuggestionView {
   createdAt: string;
 }
 
+/** What an @handle link opens: handles are one namespace, a person's or an organization's. */
+export interface HandleView {
+  kind: 'person' | 'org';
+  id: string;
+  handle: string;
+}
+
 /** An organization as anyone sees it (PRD §36, R15). */
 export interface OrgSummaryView {
   id: string;

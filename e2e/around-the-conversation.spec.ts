@@ -449,6 +449,75 @@ test.describe
       expect(alex.errors).toEqual([]);
     });
 
+    test('an @handle link opens its person or organization, even after signing up first', async ({
+      browser,
+    }) => {
+      const { page, errors } = noor;
+      const origin = new URL(page.url()).origin;
+      await page.goto(`/@alex.${stamp}`);
+      await expect(page).toHaveURL(new RegExp(`/p/${alexId}$`));
+      await page.goto(`/@nile.dental.${stamp}`);
+      await expect(page).toHaveURL(new RegExp(`/o/nile\\.dental\\.${stamp}$`));
+      await page.goto(`/@nobody.${stamp}`);
+      await expect(visible(page, `No one here goes by @nobody.${stamp}`)).toBeVisible();
+      // A browser without a share sheet copies the link instead of doing nothing.
+      await page.goto('/connect');
+      await page.getByRole('button', { name: `Share @noor.${stamp}` }).click();
+      await expect(visible(page, 'Link copied')).toBeVisible();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        `${origin}/@noor.${stamp}`,
+      );
+
+      // A Caishy link in a message opens here, not in another tab.
+      const sent = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), body: `Our clinic: ${origin}/@nile.dental.${stamp}` },
+      });
+      expect(sent.ok()).toBe(true);
+      await page.goto(`/c/${convo}`);
+      await page
+        .getByRole('link', { name: `${origin}/@nile.dental.${stamp}` })
+        .filter({ visible: true })
+        .click();
+      await expect(page).toHaveURL(new RegExp(`/o/nile\\.dental\\.${stamp}$`));
+      expect(page.context().pages()).toHaveLength(1);
+
+      // Someone new opens Noor's link, signs up, and lands on Noor, ready to connect.
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const lina = await newPerson(context);
+      const linaHandle = `lina.${stamp}`;
+      await lina.page.goto(`/@noor.${stamp}`);
+      await expect(lina.page.getByTestId('welcome-link')).toHaveText(
+        `Create an account or sign in to see @noor.${stamp}`,
+      );
+      await lina.page.screenshot({ path: 'e2e/screenshots/phone-link-welcome.png' });
+      await lina.page.getByTestId('welcome-sign-up').click();
+      await lina.page.getByTestId('signup-name').fill('Lina Farah');
+      await lina.page.getByTestId('signup-handle').fill(linaHandle);
+      await lina.page.getByTestId('signup-email').fill(`${linaHandle}@example.com`);
+      await lina.page.getByTestId('signup-password').fill('a long enough passphrase');
+      await lina.page.getByTestId('signup-birth-year').fill('1990');
+      await expect(lina.page.getByText('Available')).toBeVisible();
+      await lina.page.getByTestId('signup-submit').click();
+      await lina.page.waitForURL('**/onboarding');
+      await lina.page.getByText('Copy the codes').click();
+      await lina.page.getByTestId('onboarding-codes-next').click();
+      await lina.page.getByTestId('onboarding-rules-next').click();
+      await expect(visible(lina.page, `You came here for @noor.${stamp}.`)).toBeVisible();
+      await lina.page.getByTestId('onboarding-link').click();
+      await expect(lina.page).toHaveURL(new RegExp(`/p/${noorId}$`));
+      await expect(lina.page.getByTestId('person-connect')).toBeVisible();
+      await lina.page.screenshot({ path: 'e2e/screenshots/phone-link-signup.png' });
+      // Back goes home, not to the way in.
+      await lina.page.goBack();
+      await expect(lina.page).toHaveURL(/\/$/);
+      // The one failed call is the handle nobody has.
+      expect(errors.filter((e) => !/handles\/nobody\.|status of 404/.test(e))).toEqual([]);
+      errors.length = 0;
+      expect(lina.errors).toEqual([]);
+      await context.close();
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [

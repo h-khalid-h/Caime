@@ -1,4 +1,7 @@
+import { router } from 'expo-router';
 import { Alert, Linking, Platform } from 'react-native';
+import { WEB_URL } from './config';
+import { ownLinkPath } from './paths';
 
 const URL_RE = /\bhttps?:\/\/[^\s<>"')\]]+[^\s<>"')\].,;:!?]/gi;
 
@@ -25,6 +28,12 @@ export function linkify(text: string): TextPart[] {
 
 /** Open a link, asking first when the server flagged it as unusual (link safety, PRD §60). */
 export function openLink(url: string, suspicious = false): void {
+  // A link to Caishy itself (someone's @handle) opens here, not in another tab.
+  const own = ownLinkPath(url, WEB_URL);
+  if (own) {
+    router.push(own);
+    return;
+  }
   const go = () => void Linking.openURL(url).catch(() => {});
   if (!suspicious) {
     go();

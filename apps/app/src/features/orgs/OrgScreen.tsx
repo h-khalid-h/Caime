@@ -15,7 +15,9 @@ import { endpoints } from '@/api/endpoints';
 import { useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
+import { handleLink } from '@/lib/config';
 import { openLink } from '@/lib/links';
+import { shareLink } from '@/lib/share';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -23,7 +25,7 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, BadgeCheck, Copy, Globe, LogOut, Settings, UserPlus } from '@/ui/icons';
+import { ArrowLeft, BadgeCheck, Copy, Globe, LogOut, Settings, Share, UserPlus } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -240,7 +242,18 @@ export function OrgScreen({ handle }: { handle: string }) {
 
   return (
     <Screen edges={desktop ? [] : ['top', 'bottom']}>
-      <TopBar left={desktop ? undefined : back} title={org.name} />
+      <TopBar
+        left={desktop ? undefined : back}
+        title={org.name}
+        right={
+          <IconButton
+            icon={Share}
+            label={`Share ${org.name}’s link`}
+            onPress={() => void shareLink(`${org.name} on Caishy:`, handleLink(org.handle))}
+            testID="org-share"
+          />
+        }
+      />
       <ScrollView
         contentContainerStyle={{
           paddingBottom: 32,

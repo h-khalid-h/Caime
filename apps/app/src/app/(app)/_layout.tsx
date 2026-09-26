@@ -1,4 +1,5 @@
-import { Redirect, Slot, Stack, usePathname } from 'expo-router';
+import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
@@ -8,6 +9,7 @@ import { NavRail } from '@/features/shell/NavRail';
 import { useSection } from '@/features/shell/sections';
 import { KeyboardShortcuts } from '@/features/shell/shortcuts';
 import { SpacesList } from '@/features/spaces/SpacesList';
+import { takeLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { useLayout } from '@/ui/layout';
@@ -20,6 +22,13 @@ export default function AppLayout() {
   const pathname = usePathname();
   const { desktop } = useLayout();
   const t = useTheme();
+  const onboarded = Boolean(user?.onboarded);
+  // Signed in through a link (someone's @handle): go where it pointed. Onboarding takes it itself.
+  useEffect(() => {
+    if (!onboarded) return;
+    const link = takeLink();
+    if (link) setTimeout(() => router.push(link), 0);
+  }, [onboarded]);
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;
   if (desktop && pathname !== '/onboarding')

@@ -107,6 +107,8 @@ These are rules, not preferences.
   the app to anything that asks for HTML (`plugins/static.ts`); test new link shapes with a
   reload, not only by navigating inside the app.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
+- Links to Caishy are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
+  from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
 
 ## Credentials and environment
 
@@ -121,6 +123,6 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
 native bundles export), Connect Kits, AI assist, Spaces, Organizations with DNS verification,
-your-data controls, the image and CI are built and verified. Remaining: share links, the
+share links, your-data controls, the image and CI are built and verified. Remaining: the
 business inbox, the platform API, store builds, and the EasyPanel deploy (⛔ needs EasyPanel
 access, `docs/DEPLOY.md`).

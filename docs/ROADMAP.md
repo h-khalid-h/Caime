@@ -64,6 +64,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Attention inbox, conversation, composer, inline suggestions, typing, presence, reciprocal
       read ticks (E2E, phone and desktop)
 - [x] Connect flow in ≤ 3 taps (sphere, role, done), accept with a label, People (E2E)
+- [x] Share links: `/@handle` opens that person or organization, found only as search would
+      find them; a Caishy link in a message opens in the app; a desktop browser without a
+      share sheet copies the link. Someone signed out keeps the link through sign-in, sign-up
+      and onboarding ("You came here for @noor") and lands on it (`handles.test.ts`,
+      `paths.test.ts`, E2E)
 - [x] Person profile, relationship change and its history, one line per change (E2E)
 - [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
 - [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
@@ -79,7 +84,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Realtime client with reconnect and catch-up; on-device cache with revalidation; offline
       outbox: a message written offline sends the moment the network returns (E2E)
 - [x] Stickers (Caishy Friends, 16): sent, and arrive live (E2E)
-- [~] Native: iOS and Android bundles export (Hermes); not yet run on a device or simulator
+- [~] Native: iOS and Android bundles export (Hermes); not yet run on a device or simulator.
+      Share links open the app only once it claims its domain (iOS associated domains, Android
+      app links, and the two files the server would serve under `/.well-known/`)
 
 ## M6 — Expansion
 
@@ -124,7 +131,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (421.5 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (422.8 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -199,3 +206,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   asks for, and a missing file is still a 404, never the app (`web.test.ts`, fails without the
   fix). And the Connect screen's "Find me there" link pointed at a domain and a route that don't
   exist; that's next. Tests: 133 core, 49 brand, 110 server, 4 app, 18 E2E.
+- 2026-09-26 — Session 2 (cont.): share links. `/@handle` opens a person or an organization,
+  and a link survives signing up: the welcome page says whose link it is, onboarding ends on it,
+  and Back goes home. Sharing on a desktop browser used to do nothing (there's no share sheet);
+  it copies the link now. Tests: 133 core, 49 brand, 112 server, 8 app, 19 E2E.
