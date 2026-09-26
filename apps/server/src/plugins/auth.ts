@@ -3,13 +3,14 @@
  * `X-Caishy-Client` on state-changing requests — a cross-site form cannot set custom headers, so
  * this stops CSRF. Native sends a Bearer token.
  */
-import { isApiToken, isPersonToken } from '@caishy/core';
+import { isApiToken, isPersonToken, OAUTH_ACCESS_PREFIX } from '@caishy/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext, Auth } from '../context';
 import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/access';
 import { API_ROUTES, resolveApiToken } from '../lib/apps';
 import { hashToken } from '../lib/crypto';
 import { AppError, unauthorized } from '../lib/errors';
+import { resolveOAuthAccess } from '../lib/oauth';
 
 export const SESSION_COOKIE = 'caishy_session';
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -95,7 +96,9 @@ async function authenticateApp(ctx: AppContext, req: FastifyRequest, token: stri
  * routes in PERSON_ROUTES, each behind the permission it needs, never their account itself.
  */
 async function authenticatePerson(ctx: AppContext, req: FastifyRequest, token: string) {
-  const found = await resolvePersonalToken(ctx, token);
+  const found = token.startsWith(OAUTH_ACCESS_PREFIX)
+    ? await resolveOAuthAccess(ctx, token)
+    : await resolvePersonalToken(ctx, token);
   if (!found) return;
   const scope = PERSON_ROUTES[`${req.method} ${req.routeOptions.url ?? ''}`];
   if (!scope) throw new AppError(403, 'token_route', 'A token can’t do this: sign in to Caishy.');

@@ -1,11 +1,12 @@
 import { PERSONAL_SCOPE_LABELS, PERSONAL_SCOPES, type PersonalScope } from '@caishy/core/access';
 import type { PersonalTokenView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
+import { formatListTime, formatWhen } from '@caishy/core/format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { OAuthApps } from '@/features/settings/OAuthApps';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
@@ -163,7 +164,9 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
           <Text variant="caption" color="textSecondary">
             {[
               `${token.prefix}…`,
-              token.lastUsedAt ? `used ${when(token.lastUsedAt)}` : 'never used',
+              token.lastUsedAt
+                ? `used ${formatWhen(token.lastUsedAt, now, timeZone, locale)}`
+                : 'never used',
               expired
                 ? 'ended'
                 : token.expiresAt
@@ -190,7 +193,8 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
 
 /**
  * Developer (PRD §74): personal access tokens for your own scripts, each able to do only what
- * you chose, for as long as you chose, and never anything about your account itself.
+ * you chose, for as long as you chose, and never anything about your account itself; and apps
+ * you make for other people, which they let in through OAuth.
  */
 export default function DeveloperSettings() {
   const minor = useSession((s) => s.user?.minor ?? false);
@@ -202,15 +206,15 @@ export default function DeveloperSettings() {
       {minor ? (
         <Card>
           <Text variant="body" color="textSecondary">
-            Access tokens are for people over 18.
+            Access tokens and apps are for people over 18.
           </Text>
         </Card>
       ) : (
-        <Group
-          title="Personal access tokens"
-          footer="A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caishy keeps only a fingerprint of each."
-        >
-          <Card padded={false}>
+        <>
+          <Group
+            title="Personal access tokens"
+            footer="A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caishy keeps only a fingerprint of each."
+          >
             {q.isPending ? (
               <SkeletonRows />
             ) : (
@@ -229,8 +233,9 @@ export default function DeveloperSettings() {
               onPress={() => setMaking(true)}
               testID="token-new"
             />
-          </Card>
-        </Group>
+          </Group>
+          <OAuthApps />
+        </>
       )}
       <NewToken open={making} onClose={() => setMaking(false)} />
     </SettingsPage>

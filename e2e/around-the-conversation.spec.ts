@@ -5,14 +5,15 @@
  * assist. One pair of people is shared by these tests (sign-ups are rate limited per address), so
  * they run in order.
  */
-import { randomUUID } from 'node:crypto';
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { type BrowserContext, expect, type Page, request, test } from '@playwright/test';
 import {
   ADMIN_TOKEN,
   apiSignUp,
   CLIENT,
   METRICS_TOKEN,
   newPerson,
+  PASSWORD,
   photo,
   publishTxt,
   visible,
@@ -862,6 +863,7 @@ test.describe
         ['about', 'About Caishy'],
         ['plan', 'Plan'],
         ['developer', 'Developer'],
+        ['connected', 'Connected apps'],
         ['appearance', 'Appearance'],
       ]) {
         await page.goto(`/settings/${path}`);
@@ -1116,11 +1118,10 @@ test.describe
       });
       expect(sent.status()).toBe(201);
       await alex.page.goto(`/c/${convo}`);
-      const bubble = visible(alex.page, 'Reminder: rehearsal at 6.');
-      await expect(bubble).toBeVisible();
-      await expect(
-        alex.page.getByTestId('message-sent-via').filter({ visible: true }).last(),
-      ).toHaveText('via Reminders script ·');
+      const bubble = alex.page
+        .getByLabel(/sent via Reminders script, Reminder: rehearsal at 6\./)
+        .filter({ visible: true });
+      await expect(bubble.getByTestId('message-sent-via')).toHaveText('via Reminders script ·');
       // It can't reach her account; revoked, it can't do anything.
       const settings = await alexContext.request.patch('/v1/me', {
         headers: { authorization: `Bearer ${token}` },
@@ -1135,6 +1136,111 @@ test.describe
       });
       expect(after.status()).toBe(401);
       expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
+    test('an app Noor made acts for Alex once he lets it in, and stops when he removes it', async ({
+      browser,
+      baseURL,
+    }) => {
+      const { page, errors } = noor;
+      // Noor registers her app. It runs in a browser, so it proves itself with PKCE: no secret.
+      await page.goto('/settings/developer');
+      await page.getByTestId('oauth-app-new').click();
+      await page.getByTestId('oauth-app-name').fill('Weekly digest');
+      await page.getByTestId('oauth-app-website').fill('https://digest.example');
+      await page.getByTestId('oauth-app-redirects').fill('https://digest.example/callback');
+      await page.getByTestId('oauth-app-create').click();
+      const clientId = ((await page.getByTestId('oauth-app-client-id').textContent()) ?? '').trim();
+      expect(clientId).toMatch(/^app_[\w-]{16}$/);
+      await expect(page.getByTestId('oauth-app-secret')).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-developer-oauth-app.png' });
+      await page.getByTestId('oauth-app-done').click();
+      await expect(page.getByTestId('oauth-app-Weekly digest')).toBeVisible();
+
+      // Its link reaches Alex signed out, on his phone; signing in brings him back to it.
+      const verifier = randomBytes(32).toString('base64url');
+      const authorize = `/oauth/authorize?${new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: 'https://digest.example/callback',
+        scope: 'messages:read messages:write',
+        state: 'digest-7',
+        code_challenge: createHash('sha256').update(verifier).digest('base64url'),
+        code_challenge_method: 'S256',
+      })}`;
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+      });
+      // The app's own page, where Caishy sends him back.
+      await phone.route('https://digest.example/**', (r) =>
+        r.fulfill({ contentType: 'text/html', body: '<p>Connected to Caishy</p>' }),
+      );
+      const app = await newPerson(phone);
+      await app.page.goto(authorize);
+      await expect(app.page.getByTestId('welcome-link')).toHaveText(
+        'An app asked to act for you. Sign in to answer it',
+      );
+      await app.page.getByTestId('welcome-sign-in').click();
+      await app.page.getByTestId('signin-identifier').fill(`alex.${stamp}`);
+      await app.page.getByTestId('signin-password').fill(PASSWORD);
+      await app.page.getByTestId('signin-submit').click();
+      const asked = app.page.getByTestId('oauth-consent');
+      await expect(asked).toContainText('Weekly digest wants to act for you');
+      await expect(asked).toContainText(
+        `Made by Noor Haddad (@noor.${stamp}) · https://digest.example`,
+      );
+      await expect(asked).toContainText('Send messages as you, marked with what sent them');
+      await expect(asked).toContainText('Then you’ll go back to digest.example.');
+      await app.page.screenshot({ path: 'e2e/screenshots/phone-oauth-consent.png' });
+      await app.page.getByTestId('oauth-allow').click();
+      await app.page.waitForURL(/^https:\/\/digest\.example\/callback\?/);
+      const back = new URL(app.page.url());
+      expect(back.searchParams.get('state')).toBe('digest-7');
+
+      // The app trades the code from its own server: no cookies, no Caishy client header. Its
+      // OAuth library finds where on its own (RFC 8414).
+      const digest = await request.newContext({ baseURL });
+      const found = await (await digest.get('/.well-known/oauth-authorization-server')).json();
+      expect(found.authorization_endpoint).toBe(`${baseURL}/oauth/authorize`);
+      const traded = await digest.post(found.token_endpoint, {
+        form: {
+          grant_type: 'authorization_code',
+          code: back.searchParams.get('code') ?? '',
+          redirect_uri: 'https://digest.example/callback',
+          client_id: clientId,
+          code_verifier: verifier,
+        },
+      });
+      expect(traded.status(), await traded.text()).toBe(200);
+      const { access_token: token } = (await traded.json()) as { access_token: string };
+      const sent = await digest.post(`/v1/conversations/${convo}/messages`, {
+        headers: { authorization: `Bearer ${token}` },
+        data: { clientId: randomUUID(), body: 'Your week: 3 conversations, 1 thing to do.' },
+      });
+      expect(sent.status()).toBe(201);
+      await page.goto(`/c/${convo}`);
+      // Newest first in the page: find the message by what it says it is.
+      const digestMessage = page
+        .getByLabel(/^sent via Weekly digest, Your week: 3 conversations, 1 thing to do\./)
+        .filter({ visible: true });
+      await expect(digestMessage.getByTestId('message-sent-via')).toHaveText('via Weekly digest ·');
+
+      // Alex finds it among his connected apps and ends it; its token stops at once.
+      await app.page.goto('/settings/connected');
+      await expect(app.page.getByTestId('connected-Weekly digest')).toContainText(
+        'Made by Noor Haddad',
+      );
+      await app.page.screenshot({ path: 'e2e/screenshots/phone-connected-apps.png' });
+      await app.page.getByTestId('connected-remove-Weekly digest').click();
+      await expect(app.page.getByTestId('connected-none')).toBeVisible();
+      const after = await digest.get(`/v1/conversations/${convo}`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(after.status()).toBe(401);
+      await digest.dispose();
+      await phone.close();
+      expect([...errors, ...app.errors]).toEqual([]);
     });
 
     test('a location shared live follows its sharer until they stop', async () => {

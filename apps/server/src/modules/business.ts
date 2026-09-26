@@ -256,7 +256,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', wanted)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!target || target.kind !== 'human') throw nobody();
+    if (target?.kind !== 'human') throw nobody();
     if (await orgSeat(ctx.db, target.id, id))
       throw badRequest('They’re on the team: write to them directly.');
 

@@ -47,6 +47,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       aiRuns,
       spaces,
       orgs,
+      tokens,
+      apps,
+      connectedApps,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -121,6 +124,30 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .select(['o.name', 'o.handle', 'm.role', 'm.title', 'm.joined_at', 'm.left_at'])
         .where('m.user_id', '=', me)
         .orderBy('m.joined_at')
+        .execute(),
+      // What can act as you, and what you made for others: names and permissions, never secrets.
+      ctx.db
+        .selectFrom('personal_tokens')
+        .select(['name', 'scopes', 'created_at', 'last_used_at', 'expires_at'])
+        .where('user_id', '=', me)
+        .where('revoked_at', 'is', null)
+        .orderBy('created_at')
+        .execute(),
+      ctx.db
+        .selectFrom('oauth_clients')
+        .select(['client_id', 'name', 'website', 'redirect_uris', 'secret_hash', 'created_at'])
+        .where('owner_id', '=', me)
+        .where('revoked_at', 'is', null)
+        .orderBy('created_at')
+        .execute(),
+      ctx.db
+        .selectFrom('oauth_grants as g')
+        .innerJoin('oauth_clients as c', 'c.id', 'g.client_id')
+        .select(['c.name', 'c.website', 'g.scopes', 'g.created_at', 'g.last_used_at'])
+        .where('g.user_id', '=', me)
+        .where('g.revoked_at', 'is', null)
+        .where('c.revoked_at', 'is', null)
+        .orderBy('g.created_at')
         .execute(),
     ]);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
@@ -209,6 +236,28 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         title: o.title,
         joinedAt: o.joined_at.toISOString(),
         leftAt: o.left_at?.toISOString() ?? null,
+      })),
+      accessTokens: tokens.map((k) => ({
+        name: k.name,
+        scopes: k.scopes,
+        createdAt: k.created_at.toISOString(),
+        lastUsedAt: k.last_used_at?.toISOString() ?? null,
+        expiresAt: k.expires_at?.toISOString() ?? null,
+      })),
+      appsYouMade: apps.map((a) => ({
+        clientId: a.client_id,
+        name: a.name,
+        website: a.website,
+        redirectUris: a.redirect_uris,
+        confidential: a.secret_hash !== null,
+        createdAt: a.created_at.toISOString(),
+      })),
+      connectedApps: connectedApps.map((g) => ({
+        name: g.name,
+        website: g.website,
+        scopes: g.scopes,
+        allowedAt: g.created_at.toISOString(),
+        lastUsedAt: g.last_used_at?.toISOString() ?? null,
       })),
       // When AI assist was used and for what; what it read and wrote is never stored.
       aiAssist: aiRuns.map((r) => ({

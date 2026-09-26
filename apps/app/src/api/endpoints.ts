@@ -14,6 +14,7 @@ import type {
   BusinessInboxView,
   BusinessSummaryView,
   BusinessThreadView,
+  ConnectedAppView,
   ConnectionRequestView,
   ConnectionView,
   ConversationView,
@@ -27,6 +28,8 @@ import type {
   MessageView,
   MeView,
   NotificationsResponse,
+  OAuthAppView,
+  OAuthConsentView,
   OrgAppSecretsView,
   OrgAppView,
   OrgInsightsView,
@@ -283,6 +286,21 @@ export const endpoints = {
   createToken: (body: { name: string; scopes: string[]; days: 30 | 90 | 365 | null }) =>
     api.post<{ token: string; view: PersonalTokenView }>('/me/tokens', body),
   revokeToken: (id: string) => api.del<Ok>(`/me/tokens/${id}`),
+  // OAuth (PRD §74): apps a developer registers, and apps someone lets act for them
+  oauthApps: () => api.get<{ apps: OAuthAppView[] }>('/me/oauth-apps'),
+  createOAuthApp: (body: {
+    name: string;
+    website?: string;
+    redirectUris: string[];
+    confidential: boolean;
+  }) => api.post<{ app: OAuthAppView; clientSecret: string | null }>('/me/oauth-apps', body),
+  removeOAuthApp: (id: string) => api.del<Ok>(`/me/oauth-apps/${id}`),
+  oauthConsent: (params: Record<string, string>) =>
+    api.get<OAuthConsentView>(`/oauth/authorize?${new URLSearchParams(params).toString()}`),
+  oauthDecide: (params: Record<string, string>, decision: 'allow' | 'deny') =>
+    api.post<{ redirect: string }>('/oauth/authorize', { ...params, decision }),
+  connectedApps: () => api.get<{ apps: ConnectedAppView[] }>('/me/connected-apps'),
+  removeConnectedApp: (grantId: string) => api.del<Ok>(`/me/connected-apps/${grantId}`),
   // Live location (R29): the sharer's device moves it; only they stop it
   moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
     api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),

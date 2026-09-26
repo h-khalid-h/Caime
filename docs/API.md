@@ -101,7 +101,92 @@ Anything else answers `403` with `token_route` (or `token_scope` without the per
 token never changes a password, privacy or sessions, makes tokens, exports or deletes an
 account. Revoked or expired, it answers `401`.
 
+## Acting for other people: OAuth
+
+An app other people use (a digest, a planner, an assistant) asks each of them to let it in, with
+the authorization code flow and PKCE. Register it in **You → Developer → Your apps**: its name,
+its website, the addresses people return to, and where it runs.
+
+- **Phones and browsers** (a public app): no secret, since it couldn't keep one. It proves
+  itself with PKCE every time.
+- **Its own server** (a confidential app): a secret, `cas_…`, shown once. It sends it as HTTP
+  Basic (`client_id:client_secret`) or as `client_secret` in the form, and uses PKCE as well.
+
+Return addresses are exact: https, plain http only on `localhost`, or the app's own scheme
+(`myapp://callback`). Everything below is also at `/.well-known/oauth-authorization-server`
+(RFC 8414), so most OAuth libraries need only that address and the client ID.
+
+### 1. Send them to Caishy
+
+```
+https://<caishy>/oauth/authorize?response_type=code&client_id=app_…
+  &redirect_uri=https%3A%2F%2Fyour.app%2Fcallback&scope=messages%3Aread%20messages%3Awrite
+  &state=<random>&code_challenge=<base64url SHA-256 of the verifier>&code_challenge_method=S256
+```
+
+`scope` is the permissions from the table above, separated by spaces; `code_challenge_method` is
+only `S256`, and the verifier is 43 to 128 characters the app keeps until step 2. They sign in if
+they need to, see the app's name, who made it, its website and what it asks for, and choose.
+Either way they go back to the return address, with `state` as it was sent:
+
+- Allowed: `?code=…&state=…`. The code works once, for ten minutes.
+- Declined: `?error=access_denied&state=…`.
+
+A request that isn't right (an unknown app, a return address it didn't register, a permission
+that doesn't exist) is shown to them as such and sends them nowhere. Nobody under 18 lets an app
+in.
+
+### 2. Trade the code for tokens
+
+```
+POST /v1/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=…&redirect_uri=…&client_id=app_…&code_verifier=…
+```
+
+```json
+{
+  "access_token": "cao_…",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "car_…",
+  "scope": "messages:read messages:write"
+}
+```
+
+Call the routes in the table above with `Authorization: Bearer cao_…`, within the permissions
+they allowed; a message the app sends shows "via" its name. There is no CORS on these
+endpoints, so an app that runs only in a browser trades the code on a server of its own.
+
+### 3. Refresh
+
+`grant_type=refresh_token&refresh_token=car_…&client_id=app_…` answers a new pair, and the
+refresh token sent is spent. Sent again, it means a copy leaked: the grant ends, both tokens
+stop, and the person has to let the app in again. A refresh token lasts 30 days.
+
+### Errors
+
+The token and revocation endpoints answer as RFC 6749 says, never with Caishy's own error shape,
+and with `cache-control: no-store`:
+
+| `error` | Status | When |
+| --- | --- | --- |
+| `invalid_client` | 401 | An unknown or removed app, or a confidential one without its secret |
+| `invalid_grant` | 400 | A code or refresh token that isn't valid, was used or has expired; a `redirect_uri` or verifier that doesn't match. A code used twice ends what it gave |
+| `unsupported_grant_type` | 400 | Anything but `authorization_code` and `refresh_token` |
+
+Each comes with an `error_description` a developer can read.
+
+### Ending it
+
+- The app gives a token back with `POST /v1/oauth/revoke`, `token=…&client_id=…` (and its
+  secret, if it has one), as RFC 7009 says: a refresh token ends the grant, an access token only
+  itself. It answers `200` whatever the token was, and only ever ends the app's own.
+- The person removes the app in **You → Connected apps**, where they see what it may do and
+  when it last acted; its tokens stop at once.
+- Removing the app in **Your apps** ends it for everyone who let it in.
+
 ## Not yet
 
-OAuth for third-party apps (acting for someone who let them in), and webhooks for anything
-outside the Business inbox.
+Webhooks for anything outside the Business inbox.

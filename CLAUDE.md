@@ -146,6 +146,13 @@ These are rules, not preferences.
   checked in the auth plugin before the route runs, as app tokens reach only `API_ROUTES`. A
   route joins the list on purpose, with its permission and a case in `personal-tokens.test.ts`;
   nothing about the account itself ever does. `req.auth.grant` says a token made the request.
+- OAuth apps' tokens (`cao_`) go through the same `PERSON_ROUTES`; `resolveOAuthAccess`
+  (`apps/server/src/lib/oauth.ts`) checks the token, its grant, its app and its person are all
+  live. `/v1/oauth/token` and `/v1/oauth/revoke` answer RFC 6749/7009 errors
+  (`{error, error_description}`), not Caishy's shape, and take forms. The consent screen is
+  `apps/app/src/app/(app)/oauth/authorize.tsx`; a signed-out visitor's authorize link survives
+  sign-in through `state/pendingLink.ts` (`appPath` allows 1,000 characters and colons in the
+  query for it).
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
@@ -182,9 +189,11 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 ## Current state
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
-native bundles export), Connect Kits, AI assist, Spaces, Organizations with DNS verification,
-the Business inbox, apps for organizations (scoped tokens, bots, signed webhooks), plan
-entitlements, metrics (operations, product, organizations' insights), share links, your-data
-controls, the image and CI are built and verified. Remaining: billing (⛔ Stripe), personal
-tokens and OAuth, calls (⛔ TURN), the location, album and checklist kits, store builds, and the
-EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).
+native bundles export), Connect Kits (including location, live location, checklists and shared
+albums), AI assist, Spaces, Organizations with DNS verification, the Business inbox (with
+organizations writing first as requests), apps for organizations (scoped tokens, bots, signed
+webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
+(operations, product, organizations' insights), share links, your-data controls, the image and
+CI are built and verified. Remaining: AI agents, billing (⛔ Stripe), calls (⛔ TURN), a
+third-party penetration test, store builds, and the EasyPanel deploy (⛔ needs EasyPanel access,
+`docs/DEPLOY.md`).

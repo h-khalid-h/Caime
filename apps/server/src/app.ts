@@ -39,6 +39,7 @@ import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
 import { metricsRoutes } from './modules/metrics';
 import { notificationRoutes } from './modules/notifications';
+import { oauthDiscovery, oauthRoutes } from './modules/oauth';
 import { orgRoutes } from './modules/orgs';
 import { peopleRoutes } from './modules/people';
 import { policyRoutes } from './modules/policies';
@@ -185,6 +186,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     ctx.metrics.httpSeconds.observe({ method: req.method, route }, reply.elapsedTime / 1000);
   });
   await metricsRoutes(app, ctx);
+  await oauthDiscovery(app, ctx);
 
   await app.register(
     async (v1) => {
@@ -210,6 +212,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await businessRoutes(v1, ctx);
       await appRoutes(v1, ctx);
       await tokenRoutes(v1, ctx);
+      await oauthRoutes(v1, ctx);
       await adminRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);

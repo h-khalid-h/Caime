@@ -10,6 +10,8 @@ export const qk = {
   orgInsights: (orgId: string, days: number) => ['org-insights', orgId, days] as const,
   businessSummary: ['business-summary'] as const,
   tokens: ['personal-tokens'] as const,
+  oauthApps: ['oauth-apps'] as const,
+  connectedApps: ['connected-apps'] as const,
   space: (id: string) => ['space', id] as const,
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,

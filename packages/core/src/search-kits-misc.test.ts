@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatDue, formatListTime, initials, joinNames, textDirection } from './format';
+import {
+  formatDue,
+  formatListTime,
+  formatWhen,
+  initials,
+  joinNames,
+  textDirection,
+} from './format';
 import { isUuid, uuidv7, uuidv7Time } from './ids';
 import { kitsFor } from './kits';
 import { parseSearchQuery } from './search';
@@ -149,6 +156,15 @@ describe('format', () => {
     expect(formatListTime('2026-09-22T15:00:00Z', now, tz)).toBe('Yesterday');
     expect(formatListTime('2026-09-19T15:00:00Z', now, tz)).toBe('Sat');
     expect(formatListTime('2026-08-01T15:00:00Z', now, tz)).toBe('Aug 1');
+  });
+  it('times inside a sentence', () => {
+    expect(formatWhen('2026-09-23T13:59:30Z', now, tz)).toBe('just now');
+    expect(formatWhen('2026-09-23T13:45:00Z', now, tz)).toBe('15 min ago');
+    expect(formatWhen('2026-09-23T11:00:00Z', now, tz)).toBe('at 7:00 AM');
+    expect(formatWhen('2026-09-22T15:00:00Z', now, tz)).toBe('yesterday');
+    expect(formatWhen('2026-09-19T15:00:00Z', now, tz)).toBe('on Sat');
+    expect(formatWhen('2026-08-01T15:00:00Z', now, tz)).toBe('on Aug 1');
+    expect(formatWhen('2025-08-01T15:00:00Z', now, tz)).toBe('on Aug 1, 2025');
   });
   it('due dates', () => {
     expect(formatDue('2026-09-24T13:00:00Z', now, tz)).toBe('Tomorrow');

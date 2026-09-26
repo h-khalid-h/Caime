@@ -33,7 +33,9 @@ export default function AppLayout() {
   }, [onboarded]);
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;
-  if (desktop && pathname !== '/onboarding')
+  // Onboarding, and an app asking to act for them, have the whole window: nothing else to do there.
+  const focused = pathname === '/onboarding' || pathname.startsWith('/oauth/');
+  if (desktop && !focused)
     return (
       <>
         <DesktopShell />

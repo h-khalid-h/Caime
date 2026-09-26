@@ -61,6 +61,32 @@ afterAll(async () => {
 
 describe('your data', () => {
   it('exports what is yours as a download, and nothing that is someone else’s', async () => {
+    // What can act for him and what he made for others: named in it, never their secrets.
+    const token = await hassan.post('/v1/me/tokens', {
+      name: 'Backup script',
+      scopes: ['messages:read'],
+      days: 30,
+    });
+    const made = await hassan.post('/v1/me/oauth-apps', {
+      name: 'Hassan’s digest',
+      redirectUris: ['https://digest.example/cb'],
+      confidential: true,
+    });
+    const planner = (
+      await sarah.post('/v1/me/oauth-apps', {
+        name: 'Sarah’s planner',
+        redirectUris: ['https://planner.example/cb'],
+      })
+    ).app;
+    await hassan.post('/v1/oauth/authorize', {
+      response_type: 'code',
+      client_id: planner.clientId,
+      redirect_uri: 'https://planner.example/cb',
+      scope: 'actions:read',
+      code_challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+      code_challenge_method: 'S256',
+      decision: 'allow',
+    });
     const res = await hassan.req('GET', '/v1/me/export');
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-disposition']).toMatch(
@@ -76,6 +102,21 @@ describe('your data', () => {
     expect(archive.messages.map((m: any) => m.body)).toEqual(['From Hassan']);
     expect(JSON.stringify(archive)).not.toContain('From Sarah');
     expect(JSON.stringify(archive)).not.toContain('password');
+    expect(archive.accessTokens).toEqual([
+      expect.objectContaining({ name: 'Backup script', scopes: ['messages:read'] }),
+    ]);
+    expect(archive.appsYouMade).toEqual([
+      expect.objectContaining({
+        name: 'Hassan’s digest',
+        clientId: made.app.clientId,
+        confidential: true,
+      }),
+    ]);
+    expect(archive.connectedApps).toEqual([
+      expect.objectContaining({ name: 'Sarah’s planner', scopes: ['actions:read'] }),
+    ]);
+    expect(JSON.stringify(archive)).not.toContain(token.token);
+    expect(JSON.stringify(archive)).not.toContain(made.clientSecret);
   });
 
   it('deletes an account only with its password, and leaves others a consistent history', async () => {
@@ -132,6 +173,13 @@ describe('your data', () => {
       .where('owner_id', '=', hassan.user.id)
       .execute();
     expect(owned).toEqual([]);
+    // The app he made goes with him, for everyone who let it in.
+    const apps = await t.ctx.db
+      .selectFrom('oauth_clients')
+      .select('id')
+      .where('owner_id', '=', hassan.user.id)
+      .execute();
+    expect(apps).toEqual([]);
 
     // Sarah keeps the conversation: Hassan's words stay, without his name.
     const view = await sarah.get(`/v1/conversations/${convo}`);

@@ -14,6 +14,7 @@ import {
   Info,
   Keyboard,
   KeyRound,
+  LayoutGrid,
   Lock,
   LogOut,
   Palette,
@@ -68,11 +69,18 @@ const ITEMS: Array<{
     subtitle: 'Devices, password, recovery codes',
   },
   {
+    href: '/settings/connected',
+    path: '/settings/connected',
+    icon: LayoutGrid,
+    title: 'Connected apps',
+    subtitle: 'Apps you let act for you',
+  },
+  {
     href: '/settings/developer',
     path: '/settings/developer',
     icon: KeyRound,
     title: 'Developer',
-    subtitle: 'Access tokens for your own scripts',
+    subtitle: 'Tokens for your scripts, apps for other people',
   },
   {
     href: '/settings/about',

@@ -669,6 +669,50 @@ export interface PersonalTokensTable {
   revoked_at: NullableTimestamp;
 }
 
+export interface OAuthClientsTable {
+  id: string;
+  client_id: string;
+  owner_id: string;
+  name: string;
+  website: string | null;
+  redirect_uris: string[];
+  secret_hash: Buffer | null;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
+export interface OAuthGrantsTable {
+  id: string;
+  client_id: string;
+  user_id: string;
+  scopes: string[];
+  last_used_at: NullableTimestamp;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
+export interface OAuthCodesTable {
+  code_hash: Buffer;
+  grant_id: string;
+  redirect_uri: string;
+  code_challenge: string;
+  scopes: string[];
+  expires_at: Date;
+  used_at: NullableTimestamp;
+}
+
+export interface OAuthTokensTable {
+  id: string;
+  grant_id: string;
+  kind: 'access' | 'refresh';
+  token_hash: Buffer;
+  scopes: string[];
+  expires_at: Date;
+  created_at: Generated<Date>;
+  used_at: NullableTimestamp;
+  revoked_at: NullableTimestamp;
+}
+
 export interface Database {
   users: UsersTable;
   identities: IdentitiesTable;
@@ -698,6 +742,10 @@ export interface Database {
   org_blocks: OrgBlocksTable;
   album_photos: AlbumPhotosTable;
   personal_tokens: PersonalTokensTable;
+  oauth_clients: OAuthClientsTable;
+  oauth_grants: OAuthGrantsTable;
+  oauth_codes: OAuthCodesTable;
+  oauth_tokens: OAuthTokensTable;
   reports: ReportsTable;
   domain_events: DomainEventsTable;
   jobs: JobsTable;

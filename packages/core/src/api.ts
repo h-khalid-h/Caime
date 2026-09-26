@@ -1038,3 +1038,35 @@ export interface PersonalTokenView {
   lastUsedAt: string | null;
   expiresAt: string | null;
 }
+
+/** A third-party app its developer registered (PRD §74): never its secret after it's made. */
+export interface OAuthAppView {
+  id: string;
+  clientId: string;
+  name: string;
+  website: string | null;
+  redirectUris: string[];
+  /** It keeps a secret on a server; otherwise it proves itself with PKCE alone. */
+  confidential: boolean;
+  createdAt: string;
+}
+
+/** What someone is asked when an app wants to act for them. */
+export interface OAuthConsentView {
+  app: { name: string; website: string | null; owner: { displayName: string; handle: string } };
+  scopes: Array<{ scope: string; label: string }>;
+  redirectUri: string;
+  /** They let it in before, with at least these permissions. */
+  allowedBefore: boolean;
+}
+
+/** An app someone let act for them, and what it may do. */
+export interface ConnectedAppView {
+  grantId: string;
+  name: string;
+  website: string | null;
+  owner: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+}

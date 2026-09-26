@@ -3,7 +3,7 @@
  * body with these; clients use the same schemas for forms, so a rule changes in one place.
  */
 import { z } from 'zod';
-import { PERSONAL_SCOPES } from './access';
+import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { ORG_KINDS } from './orgs';
@@ -72,6 +72,39 @@ export const CreatePersonalTokenBody = z
     days: z.union([z.literal(30), z.literal(90), z.literal(365), z.null()]).default(90),
   })
   .strict();
+
+/** A third-party app a developer registers: where people come back to after allowing it. */
+export const CreateOAuthAppBody = z
+  .object({
+    name: z.string().trim().min(1, 'Name your app.').max(60),
+    website: z.string().trim().url().max(300).optional(),
+    redirectUris: z
+      .array(
+        z
+          .string()
+          .trim()
+          .max(500)
+          .superRefine((uri, ctx) => {
+            const error = redirectUriError(uri);
+            if (error) ctx.addIssue({ code: 'custom', message: error });
+          }),
+      )
+      .min(1, 'Add where people come back to after allowing it.')
+      .max(5),
+    confidential: z.boolean().default(false),
+  })
+  .strict();
+
+/** An app asks to act for someone (the authorization request, with PKCE). */
+export const OAuthAuthorizeRequest = z.object({
+  response_type: z.literal('code'),
+  client_id: z.string().min(1).max(80),
+  redirect_uri: z.string().min(1).max(500),
+  scope: z.string().max(500).default(''),
+  state: z.string().max(500).optional(),
+  code_challenge: z.string().regex(/^[\w-]{43,128}$/, 'A PKCE code challenge is needed.'),
+  code_challenge_method: z.literal('S256'),
+});
 
 export const LoginBody = z.object({
   identifier: z.string().trim().min(1, 'Enter your email or handle.').max(254),

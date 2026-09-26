@@ -5,13 +5,20 @@
 
 /** The way in, never a place to return someone to. */
 const ENTRY = /^\/(?:welcome|sign-in|sign-up|recover|onboarding)?(?:[/?#]|$)/;
-const SAFE = /^\/(?!\/)[\w@.~%/?=&+-]{0,300}$/;
+// A query may carry a colon (an app's scope=messages:read, as browsers leave it); a path never.
+const SAFE = /^\/(?!\/)[\w@.~%/=&+-]*(?:\?[\w@.~%/?=&+:-]*)?$/;
+// Long enough for an app's authorization request (/oauth/authorize?…), short of junk.
+const MAX_PATH = 1000;
 
 /** A path inside the app worth opening from a link, or null (the way in, junk, another site). */
 export function appPath(path: string | null | undefined): string | null {
-  if (!path || !SAFE.test(path) || ENTRY.test(path)) return null;
+  if (!path || path.length > MAX_PATH || !SAFE.test(path) || ENTRY.test(path)) return null;
   return path;
 }
+
+/** An app asking to act for someone (PRD §74): the way back to it survives signing in. */
+export const isAuthorizeLink = (path: string | null | undefined) =>
+  Boolean(path && /^\/oauth\/authorize(?:\?|$)/.test(path));
 
 /** The in-app path of a link to Caishy itself (on `base`, its web origin), or null. */
 export function ownLinkPath(url: string, base: string): string | null {

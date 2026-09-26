@@ -7,7 +7,7 @@ import {
   WEBHOOK_EVENTS,
   type WebhookEvent,
 } from '@caishy/core/apps';
-import { formatListTime } from '@caishy/core/format';
+import { formatWhen } from '@caishy/core/format';
 import { PLAN_NAMES } from '@caishy/core/plans';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
@@ -356,7 +356,7 @@ export function OrgApps({ org }: { org: OrgView }) {
             <Text variant="caption" color="textSecondary">
               Token {app.tokenPrefix ?? '—'}…
               {app.lastUsedAt
-                ? ` · last used ${formatListTime(app.lastUsedAt, now, timeZone, locale)}`
+                ? ` · last used ${formatWhen(app.lastUsedAt, now, timeZone, locale)}`
                 : ' · not used yet'}
             </Text>
             <View style={{ marginHorizontal: -20 }}>

@@ -96,6 +96,31 @@ export function formatListTime(iso: string, now: Date, timeZone: string, locale 
   }).format(t);
 }
 
+/**
+ * When something happened, as a sentence goes on ("used …", "allowed …"): "just now",
+ * "15 min ago", "at 7:00 AM", "yesterday", "on Sat", "on Aug 1", "on Aug 1, 2025".
+ */
+export function formatWhen(iso: string, now: Date, timeZone: string, locale = 'en'): string {
+  const t = new Date(iso);
+  const diff = now.getTime() - t.getTime();
+  if (diff < 60_000 && diff > -60_000) return 'just now';
+  if (diff > 0 && diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
+  const p = zonedParts(t, timeZone);
+  const n = zonedParts(now, timeZone);
+  if (sameDay(p, n)) return `at ${formatClock(iso, timeZone, locale)}`;
+  const y = new Date(Date.UTC(n.year, n.month - 1, n.day - 1));
+  if (sameDay(p, { year: y.getUTCFullYear(), month: y.getUTCMonth() + 1, day: y.getUTCDate() }))
+    return 'yesterday';
+  if (diff > 0 && diff < 6 * 86_400_000)
+    return `on ${dateFormat(locale, { weekday: 'short', timeZone }).format(t)}`;
+  return `on ${dateFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: p.year === n.year ? undefined : 'numeric',
+    timeZone,
+  }).format(t)}`;
+}
+
 /** Day separators in a conversation: "Today", "Yesterday", "Tuesday", "12 September 2025". */
 export function formatDayHeading(iso: string, now: Date, timeZone: string, locale = 'en'): string {
   const t = new Date(iso);

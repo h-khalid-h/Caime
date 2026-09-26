@@ -159,7 +159,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       developer guide is `docs/API.md`). Personal access tokens for people's own scripts: named,
       with the permissions they chose and a lifetime, shown once, reaching only their messages
       and actions and never the account itself; what they send says "via" the token
-      (`personal-tokens.test.ts`, E2E). [ ] OAuth for third-party apps, AI agents
+      (`personal-tokens.test.ts`, E2E). OAuth for third-party apps: a developer registers one in
+      Developer, people see who made it and what it asks before letting it in, and it gets
+      tokens that act within that and say "via" it, ended from Connected apps
+      (`oauth.test.ts`, E2E; `docs/API.md`). [ ] AI agents
 - [x] Plan entitlements (R23): what each plan includes lives in core and is checked on the server
       where something is added (AI assists, files, a team's people, apps). The wedge is never
       counted, and a lower plan never removes anything. You → Plan shows what's used; an
@@ -381,3 +384,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   privacy, sessions, tokens, export or deletion. Revoked, or out of time, it stops at once;
   recovering an account ends all of them. A message it sends shows "via" its name, so nobody
   takes a script for someone typing. Tests: 149 core, 49 brand, 176 server, 8 app, 30 E2E.
+- 2026-09-26 — Session 2 (cont.): OAuth for third-party apps. A developer registers an app in
+  You → Developer: its name, website, exact return addresses, and whether it runs on phones and
+  in browsers (PKCE, no secret) or on its own server (a secret, shown once). Someone the app
+  sends to Caishy sees who made it and what it asks, signing in first if they need to and coming
+  back to the question, and lets it in or not. The app trades a code (single use, ten minutes,
+  bound to its PKCE challenge) for an hour's access token and a month's refresh token that turns
+  over on each use; a code or refresh token used twice ends the grant, since only a copy would
+  be. The app acts within what it was allowed, and what it sends says "via" it. People end it in
+  You → Connected apps, its developer removing it ends it for everyone, and nobody under 18 lets
+  one in. `/.well-known/oauth-authorization-server` tells OAuth libraries where everything is.
+  Its review found that a Basic header that didn't decode answered 500 and that revocation didn't
+  check which app asked; both are fixed and tested. The export now lists the tokens and apps
+  that act for you and the apps you made. Tests: 153 core, 49 brand, 185 server, 9 app, 31 E2E.
