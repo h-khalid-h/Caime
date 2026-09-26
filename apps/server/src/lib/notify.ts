@@ -55,7 +55,17 @@ export async function notify(ctx: AppContext, input: NotifyInput): Promise<strin
       data: input.data ?? {},
     },
   });
-  for (const hook of hooks)
-    await hook(ctx, id, input).catch((err) => ctx.log.warn({ err }, 'notification hook failed'));
+  if ((input.delivery ?? 'push') === 'push') await runNotificationHooks(ctx, id, input);
   return id;
+}
+
+/** Deliver a notification to devices (web push, mobile push) through the registered hooks. */
+export async function runNotificationHooks(
+  ctx: AppContext,
+  id: string,
+  input: NotifyInput,
+): Promise<void> {
+  for (const hook of hooks) {
+    await hook(ctx, id, input).catch((err) => ctx.log.warn({ err }, 'notification hook failed'));
+  }
 }

@@ -12,6 +12,7 @@ import { recordEvent } from '../lib/events';
 import { relationshipView } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
+import { createTopicConversation } from './conversations';
 import { createRelationship } from './relationships';
 
 export function suggestionView(s: Suggestion) {
@@ -71,6 +72,32 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
     const dueAt = edits.dueAt !== undefined ? edits.dueAt : (s.due_at?.toISOString() ?? null);
     const payload = (s.payload ?? {}) as Record<string, unknown>;
 
+    if (s.kind === 'topic') {
+      const parentId = String(payload.parentId ?? s.conversation_id);
+      const conversationId = await createTopicConversation(ctx, auth.userId, parentId, title);
+      await ctx.db
+        .updateTable('suggestions')
+        .set({
+          status: 'accepted',
+          resolved_at: ctx.now(),
+          result_ref: JSON.stringify({ type: 'conversation', id: conversationId }),
+        })
+        .where('id', '=', id)
+        .execute();
+      // Everyone else's copy of this topic suggestion is now answered too.
+      await ctx.db
+        .updateTable('suggestions')
+        .set({ status: 'expired', resolved_at: ctx.now() })
+        .where('fingerprint', '=', s.fingerprint)
+        .where('status', '=', 'pending')
+        .execute();
+      await ctx.bus.publish([auth.userId], {
+        type: 'suggestion.resolved',
+        data: { id, status: 'accepted' },
+      });
+      return { accepted: { type: 'conversation', id: conversationId } };
+    }
+
     const result = await ctx.db.transaction().execute(async (trx) => {
       let ref: { type: string; id: string; view?: unknown };
       switch (s.kind) {
@@ -125,6 +152,15 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
             decidedBy: (payload.decidedBy as string | undefined) ?? auth.userId,
           });
           ref = { type: 'decision', id: d.id };
+          // One decision per message: other participants' suggestions for it are answered.
+          await trx
+            .updateTable('suggestions')
+            .set({ status: 'expired', resolved_at: ctx.now() })
+            .where('message_id', '=', s.message_id)
+            .where('kind', '=', 'decision')
+            .where('status', '=', 'pending')
+            .where('id', '<>', id)
+            .execute();
           break;
         }
         default:

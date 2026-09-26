@@ -14,6 +14,8 @@ type Json<T = unknown> = ColumnType<T, T | string, T | string>;
 /** A jsonb column with a database default. */
 type JsonDefaulted<T> = ColumnType<T, T | string | undefined, T | string>;
 type Defaulted<T> = ColumnType<T, T | undefined, T>;
+/** bigint counters: pg returns strings; numbers are accepted on write. */
+type BigIntCol = ColumnType<string, string | number | undefined, string | number>;
 
 export interface UsersTable {
   id: string;
@@ -245,7 +247,7 @@ export interface ConversationsTable {
   temporary_until: NullableTimestamp;
   retention_days: number | null;
   created_by: string | null;
-  last_seq: Defaulted<string>;
+  last_seq: BigIntCol;
   last_message_at: NullableTimestamp;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
@@ -258,14 +260,14 @@ export interface ParticipantsTable {
   identity_id: string | null;
   joined_at: Generated<Date>;
   left_at: NullableTimestamp;
-  last_read_seq: Defaulted<string>;
-  last_delivered_seq: Defaulted<string>;
+  last_read_seq: BigIntCol;
+  last_delivered_seq: BigIntCol;
   attention: Defaulted<AttentionOverride>;
   muted_until: NullableTimestamp;
   archived_at: NullableTimestamp;
   pinned_at: NullableTimestamp;
   request_state: 'pending' | 'accepted' | 'declined' | null;
-  dismissed_seq: Defaulted<string>;
+  dismissed_seq: BigIntCol;
   draft: string | null;
   draft_updated_at: NullableTimestamp;
 }
@@ -328,7 +330,7 @@ export interface FilesTable {
   sha256: string | null;
   thumb_key: string | null;
   status: Defaulted<'uploading' | 'ready' | 'failed'>;
-  upload_offset: Defaulted<string>;
+  upload_offset: BigIntCol;
   created_at: Generated<Date>;
 }
 
@@ -491,6 +493,19 @@ export interface AiRunsTable {
   created_at: Generated<Date>;
 }
 
+export interface PollVotesTable {
+  message_id: string;
+  user_id: string;
+  option_id: string;
+  created_at: Generated<Date>;
+}
+
+export interface HiddenMessagesTable {
+  message_id: string;
+  user_id: string;
+  created_at: Generated<Date>;
+}
+
 export interface ServerSettingsTable {
   key: string;
   value: Json;
@@ -529,6 +544,8 @@ export interface Database {
   audit_log: AuditLogTable;
   ai_runs: AiRunsTable;
   server_settings: ServerSettingsTable;
+  poll_votes: PollVotesTable;
+  hidden_messages: HiddenMessagesTable;
 }
 
 export type User = Selectable<UsersTable>;

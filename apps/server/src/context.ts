@@ -15,6 +15,10 @@ export interface AppContext {
   log: FastifyBaseLogger;
   /** Injectable clock so tests can move time. */
   now(): Date;
+  /** Run work after the response (notifications, suggestions). Errors are logged, never thrown. */
+  defer(label: string, work: () => Promise<unknown>): void;
+  /** Wait for deferred work to finish (tests, shutdown). */
+  flush(): Promise<void>;
 }
 
 export interface Auth {

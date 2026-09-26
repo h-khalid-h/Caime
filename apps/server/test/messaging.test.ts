@@ -1,0 +1,473 @@
+import { uuidv4 } from '@caishy/core';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import WebSocket from 'ws';
+import { runDueJobs, runPeriodic } from '../src/lib/jobs';
+import { type Client, createTestApp, signup, type TestApp } from './helpers';
+
+let t: TestApp;
+let hassan: Client;
+let sarah: Client;
+let convo: string;
+
+async function connect(a: Client, b: Client, aSeesB?: object, bSeesA?: object): Promise<string> {
+  const r = await a.post('/v1/connections/requests', { toUserId: b.user.id, relationship: aSeesB });
+  const res = await b.post(`/v1/connections/requests/${r.requestId}/accept`, {
+    relationship: bSeesA,
+  });
+  return res.conversationId as string;
+}
+
+const send = (c: Client, conversationId: string, body: string, extra: object = {}) =>
+  c
+    .post(`/v1/conversations/${conversationId}/messages`, {
+      clientId: uuidv4(),
+      kind: 'text',
+      body,
+      ...extra,
+    })
+    .then((r) => r.message);
+
+const inbox = async (c: Client) => {
+  await t.ctx.flush();
+  return c.get('/v1/inbox');
+};
+const sectionOf = (ib: any, id: string) =>
+  ib.sections.find((s: any) => s.items.some((i: any) => i.id === id));
+const itemOf = (ib: any, id: string) => sectionOf(ib, id)?.items.find((i: any) => i.id === id);
+
+beforeAll(async () => {
+  t = await createTestApp();
+  hassan = await signup(t, {
+    displayName: 'Hassan Khalid',
+    handle: 'hassan',
+    email: 'hassan@example.com',
+  });
+  sarah = await signup(t, {
+    displayName: 'Sarah Smith',
+    handle: 'sarahs',
+    email: 'sarah@example.com',
+  });
+  convo = await connect(
+    hassan,
+    sarah,
+    { sphere: 'work', role: 'manager', orgName: 'DATA C' },
+    { sphere: 'work', role: 'direct_report', orgName: 'DATA C' },
+  );
+});
+afterAll(async () => {
+  await t.close();
+});
+
+describe('delivery guarantees (PRD §80)', () => {
+  it('a retried send returns the original message, never a duplicate', async () => {
+    const clientId = uuidv4();
+    const a = await hassan.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId,
+      kind: 'text',
+      body: 'Hello',
+    });
+    const b = await hassan.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId,
+      kind: 'text',
+      body: 'Hello',
+    });
+    expect(a.statusCode).toBe(201);
+    expect(b.statusCode).toBe(200);
+    expect(b.json().message.id).toBe(a.json().message.id);
+    const count = await t.ctx.db
+      .selectFrom('messages')
+      .select(t.ctx.db.fn.countAll<string>().as('n'))
+      .where('client_id', '=', clientId)
+      .executeTakeFirstOrThrow();
+    expect(Number(count.n)).toBe(1);
+  });
+
+  it('concurrent sends get unique, contiguous sequence numbers', async () => {
+    const before = (await hassan.get(`/v1/conversations/${convo}`)).conversation.lastSeq;
+    const sent = await Promise.all(
+      Array.from({ length: 20 }, (_, i) => send(i % 2 ? hassan : sarah, convo, `burst ${i}`)),
+    );
+    const seqs = sent.map((m) => m.seq).sort((a, b) => a - b);
+    expect(seqs).toEqual(Array.from({ length: 20 }, (_, i) => before + i + 1));
+    const page = await hassan.get(`/v1/conversations/${convo}/messages?after=${before}&limit=50`);
+    expect(page.messages.map((m: any) => m.seq)).toEqual(seqs);
+  });
+});
+
+describe('the attention inbox (PRD §19, R7, R8)', () => {
+  it('a request from my manager needs me, and says why', async () => {
+    await sarah.post(`/v1/conversations/${convo}/receipts`, { read: 1000 });
+    await hassan.post(`/v1/conversations/${convo}/receipts`, { read: 1000 });
+    await send(sarah, convo, 'Can you send me the report by Friday?');
+    const ib = await inbox(hassan);
+    const item = itemOf(ib, convo);
+    expect(sectionOf(ib, convo).section).toBe('needs_you');
+    expect(item.reasons.map((r: any) => r.label)).toEqual([
+      'Asked you to do something',
+      'Manager · DATA C',
+    ]);
+    expect(item.relationship).toEqual({ label: 'Manager · DATA C', sphere: 'work' });
+    expect(ib.headline).toBe('1 needs you');
+  });
+
+  it('"Doesn\'t need me" clears it (R8)', async () => {
+    await hassan.post(`/v1/conversations/${convo}/dismiss`);
+    expect(sectionOf(await inbox(hassan), convo).section).not.toBe('needs_you');
+  });
+
+  it('my open question puts the conversation in Waiting for me', async () => {
+    await hassan.post(`/v1/conversations/${convo}/receipts`, { read: 1000 });
+    await send(hassan, convo, 'Which template should I use?');
+    const ib = await inbox(hassan);
+    expect(sectionOf(ib, convo).section).toBe('waiting');
+    expect(itemOf(ib, convo).reasons[0].label).toBe('Waiting for a reply');
+    // ...and it needs Sarah.
+    expect(sectionOf(await inbox(sarah), convo).section).toBe('needs_you');
+  });
+});
+
+describe('message intelligence → suggestions (PRD §23, §29)', () => {
+  it('my commitment suggests a reminder to me and a waiting item to them', async () => {
+    const m = await send(hassan, convo, "I'll send the proposal tomorrow.");
+    await t.ctx.flush();
+    const mine = (await hassan.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.find(
+      (s: any) => s.messageId === m.id,
+    );
+    expect(mine).toMatchObject({ kind: 'reminder', title: 'Send proposal', dueText: 'tomorrow' });
+    const hers = (await sarah.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.find(
+      (s: any) => s.messageId === m.id,
+    );
+    expect(hers).toMatchObject({
+      kind: 'waiting',
+      title: 'Proposal',
+      subjectUserId: hassan.user.id,
+    });
+    expect(hers.rationale).toBe("Hassan wrote “I'll send the proposal tomorrow.”");
+    const accepted = await sarah.post(`/v1/suggestions/${hers.id}/accept`);
+    const task = await t.ctx.db
+      .selectFrom('tasks')
+      .selectAll()
+      .where('id', '=', accepted.accepted.id)
+      .executeTakeFirstOrThrow();
+    expect(task).toMatchObject({
+      owner_id: sarah.user.id,
+      assignee_id: hassan.user.id,
+      shared: false,
+      source: 'suggestion',
+      message_id: m.id,
+    });
+    expect(task.relationship_snapshot).toMatchObject({ label: 'Direct report · DATA C' });
+  });
+
+  it('a decision is recorded once, whoever accepts first', async () => {
+    const m = await send(sarah, convo, "Let's go with the blue design.");
+    await t.ctx.flush();
+    const hs = (
+      await hassan.get(`/v1/suggestions?conversationId=${convo}&kind=decision`)
+    ).suggestions.find((s: any) => s.messageId === m.id);
+    expect(hs.title).toBe('Go with the blue design');
+    await hassan.post(`/v1/suggestions/${hs.id}/accept`);
+    const ss = (
+      await sarah.get(`/v1/suggestions?conversationId=${convo}&kind=decision`)
+    ).suggestions.filter((s: any) => s.messageId === m.id);
+    expect(ss).toEqual([]);
+    const decisions = await t.ctx.db
+      .selectFrom('decisions')
+      .selectAll()
+      .where('message_id', '=', m.id)
+      .execute();
+    expect(decisions).toHaveLength(1);
+  });
+});
+
+describe('notifications (PRD §31–§33)', () => {
+  it('a burst becomes one notification that counts', async () => {
+    const lina = await signup(t, { displayName: 'Lina Aziz' });
+    const c = await connect(
+      lina,
+      sarah,
+      { sphere: 'friend', role: 'friend' },
+      { sphere: 'friend', role: 'close_friend' },
+    );
+    for (const text of ['Hi', 'Are you there?', 'I need something', 'Can you call me?'])
+      await send(lina, c, text);
+    await t.ctx.flush();
+    const rows = await t.ctx.db
+      .selectFrom('notifications')
+      .selectAll()
+      .where('user_id', '=', sarah.user.id)
+      .where('group_key', '=', `conv:${c}`)
+      .execute();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      count: 4,
+      title: 'Lina Aziz sent 4 messages',
+      delivery: 'push',
+      body: 'Can you call me?',
+    });
+  });
+
+  it('work messages outside work hours are held until morning (R9)', async () => {
+    t.clock.set('2026-09-24T02:30:00Z'); // 22:30 in New York
+    const m = await send(hassan, convo, 'Quick one for tomorrow');
+    await t.ctx.flush();
+    const n = await t.ctx.db
+      .selectFrom('notifications')
+      .selectAll()
+      .where('user_id', '=', sarah.user.id)
+      .where('group_key', '=', `conv:${convo}`)
+      .orderBy('updated_at', 'desc')
+      .executeTakeFirstOrThrow();
+    expect(n.data).toMatchObject({ messageId: m.id });
+    expect(n.delivery).toBe('held');
+    expect(n.hold_until?.toISOString()).toBe('2026-09-24T12:00:00.000Z'); // 08:00 New York
+    t.clock.set('2026-09-24T12:01:00Z');
+    await runPeriodic(t.ctx);
+    const after = await t.ctx.db
+      .selectFrom('notifications')
+      .select('delivery')
+      .where('id', '=', n.id)
+      .executeTakeFirstOrThrow();
+    expect(after.delivery).toBe('push');
+    t.clock.set('2026-09-23T14:00:00Z');
+  });
+
+  it('reading the conversation clears its notification', async () => {
+    await sarah.post(`/v1/conversations/${convo}/receipts`, { read: 100000 });
+    const unread = await t.ctx.db
+      .selectFrom('notifications')
+      .selectAll()
+      .where('user_id', '=', sarah.user.id)
+      .where('group_key', '=', `conv:${convo}`)
+      .where('read_at', 'is', null)
+      .execute();
+    expect(unread).toEqual([]);
+  });
+});
+
+describe('message requests from people you are not connected with (R14)', () => {
+  it('one message until accepted; it waits in Requests; replying accepts', async () => {
+    const zed = await signup(t, { displayName: 'Zed Stranger' });
+    const opened = await zed.post('/v1/conversations', { kind: 'direct', userId: sarah.user.id });
+    const id = opened.conversation.id;
+    expect(opened.conversation.request).toBe('outgoing');
+    await send(
+      zed,
+      id,
+      'Hi Sarah, I found your talk great. Can we chat? https://example.com/slides',
+    );
+    const second = await zed.req('POST', `/v1/conversations/${id}/messages`, {
+      clientId: uuidv4(),
+      kind: 'text',
+      body: 'Hello?',
+    });
+    expect(second.statusCode).toBe(403);
+    expect(second.json().error.code).toBe('awaiting_acceptance');
+    const ib = await inbox(sarah);
+    expect(sectionOf(ib, id).section).toBe('requests');
+    // A stranger's question creates no work for Sarah.
+    const suggestions = (await sarah.get(`/v1/suggestions?conversationId=${id}`)).suggestions;
+    expect(suggestions).toEqual([]);
+    await send(sarah, id, 'Sure, happy to.');
+    expect((await sarah.get(`/v1/conversations/${id}`)).conversation.request).toBeNull();
+    await send(zed, id, 'Great, thanks!');
+  });
+
+  it('nobody can start one when requests are off', async () => {
+    const quiet = await signup(t, { displayName: 'Quiet Person' });
+    await quiet.req('PUT', '/v1/me/privacy', { messageRequests: 'nobody' });
+    const zed = await signup(t, { displayName: 'Another Stranger' });
+    const res = await zed.req('POST', '/v1/conversations', {
+      kind: 'direct',
+      userId: quiet.user.id,
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+describe('read receipts are reciprocal', () => {
+  it('turning mine off hides theirs from me and mine from them', async () => {
+    const view = async (c: Client) =>
+      (await c.get(`/v1/conversations/${convo}`)).conversation.other.readSeq;
+    expect(await view(hassan)).toBeGreaterThan(0);
+    await sarah.req('PUT', '/v1/me/privacy', { fields: { readReceipts: { kind: 'nobody' } } });
+    expect(await view(hassan)).toBeNull();
+    expect(await view(sarah)).toBeNull();
+    await sarah.req('PUT', '/v1/me/privacy', { fields: { readReceipts: { kind: 'connections' } } });
+  });
+});
+
+describe('topics emerge from the conversation (PRD §58)', () => {
+  it('suggests a topic after it keeps coming up, and creates it on accept', async () => {
+    await send(hassan, convo, 'Project Alpha kickoff moved to Monday');
+    await send(sarah, convo, 'Who owns Project Alpha budget?');
+    await send(hassan, convo, 'Project Alpha budget is with finance');
+    await t.ctx.flush();
+    const s = (await sarah.get(`/v1/suggestions?conversationId=${convo}&kind=topic`))
+      .suggestions[0];
+    expect(s).toMatchObject({ title: 'Project Alpha' });
+    const res = await sarah.post(`/v1/suggestions/${s.id}/accept`);
+    const topic = await sarah.get(`/v1/conversations/${res.accepted.id}`);
+    expect(topic.conversation).toMatchObject({
+      kind: 'direct',
+      isGeneral: false,
+      topic: 'Project Alpha',
+      parentId: convo,
+    });
+    expect(
+      (await hassan.get(`/v1/suggestions?conversationId=${convo}&kind=topic`)).suggestions,
+    ).toEqual([]);
+    const people = await hassan.get(`/v1/people/${sarah.user.id}/conversations`);
+    expect(people.conversations.map((c: any) => c.title)).toEqual(['General', 'Project Alpha']);
+  });
+});
+
+describe('follow-ups (PRD §69)', () => {
+  it('no reply from a vendor within 48 h surfaces a follow-up', async () => {
+    const dhl = await signup(t, { displayName: 'DHL Desk' });
+    const c = await connect(hassan, dhl, { sphere: 'vendor', role: 'delivery_provider' });
+    await send(hassan, c, 'Can you share the tracking number?');
+    await t.ctx.flush();
+    t.clock.advance(49 * 3_600_000);
+    await runDueJobs(t.ctx);
+    const n = await t.ctx.db
+      .selectFrom('notifications')
+      .selectAll()
+      .where('user_id', '=', hassan.user.id)
+      .where('kind', '=', 'follow_up')
+      .executeTakeFirstOrThrow();
+    expect(n.title).toBe('No reply from DHL Desk yet');
+    const ib = await inbox(hassan);
+    expect(itemOf(ib, c).reasons.map((r: any) => r.code)).toContain('follow_up_due');
+    t.clock.set('2026-09-23T14:00:00Z');
+  });
+});
+
+describe('groups (PRD §14, §56)', () => {
+  it('members must be connections; mentions need you, plain questions do not', async () => {
+    const lina = await signup(t, { displayName: 'Lina' });
+    const omar = await signup(t, { displayName: 'Omar' });
+    await connect(sarah, lina);
+    const stranger = await sarah.req('POST', '/v1/conversations', {
+      kind: 'group',
+      title: 'Trip',
+      memberIds: [omar.user.id],
+    });
+    expect(stranger.statusCode).toBe(400);
+    const g = (
+      await sarah.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Family Trip',
+        memberIds: [hassan.user.id, lina.user.id],
+      })
+    ).conversation;
+    const first = await hassan.get(`/v1/conversations/${g.id}/messages`);
+    expect(first.messages[0]).toMatchObject({
+      kind: 'system',
+      payload: { event: 'group_created', title: 'Family Trip' },
+    });
+    await hassan.post(`/v1/conversations/${g.id}/receipts`, { read: 100 });
+    await lina.post(`/v1/conversations/${g.id}/receipts`, { read: 100 });
+    await send(sarah, g.id, 'Who is bringing the tent?');
+    expect(sectionOf(await inbox(lina), g.id).section).toBe('recent');
+    await send(sarah, g.id, 'Lina, can you book the cabin?', { mentions: [lina.user.id] });
+    expect(sectionOf(await inbox(lina), g.id).section).toBe('needs_you');
+    expect(sectionOf(await inbox(hassan), g.id).section).toBe('recent');
+  });
+});
+
+describe('message features', () => {
+  it('reactions, replies, edits, deletes and delete-for-me', async () => {
+    const m = await send(sarah, convo, 'Original');
+    await hassan.post(`/v1/messages/${m.id}/reactions`, { emoji: '👍' });
+    const reply = await send(hassan, convo, 'Replying', { replyToId: m.id });
+    expect(reply.replyTo).toMatchObject({ id: m.id, preview: 'Original' });
+    const edited = await sarah.patch(`/v1/messages/${m.id}`, { body: 'Edited' });
+    expect(edited.message).toMatchObject({
+      body: 'Edited',
+      reactions: [{ emoji: '👍', count: 1, mine: false }],
+    });
+    expect(edited.message.editedAt).not.toBeNull();
+    expect((await hassan.req('PATCH', `/v1/messages/${m.id}`, { body: 'hijack' })).statusCode).toBe(
+      403,
+    );
+    await hassan.del(`/v1/messages/${reply.id}?forEveryone=false`);
+    const mine = await hassan.get(`/v1/conversations/${convo}/messages?limit=5`);
+    expect(mine.messages.map((x: any) => x.id)).not.toContain(reply.id);
+    const hers = await sarah.get(`/v1/conversations/${convo}/messages?limit=5`);
+    expect(hers.messages.map((x: any) => x.id)).toContain(reply.id);
+    await sarah.del(`/v1/messages/${m.id}`);
+    const gone = (await hassan.get(`/v1/conversations/${convo}/messages?limit=10`)).messages.find(
+      (x: any) => x.id === m.id,
+    );
+    expect(gone).toMatchObject({ body: null, deletedAt: expect.any(String) });
+  });
+
+  it('polls count votes; links land in the asset index with a safety check', async () => {
+    const poll = await hassan.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'poll',
+      payload: {
+        question: 'Lunch?',
+        options: [
+          { id: 'a', text: 'Pizza' },
+          { id: 'b', text: 'Sushi' },
+        ],
+        multiple: false,
+      },
+    });
+    const voted = await sarah.post(`/v1/messages/${poll.message.id}/vote`, { optionIds: ['b'] });
+    expect(voted.message.poll).toEqual({ counts: { b: 1 }, mine: ['b'], voters: 1 });
+    const link = await send(
+      sarah,
+      convo,
+      'Docs: https://docs.example.com/plan and a sketchy one http://192.168.0.9/login',
+    );
+    expect(link.entities.links).toEqual([
+      expect.objectContaining({ host: 'docs.example.com', suspicious: false }),
+      expect.objectContaining({ host: '192.168.0.9', suspicious: true }),
+    ]);
+    const assets = await hassan.get(`/v1/conversations/${convo}/assets?kind=link`);
+    expect(assets.counts.link).toBeGreaterThanOrEqual(2);
+    expect(assets.assets[0]).toMatchObject({ kind: 'link' });
+  });
+});
+
+describe('realtime', () => {
+  it('delivers a new message to the other side over WebSocket', async () => {
+    const address = await t.app.listen({ port: 0, host: '127.0.0.1' });
+    const ws = new WebSocket(`${address.replace('http', 'ws')}/v1/realtime`);
+    const frames: any[] = [];
+    await new Promise<void>((resolve, reject) => {
+      ws.on('open', () => ws.send(JSON.stringify({ type: 'auth', token: sarah.token })));
+      ws.on('message', (raw) => {
+        const f = JSON.parse(String(raw));
+        frames.push(f);
+        if (f.type === 'hello') resolve();
+      });
+      ws.on('error', reject);
+    });
+    const m = await send(hassan, convo, 'Live?');
+    const deadline = Date.now() + 3000;
+    while (
+      !frames.some((f) => f.event?.type === 'message.created' && f.event.data.id === m.id) &&
+      Date.now() < deadline
+    ) {
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    expect(
+      frames.some((f) => f.event?.type === 'message.created' && f.event.data.id === m.id),
+    ).toBe(true);
+    ws.close();
+  });
+
+  it('refuses a socket without a valid session', async () => {
+    const address = t.app.server.address() as { port: number };
+    const ws = new WebSocket(`ws://127.0.0.1:${address.port}/v1/realtime`);
+    const code = await new Promise<number>((resolve) => {
+      ws.on('open', () => ws.send(JSON.stringify({ type: 'auth', token: 'csy_nope' })));
+      ws.on('close', (c) => resolve(c));
+    });
+    expect(code).toBe(4401);
+  });
+});

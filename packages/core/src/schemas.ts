@@ -230,3 +230,134 @@ export const AcceptSuggestionBody = z.object({
   dueAt: z.string().datetime().nullable().optional(),
   relationship: RelationshipInput.optional(),
 });
+
+// --- Conversations and messages ----------------------------------------------------------------
+
+export const CreateConversationBody = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('direct'),
+    userId: z.string().uuid(),
+    /** A titled topic conversation with the same person (PRD §16). */
+    title: z.string().trim().min(1).max(80).optional(),
+    contextId: z.string().uuid().optional(),
+  }),
+  z.object({
+    kind: z.literal('group'),
+    title: z.string().trim().min(1, 'Name the group.').max(80),
+    purpose: z.string().trim().max(200).optional(),
+    memberIds: z.array(z.string().uuid()).min(1, 'Add at least one person.').max(255),
+  }),
+]);
+
+export const UpdateConversationBody = z
+  .object({
+    title: z.string().trim().min(1).max(80).optional(),
+    purpose: z.string().trim().max(200).nullable().optional(),
+    contextId: z.string().uuid().nullable().optional(),
+    attention: z.enum(['auto', 'priority', 'normal', 'quiet']).optional(),
+    mutedUntil: z.string().datetime().nullable().optional(),
+    archived: z.boolean().optional(),
+    pinned: z.boolean().optional(),
+    draft: z.string().max(10_000).nullable().optional(),
+    retentionDays: z.number().int().min(1).max(3650).nullable().optional(),
+  })
+  .strict();
+
+const StickerPayload = z.object({ pack: z.string().max(40), sticker: z.string().max(40) });
+const LocationPayload = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  label: z.string().max(200).optional(),
+  live: z.boolean().optional(),
+});
+const ContactPayload = z.union([
+  z.object({ userId: z.string().uuid() }),
+  z.object({
+    name: z.string().max(80),
+    phone: z.string().max(40).optional(),
+    email: z.string().max(254).optional(),
+  }),
+]);
+export const PollPayload = z.object({
+  question: z.string().trim().min(1).max(300),
+  options: z
+    .array(z.object({ id: z.string().max(20), text: z.string().trim().min(1).max(100) }))
+    .min(2, 'Add at least two options.')
+    .max(12),
+  multiple: z.boolean().default(false),
+});
+const KitPayload = z.object({
+  kit: z.string().max(40),
+  fields: z.record(z.string(), z.unknown()),
+  state: z.string().max(40).optional(),
+});
+
+export const SendMessageBody = z
+  .object({
+    clientId: z.string().min(8).max(64),
+    kind: z
+      .enum(['text', 'media', 'file', 'voice', 'location', 'contact', 'poll', 'kit', 'sticker'])
+      .default('text'),
+    body: z.string().max(10_000).nullable().optional(),
+    payload: z.unknown().optional(),
+    replyToId: z.string().uuid().nullable().optional(),
+    fileIds: z.array(z.string().uuid()).max(10).optional(),
+    urgent: z.boolean().optional(),
+    mentions: z.array(z.string().uuid()).max(50).optional(),
+    /** The sender's own label for the message; otherwise Caishy detects it (PRD §18). */
+    mode: z
+      .enum(['talk', 'ask', 'plan', 'decide', 'share', 'request', 'confirm', 'pay', 'track'])
+      .optional(),
+  })
+  .superRefine((m, ctx) => {
+    const need = (ok: boolean, message: string) => {
+      if (!ok) ctx.addIssue({ code: 'custom', message });
+    };
+    switch (m.kind) {
+      case 'text':
+        need(Boolean(m.body?.trim()), 'Write a message.');
+        break;
+      case 'media':
+      case 'file':
+      case 'voice':
+        need(Boolean(m.fileIds?.length), 'Attach a file.');
+        break;
+      case 'sticker':
+        need(StickerPayload.safeParse(m.payload).success, 'Choose a sticker.');
+        break;
+      case 'location':
+        need(LocationPayload.safeParse(m.payload).success, 'Choose a location.');
+        break;
+      case 'contact':
+        need(ContactPayload.safeParse(m.payload).success, 'Choose a contact.');
+        break;
+      case 'poll':
+        need(PollPayload.safeParse(m.payload).success, 'Add a question and at least two options.');
+        break;
+      case 'kit':
+        need(KitPayload.safeParse(m.payload).success, 'That card is incomplete.');
+        break;
+    }
+  });
+export type SendMessageBodyT = z.infer<typeof SendMessageBody>;
+
+export const EditMessageBody = z
+  .object({
+    body: z.string().trim().min(1).max(10_000).optional(),
+    mode: z
+      .enum(['talk', 'ask', 'plan', 'decide', 'share', 'request', 'confirm', 'pay', 'track'])
+      .optional(),
+  })
+  .strict();
+
+export const ReactionBody = z.object({ emoji: z.string().min(1).max(16) });
+export const ReceiptsBody = z.object({
+  delivered: z.number().int().min(0).optional(),
+  read: z.number().int().min(0).optional(),
+});
+export const VoteBody = z.object({ optionIds: z.array(z.string().max(20)).max(12) });
+export const ForwardBody = z.object({
+  conversationIds: z.array(z.string().uuid()).min(1).max(20),
+  clientId: z.string().min(8).max(64),
+});
+export const MembersBody = z.object({ userIds: z.array(z.string().uuid()).min(1).max(100) });

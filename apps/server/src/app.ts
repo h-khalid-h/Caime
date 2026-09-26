@@ -15,15 +15,20 @@ import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
 import { Bus } from './lib/bus';
 import { AppError } from './lib/errors';
+import { startWorkers } from './lib/jobs';
 import { RateLimiter } from './lib/rate-limit';
 import { authRoutes } from './modules/auth';
 import { connectionRoutes } from './modules/connections';
+import { conversationRoutes } from './modules/conversations';
 import { healthRoutes } from './modules/health';
+import { inboxRoutes } from './modules/inbox';
 import { meRoutes } from './modules/me';
 import { peopleRoutes } from './modules/people';
 import { policyRoutes } from './modules/policies';
+import { realtimeRoutes } from './modules/realtime';
 import { relationshipRoutes } from './modules/relationships';
 import { suggestionRoutes } from './modules/suggestions';
+import { registerWorkers } from './modules/workers';
 import { registerAuth } from './plugins/auth';
 
 export interface BuiltApp {
@@ -56,6 +61,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   const bus = new Bus(database.pool);
   await bus.start();
 
+  const pending = new Set<Promise<unknown>>();
   const ctx: AppContext = {
     config,
     db: database.db,
@@ -64,6 +70,18 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     limiter: new RateLimiter(),
     log: app.log,
     now: options.now ?? (() => new Date()),
+    defer(label, work) {
+      const p: Promise<unknown> = work()
+        .catch((err) => {
+          app.log.error({ err }, `deferred ${label} failed`);
+          if (config.isTest) console.error(`deferred ${label} failed`, err);
+        })
+        .finally(() => pending.delete(p));
+      pending.add(p);
+    },
+    async flush() {
+      while (pending.size) await Promise.all([...pending]);
+    },
   };
 
   await app.register(cookie);
@@ -123,11 +141,19 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await relationshipRoutes(v1, ctx);
       await policyRoutes(v1, ctx);
       await suggestionRoutes(v1, ctx);
+      await conversationRoutes(v1, ctx);
+      await inboxRoutes(v1, ctx);
+      await realtimeRoutes(v1, ctx);
     },
     { prefix: '/v1' },
   );
 
+  registerWorkers();
+  const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
+
   app.addHook('onClose', async () => {
+    stopWorkers();
+    await ctx.flush();
     await bus.stop();
     await database.close();
   });
