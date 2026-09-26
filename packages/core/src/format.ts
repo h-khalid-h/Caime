@@ -1,0 +1,188 @@
+/**
+ * Formatting shared by every client and by notifications. Locale-aware through Intl; names are
+ * treated as opaque strings in any script (PRODUCT-REVIEW R28).
+ */
+import { zonedParts } from './time';
+
+/** One or two letters for an avatar: "Sarah Smith" → "SS", "سارة" → "س", "李明" → "李". */
+export function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  const first = [...words[0]!][0] ?? '?';
+  if (words.length === 1) return first.toUpperCase();
+  const last = [...words[words.length - 1]!][0] ?? '';
+  // Scripts without case or with joined letters read better with one letter.
+  if (/[؀-ۿ֐-׿一-鿿぀-ヿ가-힯]/.test(first)) return first;
+  return (first + last).toUpperCase();
+}
+
+/** First name for friendly copy, falling back to the whole name for single names. */
+export function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? name;
+}
+
+/** "Sarah", "Sarah and Ahmed", "Sarah, Ahmed and Lina", "Sarah, Ahmed and 3 others". */
+export function joinNames(names: string[], max = 3, locale = 'en'): string {
+  if (names.length === 0) return '';
+  if (names.length <= max) {
+    try {
+      return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(names);
+    } catch {
+      return names.length === 1
+        ? names[0]!
+        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+    }
+  }
+  const rest = names.length - (max - 1);
+  return `${names.slice(0, max - 1).join(', ')} and ${rest} others`;
+}
+
+const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
+const LTR = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ]/;
+
+/** Direction of a message from its first strong character (R21). */
+export function textDirection(text: string): 'rtl' | 'ltr' {
+  for (const ch of text) {
+    if (RTL.test(ch)) return 'rtl';
+    if (LTR.test(ch)) return 'ltr';
+  }
+  return 'ltr';
+}
+
+function sameDay(
+  a: { year: number; month: number; day: number },
+  b: { year: number; month: number; day: number },
+) {
+  return a.year === b.year && a.month === b.month && a.day === b.day;
+}
+
+/**
+ * Inbox timestamps: "now", "5m", "3:42 PM", "Yesterday", "Tue", "Sep 12", "12/09/2025".
+ * Always the viewer's time zone and locale.
+ */
+export function formatListTime(iso: string, now: Date, timeZone: string, locale = 'en'): string {
+  const t = new Date(iso);
+  const diff = now.getTime() - t.getTime();
+  if (diff < 60_000 && diff > -60_000) return 'now';
+  if (diff > 0 && diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
+  const p = zonedParts(t, timeZone);
+  const n = zonedParts(now, timeZone);
+  if (sameDay(p, n)) {
+    return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(
+      t,
+    );
+  }
+  const yesterday = new Date(Date.UTC(n.year, n.month - 1, n.day - 1));
+  if (
+    sameDay(p, {
+      year: yesterday.getUTCFullYear(),
+      month: yesterday.getUTCMonth() + 1,
+      day: yesterday.getUTCDate(),
+    })
+  ) {
+    return 'Yesterday';
+  }
+  if (diff > 0 && diff < 6 * 86_400_000) {
+    return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone }).format(t);
+  }
+  if (p.year === n.year)
+    return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone,
+  }).format(t);
+}
+
+/** Day separators in a conversation: "Today", "Yesterday", "Tuesday", "12 September 2025". */
+export function formatDayHeading(iso: string, now: Date, timeZone: string, locale = 'en'): string {
+  const t = new Date(iso);
+  const p = zonedParts(t, timeZone);
+  const n = zonedParts(now, timeZone);
+  if (sameDay(p, n)) return 'Today';
+  const y = new Date(Date.UTC(n.year, n.month - 1, n.day - 1));
+  if (sameDay(p, { year: y.getUTCFullYear(), month: y.getUTCMonth() + 1, day: y.getUTCDate() }))
+    return 'Yesterday';
+  const diff = now.getTime() - t.getTime();
+  if (diff > 0 && diff < 6 * 86_400_000)
+    return new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone }).format(t);
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: p.year === n.year ? undefined : 'numeric',
+    timeZone,
+  }).format(t);
+}
+
+/** Message time inside a bubble: "3:42 PM". */
+export function formatClock(iso: string, timeZone: string, locale = 'en'): string {
+  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(
+    new Date(iso),
+  );
+}
+
+/** Due dates: "Today", "Tomorrow 3:00 PM", "Fri", "Oct 15", "2 days ago". */
+export function formatDue(
+  iso: string,
+  now: Date,
+  timeZone: string,
+  locale = 'en',
+  hasTime = false,
+): string {
+  const t = new Date(iso);
+  const p = zonedParts(t, timeZone);
+  const n = zonedParts(now, timeZone);
+  const dayMs = Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(n.year, n.month - 1, n.day);
+  const days = Math.round(dayMs / 86_400_000);
+  const clock = hasTime ? ` ${formatClock(iso, timeZone, locale)}` : '';
+  if (days === 0) return `Today${clock}`;
+  if (days === 1) return `Tomorrow${clock}`;
+  if (days === -1) return 'Yesterday';
+  if (days < -1) return `${-days} days ago`;
+  if (days < 7)
+    return `${new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone }).format(t)}${clock}`;
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let v = bytes / 1024;
+  let u = 0;
+  while (v >= 1024 && u < units.length - 1) {
+    v /= 1024;
+    u++;
+  }
+  return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[u]}`;
+}
+
+export function formatAmount(value: number, currency: string | null, locale = 'en'): string {
+  if (!currency) return new Intl.NumberFormat(locale).format(value);
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+  } catch {
+    return `${new Intl.NumberFormat(locale).format(value)} ${currency}`;
+  }
+}
+
+export function formatDuration(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}
+
+export function truncate(text: string, max: number): string {
+  const chars = [...text];
+  return chars.length <= max
+    ? text
+    : `${chars
+        .slice(0, max - 1)
+        .join('')
+        .trimEnd()}…`;
+}
+
+/** A message preview for lists and notifications: first line, trimmed. */
+export function previewText(text: string, max = 90): string {
+  return truncate(text.replace(/\s+/g, ' ').trim(), max);
+}

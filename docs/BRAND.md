@@ -1,5 +1,10 @@
 # Caishy brand system
 
+**The boards are inspiration; this document is the decision.** Every choice below is made for one
+test: does it help Caishy beat the alternatives (docs/COMPETITIVE.md) for people of every age,
+gender and use case, and does it feel modern in 2026? Where a board helps, it is adopted; where it
+works against the product, it is overruled and the reason is written down.
+
 The owner supplied three brand boards on 2026-09-26:
 
 | Board | Content | In repo |

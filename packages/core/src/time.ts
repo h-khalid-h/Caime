@@ -75,7 +75,13 @@ export function zonedTimeToUtc(
   local: { year: number; month: number; day: number; hour?: number; minute?: number },
   timeZone: string,
 ): Date {
-  const guess = Date.UTC(local.year, local.month - 1, local.day, local.hour ?? 0, local.minute ?? 0);
+  const guess = Date.UTC(
+    local.year,
+    local.month - 1,
+    local.day,
+    local.hour ?? 0,
+    local.minute ?? 0,
+  );
   let offset = timeZoneOffsetMinutes(new Date(guess), timeZone);
   let result = guess - offset * 60000;
   const second = timeZoneOffsetMinutes(new Date(result), timeZone);
@@ -184,7 +190,13 @@ export function nextScheduleStart(schedule: Schedule, now: Date, timeZone: strin
     const d = addDays(p, offset);
     if (!schedule.days.includes(d.weekday)) continue;
     const candidate = zonedTimeToUtc(
-      { year: d.year, month: d.month, day: d.day, hour: Math.floor(start / 60), minute: start % 60 },
+      {
+        year: d.year,
+        month: d.month,
+        day: d.day,
+        hour: Math.floor(start / 60),
+        minute: start % 60,
+      },
       timeZone,
     );
     if (candidate.getTime() > now.getTime()) return candidate;

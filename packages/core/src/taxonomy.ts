@@ -445,9 +445,7 @@ export function relationshipFit(aViewOfB: RoleRef, bViewOfA: RoleRef): Fit {
 }
 
 /** Search words that name a relationship: "managers" → work/manager, "customers" → customer. */
-export function relationshipFromWord(
-  word: string,
-): { sphere: Sphere; role?: string } | undefined {
+export function relationshipFromWord(word: string): { sphere: Sphere; role?: string } | undefined {
   const w = word.trim().toLowerCase();
   if (!w) return undefined;
   for (const sphere of SPHERES) {
