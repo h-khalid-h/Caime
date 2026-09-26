@@ -125,7 +125,12 @@ function ThreadRow({
             request={thread.awaitingAcceptance}
           />
           <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {thread.assignee ? thread.assignee.displayName : 'Nobody has it'}
+            {[
+              thread.assignee ? thread.assignee.displayName : 'Nobody has it',
+              thread.customerUnder18 ? 'Under 18' : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
       </View>

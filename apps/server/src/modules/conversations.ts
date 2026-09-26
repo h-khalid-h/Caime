@@ -17,6 +17,7 @@ import {
   EditMessageBody,
   ForwardBody,
   isCardKit,
+  isMinor,
   KITS,
   kitMoves,
   kitStateLabel,
@@ -300,6 +301,7 @@ export async function conversationView(
         : otherRequest === 'pending' || otherRequest === 'declined'
           ? 'outgoing'
           : null,
+    hasMinor: members.some((m) => isMinor(m.birth_year, now)),
     lastSeq: Number(conversation.last_seq),
     lastMessageAt: conversation.last_message_at?.toISOString() ?? null,
     createdAt: conversation.created_at.toISOString(),

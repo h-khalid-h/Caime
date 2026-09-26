@@ -335,6 +335,11 @@ export interface ConversationView {
     requestState: 'pending' | 'accepted' | 'declined' | null;
   };
   request: RequestDirection | null;
+  /**
+   * Someone in it is under 18 (R29): cards that involve money or where someone is aren't offered,
+   * and in a business conversation its team knows the customer is.
+   */
+  hasMinor: boolean;
   lastSeq: number;
   lastMessageAt: string | null;
   createdAt: string;
@@ -506,6 +511,8 @@ export interface BusinessThreadView {
    * request (R14), and the team can write again once they do.
    */
   awaitingAcceptance: boolean;
+  /** The customer is under 18 (R29): no money cards, and the team answers knowing it. */
+  customerUnder18: boolean;
 }
 
 /** What the team gets back from writing to someone first (R14). */

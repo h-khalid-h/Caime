@@ -142,8 +142,11 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .select('birth_year')
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (isMinor(me.birth_year, ctx.now()))
-      throw forbidden('Messaging organizations is for people over 18 for now.');
+    // Under 18, only an organization that has proved who it is: a school, a club, a clinic (R29).
+    if (isMinor(me.birth_year, ctx.now()) && !org.verified_at)
+      throw forbidden(
+        `Under 18, you can message organizations that have verified who they are. ${org.name} hasn’t yet.`,
+      );
     if (await orgBlocked(ctx.db, auth.userId, id))
       throw new AppError(
         403,

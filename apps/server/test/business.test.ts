@@ -68,12 +68,15 @@ afterAll(async () => {
 });
 
 describe('the business inbox (PRD §37–38, R15)', () => {
-  it('a customer starts one conversation with an organization, and only adults outside it can', async () => {
+  it('a customer starts one conversation with an organization, from outside its team', async () => {
     const first = await lina.req('POST', `/v1/orgs/${orgId}/conversations`);
     expect(first.statusCode).toBe(201);
     convo = first.json().conversationId;
     expect((await lina.post(`/v1/orgs/${orgId}/conversations`)).conversationId).toBe(convo);
-    expect((await teen.req('POST', `/v1/orgs/${orgId}/conversations`)).statusCode).toBe(403);
+    // Under 18, only once it has verified who it is (business-minors.test.ts).
+    expect((await teen.req('POST', `/v1/orgs/${orgId}/conversations`)).json().error.message).toBe(
+      'Under 18, you can message organizations that have verified who they are. DATA C hasn’t yet.',
+    );
     expect((await omar.req('POST', `/v1/orgs/${orgId}/conversations`)).statusCode).toBe(400);
 
     // The customer talks to the organization; the team sees the customer, and each other.

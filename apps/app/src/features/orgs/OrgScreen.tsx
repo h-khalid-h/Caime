@@ -311,19 +311,31 @@ export function OrgScreen({ handle }: { handle: string }) {
                 testID="org-unblock"
               />
             </View>
-          ) : minor ? (
-            <Text variant="caption" color="textTertiary" align="center">
-              Messaging organizations is for people over 18 for now.
+          ) : minor && !org.verified ? (
+            <Text
+              variant="caption"
+              color="textTertiary"
+              align="center"
+              testID="org-minor-unverified"
+            >
+              Under 18, you can message organizations that have verified who they are.
             </Text>
           ) : (
-            <Button
-              label={`Message ${org.name}`}
-              icon={MessageCircle}
-              loading={starting}
-              style={{ alignSelf: 'center', marginTop: 6 }}
-              onPress={() => void message(org.id)}
-              testID="org-message"
-            />
+            <View style={{ alignItems: 'center', gap: 6 }}>
+              <Button
+                label={`Message ${org.name}`}
+                icon={MessageCircle}
+                loading={starting}
+                style={{ alignSelf: 'center', marginTop: 6 }}
+                onPress={() => void message(org.id)}
+                testID="org-message"
+              />
+              {minor ? (
+                <Text variant="caption" color="textTertiary" align="center">
+                  Its team will see you’re under 18.
+                </Text>
+              ) : null}
+            </View>
           )}
         </View>
 

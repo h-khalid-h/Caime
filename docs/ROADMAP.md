@@ -116,8 +116,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       arrives as a message request: silent, in Requests, links inert, one message until they
       answer; they accept, decline or block it. Never to anyone under 18 or who only hears from
       people they know, and limited by plan per day (`business-start.test.ts`, E2E, which also
-      verifies a domain end to end against a DNS stand-in). [ ] Customers under 18; AI follow-ups
-      and requests across it
+      verifies a domain end to end against a DNS stand-in). Customers under 18 write only to an
+      organization that has verified who it is (a school, a club, a clinic) and are told its team
+      will know; the team sees "Under 18", no card about money is offered or accepted, and its
+      apps' webhooks say so too (`business-minors.test.ts`, E2E). [ ] AI follow-ups and requests
+      across it
 - [x] Spaces: a family, team, project, community or school with its people and conversations.
       Everyone is in its General conversation (which goes by the space's name); its other
       conversations are open to join; a topic that keeps coming up in General becomes one.
@@ -168,7 +171,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (431.1 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (431.2 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -329,3 +332,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   does. And links in a request were clickable, though R14 says they wait until it's accepted;
   they're text until then. End-to-end tests now verify a domain for real, against a DNS
   stand-in. Tests: 148 core, 49 brand, 163 server, 8 app, 27 E2E.
+- 2026-09-26 — Session 2 (cont.): customers under 18. They were refused by every organization,
+  which left out the ones most of them need: their school, a club, a clinic. They can now write
+  to an organization that has verified who it is, never to one that hasn't, and never hear from
+  one first. The page tells them its team will know they're under 18; the team sees it on the
+  conversation, cards about money aren't offered (the server refuses them, as before), and
+  webhooks carry it so an integration never treats them as a customer to market to. Tests: 148
+  core, 49 brand, 165 server, 8 app, 28 E2E.

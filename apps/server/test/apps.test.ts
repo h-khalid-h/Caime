@@ -148,7 +148,7 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
       data: {
         conversationId: convo,
         message: { body: 'Do you deliver to Maadi?' },
-        customer: { id: lina.user.id, displayName: 'Lina Customer' },
+        customer: { id: lina.user.id, displayName: 'Lina Customer', under18: false },
       },
     });
   });

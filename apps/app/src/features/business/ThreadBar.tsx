@@ -93,6 +93,7 @@ export function ThreadBar({
                 : `Waiting ${waitedFor(thread.waitingSince, now)}`
               : null,
             who,
+            thread.customerUnder18 ? 'Under 18' : null,
             conversation.business?.org.name,
           ]
             .filter(Boolean)

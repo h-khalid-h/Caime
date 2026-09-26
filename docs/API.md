@@ -49,7 +49,7 @@ Caishy `POST`s JSON to the app's address (https only) for the events it listens 
 
 | Event | When | `data` |
 | --- | --- | --- |
-| `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`) |
+| `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
 | `business.thread` | Someone assigns, escalates, resolves or reopens a conversation | `conversationId`, `change`, `state`, `assignee` |
 | `ping` | You pressed "Send a test delivery" | `appId` |
 

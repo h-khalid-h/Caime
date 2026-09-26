@@ -44,7 +44,12 @@ export const visible = (page: Page, text: string | RegExp) =>
  * Signs up and finishes onboarding through the API, sharing the context's cookies, for tests
  * about what comes after sign-up (the sign-up screens have their own test).
  */
-export async function apiSignUp(context: BrowserContext, displayName: string, handle: string) {
+export async function apiSignUp(
+  context: BrowserContext,
+  displayName: string,
+  handle: string,
+  opts: { birthYear?: number } = {},
+) {
   const res = await context.request.post('/v1/auth/signup', {
     headers: CLIENT,
     data: {
@@ -52,7 +57,7 @@ export async function apiSignUp(context: BrowserContext, displayName: string, ha
       password: PASSWORD,
       displayName,
       handle,
-      birthYear: 1990,
+      birthYear: opts.birthYear ?? 1990,
       timeZone: 'UTC',
       client: 'web',
     },

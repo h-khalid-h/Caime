@@ -2,7 +2,7 @@ import type { ConversationView } from '@caishy/core/api';
 import { formatAmount } from '@caishy/core/format';
 import { uuidv4 } from '@caishy/core/ids';
 import { extractAmounts } from '@caishy/core/intelligence';
-import { CARD_KITS, type CardKitId, prepareKitFields } from '@caishy/core/kit-cards';
+import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caishy/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caishy/core/kits';
 import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
 import { firstFutureWhen } from '@caishy/core/when';
@@ -41,7 +41,12 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
     // One customer, one organization: its cards are one-to-one cards.
     isGroup: conversation.kind !== 'direct' && !business,
     viewerIsMinor,
-  }).filter((k) => offered.has(k.id));
+  }).filter(
+    (k) =>
+      offered.has(k.id) &&
+      // With someone under 18 in it, no card about money (R29): the server refuses them too.
+      !(conversation.hasMinor && k.adultsOnly && isCardKit(k.id)),
+  );
 }
 
 type Clock = { now: Date; timeZone: string; locale: string; workweek: number[] };

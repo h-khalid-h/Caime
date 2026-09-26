@@ -8,6 +8,7 @@
  */
 import {
   type BusinessThreadView,
+  isMinor,
   type MessageView,
   type OrgRef,
   threadState,
@@ -273,7 +274,7 @@ export async function recordBusinessMessage(
   if (!thread) return;
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['kind', 'display_name', 'handle'])
+    .select(['kind', 'display_name', 'handle', 'birth_year'])
     .where('id', '=', senderId)
     .executeTakeFirst();
   if (sender && sender.kind !== 'human') {
@@ -314,7 +315,13 @@ export async function recordBusinessMessage(
         body: message.body,
         createdAt: at.toISOString(),
       },
-      customer: { id: senderId, displayName: sender.display_name, handle: sender.handle },
+      customer: {
+        id: senderId,
+        displayName: sender.display_name,
+        handle: sender.handle,
+        // Integrations must know, too: nothing an organization sends a minor is marketing (R29).
+        under18: isMinor(sender.birth_year, at),
+      },
     });
 }
 
@@ -354,12 +361,9 @@ export async function threadViews(
       ),
     ),
   ];
-  const [customers, names, lastMessages, mine, blocked, requests] = await Promise.all([
-    personViewsFor(
-      ctx,
-      viewerId,
-      threads.map((t) => t.customer_id).filter((x): x is string => Boolean(x)),
-    ),
+  const customerIds = threads.map((t) => t.customer_id).filter((x): x is string => Boolean(x));
+  const [customers, names, lastMessages, mine, blocked, requests, ages] = await Promise.all([
+    personViewsFor(ctx, viewerId, customerIds),
     people.length
       ? ctx.db
           .selectFrom('users')
@@ -409,7 +413,16 @@ export async function threadViews(
       .where('t.conversation_id', 'in', ids)
       .where('p.request_state', 'in', ['pending', 'declined'])
       .execute(),
+    customerIds.length
+      ? ctx.db
+          .selectFrom('users')
+          .select(['id', 'birth_year'])
+          .where('id', 'in', customerIds)
+          .execute()
+      : Promise.resolve([]),
   ]);
+  const now = ctx.now();
+  const under18 = new Set(ages.filter((u) => isMinor(u.birth_year, now)).map((u) => u.id));
   const closed = new Set(blocked.map((b) => b.conversation_id));
   const awaiting = new Set(requests.map((r) => r.conversation_id));
   const nameOf = (id: string | null) =>
@@ -445,6 +458,7 @@ export async function threadViews(
       lastActivityAt: (last?.created_at ?? t.updated_at).toISOString(),
       closed: closed.has(t.conversation_id),
       awaitingAcceptance: awaiting.has(t.conversation_id),
+      customerUnder18: t.customer_id !== null && under18.has(t.customer_id),
     };
   });
 }

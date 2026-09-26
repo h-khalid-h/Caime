@@ -784,6 +784,49 @@ test.describe
       }
     });
 
+    test('someone under 18 writes to a verified organization, and its team knows', async ({
+      browser,
+    }) => {
+      const handle = `nile.dental.${stamp}`;
+      const teenContext = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+      });
+      try {
+        await apiSignUp(teenContext, 'Rami Young', `rami.${stamp}`, { birthYear: 2011 });
+        const teen = await newPerson(teenContext);
+        await teen.page.goto(`/@${handle}`);
+        await expect(visible(teen.page, 'Its team will see you’re under 18.')).toBeVisible();
+        await teen.page.getByTestId('org-message').click();
+        await teen.page
+          .getByTestId('composer-input')
+          .filter({ visible: true })
+          .fill('Can I book a check-up without a parent?');
+        await teen.page.getByTestId('composer-send').filter({ visible: true }).click();
+
+        // The team answers knowing it, and nothing about money is offered in it.
+        const { page, errors } = noor;
+        await page.goto(`/o/${handle}/inbox`);
+        await page.getByTestId(`thread-row-rami.${stamp}`).click();
+        await expect(page.getByTestId('thread-bar')).toContainText('Under 18');
+        await page
+          .getByRole('button', { name: 'Share a photo, a file or a card' })
+          .filter({ visible: true })
+          .click();
+        await expect(page.getByTestId('kit-option-appointment')).toBeVisible();
+        await expect(page.getByTestId('kit-option-invoice')).toHaveCount(0);
+        await expect(page.getByTestId('kit-option-payment_request')).toHaveCount(0);
+        await page.screenshot({
+          path: 'e2e/screenshots/desktop-business-under-18.png',
+          animations: 'disabled',
+        });
+        await page.keyboard.press('Escape');
+        expect([...errors, ...teen.errors]).toEqual([]);
+      } finally {
+        await teenContext.close();
+      }
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [
