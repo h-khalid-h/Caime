@@ -71,8 +71,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       from someone lands in Asked me (E2E)
 - [x] Alerts: requests and message bursts arrive, each with why it was held or sent (E2E)
 - [ ] Spaces
-- [x] Desktop web: rail, list, detail and context panel (E2E screenshots). [ ] Keyboard
-      shortcuts beyond Enter to send
+- [x] Desktop web: rail, list, detail and context panel (E2E screenshots); keyboard shortcuts:
+      Ctrl/⌘ K search, Alt ↑/↓ between conversations, ↑ edits your last message, ? lists them
+      (E2E)
 - [x] Realtime client with reconnect and catch-up; on-device cache with revalidation; offline
       outbox: a message written offline sends the moment the network returns (E2E)
 - [x] Stickers (Caishy Friends, 16): sent, and arrive live (E2E)
@@ -99,7 +100,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (408 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (409.5 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -130,4 +131,5 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   change, and the app staying "offline" after a network blip on Chromium (NetInfo's web build
   never hears the network return). Alerts read "sent 56 messages (56)" and
   "outside 08:00–20:00" on a Saturday; they now read "sent 56 messages" and "outside Mon–Fri
-  08:00–20:00". Tests: 115 core, 49 brand, 79 server, 9 E2E.
+  08:00–20:00". Keyboard shortcuts; their test found that editing your last message left the
+  old text in the inbox preview. Tests: 115 core, 49 brand, 79 server, 10 E2E.

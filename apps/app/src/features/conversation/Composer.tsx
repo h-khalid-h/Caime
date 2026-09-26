@@ -9,7 +9,7 @@ import { type LocalFile, uploadFile } from '@/api/upload';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
 import { realtime } from '@/realtime/client';
-import { upsertMessage } from '@/state/cache';
+import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
 import { useOutbox } from '@/state/outbox';
 import { fontFamily } from '@/theme/fonts';
@@ -43,13 +43,15 @@ export interface ComposerProps {
   onDoneEditing: () => void;
   disabled?: string | null;
   replyName?: string | null;
+  /** ↑ in an empty box: edit the last message you sent (web). */
+  onEditLast?: () => void;
 }
 
 const MIN_H = 44;
 const MAX_H = 150;
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
-  { conversation, replyTo, onClearReply, editing, onDoneEditing, disabled, replyName },
+  { conversation, replyTo, onClearReply, editing, onDoneEditing, disabled, replyName, onEditLast },
   ref,
 ) {
   const t = useTheme();
@@ -93,6 +95,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       try {
         const res = await endpoints.editMessage(editing.id, body);
         upsertMessage(qc, res.message);
+        applyEditToInbox(qc, res.message);
       } catch (e) {
         toast((e as Error).message, { tone: 'danger' });
       }
@@ -267,11 +270,19 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               const ne = e.nativeEvent as unknown as {
                 key: string;
                 shiftKey?: boolean;
+                altKey?: boolean;
+                ctrlKey?: boolean;
+                metaKey?: boolean;
                 isComposing?: boolean;
               };
+              const plain = !ne.shiftKey && !ne.altKey && !ne.ctrlKey && !ne.metaKey;
               if (ne.key === 'Enter' && enterSends && !ne.shiftKey && !ne.isComposing) {
                 e.preventDefault();
                 void send();
+              }
+              if (ne.key === 'ArrowUp' && plain && !value && !editing && onEditLast) {
+                e.preventDefault();
+                onEditLast();
               }
               if (ne.key === 'Escape') {
                 if (editing) {

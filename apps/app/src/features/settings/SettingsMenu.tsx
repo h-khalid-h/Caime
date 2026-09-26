@@ -1,11 +1,12 @@
 import { type Href, router, usePathname } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
+import { useShortcutsSheet } from '@/features/shell/shortcuts';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
-import { Bell, Info, Lock, LogOut, Palette, Shield, UserRound } from '@/ui/icons';
+import { Bell, Info, Keyboard, Lock, LogOut, Palette, Shield, UserRound } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
@@ -119,6 +120,16 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
             </View>
           ))}
         </Card>
+        {Platform.OS === 'web' ? (
+          <Card padded={false}>
+            <ListRow
+              icon={Keyboard}
+              title="Keyboard shortcuts"
+              subtitle="Press ? anywhere to see them"
+              onPress={() => useShortcutsSheet.getState().setOpen(true)}
+            />
+          </Card>
+        ) : null}
         <Card padded={false}>
           <ListRow
             icon={LogOut}

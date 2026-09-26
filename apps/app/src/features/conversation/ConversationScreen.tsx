@@ -449,6 +449,14 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           onDoneEditing={() => setEditing(null)}
           disabled={disabled}
           replyName={replyName}
+          onEditLast={() => {
+            const last = messages.findLast(
+              (m) => m.senderId === me.id && m.kind === 'text' && m.deletedAt === null,
+            );
+            if (!last) return;
+            setReplyTo(null);
+            setEditing(last);
+          }}
         />
       ) : null}
     </KeyboardAvoidingView>

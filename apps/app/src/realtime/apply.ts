@@ -6,7 +6,13 @@ import type { RealtimeEvent } from '@caishy/core/api';
 import type { QueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { applyMessageToInbox, patchMessage, removeMessage, upsertMessage } from '@/state/cache';
+import {
+  applyEditToInbox,
+  applyMessageToInbox,
+  patchMessage,
+  removeMessage,
+  upsertMessage,
+} from '@/state/cache';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
 
@@ -67,6 +73,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     }
     case 'message.updated':
       upsertMessage(qc, event.data);
+      applyEditToInbox(qc, event.data);
       return;
     case 'message.deleted':
       patchMessage(qc, event.data.conversationId, event.data.id, (m) => ({

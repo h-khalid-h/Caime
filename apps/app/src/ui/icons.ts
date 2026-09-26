@@ -42,6 +42,7 @@ export { default as ImageIcon } from 'lucide-react-native/icons/image';
 export { default as Inbox } from 'lucide-react-native/icons/inbox';
 export { default as Info } from 'lucide-react-native/icons/info';
 export { default as KeyRound } from 'lucide-react-native/icons/key-round';
+export { default as Keyboard } from 'lucide-react-native/icons/keyboard';
 export { default as Laptop } from 'lucide-react-native/icons/laptop';
 export { default as Link } from 'lucide-react-native/icons/link';
 export { default as ListChecks } from 'lucide-react-native/icons/list-checks';

@@ -6,6 +6,7 @@ import { PeopleList } from '@/features/people/PeopleList';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { NavRail } from '@/features/shell/NavRail';
 import { useSection } from '@/features/shell/sections';
+import { KeyboardShortcuts } from '@/features/shell/shortcuts';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { useLayout } from '@/ui/layout';
@@ -20,12 +21,21 @@ export default function AppLayout() {
   const t = useTheme();
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;
-  if (desktop && pathname !== '/onboarding') return <DesktopShell />;
+  if (desktop && pathname !== '/onboarding')
+    return (
+      <>
+        <DesktopShell />
+        <KeyboardShortcuts />
+      </>
+    );
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.canvas } }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.canvas } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+      </Stack>
+      <KeyboardShortcuts />
+    </>
   );
 }
 

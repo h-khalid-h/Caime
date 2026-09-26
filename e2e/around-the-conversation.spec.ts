@@ -164,6 +164,61 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('the keyboard moves between conversations, edits, searches and lists its shortcuts', async () => {
+      const { page, errors } = noor;
+      // A second conversation with Alex (a topic), so there is somewhere to move to.
+      const topic = await noorContext.request.post('/v1/conversations', {
+        headers: CLIENT,
+        data: { kind: 'direct', userId: alexId, title: 'Venue' },
+      });
+      expect(topic.ok(), await topic.text()).toBe(true);
+      const topicId: string = (await topic.json()).conversation.id;
+      await noorContext.request.post(`/v1/conversations/${topicId}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), body: 'Floor plan attached soon' },
+      });
+      const inbox = await (await noorContext.request.get('/v1/inbox')).json();
+      const order: string[] = inbox.sections.flatMap((s: any) => s.items.map((i: any) => i.id));
+      expect(order).toEqual(expect.arrayContaining([convo, topicId]));
+
+      // Alt+↓ and Alt+↑ walk the inbox in its order, even from the message box.
+      const path = () => new URL(page.url()).pathname;
+      await page.goto(`/c/${order[0]}`);
+      await page.getByTestId('composer-input').click();
+      await page.keyboard.press('Alt+ArrowDown');
+      await expect.poll(path).toBe(`/c/${order[1]}`);
+      await page.keyboard.press('Alt+ArrowUp');
+      await expect.poll(path).toBe(`/c/${order[0]}`);
+
+      // ↑ in an empty message box edits the last message you sent.
+      await page.goto(`/c/${topicId}`);
+      const box = page.getByTestId('composer-input');
+      await box.click();
+      await page.keyboard.press('ArrowUp');
+      await expect(page.getByLabel('Edit message')).toHaveValue('Floor plan attached soon');
+      await box.fill('Floor plan attached');
+      await page.keyboard.press('Enter');
+      await expect(visible(page, 'Floor plan attached')).toBeVisible();
+      await expect(page.getByText('Floor plan attached soon')).toHaveCount(0);
+
+      // ? lists the shortcuts (outside a text field); Ctrl+K opens search.
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await page.keyboard.press('Shift+Slash');
+      await expect(visible(page, 'Keyboard shortcuts')).toBeVisible();
+      await expect(visible(page, 'Previous conversation')).toBeVisible();
+      await page.waitForTimeout(400); // the fade-in, for the screenshot only
+      await page.screenshot({ path: 'e2e/screenshots/desktop-shortcuts.png' });
+      // Escape closes it once its fade-in has finished (react-native-web's Modal).
+      await expect(async () => {
+        await page.keyboard.press('Escape');
+        await expect(page.getByText('Previous conversation')).toBeHidden({ timeout: 500 });
+      }).toPass();
+      await page.keyboard.press('Control+KeyK');
+      await expect.poll(path).toBe('/search');
+      await expect(page.getByTestId('search-input')).toBeFocused();
+      expect(errors).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [

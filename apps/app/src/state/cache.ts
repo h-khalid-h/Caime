@@ -149,6 +149,21 @@ export function applyMessageToInbox(
   }));
 }
 
+/** An edit changes a conversation's preview only when it's the last message there. */
+export function applyEditToInbox(qc: QueryClient, m: MessageView): void {
+  patchItems(qc, m.conversationId, (item) =>
+    item.lastMessage?.id === m.id
+      ? {
+          ...item,
+          lastMessage: {
+            ...item.lastMessage,
+            preview: messagePreview({ ...m, deleted: m.deletedAt !== null }),
+          },
+        }
+      : item,
+  );
+}
+
 export function markInboxRead(qc: QueryClient, conversationId: string): void {
   patchItems(qc, conversationId, (item) => ({ ...item, unreadCount: 0, unreadMentions: 0 }));
 }
