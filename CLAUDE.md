@@ -130,6 +130,12 @@ These are rules, not preferences.
   `toBeChecked()` and friends rather than by styling.
 - A kit's field checks (`prepareKitFields`) run in the app before sending and again on the
   server over what was sent, so they must be idempotent: a checked value checks the same.
+- A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
+  the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
+  and its Undo can't be pressed. Anything else that must show over a sheet goes inside it.
+- E2E: a phone sheet slides up, so wait with `toBeInViewport({ ratio: 1 })` and screenshot with
+  `animations: 'disabled'`. Photos to upload come from `photo()` in `e2e/helpers.ts`, through
+  `page.waitForEvent('filechooser')`.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;

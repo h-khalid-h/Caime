@@ -93,6 +93,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         entities: {},
         files: [],
         poll: null,
+        album: null,
         reactions: [],
         deletedAt: new Date().toISOString(),
       }));

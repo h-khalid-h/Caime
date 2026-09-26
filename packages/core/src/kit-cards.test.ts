@@ -101,7 +101,7 @@ describe('prepareKitFields', () => {
   });
 
   it('refuses kits that aren’t cards, including the server’s own request card', () => {
-    for (const kit of ['request', 'poll', 'location', 'shared_album', 'nope', 7]) {
+    for (const kit of ['request', 'poll', 'location', 'nope', 7]) {
       expect(prepareKitFields(kit, { title: 'x' })).toEqual({
         ok: false,
         error: 'That card isn’t available.',

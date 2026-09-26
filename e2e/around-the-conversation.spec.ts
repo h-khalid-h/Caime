@@ -7,7 +7,15 @@
  */
 import { randomUUID } from 'node:crypto';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
-import { ADMIN_TOKEN, apiSignUp, CLIENT, METRICS_TOKEN, newPerson, visible } from './helpers';
+import {
+  ADMIN_TOKEN,
+  apiSignUp,
+  CLIENT,
+  METRICS_TOKEN,
+  newPerson,
+  photo,
+  visible,
+} from './helpers';
 
 const stamp = Date.now().toString(36).slice(-6);
 /** The Messages API stand-in the server talks to (playwright.config.ts). */
@@ -879,6 +887,74 @@ test.describe
         .filter({ hasText: 'The venue', visible: true });
       await expect(shared).toContainText('Within 15 m');
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-kit-location.png' });
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
+    test('an album they both add photos to, and only take their own out of', async () => {
+      const { page, errors } = noor;
+      await page.goto(`/c/${convo}`);
+      await alex.page.goto(`/c/${convo}`);
+      // Friends now (the test before): an album fits.
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await page.getByTestId('kit-option-shared_album').click();
+      await page.getByLabel('Album name').fill('Venue day');
+      await page.getByTestId('kit-send').click();
+      const mine = page.getByTestId('kit-shared_album').filter({ hasText: 'Venue day' });
+      await expect(mine).toContainText('0 photos');
+      await expect(mine).toContainText('Nothing in it yet. Everyone here can add photos.');
+
+      // Alex adds two from the phone, Noor one from her desk; each sees the other's.
+      const theirs = alex.page
+        .getByTestId('kit-shared_album')
+        .filter({ hasText: 'Venue day', visible: true });
+      const addFrom = async (p: Page, card: typeof mine, files: Array<[string, Buffer]>) => {
+        const chooser = p.waitForEvent('filechooser');
+        await card.getByTestId('album-add').click();
+        await (await chooser).setFiles(
+          files.map(([name, buffer]) => ({ name, mimeType: 'image/png', buffer })),
+        );
+      };
+      await addFrom(alex.page, theirs, [
+        ['stage.png', photo(240, 180, [233, 196, 106], [214, 79, 60])],
+        ['hall.png', photo(240, 180, [120, 180, 200], [40, 70, 130])],
+      ]);
+      await expect(theirs).toContainText('2 photos');
+      await expect(mine).toContainText('2 photos');
+      await addFrom(page, mine, [['tables.png', photo(240, 180, [150, 200, 140], [60, 120, 90])]]);
+      await expect(theirs).toContainText('3 photos');
+      await expect(mine.getByTestId('album-preview').locator('img')).toHaveCount(3);
+
+      // In the album, Alex can take out the two they added, not Noor's.
+      await theirs.getByTestId('album-preview').click();
+      const sheet = alex.page.getByTestId('album-sheet-photos').filter({ visible: true });
+      await expect(sheet.locator('img')).toHaveCount(3);
+      await expect(sheet.getByRole('button', { name: /out of the album$/ })).toHaveCount(2);
+      await expect(
+        sheet.getByRole('button', { name: 'Take photo 1 out of the album' }),
+      ).toHaveCount(0);
+      // The sheet slides up on a phone; the picture is of it in place.
+      await expect(sheet).toBeInViewport({ ratio: 1 });
+      await alex.page.screenshot({
+        path: 'e2e/screenshots/phone-kit-album.png',
+        animations: 'disabled',
+      });
+      // Taken out by mistake, it goes back in; the toast shows above the sheet, not under it.
+      await sheet.getByRole('button', { name: 'Take photo 2 out of the album' }).click();
+      await expect(mine).toContainText('2 photos');
+      await alex.page.getByRole('button', { name: 'Undo' }).click();
+      await expect(mine).toContainText('3 photos');
+      await expect(sheet.locator('img')).toHaveCount(3);
+      await sheet.getByRole('button', { name: 'Take photo 1 out of the album' }).click();
+      await expect(mine).toContainText('2 photos');
+
+      // Noor closes it: nobody adds more, and what's in it stays.
+      await mine.getByRole('button', { name: 'Close the album' }).click();
+      await expect(mine).toContainText('Closed');
+      await expect(mine.getByTestId('album-add')).toHaveCount(0);
+      await alex.page.keyboard.press('Escape');
+      await expect(theirs).toContainText('Closed');
+      await expect(theirs.getByTestId('album-add')).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-kit-album.png' });
       expect([...errors, ...alex.errors]).toEqual([]);
     });
   });

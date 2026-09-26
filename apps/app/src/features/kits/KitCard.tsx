@@ -20,6 +20,7 @@ import { Chip } from '@/ui/Chip';
 import { ListChecks } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
 import { KIT_ICONS } from './icons';
 
@@ -74,6 +75,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
 
   const kit = p.kit;
   if (kit === 'checklist') return <ChecklistCard m={m} mine={mine} />;
+  if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
   const Icon = KIT_ICONS[kit];
   const details = kitDetails(kit, p.fields ?? {}, { now, timeZone, locale });
   const moves = m.deletedAt ? [] : kitMoves(kit, state, mine);

@@ -51,6 +51,7 @@ export { default as Heart } from 'lucide-react-native/icons/heart';
 export { default as Hourglass } from 'lucide-react-native/icons/hourglass';
 export { default as House } from 'lucide-react-native/icons/house';
 export { default as ImageIcon } from 'lucide-react-native/icons/image';
+export { default as Images } from 'lucide-react-native/icons/images';
 export { default as Inbox } from 'lucide-react-native/icons/inbox';
 export { default as Info } from 'lucide-react-native/icons/info';
 export { default as KeyRound } from 'lucide-react-native/icons/key-round';

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useId } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -13,6 +13,7 @@ import { IconButton } from './IconButton';
 import { X } from './icons';
 import { useLayout } from './layout';
 import { Text } from './Text';
+import { ToastHost, useToastLayers } from './Toast';
 
 export interface SheetProps {
   open: boolean;
@@ -41,6 +42,13 @@ export function Sheet({
   const { phone, height } = useLayout();
   const insets = useSafeAreaInsets();
   const Body = scroll ? ScrollView : View;
+  const layer = useId();
+  useEffect(() => {
+    if (!open) return;
+    const { enter, leave } = useToastLayers.getState();
+    enter(layer);
+    return () => leave(layer);
+  }, [open, layer]);
   return (
     <Modal
       visible={open}
@@ -132,6 +140,7 @@ export function Sheet({
           ) : null}
         </View>
       </KeyboardAvoidingView>
+      <ToastHost layer={layer} />
     </Modal>
   );
 }

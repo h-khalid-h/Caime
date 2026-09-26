@@ -243,7 +243,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!(await verifyPassword(password, user.password_hash))) {
       throw new AppError(401, 'invalid_credentials', 'That password isn’t right.');
     }
-    // Who to tell, and which files only this account could see (not attached to any message).
+    // Who to tell, and which files only this account could see (in no message and no album).
     const [others, orphanFiles] = await Promise.all([
       ctx.db.selectFrom('connection_sides').select('other_id').where('owner_id', '=', me).execute(),
       ctx.db
@@ -257,6 +257,16 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
                 .selectFrom('message_files as mf')
                 .select('mf.file_id')
                 .whereRef('mf.file_id', '=', 'f.id'),
+            ),
+          ),
+        )
+        .where((eb) =>
+          eb.not(
+            eb.exists(
+              eb
+                .selectFrom('album_photos as ap')
+                .select('ap.file_id')
+                .whereRef('ap.file_id', '=', 'f.id'),
             ),
           ),
         )

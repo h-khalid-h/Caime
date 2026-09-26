@@ -230,6 +230,19 @@ export interface ReactionView {
   userIds: string[];
 }
 
+/** An album's photos, as a card shows them: how many, and the latest few. */
+export interface AlbumView {
+  count: number;
+  photos: FileView[];
+}
+
+/** One photo in an album, with who added it (to know who may take it out). */
+export interface AlbumPhotoView {
+  file: FileView;
+  addedBy: string | null;
+  addedAt: string;
+}
+
 export interface MessageView {
   id: string;
   conversationId: string;
@@ -259,6 +272,8 @@ export interface MessageView {
   reactions: ReactionView[];
   files: FileView[];
   poll: { counts: Record<string, number>; mine: string[]; voters: number } | null;
+  /** A shared album card: how many photos, and the latest few (PRD §41). */
+  album: AlbumView | null;
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;

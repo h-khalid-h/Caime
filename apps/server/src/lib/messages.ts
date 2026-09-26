@@ -1,3 +1,4 @@
+import type { AlbumView } from '@caishy/core';
 /**
  * Sending and reading messages (PRD §21, §80; ADR-8, ADR-9). A message never appears sent and
  * then disappears: it is ordered by `seq` inside the insert transaction, and a retried send with
@@ -70,6 +71,16 @@ export function messagePreview(
   });
 }
 
+const ALBUM_PREVIEW = 6;
+
+function albumOf(
+  rows: Array<Parameters<typeof fileView>[0] & { message_id: string }>,
+  messageId: string,
+): AlbumView {
+  const mine = rows.filter((r) => r.message_id === messageId);
+  return { count: mine.length, photos: mine.slice(0, ALBUM_PREVIEW).map(fileView) };
+}
+
 /** Load full views for a set of message rows, as seen by `viewerId`. */
 export async function messageViews(
   db: Q,
@@ -80,7 +91,10 @@ export async function messageViews(
   const ids = rows.map((m) => m.id);
   const replyIds = rows.map((m) => m.reply_to_id).filter((x): x is string => Boolean(x));
   const senderIds = [...new Set(rows.map((m) => m.sender_id).filter((x): x is string => !!x))];
-  const [reactions, files, replies, votes, senders] = await Promise.all([
+  const albumIds = rows
+    .filter((m) => m.kind === 'kit' && (m.payload as { kit?: unknown })?.kit === 'shared_album')
+    .map((m) => m.id);
+  const [reactions, files, replies, votes, senders, albums] = await Promise.all([
     db
       .selectFrom('reactions')
       .selectAll()
@@ -113,6 +127,28 @@ export async function messageViews(
     senderIds.length
       ? db.selectFrom('users').select(['id', 'kind']).where('id', 'in', senderIds).execute()
       : Promise.resolve([] as Array<{ id: string; kind: string }>),
+    // Each album's photos, newest first: the card shows how many and the latest few.
+    albumIds.length
+      ? db
+          .selectFrom('album_photos as a')
+          .innerJoin('files', 'files.id', 'a.file_id')
+          .select([
+            'a.message_id',
+            'files.id',
+            'files.name',
+            'files.mime',
+            'files.size',
+            'files.kind',
+            'files.width',
+            'files.height',
+            'files.duration_ms',
+            'files.thumb_key',
+          ])
+          .where('a.message_id', 'in', albumIds)
+          .orderBy('a.created_at', 'desc')
+          .orderBy('a.file_id', 'desc')
+          .execute()
+      : Promise.resolve([]),
   ]);
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(senders.filter((u) => u.kind !== 'human').map((u) => u.id));
@@ -168,6 +204,7 @@ export async function messageViews(
       })),
       files: deleted ? [] : files.filter((f) => f.message_id === m.id).map(fileView),
       poll,
+      album: albumIds.includes(m.id) && !deleted ? albumOf(albums, m.id) : null,
       editedAt: m.edited_at?.toISOString() ?? null,
       deletedAt: m.deleted_at?.toISOString() ?? null,
       createdAt: m.created_at.toISOString(),

@@ -1,3 +1,4 @@
+import { crc32, deflateSync } from 'node:zlib';
 import { type BrowserContext, expect, type Page } from '@playwright/test';
 
 /** Cookie-authenticated writes need this header (docs/SECURITY.md, CSRF). */
@@ -53,4 +54,36 @@ export async function apiSignUp(context: BrowserContext, displayName: string, ha
   });
   expect(done.ok(), await done.text()).toBe(true);
   return user;
+}
+
+/** A small photo to upload: a PNG shading from one colour to another, corner to corner. */
+export function photo(width: number, height: number, from: number[], to: number[]): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const out = Buffer.alloc(body.length + 8);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), body.length + 4);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8; // bits per channel
+  header[9] = 2; // RGB
+  const rows = Buffer.alloc((width * 3 + 1) * height);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const k = (x + y) / (width + height - 2);
+      for (let c = 0; c < 3; c++)
+        rows[y * (width * 3 + 1) + 1 + x * 3 + c] = Math.round(
+          (from[c] ?? 0) + ((to[c] ?? 0) - (from[c] ?? 0)) * k,
+        );
+    }
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(rows)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }

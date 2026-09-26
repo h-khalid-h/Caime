@@ -434,6 +434,13 @@ export interface BlocksTable {
   created_at: Generated<Date>;
 }
 
+export interface AlbumPhotosTable {
+  message_id: string;
+  file_id: string;
+  added_by: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface OrgBlocksTable {
   user_id: string;
   org_id: string;
@@ -669,6 +676,7 @@ export interface Database {
   push_subscriptions: PushSubscriptionsTable;
   blocks: BlocksTable;
   org_blocks: OrgBlocksTable;
+  album_photos: AlbumPhotosTable;
   reports: ReportsTable;
   domain_events: DomainEventsTable;
   jobs: JobsTable;

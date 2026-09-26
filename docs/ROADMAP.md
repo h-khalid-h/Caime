@@ -124,7 +124,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       the relationship, moved by the right person, live (`kits.test.ts`, E2E). Checklists anyone
       in the conversation ticks and adds to, done when all is ticked; a place, or where you are
       right now, shared once and never by under-18s (`kits.test.ts`, `checklists.test.ts`, E2E).
-      [ ] Shared album; live location
+      Albums everyone in the conversation adds photos to, newest first, seen only by the people
+      in it; whoever added a photo, or made the album, takes it out, and its maker closes it
+      (`albums.test.ts`, E2E). [ ] Live location
 - [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
       private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
       relationship's tone), translate a message, catch me up (offered when ten or more are
@@ -161,7 +163,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.5 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.9 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -301,3 +303,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   the app read as unchecked and unselected to screen readers on the web; the shared Pressable now
   says it as ARIA. Under-18s' location, and simultaneous ticks under a row lock, each fail their
   test when removed. Tests: 148 core, 49 brand, 152 server, 8 app, 25 E2E.
+- 2026-09-26 — Session 2 (cont.): shared albums. Anyone in a family, friend or community
+  conversation makes one; everyone in it adds photos and videos from their own uploads, sees
+  them newest first on the card and all of them in the album, and takes out what they added
+  (with Undo); whoever made it can take anything out and closes it when it's done. A photo is
+  seen through the album only by the people in the conversation, and is its owner's alone again
+  once taken out or the album is deleted; a deleted account's photos stay for the others. The
+  end-to-end test found that every toast raised inside a sheet (an error, "copied", an Undo) was
+  drawn under it, behind the scrim and out of reach; toasts now show in the topmost sheet.
+  Access, ownership, closing and removal each fail their test when removed. Tests: 148 core, 49
+  brand, 155 server, 8 app, 26 E2E.

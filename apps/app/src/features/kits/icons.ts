@@ -8,6 +8,7 @@ import {
   ClipboardList,
   FileCheck,
   HandCoins,
+  Images,
   LifeBuoy,
   ListChecks,
   MapPin,
@@ -29,6 +30,7 @@ export const KIT_ICONS: Record<CardKitId | 'poll' | 'location', IconComponent> =
   support_ticket: LifeBuoy,
   appointment: CalendarCheck,
   checklist: ListChecks,
+  shared_album: Images,
   poll: ChartBar,
   location: MapPin,
 };

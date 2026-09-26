@@ -147,7 +147,21 @@ export async function canReadFile(
     .where('p.left_at', 'is', null)
     .limit(1)
     .executeTakeFirst();
-  return Boolean(shared);
+  if (shared) return true;
+  // Or in an album in a conversation they're in (PRD §41), while the album is there.
+  const inAlbum = await ctx.db
+    .selectFrom('album_photos as a')
+    .innerJoin('messages as m', 'm.id', 'a.message_id')
+    .innerJoin('participants as p', (j) =>
+      j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', userId),
+    )
+    .select('a.file_id')
+    .where('a.file_id', '=', fileId)
+    .where('m.deleted_at', 'is', null)
+    .where('p.left_at', 'is', null)
+    .limit(1)
+    .executeTakeFirst();
+  return Boolean(inAlbum);
 }
 
 export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {

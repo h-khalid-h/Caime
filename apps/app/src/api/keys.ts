@@ -14,6 +14,7 @@ export const qk = {
   inboxAll: ['inbox', 'all'] as const,
   conversation: (id: string) => ['conversation', id] as const,
   messages: (id: string) => ['messages', id] as const,
+  album: (messageId: string) => ['album', messageId] as const,
   memory: (id: string) => ['memory', id] as const,
   suggestions: (conversationId?: string) => ['suggestions', conversationId ?? 'all'] as const,
   person: (id: string) => ['person', id] as const,

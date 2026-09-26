@@ -17,6 +17,8 @@ export interface IconButtonProps {
   disabled?: boolean;
   badge?: boolean;
   style?: ViewStyle;
+  /** Extra reach around a button drawn smaller than a finger (over a photo, say). */
+  hitSlop?: number;
   testID?: string;
 }
 
@@ -31,6 +33,7 @@ export function IconButton({
   disabled,
   badge,
   style,
+  hitSlop,
   testID,
 }: IconButtonProps) {
   const t = useTheme();
@@ -53,6 +56,7 @@ export function IconButton({
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
+      hitSlop={hitSlop}
       haptic
       focusRadius={minTouchTarget / 2}
       style={({ pressed, hovered }) => [

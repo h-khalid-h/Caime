@@ -8,10 +8,7 @@ import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
 
-/**
- * The kits posted as cards. Poll is posted as a poll message and location as a location
- * message; the shared album isn't built yet, so nothing offers it.
- */
+/** The kits posted as cards. Poll is posted as a poll message, and location as a location. */
 export const CARD_KITS = [
   'approval',
   'meeting',
@@ -24,6 +21,7 @@ export const CARD_KITS = [
   'support_ticket',
   'appointment',
   'checklist',
+  'shared_album',
 ] as const satisfies readonly KitId[];
 export type CardKitId = (typeof CARD_KITS)[number];
 
@@ -44,6 +42,7 @@ export const KIT_MODES: Record<CardKitId, Mode> = {
   support_ticket: 'request',
   appointment: 'plan',
   checklist: 'plan',
+  shared_album: 'share',
 };
 
 /** Who may move a card: whoever posted it, the others in the conversation, or anyone there. */
@@ -128,6 +127,11 @@ export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
   },
   // A checklist has no buttons to press: it's done when everything on it is ticked.
   checklist: {},
+  // Whoever made an album decides when it's full: closed, nobody adds to it.
+  shared_album: {
+    open: [m('closed', 'Close the album', 'creator')],
+    closed: [m('open', 'Reopen', 'creator')],
+  },
 };
 
 /** The moves this person may make on a card in this state. */

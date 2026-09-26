@@ -26,6 +26,21 @@ export const useToasts = create<ToastState>((set) => ({
   dismiss: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
 }));
 
+/**
+ * Where toasts show: in the topmost open sheet, or on the screen when none is open. A sheet is a
+ * modal (a layer above the app on the web, a window of its own on phones), so a toast drawn on
+ * the screen beneath it would be hidden, and its Undo out of reach.
+ */
+export const useToastLayers = create<{
+  open: string[];
+  enter: (id: string) => void;
+  leave: (id: string) => void;
+}>((set) => ({
+  open: [],
+  enter: (id) => set((s) => ({ open: [...s.open.filter((i) => i !== id), id] })),
+  leave: (id) => set((s) => ({ open: s.open.filter((i) => i !== id) })),
+}));
+
 export function toast(
   message: string,
   opts: { tone?: ToastItem['tone']; action?: ToastItem['action'] } = {},
@@ -83,10 +98,12 @@ function ToastView({ item }: { item: ToastItem }) {
   );
 }
 
-export function ToastHost() {
+/** Without `layer`, the screen's; a sheet passes its own and shows them while it's on top. */
+export function ToastHost({ layer }: { layer?: string }) {
   const items = useToasts((s) => s.items);
+  const top = useToastLayers((s) => s.open[s.open.length - 1]);
   const insets = useSafeAreaInsets();
-  if (items.length === 0) return null;
+  if (items.length === 0 || top !== layer) return null;
   return (
     <View
       pointerEvents="box-none"

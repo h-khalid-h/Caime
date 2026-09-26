@@ -2,7 +2,12 @@
  * Conversations and messages (PRD §15–§22, §26, §56; R14).
  */
 
-import type { ConversationBusinessView, ConversationView, MessagesPage } from '@caishy/core';
+import type {
+  AlbumPhotoView,
+  ConversationBusinessView,
+  ConversationView,
+  MessagesPage,
+} from '@caishy/core';
 import {
   applyChecklistOp,
   ChecklistOpBody,
@@ -972,6 +977,189 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         data: { conversationId: found.conversation_id, messageId: id },
       });
     }
+    return { message: view };
+  });
+
+  // --- Shared albums (PRD §41): photos people in the conversation add to one card -------------
+
+  const ALBUM_MAX = 500;
+
+  async function albumCard(id: string, userId: string) {
+    const m = await ctx.db
+      .selectFrom('messages')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m) throw notFound('That album');
+    await membership(ctx, userId, m.conversation_id);
+    const card = (m.payload ?? {}) as { kit?: unknown; state?: string; title?: string };
+    if (m.kind !== 'kit' || m.deleted_at || card.kit !== 'shared_album')
+      throw notFound('That album');
+    return { m, card };
+  }
+
+  /** Everyone in the conversation sees the card change: its count and latest photos. */
+  async function albumChanged(messageId: string, conversationId: string, actorId: string) {
+    const updated = await ctx.db
+      .selectFrom('messages')
+      .selectAll()
+      .where('id', '=', messageId)
+      .executeTakeFirstOrThrow();
+    const members = (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id);
+    const [view] = await messageViews(ctx.db, [updated], actorId);
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    return { view, members };
+  }
+
+  app.get('/messages/:id/album', async (req): Promise<{ photos: AlbumPhotoView[] }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    await albumCard(id, auth.userId);
+    const rows = await ctx.db
+      .selectFrom('album_photos as a')
+      .innerJoin('files', 'files.id', 'a.file_id')
+      .select([
+        'a.added_by',
+        'a.created_at as added_at',
+        'files.id',
+        'files.name',
+        'files.mime',
+        'files.size',
+        'files.kind',
+        'files.width',
+        'files.height',
+        'files.duration_ms',
+        'files.thumb_key',
+      ])
+      .where('a.message_id', '=', id)
+      .orderBy('a.created_at', 'desc')
+      .orderBy('a.file_id', 'desc')
+      .execute();
+    return {
+      photos: rows.map((r) => ({
+        file: fileView(r),
+        addedBy: r.added_by,
+        addedAt: r.added_at.toISOString(),
+      })),
+    };
+  });
+
+  app.post('/messages/:id/album', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { fileIds } = parse(
+      z.object({ fileIds: z.array(z.string().uuid()).min(1).max(20) }),
+      req.body,
+    );
+    const { m, card } = await albumCard(id, auth.userId);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
+    if (card.state === 'closed') throw badRequest('This album is closed.');
+    const wanted = [...new Set(fileIds)];
+    const files = await ctx.db
+      .selectFrom('files')
+      .select(['id', 'kind', 'status', 'owner_id', 'name'])
+      .where('id', 'in', wanted)
+      .execute();
+    // Your own uploads only: nobody adds a photo they were merely shown elsewhere.
+    if (
+      files.length !== wanted.length ||
+      files.some((f) => f.owner_id !== auth.userId || f.status !== 'ready')
+    )
+      throw badRequest('Add photos you’ve uploaded.');
+    if (files.some((f) => f.kind !== 'image' && f.kind !== 'video'))
+      throw badRequest('Albums take photos and videos.');
+    const { n } = await ctx.db
+      .selectFrom('album_photos')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .where('message_id', '=', id)
+      .executeTakeFirstOrThrow();
+    if (n + files.length > ALBUM_MAX) throw badRequest(`An album holds ${ALBUM_MAX} photos.`);
+    const added = await ctx.db.transaction().execute(async (trx) => {
+      const inserted = await trx
+        .insertInto('album_photos')
+        .values(
+          files.map((f) => ({
+            message_id: id,
+            file_id: f.id,
+            added_by: auth.userId,
+            created_at: ctx.now(),
+          })),
+        )
+        .onConflict((oc) => oc.doNothing())
+        .returning('file_id')
+        .execute();
+      const fresh = files.filter((f) => inserted.some((i) => i.file_id === f.id));
+      if (fresh.length)
+        await trx
+          .insertInto('assets')
+          .values(
+            fresh.map((f) => ({
+              id: uuidv7(),
+              conversation_id: m.conversation_id,
+              message_id: id,
+              sender_id: auth.userId,
+              kind: f.kind === 'video' ? ('video' as const) : ('photo' as const),
+              file_id: f.id,
+              title: f.name,
+              created_at: ctx.now(),
+            })),
+          )
+          .execute();
+      return fresh.length;
+    });
+    const { view, members } = await albumChanged(id, m.conversation_id, auth.userId);
+    if (added) {
+      const who = await ctx.db
+        .selectFrom('users')
+        .select('display_name')
+        .where('id', '=', auth.userId)
+        .executeTakeFirstOrThrow();
+      // News, not something to do: activity, one line per album however many arrive.
+      for (const userId of members) {
+        if (userId === auth.userId) continue;
+        await notify(ctx, {
+          userId,
+          kind: 'kit',
+          level: 'activity',
+          title: `${who.display_name} added ${added === 1 ? 'a photo' : `${added} photos`} to ${card.title ?? 'the album'}`,
+          data: { conversationId: m.conversation_id, messageId: id },
+          groupKey: `album:${id}`,
+        });
+      }
+    }
+    return { message: view };
+  });
+
+  app.delete('/messages/:id/album/:fileId', async (req) => {
+    const auth = requireAuth(req);
+    const { id, fileId } = parse(
+      z.object({ id: z.string().uuid(), fileId: z.string().uuid() }),
+      req.params,
+    );
+    const { m } = await albumCard(id, auth.userId);
+    const photo = await ctx.db
+      .selectFrom('album_photos')
+      .select('added_by')
+      .where('message_id', '=', id)
+      .where('file_id', '=', fileId)
+      .executeTakeFirst();
+    if (!photo) throw notFound('That photo');
+    // Whoever added it, or whoever made the album, takes it out.
+    if (photo.added_by !== auth.userId && m.sender_id !== auth.userId)
+      throw forbidden('Only whoever added it, or made the album, can take it out.');
+    await ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .deleteFrom('album_photos')
+        .where('message_id', '=', id)
+        .where('file_id', '=', fileId)
+        .execute();
+      await trx
+        .deleteFrom('assets')
+        .where('message_id', '=', id)
+        .where('file_id', '=', fileId)
+        .execute();
+    });
+    const { view } = await albumChanged(id, m.conversation_id, auth.userId);
     return { message: view };
   });
 

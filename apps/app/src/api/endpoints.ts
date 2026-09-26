@@ -9,6 +9,7 @@ import type {
   AiRewriteView,
   AiStatusView,
   AiTranslationView,
+  AlbumPhotoView,
   AuthResponse,
   BusinessInboxView,
   BusinessSummaryView,
@@ -215,6 +216,11 @@ export const endpoints = {
     api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
   checklist: (id: string, op: ChecklistOp) =>
     api.post<{ message: MessageView }>(`/messages/${id}/checklist`, op),
+  album: (id: string) => api.get<{ photos: AlbumPhotoView[] }>(`/messages/${id}/album`),
+  addToAlbum: (id: string, fileIds: string[]) =>
+    api.post<{ message: MessageView }>(`/messages/${id}/album`, { fileIds }),
+  removeFromAlbum: (id: string, fileId: string) =>
+    api.del<{ message: MessageView }>(`/messages/${id}/album/${fileId}`),
   receipts: (id: string, body: { read?: number; delivered?: number }) =>
     api.post<Ok>(`/conversations/${id}/receipts`, body),
   dismissAttention: (id: string) => api.post<Ok>(`/conversations/${id}/dismiss`),
