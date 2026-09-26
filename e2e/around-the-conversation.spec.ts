@@ -1,7 +1,7 @@
 /**
  * What surrounds a conversation, end to end: a relationship that changes and keeps its history,
  * search that opens the message it found, stickers, a message written offline that sends when
- * the network returns, and settings that follow you. One pair of people is shared by these tests
+ * the network returns, actions and alerts, and settings that follow you. One pair of people is shared by these tests
  * (sign-ups are rate limited per address), so they run in order.
  */
 import { randomUUID } from 'node:crypto';
@@ -16,6 +16,7 @@ test.describe
     let alexContext: BrowserContext;
     let noor: { page: Page; errors: string[] };
     let alex: { page: Page; errors: string[] };
+    let noorId: string;
     let alexId: string;
     let convo: string;
 
@@ -25,7 +26,7 @@ test.describe
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
       });
-      await apiSignUp(noorContext, 'Noor Haddad', `noor.${stamp}`);
+      noorId = (await apiSignUp(noorContext, 'Noor Haddad', `noor.${stamp}`)).id;
       alexId = (await apiSignUp(alexContext, 'Alex Chen', `alex.${stamp}`)).id;
       const request = await noorContext.request.post('/v1/connections/requests', {
         headers: CLIENT,
@@ -61,6 +62,7 @@ test.describe
       await expect(visible(page, 'Manager · DATA C')).toBeVisible();
       // One change is one line, not an addition and a change.
       await expect(page.getByText('Added “Manager · DATA C”')).toHaveCount(0);
+      await expect(page.getByText('How do you know Alex?')).toBeHidden();
       await page.screenshot({ path: 'e2e/screenshots/desktop-person-history.png' });
       expect(errors).toEqual([]);
     });
@@ -123,6 +125,43 @@ test.describe
       const offlineNoise = /ERR_INTERNET_DISCONNECTED|WebSocket|Failed to load resource/;
       expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
       expect(noor.errors).toEqual([]);
+    });
+
+    test('an action is added, finished and undone; a request lands in Actions and Alerts', async () => {
+      const { page, errors } = noor;
+      await page.goto('/actions');
+      await page.getByTestId('add-task').click();
+      await page.getByLabel('What needs doing').fill('Renew passport by Friday');
+      await expect(visible(page, /^From “.*Friday”$/)).toBeVisible();
+      await page.getByRole('button', { name: 'Add', exact: true }).click();
+      const done = page.getByRole('checkbox', { name: 'Complete Renew passport by Friday' });
+      await expect(done).toBeVisible();
+      await done.click();
+      await expect(visible(page, 'Nothing on your plate')).toBeVisible();
+      await page.getByRole('button', { name: 'Undo', exact: true }).click();
+      await expect(done).toBeVisible();
+
+      // Alex asks Noor for something in their conversation.
+      const asked = await alexContext.request.post('/v1/tasks', {
+        headers: CLIENT,
+        data: {
+          title: 'Review the venue floor plan',
+          assigneeId: noorId,
+          shared: true,
+          conversationId: convo,
+        },
+      });
+      expect(asked.ok(), await asked.text()).toBe(true);
+      await page.getByRole('tab', { name: /^Asked me, 1$/ }).click();
+      await expect(visible(page, 'Review the venue floor plan')).toBeVisible();
+      await expect(visible(page, 'Alex Chen asked you')).toBeVisible();
+
+      // And it's in Alerts, which reads it.
+      await page.getByRole('link', { name: /^Alerts, \d+$/ }).click();
+      await expect(visible(page, 'Alex Chen asked you')).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Alerts', exact: true })).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-alerts.png' });
+      expect(errors).toEqual([]);
     });
 
     test('every settings page opens, and a chosen theme follows you', async () => {

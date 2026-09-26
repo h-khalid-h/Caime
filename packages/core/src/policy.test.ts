@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   currentPriority,
+  daysText,
   decideNotification,
   defaultPolicies,
   describePolicy,
@@ -84,7 +85,7 @@ describe('decideNotification', () => {
     );
     expect(d.deliver).toBe('held');
     expect(d.holdUntil).toBe('2026-09-24T12:00:00.000Z');
-    expect(d.reason).toBe('Manager · outside 08:00–20:00');
+    expect(d.reason).toBe('Manager · outside Mon–Fri 08:00–20:00');
   });
 
   it('urgency breaks through only where the recipient allows it (R10)', () => {
@@ -139,5 +140,17 @@ describe('decideNotification', () => {
       reason: 'Quiet hours',
       holdUntil: '2026-09-24T11:00:00.000Z',
     });
+  });
+});
+
+describe('daysText', () => {
+  it('names workweeks the way people say them', () => {
+    expect(daysText([1, 2, 3, 4, 5])).toBe('Mon–Fri');
+    expect(daysText([0, 1, 2, 3, 4])).toBe('Sun–Thu');
+    expect(daysText([6, 0, 1, 2, 3])).toBe('Sat–Wed');
+    expect(daysText([1, 3, 5])).toBe('Mon, Wed, Fri');
+    expect(daysText([5, 6])).toBe('Fri, Sat');
+    expect(daysText([0, 1, 2, 3, 4, 5, 6])).toBe('');
+    expect(daysText([])).toBe('');
   });
 });

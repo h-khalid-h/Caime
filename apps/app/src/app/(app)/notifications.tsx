@@ -94,10 +94,7 @@ export default function Notifications() {
               )}
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text variant={item.read ? 'body' : 'bodyStrong'}>
-                {item.title}
-                {item.count > 1 ? ` (${item.count})` : ''}
-              </Text>
+              <Text variant={item.read ? 'body' : 'bodyStrong'}>{item.title}</Text>
               {item.body ? (
                 <Text variant="caption" color="textSecondary" numberOfLines={2}>
                   {item.body}

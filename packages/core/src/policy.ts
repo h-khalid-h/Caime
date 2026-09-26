@@ -287,8 +287,32 @@ function levelFor(event: NotificationEvent, policy: EffectivePolicy): Notificati
   }
 }
 
+const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** "Mon–Fri", "Sun–Thu", "Sat–Wed", "Mon, Wed, Fri": runs of days, wrapping past Saturday. */
+export function daysText(days: number[]): string {
+  const set = [...new Set(days.filter((d) => d >= 0 && d <= 6))].sort((a, b) => a - b);
+  if (set.length === 0 || set.length === 7) return '';
+  // Start at a day whose previous day is off, so a run like Sat–Wed isn't split at Sunday.
+  const first = set.find((d) => !set.includes((d + 6) % 7)) ?? set[0]!;
+  const ordered = [...set.filter((d) => d >= first), ...set.filter((d) => d < first)];
+  const runs: number[][] = [];
+  for (const d of ordered) {
+    const run = runs[runs.length - 1];
+    if (run && (run[run.length - 1]! + 1) % 7 === d) run.push(d);
+    else runs.push([d]);
+  }
+  return runs
+    .map((r) =>
+      r.length >= 3 ? `${DAY[r[0]!]}–${DAY[r[r.length - 1]!]}` : r.map((d) => DAY[d]).join(', '),
+    )
+    .join(', ');
+}
+
+/** "Mon–Fri 08:00–20:00", or just the hours when the schedule covers every day. */
 function scheduleText(s: Schedule): string {
-  return `${s.start}–${s.end}`;
+  const days = daysText(s.days);
+  return days ? `${days} ${s.start}–${s.end}` : `${s.start}–${s.end}`;
 }
 
 export function decideNotification(

@@ -67,8 +67,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
 - [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
       download your data and delete your account (E2E)
-- [~] Actions and Notifications: built and rendered in E2E screenshots; their flows are not
-      yet exercised end to end
+- [x] Actions: add one in words ("by Friday" becomes its due date), finish it, undo; a request
+      from someone lands in Asked me (E2E)
+- [x] Alerts: requests and message bursts arrive, each with why it was held or sent (E2E)
 - [ ] Spaces
 - [x] Desktop web: rail, list, detail and context panel (E2E screenshots). [ ] Keyboard
       shortcuts beyond Enter to send
@@ -127,4 +128,6 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   the message it found. A second E2E spec (history, search, stickers, offline, settings) found
   and fixed: raw highlight markers in search results, a change recorded as an addition plus a
   change, and the app staying "offline" after a network blip on Chromium (NetInfo's web build
-  never hears the network return). Tests: 114 core, 49 brand, 79 server, 8 E2E.
+  never hears the network return). Alerts read "sent 56 messages (56)" and
+  "outside 08:00–20:00" on a Saturday; they now read "sent 56 messages" and "outside Mon–Fri
+  08:00–20:00". Tests: 115 core, 49 brand, 79 server, 9 E2E.
