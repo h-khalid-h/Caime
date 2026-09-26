@@ -15,6 +15,7 @@ import type {
   BusinessInboxView,
   BusinessSummaryView,
   BusinessThreadView,
+  CallView,
   ConnectedAppView,
   ConnectionRequestView,
   ConnectionView,
@@ -22,6 +23,7 @@ import type {
   DecisionView,
   DeviceSessionView,
   HandleView,
+  IceConfigView,
   InboxAllResponse,
   InboxResponse,
   MemoryView,
@@ -58,6 +60,7 @@ import type {
 import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
 import type { RewriteStyle } from '@caishy/core/assist';
 import type { BusinessView } from '@caishy/core/business';
+import type { CallKind } from '@caishy/core/calls';
 import type { ChecklistOp } from '@caishy/core/kit-cards';
 import type { OrgKind } from '@caishy/core/orgs';
 import type { SpaceKind } from '@caishy/core/spaces';
@@ -303,6 +306,26 @@ export const endpoints = {
     api.post<{ redirect: string }>('/oauth/authorize', { ...params, decision }),
   connectedApps: () => api.get<{ apps: ConnectedAppView[] }>('/me/connected-apps'),
   removeConnectedApp: (grantId: string) => api.del<Ok>(`/me/connected-apps/${grantId}`),
+  // Calls (PRD §47): the server rings and relays; the media goes device to device
+  callIce: () => api.get<IceConfigView>('/calls/ice'),
+  liveCall: () => api.get<{ call: CallView | null }>('/calls/live'),
+  startCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
+    api.post<{ call: CallView }>(`/conversations/${conversationId}/calls`, body),
+  acceptCall: (id: string, deviceId: string) =>
+    api.post<{ call: CallView }>(`/calls/${id}/accept`, { deviceId }),
+  declineCall: (id: string) => api.post<{ call: CallView }>(`/calls/${id}/decline`, {}),
+  endCall: (id: string, body: { deviceId: string; failed?: boolean }) =>
+    api.post<{ call: CallView }>(`/calls/${id}/end`, body),
+  signalCall: (
+    id: string,
+    body: {
+      deviceId: string;
+      kind: 'offer' | 'answer' | 'candidate';
+      sdp?: string;
+      candidate?: RTCIceCandidateInit;
+    },
+  ) => api.post<Ok>(`/calls/${id}/signal`, body),
+  callAlive: (id: string, deviceId: string) => api.post<Ok>(`/calls/${id}/alive`, { deviceId }),
   // Live location (R29): the sharer's device moves it; only they stop it
   moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
     api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),

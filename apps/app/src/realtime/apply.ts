@@ -6,6 +6,7 @@ import type { RealtimeEvent } from '@caishy/core/api';
 import type { QueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { onCallEvent } from '@/features/calls/engine';
 import {
   applyEditToInbox,
   applyMessageToInbox,
@@ -53,6 +54,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     soon(debounceKey, () => void qc.invalidateQueries({ queryKey: key }));
 
   switch (event.type) {
+    case 'call.ringing':
+    case 'call.updated':
+    case 'call.signal':
+      onCallEvent(event);
+      return;
     case 'message.created': {
       const m = event.data;
       const mine = m.senderId === me;

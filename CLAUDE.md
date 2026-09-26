@@ -159,6 +159,12 @@ These are rules, not preferences.
   to answer, asks `ctx.ai.supportAgent`, and claims the message (`agent_seq`) before posting, so
   it answers once. Its user is kind `agent`: `automated` and `aiAgent` on its messages. The E2E
   Messages stand-in answers as it from the sentence of its knowledge nearest the question.
+- Calls: `apps/server/src/lib/calls.ts` and `modules/calls.ts` ring, relay and record;
+  `apps/app/src/features/calls/engine.web.ts` holds the RTCPeerConnection, and
+  `CallLayer.web.tsx` draws the call over everything (both have native stubs, `engine.ts` and
+  `CallLayer.tsx`, so phones build). Each tab's `DEVICE_ID` (`state/calls.ts`) is how a call
+  runs on the one device that answered. E2E runs Chromium with a fake camera and microphone and
+  the server with `STUN_URLS=''`.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
@@ -200,6 +206,7 @@ albums), AI assist, Spaces, Organizations with DNS verification, the Business in
 organizations writing first as requests), apps for organizations (scoped tokens, bots, signed
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
-CI are built and verified, and so is an organization's AI support agent. Remaining: billing
-(⛔ Stripe), calls (⛔ TURN), a third-party penetration test, store builds, and the EasyPanel
-deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).
+CI are built and verified, and so are an organization's AI support agent and 1:1 web calls.
+Remaining: billing (⛔ Stripe), a TURN relay for calls (⛔), group calls and calls in the phone
+apps, a third-party penetration test, store builds, and the EasyPanel deploy (⛔ needs
+`EASYPANEL_URL` and `EASYPANEL_API_TOKEN` in the environment settings, `docs/DEPLOY.md`).

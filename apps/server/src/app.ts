@@ -19,6 +19,7 @@ import { createAiAssist } from './lib/ai';
 import { registerWebhookJob } from './lib/apps';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
+import { registerCallSweep } from './lib/calls';
 import { AppError } from './lib/errors';
 import { startWorkers } from './lib/jobs';
 import { createMetrics } from './lib/metrics';
@@ -31,6 +32,7 @@ import { aiRoutes } from './modules/ai';
 import { appRoutes } from './modules/apps';
 import { authRoutes } from './modules/auth';
 import { businessRoutes } from './modules/business';
+import { callRoutes } from './modules/calls';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
 import { fileRoutes } from './modules/files';
@@ -202,6 +204,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await policyRoutes(v1, ctx);
       await suggestionRoutes(v1, ctx);
       await conversationRoutes(v1, ctx);
+      await callRoutes(v1, ctx);
       await inboxRoutes(v1, ctx);
       await realtimeRoutes(v1, ctx);
       await actionRoutes(v1, ctx);
@@ -228,6 +231,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerWorkers();
   registerWebhookJob();
   registerAgentJob();
+  registerCallSweep();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
 
   app.addHook('onClose', async () => {

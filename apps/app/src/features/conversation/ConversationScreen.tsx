@@ -17,6 +17,7 @@ import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
 import { catchUp } from '@/features/assist/catchUp';
 import { useAiReady } from '@/features/assist/ready';
 import { ThreadBar } from '@/features/business/ThreadBar';
+import { callsSupported, startCall } from '@/features/calls/engine';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
@@ -29,7 +30,16 @@ import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, ChevronDown, Lock, MessageCircle, PanelRight, Users } from '@/ui/icons';
+import {
+  ArrowLeft,
+  ChevronDown,
+  Lock,
+  MessageCircle,
+  PanelRight,
+  Phone,
+  Users,
+  Video,
+} from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -236,13 +246,32 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         ) : null
       }
       right={
-        desktop ? (
-          <IconButton
-            icon={PanelRight}
-            label={panel ? 'Hide details' : 'Show details'}
-            onPress={() => setPanel((p) => !p)}
-          />
-        ) : null
+        <View style={{ flexDirection: 'row', gap: 2 }}>
+          {other && conversation?.kind === 'direct' && !conversation.request && callsSupported ? (
+            // Calls (PRD §47): between two people who can already write to each other.
+            <>
+              <IconButton
+                icon={Phone}
+                label={`Voice call ${other.person.displayName}`}
+                onPress={() => void startCall(conversation.id, 'voice')}
+                testID="call-voice"
+              />
+              <IconButton
+                icon={Video}
+                label={`Video call ${other.person.displayName}`}
+                onPress={() => void startCall(conversation.id, 'video')}
+                testID="call-video"
+              />
+            </>
+          ) : null}
+          {desktop ? (
+            <IconButton
+              icon={PanelRight}
+              label={panel ? 'Hide details' : 'Show details'}
+              onPress={() => setPanel((p) => !p)}
+            />
+          ) : null}
+        </View>
       }
     >
       <Pressable

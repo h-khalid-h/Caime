@@ -24,9 +24,20 @@ export default defineConfig({
     baseURL: BASE,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    permissions: ['clipboard-read', 'clipboard-write'],
+    permissions: ['clipboard-read', 'clipboard-write', 'camera', 'microphone'],
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Calls: a test pattern and a tone stand in for a camera and a microphone.
+        launchOptions: {
+          args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+        },
+      },
+    },
+  ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : [
@@ -63,6 +74,8 @@ export default defineConfig({
             ADMIN_TOKEN,
             METRICS_TOKEN,
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
+            // Calls between two browsers on this machine need no STUN server out there.
+            STUN_URLS: '',
           },
         },
       ],

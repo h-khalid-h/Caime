@@ -181,7 +181,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       to opening a result) and invites (sign-ups through someone's @handle link, and the
       K-factor), each recorded without anyone's id or what anyone wrote or searched for
       (`product-metrics.test.ts`, E2E)
-- [ ] Calls (WebRTC 1:1 on web) ⛔ TURN relay needed for reliable production calls
+- [x] Calls (PRD §47): 1:1 voice and video on the web, between two people who can already
+      write to each other. The server rings every device of the person called, lets one answer,
+      and passes offers, answers and candidates only between the two devices in the call; the
+      media goes device to device. Missed after 45 seconds, busy while in another call, ended
+      when both sides leave, and each call leaves its line in the conversation ("Video call ·
+      4 min", "Missed voice call") (`calls.test.ts`, E2E with Chromium's fake camera).
+      [ ] Group calls, screen sharing, call summaries, calls in the phone apps.
+      ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
 
 ## M7 — Ship
 
@@ -416,3 +423,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   plan (50 answers a day on Free, 2,000 on Business). Its review found that it would never have
   answered a customer who had once talked to a person; `reopened_at` fixed that. Tests: 154
   core, 49 brand, 196 server, 9 app, 32 E2E.
+- 2026-09-26 — Session 2 (cont.): calls (PRD §47), 1:1 voice and video on the web. A phone and
+  a camera button in a direct conversation's header ring every device of the other person
+  wherever they are in the app, with the caller's name and photo; one device answers, and the
+  others stop ringing. The server passes offers, answers and candidates only between the
+  caller's device and the one that answered, so nothing else can join; the media goes device to
+  device. In the call: the other camera full screen, yours in a corner, a running clock, mute,
+  camera off and hang up. Unanswered it's missed after 45 seconds (with a notification), a
+  second call finds you busy, and a call both sides left ends by itself. Each call leaves one
+  line, read by each side their way ("Video call · 4 min", "Missed voice call", "Voice call · no
+  answer"). The E2E found that ICE candidates were refused (the browser adds a username
+  fragment the schema didn't expect) and that the other camera stayed black once a voice became
+  a picture; both are fixed. A TURN relay for strict networks is configuration (⛔). Tests: 156
+  core, 49 brand, 205 server, 9 app, 33 E2E.

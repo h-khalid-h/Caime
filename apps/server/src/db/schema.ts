@@ -619,6 +619,23 @@ export interface BusinessThreadsTable {
   updated_at: Generated<Date>;
 }
 
+/** A 1:1 call (PRD §47): who, how, and how it went. The media never passes through here. */
+export interface CallsTable {
+  id: string;
+  conversation_id: string;
+  caller_id: string | null;
+  callee_id: string | null;
+  kind: 'voice' | 'video';
+  state: 'ringing' | 'active' | 'ended';
+  outcome: 'completed' | 'missed' | 'declined' | 'cancelled' | 'failed' | null;
+  caller_device: string;
+  callee_device: string | null;
+  created_at: Date;
+  answered_at: NullableTimestamp;
+  ended_at: NullableTimestamp;
+  seen_at: Date;
+}
+
 /** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */
 export interface OrgAgentsTable {
   org_id: string;
@@ -778,6 +795,7 @@ export interface Database {
   business_threads: BusinessThreadsTable;
   org_apps: OrgAppsTable;
   org_agents: OrgAgentsTable;
+  calls: CallsTable;
   api_tokens: ApiTokensTable;
   webhook_deliveries: WebhookDeliveriesTable;
 }
@@ -795,5 +813,6 @@ export type Organization = Selectable<OrganizationsTable>;
 export type OrgMember = Selectable<OrgMembersTable>;
 export type BusinessThread = Selectable<BusinessThreadsTable>;
 export type OrgApp = Selectable<OrgAppsTable>;
+export type Call = Selectable<CallsTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;

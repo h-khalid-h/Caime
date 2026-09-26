@@ -58,6 +58,8 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `ANTHROPIC_API_KEY` | — | AI assist (rewrite, translate, catch me up, find follow-ups). Without it the AI settings don't appear and Caishy uses its heuristics (R17). Each person still turns it on for themselves. |
 | `ANTHROPIC_MODEL` | `claude-opus-5` | The Claude model AI assist uses. |
 | `ANTHROPIC_BASE_URL` | — | Another Messages API endpoint, such as a gateway. |
+| `STUN_URLS` | `stun:stun.l.google.com:19302` | Calls: STUN servers that tell each device its public address, comma-separated. Set it empty for none (calls then connect only on the same network). |
+| `TURN_URLS`, `TURN_SECRET` | — | Calls: a TURN relay (such as coturn, with `use-auth-secret` and `static-auth-secret` set to `TURN_SECRET`), comma-separated `turn:` and `turns:` addresses. Each person gets credentials that expire after 12 hours. Without a relay, calls between people on strict networks (some offices, some mobile carriers) won't connect. |
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |

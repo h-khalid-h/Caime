@@ -7,6 +7,7 @@ import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
+import { CALL_KINDS } from './calls';
 import { ORG_KINDS } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
@@ -95,6 +96,36 @@ export const CreateOAuthAppBody = z
     confidential: z.boolean().default(false),
   })
   .strict();
+
+/** The device a call rings or runs on: each tab or app picks one when it starts. */
+const CallDevice = z.string().regex(/^[\w-]{8,64}$/, 'Which device is this?');
+
+/** Call someone in a direct conversation (PRD §47). */
+export const StartCallBody = z.object({ kind: z.enum(CALL_KINDS), deviceId: CallDevice }).strict();
+
+/** Answer, on this device. */
+export const CallDeviceBody = z.object({ deviceId: CallDevice }).strict();
+
+/** How this device can be reached (WebRTC), for the other side's device. */
+export const CallSignalBody = z
+  .object({
+    deviceId: CallDevice,
+    kind: z.enum(['offer', 'answer', 'candidate']),
+    sdp: z.string().max(20_000).optional(),
+    candidate: z
+      .object({
+        candidate: z.string().max(1000),
+        sdpMid: z.string().max(64).nullable().optional(),
+        sdpMLineIndex: z.number().int().min(0).max(64).nullable().optional(),
+        usernameFragment: z.string().max(256).nullable().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((b) => (b.kind === 'candidate' ? Boolean(b.candidate) : Boolean(b.sdp)), {
+    message: 'Send an SDP with an offer or answer, and a candidate with a candidate.',
+  });
 
 /** An organization's AI agent: its name and what it answers from (PRD §75). */
 export const SetOrgAgentBody = z

@@ -59,10 +59,24 @@ const Env = z.object({
   ADMIN_TOKEN: z.string().min(24).optional(),
   /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
   PLANS_URL: z.string().url().optional(),
+  /**
+   * Calls (PRD §47): STUN servers that tell each side its public address, comma-separated.
+   * Empty for none (then calls connect only on the same network).
+   */
+  STUN_URLS: z.string().default('stun:stun.l.google.com:19302'),
+  /**
+   * A TURN relay for calls that can't connect directly (strict networks), comma-separated
+   * `turn:`/`turns:` addresses, and the shared secret it checks time-limited credentials with
+   * (coturn's `static-auth-secret`). Without them, some calls won't connect.
+   */
+  TURN_URLS: z.string().default(''),
+  TURN_SECRET: z.string().min(16).optional(),
 });
 
 export type Config = z.infer<typeof Env> & {
   corsOrigins: string[];
+  stunUrls: string[];
+  turnUrls: string[];
   isProduction: boolean;
   isTest: boolean;
   secureCookies: boolean;
@@ -77,11 +91,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`Invalid configuration:\n${problems}`);
   }
   const c = parsed.data;
+  const list = (v: string) =>
+    v
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   return {
     ...c,
-    corsOrigins: c.CORS_ORIGINS.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    corsOrigins: list(c.CORS_ORIGINS),
+    stunUrls: list(c.STUN_URLS),
+    turnUrls: c.TURN_SECRET ? list(c.TURN_URLS) : [],
     isProduction: c.NODE_ENV === 'production',
     isTest: c.NODE_ENV === 'test',
     secureCookies: c.PUBLIC_URL.startsWith('https://'),

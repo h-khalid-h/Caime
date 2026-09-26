@@ -2,6 +2,7 @@
  * Formatting shared by every client and by notifications. Locale-aware through Intl; names are
  * treated as opaque strings in any script (PRODUCT-REVIEW R28).
  */
+import { type CallKind, type CallOutcome, callText } from './calls';
 import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
 
@@ -287,6 +288,15 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return typeof p.days === 'number'
         ? `${by} set messages to disappear after ${retentionText(p.days)}`
         : `${by} turned off disappearing messages`;
+    case 'call': {
+      const c = payload as { kind?: CallKind; outcome?: CallOutcome; seconds?: number };
+      return callText(
+        c.kind ?? 'voice',
+        c.outcome ?? 'missed',
+        c.seconds ?? 0,
+        Boolean(viewerId && p.byId === viewerId),
+      );
+    }
     default:
       return 'Conversation updated';
   }

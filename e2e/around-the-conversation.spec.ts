@@ -1337,4 +1337,48 @@ test.describe
       await expect(theirs).toContainText('Within 30 m');
       expect([...errors, ...alex.errors]).toEqual([]);
     });
+
+    test('a video call rings on Alex’s phone, connects, and leaves how long they talked', async () => {
+      const { page, errors } = noor;
+      await page.goto(`/c/${convo}`);
+      await alex.page.goto('/');
+      await page.getByTestId('call-video').click();
+      // It rings wherever Alex is in the app.
+      await expect(alex.page.getByTestId('call-incoming')).toBeVisible();
+      await expect(alex.page.getByTestId('call-status')).toHaveText('Video call · calling you');
+      await expect(page.getByTestId('call-status')).toHaveText('Calling…');
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-incoming.png' });
+      await alex.page.getByTestId('call-accept').click();
+
+      // Connected: each sees the other's camera, and the clock runs.
+      await expect(page.getByTestId('call-status')).toHaveText(/^0:\d\d$/, { timeout: 20_000 });
+      await expect(alex.page.getByTestId('call-status')).toHaveText(/^0:\d\d$/);
+      const seeing = (p: Page) =>
+        p
+          .getByTestId('call-remote')
+          .evaluate((v) => v instanceof HTMLVideoElement && v.videoWidth > 0 && !v.paused)
+          .catch(() => false);
+      await expect.poll(() => seeing(page)).toBe(true);
+      await expect.poll(() => seeing(alex.page)).toBe(true);
+      await page.getByTestId('call-mute').click();
+      await expect(page.getByTestId('call-mute')).toHaveAccessibleName('Unmute');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-active.png' });
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-active.png' });
+
+      // Hung up, it's over for both, and the conversation keeps it.
+      await page.getByTestId('call-hangup').click();
+      await expect(page.getByTestId('call-screen')).toHaveCount(0);
+      await expect(alex.page.getByTestId('call-screen')).toHaveCount(0);
+      await expect(visible(page, 'Video call · under a minute')).toBeVisible();
+      await alex.page.goto(`/c/${convo}`);
+      await expect(visible(alex.page, 'Video call · under a minute')).toBeVisible();
+
+      // Turned down, the caller hears so, and each side reads it their way.
+      await page.getByTestId('call-voice').click();
+      await alex.page.getByTestId('call-decline').click();
+      await expect(page.getByTestId('call-status')).toHaveText('Alex Chen didn’t answer.');
+      await expect(visible(page, 'Voice call · no answer')).toBeVisible();
+      await expect(visible(alex.page, 'You declined a voice call')).toBeVisible();
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
   });

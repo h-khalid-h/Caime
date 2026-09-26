@@ -9,6 +9,7 @@ import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { BusinessView, ThreadState } from './business';
+import type { CallKind, CallOutcome, CallState } from './calls';
 import type { OrgKind, OrgRole } from './orgs';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
@@ -1007,6 +1008,8 @@ export type RealtimeDataEvent =
       };
     }
   | { type: 'typing'; data: { conversationId: string; userId: string } }
+  | { type: 'call.ringing' | 'call.updated'; data: CallView }
+  | { type: 'call.signal'; data: CallSignalView }
   | { type: 'presence'; data: { userId: string; state: PresenceState; at: string } }
   | {
       type: 'notification.created' | 'notification.updated';
@@ -1098,4 +1101,42 @@ export interface ConnectedAppView {
   scopes: string[];
   createdAt: string;
   lastUsedAt: string | null;
+}
+
+/** A call (PRD §47), as either side sees it. */
+export interface CallView {
+  id: string;
+  conversationId: string;
+  kind: CallKind;
+  state: CallState;
+  outcome: CallOutcome | null;
+  caller: { id: string; displayName: string; avatarUrl: string | null };
+  callee: { id: string; displayName: string; avatarUrl: string | null };
+  /** The device on each side that's in it: signals go only between these two. */
+  callerDevice: string;
+  calleeDevice: string | null;
+  createdAt: string;
+  answeredAt: string | null;
+  endedAt: string | null;
+}
+
+/** How two devices reach each other (WebRTC), passed from one to the other. */
+export interface CallSignalView {
+  callId: string;
+  from: string;
+  to: string;
+  kind: 'offer' | 'answer' | 'candidate';
+  sdp: string | null;
+  candidate: {
+    candidate: string;
+    sdpMid: string | null;
+    sdpMLineIndex: number | null;
+    usernameFragment: string | null;
+  } | null;
+}
+
+/** Where a device finds its way to the other: STUN, and a relay when one is set up. */
+export interface IceConfigView {
+  iceServers: Array<{ urls: string[]; username?: string; credential?: string }>;
+  relay: boolean;
 }
