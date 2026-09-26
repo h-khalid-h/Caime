@@ -9,6 +9,23 @@ ghcr.io/h-khalid-h/caishy:latest     # published by CI on every green push to ma
 ghcr.io/h-khalid-h/caishy:<sha>      # the same build, pinned
 ```
 
+## Live deployment
+
+Deployed 2026-09-26 on EasyPanel.
+
+| | |
+| --- | --- |
+| Public URL | https://caishy-caishy.0hqwb7.easypanel.host (EasyPanel's default service domain, HTTPS) |
+| Project | `caishy` |
+| Services | `caishy` (app, image `ghcr.io/h-khalid-h/caishy:latest`, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
+| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN` (set in EasyPanel only); no `ANTHROPIC_API_KEY`, so AI assist is off |
+
+Verified after the deploy: `/v1/readyz` answers `{"ok":true}`, `/` serves the web app with its
+Content-Security-Policy (`connect-src` allows `wss://` on the public origin) and
+`x-content-type-options: nosniff`, and a throwaway account signed up and deleted itself through
+the API. Continuous deployment still needs the service's deploy webhook stored as the
+`EASYPANEL_DEPLOY_WEBHOOK` repository secret (below).
+
 ## EasyPanel
 
 ### 1. Database
