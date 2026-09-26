@@ -38,6 +38,7 @@ import type { Conversation, Message } from '../db/schema';
 import { AiError, type AiResult, type AiUsage, languageName, type Transcript } from '../lib/ai';
 import { maskFor, maskId, maskPayload } from '../lib/business';
 import { AppError, notFound } from '../lib/errors';
+import { assertAiAllowance } from '../lib/plans';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion } from '../lib/suggest';
 import { parse } from '../lib/validate';
@@ -122,6 +123,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!me.ai_enabled)
       throw new AppError(403, 'ai_off', 'Turn on AI assist in Settings to use it.');
     ctx.limiter.hit(`ai:${userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
+    await assertAiAllowance(ctx, userId);
     return { ai, me };
   }
 

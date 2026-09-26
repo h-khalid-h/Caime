@@ -545,6 +545,7 @@ export type OrgKind =
   | 'public_service'
   | 'other';
 export type OrgRole = 'owner' | 'admin' | 'agent';
+export type OrgPlan = 'free' | 'business' | 'enterprise';
 
 export interface OrganizationsTable {
   id: string;
@@ -558,6 +559,7 @@ export interface OrganizationsTable {
   verified_at: NullableTimestamp;
   created_by: string | null;
   archived_at: NullableTimestamp;
+  plan: Defaulted<OrgPlan>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }

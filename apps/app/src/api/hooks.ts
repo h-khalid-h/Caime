@@ -85,6 +85,7 @@ export const useSpace = (id: string) =>
   useQuery({ queryKey: qk.space(id), queryFn: () => endpoints.space(id), enabled: Boolean(id) });
 
 export const useOrgs = () => useQuery({ queryKey: qk.orgs, queryFn: endpoints.orgs });
+export const useMyPlan = () => useQuery({ queryKey: qk.plan, queryFn: endpoints.myPlan });
 
 export const useOrgInbox = (orgId: string | undefined, view: BusinessView) =>
   useQuery({

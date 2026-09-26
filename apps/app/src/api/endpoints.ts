@@ -32,6 +32,7 @@ import type {
   OrgView,
   PeopleSearchResult,
   PersonProfileView,
+  PlanUsageView,
   PolicyView,
   RelationshipHistoryView,
   RelationshipView,
@@ -119,6 +120,7 @@ export const endpoints = {
   }) => api.post<AuthResponse>('/auth/recover', body),
 
   me: () => api.get<{ user: MeView }>('/me'),
+  myPlan: () => api.get<PlanUsageView>('/me/plan'),
   deleteAccount: (password: string) => request<Ok>('DELETE', '/me', { body: { password } }),
   updateMe: (patch: Record<string, unknown>) => api.patch<{ user: MeView }>('/me', patch),
   updatePrivacy: (body: Record<string, unknown>) =>

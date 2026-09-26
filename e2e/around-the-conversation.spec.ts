@@ -611,6 +611,35 @@ test.describe
       expect([...errors, ...lina.errors]).toEqual([]);
     });
 
+    test('a plan says what it includes, and what an organization has room for', async () => {
+      const { page, errors } = noor;
+      await page.goto('/you');
+      await expect(page.getByTestId('settings-plan')).toContainText('Personal · free forever');
+      await page.getByTestId('settings-plan').click();
+      await expect(page.getByTestId('plan-name')).toHaveText('Personal');
+      await expect(page.getByTestId('plan-ai')).toContainText('0 of 10 in the last 24 hours');
+      await expect(page.getByTestId('plan-files')).toContainText('0 of 5 GB');
+      await expect(visible(page, /Pro can’t be bought here yet\./)).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-plan.png' });
+
+      // Nile Dental is on Free: its one app is connected, and its team has room for one more.
+      await page.goto(`/o/nile.dental.${stamp}`);
+      await expect(page.getByTestId('org-plan')).toContainText('Free plan');
+      await expect(page.getByTestId('org-plan')).toContainText('2 of 3 people · 1 of 1 app');
+      await expect(page.getByTestId('org-apps-full')).toContainText(
+        'The Free plan includes one app. Business has room for 100 people and 25 apps',
+      );
+      await expect(page.getByTestId('org-app-add')).toHaveCount(0);
+      await page.getByTestId('org-add-people').click();
+      await expect(page.getByTestId('org-add-room')).toHaveText(
+        'Room for 1 more on the Free plan.',
+      );
+      await page.waitForTimeout(400); // the sheet's fade-in, for the screenshot only
+      await page.screenshot({ path: 'e2e/screenshots/desktop-org-plan.png' });
+      await page.keyboard.press('Escape');
+      expect(errors).toEqual([]);
+    });
+
     test('every settings page opens, and a chosen theme follows you', async () => {
       const { page, errors } = noor;
       for (const [path, title] of [
@@ -619,6 +648,7 @@ test.describe
         ['privacy', 'Privacy'],
         ['security', 'Security'],
         ['about', 'About Caishy'],
+        ['plan', 'Plan'],
         ['appearance', 'Appearance'],
       ]) {
         await page.goto(`/settings/${path}`);

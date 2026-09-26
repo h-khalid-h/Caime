@@ -47,6 +47,13 @@ const Env = z.object({
    * development only: in production it would let an app probe the server's own network.
    */
   WEBHOOKS_ALLOW_PRIVATE: bool.default(false),
+  /**
+   * The operator's token for /v1/admin (setting plans, product metrics). Without it those routes
+   * don't exist. Long and random: it can change anyone's plan.
+   */
+  ADMIN_TOKEN: z.string().min(24).optional(),
+  /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
+  PLANS_URL: z.string().url().optional(),
 });
 
 export type Config = z.infer<typeof Env> & {

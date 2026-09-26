@@ -6,6 +6,7 @@ import {
   ORG_ROLE_LABELS,
   orgKindName,
 } from '@caishy/core/orgs';
+import { PLAN_NAMES } from '@caishy/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -46,6 +47,7 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
 import { OrgApps } from './OrgApps';
+import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
 
 /** Verify the domain (PRD §55): one TXT record, then "Check now". */
 function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) => void }) {
@@ -233,6 +235,8 @@ export function OrgScreen({ handle }: { handle: string }) {
 
   const manager = canManageOrg(org.myRole);
   const onTeam = new Set((org.members ?? []).map((m) => m.userId));
+  // Room on the team under its plan; only its owner and admins see the plan, and add people.
+  const room = org.plan ? Math.max(0, org.plan.allowance.teamSize - org.plan.used.teamSize) : null;
 
   return (
     <Screen edges={desktop ? [] : ['top', 'bottom']}>
@@ -325,8 +329,9 @@ export function OrgScreen({ handle }: { handle: string }) {
         ) : null}
 
         {manager ? (
-          <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>
             <Verification org={org} refresh={put} />
+            {org.plan ? <OrgPlan plan={org.plan} /> : null}
           </View>
         ) : null}
 
@@ -432,10 +437,16 @@ export function OrgScreen({ handle }: { handle: string }) {
         subtitle="People you’re connected with, over 18. They answer for the organization."
         footer={
           <Button
-            label={picked.size ? `Add ${picked.size}` : 'Add'}
+            label={
+              room !== null && picked.size > room
+                ? `Room for ${room} more`
+                : picked.size
+                  ? `Add ${picked.size}`
+                  : 'Add'
+            }
             block
             size="lg"
-            disabled={picked.size === 0}
+            disabled={picked.size === 0 || (room !== null && picked.size > room)}
             loading={busy}
             testID="org-add-confirm"
             onPress={() =>
@@ -452,6 +463,18 @@ export function OrgScreen({ handle }: { handle: string }) {
           />
         }
       >
+        {org.plan && room !== null && room < 3 ? (
+          <Text
+            variant="caption"
+            color={room === 0 ? 'danger' : 'textSecondary'}
+            style={{ paddingBottom: 8 }}
+            testID="org-add-room"
+          >
+            {room === 0
+              ? `The team is full on the ${PLAN_NAMES[org.plan.plan]} plan (${org.plan.allowance.teamSize} people). ${nextOrgPlanLine(org.plan) ?? ''}`.trim()
+              : `Room for ${room} more on the ${PLAN_NAMES[org.plan.plan]} plan.`}
+          </Text>
+        ) : null}
         <PeoplePicker
           picked={picked}
           exclude={onTeam}

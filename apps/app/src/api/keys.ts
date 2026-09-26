@@ -2,6 +2,7 @@
 export const qk = {
   me: ['me'] as const,
   ai: ['ai'] as const,
+  plan: ['plan'] as const,
   spaces: ['spaces'] as const,
   orgs: ['orgs'] as const,
   org: (handle: string) => ['org', handle] as const,

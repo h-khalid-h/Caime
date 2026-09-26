@@ -23,6 +23,7 @@ import { startWorkers } from './lib/jobs';
 import { RateLimiter } from './lib/rate-limit';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
+import { adminRoutes } from './modules/admin';
 import { aiRoutes } from './modules/ai';
 import { appRoutes } from './modules/apps';
 import { authRoutes } from './modules/auth';
@@ -191,6 +192,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
       await appRoutes(v1, ctx);
+      await adminRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);

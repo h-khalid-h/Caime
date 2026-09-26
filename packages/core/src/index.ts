@@ -11,6 +11,7 @@ export * from './kit-cards';
 export * from './kits';
 export * from './locale';
 export * from './orgs';
+export * from './plans';
 export * from './policy';
 export * from './privacy';
 export * from './rules';

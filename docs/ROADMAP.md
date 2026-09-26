@@ -139,14 +139,20 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       it never takes a conversation or counts as the team's answer (`apps.test.ts`, E2E; the
       developer guide is `docs/API.md`). [ ] Personal access tokens, OAuth for third-party apps,
       AI agents
-- [ ] Metrics and plan entitlements
+- [x] Plan entitlements (R23): what each plan includes lives in core and is checked on the server
+      where something is added (AI assists, files, a team's people, apps). The wedge is never
+      counted, and a lower plan never removes anything. You → Plan shows what's used; an
+      organization's owner and admins see its plan on its page. The operator sets plans with
+      `ADMIN_TOKEN` (`docs/DEPLOY.md`) until billing is connected (`plans.test.ts`, `ai.test.ts`,
+      E2E). [ ] Billing ⛔ Stripe
+- [ ] Metrics: `/metrics` for operators, product metrics (PRD §82–83), insights for organizations
 - [ ] Calls (WebRTC 1:1 on web) ⛔ TURN relay needed for reliable production calls
 
 ## M7 — Ship
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (427.9 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (429.0 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -249,3 +255,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   and could hold the job queue indefinitely; a delivery now has 10 seconds in all. And jobs ran
   one after another, so one slow endpoint delayed every other job; they run eight at a time.
   Tests: 137 core, 49 brand, 132 server, 8 app, 21 E2E.
+- 2026-09-26 — Session 2 (cont.): plan entitlements (R23, PRD §84). What each plan includes lives
+  in core and is checked on the server where something is added: AI assists (10 a day on Personal,
+  200 on Pro, over any 24 hours; a refusal says when the next one is ready, on the person's own
+  clock), files (5 GB, 100 GB; an upload under way counts at its full size), and an organization's
+  team (3 people on Free, 100 on Business) and apps (1, 25). Nothing that makes Caishy useful is
+  counted, and a lower plan never removes anything. You → Plan shows what's used; an
+  organization's owner and admins see its plan, and the team sheet and Apps say when there's no
+  room before anyone tries. The operator sets plans until billing is connected. Building it found
+  that an organization's member count included its apps' bots; it counts people now. Tests: 141
+  core, 49 brand, 138 server, 8 app, 22 E2E.

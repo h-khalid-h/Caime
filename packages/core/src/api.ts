@@ -9,6 +9,7 @@ import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { BusinessView, ThreadState } from './business';
 import type { OrgKind, OrgRole } from './orgs';
+import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
 import type { Preferences } from './schemas';
@@ -584,6 +585,27 @@ export interface OrgView extends OrgSummaryView {
   members: OrgMemberView[] | null;
   /** Verification, for its owner and admins. */
   domain: OrgDomainView | null;
+  /** Its plan and what it uses of it, for its owner and admins. */
+  plan: OrgPlanView | null;
+}
+
+/** An organization's plan (PRD §84): what it includes and how much of it is in use. */
+export interface OrgPlanView {
+  plan: OrgPlan;
+  allowance: OrgAllowance;
+  used: { teamSize: number; apps: number };
+  /** Where to see plans and upgrade, when the operator has set one up. */
+  upgradeUrl: string | null;
+}
+
+/** Your own plan: what it includes, and what you've used of it. */
+export interface PlanUsageView {
+  plan: Plan;
+  allowance: PersonAllowance;
+  used: { aiToday: number; storageBytes: number };
+  /** When the next AI assist is available again, once today's are used up. */
+  aiNextAt: string | null;
+  upgradeUrl: string | null;
 }
 
 /** A space in the list (PRD §40). */

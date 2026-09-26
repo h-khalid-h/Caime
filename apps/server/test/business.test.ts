@@ -54,6 +54,12 @@ beforeAll(async () => {
   await connect(lina, omar);
   orgId = (await noor.post('/v1/orgs', { name: 'DATA C', handle: 'datac.biz', kind: 'business' }))
     .org.id;
+  // On Business, so its team can grow past three: plans have their own tests (plans.test.ts).
+  await t.ctx.db
+    .updateTable('organizations')
+    .set({ plan: 'business' })
+    .where('id', '=', orgId)
+    .execute();
   await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [sara.user.id], role: 'admin' });
   await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
 });

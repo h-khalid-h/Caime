@@ -1,3 +1,4 @@
+import { PLAN_NAMES } from '@caishy/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
 import { useShortcutsSheet } from '@/features/shell/shortcuts';
@@ -9,6 +10,7 @@ import { Card, Divider } from '@/ui/Card';
 import {
   Bell,
   Building,
+  Gauge,
   Info,
   Keyboard,
   Lock,
@@ -129,6 +131,17 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
               />
             </View>
           ))}
+        </Card>
+        <Card padded={false}>
+          <ListRow
+            icon={Gauge}
+            title="Plan"
+            subtitle={user.plan === 'personal' ? 'Personal · free forever' : PLAN_NAMES[user.plan]}
+            chevron={!pane}
+            selected={pane && pathname === '/settings/plan'}
+            onPress={() => router.navigate('/settings/plan')}
+            testID="settings-plan"
+          />
         </Card>
         <Card padded={false}>
           <ListRow

@@ -53,6 +53,12 @@ beforeAll(async () => {
   otherOrgId = (
     await omar.post('/v1/orgs', { name: 'Other Shop', handle: 'other.shop', kind: 'shop' })
   ).org.id;
+  // On Business, so it can have more than one app: plans have their own tests (plans.test.ts).
+  await t.ctx.db
+    .updateTable('organizations')
+    .set({ plan: 'business' })
+    .where('id', '=', orgId)
+    .execute();
   await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
   convo = (await lina.post(`/v1/orgs/${orgId}/conversations`)).conversationId;
 });

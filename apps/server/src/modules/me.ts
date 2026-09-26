@@ -6,6 +6,7 @@ import {
   IdentityBody,
   isMinor,
   isValidTimeZone,
+  type PlanUsageView,
   PrivacyBody,
   safeLocale,
   UpdateMeBody,
@@ -17,6 +18,7 @@ import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { badRequest, conflict, notFound } from '../lib/errors';
 import { handleTaken } from '../lib/handles';
+import { planUsage } from '../lib/plans';
 import { meView, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -28,6 +30,12 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/me', async (req) => {
     const auth = requireAuth(req);
     return { user: meView(await load(auth.userId), ctx.now()) };
+  });
+
+  /** Your plan, and what you've used of it today. */
+  app.get('/me/plan', async (req): Promise<PlanUsageView> => {
+    const auth = requireAuth(req);
+    return planUsage(ctx, auth.userId);
   });
 
   app.patch('/me', async (req) => {

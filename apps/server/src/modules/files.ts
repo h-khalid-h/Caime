@@ -15,6 +15,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
+import { assertStorage } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
 import { sniffFile } from '../lib/sniff';
 import { diskStorage, type Storage } from '../lib/storage';
@@ -172,13 +173,17 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
       req.query,
     );
+    // Nothing more once the plan's storage is full; the file's own size is checked below.
+    await assertStorage(ctx, auth.userId, 1);
     const id = uuidv7();
     const tempKey = `tmp/${id}`;
     const hash = createHash('sha256');
+    let bytes = 0;
     // Hash in-line: a 'data' listener would start the stream flowing before the writer attaches.
     const hasher = new Transform({
       transform(chunk: Buffer, _enc, cb) {
         hash.update(chunk);
+        bytes += chunk.length;
         cb(null, chunk);
       },
     });
@@ -186,6 +191,12 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     if (part.file.truncated) {
       await storage.remove(tempKey);
       throw new AppError(413, 'too_large', 'That file is over 100 MB.');
+    }
+    try {
+      await assertStorage(ctx, auth.userId, bytes);
+    } catch (err) {
+      await storage.remove(tempKey);
+      throw err;
     }
     const name = (part.filename || 'file').slice(0, 200);
     const done = await finalize(
@@ -244,6 +255,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
       req.body,
     );
+    await assertStorage(ctx, auth.userId, body.size);
     const id = uuidv7();
     await ctx.db
       .insertInto('files')

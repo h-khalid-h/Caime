@@ -388,3 +388,56 @@ describe('AI assist with an organization (R15)', () => {
     expect(follow.json().error.code).toBe('ai_business');
   });
 });
+
+describe('AI assist and plans (PRD §84, R23)', () => {
+  it('Personal includes ten a day; the eleventh waits, and says until when', async () => {
+    const ava = await signup(t, { displayName: 'Ava Stone' });
+    await ava.patch('/v1/me', { aiEnabled: true });
+    const avaConvo = await connect(ava, sam);
+    const rewrite = () =>
+      ava.req('POST', '/v1/ai/rewrite', {
+        text: 'can we move it to 3',
+        style: 'clearer',
+        conversationId: avaConvo,
+      });
+    // Failed calls don't count; the first ok one, an hour ago, is the oldest of today's ten.
+    const at = (minutesAgo: number) => new Date(t.clock.now.getTime() - minutesAgo * 60_000);
+    const runs = [
+      ...Array.from({ length: 10 }, (_, i) => ({ outcome: 'ok', created_at: at(60 - i) })),
+      { outcome: 'busy', created_at: at(5) },
+      { outcome: 'ok', created_at: at(25 * 60) }, // yesterday's
+    ];
+    await t.ctx.db
+      .insertInto('ai_runs')
+      .values(
+        runs.map((r) => ({
+          id: uuidv4(),
+          user_id: ava.user.id,
+          feature: 'rewrite',
+          provider: 'anthropic',
+          ...r,
+        })),
+      )
+      .execute();
+    const before = requests.length;
+    const refused = await rewrite();
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().error).toMatchObject({
+      code: 'plan_limit',
+      details: { nextAt: new Date(at(60).getTime() + 86_400_000).toISOString() },
+    });
+    // A day after her oldest (13:00 UTC), in Ava's time zone (New York): tomorrow at 9:00 AM.
+    expect(refused.json().error.message).toMatch(
+      /^You’ve used today’s 10 AI assists\. The next one is ready tomorrow at 9:00\sAM\. Pro includes 200 a day\.$/,
+    );
+    expect(requests.length).toBe(before); // The model was never asked.
+    expect((await ava.get('/v1/me/plan')).used.aiToday).toBe(10);
+
+    // Once the oldest of the ten is a day old, one is free again.
+    t.clock.advance(23 * 3_600_000 + 30_000);
+    expect((await ava.get('/v1/me/plan')).used.aiToday).toBe(9);
+    replies.push(message('Can we move it to 3?'));
+    expect((await rewrite()).statusCode).toBe(200);
+    expect((await rewrite()).statusCode).toBe(403);
+  });
+});

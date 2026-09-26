@@ -8,6 +8,7 @@ import {
   type WebhookEvent,
 } from '@caishy/core/apps';
 import { formatListTime } from '@caishy/core/format';
+import { PLAN_NAMES } from '@caishy/core/plans';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -23,6 +24,7 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+import { nextOrgPlanLine } from './OrgPlan';
 
 const key = (orgId: string) => ['org-apps', orgId] as const;
 
@@ -157,21 +159,26 @@ export function OrgApps({ org }: { org: OrgView }) {
       .filter(Boolean)
       .join(' · ');
 
+  // Its plan's apps are all in use: say so where Add would be (PRD §84).
+  const full = org.plan ? org.plan.used.apps >= org.plan.allowance.apps : false;
+
   return (
     <>
       <SectionTitle
         action={
-          <Button
-            label="Add"
-            icon={Plus}
-            size="sm"
-            variant="ghost"
-            onPress={() => {
-              setSecrets(null);
-              setCreating(true);
-            }}
-            testID="org-app-add"
-          />
+          full ? undefined : (
+            <Button
+              label="Add"
+              icon={Plus}
+              size="sm"
+              variant="ghost"
+              onPress={() => {
+                setSecrets(null);
+                setCreating(true);
+              }}
+              testID="org-app-add"
+            />
+          )
         }
       >
         Apps
@@ -206,6 +213,16 @@ export function OrgApps({ org }: { org: OrgView }) {
             />
           ))
         )}
+        {full && org.plan ? (
+          <Text
+            variant="caption"
+            color="textSecondary"
+            style={{ padding: 14, paddingTop: apps.length ? 4 : 14 }}
+            testID="org-apps-full"
+          >
+            {`The ${PLAN_NAMES[org.plan.plan]} plan includes ${org.plan.allowance.apps === 1 ? 'one app' : `${org.plan.allowance.apps} apps`}. ${nextOrgPlanLine(org.plan) ?? ''}`.trim()}
+          </Text>
+        ) : null}
       </View>
 
       <Sheet

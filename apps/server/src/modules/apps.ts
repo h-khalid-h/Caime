@@ -29,6 +29,7 @@ import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
+import { assertAppRoom } from '../lib/plans';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -78,6 +79,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreateOrgAppBody, req.body);
     await manager(auth.userId, id);
     ctx.limiter.hit(`apps:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
+    await assertAppRoom(ctx, id);
     const url = webhook(body.webhookUrl);
     const appId = uuidv7();
     const botId = uuidv7();

@@ -33,6 +33,7 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/erro
 import { handleTaken } from '../lib/handles';
 import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
+import { assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -56,11 +57,14 @@ async function summaryOf(
   org: Organization,
   myRole: OrgRole | null,
 ): Promise<OrgSummaryView> {
+  // People: an app's bot is on the team, but isn't one of them.
   const { n } = await ctx.db
-    .selectFrom('org_members')
+    .selectFrom('org_members as m')
+    .innerJoin('users as u', 'u.id', 'm.user_id')
     .select(sql<number>`count(*)::int`.as('n'))
-    .where('org_id', '=', org.id)
-    .where('left_at', 'is', null)
+    .where('m.org_id', '=', org.id)
+    .where('m.left_at', 'is', null)
+    .where('u.kind', '=', 'human')
     .executeTakeFirstOrThrow();
   return {
     id: org.id,
@@ -119,7 +123,8 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
           record: verificationRecord(org.domain, org.verify_token),
         }
       : null;
-  return { ...summary, createdAt: org.created_at.toISOString(), members, domain };
+  const plan = seat && canManageOrg(seat.role) ? await orgPlanView(ctx, org.id) : null;
+  return { ...summary, createdAt: org.created_at.toISOString(), members, domain, plan };
 }
 
 async function adult(ctx: AppContext, userIds: string[]): Promise<boolean> {
@@ -285,6 +290,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     if (new Set(connected.map((c) => c.other_id)).size !== adding.length)
       throw badRequest('You can add people you’re connected with.');
     if (!(await adult(ctx, adding))) throw forbidden('Teams are for people over 18.');
+    await assertTeamRoom(ctx, id, adding.length);
     for (const userId of adding)
       await ctx.db
         .insertInto('org_members')

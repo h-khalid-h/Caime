@@ -121,6 +121,10 @@ These are rules, not preferences.
 - Outbound requests to addresses someone else chose (webhooks) go through `postWebhook`: https,
   no private addresses (checked on the URL and on every DNS answer), one deadline for the whole
   exchange. Test them with `WEBHOOKS_ALLOW_PRIVATE=true` and a local server.
+- Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
+  `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
+  that needs a bigger team or more apps puts its organization on Business in its setup;
+  `plans.test.ts` is where limits are tested.
 - Watch the web budget when a screen is used by a second route: shared modules move into the
   startup chunk. Open it through its own route instead (the desktop Business inbox is a list
   pane beside `/c/[id]`, not a screen that embeds the conversation).
@@ -138,7 +142,7 @@ server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
 native bundles export), Connect Kits, AI assist, Spaces, Organizations with DNS verification,
-the Business inbox, apps for organizations (scoped tokens, bots, signed webhooks), share links,
-your-data controls, the image and CI are built and verified. Remaining: metrics and plan
-entitlements, personal tokens and OAuth, store builds, and the EasyPanel deploy (⛔ needs
-EasyPanel access, `docs/DEPLOY.md`).
+the Business inbox, apps for organizations (scoped tokens, bots, signed webhooks), plan
+entitlements, share links, your-data controls, the image and CI are built and verified.
+Remaining: metrics, billing (⛔ Stripe), personal tokens and OAuth, store builds, and the
+EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).

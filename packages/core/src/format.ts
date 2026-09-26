@@ -121,6 +121,17 @@ export function formatClock(iso: string, timeZone: string, locale = 'en'): strin
   return dateFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone }).format(new Date(iso));
 }
 
+/**
+ * A time within the next day, as a sentence ends it: "at 3:32 PM", or "tomorrow at 9:00 AM"
+ * when it's already tomorrow where the reader is.
+ */
+export function formatSoon(iso: string, now: Date, timeZone: string, locale = 'en'): string {
+  const a = zonedParts(new Date(iso), timeZone);
+  const n = zonedParts(now, timeZone);
+  const today = a.year === n.year && a.month === n.month && a.day === n.day;
+  return `${today ? '' : 'tomorrow '}at ${formatClock(iso, timeZone, locale)}`;
+}
+
 /** Due dates: "Today", "Tomorrow 3:00 PM", "Fri", "Oct 15", "2 days ago". */
 export function formatDue(
   iso: string,
@@ -145,14 +156,15 @@ export function formatDue(
 
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB'];
+  const units = ['KB', 'MB', 'GB', 'TB'];
   let v = bytes / 1024;
   let u = 0;
   while (v >= 1024 && u < units.length - 1) {
     v /= 1024;
     u++;
   }
-  return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[u]}`;
+  // "5 GB", not "5.0 GB"; "1.5 MB" keeps its tenth.
+  return `${(v < 10 ? v.toFixed(1) : String(Math.round(v))).replace(/\.0$/, '')} ${units[u]}`;
 }
 
 export function formatAmount(value: number, currency: string | null, locale = 'en'): string {

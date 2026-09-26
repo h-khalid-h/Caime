@@ -49,6 +49,8 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `MINIMUM_AGE` | `13` | Minimum age at sign-up; set `16` where local law requires. |
 | `SESSION_DAYS` | `90` | How long a signed-in device stays signed in without use. |
 | `METRICS_TOKEN` | — | Enables `GET /metrics` behind this bearer token. |
+| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans (below). At least 24 characters; without it those routes don't exist. |
+| `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits; without it, it says upgrades can't be bought yet. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@caishy.com` | Contact for push services. |
 | `EXPO_ACCESS_TOKEN` | — | Mobile push through Expo (needs the store builds). |
@@ -70,6 +72,26 @@ redeploy automatically after that:
    name `EASYPANEL_DEPLOY_WEBHOOK`, value the URL.
 
 The CI job calls it only after the new image passed its smoke test.
+
+## Plans
+
+What each plan includes is in `packages/core/src/plans.ts` (PRD §84, R23). Personal is free
+forever and nothing that makes Caishy useful is ever limited: plans count only AI assists
+(10 a day on Personal, 200 on Pro), file storage (5 GB, 100 GB), and for organizations the team
+(3 people on Free, 100 on Business) and connected apps (1, 25). A lower plan never removes
+anything; it only stops additions until they fit.
+
+Billing is an integration that isn't built yet (⛔ Stripe). Until then, the operator sets plans
+with `ADMIN_TOKEN`, and each change is written to the audit log:
+
+```sh
+curl -X PUT https://caishy.example.com/v1/admin/people/noor/plan \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"plan":"pro"}'                     # personal, pro, business, enterprise
+curl -X PUT https://caishy.example.com/v1/admin/orgs/nile.dental/plan \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"plan":"business"}'                # free, business, enterprise
+```
 
 ## Scaling
 
