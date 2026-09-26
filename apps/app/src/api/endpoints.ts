@@ -4,6 +4,7 @@
  */
 
 import type {
+  AgentTryView,
   AiActionsView,
   AiCatchUpView,
   AiRewriteView,
@@ -30,6 +31,7 @@ import type {
   NotificationsResponse,
   OAuthAppView,
   OAuthConsentView,
+  OrgAgentView,
   OrgAppSecretsView,
   OrgAppView,
   OrgInsightsView,
@@ -327,6 +329,14 @@ export const endpoints = {
     api.del<{ thread: BusinessThreadView }>(`/business/${conversationId}/escalation`),
 
   // Apps (PRD §73–75): an organization's integrations, managed by its owner and admins
+  // An organization's AI agent (PRD §74–75), for its owner and admins
+  orgAgent: (orgId: string) =>
+    api.get<{ available: boolean; agent: OrgAgentView | null }>(`/orgs/${orgId}/agent`),
+  setOrgAgent: (orgId: string, body: { name: string; knowledge: string; paused: boolean }) =>
+    api.put<{ agent: OrgAgentView }>(`/orgs/${orgId}/agent`, body),
+  removeOrgAgent: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/agent`),
+  tryOrgAgent: (orgId: string, body: { name: string; knowledge: string; question: string }) =>
+    api.post<AgentTryView>(`/orgs/${orgId}/agent/try`, body),
   orgApps: (orgId: string) => api.get<{ apps: OrgAppView[] }>(`/orgs/${orgId}/apps`),
   orgInsights: (orgId: string, days: 7 | 30) =>
     api.get<{ insights: OrgInsightsView }>(`/orgs/${orgId}/insights?days=${days}`),

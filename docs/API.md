@@ -40,6 +40,11 @@ answers `401`.
 An app answers customers; it never writes to someone first. A person on the team does, from the
 Business inbox, and it reaches them as a message request (R14).
 
+An organization can also turn on Caishy's own **AI agent** (the organization's page → AI agent),
+which answers customers first from what the organization tells it. Its messages arrive like a
+bot's, with `"automated": true` and `"aiAgent": true`, and it never takes a conversation, so an
+app sees the same thread states whether or not the agent answered.
+
 Responses are the same JSON the Caishy apps read (`packages/core/src/api.ts`). Errors are
 `{ "error": { "code": "…", "message": "…" } }`.
 
@@ -50,7 +55,7 @@ Caishy `POST`s JSON to the app's address (https only) for the events it listens 
 | Event | When | `data` |
 | --- | --- | --- |
 | `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
-| `business.thread` | Someone assigns, escalates, resolves or reopens a conversation | `conversationId`, `change`, `state`, `assignee` |
+| `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee` |
 | `ping` | You pressed "Send a test delivery" | `appId` |
 
 Every body is `{ "id", "event", "orgId", "createdAt", "data" }`, with the headers

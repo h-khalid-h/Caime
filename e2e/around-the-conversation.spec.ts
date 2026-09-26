@@ -1243,6 +1243,66 @@ test.describe
       expect([...errors, ...app.errors]).toEqual([]);
     });
 
+    test('the clinic’s AI agent answers first, says it’s an AI, and hands over to a person', async () => {
+      const handle = `nile.dental.${stamp}`;
+      const orgName = `Nile Dental ${stamp}`;
+      const agentName = `${orgName} Assistant`;
+      const { page, errors } = noor;
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-agent-setup').click();
+      await expect(page.getByTestId('org-agent-name')).toHaveValue(agentName);
+      await page
+        .getByTestId('org-agent-knowledge')
+        .fill(
+          'We are open Sunday to Thursday 9am to 6pm and Saturday 9am to 1pm. A check-up costs 400 EGP. To book, call 02 2345 6789.',
+        );
+      // Tried first: nothing reaches anyone.
+      await page.getByTestId('org-agent-question').fill('How much does a check-up cost?');
+      await page.getByTestId('org-agent-try').click();
+      const tried = page.getByTestId('org-agent-tried');
+      await expect(tried).toContainText('Answers · nothing was sent');
+      await expect(tried).toContainText('A check-up costs 400 EGP.');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-org-agent.png' });
+      await page.getByTestId('org-agent-save').click();
+      await expect(page.getByTestId('org-agent')).toContainText('Answers first');
+      await expect(visible(page, 'AI agent · says so in everything it writes')).toBeVisible();
+
+      // Lina knows before she writes that an AI answers first, and its answer says so.
+      const customer = lina.page;
+      await customer.goto(`/@${handle}`);
+      await expect(customer.getByTestId('org-agent-line')).toHaveText(
+        `${agentName}, its AI agent, answers first and says so. Ask for a person any time.`,
+      );
+      await customer.getByTestId('org-message').click();
+      const write = async (text: string) => {
+        await customer.getByTestId('composer-input').filter({ visible: true }).fill(text);
+        await customer.getByTestId('composer-send').filter({ visible: true }).click();
+      };
+      await write('Are you open on Saturday?');
+      const answer = customer
+        .getByLabel(/AI agent, Hi, I’m Nile Dental .+’s AI agent\. We are open Sunday/)
+        .filter({ visible: true });
+      await expect(answer.getByTestId('message-automated')).toHaveText('AI agent ·');
+      await customer.screenshot({ path: 'e2e/screenshots/phone-business-ai-agent.png' });
+
+      // Asked for a person, it hands over, and the team sees why the customer is waiting.
+      await write('Can I talk to a person about my filling?');
+      await expect(
+        visible(customer, `I’ve passed this to the team at ${orgName}. Someone will answer here.`),
+      ).toBeVisible();
+      await page.goto(`/o/${handle}/inbox`);
+      await expect(page.getByTestId(`thread-row-lina.${stamp}`)).toContainText('Handed over by AI');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-business-handed-over.png' });
+
+      // Removed, it leaves the team; what it wrote stays.
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-agent').click();
+      await page.getByTestId('org-agent-remove').click();
+      await page.getByTestId('org-agent-remove-confirm').click();
+      await expect(page.getByTestId('org-agent-setup')).toBeVisible();
+      expect([...errors, ...lina.errors]).toEqual([]);
+    });
+
     test('a location shared live follows its sharer until they stop', async () => {
       const { page, errors } = noor;
       await noorContext.setGeolocation({ latitude: 30.0444, longitude: 31.2357, accuracy: 15 });

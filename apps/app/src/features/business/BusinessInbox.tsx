@@ -126,6 +126,12 @@ function ThreadRow({
           />
           <Text variant="caption" color="textTertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
             {[
+              // What its AI agent did first (PRD §75): a person still owes the customer an answer.
+              thread.agentHandedOverAt && !thread.resolvedAt
+                ? 'Handed over by AI'
+                : last?.fromAgent
+                  ? 'Answered by AI'
+                  : null,
               thread.assignee ? thread.assignee.displayName : 'Nobody has it',
               thread.customerUnder18 ? 'Under 18' : null,
             ]

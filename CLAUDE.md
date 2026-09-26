@@ -153,6 +153,12 @@ These are rules, not preferences.
   `apps/app/src/app/(app)/oauth/authorize.tsx`; a signed-out visitor's authorize link survives
   sign-in through `state/pendingLink.ts` (`appPath` allows 1,000 characters and colons in the
   query for it).
+- An organization's AI agent is `lib/agent.ts`: a customer's message reaches it through
+  `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
+  which queues the `agent.reply` job three seconds out. The job checks the thread is still its
+  to answer, asks `ctx.ai.supportAgent`, and claims the message (`agent_seq`) before posting, so
+  it answers once. Its user is kind `agent`: `automated` and `aiAgent` on its messages. The E2E
+  Messages stand-in answers as it from the sentence of its knowledge nearest the question.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
@@ -194,6 +200,6 @@ albums), AI assist, Spaces, Organizations with DNS verification, the Business in
 organizations writing first as requests), apps for organizations (scoped tokens, bots, signed
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
-CI are built and verified. Remaining: AI agents, billing (⛔ Stripe), calls (⛔ TURN), a
-third-party penetration test, store builds, and the EasyPanel deploy (⛔ needs EasyPanel access,
-`docs/DEPLOY.md`).
+CI are built and verified, and so is an organization's AI support agent. Remaining: billing
+(⛔ Stripe), calls (⛔ TURN), a third-party penetration test, store builds, and the EasyPanel
+deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).

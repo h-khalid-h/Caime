@@ -28,6 +28,9 @@ export type AuditAction =
   | 'oauth.app_removed'
   | 'oauth.allowed'
   | 'oauth.removed'
+  | 'agent.created'
+  | 'agent.updated'
+  | 'agent.removed'
   | 'plan.changed';
 
 export async function audit(

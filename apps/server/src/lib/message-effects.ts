@@ -119,7 +119,8 @@ async function notifyBusiness(
     .select(['id', 'kind'])
     .where('id', 'in', [sender.id, ...recipients.map((r) => r.user_id)])
     .execute();
-  const human = (id: string) => kinds.find((k) => k.id === id)?.kind === 'human';
+  const kindOf = (id: string) => kinds.find((k) => k.id === id)?.kind;
+  const human = (id: string) => kindOf(id) === 'human';
   if (sender.id === thread.customer_id) {
     // People hear it; the organization's bots hear it through their webhooks.
     const team = (
@@ -142,8 +143,10 @@ async function notifyBusiness(
       message,
       {
         id: thread.org_id,
-        // A bot's answer says so, even in a notification (R16).
-        display_name: human(sender.id) ? thread.org_name : `${thread.org_name} (automated)`,
+        // A bot's or an AI agent's answer says so, even in a notification (R16, PRD §75).
+        display_name: human(sender.id)
+          ? thread.org_name
+          : `${thread.org_name} (${kindOf(sender.id) === 'agent' ? 'AI agent' : 'automated'})`,
       },
       customer,
       true,

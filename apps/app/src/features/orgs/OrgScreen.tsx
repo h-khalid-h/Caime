@@ -47,6 +47,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
+import { OrgAgent } from './OrgAgent';
 import { OrgApps } from './OrgApps';
 import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
@@ -334,6 +335,11 @@ export function OrgScreen({ handle }: { handle: string }) {
                 <Text variant="caption" color="textTertiary" align="center">
                   Its team will see you’re under 18.
                 </Text>
+              ) : org.agent ? (
+                // Before anyone writes, they know an AI answers first (PRD §75).
+                <Text variant="caption" color="textTertiary" align="center" testID="org-agent-line">
+                  {`${org.agent.name}, its AI agent, answers first and says so. Ask for a person any time.`}
+                </Text>
               ) : null}
             </View>
           )}
@@ -417,9 +423,11 @@ export function OrgScreen({ handle }: { handle: string }) {
                     }
                     title={self ? `${m.person.displayName} (you)` : m.person.displayName}
                     subtitle={
-                      bot
-                        ? 'Bot · an app’s, labelled automated'
-                        : [m.title, ORG_ROLE_LABELS[m.role]].filter(Boolean).join(' · ')
+                      m.person.kind === 'agent'
+                        ? 'AI agent · says so in everything it writes'
+                        : bot
+                          ? 'Bot · an app’s, labelled automated'
+                          : [m.title, ORG_ROLE_LABELS[m.role]].filter(Boolean).join(' · ')
                     }
                     onPress={
                       manageable
@@ -432,6 +440,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                 );
               })}
             </View>
+            {manager ? <OrgAgent org={org} /> : null}
             {manager ? <OrgApps org={org} /> : null}
             <View style={{ marginHorizontal: 16, marginTop: 16 }}>
               <Card padded={false}>

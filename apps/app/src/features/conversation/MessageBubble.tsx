@@ -371,9 +371,10 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {m.forwarded ? <Forward size={11} color={meta} /> : null}
       {m.automated ? (
-        // A bot's message always says so (R16), for the customer and the team alike.
+        // A bot's message always says so (R16), and an AI agent's that it's an AI (PRD §75),
+        // for the customer and the team alike.
         <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-automated">
-          Automated ·
+          {m.aiAgent ? 'AI agent ·' : 'Automated ·'}
         </Text>
       ) : null}
       {m.sentVia ? (
@@ -408,7 +409,7 @@ export const MessageBubble = memo(function MessageBubble({
 
   const accessibleText = [
     mine ? 'You' : (senderName ?? ''),
-    m.automated ? 'automated' : '',
+    m.automated ? (m.aiAgent ? 'AI agent' : 'automated') : '',
     m.sentVia ? `sent via ${m.sentVia}` : '',
     deleted ? 'Message deleted' : (m.body ?? sticker?.label ?? m.kind),
     time,

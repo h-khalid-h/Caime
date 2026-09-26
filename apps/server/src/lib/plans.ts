@@ -219,17 +219,41 @@ export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUs
   };
 }
 
+/**
+ * What an organization's AI agents answered in the last 24 hours (PRD §75): every agent it has
+ * had, so removing one and adding another starts nothing over.
+ */
+export async function agentRepliesToday(ctx: AppContext, orgId: string): Promise<number> {
+  const row = await ctx.db
+    .selectFrom('ai_runs')
+    .select(sql<number>`count(*)::int`.as('n'))
+    .where('feature', '=', 'agent')
+    .where('outcome', '=', 'ok')
+    .where('created_at', '>', new Date(ctx.now().getTime() - DAY_MS))
+    .where('user_id', 'in', (eb) =>
+      eb
+        .selectFrom('org_members as m')
+        .innerJoin('users as u', 'u.id', 'm.user_id')
+        .select('m.user_id')
+        .where('m.org_id', '=', orgId)
+        .where('u.kind', '=', 'agent'),
+    )
+    .executeTakeFirstOrThrow();
+  return row.n;
+}
+
 export async function orgPlanView(ctx: AppContext, orgId: string): Promise<OrgPlanView> {
   const org = await orgPlanRow(ctx, orgId);
-  const [size, apps, starts] = await Promise.all([
+  const [size, apps, starts, agentReplies] = await Promise.all([
     teamSize(ctx, orgId),
     appCount(ctx, orgId),
     teamStarts(ctx, orgId),
+    agentRepliesToday(ctx, orgId),
   ]);
   return {
     plan: org.plan,
     allowance: ORG_ALLOWANCES[org.plan],
-    used: { teamSize: size, apps, startsToday: starts.used },
+    used: { teamSize: size, apps, startsToday: starts.used, agentRepliesToday: agentReplies },
     upgradeUrl: upgrade(ctx),
   };
 }

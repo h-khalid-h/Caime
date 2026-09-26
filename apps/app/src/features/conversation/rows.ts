@@ -28,6 +28,7 @@ export function pendingAsMessage(item: OutboxItem, me: string): MessageView {
     clientId: item.clientId,
     senderId: me,
     automated: false,
+    aiAgent: false,
     kind: item.body.kind ?? 'text',
     body: item.body.body ?? null,
     payload: (item.body.payload as Record<string, unknown>) ?? {},

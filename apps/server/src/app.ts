@@ -14,6 +14,7 @@ import type { Config } from './config';
 import type { AppContext } from './context';
 import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
+import { registerAgentJob } from './lib/agent';
 import { createAiAssist } from './lib/ai';
 import { registerWebhookJob } from './lib/apps';
 import { Bus } from './lib/bus';
@@ -25,6 +26,7 @@ import { RateLimiter } from './lib/rate-limit';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
 import { adminRoutes } from './modules/admin';
+import { agentRoutes } from './modules/agents';
 import { aiRoutes } from './modules/ai';
 import { appRoutes } from './modules/apps';
 import { authRoutes } from './modules/auth';
@@ -211,6 +213,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
       await appRoutes(v1, ctx);
+      await agentRoutes(v1, ctx);
       await tokenRoutes(v1, ctx);
       await oauthRoutes(v1, ctx);
       await adminRoutes(v1, ctx);
@@ -224,6 +227,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
 
   registerWorkers();
   registerWebhookJob();
+  registerAgentJob();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
 
   app.addHook('onClose', async () => {

@@ -246,6 +246,19 @@ export async function leaveThreads(db: Q, orgId: string, userId: string, now: Da
     .execute();
 }
 
+type CustomerMessageHook = (
+  ctx: AppContext,
+  orgId: string,
+  conversationId: string,
+  seq: number,
+) => Promise<void>;
+const customerMessageHooks = new Set<CustomerMessageHook>();
+
+/** What acts when a customer writes (the organization's AI agent), registered at startup. */
+export function onCustomerMessage(hook: CustomerMessageHook): void {
+  customerMessageHooks.add(hook);
+}
+
 /**
  * A message moves its thread: the customer writing reopens it and puts it on the team; the team
  * writing puts it back with the customer, and whoever answers an unassigned thread takes it. A
@@ -289,6 +302,9 @@ export async function recordBusinessMessage(
         last_customer_at: at,
         resolved_at: null,
         resolved_by: null,
+        // Writing again after it was resolved starts over: its AI agent may answer again.
+        agent_handed_over_at: sql<Date | null>`case when resolved_at is null then agent_handed_over_at end`,
+        reopened_at: sql<Date | null>`case when resolved_at is null then reopened_at else ${at} end`,
         updated_at: at,
       })
       .where('conversation_id', '=', conversationId)
@@ -323,6 +339,8 @@ export async function recordBusinessMessage(
         under18: isMinor(sender.birth_year, at),
       },
     });
+  if (senderId === thread.customer_id)
+    for (const hook of customerMessageHooks) await hook(ctx, thread.org_id, conversationId, seq);
 }
 
 /** Tell the team a thread changed (the customer never hears how the team works it). */
@@ -375,7 +393,7 @@ export async function threadViews(
       .selectFrom('messages as m')
       .leftJoin('users as u', 'u.id', 'm.sender_id')
       .selectAll('m')
-      .select('u.display_name as sender_name')
+      .select(['u.display_name as sender_name', 'u.kind as sender_kind'])
       .where(
         sql<boolean>`(m.conversation_id, m.seq) in (select conversation_id, max(seq) from messages where conversation_id in (${sql.join(ids)}) and kind <> 'system' group by conversation_id)`,
       )
@@ -451,9 +469,11 @@ export async function threadViews(
             preview: messagePreview(last),
             senderName: last.sender_name,
             fromCustomer: last.sender_id === t.customer_id,
+            fromAgent: last.sender_kind === 'agent',
             createdAt: last.created_at.toISOString(),
           }
         : null,
+      agentHandedOverAt: t.agent_handed_over_at?.toISOString() ?? null,
       unreadCount: mine.find((m) => m.conversation_id === t.conversation_id)?.unread ?? 0,
       lastActivityAt: (last?.created_at ?? t.updated_at).toISOString(),
       closed: closed.has(t.conversation_id),

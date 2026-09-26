@@ -27,6 +27,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
+import { activeAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
 import { orgBlocked } from '../lib/blocks';
 import { joinThreads, leaveThreads } from '../lib/business';
@@ -126,7 +127,10 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
         }
       : null;
   const plan = seat && canManageOrg(seat.role) ? await orgPlanView(ctx, org.id) : null;
-  const blockedByMe = await orgBlocked(ctx.db, viewerId, org.id);
+  const [blockedByMe, agent] = await Promise.all([
+    orgBlocked(ctx.db, viewerId, org.id),
+    activeAgent(ctx, org.id),
+  ]);
   return {
     ...summary,
     createdAt: org.created_at.toISOString(),
@@ -134,6 +138,8 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     domain,
     plan,
     blockedByMe,
+    // Everyone sees it answers first, before they write (PRD §75).
+    agent: agent && ctx.ai ? { name: agent.name } : null,
   };
 }
 

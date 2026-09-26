@@ -5,6 +5,7 @@
  * zod schemas in ./schemas; everything here is a response. Types only: nothing here ships code.
  */
 import type { z } from 'zod';
+import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { BusinessView, ThreadState } from './business';
@@ -252,6 +253,8 @@ export interface MessageView {
   senderId: string | null;
   /** Sent by a bot or an agent, never a person, and says so wherever it's shown (R16). */
   automated: boolean;
+  /** Written by an organization's AI agent (PRD §75): shown as "AI agent", never as a person. */
+  aiAgent: boolean;
   kind: MessageKind;
   body: string | null;
   payload: Record<string, unknown>;
@@ -502,8 +505,12 @@ export interface BusinessThreadView {
     preview: string;
     senderName: string | null;
     fromCustomer: boolean;
+    /** The organization's AI agent wrote it. */
+    fromAgent: boolean;
     createdAt: string;
   } | null;
+  /** Its AI agent handed it to the team (PRD §75), and stays out until it's resolved. */
+  agentHandedOverAt: string | null;
   unreadCount: number;
   lastActivityAt: string;
   /** Its customer blocked the organization: closed until they unblock it. */
@@ -630,13 +637,35 @@ export interface OrgView extends OrgSummaryView {
   plan: OrgPlanView | null;
   /** You blocked it: it can't write to you, and your conversation with it is closed. */
   blockedByMe: boolean;
+  /** Its AI agent answers first (PRD §75): everyone sees that before they write. */
+  agent: { name: string } | null;
+}
+
+/** An organization's AI agent, for its owner and admins (PRD §74–75). */
+export interface OrgAgentView {
+  name: string;
+  /** What the organization told it: the only thing it answers from. */
+  knowledge: string;
+  /** Paused, it stays on the team and quiet; nothing it wrote goes away. */
+  paused: boolean;
+  /** What it wrote to customers in the last 24 hours, against what the plan includes. */
+  repliesToday: number;
+  repliesPerDay: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** What an AI agent would do with a question, tried before it answers anyone. */
+export interface AgentTryView {
+  action: AgentAction;
+  message: string;
 }
 
 /** An organization's plan (PRD §84): what it includes and how much of it is in use. */
 export interface OrgPlanView {
   plan: OrgPlan;
   allowance: OrgAllowance;
-  used: { teamSize: number; apps: number; startsToday: number };
+  used: { teamSize: number; apps: number; startsToday: number; agentRepliesToday: number };
   /** Where to see plans and upgrade, when the operator has set one up. */
   upgradeUrl: string | null;
 }

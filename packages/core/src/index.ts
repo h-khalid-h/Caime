@@ -1,4 +1,5 @@
 export * from './access';
+export * from './agents';
 export * from './api';
 export * from './apps';
 export * from './assist';

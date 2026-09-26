@@ -47,6 +47,9 @@ export function OrgPlan({ plan }: { plan: OrgPlanView }) {
         <Text variant="caption" color="textSecondary">
           {`${plan.used.startsToday} of ${plan.allowance.startsPerDay.toLocaleString('en-US')} conversations started by the team today. Customers writing first are never counted.`}
         </Text>
+        <Text variant="caption" color="textSecondary" testID="org-plan-agent">
+          {`${plan.used.agentRepliesToday} of ${plan.allowance.agentRepliesPerDay.toLocaleString('en-US')} AI agent answers in the last 24 hours. Past that, your team answers as usual.`}
+        </Text>
         {line ? (
           <Text variant="caption" color="textSecondary">
             {plan.upgradeUrl ? line : `${line} It can’t be bought here yet.`}

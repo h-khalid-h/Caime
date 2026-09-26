@@ -69,6 +69,32 @@ function answer(body) {
       }));
     return reply(JSON.stringify({ items }));
   }
+  if (system.includes('the AI agent that answers customers of')) {
+    calls.push('agent');
+    const org = /customers of (.+?) in Caishy/.exec(system)?.[1] ?? 'the organization';
+    const knowledge = between(content, '<knowledge>', '</knowledge>');
+    const asked =
+      between(content, '<conversation>', '</conversation>')
+        .split('\n')
+        .filter((l) => /^\[\d+\] Customer: /.test(l))
+        .pop()
+        ?.replace(/^\[\d+\] Customer: /, '') ?? '';
+    const say = (action, message) => reply(JSON.stringify({ action, message }));
+    const handOver = () =>
+      say('hand_over', `I’ve passed this to the team at ${org}. Someone will answer here.`);
+    if (/person|human|someone/i.test(asked)) return handOver();
+    if (/thank/i.test(asked)) return say('resolve', 'You’re welcome. Take care!');
+    // The sentence of what it knows that shares the most words with the question.
+    const words = (text) => text.toLowerCase().match(/[a-z]{4,}/g) ?? [];
+    const wanted = new Set(words(asked));
+    const best = knowledge
+      .split(/(?<=\.)\s+/)
+      .map((sentence) => ({ sentence, n: words(sentence).filter((w) => wanted.has(w)).length }))
+      .sort((a, b) => b.n - a.n)[0];
+    if (!best?.n) return handOver();
+    const intro = content.includes('begin by saying') ? `Hi, I’m ${org}’s AI agent. ` : '';
+    return say('answer', `${intro}${best.sentence}`);
+  }
   calls.push('other');
   return reply('OK');
 }

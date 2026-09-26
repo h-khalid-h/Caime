@@ -39,6 +39,11 @@ export interface OrgAllowance {
    * customer starts is never counted.
    */
   startsPerDay: number;
+  /**
+   * What its AI agent writes to customers in any 24 hours (PRD §75). Past it, the agent stays
+   * quiet and the team answers, as it would without one.
+   */
+  agentRepliesPerDay: number;
 }
 
 const GB = 1024 ** 3;
@@ -52,9 +57,21 @@ export const PERSON_ALLOWANCES: Readonly<Record<Plan, PersonAllowance>> = {
 };
 
 export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {
-  free: { teamSize: 3, apps: 1, insights: false, startsPerDay: 20 },
-  business: { teamSize: 100, apps: 25, insights: true, startsPerDay: 1000 },
-  enterprise: { teamSize: 10_000, apps: 200, insights: true, startsPerDay: 20_000 },
+  free: { teamSize: 3, apps: 1, insights: false, startsPerDay: 20, agentRepliesPerDay: 50 },
+  business: {
+    teamSize: 100,
+    apps: 25,
+    insights: true,
+    startsPerDay: 1000,
+    agentRepliesPerDay: 2000,
+  },
+  enterprise: {
+    teamSize: 10_000,
+    apps: 200,
+    insights: true,
+    startsPerDay: 20_000,
+    agentRepliesPerDay: 20_000,
+  },
 };
 
 export const PLAN_NAMES: Readonly<Record<Plan | OrgPlan, string>> = {

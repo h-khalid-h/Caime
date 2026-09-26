@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
+import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { ORG_KINDS } from './orgs';
@@ -92,6 +93,28 @@ export const CreateOAuthAppBody = z
       .min(1, 'Add where people come back to after allowing it.')
       .max(5),
     confidential: z.boolean().default(false),
+  })
+  .strict();
+
+/** An organization's AI agent: its name and what it answers from (PRD §75). */
+export const SetOrgAgentBody = z
+  .object({
+    name: z.string().trim().min(1, 'Name it.').max(AGENT_NAME_MAX),
+    knowledge: z
+      .string()
+      .trim()
+      .min(20, 'Tell it what customers ask about: hours, services, prices, how to book.')
+      .max(AGENT_KNOWLEDGE_MAX),
+    paused: z.boolean().default(false),
+  })
+  .strict();
+
+/** A question to try an AI agent on, with what it would know, before it answers anyone. */
+export const TryOrgAgentBody = z
+  .object({
+    name: z.string().trim().min(1).max(AGENT_NAME_MAX),
+    knowledge: z.string().trim().min(1).max(AGENT_KNOWLEDGE_MAX),
+    question: z.string().trim().min(1, 'Ask it something a customer would.').max(1000),
   })
   .strict();
 

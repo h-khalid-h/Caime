@@ -153,6 +153,7 @@ export async function messageViews(
   ]);
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(senders.filter((u) => u.kind !== 'human').map((u) => u.id));
+  const agentSenders = new Set(senders.filter((u) => u.kind === 'agent').map((u) => u.id));
   const views = rows.map((m): MessageView => {
     const deleted = m.deleted_at !== null;
     const byEmoji = new Map<string, string[]>();
@@ -178,6 +179,7 @@ export async function messageViews(
       clientId: m.sender_id === viewerId ? m.client_id : null,
       senderId: m.sender_id,
       automated: m.kind !== 'system' && m.sender_id !== null && automatedSenders.has(m.sender_id),
+      aiAgent: m.kind !== 'system' && m.sender_id !== null && agentSenders.has(m.sender_id),
       kind: m.kind,
       body: deleted ? null : m.body,
       payload: deleted ? {} : (m.payload ?? {}),

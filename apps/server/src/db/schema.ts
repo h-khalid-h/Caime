@@ -609,6 +609,23 @@ export interface BusinessThreadsTable {
   team_read_seq: ColumnType<string, string | number | undefined, string | number>;
   /** The team wrote first (R14); counted against the plan's starts. */
   started_by_team: Defaulted<boolean>;
+  /** The customer message its AI agent last dealt with (PRD §75), so it deals with each once. */
+  agent_seq: ColumnType<string, string | number | undefined, string | number>;
+  /** Its AI agent handed it to the team: it stays out until the conversation is resolved. */
+  agent_handed_over_at: NullableTimestamp;
+  /** The customer last wrote to it resolved: a new question since whoever has it last wrote. */
+  reopened_at: NullableTimestamp;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+/** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */
+export interface OrgAgentsTable {
+  org_id: string;
+  bot_user_id: string;
+  knowledge: string;
+  paused_at: NullableTimestamp;
+  created_by: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -760,6 +777,7 @@ export interface Database {
   org_members: OrgMembersTable;
   business_threads: BusinessThreadsTable;
   org_apps: OrgAppsTable;
+  org_agents: OrgAgentsTable;
   api_tokens: ApiTokensTable;
   webhook_deliveries: WebhookDeliveriesTable;
 }

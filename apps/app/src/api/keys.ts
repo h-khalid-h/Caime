@@ -11,6 +11,7 @@ export const qk = {
   businessSummary: ['business-summary'] as const,
   tokens: ['personal-tokens'] as const,
   oauthApps: ['oauth-apps'] as const,
+  orgAgent: (orgId: string) => ['org-agent', orgId] as const,
   connectedApps: ['connected-apps'] as const,
   space: (id: string) => ['space', id] as const,
   inbox: ['inbox'] as const,

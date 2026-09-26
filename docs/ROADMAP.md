@@ -162,7 +162,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       (`personal-tokens.test.ts`, E2E). OAuth for third-party apps: a developer registers one in
       Developer, people see who made it and what it asks before letting it in, and it gets
       tokens that act within that and say "via" it, ended from Connected apps
-      (`oauth.test.ts`, E2E; `docs/API.md`). [ ] AI agents
+      (`oauth.test.ts`, E2E; `docs/API.md`). AI agents (PRD §74–75): an organization's support
+      agent answers customers first from what the organization told it, says it's an AI in
+      everything it writes, hands a conversation to the team when it can't answer or is asked
+      for a person, and never answers anyone under 18 (`agents.test.ts`, E2E)
 - [x] Plan entitlements (R23): what each plan includes lives in core and is checked on the server
       where something is added (AI assists, files, a team's people, apps). The wedge is never
       counted, and a lower plan never removes anything. You → Plan shows what's used; an
@@ -397,3 +400,19 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   Its review found that a Basic header that didn't decode answered 500 and that revocation didn't
   check which app asked; both are fixed and tested. The export now lists the tokens and apps
   that act for you and the apps you made. Tests: 153 core, 49 brand, 185 server, 9 app, 31 E2E.
+- 2026-09-26 — Session 2 (cont.): AI agents (PRD §74–75). An organization's owner or admins turn
+  on its AI agent on the organization's page: a name ("Nile Dental Assistant" to start), what it
+  knows (hours, prices, how to book), and a question to try it on first, with nothing sent. It
+  joins the team as its own member, and a customer sees on the organization's page, before
+  writing, that it answers first. When a customer writes, it waits a moment (so three quick
+  messages are read as one), reads the conversation and what it was told, and answers, hands the
+  conversation to the team (a booking, a payment, a complaint, anything it wasn't told, or a
+  customer asking for a person), or closes it when the customer is done. Everything it writes
+  says "AI agent", and like any bot it never takes a conversation or counts as the team's answer.
+  It stays out of anyone under 18, private conversations, anything escalated or handed over, and
+  any conversation a person on the team is in; a customer writing to a resolved conversation
+  asks something new, so it may answer again until the team writes. It answers each message
+  once, even with two workers on it, at most ten times in a conversation a day, and within the
+  plan (50 answers a day on Free, 2,000 on Business). Its review found that it would never have
+  answered a customer who had once talked to a person; `reopened_at` fixed that. Tests: 154
+  core, 49 brand, 196 server, 9 app, 32 E2E.
