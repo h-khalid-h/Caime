@@ -37,6 +37,7 @@ a control without a test is listed as a gap, not a control. Reviewed 2026-09-26.
 | Web app | Strict CSP (`script-src 'self'`, no inline script), `frame-ancestors 'none'`, helmet headers, no-cache HTML | `curl -I /` in CI's image smoke test |
 | Logs | Authorization, cookies and passwords redacted; query strings (search terms, handles) not logged | — (code: `app.ts`) |
 | Device input | Locales and time zones sanitised; formatting never throws on bad values | `locale.test.ts` |
+| AI assist | Off unless the operator set a key and the person, an adult, turned it on; never on a private conversation; checked on every call. Only what the action needs is sent: the draft, the one message, or what the person can see of the conversation as names and text (no ids, handles or emails). Prompts treat that content as text, not instructions. Message text is never logged, only why a call failed. Everything it writes is labelled and changes nothing until tapped; follow-ups arrive as suggestions to accept. Refusals and busy periods say so plainly. 60 calls an hour per person | `ai.test.ts`, `e2e/around-the-conversation.spec.ts` |
 | Your data | Export downloads what is yours as JSON: your messages and not other people's, no password or session secrets. Deletion needs the password, is rate-limited and immediate; it ends the account's sessions, removes files nobody else can see from the database and the disk, and leaves others their conversations (your messages, unnamed), the files you shared with them, and the actions they were waiting on you for | `account.test.ts`, `e2e/core-flow.spec.ts` |
 | Dependencies | `pnpm audit --prod` clean. Two advisories in the app toolchain are closed with overrides in `pnpm-workspace.yaml`: `decode-uri-component` (vendored linear-time drop-in, `vendor/`) and `xcode>uuid` | `pnpm audit --prod` |
 
@@ -47,6 +48,10 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
 - **Message encryption at rest.** Messages are protected by access control and the database's
   disk encryption, not end-to-end encryption. "Private" conversations (`privacy_class`) exist in
   the model; their end-to-end encryption is not built.
+- **AI assist reads other people's messages** when someone asks it to catch up or find
+  follow-ups in a standard conversation; they aren't asked first. Private conversations (R18)
+  are the answer and aren't built yet. A message can also try to steer what the model writes;
+  what it writes only ever reaches the person who asked, as a suggestion.
 - **Moderation tooling.** Reports are stored; there is no reviewer interface yet.
 - **Rate limits are per instance** (in memory). With several instances behind a load balancer,
   limits multiply by the instance count until a shared store is added.

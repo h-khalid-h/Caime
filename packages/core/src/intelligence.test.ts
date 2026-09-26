@@ -45,6 +45,17 @@ describe('the PRD examples', () => {
     expect(s).toMatchObject({ kind: 'waiting', title: 'Contract', dueText: 'by Friday' });
   });
 
+  it('waiting on something that isn’t handed over keeps what they’ll do with it', () => {
+    // "Caterer" alone would read as waiting on the caterer.
+    const theirs = suggestFromAnalysis(analyzeMessage('I’ll confirm the caterer.', opts), sarah);
+    expect(theirs[0]).toMatchObject({ kind: 'waiting', title: 'Confirm caterer', vague: false });
+    const mine = suggestFromAnalysis(analyzeMessage('Could you book the venue?', opts), me);
+    expect(mine[0]).toMatchObject({ kind: 'waiting', title: 'Book venue' });
+    // Handed-over things are still named by the thing.
+    const sent = suggestFromAnalysis(analyzeMessage('I’ll share the slides tonight.', opts), sarah);
+    expect(sent[0]).toMatchObject({ kind: 'waiting', title: 'Slides' });
+  });
+
   it('"Approved the final design." → a decision (PRD §30)', () => {
     const a = analyzeMessage('Approved the final design.', opts);
     expect(a.mode).toBe('decide');

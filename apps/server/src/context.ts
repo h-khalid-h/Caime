@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import type pg from 'pg';
 import type { Config } from './config';
 import type { Database } from './db/schema';
+import type { AiAssist } from './lib/ai';
 import type { Bus } from './lib/bus';
 import type { RateLimiter } from './lib/rate-limit';
 
@@ -12,6 +13,8 @@ export interface AppContext {
   pool: pg.Pool;
   bus: Bus;
   limiter: RateLimiter;
+  /** AI assist, when the operator configured a provider (R17). */
+  ai: AiAssist | null;
   log: FastifyBaseLogger;
   /** Injectable clock so tests can move time. */
   now(): Date;

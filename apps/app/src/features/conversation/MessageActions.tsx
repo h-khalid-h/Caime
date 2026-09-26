@@ -4,9 +4,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { translate } from '@/features/assist/translations';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
-import { Copy, CornerUpLeft, Flag, ListChecks, Pencil, Trash } from '@/ui/icons';
+import { Copy, CornerUpLeft, Flag, Languages, ListChecks, Pencil, Trash } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
@@ -52,12 +53,15 @@ export function MessageActions({
   onClose,
   onReply,
   onEdit,
+  aiReady,
 }: {
   m: MessageView | null;
   me: string;
   onClose: () => void;
   onReply: (m: MessageView) => void;
   onEdit: (m: MessageView) => void;
+  /** AI assist is on and may read this conversation: offer to translate. */
+  aiReady?: boolean;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -120,6 +124,15 @@ export function MessageActions({
               await Clipboard.setStringAsync(text);
               toast('Copied');
             })}
+          />
+        ) : null}
+        {aiReady && !mine && !deleted && text ? (
+          <ListRow
+            icon={Languages}
+            title="Translate"
+            subtitle="Into your language, suggested by Caishy"
+            onPress={close(() => translate(m.id))}
+            testID="message-translate"
           />
         ) : null}
         {!deleted && text ? (

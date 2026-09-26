@@ -1,7 +1,10 @@
 import type { Audience, PrivacyField } from '@caishy/core/privacy';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useAiStatus } from '@/api/hooks';
+import { qk } from '@/api/keys';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -40,7 +43,18 @@ function describe(a: Audience | undefined): string {
 export default function Privacy() {
   const t = useTheme();
   const me = useMe();
+  const qc = useQueryClient();
+  const ai = useAiStatus();
   const [editing, setEditing] = useState<PrivacyField | null>(null);
+  const setAi = async (aiEnabled: boolean) => {
+    try {
+      const res = await endpoints.updateMe({ aiEnabled });
+      useSession.getState().setUser(res.user);
+      void qc.invalidateQueries({ queryKey: qk.ai });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  };
   const save = async (body: Record<string, unknown>) => {
     try {
       const res = await endpoints.updatePrivacy(body);
@@ -135,6 +149,31 @@ export default function Privacy() {
           ]}
         />
       </Group>
+      {ai.data?.available ? (
+        <Group
+          title="AI assist"
+          footer="Only when you tap an AI action, Caishy sends what that action needs (your draft, the message, or the conversation you asked about) to Anthropic, its AI provider, to write a suggestion. Anthropic doesn’t use it to train models. Private conversations are never sent. What it writes is labelled and changes nothing until you choose it."
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyStrong">Use AI assist</Text>
+              <Text variant="caption" color="textSecondary">
+                {me.minor
+                  ? 'Available from 18'
+                  : 'Rewrite drafts, translate messages, catch up and find follow-ups'}
+              </Text>
+            </View>
+            <Switch
+              value={me.aiEnabled && !me.minor}
+              disabled={me.minor}
+              onValueChange={(v) => void setAi(v)}
+              trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
+              accessibilityLabel="Use AI assist"
+              testID="ai-toggle"
+            />
+          </View>
+        </Group>
+      ) : null}
       <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editingLabel}>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<Simple>

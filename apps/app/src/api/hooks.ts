@@ -25,11 +25,12 @@ export const useTasks = (
 export const useNotifications = () =>
   useQuery({ queryKey: qk.notifications, queryFn: endpoints.notifications });
 
-export const useConversation = (id: string) =>
+export const useConversation = (id: string, options: { refetchOnMount?: 'always' } = {}) =>
   useQuery({
     queryKey: qk.conversation(id),
     queryFn: () => endpoints.conversation(id),
     enabled: Boolean(id),
+    ...options,
   });
 
 export const PAGE = 50;
@@ -72,3 +73,7 @@ export const useMemory = (conversationId: string, enabled = true) =>
   });
 
 export const usePolicies = () => useQuery({ queryKey: qk.policies, queryFn: endpoints.policies });
+
+/** Whether this server offers AI assist, and whether this person turned it on. */
+export const useAiStatus = () =>
+  useQuery({ queryKey: qk.ai, queryFn: endpoints.ai, staleTime: 10 * 60_000 });

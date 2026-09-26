@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useConversation, useMessages } from '@/api/hooks';
+import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
+import { catchUp } from '@/features/assist/catchUp';
+import { useAiReady } from '@/features/assist/ready';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useNow, useUserClock } from '@/lib/time';
 import { flatMessages, type MessagePages, markInboxRead, maxSeq } from '@/state/cache';
@@ -47,7 +50,8 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const me = useMe();
   const qc = useQueryClient();
   const { desktop, wide, height } = useLayout();
-  const conv = useConversation(id);
+  // Always confirmed on open: what the device kept may be behind (the unread line depends on it).
+  const conv = useConversation(id, { refetchOnMount: 'always' });
   const msgs = useMessages(id);
   const conversation = conv.data?.conversation;
   const pendingAll = useOutbox((s) => s.items);
@@ -72,14 +76,23 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
 
   useEffect(() => setPanel(wide), [wide]);
 
-  // Where "new messages" starts: fixed when the conversation opens, so it doesn't move as we read.
+  // Where "new messages" starts, and how many: taken from the first fresh copy of the
+  // conversation (a copy restored on the device can be behind), then fixed, so the line doesn't
+  // move as the person reads. Marking read on this screen fixes it too.
+  const readUpTo = useRef({ id, seq: 0 });
+  if (readUpTo.current.id !== id) readUpTo.current = { id, seq: 0 };
   const unreadFrom = useRef<number | null>(null);
-  const openedFor = useRef<string | null>(null);
-  if (conversation && openedFor.current !== id) {
-    openedFor.current = id;
+  const unreadAtOpen = useRef(0);
+  const settledFor = useRef<string | null>(null);
+  if (conversation && settledFor.current !== id) {
     unreadFrom.current =
       conversation.lastSeq > conversation.me.lastReadSeq ? conversation.me.lastReadSeq + 1 : null;
+    unreadAtOpen.current = Math.max(0, conversation.lastSeq - conversation.me.lastReadSeq);
+    if (conv.isFetchedAfterMount || readUpTo.current.seq > 0) settledFor.current = id;
   }
+  const aiReady = useAiReady(conversation);
+  const [catchUpDone, setCatchUpDone] = useState<string | null>(null);
+  const offerCatchUp = aiReady && unreadAtOpen.current >= CATCH_UP_AFTER && catchUpDone !== id;
 
   const messages = useMemo(() => flatMessages(msgs.data), [msgs.data]);
   const [focus, setFocus] = useState<number | null>(focusSeq ?? null);
@@ -137,9 +150,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
 
   // Mark read up to the newest message while visible (debounced; skips when nothing is new).
   const newest = maxSeq(msgs.data as MessagePages | undefined);
-  const readUpTo = useRef(0);
   useEffect(() => {
-    if (!conversation || newest <= Math.max(readUpTo.current, conversation.me.lastReadSeq)) return;
+    if (!conversation || newest <= Math.max(readUpTo.current.seq, conversation.me.lastReadSeq))
+      return;
     if (conversation.request === 'incoming') return; // Reading a request never tells the sender.
     const timer = setTimeout(() => {
       if (AppState.currentState !== 'active' && Platform.OS !== 'web') return;
@@ -149,7 +162,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         document.visibilityState !== 'visible'
       )
         return;
-      readUpTo.current = newest;
+      readUpTo.current = { id, seq: newest };
       markInboxRead(qc, id);
       void endpoints.receipts(id, { read: newest }).catch(() => {});
     }, 400);
@@ -352,6 +365,18 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     <View style={{ flex: 1, backgroundColor: t.c.canvas }}>
       <ConnectionBanner />
       {conversation ? <RequestBanner conversation={conversation} /> : null}
+      {offerCatchUp ? (
+        <CatchUpBanner
+          count={unreadAtOpen.current}
+          onCatchUp={() => {
+            setCatchUpDone(id);
+            void catchUp(id);
+            if (desktop) setPanel(true);
+            else setDetails(true);
+          }}
+          onDismiss={() => setCatchUpDone(id)}
+        />
+      ) : null}
       <FlatList
         ref={list}
         inverted
@@ -484,6 +509,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       <MessageActions
         m={actionsFor}
         me={me.id}
+        aiReady={aiReady}
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {

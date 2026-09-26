@@ -40,6 +40,11 @@ export interface ActionClause {
   title: string;
   /** The thing itself, for waiting items: "Proposal". Null when there is no clear object. */
   object: string | null;
+  /**
+   * The object is handed over ("send the proposal"), so waiting on "Proposal" says it all. For
+   * other verbs ("confirm the caterer") the object alone loses the meaning: keep the action.
+   */
+  handover: boolean;
   when: WhenMatch | null;
   /** The sentence it came from, for the rationale. */
   quote: string;
@@ -138,6 +143,9 @@ const TRAILING_WORDS =
 const CUT_AT =
   /\s+(?:to|for|with|by|before|after|on|at|in|from|so|and|because|when|if|once)\s+.*$/i;
 
+const HANDOVER_VERBS =
+  /^(?:send|resend|share|forward|email|e-mail|mail|text|upload|bring|deliver|submit|return|give|get|provide|pass|hand|post|attach|transfer)$/i;
+
 const OBJECT_FOR_PHRASE: Array<[RegExp, string]> = [
   [/^get back to (you|me)\b/i, 'Reply'],
   [/^let (you|me) know\b/i, 'Update'],
@@ -226,11 +234,17 @@ function toAction(
   if (arabic) {
     const words = clause.split(' ');
     const object = words.length > 1 ? words.slice(1).join(' ') : null;
-    return { title: clause, object, when, quote };
+    return { title: clause, object, handover: true, when, quote };
   }
   for (const [re, object] of OBJECT_FOR_PHRASE) {
     if (re.test(clause))
-      return { title: capitalise(clause.replace(CUT_AT, '')), object, when, quote };
+      return {
+        title: capitalise(clause.replace(CUT_AT, '')),
+        object,
+        handover: true,
+        when,
+        quote,
+      };
   }
   const [verb, ...restWords] = clause.split(' ');
   if (!verb) return null;
@@ -239,7 +253,7 @@ function toAction(
   const title = rest
     ? `${capitalise(verb.toLowerCase())} ${rest.replace(LEADING_WORDS, '')}`
     : capitalise(verb.toLowerCase());
-  return { title, object, when, quote };
+  return { title, object, handover: HANDOVER_VERBS.test(verb), when, quote };
 }
 
 function firstDateIn(dates: WhenMatch[], index: number, length: number): WhenMatch | null {
@@ -523,6 +537,10 @@ function isVague(c: ActionClause): boolean {
   return !c.object || POINTING.test(c.object.trim());
 }
 
+function waitingTitle(c: ActionClause): string {
+  return c.handover ? (c.object ?? c.title) : c.title;
+}
+
 function lowerFirst(s: string): string {
   return s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
 }
@@ -561,10 +579,11 @@ export function suggestFromAnalysis(
     } else {
       out.push({
         kind: 'waiting',
-        // "Q3 report" when they named it; "Sarah will send it" when they only pointed at it.
+        // "Q3 report" when they named it; "Sarah will send it" when they only pointed at it;
+        // "Confirm caterer" when the thing alone would lose what they'll do with it.
         title: vague
           ? `${ctx.senderName} will ${lowerFirst(a.commitment.title)}`
-          : (a.commitment.object ?? a.commitment.title),
+          : waitingTitle(a.commitment),
         ...due(a.commitment),
         rationale: `${ctx.senderName} wrote ${quote(a.commitment.quote)}`,
         confidence: a.commitment.when ? 0.9 : 0.75,
@@ -577,7 +596,7 @@ export function suggestFromAnalysis(
     if (ctx.senderIsMe) {
       out.push({
         kind: 'waiting',
-        title: isVague(a.request) ? a.request.title : (a.request.object ?? a.request.title),
+        title: isVague(a.request) ? a.request.title : waitingTitle(a.request),
         ...due(a.request),
         rationale: `You asked ${quote(a.request.quote)}`,
         confidence: 0.7,

@@ -436,6 +436,42 @@ export interface SuggestionView {
   createdAt: string;
 }
 
+/** AI assist for this account: the server has a provider, the person turned it on, and may. */
+export interface AiStatusView {
+  available: boolean;
+  enabled: boolean;
+  /** Adults only for now. */
+  eligible: boolean;
+}
+
+/** Everything a model wrote carries `label` ("Suggested by Caishy") and waits for a tap (R17). */
+export interface AiRewriteView {
+  suggestion: string;
+  label: string;
+}
+
+export interface AiTranslationView {
+  translation: string;
+  /** The language it was translated into, e.g. "en" and "English". */
+  to: string;
+  language: string;
+  label: string;
+}
+
+export interface AiCatchUpView {
+  /** Null when there is nothing to read yet. */
+  summary: string | null;
+  label: string | null;
+  /** Messages since the reader last read, among those summarized. */
+  newCount: number;
+}
+
+export interface AiActionsView {
+  /** New suggestions, also in GET /suggestions; things already suggested or tracked are left out. */
+  found: SuggestionView[];
+  label: string;
+}
+
 export interface MemoryView {
   summary: string;
   people: Array<{ id: string; displayName: string; role: string }>;

@@ -6,6 +6,8 @@ import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from '
 import { Platform, TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
+import { RewriteSheet } from '@/features/assist/RewriteSheet';
+import { useAiReady } from '@/features/assist/ready';
 import { KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
@@ -27,6 +29,7 @@ import {
   Reply,
   SendHorizontal,
   Sticker,
+  WandSparkles,
   X,
 } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
@@ -66,6 +69,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
   const [kit, setKit] = useState<KitChoice | null>(null);
+  const [rewrite, setRewrite] = useState(false);
+  const aiReady = useAiReady(conversation);
   const me = useMe();
   const kits = kitsOffered(conversation, me.minor);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -312,6 +317,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             ]}
           />
         </View>
+        {canSend && aiReady ? (
+          <IconButton
+            icon={WandSparkles}
+            label="Rewrite with Caishy"
+            onPress={() => setRewrite(true)}
+            testID="composer-rewrite"
+          />
+        ) : null}
         {canSend ? (
           <IconButton
             icon={SendHorizontal}
@@ -379,6 +392,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         </View>
       </Sheet>
       <KitForm conversation={conversation} kit={kit} onClose={() => setKit(null)} />
+      {aiReady ? (
+        <RewriteSheet
+          open={rewrite}
+          text={value}
+          conversationId={id}
+          onUse={onChange}
+          onClose={() => {
+            setRewrite(false);
+            input.current?.focus();
+          }}
+        />
+      ) : null}
     </View>
   );
 });

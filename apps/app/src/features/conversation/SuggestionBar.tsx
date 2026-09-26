@@ -1,4 +1,5 @@
 import type { SuggestionView } from '@caishy/core/api';
+import { AI_LABEL } from '@caishy/core/assist';
 import { formatDue } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -92,7 +93,8 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Sparkles size={14} color={t.c.accentStrong} />
         <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-          Suggestion{list.length > 1 ? ` · 1 of ${list.length}` : ''}
+          {s.payload.source === 'ai' ? AI_LABEL : 'Suggestion'}
+          {list.length > 1 ? ` · 1 of ${list.length}` : ''}
         </Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

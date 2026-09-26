@@ -52,7 +52,9 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@caishy.com` | Contact for push services. |
 | `EXPO_ACCESS_TOKEN` | — | Mobile push through Expo (needs the store builds). |
-| `ANTHROPIC_API_KEY` | — | AI assist. Without it Caishy uses its on-device heuristics (R17). |
+| `ANTHROPIC_API_KEY` | — | AI assist (rewrite, translate, catch me up, find follow-ups). Without it the AI settings don't appear and Caishy uses its heuristics (R17). Each person still turns it on for themselves. |
+| `ANTHROPIC_MODEL` | `claude-opus-5` | The Claude model AI assist uses. |
+| `ANTHROPIC_BASE_URL` | — | Another Messages API endpoint, such as a gateway. |
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |

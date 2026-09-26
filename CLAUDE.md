@@ -93,6 +93,12 @@ These are rules, not preferences.
 - Network state comes from `src/lib/network.ts`: the browser's `online`/`offline` events on the
   web, NetInfo on native (`network.native.ts`). NetInfo's web build listens to
   `navigator.connection`, which Chromium doesn't fire when the network returns.
+- AI assist is tested without a key: the server tests start a local stand-in for the Messages
+  API and point `ANTHROPIC_BASE_URL` at it; E2E runs `e2e/anthropic-stub.mjs` as a second
+  Playwright web server, whose `GET /requests` lists which features called it.
+- On the web, a pressable inside another ends the outer one's hover (React Native Web's
+  `contain`), so anything shown on hover belongs beside the thing hovered, not inside it.
+- Hold the socket in E2E with `page.routeWebSocket` to test what happens before it connects.
 
 ## Credentials and environment
 
@@ -100,11 +106,12 @@ Nothing secret is committed. The server reads configuration from environment var
 (`apps/server/.env.example`, `docs/DEPLOY.md`). Deployment automation needs `EASYPANEL_URL` and
 `EASYPANEL_API_TOKEN` in the cloud environment settings, never pasted into chat; CI redeploys
 through the `EASYPANEL_DEPLOY_WEBHOOK` repository secret. Optional integrations turn on when their
-variables exist: `ANTHROPIC_API_KEY` (AI assist), `EXPO_ACCESS_TOKEN` (mobile push).
+variables exist: `ANTHROPIC_API_KEY` (AI assist, Claude through `@anthropic-ai/sdk` with
+server-side refusal fallbacks), `EXPO_ACCESS_TOKEN` (mobile push).
 
 ## Current state
 
 See `docs/ROADMAP.md`. In one line: core, server, the universal app (web verified end to end,
-native bundles export), Connect Kits, your-data controls, the image and CI are built and
-verified. Remaining: Spaces, organizations and the business inbox, AI assist, the platform API,
-store builds, and the EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).
+native bundles export), Connect Kits, AI assist, your-data controls, the image and CI are built
+and verified. Remaining: Spaces, organizations and the business inbox, the platform API, store
+builds, and the EasyPanel deploy (⛔ needs EasyPanel access, `docs/DEPLOY.md`).

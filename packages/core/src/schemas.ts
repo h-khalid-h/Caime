@@ -3,6 +3,7 @@
  * body with these; clients use the same schemas for forms, so a rule changes in one place.
  */
 import { z } from 'zod';
+import { REWRITE_STYLES } from './assist';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
@@ -440,3 +441,19 @@ export const ReportBody = z.object({
   reason: z.enum(['spam', 'scam', 'harassment', 'impersonation', 'inappropriate', 'other']),
   details: z.string().trim().max(2000).optional(),
 });
+
+export const AiRewriteBody = z
+  .object({
+    text: z.string().trim().min(1).max(4000),
+    style: z.enum(REWRITE_STYLES),
+    conversationId: z.string().uuid(),
+  })
+  .strict();
+
+export const AiTranslateBody = z
+  .object({
+    messageId: z.string().uuid(),
+    /** A BCP 47 language; the reader's own language when absent. */
+    to: z.string().trim().min(2).max(35).optional(),
+  })
+  .strict();

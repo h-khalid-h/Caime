@@ -8,6 +8,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = Number(process.env.E2E_PORT ?? 8787);
 const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
+/** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */
+const AI_STUB = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -25,22 +27,32 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : {
-        command: 'node --enable-source-maps apps/server/dist/server.js',
-        url: `${BASE}/v1/readyz`,
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-        env: {
-          NODE_ENV: 'production',
-          PORT: String(PORT),
-          HOST: '127.0.0.1',
-          PUBLIC_URL: BASE,
-          DATABASE_URL:
-            process.env.E2E_DATABASE_URL ??
-            'postgres://caishy:caishy-dev@127.0.0.1:5432/caishy_e2e',
-          DATA_DIR: join(tmpdir(), 'caishy-e2e'),
-          WEB_DIR: 'apps/app/dist',
-          LOG_LEVEL: 'warn',
+    : [
+        {
+          command: 'node e2e/anthropic-stub.mjs',
+          url: `${AI_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(AI_STUB).port },
         },
-      },
+        {
+          command: 'node --enable-source-maps apps/server/dist/server.js',
+          url: `${BASE}/v1/readyz`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          env: {
+            NODE_ENV: 'production',
+            PORT: String(PORT),
+            HOST: '127.0.0.1',
+            PUBLIC_URL: BASE,
+            DATABASE_URL:
+              process.env.E2E_DATABASE_URL ??
+              'postgres://caishy:caishy-dev@127.0.0.1:5432/caishy_e2e',
+            DATA_DIR: join(tmpdir(), 'caishy-e2e'),
+            WEB_DIR: 'apps/app/dist',
+            LOG_LEVEL: 'warn',
+            ANTHROPIC_API_KEY: 'e2e-stub',
+            ANTHROPIC_BASE_URL: AI_STUB,
+          },
+        },
+      ],
 });

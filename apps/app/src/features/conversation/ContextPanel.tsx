@@ -7,6 +7,8 @@ import { endpoints } from '@/api/endpoints';
 import { useMemory } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { taskWho } from '@/features/actions/TaskRow';
+import { AssistTools } from '@/features/assist/AssistTools';
+import { useAiReady } from '@/features/assist/ready';
 import { Choice } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
@@ -77,6 +79,7 @@ export function ContextPanel({
   const t = useTheme();
   const qc = useQueryClient();
   const memory = useMemory(conversation.id);
+  const aiReady = useAiReady(conversation);
   const other = conversation.other;
   const now = useNow();
   const { timeZone, locale } = useUserClock();
@@ -174,6 +177,7 @@ export function ContextPanel({
               <Text variant="body" color="textSecondary">
                 {m.summary}
               </Text>
+              {aiReady ? <AssistTools conversationId={conversation.id} /> : null}
             </Section>
             {m.openItems.length ? (
               <Section title={`Open · ${m.openItems.length}`}>

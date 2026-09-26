@@ -1,7 +1,7 @@
 /**
  * What surrounds a conversation, end to end: a relationship that changes and keeps its history,
  * search that opens the message it found, stickers, a message written offline that sends when
- * the network returns, actions and alerts, and settings that follow you. One pair of people is shared by these tests
+ * the network returns, actions and alerts, settings that follow you, and AI assist. One pair of people is shared by these tests
  * (sign-ups are rate limited per address), so they run in order.
  */
 import { randomUUID } from 'node:crypto';
@@ -9,6 +9,8 @@ import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
 
 const stamp = Date.now().toString(36).slice(-6);
+/** The Messages API stand-in the server talks to (playwright.config.ts). */
+const AI_STUB_REQUESTS = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}/requests`;
 
 test.describe
   .serial('around the conversation', () => {
@@ -126,6 +128,35 @@ test.describe
       expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
       alex.errors.length = 0; // The page lives on into the next tests; its offline noise doesn't.
       expect(noor.errors).toEqual([]);
+    });
+
+    test('a message sent while the page is still connecting arrives', async () => {
+      // Hold the socket back until after a message is sent: the first page was read before it,
+      // and the socket wasn't listening yet, so only catching up on connect can bring it.
+      const { page, errors } = await newPerson(noorContext);
+      let release = () => {};
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.routeWebSocket(/\/v1\/realtime/, async (ws) => {
+        await held;
+        ws.connectToServer();
+      });
+      const firstPage = page.waitForResponse(
+        (r) => r.url().includes(`/v1/conversations/${convo}/messages`) && r.ok(),
+      );
+      await page.goto(`/c/${convo}`);
+      await firstPage;
+      const body = `Sent while connecting ${stamp}`;
+      const sent = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), body },
+      });
+      expect(sent.ok()).toBe(true);
+      release();
+      await expect(visible(page, body)).toBeVisible();
+      await page.close();
+      expect(errors).toEqual([]);
     });
 
     test('an action is added, finished and undone; a request lands in Actions and Alerts', async () => {
@@ -339,6 +370,93 @@ test.describe
       await page.reload();
       await expect.poll(scheme).toBe('dark');
       await page.screenshot({ path: 'e2e/screenshots/desktop-appearance-dark.png' });
+      expect(errors).toEqual([]);
+    });
+
+    test('AI assist, once turned on: catch up, follow-ups, translate and rewrite', async () => {
+      const { page, errors } = noor;
+      const stub = async () =>
+        ((await (await page.request.get(AI_STUB_REQUESTS)).json()) as { calls: string[] }).calls;
+      // Off by default: nothing has reached the model, and the composer offers nothing.
+      expect(await stub()).toEqual([]);
+      await page.goto(`/c/${convo}`);
+      await page.getByTestId('composer-input').fill('can u send the contract fri');
+      await expect(page.getByTestId('composer-send')).toBeVisible();
+      await expect(page.getByTestId('composer-rewrite')).toHaveCount(0);
+      await page.getByTestId('composer-input').fill('');
+
+      await page.goto('/settings/privacy');
+      const saved = page.waitForResponse(
+        (r) => r.url().endsWith('/v1/me') && r.request().method() === 'PATCH',
+      );
+      await page.getByTestId('ai-toggle').click();
+      expect((await saved).ok()).toBe(true);
+
+      for (const body of [
+        'هل وصل العقد؟',
+        'The printer needs the final logo files before Friday.',
+        ...Array.from({ length: 8 }, (_, i) => `Venue note ${i + 1}`),
+        'That’s all for now.',
+      ]) {
+        const res = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+          headers: CLIENT,
+          data: { clientId: randomUUID(), body },
+        });
+        expect(res.ok()).toBe(true);
+      }
+      await page.goto(`/c/${convo}`);
+      // Eleven just now, and whatever arrived unread before.
+      const banner = visible(page, /^\d+ new messages$/);
+      await expect(banner).toBeVisible();
+      expect(Number((await banner.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(11);
+      await page.getByTestId('catch-up-banner').click();
+      const summary = page.getByTestId('assist-summary').filter({ visible: true });
+      await expect(summary).toContainText('Suggested by Caishy');
+      await expect(summary).toContainText(
+        /Caught up on \d+ messages\. The latest is from Alex Chen\./,
+      );
+      await expect(page.getByText(/^\d+ new messages$/)).toHaveCount(0);
+
+      await page.getByTestId('assist-find').filter({ visible: true }).click();
+      await expect(visible(page, '1 follow-up to review')).toBeVisible();
+      const offer = page.getByLabel('Suggestion: Send the final logo files');
+      await expect(offer).toContainText('Suggested by Caishy');
+      await expect(offer).toContainText('Alex wrote “The printer needs the final logo files');
+
+      // The hover buttons beside a message open its actions (they used to vanish under the pointer).
+      await visible(page, 'هل وصل العقد؟').hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await page.getByTestId('message-translate').click();
+      const translation = page.getByTestId('message-translation');
+      await expect(translation).toContainText('English · Suggested by Caishy');
+      await expect(translation).toContainText('Did the contract arrive?');
+      await translation.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-ai-assist.png' });
+
+      await page.getByTestId('composer-input').fill('can u send the contract fri');
+      await page.getByTestId('composer-rewrite').click();
+      await page.getByTestId('rewrite-formal').click();
+      await expect(page.getByTestId('rewrite-suggestion')).toHaveText(
+        'Could you send me the contract by Friday?',
+      );
+      await page.getByTestId('rewrite-use').click();
+      await expect(page.getByTestId('composer-input')).toHaveValue(
+        'Could you send me the contract by Friday?',
+      );
+      await page.getByTestId('composer-send').click();
+      await expect(page.getByTestId('composer-input')).toHaveValue('');
+      // Sent as written after the tap, from Noor, and nothing was sent before it.
+      await expect
+        .poll(async () => {
+          const res = await alexContext.request.get(`/v1/conversations/${convo}/messages?limit=1`);
+          const [last] = (await res.json()).messages as Array<{ body: string; senderId: string }>;
+          return last && `${last.senderId === noorId ? 'Noor' : 'someone else'}: ${last.body}`;
+        })
+        .toBe('Noor: Could you send me the contract by Friday?');
+
+      await offer.getByRole('button', { name: 'Add to actions' }).click();
+      await expect(visible(page, 'Added to your actions')).toBeVisible();
+      expect(await stub()).toEqual(['catch-up', 'actions', 'translate', 'rewrite']);
       expect(errors).toEqual([]);
     });
   });

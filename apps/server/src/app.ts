@@ -13,12 +13,14 @@ import type { Config } from './config';
 import type { AppContext } from './context';
 import { migrate } from './db/migrate';
 import { createDb } from './db/pool';
+import { createAiAssist } from './lib/ai';
 import { Bus } from './lib/bus';
 import { AppError } from './lib/errors';
 import { startWorkers } from './lib/jobs';
 import { RateLimiter } from './lib/rate-limit';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
+import { aiRoutes } from './modules/ai';
 import { authRoutes } from './modules/auth';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
@@ -84,6 +86,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     pool: database.pool,
     bus,
     limiter: new RateLimiter(),
+    ai: createAiAssist(config),
     log: app.log,
     now: options.now ?? (() => new Date()),
     defer(label, work) {
@@ -165,6 +168,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await realtimeRoutes(v1, ctx);
       await actionRoutes(v1, ctx);
       await memoryRoutes(v1, ctx);
+      await aiRoutes(v1, ctx);
       await searchRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);

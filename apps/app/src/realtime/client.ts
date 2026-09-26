@@ -4,6 +4,7 @@
  * backoff, and after every reconnect it catches up on whatever it missed while away.
  */
 import type { RealtimeFrame } from '@caishy/core/api';
+import type { Query } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
 import { getAuthToken } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
@@ -72,7 +73,7 @@ class RealtimeClient {
       // have dropped, and send what queued meanwhile instead of waiting out the outbox's backoff.
       if (this.ready && this.ws.readyState === 1 && useLive.getState().connection === 'offline') {
         useLive.getState().setConnection('open');
-        void this.catchUp();
+        void this.catchUp(true);
       }
       useOutbox.getState().flush();
       return;
@@ -168,7 +169,9 @@ class RealtimeClient {
       }
       this.send({ type: 'ping' });
     }, PING_MS);
-    if (this.everConnected) void this.catchUp();
+    // Every time, the first too: a message sent after a conversation's first page was read but
+    // before this socket was listening arrives through neither.
+    void this.catchUp(this.everConnected);
     this.everConnected = true;
     useOutbox.getState().flush();
   }
@@ -180,14 +183,19 @@ class RealtimeClient {
     this.retryTimer = setTimeout(() => this.connect(), delay);
   }
 
-  /** After a gap: refresh the lists, and fetch what each open conversation missed. */
-  private async catchUp(): Promise<void> {
-    void queryClient.invalidateQueries({ queryKey: qk.inbox });
-    void queryClient.invalidateQueries({ queryKey: qk.notifications });
+  /** Fetch what each open conversation missed; after a gap, refresh the lists too. */
+  private async catchUp(afterGap: boolean): Promise<void> {
+    if (afterGap) {
+      void queryClient.invalidateQueries({ queryKey: qk.inbox });
+      void queryClient.invalidateQueries({ queryKey: qk.notifications });
+    }
     const cached = queryClient.getQueryCache().findAll({ queryKey: ['messages'] });
     const active = cached.filter((q) => q.getObserversCount() > 0);
     for (const q of active) {
       const id = String(q.queryKey[1]);
+      // A page on its way was read before now: ask for what came after it once it lands.
+      await settled(q);
+      if (!q.state.data) continue;
       const after = maxSeq(q.state.data as MessagePages | undefined);
       try {
         const page = await endpoints.messages(id, { after, limit: 200 });
@@ -201,6 +209,18 @@ class RealtimeClient {
       }
     }
   }
+}
+
+/** Resolves once the query isn't fetching (loaded, failed or paused offline). */
+function settled(q: Query): Promise<void> {
+  if (q.state.fetchStatus !== 'fetching') return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((e) => {
+      if (e.query !== q || q.state.fetchStatus === 'fetching') return;
+      unsubscribe();
+      resolve();
+    });
+  });
 }
 
 export const realtime = new RealtimeClient();

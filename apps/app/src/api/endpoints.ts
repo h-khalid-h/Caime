@@ -2,7 +2,13 @@
  * Every call the app makes, typed by the shared contract (@caishy/core/api). Screens call these
  * through TanStack Query; nothing else builds URLs.
  */
+
 import type {
+  AiActionsView,
+  AiCatchUpView,
+  AiRewriteView,
+  AiStatusView,
+  AiTranslationView,
   AuthResponse,
   ConnectionRequestView,
   ConnectionView,
@@ -28,6 +34,7 @@ import type {
   TaskView,
   TaxonomyResponse,
 } from '@caishy/core/api';
+import type { RewriteStyle } from '@caishy/core/assist';
 import type { Sphere } from '@caishy/core/taxonomy';
 import { api, request } from './client';
 
@@ -191,6 +198,14 @@ export const endpoints = {
     api.post<Ok>(`/conversations/${id}/receipts`, body),
   dismissAttention: (id: string) => api.post<Ok>(`/conversations/${id}/dismiss`),
   memory: (id: string) => api.get<MemoryView>(`/conversations/${id}/memory`),
+
+  // AI assist: every answer is a suggestion, used only when the person taps it (R17)
+  ai: () => api.get<AiStatusView>('/ai'),
+  aiRewrite: (body: { text: string; style: RewriteStyle; conversationId: string }) =>
+    api.post<AiRewriteView>('/ai/rewrite', body),
+  aiTranslate: (messageId: string) => api.post<AiTranslationView>('/ai/translate', { messageId }),
+  catchUp: (id: string) => api.post<AiCatchUpView>(`/conversations/${id}/catch-up`, {}),
+  findActions: (id: string) => api.post<AiActionsView>(`/conversations/${id}/ai/actions`, {}),
 
   // Actions and suggestions
   tasks: (view: TaskViewFilter, params: { conversationId?: string; personId?: string } = {}) =>

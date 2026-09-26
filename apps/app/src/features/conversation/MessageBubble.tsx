@@ -1,10 +1,11 @@
 import type { MessageView } from '@caishy/core/api';
 import { formatBytes, formatClock, systemText } from '@caishy/core/format';
 import { Image } from 'expo-image';
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
+import { type Translation, useTranslations } from '@/features/assist/translations';
 import { KitCard } from '@/features/kits/KitCard';
 import { stickerById } from '@/features/stickers/pack';
 import { linkify, openLink } from '@/lib/links';
@@ -18,6 +19,7 @@ import {
   CornerUpLeft,
   FileText,
   Forward,
+  Languages,
   MapPin,
   Smile,
   UserRound,
@@ -74,6 +76,64 @@ function DeliveryIcon({
   }
 }
 
+/** A translation the reader asked for, under the original and labelled as Caishy's (R17). */
+function TranslationBlock({
+  id,
+  value,
+  fg,
+  meta,
+}: {
+  id: string;
+  value: Translation;
+  fg: string;
+  meta: string;
+}) {
+  const t = useTheme();
+  const hide = () => useTranslations.getState().hide(id);
+  return (
+    <View
+      testID="message-translation"
+      accessibilityLiveRegion="polite"
+      style={{
+        marginTop: 6,
+        paddingTop: 6,
+        borderTopWidth: 1,
+        borderTopColor: t.c.border,
+        gap: 2,
+      }}
+    >
+      {value.state === 'loading' ? (
+        <Text variant="caption" color={meta}>
+          Translating…
+        </Text>
+      ) : value.state === 'failed' ? (
+        <Text variant="caption" color="danger">
+          {value.error}
+        </Text>
+      ) : (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Languages size={12} color={meta} />
+            <Text variant="caption" color={meta} style={{ fontSize: 11 }}>
+              {value.language} · {value.label}
+            </Text>
+          </View>
+          <Text variant="message" color={fg} selectable auto={value.text}>
+            {value.text}
+          </Text>
+        </>
+      )}
+      {value.state !== 'loading' ? (
+        <Pressable accessibilityRole="button" onPress={hide} hitSlop={6}>
+          <Text variant="captionStrong" color={meta} style={{ fontSize: 11 }}>
+            Hide translation
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 export const MessageBubble = memo(function MessageBubble({
   m,
   mine,
@@ -91,6 +151,27 @@ export const MessageBubble = memo(function MessageBubble({
 }: BubbleProps) {
   const t = useTheme();
   const meId = useSession((s) => s.user?.id ?? null);
+  const translation = useTranslations((s) => s.byId[m.id]);
+  // Hover actions (web) sit beside the bubble, not inside it: a pressable inside another ends
+  // the outer one's hover, which took the buttons away just as the pointer reached them. Moving
+  // from the bubble to the buttons gets a moment's grace.
+  const [hover, setHover] = useState(false);
+  const hideHover = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverIn = () => {
+    if (hideHover.current) clearTimeout(hideHover.current);
+    hideHover.current = null;
+    setHover(true);
+  };
+  const hoverOut = () => {
+    if (hideHover.current) clearTimeout(hideHover.current);
+    hideHover.current = setTimeout(() => setHover(false), 150);
+  };
+  useEffect(
+    () => () => {
+      if (hideHover.current) clearTimeout(hideHover.current);
+    },
+    [],
+  );
   const r = t.radii.bubble;
   const tail = t.radii.bubbleTail;
   const deleted = m.deletedAt !== null;
@@ -349,14 +430,7 @@ export const MessageBubble = memo(function MessageBubble({
           {senderName}
         </Text>
       ) : null}
-      <Pressable
-        accessibilityRole="text"
-        accessibilityLabel={accessibleText}
-        accessibilityHint="Double tap and hold for actions"
-        onLongPress={() => onLongPress?.(m)}
-        onPress={delivery === 'failed' ? () => onRetry?.(m) : undefined}
-        delayLongPress={300}
-        focusRadius={r}
+      <View
         style={{
           maxWidth: '82%',
           flexDirection: mine ? 'row-reverse' : 'row',
@@ -364,62 +438,78 @@ export const MessageBubble = memo(function MessageBubble({
           gap: 6,
         }}
       >
-        {({ hovered }) => (
-          <>
-            {sticker ? (
-              <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
-                <Character
-                  name={sticker.character}
-                  expression={sticker.expression}
-                  size={132}
-                  label={sticker.label}
-                />
-                <Text variant="caption" color="textTertiary" style={{ fontSize: 11 }}>
-                  {time}
-                </Text>
-              </View>
-            ) : (
-              <View
-                style={{
-                  backgroundColor: bg,
-                  paddingHorizontal: 12,
-                  paddingTop: card ? 10 : 8,
-                  paddingBottom: 6,
-                  flexShrink: 1,
-                  ...(card ? { borderWidth: 1, borderColor: t.c.border } : {}),
-                  ...radius,
-                }}
-              >
-                {reply}
-                {content}
-                {metaRow}
-              </View>
-            )}
-            {hovered && !deleted && onReply ? (
-              <View style={{ flexDirection: mine ? 'row-reverse' : 'row', gap: 2 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Reply"
-                  onPress={() => onReply(m)}
-                  hitSlop={6}
-                  style={{ padding: 6, borderRadius: 16, backgroundColor: t.c.surface }}
-                >
-                  <CornerUpLeft size={16} color={t.c.textSecondary} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="React"
-                  onPress={() => onLongPress?.(m)}
-                  hitSlop={6}
-                  style={{ padding: 6, borderRadius: 16, backgroundColor: t.c.surface }}
-                >
-                  <Smile size={16} color={t.c.textSecondary} />
-                </Pressable>
-              </View>
-            ) : null}
-          </>
-        )}
-      </Pressable>
+        <Pressable
+          accessibilityRole="text"
+          accessibilityLabel={accessibleText}
+          accessibilityHint="Double tap and hold for actions"
+          onLongPress={() => onLongPress?.(m)}
+          onPress={delivery === 'failed' ? () => onRetry?.(m) : undefined}
+          onHoverIn={hoverIn}
+          onHoverOut={hoverOut}
+          delayLongPress={300}
+          focusRadius={r}
+          style={{ flexShrink: 1 }}
+        >
+          {sticker ? (
+            <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
+              <Character
+                name={sticker.character}
+                expression={sticker.expression}
+                size={132}
+                label={sticker.label}
+              />
+              <Text variant="caption" color="textTertiary" style={{ fontSize: 11 }}>
+                {time}
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                backgroundColor: bg,
+                paddingHorizontal: 12,
+                paddingTop: card ? 10 : 8,
+                paddingBottom: 6,
+                flexShrink: 1,
+                ...(card ? { borderWidth: 1, borderColor: t.c.border } : {}),
+                ...radius,
+              }}
+            >
+              {reply}
+              {content}
+              {translation && !deleted ? (
+                <TranslationBlock id={m.id} value={translation} fg={fg} meta={meta} />
+              ) : null}
+              {metaRow}
+            </View>
+          )}
+        </Pressable>
+        {hover && !deleted && onReply ? (
+          <View style={{ flexDirection: mine ? 'row-reverse' : 'row', gap: 2 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reply"
+              onPress={() => onReply(m)}
+              onHoverIn={hoverIn}
+              onHoverOut={hoverOut}
+              hitSlop={6}
+              style={{ padding: 6, borderRadius: 16, backgroundColor: t.c.surface }}
+            >
+              <CornerUpLeft size={16} color={t.c.textSecondary} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="React"
+              onPress={() => onLongPress?.(m)}
+              onHoverIn={hoverIn}
+              onHoverOut={hoverOut}
+              hitSlop={6}
+              style={{ padding: 6, borderRadius: 16, backgroundColor: t.c.surface }}
+            >
+              <Smile size={16} color={t.c.textSecondary} />
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
       {m.reactions.length ? (
         <View
           style={{

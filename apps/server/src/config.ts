@@ -35,9 +35,11 @@ const Env = z.object({
   VAPID_SUBJECT: z.string().default('mailto:hello@caishy.com'),
   /** Expo push access token (mobile push). */
   EXPO_ACCESS_TOKEN: z.string().optional(),
-  /** AI assist (Anthropic). */
+  /** AI assist (Anthropic). Off without a key; each person still turns it on for themselves. */
   ANTHROPIC_API_KEY: z.string().optional(),
-  ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
+  /** Another Messages API endpoint (a gateway, or the local stub the tests run). */
+  ANTHROPIC_BASE_URL: z.string().url().optional(),
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
 });

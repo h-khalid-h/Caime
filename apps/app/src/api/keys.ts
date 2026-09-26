@@ -1,6 +1,7 @@
 /** Query keys, in one place so realtime events invalidate exactly what they change. */
 export const qk = {
   me: ['me'] as const,
+  ai: ['ai'] as const,
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,
   conversation: (id: string) => ['conversation', id] as const,

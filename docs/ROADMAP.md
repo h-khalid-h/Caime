@@ -90,7 +90,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       order, payment request, support ticket, appointment, and polls; offered only where they fit
       the relationship, moved by the right person, live (`kits.test.ts`, E2E). [ ] Location,
       shared album and checklist kits
-- [ ] AI assist with Anthropic provider and heuristic fallback
+- [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
+      private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
+      relationship's tone), translate a message, catch me up (offered when ten or more are
+      unread), find follow-ups (filed as ordinary suggestions, never twice). Everything it writes
+      is labelled "Suggested by Caishy" and used only on a tap; the heuristics stay the default
+      and the fallback (`ai.test.ts` against a Messages API stub, E2E)
 - [x] Export and account deletion (`account.test.ts`, E2E); others keep their conversations,
       shared files and the actions they were waiting on
 - [x] Retention: disappearing messages per conversation (24 hours to 1 year), set from the
@@ -104,7 +109,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (415.2 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (415.6 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -149,3 +154,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   while a conversation's first page loaded was dropped; the app now applies live changes again
   once the page lands (unit-tested; the app has unit tests now). Tests: 125 core, 49 brand,
   86 server, 3 app, 14 E2E.
+- 2026-09-26 — Session 2 (cont.): AI assist through Claude (rewrite, translate, catch me up,
+  find follow-ups), with server-side refusal fallbacks, tested against a local stand-in for the
+  Messages API in both the server tests and E2E. Building it found four older bugs. Waiting
+  items were titled by their object alone, so "I'll confirm the caterer" became "Caterer"; only
+  hand-over verbs (send, share) are titled that way now. After a reload, a conversation took its
+  unread line from the device's stale copy, so neither "New messages" nor the catch-up offer
+  appeared; it now waits for a fresh copy. On desktop web, the Reply and React buttons beside a
+  message vanished the moment the pointer reached them (a pressable inside another ends the
+  outer one's hover), so they could never be clicked; they sit beside the bubble now. And a
+  message sent after a conversation's first page loaded but before the socket was listening was
+  never shown; the app now catches up on every connection, the first included (E2E holds the
+  socket back to prove it). Tests: 126 core, 49 brand, 93 server, 3 app, 16 E2E.
