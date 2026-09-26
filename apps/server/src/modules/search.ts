@@ -29,7 +29,7 @@ async function resolvePeople(ctx: AppContext, me: string, name: string): Promise
       eb.or([
         eb('u.display_name', 'ilike', like(name)),
         eb('s.nickname', 'ilike', like(name)),
-        sql<boolean>`u.handle::text ilike ${name.replace(/^@/, '') + '%'}`,
+        sql<boolean>`u.handle::text ilike ${`${name.replace(/^@/, '')}%`}`,
       ]),
     )
     .where((eb) =>

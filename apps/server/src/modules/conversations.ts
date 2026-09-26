@@ -829,7 +829,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m || m.kind !== 'poll' || m.deleted_at) throw notFound('That poll');
+    if (m?.kind !== 'poll' || m.deleted_at) throw notFound('That poll');
     await membership(ctx, auth.userId, m.conversation_id);
     const poll = PollPayload.parse(m.payload);
     const valid = new Set(poll.options.map((o) => o.id));

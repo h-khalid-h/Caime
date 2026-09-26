@@ -12,10 +12,13 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "assets": "node scripts/build-assets.mjs"
+    "assets": "tsx scripts/build-assets.mts"
   },
   "devDependencies": {
-    "vitest": "^5.0.2"
+    "opentype.js": "^1.3.4",
+    "sharp": "^0.35.4",
+    "vitest": "^5.0.2",
+    "tsx": "^4.23.15"
   },
   "dependencies": {
     "@caishy/core": "workspace:*"

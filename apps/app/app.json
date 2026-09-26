@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Caishy",
+    "slug": "caishy",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/brand/icon.png",
+    "scheme": "caishy",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FAF8FC",
+    "ios": {
+      "bundleIdentifier": "com.caishy.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Caishy uses the camera when you take a photo to send.",
+        "NSPhotoLibraryUsageDescription": "Caishy opens your photos when you choose one to send.",
+        "NSMicrophoneUsageDescription": "Caishy uses the microphone when you record a voice message.",
+        "NSLocationWhenInUseUsageDescription": "Caishy uses your location only when you choose to share it."
+      }
+    },
+    "android": {
+      "package": "com.caishy.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FF8FB1",
+        "foregroundImage": "./assets/brand/adaptive-foreground.png",
+        "monochromeImage": "./assets/brand/adaptive-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/brand/favicon.png",
+      "name": "Caishy",
+      "shortName": "Caishy",
+      "description": "Messaging that understands your relationships.",
+      "themeColor": "#3B2E5B",
+      "backgroundColor": "#FAF8FC"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "asyncRoutes": {
+            "web": true,
+            "default": "development"
+          }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF7E9",
+          "image": "./assets/brand/splash.png",
+          "imageWidth": 180,
+          "dark": {
+            "backgroundColor": "#120F1A",
+            "image": "./assets/brand/splash.png"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-secure-store",
+      "expo-audio",
+      "expo-localization"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
