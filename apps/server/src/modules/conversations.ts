@@ -187,7 +187,7 @@ export async function conversationView(
     title:
       conversation.kind === 'direct'
         ? conversation.is_general
-          ? (other?.person.displayName ?? 'Conversation')
+          ? (other?.person.displayName ?? 'Deleted account')
           : (conversation.title ?? 'Topic')
         : (conversation.title ?? 'Group'),
     topic: conversation.kind === 'direct' && !conversation.is_general ? conversation.title : null,

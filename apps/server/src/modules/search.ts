@@ -289,7 +289,8 @@ export async function runSearch(
         ]),
       )
       .where('status', 'in', ['open', 'accepted']);
-    if (scope === 'waiting') q = q.where('owner_id', '=', me).where('assignee_id', '<>', me);
+    if (scope === 'waiting')
+      q = q.where('owner_id', '=', me).where('assignee_id', 'is distinct from', me);
     if (personIds) {
       if (personIds.length === 0) q = q.where(sql<boolean>`false`);
       else if (parsed.direction === 'asked_me' || scope === 'tasks') {

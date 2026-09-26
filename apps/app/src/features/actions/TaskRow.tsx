@@ -8,6 +8,15 @@ import { Check } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
+/** Who the task is between, from the reader's side; null when it's only theirs. */
+export function taskWho(task: TaskView): string | null {
+  if (task.direction === 'asked_me') return `${task.owner.displayName} asked you`;
+  if (task.direction === 'mine') return null;
+  return task.assignee.id
+    ? `Waiting on ${task.assignee.displayName}`
+    : 'Waiting on a deleted account';
+}
+
 export const TaskRow = memo(function TaskRow({
   task,
   now,
@@ -24,12 +33,7 @@ export const TaskRow = memo(function TaskRow({
   const t = useTheme();
   const done = task.status === 'done';
   const overdue = !done && task.dueAt !== null && Date.parse(task.dueAt) < now.getTime();
-  const who =
-    task.direction === 'asked_me'
-      ? `${task.owner.displayName} asked you`
-      : task.direction === 'waiting' || task.direction === 'i_asked'
-        ? `Waiting on ${task.assignee.displayName}`
-        : null;
+  const who = taskWho(task);
   return (
     <View
       style={{

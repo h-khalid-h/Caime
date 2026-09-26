@@ -128,3 +128,26 @@ test('a signed-out visitor lands on the welcome page with no errors', async ({ b
   expect(errors).toEqual([]);
   await context.close();
 });
+
+test('a person can download their data and delete their account from settings', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const { page, errors } = await newPerson(context);
+  const handle = `leaving.${stamp}`;
+  await signUp(page, 'Leaving Soon', handle);
+  await onboard(page, 'leaving', false);
+  await page.getByTestId('tab-you').click();
+  await page.getByTestId('settings-security').click();
+  const download = page.waitForEvent('download');
+  await page.getByText('Download your data').click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^caishy-export-\d{4}-\d{2}-\d{2}\.json$/);
+  await page.getByTestId('delete-account').click();
+  await page.getByLabel('Your password').fill('a long enough passphrase');
+  await page.getByTestId('delete-confirm').click();
+  await page.waitForURL('**/welcome');
+  await expect(page.getByText('Your account is deleted.', { exact: false })).toBeVisible();
+  expect(errors).toEqual([]);
+  await context.close();
+});

@@ -6,6 +6,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useMemory } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { taskWho } from '@/features/actions/TaskRow';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -56,11 +57,7 @@ function TaskLine({ task, onToggle }: { task: TaskView; onToggle: (t: TaskView) 
           {task.title}
         </Text>
         <Text variant="caption" color="textSecondary">
-          {task.direction === 'waiting' || task.direction === 'i_asked'
-            ? `Waiting on ${task.assignee.displayName}`
-            : task.direction === 'asked_me'
-              ? `${task.owner.displayName} asked you`
-              : 'Yours'}
+          {taskWho(task) ?? 'Yours'}
           {task.dueAt ? ` · ${formatDue(task.dueAt, now, timeZone, locale)}` : ''}
         </Text>
       </View>

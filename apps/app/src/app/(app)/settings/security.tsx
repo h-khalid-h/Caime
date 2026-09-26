@@ -8,11 +8,14 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { API_URL, isWeb } from '@/lib/config';
 import { useNow, useUserClock } from '@/lib/time';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Laptop, Monitor, Smartphone } from '@/ui/icons';
+import { FileText, Laptop, Monitor, Smartphone, Trash } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
+import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -35,6 +38,29 @@ export default function Security() {
   const [pwError, setPwError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [codes, setCodes] = useState<string[] | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const deleteAccount = async () => {
+    if (!confirm) {
+      setDeleteError('Enter your password.');
+      return;
+    }
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await endpoints.deleteAccount(confirm);
+      setDeleting(false);
+      await useSession.getState().signOut({ remote: false });
+      toast('Your account is deleted. Thank you for trying Caishy.');
+    } catch (e) {
+      setDeleteError((e as Error).message);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const changePassword = async () => {
     const err = passwordError(next);
@@ -165,6 +191,64 @@ export default function Security() {
           </Text>
         </View>
       </Group>
+      <Group
+        title="Your data"
+        footer="The download has your profile, how you label people, your rules, connections, the messages you sent, your actions and files."
+      >
+        <ListRow
+          icon={FileText}
+          title="Download your data"
+          subtitle={isWeb ? 'A JSON file, ready at once' : 'Open Caishy on the web to download it'}
+          onPress={
+            isWeb
+              ? () => {
+                  window.location.href = `${API_URL}/v1/me/export`;
+                }
+              : undefined
+          }
+        />
+        <View style={{ borderTopWidth: 1, borderTopColor: t.c.border }}>
+          <ListRow
+            icon={Trash}
+            title="Delete your account"
+            destructive
+            onPress={() => setDeleting(true)}
+            testID="delete-account"
+          />
+        </View>
+      </Group>
+      <Sheet
+        open={deleting}
+        onClose={() => setDeleting(false)}
+        title="Delete your account?"
+        footer={
+          <Button
+            label="Delete my account"
+            variant="danger"
+            block
+            size="lg"
+            loading={deleteBusy}
+            onPress={deleteAccount}
+            testID="delete-confirm"
+          />
+        }
+      >
+        <Text variant="body">This can’t be undone. Deleting your account:</Text>
+        <Text variant="body" color="textSecondary">
+          • removes your profile, how you label people, your rules, suggestions, actions and
+          devices, and the files only you can see{'\n'}• ends your connections{'\n'}• leaves the
+          messages you sent in other people’s conversations, shown as from a deleted account. Delete
+          any you’d rather not leave first.
+        </Text>
+        <TextField
+          label="Your password"
+          secret
+          value={confirm}
+          onChangeText={setConfirm}
+          error={deleteError}
+          autoComplete="current-password"
+        />
+      </Sheet>
     </SettingsPage>
   );
 }

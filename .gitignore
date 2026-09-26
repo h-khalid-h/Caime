@@ -21,3 +21,5 @@ playwright-report/
 test-results/
 
 e2e/screenshots/
+# native bundle exports (expo export --platform ios|android)
+apps/app/dist-native/

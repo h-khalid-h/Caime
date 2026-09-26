@@ -17,6 +17,7 @@ import { Bus } from './lib/bus';
 import { AppError } from './lib/errors';
 import { startWorkers } from './lib/jobs';
 import { RateLimiter } from './lib/rate-limit';
+import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
 import { authRoutes } from './modules/auth';
 import { connectionRoutes } from './modules/connections';
@@ -152,6 +153,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     async (v1) => {
       await healthRoutes(v1, ctx);
       await authRoutes(v1, ctx);
+      await accountRoutes(v1, ctx);
       await meRoutes(v1, ctx);
       await peopleRoutes(v1, ctx);
       await connectionRoutes(v1, ctx);

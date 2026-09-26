@@ -249,7 +249,7 @@ export async function buildInbox(
       title:
         r.kind === 'direct'
           ? r.is_general
-            ? (other?.displayName ?? 'Conversation')
+            ? (other?.displayName ?? 'Deleted account')
             : (r.title ?? 'Topic')
           : (r.title ?? 'Group'),
       topic: r.kind === 'direct' && !r.is_general ? r.title : null,

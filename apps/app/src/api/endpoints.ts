@@ -29,7 +29,7 @@ import type {
   TaxonomyResponse,
 } from '@caishy/core/api';
 import type { Sphere } from '@caishy/core/taxonomy';
-import { api } from './client';
+import { api, request } from './client';
 
 type Ok = { ok: true };
 const q = (params: Record<string, string | number | boolean | null | undefined>) => {
@@ -97,6 +97,7 @@ export const endpoints = {
   }) => api.post<AuthResponse>('/auth/recover', body),
 
   me: () => api.get<{ user: MeView }>('/me'),
+  deleteAccount: (password: string) => request<Ok>('DELETE', '/me', { body: { password } }),
   updateMe: (patch: Record<string, unknown>) => api.patch<{ user: MeView }>('/me', patch),
   updatePrivacy: (body: Record<string, unknown>) =>
     api.put<{ privacy: MeView['privacy'] }>('/me/privacy', body),

@@ -382,7 +382,8 @@ export interface TaskView {
   direction: TaskDirection;
   shared: boolean;
   owner: { id: string; displayName: string };
-  assignee: { id: string; displayName: string };
+  /** `id` is null when the person it waited on deleted their account. */
+  assignee: { id: string | null; displayName: string };
   dueAt: string | null;
   dueHasTime: boolean;
   remindAt: string | null;

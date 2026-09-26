@@ -360,7 +360,7 @@ export type TaskStatus = 'open' | 'accepted' | 'declined' | 'done' | 'cancelled'
 export interface TasksTable {
   id: string;
   owner_id: string;
-  assignee_id: string;
+  assignee_id: string | null;
   shared: Defaulted<boolean>;
   title: string;
   notes: string | null;

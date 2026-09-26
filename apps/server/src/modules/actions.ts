@@ -37,8 +37,15 @@ export function directionOf(
   return 'asked_me';
 }
 
+/** Who hears about a change: the owner, and the assignee when it was shared with them. */
+function audienceOf(t: Pick<Task, 'owner_id' | 'assignee_id' | 'shared'>): string[] {
+  return t.shared && t.assignee_id ? [t.owner_id, t.assignee_id] : [t.owner_id];
+}
+
 export async function taskViews(ctx: AppContext, rows: Task[], me: string): Promise<TaskView[]> {
-  const userIds = [...new Set(rows.flatMap((t) => [t.owner_id, t.assignee_id]))];
+  const userIds = [
+    ...new Set(rows.flatMap((t) => (t.assignee_id ? [t.owner_id, t.assignee_id] : [t.owner_id]))),
+  ];
   const messageIds = rows.map((t) => t.message_id).filter((x): x is string => Boolean(x));
   const [users, messages] = await Promise.all([
     userIds.length
@@ -64,7 +71,9 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
       direction: directionOf(t, me),
       shared: t.shared,
       owner: { id: t.owner_id, displayName: name(t.owner_id) },
-      assignee: { id: t.assignee_id, displayName: name(t.assignee_id) },
+      assignee: t.assignee_id
+        ? { id: t.assignee_id, displayName: name(t.assignee_id) }
+        : { id: null, displayName: 'Deleted account' },
       dueAt: t.due_at?.toISOString() ?? null,
       dueHasTime: t.due_has_time,
       remindAt: t.remind_at?.toISOString() ?? null,
@@ -153,7 +162,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       case 'waiting':
         query = query
           .where('owner_id', '=', me)
-          .where('assignee_id', '<>', me)
+          .where('assignee_id', 'is distinct from', me)
           .where('status', 'in', open);
         break;
       case 'asked_me':
@@ -165,7 +174,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       case 'i_asked':
         query = query
           .where('owner_id', '=', me)
-          .where('assignee_id', '<>', me)
+          .where('assignee_id', 'is distinct from', me)
           .where('shared', '=', true)
           .where('status', 'in', open);
         break;
@@ -197,7 +206,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         sql<number>`count(*) filter (where assignee_id = ${me} and status in ('open','accepted'))::int`.as(
           'todo',
         ),
-        sql<number>`count(*) filter (where owner_id = ${me} and assignee_id <> ${me} and status in ('open','accepted'))::int`.as(
+        sql<number>`count(*) filter (where owner_id = ${me} and assignee_id is distinct from ${me} and status in ('open','accepted'))::int`.as(
           'waiting',
         ),
         sql<number>`count(*) filter (where assignee_id = ${me} and owner_id <> ${me} and shared and status in ('open','accepted'))::int`.as(
@@ -359,8 +368,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       taskId: id,
       status: updated.status,
     });
-    const audience = t.shared ? [t.owner_id, t.assignee_id] : [t.owner_id];
-    await ctx.bus.publish(audience, { type: 'task.updated', data: { id } });
+    await ctx.bus.publish(audienceOf(t), { type: 'task.updated', data: { id } });
     if (t.shared && body.status && !isOwner) {
       // The person who asked hears back; their waiting item resolves with it (R13).
       const who = await ctx.db
@@ -395,7 +403,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     if (t.owner_id !== auth.userId)
       throw forbidden('Only the person who created this can delete it.');
     await ctx.db.deleteFrom('tasks').where('id', '=', id).execute();
-    await ctx.bus.publish(t.shared ? [t.owner_id, t.assignee_id] : [t.owner_id], {
+    await ctx.bus.publish(audienceOf(t), {
       type: 'task.deleted',
       data: { id },
     });
