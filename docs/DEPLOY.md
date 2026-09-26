@@ -17,14 +17,20 @@ Deployed 2026-09-26 on EasyPanel.
 | --- | --- |
 | Public URL | https://caishy-caishy.0hqwb7.easypanel.host (EasyPanel's default service domain, HTTPS) |
 | Project | `caishy` |
-| Services | `caishy` (app, image `ghcr.io/h-khalid-h/caishy:latest`, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
+| Services | `caishy` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
+| Source | **GitHub** `h-khalid-h/Caishy`, branch `main`, built by EasyPanel from the `Dockerfile` (image `easypanel/caishy/caishy:latest`) |
+| Auto deploy | On: every push to `main` rebuilds and redeploys `caishy`. The old container serves until the new one passes its `/v1/readyz` health check. |
 | Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN` (set in EasyPanel only); no `ANTHROPIC_API_KEY`, so AI assist is off |
 
-Verified after the deploy: `/v1/readyz` answers `{"ok":true}`, `/` serves the web app with its
-Content-Security-Policy (`connect-src` allows `wss://` on the public origin) and
-`x-content-type-options: nosniff`, and a throwaway account signed up and deleted itself through
-the API. Continuous deployment still needs the service's deploy webhook stored as the
-`EASYPANEL_DEPLOY_WEBHOOK` repository secret (below).
+Verified after the deploy (first on the published image, then again on the GitHub build):
+`/v1/readyz` answers `{"ok":true}`, `/` serves the web app with its Content-Security-Policy
+(`connect-src` allows `wss://` on the public origin) and `x-content-type-options: nosniff`, and a
+throwaway account signed up and deleted itself through the API.
+
+Auto deploy builds from GitHub, so a push reaches production without waiting for CI. That's why
+`EASYPANEL_DEPLOY_WEBHOOK` stays unset for this service: with it, CI's deploy step would only
+trigger a second, redundant rebuild. To deploy only what CI passed instead, switch the source back
+to the image `ghcr.io/h-khalid-h/caishy:latest`, turn auto deploy off, and set the secret (below).
 
 ## EasyPanel
 
