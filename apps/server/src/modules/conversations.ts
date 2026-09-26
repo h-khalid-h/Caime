@@ -21,6 +21,10 @@ import {
   KITS,
   kitMoves,
   kitStateLabel,
+  type LiveLocation,
+  LiveLocationUpdate,
+  type LocationPayloadT,
+  liveNow,
   MembersBody,
   PollPayload,
   ReactionBody,
@@ -925,6 +929,74 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
    * or made the list, changes or removes it. Changes are applied one at a time (the card's row is
    * locked), so two people ticking at once never undo each other.
    */
+  /**
+   * A live location moves with its sharer, and only theirs: only the latest point is kept, never
+   * a trail. It stops at the time they chose, or when they stop it.
+   */
+  async function moveLiveLocation(
+    id: string,
+    userId: string,
+    change: (card: LocationPayloadT & { live: LiveLocation }, at: Date) => Record<string, unknown>,
+  ) {
+    const found = await ctx.db
+      .selectFrom('messages')
+      .select('conversation_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!found) throw notFound('That message');
+    await membership(ctx, userId, found.conversation_id);
+    await assertCanWrite(ctx, found.conversation_id, userId);
+    const updated = await ctx.db.transaction().execute(async (trx) => {
+      const m = await trx
+        .selectFrom('messages')
+        .selectAll()
+        .where('id', '=', id)
+        .forUpdate()
+        .executeTakeFirstOrThrow();
+      const card = (m.payload ?? {}) as LocationPayloadT & { live?: LiveLocation };
+      if (m.kind !== 'location' || m.deleted_at || !card.live)
+        throw badRequest('That isn’t a live location.');
+      if (m.sender_id !== userId) throw forbidden('Only whoever is sharing it can change it.');
+      const at = ctx.now();
+      if (!liveNow(card.live, at))
+        throw new AppError(409, 'location_ended', 'This live location has ended.');
+      return trx
+        .updateTable('messages')
+        .set({ payload: JSON.stringify(change({ ...card, live: card.live }, at)) })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+    });
+    const members = (await participantsOf(ctx.db, found.conversation_id)).map((p) => p.user_id);
+    const [view] = await messageViews(ctx.db, [updated], userId);
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    return { message: view! };
+  }
+
+  app.post('/messages/:id/location', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const point = parse(LiveLocationUpdate, req.body);
+    // A moving phone reports often; every few seconds is plenty for the people watching.
+    ctx.limiter.hit(`live-location:${id}`, ctx.config.isTest ? 1000 : 1, 2_000);
+    return moveLiveLocation(id, auth.userId, (card, at) => ({
+      ...card,
+      lat: point.lat,
+      lng: point.lng,
+      accuracy: point.accuracy,
+      live: { ...card.live, updatedAt: at.toISOString() },
+    }));
+  });
+
+  app.post('/messages/:id/location/stop', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return moveLiveLocation(id, auth.userId, (card, at) => ({
+      ...card,
+      live: { ...card.live, stoppedAt: at.toISOString() },
+    }));
+  });
+
   app.post('/messages/:id/checklist', async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);

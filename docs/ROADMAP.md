@@ -136,7 +136,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       right now, shared once and never by under-18s (`kits.test.ts`, `checklists.test.ts`, E2E).
       Albums everyone in the conversation adds photos to, newest first, seen only by the people
       in it; whoever added a photo, or made the album, takes it out, and its maker closes it
-      (`albums.test.ts`, E2E). [ ] Live location
+      (`albums.test.ts`, E2E). Where you are, live for 15 minutes, an hour or 8 hours: it follows
+      its sharer while Caishy is open, keeps only the latest point, and ends at its time or when
+      they stop it; the sharer always sees it's on. Never by anyone under 18, never with an
+      organization (`live-location.test.ts`, E2E)
 - [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
       private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
       relationship's tone), translate a message, catch me up (offered when ten or more are
@@ -173,7 +176,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (431.2 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (434.3 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -351,3 +354,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   duplicate; the test now waits for it. Local test runs could also fail at the end of a file
   when an autovacuum worker was in its database, which the local role may not end; dropping
   waits it out. Tests: 148 core, 49 brand, 168 server, 8 app, 28 E2E.
+- 2026-09-26 — Session 2 (cont.): live location. After finding where you are, you choose just now,
+  or live for 15 minutes, an hour or 8 hours. The server keeps the clock; only the sharer moves
+  it, from their device while Caishy is open, and only the latest point is kept, never a trail. A
+  pill says "Sharing your location live · until 6:04 PM" wherever they are in the app, with
+  Stop, and the card has Stop sharing too. Under-18s can't share one and it's never shared with
+  an organization. Tests: 149 core, 49 brand, 171 server, 8 app, 29 E2E.

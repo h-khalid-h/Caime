@@ -7,6 +7,7 @@ import {
   prepareKitFields,
 } from './kit-cards';
 import { kitsFor } from './kits';
+import { liveNow } from './location';
 import { LocationPayload } from './schemas';
 
 const noor = { userId: 'noor', isCreator: true };
@@ -95,8 +96,28 @@ describe('locations (R29)', () => {
     expect(LocationPayload.safeParse({ label: 'Café Riche, Downtown' }).success).toBe(true);
     expect(LocationPayload.safeParse({ lat: 30.04 }).success).toBe(false);
     expect(LocationPayload.safeParse({}).success).toBe(false);
-    // One moment, shared on purpose: there's no live location.
+    // Live, it says for how long, and starts from where they are.
+    expect(LocationPayload.safeParse({ lat: 1, lng: 2, live: { minutes: 60 } }).success).toBe(true);
     expect(LocationPayload.safeParse({ lat: 1, lng: 2, live: true }).success).toBe(false);
+    expect(LocationPayload.safeParse({ lat: 1, lng: 2, live: { minutes: 1440 } }).success).toBe(
+      false,
+    );
+    expect(LocationPayload.safeParse({ label: 'Home', live: { minutes: 15 } }).success).toBe(false);
+  });
+
+  it('are live only until their time, or until the sharer stops', () => {
+    const live = {
+      startedAt: '2026-09-26T10:00:00Z',
+      until: '2026-09-26T11:00:00Z',
+      updatedAt: '2026-09-26T10:30:00Z',
+      stoppedAt: null,
+    };
+    expect(liveNow(live, new Date('2026-09-26T10:59:00Z'))).toBe(true);
+    expect(liveNow(live, new Date('2026-09-26T11:00:00Z'))).toBe(false);
+    expect(
+      liveNow({ ...live, stoppedAt: '2026-09-26T10:40:00Z' }, new Date('2026-09-26T10:45:00Z')),
+    ).toBe(false);
+    expect(liveNow(null, new Date())).toBe(false);
   });
 
   it('are never offered to anyone under 18', () => {

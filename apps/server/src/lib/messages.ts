@@ -13,6 +13,7 @@ import {
   KIT_MODES,
   kitHeadline,
   kitsFor,
+  LocationPayload,
   type MessageView,
   type Mode,
   prepareKitFields,
@@ -495,6 +496,24 @@ export async function sendMessage(
       history: [],
     };
     kitMode = KIT_MODES[card.kit];
+  }
+  // Live, a location follows its sharer until the time they chose; the server keeps the clock.
+  if (body.kind === 'location') {
+    const place = LocationPayload.parse(body.payload);
+    if (place.live) {
+      if (conversation.kind === 'business')
+        throw badRequest('Live location is for people you know, not organizations.');
+      const at = ctx.now();
+      payload = {
+        ...place,
+        live: {
+          startedAt: at.toISOString(),
+          until: new Date(at.getTime() + place.live.minutes * 60_000).toISOString(),
+          updatedAt: at.toISOString(),
+          stoppedAt: null,
+        },
+      };
+    }
   }
 
   const mode =

@@ -277,6 +277,11 @@ export const endpoints = {
   // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
   messageOrg: (orgId: string) =>
     api.post<{ conversationId: string; created: boolean }>(`/orgs/${orgId}/conversations`),
+  // Live location (R29): the sharer's device moves it; only they stop it
+  moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
+    api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),
+  stopLocation: (messageId: string) =>
+    api.post<{ message: MessageView }>(`/messages/${messageId}/location/stop`),
   /** Someone on the team writes to a person first: a message request to them (R14). */
   startThread: (orgId: string, body: { handle: string; body: string; clientId: string }) =>
     api.post<StartThreadResult>(`/orgs/${orgId}/threads`, body),

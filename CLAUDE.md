@@ -142,6 +142,10 @@ These are rules, not preferences.
 - E2E verifies organizations' domains for real: `e2e/dns-stub.mjs` answers the server's TXT
   lookups (`DNS_SERVERS`), and `publishTxt()` (`e2e/helpers.ts`) publishes a record. A verified
   domain belongs to one organization, so a test uses a domain of its own each run.
+- Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
+  `packages/core/src/location.ts`, no zod, so the app can import it). The app's
+  `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
+  `state/liveShares.ts` and shows the "Sharing your location live" pill.
 - A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
   and its Undo can't be pressed. Anything else that must show over a sheet goes inside it.

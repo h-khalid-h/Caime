@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { BusinessInbox } from '@/features/business/BusinessInbox';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
+import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
 import { PeopleList } from '@/features/people/PeopleList';
 import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { NavRail } from '@/features/shell/NavRail';
@@ -37,6 +38,7 @@ export default function AppLayout() {
       <>
         <DesktopShell />
         <KeyboardShortcuts />
+        <LiveLocationSharer />
       </>
     );
   return (
@@ -46,6 +48,7 @@ export default function AppLayout() {
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
       </Stack>
       <KeyboardShortcuts />
+      <LiveLocationSharer />
     </>
   );
 }

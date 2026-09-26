@@ -15,6 +15,7 @@ import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
 import { DEFAULT_PREFS, usePrefs } from '@/theme/prefs';
 import { useLive } from './live';
+import { useLiveShares } from './liveShares';
 import { useOutbox } from './outbox';
 
 const USER_KEY = 'caishy.user';
@@ -142,6 +143,7 @@ export const useSession = create<SessionState>((set, get) => ({
     queryClient.clear();
     await persister.removeClient();
     useOutbox.getState().clear();
+    useLiveShares.getState().clear();
     useLive.getState().reset();
     usePrefs.getState().set(DEFAULT_PREFS);
     set({ status: 'signedOut', user: null, freshRecoveryCodes: null });

@@ -13,11 +13,13 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useUserClock } from '@/lib/time';
 import { applyMessageToInbox, upsertMessage } from '@/state/cache';
+import { useLiveShares } from '@/state/liveShares';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { MapPin, Plus } from '@/ui/icons';
+import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
@@ -117,6 +119,8 @@ export function KitForm({
   // Location: where the device says this person is, once, when they ask.
   const [spot, setSpot] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  // Or live, for a while: it follows them until then, while Caishy is open (R29).
+  const [liveFor, setLiveFor] = useState<'0' | '15' | '60' | '480'>('0');
 
   const close = () => {
     setTexts({});
@@ -125,6 +129,7 @@ export function KitForm({
     setMultiple(false);
     setError(null);
     setSpot(null);
+    setLiveFor('0');
     onClose();
   };
 
@@ -159,7 +164,14 @@ export function KitForm({
     if (kit === 'location') {
       const label = (texts.label ?? '').trim();
       if (!spot && !label) return setError('Share where you are, or type a place.');
-      body = { kind: 'location', payload: { ...(spot ?? {}), ...(label ? { label } : {}) } };
+      body = {
+        kind: 'location',
+        payload: {
+          ...(spot ?? {}),
+          ...(label ? { label } : {}),
+          ...(spot && liveFor !== '0' ? { live: { minutes: Number(liveFor) } } : {}),
+        },
+      };
     } else if (kit === 'poll') {
       const question = (texts.question ?? '').trim();
       const choices = options.map((o) => o.trim()).filter(Boolean);
@@ -200,6 +212,11 @@ export function KitForm({
       const { message } = await endpoints.send(conversation.id, { clientId: uuidv4(), ...body });
       upsertMessage(qc, message);
       applyMessageToInbox(qc, message, { mine: true, reading: true });
+      const live = (message.payload as { live?: { until: string } }).live;
+      if (message.kind === 'location' && live)
+        useLiveShares
+          .getState()
+          .start(message.id, { conversationId: conversation.id, until: live.until });
       close();
     } catch (e) {
       setError((e as Error).message);
@@ -229,7 +246,9 @@ export function KitForm({
       {kit === 'location' ? (
         <View style={{ gap: 12 }}>
           <Text variant="caption" color="textSecondary">
-            Only this moment is shared, never where you go after.
+            {liveFor === '0' || !spot
+              ? 'Only this moment is shared, never where you go after.'
+              : 'Where you are follows here until then, while Caishy is open. Stop it any time; only the latest point is kept.'}
           </Text>
           {spot ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -239,6 +258,19 @@ export function KitForm({
               </Text>
               <Button label="Clear" size="sm" variant="ghost" onPress={() => setSpot(null)} />
             </View>
+          ) : null}
+          {spot ? (
+            <Segmented
+              label="How long to share it"
+              value={liveFor}
+              onChange={setLiveFor}
+              options={[
+                { value: '0', label: 'Just now' },
+                { value: '15', label: '15 min' },
+                { value: '60', label: '1 hour' },
+                { value: '480', label: '8 hours' },
+              ]}
+            />
           ) : (
             <Button
               label="Use where I am now"

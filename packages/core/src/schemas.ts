@@ -276,11 +276,27 @@ export const LocationPayload = z
     lng: z.number().min(-180).max(180).optional(),
     accuracy: z.number().min(0).max(100_000).optional(),
     label: z.string().trim().max(200).optional(),
+    /** Live: the point follows the sharer until then, or until they stop it (never under 18). */
+    live: z
+      .object({ minutes: z.union([z.literal(15), z.literal(60), z.literal(480)]) })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine((p) => (p.lat === undefined) === (p.lng === undefined), 'A place needs both coordinates.')
-  .refine((p) => p.lat !== undefined || Boolean(p.label), 'Choose a place.');
+  .refine((p) => p.lat !== undefined || Boolean(p.label), 'Choose a place.')
+  .refine((p) => !p.live || p.lat !== undefined, 'A live location starts where you are.');
 export type LocationPayloadT = z.infer<typeof LocationPayload>;
+
+/** Where a live location's sharer is now; only the latest point is kept. */
+export const LiveLocationUpdate = z
+  .object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    accuracy: z.number().min(0).max(100_000).optional(),
+  })
+  .strict();
+
 const ContactPayload = z.union([
   z.object({ userId: z.string().uuid() }),
   z.object({

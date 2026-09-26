@@ -1082,4 +1082,39 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-kit-album.png' });
       expect([...errors, ...alex.errors]).toEqual([]);
     });
+
+    test('a location shared live follows its sharer until they stop', async () => {
+      const { page, errors } = noor;
+      await noorContext.setGeolocation({ latitude: 30.0444, longitude: 31.2357, accuracy: 15 });
+      await page.goto(`/c/${convo}`);
+      await alex.page.goto(`/c/${convo}`);
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await page.getByTestId('kit-option-location').click();
+      await page.getByTestId('location-here').click();
+      await expect(page.getByTestId('location-found')).toHaveText('Found you, within 15 m.');
+      await page.getByRole('tab', { name: '15 min' }).click();
+      await page.getByTestId('kit-send').click();
+
+      // Noor sees she's sharing for as long as she is, with a way to stop.
+      const sharing = page.getByTestId('live-location-sharing');
+      await expect(sharing).toContainText('Sharing your location live · until');
+      const theirs = alex.page
+        .getByTestId('message-location')
+        .filter({ hasText: 'Live location', visible: true });
+      await expect(theirs).toContainText(/Live until .+ · updated just now/);
+      await expect(theirs).toContainText('Within 15 m');
+
+      // She moves; Alex sees where she is now.
+      await noorContext.setGeolocation({ latitude: 30.0561, longitude: 31.2394, accuracy: 30 });
+      await expect(theirs).toContainText('Within 30 m');
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-live-location.png' });
+      await page.screenshot({ path: 'e2e/screenshots/desktop-live-location.png' });
+
+      // Stopped, it stays where she was last seen.
+      await page.getByTestId('live-location-stop').click();
+      await expect(sharing).toHaveCount(0);
+      await expect(theirs).toContainText(/Shared live · stopped at/);
+      await expect(theirs).toContainText('Within 30 m');
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
   });

@@ -283,7 +283,12 @@ export function messagePreview(m: {
   deleted: boolean;
 }): string {
   if (m.deleted) return 'Message deleted';
-  const payload = (m.payload ?? {}) as { question?: unknown; title?: unknown; label?: unknown };
+  const payload = (m.payload ?? {}) as {
+    question?: unknown;
+    title?: unknown;
+    label?: unknown;
+    live?: unknown;
+  };
   switch (m.kind) {
     case 'text':
       return previewText(m.body ?? '');
@@ -294,7 +299,7 @@ export function messagePreview(m: {
     case 'voice':
       return '🎙 Voice message';
     case 'location':
-      return '📍 Location';
+      return payload.live ? '📍 Live location' : '📍 Location';
     case 'contact':
       return '👤 Contact';
     case 'poll':
