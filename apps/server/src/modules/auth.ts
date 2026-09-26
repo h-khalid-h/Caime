@@ -397,6 +397,13 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', user.id)
       .where('revoked_at', 'is', null)
       .execute();
+    // Someone who lost their account may not be the one who made its tokens: they go too.
+    await ctx.db
+      .updateTable('personal_tokens')
+      .set({ revoked_at: ctx.now() })
+      .where('user_id', '=', user.id)
+      .where('revoked_at', 'is', null)
+      .execute();
     const remaining = await ctx.db
       .selectFrom('recovery_codes')
       .select(sql<number>`count(*)::int`.as('n'))

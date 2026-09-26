@@ -3,6 +3,7 @@
  * body with these; clients use the same schemas for forms, so a rule changes in one place.
  */
 import { z } from 'zod';
+import { PERSONAL_SCOPES } from './access';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { ORG_KINDS } from './orgs';
@@ -61,6 +62,15 @@ export const SignupBody = z.object({
  */
 export const SearchOutcomeBody = z
   .object({ found: z.boolean(), ms: z.number().int().min(0).max(3_600_000) })
+  .strict();
+
+/** A personal access token: what it's for, what it may do, and for how long (days; null: until revoked). */
+export const CreatePersonalTokenBody = z
+  .object({
+    name: z.string().trim().min(1, 'Name it for what will use it.').max(60),
+    scopes: z.array(z.enum(PERSONAL_SCOPES)).min(1, 'Choose what it may do.').max(10),
+    days: z.union([z.literal(30), z.literal(90), z.literal(365), z.null()]).default(90),
+  })
   .strict();
 
 export const LoginBody = z.object({

@@ -310,6 +310,8 @@ export interface MessagesTable {
   deleted_at: NullableTimestamp;
   created_at: Generated<Date>;
   search: ColumnType<string, never, never>;
+  /** What sent it when its sender didn't type it in Caishy: their token's name, or an app's. */
+  sent_via: string | null;
 }
 
 export interface ReactionsTable {
@@ -654,6 +656,19 @@ export interface ServerSettingsTable {
   updated_at: Generated<Date>;
 }
 
+export interface PersonalTokensTable {
+  id: string;
+  user_id: string;
+  name: string;
+  scopes: string[];
+  prefix: string;
+  token_hash: Buffer;
+  expires_at: NullableTimestamp;
+  last_used_at: NullableTimestamp;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
 export interface Database {
   users: UsersTable;
   identities: IdentitiesTable;
@@ -682,6 +697,7 @@ export interface Database {
   blocks: BlocksTable;
   org_blocks: OrgBlocksTable;
   album_photos: AlbumPhotosTable;
+  personal_tokens: PersonalTokensTable;
   reports: ReportsTable;
   domain_events: DomainEventsTable;
   jobs: JobsTable;

@@ -156,8 +156,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       webhook signed with a secret shown once, retried with its deliveries listed on the app's
       sheet. The bot answers customers as the organization and every reply says "Automated";
       it never takes a conversation or counts as the team's answer (`apps.test.ts`, E2E; the
-      developer guide is `docs/API.md`). [ ] Personal access tokens, OAuth for third-party apps,
-      AI agents
+      developer guide is `docs/API.md`). Personal access tokens for people's own scripts: named,
+      with the permissions they chose and a lifetime, shown once, reaching only their messages
+      and actions and never the account itself; what they send says "via" the token
+      (`personal-tokens.test.ts`, E2E). [ ] OAuth for third-party apps, AI agents
 - [x] Plan entitlements (R23): what each plan includes lives in core and is checked on the server
       where something is added (AI assists, files, a team's people, apps). The wedge is never
       counted, and a lower plan never removes anything. You → Plan shows what's used; an
@@ -372,3 +374,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   that "answered" was decided after the response, when a quick "doesn't need me" had already
   moved the line it's measured from; it's decided as the message is sent now. Tests: 149 core,
   49 brand, 172 server, 8 app, 29 E2E.
+- 2026-09-26 — Session 2 (cont.): personal access tokens. You → Developer makes one for your own
+  scripts: a name, what it may do (read or send messages, read or change actions, see your name
+  and handle) and how long it lasts; it's shown once and only its hash is kept. It reaches only
+  the routes behind those permissions, and nothing about the account itself: not the password,
+  privacy, sessions, tokens, export or deletion. Revoked, or out of time, it stops at once;
+  recovering an account ends all of them. A message it sends shows "via" its name, so nobody
+  takes a script for someone typing. Tests: 149 core, 49 brand, 176 server, 8 app, 30 E2E.

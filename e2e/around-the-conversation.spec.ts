@@ -861,6 +861,7 @@ test.describe
         ['security', 'Security'],
         ['about', 'About Caishy'],
         ['plan', 'Plan'],
+        ['developer', 'Developer'],
         ['appearance', 'Appearance'],
       ]) {
         await page.goto(`/settings/${path}`);
@@ -1091,6 +1092,48 @@ test.describe
       await expect(theirs).toContainText('Closed');
       await expect(theirs.getByTestId('album-add')).toHaveCount(0);
       await page.screenshot({ path: 'e2e/screenshots/desktop-kit-album.png' });
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
+    test('a token of her own sends a message for Noor, and says it came through it', async () => {
+      const { page, errors } = noor;
+      await page.goto('/settings/developer');
+      await page.getByTestId('token-new').click();
+      await page.getByTestId('token-name').fill('Reminders script');
+      await page.getByTestId('token-scope-messages:write').click();
+      await page.getByRole('tab', { name: '30 days' }).click();
+      await page.getByTestId('token-create').click();
+      const token = ((await page.getByTestId('token-value').textContent()) ?? '').trim();
+      expect(token).toMatch(/^cap_[\w-]{32}$/);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-developer-token.png' });
+      await page.getByTestId('token-done').click();
+      await expect(page.getByTestId('token-Reminders script')).toContainText('never used');
+
+      // Her script sends as her; Alex sees it came through it.
+      const sent = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+        headers: { authorization: `Bearer ${token}` },
+        data: { clientId: randomUUID(), body: 'Reminder: rehearsal at 6.' },
+      });
+      expect(sent.status()).toBe(201);
+      await alex.page.goto(`/c/${convo}`);
+      const bubble = visible(alex.page, 'Reminder: rehearsal at 6.');
+      await expect(bubble).toBeVisible();
+      await expect(
+        alex.page.getByTestId('message-sent-via').filter({ visible: true }).last(),
+      ).toHaveText('via Reminders script ·');
+      // It can't reach her account; revoked, it can't do anything.
+      const settings = await alexContext.request.patch('/v1/me', {
+        headers: { authorization: `Bearer ${token}` },
+        data: { displayName: 'Not Noor' },
+      });
+      expect(settings.status()).toBe(403);
+      await page.getByTestId('token-revoke-Reminders script').click();
+      await expect(page.getByTestId('token-Reminders script')).toHaveCount(0);
+      const after = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+        headers: { authorization: `Bearer ${token}` },
+        data: { clientId: randomUUID(), body: 'Too late.' },
+      });
+      expect(after.status()).toBe(401);
       expect([...errors, ...alex.errors]).toEqual([]);
     });
 

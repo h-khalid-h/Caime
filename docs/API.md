@@ -82,7 +82,26 @@ export function verify(secret, header, rawBody, toleranceSeconds = 300) {
 }
 ```
 
+## Acting as yourself: personal access tokens
+
+A person can make tokens for their own scripts in **You → Developer**: a name, what it may do,
+and how long it lasts (30 days, 90 days, a year, or until revoked). A token is shown once and
+starts `cap_`. Send it as `Authorization: Bearer cap_…`; it acts as that person, and a message
+it sends shows "via" the token's name.
+
+| Permission | Route | What it does |
+| --- | --- | --- |
+| `profile:read` | `GET /v1/me` | Who it acts for: id, handle, name, avatar, time zone, locale (no email, privacy or plan) |
+| `messages:read` | `GET /v1/inbox`, `GET /v1/conversations/:id`, `GET /v1/conversations/:id/messages`, `GET /v1/search?q=` | Their inbox, conversations and search |
+| `messages:write` | `POST /v1/conversations/:id/messages` | Send as them: `{ "clientId": "<uuid>", "body": "…" }` |
+| `actions:read` | `GET /v1/tasks` | Their actions and what they wait for |
+| `actions:write` | `POST /v1/tasks`, `PATCH /v1/tasks/:id` | Add, change and finish actions |
+
+Anything else answers `403` with `token_route` (or `token_scope` without the permission): a
+token never changes a password, privacy or sessions, makes tokens, exports or deletes an
+account. Revoked or expired, it answers `401`.
+
 ## Not yet
 
-Personal access tokens (acting as a person, not an organization's bot), OAuth for third-party
-apps, and webhooks for anything outside the Business inbox.
+OAuth for third-party apps (acting for someone who let them in), and webhooks for anything
+outside the Business inbox.

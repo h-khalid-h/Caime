@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import type pg from 'pg';
 import type { Config } from './config';
 import type { Database } from './db/schema';
+import type { PersonGrant } from './lib/access';
 import type { AiAssist } from './lib/ai';
 import type { Bus } from './lib/bus';
 import type { Metrics } from './lib/metrics';
@@ -33,10 +34,12 @@ export interface AppContext {
 export interface Auth {
   userId: string;
   sessionId: string;
-  kind: 'web' | 'native' | 'api';
+  kind: 'web' | 'native' | 'api' | 'token';
   via: 'cookie' | 'bearer';
   /** Set when an app's token made the request: it acts as the app's bot (lib/apps.ts). */
   app?: { id: string; orgId: string; scopes: string[] };
+  /** Set when a token acting as a person made it: theirs, or an app's they let in (lib/access.ts). */
+  grant?: PersonGrant;
 }
 
 declare module 'fastify' {

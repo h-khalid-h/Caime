@@ -376,6 +376,18 @@ export const MessageBubble = memo(function MessageBubble({
           Automated ·
         </Text>
       ) : null}
+      {m.sentVia ? (
+        // Sent through a token or an app its sender let in, not typed here (PRD §74).
+        <Text
+          variant="caption"
+          color={meta}
+          style={{ fontSize: 11 }}
+          numberOfLines={1}
+          testID="message-sent-via"
+        >
+          {`via ${m.sentVia} ·`}
+        </Text>
+      ) : null}
       {m.editedAt && !deleted ? (
         <Text variant="caption" color={meta} style={{ fontSize: 11 }}>
           edited
@@ -397,6 +409,7 @@ export const MessageBubble = memo(function MessageBubble({
   const accessibleText = [
     mine ? 'You' : (senderName ?? ''),
     m.automated ? 'automated' : '',
+    m.sentVia ? `sent via ${m.sentVia}` : '',
     deleted ? 'Message deleted' : (m.body ?? sticker?.label ?? m.kind),
     time,
     delivery && mine ? delivery : '',

@@ -24,6 +24,8 @@ export type AuditAction =
   | 'app.token_replaced'
   | 'app.secret_replaced'
   | 'app.revoked'
+  | 'token.created'
+  | 'token.revoked'
   | 'plan.changed';
 
 export async function audit(

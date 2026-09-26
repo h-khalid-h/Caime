@@ -801,7 +801,9 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(SendMessageBody, req.body);
     ctx.limiter.hit(`send:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-    const result = await sendMessage(ctx, auth.userId, id, body);
+    const result = await sendMessage(ctx, auth.userId, id, body, {
+      sentVia: auth.grant?.name ?? null,
+    });
     const [view] = await messageViews(ctx.db, [result.message], auth.userId);
     if (result.created) {
       reply.status(201);

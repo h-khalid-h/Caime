@@ -33,6 +33,7 @@ import type {
   OrgSummaryView,
   OrgView,
   PeopleSearchResult,
+  PersonalTokenView,
   PersonProfileView,
   PlanUsageView,
   PolicyView,
@@ -277,6 +278,11 @@ export const endpoints = {
   // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
   messageOrg: (orgId: string) =>
     api.post<{ conversationId: string; created: boolean }>(`/orgs/${orgId}/conversations`),
+  // Personal access tokens (PRD §74): made and revoked only while signed in
+  tokens: () => api.get<{ tokens: PersonalTokenView[] }>('/me/tokens'),
+  createToken: (body: { name: string; scopes: string[]; days: 30 | 90 | 365 | null }) =>
+    api.post<{ token: string; view: PersonalTokenView }>('/me/tokens', body),
+  revokeToken: (id: string) => api.del<Ok>(`/me/tokens/${id}`),
   // Live location (R29): the sharer's device moves it; only they stop it
   moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
     api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),

@@ -142,6 +142,10 @@ These are rules, not preferences.
 - E2E verifies organizations' domains for real: `e2e/dns-stub.mjs` answers the server's TXT
   lookups (`DNS_SERVERS`), and `publishTxt()` (`e2e/helpers.ts`) publishes a record. A verified
   domain belongs to one organization, so a test uses a domain of its own each run.
+- Tokens that act as a person reach only `PERSON_ROUTES` (`apps/server/src/lib/access.ts`),
+  checked in the auth plugin before the route runs, as app tokens reach only `API_ROUTES`. A
+  route joins the list on purpose, with its permission and a case in `personal-tokens.test.ts`;
+  nothing about the account itself ever does. `req.auth.grant` says a token made the request.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from

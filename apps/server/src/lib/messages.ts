@@ -194,6 +194,7 @@ export async function messageViews(
           }
         : null,
       forwarded: m.forwarded_from_id !== null,
+      sentVia: m.sent_via,
       urgent: m.urgent,
       isQuestion: m.is_question,
       isRequest: m.is_request,
@@ -292,6 +293,8 @@ export async function sendMessage(
   body: SendMessageBodyT,
   opts: {
     forwardedFromId?: string | null;
+    /** A token or an app sent it for its sender (PRD §74): its name, shown with the message. */
+    sentVia?: string | null;
     /** The server's own cards (task requests) are sent as built, not as a client's kit card. */
     trusted?: boolean;
   } = {},
@@ -577,6 +580,7 @@ export async function sendMessage(
           mentions,
           reply_to_id: body.replyToId ?? null,
           forwarded_from_id: opts.forwardedFromId ?? null,
+          sent_via: opts.sentVia ?? null,
           urgent: body.urgent ?? false,
           is_question: analysis?.isQuestion ?? body.kind === 'poll',
           is_request: analysis?.isRequest ?? false,

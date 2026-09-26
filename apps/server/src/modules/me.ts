@@ -19,7 +19,7 @@ import type { UserUpdate } from '../db/schema';
 import { badRequest, conflict, notFound } from '../lib/errors';
 import { handleTaken } from '../lib/handles';
 import { planUsage } from '../lib/plans';
-import { meView, privacyOf } from '../lib/users';
+import { avatarUrl, meView, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -29,7 +29,20 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/me', async (req) => {
     const auth = requireAuth(req);
-    return { user: meView(await load(auth.userId), ctx.now()) };
+    const user = await load(auth.userId);
+    // A token sees who it acts for, not their email, privacy or plan (PRD §74).
+    if (auth.grant)
+      return {
+        user: {
+          id: user.id,
+          handle: user.handle,
+          displayName: user.display_name,
+          avatarUrl: avatarUrl(user),
+          timeZone: user.time_zone,
+          locale: user.locale,
+        },
+      };
+    return { user: meView(user, ctx.now()) };
   });
 
   /** Your plan, and what you've used of it today. */

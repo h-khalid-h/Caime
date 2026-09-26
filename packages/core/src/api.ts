@@ -274,6 +274,8 @@ export interface MessageView {
   poll: { counts: Record<string, number>; mine: string[]; voters: number } | null;
   /** A shared album card: how many photos, and the latest few (PRD §41). */
   album: AlbumView | null;
+  /** Sent through a token or an app its sender let act for them, not typed in Caishy: its name. */
+  sentVia: string | null;
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
@@ -1024,3 +1026,15 @@ export type RealtimeFrame =
   | { type: 'hello'; userId: string; serverTime: string }
   | { type: 'pong'; serverTime: string }
   | { type: 'event'; event: RealtimeEvent };
+
+/** A personal access token, as its owner sees it: never the token itself after it's made. */
+export interface PersonalTokenView {
+  id: string;
+  name: string;
+  scopes: string[];
+  /** The first characters, to tell tokens apart. */
+  prefix: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+}

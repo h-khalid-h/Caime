@@ -13,6 +13,7 @@ import {
   Gauge,
   Info,
   Keyboard,
+  KeyRound,
   Lock,
   LogOut,
   Palette,
@@ -65,6 +66,13 @@ const ITEMS: Array<{
     icon: Shield,
     title: 'Security',
     subtitle: 'Devices, password, recovery codes',
+  },
+  {
+    href: '/settings/developer',
+    path: '/settings/developer',
+    icon: KeyRound,
+    title: 'Developer',
+    subtitle: 'Access tokens for your own scripts',
   },
   {
     href: '/settings/about',

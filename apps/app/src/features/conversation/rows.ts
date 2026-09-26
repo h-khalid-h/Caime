@@ -43,6 +43,7 @@ export function pendingAsMessage(item: OutboxItem, me: string): MessageView {
     files: [],
     poll: null,
     album: null,
+    sentVia: null,
     editedAt: null,
     deletedAt: null,
     createdAt: item.createdAt,
