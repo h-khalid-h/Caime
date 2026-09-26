@@ -3,6 +3,9 @@
 alter table ai_runs add column conversation_id uuid;
 create index ai_runs_conversation on ai_runs (conversation_id, created_at)
   where conversation_id is not null;
+-- An answer it thought of but never sent (the customer wrote again meanwhile): the call still
+-- happened, and how it ended stays in outcome; no plan counts it.
+alter table ai_runs add column discarded_at timestamptz;
 
 -- Each side of a call says it's still there for itself, so one side staying can't keep open a
 -- call the other has left (lib/calls.ts). seen_at stays: the last time either side was there.

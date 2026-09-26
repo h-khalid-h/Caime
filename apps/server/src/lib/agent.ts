@@ -105,7 +105,7 @@ async function recordRun(
 
 /** An answer it thought of but never sent: no plan counts it, though the call still happened. */
 const discard = (ctx: AppContext, runId: string) =>
-  ctx.db.updateTable('ai_runs').set({ outcome: 'discarded' }).where('id', '=', runId).execute();
+  ctx.db.updateTable('ai_runs').set({ discarded_at: ctx.now() }).where('id', '=', runId).execute();
 
 /**
  * Ask the model, as the agent. Failing, it says nothing and the team answers; `null` then. The
@@ -209,8 +209,11 @@ export function todayForAgent(now: Date, timeZone = 'UTC'): string {
 }
 
 /** What it tells the customer when it passes a conversation on without asking the model. */
-const passedOn = (orgName: string) =>
-  `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
+function passedOn(orgName: string, arabic: boolean): string {
+  return arabic
+    ? `حوّلت محادثتك إلى فريق ${orgName}، وسيرد عليك أحدهم هنا.`
+    : `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
+}
 
 /** Post as the agent, as any message is: stored, sent live, notified, recorded on the thread. */
 async function postAs(ctx: AppContext, senderId: string, conversationId: string, body: string) {
@@ -348,7 +351,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (!agent) return;
   const customer = await ctx.db
     .selectFrom('users')
-    .select(['birth_year', 'time_zone'])
+    .select(['birth_year', 'time_zone', 'locale'])
     .where('id', '=', thread.customer_id)
     .executeTakeFirst();
   // A person answers anyone under 18 (R29).
@@ -395,9 +398,18 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   ]);
   if (answered.n >= AGENT_REPLIES_PER_CONVERSATION || thought.n >= AGENT_CALLS_PER_CONVERSATION) {
     if (!(await claim())) return;
-    // Said without the model, so the customer isn't left wondering who answers now.
-    await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name)).catch((err) =>
-      ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
+    // Said without the model, so the customer isn't left wondering who answers now: in the
+    // language they write in (Arabic when they write in it, or read Caishy in it), else English.
+    const latest = await ctx.db
+      .selectFrom('messages')
+      .select('body')
+      .where('conversation_id', '=', conversationId)
+      .where('seq', '=', String(seq))
+      .executeTakeFirst();
+    const arabic =
+      /\p{Script=Arabic}/u.test(latest?.body ?? '') || customer.locale.startsWith('ar');
+    await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name, arabic)).catch(
+      (err) => ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
     );
     await handOver(ctx, thread.org_id, conversationId, agent);
     return;

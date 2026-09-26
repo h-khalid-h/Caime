@@ -162,8 +162,10 @@ grant_type=authorization_code&code=…&redirect_uri=…&client_id=app_…&code_v
 ```
 
 Call the routes in the table above with `Authorization: Bearer cao_…`, within the permissions
-they allow now: letting the app in again for less narrows the tokens it already holds, and the
-`scope` of a refreshed pair says what's left. A message the app sends shows "via" its name (to a
+they allowed. Sending someone back to consent only ever adds: asking for something new adds it,
+asking for less keeps what the app had, and a token has the scopes its request asked for (a
+refreshed pair keeps them). The person takes it all back by removing the app. A message the app
+sends shows "via" its name (to a
 business customer, "via an app"). The token and revocation endpoints and the discovery document
 answer any origin (CORS, without credentials), so an app that runs only in a browser can trade
 its code itself.
@@ -182,7 +184,7 @@ and with `cache-control: no-store`:
 | `error` | Status | When |
 | --- | --- | --- |
 | `invalid_client` | 401 | An unknown or removed app, or a confidential one without its secret |
-| `invalid_grant` | 400 | A code or refresh token that isn't valid, was used or has expired; a `redirect_uri` or verifier that doesn't match; nothing left of what the person allowed. A code used twice within its ten minutes ends what it gave; one turning up after it expired only is refused |
+| `invalid_grant` | 400 | A code or refresh token that isn't valid, was used or has expired; a `redirect_uri` or verifier that doesn't match. A code used twice within its ten minutes ends what it gave; one turning up after it expired only is refused |
 | `unsupported_grant_type` | 400 | Anything but `authorization_code` and `refresh_token` |
 | `invalid_request` | 400, 413, 415 | A body that isn't a form (or JSON) the endpoint can read |
 | `temporarily_unavailable` | 429 | Too many requests from one address (600 a minute); `retry-after` says when to try again |

@@ -355,6 +355,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(Object.keys(runs[0]!).sort()).toEqual([
       'conversation_id',
       'created_at',
+      'discarded_at',
       'feature',
       'id',
       'input_tokens',

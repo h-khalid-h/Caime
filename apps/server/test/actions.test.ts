@@ -1,6 +1,7 @@
 import { uuidv4 } from '@caishy/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runPeriodic } from '../src/lib/jobs';
+import { liveSubscriptions } from '../src/modules/notifications';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -261,6 +262,43 @@ describe('notifications and push', () => {
       .where('user_id', '=', sarah.user.id)
       .execute();
     expect(subs).toHaveLength(1);
+  });
+
+  it('a push goes only to devices still signed in', async () => {
+    const login = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: {
+        identifier: sarah.user.handle,
+        password: 'correct horse battery',
+        client: 'native',
+      },
+    });
+    const phone = login.json().token as string;
+    const subscribed = await t.app.inject({
+      method: 'POST',
+      url: '/v1/push/subscriptions',
+      headers: { authorization: `Bearer ${phone}` },
+      payload: {
+        kind: 'webpush',
+        subscription: {
+          endpoint: 'https://push.example.com/phone',
+          keys: { p256dh: 'x'.repeat(87), auth: 'y'.repeat(22) },
+        },
+      },
+    });
+    expect(subscribed.statusCode).toBe(201);
+    const reached = async () =>
+      (await liveSubscriptions(t.ctx, sarah.user.id)).map((s) => s.endpoint).sort();
+    expect(await reached()).toEqual([
+      'https://push.example.com/abc',
+      'https://push.example.com/phone',
+    ]);
+    // Signed out from another device: the phone hears nothing more, previews least of all.
+    const { sessions } = await sarah.get('/v1/auth/sessions');
+    const other = sessions.find((d: any) => !d.current && d.kind === 'native');
+    await sarah.req('DELETE', `/v1/auth/sessions/${other.id}`);
+    expect(await reached()).toEqual(['https://push.example.com/abc']);
   });
 });
 

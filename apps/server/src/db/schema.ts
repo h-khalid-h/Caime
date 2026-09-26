@@ -510,6 +510,8 @@ export interface AiRunsTable {
   outcome: string;
   /** The conversation the AI agent was answering in, for its per-conversation bound. */
   conversation_id: string | null;
+  /** Its answer was thrown away, never sent: the call counts, the answer doesn't. */
+  discarded_at: NullableTimestamp;
   created_at: Generated<Date>;
 }
 

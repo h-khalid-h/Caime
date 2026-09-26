@@ -427,7 +427,7 @@ describe('OAuth, as the review left it', () => {
     expect(apps.json().apps).toEqual([]);
   });
 
-  it('allowed again for less, the tokens it already holds narrow to match', async () => {
+  it('allowing again only ever adds: what it could do before stays until the person removes it', async () => {
     const post = (bearer: string) =>
       as(bearer, 'POST', `/v1/conversations/${convo}/messages`, {
         clientId: uuidv4(),
@@ -435,13 +435,15 @@ describe('OAuth, as the review left it', () => {
       });
     const wide = await signedIn(noor);
     expect((await post(wide.access_token)).statusCode).toBe(201);
-    // A code from when it allowed more, not yet traded.
-    const early = pkce();
-    const { code } = await allow(noor, request(early.challenge));
-    await signedIn(noor, 'messages:read');
-
-    expect((await post(wide.access_token)).json().error.code).toBe('token_scope');
-    expect((await as(wide.access_token, 'GET', `/v1/conversations/${convo}`)).statusCode).toBe(200);
+    // Asked again for less (another install of the app, say): it was let in before, and
+    // nothing it holds changes.
+    const { challenge } = pkce();
+    expect(
+      (await consent(noor, request(challenge, { scope: 'messages:read' }))).json().allowedBefore,
+    ).toBe(true);
+    const narrow = await signedIn(noor, 'messages:read');
+    expect(narrow.scope).toBe('messages:read');
+    expect((await post(wide.access_token)).statusCode).toBe(201);
     const turned = (
       await token({
         grant_type: 'refresh_token',
@@ -449,11 +451,20 @@ describe('OAuth, as the review left it', () => {
         client_id: clientId,
       })
     ).json();
-    expect(turned.scope).toBe('messages:read');
-    expect((await post(turned.access_token)).json().error.code).toBe('token_scope');
-    const late = (await exchange(code, early.verifier)).json();
-    expect(late.scope).toBe('messages:read');
-    expect((await post(late.access_token)).json().error.code).toBe('token_scope');
+    expect(turned.scope).toBe('messages:read messages:write');
+    // Asked for something new, it's added to what it may do; the new token has what it asked.
+    expect(
+      (await consent(noor, request(pkce().challenge, { scope: 'profile:read' }))).json()
+        .allowedBefore,
+    ).toBe(false);
+    const more = await signedIn(noor, 'profile:read');
+    expect(more.scope).toBe('profile:read');
+    expect((await as(more.access_token, 'GET', '/v1/me')).statusCode).toBe(200);
+    expect((await post(turned.access_token)).statusCode).toBe(201);
+    const listed = (await noor.get('/v1/me/connected-apps')).apps.find(
+      (a: { name: string }) => a.name === 'Digest two',
+    );
+    expect(listed.scopes).toEqual(['messages:read', 'messages:write', 'profile:read']);
   });
 
   it('two first allows at once both answer, as one grant', async () => {

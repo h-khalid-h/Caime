@@ -229,6 +229,8 @@ export async function agentRepliesToday(ctx: AppContext, orgId: string): Promise
     .select(sql<number>`count(*)::int`.as('n'))
     .where('feature', '=', 'agent')
     .where('outcome', '=', 'ok')
+    // What it wrote to customers: an answer thrown away was never sent.
+    .where('discarded_at', 'is', null)
     .where('created_at', '>', new Date(ctx.now().getTime() - DAY_MS))
     .where('user_id', 'in', (eb) =>
       eb

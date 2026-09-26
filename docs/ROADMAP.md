@@ -184,8 +184,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Calls (PRD §47): 1:1 voice and video on the web, between two people who can already
       write to each other. The server rings every device of the person called, lets one answer,
       and passes offers, answers and candidates only between the two devices in the call; the
-      media goes device to device. Missed after 45 seconds, busy while in another call, ended
-      when both sides leave, and each call leaves its line in the conversation ("Video call ·
+      media goes device to device. Missed after 45 seconds, busy while in another call (said
+      only to those who may see that someone is online), ended when either side leaves or one
+      blocks the other, and each call leaves its line in the conversation ("Video call ·
       4 min", "Missed voice call") (`calls.test.ts`, E2E with Chromium's fake camera).
       [ ] Group calls, screen sharing, call summaries, calls in the phone apps.
       ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
@@ -442,8 +443,8 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - 2026-09-26 — Session 2 (cont.): a review of OAuth, the AI agent and calls, with every confirmed
   finding fixed and a test that failed first. OAuth: only the token and revocation endpoints take
   form posts (every `/v1` route did, so another site could sign someone in to its own account);
-  recovering an account ends the apps it let in; allowing an app again for less narrows the
-  tokens it already holds; two first allows at once no longer fail; a code turning up after it
+  recovering an account ends the apps it let in; allowing an app again only adds to its
+  grant, so the grant always covers its tokens; two first allows at once no longer fail; a code turning up after it
   expired ends nothing; browser apps can trade their code (CORS on token, revocation and
   discovery, without credentials); a rate limit answers as OAuth libraries expect; a business
   customer sees "via an app", never a team member's app's name; and someone who signs up from an

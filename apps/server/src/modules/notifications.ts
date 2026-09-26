@@ -70,6 +70,22 @@ function notificationView(n: {
   };
 }
 
+/**
+ * The devices a push reaches: those still signed in. A device signed out from elsewhere (or by
+ * a password change, or an account recovered from whoever took it) hears nothing more, previews
+ * least of all.
+ */
+export function liveSubscriptions(ctx: Pick<AppContext, 'db' | 'now'>, userId: string) {
+  return ctx.db
+    .selectFrom('push_subscriptions as p')
+    .innerJoin('sessions as s', 's.id', 'p.session_id')
+    .selectAll('p')
+    .where('p.user_id', '=', userId)
+    .where('s.revoked_at', 'is', null)
+    .where('s.expires_at', '>', ctx.now())
+    .execute();
+}
+
 export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) {
   let keys: { publicKey: string; privateKey: string } | null = null;
   const ensureKeys = async () => {
@@ -79,12 +95,9 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
   };
 
   onNotification(async (c, id, input) => {
-    const subs = await c.db
-      .selectFrom('push_subscriptions')
-      .selectAll()
-      .where('user_id', '=', input.userId)
-      .$if(input.pushTo === 'web', (q) => q.where('kind', '=', 'webpush'))
-      .execute();
+    const subs = (await liveSubscriptions(c, input.userId)).filter(
+      (s) => input.pushTo !== 'web' || s.kind === 'webpush',
+    );
     if (subs.length === 0) return;
     const payload = JSON.stringify({
       id,

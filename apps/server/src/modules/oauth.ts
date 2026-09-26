@@ -22,7 +22,7 @@ import {
   uuidv7,
 } from '@caishy/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type { Selectable } from 'kysely';
+import { type Selectable, sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { OAuthClientsTable } from '../db/schema';
@@ -234,8 +234,9 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     if (isMinor(me.birth_year, ctx.now())) throw forbidden('Apps act for people over 18.');
     ctx.limiter.hit(`oauth-allow:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
-    // One grant per app and person: allowing again replaces what it may do, and tokens it
-    // already holds narrow to match (resolveOAuthAccess). One statement, so two at once agree.
+    // One grant per app and person, and allowing again only adds to it: an app asking for one
+    // more thing (or another install of it asking for less) never loses what it was allowed.
+    // The person takes it all back by removing the app. One statement, so two at once agree.
     const { id: grantId } = await ctx.db
       .insertInto('oauth_grants')
       .values({
@@ -249,7 +250,11 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         oc
           .columns(['client_id', 'user_id'])
           .where('revoked_at', 'is', null)
-          .doUpdateSet({ scopes }),
+          .doUpdateSet({
+            scopes: sql<string[]>`array(
+              select s from unnest(oauth_grants.scopes || excluded.scopes) with ordinality as t(s, i)
+              group by s order by min(i))`,
+          }),
       )
       .returning('id')
       .executeTakeFirstOrThrow();

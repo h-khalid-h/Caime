@@ -40,8 +40,9 @@ export function secretMatches(secret: string | undefined, hash: Buffer | null): 
 }
 
 /**
- * What a token may do now: what it was made with, within what the person allows today. Allowing
- * an app again for less narrows the tokens it already holds, never only the next ones.
+ * What a token may do: what it was made with, and never more than its grant allows. (Allowing
+ * again only adds to a grant, so this holds a token to its grant rather than taking anything
+ * away; removing the app ends the grant and every token at once.)
  */
 export const allowedNow = (tokenScopes: string[], grantScopes: string[]) =>
   tokenScopes.filter((s) => grantScopes.includes(s));

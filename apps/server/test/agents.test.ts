@@ -102,13 +102,17 @@ beforeEach(() => {
 });
 const repliesToday = async () =>
   (await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday as number;
-const runsIn = (conversationId: string) =>
-  t.ctx.db
-    .selectFrom('ai_runs')
-    .select('outcome')
-    .where('conversation_id', '=', conversationId)
-    .orderBy('outcome')
-    .execute();
+/** The model calls made for a conversation: how each ended, and whether its answer was used. */
+const runsIn = async (conversationId: string) =>
+  (
+    await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['outcome', 'discarded_at'])
+      .where('conversation_id', '=', conversationId)
+      .execute()
+  )
+    .map((r) => ({ outcome: r.outcome, used: r.discarded_at === null }))
+    .sort((a, b) => Number(a.used) - Number(b.used));
 const PASSED_ON = 'I’ve passed this to the team at Nile Dental. Someone will answer here.';
 
 describe('an organization’s AI agent (PRD §74–75)', () => {
@@ -180,7 +184,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       (n: any) => n.data?.conversationId === convo,
     );
     expect(told.title).toBe('Nile Dental (AI agent)');
-    expect(await runsIn(convo)).toEqual([{ outcome: 'ok' }]);
+    expect(await runsIn(convo)).toEqual([{ outcome: 'ok', used: true }]);
 
     // Each message once: the job running again, as a retry would, says and asks nothing more.
     await agentReply(t.ctx, { conversationId: convo, seq: asking.seq });
@@ -214,10 +218,10 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await t.ctx.flush();
     const said = (await messages(racing.c, racing.conversationId)).filter((m) => m.aiAgent);
     expect(said).toHaveLength(1);
-    // The answer thrown away isn't one the plan counts.
+    // Both calls answered; the one thrown away isn't an answer the plan counts.
     expect(await runsIn(racing.conversationId)).toEqual([
-      { outcome: 'discarded' },
-      { outcome: 'ok' },
+      { outcome: 'ok', used: false },
+      { outcome: 'ok', used: true },
     ]);
   });
 
@@ -491,7 +495,40 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     expect(await repliesToday()).toBe(before);
     const runs = await runsIn(burst.conversationId);
     expect(runs).toHaveLength(AGENT_CALLS_PER_CONVERSATION);
-    expect(runs.every((r) => r.outcome === 'discarded')).toBe(true);
+    expect(runs.every((r) => r.outcome === 'ok' && !r.used)).toBe(true);
+  });
+
+  it('says it passed them on in the language they write in', async () => {
+    const bot = (
+      await t.ctx.db
+        .selectFrom('org_agents')
+        .select('bot_user_id')
+        .where('org_id', '=', orgId)
+        .executeTakeFirstOrThrow()
+    ).bot_user_id;
+    const arabic = await newCustomer('Yasmin Arabic');
+    // It has already thought as much as it may in this conversation today.
+    await t.ctx.db
+      .insertInto('ai_runs')
+      .values(
+        Array.from({ length: AGENT_CALLS_PER_CONVERSATION }, () => ({
+          id: uuidv7(),
+          user_id: bot,
+          feature: 'agent',
+          provider: 'anthropic',
+          outcome: 'unavailable',
+          conversation_id: arabic.conversationId,
+          created_at: t.clock.now,
+        })),
+      )
+      .execute();
+    await send(arabic.c, 'هل أنتم مفتوحون يوم السبت؟', arabic.conversationId);
+    await agentTurn();
+    expect(requests).toHaveLength(0);
+    const said = (await messages(arabic.c, arabic.conversationId)).filter((m) => m.aiAgent);
+    expect(said.map((m) => m.body)).toEqual([
+      'حوّلت محادثتك إلى فريق Nile Dental، وسيرد عليك أحدهم هنا.',
+    ]);
   });
 
   it('is tried on a question before it answers anyone, by the owner and admins only', async () => {
