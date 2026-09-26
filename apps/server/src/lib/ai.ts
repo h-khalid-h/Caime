@@ -16,10 +16,24 @@ import type { Config } from '../config';
 /** Why a model call gave nothing to show. The routes turn these into plain sentences. */
 export type AiFailure = 'declined' | 'busy' | 'unavailable';
 
+/** What a call cost, for `ai_runs`: the model that answered (a fallback, sometimes) and tokens. */
+export interface AiUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface AiResult<T> {
+  value: T;
+  usage: AiUsage;
+}
+
 export class AiError extends Error {
   constructor(
     public readonly reason: AiFailure,
     detail?: string,
+    /** Known when the model answered but its answer can't be used (a refusal, a cut-off). */
+    public readonly usage: AiUsage | null = null,
   ) {
     super(detail ?? reason);
     this.name = 'AiError';
@@ -46,10 +60,14 @@ export interface Transcript {
 
 export interface AiAssist {
   readonly model: string;
-  rewrite(input: { text: string; style: RewriteStyle; tone: AiTone }): Promise<string>;
-  translate(input: { text: string; to: string }): Promise<string>;
-  catchUp(input: { transcript: Transcript; language: string; today: string }): Promise<string>;
-  findActions(input: { transcript: Transcript; today: string }): Promise<FoundItem[]>;
+  rewrite(input: { text: string; style: RewriteStyle; tone: AiTone }): Promise<AiResult<string>>;
+  translate(input: { text: string; to: string }): Promise<AiResult<string>>;
+  catchUp(input: {
+    transcript: Transcript;
+    language: string;
+    today: string;
+  }): Promise<AiResult<string>>;
+  findActions(input: { transcript: Transcript; today: string }): Promise<AiResult<FoundItem[]>>;
 }
 
 /** "ar" → "Arabic", "en-US" → "English (United States)"; the tag itself when unknown. */
@@ -166,12 +184,21 @@ export function createAiAssist(config: Config): AiAssist | null {
     fallbacks: 'default' as const,
   };
 
+  const usageOf = (reply: {
+    model: string;
+    usage: { input_tokens: number; output_tokens: number };
+  }): AiUsage => ({
+    model: reply.model,
+    inputTokens: reply.usage.input_tokens,
+    outputTokens: reply.usage.output_tokens,
+  });
+
   const text = async (
     system: string,
     content: string,
     effort: 'low' | 'medium',
     maxTokens: number,
-  ): Promise<string> => {
+  ): Promise<AiResult<string>> => {
     const reply = await client.beta.messages
       .create({
         ...shared,
@@ -183,25 +210,27 @@ export function createAiAssist(config: Config): AiAssist | null {
       .catch((err: unknown) => {
         throw failureOf(err);
       });
-    if (reply.stop_reason === 'refusal') throw new AiError('declined');
-    if (reply.stop_reason === 'max_tokens') throw new AiError('unavailable', 'max_tokens');
+    const usage = usageOf(reply);
+    if (reply.stop_reason === 'refusal') throw new AiError('declined', undefined, usage);
+    if (reply.stop_reason === 'max_tokens') throw new AiError('unavailable', 'max_tokens', usage);
     const out = reply.content
       .map((b) => (b.type === 'text' ? b.text : ''))
       .join('')
       .trim();
-    if (!out) throw new AiError('unavailable', 'empty');
-    return out;
+    if (!out) throw new AiError('unavailable', 'empty', usage);
+    return { value: out, usage };
   };
+  const unquoted = (r: AiResult<string>): AiResult<string> => ({ ...r, value: unquote(r.value) });
 
   return {
     model,
     async rewrite({ text: draft, style, tone }) {
-      return unquote(
+      return unquoted(
         await text(REWRITE_SYSTEM(style, tone), `<message>\n${draft}\n</message>`, 'low', 8192),
       );
     },
     async translate({ text: source, to }) {
-      return unquote(await text(TRANSLATE_SYSTEM(to), `<text>\n${source}\n</text>`, 'low', 8192));
+      return unquoted(await text(TRANSLATE_SYSTEM(to), `<text>\n${source}\n</text>`, 'low', 8192));
     },
     async catchUp({ transcript, language, today }) {
       return text(
@@ -225,11 +254,12 @@ export function createAiAssist(config: Config): AiAssist | null {
         .catch((err: unknown) => {
           throw failureOf(err);
         });
-      if (reply.stop_reason === 'refusal') throw new AiError('declined');
-      if (reply.stop_reason === 'max_tokens') throw new AiError('unavailable', 'max_tokens');
+      const usage = usageOf(reply);
+      if (reply.stop_reason === 'refusal') throw new AiError('declined', undefined, usage);
+      if (reply.stop_reason === 'max_tokens') throw new AiError('unavailable', 'max_tokens', usage);
       const parsed = reply.parsed_output;
-      if (!parsed) throw new AiError('unavailable', 'unparsed');
-      return parsed.items
+      if (!parsed) throw new AiError('unavailable', 'unparsed', usage);
+      const items = parsed.items
         .map((i) => ({
           kind: i.kind,
           title: clip(i.title.trim().replace(/\s+/g, ' '), 120),
@@ -239,6 +269,7 @@ export function createAiAssist(config: Config): AiAssist | null {
         }))
         .filter((i) => i.title.length > 0)
         .slice(0, 8);
+      return { value: items, usage };
     },
   };
 }

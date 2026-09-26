@@ -28,13 +28,14 @@ import {
   messagePreview,
   resolvePolicy,
   systemText,
+  uuidv7,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
-import { AiError, languageName, type Transcript } from '../lib/ai';
+import { AiError, type AiResult, type AiUsage, languageName, type Transcript } from '../lib/ai';
 import { AppError, notFound } from '../lib/errors';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion } from '../lib/suggest';
@@ -135,12 +136,43 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     return found;
   }
 
-  /** A model failure as something the person can act on. Only the reason is logged. */
-  async function run<T>(feature: string, work: () => Promise<T>): Promise<T> {
+  /**
+   * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome; never the
+   * text), and a failure turned into something the person can act on.
+   */
+  async function run<T>(
+    feature: string,
+    userId: string,
+    work: () => Promise<AiResult<T>>,
+  ): Promise<T> {
+    const started = Date.now();
+    const record = (outcome: string, usage: AiUsage | null) =>
+      ctx.defer('ai run', () =>
+        ctx.db
+          .insertInto('ai_runs')
+          .values({
+            id: uuidv7(),
+            user_id: userId,
+            feature,
+            provider: 'anthropic',
+            model: usage?.model ?? ctx.ai?.model ?? null,
+            input_tokens: usage?.inputTokens ?? null,
+            output_tokens: usage?.outputTokens ?? null,
+            latency_ms: Date.now() - started,
+            outcome,
+          })
+          .execute(),
+      );
     try {
-      return await work();
+      const result = await work();
+      record('ok', result.usage);
+      return result.value;
     } catch (err) {
-      if (!(err instanceof AiError)) throw err;
+      if (!(err instanceof AiError)) {
+        record('error', null);
+        throw err;
+      }
+      record(err.reason, err.usage);
       ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
       if (err.reason === 'declined')
         throw new AppError(422, 'ai_declined', 'Caishy can’t help with this one.');
@@ -274,7 +306,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const { ai } = await gate(auth.userId);
     const { conversation } = await readable(auth.userId, body.conversationId);
     const tone = await toneFor(auth.userId, conversation);
-    const suggestion = await run('rewrite', () =>
+    const suggestion = await run('rewrite', auth.userId, () =>
       ai.rewrite({ text: body.text, style: body.style, tone }),
     );
     return { suggestion, label: AI_LABEL };
@@ -311,7 +343,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     await readable(auth.userId, message.conversation_id);
     const to = body.to ?? baseLanguage(me.locale);
     const language = languageName(to);
-    const translation = await run('translate', () =>
+    const translation = await run('translate', auth.userId, () =>
       ai.translate({ text: message.body!.slice(0, 4000), to: language }),
     );
     return { translation, to, language, label: AI_LABEL };
@@ -329,7 +361,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       me.time_zone,
     );
     if (lines.length === 0) return { summary: null, label: null, newCount: 0 };
-    const summary = await run('catch-up', () =>
+    const summary = await run('catch-up', auth.userId, () =>
       ai.catchUp({
         transcript,
         language: languageName(baseLanguage(me.locale)),
@@ -351,7 +383,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       me.time_zone,
     );
     if (lines.length === 0) return { found: [], label: AI_LABEL };
-    const items = await run('actions', () =>
+    const items = await run('actions', auth.userId, () =>
       ai.findActions({ transcript, today: today(me.time_zone) }),
     );
     const others = await ctx.db

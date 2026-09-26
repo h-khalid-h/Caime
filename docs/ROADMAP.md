@@ -165,4 +165,6 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   outer one's hover), so they could never be clicked; they sit beside the bubble now. And a
   message sent after a conversation's first page loaded but before the socket was listening was
   never shown; the app now catches up on every connection, the first included (E2E holds the
-  socket back to prove it). Tests: 126 core, 49 brand, 93 server, 3 app, 16 E2E.
+  socket back to prove it). Each AI call is recorded without its text (feature, model, tokens,
+  time, outcome) and is in the person's export. Tests: 126 core, 49 brand, 94 server, 3 app,
+  16 E2E.

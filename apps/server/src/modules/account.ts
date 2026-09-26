@@ -42,6 +42,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       tasks,
       files,
       sessions,
+      aiRuns,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -96,6 +97,12 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .select(['kind', 'device_name', 'platform', 'created_at', 'last_seen_at'])
         .where('user_id', '=', me)
         .where('revoked_at', 'is', null)
+        .execute(),
+      ctx.db
+        .selectFrom('ai_runs')
+        .select(['feature', 'model', 'outcome', 'created_at'])
+        .where('user_id', '=', me)
+        .orderBy('created_at')
         .execute(),
     ]);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
@@ -169,6 +176,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         platform: s.platform,
         signedInAt: s.created_at.toISOString(),
         lastSeenAt: s.last_seen_at.toISOString(),
+      })),
+      // When AI assist was used and for what; what it read and wrote is never stored.
+      aiAssist: aiRuns.map((r) => ({
+        feature: r.feature,
+        model: r.model,
+        outcome: r.outcome,
+        at: r.created_at.toISOString(),
       })),
     };
     const date = now.toISOString().slice(0, 10);

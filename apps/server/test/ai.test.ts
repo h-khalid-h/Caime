@@ -316,4 +316,52 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       t.ctx.ai = ai;
     }
   });
+  it('records every call (feature, model, tokens, outcome) and never the text', async () => {
+    await t.ctx.flush();
+    const runs = await t.ctx.db
+      .selectFrom('ai_runs')
+      .selectAll()
+      .where('user_id', '=', noor.user.id)
+      .orderBy('created_at')
+      .execute();
+    expect(runs.map((r) => `${r.feature} ${r.outcome}`)).toEqual([
+      'rewrite ok',
+      'translate ok',
+      'catch-up ok',
+      'actions ok',
+      'actions ok',
+      'actions ok',
+      'rewrite declined',
+      'rewrite busy',
+    ]);
+    // The model that answered and what it cost; a call that never got an answer has no usage.
+    expect(runs[0]).toMatchObject({
+      provider: 'anthropic',
+      model: 'claude-opus-5',
+      input_tokens: 10,
+      output_tokens: 5,
+    });
+    expect(runs.at(-1)).toMatchObject({ input_tokens: null, output_tokens: null });
+    // They are the person's own data: in their export, as what and when.
+    const archive = JSON.parse((await noor.req('GET', '/v1/me/export')).body);
+    expect(archive.aiAssist).toHaveLength(8);
+    expect(archive.aiAssist[0]).toEqual({
+      feature: 'rewrite',
+      model: 'claude-opus-5',
+      outcome: 'ok',
+      at: expect.any(String),
+    });
+    expect(Object.keys(runs[0]!).sort()).toEqual([
+      'created_at',
+      'feature',
+      'id',
+      'input_tokens',
+      'latency_ms',
+      'model',
+      'outcome',
+      'output_tokens',
+      'provider',
+      'user_id',
+    ]);
+  });
 });
