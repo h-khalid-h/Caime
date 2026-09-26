@@ -11,14 +11,18 @@
     "dev:server": "pnpm --filter @caishy/server dev",
     "dev:app": "pnpm --filter @caishy/app start",
     "build": "pnpm --filter @caishy/app build:web && pnpm --filter @caishy/server build",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "test": "pnpm -r test",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "start": "node --enable-source-maps apps/server/dist/server.js",
+    "budget": "node scripts/bundle-budget.mjs",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@playwright/test": "1.56.1"
   }
 }

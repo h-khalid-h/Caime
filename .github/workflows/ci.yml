@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build, e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: caishy
+          POSTGRES_PASSWORD: caishy-dev
+          POSTGRES_DB: caishy
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U caishy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://caishy:caishy-dev@localhost:5432/caishy
+      E2E_DATABASE_URL: postgres://caishy:caishy-dev@localhost:5432/caishy_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Web performance budget
+        run: pnpm budget
+      - name: End-to-end
+        run: |
+          psql "$DATABASE_URL" -c "create database caishy_e2e"
+          pnpm exec playwright install --with-deps chromium
+          pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e
+          path: |
+            e2e/screenshots
+            playwright-report
+            test-results
+          retention-days: 14
+
+  image:
+    name: Build and publish the image
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/caishy:latest
+            ghcr.io/${{ github.repository_owner }}/caishy:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke-test the image
+        run: |
+          docker network create caishy
+          docker run -d --name db --network caishy -e POSTGRES_USER=caishy -e POSTGRES_PASSWORD=caishy -e POSTGRES_DB=caishy postgres:16
+          for i in $(seq 1 30); do docker exec db pg_isready -U caishy && break; sleep 1; done
+          docker run -d --name app --network caishy -p 8787:8787 \
+            -e DATABASE_URL=postgres://caishy:caishy@db:5432/caishy \
+            -e PUBLIC_URL=http://localhost:8787 \
+            ghcr.io/${{ github.repository_owner }}/caishy:${{ github.sha }}
+          for i in $(seq 1 60); do curl -fsS http://localhost:8787/v1/readyz && break; sleep 1; done
+          curl -fsS http://localhost:8787/v1/readyz
+          curl -fsS http://localhost:8787/ | grep -q '<div id="root">'
+          docker logs app | tail -20
+      - name: Deploy to EasyPanel
+        env:
+          EASYPANEL_DEPLOY_WEBHOOK: ${{ secrets.EASYPANEL_DEPLOY_WEBHOOK }}
+        if: env.EASYPANEL_DEPLOY_WEBHOOK != ''
+        run: curl -fsS -X POST "$EASYPANEL_DEPLOY_WEBHOOK"

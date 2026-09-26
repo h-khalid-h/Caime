@@ -8,7 +8,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, LogController } from 'fastify';
 import type { Config } from './config';
 import type { AppContext } from './context';
 import { migrate } from './db/migrate';
@@ -60,7 +60,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     trustProxy: config.TRUST_PROXY,
     bodyLimit: 1_048_576,
     genReqId: () => uuidv7(),
-    disableRequestLogging: config.isTest,
+    logController: new LogController({ disableRequestLogging: config.isTest }),
   });
 
   const database = createDb(config.DATABASE_URL, config.DATABASE_POOL_MAX);

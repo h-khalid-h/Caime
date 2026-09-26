@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/dist-native
+**/.expo
+**/*.log
+.git
+.github
+data
+apps/server/data
+apps/app/ios
+apps/app/android
+playwright-report
+test-results
+e2e/screenshots
+docs/brand/*.png
+.env
+**/.env

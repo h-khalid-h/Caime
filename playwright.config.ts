@@ -1,0 +1,46 @@
+/**
+ * End-to-end tests against the production build: the bundled server serving the exported web
+ * app on one origin, exactly as deployed. `pnpm build` first, then `pnpm e2e`.
+ */
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
+
+const PORT = Number(process.env.E2E_PORT ?? 8787);
+const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
+
+export default defineConfig({
+  testDir: './e2e',
+  timeout: 90_000,
+  expect: { timeout: 10_000 },
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  use: {
+    baseURL: BASE,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    permissions: ['clipboard-read', 'clipboard-write'],
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: 'node --enable-source-maps apps/server/dist/server.js',
+        url: `${BASE}/v1/readyz`,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+        env: {
+          NODE_ENV: 'production',
+          PORT: String(PORT),
+          HOST: '127.0.0.1',
+          PUBLIC_URL: BASE,
+          DATABASE_URL:
+            process.env.E2E_DATABASE_URL ??
+            'postgres://caishy:caishy-dev@127.0.0.1:5432/caishy_e2e',
+          DATA_DIR: join(tmpdir(), 'caishy-e2e'),
+          WEB_DIR: 'apps/app/dist',
+          LOG_LEVEL: 'warn',
+        },
+      },
+});
