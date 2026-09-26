@@ -2,6 +2,7 @@
  * Builds the Fastify application. `index.ts` runs it; tests build it against a throwaway database.
  */
 
+import { Resolver } from 'node:dns/promises';
 import { uuidv7 } from '@caishy/core';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
@@ -30,6 +31,7 @@ import { inboxRoutes } from './modules/inbox';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
 import { notificationRoutes } from './modules/notifications';
+import { orgRoutes } from './modules/orgs';
 import { peopleRoutes } from './modules/people';
 import { policyRoutes } from './modules/policies';
 import { realtimeRoutes } from './modules/realtime';
@@ -88,6 +90,12 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     bus,
     limiter: new RateLimiter(),
     ai: createAiAssist(config),
+    dns: {
+      resolveTxt: (hostname) => {
+        const resolver = new Resolver({ timeout: 4000, tries: 2 });
+        return resolver.resolveTxt(hostname);
+      },
+    },
     log: app.log,
     now: options.now ?? (() => new Date()),
     defer(label, work) {
@@ -172,6 +180,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await aiRoutes(v1, ctx);
       await searchRoutes(v1, ctx);
       await spaceRoutes(v1, ctx);
+      await orgRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);

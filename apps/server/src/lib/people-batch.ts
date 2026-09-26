@@ -5,6 +5,7 @@
 import { type RelationshipPolicy, resolvePolicy, type Sphere } from '@caishy/core';
 import type { AppContext } from '../context';
 import type { User } from '../db/schema';
+import { verifiedOrgNames } from './orgs';
 import { pairKey } from './relations';
 import { type PersonView, personView, type ViewerRelation } from './users';
 
@@ -17,57 +18,59 @@ export async function personViewsFor(
   const out = new Map<string, PersonView>();
   if (ids.length === 0) return out;
   const now = ctx.now();
-  const [users, blocks, connections, theirRels, policies, sides, defaults] = await Promise.all([
-    ctx.db.selectFrom('users').selectAll().where('id', 'in', ids).execute(),
-    ctx.db
-      .selectFrom('blocks')
-      .selectAll()
-      .where((eb) =>
-        eb.or([
-          eb.and([eb('blocker_id', '=', viewerId), eb('blocked_id', 'in', ids)]),
-          eb.and([eb('blocked_id', '=', viewerId), eb('blocker_id', 'in', ids)]),
-        ]),
-      )
-      .execute(),
-    ctx.db
-      .selectFrom('connections')
-      .select(['id', 'user_a', 'user_b'])
-      .where('status', '=', 'active')
-      .where((eb) =>
-        eb.or([
-          eb.and([eb('user_a', '=', viewerId), eb('user_b', 'in', ids)]),
-          eb.and([eb('user_b', '=', viewerId), eb('user_a', 'in', ids)]),
-        ]),
-      )
-      .execute(),
-    ctx.db
-      .selectFrom('relationships')
-      .selectAll()
-      .where('owner_id', 'in', ids)
-      .where('subject_id', '=', viewerId)
-      .where('status', '=', 'active')
-      .orderBy('is_primary', 'desc')
-      .execute(),
-    ctx.db.selectFrom('relationship_policies').selectAll().where('user_id', 'in', ids).execute(),
-    ctx.db
-      .selectFrom('connection_sides')
-      .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
-      .select([
-        'connection_sides.owner_id',
-        'identities.display_name',
-        'identities.headline',
-        'identities.org_name',
-      ])
-      .where('connection_sides.owner_id', 'in', ids)
-      .where('connection_sides.other_id', '=', viewerId)
-      .execute(),
-    ctx.db
-      .selectFrom('identities')
-      .select(['user_id', 'display_name', 'headline', 'org_name'])
-      .where('user_id', 'in', ids)
-      .where('is_default', '=', true)
-      .execute(),
-  ]);
+  const [users, blocks, connections, theirRels, policies, sides, defaults, verified] =
+    await Promise.all([
+      ctx.db.selectFrom('users').selectAll().where('id', 'in', ids).execute(),
+      ctx.db
+        .selectFrom('blocks')
+        .selectAll()
+        .where((eb) =>
+          eb.or([
+            eb.and([eb('blocker_id', '=', viewerId), eb('blocked_id', 'in', ids)]),
+            eb.and([eb('blocked_id', '=', viewerId), eb('blocker_id', 'in', ids)]),
+          ]),
+        )
+        .execute(),
+      ctx.db
+        .selectFrom('connections')
+        .select(['id', 'user_a', 'user_b'])
+        .where('status', '=', 'active')
+        .where((eb) =>
+          eb.or([
+            eb.and([eb('user_a', '=', viewerId), eb('user_b', 'in', ids)]),
+            eb.and([eb('user_b', '=', viewerId), eb('user_a', 'in', ids)]),
+          ]),
+        )
+        .execute(),
+      ctx.db
+        .selectFrom('relationships')
+        .selectAll()
+        .where('owner_id', 'in', ids)
+        .where('subject_id', '=', viewerId)
+        .where('status', '=', 'active')
+        .orderBy('is_primary', 'desc')
+        .execute(),
+      ctx.db.selectFrom('relationship_policies').selectAll().where('user_id', 'in', ids).execute(),
+      ctx.db
+        .selectFrom('connection_sides')
+        .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
+        .select([
+          'connection_sides.owner_id',
+          'identities.display_name',
+          'identities.headline',
+          'identities.org_name',
+        ])
+        .where('connection_sides.owner_id', 'in', ids)
+        .where('connection_sides.other_id', '=', viewerId)
+        .execute(),
+      ctx.db
+        .selectFrom('identities')
+        .select(['user_id', 'display_name', 'headline', 'org_name'])
+        .where('user_id', 'in', ids)
+        .where('is_default', '=', true)
+        .execute(),
+      verifiedOrgNames(ctx.db, ids),
+    ]);
   const byId = new Map<string, User>(users.map((u) => [u.id, u]));
   for (const id of ids) {
     const u = byId.get(id);
@@ -102,6 +105,7 @@ export async function personViewsFor(
         connectionId: conn?.id ?? null,
       }).privacy,
       sharesConversation: true,
+      verifiedOrgName: verified.get(id) ?? null,
     };
     const side = sides.find((s) => s.owner_id === id);
     const def = defaults.find((d) => d.user_id === id);

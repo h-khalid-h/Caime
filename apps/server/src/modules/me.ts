@@ -16,6 +16,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { badRequest, conflict, notFound } from '../lib/errors';
+import { handleTaken } from '../lib/handles';
 import { meView, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -36,12 +37,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const patch: UserUpdate = { updated_at: ctx.now() };
     if (body.displayName !== undefined) patch.display_name = body.displayName;
     if (body.handle !== undefined && body.handle !== current.handle.toLowerCase()) {
-      const taken = await ctx.db
-        .selectFrom('users')
-        .select('id')
-        .where('handle', '=', body.handle)
-        .executeTakeFirst();
-      if (taken) throw conflict('handle_taken', 'That handle is taken. Try another.');
+      if (await handleTaken(ctx.db, body.handle, { userId: auth.userId }))
+        throw conflict('handle_taken', 'That handle is taken. Try another.');
       patch.handle = body.handle;
     }
     if (body.bio !== undefined) patch.bio = body.bio;
@@ -127,15 +124,16 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       wanted,
       ...Array.from({ length: 6 }, () => `${base}${Math.floor(10 + Math.random() * 990)}`),
     ];
-    const taken = new Set(
-      (
-        await ctx.db
-          .selectFrom('users')
-          .select('handle')
-          .where('handle', 'in', candidates)
-          .execute()
-      ).map((r) => String(r.handle)),
-    );
+    // One namespace with organizations (lib/handles.ts).
+    const [people, orgs] = await Promise.all([
+      ctx.db.selectFrom('users').select('handle').where('handle', 'in', candidates).execute(),
+      ctx.db
+        .selectFrom('organizations')
+        .select('handle')
+        .where('handle', 'in', candidates)
+        .execute(),
+    ]);
+    const taken = new Set([...people, ...orgs].map((r) => String(r.handle).toLowerCase()));
     if (!taken.has(wanted)) return { available: true, reason: null, suggestion: null };
     return {
       available: false,

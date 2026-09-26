@@ -32,6 +32,7 @@ import {
 } from '../lib/crypto';
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { handleTaken } from '../lib/handles';
 import { meView, regionFromLocale, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth, setSessionCookie, tokenFrom } from '../plugins/auth';
@@ -120,7 +121,10 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (existing.some((u) => u.email.toLowerCase() === body.email)) {
       throw conflict('email_taken', 'That email already has an account. Sign in instead?');
     }
-    if (existing.some((u) => u.handle.toLowerCase() === body.handle)) {
+    if (
+      existing.some((u) => u.handle.toLowerCase() === body.handle) ||
+      (await handleTaken(ctx.db, body.handle))
+    ) {
       throw conflict('handle_taken', 'That handle is taken. Try another.');
     }
     const id = uuidv7();

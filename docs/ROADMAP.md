@@ -85,7 +85,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [~] Files, images (metadata stripped, thumbnails), resumable uploads, ranges done; voice notes
       store and play; transcription ⛔ needs a speech-to-text provider
-- [ ] Organizations and DNS verification; Business inbox; org accounts
+- [x] Organizations: a business, shop, clinic, school, nonprofit or public service with a
+      profile anyone can find and a team. Its handle shares one namespace with people's, so
+      nobody can pose as it. It verifies its domain with one DNS TXT record
+      (`_caishy-verify.<domain>`); only then is it "Verified · <domain>" and its team "Verified at
+      <name>", and no other organization can claim that domain. Changing the domain unverifies it
+      until the new one is proven. The team is made of adult connections; owners and admins
+      manage it and the domain; an owner who leaves or deletes their account hands it on; the
+      last one out closes it (`orgs.test.ts`, E2E)
+- [ ] Business inbox: customers message an organization, the team assigns, answers as the
+      organization, escalates and resolves
 - [x] Spaces: a family, team, project, community or school with its people and conversations.
       Everyone is in its General conversation (which goes by the space's name); its other
       conversations are open to join; a topic that keeps coming up in General becomes one.
@@ -115,7 +124,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (419.2 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (421.5 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -182,3 +191,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   keep the data's fetch time and its refetch mark (unit-tested; fails without the fix). A
   sheet that emptied itself while closing now keeps its content until it's gone. Tests: 129
   core, 49 brand, 101 server, 4 app, 17 E2E.
+- 2026-09-26 — Session 2 (cont.): Organizations, with DNS verification and the trust label their
+  teams carry. Building them found two bugs in how the server serves the web app. Any page whose
+  path ended in something like a file extension got the API's 404 instead of the app, so an
+  organization with a dot in its handle (`/o/nile.dental`) broke on reload, and so did a link
+  whose query ended in one (`?h=sara.ali`); a page load is now recognized by what the browser
+  asks for, and a missing file is still a 404, never the app (`web.test.ts`, fails without the
+  fix). And the Connect screen's "Find me there" link pointed at a domain and a route that don't
+  exist; that's next. Tests: 133 core, 49 brand, 110 server, 4 app, 18 E2E.

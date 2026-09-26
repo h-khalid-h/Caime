@@ -82,11 +82,11 @@ export function canChangeSpaceRole(actor: SpaceRole, target: SpaceRole): boolean
 }
 
 /**
- * Who owns the space when its owner leaves: the admin who has been there longest, else the
- * member who has. Null when nobody is left.
+ * Who owns a space or an organization when its owner leaves: the admin who has been there
+ * longest, else whoever has. Null when nobody is left.
  */
-export function nextSpaceOwner(
-  members: ReadonlyArray<{ userId: string; role: SpaceRole; joinedAt: string }>,
+export function nextOwner<R extends string>(
+  members: ReadonlyArray<{ userId: string; role: R; joinedAt: string }>,
   leaving: string,
 ): string | null {
   const staying = members
@@ -94,3 +94,5 @@ export function nextSpaceOwner(
     .sort((a, b) => Date.parse(a.joinedAt) - Date.parse(b.joinedAt));
   return (staying.find((m) => m.role === 'admin') ?? staying[0])?.userId ?? null;
 }
+
+export const nextSpaceOwner = nextOwner<SpaceRole>;

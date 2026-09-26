@@ -11,6 +11,7 @@ import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { verifyPassword } from '../lib/crypto';
 import { AppError, notFound } from '../lib/errors';
+import { handOverOrgs } from '../lib/orgs';
 import { relationshipView } from '../lib/relations';
 import { handOverSpaces } from '../lib/spaces';
 import { diskStorage } from '../lib/storage';
@@ -45,6 +46,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       sessions,
       aiRuns,
       spaces,
+      orgs,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -110,6 +112,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .selectFrom('space_members as m')
         .innerJoin('spaces as s', 's.id', 'm.space_id')
         .select(['s.name', 's.kind', 'm.role', 'm.joined_at', 'm.left_at'])
+        .where('m.user_id', '=', me)
+        .orderBy('m.joined_at')
+        .execute(),
+      ctx.db
+        .selectFrom('org_members as m')
+        .innerJoin('organizations as o', 'o.id', 'm.org_id')
+        .select(['o.name', 'o.handle', 'm.role', 'm.title', 'm.joined_at', 'm.left_at'])
         .where('m.user_id', '=', me)
         .orderBy('m.joined_at')
         .execute(),
@@ -193,6 +202,14 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         joinedAt: sp.joined_at.toISOString(),
         leftAt: sp.left_at?.toISOString() ?? null,
       })),
+      organizations: orgs.map((o) => ({
+        name: o.name,
+        handle: o.handle,
+        role: o.role,
+        title: o.title,
+        joinedAt: o.joined_at.toISOString(),
+        leftAt: o.left_at?.toISOString() ?? null,
+      })),
       // When AI assist was used and for what; what it read and wrote is never stored.
       aiAssist: aiRuns.map((r) => ({
         feature: r.feature,
@@ -246,8 +263,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute(),
     ]);
     await ctx.db.transaction().execute(async (trx) => {
-      // Spaces it owned stay with the people in them.
+      // Spaces and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());
+      await handOverOrgs(trx, me, ctx.now());
       // The account first (its avatar points at a file), then the files only it could see.
       await trx.deleteFrom('users').where('id', '=', me).execute();
       if (orphanFiles.length)

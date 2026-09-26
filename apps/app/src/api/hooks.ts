@@ -82,3 +82,12 @@ export const useSpaces = () => useQuery({ queryKey: qk.spaces, queryFn: endpoint
 
 export const useSpace = (id: string) =>
   useQuery({ queryKey: qk.space(id), queryFn: () => endpoints.space(id), enabled: Boolean(id) });
+
+export const useOrgs = () => useQuery({ queryKey: qk.orgs, queryFn: endpoints.orgs });
+
+export const useOrg = (handle: string) =>
+  useQuery({
+    queryKey: qk.org(handle),
+    queryFn: () => endpoints.orgByHandle(handle),
+    enabled: Boolean(handle),
+  });

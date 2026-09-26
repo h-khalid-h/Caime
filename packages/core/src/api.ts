@@ -6,6 +6,7 @@
  */
 import type { z } from 'zod';
 import type { AttentionReason, AttentionSection } from './attention';
+import type { OrgKind, OrgRole } from './orgs';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
 import type { Preferences } from './schemas';
@@ -444,6 +445,46 @@ export interface SuggestionView {
   dueAt: string | null;
   dueText: string | null;
   createdAt: string;
+}
+
+/** An organization as anyone sees it (PRD §36, R15). */
+export interface OrgSummaryView {
+  id: string;
+  name: string;
+  handle: string;
+  kind: OrgKind;
+  about: string | null;
+  website: string | null;
+  /** It proved it controls `verifiedDomain` with a DNS record. */
+  verified: boolean;
+  verifiedDomain: string | null;
+  memberCount: number;
+  /** Your role, when you're on its team. */
+  myRole: OrgRole | null;
+}
+
+export interface OrgMemberView {
+  userId: string;
+  role: OrgRole;
+  title: string | null;
+  person: PersonView;
+  joinedAt: string;
+}
+
+export interface OrgDomainView {
+  name: string;
+  verified: boolean;
+  verifiedAt: string | null;
+  /** The TXT record that proves it. */
+  record: { name: string; type: 'TXT'; value: string };
+}
+
+export interface OrgView extends OrgSummaryView {
+  createdAt: string;
+  /** Its team, for the people on it. */
+  members: OrgMemberView[] | null;
+  /** Verification, for its owner and admins. */
+  domain: OrgDomainView | null;
 }
 
 /** A space in the list (PRD §40). */

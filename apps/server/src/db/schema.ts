@@ -536,6 +536,42 @@ export interface SpaceMembersTable {
   left_at: NullableTimestamp;
 }
 
+export type OrgKind =
+  | 'business'
+  | 'shop'
+  | 'clinic'
+  | 'school'
+  | 'nonprofit'
+  | 'public_service'
+  | 'other';
+export type OrgRole = 'owner' | 'admin' | 'agent';
+
+export interface OrganizationsTable {
+  id: string;
+  name: string;
+  handle: string;
+  kind: OrgKind;
+  about: string | null;
+  website: string | null;
+  domain: string | null;
+  verify_token: string | null;
+  verified_at: NullableTimestamp;
+  created_by: string | null;
+  archived_at: NullableTimestamp;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface OrgMembersTable {
+  org_id: string;
+  user_id: string;
+  role: Defaulted<OrgRole>;
+  title: string | null;
+  added_by: string | null;
+  joined_at: Generated<Date>;
+  left_at: NullableTimestamp;
+}
+
 export interface ServerSettingsTable {
   key: string;
   value: Json;
@@ -578,6 +614,8 @@ export interface Database {
   hidden_messages: HiddenMessagesTable;
   spaces: SpacesTable;
   space_members: SpaceMembersTable;
+  organizations: OrganizationsTable;
+  org_members: OrgMembersTable;
 }
 
 export type User = Selectable<UsersTable>;
@@ -589,5 +627,7 @@ export type Participant = Selectable<ParticipantsTable>;
 export type Message = Selectable<MessagesTable>;
 export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
+export type Organization = Selectable<OrganizationsTable>;
+export type OrgMember = Selectable<OrgMembersTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;

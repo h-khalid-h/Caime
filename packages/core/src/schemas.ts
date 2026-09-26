@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { REWRITE_STYLES } from './assist';
+import { ORG_KINDS } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
@@ -491,3 +492,51 @@ export const CreateSpaceConversationBody = z
     everyone: z.boolean().default(false),
   })
   .strict();
+
+/** Organizations (PRD §36). */
+const OrgName = z.string().trim().min(1, 'Give the organization a name.').max(100);
+const OrgAbout = z.string().trim().max(500).nullable();
+const OrgWebsite = z
+  .string()
+  .trim()
+  .max(200)
+  .url('Enter a web address like https://datac.com')
+  .refine((u) => /^https?:\/\//i.test(u), 'Enter a web address like https://datac.com')
+  .nullable();
+
+export const CreateOrgBody = z
+  .object({
+    name: OrgName,
+    handle: Handle,
+    kind: z.enum(ORG_KINDS),
+    about: OrgAbout.optional(),
+    website: OrgWebsite.optional(),
+  })
+  .strict();
+
+export const UpdateOrgBody = z
+  .object({
+    name: OrgName.optional(),
+    kind: z.enum(ORG_KINDS).optional(),
+    about: OrgAbout.optional(),
+    website: OrgWebsite.optional(),
+  })
+  .strict()
+  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+
+export const OrgMembersBody = z
+  .object({
+    userIds: z.array(z.string().uuid()).min(1).max(100),
+    role: z.enum(['admin', 'agent']).default('agent'),
+  })
+  .strict();
+
+export const OrgMemberBody = z
+  .object({
+    role: z.enum(['admin', 'agent']).optional(),
+    title: z.string().trim().max(80).nullable().optional(),
+  })
+  .strict()
+  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+
+export const OrgDomainBody = z.object({ domain: z.string().trim().min(3).max(260) }).strict();

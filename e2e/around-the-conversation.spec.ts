@@ -1,8 +1,9 @@
 /**
  * What surrounds a conversation, end to end: a relationship that changes and keeps its history,
  * search that opens the message it found, stickers, a message written offline that sends when
- * the network returns, actions and alerts, settings that follow you, and AI assist. One pair of people is shared by these tests
- * (sign-ups are rate limited per address), so they run in order.
+ * the network returns, actions and alerts, spaces, organizations, settings that follow you, and AI
+ * assist. One pair of people is shared by these tests (sign-ups are rate limited per address), so
+ * they run in order.
  */
 import { randomUUID } from 'node:crypto';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
@@ -396,6 +397,56 @@ test.describe
       ).toBeVisible();
       await phone.screenshot({ path: 'e2e/screenshots/phone-spaces.png' });
       expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
+    test('an organization: its profile, the DNS record that verifies it, and its team', async () => {
+      const { page, errors } = noor;
+      const handle = `nile.dental.${stamp}`;
+      await page.goto('/you');
+      await page.getByTestId('settings-orgs').filter({ visible: true }).click();
+      await page.getByTestId('org-create-start').click();
+      await page.getByTestId('org-name').fill(`Nile Dental ${stamp}`);
+      await expect(page.getByTestId('org-handle')).toHaveValue(handle);
+      await page.getByTestId('org-kind-clinic').click();
+      await page.getByTestId('org-create').click();
+      await expect(page).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
+      // A handle's dots don't read as a file: reloading it still opens the app.
+      await page.reload();
+      await expect(visible(page, `Clinic or practice · @${handle}`)).toBeVisible();
+      await expect(page.getByTestId('org-unverified')).toBeVisible();
+
+      await page.getByTestId('org-domain').fill('https://www.NileDental.example/about');
+      await page.getByTestId('org-domain-set').click();
+      await expect(page.getByTestId('org-record-name')).toHaveText(
+        '_caishy-verify.niledental.example',
+      );
+      await expect(page.getByTestId('org-record-value')).toHaveText(/^caishy-verify=[\w-]{20,}$/);
+      // Nothing is published at that name: it says so, and stays unverified.
+      const checked = page.waitForResponse((r) => r.url().endsWith('/domain/check'));
+      await page.getByTestId('org-domain-check').click();
+      expect((await checked).status()).toBe(422);
+      await expect(visible(page, /couldn’t find the record yet/)).toBeVisible();
+      await expect(page.getByTestId('org-unverified')).toBeVisible();
+
+      // The team is made of connections.
+      await page.getByTestId('org-add-people').click();
+      await page.getByTestId(`pick-alex.${stamp}`).click();
+      await page.getByTestId('org-add-confirm').click();
+      await expect(visible(page, 'Team · 2')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-organization.png' });
+
+      // Alex finds it among theirs and sees the team, but not the verification controls.
+      const phone = alex.page;
+      await phone.goto('/orgs');
+      await phone.getByTestId(`org-row-${handle}`).click();
+      await expect(visible(phone, 'Alex Chen (you)')).toBeVisible();
+      await expect(phone.getByTestId('org-domain-check')).toHaveCount(0);
+      await phone.screenshot({ path: 'e2e/screenshots/phone-organization.png' });
+      // The one failed call is the check that found no record.
+      expect(errors.filter((e) => !/422|domain\/check/.test(e))).toEqual([]);
+      errors.length = 0; // The page lives on into the next tests; that expected 422 doesn't.
+      expect(alex.errors).toEqual([]);
     });
 
     test('every settings page opens, and a chosen theme follows you', async () => {

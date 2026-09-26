@@ -22,6 +22,8 @@ import type {
   MessageView,
   MeView,
   NotificationsResponse,
+  OrgSummaryView,
+  OrgView,
   PeopleSearchResult,
   PersonProfileView,
   PolicyView,
@@ -37,6 +39,7 @@ import type {
   TaxonomyResponse,
 } from '@caishy/core/api';
 import type { RewriteStyle } from '@caishy/core/assist';
+import type { OrgKind } from '@caishy/core/orgs';
 import type { SpaceKind } from '@caishy/core/spaces';
 import type { Sphere } from '@caishy/core/taxonomy';
 import { api, request } from './client';
@@ -219,6 +222,33 @@ export const endpoints = {
     api.post<{ conversation: ConversationView }>(
       `/spaces/${id}/conversations/${conversationId}/join`,
     ),
+
+  // Organizations (PRD §36)
+  orgs: () => api.get<{ orgs: OrgSummaryView[] }>('/orgs'),
+  searchOrgs: (term: string) =>
+    api.get<{ orgs: OrgSummaryView[] }>(`/orgs/search${q({ q: term })}`),
+  orgByHandle: (handle: string) =>
+    api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),
+  createOrg: (body: {
+    name: string;
+    handle: string;
+    kind: OrgKind;
+    about?: string;
+    website?: string;
+  }) => api.post<{ org: OrgView }>('/orgs', body),
+  updateOrg: (id: string, body: Record<string, unknown>) =>
+    api.patch<{ org: OrgView }>(`/orgs/${id}`, body),
+  addToOrg: (id: string, userIds: string[]) => api.post<Ok>(`/orgs/${id}/members`, { userIds }),
+  removeFromOrg: (id: string, userId: string) => api.del<Ok>(`/orgs/${id}/members/${userId}`),
+  updateOrgMember: (
+    id: string,
+    userId: string,
+    body: { role?: 'admin' | 'agent'; title?: string | null },
+  ) => api.patch<Ok>(`/orgs/${id}/members/${userId}`, body),
+  setOrgDomain: (id: string, domain: string) =>
+    request<{ org: OrgView }>('PUT', `/orgs/${id}/domain`, { body: { domain } }),
+  checkOrgDomain: (id: string) => api.post<{ org: OrgView }>(`/orgs/${id}/domain/check`),
+  removeOrgDomain: (id: string) => api.del<{ org: OrgView }>(`/orgs/${id}/domain`),
 
   // AI assist: every answer is a suggestion, used only when the person taps it (R17)
   ai: () => api.get<AiStatusView>('/ai'),

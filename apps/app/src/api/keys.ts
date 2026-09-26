@@ -3,6 +3,8 @@ export const qk = {
   me: ['me'] as const,
   ai: ['ai'] as const,
   spaces: ['spaces'] as const,
+  orgs: ['orgs'] as const,
+  org: (handle: string) => ['org', handle] as const,
   space: (id: string) => ['space', id] as const,
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,

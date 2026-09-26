@@ -65,10 +65,15 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
   // The root is a directory to the static handler; it must be the app, not a listing.
   app.get('/', (_req, reply) => serve(reply));
   return {
-    handles: (req) =>
-      (req.method === 'GET' || req.method === 'HEAD') &&
-      !req.url.startsWith('/v1/') &&
-      !/\.[a-z0-9]{2,5}(\?|$)/i.test(req.url.split('#')[0] ?? ''),
+    handles: (req) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+      const path = req.url.split(/[?#]/)[0] ?? '';
+      if (path === '/v1' || path.startsWith('/v1/')) return false;
+      // A page load gets the app whatever the path looks like: handles have dots (/o/nile.dental).
+      if (/\btext\/html\b/.test(req.headers.accept ?? '')) return true;
+      // Anything else shaped like a file is a missing file, never the app as a script or image.
+      return !/\.[a-z0-9]{2,5}$/i.test(path);
+    },
     serve,
   };
 }

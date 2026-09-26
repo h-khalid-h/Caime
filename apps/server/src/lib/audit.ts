@@ -14,6 +14,10 @@ export type AuditAction =
   | 'account.deleted'
   | 'token.created'
   | 'token.revoked'
+  | 'org.created'
+  | 'org.members_added'
+  | 'org.member_removed'
+  | 'org.left'
   | 'org.verified';
 
 export async function audit(

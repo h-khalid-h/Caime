@@ -16,6 +16,7 @@ import {
 } from '@caishy/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database, Relationship, User } from '../db/schema';
+import { verifiedOrgNames } from './orgs';
 import { privacyOf, type ViewerRelation } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
@@ -174,12 +175,19 @@ export async function viewerRelation(
   viewerId: string,
 ): Promise<ViewerRelation> {
   if (ownerId === viewerId)
-    return { isSelf: true, isConnected: true, blocked: false, ownerSpheresForViewer: [] };
-  const [b, spheres, policies, primary] = await Promise.all([
+    return {
+      isSelf: true,
+      isConnected: true,
+      blocked: false,
+      ownerSpheresForViewer: [],
+      verifiedOrgName: (await verifiedOrgNames(db, [ownerId])).get(ownerId) ?? null,
+    };
+  const [b, spheres, policies, primary, verified] = await Promise.all([
     between(db, viewerId, ownerId),
     ownerSpheresFor(db, ownerId, viewerId),
     loadPolicies(db, ownerId),
     activeRelationships(db, ownerId, [viewerId]),
+    verifiedOrgNames(db, [ownerId]),
   ]);
   const preset = resolvePolicy(policies, policyTargetFor(primary[0], b.connectionId)).privacy;
   return {
@@ -188,6 +196,7 @@ export async function viewerRelation(
     blocked: b.blockedByMe || b.blockedMe,
     ownerSpheresForViewer: spheres,
     preset,
+    verifiedOrgName: verified.get(ownerId) ?? null,
   };
 }
 

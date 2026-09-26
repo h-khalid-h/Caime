@@ -6,7 +6,17 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
-import { Bell, Info, Keyboard, Lock, LogOut, Palette, Shield, UserRound } from '@/ui/icons';
+import {
+  Bell,
+  Building,
+  Info,
+  Keyboard,
+  Lock,
+  LogOut,
+  Palette,
+  Shield,
+  UserRound,
+} from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
@@ -119,6 +129,17 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
               />
             </View>
           ))}
+        </Card>
+        <Card padded={false}>
+          <ListRow
+            icon={Building}
+            title="Organizations"
+            subtitle="Your business, clinic or school, verified"
+            chevron={!pane}
+            selected={pane && (pathname.startsWith('/orgs') || pathname.startsWith('/o/'))}
+            onPress={() => router.navigate('/orgs')}
+            testID="settings-orgs"
+          />
         </Card>
         {Platform.OS === 'web' ? (
           <Card padded={false}>
