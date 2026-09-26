@@ -1,0 +1,22 @@
+/** Query keys, in one place so realtime events invalidate exactly what they change. */
+export const qk = {
+  me: ['me'] as const,
+  inbox: ['inbox'] as const,
+  inboxAll: ['inbox', 'all'] as const,
+  conversation: (id: string) => ['conversation', id] as const,
+  messages: (id: string) => ['messages', id] as const,
+  memory: (id: string) => ['memory', id] as const,
+  suggestions: (conversationId?: string) => ['suggestions', conversationId ?? 'all'] as const,
+  person: (id: string) => ['person', id] as const,
+  relationshipHistory: (id: string) => ['relationship-history', id] as const,
+  connections: ['connections'] as const,
+  requests: (direction: 'incoming' | 'outgoing') => ['requests', direction] as const,
+  taxonomy: ['taxonomy'] as const,
+  tasks: (view: string, scope?: string) => ['tasks', view, scope ?? ''] as const,
+  decisions: (conversationId?: string) => ['decisions', conversationId ?? 'all'] as const,
+  notifications: ['notifications'] as const,
+  policies: ['policies'] as const,
+  sessions: ['sessions'] as const,
+  search: (term: string) => ['search', term] as const,
+  peopleSearch: (term: string) => ['people-search', term] as const,
+};

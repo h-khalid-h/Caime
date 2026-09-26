@@ -1,0 +1,85 @@
+import { router } from 'expo-router';
+import { View } from 'react-native';
+import { Character } from '@/brand/Character';
+import { Wordmark } from '@/brand/Wordmark';
+import { BrandPanel } from '@/features/auth/AuthLayout';
+import { useTheme } from '@/theme/theme';
+import { Button } from '@/ui/Button';
+import { useLayout } from '@/ui/layout';
+import { Screen } from '@/ui/Screen';
+import { Text } from '@/ui/Text';
+
+export default function Welcome() {
+  const { desktop } = useLayout();
+  const t = useTheme();
+  const actions = (
+    <View style={{ gap: 12, width: '100%', maxWidth: 420, alignSelf: 'center' }}>
+      <Button
+        label="Create your account"
+        size="lg"
+        block
+        onPress={() => router.push('/sign-up')}
+        testID="welcome-sign-up"
+      />
+      <Button
+        label="I already have an account"
+        variant="secondary"
+        size="lg"
+        block
+        onPress={() => router.push('/sign-in')}
+        testID="welcome-sign-in"
+      />
+      <Text variant="caption" color="textTertiary" align="center" style={{ marginTop: 4 }}>
+        Free for people. Private by design: how you label someone is only ever yours.
+      </Text>
+    </View>
+  );
+  if (desktop) {
+    return (
+      <Screen edges={['top', 'bottom']} surface>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <BrandPanel />
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              padding: 48,
+              gap: 28,
+              backgroundColor: t.c.surface,
+            }}
+          >
+            <View style={{ maxWidth: 420, width: '100%', alignSelf: 'center', gap: 8 }}>
+              <Text variant="display" accessibilityRole="header">
+                Welcome to Caishy
+              </Text>
+              <Text variant="body" color="textSecondary">
+                One place for everyone you talk to, and it knows the difference between your mum,
+                your manager and your plumber.
+              </Text>
+            </View>
+            {actions}
+          </View>
+        </View>
+      </Screen>
+    );
+  }
+  return (
+    <Screen edges={['top', 'bottom']}>
+      <View style={{ flex: 1, paddingHorizontal: 24, paddingBottom: 16 }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 }}>
+          <Character name="caishy" size={176} expression="happy" />
+          <Wordmark height={44} />
+          <View style={{ gap: 8, maxWidth: 360 }}>
+            <Text variant="title" align="center" accessibilityRole="header">
+              Messaging that understands your relationships.
+            </Text>
+            <Text variant="body" color="textSecondary" align="center">
+              Family, friends and work, each in its place. The right conversations find you.
+            </Text>
+          </View>
+        </View>
+        {actions}
+      </View>
+    </Screen>
+  );
+}

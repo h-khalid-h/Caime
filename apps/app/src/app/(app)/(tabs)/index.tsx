@@ -1,0 +1,16 @@
+import { InboxList } from '@/features/inbox/InboxList';
+import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
+import { useLayout } from '@/ui/layout';
+
+export default function Chats() {
+  const { desktop } = useLayout();
+  if (desktop)
+    return (
+      <DetailPlaceholder
+        character="caishy"
+        title="Pick a conversation"
+        body="Whatever needs you is at the top of the list. Everything else can wait."
+      />
+    );
+  return <InboxList />;
+}
