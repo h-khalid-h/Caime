@@ -2,7 +2,9 @@ import type { PlanUsageView } from '@caishy/core/api';
 import { formatBytes, formatSoon } from '@caishy/core/format';
 import { nextPersonPlan, PERSON_ALLOWANCES, PLAN_NAMES } from '@caishy/core/plans';
 import { View } from 'react-native';
-import { useMyPlan } from '@/api/hooks';
+import { useBilling, useMyPlan } from '@/api/hooks';
+import { qk } from '@/api/keys';
+import { BillingCard, useBackFromCheckout } from '@/features/billing';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { openLink } from '@/lib/links';
 import { useSession } from '@/state/session';
@@ -54,6 +56,8 @@ function aiDetail(p: PlanUsageView, timeZone: string, locale: string): string {
 
 export default function PlanSettings() {
   const q = useMyPlan();
+  const billing = useBilling().data;
+  const back = useBackFromCheckout([qk.plan, qk.billing]);
   const user = useSession((s) => s.user);
   const p = q.data;
   if (!p || !user)
@@ -64,6 +68,12 @@ export default function PlanSettings() {
     );
   const next = nextPersonPlan(p.plan);
   const free = p.plan === 'personal';
+  // Pro is bought here once Stripe is set up; one paid for is managed here too.
+  const billed =
+    billing &&
+    (billing.subscription ||
+      billing.canManage ||
+      (free && (billing.enabled || billing.unavailable)));
   return (
     <SettingsPage title="Plan">
       <View style={{ gap: 6, paddingHorizontal: 4 }}>
@@ -97,7 +107,19 @@ export default function PlanSettings() {
         />
       </Group>
 
-      {next ? (
+      {billed && billing ? (
+        <Group title={PLAN_NAMES.pro}>
+          <View style={{ padding: 16, gap: 12 }}>
+            {free && !billing.subscription ? (
+              <Text variant="body">
+                {PERSON_ALLOWANCES.pro.aiPerDay} AI assists a day and{' '}
+                {formatBytes(PERSON_ALLOWANCES.pro.storageBytes)} for files.
+              </Text>
+            ) : null}
+            <BillingCard billing={billing} plan="pro" back={back} />
+          </View>
+        </Group>
+      ) : next ? (
         <Group
           title={PLAN_NAMES[next]}
           footer={

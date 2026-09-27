@@ -7,6 +7,7 @@ import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
+import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, type PublicJwk, type SealedMessage } from './e2ee';
 import { ORG_KINDS } from './orgs';
@@ -772,3 +773,20 @@ export const ChecklistOpBody = z.discriminatedUnion('op', [
   z.object({ op: z.literal('edit'), itemId: z.string().max(10), text: z.string().max(400) }),
   z.object({ op: z.literal('remove'), itemId: z.string().max(10) }),
 ]);
+
+// --- Billing ---------------------------------------------------------------------------------
+
+/** Buy a plan (R25): Pro for yourself, or Business for an organization you run. */
+export const CheckoutBody = z
+  .object({
+    plan: z.enum(BILLED_PLANS),
+    interval: z.enum(BILLING_INTERVALS),
+    orgId: z.string().uuid().optional(),
+  })
+  .strict()
+  .refine((b) => (b.plan === 'business') === Boolean(b.orgId), {
+    message: 'Pro is for you; Business is for an organization.',
+  });
+
+/** Manage what you pay, or what an organization you run pays, in Stripe's portal. */
+export const BillingPortalBody = z.object({ orgId: z.string().uuid().optional() }).strict();

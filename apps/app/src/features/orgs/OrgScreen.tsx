@@ -369,7 +369,7 @@ export function OrgScreen({ handle }: { handle: string }) {
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>
             <Verification org={org} refresh={put} />
             {org.plan?.allowance.insights ? <OrgInsights orgId={org.id} /> : null}
-            {org.plan ? <OrgPlan plan={org.plan} /> : null}
+            {org.plan ? <OrgPlan plan={org.plan} orgId={org.id} handle={org.handle} /> : null}
           </View>
         ) : null}
 

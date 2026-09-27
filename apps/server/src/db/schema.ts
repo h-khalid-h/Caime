@@ -676,6 +676,33 @@ export interface CallMembersTable {
   seen_at: NullableTimestamp;
 }
 
+/** Which Stripe customer is whose (R25): a person's, or an organization's. */
+export interface BillingCustomersTable {
+  id: string;
+  user_id: string | null;
+  org_id: string | null;
+  created_at: Generated<Date>;
+}
+
+/** Where each subscription stands, as Stripe last said. */
+export interface BillingSubscriptionsTable {
+  id: string;
+  customer_id: string;
+  plan: 'pro' | 'business';
+  interval: 'month' | 'year';
+  status: string;
+  current_period_end: NullableTimestamp;
+  cancel_at_period_end: Defaulted<boolean>;
+  updated_at: Generated<Date>;
+}
+
+/** Stripe's events, each handled once. */
+export interface BillingEventsTable {
+  id: string;
+  type: string;
+  received_at: Generated<Date>;
+}
+
 /** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */
 export interface OrgAgentsTable {
   org_id: string;
@@ -838,6 +865,9 @@ export interface Database {
   calls: CallsTable;
   call_members: CallMembersTable;
   e2ee_devices: E2eeDevicesTable;
+  billing_customers: BillingCustomersTable;
+  billing_subscriptions: BillingSubscriptionsTable;
+  billing_events: BillingEventsTable;
   api_tokens: ApiTokensTable;
   webhook_deliveries: WebhookDeliveriesTable;
 }

@@ -12,6 +12,10 @@ const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 /** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */
 const AI_STUB = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}`;
 const DNS_PORT = Number(process.env.E2E_DNS_PORT ?? 8853);
+/** A stand-in for Stripe (e2e/stripe-stub.mjs): its Checkout and portal pages, and its API. */
+const STRIPE_STUB = `http://127.0.0.1:${Number(process.env.E2E_STRIPE_STUB_PORT ?? 8796)}`;
+const STRIPE_KEY = 'sk_test_e2e_0123456789abcdef';
+const STRIPE_WEBHOOK_SECRET = 'whsec_e2e_0123456789abcdef';
 
 export default defineConfig({
   testDir: './e2e',
@@ -54,6 +58,17 @@ export default defineConfig({
           env: { PORT: new URL(DNS_STUB).port, DNS_PORT: String(DNS_PORT) },
         },
         {
+          command: 'node e2e/stripe-stub.mjs',
+          url: `${STRIPE_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: {
+            PORT: new URL(STRIPE_STUB).port,
+            STRIPE_KEY,
+            WEBHOOK_SECRET: STRIPE_WEBHOOK_SECRET,
+            WEBHOOK_URL: `${BASE}/v1/billing/webhook`,
+          },
+        },
+        {
           command: 'node --enable-source-maps apps/server/dist/server.js',
           url: `${BASE}/v1/readyz`,
           reuseExistingServer: !process.env.CI,
@@ -76,6 +91,9 @@ export default defineConfig({
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
             // Calls between two browsers on this machine need no STUN server out there.
             STUN_URLS: '',
+            STRIPE_SECRET_KEY: STRIPE_KEY,
+            STRIPE_WEBHOOK_SECRET,
+            STRIPE_API_BASE: STRIPE_STUB,
           },
         },
       ],

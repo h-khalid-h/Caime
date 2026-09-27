@@ -60,6 +60,17 @@ const Env = z.object({
   /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
   PLANS_URL: z.string().url().optional(),
   /**
+   * Billing (R25): Stripe's secret (or restricted) key, and the signing secret of the webhook
+   * endpoint Stripe sends to at /v1/billing/webhook. Plans can be bought in the app only with
+   * both; the prices are Stripe's own, found by their lookup keys (docs/DEPLOY.md).
+   */
+  STRIPE_SECRET_KEY: z.string().min(20).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(10).optional(),
+  /** Another Stripe API origin (the local stub the tests run). */
+  STRIPE_API_BASE: z.string().url().default('https://api.stripe.com'),
+  /** The customer portal configuration to open (bpc_…); without it, the account's default. */
+  STRIPE_PORTAL_CONFIGURATION: z.string().optional(),
+  /**
    * Calls (PRD §47): STUN servers that tell each side its public address, comma-separated.
    * Empty for none (then calls connect only on the same network).
    */

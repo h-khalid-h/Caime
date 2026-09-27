@@ -193,6 +193,12 @@ These are rules, not preferences.
 - E2E: a phone sheet slides up, so wait with `toBeInViewport({ ratio: 1 })` and screenshot with
   `animations: 'disabled'`. Photos to upload come from `photo()` in `e2e/helpers.ts`, through
   `page.waitForEvent('filechooser')`.
+- Billing: `lib/billing.ts` and `modules/billing.ts` (Stripe, with fetch in `lib/stripe.ts`, API
+  version pinned). Prices are found by lookup key (`caishy_<plan>_<interval>`), never by id. The
+  webhook takes the raw body (its own content-type parser), checks the signature, and applies
+  what `GET /v1/subscriptions/:id` says, never the event's copy. Tests talk to
+  `test/stripe-stub.ts`; the E2E to `e2e/stripe-stub.mjs`, whose Checkout and portal pages send
+  the signed webhooks.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;

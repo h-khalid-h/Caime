@@ -81,7 +81,9 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `METRICS_TOKEN` | — | Enables `GET /metrics` (below) behind this bearer token. |
 | `DNS_SERVERS` | the system's | Resolvers for checking organizations' domains, comma-separated (`1.1.1.1,8.8.8.8`). Set it if the host's resolver caches a new record too long. |
 | `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
-| `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits; without it, it says upgrades can't be bought yet. |
+| `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits when billing isn't set up; without either, it says upgrades can't be bought yet. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | — | Billing (below): Stripe's secret or restricted key, and the signing secret of the webhook endpoint at `/v1/billing/webhook`. With both, Pro and Business are bought in the app through Stripe Checkout and managed in Stripe's customer portal. |
+| `STRIPE_PORTAL_CONFIGURATION` | the account's default | The customer portal configuration (`bpc_…`) to open. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@caishy.com` | Contact for push services. |
 | `EXPO_ACCESS_TOKEN` | — | Mobile push through Expo (needs the store builds). |
@@ -93,6 +95,32 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |
+
+### Billing (Stripe)
+
+Plans are bought in the app once Stripe is set up; until then, an operator sets them
+(`/v1/admin`). In Stripe (the same steps in test mode first, if the account has it):
+
+1. **Products and prices.** A product for Pro and one for Business, each with a monthly and a
+   yearly recurring price whose **lookup keys** are `caishy_pro_month`, `caishy_pro_year`,
+   `caishy_business_month` and `caishy_business_year`. The app shows whatever those prices are,
+   found by their keys; to change a price, make a new one and move the key to it
+   (`transfer_lookup_key`), and people already paying keep theirs.
+2. **Webhook.** An endpoint at `https://<PUBLIC_URL>/v1/billing/webhook` for
+   `checkout.session.completed`, `customer.subscription.created`,
+   `customer.subscription.updated` and `customer.subscription.deleted`, on API version
+   `2024-06-20` (what the server pins). Its signing secret is `STRIPE_WEBHOOK_SECRET`.
+3. **Customer portal.** Turn on cancelling, updating the payment method and invoice history
+   (or make a configuration through the API and set `STRIPE_PORTAL_CONFIGURATION`).
+4. Set `STRIPE_SECRET_KEY` (a restricted key needs write access to Customers, Checkout
+   Sessions, Customer portal and Subscriptions, and read access to Prices) and
+   `STRIPE_WEBHOOK_SECRET` on the service, and redeploy.
+
+Whatever a webhook says, the server asks Stripe how that subscription stands now, so events that
+come late or out of order change nothing wrongly; each event is handled once. A plan is on while
+its subscription is active, in a trial, or retrying a failed payment (`past_due`), and goes back
+to Personal or Free when it ends. It never replaces a plan an operator set (Enterprise), and a
+lower plan never takes anything away. Deleting an account ends its subscriptions first.
 
 ### 4. Continuous deployment
 

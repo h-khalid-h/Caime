@@ -1,6 +1,9 @@
 import type { OrgPlanView } from '@caishy/core/api';
 import { nextOrgPlan, ORG_ALLOWANCES, PLAN_NAMES } from '@caishy/core/plans';
 import { View } from 'react-native';
+import { useOrgBilling } from '@/api/hooks';
+import { qk } from '@/api/keys';
+import { BillingCard, useBackFromCheckout } from '@/features/billing';
 import { openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -23,10 +26,26 @@ export function nextOrgPlanLine(plan: OrgPlanView): string | null {
 }
 
 /** An organization's plan, for its owner and admins: what it includes and what's in use. */
-export function OrgPlan({ plan }: { plan: OrgPlanView }) {
+export function OrgPlan({
+  plan,
+  orgId,
+  handle,
+}: {
+  plan: OrgPlanView;
+  orgId: string;
+  handle: string;
+}) {
   const t = useTheme();
   const next = nextOrgPlan(plan.plan);
   const line = nextOrgPlanLine(plan);
+  const billing = useOrgBilling(orgId).data;
+  const back = useBackFromCheckout([qk.org(handle), qk.orgBilling(orgId)]);
+  // Business is bought here once Stripe is set up; one paid for is managed here too.
+  const billed =
+    billing &&
+    (billing.subscription ||
+      billing.canManage ||
+      (plan.plan === 'free' && (billing.enabled || billing.unavailable)));
   return (
     <Card>
       <View style={{ gap: 12 }} testID="org-plan">
@@ -50,12 +69,21 @@ export function OrgPlan({ plan }: { plan: OrgPlanView }) {
         <Text variant="caption" color="textSecondary" testID="org-plan-agent">
           {`${plan.used.agentRepliesToday} of ${plan.allowance.agentRepliesPerDay.toLocaleString('en-US')} AI agent answers in the last 24 hours. Past that, your team answers as usual.`}
         </Text>
-        {line ? (
+        {billed && billing ? (
+          <>
+            {plan.plan === 'free' && line ? (
+              <Text variant="caption" color="textSecondary">
+                {line}
+              </Text>
+            ) : null}
+            <BillingCard billing={billing} plan="business" orgId={orgId} back={back} />
+          </>
+        ) : line ? (
           <Text variant="caption" color="textSecondary">
             {plan.upgradeUrl ? line : `${line} It can’t be bought here yet.`}
           </Text>
         ) : null}
-        {next && plan.upgradeUrl ? (
+        {!billed && next && plan.upgradeUrl ? (
           <Button
             label={`See ${PLAN_NAMES[next]}`}
             variant="secondary"

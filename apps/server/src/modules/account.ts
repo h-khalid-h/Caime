@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
+import { endSubscriptionsOf } from '../lib/billing';
 import { verifyPassword } from '../lib/crypto';
 import { AppError, notFound } from '../lib/errors';
 import { leaveAllGroupCalls } from '../lib/group-calls';
@@ -322,7 +323,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         )
         .execute(),
     ]);
-    // Out of any group call first, so the others hear it and the call's line is written.
+    // What it pays for ends first: nothing is charged to an account that's gone.
+    await endSubscriptionsOf(ctx, { userId: me });
+    // Out of any group call, so the others hear it and the call's line is written.
     await leaveAllGroupCalls(ctx, me);
     await ctx.db.transaction().execute(async (trx) => {
       // Spaces and organizations it owned stay with the people in them.

@@ -63,6 +63,7 @@ import type {
 } from '@caishy/core/api';
 import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
 import type { RewriteStyle } from '@caishy/core/assist';
+import type { BilledPlan, BillingInterval, BillingView } from '@caishy/core/billing';
 import type { BusinessView } from '@caishy/core/business';
 import type { CallKind } from '@caishy/core/calls';
 import type { PublicJwk, SealedMessage } from '@caishy/core/e2ee';
@@ -141,6 +142,12 @@ export const endpoints = {
 
   me: () => api.get<{ user: MeView }>('/me'),
   myPlan: () => api.get<PlanUsageView>('/me/plan'),
+  billing: () => api.get<BillingView>('/billing'),
+  orgBilling: (orgId: string) => api.get<BillingView>(`/orgs/${orgId}/billing`),
+  checkout: (body: { plan: BilledPlan; interval: BillingInterval; orgId?: string }) =>
+    api.post<{ url: string }>('/billing/checkout', body),
+  billingPortal: (orgId?: string) =>
+    api.post<{ url: string }>('/billing/portal', orgId ? { orgId } : {}),
   deleteAccount: (password: string) => request<Ok>('DELETE', '/me', { body: { password } }),
   updateMe: (patch: Record<string, unknown>) => api.patch<{ user: MeView }>('/me', patch),
   updatePrivacy: (body: Record<string, unknown>) =>

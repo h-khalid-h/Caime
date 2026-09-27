@@ -647,7 +647,11 @@ test.describe
       await expect(page.getByTestId('plan-name')).toHaveText('Personal');
       await expect(page.getByTestId('plan-ai')).toContainText('0 of 10 in the last 24 hours');
       await expect(page.getByTestId('plan-files')).toContainText('0 of 5 GB');
-      await expect(visible(page, /Pro can’t be bought here yet\./)).toBeVisible();
+      // Pro can be bought here, at Stripe's price for it.
+      await expect(page.getByTestId('billing-price')).toHaveText('€6 a month');
+      await page.getByRole('tab', { name: 'Yearly' }).click();
+      await expect(page.getByTestId('billing-price')).toHaveText('€60 a year');
+      await page.getByRole('tab', { name: 'Monthly' }).click();
       await page.screenshot({ path: 'e2e/screenshots/desktop-plan.png' });
 
       // Nile Dental is on Free: its one app is connected, and its team has room for one more.
@@ -665,6 +669,30 @@ test.describe
       await page.waitForTimeout(400); // the sheet's fade-in, for the screenshot only
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-plan.png' });
       await page.keyboard.press('Escape');
+      expect(errors).toEqual([]);
+    });
+
+    test('Pro, bought through Stripe and managed there', async () => {
+      const { page, errors } = noor;
+      await page.goto('/settings/plan');
+      await page.getByTestId('billing-checkout').click();
+      // Stripe's Checkout (its stand-in here): paid, and back.
+      await page.waitForURL(/\/checkout\//);
+      await page.getByRole('button', { name: 'Pay' }).click();
+      await page.waitForURL(/\/settings\/plan\?billing=done/);
+      await expect(page.getByTestId('plan-name')).toHaveText('Pro');
+      const paid = page.getByTestId('billing-subscription');
+      await expect(paid).toContainText('Pro · €6 a month');
+      await expect(paid).toContainText('Renews on');
+      await expect(page.getByTestId('plan-ai')).toContainText('of 200 in the last 24 hours');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-plan-pro.png' });
+      // Cancelled in Stripe's portal, it stays on until what's paid for ends.
+      await page.getByTestId('billing-manage').click();
+      await page.waitForURL(/\/portal\//);
+      await page.getByRole('button', { name: 'Cancel plan' }).click();
+      await page.waitForURL(/\/settings\/plan$/);
+      await expect(page.getByTestId('billing-subscription')).toContainText('Ends on');
+      await expect(page.getByTestId('plan-name')).toHaveText('Pro');
       expect(errors).toEqual([]);
     });
 
