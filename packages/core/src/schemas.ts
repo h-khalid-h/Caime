@@ -7,6 +7,7 @@ import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
+import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
@@ -353,6 +354,39 @@ export const PolicyBody = z.object({
     ),
   settings: PolicySettingsSchema,
 });
+
+// --- Automations and what's saved (PRD §69) ----------------------------------------------------
+
+const CollectionName = z.string().trim().min(1).max(COLLECTION_MAX);
+
+export const AutomationWhenSchema = z
+  .object({
+    sphere: SphereSchema.nullable().optional(),
+    role: z.string().trim().max(60).nullable().optional(),
+    kinds: z.array(z.enum(SAVE_KINDS)).min(1).max(SAVE_KINDS.length),
+    words: z.array(z.string().trim().min(1).max(WORD_MAX)).max(WORDS_MAX).optional(),
+  })
+  .refine((w) => !w.role || w.sphere, 'A role needs a kind of relationship.');
+
+export const AutomationBody = z.object({
+  name: z.string().trim().max(60).nullable().optional(),
+  when: AutomationWhenSchema,
+  collection: CollectionName,
+  enabled: z.boolean().optional(),
+});
+
+export const AutomationPatch = AutomationBody.partial();
+
+export const SaveBody = z.object({
+  /** Where to keep it; the default collection without one. */
+  collection: CollectionName.optional(),
+  /** One file or link of the message, rather than all of it. */
+  assetId: z.string().uuid().optional(),
+});
+
+export const MoveSavedBody = z.object({ collection: CollectionName });
+
+export const RenameCollectionBody = z.object({ from: CollectionName, to: CollectionName });
 
 // --- Suggestions -----------------------------------------------------------------------------
 

@@ -310,7 +310,7 @@ export function daysText(days: number[]): string {
 }
 
 /** "Mon–Fri 08:00–20:00", or just the hours when the schedule covers every day. */
-function scheduleText(s: Schedule): string {
+export function scheduleText(s: Schedule): string {
   const days = daysText(s.days);
   return days ? `${days} ${s.start}–${s.end}` : `${s.start}–${s.end}`;
 }

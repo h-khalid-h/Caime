@@ -1335,6 +1335,11 @@ describe('pinned messages (PRD §22, §56)', () => {
     await ana.patch(`/v1/conversations/${direct}`, { retentionDays: 1 });
     const m = await send(bo, direct, 'The plan is at https://venue.example/plan');
     await pin(ana, m.id);
+    // Saved, too (PRD §69): what's kept of it goes with it.
+    await ana.post(`/v1/messages/${m.id}/save`, { collection: 'Venue' });
+    const saved = async () =>
+      ((await ana.get('/v1/saved/items')).items as any[]).map((i) => i.message.id);
+    expect(await saved()).toContain(m.id);
     const links = async () =>
       (await ana.get(`/v1/conversations/${direct}/assets?kind=link`)).assets as any[];
     expect((await links()).map((a) => a.messageId)).toContain(m.id);
@@ -1343,6 +1348,13 @@ describe('pinned messages (PRD §22, §56)', () => {
       await runPeriodic(t.ctx);
       expect(await pins(ana, direct)).toEqual([]);
       expect((await links()).map((a) => a.messageId)).not.toContain(m.id);
+      expect(await saved()).not.toContain(m.id);
+      const kept = await t.ctx.db
+        .selectFrom('saved_items')
+        .select('id')
+        .where('message_id', '=', m.id)
+        .execute();
+      expect(kept).toEqual([]);
       const memory = await ana.get(`/v1/conversations/${direct}/memory`);
       expect(JSON.stringify(memory.links)).not.toContain('venue.example');
     } finally {

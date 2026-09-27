@@ -9,6 +9,7 @@ export { default as BadgeCheck } from 'lucide-react-native/icons/badge-check';
 export { default as Ban } from 'lucide-react-native/icons/ban';
 export { default as Bell } from 'lucide-react-native/icons/bell';
 export { default as BellOff } from 'lucide-react-native/icons/bell-off';
+export { default as Bookmark } from 'lucide-react-native/icons/bookmark';
 export { default as Bot } from 'lucide-react-native/icons/bot';
 export { default as Briefcase } from 'lucide-react-native/icons/briefcase';
 export { default as Building } from 'lucide-react-native/icons/building';
@@ -37,6 +38,7 @@ export { default as Smile } from 'lucide-react-native/icons/face-slightly-smilin
 export { default as FileCheck } from 'lucide-react-native/icons/file-check';
 export { default as FileText } from 'lucide-react-native/icons/file-text';
 export { default as Flag } from 'lucide-react-native/icons/flag';
+export { default as Folder } from 'lucide-react-native/icons/folder';
 export { default as Forward } from 'lucide-react-native/icons/forward';
 export { default as Gauge } from 'lucide-react-native/icons/gauge';
 export { default as Globe } from 'lucide-react-native/icons/globe';

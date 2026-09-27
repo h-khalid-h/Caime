@@ -1,7 +1,7 @@
 /**
  * What happens after a message is stored: relationship-aware notifications with burst
  * consolidation (PRD §31–§33), suggestions for each side (PRD §23, §29, §30; R12), emerging
- * topic detection (PRD §58) and follow-up checks (PRD §69).
+ * topic detection (PRD §58), follow-up checks and automations (PRD §69).
  */
 import {
   type Analysis,
@@ -15,6 +15,7 @@ import {
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
+import { runAutomations } from './automations';
 import { isGroupTopic } from './conversations';
 import { enqueue } from './jobs';
 import { messagePreview } from './messages';
@@ -66,6 +67,7 @@ export async function afterMessage(
     // side asked and promised is still worth a suggestion (R15 decides how it's said).
     await notifyBusiness(ctx, conversation, message, sender, recipients, replyToSender ?? null);
     await suggestBusiness(ctx, conversation, message, analysis, sender);
+    await runAutomations(ctx, conversation, message, recipients);
     return;
   }
   const addressed = (userId: string) =>
@@ -86,6 +88,7 @@ export async function afterMessage(
     suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
     detectTopic(ctx, conversation, message),
     scheduleFollowUp(ctx, conversation, message, recipients),
+    runAutomations(ctx, conversation, message, recipients),
   ]);
 }
 

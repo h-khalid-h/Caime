@@ -8,10 +8,12 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
+import { SaveSheet } from '@/features/saved/SaveSheet';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import {
+  Bookmark,
   Copy,
   CornerUpLeft,
   Flag,
@@ -112,10 +114,13 @@ export function MessageActions({
   // Saving it as a decision (PRD §30): its words to start from, for this message only.
   const [deciding, setDeciding] = useState<{ id: string; title: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  // Keeping it in a collection of theirs (PRD §69), for this message only.
+  const [keeping, setKeeping] = useState<string | null>(null);
   if (!m) return null;
   const decision = deciding?.id === m.id ? deciding.title : null;
   const dismiss = () => {
     setDeciding(null);
+    setKeeping(null);
     onClose();
   };
   const mine = m.senderId === me;
@@ -145,6 +150,7 @@ export function MessageActions({
       setSaving(false);
     }
   };
+  if (keeping === m.id) return <SaveSheet message={m} onClose={dismiss} />;
   if (decision !== null)
     return (
       <Sheet
@@ -235,6 +241,16 @@ export function MessageActions({
             title="Forward"
             onPress={close(() => onForward(m))}
             testID="message-forward"
+          />
+        ) : null}
+        {/* Kept only where Caishy can read it: never a private message, nor a line about it. */}
+        {!deleted && !where.private && !m.sealed && m.kind !== 'system' ? (
+          <ListRow
+            icon={Bookmark}
+            title="Save"
+            subtitle="Keep it in a collection of yours"
+            onPress={() => setKeeping(m.id)}
+            testID="message-save"
           />
         ) : null}
         {aiReady && !mine && !deleted && text ? (

@@ -34,6 +34,7 @@ import { agentRoutes } from './modules/agents';
 import { aiRoutes } from './modules/ai';
 import { appRoutes } from './modules/apps';
 import { authRoutes } from './modules/auth';
+import { automationRoutes } from './modules/automations';
 import { billingRoutes } from './modules/billing';
 import { businessRoutes } from './modules/business';
 import { callRoutes } from './modules/calls';
@@ -232,6 +233,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await connectionRoutes(v1, ctx);
       await relationshipRoutes(v1, ctx);
       await policyRoutes(v1, ctx);
+      await automationRoutes(v1, ctx);
       await suggestionRoutes(v1, ctx);
       await conversationRoutes(v1, ctx);
       await callRoutes(v1, ctx);

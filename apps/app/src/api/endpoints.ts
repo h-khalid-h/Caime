@@ -14,6 +14,7 @@ import type {
   AssetsResponse,
   AssetView,
   AuthResponse,
+  AutomationView,
   BusinessInboxView,
   BusinessSummaryView,
   BusinessThreadView,
@@ -56,6 +57,8 @@ import type {
   PolicyView,
   RelationshipHistoryView,
   RelationshipView,
+  SavedCollectionsResponse,
+  SavedItemsResponse,
   SearchResponse,
   SessionResponse,
   SpaceSummaryView,
@@ -69,6 +72,7 @@ import type {
 } from '@caishy/core/api';
 import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
 import type { RewriteStyle } from '@caishy/core/assist';
+import type { AutomationWhen } from '@caishy/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caishy/core/billing';
 import type { BusinessView } from '@caishy/core/business';
 import type { CallKind } from '@caishy/core/calls';
@@ -548,6 +552,38 @@ export const endpoints = {
       `/policies/for/${userId}`,
     ),
   resetPolicies: () => api.post<Ok>('/policies/reset'),
+  /** Automations (PRD §69): what Caishy keeps of what arrives, set up by the person it's for. */
+  automations: () => api.get<{ automations: AutomationView[] }>('/automations'),
+  createAutomation: (body: {
+    name?: string | null;
+    when: Partial<AutomationWhen> & Pick<AutomationWhen, 'kinds'>;
+    collection: string;
+    enabled?: boolean;
+  }) => api.post<{ id: string }>('/automations', body),
+  updateAutomation: (
+    id: string,
+    body: Partial<{
+      name: string | null;
+      when: Partial<AutomationWhen> & Pick<AutomationWhen, 'kinds'>;
+      collection: string;
+      enabled: boolean;
+    }>,
+  ) => api.patch<Ok>(`/automations/${id}`, body),
+  deleteAutomation: (id: string) => api.del<Ok>(`/automations/${id}`),
+  /** What's saved, by collection, and one collection (or all) a page at a time. */
+  saved: () => api.get<SavedCollectionsResponse>('/saved'),
+  savedItems: (collection?: string, before?: string) =>
+    api.get<SavedItemsResponse>(`/saved/items${q({ collection, before })}`),
+  saveMessage: (messageId: string, body: { collection?: string; assetId?: string } = {}) =>
+    api.post<{ id: string; collection: string; existing?: boolean }>(
+      `/messages/${messageId}/save`,
+      body,
+    ),
+  moveSaved: (id: string, collection: string) => api.patch<Ok>(`/saved/${id}`, { collection }),
+  unsave: (id: string) => api.del<Ok>(`/saved/${id}`),
+  renameCollection: (from: string, to: string) =>
+    api.post<Ok & { collection: string }>('/saved/collections/rename', { from, to }),
+  deleteCollection: (name: string) => api.del<Ok>(`/saved/collections${q({ name })}`),
   block: (userId: string) => api.post<Ok>('/blocks', { userId }),
   unblock: (userId: string) => api.del<Ok>(`/blocks/${userId}`),
   blockOrg: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/block`),

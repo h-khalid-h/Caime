@@ -8,6 +8,7 @@ import type { z } from 'zod';
 import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
+import type { AutomationWhen } from './automations';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { PublicJwk, SealedMessage } from './e2ee';
@@ -997,6 +998,72 @@ export interface PolicyView extends RelationshipPolicy {
   description: string;
 }
 
+// --- Automations and what's saved (PRD §69) -------------------------------------------------
+
+export interface AutomationView {
+  id: string;
+  name: string | null;
+  when: AutomationWhen;
+  collection: string;
+  enabled: boolean;
+  /** How many things it has saved, and when it last did. */
+  runs: number;
+  lastRunAt: string | null;
+  /** "When a customer sends a file with “invoice”, save it to Customer Files" */
+  description: string;
+  createdAt: string;
+}
+
+export interface SavedCollectionView {
+  name: string;
+  /** What's in it that its owner can still see. */
+  count: number;
+  latestAt: string | null;
+  /** How many of their automations save to it. */
+  automations: number;
+}
+
+export interface SavedCollectionsResponse {
+  collections: SavedCollectionView[];
+  total: number;
+  /** The most anyone keeps saved (automations.ts). */
+  max: number;
+}
+
+export interface SavedItemView {
+  id: string;
+  collection: string;
+  savedAt: string;
+  /** Kept by one of their automations, not by hand. */
+  automationId: string | null;
+  conversation: {
+    id: string;
+    kind: string;
+    /** A group's or a topic's name; a one-to-one has none, and a customer sees the organization's. */
+    title: string | null;
+  };
+  message: {
+    id: string;
+    seq: number;
+    kind: string;
+    /** To a customer, someone on an organization's team shows as the organization (R15). */
+    senderId: string | null;
+    senderName: string | null;
+    body: string | null;
+    createdAt: string;
+  };
+  /** The files kept: the one saved, or every file of a message saved whole. */
+  files: FileView[];
+  /** A link saved on its own. */
+  link: { url: string; host: string | null; title: string | null } | null;
+}
+
+export interface SavedItemsResponse {
+  items: SavedItemView[];
+  /** Where the next page starts, when there's more. */
+  nextBefore: string | null;
+}
+
 // --- Search ---------------------------------------------------------------------------------
 
 export interface SearchMessageHit {
@@ -1155,7 +1222,10 @@ export type RealtimeSignalType =
   /** An organization someone follows (or whose team they're on) posted, changed or took back an update. */
   | 'updates.changed'
   /** What a conversation keeps pinned at its top changed. */
-  | 'pins.changed';
+  | 'pins.changed'
+  /** What someone saved changed: by hand, on another device, or by an automation of theirs. */
+  | 'saved.changed'
+  | 'automations.changed';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

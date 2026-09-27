@@ -371,6 +371,35 @@ export interface AssetsTable {
   created_at: Generated<Date>;
 }
 
+/** Automations (PRD §69): what someone set Caishy to keep of what arrives. */
+export interface AutomationsTable {
+  id: string;
+  user_id: string;
+  name: string | null;
+  scope_sphere: string | null;
+  scope_role: string | null;
+  kinds: string[];
+  words: Generated<string[]>;
+  collection: string;
+  enabled: Generated<boolean>;
+  runs: Generated<number>;
+  last_run_at: Date | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+/** A message, or one file or link of it, kept in one of someone's collections. */
+export interface SavedItemsTable {
+  id: string;
+  user_id: string;
+  collection: string;
+  conversation_id: string;
+  message_id: string;
+  asset_id: string | null;
+  automation_id: string | null;
+  created_at: Generated<Date>;
+}
+
 export type TaskStatus = 'open' | 'accepted' | 'declined' | 'done' | 'cancelled';
 
 export interface TasksTable {
@@ -875,6 +904,8 @@ export interface Database {
   files: FilesTable;
   message_files: MessageFilesTable;
   assets: AssetsTable;
+  automations: AutomationsTable;
+  saved_items: SavedItemsTable;
   tasks: TasksTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;

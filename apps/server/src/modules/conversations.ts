@@ -55,6 +55,7 @@ const privateGroupFull = () =>
   );
 
 import type { Conversation, Participant } from '../db/schema';
+import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
@@ -1758,6 +1759,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         type: 'message.hidden',
         data: { id, conversationId: m.conversation_id },
       });
+      // Gone from their view, it's gone from what they saved too.
+      await tellSaved(ctx, await dropSaved(ctx.db, [id], auth.userId));
       // Pinned, it leaves the top of their view too (it stays pinned for everyone else).
       if (m.pinned_at)
         await ctx.bus.publish([auth.userId], {
@@ -1772,7 +1775,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const moderator = ['owner', 'admin'].includes(me.role);
     if (m.sender_id !== auth.userId && !moderator)
       throw forbidden('You can delete your own messages.');
-    await ctx.db.transaction().execute(async (trx) => {
+    const savers = await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('messages')
         .set({
@@ -1787,6 +1790,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         })
         .where('id', '=', id)
         .execute();
+      // Whoever saved it no longer has it (PRD §69).
+      const savers = await dropSaved(trx, [id]);
       await trx.deleteFrom('assets').where('message_id', '=', id).execute();
       await trx.deleteFrom('message_files').where('message_id', '=', id).execute();
       await trx
@@ -1796,11 +1801,13 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .where('status', '=', 'pending')
         .execute();
       await recordEvent(trx, 'message.deleted', auth.userId, { messageId: id });
+      return savers;
     });
     await ctx.bus.publish(
       (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
       { type: 'message.deleted', data: { id, conversationId: m.conversation_id } },
     );
+    await tellSaved(ctx, savers);
     if (m.pinned_at)
       await ctx.bus.publish(
         (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),

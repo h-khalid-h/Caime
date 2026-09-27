@@ -99,6 +99,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       the app's CSP; a real push service isn't reachable from the E2E). Expo push implemented but
       ⛔ needs EAS credentials for production builds; not yet exercised end to end
 - [x] Jobs: reminders, held notifications, follow-ups, retention
+- [x] Automations (PRD §69), set up by the person they act for: keeping what arrives from someone
+      known a way (or anyone) that's a file, photo, video, voice note or link, with a word in
+      its name or its message ("invoice"), in a collection of one's own ("Customer Files"). A
+      reminder when someone hasn't answered and quiet hours are rules, listed with them on one
+      Automations page. A message, or one file of it, is saved by hand from its actions. Saved
+      lists every collection and what's in it, each opening where it is and shown where it was
+      said; what's deleted or disappears, or is deleted for oneself, goes from it too
+      (`automations.test.ts`, core `automations.test.ts`, E2E)
 
 ## M5 — App (iOS, Android, Web)
 

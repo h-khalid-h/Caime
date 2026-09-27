@@ -90,6 +90,19 @@ export const useMemory = (conversationId: string, enabled = true) =>
 
 export const usePolicies = () => useQuery({ queryKey: qk.policies, queryFn: endpoints.policies });
 
+export const useAutomations = () =>
+  useQuery({ queryKey: qk.automations, queryFn: endpoints.automations });
+
+export const useSaved = () => useQuery({ queryKey: qk.saved, queryFn: endpoints.saved });
+
+export const useSavedItems = (collection?: string) =>
+  useInfiniteQuery({
+    queryKey: qk.savedItems(collection),
+    queryFn: ({ pageParam }) => endpoints.savedItems(collection, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextBefore ?? undefined,
+  });
+
 /** Whether this server offers AI assist, and whether this person turned it on. */
 export const useAiStatus = () =>
   useQuery({ queryKey: qk.ai, queryFn: endpoints.ai, staleTime: 10 * 60_000 });

@@ -283,7 +283,16 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     case 'policies.changed':
       invalidate(qk.policies);
+      invalidate(['policy-for'], 'policy-for');
       invalidate(qk.inbox, 'inbox');
+      return;
+    case 'saved.changed':
+      invalidate(qk.saved, 'saved');
+      return;
+    case 'automations.changed':
+      invalidate(qk.automations);
+      // A collection an automation saves to is listed before anything is in it.
+      invalidate(qk.saved, 'saved');
       return;
     case 'updates.changed':
       invalidate(['updates'], 'updates');

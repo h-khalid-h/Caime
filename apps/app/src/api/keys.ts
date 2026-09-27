@@ -44,6 +44,10 @@ export const qk = {
   decisions: (conversationId?: string) => ['decisions', conversationId ?? 'all'] as const,
   notifications: ['notifications'] as const,
   policies: ['policies'] as const,
+  automations: ['automations'] as const,
+  /** What's saved (PRD §69): the collections, and one collection's items (or all of them). */
+  saved: ['saved'] as const,
+  savedItems: (collection?: string) => ['saved', 'items', collection ?? ''] as const,
   sessions: ['sessions'] as const,
   search: (term: string) => ['search', term] as const,
   peopleSearch: (term: string) => ['people-search', term] as const,

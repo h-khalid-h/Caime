@@ -892,6 +892,8 @@ test.describe
         ['plan', 'Plan'],
         ['developer', 'Developer'],
         ['connected', 'Connected apps'],
+        ['saved', 'Saved'],
+        ['automations', 'Automations'],
         ['appearance', 'Appearance'],
       ]) {
         await page.goto(`/settings/${path}`);
@@ -964,6 +966,89 @@ test.describe
       await expect(page.getByTestId('person-rule').filter({ visible: true })).not.toContainText(
         'Just for them',
       );
+      expect(errors).toEqual([]);
+    });
+
+    test('an automation keeps what arrives, and a message is saved by hand, each in a collection', async () => {
+      const { page, errors } = noor;
+      // Set up by Noor: files with "invoice" in them, from anyone, kept in Invoices.
+      await page.goto('/settings/automations');
+      await page.getByTestId('automation-add').filter({ visible: true }).click();
+      const sheet = page.getByTestId('automation-sheet').filter({ visible: true });
+      await expect(sheet).toBeVisible();
+      await sheet.getByTestId('automation-words').fill('invoice');
+      await sheet.getByTestId('automation-collection').fill('Invoices');
+      await page.getByTestId('automation-save').click();
+      await expect(
+        page.getByTestId('automation-row').filter({
+          visible: true,
+          hasText: 'When anyone sends a file with “invoice”, save it to Invoices',
+        }),
+      ).toBeVisible();
+      // Alex writes, then sends one.
+      const said = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), body: 'The venue is 12 Nile St.' },
+      });
+      expect(said.ok()).toBe(true);
+      const upload = await alexContext.request.post('/v1/files', {
+        headers: CLIENT,
+        multipart: {
+          file: {
+            name: 'invoice-0927.pdf',
+            mimeType: 'application/pdf',
+            buffer: Buffer.from('%PDF-1.4 an invoice'),
+          },
+        },
+      });
+      expect(upload.ok()).toBe(true);
+      const { file } = await upload.json();
+      const sent = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
+        headers: CLIENT,
+        data: { clientId: randomUUID(), kind: 'file', body: 'For September', fileIds: [file.id] },
+      });
+      expect(sent.ok()).toBe(true);
+      await page.goto('/settings/saved');
+      await page
+        .getByTestId('saved-collection')
+        .filter({ visible: true, hasText: 'Invoices' })
+        .click();
+      const kept = page.getByTestId('saved-item').filter({ visible: true });
+      await expect(kept).toHaveCount(1);
+      await expect(kept).toContainText('invoice-0927.pdf');
+      await expect(kept).toContainText('Kept by an automation');
+      // By hand, from a message's actions, into a collection of its own.
+      await page.goto(`/c/${convo}`);
+      await visible(page, 'The venue is 12 Nile St.').hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await page.getByTestId('message-save').click();
+      await page.getByRole('radio', { name: 'A new collection' }).click();
+      await page.getByTestId('save-new-name').fill('Venue');
+      await page.getByTestId('save-confirm').click();
+      await expect(visible(page, 'Saved to Venue')).toBeVisible();
+      await page.goto('/settings/saved');
+      await page
+        .getByTestId('saved-collection')
+        .filter({ visible: true, hasText: 'Venue' })
+        .click();
+      const venue = page.getByTestId('saved-item').filter({ visible: true });
+      await expect(venue).toContainText('The venue is 12 Nile St.');
+      await expect(venue).toContainText('Alex Chen');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-saved.png' });
+      // Shown where it was said, and taken out of what's saved.
+      await venue.getByTestId('saved-jump').click();
+      await expect.poll(() => new URL(page.url()).pathname).toBe(`/c/${convo}`);
+      await page.goto('/settings/saved');
+      await page
+        .getByTestId('saved-collection')
+        .filter({ visible: true, hasText: 'Venue' })
+        .click();
+      await page
+        .getByTestId('saved-item')
+        .filter({ visible: true })
+        .getByTestId('saved-remove')
+        .click();
+      await expect(page.getByTestId('saved-item').filter({ visible: true })).toHaveCount(0);
       expect(errors).toEqual([]);
     });
 

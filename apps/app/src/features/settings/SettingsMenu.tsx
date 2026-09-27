@@ -9,6 +9,7 @@ import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
 import {
   Bell,
+  Bookmark,
   Building,
   Gauge,
   Info,
@@ -20,6 +21,7 @@ import {
   Palette,
   Shield,
   UserRound,
+  Zap,
 } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
@@ -53,6 +55,20 @@ const ITEMS: Array<{
     icon: Bell,
     title: 'Notifications and priorities',
     subtitle: 'Who reaches you, and when',
+  },
+  {
+    href: '/settings/saved',
+    path: '/settings/saved',
+    icon: Bookmark,
+    title: 'Saved',
+    subtitle: 'What you and your automations kept',
+  },
+  {
+    href: '/settings/automations',
+    path: '/settings/automations',
+    icon: Zap,
+    title: 'Automations',
+    subtitle: 'Keep what arrives, reminders, quiet hours',
   },
   {
     href: '/settings/privacy',

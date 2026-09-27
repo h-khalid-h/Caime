@@ -105,7 +105,7 @@ export function registerWorkers(): void {
     run: async (ctx) => {
       // Disappeared (PRD §60): its words and envelope go, and so does everything kept of it
       // elsewhere, as when it's deleted for everyone: the files and links in the conversation's
-      // index and memory, a pin, and what Caishy was about to offer about it.
+      // index and memory, a pin, what anyone saved of it, and what Caishy was about to offer.
       await sql`
         with gone as (
           update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}',
@@ -116,7 +116,8 @@ export function registerWorkers(): void {
           returning m.id
         ),
         assets_gone as (delete from assets where message_id in (select id from gone)),
-        files_gone as (delete from message_files where message_id in (select id from gone))
+        files_gone as (delete from message_files where message_id in (select id from gone)),
+        saved_gone as (delete from saved_items where message_id in (select id from gone))
         update suggestions set status = 'expired', resolved_at = ${ctx.now()}
         where status = 'pending' and message_id in (select id from gone)`.execute(ctx.db);
       await ctx.db

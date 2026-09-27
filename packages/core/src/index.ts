@@ -4,6 +4,7 @@ export * from './api';
 export * from './apps';
 export * from './assist';
 export * from './attention';
+export * from './automations';
 export * from './billing';
 export * from './business';
 export * from './calls';

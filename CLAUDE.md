@@ -272,6 +272,11 @@ These are rules, not preferences.
   their reactions). The app applies it with `updateMessage` (`state/cache.ts`): only to a
   message it already shows, never adding one, and with the viewer's own parts worked out again.
   `upsertMessage` is for `message.created` and the app's own answers.
+- What's saved (`saved_items`, PRD §69) points at messages and copies nothing. Any new path
+  that deletes a message for everyone, hides it for someone or lets it disappear drops what
+  was saved of it (`dropSaved`, then `tellSaved`; the retention job does it in its own SQL),
+  as it drops the message's assets and pin. A group's topic changes its disappearing messages
+  only through its group, which passes them on.
 
 ## Credentials and environment
 
