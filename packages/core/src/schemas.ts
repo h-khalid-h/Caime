@@ -361,6 +361,8 @@ export const AcceptSuggestionBody = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   dueAt: z.string().datetime().nullable().optional(),
   relationship: RelationshipInput.optional(),
+  /** A possible duplicate (PRD §51): which of the two to keep them under. */
+  keep: z.string().uuid().optional(),
 });
 
 // --- Conversations and messages ----------------------------------------------------------------

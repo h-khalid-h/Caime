@@ -200,6 +200,8 @@ export const endpoints = {
   updateConnection: (id: string, patch: Record<string, unknown>) =>
     api.patch<Ok>(`/connections/${id}`, patch),
   removeConnection: (id: string) => api.del<Ok>(`/connections/${id}`),
+  /** Not the same person after all (PRD §51): a merged account stands on its own again. */
+  separateConnection: (id: string) => api.post<Ok>(`/connections/${id}/separate`),
 
   // Conversations
   inbox: () => api.get<InboxResponse>('/inbox'),
@@ -477,7 +479,7 @@ export const endpoints = {
   deleteTask: (id: string) => api.del<Ok>(`/tasks/${id}`),
   decisions: (params: { conversationId?: string } = {}) =>
     api.get<{ decisions: DecisionView[] }>(`/decisions${q(params)}`),
-  suggestions: (params: { conversationId?: string; subjectUserId?: string } = {}) =>
+  suggestions: (params: { conversationId?: string; subjectUserId?: string; kind?: string } = {}) =>
     api.get<{ suggestions: SuggestionView[] }>(`/suggestions${q(params)}`),
   acceptSuggestion: (id: string, body: Record<string, unknown> = {}) =>
     api.post<{ accepted: { type: string; id: string } }>(`/suggestions/${id}/accept`, body),

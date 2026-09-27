@@ -108,6 +108,8 @@ export interface ConnectionSidesTable {
   muted_until: NullableTimestamp;
   archived_at: NullableTimestamp;
   last_interaction_at: NullableTimestamp;
+  /** The owner said this person is the same as another connection of theirs (PRD §51). */
+  merged_into: Defaulted<string | null>;
   created_at: Generated<Date>;
 }
 

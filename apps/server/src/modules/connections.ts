@@ -19,6 +19,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
 import { ensureDirectConversation } from '../lib/conversations';
+import { suggestDuplicatesOf } from '../lib/duplicates';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsAfterDisconnect } from '../lib/group-calls';
@@ -121,6 +122,9 @@ async function afterConnected(
     { id: accepter.id, email: accepter.email, displayName: accepter.display_name },
     { fromUserId: requesterId, sphere: context.sphere, orgName: context.orgName },
   );
+  // Perhaps someone either of them knows already (PRD §51): offered, never merged for them.
+  await suggestDuplicatesOf(ctx, requesterId, accepterId);
+  await suggestDuplicatesOf(ctx, accepterId, requesterId);
   await ctx.bus.publish([requesterId, accepterId], {
     type: 'connection.created',
     data: { connectionId, conversationId, users: [requesterId, accepterId] },
@@ -361,6 +365,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
         's.muted_until',
         's.archived_at',
         's.last_interaction_at',
+        's.merged_into',
         'c.created_at as connected_at',
       ])
       .where('s.owner_id', '=', auth.userId)
@@ -412,17 +417,50 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
           relationships: mine,
           conversationId:
             conversations.find((c) => c.direct_key === pairKey(auth.userId, u.id).key)?.id ?? null,
+          also: [] as ConnectionView['also'],
+          mergedInto: u.merged_into,
         };
       }),
     );
+    // Accounts said to be the same person (PRD §51) show under the one they're merged into. What
+    // it was merged into may be gone (no longer connected, or not in this search): it stands on
+    // its own again. Found before anything changes, and never round in a circle.
+    const byId = new Map(out.map((c) => [c.person.id, c]));
+    const shownUnder = out.map((c) => {
+      const seen = new Set<string>();
+      let at = c;
+      while (at.mergedInto && !seen.has(at.person.id)) {
+        seen.add(at.person.id);
+        const up = byId.get(at.mergedInto);
+        if (!up) break;
+        at = up;
+      }
+      return at;
+    });
+    for (const [i, c] of out.entries()) {
+      const into = shownUnder[i] as (typeof out)[number];
+      c.mergedInto = into === c ? null : into.person.id;
+      if (into !== c)
+        into.also.push({
+          connectionId: c.connectionId,
+          person: c.person,
+          conversationId: c.conversationId,
+        });
+    }
+    if (!sphere) return { connections: out };
+    // One person, however many accounts: in a sphere if any of them is, unclassified if none is.
+    const one = (c: (typeof out)[number]) => c.mergedInto ?? c.person.id;
+    const labelled = new Set(
+      out
+        .filter((c) =>
+          sphere === 'unclassified'
+            ? c.relationships.length > 0
+            : c.relationships.some((r) => r.sphere === sphere),
+        )
+        .map(one),
+    );
     return {
-      connections: sphere
-        ? out.filter((c) =>
-            sphere === 'unclassified'
-              ? c.relationships.length === 0
-              : c.relationships.some((r) => r.sphere === sphere),
-          )
-        : out,
+      connections: out.filter((c) => labelled.has(one(c)) !== (sphere === 'unclassified')),
     };
   });
 
@@ -459,6 +497,27 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('connection_id', '=', id)
       .where('owner_id', '=', auth.userId)
       .execute();
+    await ctx.bus.publish([auth.userId], {
+      type: 'connection.updated',
+      data: { connectionId: id },
+    });
+    if (body.nickname) await suggestDuplicatesOf(ctx, auth.userId, side.other_id);
+    return { ok: true };
+  });
+
+  /** Not the same person after all (PRD §51): the merged account stands on its own again. */
+  app.post('/connections/:id/separate', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const side = await ctx.db
+      .updateTable('connection_sides')
+      .set({ merged_into: null })
+      .where('connection_id', '=', id)
+      .where('owner_id', '=', auth.userId)
+      .where('merged_into', 'is not', null)
+      .returning('connection_id')
+      .executeTakeFirst();
+    if (!side) throw notFound('That merged connection');
     await ctx.bus.publish([auth.userId], {
       type: 'connection.updated',
       data: { connectionId: id },

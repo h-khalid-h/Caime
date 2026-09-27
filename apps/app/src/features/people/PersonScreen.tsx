@@ -38,6 +38,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { ConnectSheet } from './ConnectSheet';
 import { RelationshipHistory } from './RelationshipHistory';
+import { OtherAccounts } from './SamePerson';
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
@@ -320,6 +321,8 @@ export function PersonScreen({ id }: { id: string }) {
             </View>
           </Card>
         ) : null}
+
+        {state === 'connected' && !self ? <OtherAccounts personId={id} name={name} /> : null}
 
         {!self ? <RelationshipHistory personId={id} name={name} /> : null}
 

@@ -23,6 +23,8 @@ export const qk = {
   album: (messageId: string) => ['album', messageId] as const,
   memory: (id: string) => ['memory', id] as const,
   suggestions: (conversationId?: string) => ['suggestions', conversationId ?? 'all'] as const,
+  /** Two of someone's connections who may be one person (PRD §51). */
+  duplicates: ['suggestions', 'kind', 'duplicate'] as const,
   person: (id: string) => ['person', id] as const,
   /** Call history: every call, the missed ones, or those with one person. */
   calls: (filter: string) => ['calls', filter] as const,

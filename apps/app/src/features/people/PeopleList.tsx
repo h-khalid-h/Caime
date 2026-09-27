@@ -17,13 +17,23 @@ import { PageHeader, Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
+import { DuplicateOffers } from './SamePerson';
 
 type Filter = Sphere | 'all' | 'unlabelled';
 
-function PersonRow({ c, selected }: { c: ConnectionView; selected: boolean }) {
+function PersonRow({
+  c,
+  selected,
+  relationships,
+}: {
+  c: ConnectionView;
+  selected: boolean;
+  /** How they're known, across every account of theirs merged into this one (PRD §51). */
+  relationships: ConnectionView['relationships'];
+}) {
   const t = useTheme();
   const presence = useLive((s) => s.presence[c.person.id]);
-  const primary = c.relationships.find((r) => r.isPrimary) ?? c.relationships[0];
+  const primary = relationships.find((r) => r.isPrimary) ?? relationships[0];
   return (
     <Pressable
       accessibilityRole="button"
@@ -59,8 +69,8 @@ function PersonRow({ c, selected }: { c: ConnectionView; selected: boolean }) {
               {c.nickname ?? c.person.displayName}
             </Text>
             <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-              {c.relationships.length ? (
-                c.relationships
+              {relationships.length ? (
+                relationships
                   .slice(0, 2)
                   .map((r) => <RelationshipChip key={r.id} label={r.label} sphere={r.sphere} />)
               ) : (
@@ -68,6 +78,11 @@ function PersonRow({ c, selected }: { c: ConnectionView; selected: boolean }) {
                   @{c.person.handle} · add how you know them
                 </Text>
               )}
+              {c.also.length ? (
+                <Text variant="caption" color="textTertiary">
+                  {`${c.also.length + 1} accounts`}
+                </Text>
+              ) : null}
             </View>
           </View>
         </View>
@@ -85,40 +100,56 @@ export function PeopleList({ pane }: { pane?: boolean }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [term, setTerm] = useState('');
   const all = q.data?.connections ?? [];
+  // One row a person: accounts merged into another (PRD §51) show under it, and count with it.
+  const { people, accountsOf } = useMemo(() => {
+    const byId = new Map(all.map((c) => [c.person.id, c]));
+    const accounts = new Map(
+      all.map((c) => [
+        c.connectionId,
+        [c, ...c.also.flatMap((a) => byId.get(a.person.id) ?? [])] as ConnectionView[],
+      ]),
+    );
+    return {
+      people: all.filter((c) => !c.mergedInto),
+      accountsOf: (c: ConnectionView) => accounts.get(c.connectionId) ?? [c],
+    };
+  }, [all]);
+  const relationshipsOf = (c: ConnectionView) => accountsOf(c).flatMap((a) => a.relationships);
 
   const counts = useMemo(() => {
-    const out: Partial<Record<Filter, number>> = { all: all.length, unlabelled: 0 };
-    for (const c of all) {
-      if (c.relationships.length === 0) out.unlabelled = (out.unlabelled ?? 0) + 1;
-      for (const s of new Set(c.relationships.map((r) => r.sphere))) out[s] = (out[s] ?? 0) + 1;
+    const out: Partial<Record<Filter, number>> = { all: people.length, unlabelled: 0 };
+    for (const c of people) {
+      const rels = accountsOf(c).flatMap((a) => a.relationships);
+      if (rels.length === 0) out.unlabelled = (out.unlabelled ?? 0) + 1;
+      for (const s of new Set(rels.map((r) => r.sphere))) out[s] = (out[s] ?? 0) + 1;
     }
     return out;
-  }, [all]);
+  }, [people, accountsOf]);
 
   const sections = useMemo(() => {
     const needle = term.trim().toLowerCase().replace(/^@/, '');
-    const matches = all.filter((c) => {
-      if (filter === 'unlabelled' && c.relationships.length) return false;
-      if (
-        filter !== 'all' &&
-        filter !== 'unlabelled' &&
-        !c.relationships.some((r) => r.sphere === filter)
-      )
+    const matches = people.filter((c) => {
+      const accounts = accountsOf(c);
+      const rels = accounts.flatMap((a) => a.relationships);
+      if (filter === 'unlabelled' && rels.length) return false;
+      if (filter !== 'all' && filter !== 'unlabelled' && !rels.some((r) => r.sphere === filter))
         return false;
       if (!needle) return true;
       return (
-        c.person.displayName.toLowerCase().includes(needle) ||
-        (c.nickname ?? '').toLowerCase().includes(needle) ||
-        c.person.handle.includes(needle) ||
-        c.relationships.some((r) => r.label.toLowerCase().includes(needle))
+        accounts.some(
+          (a) =>
+            a.person.displayName.toLowerCase().includes(needle) ||
+            (a.nickname ?? '').toLowerCase().includes(needle) ||
+            a.person.handle.includes(needle),
+        ) || rels.some((r) => r.label.toLowerCase().includes(needle))
       );
     });
     if (filter !== 'all' || needle) return matches.length ? [{ title: '', data: matches }] : [];
     // Grouped by how you know them, in the taxonomy's order.
     const bySphere = new Map<string, ConnectionView[]>();
     for (const c of matches) {
-      const s =
-        (c.relationships.find((r) => r.isPrimary) ?? c.relationships[0])?.sphere ?? 'unlabelled';
+      const rels = accountsOf(c).flatMap((a) => a.relationships);
+      const s = (rels.find((r) => r.isPrimary) ?? rels[0])?.sphere ?? 'unlabelled';
       bySphere.set(s, [...(bySphere.get(s) ?? []), c]);
     }
     const order = [...SPHERES, 'unlabelled'];
@@ -128,7 +159,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         title: s === 'unlabelled' ? 'Not labelled yet' : SPHERE_DEFS[s as Sphere].plural,
         data: bySphere.get(s) ?? [],
       }));
-  }, [all, filter, term]);
+  }, [people, accountsOf, filter, term]);
 
   const chips: Filter[] = [
     'all',
@@ -141,7 +172,9 @@ export function PeopleList({ pane }: { pane?: boolean }) {
     <View>
       <PageHeader
         title="People"
-        subtitle={all.length ? `${all.length} connection${all.length === 1 ? '' : 's'}` : null}
+        subtitle={
+          people.length ? `${people.length} connection${people.length === 1 ? '' : 's'}` : null
+        }
         right={
           <View style={{ flexDirection: 'row', gap: 2 }}>
             <IconButton
@@ -184,7 +217,8 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           <ChevronRight size={18} color={t.c.accentStrong} />
         </Pressable>
       ) : null}
-      {all.length > 6 ? (
+      <DuplicateOffers all={all} />
+      {people.length > 6 ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <TextField
             icon={Search}
@@ -260,7 +294,13 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           ) : null
         }
         renderItem={({ item }) => (
-          <PersonRow c={item} selected={Boolean(pane && selectedId === item.person.id)} />
+          <PersonRow
+            c={item}
+            relationships={relationshipsOf(item)}
+            selected={Boolean(
+              pane && selectedId && accountsOf(item).some((a) => a.person.id === selectedId),
+            )}
+          />
         )}
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={

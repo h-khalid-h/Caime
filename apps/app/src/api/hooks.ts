@@ -66,6 +66,13 @@ export const useSuggestions = (conversationId?: string) =>
     queryFn: () => endpoints.suggestions(conversationId ? { conversationId } : {}),
   });
 
+/** Possible duplicates among someone's connections, offered in People (PRD §51). */
+export const useDuplicates = () =>
+  useQuery({
+    queryKey: qk.duplicates,
+    queryFn: () => endpoints.suggestions({ kind: 'duplicate' }),
+  });
+
 export const useMemory = (conversationId: string, enabled = true) =>
   useQuery({
     queryKey: qk.memory(conversationId),

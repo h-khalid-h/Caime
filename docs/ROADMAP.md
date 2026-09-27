@@ -71,6 +71,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       and onboarding ("You came here for @noor") and lands on it (`handles.test.ts`,
       `paths.test.ts`, E2E)
 - [x] Person profile, relationship change and its history, one line per change (E2E)
+- [x] Possible duplicates (PRD §51): two of someone's people who may be one (the same name as
+      they show it, the same nickname, or one name inside the other from the same place) are
+      offered at the top of People, never merged for them. Merged, one row stands for both,
+      only in that person's view, each account keeps its conversations, and either can be
+      separated again. Only what the person sees is compared, never an email or a phone number
+      (`duplicates.test.ts`, E2E)
 - [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
 - [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
       download your data and delete your account (E2E)

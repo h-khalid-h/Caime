@@ -27,6 +27,7 @@ import type { Kysely, Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Database, Relationship } from '../db/schema';
+import { suggestDuplicatesOf } from '../lib/duplicates';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { between, mutualFit, pairKey, relationshipView } from '../lib/relations';
@@ -258,6 +259,8 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
       type: 'relationship.changed',
       data: { subjectId: body.userId },
     });
+    // Labelled like someone else already is: perhaps the same person (PRD §51).
+    await suggestDuplicatesOf(ctx, auth.userId, body.userId);
     reply.status(201);
     return { relationship: relationshipView(row) };
   });

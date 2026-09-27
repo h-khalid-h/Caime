@@ -5,6 +5,7 @@
 import type { SuggestionView } from '@caishy/core';
 import { AcceptSuggestionBody, type RelationshipInputT } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Suggestion } from '../db/schema';
@@ -103,6 +104,78 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
     const result = await ctx.db.transaction().execute(async (trx) => {
       let ref: { type: string; id: string; view?: unknown };
       switch (s.kind) {
+        case 'duplicate': {
+          // The same person (PRD §51): the one merged shows under the one kept, in their view
+          // only. Both accounts and their conversations stay as they are.
+          const pair = [String(payload.keep), String(payload.merge)];
+          const kept = edits.keep ?? pair[0];
+          if (!kept || !pair.includes(kept)) throw badRequest('Keep one of the two.');
+          const merged = pair.find((p) => p !== kept) as string;
+          const sideOf = (otherId: string) =>
+            trx
+              .selectFrom('connection_sides as s')
+              .innerJoin('connections as c', 'c.id', 's.connection_id')
+              .select(['s.connection_id', 's.merged_into'])
+              .where('s.owner_id', '=', auth.userId)
+              .where('s.other_id', '=', otherId)
+              .where('c.status', '=', 'active')
+              .forUpdate()
+              .executeTakeFirst();
+          // Who someone shows under: the one they're merged into, while that one is still theirs.
+          const shownUnder = async (otherId: string) => {
+            const side = await sideOf(otherId);
+            if (!side) return null;
+            const up = side.merged_into ? await sideOf(side.merged_into) : undefined;
+            return { side, one: up && side.merged_into ? side.merged_into : otherId };
+          };
+          const keeping = await shownUnder(kept);
+          const merging = await shownUnder(merged);
+          if (!keeping || !merging)
+            throw badRequest('You aren’t connected with both of them any more.');
+          const into = keeping.one;
+          if (into !== merging.one) {
+            // The one kept under stands on its own; the one merged, and anyone already under it,
+            // go under it: one person, one row.
+            await trx
+              .updateTable('connection_sides')
+              .set({ merged_into: null })
+              .where('owner_id', '=', auth.userId)
+              .where('other_id', '=', into)
+              .execute();
+            await trx
+              .updateTable('connection_sides')
+              .set({ merged_into: into })
+              .where('owner_id', '=', auth.userId)
+              .where((eb) =>
+                eb.or([eb('other_id', '=', merging.one), eb('merged_into', '=', merging.one)]),
+              )
+              .execute();
+          }
+          // Any other pair now within this one person has nothing left to ask.
+          const one = await trx
+            .selectFrom('connection_sides')
+            .select('other_id')
+            .where('owner_id', '=', auth.userId)
+            .where((eb) => eb.or([eb('other_id', '=', into), eb('merged_into', '=', into)]))
+            .execute();
+          const ids = one.map((r) => r.other_id);
+          await trx
+            .updateTable('suggestions')
+            .set({ status: 'expired', resolved_at: ctx.now() })
+            .where('user_id', '=', auth.userId)
+            .where('kind', '=', 'duplicate')
+            .where('status', '=', 'pending')
+            .where('id', '<>', id)
+            .where(sql<string>`payload->>'keep'`, 'in', ids)
+            .where(sql<string>`payload->>'merge'`, 'in', ids)
+            .execute();
+          ref = {
+            type: 'person',
+            id: into,
+            view: { connectionId: merging.side.connection_id },
+          };
+          break;
+        }
         case 'relationship': {
           if (!s.subject_user_id) throw badRequest('This suggestion is missing its person.');
           const input = (edits.relationship ?? payload) as RelationshipInputT;
@@ -194,10 +267,16 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute();
       affected.push(...members.map((m) => m.user_id));
     }
-    await ctx.bus.publish(affected, {
-      type: `${result.type}.created`,
-      data: { id: result.id, conversationId: s.conversation_id },
-    });
+    if (result.type === 'person')
+      await ctx.bus.publish([auth.userId], {
+        type: 'connection.updated',
+        data: { connectionId: (result.view as { connectionId: string }).connectionId },
+      });
+    else
+      await ctx.bus.publish(affected, {
+        type: `${result.type}.created`,
+        data: { id: result.id, conversationId: s.conversation_id },
+      });
     await ctx.bus.publish([auth.userId], {
       type: 'suggestion.resolved',
       data: { id, status: 'accepted' },

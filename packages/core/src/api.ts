@@ -126,6 +126,13 @@ export interface ConnectionView {
   lastInteractionAt: string | null;
   relationships: RelationshipView[];
   conversationId: string | null;
+  /**
+   * Other accounts you said are this same person (PRD §51, a duplicate merged): shown with this
+   * one in People, and separated again whenever you like.
+   */
+  also: Array<{ connectionId: string; person: PersonView; conversationId: string | null }>;
+  /** You said this account is the same person as another connection of yours (by user id). */
+  mergedInto: string | null;
 }
 
 export interface ConnectionRequestView {
@@ -474,7 +481,7 @@ export interface DecisionView {
 
 export interface SuggestionView {
   id: string;
-  /** relationship · topic · task · reminder · waiting · decision (R12: never a fact). */
+  /** relationship · topic · task · reminder · waiting · decision · duplicate (R12: never a fact). */
   kind: string;
   title: string;
   rationale: string;

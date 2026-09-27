@@ -1692,4 +1692,60 @@ test.describe
       expect([...errors, ...alex.errors, ...second.errors]).toEqual([]);
       await laptop.close();
     });
+    test('two of Noor’s people who may be one are offered to her, merged, and separated again', async () => {
+      if (!linaContext) throw new Error('The link test signs Lina up first.');
+      const { page, errors } = noor;
+      const linaId = (await (await linaContext.request.get('/v1/me')).json()).user.id as string;
+      const mine = async () =>
+        (
+          (await (await noorContext.request.get('/v1/connections')).json()).connections as Array<{
+            connectionId: string;
+            person: { id: string };
+          }>
+        ).filter((c) => [alexId, linaId].includes(c.person.id));
+      // Noor calls them both the same: that's something she can see, so it's offered.
+      for (const c of await mine()) {
+        const named = await noorContext.request.patch(`/v1/connections/${c.connectionId}`, {
+          headers: CLIENT,
+          data: { nickname: 'Al' },
+        });
+        expect(named.ok(), await named.text()).toBe(true);
+      }
+      await page.goto('/people');
+      const offer = page.getByTestId('duplicate-offer').filter({ visible: true });
+      await expect(offer).toContainText('Lina Farah and Alex Chen may be the same person');
+      await expect(offer).toContainText('Both have the same nickname.');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-duplicate-offer.png' });
+      await offer.getByTestId('duplicate-merge').click();
+      await expect(visible(page, 'Merged: Al is one person in People now')).toBeVisible();
+      await expect(offer).toHaveCount(0);
+      // One row for the two of them, and on it, the other account.
+      await expect(visible(page, '2 accounts')).toBeVisible();
+      await visible(page, '2 accounts').click();
+      await page.waitForURL(`**/p/${alexId}`);
+      const other = page.getByTestId('other-account').filter({ visible: true });
+      await expect(other).toContainText('Lina Farah');
+      await expect(visible(page, 'Only you see them as one.')).toBeVisible();
+      // Only in Noor's view: Lina sees nothing of it.
+      expect(
+        (
+          (await (await linaContext.request.get('/v1/connections')).json()).connections as Array<{
+            mergedInto: string | null;
+          }>
+        ).every((c) => c.mergedInto === null),
+      ).toBe(true);
+      // Not the same after all.
+      await other.getByTestId('separate-account').click();
+      await expect(
+        visible(page, 'Separated: Lina Farah is on their own in People again'),
+      ).toBeVisible();
+      await expect(other).toHaveCount(0);
+      await expect(page.getByText('2 accounts').filter({ visible: true })).toHaveCount(0);
+      for (const c of await mine())
+        await noorContext.request.patch(`/v1/connections/${c.connectionId}`, {
+          headers: CLIENT,
+          data: { nickname: null },
+        });
+      expect(errors).toEqual([]);
+    });
   });
