@@ -232,7 +232,8 @@ async function sharedPlace(ctx: AppContext, a: string, b: string): Promise<Place
  * Someone joined a team or a space: to each side of each pair of them connected there who hasn't
  * said how they know the other, Caishy offers what the place suggests. Never decided for them,
  * never between two people either of whom has blocked the other. Read and written a whole place
- * at a time: a space of two hundred people who know each other is one read and a few writes.
+ * at a time, however many join and however many they know there: one read (found from the
+ * newcomers' own connections, each named in it), an insert for each 500 offers, one publish.
  */
 export async function suggestFromPlace(
   ctx: AppContext,
@@ -242,16 +243,36 @@ export async function suggestFromPlace(
 ): Promise<void> {
   const everyone = [...new Set([...newcomers, ...members])];
   if (!newcomers.length || everyone.length < 2 || !offerOf(place, '')) return;
-  // Each way of each pair: the one who'd be offered, and who they'd be offered about.
+  // Each way of each pair: the one who'd be offered, and who they'd be offered about, named as
+  // they show themselves to the one offered (their identity for them, else their default: as
+  // personViewsFor does).
   const pairs = await ctx.db
     .selectFrom('connection_sides as s')
     .innerJoin('connections as c', 'c.id', 's.connection_id')
-    .select(['s.owner_id', 's.other_id'])
+    .innerJoin('users as u', 'u.id', 's.other_id')
+    .leftJoin('connection_sides as t', (j) =>
+      j.onRef('t.connection_id', '=', 's.connection_id').onRef('t.owner_id', '=', 's.other_id'),
+    )
+    .leftJoin('identities as ti', 'ti.id', 't.identity_id')
+    .leftJoin('identities as di', (j) =>
+      j.onRef('di.user_id', '=', 's.other_id').on('di.is_default', '=', true),
+    )
+    .select([
+      's.owner_id',
+      's.other_id',
+      sql<string>`coalesce(ti.display_name, di.display_name, u.display_name)`.as('shown'),
+    ])
     .where('c.status', '=', 'active')
-    .where('s.owner_id', 'in', everyone)
-    .where('s.other_id', 'in', everyone)
+    // The connections a newcomer has with someone there, found from the newcomers' own sides
+    // (by the index on owner and other), and both sides of each.
+    .where('s.connection_id', 'in', (eb) =>
+      eb
+        .selectFrom('connection_sides as n')
+        .select('n.connection_id')
+        .where('n.owner_id', 'in', newcomers)
+        .where('n.other_id', 'in', everyone),
+    )
     .whereRef('s.owner_id', '<>', 's.other_id')
-    .where((eb) => eb.or([eb('s.owner_id', 'in', newcomers), eb('s.other_id', 'in', newcomers)]))
     .where(({ not, exists, selectFrom }) =>
       not(
         exists(
@@ -285,27 +306,21 @@ export async function suggestFromPlace(
     )
     .execute();
   if (!pairs.length) return;
-  const byOwner = new Map<string, string[]>();
-  for (const p of pairs) byOwner.set(p.owner_id, [...(byOwner.get(p.owner_id) ?? []), p.other_id]);
   const rows: Insertable<SuggestionsTable>[] = [];
-  for (const [owner, subjects] of byOwner) {
-    // Each is named as they show themselves to whoever is offered.
-    const shown = await personViewsFor(ctx, owner, subjects);
-    for (const subject of subjects) {
-      const o = offerOf(place, shown.get(subject)?.displayName ?? 'them');
-      if (!o) continue;
-      rows.push({
-        id: uuidv7(),
-        user_id: owner,
-        kind: 'relationship',
-        title: o.title,
-        rationale: o.rationale,
-        confidence: o.confidence,
-        payload: { sphere: o.sphere, role: o.role, orgName: o.orgName, place: placeRef(place) },
-        subject_user_id: subject,
-        fingerprint: relationshipFingerprint(subject, o),
-      });
-    }
+  for (const p of pairs) {
+    const o = offerOf(place, p.shown || 'them');
+    if (!o) continue;
+    rows.push({
+      id: uuidv7(),
+      user_id: p.owner_id,
+      kind: 'relationship',
+      title: o.title,
+      rationale: o.rationale,
+      confidence: o.confidence,
+      payload: { sphere: o.sphere, role: o.role, orgName: o.orgName, place: placeRef(place) },
+      subject_user_id: p.other_id,
+      fingerprint: relationshipFingerprint(p.other_id, o),
+    });
   }
   const offered = new Set<string>();
   for (let i = 0; i < rows.length; i += 500) {
@@ -317,8 +332,8 @@ export async function suggestFromPlace(
       .execute();
     for (const m of made) offered.add(m.user_id);
   }
-  for (const userId of offered)
-    await ctx.bus.publish([userId], {
+  if (offered.size)
+    await ctx.bus.publish([...offered], {
       type: 'suggestion.created',
       data: { kind: 'relationship', conversationId: null },
     });
