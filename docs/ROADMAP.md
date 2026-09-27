@@ -236,10 +236,17 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       (or a group of them), started from their page; every message sealed on the sender's device
       for every device of everyone in it and signed by it, so the server keeps only envelopes it
       can't read, change or forge. Each device's keys are its own and go when it signs out; a
-      security code for each person to compare, and a notice when one changes; a device added
-      later can't read what came before it. Text only for now; never forwarded, never read by AI
-      (`e2ee.test.ts`, `private.test.ts` on the server and in the app, E2E with two browsers
-      and a third device). [ ] Private conversations in the phone apps
+      later device waits until one of the person's approves it, and each device checks those
+      approvals itself, so the server can't add a device as someone's; a security code for each
+      person (their first device's, so it holds as they add devices) to compare, and a notice
+      when one changes; a device added later can't read what came before it. A review found
+      sixteen ways the server or a stolen copy of it could still read, forge, replay or hide
+      messages; all are fixed (keys pinned on each device, approvals, drafts and the outbox
+      kept off disk, messages opened only in their conversation and at their newest edit,
+      replies sealed with what they answer, a deleted account's messages still checkable).
+      Text only for now; never forwarded, never read by AI (`e2ee.test.ts`, `private.test.ts`
+      on the server and in the app, E2E with two browsers and a third device approved from the
+      phone). [ ] Private conversations in the phone apps
       [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
       ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
 

@@ -7,14 +7,13 @@
 import type { OrgUpdateView, OrgView } from '@caishy/core/api';
 import { formatListTime } from '@caishy/core/format';
 import { UPDATE_MAX } from '@caishy/core/orgs';
-import { assessLink } from '@caishy/core/safety';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useOrgUpdates } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { linkify, openLink } from '@/lib/links';
+import { linkify, openCheckedLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -37,7 +36,7 @@ function Body({ text }: { text: string }) {
             variant="body"
             color={t.c.link}
             style={{ textDecorationLine: 'underline' }}
-            onPress={() => openLink(part.url ?? '', assessLink(part.url ?? '').suspicious)}
+            onPress={() => void openCheckedLink(part.url ?? '')}
             accessibilityRole="link"
           >
             {part.text}

@@ -1,20 +1,23 @@
 /**
- * Private conversations on this device (R18, PRD §61): its keys, sealing what it sends for every
- * device of everyone in the conversation, opening what it's sent, and each person's security
- * code. The keys live only in this browser (keystore); the server sees envelopes.
+ * Private conversations on this device (R18, PRD §61): its keys, sealing what it sends for the
+ * devices of the people in the conversation that this device has confirmed as theirs (./trust),
+ * opening what it's sent only from a device confirmed as its sender's, and each person's security
+ * code. A new device of mine waits until one of mine approves it; this device approves those.
+ * The keys live only in this browser (keystore); the server sees envelopes.
  */
-import type { DeviceView, MessageView } from '@caishy/core/api';
-import type { PublicDevice, SealedMessage } from '@caishy/core/e2ee';
+import type { DeviceView, MessageView, MyDeviceView } from '@caishy/core/api';
+import type { PrivatePayload, SealedMessage } from '@caishy/core/e2ee';
 import {
   type DeviceKeys,
   e2eeSupported,
+  introduce,
   newDeviceKeys,
   type OpenResult,
   open,
   publicKeys,
   seal,
-  securityCode,
 } from '@caishy/core/e2ee-crypto';
+import { uuidv7 } from '@caishy/core/ids';
 import { ApiError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
 import { useSession } from '@/state/session';
@@ -22,21 +25,28 @@ import {
   forgetDevice,
   keystoreSupported,
   loadDevice,
+  loadOpened,
   loadSeen,
-  type SeenCode,
   saveDevice,
+  saveOpened,
   saveSeen,
 } from './keystore';
+import { forgetKnown } from './known';
+import { codeOf, judge, pinned, pinSelf } from './trust';
 
 export { privateSupported } from './support';
 
-interface Mine {
+export interface Mine {
   userId: string;
   id: string;
   keys: DeviceKeys;
+  /** Approved by one of theirs (or the first): until then nothing is sealed for it. */
+  approved: boolean;
 }
 let mine: Mine | null = null;
+let checkedAt = 0;
 let ensuring: Promise<Mine> | null = null;
+const RECHECK_MS = 30_000;
 
 /** A name for this device in Settings: the browser and the system it's on. */
 function deviceName(): string {
@@ -65,37 +75,79 @@ function deviceName(): string {
   return system ? `${browser} on ${system}` : browser;
 }
 
-/**
- * This device's keys: the ones kept here while the server still has them for this session, or
- * new ones, registered now (a new browser, or its session ended).
- */
-export async function ensureDevice(fresh = false): Promise<Mine> {
+/** One tab at a time registers this browser's device: two at once would retire each other's. */
+function oneTab<T>(userId: string, f: () => Promise<T>): Promise<T> {
+  const locks = (globalThis.navigator as { locks?: LockManager } | undefined)?.locks;
+  return locks ? (locks.request(`caishy-e2ee:${userId}`, f) as Promise<T>) : f();
+}
+
+const signedInUser = () => {
   const userId = useSession.getState().user?.id;
   if (!userId || !keystoreSupported || !e2eeSupported())
     throw new Error('Private conversations open in Caishy on the web.');
+  return userId;
+};
+
+async function register(userId: string, startOver: boolean): Promise<Mine> {
+  const keys = await newDeviceKeys();
+  const id = uuidv7();
+  const pub = { id, userId, ...(await publicKeys(keys)) };
+  const { device } = await endpoints.registerDevice({
+    id,
+    encryptionKey: pub.encryptionKey,
+    signingKey: pub.signingKey,
+    // Its own word that these keys are its: the first of a chain, or until one of theirs approves.
+    introduction: await introduce({ keys }, pub),
+    name: deviceName(),
+    ...(startOver ? { startOver: true } : {}),
+  });
+  await saveDevice(userId, { id, keys });
+  await pinSelf(userId, device);
+  return { userId, id, keys, approved: device.approved };
+}
+
+/**
+ * This device's keys: the ones kept here while the server still has them for this session (a
+ * device another tab registered is taken up, never replaced), or new ones, registered now (a new
+ * browser, or its session ended). Checked with the server now and then, and when asked to.
+ */
+export async function ensureDevice(opts: { recheck?: boolean } = {}): Promise<Mine> {
+  const userId = signedInUser();
   watchSignOut();
-  if (!fresh && mine?.userId === userId) return mine;
-  ensuring ??= (async () => {
-    let stored = fresh ? null : await loadDevice(userId);
-    if (stored) {
-      const { devices } = await endpoints.myDevices();
-      if (!devices.some((d) => d.id === stored?.id && d.current)) stored = null;
+  if (!opts.recheck && mine?.userId === userId && Date.now() - checkedAt < RECHECK_MS) return mine;
+  ensuring ??= oneTab(userId, async () => {
+    const stored = await loadDevice(userId);
+    const { devices } = await endpoints.myDevices();
+    const current = stored ? devices.find((d) => d.id === stored.id && d.current) : undefined;
+    const was = mine;
+    mine =
+      stored && current
+        ? { userId, id: stored.id, keys: stored.keys, approved: current.approved }
+        : await register(userId, false);
+    checkedAt = Date.now();
+    if (was && (was.id !== mine.id || was.approved !== mine.approved)) {
+      opened.clear();
+      tell();
     }
-    if (!stored) {
-      const keys = await newDeviceKeys();
-      const { device } = await endpoints.registerDevice({
-        ...(await publicKeys(keys)),
-        name: deviceName(),
-      });
-      stored = { id: device.id, keys };
-      await saveDevice(userId, stored);
-    }
-    mine = { userId, id: stored.id, keys: stored.keys };
     return mine;
-  })().finally(() => {
+  }).finally(() => {
     ensuring = null;
   });
   return ensuring;
+}
+
+/**
+ * Start over here: this device becomes the first of a new chain, and every other device of mine
+ * is retired. Everyone who compared my code sees it changed.
+ */
+export async function startOver(): Promise<Mine> {
+  const userId = signedInUser();
+  watchSignOut();
+  mine = await oneTab(userId, () => register(userId, true));
+  checkedAt = Date.now();
+  opened.clear();
+  tell();
+  return mine;
 }
 
 /**
@@ -114,56 +166,97 @@ function watchSignOut(): void {
 /** Signed out: this browser's keys for the account are forgotten with the session. */
 export async function forgetThisDevice(userId: string): Promise<void> {
   mine = null;
+  checkedAt = 0;
   opened.clear();
-  known.clear();
+  forgetKnown();
   await forgetDevice(userId).catch(() => {});
 }
 
-/** Devices seen per conversation, to check senders with: live ones and past senders. */
-const known = new Map<string, Map<string, DeviceView>>();
-function remember(conversationId: string, devices: DeviceView[]) {
-  const map = known.get(conversationId) ?? new Map<string, DeviceView>();
-  for (const d of devices) map.set(d.id, d);
-  known.set(conversationId, map);
-}
-async function senderDevice(conversationId: string, deviceId: string): Promise<DeviceView | null> {
-  const hit = known.get(conversationId)?.get(deviceId);
-  if (hit) return hit;
-  const { devices, senders } = await endpoints.conversationDevices(conversationId, [deviceId]);
-  remember(conversationId, [...devices, ...senders]);
-  return known.get(conversationId)?.get(deviceId) ?? null;
-}
-/** Someone's devices changed: what's known of that conversation is asked for again. */
-export function devicesChanged(conversationIds: string[]): void {
-  for (const id of conversationIds) known.delete(id);
-  for (const f of codeListeners) f();
+/** Someone's devices changed (mine too): what was opened is looked at again, codes too. */
+export function devicesChanged(userId: string): void {
+  opened.clear();
+  if (userId === useSession.getState().user?.id) checkedAt = 0;
+  tell();
 }
 
-/** Seal text on this device for these devices (all of the conversation's now, by default). */
+/** Why a private message can't be sent from here: said as it is, never sent some other way. */
+const refused = (code: string, message: string, details?: Record<string, unknown>) =>
+  new ApiError(409, code, message, details);
+const WAITING =
+  'This browser can’t write in private conversations until you approve it on another device where you’re signed in to Caishy.';
+
+interface Recipients {
+  people: string[];
+  devices: DeviceView[];
+  chain: DeviceView[];
+}
+
+/**
+ * Seal text on this device for the devices of the people in the conversation that it confirms as
+ * theirs (never one it can't), with the message it answers inside, so it can't be moved.
+ */
 export async function sealText(
   conversationId: string,
   cid: string,
   text: string,
   edit = 0,
-  devices?: DeviceView[],
+  given?: Recipients,
+  replyTo?: PrivatePayload['replyTo'],
 ): Promise<SealedMessage> {
   const me = await ensureDevice();
-  const to = devices ?? (await endpoints.conversationDevices(conversationId)).devices;
-  remember(conversationId, to);
-  return seal({ conversationId, cid, edit, payload: { body: text }, from: me, to });
+  if (!me.approved) throw refused('waiting', WAITING);
+  const view = given ?? (await endpoints.conversationDevices(conversationId));
+  const j = await judge(me.userId, view.devices, view.chain);
+  if (j.held.size)
+    throw refused(
+      'code_changed',
+      'Someone’s security code changed since you compared it: check it in this conversation’s details, then send again.',
+      { userIds: [...j.held] },
+    );
+  const people = new Set(view.people);
+  const to: Array<Pick<DeviceView, 'id' | 'encryptionKey'>> = j.trusted.filter((d) =>
+    people.has(d.userId),
+  );
+  // This device reads what it sent, whatever it's told.
+  if (!to.some((d) => d.id === me.id))
+    to.push({ id: me.id, encryptionKey: (await publicKeys(me.keys)).encryptionKey });
+  return seal({
+    conversationId,
+    cid,
+    edit,
+    payload: replyTo ? { body: text, replyTo } : { body: text },
+    from: me,
+    to,
+  });
 }
 
+/** What a 409 says the conversation's devices are now, to seal for again. */
+const recipientsIn = (e: ApiError): Recipients | undefined => {
+  const d = e.details as Partial<Recipients> | undefined;
+  return d?.devices && d.people
+    ? { people: d.people, devices: d.devices, chain: d.chain ?? [] }
+    : undefined;
+};
+
 /**
- * Seal and send, sealing again if someone's devices changed meanwhile, or registering this
- * device again if the server no longer has it (its session ended).
+ * Seal and send, sealing again if someone's devices changed meanwhile, or checking this device
+ * again if the server no longer has it (its session ended, or another tab replaced it).
  */
 export async function sendPrivate(
   conversationId: string,
   body: SendBody,
+  replyTo?: PrivatePayload['replyTo'],
 ): Promise<{ message: MessageView }> {
-  let devices: DeviceView[] | undefined;
+  let given: Recipients | undefined;
   for (let tries = 0; ; tries++) {
-    const sealed = await sealText(conversationId, body.clientId, body.body ?? '', 0, devices);
+    const sealed = await sealText(
+      conversationId,
+      body.clientId,
+      body.body ?? '',
+      0,
+      given,
+      replyTo,
+    );
     try {
       return await endpoints.send(conversationId, {
         clientId: body.clientId,
@@ -172,110 +265,244 @@ export async function sendPrivate(
         sealed,
       });
     } catch (e) {
-      if (tries >= 2 || !(e instanceof ApiError)) throw e;
-      if (e.code === 'devices_changed') devices = e.details?.devices as DeviceView[] | undefined;
-      else if (e.code === 'unknown_device') {
-        await ensureDevice(true);
-        devices = undefined;
+      if (!(e instanceof ApiError)) throw e;
+      if (e.code === 'devices_changed') {
+        if (tries >= 2)
+          throw refused(
+            'unconfirmed_devices',
+            'A device listed for someone here couldn’t be confirmed as theirs, so this wasn’t sent. Check their security code in this conversation’s details.',
+          );
+        given = recipientsIn(e);
+      } else if (e.code === 'unknown_device' && tries < 2) {
+        await ensureDevice({ recheck: true });
+        given = undefined;
       } else throw e;
     }
   }
 }
 
-/** An edit: sealed again, as the next edit of the same message. */
+/** An edit: sealed again, as the next edit of the same message (answering what it answered). */
 export async function editPrivate(message: MessageView, text: string): Promise<MessageView> {
   const sealed = message.sealed;
   if (!sealed) throw new Error('That message isn’t private.');
-  let devices: DeviceView[] | undefined;
+  const was = await openMessage(message, message.conversationId);
+  const replyTo = was.ok ? was.payload.replyTo : undefined;
+  let given: Recipients | undefined;
   for (let tries = 0; ; tries++) {
-    const next = await sealText(message.conversationId, sealed.cid, text, sealed.edit + 1, devices);
+    const next = await sealText(
+      message.conversationId,
+      sealed.cid,
+      text,
+      sealed.edit + 1,
+      given,
+      replyTo,
+    );
     try {
       return (await endpoints.editMessage(message.id, { sealed: next })).message;
     } catch (e) {
       if (tries >= 2 || !(e instanceof ApiError) || e.code !== 'devices_changed') throw e;
-      devices = e.details?.devices as DeviceView[] | undefined;
+      given = recipientsIn(e);
     }
   }
 }
 
-const opened = new Map<string, OpenResult>();
-/** A private message opened on this device, once (by its version). */
-export async function openMessage(m: MessageView): Promise<OpenResult> {
+/** Why a private message isn't shown here, beyond what opening it says. */
+export type Opened =
+  | OpenResult
+  /** This device is waiting to be approved: nothing is sealed for it yet. */
+  | { ok: false; reason: 'waiting' }
+  /** Its sender's code changed since it was compared: held until checked. */
+  | { ok: false; reason: 'held' }
+  /** An older version of a message edited since. */
+  | { ok: false; reason: 'stale' };
+
+/** The sender's device, as this device confirmed it: never as the server says now. */
+async function senderOf(me: string, conversationId: string, deviceId: string) {
+  const pin = await pinned(me, deviceId);
+  if (pin) return { pin, held: false };
+  const view = await endpoints.conversationDevices(conversationId, [deviceId]);
+  const all = [...view.devices, ...view.chain];
+  const d = all.find((x) => x.id === deviceId);
+  if (!d) return { pin: null, held: false };
+  const j = await judge(me, [d], all);
+  return {
+    pin: j.trusted.length ? await pinned(me, deviceId) : null,
+    held: j.held.has(d.userId),
+  };
+}
+
+const opened = new Map<string, Opened>();
+/**
+ * A private message opened on this device, once (by its version): only in the conversation shown
+ * (`conversationId`), only from a device confirmed as its sender's, and only its newest edit.
+ */
+export async function openMessage(m: MessageView, conversationId: string): Promise<Opened> {
   const sealed = m.sealed;
-  if (!sealed) return { ok: false, reason: 'unreadable' };
-  const key = `${m.id}|${sealed.edit}|${sealed.sig}`;
+  if (!sealed || m.conversationId !== conversationId) return { ok: false, reason: 'unverified' };
+  const key = `${conversationId}|${m.id}|${sealed.edit}|${sealed.sig}`;
   const hit = opened.get(key);
   if (hit) return hit;
-  const me = await ensureDevice();
-  const sender = await senderDevice(m.conversationId, sealed.from);
-  // The device it says it's from must be its sender's, and signed as theirs: the server can't
-  // pass one person's device, or words, off as another's.
-  const result =
-    sender && sender.userId === m.senderId && sealed.by === m.senderId
-      ? await open({ conversationId: m.conversationId, sealed, me, sender })
-      : ({ ok: false, reason: 'unverified' } as const);
+  let me = await ensureDevice();
+  // Not sealed for this device: perhaps another tab replaced it with the one this is for.
+  if (!sealed.keys[me.id]) me = await ensureDevice({ recheck: true });
+  const result = await (async (): Promise<Opened> => {
+    if (!me.approved) return { ok: false, reason: 'waiting' };
+    const sender = await senderOf(me.userId, conversationId, sealed.from);
+    if (sender.held) return { ok: false, reason: 'held' };
+    // The device it says it's from must be one confirmed as its sender's, and signed as theirs.
+    // Someone whose account is gone since (no sender) is checked by their device alone.
+    if (
+      !sender.pin ||
+      sender.pin.userId !== sealed.by ||
+      (m.senderId !== null && m.senderId !== sealed.by)
+    )
+      return { ok: false, reason: 'unverified' };
+    const r = await open({
+      conversationId,
+      sealed,
+      me,
+      sender: { id: sealed.from, userId: sender.pin.userId, signingKey: sender.pin.signingKey },
+    });
+    if (!r.ok) return r;
+    // Only its newest edit, and only as the one message it is.
+    const at = `${me.userId}|${conversationId}|${sealed.by}|${sealed.cid}`;
+    const before = await loadOpened(at);
+    if (before && before.id !== m.id) return { ok: false, reason: 'unverified' };
+    if (before && sealed.edit < before.edit) return { ok: false, reason: 'stale' };
+    if (!before || sealed.edit > before.edit) await saveOpened(at, { id: m.id, edit: sealed.edit });
+    return r;
+  })();
   opened.set(key, result);
   return result;
 }
 
-export function noteFor(result: OpenResult): string | null {
+export function noteFor(result: Opened): string | null {
   if (result.ok) return null;
-  return result.reason === 'not_for_this_device'
-    ? 'Sent before this device could read private messages.'
-    : result.reason === 'unverified'
-      ? 'This message couldn’t be checked, so it isn’t shown.'
-      : 'This message can’t be read on this device.';
+  switch (result.reason) {
+    case 'not_for_this_device':
+      return 'Sent before this device could read private messages.';
+    case 'waiting':
+      return 'This browser reads private messages once you approve it on another of your devices.';
+    case 'held':
+      return 'Their security code changed since you compared it: check it in this conversation’s details to read this.';
+    case 'stale':
+      return 'An older version of a message that was edited since.';
+    case 'unverified':
+      return 'This message couldn’t be checked, so it isn’t shown.';
+    default:
+      return 'This message can’t be read on this device.';
+  }
 }
 
-const codeListeners = new Set<() => void>();
+const listeners = new Set<() => void>();
+const tell = () => {
+  for (const f of listeners) f();
+};
 
 /** Each person's security code in a conversation, and whether it changed since last seen here. */
 export interface PersonCode {
   userId: string;
   code: string | null;
+  /** The first device of their chain now: what accepting their code accepts. */
+  rootId: string | null;
   changed: boolean;
   verified: boolean;
+  /** Changed since it was compared: nothing is sealed for them, or read from them, until checked. */
+  held: boolean;
+  /** Devices listed as theirs that don't hold up as theirs: never sealed for. */
+  unconfirmed: number;
 }
 
 /** The codes of everyone in a private conversation (this person's own too). */
 export async function codesFor(conversationId: string): Promise<PersonCode[]> {
-  const me = useSession.getState().user?.id ?? '';
-  const { devices } = await endpoints.conversationDevices(conversationId);
-  remember(conversationId, devices);
-  const byUser = new Map<string, PublicDevice[]>();
-  for (const d of devices) byUser.set(d.userId, [...(byUser.get(d.userId) ?? []), d]);
+  const me = signedInUser();
+  const view = await endpoints.conversationDevices(conversationId);
+  const j = await judge(me, view.devices, view.chain);
   const out: PersonCode[] = [];
-  for (const [userId, list] of byUser) {
-    const code = await securityCode(list);
-    const key = `${me}|${userId}`;
-    const seen = await loadSeen(key);
-    // The first time a person's code is seen here, it's remembered; after that, a new one shows.
-    if (!seen) await saveSeen(key, { code, verified: false });
+  for (const userId of new Set(view.people)) {
+    const listed = view.devices.filter((d) => d.userId === userId);
+    if (!listed.length) continue;
+    // Their code is from the first device of the chain their confirmed devices hold up to.
+    const root = j.roots.get(userId) ?? null;
+    const code = root ? await codeOf(root) : null;
+    const seen = await loadSeen(`${me}|${userId}`);
+    const changed = Boolean(seen && code && seen.code !== code);
     out.push({
       userId,
       code,
-      changed: Boolean(seen && seen.code !== code),
-      verified: Boolean(seen?.verified && seen.code === code),
+      rootId: root?.id ?? null,
+      changed,
+      verified: Boolean(seen?.verified && !changed),
+      held: j.held.has(userId),
+      unconfirmed: j.unconfirmed.filter((d) => d.userId === userId).length,
     });
   }
   return out;
 }
 
-/** Seen (or compared with them): this code is theirs now. */
-export async function acceptCode(userId: string, code: string, verified: boolean): Promise<void> {
-  const me = useSession.getState().user?.id ?? '';
-  const was: SeenCode | null = await loadSeen(`${me}|${userId}`);
+/** Seen (or compared with them): this code is theirs now, and so is the device it's from. */
+export async function acceptCode(
+  userId: string,
+  code: string,
+  verified: boolean,
+  rootId: string | null,
+): Promise<void> {
+  const me = signedInUser();
+  const was = await loadSeen(`${me}|${userId}`);
   await saveSeen(`${me}|${userId}`, {
     code,
     verified: verified || Boolean(was?.verified && was.code === code),
+    roots: [...new Set([...(was?.roots ?? []), ...(rootId ? [rootId] : [])])],
   });
-  for (const f of codeListeners) f();
+  opened.clear();
+  tell();
 }
 
-/** Told whenever someone's codes may have changed (devices, or a code accepted here). */
+/** My devices, as this device sees them: which it is, which wait, and any it can't confirm. */
+export interface MyDevice extends MyDeviceView {
+  /** Listed as mine and approved, but its approval doesn't hold up: never sealed for. */
+  unconfirmed: boolean;
+}
+export async function myDevices(): Promise<MyDevice[]> {
+  const me = await ensureDevice();
+  const { devices, chain } = await endpoints.myDevices();
+  const approved = devices.filter((d) => d.approved && d.id !== me.id);
+  const j = me.approved ? await judge(me.userId, approved, chain) : null;
+  return devices.map((d) => ({
+    ...d,
+    unconfirmed: Boolean(j?.unconfirmed.some((x) => x.id === d.id)),
+  }));
+}
+
+/** This device approves another of mine that's waiting: it's mine, and sealed for from now. */
+export async function approveDevice(deviceId: string): Promise<void> {
+  const me = await ensureDevice();
+  if (!me.approved) throw new Error(WAITING);
+  const { devices } = await endpoints.myDevices();
+  const d = devices.find((x) => x.id === deviceId && !x.approved);
+  if (!d) throw new Error('That device isn’t waiting any more.');
+  const introduction = await introduce(me, {
+    id: d.id,
+    userId: me.userId,
+    encryptionKey: d.encryptionKey,
+    signingKey: d.signingKey,
+  });
+  await endpoints.approveDevice(deviceId, { introduction });
+  await pinSelf(me.userId, { ...d, userId: me.userId });
+  tell();
+}
+
+/** Removed: nothing more is sealed for it, and it's signed out (this one too, if it's this). */
+export async function removeDevice(deviceId: string): Promise<void> {
+  const { signedOut } = await endpoints.removeDevice(deviceId);
+  tell();
+  if (signedOut) await useSession.getState().signOut({ remote: false });
+}
+
+/** Told whenever codes or devices may have changed (devices, a code accepted, an approval). */
 export function onCodesChanged(f: () => void): () => void {
-  codeListeners.add(f);
+  listeners.add(f);
   return () => {
-    codeListeners.delete(f);
+    listeners.delete(f);
   };
 }

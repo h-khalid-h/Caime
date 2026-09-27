@@ -210,7 +210,13 @@ These are rules, not preferences.
   copies or derives from message bodies (search, memory, AI, previews, forwards, exports, kits)
   must leave `m.sealed` messages alone. The app's side is `features/e2ee/` (`private.ts` holds no
   React; keys in IndexedDB, `keystore.web.ts`), loaded only when used (`support.web.ts`,
-  `hooks.ts`, and a dynamic import in the signed-in layout).
+  `hooks.ts`, and a dynamic import in the signed-in layout). Trust is the device's, never the
+  server's (`trust.ts`): a device counts only if pinned with the same keys, or its chain of
+  introductions (`chainRoot`) holds up to a first device accepted for that person; anything
+  sealed, sent or shown goes through `judge`. Open with the conversation on screen
+  (`openMessage(m, conversationId)`), never `m.conversationId`. A new device registers with a
+  client-chosen id and its own signature, and waits (`approved: false`) until another of the
+  person's approves it.
 - Possible duplicates (PRD §51): `lib/duplicates.ts` offers them, from what the viewer sees only;
   `connection_sides.merged_into` always names a group's root (accepting a `duplicate` suggestion
   unions two groups), and `GET /connections` folds each group into its root's `also`. The app's

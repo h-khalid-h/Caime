@@ -1676,8 +1676,8 @@ test.describe
       await page.keyboard.press('Escape');
       await alex.page.keyboard.press('Escape');
 
-      // Alex signs in on a laptop too. Noor is told his code changed; the laptop can't read what
-      // was sent before it, and reads what's sent after.
+      // Alex signs in on a laptop too. It reads and writes nothing private until Alex says, on
+      // his phone, that it's his.
       const laptop = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const signedIn = await laptop.request.post('/v1/auth/login', {
         headers: CLIENT,
@@ -1686,15 +1686,36 @@ test.describe
       expect(signedIn.ok(), await signedIn.text()).toBe(true);
       const second = await newPerson(laptop);
       await second.page.goto(`/c/${privateId}`);
+      await expect(second.page.getByTestId('private-blocked')).toContainText(
+        'once you approve it on another device',
+      );
+      await expect(second.page.getByTestId('message-sealed-note').first()).toHaveText(
+        'This browser reads private messages once you approve it on another of your devices.',
+      );
+      await second.page.screenshot({ path: 'e2e/screenshots/desktop-private-waiting.png' });
+      // Every browser Alex signed in on since his phone waits for him (the laptop, and others
+      // earlier in this run): he says each is his.
+      await alex.page.goto('/');
+      const asks = alex.page.getByTestId('private-waiting');
+      await expect(asks.first()).toContainText('Is this you?');
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-private-approve.png' });
+      for (let left = await asks.count(); left > 0; left--) {
+        await asks.first().getByTestId('private-approve').click();
+        await expect(asks).toHaveCount(left - 1);
+      }
+      // Approved: the laptop can't read what was sent before it, and reads what's sent after.
+      // Alex's code is the same as before (his phone vouches for the laptop): Noor isn't told
+      // it changed.
       await expect(second.page.getByTestId('message-sealed-note').first()).toHaveText(
         'Sent before this device could read private messages.',
       );
-      await expect(page.getByTestId('private-code-changed')).toBeVisible();
-      await page.screenshot({ path: 'e2e/screenshots/desktop-private-code-changed.png' });
+      await expect(second.page.getByTestId('private-blocked')).toHaveCount(0);
+      await expect(page.getByTestId('private-code-changed')).toHaveCount(0);
       const later = 'And the laptop reads this one';
       await page.getByTestId('composer-input').fill(later);
       await page.getByTestId('composer-send').click();
       await expect(visible(second.page, later)).toBeVisible();
+      await alex.page.goto(`/c/${privateId}`);
       await expect(visible(alex.page, later)).toBeVisible();
       expect([...errors, ...alex.errors, ...second.errors]).toEqual([]);
       await laptop.close();

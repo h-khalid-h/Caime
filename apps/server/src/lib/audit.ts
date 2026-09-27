@@ -34,7 +34,11 @@ export type AuditAction =
   | 'agent.created'
   | 'agent.updated'
   | 'agent.removed'
-  | 'plan.changed';
+  | 'plan.changed'
+  | 'e2ee.device_first'
+  | 'e2ee.device_waiting'
+  | 'e2ee.device_approved'
+  | 'e2ee.device_removed';
 
 export async function audit(
   db: Kysely<Database>,

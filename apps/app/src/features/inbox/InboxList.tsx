@@ -6,6 +6,8 @@ import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { WaitingDevices } from '@/features/e2ee/parts';
+import { privateSupported } from '@/features/e2ee/support';
 import { PushPrompt } from '@/features/push/PushPrompt';
 import { useBadges } from '@/features/shell/useBadges';
 import { UpdatesRow } from '@/features/updates/UpdatesRow';
@@ -110,6 +112,11 @@ export function InboxList({ pane }: { pane?: boolean }) {
         />
       </View>
       <ConnectionBanner />
+      {privateSupported ? (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+          <WaitingDevices on />
+        </View>
+      ) : null}
       <PushPrompt />
       <TeamInboxes />
       <UpdatesRow />

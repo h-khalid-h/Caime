@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { PrivateDevices } from '@/features/e2ee/parts';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { API_URL, isWeb } from '@/lib/config';
 import { useNow, useUserClock } from '@/lib/time';
@@ -118,6 +119,7 @@ export default function Security() {
           </View>
         ))}
       </Group>
+      <PrivateDevices />
       <Group title="Password">
         <View style={{ padding: 16, gap: 12 }}>
           <TextField

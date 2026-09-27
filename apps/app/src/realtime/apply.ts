@@ -63,9 +63,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       if (event.type === 'call.updated' && event.data.state === 'ended') invalidate(['calls']);
       return;
     case 'devices.changed':
-      // Someone's devices for private conversations changed: seal for the new set (R18).
+      // Someone's devices for private conversations changed (mine too: one of mine may be
+      // waiting to be approved): what's sealed for, and each code, is looked at again (R18).
       void import('@/features/e2ee/private')
-        .then((p) => p.devicesChanged(event.data.conversationIds))
+        .then((p) => p.devicesChanged(event.data.userId))
         .catch(() => {});
       return;
     case 'groupcall.ringing':

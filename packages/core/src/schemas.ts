@@ -9,7 +9,7 @@ import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
-import { isPublicKey, isSealed, type PublicJwk, type SealedMessage } from './e2ee';
+import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { ORG_KINDS, UPDATE_MAX } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
@@ -471,16 +471,30 @@ export const SealedSchema = z.custom<SealedMessage>((v) => isSealed(v), {
   message: 'That message isn’t sealed properly.',
 });
 
-/** A device's public keys for private conversations (R18). */
+const Signature = z.custom<string>((v) => isSignature(v), {
+  message: 'That signature isn’t right.',
+});
+
+/**
+ * A device's public keys for private conversations (R18), with its own signature over them. It's
+ * the first of its person's chain if they have no other (or `startOver`, which retires the
+ * others); otherwise it waits for one of theirs to approve it.
+ */
 export const RegisterDeviceBody = z
   .object({
+    id: z.string().uuid(),
     encryptionKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
       message: 'That key isn’t right.',
     }),
     signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), { message: 'That key isn’t right.' }),
+    introduction: Signature,
     name: z.string().trim().max(80).optional(),
+    startOver: z.boolean().optional(),
   })
   .strict();
+
+/** One of my devices approves another of mine: its signature over the new one's introduction. */
+export const ApproveDeviceBody = z.object({ introduction: Signature }).strict();
 
 export const SendMessageBody = z
   .object({

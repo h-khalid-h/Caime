@@ -1249,20 +1249,37 @@ export interface CallHistoryResponse {
   nextBefore: string | null;
 }
 
-/** A device that reads private conversations (R18), as anyone writing to it gets it. */
+/**
+ * A device that reads private conversations (R18), as anyone writing to it gets it: its keys,
+ * and who vouched for it (the device of the same person that approved it, or itself, the first).
+ */
 export interface DeviceView {
   id: string;
   userId: string;
   encryptionKey: PublicJwk;
   signingKey: PublicJwk;
-  createdAt: string;
+  introducedBy: string | null;
+  introduction: string;
 }
 
-/** One of my own devices, for Settings: which it is, and when it was added. */
+/** A private conversation's devices, to seal for, and the chains that vouch for them. */
+export interface ConversationDevicesView {
+  /** Who's in it now. */
+  people: string[];
+  /** Everyone's devices that read it now (approved, signed in). */
+  devices: DeviceView[];
+  /** Devices asked for by id (past senders), and every device that introduced one listed. */
+  chain: DeviceView[];
+}
+
+/** One of my own devices, for Settings: which it is, when it was added, and if it's approved. */
 export interface MyDeviceView extends DeviceView {
   name: string | null;
   /** This is the device asking. */
   current: boolean;
+  createdAt: string;
+  /** Approved by one of my devices (or the first): until then nothing is sealed for it. */
+  approved: boolean;
 }
 
 /** How two devices reach each other (WebRTC), passed from one to the other. */

@@ -6,6 +6,7 @@
  * that nobody else can see are removed from storage.
  */
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
@@ -341,6 +342,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     await endBillingOf(ctx, { userId: me });
     // Out of any group call, so the others hear it and the call's line is written.
     await leaveAllGroupCalls(ctx, me);
+    // Its devices read nothing more, but their public keys stay (without their names), so those
+    // it wrote to privately can still check what it sent them.
+    await ctx.db
+      .updateTable('e2ee_devices')
+      .set({ name: null, revoked_at: sql`coalesce(revoked_at, ${ctx.now()})` })
+      .where('user_id', '=', me)
+      .execute();
     const closed = await ctx.db.transaction().execute(async (trx) => {
       // Spaces and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());

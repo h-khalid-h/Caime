@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { canonical, isPublicKey, isSealed, type PublicDevice, type SealedMessage } from './e2ee';
 import {
+  canonical,
+  type IntroducedDevice,
+  isPublicKey,
+  isSealed,
+  type PublicDevice,
+  type SealedMessage,
+} from './e2ee';
+import {
+  chainRoot,
   type DeviceKeys,
+  introduce,
   newDeviceKeys,
   open,
   publicKeys,
@@ -130,6 +139,67 @@ describe('end-to-end encryption (R18, PRD §61)', () => {
     expect(code).toMatch(/^\d{5}( \d{5}){5}$/);
     expect(await securityCode([b.pub, a.pub])).toBe(code);
     expect(await securityCode([a.pub])).not.toBe(code);
+  });
+
+  it('a person’s devices are theirs only as far as their own chain vouches', async () => {
+    const laptop = await device('dev-laptop', 'noor');
+    const phone = await device('dev-phone', 'noor');
+    const tablet = await device('dev-tablet', 'noor');
+    const rogue = await device('dev-rogue', 'noor');
+    // The laptop was first: it vouches for itself. It approved the phone, the phone the tablet.
+    const first: IntroducedDevice = {
+      ...laptop.pub,
+      introducedBy: null,
+      introduction: await introduce(laptop, laptop.pub),
+    };
+    const second: IntroducedDevice = {
+      ...phone.pub,
+      introducedBy: first.id,
+      introduction: await introduce(laptop, phone.pub),
+    };
+    const third: IntroducedDevice = {
+      ...tablet.pub,
+      introducedBy: second.id,
+      introduction: await introduce(phone, tablet.pub),
+    };
+    const all = new Map([first, second, third].map((d) => [d.id, d]));
+    const lookup = (id: string) => all.get(id);
+    expect((await chainRoot(third, lookup))?.id).toBe(first.id);
+    expect((await chainRoot(first, lookup))?.id).toBe(first.id);
+    // One already confirmed ends the walk.
+    expect((await chainRoot(third, lookup, (d) => d.id === second.id))?.id).toBe(second.id);
+    // A device the server adds says the laptop approved it, but the laptop never signed it.
+    const added: IntroducedDevice = {
+      ...rogue.pub,
+      introducedBy: first.id,
+      introduction: await introduce(rogue, rogue.pub),
+    };
+    expect(await chainRoot(added, lookup)).toBeNull();
+    // Nor can a key be swapped under an approved device's id.
+    expect(await chainRoot({ ...second, signingKey: rogue.pub.signingKey }, lookup)).toBeNull();
+    // Nor can someone else's device introduce one of Noor's, nor Noor's be listed as Sam's.
+    const sam = await device('dev-sam', 'sam');
+    const samFirst: IntroducedDevice = {
+      ...sam.pub,
+      introducedBy: null,
+      introduction: await introduce(sam, sam.pub),
+    };
+    all.set(samFirst.id, samFirst);
+    const bySam: IntroducedDevice = {
+      ...rogue.pub,
+      introducedBy: samFirst.id,
+      introduction: await introduce(sam, rogue.pub),
+    };
+    expect(await chainRoot(bySam, lookup)).toBeNull();
+    expect(await chainRoot({ ...second, userId: 'sam' }, lookup)).toBeNull();
+    // A chain that loops, or whose link is missing, holds nothing up.
+    all.set(first.id, { ...first, introducedBy: third.id });
+    expect(await chainRoot(third, lookup)).toBeNull();
+    all.delete(first.id);
+    expect(await chainRoot(third, lookup)).toBeNull();
+    // The code is the first device's: the same however many devices follow it.
+    expect(await securityCode([first])).toBe(await securityCode([laptop.pub]));
+    expect(await securityCode([first])).not.toBe(await securityCode([phone.pub]));
   });
 
   it('checks an envelope’s shape before it’s stored', async () => {

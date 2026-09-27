@@ -8,7 +8,9 @@ import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
 import { RewriteSheet } from '@/features/assist/RewriteSheet';
 import { useAiReady } from '@/features/assist/ready';
-import { loadPrivate, useOpened } from '@/features/e2ee/hooks';
+import { loadPrivate, useOpened, useThisDevice, whyNotWritten } from '@/features/e2ee/hooks';
+import { StartOverSheet } from '@/features/e2ee/parts';
+import { privateSupported } from '@/features/e2ee/support';
 import { KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
@@ -57,6 +59,8 @@ export interface ComposerProps {
   onEditLast?: () => void;
   /** What the empty box says: "Reply as DATA C" for an organization's team (R15). */
   placeholder?: string;
+  /** The conversation shown, and whether it's private here (R18, seen so on this device too). */
+  where: { conversationId: string; private: boolean };
 }
 
 const MIN_H = 44;
@@ -74,14 +78,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     replyName,
     onEditLast,
     placeholder,
+    where,
   },
   ref,
 ) {
   const t = useTheme();
   const qc = useQueryClient();
   const id = conversation.id;
-  const stored = useDrafts((s) => s.drafts[id]);
-  const [text, setText] = useState(() => stored ?? conversation.me.draft ?? '');
+  // End to end encrypted (R18): text only, sealed on this device; its words are opened here, and
+  // what's being written stays on this device (never mirrored to the account, nor kept).
+  const privately = where.private;
+  const stored = useDrafts((s) => (privately ? s.local[id] : s.drafts[id]));
+  const [text, setText] = useState(
+    () => stored ?? (privately ? '' : (conversation.me.draft ?? '')),
+  );
   const [height, setHeight] = useState(MIN_H);
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
@@ -92,10 +102,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const kits = kitsOffered(conversation, me.minor);
   const [uploading, setUploading] = useState<string | null>(null);
   const [editText, setEditText] = useState<string | null>(null);
-  // End to end encrypted (R18): text only, sealed on this device; its words are opened here.
-  const privately = conversation.privacyClass === 'private';
-  const editingText = useOpened(editing).text;
-  const replyingText = useOpened(replyTo).text;
+  const editingText = useOpened(editing, where).text;
+  const replyingText = useOpened(replyTo, where).text;
+  // Seen as private here, and now said not to be: nothing is written from here in the clear.
+  const downgraded = privately && conversation.privacyClass !== 'private';
+  // This browser, until one of theirs approves it, can't write here.
+  const thisDevice = useThisDevice(privately && privateSupported && !downgraded);
+  const [startingOver, setStartingOver] = useState(false);
+  const blocked = whyNotWritten(where, conversation.privacyClass === 'private', thisDevice);
   const input = useRef<TextInput>(null);
   const enterPref = usePrefs((p) => p.enterToSend);
   const enterSends = enterPref ?? Platform.OS === 'web';
@@ -111,12 +125,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       return;
     }
     setText(v);
-    useDrafts.getState().set(id, v);
+    if (privately) useDrafts.getState().setLocal(id, v);
+    else useDrafts.getState().set(id, v);
     if (v.trim()) realtime.typing(id);
   };
 
   const send = useCallback(async () => {
-    if (disabled) return;
+    if (disabled || blocked) return;
     if (editing) {
       const body = (editText ?? editingText ?? '').trim();
       if (!body || body === editingText) {
@@ -151,7 +166,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             kind: replyTo.kind,
           }
         : null,
-      { private: privately },
+      privately
+        ? {
+            private: true,
+            // Sealed inside it: which message it answers, so it can't be moved to another.
+            replyToSealed: replyTo?.sealed
+              ? { by: replyTo.sealed.by, cid: replyTo.sealed.cid }
+              : undefined,
+          }
+        : {},
     );
     setText('');
     setHeight(MIN_H);
@@ -160,6 +183,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     input.current?.focus();
   }, [
     disabled,
+    blocked,
     editing,
     editText,
     editingText,
@@ -234,7 +258,16 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     );
   };
 
-  if (disabled) {
+  if (disabled || blocked) {
+    const action =
+      disabledAction ??
+      (!disabled && thisDevice === 'waiting'
+        ? {
+            label: 'Start over here instead',
+            onPress: () => setStartingOver(true),
+            testID: 'private-start-over',
+          }
+        : undefined);
     return (
       <View
         style={{
@@ -244,21 +277,27 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           backgroundColor: t.c.surface,
         }}
       >
-        <Text variant="body" color="textSecondary" align="center">
-          {disabled}
+        <Text
+          variant="body"
+          color="textSecondary"
+          align="center"
+          testID={disabled ? undefined : 'private-blocked'}
+        >
+          {disabled ?? blocked}
         </Text>
-        {disabledAction ? (
+        {action ? (
           <View style={{ alignItems: 'center', marginTop: 10 }}>
             <Button
-              label={disabledAction.label}
+              label={action.label}
               size="sm"
               variant="secondary"
               style={{ alignSelf: 'center' }}
-              onPress={disabledAction.onPress}
-              testID={disabledAction.testID}
+              onPress={action.onPress}
+              testID={action.testID}
             />
           </View>
         ) : null}
+        <StartOverSheet open={startingOver} onClose={() => setStartingOver(false)} />
       </View>
     );
   }

@@ -104,7 +104,8 @@ export function registerWorkers(): void {
     everyMs: 3_600_000,
     run: async (ctx) => {
       await sql`
-        update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}', entities = '{}'
+        update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}', entities = '{}',
+          sealed = null
         from conversations c
         where m.conversation_id = c.id and c.retention_days is not null and m.deleted_at is null
           and m.created_at < ${ctx.now()}::timestamptz - make_interval(days => c.retention_days)`.execute(

@@ -22,7 +22,8 @@ import { callsSupported, startCall } from '@/features/calls/engine';
 import { GroupCallBanner } from '@/features/calls/GroupCallBanner';
 import { groupCallsSupported, startGroupCall } from '@/features/calls/group';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
-import { CodeChangedBanner, PrivateSheet } from '@/features/e2ee/PrivateSheet';
+import { useKnownPrivate } from '@/features/e2ee/hooks';
+import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
@@ -205,6 +206,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     [qc, me.id],
   );
   const onRetry = useCallback((m: MessageView) => useOutbox.getState().retry(m.id), []);
+  // Seen as private here once, it stays private here, whatever's said of it now (R18).
+  const saysPrivate = conversation?.privacyClass === 'private';
+  const knownPrivate = useKnownPrivate(id, saysPrivate);
+  const where = useMemo(
+    () => ({ conversationId: id, private: saysPrivate || knownPrivate }),
+    [id, saysPrivate, knownPrivate],
+  );
 
   if (conv.isError && !conversation) {
     return (
@@ -458,6 +466,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         onRetry={onRetry}
         highlighted={marked !== null && item.m.seq === marked}
         inertLinks={conversation?.request === 'incoming'}
+        where={where}
       />
     );
   };
@@ -468,6 +477,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       {conversation && privately ? (
         <CodeChangedBanner conversation={conversation} onOpen={() => setPrivateInfo(true)} />
       ) : null}
+      {knownPrivate && !saysPrivate ? <Downgraded /> : null}
       {conversation?.kind === 'group' ? <GroupCallBanner conversationId={conversation.id} /> : null}
       {conversation && thread ? <ThreadBar conversation={conversation} thread={thread} /> : null}
       {conversation ? <RequestBanner conversation={conversation} /> : null}
@@ -602,6 +612,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           ref={composer}
           key={id}
           conversation={conversation}
+          where={where}
           replyTo={replyTo}
           onClearReply={() => setReplyTo(null)}
           editing={editing}

@@ -1,7 +1,8 @@
 /**
  * The offline outbox (ADR-8): a message is on screen the instant it's written, survives the app
  * closing, and is sent in order when the network allows. The server deduplicates by clientId, so
- * a retry after a lost response can never send twice.
+ * a retry after a lost response can never send twice. A private conversation's (R18) is only
+ * held while the app is open: its words are never written to the device's storage.
  */
 import type { MessageView } from '@caishy/core/api';
 import { uuidv4 } from '@caishy/core/ids';
@@ -24,6 +25,8 @@ export interface OutboxItem {
   attempts: number;
   /** For a private conversation: sealed on this device when it's sent (R18). */
   private?: boolean;
+  /** The message a private one answers, sealed inside it. */
+  replyToSealed?: { by: string; cid: string };
 }
 
 interface OutboxState {
@@ -32,7 +35,7 @@ interface OutboxState {
     conversationId: string,
     body: Omit<SendBody, 'clientId'>,
     replyTo?: MessageView['replyTo'],
-    opts?: { private?: boolean },
+    opts?: { private?: boolean; replyToSealed?: { by: string; cid: string } },
   ) => string;
   resolve: (clientId: string) => void;
   retry: (clientId: string) => void;
@@ -63,7 +66,11 @@ async function sendOne(item: OutboxItem): Promise<'sent' | 'offline' | 'failed'>
   try {
     // A private one is sealed now, for the devices in it now (R18).
     const { message } = item.private
-      ? await (await import('@/features/e2ee/private')).sendPrivate(item.conversationId, item.body)
+      ? await (await import('@/features/e2ee/private')).sendPrivate(
+          item.conversationId,
+          item.body,
+          item.replyToSealed,
+        )
       : await endpoints.send(item.conversationId, item.body);
     upsertMessage(queryClient, message);
     applyMessageToInbox(queryClient, message, { mine: true, reading: true });
@@ -100,6 +107,7 @@ export const useOutbox = create<OutboxState>()(
           status: 'queued',
           attempts: 0,
           ...(opts.private ? { private: true } : {}),
+          ...(opts.replyToSealed ? { replyToSealed: opts.replyToSealed } : {}),
         };
         set((s) => ({ items: [...s.items, item] }));
         get().flush();
@@ -142,7 +150,7 @@ export const useOutbox = create<OutboxState>()(
     {
       name: 'caishy.outbox',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ items: s.items }),
+      partialize: (s) => ({ items: s.items.filter((i) => !i.private) }),
       // Anything mid-send when the app closed goes back in the queue.
       onRehydrateStorage: () => (state) => {
         if (!state) return;

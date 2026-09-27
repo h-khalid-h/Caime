@@ -14,6 +14,7 @@ import { persister, queryClient } from '@/api/queryClient';
 import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
 import { DEFAULT_PREFS, usePrefs } from '@/theme/prefs';
+import { useDrafts } from './drafts';
 import { useLive } from './live';
 import { useLiveShares } from './liveShares';
 import { useOutbox } from './outbox';
@@ -135,7 +136,12 @@ export const useSession = create<SessionState>((set, get) => ({
   },
 
   signOut: async ({ remote = true } = {}) => {
+    const was = get().user?.id;
     if (remote) await endpoints.logout().catch(() => {});
+    // This browser's keys for private conversations go with the session, whether or not they
+    // were used since it opened (R18).
+    if (was)
+      void import('@/features/e2ee/keystore').then((k) => k.forgetDevice(was)).catch(() => {});
     realtime.stop();
     setAuthToken(null);
     await writeToken(null).catch(() => {});
@@ -143,6 +149,7 @@ export const useSession = create<SessionState>((set, get) => ({
     queryClient.clear();
     await persister.removeClient();
     useOutbox.getState().clear();
+    useDrafts.getState().reset();
     useLiveShares.getState().clear();
     useLive.getState().reset();
     usePrefs.getState().set(DEFAULT_PREFS);

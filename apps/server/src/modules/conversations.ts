@@ -27,6 +27,7 @@ import {
   liveNow,
   MembersBody,
   PollPayload,
+  PRIVATE_GROUP_MAX,
   ReactionBody,
   ReceiptsBody,
   SendMessageBody,
@@ -38,6 +39,12 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+
+const privateGroupFull = () =>
+  badRequest(
+    `A private group holds up to ${PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.`,
+  );
+
 import type { Conversation, Participant } from '../db/schema';
 import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
@@ -426,6 +433,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     }
     // Groups are made of people you're connected with (anti-abuse, PRD §55).
     const memberIds = [...new Set(body.memberIds.filter((id) => id !== auth.userId))];
+    if (body.private && memberIds.length + 1 > PRIVATE_GROUP_MAX) throw privateGroupFull();
     const connected = await ctx.db
       .selectFrom('connection_sides as s')
       .innerJoin('connections as c', 'c.id', 's.connection_id')
@@ -491,6 +499,9 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(UpdateConversationBody, req.body);
     const { conversation, me } = await membership(ctx, auth.userId, id);
+    // What's being written in a private conversation stays on the device writing it.
+    if (body.draft && conversation.privacy_class === 'private')
+      throw badRequest('Drafts in a private conversation stay on your device.');
     const shared: Record<string, unknown> = {};
     if (
       body.title !== undefined ||
@@ -600,6 +611,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .execute();
       if (connected.length !== new Set(body.userIds).size)
         throw badRequest('You can add people you’re connected with.');
+    }
+    // Every message in a private group is sealed for each of its people's devices.
+    if (conversation.privacy_class === 'private') {
+      const inIt = new Set((await participantsOf(ctx.db, id)).map((p) => p.user_id));
+      const more = new Set(body.userIds.filter((u) => !inIt.has(u)));
+      if (inIt.size + more.size > PRIVATE_GROUP_MAX) throw privateGroupFull();
     }
     for (const userId of body.userIds) {
       await ctx.db

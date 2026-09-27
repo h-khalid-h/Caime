@@ -13,15 +13,30 @@
  * the conversation, the sender's message id, the device and whose it is are bound into the
  * encryption (as associated data) and into the signature.
  *
+ * Which devices are whose isn't taken from the server either. A person's devices form a chain:
+ * their first device vouches for itself (it signs its own introduction: whose it is, and its
+ * keys), and every later one waits until one of theirs already in the chain signs its
+ * introduction, on an "Is this you?" prompt. Nothing is sealed for a device still waiting. A
+ * person's security code is a digest of their chain's first device, so it stays the same as they
+ * add devices, and changes only when they start over (every device lost, or chosen): a device the
+ * server adds to someone's account can't be passed off as theirs without their code changing.
+ * Each device keeps what it confirmed (every device's keys, each person's first device), so a
+ * later answer from the server never changes it.
+ *
  * What this doesn't hide, and the app says so: who is in a conversation, when messages are sent
- * and how long they are, and reactions. The server hands out the device keys, so it could add a
- * device of its own to someone's account: each person's security code (a digest of their device
- * keys) lets two people compare, and a changed one is shown in the conversation. A device added
- * later can't read what was sent before it was.
+ * and how long they are, and reactions. A device added later can't read what was sent before it
+ * was.
  */
 
 export const E2EE_VERSION = 1;
 export const E2EE_LABEL = 'caishy-e2ee/1';
+
+/** At most this many devices read one person's private conversations. */
+export const MAX_DEVICES = 20;
+/** A private group holds at most this many people: every message is sealed for each device. */
+export const PRIVATE_GROUP_MAX = 64;
+/** So an envelope never needs more keys than this. */
+export const MAX_ENVELOPE_KEYS = PRIVATE_GROUP_MAX * MAX_DEVICES;
 
 /** A P-256 public key as JSON (a JWK's public parts). */
 export interface PublicJwk {
@@ -37,6 +52,14 @@ export interface PublicDevice {
   userId: string;
   encryptionKey: PublicJwk;
   signingKey: PublicJwk;
+}
+
+/** A device and who vouched for it: the first of a person's chain vouches for itself. */
+export interface IntroducedDevice extends PublicDevice {
+  /** The device of the same person that approved this one; null for the first of a chain. */
+  introducedBy: string | null;
+  /** Its approver's signature (or, the first, its own) over its introduction. */
+  introduction: string;
 }
 
 /** A private conversation's message as the server stores it: nothing it can read. */
@@ -63,6 +86,8 @@ export interface SealedMessage {
 /** What a private message carries inside. */
 export interface PrivatePayload {
   body: string;
+  /** The message it answers, by who sent it and their id for it: sealed, so it can't be moved. */
+  replyTo?: { by: string; cid: string } | null;
 }
 
 /** JSON with keys in a fixed order, so both sides sign and check the same bytes. */
@@ -79,6 +104,20 @@ export function canonical(value: unknown): string {
 
 /** Only the parts of a public key that are the key (a JWK may carry more). */
 export const ecPublic = (k: PublicJwk): PublicJwk => ({ kty: 'EC', crv: 'P-256', x: k.x, y: k.y });
+
+/** What's signed to introduce a device: whose it is, which it is, and its keys. */
+export const introductionText = (d: PublicDevice) =>
+  canonical({
+    label: `${E2EE_LABEL} device`,
+    userId: d.userId,
+    id: d.id,
+    e: ecPublic(d.encryptionKey),
+    s: ecPublic(d.signingKey),
+  });
+
+/** A signature as a device makes one: base64url, not too long. */
+export const isSignature = (v: unknown): v is string =>
+  typeof v === 'string' && v.length > 0 && v.length <= 200 && /^[A-Za-z0-9_-]+$/.test(v);
 
 /** Is this a P-256 public key as a device would register one? */
 export function isPublicKey(k: unknown): k is PublicJwk {
@@ -115,7 +154,7 @@ export function isSealed(value: unknown): value is SealedMessage {
     typeof v.keys === 'object' &&
     !Array.isArray(v.keys) &&
     Object.keys(v.keys as object).length > 0 &&
-    Object.keys(v.keys as object).length <= 512 &&
+    Object.keys(v.keys as object).length <= MAX_ENVELOPE_KEYS &&
     Object.entries(v.keys as Record<string, unknown>).every(
       ([k, w]) => k.length <= 64 && b64(w, 80),
     )

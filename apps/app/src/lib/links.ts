@@ -27,6 +27,15 @@ export function linkify(text: string): TextPart[] {
 }
 
 /** Open a link, asking first when the server flagged it as unusual (link safety, PRD §60). */
+/**
+ * Open a link whose words the server never checked (a private message, an organization's
+ * update): checked here first, the check loaded when a link is first opened.
+ */
+export async function openCheckedLink(url: string): Promise<void> {
+  const { assessLink } = await import('@caishy/core/safety');
+  openLink(url, assessLink(url).suspicious);
+}
+
 export function openLink(url: string, suspicious = false): void {
   // A link to Caishy itself (someone's @handle) opens here, not in another tab.
   const own = ownLinkPath(url, WEB_URL);

@@ -683,10 +683,13 @@ export interface CallsTable {
 export interface E2eeDevicesTable {
   id: string;
   user_id: string;
-  session_id: string;
+  session_id: string | null;
   name: string | null;
   encryption_key: Json;
   signing_key: Json;
+  introduced_by: string | null;
+  introduction: string;
+  approved_at: NullableTimestamp;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
 }

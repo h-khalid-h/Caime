@@ -6,6 +6,8 @@
 import {
   canonical,
   ecPublic,
+  type IntroducedDevice,
+  introductionText,
   E2EE_LABEL as LABEL,
   type PrivatePayload,
   type PublicDevice,
@@ -227,6 +229,12 @@ export async function open(input: {
     );
     const payload = JSON.parse(new TextDecoder().decode(plain)) as PrivatePayload;
     if (typeof payload?.body !== 'string') return { ok: false, reason: 'unreadable' };
+    const r = payload.replyTo;
+    if (
+      r != null &&
+      (typeof r !== 'object' || typeof r.by !== 'string' || typeof r.cid !== 'string')
+    )
+      return { ok: false, reason: 'unreadable' };
     return { ok: true, payload };
   } catch {
     return { ok: false, reason: 'unreadable' };
@@ -234,8 +242,62 @@ export async function open(input: {
 }
 
 /**
- * Someone's security code: 30 digits from their devices' public keys, the same wherever it's
- * worked out. Two people compare them; it changes when a device is added or removed.
+ * Introduce a device: signed by the device of the same person that approves it, or, the first of
+ * a chain, by the device itself.
+ */
+export async function introduce(
+  signer: { keys: DeviceKeys },
+  device: PublicDevice,
+): Promise<string> {
+  const sig = await subtle().sign(
+    ECDSA,
+    signer.keys.signing.privateKey,
+    utf8(introductionText(device)),
+  );
+  return toBase64Url(sig);
+}
+
+async function introducedBy(device: IntroducedDevice, signingKey: PublicJwk): Promise<boolean> {
+  try {
+    return await subtle().verify(
+      ECDSA,
+      await importVerify(signingKey),
+      fromBase64Url(device.introduction),
+      utf8(introductionText(device)),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The first device of the chain a device belongs to: each introduction checked against the device
+ * that made it, all of one person's, up to one that vouches for itself. Null if any link doesn't
+ * hold (or the chain loops, or runs away), or `stop` is reached first: a device already confirmed,
+ * whose own chain was checked when it was.
+ */
+export async function chainRoot(
+  device: IntroducedDevice,
+  lookup: (id: string) => IntroducedDevice | undefined,
+  stop?: (d: IntroducedDevice) => boolean,
+): Promise<IntroducedDevice | null> {
+  const seen = new Set<string>();
+  let d: IntroducedDevice | undefined = device;
+  while (d && seen.size < 500) {
+    if (seen.has(d.id) || d.userId !== device.userId) return null;
+    seen.add(d.id);
+    if (d !== device && stop?.(d)) return d;
+    if (!d.introducedBy) return (await introducedBy(d, d.signingKey)) ? d : null;
+    const by = lookup(d.introducedBy);
+    if (!by || !(await introducedBy(d, by.signingKey))) return null;
+    d = by;
+  }
+  return null;
+}
+
+/**
+ * Someone's security code: 30 digits from the public keys of the first device of their chain, the
+ * same wherever it's worked out. Two people compare them; it changes only when they start over.
  */
 export async function securityCode(
   devices: Array<Pick<PublicDevice, 'id' | 'encryptionKey' | 'signingKey'>>,

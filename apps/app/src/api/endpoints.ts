@@ -20,6 +20,7 @@ import type {
   ConnectedAppView,
   ConnectionRequestView,
   ConnectionView,
+  ConversationDevicesView,
   ConversationView,
   DecisionView,
   DeviceSessionView,
@@ -357,12 +358,20 @@ export const endpoints = {
   callAlive: (id: string, deviceId: string) =>
     api.post<{ call: CallView }>(`/calls/${id}/alive`, { deviceId }),
   // Private conversations (R18): this device's public keys, and everyone's to seal for
-  registerDevice: (body: { encryptionKey: PublicJwk; signingKey: PublicJwk; name?: string }) =>
-    api.post<{ device: MyDeviceView }>('/e2ee/devices', body),
-  myDevices: () => api.get<{ devices: MyDeviceView[] }>('/e2ee/devices'),
-  removeDevice: (id: string) => api.del<Ok>(`/e2ee/devices/${id}`),
+  registerDevice: (body: {
+    id: string;
+    encryptionKey: PublicJwk;
+    signingKey: PublicJwk;
+    introduction: string;
+    name?: string;
+    startOver?: boolean;
+  }) => api.post<{ device: MyDeviceView }>('/e2ee/devices', body),
+  myDevices: () => api.get<{ devices: MyDeviceView[]; chain: DeviceView[] }>('/e2ee/devices'),
+  approveDevice: (id: string, body: { introduction: string }) =>
+    api.post<{ device: MyDeviceView }>(`/e2ee/devices/${id}/approve`, body),
+  removeDevice: (id: string) => api.del<{ ok: true; signedOut: boolean }>(`/e2ee/devices/${id}`),
   conversationDevices: (conversationId: string, ids: string[] = []) =>
-    api.get<{ devices: DeviceView[]; senders: DeviceView[] }>(
+    api.get<ConversationDevicesView>(
       `/conversations/${conversationId}/devices${q({ ids: ids.length ? ids.join(',') : undefined })}`,
     ),
   callHistory: (params: { before?: string; limit?: number; with?: string; missed?: boolean }) =>

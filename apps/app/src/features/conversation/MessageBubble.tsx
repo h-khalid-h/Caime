@@ -6,7 +6,13 @@ import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
-import { useOpened, useReplyPreview } from '@/features/e2ee/hooks';
+import {
+  readAs,
+  suspiciousLink,
+  UNVERIFIED,
+  useOpened,
+  useReplyPreview,
+} from '@/features/e2ee/hooks';
 import { KitCard } from '@/features/kits/KitCard';
 import { LocationBody } from '@/features/location/LocationBody';
 import { stickerById } from '@/features/stickers/pack';
@@ -51,6 +57,8 @@ export interface BubbleProps {
   highlighted?: boolean;
   /** In a message request not yet accepted, links read as text and open nothing (R14). */
   inertLinks?: boolean;
+  /** The conversation shown, and whether it's private (R18): messages open only as its. */
+  where: { conversationId: string; private: boolean };
 }
 
 function DeliveryIcon({
@@ -152,14 +160,16 @@ export const MessageBubble = memo(function MessageBubble({
   onRetry,
   highlighted,
   inertLinks = false,
+  where,
 }: BubbleProps) {
   const t = useTheme();
   const meId = useSession((s) => s.user?.id ?? null);
   const translation = useTranslations((s) => s.byId[m.id]);
-  // A private message's words are opened here, on this device (R18).
-  const opened = useOpened(m);
-  const text = m.sealed ? opened.text : m.body;
-  const replyText = useReplyPreview(m.replyTo, m.conversationId);
+  // A private message's words are opened here, on this device (R18); in a private conversation,
+  // anything not sealed isn't shown.
+  const opened = useOpened(m, where);
+  const text = m.sealed || where.private ? opened.text : m.body;
+  const replyText = useReplyPreview(m.replyTo, where, opened.replyTo);
   // Hover actions (web) sit beside the bubble, not inside it: a pressable inside another ends
   // the outer one's hover, which took the buttons away just as the pointer reached them. Moving
   // from the bubble to the buttons gets a moment's grace.
@@ -241,9 +251,11 @@ export const MessageBubble = memo(function MessageBubble({
     </View>
   ) : null;
 
-  const links =
-    (m.entities as { links?: Array<{ url: string; suspicious?: boolean }> }).links ?? [];
-  const suspicious = (url: string) => links.some((l) => l.url === url && l.suspicious);
+  // A private message's links are checked here, from its words: the server never had them.
+  const open = (url: string) =>
+    void suspiciousLink(m, url)
+      .then((unusual) => openLink(url, unusual))
+      .catch(() => openLink(url, true));
   const bodyText = text ? (
     <Text variant="message" color={fg} selectable auto={text}>
       {linkify(text).map((part) =>
@@ -253,7 +265,7 @@ export const MessageBubble = memo(function MessageBubble({
             variant="message"
             color={mine ? fg : t.c.link}
             style={{ textDecorationLine: 'underline' }}
-            onPress={() => openLink(part.url ?? '', suspicious(part.url ?? ''))}
+            onPress={() => open(part.url ?? '')}
             accessibilityRole="link"
           >
             {part.text}
@@ -270,6 +282,19 @@ export const MessageBubble = memo(function MessageBubble({
     content = (
       <Text variant="message" color={meta} style={{ fontStyle: 'italic' }}>
         Message deleted
+      </Text>
+    );
+  } else if (readAs(m, where) === 'unverified') {
+    // In a private conversation only sealed text is written: anything else (a card, a file, a
+    // poll, words in the clear) didn't come from anyone's device, so it isn't shown.
+    content = (
+      <Text
+        variant="message"
+        color={meta}
+        style={{ fontStyle: 'italic' }}
+        testID="message-sealed-note"
+      >
+        {UNVERIFIED}
       </Text>
     );
   } else if (m.kind === 'media' && m.files.length) {
