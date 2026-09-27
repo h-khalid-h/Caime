@@ -22,6 +22,8 @@ export const qk = {
   messages: (id: string) => ['messages', id] as const,
   album: (messageId: string) => ['album', messageId] as const,
   memory: (id: string) => ['memory', id] as const,
+  /** What a conversation keeps pinned at its top (PRD §22). */
+  pins: (id: string) => ['pins', id] as const,
   suggestions: (conversationId?: string) => ['suggestions', conversationId ?? 'all'] as const,
   /** Two of someone's connections who may be one person (PRD §51). */
   duplicates: ['suggestions', 'kind', 'duplicate'] as const,

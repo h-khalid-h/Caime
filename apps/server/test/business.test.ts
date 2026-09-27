@@ -364,6 +364,9 @@ describe('the business inbox (PRD §37–38, R15)', () => {
       decidedBy: { id: orgId, displayName: 'DATA C' },
     });
     expect(teamNamed(JSON.stringify(decided))).toBe(false);
+    // Nothing's pinned between a customer and an organization.
+    const said = (await send(sara, 'Your refund is on its way')).message;
+    expect((await sara.req('POST', `/v1/messages/${said.id}/pin`)).statusCode).toBe(400);
     // The team sees which of them it was.
     expect(
       (await noor.get(`/v1/decisions?conversationId=${convo}`)).decisions[0].decidedBy,

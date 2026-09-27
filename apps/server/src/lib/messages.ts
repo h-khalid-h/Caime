@@ -201,6 +201,7 @@ export async function messageViews(
       forwarded: m.forwarded_from_id !== null,
       sentVia: m.sent_via,
       sealed: deleted ? null : ((m.sealed as SealedMessage | null) ?? null),
+      pinnedAt: deleted ? null : (m.pinned_at?.toISOString() ?? null),
       urgent: m.urgent,
       isQuestion: m.is_question,
       isRequest: m.is_request,

@@ -51,9 +51,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       "6 people · 3 decisions · 4 open · 8 files · Friday" (PRD §57), and "@" in the composer
       offers who's in it: whoever a message names is told, and sees it marked (PRD §20;
       `mentions.test.ts`, E2E)
-- [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls. Forward
-      is in the API (a private conversation's messages never leave it); the app doesn't offer it
-      yet
+- [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls; pinned
+      messages (PRD §22), five at most, kept at the top for everyone and gone once deleted, by
+      whoever may change the conversation (`messaging.test.ts`, E2E); forwarding from a message's
+      actions to up to 20 conversations, to all of them or none, never from or into a private one;
+      cards, polls and live locations stay where they were shared (`messaging.test.ts`, E2E)
 - [x] Realtime hub (WebSocket + pg NOTIFY), typing, presence
 - [x] Attention inbox API
 - [x] Message requests from non-connections (R14): links inert until accepted; declined, one stays

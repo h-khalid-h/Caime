@@ -293,6 +293,8 @@ export interface MessageView {
    * device to open; `body` is null. The sender's id for it is `sealed.cid`.
    */
   sealed: SealedMessage | null;
+  /** Kept at the top of its conversation for everyone in it (PRD §22). */
+  pinnedAt: string | null;
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
@@ -386,6 +388,8 @@ export interface InboxItemView {
   topic: string | null;
   isGeneral: boolean;
   parentId: string | null;
+  /** A private one (R18) takes only what's sealed on a device: nothing forwarded into it. */
+  privacyClass: 'standard' | 'private';
   other: PersonView | null;
   /** The organization, in a customer's conversation with one (R15). */
   org: OrgRef | null;
@@ -1117,7 +1121,9 @@ export type RealtimeSignalType =
   | 'me.updated'
   | 'business.updated'
   /** An organization someone follows (or whose team they're on) posted, changed or took back an update. */
-  | 'updates.changed';
+  | 'updates.changed'
+  /** What a conversation keeps pinned at its top changed. */
+  | 'pins.changed';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

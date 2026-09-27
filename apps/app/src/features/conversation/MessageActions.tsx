@@ -5,12 +5,25 @@ import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Copy, CornerUpLeft, Flag, Languages, ListChecks, Pencil, Star, Trash } from '@/ui/icons';
+import {
+  Copy,
+  CornerUpLeft,
+  Flag,
+  Forward,
+  Languages,
+  ListChecks,
+  Pencil,
+  Pin,
+  PinOff,
+  Star,
+  Trash,
+} from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
@@ -22,6 +35,16 @@ import { toast } from '@/ui/Toast';
 const DECISION_MAX = 300;
 
 export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+
+/**
+ * What can be forwarded (the server's rule): not a private message, a line about the
+ * conversation, a card, a poll or a live location, which stay where they were shared.
+ */
+function forwardable(m: MessageView): boolean {
+  if (m.sealed) return false;
+  if (m.kind === 'location') return !(m.payload as { live?: unknown }).live;
+  return ['text', 'media', 'file', 'voice', 'sticker', 'contact'].includes(m.kind);
+}
 
 export async function toggleReaction(
   qc: ReturnType<typeof useQueryClient>,
@@ -63,6 +86,8 @@ export function MessageActions({
   aiReady,
   where,
   moderator = false,
+  canPin = false,
+  onForward,
 }: {
   m: MessageView | null;
   me: string;
@@ -75,6 +100,10 @@ export function MessageActions({
   where: { conversationId: string; private: boolean };
   /** A group's owner or admin: they take down anyone's message, for everyone (PRD §56). */
   moderator?: boolean;
+  /** They may pin messages here (core pins.ts). */
+  canPin?: boolean;
+  /** Forward it to other conversations (never from a private one). */
+  onForward?: (m: MessageView) => void;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -200,6 +229,14 @@ export function MessageActions({
             testID="message-copy"
           />
         ) : null}
+        {onForward && forwardable(m) && !where.private && !deleted ? (
+          <ListRow
+            icon={Forward}
+            title="Forward"
+            onPress={close(() => onForward(m))}
+            testID="message-forward"
+          />
+        ) : null}
         {aiReady && !mine && !deleted && text ? (
           <ListRow
             icon={Languages}
@@ -236,6 +273,24 @@ export function MessageActions({
             subtitle="Everyone here sees it, with a link back to this message"
             onPress={() => setDeciding({ id: m.id, title: previewText(text, DECISION_MAX) })}
             testID="message-decision"
+          />
+        ) : null}
+        {canPin && m.kind !== 'system' && !deleted ? (
+          <ListRow
+            icon={m.pinnedAt ? PinOff : Pin}
+            title={m.pinnedAt ? 'Unpin' : 'Pin'}
+            subtitle={m.pinnedAt ? undefined : 'Keeps it at the top for everyone here'}
+            testID="message-pin"
+            onPress={close(async () => {
+              try {
+                if (m.pinnedAt) await endpoints.unpin(m.id);
+                else await endpoints.pin(m.id);
+                toast(m.pinnedAt ? 'Unpinned' : 'Pinned');
+                void qc.invalidateQueries({ queryKey: qk.pins(m.conversationId) });
+              } catch (e) {
+                toast((e as Error).message, { tone: 'danger' });
+              }
+            })}
           />
         ) : null}
         {mine && m.kind === 'text' && !deleted ? (

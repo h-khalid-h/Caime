@@ -29,6 +29,7 @@ import {
   FileText,
   Forward,
   Languages,
+  Pin,
   Smile,
   UserRound,
 } from '@/ui/icons';
@@ -416,6 +417,9 @@ export const MessageBubble = memo(function MessageBubble({
       }}
     >
       {m.forwarded ? <Forward size={11} color={meta} /> : null}
+      {m.pinnedAt && !deleted ? (
+        <Pin size={11} color={meta} accessibilityLabel="Pinned" testID="message-pinned" />
+      ) : null}
       {forMe ? (
         <AtSign
           size={11}
@@ -464,6 +468,7 @@ export const MessageBubble = memo(function MessageBubble({
   const accessibleText = [
     mine ? 'You' : (senderName ?? ''),
     forMe ? 'mentions you' : '',
+    m.pinnedAt && !deleted ? 'pinned' : '',
     m.automated ? (m.aiAgent ? 'AI agent' : 'automated') : '',
     m.sentVia ? `sent via ${m.sentVia}` : '',
     deleted ? 'Message deleted' : (text ?? opened.note ?? sticker?.label ?? m.kind),

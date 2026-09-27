@@ -73,6 +73,13 @@ export const useDuplicates = () =>
     queryFn: () => endpoints.suggestions({ kind: 'duplicate' }),
   });
 
+export const usePins = (conversationId: string, enabled = true) =>
+  useQuery({
+    queryKey: qk.pins(conversationId),
+    queryFn: () => endpoints.pins(conversationId),
+    enabled: enabled && Boolean(conversationId),
+  });
+
 export const useMemory = (conversationId: string, enabled = true) =>
   useQuery({
     queryKey: qk.memory(conversationId),

@@ -1845,6 +1845,26 @@ test.describe
       await page.keyboard.press('Enter');
       await expect(visible(page, '@Alex Chen can you pick the next one?')).toBeVisible();
 
+      // Kept at the top for everyone in it, pinned from its actions.
+      await bubble.hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await page.getByTestId('message-pin').click();
+      await expect(visible(page, 'You pinned a message')).toBeVisible();
+      await expect(page.getByTestId('pinned-bar').filter({ visible: true })).toContainText(
+        'Middlemarch in October, then Beloved',
+      );
+
+      // Forwarded to her conversation with Alex, from the same actions.
+      await bubble.hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await page.getByTestId('message-forward').click();
+      await page.getByTestId('forward-find').fill('Alex Chen');
+      await page.getByTestId('forward-to').filter({ hasText: 'Alex Chen' }).first().click();
+      await page.getByTestId('forward-send').click();
+      await expect(
+        page.getByText('Forwarded', { exact: true }).filter({ visible: true }),
+      ).toBeVisible();
+
       // Removed, Lina is out of it, and her open screen says so at once; Noor leaves, and Alex
       // owns it now.
       await lina.page.goto(`/c/${id}`);
@@ -1883,6 +1903,9 @@ test.describe
           visible: true,
         }),
       ).toBeVisible();
+      await expect(phone.getByTestId('pinned-bar').filter({ visible: true })).toContainText(
+        'Middlemarch in October, then Beloved',
+      );
       expect([...errors, ...alex.errors]).toEqual([]);
     });
     test('Lina follows Nile Dental, and its updates reach her apart from her conversations', async () => {

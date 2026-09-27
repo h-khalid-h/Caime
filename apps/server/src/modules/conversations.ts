@@ -7,12 +7,14 @@ import type {
   ConversationBusinessView,
   ConversationView,
   MessagesPage,
+  MessageView,
 } from '@caishy/core';
 import {
   applyChecklistOp,
   ChecklistOpBody,
   CreateConversationBody,
   canChangeSpaceRole,
+  canPin,
   canRemoveFromSpace,
   checklistItems,
   checklistState,
@@ -28,6 +30,7 @@ import {
   type LocationPayloadT,
   liveNow,
   MembersBody,
+  PINNED_MAX,
   PollPayload,
   PRIVATE_GROUP_MAX,
   ReactionBody,
@@ -1510,7 +1513,16 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('messages')
-        .set({ deleted_at: ctx.now(), body: null, payload: '{}', entities: '{}', sealed: null })
+        .set({
+          deleted_at: ctx.now(),
+          body: null,
+          payload: '{}',
+          entities: '{}',
+          sealed: null,
+          // Gone for everyone, it's pinned for nobody.
+          pinned_at: null,
+          pinned_by: null,
+        })
         .where('id', '=', id)
         .execute();
       await trx.deleteFrom('assets').where('message_id', '=', id).execute();
@@ -1527,6 +1539,119 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
       { type: 'message.deleted', data: { id, conversationId: m.conversation_id } },
     );
+    if (m.pinned_at)
+      await ctx.bus.publish(
+        (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
+        { type: 'pins.changed', data: { conversationId: m.conversation_id } },
+      );
+    return { ok: true };
+  });
+
+  // --- Pinned messages (PRD §22, §56) ------------------------------------------------------
+
+  /** What a conversation keeps at its top, newest pin first. */
+  app.get('/conversations/:id/pins', async (req): Promise<{ messages: MessageView[] }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    await membership(ctx, auth.userId, id);
+    const rows = await ctx.db
+      .selectFrom('messages')
+      .selectAll()
+      .where('conversation_id', '=', id)
+      .where('pinned_at', 'is not', null)
+      .where('deleted_at', 'is', null)
+      // One they deleted for themselves stays out of their sight here too.
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('hidden_messages')
+              .select('message_id')
+              .whereRef('hidden_messages.message_id', '=', 'messages.id')
+              .where('hidden_messages.user_id', '=', auth.userId),
+          ),
+        ),
+      )
+      .orderBy('pinned_at', 'desc')
+      .limit(PINNED_MAX)
+      .execute();
+    return { messages: await messageViews(ctx.db, rows, auth.userId) };
+  });
+
+  /** Everyone in it sees the message marked (or not) and what's at the top change. */
+  async function tellPinned(actorId: string, messageId: string, conversationId: string) {
+    const row = await ctx.db
+      .selectFrom('messages')
+      .selectAll()
+      .where('id', '=', messageId)
+      .executeTakeFirstOrThrow();
+    const [view] = await messageViews(ctx.db, [row], actorId);
+    const members = (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id);
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view!, clientId: null } });
+    await ctx.bus.publish(members, { type: 'pins.changed', data: { conversationId } });
+  }
+
+  /** Pinning or unpinning: whoever may change the conversation (core pins.ts), one at a time. */
+  async function pinnable(userId: string, messageId: string) {
+    const m = await ctx.db
+      .selectFrom('messages')
+      .selectAll()
+      .where('id', '=', messageId)
+      .executeTakeFirst();
+    if (!m || m.deleted_at) throw notFound('That message');
+    const { conversation, me } = await membership(ctx, userId, m.conversation_id);
+    if (conversation.kind === 'business')
+      throw badRequest('Pinned messages are for conversations between people.');
+    if (!canPin(conversation.kind, me.role))
+      throw forbidden('Only the group’s owner and admins pin messages.');
+    return m;
+  }
+
+  app.post('/messages/:id/pin', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const m = await pinnable(auth.userId, id);
+    if (m.kind === 'system') throw badRequest('Lines about the conversation aren’t pinned.');
+    if (m.pinned_at) return { ok: true };
+    // Its line goes in the conversation: only from someone who may write there (blocks).
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
+    const pinned = await ctx.db.transaction().execute(async (trx) => {
+      await lockConversation(trx, m.conversation_id);
+      const { n } = await trx
+        .selectFrom('messages')
+        .select(sql<number>`count(*)::int`.as('n'))
+        .where('conversation_id', '=', m.conversation_id)
+        .where('pinned_at', 'is not', null)
+        .where('deleted_at', 'is', null)
+        .executeTakeFirstOrThrow();
+      if (n >= PINNED_MAX)
+        throw badRequest(`${PINNED_MAX} messages are pinned already. Unpin one first.`);
+      const done = await trx
+        .updateTable('messages')
+        .set({ pinned_at: ctx.now(), pinned_by: auth.userId })
+        .where('id', '=', id)
+        .where('pinned_at', 'is', null)
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+      return Number(done.numUpdatedRows) > 0;
+    });
+    if (!pinned) return { ok: true };
+    await sendSystem(ctx, m.conversation_id, auth.userId, 'message_pinned', { messageId: id });
+    await tellPinned(auth.userId, id, m.conversation_id);
+    return { ok: true };
+  });
+
+  app.delete('/messages/:id/pin', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const m = await pinnable(auth.userId, id);
+    const done = await ctx.db
+      .updateTable('messages')
+      .set({ pinned_at: null, pinned_by: null })
+      .where('id', '=', id)
+      .where('pinned_at', 'is not', null)
+      .executeTakeFirst();
+    if (Number(done.numUpdatedRows) > 0) await tellPinned(auth.userId, id, m.conversation_id);
     return { ok: true };
   });
 
@@ -1648,6 +1773,19 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     await membership(ctx, auth.userId, m.conversation_id);
     // Its words are only on the devices it was sealed for, and stay in the private conversation.
     if (m.sealed) throw badRequest('Messages in a private conversation stay in it.');
+    // A copy of a card, a poll or a live location isn't the same thing: they stay where they were
+    // shared (their state, votes and whereabouts are theirs), and so do lines about a conversation.
+    const live = m.kind === 'location' && Boolean((m.payload as { live?: unknown } | null)?.live);
+    if (m.kind === 'system' || m.kind === 'kit' || m.kind === 'poll' || live)
+      throw badRequest('Cards, polls and live locations stay where they were shared.');
+    // Every one checked first, so it goes to all of them or to none.
+    const targets = [...new Set(body.conversationIds)];
+    for (const conversationId of targets) {
+      const { conversation } = await membership(ctx, auth.userId, conversationId);
+      if (conversation.privacy_class === 'private')
+        throw badRequest('Nothing is forwarded into a private conversation.');
+      await assertCanWrite(ctx, conversationId, auth.userId);
+    }
     const files = await ctx.db
       .selectFrom('message_files')
       .select('file_id')
@@ -1655,15 +1793,14 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .orderBy('position')
       .execute();
     const out: string[] = [];
-    for (const [i, conversationId] of body.conversationIds.entries()) {
-      await membership(ctx, auth.userId, conversationId);
+    for (const [i, conversationId] of targets.entries()) {
       const result = await sendMessage(
         ctx,
         auth.userId,
         conversationId,
         {
           clientId: `${body.clientId}:${i}`,
-          kind: m.kind === 'system' ? 'text' : m.kind,
+          kind: m.kind,
           body: m.body,
           payload: m.payload,
           fileIds: files.map((f) => f.file_id),

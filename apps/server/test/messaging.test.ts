@@ -892,6 +892,155 @@ describe('a group’s roles hold, whatever happens at once (PRD §56)', () => {
   });
 });
 
+describe('pinned messages (PRD §22, §56)', () => {
+  let ana: Client; // the group's owner
+  let bo: Client;
+  let cal: Client;
+  let g: string;
+  let direct: string;
+  const pins = async (c: Client, id: string) =>
+    ((await c.get(`/v1/conversations/${id}/pins`)).messages as any[]).map((m) => m.body);
+  const pinLines = async (c: Client, id: string) =>
+    ((await c.get(`/v1/conversations/${id}/messages`)).messages as any[]).filter(
+      (m) => m.kind === 'system' && m.payload.event === 'message_pinned',
+    );
+  const pin = (c: Client, messageId: string) => c.req('POST', `/v1/messages/${messageId}/pin`);
+
+  beforeAll(async () => {
+    ana = await signup(t, { displayName: 'Ana Pins' });
+    bo = await signup(t, { displayName: 'Bo Pins' });
+    cal = await signup(t, { displayName: 'Cal Pins' });
+    direct = await connect(ana, bo);
+    await connect(ana, cal);
+    g = (
+      await ana.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Orchestra',
+        memberIds: [bo.user.id, cal.user.id],
+      })
+    ).conversation.id;
+  });
+
+  it('either person pins in a one-to-one; both see it at the top, and a line says who', async () => {
+    const m = await send(bo, direct, 'The gate code is on the back door');
+    expect((await pin(ana, m.id)).statusCode).toBe(200);
+    expect(await pins(bo, direct)).toEqual(['The gate code is on the back door']);
+    const listed = ((await bo.get(`/v1/conversations/${direct}/messages`)).messages as any[]).find(
+      (x) => x.id === m.id,
+    );
+    expect(listed.pinnedAt).not.toBeNull();
+    // Pinned again, nothing more is said.
+    expect((await pin(bo, m.id)).statusCode).toBe(200);
+    expect(await pinLines(bo, direct)).toHaveLength(1);
+    // Either of them takes it down.
+    expect((await bo.req('DELETE', `/v1/messages/${m.id}/pin`)).statusCode).toBe(200);
+    expect(await pins(ana, direct)).toEqual([]);
+  });
+
+  it('in a group its owner and admins pin, five at most; deleted, a message goes from the top', async () => {
+    const first = await send(cal, g, 'Bring your music stands');
+    expect((await pin(cal, first.id)).statusCode).toBe(403);
+    await ana.patch(`/v1/conversations/${g}/members/${bo.user.id}`, { role: 'admin' });
+    expect((await pin(bo, first.id)).statusCode).toBe(200);
+    // A line about the group isn't one to pin.
+    const line = ((await ana.get(`/v1/conversations/${g}/messages`)).messages as any[]).find(
+      (m) => m.kind === 'system',
+    );
+    expect((await pin(ana, line.id)).statusCode).toBe(400);
+    for (const text of ['Tuesday at 7', 'Tickets from Friday', 'Dress code: black', 'Bus at 5'])
+      expect((await pin(ana, (await send(ana, g, text)).id)).statusCode).toBe(200);
+    const sixth = await pin(ana, (await send(ana, g, 'One too many')).id);
+    expect(sixth.statusCode).toBe(400);
+    expect(sixth.json().error.message).toBe('5 messages are pinned already. Unpin one first.');
+    expect(await pins(cal, g)).toHaveLength(5);
+    // Deleted for themselves, it's out of their own view of the top only.
+    await cal.req('DELETE', `/v1/messages/${first.id}?forEveryone=false`);
+    expect(await pins(cal, g)).not.toContain('Bring your music stands');
+    expect(await pins(ana, g)).toContain('Bring your music stands');
+    // Deleted for everyone, it's pinned for nobody.
+    await ana.req('DELETE', `/v1/messages/${first.id}`);
+    expect(await pins(ana, g)).not.toContain('Bring your music stands');
+    expect(await pins(ana, g)).toHaveLength(4);
+    // Nobody outside it sees what's pinned.
+    const stranger = await signup(t, { displayName: 'Stranger Pins' });
+    expect((await stranger.req('GET', `/v1/conversations/${g}/pins`)).statusCode).toBe(404);
+    expect((await stranger.req('DELETE', `/v1/messages/${first.id}/pin`)).statusCode).toBe(404);
+  });
+});
+
+describe('forwarding (PRD §22)', () => {
+  let ana: Client;
+  let bo: Client;
+  let cal: Client;
+  let ab: string;
+  let ac: string;
+  let g: string;
+  const last = async (c: Client, id: string) =>
+    ((await c.get(`/v1/conversations/${id}/messages`)).messages as any[]).at(-1);
+  const forward = (c: Client, messageId: string, conversationIds: string[]) =>
+    c.req('POST', `/v1/messages/${messageId}/forward`, { conversationIds, clientId: uuidv4() });
+
+  beforeAll(async () => {
+    ana = await signup(t, { displayName: 'Ana Forward' });
+    bo = await signup(t, { displayName: 'Bo Forward' });
+    cal = await signup(t, { displayName: 'Cal Forward' });
+    ab = await connect(ana, bo);
+    ac = await connect(ana, cal);
+    g = (
+      await ana.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Forwarded to',
+        memberIds: [bo.user.id, cal.user.id],
+      })
+    ).conversation.id;
+  });
+
+  it('goes to each conversation once, marked as forwarded', async () => {
+    const m = await send(bo, ab, 'The venue is booked');
+    const r = await forward(ana, m.id, [ac, g, ac]);
+    expect(r.statusCode).toBe(200);
+    expect(r.json().messageIds).toHaveLength(2);
+    expect(await last(cal, ac)).toMatchObject({ body: 'The venue is booked', forwarded: true });
+    expect(await last(bo, g)).toMatchObject({ body: 'The venue is booked', forwarded: true });
+  });
+
+  it('cards, polls, live locations and lines about a conversation stay where they were', async () => {
+    const poll = (
+      await ana.post(`/v1/conversations/${ab}/messages`, {
+        clientId: uuidv4(),
+        kind: 'poll',
+        payload: {
+          question: 'Friday or Saturday?',
+          options: [
+            { id: 'a', text: 'Friday' },
+            { id: 'b', text: 'Saturday' },
+          ],
+        },
+      })
+    ).message;
+    const line = ((await ana.get(`/v1/conversations/${g}/messages`)).messages as any[]).find(
+      (m) => m.kind === 'system',
+    );
+    for (const id of [poll.id, line.id]) {
+      const r = await forward(ana, id, [ac]);
+      expect(r.statusCode).toBe(400);
+      expect(r.json().error.message).toBe(
+        'Cards, polls and live locations stay where they were shared.',
+      );
+    }
+  });
+
+  it('goes to all of them or to none', async () => {
+    await cal.post('/v1/blocks', { userId: ana.user.id });
+    const m = await send(ana, g, 'Rehearsal moved to Monday');
+    const before = await last(bo, ab);
+    const r = await forward(ana, m.id, [ab, ac]);
+    expect(r.statusCode).toBe(403);
+    // Bo's conversation with Ana got nothing either, though it came first.
+    expect((await last(bo, ab)).id).toBe(before.id);
+  });
+});
+
 describe('message features', () => {
   it('reactions, replies, edits, deletes and delete-for-me', async () => {
     const m = await send(sarah, convo, 'Original');

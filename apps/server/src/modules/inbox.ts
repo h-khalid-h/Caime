@@ -294,6 +294,7 @@ export async function buildInbox(
       topic: r.kind === 'direct' && !r.is_general ? r.title : null,
       isGeneral: r.is_general,
       parentId: r.parent_id,
+      privacyClass: r.privacy_class,
       other: other ?? null,
       relationship: rel
         ? { label: relationshipView(rel).label, sphere: rel.sphere as Sphere }

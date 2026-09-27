@@ -86,26 +86,34 @@ export function PeoplePicker({
                 {p.relationship ? (
                   <RelationshipChip label={p.relationship.label} sphere={p.relationship.sphere} />
                 ) : null}
-                <View
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: on ? t.c.primary : t.c.borderStrong,
-                    backgroundColor: on ? t.c.primary : 'transparent',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {on ? <Check size={14} color={t.c.onPrimary} strokeWidth={3} /> : null}
-                </View>
+                <PickMark on={on} />
               </View>
             }
             onPress={() => onToggle(p.id)}
           />
         );
       })}
+    </View>
+  );
+}
+
+/** The round mark beside something picked in a list (the row itself says so to a reader). */
+export function PickMark({ on }: { on: boolean }) {
+  const t = useTheme();
+  return (
+    <View
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: on ? t.c.primary : t.c.borderStrong,
+        backgroundColor: on ? t.c.primary : 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {on ? <Check size={14} color={t.c.onPrimary} strokeWidth={3} /> : null}
     </View>
   );
 }

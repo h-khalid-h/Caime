@@ -303,6 +303,8 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return p.title
         ? `${by} renamed the conversation “${p.title}”`
         : `${by} renamed the conversation`;
+    case 'message_pinned':
+      return `${by} pinned a message`;
     case 'purpose_changed':
       return p.purpose
         ? `${by} changed what it’s for: ${p.purpose}`

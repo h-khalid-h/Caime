@@ -253,6 +253,8 @@ export const endpoints = {
     ),
   deleteMessage: (id: string, forEveryone: boolean) =>
     api.del<Ok>(`/messages/${id}${q({ forEveryone })}`),
+  forward: (id: string, conversationIds: string[], clientId: string) =>
+    api.post<{ messageIds: string[] }>(`/messages/${id}/forward`, { conversationIds, clientId }),
   react: (id: string, emoji: string) => api.post<Ok>(`/messages/${id}/reactions`, { emoji }),
   unreact: (id: string, emoji: string) =>
     api.del<Ok>(`/messages/${id}/reactions/${encodeURIComponent(emoji)}`),
@@ -500,6 +502,10 @@ export const endpoints = {
     api.get<{ decisions: DecisionView[] }>(`/decisions${q(params)}`),
   createDecision: (body: { conversationId: string; title: string; messageId?: string }) =>
     api.post<{ id: string }>('/decisions', body),
+  pins: (conversationId: string) =>
+    api.get<{ messages: MessageView[] }>(`/conversations/${conversationId}/pins`),
+  pin: (messageId: string) => api.post<Ok>(`/messages/${messageId}/pin`),
+  unpin: (messageId: string) => api.del<Ok>(`/messages/${messageId}/pin`),
   suggestions: (params: { conversationId?: string; subjectUserId?: string; kind?: string } = {}) =>
     api.get<{ suggestions: SuggestionView[] }>(`/suggestions${q(params)}`),
   acceptSuggestion: (id: string, body: Record<string, unknown> = {}) =>

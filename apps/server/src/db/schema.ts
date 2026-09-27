@@ -320,6 +320,9 @@ export interface MessagesTable {
   sent_via: string | null;
   /** In a private conversation (R18): the message as an envelope only its devices can open. */
   sealed: Json<Record<string, unknown>> | null;
+  /** Kept at the conversation's top for everyone in it (PRD §22), and by whom. */
+  pinned_at: NullableTimestamp;
+  pinned_by: string | null;
 }
 
 export interface ReactionsTable {

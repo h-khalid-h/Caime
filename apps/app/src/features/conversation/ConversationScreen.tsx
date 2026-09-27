@@ -1,6 +1,7 @@
 import type { MessageView } from '@caishy/core/api';
 import { GROUP_CALL_MAX } from '@caishy/core/calls';
 import { contextLine, formatDue } from '@caishy/core/format';
+import { canPin } from '@caishy/core/pins';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -57,8 +58,10 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { Composer, type ComposerHandle } from './Composer';
 import { ContextPanel } from './ContextPanel';
+import { ForwardSheet } from './ForwardSheet';
 import { MessageActions, toggleReaction } from './MessageActions';
 import { MessageBubble } from './MessageBubble';
+import { PinnedBar } from './PinnedBar';
 import { RequestBanner } from './RequestBanner';
 import { buildRows, type Row } from './rows';
 import { SuggestionBar } from './SuggestionBar';
@@ -90,6 +93,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const [privateInfo, setPrivateInfo] = useState(false);
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
+  const [forwarding, setForwarding] = useState<MessageView | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const composer = useRef<ComposerHandle>(null);
   const list = useRef<FlatList<Row>>(null);
@@ -253,6 +257,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   }
 
   const privately = conversation?.privacyClass === 'private';
+  // Who keeps messages at the top (core pins.ts): either person in a one-to-one, a group's
+  // owner and admins.
+  const pinner = conversation ? canPin(conversation.kind, conversation.me.role) : false;
   const groupLine =
     conversation && gathered
       ? contextLine({
@@ -511,6 +518,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       {conversation?.kind === 'group' ? <GroupCallBanner conversationId={conversation.id} /> : null}
       {conversation && thread ? <ThreadBar conversation={conversation} thread={thread} /> : null}
       {conversation ? <RequestBanner conversation={conversation} /> : null}
+      {conversation && conversation.kind !== 'business' ? (
+        <PinnedBar where={where} canUnpin={pinner} onJump={(m) => setFocus(m.seq)} />
+      ) : null}
       {offerCatchUp ? (
         <CatchUpBanner
           count={unreadAtOpen.current}
@@ -690,6 +700,8 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           conversation?.kind !== 'direct' &&
           (conversation?.me.role === 'owner' || conversation?.me.role === 'admin')
         }
+        canPin={pinner}
+        onForward={setForwarding}
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {
@@ -698,6 +710,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           composer.current?.focus();
         }}
       />
+      {forwarding ? <ForwardSheet m={forwarding} onClose={() => setForwarding(null)} /> : null}
       {conversation && privately ? (
         <PrivateSheet
           conversation={conversation}

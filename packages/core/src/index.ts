@@ -18,6 +18,7 @@ export * from './locale';
 export * from './location';
 export * from './mentions';
 export * from './orgs';
+export * from './pins';
 export * from './plans';
 export * from './policy';
 export * from './privacy';

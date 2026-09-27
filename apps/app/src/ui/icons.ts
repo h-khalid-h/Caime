@@ -82,6 +82,7 @@ export { default as PhoneMissed } from 'lucide-react-native/icons/phone-missed';
 export { default as PhoneOff } from 'lucide-react-native/icons/phone-off';
 export { default as PhoneOutgoing } from 'lucide-react-native/icons/phone-outgoing';
 export { default as Pin } from 'lucide-react-native/icons/pin';
+export { default as PinOff } from 'lucide-react-native/icons/pin-off';
 export { default as Plus } from 'lucide-react-native/icons/plus';
 export { default as Receipt } from 'lucide-react-native/icons/receipt';
 export { default as RefreshCw } from 'lucide-react-native/icons/refresh-cw';

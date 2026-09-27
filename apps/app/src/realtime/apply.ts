@@ -144,6 +144,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       }));
       invalidate(qk.inbox, 'inbox');
       return;
+    case 'pins.changed':
+      if (typeof event.data.conversationId === 'string')
+        invalidate(qk.pins(event.data.conversationId));
+      return;
     case 'message.hidden':
       removeMessage(qc, event.data.conversationId, event.data.id);
       invalidate(qk.inbox, 'inbox');
