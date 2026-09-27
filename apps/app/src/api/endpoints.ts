@@ -75,6 +75,7 @@ import type { CallKind } from '@caishy/core/calls';
 import type { PublicJwk, SealedMessage } from '@caishy/core/e2ee';
 import type { ChecklistOp } from '@caishy/core/kit-cards';
 import type { OrgKind } from '@caishy/core/orgs';
+import type { EffectivePolicy } from '@caishy/core/policy';
 import type { SpaceKind } from '@caishy/core/spaces';
 import type { Sphere } from '@caishy/core/taxonomy';
 import { api, request } from './client';
@@ -532,8 +533,20 @@ export const endpoints = {
   markNotificationsRead: (body: { ids?: string[]; all?: boolean }) =>
     api.post<Ok>('/notifications/read', body),
   policies: () => api.get<{ policies: PolicyView[] }>('/policies'),
+  /** A rule of one's own (PRD §68): for a kind of relationship, a role in it, or one person. */
+  createPolicy: (body: {
+    name?: string | null;
+    scope: { sphere?: Sphere | null; role?: string | null; connectionId?: string | null };
+    settings: Record<string, unknown>;
+  }) => api.post<{ id: string; existing?: boolean }>('/policies', body),
   updatePolicy: (id: string, body: Record<string, unknown>) =>
     api.patch<Ok>(`/policies/${id}`, body),
+  deletePolicy: (id: string) => api.del<Ok>(`/policies/${id}`),
+  /** How Caishy treats one person now, in words, and what they'd get without a rule of their own. */
+  policyFor: (userId: string) =>
+    api.get<{ policy: EffectivePolicy; description: string; inherited: EffectivePolicy }>(
+      `/policies/for/${userId}`,
+    ),
   resetPolicies: () => api.post<Ok>('/policies/reset'),
   block: (userId: string) => api.post<Ok>('/blocks', { userId }),
   unblock: (userId: string) => api.del<Ok>(`/blocks/${userId}`),

@@ -291,4 +291,60 @@ describe('policies (R11)', () => {
       'Muted · Quiet',
     );
   });
+
+  it('a scope has one rule, a person’s is for your own connection, and what they inherit shows', async () => {
+    const conn = (await hassan.get('/v1/connections')).connections.find(
+      (c: any) => c.person.id === sarah.user.id,
+    );
+    const before = (await hassan.get('/v1/policies')).policies.length;
+    // The same person again is their rule, changed: never a second one.
+    const again = await hassan.req('POST', '/v1/policies', {
+      scope: { connectionId: conn.connectionId },
+      settings: { aiTone: 'professional' },
+    });
+    expect(again.statusCode).toBe(200);
+    expect(again.json().existing).toBe(true);
+    const { policies } = await hassan.get('/v1/policies');
+    expect(policies).toHaveLength(before);
+    const theirs = policies.find((p: any) => p.scope.connectionId === conn.connectionId);
+    expect(again.json().id).toBe(theirs.id);
+    expect(theirs.settings).toEqual({ notify: 'mute', priority: 'quiet', aiTone: 'professional' });
+    // The same kind of relationship again, named: the one rule, now with a name.
+    const vendor = policies.find((p: any) => p.scope.sphere === 'vendor' && !p.scope.role);
+    const named = await hassan.post('/v1/policies', {
+      name: 'My vendors',
+      scope: { sphere: 'vendor' },
+      settings: {},
+    });
+    expect(named.id).toBe(vendor.id);
+    const after = (await hassan.get('/v1/policies')).policies;
+    expect(after).toHaveLength(before);
+    expect(after.find((p: any) => p.id === vendor.id)).toMatchObject({
+      name: 'My vendors',
+      settings: vendor.settings,
+    });
+    // Someone else's connection isn't yours to make a rule for.
+    const other = await signup(t, { displayName: 'Olga Other' });
+    const theirConn = (await sarah.get('/v1/connections')).connections.find(
+      (c: any) => c.person.id === hassan.user.id,
+    );
+    expect(theirConn.connectionId).toBe(conn.connectionId);
+    const foreign = await other.req('POST', '/v1/policies', {
+      scope: { connectionId: conn.connectionId },
+      settings: { notify: 'always' },
+    });
+    expect(foreign.statusCode).toBe(404);
+    expect(
+      (
+        await other.req('PATCH', `/v1/policies/${theirs.id}`, {
+          settings: { notify: 'always' },
+        })
+      ).statusCode,
+    ).toBe(404);
+    // What they'd get without a rule of their own: their relationship's.
+    const forSarah = await hassan.get(`/v1/policies/for/${sarah.user.id}`);
+    expect(forSarah.policy.notify).toBe('mute');
+    expect(forSarah.inherited.notify).toBe('always');
+    expect(forSarah.inherited.sources.some((s: any) => s.level === 'connection')).toBe(false);
+  });
 });

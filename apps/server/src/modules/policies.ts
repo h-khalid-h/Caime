@@ -14,6 +14,20 @@ import { seedDefaults } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
+type Scope = z.infer<typeof PolicyBody>['scope'];
+
+/** A rule for one person is for one of your own connections. */
+async function assertOwnConnection(ctx: AppContext, userId: string, scope: Scope) {
+  if (!scope.connectionId) return;
+  const conn = await ctx.db
+    .selectFrom('connections')
+    .select('id')
+    .where('id', '=', scope.connectionId)
+    .where((w) => w.or([w('user_a', '=', userId), w('user_b', '=', userId)]))
+    .executeTakeFirst();
+  if (!conn) throw notFound('That connection');
+}
+
 export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/policies', async (req): Promise<{ policies: PolicyView[] }> => {
     const auth = requireAuth(req);
@@ -36,6 +50,28 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/policies', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(PolicyBody, req.body);
+    await assertOwnConnection(ctx, auth.userId, body.scope);
+    // Only one rule applies to a scope, so the same scope again is the same rule, changed.
+    const same = (await loadPolicies(ctx.db, auth.userId)).find(
+      (p) =>
+        (p.scope.sphere ?? null) === (body.scope.sphere ?? null) &&
+        (p.scope.role ?? null) === (body.scope.role ?? null) &&
+        (p.scope.orgId ?? null) === (body.scope.orgId ?? null) &&
+        (p.scope.connectionId ?? null) === (body.scope.connectionId ?? null),
+    );
+    if (same) {
+      await ctx.db
+        .updateTable('relationship_policies')
+        .set({
+          ...(body.name !== undefined ? { name: body.name } : {}),
+          settings: JSON.stringify({ ...same.settings, ...body.settings }),
+          updated_at: ctx.now(),
+        })
+        .where('id', '=', same.id)
+        .execute();
+      await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
+      return { id: same.id, existing: true };
+    }
     const id = uuidv7();
     await ctx.db
       .insertInto('relationship_policies')
@@ -66,6 +102,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
     if (!existing) throw notFound('That rule');
+    if (body.scope) await assertOwnConnection(ctx, auth.userId, body.scope);
     await ctx.db
       .updateTable('relationship_policies')
       .set({
@@ -134,7 +171,13 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       activeRelationships(ctx.db, auth.userId, [userId]),
       between(ctx.db, auth.userId, userId),
     ]);
-    const effective = resolvePolicy(policies, policyTargetFor(rels[0], b.connectionId));
-    return { policy: effective, description: describePolicy(effective) };
+    const target = policyTargetFor(rels[0], b.connectionId);
+    const effective = resolvePolicy(policies, target);
+    return {
+      policy: effective,
+      description: describePolicy(effective),
+      // What applies to them without a rule of their own: what that rule, where it's silent, keeps.
+      inherited: resolvePolicy(policies, { ...target, connectionId: null }),
+    };
   });
 }

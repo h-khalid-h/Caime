@@ -123,6 +123,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
 - [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
       download your data and delete your account (E2E)
+- [x] Rules (PRD §68–70): how Caishy treats a kind of relationship, a role in it, or one
+      person, all of it changed from Settings → Notifications and priorities: notifications
+      (always, in set days and hours, only if important, never), urgent messages, priority (in
+      hours only, too), a reminder when they haven't answered, the tone Caishy suggests, and how
+      much of you they see. What a rule leaves alone shows as it comes from the broader one; a
+      named rule is a template ("My Vendors"), and asking for one the same people have is that
+      one. The work week is changed there. A person's page has a rule just for them over their
+      relationship's, taken away when it says nothing; one is only ever for one's own connection
+      (`connections.test.ts`, E2E)
 - [x] Actions: add one in words ("by Friday" becomes its due date), finish it, undo; a request
       from someone lands in Asked me (E2E)
 - [x] Alerts: requests and message bursts arrive, each with why it was held or sent (E2E)

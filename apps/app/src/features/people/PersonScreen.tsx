@@ -38,6 +38,7 @@ import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { ConnectSheet } from './ConnectSheet';
+import { PersonRule } from './PersonRule';
 import { RelationshipHistory } from './RelationshipHistory';
 
 function Stat({ value, label }: { value: number; label: string }) {
@@ -320,6 +321,15 @@ export function PersonScreen({ id }: { id: string }) {
               ) : null}
             </View>
           </Card>
+        ) : null}
+
+        {state === 'connected' && !self && p.connection.connectionId ? (
+          <PersonRule
+            personId={id}
+            name={name}
+            connectionId={p.connection.connectionId}
+            relationship={p.relationships[0]}
+          />
         ) : null}
 
         {state === 'connected' && !self ? <OtherAccounts personId={id} name={name} /> : null}

@@ -1,14 +1,15 @@
 import type { PolicyView } from '@caishy/core/api';
-import type { NotifyMode, Priority } from '@caishy/core/policy';
-import { SPHERE_DEFS } from '@caishy/core/taxonomy';
+import { resolvePolicy } from '@caishy/core/policy';
+import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { DayPicker, RuleSheet } from '@/features/settings/RuleSheet';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
-import { useMe } from '@/state/session';
+import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
@@ -16,6 +17,7 @@ import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
 // Loaded here only: everything about this browser's notifications stays out of the first download.
@@ -23,14 +25,125 @@ const BrowserNotifications = lazyPart(() =>
   import('@/features/push/BrowserNotifications').then((m) => m.BrowserNotifications),
 );
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function scopeLabel(p: PolicyView): string {
+/** Who a rule is for: "Work · Manager", "Customers", or its name when it has one. */
+function scopeLabel(p: Pick<PolicyView, 'name' | 'scope'>): string {
   if (p.name) return p.name;
   if (p.scope.connectionId) return 'One person';
-  if (p.scope.sphere)
-    return SPHERE_DEFS[p.scope.sphere].plural + (p.scope.role ? ` · ${p.scope.role}` : '');
+  const { sphere, role } = p.scope;
+  if (sphere) {
+    const r = findRole(sphere, role);
+    return SPHERE_DEFS[sphere].plural + (role ? ` · ${r?.plural ?? role}` : '');
+  }
   return 'Everyone else';
+}
+
+/** What applies to a rule's people where it says nothing: the broader rules around it. */
+function inheritedFor(p: PolicyView, all: PolicyView[]) {
+  return resolvePolicy(
+    all.filter((x) => x.id !== p.id),
+    { sphere: p.scope.sphere ?? null, role: p.scope.role, orgId: p.scope.orgId },
+  );
+}
+
+/** A rule of one's own (PRD §68, §70): for a kind of relationship, or a role in it. */
+function NewRule({
+  open,
+  onClose,
+  onMade,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onMade: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+  const [sphere, setSphere] = useState<Sphere>('customer');
+  const [role, setRole] = useState<string>('all');
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const make = async () => {
+    setBusy(true);
+    try {
+      // The same people again is the rule they have, given the name if there is one.
+      const trimmed = name.trim();
+      const made = await endpoints.createPolicy({
+        ...(trimmed ? { name: trimmed } : {}),
+        scope: { sphere, role: role === 'all' ? null : role },
+        settings: {},
+      });
+      if (made.existing) toast('They have a rule already: here it is');
+      await qc.invalidateQueries({ queryKey: qk.policies });
+      setName('');
+      onMade(made.id);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="A new rule"
+      subtitle="For everyone you know one way, or in one role"
+      footer={
+        <Button
+          label="Make the rule"
+          block
+          size="lg"
+          loading={busy}
+          onPress={() => void make()}
+          testID="rule-make"
+        />
+      }
+    >
+      <View style={{ gap: 12 }}>
+        <Text variant="overline" color="textTertiary" accessibilityRole="header">
+          Who it’s for
+        </Text>
+        <View style={{ marginHorizontal: -20 }}>
+          <Choice<Sphere>
+            label="Who it’s for"
+            value={sphere}
+            onChange={(v) => {
+              setSphere(v);
+              setRole('all');
+            }}
+            options={SPHERES.filter((s) => s !== 'other').map((s) => ({
+              value: s,
+              label: SPHERE_DEFS[s].plural,
+            }))}
+          />
+        </View>
+        {ROLES[sphere].length ? (
+          <>
+            <Text variant="overline" color="textTertiary" accessibilityRole="header">
+              Of them
+            </Text>
+            <View style={{ marginHorizontal: -20 }}>
+              <Choice<string>
+                label="Of them"
+                value={role}
+                onChange={setRole}
+                options={[
+                  { value: 'all', label: `All ${SPHERE_DEFS[sphere].plural.toLowerCase()}` },
+                  ...ROLES[sphere].map((r) => ({ value: r.id, label: r.plural })),
+                ]}
+              />
+            </View>
+          </>
+        ) : null}
+        <TextField
+          label="Its name (optional)"
+          value={name}
+          onChangeText={setName}
+          placeholder="My customers"
+          maxLength={60}
+          testID="rule-new-name"
+        />
+      </View>
+    </Sheet>
+  );
 }
 
 export default function Notifications() {
@@ -38,14 +151,16 @@ export default function Notifications() {
   const qc = useQueryClient();
   const me = useMe();
   const q = usePolicies();
-  const [editing, setEditing] = useState<PolicyView | null>(null);
-  const policies = (q.data?.policies ?? []).filter((p) => !p.scope.connectionId);
-
-  const update = async (p: PolicyView, settings: Record<string, unknown>) => {
-    setEditing((e) => (e ? { ...e, settings: { ...e.settings, ...settings } } : e));
+  const [editing, setEditing] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const all = q.data?.policies ?? [];
+  // One person's rules are on their page.
+  const policies = all.filter((p) => !p.scope.connectionId);
+  const rule = editing ? (all.find((p) => p.id === editing) ?? null) : null;
+  const saveWeek = async (workweek: number[]) => {
     try {
-      await endpoints.updatePolicy(p.id, { settings });
-      void qc.invalidateQueries({ queryKey: qk.policies });
+      const { user } = await endpoints.updateMe({ workweek });
+      useSession.getState().setUser(user);
       void qc.invalidateQueries({ queryKey: qk.inbox });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -56,7 +171,8 @@ export default function Notifications() {
     <SettingsPage title="Notifications and priorities">
       <Text variant="body" color="textSecondary">
         Caishy decides who reaches you by how you know them. Family can always get through; work
-        waits for work hours; everyone else stays quiet unless it’s important. Change any of it.
+        waits for work hours; everyone else stays quiet unless it’s important. Change any of it, or
+        make rules of your own.
       </Text>
       <BrowserNotifications />
       <Group title="By relationship">
@@ -70,35 +186,26 @@ export default function Notifications() {
               }
               title={p.scope.sphere ? '' : scopeLabel(p)}
               subtitle={p.description}
+              accessibilityLabel={`${scopeLabel(p)}, ${p.description}`}
               chevron
-              onPress={() => setEditing(p)}
+              onPress={() => setEditing(p.id)}
+              testID="rule-row"
             />
           </View>
         ))}
       </Group>
+      <Button
+        label="Add a rule"
+        variant="secondary"
+        onPress={() => setAdding(true)}
+        testID="rule-add"
+      />
       <Group
         title="Your work week"
         footer="Work notifications wait for these days. Set from your region; change it if yours is different."
       >
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16 }}>
-          {DAYS.map((d, i) => (
-            <View
-              key={d}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 12,
-                backgroundColor: me.workweek.includes(i) ? t.c.primary : t.c.surfaceMuted,
-              }}
-            >
-              <Text
-                variant="captionStrong"
-                color={me.workweek.includes(i) ? t.c.onPrimary : t.c.textSecondary}
-              >
-                {d}
-              </Text>
-            </View>
-          ))}
+        <View style={{ padding: 16 }}>
+          <DayPicker label="Your work week" days={me.workweek} onChange={(d) => void saveWeek(d)} />
         </View>
       </Group>
       <Button
@@ -112,60 +219,25 @@ export default function Notifications() {
           toast('Back to the defaults');
         }}
       />
-      <Sheet
-        open={editing !== null}
-        onClose={() => setEditing(null)}
-        title={editing ? scopeLabel(editing) : ''}
-        subtitle={editing?.description}
-      >
-        {editing ? (
-          <>
-            <Text variant="overline" color="textTertiary">
-              Notifications
-            </Text>
-            <View style={{ marginHorizontal: -20 }}>
-              <Choice<NotifyMode>
-                label="Notifications"
-                value={editing.settings.notify ?? 'always'}
-                onChange={(notify) => void update(editing, { notify })}
-                options={[
-                  { value: 'always', label: 'Always', detail: 'Any time they write' },
-                  {
-                    value: 'schedule',
-                    label: 'In work hours',
-                    detail: 'Held until your work week starts',
-                  },
-                  {
-                    value: 'important_only',
-                    label: 'Only if important',
-                    detail: 'Questions, requests, mentions, urgent',
-                  },
-                  { value: 'mute', label: 'Never', detail: 'Still in your inbox, never a sound' },
-                ]}
-              />
-            </View>
-            <Text variant="overline" color="textTertiary">
-              In your inbox
-            </Text>
-            <View style={{ marginHorizontal: -20 }}>
-              <Choice<Priority>
-                label="Priority"
-                value={editing.settings.priority ?? 'normal'}
-                onChange={(priority) => void update(editing, { priority })}
-                options={[
-                  { value: 'priority', label: 'Priority', detail: 'Near the top, under Important' },
-                  { value: 'normal', label: 'Normal' },
-                  {
-                    value: 'quiet',
-                    label: 'Quiet',
-                    detail: 'Tucked away unless they ask you something',
-                  },
-                ]}
-              />
-            </View>
-          </>
-        ) : null}
-      </Sheet>
+      {rule ? (
+        <RuleSheet
+          key={rule.id}
+          rule={rule}
+          inherited={inheritedFor(rule, all)}
+          title={scopeLabel(rule)}
+          subtitle={rule.description}
+          open
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+      <NewRule
+        open={adding}
+        onClose={() => setAdding(false)}
+        onMade={(id) => {
+          setAdding(false);
+          setEditing(id);
+        }}
+      />
     </SettingsPage>
   );
 }

@@ -1,0 +1,109 @@
+/**
+ * How Caishy treats one person (PRD §68): what their relationship's rule says, and a rule just for
+ * them on top of it, changed from their page. A rule of theirs that ends up saying nothing is
+ * taken away again, so "just for them" always means something.
+ */
+import type { RelationshipView } from '@caishy/core/api';
+import { resolvePolicy } from '@caishy/core/policy';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { endpoints } from '@/api/endpoints';
+import { usePolicies } from '@/api/hooks';
+import { qk } from '@/api/keys';
+import { RuleSheet } from '@/features/settings/RuleSheet';
+import { Card } from '@/ui/Card';
+import { Bell } from '@/ui/icons';
+import { ListRow } from '@/ui/ListRow';
+import { toast } from '@/ui/Toast';
+
+export function PersonRule({
+  personId,
+  name,
+  connectionId,
+  relationship,
+}: {
+  personId: string;
+  name: string;
+  connectionId: string;
+  relationship: RelationshipView | undefined;
+}) {
+  const qc = useQueryClient();
+  const policies = usePolicies();
+  const said = useQuery({
+    queryKey: ['policy-for', personId],
+    queryFn: () => endpoints.policyFor(personId),
+  });
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const all = policies.data?.policies ?? [];
+  const theirs = all.find((p) => p.scope.connectionId === connectionId) ?? null;
+  // The server's, which knows the organization they're with; until it answers, from their role.
+  const inherited =
+    said.data?.inherited ??
+    resolvePolicy(
+      all.filter((p) => p.id !== theirs?.id),
+      { sphere: relationship?.sphere ?? null, role: relationship?.role ?? null },
+    );
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: qk.policies });
+    void qc.invalidateQueries({ queryKey: ['policy-for', personId] });
+  };
+  const edit = async () => {
+    if (theirs) {
+      setOpen(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      await endpoints.createPolicy({ scope: { connectionId }, settings: {} });
+      await qc.invalidateQueries({ queryKey: qk.policies });
+      setOpen(true);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const close = async () => {
+    setOpen(false);
+    // Nothing changed for them: no rule of their own.
+    const now = (await endpoints.policies().catch(() => null))?.policies.find(
+      (p) => p.scope.connectionId === connectionId,
+    );
+    if (now && Object.keys(now.settings).length === 0)
+      await endpoints.deletePolicy(now.id).catch(() => {});
+    refresh();
+  };
+  return (
+    <Card padded={false}>
+      <ListRow
+        icon={Bell}
+        title="Notifications and priority"
+        subtitle={
+          [
+            said.data?.description,
+            theirs && Object.keys(theirs.settings).length ? 'Just for them' : null,
+          ]
+            .filter(Boolean)
+            .join(' · ') || null
+        }
+        chevron
+        onPress={busy ? undefined : () => void edit()}
+        testID="person-rule"
+      />
+      {open && theirs ? (
+        <RuleSheet
+          key={theirs.id}
+          rule={theirs}
+          inherited={inherited}
+          title={name}
+          subtitle="Just for them, over how you know them"
+          open
+          onClose={() => void close()}
+          deleteLabel={`Treat ${name} like everyone you know this way`}
+          onDeleted={refresh}
+        />
+      ) : null}
+    </Card>
+  );
+}

@@ -914,6 +914,59 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('rules of your own: one for a kind of relationship, and one just for one person', async () => {
+      const { page, errors } = noor;
+      const sheet = page.getByTestId('rule-sheet').filter({ visible: true });
+      // Escape closes a sheet once its fade-in has finished (react-native-web's Modal).
+      const closeSheet = () =>
+        expect(async () => {
+          await page.keyboard.press('Escape');
+          await expect(sheet).toHaveCount(0, { timeout: 500 });
+        }).toPass();
+      await page.goto('/settings/notifications');
+      // Vendors again is the rule they have (a template, "My Vendors"), renamed, and it follows
+      // up later than it did.
+      await page.getByTestId('rule-add').filter({ visible: true }).click();
+      await page.getByRole('radio', { name: 'Vendors', exact: true }).click();
+      await page.getByTestId('rule-new-name').fill('Suppliers');
+      await page.getByTestId('rule-make').click();
+      await expect(sheet).toBeVisible();
+      await sheet.getByRole('radio', { name: /^After 3 days/ }).click();
+      await closeSheet();
+      await expect(
+        page.getByTestId('rule-row').filter({ visible: true, hasText: 'Follow up after 72 h' }),
+      ).toContainText('Suppliers');
+      // Work in other hours: a schedule of its own.
+      await page
+        .getByTestId('rule-row')
+        .filter({ visible: true, hasText: /^Work/ })
+        .first()
+        .click();
+      await sheet.getByTestId('rule-until').fill('19:00');
+      await sheet.getByTestId('rule-until').press('Enter');
+      await closeSheet();
+      await expect(
+        page.getByTestId('rule-row').filter({ visible: true, hasText: '19:00' }).first(),
+      ).toBeVisible();
+      // Just for Alex, Noor's manager: never a sound, and still a priority in work hours.
+      await page.goto(`/p/${alexId}`);
+      await page.getByTestId('person-rule').filter({ visible: true }).click();
+      await sheet.getByRole('radio', { name: /^Never/ }).click();
+      await closeSheet();
+      await expect(page.getByTestId('person-rule').filter({ visible: true })).toContainText(
+        'Muted · Priority in hours · Just for them',
+      );
+      // And back to what colleagues get.
+      await page.getByTestId('person-rule').filter({ visible: true }).click();
+      await sheet.getByTestId('rule-delete').click();
+      await sheet.getByTestId('rule-delete-confirm').click();
+      await expect(sheet).toHaveCount(0);
+      await expect(page.getByTestId('person-rule').filter({ visible: true })).not.toContainText(
+        'Just for them',
+      );
+      expect(errors).toEqual([]);
+    });
+
     test('AI assist, once turned on: catch up, follow-ups, translate and rewrite', async () => {
       const { page, errors } = noor;
       const stub = async () =>
