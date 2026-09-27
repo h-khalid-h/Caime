@@ -620,9 +620,12 @@ describe('running a group (PRD §56)', () => {
       .where('conversation_id', '=', g)
       .where('user_id', '=', cal.user.id)
       .execute();
+    expect((await ana.get('/v1/search?q=Middlemarch')).results.decisions).toHaveLength(1);
     await ana.req('DELETE', `/v1/conversations/${g}/members/${ana.user.id}`);
     expect(await roles(bo)).toEqual({ Bo: 'owner', Cal: 'member', Dan: 'member' });
     expect(await lines(bo)).toContain('owner_changed');
+    // Out of it, she finds nothing of it: its decisions included.
+    expect((await ana.get('/v1/search?q=Middlemarch')).results.decisions ?? []).toEqual([]);
     // No admin: whoever has been in it longest.
     const kin = (
       await bo.post('/v1/conversations', { kind: 'group', title: 'Kin', memberIds: [ana.user.id] })

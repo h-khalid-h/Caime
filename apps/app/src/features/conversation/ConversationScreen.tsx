@@ -1,5 +1,6 @@
 import type { MessageView } from '@caishy/core/api';
 import { GROUP_CALL_MAX } from '@caishy/core/calls';
+import { contextLine, formatDue } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { useConversation, useMessages } from '@/api/hooks';
+import { useConversation, useMemory, useMessages } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
 import { catchUp } from '@/features/assist/catchUp';
@@ -213,6 +214,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     () => ({ conversationId: id, private: saysPrivate || knownPrivate }),
     [id, saysPrivate, knownPrivate],
   );
+  // A group at a glance (PRD §57): what it has gathered, not only how many are in it. Never a
+  // private one's: the server keeps nothing of what's said there.
+  const isGroup =
+    conversation !== undefined &&
+    conversation.kind !== 'direct' &&
+    conversation.kind !== 'business';
+  const gathered = useMemory(id, isGroup && !where.private).data;
 
   if (conv.isError && !conversation) {
     return (
@@ -233,6 +241,16 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   }
 
   const privately = conversation?.privacyClass === 'private';
+  const groupLine =
+    conversation && gathered
+      ? contextLine({
+          people: conversation.participants.length,
+          decisions: gathered.counts.decisions,
+          openItems: gathered.counts.openItems,
+          files: gathered.counts.files,
+          next: gathered.dates[0] ? formatDue(gathered.dates[0].at, now, timeZone, locale) : null,
+        })
+      : null;
   const subtitle = privately
     ? typingNames.length
       ? 'typing…'
@@ -250,7 +268,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               ? 'Online'
               : (other.relationship?.label ?? `@${other.person.handle}`)
             : conversation
-              ? `${conversation.participants.length} people`
+              ? (groupLine ?? `${conversation.participants.length} people`)
               : '';
 
   const header = (

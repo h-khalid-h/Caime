@@ -2,18 +2,24 @@ import type { MessageView } from '@caishy/core/api';
 import { previewText } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
-import { Copy, CornerUpLeft, Flag, Languages, ListChecks, Pencil, Trash } from '@/ui/icons';
+import { Button } from '@/ui/Button';
+import { Copy, CornerUpLeft, Flag, Languages, ListChecks, Pencil, Star, Trash } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** A decision's longest title (the server's). */
+const DECISION_MAX = 300;
 
 export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 
@@ -74,20 +80,76 @@ export function MessageActions({
   const qc = useQueryClient();
   // A private message's words, as opened here: to copy, never to send anywhere (R18).
   const opened = useOpened(m, where);
+  // Saving it as a decision (PRD §30): its words to start from, for this message only.
+  const [deciding, setDeciding] = useState<{ id: string; title: string } | null>(null);
+  const [saving, setSaving] = useState(false);
   if (!m) return null;
+  const decision = deciding?.id === m.id ? deciding.title : null;
+  const dismiss = () => {
+    setDeciding(null);
+    onClose();
+  };
   const mine = m.senderId === me;
   const deleted = m.deletedAt !== null;
   // What Caishy may read (translate, find a task in): never a private message's words.
   const text = m.sealed ? '' : (m.body ?? '');
   const shown = m.sealed ? (opened.text ?? '') : text;
   const close = (fn: () => void | Promise<void>) => () => {
-    onClose();
+    dismiss();
     void fn();
   };
+  const saveDecision = async (title: string) => {
+    setSaving(true);
+    try {
+      await endpoints.createDecision({
+        conversationId: m.conversationId,
+        title,
+        messageId: m.id,
+      });
+      toast('Decision saved');
+      void qc.invalidateQueries({ queryKey: ['decisions'] });
+      void qc.invalidateQueries({ queryKey: ['memory'] });
+      dismiss();
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setSaving(false);
+    }
+  };
+  if (decision !== null)
+    return (
+      <Sheet
+        open
+        onClose={dismiss}
+        title="Save as a decision"
+        subtitle="Everyone in this conversation sees it, with a link back to the message."
+        footer={
+          <Button
+            label="Save decision"
+            block
+            size="lg"
+            loading={saving}
+            disabled={!decision.trim()}
+            onPress={() => void saveDecision(decision.trim())}
+            testID="decision-save"
+          />
+        }
+      >
+        <TextField
+          label="The decision"
+          value={decision}
+          onChangeText={(title) => setDeciding({ id: m.id, title })}
+          maxLength={DECISION_MAX}
+          multiline
+          autoFocus
+          testID="decision-title"
+        />
+      </Sheet>
+    );
   return (
     <Sheet
       open
-      onClose={onClose}
+      onClose={dismiss}
       title={mine ? 'Your message' : 'Message'}
       subtitle={shown ? previewText(shown, 80) : undefined}
     >
@@ -165,6 +227,15 @@ export function MessageActions({
                 toast((e as Error).message, { tone: 'danger' });
               }
             })}
+          />
+        ) : null}
+        {!deleted && text ? (
+          <ListRow
+            icon={Star}
+            title="Save as a decision"
+            subtitle="Everyone here sees it, with a link back to this message"
+            onPress={() => setDeciding({ id: m.id, title: previewText(text, DECISION_MAX) })}
+            testID="message-decision"
           />
         ) : null}
         {mine && m.kind === 'text' && !deleted ? (

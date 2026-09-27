@@ -355,4 +355,18 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     });
     expect(mine.json().message.sentVia).toBe('Lina’s notes');
   });
+
+  it('a decision the team records is the organization’s, as the customer sees it', async () => {
+    await sara.post('/v1/decisions', { conversationId: convo, title: 'Refund by courier credit' });
+    const decided = await lina.get(`/v1/decisions?conversationId=${convo}`);
+    expect(decided.decisions[0]).toMatchObject({
+      title: 'Refund by courier credit',
+      decidedBy: { id: orgId, displayName: 'DATA C' },
+    });
+    expect(teamNamed(JSON.stringify(decided))).toBe(false);
+    // The team sees which of them it was.
+    expect(
+      (await noor.get(`/v1/decisions?conversationId=${convo}`)).decisions[0].decidedBy,
+    ).toEqual({ id: sara.user.id, displayName: 'Sara Ali' });
+  });
 });

@@ -219,7 +219,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['time_zone', 'locale'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    const [people, decisions, openTasks, recent, assets, stats] = await Promise.all([
+    const [people, decisions, openTasks, recent, assets, stats, totals] = await Promise.all([
       ctx.db
         .selectFrom('participants as p')
         .innerJoin('users as u', 'u.id', 'p.user_id')
@@ -274,6 +274,17 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('conversation_id', '=', id)
         .where('deleted_at', 'is', null)
         .where('kind', '<>', 'system')
+        .executeTakeFirstOrThrow(),
+      // What the group has gathered, counted whole (the lists above show only the latest).
+      ctx.db
+        .selectNoFrom([
+          sql<number>`(select count(*) from decisions d where d.conversation_id = ${id} and d.status = 'active')::int`.as(
+            'decisions',
+          ),
+          sql<number>`(select count(*) from assets a where a.conversation_id = ${id} and a.kind in ('photo', 'video', 'document', 'audio'))::int`.as(
+            'files',
+          ),
+        ])
         .executeTakeFirstOrThrow(),
     ]);
     type Entities = {
@@ -355,7 +366,12 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([t]) => t),
-      counts: { messages: stats.total, decisions: decisions.length, openItems: tasks.length },
+      counts: {
+        messages: stats.total,
+        decisions: totals.decisions,
+        openItems: tasks.length,
+        files: totals.files,
+      },
       privacyClass: conversation.privacy_class,
     };
   });

@@ -17,8 +17,8 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
-import { customerMask } from '../lib/business';
-import { canEditConversation } from '../lib/contexts';
+import { customerMask, maskFor } from '../lib/business';
+import { canEditConversation, contextVisible } from '../lib/contexts';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { messagePreview, messageViews, participantsOf, sendMessage } from '../lib/messages';
@@ -95,6 +95,30 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
       completedAt: t.completed_at?.toISOString() ?? null,
     };
   });
+}
+
+/**
+ * What a new task or decision points back to has to be theirs to see: a message only in the
+ * conversation it's added in (so it never quotes one from anywhere else), and a context they
+ * can read.
+ */
+async function checkSources(
+  ctx: AppContext,
+  me: string,
+  body: { conversationId?: string; messageId?: string; contextId?: string },
+) {
+  if (body.messageId) {
+    if (!body.conversationId) throw badRequest('A message is linked with its conversation.');
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select('id')
+      .where('id', '=', body.messageId)
+      .where('conversation_id', '=', body.conversationId)
+      .executeTakeFirst();
+    if (!m) throw notFound('That message');
+  }
+  if (body.contextId && !(await contextVisible(ctx.db, me, body.contextId)))
+    throw notFound('That context');
 }
 
 async function visibleTask(ctx: AppContext, me: string, id: string): Promise<Task> {
@@ -245,6 +269,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!related) throw forbidden('You can ask people you’re connected with.');
     }
     if (body.conversationId) await membership(ctx, me, body.conversationId);
+    await checkSources(ctx, me, body);
     if (body.shared && assignee === me) throw badRequest('A request goes to someone else.');
     // A request across a business conversation would name who on the team asked (R15).
     const business = body.conversationId ? await customerMask(ctx.db, body.conversationId) : null;
@@ -456,6 +481,17 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('d.decided_at', 'desc')
       .limit(200)
       .execute();
+    // A customer sees the organization decide, never which of its team (R15).
+    const masks = new Map<string, Awaited<ReturnType<typeof maskFor>>>();
+    for (const c of new Set(rows.map((d) => d.conversation_id)))
+      masks.set(c, await maskFor(ctx.db, c, auth.userId));
+    const decidedBy = (d: (typeof rows)[number]): DecisionView['decidedBy'] => {
+      if (!d.decided_by) return null;
+      const mask = masks.get(d.conversation_id);
+      if (mask && d.decided_by !== auth.userId)
+        return { id: mask.orgId, displayName: mask.orgName };
+      return { id: d.decided_by, displayName: d.decided_by_name };
+    };
     return {
       decisions: rows.map((d) => ({
         id: d.id,
@@ -464,7 +500,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         contextId: d.context_id,
         title: d.title,
         notes: d.notes,
-        decidedBy: d.decided_by ? { id: d.decided_by, displayName: d.decided_by_name } : null,
+        decidedBy: decidedBy(d),
         decidedAt: d.decided_at.toISOString(),
       })),
     };
@@ -474,6 +510,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(CreateDecisionBody, req.body);
     await membership(ctx, auth.userId, body.conversationId);
+    await checkSources(ctx, auth.userId, body);
     const d = await ctx.db.transaction().execute((trx) =>
       createDecision(trx, ctx, {
         conversationId: body.conversationId,

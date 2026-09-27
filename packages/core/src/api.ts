@@ -924,7 +924,8 @@ export interface MemoryView {
   links: Array<{ id: string; url: string | null; host: string | null; messageId: string | null }>;
   places: Array<{ id: string; title: string | null; messageId: string | null }>;
   topics: string[];
-  counts: { messages: number; decisions: number; openItems: number };
+  /** Whole counts: decisions and files in it, and what's open for the viewer (PRD §57). */
+  counts: { messages: number; decisions: number; openItems: number; files: number };
   privacyClass: 'standard' | 'private';
 }
 

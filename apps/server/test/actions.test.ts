@@ -185,6 +185,36 @@ describe('decisions, context and memory (PRD §17, §24, §30)', () => {
     const ctxView = await hassan.get(`/v1/contexts/${view.context.id}`);
     expect(ctxView.counts.decisions).toBe(1);
   });
+
+  it('saved from a message, it keeps the link; one from anywhere else is refused', async () => {
+    const m = await send(hassan, convo, 'Let’s go with the courier on Monday');
+    const d = await sarah.post('/v1/decisions', {
+      conversationId: convo,
+      title: 'The courier, on Monday',
+      messageId: m.id,
+    });
+    const listed = await hassan.get(`/v1/decisions?conversationId=${convo}`);
+    expect(listed.decisions.find((x: any) => x.id === d.id)).toMatchObject({ messageId: m.id });
+    // A conversation Hassan isn't in, and a context only its maker sees.
+    const nadia = await signup(t, { displayName: 'Nadia Other' });
+    const r = await sarah.post('/v1/connections/requests', { toUserId: nadia.user.id });
+    const theirs = (await nadia.post(`/v1/connections/requests/${r.requestId}/accept`, {}))
+      .conversationId;
+    const elsewhere = await send(sarah, theirs, 'The pin is 4417');
+    const hidden = await nadia.post('/v1/contexts', { kind: 'project', title: 'Hers' });
+    const tries = [
+      ['POST', '/v1/decisions', { conversationId: convo, title: 'x', messageId: elsewhere.id }],
+      ['POST', '/v1/tasks', { title: 'x', conversationId: convo, messageId: elsewhere.id }],
+      ['POST', '/v1/decisions', { conversationId: convo, title: 'x', contextId: hidden.id }],
+      ['POST', '/v1/tasks', { title: 'x', contextId: hidden.id }],
+    ] as const;
+    for (const [method, url, body] of tries)
+      expect((await hassan.req(method, url, body)).statusCode).toBe(404);
+    const loose = await hassan.req('POST', '/v1/tasks', { title: 'x', messageId: elsewhere.id });
+    expect(loose.statusCode).toBe(400);
+    // So no task of his quotes it.
+    expect(JSON.stringify(await hassan.get('/v1/tasks'))).not.toContain('4417');
+  });
 });
 
 describe('search (PRD §25)', () => {

@@ -498,6 +498,8 @@ export const endpoints = {
   deleteTask: (id: string) => api.del<Ok>(`/tasks/${id}`),
   decisions: (params: { conversationId?: string } = {}) =>
     api.get<{ decisions: DecisionView[] }>(`/decisions${q(params)}`),
+  createDecision: (body: { conversationId: string; title: string; messageId?: string }) =>
+    api.post<{ id: string }>('/decisions', body),
   suggestions: (params: { conversationId?: string; subjectUserId?: string; kind?: string } = {}) =>
     api.get<{ suggestions: SuggestionView[] }>(`/suggestions${q(params)}`),
   acceptSuggestion: (id: string, body: Record<string, unknown> = {}) =>

@@ -171,7 +171,11 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
         open={adding}
         onClose={() => setAdding(false)}
         title="Add people"
-        subtitle="People you’re connected with. They see what’s written from now on."
+        subtitle={
+          conversation.privacyClass === 'private'
+            ? 'People you’re connected with. They read what’s written from now on: what came before stays locked to the devices it was sent to.'
+            : 'People you’re connected with. They’ll see what’s been written here, too.'
+        }
         footer={
           <Button
             label={picked.size ? `Add ${picked.size}` : 'Add'}

@@ -23,6 +23,30 @@ export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
+/**
+ * A group at a glance (PRD §57): instead of only how many messages, "6 people · 3 decisions ·
+ * 4 open · 8 files · Friday". Only what it has; `next` is the soonest date already said.
+ */
+export function contextLine(c: {
+  people: number;
+  decisions: number;
+  openItems: number;
+  files: number;
+  next: string | null;
+}): string {
+  const n = (count: number, one: string, many: string) =>
+    count > 0 ? `${count} ${count === 1 ? one : many}` : null;
+  return [
+    n(c.people, 'person', 'people'),
+    n(c.decisions, 'decision', 'decisions'),
+    c.openItems > 0 ? `${c.openItems} open` : null,
+    n(c.files, 'file', 'files'),
+    c.next,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 /** "Sarah", "Sarah and Ahmed", "Sarah, Ahmed and Lina", "Sarah, Ahmed and 3 others". */
 export function joinNames(names: string[], max = 3, locale = 'en'): string {
   if (names.length === 0) return '';

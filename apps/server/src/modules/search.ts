@@ -381,6 +381,7 @@ export async function runSearch(
         j.onRef('p.conversation_id', '=', 'd.conversation_id').on('p.user_id', '=', me),
       )
       .select(['d.id', 'd.title', 'd.conversation_id', 'd.message_id', 'd.decided_at'])
+      .where('p.left_at', 'is', null)
       .where('d.status', '=', 'active')
       .$if(Boolean(text), (qb) =>
         qb.where((eb) =>

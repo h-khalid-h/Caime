@@ -1807,6 +1807,25 @@ test.describe
       await page.getByTestId('group-edit-save').click();
       await expect(visible(page, 'One book a month')).toBeVisible();
 
+      // One of its messages becomes a decision: said in it, gathered in its details, and counted
+      // in its header.
+      await page.getByTestId('composer-input').fill('Middlemarch in October, then Beloved');
+      await page.getByTestId('composer-send').click();
+      await visible(page, 'Middlemarch in October, then Beloved').hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await page.getByTestId('message-decision').click();
+      await expect(page.getByTestId('decision-title')).toHaveValue(
+        'Middlemarch in October, then Beloved',
+      );
+      await page.getByTestId('decision-title').fill('Middlemarch in October');
+      await page.getByTestId('decision-save').click();
+      await expect(visible(page, 'Decision saved')).toBeVisible();
+      await expect(visible(page, 'You recorded a decision: Middlemarch in October')).toBeVisible();
+      await expect(
+        page.getByText('Middlemarch in October', { exact: true }).filter({ visible: true }),
+      ).toBeVisible();
+      await expect(visible(page, '3 people · 1 decision')).toBeVisible();
+
       // Removed, Lina is out of it; Noor leaves, and Alex owns it now.
       await panel.getByTestId('group-person').filter({ hasText: 'Lina Farah' }).click();
       await page.getByTestId('group-remove').click();

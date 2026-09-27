@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contextLine,
   formatClock,
   formatDue,
   formatListTime,
@@ -75,5 +76,19 @@ describe('systemText', () => {
     // Events written before names were recorded still read as a sentence.
     expect(systemText({ event: 'members_added', userIds: ['u3'] })).toBe('Someone added people');
     expect(systemText(null)).toBe('Conversation updated');
+  });
+});
+
+describe('contextLine', () => {
+  it('says what a group has gathered, and only what it has (PRD §57)', () => {
+    expect(contextLine({ people: 6, decisions: 3, openItems: 4, files: 8, next: 'Friday' })).toBe(
+      '6 people · 3 decisions · 4 open · 8 files · Friday',
+    );
+    expect(contextLine({ people: 3, decisions: 1, openItems: 0, files: 1, next: null })).toBe(
+      '3 people · 1 decision · 1 file',
+    );
+    expect(contextLine({ people: 2, decisions: 0, openItems: 0, files: 0, next: null })).toBe(
+      '2 people',
+    );
   });
 });
