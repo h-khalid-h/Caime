@@ -199,6 +199,18 @@ These are rules, not preferences.
   what `GET /v1/subscriptions/:id` says, never the event's copy. Tests talk to
   `test/stripe-stub.ts`; the E2E to `e2e/stripe-stub.mjs`, whose Checkout and portal pages send
   the signed webhooks.
+- Private conversations (R18): the design is in `packages/core/src/e2ee.ts`'s header and the Web
+  Crypto in `e2ee-crypto.ts`; the server never imports the latter and never sees a key or a
+  word. The server's side is `lib/e2ee.ts` (live devices, `assertSealedForEveryone`) and
+  `modules/e2ee.ts`; a private conversation takes only sealed text, so any new path that reads,
+  copies or derives from message bodies (search, memory, AI, previews, forwards, exports, kits)
+  must leave `m.sealed` messages alone. The app's side is `features/e2ee/` (`private.ts` holds no
+  React; keys in IndexedDB, `keystore.web.ts`), loaded only when used (`support.web.ts`,
+  `hooks.ts`, and a dynamic import in the signed-in layout).
+- Possible duplicates (PRD §51): `lib/duplicates.ts` offers them, from what the viewer sees only;
+  `connection_sides.merged_into` always names a group's root (accepting a `duplicate` suggestion
+  unions two groups), and `GET /connections` folds each group into its root's `also`. The app's
+  card and section load only when there's one (`features/duplicates/`).
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
@@ -230,10 +242,12 @@ albums), AI assist, Spaces, Organizations with DNS verification, the Business in
 organizations writing first as requests), apps for organizations (scoped tokens, bots, signed
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
-CI are built and verified, and so are an organization's AI support agent and web calls (1:1
-and in groups of up to eight).
+CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
+groups of up to eight) with their history, private conversations (end to end encrypted, web),
+billing with Stripe, and possible duplicates in People.
 It's live on EasyPanel at https://caishy-caishy.0hqwb7.easypanel.host (`docs/DEPLOY.md`); sessions
 in this environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
-billing (⛔ Stripe), a TURN relay for calls (⛔), calls in the phone apps, a
-third-party penetration test, and store builds. Production is only what passed CI: a green run
+the live Stripe account's products, prices and webhook (tell the account's owner before creating
+anything there: it's live), a TURN relay for calls (⛔), calls and private conversations in the
+phone apps, a third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).

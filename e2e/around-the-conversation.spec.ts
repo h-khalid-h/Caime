@@ -1637,15 +1637,22 @@ test.describe
       await page.getByTestId('composer-send').click();
       await expect(visible(page, secret)).toBeVisible();
 
-      // What the server keeps is an envelope: the words are never in it.
-      const kept = await noorContext.request.get(`/v1/conversations/${privateId}/messages`, {
-        headers: CLIENT,
-      });
-      expect(await kept.text()).not.toContain(code);
-      const sealed = ((await kept.json()).messages as Array<{ body: unknown; sealed: unknown }>)
-        .filter((m) => m.sealed)
-        .map((m) => m.body);
-      expect(sealed).toEqual([null]);
+      // What the server keeps is an envelope: the words are never in it. (It shows at once, from
+      // the outbox; the server has it once it's sent.)
+      const kept = async () =>
+        (
+          await noorContext.request.get(`/v1/conversations/${privateId}/messages`, {
+            headers: CLIENT,
+          })
+        ).text();
+      await expect
+        .poll(async () =>
+          (JSON.parse(await kept()).messages as Array<{ body: unknown; sealed: unknown }>)
+            .filter((m) => m.sealed)
+            .map((m) => m.body),
+        )
+        .toEqual([null]);
+      expect(await kept()).not.toContain(code);
 
       // Alex reads it on his phone, and answers.
       await alex.page.goto(`/c/${privateId}`);

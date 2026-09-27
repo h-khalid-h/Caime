@@ -176,8 +176,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       where something is added (AI assists, files, a team's people, apps). The wedge is never
       counted, and a lower plan never removes anything. You → Plan shows what's used; an
       organization's owner and admins see its plan on its page. The operator sets plans with
-      `ADMIN_TOKEN` (`docs/DEPLOY.md`) until billing is connected (`plans.test.ts`, `ai.test.ts`,
-      E2E). [ ] Billing ⛔ Stripe
+      `ADMIN_TOKEN` (`docs/DEPLOY.md`), and a plan set that way is never changed by billing
+      (`plans.test.ts`, `ai.test.ts`, E2E).
+- [x] Billing with Stripe (PRD §84, R25): Pro for a person and Business for an organization,
+      monthly or yearly, bought through Stripe Checkout and managed in Stripe's customer portal;
+      prices are found in Stripe by their lookup keys, and the plan follows the subscription
+      (on while it's paid, in a trial or being retried; off once it ends) from signed webhooks,
+      each re-read from Stripe. Only a person, or an organization's owner or admins, buy or
+      manage its plan; nobody under 18 buys (`billing.test.ts` against a Stripe stand-in, E2E
+      through the stand-in's Checkout and portal pages). ⛔ The live account's products, prices,
+      portal and webhook endpoint are set up once billing is deployed (`docs/DEPLOY.md`)
 - [x] Metrics: `/metrics` for the operator's scraper (PRD §81), product metrics from what Caishy
       already keeps (PRD §82–83: activation, engagement, the core rates, retention), and insights
       for organizations on Business (PRD §71: customers who wrote, first answer, waiting,
@@ -203,7 +211,18 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       rung, a call that's on shows a banner to join it, and it goes on while two are in it, then
       leaves its line ("Group video call · 12 min"). Blocks and R29 keep people apart in a call,
       and leaving the group leaves its call (`group-calls.test.ts`, `group.web.test.ts`, E2E with
-      three browsers).
+      three browsers). Call history: every call a person was in or was rung for, newest first,
+      the missed ones, and those with one person (People → Calls, and on a person's page), each
+      with how it ended and how long it lasted; a group call shows only who was in it
+      (`call-history.test.ts`, E2E).
+- [x] Private conversations (R18, PRD §61), end to end encrypted, on the web: with a connection
+      (or a group of them), started from their page; every message sealed on the sender's device
+      for every device of everyone in it and signed by it, so the server keeps only envelopes it
+      can't read, change or forge. Each device's keys are its own and go when it signs out; a
+      security code for each person to compare, and a notice when one changes; a device added
+      later can't read what came before it. Text only for now; never forwarded, never read by AI
+      (`e2ee.test.ts`, `private.test.ts` on the server and in the app, E2E with two browsers
+      and a third device). [ ] Private conversations in the phone apps
       [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
       ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
 
