@@ -37,9 +37,12 @@ export function PrivateSheet({
   const codes = useCodes(open ? conversation.id : null);
   const mine = codes?.find((c) => c.userId === me);
   const others = (codes ?? []).filter((c) => c.userId !== me);
-  const missing = conversation.participants.filter(
-    (p) => p.userId !== me && !codes?.some((c) => c.userId === p.userId),
-  );
+  // Said only once the codes are in (never while they load, nor where they can't be).
+  const missing = codes
+    ? conversation.participants.filter(
+        (p) => p.userId !== me && !codes.some((c) => c.userId === p.userId),
+      )
+    : [];
   return (
     <Sheet
       open={open}

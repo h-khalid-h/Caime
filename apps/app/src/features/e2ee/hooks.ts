@@ -7,7 +7,7 @@
 import type { MessageView } from '@caishy/core/api';
 import type { PrivatePayload } from '@caishy/core/e2ee';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { qk } from '@/api/keys';
 import { flatMessages, type MessagePages } from '@/state/cache';
 import { privateSupported } from './support';
@@ -96,6 +96,8 @@ export function useOpened(
         : { text: m?.body ?? null, note: null, loading: false };
   const [state, setState] = useState<Opened>(initial);
   const [again, setAgain] = useState(0);
+  // Couldn't be asked (offline, the server away): tried again, sooner at first, then less often.
+  const failures = useRef(0);
   const key = `${where.conversationId}|${as}|${m?.id}|${
     sealed ? `${sealed.edit}|${sealed.sig}` : (m?.body ?? '')
   }|${again}`;
@@ -109,13 +111,13 @@ export function useOpened(
     if (!privateSupported) return;
     let live = true;
     let stop: (() => void) | null = null;
+    let retry: ReturnType<typeof setTimeout> | null = null;
     void loadPrivate()
       .then(async (p) => {
         // A code accepted, or this device approved: opened again.
         stop = p.onCodesChanged(() => live && setAgain((n) => n + 1));
-        const r = await p
-          .openMessage(m, where.conversationId)
-          .catch(() => ({ ok: false, reason: 'unreadable' }) as const);
+        const r = await p.openMessage(m, where.conversationId);
+        failures.current = 0;
         if (live)
           setState(
             r.ok
@@ -124,16 +126,16 @@ export function useOpened(
           );
       })
       .catch(() => {
-        if (live)
-          setState({
-            text: null,
-            note: 'This message can’t be read on this device.',
-            loading: false,
-          });
+        // Not an answer about the message: it's still being opened, and tried again shortly.
+        if (!live) return;
+        failures.current = Math.min(failures.current + 1, 5);
+        setState({ text: null, note: null, loading: true });
+        retry = setTimeout(() => live && setAgain((n) => n + 1), 1000 * 2 ** failures.current);
       });
     return () => {
       live = false;
       stop?.();
+      if (retry) clearTimeout(retry);
     };
   }, [key]);
   return state;

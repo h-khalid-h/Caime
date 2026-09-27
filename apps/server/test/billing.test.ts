@@ -327,6 +327,20 @@ describe('billing (PRD §84, R25)', () => {
     expect(orgs.statusCode).toBe(409);
   });
 
+  it('a plan above the one everyone starts on is never sold over, and one nothing pays for is settled first', async () => {
+    const nia = await signup(t, { displayName: 'Nia Stale' });
+    // Billing turned Pro on, and whatever paid for it is gone without a word (a missed webhook).
+    await t.ctx.db
+      .updateTable('users')
+      .set({ plan: 'pro', plan_source: 'billing' })
+      .where('id', '=', nia.user.id)
+      .execute();
+    expect((await nia.get('/v1/billing')).unavailable).toBe('You’re on Pro already.');
+    // Checkout asks Stripe first, finds nothing paying, puts the plan back, and sells it.
+    expect((await checkout(nia, PRO)).statusCode).toBe(200);
+    expect(await planOf(nia)).toBe('personal');
+  });
+
   it('Business is bought for an organization by its owner or an admin, never anyone else', async () => {
     const org = (
       await noor.post('/v1/orgs', { name: 'Haddad Clinic', handle: 'haddadclinic', kind: 'clinic' })

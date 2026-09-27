@@ -28,8 +28,11 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export const ErrorBoundary = ScreenError;
 
-/** Bump when a cached shape changes incompatibly; old caches are dropped, not misread. */
-const CACHE_VERSION = '1';
+/**
+ * Bump when a cached shape changes incompatibly (a view gains a field the screens rely on); old
+ * caches are dropped, not misread. 2: connections say who's merged into whom (PRD §51).
+ */
+const CACHE_VERSION = '2';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

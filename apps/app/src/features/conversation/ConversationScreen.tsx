@@ -655,6 +655,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         m={actionsFor}
         me={me.id}
         aiReady={aiReady}
+        where={where}
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {

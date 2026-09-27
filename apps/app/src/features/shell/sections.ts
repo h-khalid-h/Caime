@@ -22,12 +22,21 @@ export function inboxHandleOf(pathname: string, inbox?: string): string | null {
 
 export function sectionOf(pathname: string, inbox?: string): Section {
   if (inboxHandleOf(pathname, inbox)) return 'business';
-  if (pathname === '/' || pathname.startsWith('/c/') || pathname === '/new-group') return 'chats';
+  // Organizations' updates open from Chats; call history from People and from a person's page:
+  // the list they came from stays beside them.
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/c/') ||
+    pathname === '/new-group' ||
+    pathname === '/updates'
+  )
+    return 'chats';
   if (
     pathname.startsWith('/people') ||
     pathname.startsWith('/p/') ||
     pathname === '/connect' ||
-    pathname === '/requests'
+    pathname === '/requests' ||
+    pathname === '/calls'
   )
     return 'people';
   if (pathname.startsWith('/spaces') || pathname.startsWith('/s/') || pathname === '/new-space')

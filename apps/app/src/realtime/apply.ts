@@ -280,7 +280,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(qk.notifications);
       return;
     case 'me.updated':
+      // Their plan (or anything else of theirs) changed: what every screen shows of them, the
+      // Settings menu too, is asked for again.
       invalidate(qk.me);
+      void import('@/state/session').then((m) => m.useSession.getState().refresh());
       return;
     case 'business.updated': {
       // A thread moved (a customer wrote, someone took it, it was resolved): the team's views.

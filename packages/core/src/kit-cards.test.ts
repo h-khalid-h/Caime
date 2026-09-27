@@ -156,5 +156,9 @@ describe('how a card reads', () => {
         deleted: false,
       }),
     ).toBe('Send the deck');
+    // A private one has nothing to show, edited or not; deleted, it says so.
+    const sealed = { kind: 'text', body: null, payload: {}, sealed: { v: 1 } };
+    expect(messagePreview({ ...sealed, deleted: false })).toBe('Encrypted message');
+    expect(messagePreview({ ...sealed, deleted: true })).toBe('Message deleted');
   });
 });

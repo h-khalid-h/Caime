@@ -5,6 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { translate } from '@/features/assist/translations';
+import { useOpened } from '@/features/e2ee/hooks';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
 import { Copy, CornerUpLeft, Flag, Languages, ListChecks, Pencil, Trash } from '@/ui/icons';
@@ -54,6 +55,7 @@ export function MessageActions({
   onReply,
   onEdit,
   aiReady,
+  where,
 }: {
   m: MessageView | null;
   me: string;
@@ -62,13 +64,19 @@ export function MessageActions({
   onEdit: (m: MessageView) => void;
   /** AI assist is on and may read this conversation: offer to translate. */
   aiReady?: boolean;
+  /** The conversation shown, and whether it's private (R18). */
+  where: { conversationId: string; private: boolean };
 }) {
   const t = useTheme();
   const qc = useQueryClient();
+  // A private message's words, as opened here: to copy, never to send anywhere (R18).
+  const opened = useOpened(m, where);
   if (!m) return null;
   const mine = m.senderId === me;
   const deleted = m.deletedAt !== null;
-  const text = m.body ?? '';
+  // What Caishy may read (translate, find a task in): never a private message's words.
+  const text = m.sealed ? '' : (m.body ?? '');
+  const shown = m.sealed ? (opened.text ?? '') : text;
   const close = (fn: () => void | Promise<void>) => () => {
     onClose();
     void fn();
@@ -78,7 +86,7 @@ export function MessageActions({
       open
       onClose={onClose}
       title={mine ? 'Your message' : 'Message'}
-      subtitle={text ? previewText(text, 80) : undefined}
+      subtitle={shown ? previewText(shown, 80) : undefined}
     >
       {!deleted ? (
         <View
@@ -116,14 +124,15 @@ export function MessageActions({
         {!deleted ? (
           <ListRow icon={CornerUpLeft} title="Reply" onPress={close(() => onReply(m))} />
         ) : null}
-        {text && !deleted ? (
+        {shown && !deleted ? (
           <ListRow
             icon={Copy}
             title="Copy text"
             onPress={close(async () => {
-              await Clipboard.setStringAsync(text);
+              await Clipboard.setStringAsync(shown);
               toast('Copied');
             })}
+            testID="message-copy"
           />
         ) : null}
         {aiReady && !mine && !deleted && text ? (

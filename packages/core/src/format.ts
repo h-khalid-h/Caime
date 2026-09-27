@@ -322,8 +322,11 @@ export function messagePreview(m: {
   body: string | null;
   payload: unknown;
   deleted: boolean;
+  /** A private conversation's (R18): nothing in it to preview. */
+  sealed?: unknown;
 }): string {
   if (m.deleted) return 'Message deleted';
+  if (m.sealed) return 'Encrypted message';
   const payload = (m.payload ?? {}) as {
     question?: unknown;
     title?: unknown;

@@ -88,11 +88,16 @@ export function BillingCard({
         </Text>
       </View>
     );
+  // On it already (an operator's plan, say), or not theirs to buy: said, and what they paid
+  // before can still be managed.
   if (billing.unavailable)
     return (
-      <Text variant="caption" color="textSecondary" testID="billing-unavailable">
-        {billing.unavailable}
-      </Text>
+      <View style={{ gap: 10 }}>
+        <Text variant="caption" color="textSecondary" testID="billing-unavailable">
+          {billing.unavailable}
+        </Text>
+        {manage}
+      </View>
     );
   if (!billing.enabled || !price) return manage;
   return (

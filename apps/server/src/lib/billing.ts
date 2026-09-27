@@ -182,8 +182,9 @@ export async function billingView(
         currency: sub.currency,
       }
     : null;
+  // On more than the plan everyone starts on, whoever put them there: nothing to buy over it.
   const included =
-    !sub && now && operatorsPlan(payer, now)
+    !sub && now && now.plan !== basePlan(payer)
       ? 'userId' in payer
         ? `You’re on ${PLAN_NAMES[now.plan as keyof typeof PLAN_NAMES]} already.`
         : `It’s on ${PLAN_NAMES[now.plan as keyof typeof PLAN_NAMES]} already.`
@@ -295,6 +296,12 @@ export async function startCheckout(
       'already_subscribed',
       `${PLAN_NAMES[plan]} is on already: change it from Manage billing.`,
     );
+  // Nothing paying for it, yet more than the plan everyone starts on (whoever set it): nothing
+  // is sold over it.
+  await settlePayer(ctx, payer);
+  const now = await planNow(payer, ctx.db);
+  if (now && now.plan !== basePlan(payer))
+    throw new AppError(409, 'plan_included', `${PLAN_NAMES[plan]} is part of this plan already.`);
   const back = `${ctx.config.PUBLIC_URL}${returnPath}`;
   // Only the newest Checkout can be paid: any other still open for them closes first. One
   // payer's are made one at a time, so two taps at once leave one open, never two.

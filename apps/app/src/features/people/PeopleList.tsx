@@ -78,7 +78,7 @@ function PersonRow({
                   @{c.person.handle} · add how you know them
                 </Text>
               )}
-              {c.also.length ? (
+              {c.also?.length ? (
                 <Text variant="caption" color="textTertiary">
                   {`${c.also.length + 1} accounts`}
                 </Text>
@@ -106,7 +106,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
     const accounts = new Map(
       all.map((c) => [
         c.connectionId,
-        [c, ...c.also.flatMap((a) => byId.get(a.person.id) ?? [])] as ConnectionView[],
+        [c, ...(c.also ?? []).flatMap((a) => byId.get(a.person.id) ?? [])] as ConnectionView[],
       ]),
     );
     return {
@@ -114,7 +114,18 @@ export function PeopleList({ pane }: { pane?: boolean }) {
       accountsOf: (c: ConnectionView) => accounts.get(c.connectionId) ?? [c],
     };
   }, [all]);
-  const relationshipsOf = (c: ConnectionView) => accountsOf(c).flatMap((a) => a.relationships);
+  // One person's labels, whichever of their accounts has them: each once, the main one's first.
+  const relationshipsOf = (c: ConnectionView) => {
+    const seen = new Set<string>();
+    return accountsOf(c)
+      .flatMap((a) => a.relationships)
+      .filter((r) => {
+        const key = `${r.sphere}|${r.label.trim().toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  };
 
   const counts = useMemo(() => {
     const out: Partial<Record<Filter, number>> = { all: people.length, unlabelled: 0 };

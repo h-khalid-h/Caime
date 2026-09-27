@@ -165,7 +165,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
       <Card>
         <View style={{ gap: 10 }} testID="shown-under">
           <Text variant="body">{`In People, ${name} is one person with ${shownName(under)}.`}</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <Button
               label={`See ${shownName(under)}`}
               size="sm"
@@ -187,7 +187,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
       </Card>
     );
   }
-  if (!mine.also.length) return null;
+  if (!mine.also?.length) return null;
   return (
     <Card padded={false}>
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 }}>
@@ -198,6 +198,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
       {mine.also.map((a, i) => (
         <View key={a.connectionId} testID="other-account">
           {i > 0 ? <Divider inset={64} /> : null}
+          {/* Open and Separate side by side, each its own control: never one inside the other. */}
           <ListRow
             left={
               <Avatar
@@ -209,16 +210,26 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
             }
             title={a.person.displayName}
             subtitle={`@${a.person.handle}`}
-            onPress={() => router.navigate({ pathname: '/p/[id]', params: { id: a.person.id } })}
             right={
-              <Button
-                label="Separate"
-                size="sm"
-                variant="ghost"
-                loading={busy === a.connectionId}
-                onPress={() => void separate(a.connectionId, a.person.displayName)}
-                testID="separate-account"
-              />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                <Button
+                  label="Open"
+                  size="sm"
+                  variant="ghost"
+                  onPress={() =>
+                    router.navigate({ pathname: '/p/[id]', params: { id: a.person.id } })
+                  }
+                  testID="open-account"
+                />
+                <Button
+                  label="Separate"
+                  size="sm"
+                  variant="ghost"
+                  loading={busy === a.connectionId}
+                  onPress={() => void separate(a.connectionId, a.person.displayName)}
+                  testID="separate-account"
+                />
+              </View>
             }
           />
         </View>
