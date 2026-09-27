@@ -148,9 +148,10 @@ describe('private conversations on this device (R18)', () => {
       }));
     await p.sendPrivate(conversationId, { clientId: 'client-000001', body: 'The code is 4471' });
     const sent = h.endpoints.send.mock.calls.map((c) => c[1] as Record<string, any>);
+    const [first, second] = sent;
     expect(sent).toHaveLength(2);
-    expect(Object.keys(sent[0].sealed.keys).sort()).toEqual([mine.id, sam.view.id].sort());
-    expect(Object.keys(sent[1].sealed.keys).sort()).toEqual(
+    expect(Object.keys(first?.sealed.keys ?? {}).sort()).toEqual([mine.id, sam.view.id].sort());
+    expect(Object.keys(second?.sealed.keys ?? {}).sort()).toEqual(
       [mine.id, sam.view.id, samNew.view.id].sort(),
     );
     // No words go to the server, only the envelope.

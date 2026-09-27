@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { privateSupported } from '@/features/e2ee/private';
+import { privateSupported } from '@/features/e2ee/support';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';

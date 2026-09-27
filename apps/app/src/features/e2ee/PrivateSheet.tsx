@@ -7,7 +7,9 @@ import { Card } from '@/ui/Card';
 import { Lock, ShieldCheck } from '@/ui/icons';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
-import { acceptCode, type PersonCode, privateSupported, useCodes } from './private';
+import { loadPrivate, useCodes } from './hooks';
+import type { PersonCode } from './private';
+import { privateSupported } from './support';
 
 /** Someone's name in this conversation, as it shows them. */
 const nameIn = (conversation: ConversationView, userId: string) =>
@@ -116,7 +118,9 @@ function CodeCard({ name, code }: { name: string; code: PersonCode }) {
             label={code.changed ? 'It’s them: remember this code' : 'It matches'}
             size="sm"
             variant="secondary"
-            onPress={() => void acceptCode(code.userId, code.code ?? '', true)}
+            onPress={() =>
+              void loadPrivate().then((p) => p.acceptCode(code.userId, code.code ?? '', true))
+            }
             testID="private-code-accept"
           />
         ) : null}

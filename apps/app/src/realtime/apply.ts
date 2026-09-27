@@ -8,7 +8,6 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { onCallEvent } from '@/features/calls/engine';
 import { onGroupCallEvent } from '@/features/calls/group';
-import { devicesChanged } from '@/features/e2ee/private';
 import {
   applyEditToInbox,
   applyMessageToInbox,
@@ -65,7 +64,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     case 'devices.changed':
       // Someone's devices for private conversations changed: seal for the new set (R18).
-      devicesChanged(event.data.conversationIds);
+      void import('@/features/e2ee/private')
+        .then((p) => p.devicesChanged(event.data.conversationIds))
+        .catch(() => {});
       return;
     case 'groupcall.ringing':
     case 'groupcall.updated':

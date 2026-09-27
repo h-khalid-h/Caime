@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
-import { useOpened, useReplyPreview } from '@/features/e2ee/private';
+import { useOpened, useReplyPreview } from '@/features/e2ee/hooks';
 import { KitCard } from '@/features/kits/KitCard';
 import { LocationBody } from '@/features/location/LocationBody';
 import { stickerById } from '@/features/stickers/pack';

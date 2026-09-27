@@ -11,7 +11,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { ApiError, NetworkError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
 import { queryClient } from '@/api/queryClient';
-import { sendPrivate } from '@/features/e2ee/private';
 import { applyMessageToInbox, upsertMessage } from './cache';
 
 export interface OutboxItem {
@@ -64,7 +63,7 @@ async function sendOne(item: OutboxItem): Promise<'sent' | 'offline' | 'failed'>
   try {
     // A private one is sealed now, for the devices in it now (R18).
     const { message } = item.private
-      ? await sendPrivate(item.conversationId, item.body)
+      ? await (await import('@/features/e2ee/private')).sendPrivate(item.conversationId, item.body)
       : await endpoints.send(item.conversationId, item.body);
     upsertMessage(queryClient, message);
     applyMessageToInbox(queryClient, message, { mine: true, reading: true });

@@ -23,7 +23,7 @@ import { GroupCallBanner } from '@/features/calls/GroupCallBanner';
 import { groupCallsSupported, startGroupCall } from '@/features/calls/group';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { CodeChangedBanner, PrivateSheet } from '@/features/e2ee/PrivateSheet';
-import { privateSupported } from '@/features/e2ee/private';
+import { privateSupported } from '@/features/e2ee/support';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { flatMessages, type MessagePages, markInboxRead, maxSeq } from '@/state/cache';

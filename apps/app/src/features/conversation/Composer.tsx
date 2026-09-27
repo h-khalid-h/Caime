@@ -8,7 +8,7 @@ import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
 import { RewriteSheet } from '@/features/assist/RewriteSheet';
 import { useAiReady } from '@/features/assist/ready';
-import { editPrivate, useOpened } from '@/features/e2ee/private';
+import { loadPrivate, useOpened } from '@/features/e2ee/hooks';
 import { KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
@@ -126,7 +126,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       }
       try {
         const message = editing.sealed
-          ? await editPrivate(editing, body)
+          ? await (await loadPrivate()).editPrivate(editing, body)
           : (await endpoints.editMessage(editing.id, body)).message;
         upsertMessage(qc, message);
         applyEditToInbox(qc, message);

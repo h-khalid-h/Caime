@@ -7,7 +7,7 @@ import { endpoints } from '@/api/endpoints';
 import { usePerson } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PersonCalls } from '@/features/calls/PersonCalls';
-import { privateSupported } from '@/features/e2ee/private';
+import { privateSupported } from '@/features/e2ee/support';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
 import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
 import { useLive } from '@/state/live';

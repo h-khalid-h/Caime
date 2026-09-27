@@ -15,12 +15,8 @@ import {
   seal,
   securityCode,
 } from '@caishy/core/e2ee-crypto';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
 import { ApiError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
-import { qk } from '@/api/keys';
-import { flatMessages, type MessagePages } from '@/state/cache';
 import { useSession } from '@/state/session';
 import {
   forgetDevice,
@@ -32,8 +28,7 @@ import {
   saveSeen,
 } from './keystore';
 
-/** Private conversations open here: the web, for now. */
-export const privateSupported = keystoreSupported && e2eeSupported();
+export { privateSupported } from './support';
 
 interface Mine {
   userId: string;
@@ -76,7 +71,7 @@ function deviceName(): string {
  */
 export async function ensureDevice(fresh = false): Promise<Mine> {
   const userId = useSession.getState().user?.id;
-  if (!userId || !privateSupported)
+  if (!userId || !keystoreSupported || !e2eeSupported())
     throw new Error('Private conversations open in Caishy on the web.');
   watchSignOut();
   if (!fresh && mine?.userId === userId) return mine;
@@ -223,12 +218,6 @@ export async function openMessage(m: MessageView): Promise<OpenResult> {
   return result;
 }
 
-/** What a private message says here, or why it can't be shown. */
-export interface Opened {
-  text: string | null;
-  note: string | null;
-  loading: boolean;
-}
 export function noteFor(result: OpenResult): string | null {
   if (result.ok) return null;
   return result.reason === 'not_for_this_device'
@@ -236,43 +225,6 @@ export function noteFor(result: OpenResult): string | null {
     : result.reason === 'unverified'
       ? 'This message couldn’t be checked, so it isn’t shown.'
       : 'This message can’t be read on this device.';
-}
-
-/** Open a private message for the screen; for any other message, its body as it is. */
-export function useOpened(m: MessageView | null | undefined): Opened {
-  const sealed = m?.sealed ?? null;
-  const [state, setState] = useState<Opened>(() =>
-    sealed
-      ? privateSupported
-        ? { text: null, note: null, loading: true }
-        : { text: null, note: 'Open Caishy on the web to read private messages.', loading: false }
-      : { text: m?.body ?? null, note: null, loading: false },
-  );
-  const key = sealed ? `${m?.id}|${sealed.edit}|${sealed.sig}` : `${m?.id}|${m?.body ?? ''}`;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands for the message's version
-  useEffect(() => {
-    if (!m) return;
-    if (!sealed) {
-      setState({ text: m.body, note: null, loading: false });
-      return;
-    }
-    if (!privateSupported) return;
-    let live = true;
-    void openMessage(m)
-      .catch(() => ({ ok: false, reason: 'unreadable' }) as const)
-      .then((r) => {
-        if (live)
-          setState(
-            r.ok
-              ? { text: r.payload.body, note: null, loading: false }
-              : { text: null, note: noteFor(r), loading: false },
-          );
-      });
-    return () => {
-      live = false;
-    };
-  }, [key]);
-  return state;
 }
 
 const codeListeners = new Set<() => void>();
@@ -320,36 +272,10 @@ export async function acceptCode(userId: string, code: string, verified: boolean
   for (const f of codeListeners) f();
 }
 
-/** The codes in a conversation, kept up to date as devices change. */
-export function useCodes(conversationId: string | null): PersonCode[] | null {
-  const [codes, setCodes] = useState<PersonCode[] | null>(null);
-  useEffect(() => {
-    if (!conversationId || !privateSupported) return;
-    let live = true;
-    const load = () =>
-      void codesFor(conversationId)
-        .then((c) => live && setCodes(c))
-        .catch(() => {});
-    load();
-    codeListeners.add(load);
-    return () => {
-      live = false;
-      codeListeners.delete(load);
-    };
-  }, [conversationId]);
-  return codes;
-}
-
-/** A reply's quote: the words it answers, opened here when it's private (the server has none). */
-export function useReplyPreview(replyTo: MessageView['replyTo'], conversationId: string): string {
-  const qc = useQueryClient();
-  const original =
-    replyTo && !replyTo.preview
-      ? flatMessages(qc.getQueryData<MessagePages>(qk.messages(conversationId))).find(
-          (x) => x.id === replyTo.id,
-        )
-      : undefined;
-  const opened = useOpened(original ?? null);
-  if (!replyTo) return '';
-  return replyTo.preview || opened.text || 'Message';
+/** Told whenever someone's codes may have changed (devices, or a code accepted here). */
+export function onCodesChanged(f: () => void): () => void {
+  codeListeners.add(f);
+  return () => {
+    codeListeners.delete(f);
+  };
 }
