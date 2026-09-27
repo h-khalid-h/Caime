@@ -22,6 +22,7 @@ import { DEVICE_ID, useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
+import { checkLiveGroupCall } from './group';
 import { media, mediaTrouble } from './media.web';
 
 export const callsSupported =
@@ -109,6 +110,15 @@ function release(): void {
   for (const t of store().local?.getTracks() ?? []) t.stop();
 }
 
+/**
+ * Free again: anything ringing now shows, a group call as much as a 1:1 call (either rings over
+ * nothing else on this device, so one that rang meanwhile wasn't shown).
+ */
+function lookForRings(): void {
+  void checkLiveCall();
+  void checkLiveGroupCall();
+}
+
 /** Show that it ended for a moment, then clear the screen, and look for a call ringing now. */
 function finish(note: string | null): void {
   release();
@@ -117,8 +127,27 @@ function finish(note: string | null): void {
   setTimeout(() => {
     if (current()?.id !== call?.id) return;
     store().reset();
-    void checkLiveCall();
+    lookForRings();
   }, 1800);
+}
+
+/** Stop showing a ring or a call that's someone else's now (another device), without a word. */
+function letGo(): void {
+  release();
+  store().reset();
+  void checkLiveGroupCall();
+}
+
+/**
+ * Mute or Camera off pressed while the browser was asking for them holds for what it gave: its
+ * tracks start as the screen says. Returns whether the camera is off.
+ */
+function asPressed(got: { stream: MediaStream; cameraOff: boolean }): boolean {
+  const { muted, cameraOff } = store();
+  const off = got.cameraOff || cameraOff;
+  for (const t of got.stream.getAudioTracks()) t.enabled = !muted;
+  for (const t of got.stream.getVideoTracks()) t.enabled = !off;
+  return off;
 }
 
 /**
@@ -288,7 +317,7 @@ export async function startCall(conversationId: string, kind: CallKind): Promise
   }
   try {
     const { call } = await endpoints.startCall(conversationId, { kind, deviceId: DEVICE_ID });
-    store().patch({ call, phase: 'outgoing', local: got.stream, cameraOff: got.cameraOff });
+    store().patch({ call, phase: 'outgoing', local: got.stream, cameraOff: asPressed(got) });
     heartbeat(call.id);
   } catch (e) {
     for (const t of got.stream.getTracks()) t.stop();
@@ -323,7 +352,7 @@ export async function answer(): Promise<void> {
     return;
   }
   try {
-    store().patch({ local: got.stream, cameraOff: got.cameraOff });
+    store().patch({ local: got.stream, cameraOff: asPressed(got) });
     await connect(got.stream);
     const { call: answered } = await endpoints.acceptCall(call.id, DEVICE_ID);
     // It ended meanwhile (the event came before the answer): nothing to start.
@@ -427,8 +456,7 @@ export function onCallEvent(event: RealtimeEvent): void {
     const iCalled = call.caller.id === me();
     // Turned down on another of my devices: this one just stops ringing.
     if (!iCalled && call.outcome === 'declined') {
-      release();
-      store().reset();
+      letGo();
       return;
     }
     finish(
@@ -442,8 +470,7 @@ export function onCallEvent(event: RealtimeEvent): void {
   }
   // Answered on another of my devices: this one stops ringing.
   if (call.state === 'active' && !mineOn(call)) {
-    release();
-    store().reset();
+    letGo();
     return;
   }
   store().patch({ call });
@@ -486,10 +513,8 @@ export async function checkLiveCall(person: string = me()): Promise<void> {
   const ringing = call?.state === 'ringing' && call.callee.id === person ? call : null;
   if (shown) {
     // Answered elsewhere, turned down, called off or missed while this tab wasn't listening.
-    if (current()?.id === shown.id && store().phase === 'incoming' && ringing?.id !== shown.id) {
-      release();
-      store().reset();
-    }
+    if (current()?.id === shown.id && store().phase === 'incoming' && ringing?.id !== shown.id)
+      letGo();
     return;
   }
   if (ringing && !store().phase && !inGroupCall()) ring(ringing);

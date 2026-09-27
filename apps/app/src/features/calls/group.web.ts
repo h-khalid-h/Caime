@@ -27,6 +27,7 @@ import { DEVICE_ID, useCall } from '@/state/calls';
 import { useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
+import { checkLiveCall } from './engine';
 import { media, mediaTrouble } from './media.web';
 
 export const groupCallsSupported =
@@ -78,6 +79,8 @@ let iceServers: RTCIceServer[] = [];
 let lastRefresh = 0;
 /** Calls this device has heard ended: nothing later brings one back. */
 const over = new Set<string>();
+/** Calls turned down or left on this device: they don't ring here again. */
+const leftHere = new Set<string>();
 /** Each join from this device: only the latest one's answer is acted on. */
 let joins = 0;
 
@@ -97,11 +100,12 @@ const inOneToOne = () => {
   return Boolean(phase && phase !== 'ended');
 };
 const mine = (call: GroupCallView) => call.members.find((m) => m.person.id === me());
-/** It rings for this person now. */
+/**
+ * It rings for this person now, as the server says: their ring ends there when its time is up.
+ * This device's clock only says when to ask again.
+ */
 const ringsForMe = (call: GroupCallView) =>
-  call.state !== 'ended' &&
-  mine(call)?.state === 'ringing' &&
-  Date.parse(call.createdAt) + CALL_RING_SECONDS * 1000 > Date.now();
+  call.state !== 'ended' && mine(call)?.state === 'ringing' && !leftHere.has(call.id);
 
 /**
  * Signed out (here, or from another device): the call this device holds is let go of. Watched
@@ -116,6 +120,7 @@ function watchSignOut(): void {
       if (current()) release();
       store().reset();
       useGroupCall.setState({ on: {} });
+      leftHere.clear();
     }
   });
 }
@@ -147,6 +152,15 @@ function release(): void {
   for (const t of store().local?.getTracks() ?? []) t.stop();
 }
 
+/**
+ * Free again: anything ringing now shows, a 1:1 call as much as a group call (either rings over
+ * nothing else on this device, so one that rang meanwhile wasn't shown).
+ */
+function lookForRings(): void {
+  void checkLiveGroupCall();
+  void checkLiveCall();
+}
+
 /** Show that it ended for a moment, then clear the screen, and look for a call ringing now. */
 function finish(note: string | null): void {
   const call = current();
@@ -155,7 +169,7 @@ function finish(note: string | null): void {
   setTimeout(() => {
     if (current()?.id !== call?.id || store().phase !== 'ended') return;
     store().reset();
-    void checkLiveGroupCall();
+    lookForRings();
   }, 1800);
 }
 
@@ -163,6 +177,19 @@ function finish(note: string | null): void {
 function stopRinging(): void {
   release();
   store().reset();
+  lookForRings();
+}
+
+/**
+ * Mute or Camera off pressed while the browser was asking for them holds for what it gave: its
+ * tracks start as the screen says. Returns whether the camera is off.
+ */
+function asPressed(got: { stream: MediaStream; cameraOff: boolean }): boolean {
+  const { muted, cameraOff } = store();
+  const off = got.cameraOff || cameraOff;
+  for (const t of got.stream.getAudioTracks()) t.enabled = !muted;
+  for (const t of got.stream.getVideoTracks()) t.enabled = !off;
+  return off;
 }
 
 /** The DTLS fingerprint an offer or answer carries: the same for as long as a connection lives. */
@@ -230,8 +257,12 @@ async function onSignalFor(peer: Peer, s: GroupCallSignalView): Promise<void> {
   if (peers.get(peer.key) !== peer) return;
   const { pc } = peer;
   if (s.kind === 'candidate' && s.candidate) {
-    if (peer.described) await pc.addIceCandidate(s.candidate).catch(() => {});
-    else peer.waiting.push(s.candidate);
+    const candidate = s.candidate;
+    // After an ICE restart, a candidate can come before the offer or answer it belongs to (each
+    // signal is a request of its own): one the connection won't take yet waits for the next.
+    if (peer.described)
+      await pc.addIceCandidate(candidate).catch(() => peer.waiting.push(candidate));
+    else peer.waiting.push(candidate);
     return;
   }
   if (!s.sdp) return;
@@ -449,20 +480,38 @@ function heartbeat(): void {
   beat = setInterval(() => void refresh(true), BEAT_MS);
 }
 
+function keepEarly(s: GroupCallSignalView): void {
+  if (early.length >= EARLY_MAX) early.shift();
+  early.push(s);
+}
+
 function onSignal(s: GroupCallSignalView): void {
   const call = current();
   const phase = store().phase;
-  if (s.to !== DEVICE_ID || !call || s.callId !== call.id) return;
+  if (s.to !== DEVICE_ID) return;
+  // Starting it: someone quick joined and offered before the call's id came back here. Kept
+  // until it does.
+  if (phase === 'starting' && !call) {
+    keepEarly(s);
+    return;
+  }
+  if (!call || s.callId !== call.id) return;
   if (phase !== 'in' && phase !== 'joining') return;
   const peer = peers.get(keyOf(s.fromUser, s.from));
   if (peer) {
     peer.queue = peer.queue.then(() => onSignalFor(peer, s)).catch(() => {});
     return;
   }
-  if (early.length >= EARLY_MAX) early.shift();
-  early.push(s);
+  keepEarly(s);
   // From a device that joined since this one last heard: find out who it is.
   void refresh();
+}
+
+/** In it now: whoever offered before this device knew of them is found out about at once. */
+function settleIn(call: GroupCallView): void {
+  heartbeat();
+  reconcile(call);
+  if (early.length) void refresh(true);
 }
 
 /** Show a call ringing for this person, until it stops. */
@@ -491,12 +540,13 @@ export async function startGroupCall(conversationId: string, kind: CallKind): Pr
   try {
     iceServers = (await endpoints.callIce().catch(() => ({ iceServers: [] }))).iceServers;
     const { call } = await endpoints.startGroupCall(conversationId, { kind, deviceId: DEVICE_ID });
+    early = early.filter((s) => s.callId === call.id);
     heard(call);
-    store().patch({ call, phase: 'in', local: got.stream, cameraOff: got.cameraOff });
-    heartbeat();
-    reconcile(call);
+    store().patch({ call, phase: 'in', local: got.stream, cameraOff: asPressed(got) });
+    settleIn(call);
   } catch (e) {
     for (const t of got.stream.getTracks()) t.stop();
+    early = [];
     store().reset();
     // Someone else started one first: it's there to join.
     if (e instanceof ApiError && e.code === 'call_on')
@@ -522,24 +572,27 @@ export async function joinGroupCall(target?: GroupCallView): Promise<void> {
   watchSignOut();
   if (ringTimer) clearTimeout(ringTimer);
   store().patch({ call, phase: 'joining', note: null });
+  // This join is the one this device is making: a later one (after leaving it) answers for itself.
+  const latest = () =>
+    attempt === joins && current()?.id === call.id && store().phase === 'joining';
   let got: Awaited<ReturnType<typeof media>>;
   try {
     got = await media(call.kind);
   } catch (e) {
-    // Still ringing: fix it and join, or decline. It isn't turned down for them.
-    if (current()?.id === call.id && store().phase === 'joining') {
-      if (wasRinging) store().patch({ phase: 'incoming' });
-      else store().reset();
-    }
+    if (!latest()) return;
+    // Still ringing: fix it and join, or decline. It isn't turned down for them, and it asks
+    // again once its time is up.
+    if (wasRinging) ring(call);
+    else store().reset();
     toast(mediaTrouble(e, call.kind), { tone: 'danger' });
     return;
   }
-  // It ended while the browser asked: nothing to join.
-  if (current()?.id !== call.id || store().phase !== 'joining') {
+  // It ended while the browser asked, or this join was left for another: nothing to join.
+  if (!latest()) {
     for (const t of got.stream.getTracks()) t.stop();
     return;
   }
-  store().patch({ local: got.stream, cameraOff: got.cameraOff });
+  store().patch({ local: got.stream, cameraOff: asPressed(got) });
   try {
     iceServers = (await endpoints.callIce().catch(() => ({ iceServers: [] }))).iceServers;
     const { call: joined } = await endpoints.joinGroupCall(call.id, DEVICE_ID);
@@ -552,10 +605,9 @@ export async function joinGroupCall(target?: GroupCallView): Promise<void> {
     }
     heard(joined);
     store().patch({ call: joined, phase: 'in' });
-    heartbeat();
-    reconcile(joined);
+    settleIn(joined);
   } catch (e) {
-    if (current()?.id !== call.id || store().phase !== 'joining') return;
+    if (!latest()) return;
     const ended =
       e instanceof ApiError ? (e.details?.call as GroupCallView | undefined) : undefined;
     if (ended) heard(ended);
@@ -569,17 +621,25 @@ export async function leaveGroupCall(): Promise<void> {
   const call = current();
   const phase = store().phase;
   if (!call || !phase) return;
+  leftHere.add(call.id);
   if (phase === 'incoming') {
     stopRinging();
     await endpoints.declineGroupCall(call.id).catch(() => {});
     return;
   }
+  // Left while joining from its ring, before the join landed: it still rings for them, here and
+  // on their other devices, so it's turned down too. (Declining changes only a ring, so a join
+  // that landed meanwhile is simply left.)
+  const rung = phase === 'joining' && mine(call)?.state === 'ringing';
   finish(null);
   if (phase === 'in' || phase === 'joining')
-    await endpoints
-      .leaveGroupCall(call.id, DEVICE_ID)
-      .then(({ call: now }) => heard(now))
-      .catch(() => {});
+    await Promise.all([
+      rung ? endpoints.declineGroupCall(call.id).catch(() => {}) : null,
+      endpoints
+        .leaveGroupCall(call.id, DEVICE_ID)
+        .then(({ call: now }) => heard(now))
+        .catch(() => {}),
+    ]);
 }
 
 export function toggleGroupMute(): void {

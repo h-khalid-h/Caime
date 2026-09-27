@@ -492,3 +492,30 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   ("Noor is sharing their screen"), the avatar instead of black frames when a camera is off, and
   when someone is muted. Tests: 156 core, 49 brand, 223 server, 25 app, 33 E2E (the call test now
   shares a screen in a video call and in a voice one).
+- 2026-09-27 — Session 2 (cont.): group calls on the web, in groups of up to eight. Every device
+  in a call connects to every other, so the media goes device to device as in a 1:1 call; the
+  server rings everyone who can take part, keeps who's in it on which device (`call_members`),
+  passes offers, answers and candidates only between two joined devices, and ends the call when
+  fewer than two are left in it, with its line in the group ("Group video call · 12 min").
+  Whoever joined later makes the offer, so two devices never offer each other; `rev` goes up with
+  every change others can see, so a device ignores older views; a device that joins again gets a
+  new connection. Blocks and R29 keep people apart (nobody rung by or joining a call with
+  someone they're blocked with; someone under 18 only with people they're connected with);
+  leaving the group, being removed or deleting the account is leaving its call; one call at a
+  time for each person, 1:1 or group, and one on at a time in a group. On the web: a ring with
+  who's in it, a grid with mute, camera, screen sharing (shown large) and leave, call buttons in
+  groups of up to eight, and a banner to join a call that's on. Three reviews, each confirmed
+  finding fixed and its test shown to fail without the fix: every change to who's in a call is
+  made under the call's lock, and placing, answering, starting or joining under the person's
+  own, so a leave or the sweep never decides on a call someone just joined and nobody ends up in
+  two calls; a start or join under way is seen by any block, removal or connection ended; what
+  the group sees is who's in it, never who was rung, turned it down or missed it (a ring that
+  stops is told only to its person and moves nothing anyone can count, and an unanswered call
+  rings its whole time); signals go by person and device; and on the web, Mute or Camera off
+  pressed while the browser asks holds for what it gives (1:1 too), Leave while joining from a
+  ring turns it down, a join left for another lets go of its microphone, whoever joins while a
+  call is being started is answered, a ring stays the server's to end (never the device's
+  clock), a ring that couldn't get the microphone still asks when its time is up, either engine
+  looks for the other's ring once free, and in Firefox a candidate that comes before its ICE
+  restart's answer waits for it. Tests: 157 core, 49 brand, 257 server, 55 app, 34 E2E (three
+  browsers in one call).

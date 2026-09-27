@@ -179,7 +179,10 @@ These are rules, not preferences.
   or stopped) passes `unseen` to settle: no revision, told only to whoever it was for. An
   unanswered call ends only at its ring time or when its starter leaves. Peers are keyed by
   person and device (`keyOf`), and signals carry `fromUser` / `toUser`; hooks that take someone
-  out (blocks, removals, disconnects) run under `whileNoneEnter`.
+  out (blocks, removals, disconnects) run under `whileNoneEnter`. On the web, whether a call
+  rings is the server's to say (the person's own member state), never the device's clock; an
+  engine that lets go of a call or a ring looks for both engines' rings (`lookForRings`); and
+  media that arrives applies what was pressed meanwhile (`asPressed`).
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from

@@ -45,13 +45,24 @@ const h = vi.hoisted(() => {
   const signIn = () => {
     user = { id: 'me' };
   };
-  return { ApiError, endpoints, useSession, signOut, signIn, toasts: [] as string[] };
+  // The 1:1 engine's own look for what rings now.
+  const checkLiveCall = vi.fn(async () => {});
+  return {
+    ApiError,
+    endpoints,
+    useSession,
+    signOut,
+    signIn,
+    checkLiveCall,
+    toasts: [] as string[],
+  };
 });
 vi.mock('@/api/client', () => ({ ApiError: h.ApiError }));
 vi.mock('@/api/endpoints', () => ({ endpoints: h.endpoints }));
 vi.mock('@/lib/config', () => ({ API_URL: 'https://api.example' }));
 vi.mock('@/state/session', () => ({ useSession: h.useSession }));
 vi.mock('@/ui/Toast', () => ({ toast: (m: string) => h.toasts.push(m) }));
+vi.mock('./engine', () => ({ checkLiveCall: h.checkLiveCall }));
 
 const stopped: string[] = [];
 class FakeTrack {
@@ -163,7 +174,13 @@ class FakePC {
       this.transceivers.push(new FakeTransceiver('video', 'recvonly', null));
     this.signalingState = d.type === 'offer' ? 'have-remote-offer' : 'stable';
   }
-  async addIceCandidate() {}
+  added: unknown[] = [];
+  /** A candidate for a description it doesn't have yet (Firefox, after an ICE restart). */
+  refuse = false;
+  async addIceCandidate(c: unknown) {
+    if (this.refuse) throw new Error('Unknown ufrag');
+    this.added.push(c);
+  }
   /** The connection comes up, drops or fails. */
   become(state: string) {
     this.connectionState = state;
@@ -272,6 +289,7 @@ beforeEach(() => {
   pcs.length = 0;
   h.toasts.length = 0;
   for (const f of Object.values(h.endpoints)) f.mockReset();
+  h.checkLiveCall.mockClear();
   h.endpoints.declineGroupCall.mockResolvedValue({});
   h.endpoints.leaveGroupCall.mockResolvedValue({ call: null });
   h.endpoints.signalGroupCall.mockResolvedValue({ ok: true });
@@ -872,5 +890,283 @@ describe('the web group call engine', () => {
     await settle();
     expect(phase()).toBe('in');
     expect(h.endpoints.leaveGroupCall).not.toHaveBeenCalled();
+  });
+  it('Mute or camera off pressed while the browser asks holds for what it gives', async () => {
+    const others = [{ id: 'noor', joinedAt: at(0) }];
+    let give!: (s: FakeStream) => void;
+    media = () => new Promise((r) => (give = r));
+    h.endpoints.joinGroupCall.mockResolvedValue({
+      call: view([...others, meIn()], { kind: 'video' }),
+    });
+    const joining = engine.joinGroupCall(view(others, { kind: 'video' }));
+    await settle();
+    expect(phase()).toBe('joining');
+    engine.toggleGroupMute();
+    engine.toggleGroupCamera();
+    const mic = new FakeTrack('audio', 'mic-held');
+    const cam = new FakeTrack('video', 'cam-held');
+    give(new FakeStream([mic, cam]));
+    await joining;
+    await settle();
+    expect(phase()).toBe('in');
+    expect([mic.enabled, cam.enabled]).toEqual([false, false]);
+    expect(useGroupCall.getState()).toMatchObject({ muted: true, cameraOff: true });
+    // And the others are told what's so: muted, no camera.
+    const pc = pcs[0] as FakePC;
+    pc.channel?.open();
+    expect(pc.channel?.sent.at(-1)).toEqual({ camera: false, sharing: false, muted: true });
+    await engine.leaveGroupCall();
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // Starting one too.
+    h.endpoints.startGroupCall.mockResolvedValue({ call: view([meIn(at(40))]) });
+    const starting = engine.startGroupCall('conv-g', 'voice');
+    await settle();
+    expect(phase()).toBe('starting');
+    engine.toggleGroupMute();
+    const mine = new FakeTrack('audio', 'mic-start');
+    give(new FakeStream([mine]));
+    await starting;
+    await settle();
+    expect(phase()).toBe('in');
+    expect(mine.enabled).toBe(false);
+  });
+
+  it('Leave while joining from its ring turns it down, and it doesn’t ring here again', async () => {
+    const ringing = view(
+      [
+        { id: 'noor', joinedAt: at(0) },
+        { id: 'me', state: 'ringing' },
+      ],
+      { state: 'ringing' },
+    );
+    engine.onGroupCallEvent({ type: 'groupcall.ringing', data: ringing });
+    expect(phase()).toBe('incoming');
+    // The browser's prompt is up, and stays up.
+    media = () => new Promise(() => {});
+    void engine.joinGroupCall();
+    await settle();
+    expect(phase()).toBe('joining');
+    await engine.leaveGroupCall();
+    expect(h.endpoints.declineGroupCall).toHaveBeenCalledWith(callId);
+    expect(h.endpoints.leaveGroupCall).toHaveBeenCalledWith(callId, DEVICE_ID);
+    // Before the server has heard, it still says it rings: not here, not again.
+    h.endpoints.liveGroupCall.mockResolvedValue({ call: ringing });
+    await vi.advanceTimersByTimeAsync(2000);
+    await settle();
+    expect(phase()).toBeNull();
+    engine.onGroupCallEvent({
+      type: 'groupcall.updated',
+      data: { ...(ringing as object), rev: 2 } as never,
+    });
+    expect(phase()).toBeNull();
+
+    // Joining from the banner, not rung: leaving turns nothing down.
+    callId = `${callId}-banner`;
+    h.endpoints.declineGroupCall.mockClear();
+    void engine.joinGroupCall(view([{ id: 'noor', joinedAt: at(0) }]));
+    await settle();
+    await engine.leaveGroupCall();
+    expect(h.endpoints.declineGroupCall).not.toHaveBeenCalled();
+  });
+
+  it('a join left for another lets go of its microphone, and never ends the later one', async () => {
+    const others = [{ id: 'noor', joinedAt: at(0) }];
+    const asks: Array<{ give: (s: FakeStream) => void; fail: (e: unknown) => void }> = [];
+    media = () => new Promise((give, fail) => asks.push({ give, fail }));
+    h.endpoints.joinGroupCall.mockResolvedValue({ call: view([...others, meIn()]) });
+    const first = engine.joinGroupCall(view(others));
+    await settle();
+    await engine.leaveGroupCall();
+    await vi.advanceTimersByTimeAsync(2000);
+    const second = engine.joinGroupCall(view(others));
+    await settle();
+    // The browser answers both at once, the first join's first.
+    const a = new FakeStream([new FakeTrack('audio', 'mic-first')]);
+    const b = new FakeStream([new FakeTrack('audio', 'mic-second')]);
+    asks[0]?.give(a);
+    await settle();
+    expect(stopped).toContain('mic-first');
+    expect(phase()).toBe('joining');
+    asks[1]?.give(b);
+    await first;
+    await second;
+    await settle();
+    expect(phase()).toBe('in');
+    expect(h.endpoints.joinGroupCall).toHaveBeenCalledTimes(1);
+    expect(useGroupCall.getState().local).toBe(b);
+    await engine.leaveGroupCall();
+    expect(stopped).toContain('mic-second');
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // One that failed, after another took its place, says nothing and ends nothing.
+    const third = engine.joinGroupCall(view(others));
+    await settle();
+    await engine.leaveGroupCall();
+    await vi.advanceTimersByTimeAsync(2000);
+    const fourth = engine.joinGroupCall(view(others));
+    await settle();
+    asks[2]?.fail(new DOMException('No microphone', 'NotFoundError'));
+    await third;
+    await settle();
+    expect(phase()).toBe('joining');
+    expect(h.toasts).toEqual([]);
+    asks[3]?.give(new FakeStream([new FakeTrack('audio', 'mic-fourth')]));
+    await fourth;
+    await settle();
+    expect(phase()).toBe('in');
+  });
+
+  it('whoever joins while it’s being started is answered, not left waiting', async () => {
+    let respond!: (v: unknown) => void;
+    h.endpoints.startGroupCall.mockReturnValue(new Promise((r) => (respond = r)));
+    const starting = engine.startGroupCall('conv-g', 'voice');
+    await settle();
+    expect(phase()).toBe('starting');
+    // Lina joined, and offered, before this device heard the call's id.
+    const offer = (over: Record<string, unknown>) =>
+      engine.onGroupCallEvent({
+        type: 'groupcall.signal',
+        data: {
+          callId,
+          from: 'dev-lina-0000',
+          fromUser: 'lina',
+          to: DEVICE_ID,
+          kind: 'offer',
+          sdp: 'offer-lina',
+          candidate: null,
+          ...over,
+        } as never,
+      });
+    offer({});
+    offer({ callId: 'another-call', from: 'dev-kai-0000', fromUser: 'kai' });
+    // The start's answer was made before she joined; the server says so when asked.
+    h.endpoints.groupCallAlive.mockResolvedValue({
+      call: view([meIn(at(0)), { id: 'lina', joinedAt: at(1) }], { rev: 2 }),
+    });
+    respond({ call: view([meIn(at(0))]) });
+    await starting;
+    await settle();
+    expect(phase()).toBe('in');
+    expect(h.endpoints.groupCallAlive).toHaveBeenCalledWith(callId, DEVICE_ID);
+    expect(pcs).toHaveLength(1);
+    expect(pcs[0]?.remote).toEqual(['offer']);
+    expect(sent()).toEqual([['dev-lina-0000', 'answer']]);
+    // What came for another call was never kept for this one: Kai, joining now, starts afresh.
+    engine.onGroupCallEvent({
+      type: 'groupcall.updated',
+      data: view([meIn(at(0)), { id: 'lina', joinedAt: at(1) }, { id: 'kai', joinedAt: at(2) }], {
+        rev: 3,
+      }),
+    });
+    await settle();
+    expect(pcs).toHaveLength(2);
+    expect(pcs[1]?.remote).toEqual([]);
+    expect(sent()).toEqual([['dev-lina-0000', 'answer']]);
+  });
+
+  it('a ring joined without a microphone rings again, and still asks once its time is up', async () => {
+    const ringing = view(
+      [
+        { id: 'noor', joinedAt: at(0) },
+        { id: 'me', state: 'ringing' },
+      ],
+      { state: 'ringing' },
+    );
+    engine.onGroupCallEvent({ type: 'groupcall.ringing', data: ringing });
+    media = async () => {
+      throw new DOMException('Denied', 'NotAllowedError');
+    };
+    await engine.joinGroupCall();
+    expect(phase()).toBe('incoming');
+    expect(h.toasts).toHaveLength(1);
+    h.endpoints.liveGroupCall.mockClear();
+    await vi.advanceTimersByTimeAsync(49_000);
+    await settle();
+    expect(h.endpoints.liveGroupCall).toHaveBeenCalled();
+    expect(phase()).toBeNull();
+  });
+
+  it('free again, it looks for a 1:1 call that rang meanwhile', async () => {
+    await inCall([{ id: 'noor', joinedAt: at(0) }]);
+    await engine.leaveGroupCall();
+    expect(h.checkLiveCall).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(h.checkLiveCall).toHaveBeenCalledTimes(1);
+    // A ring that stops, too.
+    engine.onGroupCallEvent({
+      type: 'groupcall.ringing',
+      data: view(
+        [
+          { id: 'noor', joinedAt: at(0) },
+          { id: 'me', state: 'ringing' },
+        ],
+        { id: `${callId}-next`, state: 'ringing' },
+      ),
+    });
+    expect(phase()).toBe('incoming');
+    await engine.leaveGroupCall();
+    expect(h.checkLiveCall).toHaveBeenCalledTimes(2);
+  });
+
+  it('whether it rings is the server’s to say, whatever this device’s clock says', async () => {
+    // This device's clock is 50 seconds fast: by it, the ring's time is already up.
+    const ringing = () =>
+      view(
+        [
+          { id: 'noor', joinedAt: at(0) },
+          { id: 'me', state: 'ringing' },
+        ],
+        { state: 'ringing', createdAt: new Date(Date.now() - 50_000).toISOString() },
+      );
+    engine.onGroupCallEvent({ type: 'groupcall.ringing', data: ringing() });
+    expect(phase()).toBe('incoming');
+    useGroupCall.getState().reset();
+    callId = `${callId}-load`;
+    h.endpoints.liveGroupCall.mockResolvedValue({ call: ringing() });
+    await engine.checkLiveGroupCall();
+    expect(phase()).toBe('incoming');
+    // It asks again at once (its time is up by this clock), and the server still says it rings.
+    await vi.advanceTimersByTimeAsync(3500);
+    await settle();
+    expect(phase()).toBe('incoming');
+  });
+
+  it('after an ICE restart, a candidate that comes before its answer waits for it', async () => {
+    await inCall([{ id: 'noor', joinedAt: at(0) }]);
+    const pc = pcs[0] as FakePC;
+    const signal = (kind: string, over: Record<string, unknown>) =>
+      engine.onGroupCallEvent({
+        type: 'groupcall.signal',
+        data: {
+          callId,
+          from: 'dev-noor-0000',
+          fromUser: 'noor',
+          to: DEVICE_ID,
+          kind,
+          sdp: null,
+          candidate: null,
+          ...over,
+        } as never,
+      });
+    signal('answer', { sdp: 'answer-1' });
+    await settle();
+    pc.become('failed');
+    await settle();
+    expect(pc.offers).toEqual([undefined, { iceRestart: true }]);
+    const early = {
+      candidate: 'candidate:2',
+      sdpMid: '0',
+      sdpMLineIndex: 0,
+      usernameFragment: 'u2',
+    };
+    pc.refuse = true;
+    signal('candidate', { candidate: early });
+    await settle();
+    expect(pc.added).toEqual([]);
+    pc.refuse = false;
+    signal('answer', { sdp: 'answer-2' });
+    await settle();
+    expect(pc.added).toEqual([early]);
   });
 });

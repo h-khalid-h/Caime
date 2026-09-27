@@ -44,13 +44,24 @@ const h = vi.hoisted(() => {
   const signIn = () => {
     user = { id: 'me' };
   };
-  return { ApiError, endpoints, useSession, signOut, signIn, toasts: [] as string[] };
+  // The group engine's own look for what rings now.
+  const checkLiveGroupCall = vi.fn(async () => {});
+  return {
+    ApiError,
+    endpoints,
+    useSession,
+    signOut,
+    signIn,
+    checkLiveGroupCall,
+    toasts: [] as string[],
+  };
 });
 vi.mock('@/api/client', () => ({ ApiError: h.ApiError }));
 vi.mock('@/api/endpoints', () => ({ endpoints: h.endpoints }));
 vi.mock('@/lib/config', () => ({ API_URL: 'https://api.example' }));
 vi.mock('@/state/session', () => ({ useSession: h.useSession }));
 vi.mock('@/ui/Toast', () => ({ toast: (m: string) => h.toasts.push(m) }));
+vi.mock('./group', () => ({ checkLiveGroupCall: h.checkLiveGroupCall }));
 
 const stopped: string[] = [];
 class FakeTrack {
@@ -259,6 +270,7 @@ beforeEach(() => {
   pcs.length = 0;
   h.toasts.length = 0;
   for (const f of Object.values(h.endpoints)) f.mockReset();
+  h.checkLiveGroupCall.mockClear();
   h.endpoints.declineCall.mockResolvedValue({});
   h.endpoints.endCall.mockResolvedValue({});
   h.endpoints.signalCall.mockResolvedValue({ ok: true });
@@ -435,6 +447,60 @@ describe('the web call engine, when the network misbehaves', () => {
     expect(h.endpoints.endCall).not.toHaveBeenCalled();
     expect(h.endpoints.declineCall).not.toHaveBeenCalled();
     expect(phase()).toBe('connecting');
+  });
+  it('Mute or camera off pressed while the browser asks holds for what it gives', async () => {
+    engine.onCallEvent({ type: 'call.ringing', data: view({ kind: 'video' }) });
+    const asked = deferred<FakeStream>();
+    media = () => asked.promise;
+    h.endpoints.acceptCall.mockResolvedValue({
+      call: view({ kind: 'video', state: 'active', calleeDevice: DEVICE_ID }),
+    });
+    const answering = engine.answer();
+    await settle();
+    expect(phase()).toBe('connecting');
+    engine.toggleMute();
+    engine.toggleCamera();
+    const mic = new FakeTrack('audio', 'mic-held');
+    const cam = new FakeTrack('video', 'cam-held');
+    asked.resolve(new FakeStream([mic, cam]));
+    await answering;
+    await settle();
+    expect([mic.enabled, cam.enabled]).toEqual([false, false]);
+    expect(useCall.getState()).toMatchObject({ muted: true, cameraOff: true });
+    const channel = (pcs[0] as FakePC).channels[0] as FakeChannel;
+    channel.open();
+    expect(channel.sent.at(-1)).toEqual({ camera: false, sharing: false, muted: true });
+    await engine.hangUp();
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // Calling someone, too.
+    const calling = deferred<FakeStream>();
+    media = () => calling.promise;
+    h.endpoints.startCall.mockResolvedValue({ call: placed() });
+    const starting = engine.startCall('conv-1', 'voice');
+    await settle();
+    engine.toggleMute();
+    const mine = new FakeTrack('audio', 'mic-start');
+    calling.resolve(new FakeStream([mine]));
+    await starting;
+    expect(phase()).toBe('outgoing');
+    expect(mine.enabled).toBe(false);
+  });
+
+  it('free again, it looks for a group call that rang meanwhile', async () => {
+    engine.onCallEvent({ type: 'call.ringing', data: view() });
+    await engine.hangUp();
+    expect(h.checkLiveGroupCall).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(h.checkLiveGroupCall).toHaveBeenCalledTimes(1);
+    // Answered on another of this person's devices: this one is free at once.
+    engine.onCallEvent({ type: 'call.ringing', data: view({ id: 'call-2' }) });
+    engine.onCallEvent({
+      type: 'call.updated',
+      data: view({ id: 'call-2', state: 'active', calleeDevice: 'dev-my-phone' }),
+    });
+    expect(phase()).toBeNull();
+    expect(h.checkLiveGroupCall).toHaveBeenCalledTimes(2);
   });
 });
 
