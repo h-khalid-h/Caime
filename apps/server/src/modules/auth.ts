@@ -25,10 +25,12 @@ import { audit } from '../lib/audit';
 import {
   decoyHash,
   hashPassword,
+  hashRecoveryCode,
   hashToken,
+  matchRecoveryCode,
   newToken,
-  normaliseRecoveryCode,
   recoveryCodes,
+  recoverySalt,
   verifyPassword,
 } from '../lib/crypto';
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
@@ -85,18 +87,22 @@ export async function createSession(
   return token;
 }
 
+/**
+ * Confirming the password while signed in: few tries, so a session someone took can't find the
+ * password it'd take to keep the account (a new password, new recovery codes).
+ */
+function passwordTry(ctx: AppContext, userId: string): void {
+  ctx.limiter.hit(`password-try:${userId}`, ctx.config.isTest ? 1000 : 10, 600_000);
+}
+
 async function storeRecoveryCodes(ctx: AppContext, userId: string): Promise<string[]> {
   const codes = recoveryCodes();
+  const salt = recoverySalt();
+  const hashes = await Promise.all(codes.map((c) => hashRecoveryCode(c, salt)));
   await ctx.db.deleteFrom('recovery_codes').where('user_id', '=', userId).execute();
   await ctx.db
     .insertInto('recovery_codes')
-    .values(
-      codes.map((c) => ({
-        id: uuidv7(),
-        user_id: userId,
-        code_hash: hashToken(normaliseRecoveryCode(c)),
-      })),
-    )
+    .values(hashes.map((code_hash) => ({ id: uuidv7(), user_id: userId, code_hash, salt })))
     .execute();
   return codes;
 }
@@ -312,6 +318,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.post('/auth/password', async (req) => {
     const auth = requireAuth(req);
+    passwordTry(ctx, auth.userId);
     const body = parse(ChangePasswordBody, req.body);
     const user = await ctx.db
       .selectFrom('users')
@@ -344,6 +351,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.post('/auth/recovery-codes', async (req) => {
     const auth = requireAuth(req);
+    passwordTry(ctx, auth.userId);
     const { password } = parse(z.object({ password: z.string().min(1) }), req.body);
     const user = await ctx.db
       .selectFrom('users')
@@ -378,12 +386,21 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       'invalid_recovery',
       'That recovery code doesn’t match this account.',
     );
-    if (!user) throw failure;
+    const unused = user
+      ? await ctx.db
+          .selectFrom('recovery_codes')
+          .select(['id', 'code_hash', 'salt'])
+          .where('user_id', '=', user.id)
+          .where('used_at', 'is', null)
+          .execute()
+      : [];
+    const matched = await matchRecoveryCode(body.code, unused);
+    if (!user || !matched) throw failure;
+    // Once: a second try with the same code at the same moment finds it used.
     const used = await ctx.db
       .updateTable('recovery_codes')
       .set({ used_at: ctx.now() })
-      .where('user_id', '=', user.id)
-      .where('code_hash', '=', hashToken(normaliseRecoveryCode(body.code)))
+      .where('id', '=', matched)
       .where('used_at', 'is', null)
       .returning('id')
       .executeTakeFirst();

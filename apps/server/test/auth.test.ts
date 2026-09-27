@@ -1,4 +1,7 @@
+import { uuidv7 } from '@caishy/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { hashRecoveryCode, hashToken, matchRecoveryCode, recoverySalt } from '../src/lib/crypto';
+import { tooMany } from '../src/lib/errors';
 import { clientFor, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -19,6 +22,13 @@ const base = {
   locale: 'ar-EG',
   client: 'native',
 };
+
+const recover = (identifier: string, code: string) =>
+  t.app.inject({
+    method: 'POST',
+    url: '/v1/auth/recover',
+    payload: { identifier, code, newPassword: 'a brand new passphrase', client: 'native' },
+  });
 
 describe('sign-up', () => {
   it('creates an account with local defaults, recovery codes and a session', async () => {
@@ -255,5 +265,106 @@ describe('recovery without email', () => {
       },
     });
     expect(again.statusCode).toBe(400);
+  });
+
+  it('keeps codes only as slow hashes, salted for each account', async () => {
+    const [a, b] = [await signup(t), await signup(t)];
+    const kept = await t.ctx.db
+      .selectFrom('recovery_codes')
+      .select(['user_id', 'code_hash', 'salt'])
+      .where('user_id', 'in', [a.user.id, b.user.id])
+      .execute();
+    expect(kept).toHaveLength(20);
+    // Nothing a fast hash of a code would find.
+    const fast = new Set(
+      [...a.recoveryCodes, ...b.recoveryCodes].map((c) => hashToken(c).toString('hex')),
+    );
+    expect(kept.some((k) => fast.has(k.code_hash.toString('hex')))).toBe(false);
+    const salts = new Set(kept.map((k) => k.salt?.toString('hex')));
+    expect(salts.size).toBe(2);
+    expect(salts.has(undefined)).toBe(false);
+    // A code works only for its own account.
+    expect((await recover(b.user.handle, a.recoveryCodes[0]!)).statusCode).toBe(400);
+    expect((await recover(a.user.handle, a.recoveryCodes[3]!)).statusCode).toBe(200);
+  });
+
+  it('still takes a code made before they were hashed slowly, once', async () => {
+    const u = await signup(t);
+    await t.ctx.db.deleteFrom('recovery_codes').where('user_id', '=', u.user.id).execute();
+    await t.ctx.db
+      .insertInto('recovery_codes')
+      .values({ id: uuidv7(), user_id: u.user.id, code_hash: hashToken('ABCD-EFGH') })
+      .execute();
+    expect((await recover(u.user.handle, 'abcd efgh')).statusCode).toBe(200);
+    expect((await recover(u.user.handle, 'ABCD-EFGH')).statusCode).toBe(400);
+    // Anyone, or nobody: the same answer.
+    const nobody = await recover('nobody.here', 'ABCD-EFGH');
+    expect(nobody.statusCode).toBe(400);
+    expect(nobody.json().error.code).toBe('invalid_recovery');
+  });
+
+  it('makes one slow hash a try, whatever it finds, so its time says nothing', async () => {
+    let hashes = 0;
+    const counted = (code: string, salt: Buffer) => {
+      hashes++;
+      return hashRecoveryCode(code, salt);
+    };
+    const salt = recoverySalt();
+    const theirs = await hashRecoveryCode('ABCD-EFGH', salt);
+    const cases: Array<[Parameters<typeof matchRecoveryCode>[1], string | null]> = [
+      [[], null],
+      [[{ id: 'old', code_hash: hashToken('ABCD-EFGH'), salt: null }], 'old'],
+      [
+        [
+          { id: 'other', code_hash: await hashRecoveryCode('WXYZ-2345', salt), salt },
+          { id: 'this', code_hash: theirs, salt },
+        ],
+        'this',
+      ],
+    ];
+    for (const [stored, found] of cases) {
+      hashes = 0;
+      expect(await matchRecoveryCode('abcd efgh', stored, counted)).toBe(found);
+      expect(hashes).toBe(1);
+    }
+  });
+
+  it('takes a code tried twice at once only once', async () => {
+    const u = await signup(t);
+    const code = u.recoveryCodes[1]!;
+    const tries = await Promise.all([recover(u.user.handle, code), recover(u.user.handle, code)]);
+    expect(tries.map((r) => r.statusCode).sort()).toEqual([200, 400]);
+  });
+});
+
+describe('the password, asked again while signed in', () => {
+  it('has few tries, on each route that asks, before anything else is done', async () => {
+    const u = await signup(t);
+    const limiter = t.ctx.limiter;
+    const real = limiter.hit.bind(limiter);
+    const tries: string[] = [];
+    let full = false;
+    limiter.hit = (key, limit, windowMs, now) => {
+      if (key.startsWith('password-try:')) {
+        tries.push(key);
+        if (full) throw tooMany(60);
+      }
+      real(key, limit, windowMs, now);
+    };
+    try {
+      const wrong = 'not my password';
+      const change = { currentPassword: wrong, newPassword: 'another good passphrase' };
+      expect((await u.req('POST', '/v1/auth/password', change)).statusCode).toBe(400);
+      const codes = { password: wrong };
+      expect((await u.req('POST', '/v1/auth/recovery-codes', codes)).statusCode).toBe(400);
+      expect(tries).toEqual([`password-try:${u.user.id}`, `password-try:${u.user.id}`]);
+      full = true;
+      const right = { password: 'correct horse battery' };
+      expect((await u.req('POST', '/v1/auth/recovery-codes', right)).statusCode).toBe(429);
+      // The codes are as they were.
+      expect((await recover(u.user.handle, u.recoveryCodes[0]!)).statusCode).toBe(200);
+    } finally {
+      delete (limiter as { hit?: unknown }).hit;
+    }
   });
 });

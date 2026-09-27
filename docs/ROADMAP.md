@@ -763,3 +763,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   hello names; opening on a saved account that isn't the one signed in signs it out here first.
   Mutation-tested: 9 changes to the new code, each caught by a test. Tests: 209 core, 49 brand,
   445 server, 126 app, 53 E2E (two tabs, one signed out and in as someone else under the other).
+- 2026-09-27 — Session 2 (cont.): recovery codes are kept as slow hashes. They were SHA-256 of
+  40 random bits, which a copy of the database gives up in minutes; now scrypt, with a salt of the
+  account's own, so one hash checks a try against all ten codes and making them costs 146 ms at
+  sign-up. Codes made before keep working until used or replaced. Found on the way: confirming
+  the password while signed in (a new password, new recovery codes) had no limit, so a session
+  someone took could be used to guess it; now ten tries in ten minutes. A code tried twice at the
+  same moment works once (tested now). Mutation-tested: 15 changes, each caught by a test but one
+  that changes nothing observable. Tests: 209 core, 49 brand, 450 server, 126 app, 53 E2E.

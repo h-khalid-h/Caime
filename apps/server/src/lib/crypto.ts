@@ -70,6 +70,55 @@ export function recoveryCodes(count = 10): string[] {
   });
 }
 
+/**
+ * Recovery codes are hashed slowly, with a salt of their account's own (0033): a copy of the
+ * database can't be tried against every one of 32^8 codes, as a fast hash of them could, and one
+ * hash checks all of an account's codes. Codes are random, not chosen, so a lighter cost than a
+ * password's does.
+ */
+const RECOVERY_N = 16384;
+
+export function recoverySalt(): Buffer {
+  return randomBytes(16);
+}
+
+export function hashRecoveryCode(code: string, salt: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scryptCb(
+      normaliseRecoveryCode(code),
+      salt,
+      32,
+      { N: RECOVERY_N, r: R, p: P, maxmem: 128 * RECOVERY_N * R * 2 },
+      (err, key) => (err ? reject(err) : resolve(key)),
+    );
+  });
+}
+
+/**
+ * The code among an account's unused ones that this is, if any: codes made before 0033 by their
+ * fast hash, the rest by one slow hash. At least one slow hash is always made, so how long a try
+ * takes says nothing of whether the account exists or has codes left.
+ */
+export async function matchRecoveryCode(
+  code: string,
+  stored: Array<{ id: string; code_hash: Buffer; salt: Buffer | null }>,
+  slowHash = hashRecoveryCode,
+): Promise<string | null> {
+  const fast = hashToken(normaliseRecoveryCode(code));
+  const slow = new Map<string, Buffer>();
+  for (const s of stored)
+    if (s.salt && !slow.has(s.salt.toString('hex')))
+      slow.set(s.salt.toString('hex'), await slowHash(code, s.salt));
+  if (!slow.size) await slowHash(code, recoverySalt());
+  let found: string | null = null;
+  for (const s of stored) {
+    const hash = s.salt ? slow.get(s.salt.toString('hex')) : fast;
+    if (hash && hash.length === s.code_hash.length && timingSafeEqual(hash, s.code_hash))
+      found ??= s.id;
+  }
+  return found;
+}
+
 export function normaliseRecoveryCode(code: string): string {
   return code
     .toUpperCase()
