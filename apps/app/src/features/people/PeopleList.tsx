@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useConnections, useRequests } from '@/api/hooks';
 import { DuplicateOffers } from '@/features/duplicates';
+import { RelationshipOffers } from '@/features/relationships/offers';
 import { useLive } from '@/state/live';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -229,6 +230,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         </Pressable>
       ) : null}
       <DuplicateOffers all={all} />
+      <RelationshipOffers all={all} />
       {people.length > 6 ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <TextField

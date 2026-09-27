@@ -127,6 +127,12 @@ describe('find → connect → classify (the wedge, PRD §11, W1)', () => {
       decisions: 0,
       openActions: 0,
       waiting: 0,
+      contexts: [],
+      rhythm: null,
+      lastTalkedAt: null,
+      theirAsks: 0,
+      myAsks: 0,
+      privacy: 'standard',
     });
     expect(p.person.trust.label).toBe('Known to you');
   });

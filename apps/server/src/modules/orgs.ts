@@ -39,6 +39,7 @@ import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
+import { suggestFromPlace } from '../lib/suggest';
 import { endFollowsOf } from '../lib/updates';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -344,6 +345,17 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     // The team answers every one of the organization's conversations.
     for (const userId of adding) await joinThreads(ctx.db, id, userId);
     await ctx.bus.publish(adding, { type: 'business.updated', data: { orgId: id } });
+    // Teammates who know each other may be colleagues: offered to each, never decided (PRD §12).
+    ctx.defer('suggest-teammates', async () => {
+      const org = await orgById(ctx.db, id);
+      const people = (await team(ctx, id)).filter((m) => m.kind === 'human').map((m) => m.user_id);
+      await suggestFromPlace(
+        ctx,
+        { kind: 'org', name: org.name, verified: org.verified_at !== null },
+        adding,
+        people,
+      );
+    });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.members_added',

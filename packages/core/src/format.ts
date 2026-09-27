@@ -2,6 +2,8 @@
  * Formatting shared by every client and by notifications. Locale-aware through Intl; names are
  * treated as opaque strings in any script (PRODUCT-REVIEW R28).
  */
+
+import type { Rhythm } from './api';
 import { type CallKind, type CallOutcome, callText } from './calls';
 import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
@@ -423,3 +425,21 @@ export function messagePreview(m: {
       return previewText(m.body ?? '');
   }
 }
+
+/**
+ * How often two people have talked lately (PRD §67, §71), from the weeks of the last twelve they
+ * wrote in: a word for the person, never a count to compare people by.
+ */
+export function rhythmOf(weeks: number, everTalked: boolean): Rhythm | null {
+  if (weeks >= 8) return 'most_weeks';
+  if (weeks >= 3) return 'now_and_then';
+  if (weeks >= 1) return 'rarely';
+  return everTalked ? 'not_lately' : null;
+}
+
+export const RHYTHM_TEXT: Record<Rhythm, string> = {
+  most_weeks: 'Most weeks',
+  now_and_then: 'Now and then',
+  rarely: 'Once in a while',
+  not_lately: 'Not lately',
+};

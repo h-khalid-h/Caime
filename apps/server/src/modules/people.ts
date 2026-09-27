@@ -3,7 +3,7 @@
  */
 
 import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caishy/core';
-import { ADULT_AGE, isMinor } from '@caishy/core';
+import { ADULT_AGE, isMinor, resolvePolicy, rhythmOf } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -12,8 +12,10 @@ import { notFound } from '../lib/errors';
 import {
   activeRelationships,
   between,
+  loadPolicies,
   mutualFit,
   pairKey,
+  policyTargetFor,
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
@@ -253,6 +255,53 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       ])
       .executeTakeFirstOrThrow();
     const primary = mine[0];
+    // How the two of them are in touch (PRD §67, §71), in words and for the viewer only.
+    const talk = conversationIds.length
+      ? await ctx.db
+          .selectFrom('messages')
+          .select([
+            sql<number>`count(distinct date_trunc('week', created_at)) filter (where created_at > ${new Date(now.getTime() - 84 * 86_400_000)})::int`.as(
+              'weeks',
+            ),
+            sql<Date | null>`max(created_at)`.as('last'),
+            // Ids are in the order messages were sent (uuidv7), to the millisecond and beyond.
+            sql<string | null>`max(id::text) filter (where sender_id = ${auth.userId})`.as('mine'),
+            sql<string | null>`max(id::text) filter (where sender_id = ${id})`.as('theirs'),
+          ])
+          .where('conversation_id', 'in', conversationIds)
+          .where('deleted_at', 'is', null)
+          .where('kind', '<>', 'system')
+          .executeTakeFirstOrThrow()
+      : { weeks: 0, last: null, mine: null, theirs: null };
+    const asks = async (from: string, since: string | null) =>
+      conversationIds.length
+        ? (
+            await ctx.db
+              .selectFrom('messages')
+              .select(sql<number>`count(*)::int`.as('n'))
+              .where('conversation_id', 'in', conversationIds)
+              .where('sender_id', '=', from)
+              .where('deleted_at', 'is', null)
+              .where((w) => w.or([w('is_question', '=', true), w('is_request', '=', true)]))
+              .$if(Boolean(since), (qb) => qb.where('id', '>', since!))
+              .executeTakeFirstOrThrow()
+          ).n
+        : 0;
+    const [theirAsks, myAsks, contexts, policies] = await Promise.all([
+      id === auth.userId ? 0 : asks(id, talk.mine),
+      id === auth.userId ? 0 : asks(auth.userId, talk.theirs),
+      conversationIds.length
+        ? ctx.db
+            .selectFrom('conversations as c')
+            .innerJoin('contexts as x', 'x.id', 'c.context_id')
+            .select(['x.id', 'x.title', 'x.kind'])
+            .distinct()
+            .where('c.id', 'in', conversationIds)
+            .execute()
+        : [],
+      loadPolicies(ctx.db, auth.userId),
+    ]);
+    const privacy = resolvePolicy(policies, policyTargetFor(primary, b.connectionId)).privacy;
     return {
       person: personView(user, relation, now, identity),
       connection: connectionState(b),
@@ -272,6 +321,12 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         decisions: Number(counts.decisions ?? 0),
         openActions: Number(actions.open ?? 0),
         waiting: Number(actions.waiting ?? 0),
+        contexts: contexts.map((x) => ({ id: x.id, title: x.title, kind: x.kind })),
+        rhythm: rhythmOf(talk.weeks, talk.last !== null),
+        lastTalkedAt: talk.last?.toISOString() ?? null,
+        theirAsks,
+        myAsks,
+        privacy: privacy === 'limited' ? 'limited' : 'standard',
       },
     };
   });

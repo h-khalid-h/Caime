@@ -171,8 +171,21 @@ export interface PersonProfileView {
     decisions: number;
     openActions: number;
     waiting: number;
+    /** What your conversations with them are about ("Project Alpha"). */
+    contexts: Array<{ id: string; title: string; kind: string }>;
+    /** How often the two of you have talked lately, in words (never a score), and when last. */
+    rhythm: Rhythm | null;
+    lastTalkedAt: string | null;
+    /** Their questions and requests since you last wrote to them, and yours since they did. */
+    theirAsks: number;
+    myAsks: number;
+    /** What they see of you, by your rules for them: a limited view, or your privacy settings. */
+    privacy: 'limited' | 'standard';
   };
 }
+
+/** How often two people have talked in the last twelve weeks (PRD §67, §71). */
+export type Rhythm = 'most_weeks' | 'now_and_then' | 'rarely' | 'not_lately';
 
 export interface RelationshipHistoryView {
   current: RelationshipView[];

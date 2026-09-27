@@ -90,6 +90,17 @@ export const useMemory = (conversationId: string, enabled = true) =>
 
 export const usePolicies = () => useQuery({ queryKey: qk.policies, queryFn: endpoints.policies });
 
+/** How Caishy thinks someone may be known (PRD §12), for one person or everyone. */
+export const useRelationshipOffers = (personId?: string) =>
+  useQuery({
+    queryKey: ['suggestions', 'relationship', personId ?? 'all'],
+    queryFn: () =>
+      endpoints.suggestions({
+        kind: 'relationship',
+        ...(personId ? { subjectUserId: personId } : {}),
+      }),
+  });
+
 export const useAutomations = () =>
   useQuery({ queryKey: qk.automations, queryFn: endpoints.automations });
 

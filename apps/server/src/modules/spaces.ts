@@ -8,6 +8,7 @@
 import type {
   ConversationView,
   SpaceConversationView,
+  SpaceKind,
   SpaceMemberView,
   SpaceSummaryView,
   SpaceView,
@@ -40,6 +41,7 @@ import { participantsOf } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { generalOf, spaceSeat } from '../lib/spaces';
+import { suggestFromPlace } from '../lib/suggest';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -319,6 +321,23 @@ async function mirrorRole(ctx: AppContext, spaceId: string, userId: string, role
 
 export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
   const idParam = z.object({ id: z.string().uuid() });
+  /** People in a space who know each other may know each other its way (PRD §12): offered. */
+  const offerWhoTheyKnow = (spaceId: string, newcomers: string[]) =>
+    ctx.defer('suggest-space', async () => {
+      const space = await ctx.db
+        .selectFrom('spaces')
+        .select(['name', 'kind'])
+        .where('id', '=', spaceId)
+        .executeTakeFirst();
+      if (!space) return;
+      const members = (await activeMembers(ctx, spaceId)).map((m) => m.user_id);
+      await suggestFromPlace(
+        ctx,
+        { kind: 'space', name: space.name, spaceKind: space.kind as SpaceKind },
+        newcomers,
+        members,
+      );
+    });
   const memberParam = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
 
   app.get('/spaces', async (req): Promise<{ spaces: SpaceSummaryView[] }> => {
@@ -387,6 +406,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       data: { conversationId: generalId },
     });
     await tellSpace(ctx, spaceId);
+    offerWhoTheyKnow(spaceId, [auth.userId, ...memberIds]);
     reply.status(201);
     return { space: await spaceView(ctx, auth.userId, spaceId) };
   });
@@ -485,6 +505,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       data: { conversationId: general.id },
     });
     await tellSpace(ctx, id);
+    offerWhoTheyKnow(id, adding);
     return { ok: true };
   });
 

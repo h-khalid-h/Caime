@@ -16,16 +16,20 @@ import { endpoints } from '@/api/endpoints';
 import { useAutomations, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { AutomationSheet } from '@/features/settings/AutomationSheet';
-import { RuleSheet } from '@/features/settings/RuleSheet';
+
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Bookmark, Clock, Moon } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+// Shared with Notifications and a person's page: loaded when a rule is opened.
+const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
 
 /** Who a rule is for, as it reads in a sentence: "vendors", "managers", "people from work". */
 function whom(p: Pick<PolicyView, 'scope'>): string {

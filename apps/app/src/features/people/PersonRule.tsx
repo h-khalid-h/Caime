@@ -10,11 +10,15 @@ import { useState } from 'react';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { RuleSheet } from '@/features/settings/RuleSheet';
+
 import { Card } from '@/ui/Card';
 import { Bell } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { toast } from '@/ui/Toast';
+
+// Shared with Notifications and Automations: loaded when their rule is opened.
+const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
 
 export function PersonRule({
   personId,

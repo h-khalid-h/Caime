@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { DayPicker, RuleSheet } from '@/features/settings/RuleSheet';
+import { DayPicker } from '@/features/settings/DayPicker';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -24,6 +24,8 @@ import { toast } from '@/ui/Toast';
 const BrowserNotifications = lazyPart(() =>
   import('@/features/push/BrowserNotifications').then((m) => m.BrowserNotifications),
 );
+// The rule editor is shared with a person's page and Automations: its own file, loaded when opened.
+const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
 
 /** Who a rule is for: "Work · Manager", "Customers", or its name when it has one. */
 function scopeLabel(p: Pick<PolicyView, 'name' | 'scope'>): string {

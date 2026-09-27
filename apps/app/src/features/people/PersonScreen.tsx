@@ -1,4 +1,5 @@
 import type { RelationshipView } from '@caishy/core/api';
+import { formatListTime, RHYTHM_TEXT } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -10,7 +11,9 @@ import { PersonCalls } from '@/features/calls/PersonCalls';
 import { OtherAccounts } from '@/features/duplicates';
 import { privateSupported } from '@/features/e2ee/support';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
+import { PersonOffer } from '@/features/relationships/offers';
 import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
+import { useNow, useUserClock } from '@/lib/time';
 import { useLive } from '@/state/live';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -41,16 +44,27 @@ import { ConnectSheet } from './ConnectSheet';
 import { PersonRule } from './PersonRule';
 import { RelationshipHistory } from './RelationshipHistory';
 
-function Stat({ value, label }: { value: number; label: string }) {
+/** One line of who someone is to you (PRD §67): what it is, and what there is of it. */
+function Fact({ label, value, testID }: { label: string; value: string; testID?: string }) {
   return (
-    <View style={{ alignItems: 'center', flex: 1, gap: 2 }}>
-      <Text variant="headline">{value}</Text>
-      <Text variant="caption" color="textSecondary">
+    <View
+      style={{ flexDirection: 'row', gap: 12, paddingVertical: 4 }}
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
+      testID={testID}
+    >
+      <Text variant="caption" color="textSecondary" style={{ width: 96 }}>
         {label}
+      </Text>
+      <Text variant="body" style={{ flex: 1 }}>
+        {value}
       </Text>
     </View>
   );
 }
+
+const count = (n: number, one: string, many: string) =>
+  `${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 export function PersonScreen({ id }: { id: string }) {
   const t = useTheme();
@@ -65,6 +79,8 @@ export function PersonScreen({ id }: { id: string }) {
   });
   const [connect, setConnect] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const now = useNow();
+  const { timeZone, locale } = useUserClock();
   const p = q.data;
 
   const refresh = () => {
@@ -264,6 +280,8 @@ export function PersonScreen({ id }: { id: string }) {
           />
         ) : null}
 
+        {state === 'connected' && !self ? <PersonOffer person={person} /> : null}
+
         {!self ? (
           <Card>
             <View style={{ gap: 10 }}>
@@ -336,13 +354,61 @@ export function PersonScreen({ id }: { id: string }) {
 
         {!self ? <RelationshipHistory personId={id} name={name} /> : null}
 
-        {state === 'connected' ? (
+        {state === 'connected' && !self ? (
           <Card>
-            <View style={{ flexDirection: 'row' }}>
-              <Stat value={p.summary.messages} label="Messages" />
-              <Stat value={p.summary.files} label="Files" />
-              <Stat value={p.summary.decisions} label="Decisions" />
-              <Stat value={p.summary.openActions} label="Open" />
+            <View style={{ gap: 2 }} testID="person-profile">
+              <Text variant="label" style={{ marginBottom: 4 }}>
+                {`${name} and you`}
+              </Text>
+              <Fact
+                label="Conversation"
+                value={[
+                  count(p.summary.messages, 'message', 'messages'),
+                  p.summary.rhythm ? RHYTHM_TEXT[p.summary.rhythm].toLowerCase() : null,
+                  p.summary.lastTalkedAt
+                    ? `last ${formatListTime(p.summary.lastTalkedAt, now, timeZone, locale)}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              />
+              {p.summary.contexts.length ? (
+                <Fact label="Context" value={p.summary.contexts.map((c) => c.title).join(', ')} />
+              ) : null}
+              <Fact
+                label="Shared"
+                value={`${count(p.summary.files, 'file', 'files')} · ${count(p.summary.links, 'link', 'links')}${
+                  p.summary.decisions
+                    ? ` · ${count(p.summary.decisions, 'decision', 'decisions')}`
+                    : ''
+                }`}
+              />
+              <Fact
+                label="Actions"
+                value={`${p.summary.openActions} open · ${p.summary.waiting} waiting`}
+              />
+              {p.summary.theirAsks || p.summary.myAsks ? (
+                <Fact
+                  label="Answers"
+                  value={[
+                    p.summary.theirAsks
+                      ? `${count(p.summary.theirAsks, 'question', 'questions')} of ${name}’s for you`
+                      : null,
+                    p.summary.myAsks ? `${p.summary.myAsks} of yours waiting on ${name}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  testID="person-asks"
+                />
+              ) : null}
+              <Fact
+                label="Privacy"
+                value={
+                  p.summary.privacy === 'limited'
+                    ? `${name} sees a limited view of you`
+                    : 'Your privacy settings'
+                }
+              />
             </View>
           </Card>
         ) : null}

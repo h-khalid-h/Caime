@@ -461,3 +461,22 @@ export function relationshipFromWord(word: string): { sphere: Sphere; role?: str
   }
   return undefined;
 }
+
+/**
+ * A relationship Caishy thinks someone may be to you (PRD §12), as it's offered: "Sarah may be
+ * your colleague at DATA C". An offer, never a fact.
+ */
+export function relationshipOfferText(
+  name: string,
+  offer: { sphere?: string | null; role?: string | null; orgName?: string | null },
+): string {
+  const sphere = (offer.sphere ?? null) as Sphere | null;
+  const at = offer.orgName ? ` at ${offer.orgName}` : '';
+  if (!sphere || !(sphere in SPHERE_DEFS)) return `${name} may be someone you know${at}`;
+  const role = findRole(sphere, offer.role);
+  if (role) return `${name} may be your ${role.label.toLowerCase()}${at}`;
+  if (sphere === 'family') return `${name} may be family`;
+  if (sphere === 'work') return `${name} may be someone you work with${at}`;
+  const label = SPHERE_DEFS[sphere].label.toLowerCase();
+  return `${name} may be ${/^[aeiou]/.test(label) ? 'an' : 'a'} ${label}${at}`;
+}

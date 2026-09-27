@@ -1052,6 +1052,53 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('Caishy thinks someone may be family, and asks rather than decides', async ({
+      browser,
+    }) => {
+      const { page, errors } = noor;
+      const samContext = await browser.newContext();
+      try {
+        const samId = (await apiSignUp(samContext, 'Sami Haddad', `sami.${stamp}`)).id;
+        // Connected without either saying how.
+        const asked = await noorContext.request.post('/v1/connections/requests', {
+          headers: CLIENT,
+          data: { toUserId: samId },
+        });
+        const { requestId } = await asked.json();
+        const accepted = await samContext.request.post(
+          `/v1/connections/requests/${requestId}/accept`,
+          { headers: CLIENT, data: {} },
+        );
+        expect(accepted.ok()).toBe(true);
+        // A family space for the two of them is a reason to think so; not a reason to decide.
+        const space = await noorContext.request.post('/v1/spaces', {
+          headers: CLIENT,
+          data: { name: 'The Haddads', kind: 'family', memberIds: [samId] },
+        });
+        expect(space.ok()).toBe(true);
+        await page.goto(`/p/${samId}`);
+        const offer = page.getByTestId('relationship-offer').filter({ visible: true });
+        await expect(offer).toContainText('Caishy thinks Sami may be family.');
+        await expect(offer).toContainText(
+          'You and Sami Haddad are both in The Haddads, a family space.',
+        );
+        await page.screenshot({ path: 'e2e/screenshots/desktop-relationship-offer.png' });
+        await offer.getByTestId('relationship-offer-accept').click();
+        await expect(offer).toHaveCount(0);
+        // Its label on their page, and beside their name in People.
+        await expect(page.getByLabel('Your label: Family').filter({ visible: true })).toHaveCount(
+          2,
+        );
+        // Who Sami is to Noor, in a few lines.
+        const profile = page.getByTestId('person-profile').filter({ visible: true });
+        await expect(profile).toContainText('Sami and you');
+        await expect(profile).toContainText('Your privacy settings');
+        expect(errors).toEqual([]);
+      } finally {
+        await samContext.close();
+      }
+    });
+
     test('AI assist, once turned on: catch up, follow-ups, translate and rewrite', async () => {
       const { page, errors } = noor;
       const stub = async () =>

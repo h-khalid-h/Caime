@@ -220,6 +220,7 @@ export function RelationshipPicker({
   onClose,
   person,
   current,
+  initial,
   onPick,
   skip,
 }: {
@@ -227,17 +228,19 @@ export function RelationshipPicker({
   onClose: () => void;
   person: { id: string; displayName: string };
   current?: RelationshipView | null;
+  /** What it starts from when it's a new one: what Caishy offered, say. */
+  initial?: Partial<RelationshipDraft> | null;
   /** Instead of saving, hand the choice back (accepting a request). */
   onPick?: (draft: RelationshipDraft) => void;
   /** A secondary way out that still counts as a choice ("Accept without a label"). */
   skip?: { label: string; onPress: () => void };
 }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState<FormState>(() => initialForm(current));
+  const [form, setForm] = useState<FormState>(() => initialForm(current ?? initial));
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (open) setForm(initialForm(current));
-  }, [open, current]);
+    if (open) setForm(initialForm(current ?? initial));
+  }, [open, current, initial]);
   const name = person.displayName.split(' ')[0] ?? person.displayName;
 
   const save = async () => {

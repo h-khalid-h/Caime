@@ -123,7 +123,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       share sheet copies the link. Someone signed out keeps the link through sign-in, sign-up
       and onboarding ("You came here for @noor") and lands on it (`handles.test.ts`,
       `paths.test.ts`, E2E)
-- [x] Person profile, relationship change and its history, one line per change (E2E)
+- [x] Person profile, relationship change and its history, one line per change (E2E). Who they
+      are to you (PRD §67, §71): your conversation (how often you talk, in words, and when you
+      last did), what it's about (its contexts), what's shared, actions open and waiting,
+      questions each way, and what they see of you. What Caishy thinks they may be to you
+      (PRD §12), from a team or a space you're both in, a company email or how they described
+      it, is offered on their page and at the top of People: accept it, change it first, or
+      not now, which it remembers (`relationship-profile.test.ts`, core `profile.test.ts`, E2E)
 - [x] Possible duplicates (PRD §51): two of someone's people who may be one (the same name as
       they show it, the same nickname, or one name inside the other from the same place) are
       offered at the top of People, never merged for them. Merged, one row stands for both,
