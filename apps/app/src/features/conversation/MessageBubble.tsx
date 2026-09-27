@@ -16,7 +16,7 @@ import {
 import { KitCard } from '@/features/kits/KitCard';
 import { LocationBody } from '@/features/location/LocationBody';
 import { stickerById } from '@/features/stickers/pack';
-import { linkify, openLink } from '@/lib/links';
+import { linkify, openLink, opensWithEnter } from '@/lib/links';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import {
@@ -267,6 +267,7 @@ export const MessageBubble = memo(function MessageBubble({
             style={{ textDecorationLine: 'underline' }}
             onPress={() => open(part.url ?? '')}
             accessibilityRole="link"
+            {...opensWithEnter(() => open(part.url ?? ''))}
           >
             {part.text}
           </Text>

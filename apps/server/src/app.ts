@@ -26,6 +26,7 @@ import { registerGroupCallSweep } from './lib/group-calls';
 import { startWorkers } from './lib/jobs';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
+import { registerUpdateJobs } from './lib/updates';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
 import { adminRoutes } from './modules/admin';
@@ -264,6 +265,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerWorkers();
   registerWebhookJob();
   registerBillingJobs();
+  registerUpdateJobs();
   registerAgentJob();
   registerCallSweep();
   registerGroupCallSweep();

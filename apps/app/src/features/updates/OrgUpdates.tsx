@@ -6,21 +6,24 @@
  */
 import type { OrgUpdateView, OrgView } from '@caishy/core/api';
 import { formatListTime } from '@caishy/core/format';
+import { uuidv4 } from '@caishy/core/ids';
 import { UPDATE_MAX } from '@caishy/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useOrgUpdates } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { linkify, openCheckedLink } from '@/lib/links';
+import { linkify, openCheckedLink, opensWithEnter } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
 import { IconButton } from '@/ui/IconButton';
-import { Bell, BellOff, Pencil, Trash } from '@/ui/icons';
+import { Bell, BellOff, Flag, Pencil, Trash } from '@/ui/icons';
 import { SectionTitle } from '@/ui/ListRow';
+import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -38,6 +41,7 @@ function Body({ text }: { text: string }) {
             style={{ textDecorationLine: 'underline' }}
             onPress={() => void openCheckedLink(part.url ?? '')}
             accessibilityRole="link"
+            {...opensWithEnter(() => void openCheckedLink(part.url ?? ''))}
           >
             {part.text}
           </Text>
@@ -52,10 +56,13 @@ function Body({ text }: { text: string }) {
 function Update({
   u,
   canPost,
+  canReport,
   onChanged,
 }: {
   u: OrgUpdateView;
   canPost: boolean;
+  /** Someone outside its team: they can report it. */
+  canReport: boolean;
   onChanged: () => void;
 }) {
   const now = useNow(60_000);
@@ -70,19 +77,22 @@ function Update({
       setEditing(null);
       onChanged();
     } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
+      // Taken back already (a second tap, or someone else on the team): it's gone either way.
+      if (e instanceof ApiError && e.status === 404) onChanged();
+      else toast((e as Error).message, { tone: 'danger' });
     } finally {
       setBusy(false);
     }
   };
   const when = formatListTime(u.createdAt, now, timeZone, locale);
+  const by = u.postedBy
+    ? `by ${u.postedBy.displayName}${u.postedBy.automated ? ' (automated)' : ''}`
+    : null;
   return (
     <View style={{ gap: 6, paddingVertical: 12, paddingHorizontal: 16 }} testID="org-update">
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
-          {[when, u.editedAt ? 'edited' : null, u.postedBy ? `by ${u.postedBy.displayName}` : null]
-            .filter(Boolean)
-            .join(' · ')}
+          {[when, u.editedAt ? 'edited' : null, by].filter(Boolean).join(' · ')}
         </Text>
         {canPost && editing === null ? (
           <>
@@ -90,18 +100,35 @@ function Update({
               icon={Pencil}
               label="Change this update"
               size={18}
+              disabled={busy}
               onPress={() => setEditing(u.body)}
             />
             <IconButton
               icon={Trash}
               label="Take this update back"
               size={18}
+              disabled={busy}
               onPress={() =>
                 void run(() => endpoints.removeUpdate(u.org.id, u.id), 'Update taken back')
               }
               testID="org-update-remove"
             />
           </>
+        ) : null}
+        {canReport ? (
+          <IconButton
+            icon={Flag}
+            label="Report this update"
+            size={18}
+            disabled={busy}
+            onPress={() =>
+              void run(
+                () => endpoints.report({ orgId: u.org.id, updateId: u.id, reason: 'other' }),
+                'Reported. Thank you for keeping Caishy safe.',
+              )
+            }
+            testID="org-update-report"
+          />
         ) : null}
       </View>
       {editing === null ? (
@@ -113,6 +140,7 @@ function Update({
             onChangeText={setEditing}
             multiline
             maxLength={UPDATE_MAX}
+            autoFocus
             accessibilityLabel="The update"
           />
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -139,21 +167,46 @@ export function OrgUpdates({ org }: { org: OrgView }) {
   const first = q.data?.pages[0];
   const updates = q.data?.pages.flatMap((p) => p.updates) ?? [];
   const [draft, setDraft] = useState('');
+  // The draft's own id: sent again after an answer that never came, it's posted once.
+  const [draftId, setDraftId] = useState(uuidv4);
   const [busy, setBusy] = useState<'post' | 'follow' | null>(null);
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.orgUpdates(org.id) });
     void qc.invalidateQueries({ queryKey: qk.following });
   };
   const following = first?.following ?? null;
-  // Opened while following: what it posted isn't new any more.
+  const newest = first?.updates[0]?.id;
+  // Seen while following: what it posted isn't new any more, one that arrives while it's open
+  // included.
   useEffect(() => {
-    if (following)
+    if (following && newest)
       void endpoints
         .readUpdates(org.id)
         .then(() => qc.invalidateQueries({ queryKey: qk.following }))
         .catch(() => {});
-  }, [following, org.id, qc]);
-  if (!first) return null;
+  }, [following, newest, org.id, qc]);
+  if (!first)
+    return (
+      <View style={{ paddingBottom: 12, gap: 8 }} testID="org-updates">
+        <SectionTitle>Updates</SectionTitle>
+        {q.isError ? (
+          <View style={{ paddingHorizontal: 16, gap: 8, alignItems: 'flex-start' }}>
+            <Text variant="caption" color="textSecondary">
+              Its updates didn’t load.
+            </Text>
+            <Button
+              label="Try again"
+              size="sm"
+              variant="secondary"
+              onPress={() => void q.refetch()}
+              testID="org-updates-retry"
+            />
+          </View>
+        ) : (
+          <SkeletonRows count={2} />
+        )}
+      </View>
+    );
   const { canPost } = first;
 
   const follow = async (work: () => Promise<unknown>, done: string) => {
@@ -171,18 +224,22 @@ export function OrgUpdates({ org }: { org: OrgView }) {
   const post = async () => {
     setBusy('post');
     try {
-      await endpoints.postUpdate(org.id, draft);
+      await endpoints.postUpdate(org.id, draft, draftId);
       setDraft('');
+      setDraftId(uuidv4());
       toast('Posted');
       refresh();
     } catch (e) {
+      // The draft stays, with its id, so pressing Post again can't post it twice.
       toast((e as Error).message, { tone: 'danger' });
     } finally {
       setBusy(null);
     }
   };
 
-  const followRow = org.myRole ? null : first.blockedByMe ? null : following ? (
+  // Anyone following can stop, or change whether they're told, team members included; only
+  // someone outside the team can start following.
+  const followRow = first.blockedByMe ? null : following ? (
     <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
       <Button
         label="Following"
@@ -207,7 +264,7 @@ export function OrgUpdates({ org }: { org: OrgView }) {
         testID="org-notify"
       />
     </View>
-  ) : (
+  ) : org.myRole ? null : (
     <Button
       label="Follow"
       size="sm"
@@ -263,7 +320,7 @@ export function OrgUpdates({ org }: { org: OrgView }) {
             {updates.map((u, i) => (
               <View key={u.id}>
                 {i > 0 ? <Divider inset={16} /> : null}
-                <Update u={u} canPost={canPost} onChanged={refresh} />
+                <Update u={u} canPost={canPost} canReport={!org.myRole} onChanged={refresh} />
               </View>
             ))}
             {q.hasNextPage ? (

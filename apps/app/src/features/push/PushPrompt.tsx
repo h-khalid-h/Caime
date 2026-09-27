@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
-import { enableWebPush, pushState } from './webPush';
+import { pushState } from './support';
 
 const SEEN = 'caishy.push-prompt';
 const answered = () => {
@@ -51,7 +51,8 @@ export function PushPrompt() {
           label="Turn on"
           size="sm"
           onPress={() =>
-            void enableWebPush()
+            void import('./webPush')
+              .then((m) => m.enableWebPush())
               .then((answer) => {
                 if (answer === 'granted') toast('Notifications are on in this browser');
               })

@@ -22,7 +22,8 @@ export class ApiError extends Error {
 
 export class NetworkError extends Error {
   constructor() {
-    super('You’re offline. It’ll go through when you’re back.');
+    // Only messages wait in the outbox (they say so themselves); anything else needs doing again.
+    super('You’re offline. Try again when you’re back.');
   }
 }
 

@@ -17,14 +17,17 @@ export function UpdatesRow() {
   if (following.length === 0) return null;
   const unread = following.reduce((n, f) => n + f.unread, 0);
   const news = following.filter((f) => f.unread);
-  const line = news.length
-    ? `New from ${news[0]?.org.name}${news.length > 1 ? ` and ${news.length - 1} more` : ''}`
+  const first = news[0];
+  // A name alone can be anyone's: one Caishy hasn't verified says so (R15).
+  const named = first ? `${first.org.name}${first.org.verified ? '' : ' (not verified)'}` : '';
+  const line = first
+    ? `New from ${named}${news.length > 1 ? ` and ${news.length - 1} more` : ''}`
     : `From ${following.length === 1 ? following[0]?.org.name : `${following.length} organizations`} you follow`;
   return (
     <View style={{ marginHorizontal: 6, marginBottom: 4 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Updates, ${unread ? `${unread} new` : 'nothing new'}`}
+        accessibilityLabel={`Updates, ${unread ? `${unread} new. ${line}` : `nothing new. ${line}`}`}
         onPress={() => router.navigate('/updates')}
         testID="updates-row"
         style={({ hovered, pressed }) => ({

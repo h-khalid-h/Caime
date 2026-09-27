@@ -300,6 +300,42 @@ describe('notifications and push', () => {
     await sarah.req('DELETE', `/v1/auth/sessions/${other.id}`);
     expect(await reached()).toEqual(['https://push.example.com/abc']);
   });
+
+  it('signing out on a device stops its pushes there', async () => {
+    const login = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: {
+        identifier: sarah.user.handle,
+        password: 'correct horse battery',
+        client: 'native',
+      },
+    });
+    const laptop = login.json().token as string;
+    await t.app.inject({
+      method: 'POST',
+      url: '/v1/push/subscriptions',
+      headers: { authorization: `Bearer ${laptop}` },
+      payload: {
+        kind: 'webpush',
+        subscription: {
+          endpoint: 'https://push.example.com/laptop',
+          keys: { p256dh: 'x'.repeat(87), auth: 'y'.repeat(22) },
+        },
+      },
+    });
+    const reached = async () =>
+      (await liveSubscriptions(t.ctx, sarah.user.id)).map((s) => s.endpoint);
+    expect(await reached()).toContain('https://push.example.com/laptop');
+    const out = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/logout',
+      headers: { authorization: `Bearer ${laptop}` },
+    });
+    expect(out.statusCode).toBe(200);
+    expect(await reached()).not.toContain('https://push.example.com/laptop');
+    expect(await reached()).toContain('https://push.example.com/abc');
+  });
 });
 
 describe('safety (PRD §55)', () => {

@@ -5,7 +5,10 @@ import { Group } from '@/features/settings/SettingsPage';
 import { Button } from '@/ui/Button';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
-import { disableWebPush, enableWebPush, type PushState, pushState, webPushOn } from './webPush';
+import { type PushState, pushState } from './support';
+
+/** The rest loads when it's needed: nothing of it is in the first download. */
+const push = () => import('./webPush');
 
 export function BrowserNotifications() {
   const [state, setState] = useState<PushState>(() => pushState());
@@ -13,14 +16,17 @@ export function BrowserNotifications() {
   const [busy, setBusy] = useState(false);
   // Whether this browser is subscribed, looked at again whenever what the browser allows changes.
   useEffect(() => {
-    if (state === 'granted') void webPushOn().then(setOn);
+    if (state === 'granted')
+      void push()
+        .then((p) => p.webPushOn())
+        .then(setOn);
     else setOn(false);
   }, [state]);
   if (state === 'unsupported') return null;
   const turnOn = async () => {
     setBusy(true);
     try {
-      const answer = await enableWebPush();
+      const answer = await (await push()).enableWebPush();
       setState(answer);
       setOn(answer === 'granted');
       if (answer === 'granted') toast('Notifications are on in this browser');
@@ -32,7 +38,7 @@ export function BrowserNotifications() {
   };
   const turnOff = async () => {
     setBusy(true);
-    await disableWebPush();
+    await (await push()).disableWebPush();
     setOn(false);
     setBusy(false);
     toast('Notifications are off in this browser');

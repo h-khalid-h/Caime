@@ -17,7 +17,10 @@ import {
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
-import { personView } from '../lib/users';
+import { identityShownTo, personView } from '../lib/users';
+
+export { identityShownTo };
+
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -33,31 +36,6 @@ export function connectionState(b: Awaited<ReturnType<typeof between>>): Connect
     connectionId: b.connectionId,
     requestId: b.outgoingRequestId ?? b.incomingRequestId,
   };
-}
-
-export async function identityShownTo(ctx: AppContext, ownerId: string, viewerId: string) {
-  const side = await ctx.db
-    .selectFrom('connection_sides')
-    .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
-    .select(['identities.display_name', 'identities.headline', 'identities.org_name'])
-    .where('connection_sides.owner_id', '=', ownerId)
-    .where('connection_sides.other_id', '=', viewerId)
-    .executeTakeFirst();
-  const identity =
-    side ??
-    (await ctx.db
-      .selectFrom('identities')
-      .select(['display_name', 'headline', 'org_name'])
-      .where('user_id', '=', ownerId)
-      .where('is_default', '=', true)
-      .executeTakeFirst());
-  return identity
-    ? {
-        displayName: identity.display_name,
-        headline: identity.headline,
-        orgName: identity.org_name,
-      }
-    : null;
 }
 
 export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {

@@ -26,7 +26,6 @@ export function linkify(text: string): TextPart[] {
   return parts;
 }
 
-/** Open a link, asking first when the server flagged it as unusual (link safety, PRD §60). */
 /**
  * Open a link whose words the server never checked (a private message, an organization's
  * update): checked here first, the check loaded when a link is first opened.
@@ -36,6 +35,26 @@ export async function openCheckedLink(url: string): Promise<void> {
   openLink(url, assessLink(url).suspicious);
 }
 
+/**
+ * A link inside text opens from the keyboard too (Enter), on the web, where it's focusable but
+ * isn't a real anchor: an anchor would open by a middle click or a new tab without the check.
+ */
+export function opensWithEnter(open: () => void): object {
+  if (Platform.OS !== 'web') return {};
+  return {
+    onKeyDown: (e: {
+      key?: string;
+      nativeEvent?: { key?: string };
+      preventDefault?: () => void;
+    }) => {
+      if ((e.nativeEvent?.key ?? e.key) !== 'Enter') return;
+      e.preventDefault?.();
+      open();
+    },
+  };
+}
+
+/** Open a link, asking first when the server flagged it as unusual (link safety, PRD §60). */
 export function openLink(url: string, suspicious = false): void {
   // A link to Caishy itself (someone's @handle) opens here, not in another tab.
   const own = ownLinkPath(url, WEB_URL);

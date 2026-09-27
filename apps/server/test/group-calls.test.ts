@@ -390,6 +390,19 @@ describe('group calls (PRD §47)', () => {
     ]);
     await sweepGroupCalls(t.ctx);
     expect(await aboutCall(omar, id)).toHaveLength(2);
+    // A browser still showing a ring shows it's over instead, quietly: Sam joined, Lina turned it
+    // down; Omar's is replaced by his missed call, as news.
+    expect(
+      pushed
+        .filter((p) => p.quiet && p.data?.callId === id)
+        .map((p) => [p.userId, p.title, p.body])
+        .sort(),
+    ).toEqual(
+      [
+        [sam.user.id, 'Trip call', 'Joined'],
+        [lina.user.id, 'Trip call', 'Turned down'],
+      ].sort(),
+    );
     // Lina turned it down: nobody tells her she missed it.
     expect((await aboutCall(lina, id)).map((n) => n.title)).toEqual([
       'Noor Haddad is calling Trip',

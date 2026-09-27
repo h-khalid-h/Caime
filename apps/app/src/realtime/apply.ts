@@ -222,9 +222,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['requests'], 'requests');
       invalidate(['person'], 'person');
       invalidate(qk.inbox, 'inbox');
-      // An organization blocked or unblocked: its page and your conversation with it change.
+      // An organization blocked or unblocked: its page, your conversation with it, and whether
+      // you follow its updates change.
       invalidate(['org'], 'org');
       invalidate(['conversation'], 'conversation');
+      if (event.type === 'block.changed') invalidate(['updates'], 'updates');
       return;
     case 'connection.request':
     case 'connection.request.resolved':
@@ -276,9 +278,18 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['decisions'], 'decisions');
       invalidate(['memory'], 'memory');
       return;
-    case 'notifications.read':
+    case 'notifications.read': {
       invalidate(qk.notifications);
+      // Read anywhere (or taken back): this browser stops showing them on the lock screen too.
+      const ids = Array.isArray(event.data.ids)
+        ? event.data.ids.filter((id): id is string => typeof id === 'string')
+        : [];
+      if (event.data.all === true || ids.length)
+        void import('@/features/push/webPush')
+          .then((p) => p.closeShownNotifications(event.data.all === true ? null : ids))
+          .catch(() => {});
       return;
+    }
     case 'me.updated':
       // Their plan (or anything else of theirs) changed: what every screen shows of them, the
       // Settings menu too, is asked for again.

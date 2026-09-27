@@ -7,10 +7,11 @@ import { formatListTime } from '@caishy/core/format';
 import { router } from 'expo-router';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { useFollowing } from '@/api/hooks';
-import { OrgMark } from '@/features/orgs/kinds';
+import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
+import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft, Building } from '@/ui/icons';
@@ -23,10 +24,17 @@ function Row({ f }: { f: FollowingView }) {
   const t = useTheme();
   const now = useNow(60_000);
   const { timeZone, locale } = useUserClock();
+  const when = f.latest ? formatListTime(f.latest.createdAt, now, timeZone, locale) : null;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[f.org.name, f.unread ? `${f.unread} new` : null]
+      // What the row shows, said: a button's label is all a screen reader reads of it.
+      accessibilityLabel={[
+        f.org.name,
+        f.org.verified ? `verified, ${f.org.verifiedDomain}` : 'not verified yet',
+        f.unread ? `${f.unread} new` : null,
+        f.latest ? `${when}, ${f.latest.body.slice(0, 200)}` : 'Nothing posted yet',
+      ]
         .filter(Boolean)
         .join(', ')}
       onPress={() => router.push({ pathname: '/o/[handle]', params: { handle: f.org.handle } })}
@@ -56,11 +64,18 @@ function Row({ f }: { f: FollowingView }) {
               <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }} auto>
                 {f.org.name}
               </Text>
-              {f.latest ? (
+              {when ? (
                 <Text variant="caption" color="textTertiary">
-                  {formatListTime(f.latest.createdAt, now, timeZone, locale)}
+                  {when}
                 </Text>
               ) : null}
+            </View>
+            {/* Who it is, as everywhere an organization is shown (R15): a name alone can be anyone's. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text variant="caption" color="textTertiary" numberOfLines={1}>
+                @{f.org.handle}
+              </Text>
+              <VerifiedLine org={f.org} />
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text
@@ -98,6 +113,13 @@ export function UpdatesScreen() {
       />
       {q.isPending && !q.data ? (
         <SkeletonRows />
+      ) : q.isError && !q.data ? (
+        <EmptyState
+          icon={Building}
+          title="Updates didn’t load"
+          body="Check your connection, then try again."
+          action={<Button label="Try again" variant="secondary" onPress={() => void q.refetch()} />}
+        />
       ) : (
         <FlatList
           data={following}

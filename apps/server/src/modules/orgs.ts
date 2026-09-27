@@ -39,6 +39,7 @@ import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
+import { endFollowsOf } from '../lib/updates';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -406,7 +407,10 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
     });
     // Closed: what it paid for ends (a job keeps trying if Stripe can't be reached now).
-    if (people.length === 1) await endBillingOf(ctx, { orgId: id });
+    if (people.length === 1) {
+      await endBillingOf(ctx, { orgId: id });
+      await endFollowsOf(ctx, id);
+    }
     await ctx.bus.publish([userId], { type: 'business.updated', data: { orgId: id } });
     await audit(ctx.db, {
       actorId: auth.userId,

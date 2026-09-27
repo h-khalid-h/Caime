@@ -11,18 +11,8 @@ import { Avatar } from '@/ui/Avatar';
 import { Divider } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArrowLeft,
-  Phone,
-  PhoneIncoming,
-  PhoneMissed,
-  PhoneOutgoing,
-  Users,
-  Video,
-} from '@/ui/icons';
-import { useLayout } from '@/ui/layout';
+import { Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, Users, Video } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
-import { Screen, TopBar } from '@/ui/Screen';
 import { Segmented } from '@/ui/Segmented';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
@@ -146,25 +136,13 @@ export function CallRows({ calls }: { calls: CallHistoryItem[] }) {
   );
 }
 
-export function CallHistory({ withId, withName }: { withId?: string; withName?: string }) {
-  const { desktop } = useLayout();
+/** The Calls screen's list, under the bar history.tsx draws before this has loaded. */
+export function CallHistoryBody({ withId, withName }: { withId?: string; withName?: string }) {
   const [view, setView] = useState<'all' | 'missed'>('all');
   const q = useCallHistory(withId ? `with:${withId}` : view);
   const calls = q.data?.pages.flatMap((p) => p.calls) ?? [];
   return (
-    <Screen edges={desktop ? [] : ['top']}>
-      <TopBar
-        left={
-          !desktop || withId ? (
-            <IconButton
-              icon={ArrowLeft}
-              label="Back"
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            />
-          ) : null
-        }
-        title={withId ? `Calls with ${withName ?? 'them'}` : 'Calls'}
-      />
+    <>
       {withId ? null : (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <Segmented
@@ -207,6 +185,6 @@ export function CallHistory({ withId, withName }: { withId?: string; withName?: 
           )
         }
       />
-    </Screen>
+    </>
   );
 }

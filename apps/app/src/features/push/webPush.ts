@@ -10,6 +10,8 @@ export async function enableWebPush(): Promise<PushState> {
 }
 export async function resumeWebPush(): Promise<void> {}
 export async function disableWebPush(): Promise<void> {}
+export async function closeShownNotifications(_ids: string[] | null): Promise<void> {}
+export async function leaveThisBrowser(_opts: { tellServer: boolean }): Promise<void> {}
 export async function webPushOn(): Promise<boolean> {
   return false;
 }

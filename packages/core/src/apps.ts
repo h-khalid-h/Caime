@@ -20,7 +20,7 @@ export const API_SCOPE_LABELS: Record<ApiScope, string> = {
   'messages:read': 'Read customers’ conversations',
   'messages:write': 'Reply to customers (as a bot)',
   'threads:write': 'Assign, escalate and resolve',
-  updates: 'Post the organization’s updates',
+  updates: 'Post, change and take back the organization’s updates',
 };
 
 /** What an app hears about. */

@@ -31,6 +31,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Ban,
+  Flag,
   Globe,
   Inbox,
   LogOut,
@@ -200,6 +201,8 @@ export function OrgScreen({ handle }: { handle: string }) {
   const reload = () => {
     void qc.invalidateQueries({ queryKey: qk.org(handle) });
     void qc.invalidateQueries({ queryKey: qk.orgs });
+    // Following it, and its updates, change with blocking it.
+    void qc.invalidateQueries({ queryKey: ['updates'] });
   };
   const run = async (work: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -469,16 +472,31 @@ export function OrgScreen({ handle }: { handle: string }) {
               : 'Caishy hasn’t verified who runs this organization. Be careful with links and payments.'}
           </Text>
         )}
-        {!org.members && !org.blockedByMe ? (
+        {!org.members ? (
           <View style={{ marginHorizontal: 16, marginTop: 20 }}>
             <Card padded={false}>
+              {org.blockedByMe ? null : (
+                <ListRow
+                  icon={Ban}
+                  title={`Block ${org.name}`}
+                  subtitle="It stops being able to write to you"
+                  destructive
+                  onPress={() => setBlocking(true)}
+                  testID="org-block"
+                />
+              )}
               <ListRow
-                icon={Ban}
-                title={`Block ${org.name}`}
-                subtitle="It stops being able to write to you"
+                icon={Flag}
+                title={`Report ${org.name}`}
+                subtitle="Sends it to Caishy’s safety team, for a scam or someone posing as another"
                 destructive
-                onPress={() => setBlocking(true)}
-                testID="org-block"
+                onPress={() =>
+                  void run(
+                    () => endpoints.report({ orgId: org.id, reason: 'other' }),
+                    'Reported. Thank you for keeping Caishy safe.',
+                  )
+                }
+                testID="org-report"
               />
             </Card>
           </View>

@@ -5,18 +5,26 @@
  * that nobody else sees, and ends when they block it.
  */
 import type { FollowingView, OrgUpdatesView, OrgUpdateView } from '@caishy/core';
-import { canManageOrg, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caishy/core';
+import { canManageOrg, EditUpdateBody, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caishy/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import type { OrgUpdate } from '../db/schema';
 import { audit } from '../lib/audit';
 import { orgBlocked } from '../lib/blocks';
 import { orgRef } from '../lib/business';
 import { AppError, forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
-import { followingOf, tellOfUpdate, updateView } from '../lib/updates';
+import {
+  announceUpdate,
+  followingOf,
+  readUpdates,
+  retellUpdate,
+  tellUpdatesChanged,
+  updateView,
+} from '../lib/updates';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -36,6 +44,23 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       throw forbidden('Only the organization’s owner and admins post its updates.');
     return auth.userId;
   }
+
+  /** Whoever just posted or changed one, as they see themselves (a bot says it's automated). */
+  async function postedByOf(userId: string): Promise<OrgUpdateView['postedBy']> {
+    const u = await ctx.db
+      .selectFrom('users')
+      .select(['display_name', 'kind'])
+      .where('id', '=', userId)
+      .executeTakeFirst();
+    return u ? { id: userId, displayName: u.display_name, automated: u.kind !== 'human' } : null;
+  }
+
+  /**
+   * Changing and taking back reach every follower too, so they're limited like posting (each
+   * organization's own allowance, shared by its team and its apps).
+   */
+  const limitChanges = (orgId: string) =>
+    ctx.limiter.hit(`org-update-changes:${orgId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
 
   app.get('/orgs/:id/updates', async (req): Promise<OrgUpdatesView> => {
     const auth = requireAuth(req);
@@ -61,20 +86,16 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       .limit(limit + 1)
       .execute();
     const page = rows.slice(0, limit);
-    // Only the team sees who on it posted each one: as each is shown to the viewer, and the
-    // viewer as themselves.
+    // Only the team (and its own apps) see who posted each one: as each is shown to the viewer,
+    // the viewer as themselves, and an app's bot marked as automated (R16).
     const ids = [...new Set(page.flatMap((u) => (u.posted_by ? [u.posted_by] : [])))];
-    const posters = new Map<string, { id: string; displayName: string }>();
+    const posters = new Map<string, NonNullable<OrgUpdateView['postedBy']>>();
     if (team && ids.length) {
       for (const [id, p] of await personViewsFor(ctx, auth.userId, ids))
-        posters.set(id, { id, displayName: p.displayName });
+        posters.set(id, { id, displayName: p.displayName, automated: p.kind !== 'human' });
       if (ids.includes(auth.userId)) {
-        const me = await ctx.db
-          .selectFrom('users')
-          .select('display_name')
-          .where('id', '=', auth.userId)
-          .executeTakeFirstOrThrow();
-        posters.set(auth.userId, { id: auth.userId, displayName: me.display_name });
+        const me = await postedByOf(auth.userId);
+        if (me) posters.set(auth.userId, me);
       }
     }
     const ref = orgRef(org);
@@ -113,29 +134,71 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     const org = await orgById(ctx.db, id);
     const by = await poster(req, id);
     const body = parse(PostUpdateBody, req.body);
+    const ref = orgRef(org);
+    // Sent again after an answer that never came: it's the same update, posted once.
+    const again = async (): Promise<OrgUpdate | undefined> =>
+      body.clientId
+        ? ctx.db
+            .selectFrom('org_updates')
+            .selectAll()
+            .where('org_id', '=', id)
+            .where('client_id', '=', body.clientId)
+            .executeTakeFirst()
+        : undefined;
+    const earlier = await again();
+    if (earlier) return { update: updateView(earlier, ref, await postedByOf(by)) };
     ctx.limiter.hit(`org-updates:${id}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     const row = await ctx.db
       .insertInto('org_updates')
-      .values({ id: uuidv7(), org_id: id, posted_by: by, body: body.body, created_at: ctx.now() })
+      .values({
+        id: uuidv7(),
+        org_id: id,
+        posted_by: by,
+        body: body.body,
+        client_id: body.clientId ?? null,
+        created_at: ctx.now(),
+      })
+      .onConflict((oc) =>
+        oc.columns(['org_id', 'client_id']).where('client_id', 'is not', null).doNothing(),
+      )
       .returningAll()
-      .executeTakeFirstOrThrow();
+      .executeTakeFirst();
+    if (!row) {
+      const raced = await again();
+      if (!raced) throw new AppError(409, 'conflict', 'That update is being posted already.');
+      return { update: updateView(raced, ref, await postedByOf(by)) };
+    }
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.update_posted',
       target: id,
       metadata: { updateId: row.id },
     });
-    ctx.defer('updates', () => tellOfUpdate(ctx, org, row, true));
+    // Told to followers by a job, so a restart loses nobody (lib/updates.ts).
+    await announceUpdate(ctx, row.id);
+    ctx.defer('updates', () => tellUpdatesChanged(ctx, id));
     reply.status(201);
-    return { update: updateView(row, orgRef(org)) };
+    return { update: updateView(row, ref, await postedByOf(by)) };
   });
 
   app.patch('/orgs/:id/updates/:updateId', async (req): Promise<{ update: OrgUpdateView }> => {
     const auth = requireAuth(req);
     const { id, updateId } = parse(updateParam, req.params);
     const org = await orgById(ctx.db, id);
-    await poster(req, id);
-    const body = parse(PostUpdateBody, req.body);
+    const by = await poster(req, id);
+    const body = parse(EditUpdateBody, req.body);
+    const current = await ctx.db
+      .selectFrom('org_updates')
+      .selectAll()
+      .where('id', '=', updateId)
+      .where('org_id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!current) throw notFound('That update');
+    // Nothing changed: nobody needs to hear of it.
+    if (current.body === body.body)
+      return { update: updateView(current, orgRef(org), await postedByOf(by)) };
+    limitChanges(id);
     const row = await ctx.db
       .updateTable('org_updates')
       .set({ body: body.body, edited_at: ctx.now() })
@@ -151,16 +214,19 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       target: id,
       metadata: { updateId },
     });
-    ctx.defer('updates', () => tellOfUpdate(ctx, org, row, false));
-    return { update: updateView(row, orgRef(org)) };
+    await retellUpdate(ctx, updateId, row.body);
+    ctx.defer('updates', () => tellUpdatesChanged(ctx, id));
+    return { update: updateView(row, orgRef(org), await postedByOf(by)) };
   });
 
   app.delete('/orgs/:id/updates/:updateId', async (req) => {
     const auth = requireAuth(req);
     const { id, updateId } = parse(updateParam, req.params);
-    const org = await orgById(ctx.db, id);
+    await orgById(ctx.db, id);
     await poster(req, id);
-    // Taken back: its words go; that there was one stays, for the audit log.
+    limitChanges(id);
+    // Taken back: its words go, from its page and from every follower's notifications; that
+    // there was one stays, for the audit log.
     const row = await ctx.db
       .updateTable('org_updates')
       .set({ body: '', deleted_at: ctx.now() })
@@ -176,7 +242,8 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       target: id,
       metadata: { updateId },
     });
-    ctx.defer('updates', () => tellOfUpdate(ctx, org, row, false));
+    await retellUpdate(ctx, updateId, null);
+    ctx.defer('updates', () => tellUpdatesChanged(ctx, id));
     return { ok: true };
   });
 
@@ -186,24 +253,30 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const { notify } = parse(FollowOrgBody, req.body ?? {});
     await orgById(ctx.db, id);
-    if (await orgBlocked(ctx.db, auth.userId, id))
-      throw new AppError(409, 'blocked', 'You’ve blocked it. Unblock it to follow its updates.');
-    const row = await ctx.db
-      .insertInto('org_follows')
-      .values({
-        user_id: auth.userId,
-        org_id: id,
-        notify: notify ?? false,
-        read_at: ctx.now(),
-        created_at: ctx.now(),
-      })
-      .onConflict((oc) =>
-        oc.columns(['user_id', 'org_id']).doUpdateSet((eb) => ({
-          notify: notify === undefined ? eb.ref('org_follows.notify') : notify,
-        })),
-      )
-      .returning('notify')
-      .executeTakeFirstOrThrow();
+    // One at a time with blocking it (modules/business.ts), so the two never cross.
+    const row = await ctx.db.transaction().execute(async (trx) => {
+      await sql`select pg_advisory_xact_lock(hashtext(${`org-follow:${auth.userId}:${id}`}))`.execute(
+        trx,
+      );
+      if (await orgBlocked(trx, auth.userId, id))
+        throw new AppError(409, 'blocked', 'You’ve blocked it. Unblock it to follow its updates.');
+      return trx
+        .insertInto('org_follows')
+        .values({
+          user_id: auth.userId,
+          org_id: id,
+          notify: notify ?? false,
+          read_at: ctx.now(),
+          created_at: ctx.now(),
+        })
+        .onConflict((oc) =>
+          oc.columns(['user_id', 'org_id']).doUpdateSet((eb) => ({
+            notify: notify === undefined ? eb.ref('org_follows.notify') : notify,
+          })),
+        )
+        .returning('notify')
+        .executeTakeFirstOrThrow();
+    });
     await ctx.bus.publish([auth.userId], { type: 'updates.changed', data: { orgId: id } });
     return { following: { notify: row.notify } };
   });
@@ -220,19 +293,11 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  /** Seen: what it has posted so far isn't new to them any more. */
+  /** Seen: what it has posted so far isn't new to them any more, notifications included. */
   app.post('/orgs/:id/updates/read', async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    const done = await ctx.db
-      .updateTable('org_follows')
-      .set({ read_at: ctx.now() })
-      .where('user_id', '=', auth.userId)
-      .where('org_id', '=', id)
-      .returning('org_id')
-      .executeTakeFirst();
-    if (done)
-      await ctx.bus.publish([auth.userId], { type: 'updates.changed', data: { orgId: id } });
+    await readUpdates(ctx, auth.userId, id);
     return { ok: true };
   });
 

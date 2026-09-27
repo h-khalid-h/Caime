@@ -515,8 +515,11 @@ export interface OrgUpdateView {
   body: string;
   createdAt: string;
   editedAt: string | null;
-  /** Who on the team posted it: for the team only (null for everyone else, or an app). */
-  postedBy: { id: string; displayName: string } | null;
+  /**
+   * Who posted it, for the team and the organization's own apps (null for everyone else): a person
+   * on the team, or an app's bot, marked `automated` (R16).
+   */
+  postedBy: { id: string; displayName: string; automated: boolean } | null;
 }
 
 /** An organization's updates as someone sees them on its page. */

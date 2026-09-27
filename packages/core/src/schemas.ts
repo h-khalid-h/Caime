@@ -369,6 +369,12 @@ export const AcceptSuggestionBody = z.object({
 
 export const PostUpdateBody = z.object({
   body: z.string().trim().min(1).max(UPDATE_MAX),
+  /** The poster's own id for it: sent again after a lost answer, it's the same update (ADR-8). */
+  clientId: z.string().uuid().optional(),
+});
+
+export const EditUpdateBody = z.object({
+  body: z.string().trim().min(1).max(UPDATE_MAX),
 });
 
 export const FollowOrgBody = z.object({
@@ -647,6 +653,9 @@ export const ReportBody = z.object({
   userId: z.string().uuid().optional(),
   messageId: z.string().uuid().optional(),
   conversationId: z.string().uuid().optional(),
+  /** An organization (from its page), or one of its updates (with its orgId). */
+  orgId: z.string().uuid().optional(),
+  updateId: z.string().uuid().optional(),
   reason: z.enum(['spam', 'scam', 'harassment', 'impersonation', 'inappropriate', 'other']),
   details: z.string().trim().max(2000).optional(),
 });

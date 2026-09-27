@@ -21,6 +21,7 @@ import { notify } from './notify';
 import { activeRelationships, loadPolicies, policyTargetFor, relationshipView } from './relations';
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion } from './suggest';
+import { identityShownTo } from './users';
 
 const BURST_WINDOW_MS = 10 * 60_000;
 const LEVEL_RANK = { activity: 0, attention: 1, urgency: 2 } as const;
@@ -169,10 +170,14 @@ async function notifyRecipient(
     .select(['time_zone', 'quiet_hours'])
     .where('id', '=', recipient.user_id)
     .executeTakeFirstOrThrow();
-  const [policies, rels] = await Promise.all([
+  const [policies, rels, shown] = await Promise.all([
     loadPolicies(ctx.db, recipient.user_id),
     activeRelationships(ctx.db, recipient.user_id, [sender.id]),
+    // Named as the sender shows themselves to this person (PRD §35), on a lock screen too; an
+    // organization speaking in its own conversation keeps its name.
+    identityShownTo(ctx, sender.id, recipient.user_id),
   ]);
+  const senderName = shown?.displayName ?? sender.display_name;
   const connectionId = conversation.kind === 'direct' ? conversation.connection_id : null;
   const policy = resolvePolicy(policies, policyTargetFor(rels[0], connectionId));
   const kind: NotificationKind = message.mentions.includes(recipient.user_id)
@@ -246,7 +251,7 @@ async function notifyRecipient(
     const salient = kind !== 'message' || !(existing.data as { salient?: boolean }).salient;
     const title = isGroup
       ? `${count} new messages in ${groupTitle}`
-      : `${sender.display_name} sent ${count} messages${context}`;
+      : `${senderName} sent ${count} messages${context}`;
     await ctx.db
       .updateTable('notifications')
       .set({
@@ -272,7 +277,7 @@ async function notifyRecipient(
     userId: recipient.user_id,
     kind: pendingRequest ? 'message_request' : kind,
     level: decision.level,
-    title: isGroup ? `${sender.display_name} · ${groupTitle}` : `${sender.display_name}${context}`,
+    title: isGroup ? `${senderName} · ${groupTitle}` : `${senderName}${context}`,
     body: preview,
     data: { ...data, salient: kind !== 'message' },
     groupKey,
@@ -392,14 +397,16 @@ async function suggest(
       fingerprint: `msg:${message.id}:${s.kind}`,
     });
   }
-  const theirs = suggestFromAnalysis(analysis, {
-    senderIsMe: false,
-    senderName: firstName(sender.display_name),
-  });
   for (const r of recipients) {
     // Strangers' messages (pending requests) don't create work for you (R14).
     if (r.request_state === 'pending' || r.request_state === 'declined' || !addressed(r.user_id))
       continue;
+    // Said with the name the sender shows this person (PRD §35).
+    const shown = await identityShownTo(ctx, sender.id, r.user_id);
+    const theirs = suggestFromAnalysis(analysis, {
+      senderIsMe: false,
+      senderName: firstName(shown?.displayName ?? sender.display_name),
+    });
     for (const s of theirs) {
       // "I'll send it Thursday" answering my request: the waiting item, now with a date.
       if (
@@ -511,12 +518,14 @@ async function suggestBusiness(
     }))
       if (s.kind !== 'waiting') await file(customerId, s, { subject: null, decidedBy: sender.id });
     // What they asked of the team, or promised it: for whoever has the thread.
-    if (thread.assignee_id)
+    if (thread.assignee_id) {
+      const shown = await identityShownTo(ctx, customerId, thread.assignee_id);
       for (const s of suggestFromAnalysis(analysis, {
         senderIsMe: false,
-        senderName: firstName(sender.display_name),
+        senderName: firstName(shown?.displayName ?? sender.display_name),
       }))
         await file(thread.assignee_id, s, { subject: customerId, decidedBy: customerId });
+    }
     return;
   }
   // Someone on the team (or its app's bot) wrote: their own promises and questions to the customer.

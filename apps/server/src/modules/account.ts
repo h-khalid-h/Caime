@@ -19,6 +19,7 @@ import { handOverOrgs } from '../lib/orgs';
 import { relationshipView } from '../lib/relations';
 import { handOverSpaces } from '../lib/spaces';
 import { diskStorage } from '../lib/storage';
+import { endFollowsOf } from '../lib/updates';
 import { meView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth } from '../plugins/auth';
@@ -369,8 +370,11 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
       return closedOrgs;
     });
-    // An organization that closed with it pays for nothing any more.
-    for (const orgId of closed) await endBillingOf(ctx, { orgId });
+    // An organization that closed with it pays for nothing any more, and nobody follows it.
+    for (const orgId of closed) {
+      await endBillingOf(ctx, { orgId });
+      await endFollowsOf(ctx, orgId);
+    }
     await audit(ctx.db, { actorId: null, action: 'account.deleted', target: me });
     for (const f of orphanFiles) {
       await storage.remove(f.storage_key).catch(() => {});

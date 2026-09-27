@@ -1,7 +1,7 @@
 /*
  * Caishy's service worker (web): it shows what the server pushes when Caishy isn't open in front
  * of the person, and opens the right place when one is tapped. It caches nothing and reads
- * nothing but the push itself: {id, title, body, tag, level, data}.
+ * nothing but the push itself: {id, title, body, tag, level, data, quiet}.
  */
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -16,6 +16,17 @@ function pathOf(data) {
   return '/notifications';
 }
 
+/**
+ * Safari takes a site's pushes away once a few have shown nothing, whatever tab is open; there,
+ * every push shows something, if only for a moment. Other browsers let the open app show it.
+ */
+const webkit = (() => {
+  const ua = (self.navigator && self.navigator.userAgent) || '';
+  return (
+    /AppleWebKit/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS|SamsungBrowser/.test(ua)
+  );
+})();
+
 self.addEventListener('push', (event) => {
   let n = {};
   try {
@@ -27,17 +38,28 @@ self.addEventListener('push', (event) => {
     (async () => {
       // Open and in front: the app shows it itself.
       const tabs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      if (tabs.some((t) => t.visibilityState === 'visible' && t.focused)) return;
+      const inFront = tabs.some((t) => t.visibilityState === 'visible' && t.focused);
+      if (inFront && !webkit) return;
       const urgent = n.level === 'urgency';
+      // A replacement (a ring that's over) swaps what's shown without a sound.
+      const quiet = n.quiet === true || inFront;
+      const tag = n.tag || n.id || undefined;
+      const id = n.id || null;
       await self.registration.showNotification(n.title || 'Caishy', {
         body: n.body || '',
-        tag: n.tag || n.id || undefined,
-        renotify: urgent,
-        requireInteraction: urgent,
-        data: { ...(n.data || {}), id: n.id || null },
+        tag,
+        // Something new alerts, even over an older one about the same thing.
+        renotify: Boolean(tag) && !quiet,
+        silent: quiet,
+        requireInteraction: urgent && !quiet,
+        data: { ...(n.data || {}), id },
         icon: '/icon-192.png',
         badge: '/notification-icon.png',
       });
+      // Shown only so Safari keeps the pushes coming: the app in front has it already.
+      if (inFront)
+        for (const shown of await self.registration.getNotifications(tag ? { tag } : {}))
+          if (shown.data && shown.data.id === id) shown.close();
     })(),
   );
 });

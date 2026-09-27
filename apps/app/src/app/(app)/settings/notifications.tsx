@@ -7,16 +7,21 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { BrowserNotifications } from '@/features/push/BrowserNotifications';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+// Loaded here only: everything about this browser's notifications stays out of the first download.
+const BrowserNotifications = lazyPart(() =>
+  import('@/features/push/BrowserNotifications').then((m) => m.BrowserNotifications),
+);
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

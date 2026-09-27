@@ -106,6 +106,8 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
       tag: input.groupKey ?? id,
       level: input.level,
       data: input.data ?? {},
+      // Something new alerts, even over an older one with the same key; a replacement doesn't.
+      quiet: Boolean(input.quiet),
     });
     let delivered = false;
     for (const s of subs) {
@@ -117,8 +119,13 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
             payload,
             {
               TTL: input.ttlSeconds ?? 24 * 3600,
-              urgency:
-                input.level === 'urgency' ? 'high' : input.level === 'attention' ? 'normal' : 'low',
+              urgency: input.quiet
+                ? 'normal'
+                : input.level === 'urgency'
+                  ? 'high'
+                  : input.level === 'attention'
+                    ? 'normal'
+                    : 'low',
               topic:
                 (input.groupKey ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || undefined,
             },

@@ -5,17 +5,29 @@
  * pushes, and a session that ends gets none (the server sends only to live sessions).
  */
 import { endpoints } from '@/api/endpoints';
+import { type PushState, pushState, webPushSupported } from './support';
 
-export type PushState = 'unsupported' | 'default' | 'granted' | 'denied';
+export { type PushState, pushState, webPushSupported };
 
-export const webPushSupported =
-  typeof window !== 'undefined' &&
-  'serviceWorker' in navigator &&
-  'PushManager' in window &&
-  'Notification' in window;
-
-export function pushState(): PushState {
-  return webPushSupported ? (Notification.permission as PushState) : 'unsupported';
+/**
+ * Turned off here, it stays off: the browser still allows them (a page can't take that back), so
+ * this says not to subscribe again on the next load or sign-in, until they turn them on.
+ */
+const OFF_KEY = 'caishy.push-off';
+function turnedOff(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(OFF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function setTurnedOff(off: boolean): void {
+  try {
+    if (off) globalThis.localStorage?.setItem(OFF_KEY, '1');
+    else globalThis.localStorage?.removeItem(OFF_KEY);
+  } catch {
+    // Storage blocked: nothing to remember it in.
+  }
 }
 
 /** A VAPID public key, as the browser wants it. */
@@ -66,24 +78,62 @@ async function subscribe(): Promise<void> {
 export async function enableWebPush(): Promise<PushState> {
   if (!webPushSupported) return 'unsupported';
   const answer = (await Notification.requestPermission()) as PushState;
-  if (answer === 'granted') await subscribe();
+  if (answer === 'granted') {
+    setTurnedOff(false);
+    await subscribe();
+  }
   return answer;
 }
 
-/** Signed in where they already said yes: this session gets its pushes too. Never asks. */
+/**
+ * Signed in where they already said yes: this session gets its pushes too. Never asks, and never
+ * while they've turned them off here.
+ */
 export async function resumeWebPush(): Promise<void> {
-  if (pushState() !== 'granted') return;
+  if (pushState() !== 'granted' || turnedOff()) return;
   await subscribe().catch(() => {});
 }
 
-/** Off in this browser: the server forgets it, and so does the browser. */
-export async function disableWebPush(): Promise<void> {
-  if (!webPushSupported) return;
+/** This browser's subscription gone: from the server (while it can still be asked), and here. */
+async function unsubscribe(tellServer: boolean): Promise<void> {
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
   if (!sub) return;
-  await endpoints.unsubscribePush(sub.endpoint).catch(() => {});
+  if (tellServer) await endpoints.unsubscribePush(sub.endpoint).catch(() => {});
   await sub.unsubscribe().catch(() => {});
+}
+
+/** Off in this browser, and kept off: the server forgets it, and so does the browser. */
+export async function disableWebPush(): Promise<void> {
+  if (!webPushSupported) return;
+  setTurnedOff(true);
+  await unsubscribe(true);
+}
+
+/**
+ * What this browser shows of Caishy's notifications, closed: those read (on any device), or all.
+ * A notification read in the app has nothing more to say on the lock screen.
+ */
+export async function closeShownNotifications(ids: string[] | null): Promise<void> {
+  if (!webPushSupported) return;
+  const reg = await navigator.serviceWorker.getRegistration().catch(() => undefined);
+  if (!reg?.getNotifications) return;
+  const shown = await reg.getNotifications().catch(() => []);
+  for (const n of shown) {
+    const id = (n.data as { id?: unknown } | null)?.id;
+    if (ids === null || (typeof id === 'string' && ids.includes(id))) n.close();
+  }
+}
+
+/**
+ * Signing out here: pushes for this session stop even if the server can't be told (the browser
+ * drops its subscription), and what's shown goes with it, so the next person to use this browser
+ * sees none of it. Signing in again subscribes afresh, unless they'd turned them off.
+ */
+export async function leaveThisBrowser({ tellServer }: { tellServer: boolean }): Promise<void> {
+  if (!webPushSupported) return;
+  await unsubscribe(tellServer).catch(() => {});
+  await closeShownNotifications(null);
 }
 
 /** Whether this browser has a subscription now (for Settings). */

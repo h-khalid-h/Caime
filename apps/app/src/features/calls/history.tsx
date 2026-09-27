@@ -1,25 +1,36 @@
 /**
  * Call history (PRD §47) loads when it's shown: the Calls screen and the calls on someone's page
- * both come through here, so neither puts it in the app's first download.
+ * both come through here, so neither puts it in the app's first download. Each part is behind a
+ * boundary, so one that can't load (a deploy replaced it) leaves the rest of the app as it was;
+ * the Calls screen draws its bar, with a way back, before its list has loaded.
  */
-import { lazy, Suspense } from 'react';
-import type { CallRows as Rows, CallHistory as Screen } from './CallHistory';
+import { router } from 'expo-router';
+import { IconButton } from '@/ui/IconButton';
+import { ArrowLeft } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
+import { useLayout } from '@/ui/layout';
+import { Screen, TopBar } from '@/ui/Screen';
 
-const LazyScreen = lazy(() => import('./CallHistory').then((m) => ({ default: m.CallHistory })));
-const LazyRows = lazy(() => import('./CallHistory').then((m) => ({ default: m.CallRows })));
+const Body = lazyPart(() => import('./CallHistory').then((m) => m.CallHistoryBody));
+export const CallRows = lazyPart(() => import('./CallHistory').then((m) => m.CallRows));
 
-export function CallHistory(props: Parameters<typeof Screen>[0]) {
+export function CallHistory({ withId, withName }: { withId?: string; withName?: string }) {
+  const { desktop } = useLayout();
   return (
-    <Suspense fallback={null}>
-      <LazyScreen {...props} />
-    </Suspense>
-  );
-}
-
-export function CallRows(props: Parameters<typeof Rows>[0]) {
-  return (
-    <Suspense fallback={null}>
-      <LazyRows {...props} />
-    </Suspense>
+    <Screen edges={desktop ? [] : ['top']}>
+      <TopBar
+        left={
+          !desktop || withId ? (
+            <IconButton
+              icon={ArrowLeft}
+              label="Back"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            />
+          ) : null
+        }
+        title={withId ? `Calls with ${withName ?? 'them'}` : 'Calls'}
+      />
+      <Body withId={withId} withName={withName} />
+    </Screen>
   );
 }

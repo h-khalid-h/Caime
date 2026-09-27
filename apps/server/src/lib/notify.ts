@@ -20,6 +20,11 @@ export interface NotifyInput {
   ttlSeconds?: number;
   /** Which devices it goes to as a push: all of them, or browsers only. */
   pushTo?: 'all' | 'web';
+  /**
+   * Replaces what a device shows under the same group key without a sound (a ring that's over):
+   * still something shown, since a browser takes pushes away from a site whose pushes show nothing.
+   */
+  quiet?: boolean;
 }
 
 export type NotifyHook = (ctx: AppContext, id: string, input: NotifyInput) => Promise<void>;
@@ -72,4 +77,17 @@ export async function runNotificationHooks(
   for (const hook of hooks) {
     await hook(ctx, id, input).catch((err) => ctx.log.warn({ err }, 'notification hook failed'));
   }
+}
+
+/**
+ * A notification that's over (a ring answered, turned down or ended), replaced in browsers that
+ * show it by a line saying so, quietly. Only browsers: the phone apps' own notifications go when
+ * it's read.
+ */
+export async function replaceShown(
+  ctx: AppContext,
+  id: string,
+  input: Omit<NotifyInput, 'quiet' | 'pushTo'>,
+): Promise<void> {
+  await runNotificationHooks(ctx, id, { ...input, quiet: true, pushTo: 'web' });
 }

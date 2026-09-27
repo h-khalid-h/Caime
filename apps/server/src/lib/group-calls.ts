@@ -20,7 +20,7 @@ import type { Call, Database } from '../db/schema';
 import { CALL_SEEN_MS, callInOf, lockCallEntry, nameShownTo } from './calls';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
-import { notify } from './notify';
+import { notify, replaceShown } from './notify';
 import { personViewsFor } from './people-batch';
 import { avatarUrl } from './users';
 
@@ -248,8 +248,17 @@ export async function keptApartFrom(
   return apart;
 }
 
-/** Someone's "… is calling" is read on every device once it stops ringing for them. */
-export async function ringStoppedFor(ctx: AppContext, callId: string, userIds: string[]) {
+/**
+ * Someone's "… is calling" is read on every device once it stops ringing for them, and a browser
+ * still showing it says why, quietly (a missed call says so itself, in its place).
+ */
+export async function ringStoppedFor(
+  ctx: AppContext,
+  callId: string,
+  userIds: string[],
+  why: 'joined' | 'declined' | 'ended' | 'missed' = 'ended',
+) {
+  let title: string | null = null;
   for (const userId of userIds) {
     const read = await ctx.db
       .updateTable('notifications')
@@ -257,12 +266,33 @@ export async function ringStoppedFor(ctx: AppContext, callId: string, userIds: s
       .where('user_id', '=', userId)
       .where('group_key', '=', `call:${callId}`)
       .where('read_at', 'is', null)
-      .returning('id')
+      .returning(['id', 'data'])
       .execute();
-    if (read.length)
-      await ctx.bus.publish([userId], {
-        type: 'notifications.read',
-        data: { ids: read.map((r) => r.id), all: false },
+    if (!read.length) continue;
+    await ctx.bus.publish([userId], {
+      type: 'notifications.read',
+      data: { ids: read.map((r) => r.id), all: false },
+    });
+    if (why === 'missed') continue;
+    if (title === null)
+      title = await ctx.db
+        .selectFrom('calls as k')
+        .innerJoin('conversations as c', 'c.id', 'k.conversation_id')
+        .select('c.title')
+        .where('k.id', '=', callId)
+        .executeTakeFirst()
+        .then((r) => `${r?.title ?? 'Group'} call`);
+    const shown = title ?? 'Group call';
+    for (const r of read)
+      await replaceShown(ctx, r.id, {
+        userId,
+        kind: 'call',
+        level: 'activity',
+        title: shown,
+        body: why === 'joined' ? 'Joined' : why === 'declined' ? 'Turned down' : 'Call ended',
+        data: r.data as Record<string, unknown>,
+        groupKey: `call:${callId}`,
+        ttlSeconds: CALL_RING_SECONDS,
       });
   }
 }
@@ -270,7 +300,7 @@ export async function ringStoppedFor(ctx: AppContext, callId: string, userIds: s
 /** Those rung who never joined have missed it, and each hears so once (quietly, if muted). */
 async function tellMissed(ctx: AppContext, call: Call, who: string[]) {
   if (!who.length) return;
-  await ringStoppedFor(ctx, call.id, who);
+  await ringStoppedFor(ctx, call.id, who, 'missed');
   const [conversation, muted] = await Promise.all([
     ctx.db
       .selectFrom('conversations')

@@ -319,7 +319,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     const joined = await ctx.db.transaction().execute(joinable);
     if (joined.state === 'ended')
       throw over(await groupCallView(ctx, joined, auth.userId, { outsider }));
-    await ringStoppedFor(ctx, id, [auth.userId]);
+    await ringStoppedFor(ctx, id, [auth.userId], 'joined');
     await publishGroupCall(ctx, joined);
     return { call: await groupCallView(ctx, joined, auth.userId, { outsider }) };
   });
@@ -343,7 +343,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       return { changed: Boolean(row), unseen: { tell: [auth.userId] } };
     });
     if (!now) throw notFound('That call');
-    await ringStoppedFor(ctx, id, [auth.userId]);
+    await ringStoppedFor(ctx, id, [auth.userId], 'declined');
     return { call: await groupCallView(ctx, now, auth.userId, { outsider }) };
   });
 

@@ -67,17 +67,23 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     await orgById(ctx.db, id);
     if (await orgSeat(ctx.db, auth.userId, id))
       throw badRequest('You’re on its team. Leave the team instead.');
-    await ctx.db
-      .insertInto('org_blocks')
-      .values({ user_id: auth.userId, org_id: id, created_at: ctx.now() })
-      .onConflict((oc) => oc.doNothing())
-      .execute();
-    // Its updates stop reaching them too (PRD §59).
-    await ctx.db
-      .deleteFrom('org_follows')
-      .where('user_id', '=', auth.userId)
-      .where('org_id', '=', id)
-      .execute();
+    // Its updates stop reaching them too (PRD §59): one at a time with following it
+    // (modules/updates.ts), so a follow can't slip in between.
+    await ctx.db.transaction().execute(async (trx) => {
+      await sql`select pg_advisory_xact_lock(hashtext(${`org-follow:${auth.userId}:${id}`}))`.execute(
+        trx,
+      );
+      await trx
+        .insertInto('org_blocks')
+        .values({ user_id: auth.userId, org_id: id, created_at: ctx.now() })
+        .onConflict((oc) => oc.doNothing())
+        .execute();
+      await trx
+        .deleteFrom('org_follows')
+        .where('user_id', '=', auth.userId)
+        .where('org_id', '=', id)
+        .execute();
+    });
     const thread = await ctx.db
       .selectFrom('business_threads')
       .select(['conversation_id', 'resolved_at'])
@@ -110,6 +116,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       type: 'block.changed',
       data: { orgId: id, blocked: true },
     });
+    await ctx.bus.publish([auth.userId], { type: 'updates.changed', data: { orgId: id } });
     return { ok: true };
   });
 
@@ -133,6 +140,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       type: 'block.changed',
       data: { orgId: id, blocked: false },
     });
+    await ctx.bus.publish([auth.userId], { type: 'updates.changed', data: { orgId: id } });
     return { ok: true };
   });
 

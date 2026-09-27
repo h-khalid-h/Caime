@@ -1,4 +1,6 @@
+import { uuidv4 } from '@caishy/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -21,8 +23,13 @@ const as = (
     ...(body ? { payload: body as object } : {}),
   });
 const updates = async (c: Client) => c.get(`/v1/orgs/${orgId}/updates`);
-const notified = async (c: Client) => {
+/** Whatever is waiting to go out (followers are told by a job, a batch at a time). */
+const deliver = async () => {
   await t.ctx.flush();
+  while (await runDueJobs(t.ctx)) await t.ctx.flush();
+};
+const notified = async (c: Client) => {
+  await deliver();
   return ((await c.get('/v1/notifications')).notifications as any[]).filter(
     (n) => n.kind === 'update',
   );
@@ -81,7 +88,11 @@ describe('an organization’s updates (PRD §59)', () => {
     // The team sees who on it posted, and how many follow.
     for (const c of [noor, omar]) {
       const team = await updates(c);
-      expect(team.updates[0].postedBy).toEqual({ id: noor.user.id, displayName: 'Noor Haddad' });
+      expect(team.updates[0].postedBy).toEqual({
+        id: noor.user.id,
+        displayName: 'Noor Haddad',
+        automated: false,
+      });
       expect(team.followers).toBe(0);
       expect(team.canPost).toBe(c === noor);
     }
@@ -112,6 +123,7 @@ describe('an organization’s updates (PRD §59)', () => {
     expect(kaiHeard).toMatchObject({
       title: 'Nile Dental',
       body: 'Closed on Monday for the holiday.',
+      level: 'activity',
       data: { orgId, handle: 'nile.dental' },
     });
     expect(JSON.stringify(kaiHeard)).not.toContain(noor.user.id);
@@ -153,8 +165,20 @@ describe('an organization’s updates (PRD §59)', () => {
     expect(posted.statusCode).toBe(201);
     expect((await as(mine, 'GET', `/v1/orgs/${orgId}/updates`)).statusCode).toBe(200);
     // The team sees it came from the app; everyone else, from the organization.
-    expect((await updates(noor)).updates[0].postedBy.displayName).toBe('Clinic News');
+    expect((await updates(noor)).updates[0].postedBy).toMatchObject({
+      displayName: 'Clinic News',
+      automated: true,
+    });
     expect((await updates(lina)).updates[0].postedBy).toBeNull();
+    // The app reads them as the team does: who posted each, how many follow, never who.
+    const asApp = (await as(mine, 'GET', `/v1/orgs/${orgId}/updates`)).json();
+    expect(asApp.updates[0].postedBy).toMatchObject({
+      displayName: 'Clinic News',
+      automated: true,
+    });
+    expect(asApp.followers).toBeGreaterThan(0);
+    expect(JSON.stringify(asApp)).not.toContain(lina.user.id);
+    expect(posted.json().update.postedBy).toMatchObject({ automated: true });
 
     const readOnly = (
       await noor.post(`/v1/orgs/${orgId}/apps`, { name: 'Reports', scopes: ['inbox:read'] })
@@ -167,9 +191,18 @@ describe('an organization’s updates (PRD §59)', () => {
     const theirs = (
       await omar.post(`/v1/orgs/${otherOrg}/apps`, { name: 'Theirs', scopes: ['updates'] })
     ).token as string;
-    expect((await as(theirs, 'POST', `/v1/orgs/${orgId}/updates`, { body: 'x' })).statusCode).toBe(
-      404,
-    );
+    // Nor does another organization's app reach this one's, for reading or changing either.
+    const target = (await updates(noor)).updates[0].id as string;
+    for (const [method, url] of [
+      ['POST', `/v1/orgs/${orgId}/updates`],
+      ['GET', `/v1/orgs/${orgId}/updates`],
+      ['PATCH', `/v1/orgs/${orgId}/updates/${target}`],
+      ['DELETE', `/v1/orgs/${orgId}/updates/${target}`],
+    ] as const)
+      expect(
+        (await as(theirs, method, url, method === 'GET' ? undefined : { body: 'x' })).statusCode,
+      ).toBe(404);
+    expect((await updates(noor)).updates[0]).toMatchObject({ id: target, body: 'From the app' });
     const personal = (
       await noor.post('/v1/me/tokens', { name: 'Script', scopes: ['messages:write'], days: 30 })
     ).token as string;
@@ -223,4 +256,224 @@ describe('an organization’s updates (PRD §59)', () => {
       expect.objectContaining({ organization: { name: 'Nile Dental', handle: 'nile.dental' } }),
     ]);
   });
+});
+
+describe('what followers are told, and when (PRD §59)', () => {
+  let ada: Client; // owner
+  let ben: Client; // an admin
+  let cy: Client; // follows, told
+  let dee: Client; // follows, told
+  let eli: Client; // follows, quietly
+  let books: string;
+  const post = async (c: Client, body: string, extra: object = {}) =>
+    (await c.post(`/v1/orgs/${books}/updates`, { body, ...extra })).update;
+  const heard = async (c: Client) =>
+    (await notified(c))
+      .filter((n) => n.data.orgId === books)
+      .map((n) => n.body as string)
+      .sort();
+  const toldOf = async (c: Client, updateId: string) =>
+    (await notified(c)).find((n) => n.data.updateId === updateId);
+
+  beforeAll(async () => {
+    ada = await signup(t, { displayName: 'Ada Stone' });
+    ben = await signup(t, { displayName: 'Ben Ruiz' });
+    cy = await signup(t, { displayName: 'Cy Park' });
+    dee = await signup(t, { displayName: 'Dee Lowe' });
+    eli = await signup(t, { displayName: 'Eli Grant' });
+    const r = await ada.post('/v1/connections/requests', { toUserId: ben.user.id });
+    await ben.post(`/v1/connections/requests/${r.requestId}/accept`, {});
+    books = (
+      await ada.post('/v1/orgs', { name: 'Harbor Books', handle: 'harbor.books', kind: 'shop' })
+    ).org.id;
+    await t.ctx.db
+      .updateTable('organizations')
+      .set({ plan: 'business' })
+      .where('id', '=', books)
+      .execute();
+    await ada.post(`/v1/orgs/${books}/members`, { userIds: [ben.user.id] });
+    await ada.patch(`/v1/orgs/${books}/members/${ben.user.id}`, { role: 'admin' });
+    for (const c of [cy, dee]) await c.req('PUT', `/v1/orgs/${books}/follow`, { notify: true });
+    await eli.req('PUT', `/v1/orgs/${books}/follow`, {});
+    // Posted after they followed (what came before isn't news to them).
+    t.clock.advance(1000);
+  });
+
+  it('an admin posts, changes and takes back, as the owner does', async () => {
+    const u = await post(ben, 'Signed copies on Friday.');
+    expect(u.postedBy).toEqual({ id: ben.user.id, displayName: 'Ben Ruiz', automated: false });
+    expect(
+      (await ben.patch(`/v1/orgs/${books}/updates/${u.id}`, { body: 'Signed copies Friday.' }))
+        .update.body,
+    ).toBe('Signed copies Friday.');
+    expect((await ben.req('DELETE', `/v1/orgs/${books}/updates/${u.id}`)).statusCode).toBe(200);
+  });
+
+  it('each batch reads the update again: taken back first, nobody hears; changed first, they hear it as it is now', async () => {
+    const gone = await post(ada, 'Sale: everything half price.');
+    await ada.req('DELETE', `/v1/orgs/${books}/updates/${gone.id}`);
+    const changed = await post(ada, 'Open late on Thrusday.');
+    await ada.patch(`/v1/orgs/${books}/updates/${changed.id}`, { body: 'Open late on Thursday.' });
+    for (const c of [cy, dee]) expect(await heard(c)).toEqual(['Open late on Thursday.']);
+    expect(await heard(eli)).toEqual([]);
+    expect(await heard(ada)).toEqual([]);
+  });
+
+  it('whoever blocked it or stopped asking by the time it goes out isn’t told, and nobody is told twice', async () => {
+    const u = await post(ada, 'Poetry night next week.');
+    await dee.post(`/v1/orgs/${books}/block`, {});
+    await cy.req('PUT', `/v1/orgs/${books}/follow`, { notify: false });
+    await deliver();
+    expect(await heard(dee)).toEqual(['Open late on Thursday.']);
+    expect(await heard(cy)).toEqual(['Open late on Thursday.']);
+    await dee.req('DELETE', `/v1/orgs/${books}/block`);
+    await dee.req('PUT', `/v1/orgs/${books}/follow`, { notify: true });
+    await cy.req('PUT', `/v1/orgs/${books}/follow`, { notify: true });
+    // The same step run again, twice at once (a retry after a restart): whoever is told is told
+    // once; whoever followed only after it was posted isn't told of it at all.
+    const { enqueue } = await import('../src/lib/jobs');
+    await enqueue(t.ctx, 'updates.fanout', { updateId: u.id }, { dedupeKey: `again:${u.id}` });
+    await enqueue(t.ctx, 'updates.fanout', { updateId: u.id }, { dedupeKey: `again2:${u.id}` });
+    expect(await heard(cy)).toEqual(['Open late on Thursday.', 'Poetry night next week.']);
+    expect(await heard(dee)).toEqual(['Open late on Thursday.']);
+    // However the steps overlap, the database holds one each: a second is refused.
+    const [told] = await t.ctx.db
+      .selectFrom('notifications')
+      .selectAll()
+      .where('user_id', '=', cy.user.id)
+      .where('kind', '=', 'update')
+      .execute();
+    if (!told) throw new Error('Cy was told of nothing');
+    const { uuidv7 } = await import('@caishy/core');
+    await expect(
+      t.ctx.db
+        .insertInto('notifications')
+        .values({
+          id: uuidv7(),
+          user_id: cy.user.id,
+          kind: 'update',
+          level: 'activity',
+          title: told.title,
+          data: JSON.stringify(told.data),
+        })
+        .execute(),
+    ).rejects.toThrow(/notifications_update/);
+    t.clock.advance(1000);
+  });
+
+  it('changed, what they were told says what it says now; taken back, it’s gone from their notifications', async () => {
+    const u = await post(ada, 'Closed for stocktaking on the 3rd.');
+    expect((await toldOf(cy, u.id))?.body).toBe('Closed for stocktaking on the 3rd.');
+    await ada.patch(`/v1/orgs/${books}/updates/${u.id}`, {
+      body: 'Closed for stocktaking on the 4th.',
+    });
+    expect((await toldOf(cy, u.id))?.body).toBe('Closed for stocktaking on the 4th.');
+    await ada.req('DELETE', `/v1/orgs/${books}/updates/${u.id}`);
+    expect(await toldOf(cy, u.id)).toBeUndefined();
+    expect(JSON.stringify(await cy.get('/v1/notifications'))).not.toContain('stocktaking');
+  });
+
+  it('reading its updates reads their notifications too', async () => {
+    await post(ada, 'New arrivals in the window.');
+    const unread = async (c: Client) => {
+      await deliver();
+      return ((await c.get('/v1/notifications')).notifications as any[]).filter(
+        (n) => n.data.orgId === books && !n.read,
+      ).length;
+    };
+    expect(await unread(cy)).toBeGreaterThan(0);
+    await cy.post(`/v1/orgs/${books}/updates/read`, {});
+    expect(await unread(cy)).toBe(0);
+    expect(await unread(dee)).toBeGreaterThan(0);
+  });
+
+  it('sent again with its clientId (the answer was lost), it’s one update, told once', async () => {
+    const clientId = uuidv4();
+    const first = await ada.req('POST', `/v1/orgs/${books}/updates`, {
+      body: 'Book club moved to Tuesday.',
+      clientId,
+    });
+    const again = await ada.req('POST', `/v1/orgs/${books}/updates`, {
+      body: 'Book club moved to Tuesday.',
+      clientId,
+    });
+    expect(first.statusCode).toBe(201);
+    expect(again.statusCode).toBe(200);
+    expect(again.json().update.id).toBe(first.json().update.id);
+    expect(
+      (await updates2(cy)).filter((u: any) => u.body === 'Book club moved to Tuesday.'),
+    ).toHaveLength(1);
+    expect((await heard(dee)).filter((b) => b === 'Book club moved to Tuesday.')).toHaveLength(1);
+    // Unchanged, a change is nothing: not marked edited, and nobody hears of it.
+    const same = await ada.patch(`/v1/orgs/${books}/updates/${first.json().update.id}`, {
+      body: 'Book club moved to Tuesday.',
+    });
+    expect(same.update.editedAt).toBeNull();
+  });
+
+  it('following makes no connection and no conversation, and a notification never cuts a character in half', async () => {
+    const before = [
+      (await eli.get('/v1/connections')).connections.length,
+      (await eli.get('/v1/inbox')).sections.flatMap((s: any) => s.items).length,
+    ];
+    await eli.req('PUT', `/v1/orgs/${books}/follow`, { notify: true });
+    await post(ada, `${'a'.repeat(138)}😀 see you Saturday`);
+    const [line] = (await notified(eli)).filter((n) => n.data.orgId === books);
+    expect(line.body.isWellFormed()).toBe(true);
+    expect(line.body.endsWith('…')).toBe(true);
+    const after = [
+      (await eli.get('/v1/connections')).connections.length,
+      (await eli.get('/v1/inbox')).sections.flatMap((s: any) => s.items).length,
+    ];
+    expect(after).toEqual(before);
+  });
+
+  it('it, or one of its updates, can be reported; an update only as its own organization’s', async () => {
+    const u = (await updates2(cy))[0];
+    expect((await cy.req('POST', '/v1/reports', { orgId: books, reason: 'scam' })).statusCode).toBe(
+      201,
+    );
+    expect(
+      (await cy.req('POST', '/v1/reports', { orgId: books, updateId: u.id, reason: 'spam' }))
+        .statusCode,
+    ).toBe(201);
+    expect(
+      (await cy.req('POST', '/v1/reports', { orgId: orgId, updateId: u.id, reason: 'spam' }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (await cy.req('POST', '/v1/reports', { updateId: u.id, reason: 'spam' })).statusCode,
+    ).toBe(400);
+    const filed = await t.ctx.db
+      .selectFrom('reports')
+      .select(['org_id', 'update_id'])
+      .where('reporter_id', '=', cy.user.id)
+      .execute();
+    expect(filed).toEqual(
+      expect.arrayContaining([
+        { org_id: books, update_id: null },
+        { org_id: books, update_id: u.id },
+      ]),
+    );
+  });
+
+  it('closed (its last person gone), nobody follows it any more', async () => {
+    const zoe = await signup(t, { displayName: 'Zoe Hart' });
+    const stall = (
+      await zoe.post('/v1/orgs', { name: 'Pop-up Stall', handle: 'popup.stall', kind: 'shop' })
+    ).org.id;
+    await cy.req('PUT', `/v1/orgs/${stall}/follow`, { notify: true });
+    await zoe.req('DELETE', `/v1/orgs/${stall}/members/${zoe.user.id}`);
+    const left = await t.ctx.db
+      .selectFrom('org_follows')
+      .select('user_id')
+      .where('org_id', '=', stall)
+      .execute();
+    expect(left).toEqual([]);
+    expect((await cy.get('/v1/updates')).following.map((f: any) => f.org.id)).not.toContain(stall);
+  });
+
+  async function updates2(c: Client) {
+    return (await c.get(`/v1/orgs/${books}/updates`)).updates as any[];
+  }
 });

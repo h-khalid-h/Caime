@@ -24,6 +24,8 @@ class FakeSub {
   }
   async unsubscribe() {
     this.unsubscribed = true;
+    // As browsers do: it's gone, and a new one would have to be made.
+    if (current === this) current = null;
     return true;
   }
 }
@@ -31,6 +33,20 @@ let permission: string;
 let asked: number;
 let current: FakeSub | null;
 let messages: ((e: { data: unknown }) => void) | null;
+let stored: Map<string, string>;
+let onScreen: Array<{ data: { id: string | null }; closed: boolean; close: () => void }>;
+const showing = (...ids: string[]) => {
+  onScreen = ids.map((id) => {
+    const n = {
+      data: { id },
+      closed: false,
+      close: () => {
+        n.closed = true;
+      },
+    };
+    return n;
+  });
+};
 
 beforeEach(() => {
   vi.resetModules();
@@ -38,6 +54,8 @@ beforeEach(() => {
   asked = 0;
   current = null;
   messages = null;
+  stored = new Map();
+  onScreen = [];
   for (const f of Object.values(h.endpoints)) f.mockClear();
   const pushManager = {
     getSubscription: async () => current,
@@ -46,8 +64,13 @@ beforeEach(() => {
       return current;
     },
   };
-  const registration = { pushManager };
+  const registration = { pushManager, getNotifications: async () => onScreen };
   vi.stubGlobal('window', { PushManager: class {}, Notification: {} });
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => stored.get(k) ?? null,
+    setItem: (k: string, v: string) => stored.set(k, v),
+    removeItem: (k: string) => stored.delete(k),
+  });
   vi.stubGlobal('Notification', {
     get permission() {
       return permission;
@@ -109,13 +132,50 @@ describe('notifications in this browser', () => {
     expect(current?.key).toEqual([4, 5, 6]);
   });
 
-  it('turned off, the server and the browser both forget it', async () => {
+  it('turned off, the server and the browser both forget it, and it stays off on the next load', async () => {
     permission = 'granted';
-    current = new FakeSub('https://push.example/mine', [1, 2, 3]);
+    const mine = new FakeSub('https://push.example/mine', [1, 2, 3]);
+    current = mine;
     const push = await import('./webPush.web');
     await push.disableWebPush();
     expect(h.endpoints.unsubscribePush).toHaveBeenCalledWith('https://push.example/mine');
-    expect(current?.unsubscribed).toBe(true);
+    expect(mine.unsubscribed).toBe(true);
+    // The browser still allows them, but a reload (or signing in again) doesn't subscribe.
+    vi.resetModules();
+    const again = await import('./webPush.web');
+    await again.resumeWebPush();
+    expect(h.endpoints.subscribePush).not.toHaveBeenCalled();
+    expect(await again.webPushOn()).toBe(false);
+    // Until they turn them on here themselves.
+    await again.enableWebPush();
+    expect(h.endpoints.subscribePush).toHaveBeenCalledTimes(1);
+    vi.resetModules();
+    const later = await import('./webPush.web');
+    await later.resumeWebPush();
+    expect(h.endpoints.subscribePush).toHaveBeenCalledTimes(2);
+  });
+
+  it('what’s read in the app stops showing here; signing out takes the rest, and the pushes', async () => {
+    permission = 'granted';
+    const mine = new FakeSub('https://push.example/mine', [1, 2, 3]);
+    current = mine;
+    const push = await import('./webPush.web');
+    showing('n1', 'n2', 'n3');
+    await push.closeShownNotifications(['n2']);
+    expect(onScreen.map((n) => n.closed)).toEqual([false, true, false]);
+    await push.leaveThisBrowser({ tellServer: true });
+    expect(onScreen.every((n) => n.closed)).toBe(true);
+    expect(h.endpoints.unsubscribePush).toHaveBeenCalledWith('https://push.example/mine');
+    expect(mine.unsubscribed).toBe(true);
+    // Signed out because the session is gone: the server can't be asked, the browser still drops
+    // it; and signing in again subscribes afresh (it wasn't turned off).
+    current = new FakeSub('https://push.example/next', [1, 2, 3]);
+    h.endpoints.unsubscribePush.mockClear();
+    await push.leaveThisBrowser({ tellServer: false });
+    expect(h.endpoints.unsubscribePush).not.toHaveBeenCalled();
+    expect(current).toBeNull();
+    await push.resumeWebPush();
+    expect(h.endpoints.subscribePush).toHaveBeenCalledTimes(1);
   });
 
   it('a tapped notification moves the app only to a path of its own', async () => {

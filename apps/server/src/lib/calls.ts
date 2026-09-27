@@ -23,7 +23,7 @@ import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
-import { notify } from './notify';
+import { notify, replaceShown } from './notify';
 import { personViewsFor } from './people-batch';
 import { avatarUrl } from './users';
 
@@ -207,7 +207,11 @@ export async function nameShownTo(
  * It isn't ringing any more: the person called has their "is calling" read on every device, so
  * it neither stays in their list nor counts as unread.
  */
-export async function ringStopped(ctx: AppContext, call: Call): Promise<void> {
+export async function ringStopped(
+  ctx: AppContext,
+  call: Call,
+  { missedNotice = false }: { missedNotice?: boolean } = {},
+): Promise<void> {
   if (!call.callee_id) return;
   const read = await ctx.db
     .updateTable('notifications')
@@ -215,12 +219,32 @@ export async function ringStopped(ctx: AppContext, call: Call): Promise<void> {
     .where('user_id', '=', call.callee_id)
     .where('group_key', '=', `call:${call.id}`)
     .where('read_at', 'is', null)
-    .returning('id')
+    .returning(['id', 'data'])
     .execute();
-  if (read.length)
-    await ctx.bus.publish([call.callee_id], {
-      type: 'notifications.read',
-      data: { ids: read.map((r) => r.id), all: false },
+  if (!read.length) return;
+  await ctx.bus.publish([call.callee_id], {
+    type: 'notifications.read',
+    data: { ids: read.map((r) => r.id), all: false },
+  });
+  // A browser still showing "… is calling" says it's over instead, quietly; a missed call says so
+  // itself, in its place.
+  if (missedNotice || !call.caller_id) return;
+  const caller = await nameShownTo(ctx, call.callee_id, call.caller_id);
+  for (const r of read)
+    await replaceShown(ctx, r.id, {
+      userId: call.callee_id,
+      kind: 'call',
+      level: 'activity',
+      title: caller ?? 'Call',
+      body:
+        call.state !== 'ended'
+          ? 'Answered'
+          : call.outcome === 'declined'
+            ? 'Declined'
+            : 'Call ended',
+      data: r.data as Record<string, unknown>,
+      groupKey: `call:${call.id}`,
+      ttlSeconds: CALL_RING_SECONDS,
     });
 }
 
@@ -243,7 +267,11 @@ export async function endCall(
     .returningAll()
     .executeTakeFirst();
   if (!ended) return null;
-  await ringStopped(ctx, ended);
+  const missedNotice =
+    !quiet &&
+    (outcome === 'missed' || outcome === 'cancelled') &&
+    Boolean(ended.callee_id && ended.caller_id);
+  await ringStopped(ctx, ended, { missedNotice });
   await publishCall(ctx, ended);
   const seconds =
     outcome === 'completed' && ended.answered_at
@@ -261,12 +289,7 @@ export async function endCall(
       { type: 'message.created', data: view },
     );
   }
-  if (
-    !quiet &&
-    (outcome === 'missed' || outcome === 'cancelled') &&
-    ended.callee_id &&
-    ended.caller_id
-  ) {
+  if (missedNotice && ended.callee_id && ended.caller_id) {
     const caller = await nameShownTo(ctx, ended.callee_id, ended.caller_id);
     await notify(ctx, {
       userId: ended.callee_id,

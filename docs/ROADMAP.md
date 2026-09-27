@@ -53,11 +53,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Search across people, relationships, orgs, messages, assets, actions, contexts
 - [~] Notifications: levels, burst consolidation, schedules, and Web Push: a service worker
       (`apps/app/public/sw.js`) shows what the server pushes when Caishy isn't open in front (a
-      call rings until it's answered) and a tap opens it in the open tab without a reload; each
-      browser is asked once, from Settings → Notifications or Chats, and every later sign-in there
-      gets its pushes (`sw.test.ts`, `webPush.test.ts`, E2E registers the worker under the app's
-      CSP; a real push service isn't reachable from the E2E). Expo push implemented but ⛔ needs
-      EAS credentials for production builds; not yet exercised end to end
+      call rings until it's answered, turned down or over, then says so quietly) and a tap opens
+      it in the open tab without a reload; each new one alerts, even over an older one about the
+      same thing; one read anywhere closes. Each browser is asked once, from Settings →
+      Notifications or Chats; every later sign-in there gets its pushes unless they turned them
+      off there, and signing out drops them and what's shown. Pushes name people as they show
+      themselves to that person, and Safari keeps them coming (`sw.test.ts`, `webPush.test.ts`,
+      `messaging.test.ts`, `calls.test.ts`, `group-calls.test.ts`, E2E registers the worker under
+      the app's CSP; a real push service isn't reachable from the E2E). Expo push implemented but
+      ⛔ needs EAS credentials for production builds; not yet exercised end to end
 - [x] Jobs: reminders, held notifications, follow-ups, retention
 
 ## M5 — App (iOS, Android, Web)
@@ -118,7 +122,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       app, with `updates`) post to whoever follows it; anyone reads them on its page, as the
       organization's. People follow from the page (and choose whether each update notifies
       them); Updates is one row at the top of Chats and a screen of its own, never among their
-      conversations or what needs them. Nobody sees who follows; the team sees how many
+      conversations or what needs them, each organization with whether Caishy verified it.
+      Nobody sees who follows; the team sees how many. A review found that the notifications
+      could stop halfway, reach someone who'd blocked it or say what was taken back, that
+      blocking and the page could disagree, and that an app's posts weren't marked; all fixed:
+      a job tells followers a batch at a time (restarts lose nobody, nobody hears twice, a
+      taken-back update stops), notifications follow the update when it changes or goes and
+      are read with it, posts are sent once however often they're retried, changes are limited,
+      an update or an organization can be reported, and one that closes is followed by nobody
       (`updates.test.ts`, E2E)
 - [x] Business inbox: a customer messages an organization from its page (found in Connect or
       by its link) and gets one conversation with it; the whole team is in it and answers as the

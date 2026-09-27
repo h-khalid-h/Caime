@@ -95,8 +95,20 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/reports', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(ReportBody, req.body);
-    if (!body.userId && !body.messageId && !body.conversationId)
+    if (!body.userId && !body.messageId && !body.conversationId && !body.orgId)
       throw badRequest('Choose what you’re reporting.');
+    // An update is reported with its organization, and only as one of that organization's.
+    if (body.updateId) {
+      const update = body.orgId
+        ? await ctx.db
+            .selectFrom('org_updates')
+            .select('id')
+            .where('id', '=', body.updateId)
+            .where('org_id', '=', body.orgId)
+            .executeTakeFirst()
+        : undefined;
+      if (!update) throw badRequest('Choose what you’re reporting.');
+    }
     ctx.limiter.hit(`report:${auth.userId}`, 30, 3_600_000);
     await ctx.db
       .insertInto('reports')
@@ -106,6 +118,8 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
         target_user_id: body.userId ?? null,
         message_id: body.messageId ?? null,
         conversation_id: body.conversationId ?? null,
+        org_id: body.orgId ?? null,
+        update_id: body.updateId ?? null,
         reason: body.reason,
         details: body.details ?? null,
       })

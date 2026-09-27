@@ -301,11 +301,27 @@ describe('calls (PRD §47)', () => {
     await sam.post(`/v1/calls/${answered}/accept`, { deviceId: 'sam-phone-1' });
     expect((await ring(answered)).read).toBe(true);
     expect((await heardSoon('notifications.read', 1))[0]?.userIds).toEqual([sam.user.id]);
+    // A browser still showing the ring shows it's over instead, quietly, under the same key
+    // (never a push that shows nothing).
+    const quietly = (callId: string) => pushed.filter((p) => p.data?.callId === callId && p.quiet);
+    expect(quietly(answered)).toEqual([
+      expect.objectContaining({
+        userId: sam.user.id,
+        title: 'Noor Haddad',
+        body: 'Answered',
+        level: 'activity',
+        groupKey: `call:${answered}`,
+        pushTo: 'web',
+      }),
+    ]);
     await noor.post(`/v1/calls/${answered}/end`, { deviceId: 'noor-tab-1' });
+    // Once over, nothing more: the ring was replaced already.
+    expect(quietly(answered)).toHaveLength(1);
 
     const declined = (await call(noor, convo)).json().call.id;
     await sam.post(`/v1/calls/${declined}/decline`, {});
     expect((await ring(declined)).read).toBe(true);
+    expect(quietly(declined)).toEqual([expect.objectContaining({ body: 'Declined' })]);
 
     const missed = (await call(noor, convo, 'voice')).json().call.id;
     t.clock.advance(46_000);
@@ -315,6 +331,9 @@ describe('calls (PRD §47)', () => {
       (n: any) => n.data?.callId === missed && n.title.startsWith('Missed'),
     );
     expect(told.read).toBe(false);
+    // A missed call replaces the ring itself, as news.
+    expect(quietly(missed)).toEqual([]);
+    expect(pushed.filter((p) => p.data?.callId === missed && !p.quiet)).toHaveLength(2);
   });
 
   it('a large signal passes through without staying in the database; offers are few', async () => {

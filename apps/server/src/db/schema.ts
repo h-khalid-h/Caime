@@ -466,6 +466,7 @@ export interface OrgUpdatesTable {
   org_id: string;
   posted_by: string | null;
   body: string;
+  client_id: Defaulted<string | null>;
   created_at: Generated<Date>;
   edited_at: NullableTimestamp;
   deleted_at: NullableTimestamp;
@@ -486,6 +487,8 @@ export interface ReportsTable {
   target_user_id: string | null;
   message_id: string | null;
   conversation_id: string | null;
+  org_id: Defaulted<string | null>;
+  update_id: Defaulted<string | null>;
   reason: string;
   details: string | null;
   status: Defaulted<'open' | 'reviewing' | 'actioned' | 'dismissed'>;

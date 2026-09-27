@@ -1830,8 +1830,28 @@ test.describe
         .toEqual(['Closed Monday for the holiday.']);
       await page.getByTestId('org-update-remove').first().click();
       await expect(visible(page, 'Update taken back')).toBeVisible();
+      // Its words go from her notifications too.
+      await expect
+        .poll(async () =>
+          (
+            (await (await linas.request.get('/v1/notifications')).json()).notifications as Array<{
+              kind: string;
+            }>
+          ).filter((n) => n.kind === 'update'),
+        )
+        .toEqual([]);
       await phone.reload();
       await expect(phone.getByTestId('org-update').filter({ visible: true })).toHaveCount(1);
+
+      // Blocked from its page, she follows it no more, and the page says so at once; unblocked,
+      // she can follow it again.
+      await phone.getByTestId('org-block').filter({ visible: true }).click();
+      await phone.getByTestId('org-block-confirm').filter({ visible: true }).click();
+      await expect(phone.getByTestId('org-unblock').filter({ visible: true })).toBeVisible();
+      await expect(phone.getByTestId('org-unfollow').filter({ visible: true })).toHaveCount(0);
+      await expect(phone.getByTestId('org-notify').filter({ visible: true })).toHaveCount(0);
+      await phone.getByTestId('org-unblock').filter({ visible: true }).click();
+      await expect(phone.getByTestId('org-follow').filter({ visible: true })).toBeVisible();
       expect([...errors, ...lina.errors]).toEqual([]);
     });
     test('this browser can show calls and messages when Caishy isn’t open', async () => {

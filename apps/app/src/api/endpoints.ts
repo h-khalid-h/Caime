@@ -517,8 +517,9 @@ export const endpoints = {
   // Organizations' updates (PRD §59)
   orgUpdates: (orgId: string, before?: string) =>
     api.get<OrgUpdatesView>(`/orgs/${orgId}/updates${q({ before })}`),
-  postUpdate: (orgId: string, body: string) =>
-    api.post<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates`, { body }),
+  /** With the poster's own id for it, so sending it again after a lost answer posts it once. */
+  postUpdate: (orgId: string, body: string, clientId: string) =>
+    api.post<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates`, { body, clientId }),
   editUpdate: (orgId: string, id: string, body: string) =>
     api.patch<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates/${id}`, { body }),
   removeUpdate: (orgId: string, id: string) => api.del<Ok>(`/orgs/${orgId}/updates/${id}`),
@@ -542,6 +543,9 @@ export const endpoints = {
     userId?: string;
     messageId?: string;
     conversationId?: string;
+    /** An organization, or one of its updates (with its orgId). */
+    orgId?: string;
+    updateId?: string;
     reason: 'spam' | 'scam' | 'harassment' | 'impersonation' | 'inappropriate' | 'other';
     details?: string;
   }) => api.post<Ok>('/reports', body),
