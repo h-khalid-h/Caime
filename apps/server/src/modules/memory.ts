@@ -104,9 +104,20 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     const rows = await ctx.db
       .selectFrom('contexts as x')
       .selectAll('x')
+      // As contextVisible has it: theirs alone, or a conversation's they're still in.
       .where((eb) =>
         eb.or([
-          eb('x.created_by', '=', auth.userId),
+          eb.and([
+            eb('x.created_by', '=', auth.userId),
+            eb.not(
+              eb.exists(
+                eb
+                  .selectFrom('conversations as l')
+                  .select('l.id')
+                  .whereRef('l.context_id', '=', 'x.id'),
+              ),
+            ),
+          ]),
           eb.exists(
             eb
               .selectFrom('conversations as c')
@@ -151,6 +162,8 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
       )
       .select(['cv.id', 'cv.title', 'cv.kind', 'cv.last_message_at'])
       .where('cv.context_id', '=', id)
+      // Only the ones they're still in: a group they left goes on without them.
+      .where('p.left_at', 'is', null)
       .execute();
     const ids = convos.map((x) => x.id);
     const [files, decisions, tasks] = await Promise.all([

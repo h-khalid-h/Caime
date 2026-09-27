@@ -52,8 +52,13 @@ const privateGroupFull = () =>
 import type { Conversation, Participant } from '../db/schema';
 import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
-import { canEditConversation, contextVisible } from '../lib/contexts';
-import { ensureDirectConversation, handOverGroup } from '../lib/conversations';
+import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
+import {
+  ensureDirectConversation,
+  handOverGroup,
+  lockConversation,
+  seatIn,
+} from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -76,7 +81,7 @@ import {
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
-import { spaceConversationTitle, spaceRefs } from '../lib/spaces';
+import { spaceChanged, spaceConversationTitle, spaceRefs } from '../lib/spaces';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -177,6 +182,7 @@ export async function conversationView(
       'p.last_read_seq',
       'p.last_delivered_seq',
       'p.request_state as member_request_state',
+      'p.joined_at as member_joined_at',
     ])
     .where('p.conversation_id', '=', conversation.id)
     .where('p.left_at', 'is', null)
@@ -205,6 +211,7 @@ export async function conversationView(
         relationship: rel ? relationshipView(rel) : null,
         readSeq,
         deliveredSeq: Number(m.last_delivered_seq),
+        joinedAt: m.member_joined_at.toISOString(),
       };
     }),
   );
@@ -279,6 +286,7 @@ export async function conversationView(
     id: conversation.id,
     kind: conversation.kind,
     title,
+    name: conversation.is_general || conversation.kind === 'business' ? null : conversation.title,
     space,
     topic: conversation.kind === 'direct' && !conversation.is_general ? conversation.title : null,
     purpose: conversation.purpose,
@@ -416,8 +424,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           body.title ?? 'Private',
           body.private ? 'private' : 'standard',
         );
-        // Only a context they can see: an id alone opens nothing.
-        if (body.contextId && (await contextVisible(ctx.db, auth.userId, body.contextId)))
+        // Only a context they may change (and so can see): an id alone opens nothing.
+        if (body.contextId && (await contextEditable(ctx.db, auth.userId, body.contextId)))
           await ctx.db
             .updateTable('conversations')
             .set({ context_id: body.contextId })
@@ -465,9 +473,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .execute();
       await trx
         .insertInto('participants')
+        // Joined now, on the app's clock: who's been in it longest decides who runs it next.
         .values([
-          { conversation_id: id, user_id: auth.userId, role: 'owner' },
-          ...memberIds.map((u) => ({ conversation_id: id, user_id: u, role: 'member' as const })),
+          { conversation_id: id, user_id: auth.userId, role: 'owner', joined_at: ctx.now() },
+          ...memberIds.map((u) => ({
+            conversation_id: id,
+            user_id: u,
+            role: 'member' as const,
+            joined_at: ctx.now(),
+          })),
         ])
         .execute();
       await recordEvent(trx, 'conversation.created', auth.userId, {
@@ -517,9 +531,14 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     ) {
       if (!canEditConversation(conversation.kind, me.role))
         throw forbidden('Only admins can change this.');
-      // Linked only to a context they can see: an id alone opens nothing.
-      if (body.contextId && !(await contextVisible(ctx.db, auth.userId, body.contextId)))
-        throw notFound('That context');
+      // Linked only to a context they may change: an id alone opens nothing, and one they only
+      // read (a group's, where they're a member) isn't theirs to take somewhere they'd run it.
+      if (body.contextId) {
+        if (!(await contextVisible(ctx.db, auth.userId, body.contextId)))
+          throw notFound('That context');
+        if (!(await contextEditable(ctx.db, auth.userId, body.contextId)))
+          throw forbidden('Only someone who may change that context links it here.');
+      }
       if (body.title !== undefined) {
         if (conversation.kind === 'direct' && conversation.is_general)
           throw badRequest('The general conversation takes the person’s name.');
@@ -535,7 +554,13 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .set({ ...shared, updated_at: ctx.now() })
         .where('id', '=', id)
         .execute();
-      // Everyone sees when messages start or stop disappearing.
+      // Everyone sees what changed about it, and who changed it.
+      if (body.title !== undefined && body.title !== conversation.title)
+        await sendSystem(ctx, id, auth.userId, 'renamed', { title: body.title });
+      if (body.purpose !== undefined && (body.purpose ?? null) !== (conversation.purpose ?? null))
+        await sendSystem(ctx, id, auth.userId, 'purpose_changed', {
+          purpose: body.purpose ?? null,
+        });
       if (body.retentionDays !== undefined && body.retentionDays !== conversation.retention_days)
         await sendSystem(ctx, id, auth.userId, 'retention_changed', { days: body.retentionDays });
     }
@@ -621,31 +646,57 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (connected.length !== new Set(body.userIds).size)
         throw badRequest('You can add people you’re connected with.');
     }
-    // Every message in a private group is sealed for each of its people's devices.
-    if (conversation.privacy_class === 'private') {
-      const inIt = new Set((await participantsOf(ctx.db, id)).map((p) => p.user_id));
-      const more = new Set(body.userIds.filter((u) => !inIt.has(u)));
-      if (inIt.size + more.size > PRIVATE_GROUP_MAX) throw privateGroupFull();
-    }
-    for (const userId of body.userIds) {
-      await ctx.db
-        .insertInto('participants')
-        .values({
-          conversation_id: id,
-          user_id: userId,
-          role: 'member',
-          last_read_seq: conversation.last_seq,
-        })
-        .onConflict((oc) =>
-          oc.columns(['conversation_id', 'user_id']).doUpdateSet({ left_at: null }),
-        )
-        .execute();
-    }
-    await sendSystem(ctx, id, auth.userId, 'members_added', { userIds: body.userIds });
+    const added = await ctx.db.transaction().execute(async (trx) => {
+      await lockConversation(trx, id);
+      // Who runs it, and who's in it, as they are now.
+      const mine = await seatIn(trx, id, auth.userId);
+      if (!mine) throw notFound('That conversation');
+      if (!['owner', 'admin'].includes(mine.role)) throw forbidden('Only admins can add people.');
+      const inIt = new Set((await participantsOf(trx, id)).map((p) => p.user_id));
+      const fresh = [...new Set(body.userIds)].filter((u) => !inIt.has(u));
+      // Every message in a private group is sealed for each of its people's devices.
+      if (conversation.privacy_class === 'private' && inIt.size + fresh.length > PRIVATE_GROUP_MAX)
+        throw privateGroupFull();
+      const { last_seq } = await trx
+        .selectFrom('conversations')
+        .select('last_seq')
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow();
+      for (const userId of fresh)
+        await trx
+          .insertInto('participants')
+          .values({
+            conversation_id: id,
+            user_id: userId,
+            role: 'member',
+            joined_at: ctx.now(),
+            last_read_seq: last_seq,
+          })
+          // Back in it after leaving, they start again: a member, from now, caught up. Whatever
+          // they were before (an admin, the longest there) isn't theirs any more.
+          .onConflict((oc) =>
+            oc
+              .columns(['conversation_id', 'user_id'])
+              .doUpdateSet({
+                left_at: null,
+                role: 'member',
+                joined_at: ctx.now(),
+                last_read_seq: last_seq,
+                last_delivered_seq: last_seq,
+              })
+              .where('participants.left_at', 'is not', null),
+          )
+          .execute();
+      return fresh;
+    });
+    if (!added.length) return { ok: true };
+    await sendSystem(ctx, id, auth.userId, 'members_added', { userIds: added });
     await ctx.bus.publish([...(await participantsOf(ctx.db, id)).map((p) => p.user_id)], {
       type: 'conversation.updated',
       data: { conversationId: id },
     });
+    // A space's conversation: the space shows who's in each of its conversations.
+    if (conversation.space_id) await spaceChanged(ctx, conversation.space_id);
     return { ok: true };
   });
 
@@ -655,7 +706,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       z.object({ id: z.string().uuid(), userId: z.string().uuid() }),
       req.params,
     );
-    const { conversation, me } = await membership(ctx, auth.userId, id);
+    const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct' || conversation.kind === 'business')
       throw badRequest('You can archive this conversation instead.');
     if (conversation.space_id && conversation.is_general)
@@ -664,37 +715,44 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           ? 'Leave the space to leave its General conversation.'
           : 'Remove them from the space instead.',
       );
-    const target =
-      userId === auth.userId
-        ? me
-        : await ctx.db
-            .selectFrom('participants')
-            .selectAll()
-            .where('conversation_id', '=', id)
-            .where('user_id', '=', userId)
-            .where('left_at', 'is', null)
-            .executeTakeFirst();
-    if (!target) throw notFound('That person in this conversation');
-    // The owner removes anyone; admins remove members; anyone may leave (PRD §56).
-    if (
-      userId !== auth.userId &&
-      !canRemoveFromSpace(me.role as SpaceRole, target.role as SpaceRole)
-    )
-      throw forbidden(
-        me.role === 'admin'
-          ? 'Admins remove members; the owner removes admins.'
-          : 'Only admins can remove people.',
-      );
-    // Whoever owned it hands it on as they go, so someone can always run it.
-    const heir = await ctx.db.transaction().execute(async (trx) => {
+    const leaving = userId === auth.userId;
+    const done = await ctx.db.transaction().execute(async (trx) => {
+      await lockConversation(trx, id);
+      // Read under the lock: a role changed, or someone gone, a moment ago counts.
+      const me = await seatIn(trx, id, auth.userId);
+      // Left already, from another of their devices: that's done.
+      if (!me && leaving) return null;
+      if (!me) throw notFound('That conversation');
+      const target = leaving ? me : await seatIn(trx, id, userId);
+      if (!target) throw notFound('That person in this conversation');
+      // The owner removes anyone; admins remove members; anyone may leave (PRD §56).
+      if (!leaving && !canRemoveFromSpace(me.role as SpaceRole, target.role as SpaceRole))
+        throw forbidden(
+          me.role === 'admin'
+            ? 'Admins remove members; the owner removes admins.'
+            : 'Only admins can remove people.',
+        );
+      // Out, they're nobody in it: added again, they start as a member.
       await trx
         .updateTable('participants')
-        .set({ left_at: ctx.now(), ...(target.role === 'owner' ? { role: 'member' } : {}) })
+        .set({ left_at: ctx.now(), role: 'member' })
         .where('conversation_id', '=', id)
         .where('user_id', '=', userId)
+        .where('left_at', 'is', null)
         .execute();
-      return target.role === 'owner' ? handOverGroup(trx, id, userId) : null;
+      // What Caishy offered them about it is gone with it.
+      await trx
+        .updateTable('suggestions')
+        .set({ status: 'expired', resolved_at: ctx.now() })
+        .where('user_id', '=', userId)
+        .where('conversation_id', '=', id)
+        .where('status', '=', 'pending')
+        .execute();
+      // Whoever owned it hands it on as they go, so someone can always run it.
+      return { heir: target.role === 'owner' ? await handOverGroup(trx, id, userId) : null };
     });
+    if (!done) return { ok: true };
+    const { heir } = done;
     // Out of the conversation is out of its call.
     await leaveGroupCallsIn(ctx, userId, [id]);
     await sendSystem(
@@ -709,6 +767,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       type: 'conversation.updated',
       data: { conversationId: id },
     });
+    if (conversation.space_id) await spaceChanged(ctx, conversation.space_id);
     return { ok: true };
   });
 
@@ -720,29 +779,34 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       req.params,
     );
     const body = parse(SpaceRoleBody, req.body);
-    const { conversation, me } = await membership(ctx, auth.userId, id);
+    const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct' || conversation.kind === 'business')
       throw badRequest('Only a group has admins.');
     if (conversation.space_id && conversation.is_general)
       throw badRequest('Make them an admin of the space instead.');
-    const target = await ctx.db
-      .selectFrom('participants')
-      .select('role')
-      .where('conversation_id', '=', id)
-      .where('user_id', '=', userId)
-      .where('left_at', 'is', null)
-      .executeTakeFirst();
-    if (!target || !['admin', 'member'].includes(target.role))
-      throw notFound('That person in this conversation');
-    if (!canChangeSpaceRole(me.role as SpaceRole, target.role as SpaceRole))
-      throw forbidden('Only the owner makes admins.');
-    if (target.role === body.role) return { ok: true };
-    await ctx.db
-      .updateTable('participants')
-      .set({ role: body.role })
-      .where('conversation_id', '=', id)
-      .where('user_id', '=', userId)
-      .execute();
+    const changed = await ctx.db.transaction().execute(async (trx) => {
+      await lockConversation(trx, id);
+      // Both as they are now: the owner may have just left, or handed it to them.
+      const me = await seatIn(trx, id, auth.userId);
+      if (!me) throw notFound('That conversation');
+      const target = await seatIn(trx, id, userId);
+      if (!target || !['admin', 'member'].includes(target.role))
+        throw notFound('That person in this conversation');
+      if (!canChangeSpaceRole(me.role as SpaceRole, target.role as SpaceRole))
+        throw forbidden('Only the owner makes admins.');
+      if (target.role === body.role) return false;
+      // Only from the role read: never over an owner someone just handed it to.
+      const done = await trx
+        .updateTable('participants')
+        .set({ role: body.role })
+        .where('conversation_id', '=', id)
+        .where('user_id', '=', userId)
+        .where('left_at', 'is', null)
+        .where('role', '=', target.role)
+        .executeTakeFirst();
+      return Number(done.numUpdatedRows) > 0;
+    });
+    if (!changed) return { ok: true };
     await sendSystem(
       ctx,
       id,
@@ -1437,6 +1501,9 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       });
       return { ok: true };
     }
+    // A line about the conversation (who joined, who changed what) is its record, for everyone.
+    if (m.kind === 'system')
+      throw badRequest('Lines about the conversation stay. You can delete it for yourself.');
     const moderator = ['owner', 'admin'].includes(me.role);
     if (m.sender_id !== auth.userId && !moderator)
       throw forbidden('You can delete your own messages.');

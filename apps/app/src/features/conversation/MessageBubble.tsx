@@ -20,6 +20,7 @@ import { linkify, openLink, opensWithEnter } from '@/lib/links';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import {
+  AtSign,
   Check,
   CheckCheck,
   CircleAlert,
@@ -193,6 +194,8 @@ export const MessageBubble = memo(function MessageBubble({
   const r = t.radii.bubble;
   const tail = t.radii.bubbleTail;
   const deleted = m.deletedAt !== null;
+  // Someone "@"-named the viewer in it (PRD §20).
+  const forMe = !mine && !deleted && meId !== null && m.mentions.includes(meId);
   // Kit cards sit on a neutral card on both sides, so their buttons read the same everywhere.
   const card = m.kind === 'kit' && !deleted && delivery !== 'failed';
   const bg =
@@ -413,6 +416,14 @@ export const MessageBubble = memo(function MessageBubble({
       }}
     >
       {m.forwarded ? <Forward size={11} color={meta} /> : null}
+      {forMe ? (
+        <AtSign
+          size={11}
+          color={card ? t.c.accentStrong : meta}
+          accessibilityLabel="Mentions you"
+          testID="message-mentions-me"
+        />
+      ) : null}
       {m.automated ? (
         // A bot's message always says so (R16), and an AI agent's that it's an AI (PRD §75),
         // for the customer and the team alike.
@@ -452,6 +463,7 @@ export const MessageBubble = memo(function MessageBubble({
 
   const accessibleText = [
     mine ? 'You' : (senderName ?? ''),
+    forMe ? 'mentions you' : '',
     m.automated ? (m.aiAgent ? 'AI agent' : 'automated') : '',
     m.sentVia ? `sent via ${m.sentVia}` : '',
     deleted ? 'Message deleted' : (text ?? opened.note ?? sticker?.label ?? m.kind),

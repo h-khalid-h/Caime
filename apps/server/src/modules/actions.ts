@@ -17,6 +17,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
+import { assertCanWrite } from '../lib/blocks';
 import { customerMask, maskFor } from '../lib/business';
 import { canEditConversation, contextVisible } from '../lib/contexts';
 import { badRequest, forbidden, notFound } from '../lib/errors';
@@ -510,6 +511,8 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(CreateDecisionBody, req.body);
     await membership(ctx, auth.userId, body.conversationId);
+    // It's a line in the conversation: only from someone who may write there (blocks).
+    await assertCanWrite(ctx, body.conversationId, auth.userId);
     await checkSources(ctx, auth.userId, body);
     const d = await ctx.db.transaction().execute((trx) =>
       createDecision(trx, ctx, {

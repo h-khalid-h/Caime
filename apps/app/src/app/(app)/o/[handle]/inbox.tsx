@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { BusinessInbox } from '@/features/business/BusinessInbox';
+import { BusinessInbox } from '@/features/shell/panes';
 
 export default function OrganizationInbox() {
   const { handle } = useLocalSearchParams<{ handle: string }>();

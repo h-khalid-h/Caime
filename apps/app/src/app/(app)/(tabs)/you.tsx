@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { SettingsMenu } from '@/features/settings/SettingsMenu';
+import { SettingsMenu } from '@/features/shell/panes';
 import { useLayout } from '@/ui/layout';
 
 export default function You() {

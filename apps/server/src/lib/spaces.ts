@@ -5,10 +5,25 @@
  */
 import { nextSpaceOwner, type SpaceRef } from '@caishy/core';
 import type { Kysely, Transaction } from 'kysely';
+import type { AppContext } from '../context';
 import type { Database, Space, SpaceMember } from '../db/schema';
 import { notFound } from './errors';
 
 type Q = Kysely<Database> | Transaction<Database>;
+
+/** Everyone in a space refreshes it: who's in one of its conversations changed. */
+export async function spaceChanged(ctx: Pick<AppContext, 'db' | 'bus'>, spaceId: string) {
+  const members = await ctx.db
+    .selectFrom('space_members')
+    .select('user_id')
+    .where('space_id', '=', spaceId)
+    .where('left_at', 'is', null)
+    .execute();
+  await ctx.bus.publish(
+    members.map((m) => m.user_id),
+    { type: 'space.updated', data: { spaceId } },
+  );
+}
 
 /** A space the person is in, with their seat. Anything else reads as not found. */
 export async function spaceSeat(

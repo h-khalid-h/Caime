@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
-import { SpacesList } from '@/features/spaces/SpacesList';
+import { SpacesList } from '@/features/shell/panes';
 import { Button } from '@/ui/Button';
 import { LayoutGrid, Plus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';

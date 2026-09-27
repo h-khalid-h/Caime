@@ -49,10 +49,13 @@ describe('system messages', () => {
     // Renaming the group changes only shared fields; that used to fail with a 500.
     const renamed = await noor.patch(`/v1/conversations/${g.id}`, { title: 'Venue crew' });
     expect(renamed.conversation.title).toBe('Venue crew');
-    // The inbox preview reads the same.
+    // Everyone's told, and the inbox preview reads the same line.
+    expect((await lines(lina, g.id, lina.user.id)).at(-1)).toBe(
+      'Noor Haddad renamed the conversation “Venue crew”',
+    );
     const all = await lina.get('/v1/inbox?view=all');
     expect(all.conversations.find((c: any) => c.id === g.id).lastMessage.preview).toBe(
-      'Omar Farouk left',
+      'Noor Haddad renamed the conversation “Venue crew”',
     );
   });
 

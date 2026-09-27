@@ -257,6 +257,12 @@ These are rules, not preferences.
 - Watch the web budget when a screen is used by a second route: shared modules move into the
   startup chunk. Open it through its own route instead (the desktop Business inbox is a list
   pane beside `/c/[id]`, not a screen that embeds the conversation).
+- A module leaves the startup chunk only when every import of it is dynamic. Splitting a part
+  out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
+  it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The
+  desktop panes and the tabs that show them take them lazily from `features/shell/panes.ts`, so
+  none is in the first download. Measure with `node scripts/bundle-budget.mjs <dist>` after an
+  `expo export --source-maps`, and look at what's in `__common` before splitting anything.
 
 ## Credentials and environment
 

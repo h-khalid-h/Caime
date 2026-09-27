@@ -16,6 +16,7 @@ import { verifyPassword } from '../lib/crypto';
 import { rerootMerged } from '../lib/duplicates';
 import { AppError, notFound } from '../lib/errors';
 import { leaveAllGroupCalls } from '../lib/group-calls';
+import { participantsOf } from '../lib/messages';
 import { handOverOrgs } from '../lib/orgs';
 import { relationshipView } from '../lib/relations';
 import { handOverSpaces } from '../lib/spaces';
@@ -24,6 +25,7 @@ import { endFollowsOf } from '../lib/updates';
 import { meView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth } from '../plugins/auth';
+import { sendSystem } from './conversations';
 
 export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
   const storage = diskStorage(ctx.config.DATA_DIR);
@@ -352,10 +354,10 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       .set({ name: null, revoked_at: sql`coalesce(revoked_at, ${ctx.now()})` })
       .where('user_id', '=', me)
       .execute();
-    const closed = await ctx.db.transaction().execute(async (trx) => {
+    const { closed, handed } = await ctx.db.transaction().execute(async (trx) => {
       // Spaces, groups and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());
-      await handOverGroups(trx, me);
+      const handed = await handOverGroups(trx, me);
       const closedOrgs = await handOverOrgs(trx, me, ctx.now());
       // Anyone who merged others under this account still sees them as one person.
       await rerootMerged(trx, me);
@@ -370,8 +372,16 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
             orphanFiles.map((f) => f.id),
           )
           .execute();
-      return closedOrgs;
+      return { closed: closedOrgs, handed };
     });
+    // Each group it owned says who runs it now, and everyone in it sees it at once.
+    for (const { conversationId, heir } of handed) {
+      if (heir) await sendSystem(ctx, conversationId, heir, 'owner_changed', { userId: heir });
+      await ctx.bus.publish(
+        (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id),
+        { type: 'conversation.updated', data: { conversationId } },
+      );
+    }
     // An organization that closed with it pays for nothing any more, and nobody follows it.
     for (const orgId of closed) {
       await endBillingOf(ctx, { orgId });

@@ -288,6 +288,7 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
     name?: string;
     userId?: string;
     days?: number | null;
+    purpose?: string | null;
   };
   const by = p.byId && p.byId === viewerId ? 'You' : (p.by ?? 'Someone');
   const them = p.userId && p.userId === viewerId ? 'you' : (p.name ?? 'someone');
@@ -298,6 +299,14 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return p.title ? `${by} started the space “${p.title}”` : `${by} started the space`;
     case 'space_renamed':
       return p.title ? `${by} renamed the space “${p.title}”` : `${by} renamed the space`;
+    case 'renamed':
+      return p.title
+        ? `${by} renamed the conversation “${p.title}”`
+        : `${by} renamed the conversation`;
+    case 'purpose_changed':
+      return p.purpose
+        ? `${by} changed what it’s for: ${p.purpose}`
+        : `${by} took away what it’s for`;
     case 'member_joined':
       return `${p.name ?? by} joined`;
     case 'members_added':

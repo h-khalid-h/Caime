@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { uuidv4 } from '@caishy/core';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { runDueJobs, runPeriodic } from '../src/lib/jobs';
@@ -646,6 +648,247 @@ describe('running a group (PRD §56)', () => {
     ]);
     // And Book club, which Bo owned, is Cal's or Dan's now: someone runs it.
     expect(Object.values(await roles(cal))).toContain('owner');
+  });
+});
+
+describe('a group’s roles hold, whatever happens at once (PRD §56)', () => {
+  let ana: Client; // owner
+  let bo: Client;
+  let cal: Client;
+  let dan: Client;
+  let g: string;
+  let anaBo: string;
+  const roles = async (c: Client, id = g) =>
+    Object.fromEntries(
+      ((await c.get(`/v1/conversations/${id}`)).conversation.participants as any[]).map((p) => [
+        p.person.displayName,
+        p.role,
+      ]),
+    );
+  const lines = async (c: Client, id = g) =>
+    ((await c.get(`/v1/conversations/${id}/messages`)).messages as any[])
+      .filter((m) => m.kind === 'system')
+      .map((m) => m.payload.event);
+  const group = async (owner: Client, title: string, members: Client[]) =>
+    (
+      await owner.post('/v1/conversations', {
+        kind: 'group',
+        title,
+        memberIds: members.map((m) => m.user.id),
+      })
+    ).conversation.id as string;
+
+  beforeAll(async () => {
+    ana = await signup(t, { displayName: 'Ana Roles' });
+    bo = await signup(t, { displayName: 'Bo Roles' });
+    cal = await signup(t, { displayName: 'Cal Roles' });
+    dan = await signup(t, { displayName: 'Dan Roles' });
+    anaBo = await connect(ana, bo);
+    for (const c of [cal, dan]) await connect(ana, c);
+    await connect(bo, cal);
+    g = await group(ana, 'Choir', [bo, cal, dan]);
+  });
+
+  it('someone added again starts as a member, from then', async () => {
+    await ana.patch(`/v1/conversations/${g}/members/${bo.user.id}`, { role: 'admin' });
+    await ana.patch(`/v1/conversations/${g}/members/${cal.user.id}`, { role: 'admin' });
+    await ana.req('DELETE', `/v1/conversations/${g}/members/${cal.user.id}`);
+    // Out of it, they're nobody in it,
+    const seat = () =>
+      t.ctx.db
+        .selectFrom('participants')
+        .select('role')
+        .where('conversation_id', '=', g)
+        .where('user_id', '=', cal.user.id)
+        .executeTakeFirstOrThrow();
+    expect((await seat()).role).toBe('member');
+    // and even a row left from before that (an admin's) comes back as a member's: an admin who
+    // brings back someone the owner took out doesn't make them an admin, which only the owner does.
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ role: 'admin' })
+      .where('conversation_id', '=', g)
+      .where('user_id', '=', cal.user.id)
+      .execute();
+    await bo.post(`/v1/conversations/${g}/members`, { userIds: [cal.user.id] });
+    expect((await roles(ana))['Cal Roles']).toBe('member');
+    // Adding someone already in it changes nothing about them.
+    await ana.post(`/v1/conversations/${g}/members`, { userIds: [bo.user.id] });
+    expect((await roles(ana))['Bo Roles']).toBe('admin');
+    // And from then: in it longest before, they aren't now.
+    const kin = await group(ana, 'Kin', [cal, dan]);
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ joined_at: new Date('2020-01-01T00:00:00Z') })
+      .where('conversation_id', '=', kin)
+      .where('user_id', '=', cal.user.id)
+      .execute();
+    await ana.req('DELETE', `/v1/conversations/${kin}/members/${cal.user.id}`);
+    await ana.post(`/v1/conversations/${kin}/members`, { userIds: [cal.user.id] });
+    // Dan has been in it since 2021: longer than Cal, now that Cal's 2020 no longer counts.
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ joined_at: new Date('2021-01-01T00:00:00Z') })
+      .where('conversation_id', '=', kin)
+      .where('user_id', '=', dan.user.id)
+      .execute();
+    await ana.req('DELETE', `/v1/conversations/${kin}/members/${ana.user.id}`);
+    expect(await roles(dan, kin)).toEqual({ 'Cal Roles': 'member', 'Dan Roles': 'owner' });
+  });
+
+  it('two leaves at once, or a leave beside a role change, leave exactly one owner', async () => {
+    const twice = await group(ana, 'Twice', [bo, cal, dan]);
+    const both = await Promise.all([
+      ana.req('DELETE', `/v1/conversations/${twice}/members/${ana.user.id}`),
+      ana.req('DELETE', `/v1/conversations/${twice}/members/${ana.user.id}`),
+    ]);
+    expect(both.map((r) => r.statusCode)).toEqual([200, 200]);
+    expect(Object.values(await roles(bo, twice)).filter((r) => r === 'owner')).toHaveLength(1);
+    expect((await lines(bo, twice)).filter((e) => e === 'owner_changed')).toHaveLength(1);
+
+    const beside = await group(ana, 'Beside', [bo, cal]);
+    const [promoted, left] = await Promise.all([
+      ana.req('PATCH', `/v1/conversations/${beside}/members/${bo.user.id}`, { role: 'admin' }),
+      ana.req('DELETE', `/v1/conversations/${beside}/members/${ana.user.id}`),
+    ]);
+    expect(left.statusCode).toBe(200);
+    expect([200, 404]).toContain(promoted.statusCode);
+    expect(Object.values(await roles(bo, beside)).filter((r) => r === 'owner')).toHaveLength(1);
+  });
+
+  it('a member can’t take the group’s context somewhere they’d run it', async () => {
+    const x = (await ana.post('/v1/contexts', { kind: 'trip', title: 'Lisbon', conversationId: g }))
+      .id as string;
+    const theirs = await connect(dan, await signup(t, { displayName: 'Eve Roles' }));
+    const linked = await dan.req('PATCH', `/v1/conversations/${theirs}`, { contextId: x });
+    expect(linked.statusCode).toBe(403);
+    expect((await dan.req('PATCH', `/v1/contexts/${x}`, { title: 'Cancelled' })).statusCode).toBe(
+      403,
+    );
+    // Its maker changes it only while they run a conversation it's in.
+    const mine = (
+      await bo.post('/v1/contexts', { kind: 'project', title: 'Spring concert', conversationId: g })
+    ).id as string;
+    await ana.patch(`/v1/conversations/${g}/members/${bo.user.id}`, { role: 'member' });
+    expect((await bo.req('PATCH', `/v1/contexts/${mine}`, { title: 'Gone' })).statusCode).toBe(403);
+    // Out of the group, it's nothing of theirs.
+    await ana.req('DELETE', `/v1/conversations/${g}/members/${bo.user.id}`);
+    expect((await bo.req('GET', `/v1/contexts/${mine}`)).statusCode).toBe(404);
+    expect(((await bo.get('/v1/contexts')).contexts as any[]).map((c) => c.id)).not.toContain(mine);
+    // Linked to their own conversation with Ana too, it shows that one, and not the group.
+    await ana.patch(`/v1/conversations/${anaBo}`, { contextId: mine });
+    const shown = await bo.get(`/v1/contexts/${mine}`);
+    expect((shown.conversations as any[]).map((c) => c.id)).toEqual([anaBo]);
+    await ana.post(`/v1/conversations/${g}/members`, { userIds: [bo.user.id] });
+  });
+
+  it('what changes about it is said, and those lines stay for everyone', async () => {
+    await ana.patch(`/v1/conversations/${g}`, { title: 'The choir', purpose: 'Tuesdays at 7' });
+    expect(await lines(dan)).toEqual(expect.arrayContaining(['renamed', 'purpose_changed']));
+    const renamed = ((await dan.get(`/v1/conversations/${g}/messages`)).messages as any[]).find(
+      (m) => m.payload?.event === 'renamed',
+    );
+    expect((await ana.req('DELETE', `/v1/messages/${renamed.id}`)).statusCode).toBe(400);
+    expect(
+      (await dan.req('DELETE', `/v1/messages/${renamed.id}?forEveryone=false`)).statusCode,
+    ).toBe(200);
+  });
+
+  it('an old suggestion does nothing once they’re out of it', async () => {
+    const offer = async () =>
+      (
+        await t.ctx.db
+          .insertInto('suggestions')
+          .values({
+            id: uuidv4(),
+            user_id: dan.user.id,
+            kind: 'decision',
+            title: 'Ana pays for everyone',
+            rationale: 'test',
+            confidence: 0.9,
+            conversation_id: g,
+            fingerprint: `test:${uuidv4()}`,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow()
+      ).id;
+    const before = await offer();
+    await ana.req('DELETE', `/v1/conversations/${g}/members/${dan.user.id}`);
+    // Leaving takes what was offered about it away,
+    const was = await t.ctx.db
+      .selectFrom('suggestions')
+      .select('status')
+      .where('id', '=', before)
+      .executeTakeFirstOrThrow();
+    expect(was.status).toBe('expired');
+    // and one that turns up afterwards can't be acted on either.
+    const after = await offer();
+    expect((await dan.req('POST', `/v1/suggestions/${after}/accept`, {})).statusCode).toBe(404);
+    const decided = await ana.get(`/v1/decisions?conversationId=${g}`);
+    expect((decided.decisions as any[]).map((d) => d.title)).not.toContain('Ana pays for everyone');
+    await ana.post(`/v1/conversations/${g}/members`, { userIds: [dan.user.id] });
+  });
+
+  it('a decision is a line in the conversation: not across a block', async () => {
+    const theirs = await connect(cal, await signup(t, { displayName: 'Fay Roles' }));
+    const fay = (await cal.get(`/v1/conversations/${theirs}`)).conversation.other.userId as string;
+    await cal.post('/v1/blocks', { userId: fay });
+    const refused = await cal.req('POST', '/v1/decisions', {
+      conversationId: theirs,
+      title: 'Nothing',
+    });
+    expect(refused.statusCode).toBe(403);
+  });
+
+  it('someone leaving a space hands on the conversations of it they started', async () => {
+    const { space } = await ana.post('/v1/spaces', {
+      name: 'Choir space',
+      kind: 'community',
+      memberIds: [cal.user.id],
+    });
+    const { conversation } = await cal.post(`/v1/spaces/${space.id}/conversations`, {
+      title: 'Robes',
+    });
+    await ana.post(`/v1/spaces/${space.id}/conversations/${conversation.id}/join`, {});
+    await cal.req('DELETE', `/v1/spaces/${space.id}/members/${cal.user.id}`);
+    expect(await roles(ana, conversation.id)).toEqual({ 'Ana Roles': 'owner' });
+    expect(await lines(ana, conversation.id)).toContain('owner_changed');
+  });
+
+  it('an account that goes says who runs its groups now', async () => {
+    const theirs = await group(bo, 'Bo’s band', [cal]);
+    const gone = await bo.req('DELETE', '/v1/me', { password: 'correct horse battery' });
+    expect(gone.statusCode).toBe(200);
+    expect(await roles(cal, theirs)).toEqual({ 'Cal Roles': 'owner' });
+    expect(await lines(cal, theirs)).toContain('owner_changed');
+  });
+
+  it('a group left with nobody running it gets someone when the change comes in (0024)', async () => {
+    const orphan = await group(ana, 'Orphan', [cal, dan]);
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ role: 'member' })
+      .where('conversation_id', '=', orphan)
+      .execute();
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ left_at: new Date(), role: 'owner' })
+      .where('conversation_id', '=', orphan)
+      .where('user_id', '=', ana.user.id)
+      .execute();
+    const migration = readFileSync(
+      new URL('../src/db/migrations/0024_group_owners.sql', import.meta.url),
+      'utf8',
+    );
+    await sql.raw(migration).execute(t.ctx.db);
+    expect(await roles(cal, orphan)).toEqual({ 'Cal Roles': 'owner', 'Dan Roles': 'member' });
+    const left = await t.ctx.db
+      .selectFrom('participants')
+      .select('role')
+      .where('conversation_id', '=', orphan)
+      .where('user_id', '=', ana.user.id)
+      .executeTakeFirstOrThrow();
+    expect(left.role).toBe('member');
   });
 });
 

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Suggestion } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
+import { assertCanWrite } from '../lib/blocks';
 import { badRequest, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { isBlockedEitherWay, relationshipView } from '../lib/relations';
@@ -71,6 +72,25 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
     if (s?.status !== 'pending') throw notFound('That suggestion');
+    // About a conversation they're no longer in: nothing of it is theirs to act on any more (a
+    // decision would be recorded in a group they've left, a task would quote it).
+    if (s.conversation_id && ['decision', 'task', 'reminder', 'waiting'].includes(s.kind)) {
+      const inIt = await ctx.db
+        .selectFrom('participants')
+        .select('user_id')
+        .where('conversation_id', '=', s.conversation_id)
+        .where('user_id', '=', auth.userId)
+        .where('left_at', 'is', null)
+        .executeTakeFirst();
+      if (!inIt) {
+        await ctx.db
+          .updateTable('suggestions')
+          .set({ status: 'expired', resolved_at: ctx.now() })
+          .where('id', '=', id)
+          .execute();
+        throw notFound('That suggestion');
+      }
+    }
     const title = edits.title ?? s.title;
     const dueAt = edits.dueAt !== undefined ? edits.dueAt : (s.due_at?.toISOString() ?? null);
     const payload = (s.payload ?? {}) as Record<string, unknown>;
@@ -223,6 +243,8 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
         }
         case 'decision': {
           if (!s.conversation_id) throw badRequest('This suggestion is missing its conversation.');
+          // Its line goes in the conversation: only from someone who may write there (blocks).
+          await assertCanWrite(ctx, s.conversation_id, auth.userId);
           const d = await createDecision(trx, ctx, {
             conversationId: s.conversation_id,
             messageId: s.message_id,

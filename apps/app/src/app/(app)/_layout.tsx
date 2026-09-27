@@ -1,17 +1,14 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import { BusinessInbox } from '@/features/business/BusinessInbox';
 import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
-import { PeopleList } from '@/features/people/PeopleList';
-import { SettingsMenu } from '@/features/settings/SettingsMenu';
 import { NavRail } from '@/features/shell/NavRail';
+import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
 import { KeyboardShortcuts } from '@/features/shell/shortcuts';
-import { SpacesList } from '@/features/spaces/SpacesList';
 import { takeLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';

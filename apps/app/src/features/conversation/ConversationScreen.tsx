@@ -12,6 +12,7 @@ import {
   Platform,
   View,
 } from 'react-native';
+import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useConversation, useMemory, useMessages } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -28,6 +29,7 @@ import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/par
 import { privateSupported } from '@/features/e2ee/support';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
+import { leftConversation } from '@/realtime/apply';
 import { flatMessages, type MessagePages, markInboxRead, maxSeq } from '@/state/cache';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
@@ -221,8 +223,18 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     conversation.kind !== 'direct' &&
     conversation.kind !== 'business';
   const gathered = useMemory(id, isGroup && !where.private).data;
+  // Taken out of it (or left from another device) while it's open: it isn't theirs any more,
+  // whatever this device kept of it, so nothing more of it is asked for or sent.
+  const gone = conv.error instanceof ApiError && conv.error.status === 404;
+  useEffect(() => {
+    if (!gone) return;
+    leftConversation(id);
+    qc.removeQueries({ queryKey: qk.messages(id) });
+    qc.removeQueries({ queryKey: qk.memory(id) });
+    void qc.invalidateQueries({ queryKey: qk.inbox });
+  }, [gone, id, qc]);
 
-  if (conv.isError && !conversation) {
+  if (conv.isError && (!conversation || gone)) {
     return (
       <Screen>
         <TopBar

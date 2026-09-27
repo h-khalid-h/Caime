@@ -1811,7 +1811,13 @@ test.describe
       // in its header.
       await page.getByTestId('composer-input').fill('Middlemarch in October, then Beloved');
       await page.getByTestId('composer-send').click();
-      await visible(page, 'Middlemarch in October, then Beloved').hover();
+      // Sent first: until then it's the copy waiting to go, which the sent one replaces. The
+      // bubble itself (the chat list's preview says the same words).
+      const bubble = page
+        .getByLabel(/Middlemarch in October, then Beloved, .*(sent|delivered|read)$/)
+        .filter({ visible: true });
+      await expect(bubble).toBeVisible();
+      await bubble.hover();
       await page.getByRole('button', { name: 'React', exact: true }).click();
       await page.getByTestId('message-decision').click();
       await expect(page.getByTestId('decision-title')).toHaveValue(
@@ -1826,12 +1832,38 @@ test.describe
       ).toBeVisible();
       await expect(visible(page, '3 people · 1 decision')).toBeVisible();
 
-      // Removed, Lina is out of it; Noor leaves, and Alex owns it now.
+      // "@" offers who's in it; the one picked is told it's for them.
+      const box = page.getByTestId('composer-input');
+      await box.pressSequentially('@Al');
+      await expect(page.getByTestId('mention-picker').filter({ visible: true })).toContainText(
+        'Alex Chen',
+      );
+      await page.keyboard.press('Enter');
+      await expect(box).toHaveValue('@Alex Chen ');
+      await expect(page.getByTestId('mention-picker')).toHaveCount(0);
+      await box.pressSequentially('can you pick the next one?');
+      await page.keyboard.press('Enter');
+      await expect(visible(page, '@Alex Chen can you pick the next one?')).toBeVisible();
+
+      // Removed, Lina is out of it, and her open screen says so at once; Noor leaves, and Alex
+      // owns it now.
+      await lina.page.goto(`/c/${id}`);
+      await expect(visible(lina.page, 'Middlemarch in October, then Beloved')).toBeVisible();
       await panel.getByTestId('group-person').filter({ hasText: 'Lina Farah' }).click();
       await page.getByTestId('group-remove').click();
       await expect(visible(page, 'Removed Lina Farah')).toBeVisible();
+      await expect(visible(lina.page, 'This conversation isn’t available')).toBeVisible();
+      // What her browser logged of it answering "not found" is what was meant to happen.
+      lina.errors.splice(
+        0,
+        lina.errors.length,
+        ...lina.errors.filter((e) => !/status of 404/.test(e)),
+      );
       await expect(panel.getByTestId('group-person')).toHaveCount(2);
       await panel.getByTestId('group-leave').click();
+      await expect(
+        visible(page, 'You stop getting its messages, and Alex Chen runs it after you.'),
+      ).toBeVisible();
       await page.getByTestId('group-leave-confirm').click();
       await page.waitForURL((url) => new URL(url).pathname === '/');
 
@@ -1844,6 +1876,12 @@ test.describe
       await expect(his).toContainText('Owner');
       await expect(his.getByTestId('group-person')).toHaveCount(1);
       await phone.screenshot({ path: 'e2e/screenshots/phone-group-details.png' });
+      await phone.getByRole('button', { name: 'Close panel' }).click();
+      await expect(
+        phone.getByLabel(/mentions you, @Alex Chen can you pick the next one\?/).filter({
+          visible: true,
+        }),
+      ).toBeVisible();
       expect([...errors, ...alex.errors]).toEqual([]);
     });
     test('Lina follows Nile Dental, and its updates reach her apart from her conversations', async () => {

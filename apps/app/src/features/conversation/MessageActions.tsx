@@ -241,7 +241,8 @@ export function MessageActions({
         {mine && m.kind === 'text' && !deleted ? (
           <ListRow icon={Pencil} title="Edit" onPress={close(() => onEdit(m))} />
         ) : null}
-        {(mine || (moderator && m.kind !== 'system')) && !deleted ? (
+        {/* A line about the conversation stays for everyone, whoever's line it is. */}
+        {(mine || moderator) && m.kind !== 'system' && !deleted ? (
           <ListRow
             icon={Trash}
             title="Delete for everyone"

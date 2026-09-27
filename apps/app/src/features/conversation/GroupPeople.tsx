@@ -9,14 +9,16 @@ import {
   canChangeSpaceRole,
   canManageSpace,
   canRemoveFromSpace,
+  nextOwner,
   SPACE_ROLE_LABELS,
   type SpaceRole,
 } from '@caishy/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useSpace } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { leftConversation } from '@/realtime/apply';
@@ -36,22 +38,36 @@ import { toast } from '@/ui/Toast';
 const roleOf = (role: string): SpaceRole =>
   role === 'owner' || role === 'admin' ? role : 'member';
 
-export function GroupPeople({ conversation }: { conversation: ConversationView }) {
+/** The server's limits on a conversation's name and what it's for. */
+const NAME_MAX = 80;
+const PURPOSE_MAX = 200;
+
+export function GroupPeople({
+  conversation,
+  onNavigate,
+}: {
+  conversation: ConversationView;
+  /** Going to someone's profile from here: the details (a sheet on a phone) step aside first. */
+  onNavigate?: () => void;
+}) {
   const t = useTheme();
   const qc = useQueryClient();
   const me = useSession((s) => s.user?.id ?? '');
   const myRole = roleOf(conversation.me.role);
   const manager = canManageSpace(myRole);
-  // A space's General holds the space's people: they're added and removed there.
+  // A space's General holds the space's people: they're added and removed there. Its other
+  // conversations take only people in the space, who can join them again from it.
   const general = Boolean(conversation.space) && conversation.isGeneral;
+  const spaceOf = conversation.space && !conversation.isGeneral ? conversation.space : null;
   const [adding, setAdding] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [managing, setManaging] = useState<ParticipantView | null>(null);
+  const [managing, setManaging] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [editing, setEditing] = useState<{ title: string; purpose: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const people = conversation.participants;
   const inIt = new Set(people.map((p) => p.userId));
+  const space = useSpace(spaceOf && adding ? spaceOf.id : '');
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
     void qc.invalidateQueries({ queryKey: qk.inbox });
@@ -70,8 +86,37 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
       setBusy(false);
     }
   };
-  const shown = managing ? people.find((p) => p.userId === managing.userId) : undefined;
-  const theirRole = shown ? roleOf(shown.role) : 'member';
+  const profile = (userId: string) => {
+    onNavigate?.();
+    router.navigate({ pathname: '/p/[id]', params: { id: userId } });
+  };
+
+  // Whoever's sheet is open, as they are now; gone from the group, their sheet closes and stays
+  // closed (it doesn't come back if they're added again). What it showed stays while it closes.
+  const shown = managing ? people.find((p) => p.userId === managing) : undefined;
+  useEffect(() => {
+    if (managing && !shown) setManaging(null);
+  }, [managing, shown]);
+  const lastShown = useRef<ParticipantView | null>(null);
+  if (shown) lastShown.current = shown;
+  const sheetPerson = shown ?? lastShown.current;
+  const theirRole = sheetPerson ? roleOf(sheetPerson.role) : 'member';
+  const lastEdit = useRef(editing);
+  if (editing) lastEdit.current = editing;
+  const form = editing ?? lastEdit.current;
+
+  // Who runs it after its owner leaves, by the server's rule: an admin there longest, else
+  // whoever has been; never an app's bot.
+  const heirId =
+    myRole === 'owner'
+      ? nextOwner(
+          people
+            .filter((p) => p.person.kind === 'human' && p.role !== 'owner')
+            .map((p) => ({ userId: p.userId, role: roleOf(p.role), joinedAt: p.joinedAt })),
+          me,
+        )
+      : null;
+  const heir = heirId ? people.find((p) => p.userId === heirId) : undefined;
 
   return (
     <View style={{ gap: 8, paddingHorizontal: 16, paddingVertical: 12 }} testID="group-people">
@@ -82,7 +127,7 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
           accessibilityRole="header"
           style={{ flex: 1 }}
         >
-          {`${people.length} people`}
+          {people.length === 1 ? '1 person' : `${people.length} people`}
         </Text>
         {manager && !general ? (
           <Button
@@ -99,7 +144,10 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
           accessibilityRole="button"
           accessibilityLabel="Change the group’s name and what it’s for"
           onPress={() =>
-            setEditing({ title: conversation.title, purpose: conversation.purpose ?? '' })
+            setEditing({
+              title: conversation.name ?? conversation.title,
+              purpose: conversation.purpose ?? '',
+            })
           }
           testID="group-edit"
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 4 }}
@@ -120,19 +168,17 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
         return (
           <Pressable
             key={p.userId}
-            accessibilityRole="button"
+            accessibilityRole={manageable ? 'button' : 'link'}
             accessibilityLabel={[
               self ? `${p.person.displayName} (you)` : p.person.displayName,
               role === 'member' ? null : SPACE_ROLE_LABELS[role],
+              p.relationship?.label ?? null,
             ]
               .filter(Boolean)
               .join(', ')}
+            accessibilityHint={manageable ? 'Opens what you can do about them' : undefined}
             disabled={self}
-            onPress={() =>
-              manageable
-                ? setManaging(p)
-                : router.navigate({ pathname: '/p/[id]', params: { id: p.userId } })
-            }
+            onPress={() => (manageable ? setManaging(p.userId) : profile(p.userId))}
             testID="group-person"
             style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
@@ -174,7 +220,9 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
         subtitle={
           conversation.privacyClass === 'private'
             ? 'People you’re connected with. They read what’s written from now on: what came before stays locked to the devices it was sent to.'
-            : 'People you’re connected with. They’ll see what’s been written here, too.'
+            : spaceOf
+              ? `People in ${spaceOf.name}. They’ll see what’s been written here, too.`
+              : 'People you’re connected with. They’ll see what’s been written here, too.'
         }
         footer={
           <Button
@@ -206,6 +254,22 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
             picked={picked}
             exclude={inIt}
             onToggle={(uid) => setPicked((p) => toggled(p, uid))}
+            among={
+              spaceOf
+                ? {
+                    people: space.data?.space.members
+                      .filter((m) => m.person.kind === 'human')
+                      .map((m) => ({
+                        id: m.userId,
+                        displayName: m.person.displayName,
+                        handle: m.person.handle,
+                        avatarUrl: m.person.avatarUrl,
+                        relationship: m.relationship,
+                      })),
+                    empty: `Everyone in ${spaceOf.name} is in it already. Add people to the space first.`,
+                  }
+                : undefined
+            }
           />
         </View>
       </Sheet>
@@ -213,18 +277,18 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
       <Sheet
         open={shown !== undefined}
         onClose={() => setManaging(null)}
-        title={shown?.person.displayName}
-        subtitle={shown ? SPACE_ROLE_LABELS[theirRole] : undefined}
+        title={sheetPerson?.person.displayName}
+        subtitle={sheetPerson ? SPACE_ROLE_LABELS[theirRole] : undefined}
       >
-        {shown ? (
+        {sheetPerson ? (
           <View style={{ marginHorizontal: -20 }}>
             <ListRow
               icon={MessageCircle}
               title="See their profile"
               onPress={() => {
-                const who = shown.userId;
+                const who = sheetPerson.userId;
                 setManaging(null);
-                router.navigate({ pathname: '/p/[id]', params: { id: who } });
+                profile(who);
               }}
             />
             {canChangeSpaceRole(myRole, theirRole) ? (
@@ -239,7 +303,7 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
                 testID="group-toggle-admin"
                 onPress={() =>
                   void (async () => {
-                    const who = shown;
+                    const who = sheetPerson;
                     setManaging(null);
                     const next = theirRole === 'admin' ? 'member' : 'admin';
                     await run(
@@ -256,12 +320,16 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
               <ListRow
                 icon={UserMinus}
                 title="Remove from the group"
-                subtitle="They stop seeing what’s written here"
+                subtitle={
+                  spaceOf
+                    ? `They stop seeing what’s written here, until they join it again from ${spaceOf.name}`
+                    : 'They stop seeing what’s written here'
+                }
                 destructive
                 testID="group-remove"
                 onPress={() =>
                   void (async () => {
-                    const who = shown;
+                    const who = sheetPerson;
                     setManaging(null);
                     await run(
                       () => endpoints.removeFromGroup(conversation.id, who.userId),
@@ -280,9 +348,11 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
         onClose={() => setLeaving(false)}
         title={`Leave “${conversation.title}”?`}
         subtitle={
-          myRole === 'owner'
-            ? 'You stop getting its messages. The admin who’s been in it longest owns it after you (or whoever has been in it longest).'
-            : 'You stop getting its messages. Someone in it can add you again.'
+          myRole !== 'owner'
+            ? 'You stop getting its messages. Someone in it can add you again.'
+            : heir
+              ? `You stop getting its messages, and ${heir.person.displayName} runs it after you.`
+              : 'You stop getting its messages. Nobody else is in it.'
         }
         footer={
           <Button
@@ -334,15 +404,19 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
             onPress={() =>
               void (async () => {
                 if (!editing) return;
+                // Only what changed: its name as it's kept (without the space's in front).
+                const title = editing.title.trim();
+                const purpose = editing.purpose.trim() || null;
+                const changes = {
+                  ...(title !== (conversation.name ?? conversation.title) ? { title } : {}),
+                  ...(purpose !== (conversation.purpose ?? null) ? { purpose } : {}),
+                };
+                if (!Object.keys(changes).length) {
+                  setEditing(null);
+                  return;
+                }
                 if (
-                  await run(
-                    () =>
-                      endpoints.updateConversation(conversation.id, {
-                        title: editing.title.trim(),
-                        purpose: editing.purpose.trim() || null,
-                      }),
-                    'Saved',
-                  )
+                  await run(() => endpoints.updateConversation(conversation.id, changes), 'Saved')
                 )
                   setEditing(null);
               })()
@@ -350,21 +424,21 @@ export function GroupPeople({ conversation }: { conversation: ConversationView }
           />
         }
       >
-        {editing ? (
+        {form ? (
           <View style={{ gap: 12 }}>
             <TextField
               label="Name"
-              value={editing.title}
-              onChangeText={(title) => setEditing({ ...editing, title })}
-              maxLength={80}
+              value={form.title}
+              onChangeText={(title) => setEditing({ ...form, title })}
+              maxLength={NAME_MAX}
               autoFocus
               testID="group-edit-title"
             />
             <TextField
               label="What it’s for"
-              value={editing.purpose}
-              onChangeText={(purpose) => setEditing({ ...editing, purpose })}
-              maxLength={300}
+              value={form.purpose}
+              onChangeText={(purpose) => setEditing({ ...form, purpose })}
+              maxLength={PURPOSE_MAX}
               multiline
               placeholder="A line everyone in it sees"
               testID="group-edit-purpose"

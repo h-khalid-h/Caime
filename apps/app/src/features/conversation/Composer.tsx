@@ -1,8 +1,9 @@
 import type { ConversationView, MessageView } from '@caishy/core/api';
+import { mentionAt, mentionCandidates, mentionedIn } from '@caishy/core/mentions';
 import { useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Platform, TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
@@ -23,6 +24,7 @@ import { useMe } from '@/state/session';
 import { fontFamily } from '@/theme/fonts';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
+import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
 import {
@@ -37,6 +39,7 @@ import {
   X,
 } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
+import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -119,11 +122,54 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // Entering edit mode loads the message's text; leaving restores the draft.
   const value = editing ? (editText ?? editingText ?? '') : text;
 
+  // Mentions (PRD §20), where there are more than two: "@" offers who's in it. Never in a
+  // private conversation, whose server can't read who a message is for, nor with an
+  // organization.
+  const mentionable =
+    !privately && conversation.kind !== 'business' && conversation.participants.length > 2;
+  const people = useMemo(
+    () =>
+      conversation.participants
+        .filter((p) => p.userId !== me.id)
+        .map((p) => ({
+          userId: p.userId,
+          displayName: p.person.displayName,
+          handle: p.person.handle,
+          avatarUrl: p.person.avatarUrl,
+        })),
+    [conversation.participants, me.id],
+  );
+  const [caret, setCaret] = useState(value.length);
+  // Where the caret goes once a name is put in, until the input says where it is.
+  const [placeCaret, setPlaceCaret] = useState<{ start: number; end: number } | undefined>();
+  // The "@" whose name was just picked (or put away with Esc): nothing more is offered for it.
+  const [settled, setSettled] = useState<number | null>(null);
+  const [active, setActive] = useState(0);
+  const typing = mentionable && !editing ? mentionAt(value, caret) : null;
+  const options = typing && typing.start !== settled ? mentionCandidates(typing.query, people) : [];
+  const chosen = options[Math.min(active, options.length - 1)];
+  const pickMention = (p: (typeof people)[number]) => {
+    if (!typing) return;
+    const name = `@${p.displayName} `;
+    const next = value.slice(0, typing.start) + name + value.slice(caret);
+    const at = typing.start + name.length;
+    onChange(next);
+    setSettled(typing.start);
+    setActive(0);
+    setCaret(at);
+    setPlaceCaret({ start: at, end: at });
+    input.current?.focus();
+  };
+
   const onChange = (v: string) => {
     if (editing) {
       setEditText(v);
       return;
     }
+    // Typing on at the end keeps the caret there, whenever the input says so.
+    if (caret >= text.length) setCaret(v.length);
+    if (settled !== null && v.charAt(settled) !== '@') setSettled(null);
+    setActive(0);
     setText(v);
     if (privately) useDrafts.getState().setLocal(id, v);
     else useDrafts.getState().set(id, v);
@@ -154,9 +200,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     }
     const body = text.trim();
     if (!body) return;
+    const mentions = mentionable ? mentionedIn(body, people) : [];
     useOutbox.getState().enqueue(
       id,
-      { kind: 'text', body, replyToId: replyTo?.id ?? null },
+      {
+        kind: 'text',
+        body,
+        replyToId: replyTo?.id ?? null,
+        ...(mentions.length ? { mentions } : {}),
+      },
       replyTo
         ? {
             id: replyTo.id,
@@ -178,6 +230,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     );
     setText('');
     setHeight(MIN_H);
+    setCaret(0);
+    setSettled(null);
     useDrafts.getState().clear(id);
     onClearReply();
     input.current?.focus();
@@ -192,6 +246,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     replyTo,
     replyingText,
     privately,
+    mentionable,
+    people,
     onClearReply,
     onDoneEditing,
     qc,
@@ -202,11 +258,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     try {
       const uploaded = [];
       for (const f of files) uploaded.push(await uploadFile(f));
+      const caption = text.trim();
+      const mentions = mentionable && caption ? mentionedIn(caption, people) : [];
       useOutbox.getState().enqueue(id, {
         kind,
-        body: text.trim() || null,
+        body: caption || null,
         fileIds: uploaded.map((u) => u.id),
         replyToId: replyTo?.id ?? null,
+        ...(mentions.length ? { mentions } : {}),
       });
       if (text.trim()) {
         setText('');
@@ -327,6 +386,47 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   return (
     <View style={{ backgroundColor: t.c.surface, borderTopWidth: 1, borderTopColor: t.c.border }}>
       {banner}
+      {options.length ? (
+        <View
+          accessibilityRole="menu"
+          accessibilityLabel="People to mention"
+          testID="mention-picker"
+          style={{ paddingHorizontal: 8, paddingTop: 6, gap: 2 }}
+        >
+          {options.map((p) => {
+            const on = p.userId === chosen?.userId;
+            return (
+              <Pressable
+                key={p.userId}
+                accessibilityRole="menuitem"
+                accessibilityLabel={`Mention ${p.displayName}`}
+                accessibilityState={{ selected: on }}
+                onPress={() => pickMention(p)}
+                testID="mention-option"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingHorizontal: 8,
+                  paddingVertical: 6,
+                  borderRadius: 10,
+                  backgroundColor: on ? t.c.accentSoft : 'transparent',
+                }}
+              >
+                <Avatar id={p.userId} name={p.displayName} url={p.avatarUrl} size={28} />
+                <Text variant="body" numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
+                  {p.displayName}
+                </Text>
+                {p.handle ? (
+                  <Text variant="caption" color="textTertiary" numberOfLines={1}>
+                    {`@${p.handle}`}
+                  </Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <View
         style={{
           flexDirection: 'row',
@@ -363,6 +463,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             placeholderTextColor={t.c.textTertiary}
             value={value}
             onChangeText={onChange}
+            selection={placeCaret}
+            onSelectionChange={(e) => {
+              setCaret(e.nativeEvent.selection.end);
+              if (placeCaret) setPlaceCaret(undefined);
+            }}
             multiline
             onContentSizeChange={(e) =>
               setHeight(Math.min(MAX_H, Math.max(MIN_H - 12, e.nativeEvent.contentSize.height)))
@@ -378,6 +483,26 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                 isComposing?: boolean;
               };
               const plain = !ne.shiftKey && !ne.altKey && !ne.ctrlKey && !ne.metaKey;
+              // Choosing someone to mention: ↑ ↓ move, Enter or Tab picks, Esc puts it away.
+              if (options.length && typing && !ne.isComposing) {
+                const at = options.findIndex((p) => p.userId === chosen?.userId);
+                if (ne.key === 'ArrowDown' || ne.key === 'ArrowUp') {
+                  e.preventDefault();
+                  const step = ne.key === 'ArrowDown' ? 1 : -1;
+                  setActive((at + step + options.length) % options.length);
+                  return;
+                }
+                if ((ne.key === 'Enter' || ne.key === 'Tab') && plain && chosen) {
+                  e.preventDefault();
+                  pickMention(chosen);
+                  return;
+                }
+                if (ne.key === 'Escape') {
+                  e.preventDefault();
+                  setSettled(typing.start);
+                  return;
+                }
+              }
               if (ne.key === 'Enter' && enterSends && !ne.shiftKey && !ne.isComposing) {
                 e.preventDefault();
                 void send();

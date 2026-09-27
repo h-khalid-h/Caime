@@ -32,9 +32,11 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { handOverGroups } from '../lib/conversations';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
+import { participantsOf } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { generalOf, spaceSeat } from '../lib/spaces';
@@ -516,16 +518,18 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     await sendSystem(ctx, general.id, auth.userId, leaving ? 'member_left' : 'member_removed', {
       userId,
     });
-    const left = await ctx.db.transaction().execute(async (trx) => {
+    const { left, handed } = await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('space_members')
         .set({ left_at: ctx.now(), role: 'member' })
         .where('space_id', '=', id)
         .where('user_id', '=', userId)
         .execute();
+      // The space's conversations they started pass on as they go, as a group's do (PRD §56).
+      const handed = await handOverGroups(trx, userId, { spaceId: id });
       const convos = await trx
         .updateTable('participants')
-        .set({ left_at: ctx.now() })
+        .set({ left_at: ctx.now(), role: 'member' })
         .where('user_id', '=', userId)
         .where('left_at', 'is', null)
         .where(
@@ -556,21 +560,35 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
           .set({ archived_at: ctx.now() })
           .where('id', '=', id)
           .execute();
+      const left = convos.map((c) => c.conversation_id);
+      // What Caishy offered them about those conversations goes with them.
+      if (left.length)
+        await trx
+          .updateTable('suggestions')
+          .set({ status: 'expired', resolved_at: ctx.now() })
+          .where('user_id', '=', userId)
+          .where('conversation_id', 'in', left)
+          .where('status', '=', 'pending')
+          .execute();
       await recordEvent(trx, 'space.member_left', auth.userId, {
         spaceId: id,
         userId,
         removed: !leaving,
         newOwner: heir,
       });
-      return convos.map((c) => c.conversation_id);
+      return { left, handed };
     });
     await ctx.bus.publish([userId], { type: 'space.removed', data: { spaceId: id } });
     await leaveGroupCallsIn(ctx, userId, left);
+    for (const { conversationId, heir: owner } of handed)
+      if (owner)
+        await sendSystem(ctx, conversationId, auth.userId, 'owner_changed', { userId: owner });
+    // Them, and whoever's still in each, see who's in it now.
     for (const conversationId of left)
-      await ctx.bus.publish([userId], {
-        type: 'conversation.updated',
-        data: { conversationId },
-      });
+      await ctx.bus.publish(
+        [userId, ...(await participantsOf(ctx.db, conversationId)).map((p) => p.user_id)],
+        { type: 'conversation.updated', data: { conversationId } },
+      );
     await tellSpace(ctx, id);
     return { ok: true };
   });

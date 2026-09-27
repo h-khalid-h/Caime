@@ -1,3 +1,4 @@
+import type { Sphere } from '@caishy/core/taxonomy';
 import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
 import { useTheme } from '@/theme/theme';
@@ -7,23 +8,45 @@ import { Check } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Text } from '@/ui/Text';
 
+/** Someone who can be picked, as the picker shows them. */
+export interface Pickable {
+  id: string;
+  displayName: string;
+  handle: string;
+  avatarUrl: string | null;
+  relationship: { label: string; sphere: Sphere } | null;
+}
+
 /**
- * Choose people you're connected with (groups and spaces take nobody else, PRD §55). `exclude`
- * leaves out who is already there.
+ * Choose people you're connected with (groups and spaces take nobody else, PRD §55), or, with
+ * `among`, from those given (a space's conversations take its people). `exclude` leaves out who
+ * is already there.
  */
 export function PeoplePicker({
   picked,
   onToggle,
   exclude,
+  among,
 }: {
   picked: ReadonlySet<string>;
   onToggle: (userId: string) => void;
   exclude?: ReadonlySet<string>;
+  /** Pick from these instead; `people` is undefined while they load. */
+  among?: { people: Pickable[] | undefined; empty: string };
 }) {
   const t = useTheme();
   const connections = useConnections();
-  const list = (connections.data?.connections ?? []).filter((c) => !exclude?.has(c.person.id));
-  if (connections.isPending)
+  const everyone: Pickable[] = among
+    ? (among.people ?? [])
+    : (connections.data?.connections ?? []).map((c) => ({
+        id: c.person.id,
+        displayName: c.nickname ?? c.person.displayName,
+        handle: c.person.handle,
+        avatarUrl: c.person.avatarUrl,
+        relationship: c.relationships[0] ?? null,
+      }));
+  const list = everyone.filter((p) => !exclude?.has(p.id));
+  if (among ? among.people === undefined : connections.isPending)
     return (
       <Text variant="body" color="textSecondary">
         Loading your people…
@@ -32,9 +55,11 @@ export function PeoplePicker({
   if (list.length === 0)
     return (
       <Text variant="body" color="textSecondary">
-        {exclude?.size
-          ? 'Everyone you’re connected with is already here.'
-          : 'Connect with people first, then add them here.'}
+        {among
+          ? among.empty
+          : exclude?.size
+            ? 'Everyone you’re connected with is already here.'
+            : 'Connect with people first, then add them here.'}
       </Text>
     );
   return (
@@ -47,29 +72,19 @@ export function PeoplePicker({
         overflow: 'hidden',
       }}
     >
-      {list.map((c) => {
-        const on = picked.has(c.person.id);
+      {list.map((p) => {
+        const on = picked.has(p.id);
         return (
           <ListRow
-            key={c.connectionId}
+            key={p.id}
             checked={on}
-            testID={`pick-${c.person.handle}`}
-            left={
-              <Avatar
-                id={c.person.id}
-                name={c.person.displayName}
-                url={c.person.avatarUrl}
-                size={36}
-              />
-            }
-            title={c.nickname ?? c.person.displayName}
+            testID={`pick-${p.handle}`}
+            left={<Avatar id={p.id} name={p.displayName} url={p.avatarUrl} size={36} />}
+            title={p.displayName}
             right={
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {c.relationships[0] ? (
-                  <RelationshipChip
-                    label={c.relationships[0].label}
-                    sphere={c.relationships[0].sphere}
-                  />
+                {p.relationship ? (
+                  <RelationshipChip label={p.relationship.label} sphere={p.relationship.sphere} />
                 ) : null}
                 <View
                   style={{
@@ -87,7 +102,7 @@ export function PeoplePicker({
                 </View>
               </View>
             }
-            onPress={() => onToggle(c.person.id)}
+            onPress={() => onToggle(p.id)}
           />
         );
       })}

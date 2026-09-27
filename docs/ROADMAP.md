@@ -44,8 +44,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       it to the admin there longest, else whoever has been in it longest. Only its owner and admins
       change it, its context or disappearing messages; a decision changes only by whoever made or
       recorded it, or them; a context is linked only by someone who can see it; admins take down
-      anyone's message (`messaging.test.ts`, E2E)
-- [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls; forward
+      anyone's message. Every change to who's in it or who runs it runs under its own lock; someone
+      added again starts as a member; leaving a space or deleting an account hands on what they
+      owned, and says so; renaming it is said; someone removed while it's open sees it go
+      (`messaging.test.ts`, E2E). A group's header says what it has gathered,
+      "6 people · 3 decisions · 4 open · 8 files · Friday" (PRD §57), and "@" in the composer
+      offers who's in it: whoever a message names is told, and sees it marked (PRD §20;
+      `mentions.test.ts`, E2E)
+- [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls. Forward
+      is in the API (a private conversation's messages never leave it); the app doesn't offer it
+      yet
 - [x] Realtime hub (WebSocket + pg NOTIFY), typing, presence
 - [x] Attention inbox API
 - [x] Message requests from non-connections (R14): links inert until accepted; declined, one stays
@@ -53,7 +61,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 ## M4 — Memory, action, notification
 
-- [x] Tasks, waiting, requests, reminders (R13); decisions; contexts
+- [x] Tasks, waiting, requests, reminders (R13); decisions, saved from a message's actions too
+      (PRD §30); contexts. A task or decision points back only to a message in its own
+      conversation and a context its maker can see; a customer sees the organization decide, never
+      which of its team (`actions.test.ts`, `business.test.ts`, E2E)
 - [x] Suggestions from message intelligence (and emerging topics, follow-ups)
 - [x] Conversation memory and asset index
 - [x] Search across people, relationships, orgs, messages, assets, actions, contexts

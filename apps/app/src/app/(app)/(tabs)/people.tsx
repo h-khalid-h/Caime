@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { PeopleList } from '@/features/people/PeopleList';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
+import { PeopleList } from '@/features/shell/panes';
 import { Button } from '@/ui/Button';
 import { UserPlus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';

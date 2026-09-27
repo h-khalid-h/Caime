@@ -74,7 +74,13 @@ function TaskLine({ task, onToggle }: { task: TaskView; onToggle: (t: TaskView) 
 }
 
 /** Who's on the other side of a business conversation (R15): the organization, or the customer. */
-function BusinessCard({ conversation }: { conversation: ConversationView }) {
+function BusinessCard({
+  conversation,
+  go,
+}: {
+  conversation: ConversationView;
+  go: (to: Parameters<typeof router.navigate>[0]) => void;
+}) {
   const business = conversation.business;
   if (!business) return null;
   const { org, thread } = business;
@@ -84,7 +90,7 @@ function BusinessCard({ conversation }: { conversation: ConversationView }) {
       <Pressable
         accessibilityRole="link"
         accessibilityLabel={`${org.name}, profile`}
-        onPress={() => router.navigate({ pathname: '/o/[handle]', params: { handle: org.handle } })}
+        onPress={() => go({ pathname: '/o/[handle]', params: { handle: org.handle } })}
         style={{ alignItems: 'center', gap: 8, padding: 20 }}
       >
         <OrgMark kind={org.kind} size={72} />
@@ -106,7 +112,7 @@ function BusinessCard({ conversation }: { conversation: ConversationView }) {
       {customer ? (
         <Pressable
           accessibilityRole="link"
-          onPress={() => router.navigate({ pathname: '/p/[id]', params: { id: customer.id } })}
+          onPress={() => go({ pathname: '/p/[id]', params: { id: customer.id } })}
           style={{ alignItems: 'center', gap: 8 }}
         >
           <Avatar id={customer.id} name={customer.displayName} url={customer.avatarUrl} size={72} />
@@ -160,6 +166,12 @@ export function ContextPanel({
     }
   };
   const m = memory.data;
+  // Going somewhere from here: on a phone the details are a sheet over the conversation, and
+  // they step aside so what's opened isn't under them.
+  const go = (to: Parameters<typeof router.navigate>[0]) => {
+    onClose?.();
+    router.navigate(to);
+  };
   return (
     <View style={{ flex: 1, backgroundColor: t.c.surface }}>
       <View
@@ -180,11 +192,11 @@ export function ContextPanel({
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         {conversation.business ? (
-          <BusinessCard conversation={conversation} />
+          <BusinessCard conversation={conversation} go={go} />
         ) : other ? (
           <Pressable
             accessibilityRole="link"
-            onPress={() => router.navigate({ pathname: '/p/[id]', params: { id: other.userId } })}
+            onPress={() => go({ pathname: '/p/[id]', params: { id: other.userId } })}
             style={{ alignItems: 'center', gap: 8, padding: 20 }}
           >
             <Avatar
@@ -220,13 +232,24 @@ export function ContextPanel({
               </Text>
             )}
           </Pressable>
+        ) : conversation.kind === 'direct' ? (
+          // The other person deleted their account: nobody to see, and nothing to leave.
+          <View style={{ alignItems: 'center', gap: 8, padding: 20 }} testID="deleted-account">
+            <Avatar id={conversation.id} name="Deleted account" size={72} />
+            <Text variant="headline" align="center">
+              Deleted account
+            </Text>
+            <Text variant="caption" color="textSecondary" align="center">
+              What you wrote to each other stays here. Archive it to put it away.
+            </Text>
+          </View>
         ) : (
           <>
             {conversation.space ? (
               <Pressable
                 accessibilityRole="link"
                 onPress={() =>
-                  router.navigate({
+                  go({
                     pathname: '/s/[id]',
                     params: { id: conversation.space?.id ?? '' },
                   })
@@ -245,7 +268,7 @@ export function ContextPanel({
                 {conversation.purpose}
               </Text>
             ) : null}
-            <GroupPeople conversation={conversation} />
+            <GroupPeople conversation={conversation} onNavigate={onClose} />
           </>
         )}
         {m ? (

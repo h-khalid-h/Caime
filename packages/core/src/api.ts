@@ -307,6 +307,8 @@ export interface ParticipantView {
   /** Null when read receipts aren't visible between us (reciprocal, R25). */
   readSeq: number | null;
   deliveredSeq: number;
+  /** Since when they've been in it (the last time they were added), for who'd run it next. */
+  joinedAt: string;
 }
 
 export interface ContextRef {
@@ -331,6 +333,12 @@ export interface ConversationView {
   id: string;
   kind: ConversationKind;
   title: string;
+  /**
+   * Its own name, as its owner and admins change it: `title` without the space's name in front
+   * ("Weekend plans" of "Family · Weekend plans"). Null when it takes a name from elsewhere (a
+   * person's, a space's General, an organization's).
+   */
+  name: string | null;
   space: SpaceRef | null;
   topic: string | null;
   purpose: string | null;
