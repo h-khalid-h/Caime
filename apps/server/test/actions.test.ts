@@ -412,3 +412,47 @@ describe('a reply that points back ("I’ll send it Thursday") updates what it a
     expect(taskAfter[0]).toMatchObject({ id: taskBefore[0].id, dueText: 'Thursday' });
   });
 });
+
+describe('an action made offline is sent until it arrives, and only once (PRD §49, ADR-8)', () => {
+  it('sent twice, one after the other or at once, it is the same action', async () => {
+    const clientId = uuidv4();
+    const first = await hassan.post('/v1/tasks', { title: 'Renew the passport', clientId });
+    const again = await hassan.post('/v1/tasks', { title: 'Renew the passport', clientId });
+    expect(again.task.id).toBe(first.task.id);
+    const twice = uuidv4();
+    const [a, b] = await Promise.all([
+      hassan.post('/v1/tasks', { title: 'Book the dentist', clientId: twice }),
+      hassan.post('/v1/tasks', { title: 'Book the dentist', clientId: twice }),
+    ]);
+    expect(a.task.id).toBe(b.task.id);
+    const titles = (await hassan.get('/v1/tasks?view=all')).tasks.map((x: any) => x.title);
+    expect(titles.filter((x: string) => x === 'Renew the passport')).toHaveLength(1);
+    expect(titles.filter((x: string) => x === 'Book the dentist')).toHaveLength(1);
+    // The device's id is only its own person's: someone else's is another action.
+    const hers = await sarah.post('/v1/tasks', { title: 'Renew the passport', clientId });
+    expect(hers.task.id).not.toBe(first.task.id);
+    expect(hers.task.owner.id).toBe(sarah.user.id);
+  });
+
+  it('a request sent again asks once: one card in the conversation, one task for them', async () => {
+    const clientId = uuidv4();
+    const body = {
+      title: 'Sign the lease',
+      assigneeId: sarah.user.id,
+      shared: true,
+      conversationId: convo,
+      clientId,
+    };
+    const first = await hassan.post('/v1/tasks', body);
+    const again = await hassan.post('/v1/tasks', body);
+    expect(again.task.id).toBe(first.task.id);
+    const cards = (await sarah.get(`/v1/conversations/${convo}/messages`)).messages.filter(
+      (m: any) => m.kind === 'kit' && m.payload?.taskId === first.task.id,
+    );
+    expect(cards).toHaveLength(1);
+    const hers = (await sarah.get('/v1/tasks?view=asked_me')).tasks.filter(
+      (x: any) => x.title === 'Sign the lease',
+    );
+    expect(hers).toHaveLength(1);
+  });
+});

@@ -1,12 +1,15 @@
 import { formatListTime, snippetParts } from '@caishy/core/format';
 import { parseSearchQuery } from '@caishy/core/search';
-import { useQuery } from '@tanstack/react-query';
+import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
+import { NetworkError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { searchOnDevice } from '@/features/search/onDevice';
 import { useNow, useUserClock } from '@/lib/time';
+import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
@@ -75,9 +78,20 @@ export default function Search() {
     queryFn: () => endpoints.search(debounced),
     enabled: debounced.length >= 2,
   });
-  const r = q.data?.results;
+  // Offline, what's on this device is searched instead, and says so (PRD §49).
+  const qc = useQueryClient();
+  const me = useMe();
+  const online = useSyncExternalStore(onlineManager.subscribe.bind(onlineManager), () =>
+    onlineManager.isOnline(),
+  );
+  const offline = debounced.length >= 2 && (!online || q.error instanceof NetworkError);
+  const local = useMemo(
+    () => (offline ? searchOnDevice(qc, debounced, me.id) : null),
+    [offline, qc, debounced, me.id],
+  );
+  const r = local ?? q.data?.results;
   const nothing =
-    q.isFetched &&
+    (local ? true : q.isFetched) &&
     r &&
     !r.people?.length &&
     !r.messages?.length &&
@@ -121,7 +135,11 @@ export default function Search() {
             accessibilityLabel="Search"
             testID="search-input"
           />
-          {interpretation ? (
+          {offline ? (
+            <Text variant="caption" color="warning" testID="search-offline">
+              Offline. Showing what’s on this device.
+            </Text>
+          ) : interpretation ? (
             <Text variant="caption" color="textSecondary">
               {interpretation}
             </Text>
@@ -297,7 +315,9 @@ export default function Search() {
         ) : null}
         {nothing ? (
           <Text variant="body" color="textSecondary" align="center" style={{ padding: 24 }}>
-            Nothing found for “{debounced}”.
+            {local
+              ? `Nothing on this device for “${debounced}”. Try again when you’re back online.`
+              : `Nothing found for “${debounced}”.`}
           </Text>
         ) : null}
       </ScrollView>

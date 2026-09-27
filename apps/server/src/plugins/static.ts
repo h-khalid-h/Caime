@@ -3,8 +3,8 @@
  * cookie stays first-party). Hashed bundles are cached forever; the HTML never is, so a deploy
  * reaches everyone on their next load. Any unknown non-API GET gets the app (client routing).
  */
-import { existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, resolve, sep } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
@@ -27,6 +27,17 @@ export function webCsp(publicUrl: string): string {
     "form-action 'self'",
     "object-src 'none'",
   ].join('; ');
+}
+
+/** Every file of the build under _expo/static, as the paths the app asks for them by. */
+export function builtFiles(dir: string): string[] {
+  const root = join(dir, '_expo', 'static');
+  if (!existsSync(root)) return [];
+  return (readdirSync(root, { recursive: true }) as string[])
+    .map((name) => join(root, name))
+    .filter((path) => statSync(path).isFile())
+    .map((path) => `/${relative(dir, path).split(sep).join('/')}`)
+    .sort();
 }
 
 export interface WebApp {
@@ -67,6 +78,12 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
       .sendFile('index.html');
   // The root is a directory to the static handler; it must be the app, not a listing.
   app.get('/', (_req, reply) => serve(reply));
+  // What this build is made of, for the service worker to keep so the app opens offline (PRD
+  // §49): every hashed file under _expo/static, the same for everyone.
+  const files = builtFiles(dir);
+  app.get('/app-files.json', (_req, reply) =>
+    reply.header('cache-control', 'no-cache').send({ files }),
+  );
   return {
     handles: (req) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return false;

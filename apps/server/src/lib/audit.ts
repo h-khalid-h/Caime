@@ -14,6 +14,8 @@ export type AuditAction =
   | 'account.deleted'
   | 'token.created'
   | 'token.revoked'
+  | 'calendar.feed_created'
+  | 'calendar.feed_stopped'
   | 'org.created'
   | 'org.members_added'
   | 'org.member_removed'

@@ -18,9 +18,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PERSIST_MAX_AGE, persister, queryClient } from '@/api/queryClient';
 import { HeartMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
+import { keepAppForOffline } from '@/lib/offline';
 import { useOutbox } from '@/state/outbox';
 import { useRememberLinks } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
+import { useTaskOutbox } from '@/state/taskOutbox';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 import { ToastHost } from '@/ui/Toast';
 
@@ -52,6 +54,7 @@ export default function RootLayout() {
   const [fontTimeout, setFontTimeout] = useState(false);
   useEffect(() => {
     void useSession.getState().boot();
+    keepAppForOffline();
     const timer = setTimeout(() => setFontTimeout(true), 2500);
     return () => clearTimeout(timer);
   }, []);
@@ -70,6 +73,7 @@ export default function RootLayout() {
             // Show the restored cache at once, then refresh whatever is on screen.
             void queryClient.invalidateQueries();
             useOutbox.getState().flush();
+            useTaskOutbox.getState().flush();
           }}
         >
           <ThemeProvider>

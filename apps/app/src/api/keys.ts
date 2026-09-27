@@ -15,6 +15,8 @@ export const qk = {
   oauthApps: ['oauth-apps'] as const,
   orgAgent: (orgId: string) => ['org-agent', orgId] as const,
   connectedApps: ['connected-apps'] as const,
+  /** Whether there's a calendar feed (PRD §72), never its address. */
+  calendarFeed: ['calendar-feed'] as const,
   space: (id: string) => ['space', id] as const,
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,

@@ -89,7 +89,7 @@ const ITEMS: Array<{
     path: '/settings/connected',
     icon: LayoutGrid,
     title: 'Connected apps',
-    subtitle: 'Apps you let act for you',
+    subtitle: 'Your calendar, and apps you let act for you',
   },
   {
     href: '/settings/developer',

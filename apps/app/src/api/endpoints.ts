@@ -18,6 +18,7 @@ import type {
   BusinessInboxView,
   BusinessSummaryView,
   BusinessThreadView,
+  CalendarFeedView,
   CallHistoryResponse,
   CallView,
   ConnectedAppView,
@@ -509,6 +510,10 @@ export const endpoints = {
   updateTask: (id: string, patch: Record<string, unknown>) =>
     api.patch<{ task: TaskView }>(`/tasks/${id}`, patch),
   deleteTask: (id: string) => api.del<Ok>(`/tasks/${id}`),
+  calendarFeed: () => api.get<{ feed: CalendarFeedView }>('/calendar/feed'),
+  /** A new address, shown this once; any old one stops working. */
+  newCalendarFeed: () => api.post<{ feed: CalendarFeedView; url: string }>('/calendar/feed', {}),
+  stopCalendarFeed: () => api.del<Ok>('/calendar/feed'),
   decisions: (params: { conversationId?: string } = {}) =>
     api.get<{ decisions: DecisionView[] }>(`/decisions${q(params)}`),
   createDecision: (body: { conversationId: string; title: string; messageId?: string }) =>

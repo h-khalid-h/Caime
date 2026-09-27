@@ -15,6 +15,7 @@ import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { Choice } from '@/features/settings/SettingsPage';
 import { openCheckedLink, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
+import { usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
@@ -55,7 +56,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function TaskLine({ task, onToggle }: { task: TaskView; onToggle: (t: TaskView) => void }) {
+function TaskLine({
+  task,
+  onToggle,
+  pending,
+}: {
+  task: TaskView;
+  onToggle: (t: TaskView) => void;
+  /** Changed on this device and not sent yet (PRD §49). */
+  pending?: boolean;
+}) {
   const t = useTheme();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
@@ -86,6 +96,7 @@ function TaskLine({ task, onToggle }: { task: TaskView; onToggle: (t: TaskView) 
         <Text variant="caption" color="textSecondary">
           {taskWho(task) ?? 'Yours'}
           {task.dueAt ? ` · ${formatDue(task.dueAt, now, timeZone, locale)}` : ''}
+          {pending ? ' · Pending' : ''}
         </Text>
       </View>
     </Pressable>
@@ -173,21 +184,15 @@ export function ContextPanel({
 }) {
   const t = useTheme();
   const [sharing, setSharing] = useState(false);
-  const qc = useQueryClient();
   const memory = useMemory(conversation.id);
   const aiReady = useAiReady(conversation);
   const other = conversation.other;
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const toggle = async (task: TaskView) => {
-    try {
-      await endpoints.updateTask(task.id, { status: task.status === 'done' ? 'open' : 'done' });
-      void qc.invalidateQueries({ queryKey: qk.memory(conversation.id) });
-      void qc.invalidateQueries({ queryKey: ['tasks'] });
-    } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
-    }
-  };
+  const { pending } = usePendingTasks();
+  // Shown at once and sent when it can be, offline too (PRD §49).
+  const toggle = (task: TaskView) =>
+    useTaskOutbox.getState().setStatus(task, task.status === 'done' ? 'open' : 'done');
   const m = memory.data;
   // Going somewhere from here: on a phone the details are a sheet over the conversation, and
   // they step aside so what's opened isn't under them.
@@ -306,7 +311,12 @@ export function ContextPanel({
             {m.openItems.length ? (
               <Section title={`Open · ${m.openItems.length}`}>
                 {m.openItems.map((task) => (
-                  <TaskLine key={task.id} task={task} onToggle={toggle} />
+                  <TaskLine
+                    key={task.id}
+                    task={task}
+                    onToggle={toggle}
+                    pending={pending.has(task.id)}
+                  />
                 ))}
               </Section>
             ) : null}

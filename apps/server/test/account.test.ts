@@ -87,6 +87,7 @@ describe('your data', () => {
       code_challenge_method: 'S256',
       decision: 'allow',
     });
+    const calendar = await hassan.post('/v1/calendar/feed');
     const res = await hassan.req('GET', '/v1/me/export');
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-disposition']).toMatch(
@@ -117,6 +118,12 @@ describe('your data', () => {
     ]);
     expect(JSON.stringify(archive)).not.toContain(token.token);
     expect(JSON.stringify(archive)).not.toContain(made.clientSecret);
+    // That a calendar reads his actions, never the address it reads them from.
+    expect(archive.calendarFeed).toEqual({
+      createdAt: t.clock.now.toISOString(),
+      lastReadAt: null,
+    });
+    expect(JSON.stringify(archive)).not.toContain(/cal_[\w-]{43}/.exec(calendar.url)![0]);
   });
 
   it('deletes an account only with its password, and leaves others a consistent history', async () => {

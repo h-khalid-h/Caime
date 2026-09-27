@@ -11,6 +11,7 @@ export * from './calls';
 export * from './e2ee';
 export * from './format';
 export * from './history';
+export * from './ics';
 export * from './ids';
 export * from './intelligence';
 export * from './kit-cards';

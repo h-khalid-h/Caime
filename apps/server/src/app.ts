@@ -37,6 +37,7 @@ import { authRoutes } from './modules/auth';
 import { automationRoutes } from './modules/automations';
 import { billingRoutes } from './modules/billing';
 import { businessRoutes } from './modules/business';
+import { calendarRoutes } from './modules/calendar';
 import { callRoutes } from './modules/calls';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
@@ -243,6 +244,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await inboxRoutes(v1, ctx);
       await realtimeRoutes(v1, ctx);
       await actionRoutes(v1, ctx);
+      await calendarRoutes(v1, ctx);
       await memoryRoutes(v1, ctx);
       await aiRoutes(v1, ctx);
       await searchRoutes(v1, ctx);

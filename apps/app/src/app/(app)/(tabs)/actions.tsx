@@ -1,12 +1,14 @@
 import type { TaskView } from '@caishy/core/api';
-import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
-import { endpoints, type TaskViewFilter } from '@/api/endpoints';
+import type { TaskViewFilter } from '@/api/endpoints';
 import { useTasks } from '@/api/hooks';
 import { AddTaskSheet } from '@/features/actions/AddTaskSheet';
 import { TaskRow } from '@/features/actions/TaskRow';
+import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useNow, useUserClock } from '@/lib/time';
+import { useMe } from '@/state/session';
+import { pendingTaskView, usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Divider } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
@@ -44,37 +46,39 @@ const EMPTY: Record<string, { title: string; body: string; character: 'momo' | '
 
 export default function Actions() {
   const t = useTheme();
-  const qc = useQueryClient();
+  const me = useMe();
   const { desktop } = useLayout();
   const [view, setView] = useState<TaskViewFilter>('todo');
   const [adding, setAdding] = useState(false);
   const q = useTasks(view);
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const counts = q.data?.counts;
+  const { creates, pending } = usePendingTasks();
+  // Made on this device and not sent yet: on your list already, marked Pending (PRD §49).
+  const unsent = useMemo(
+    () => (view === 'todo' ? creates.map((op) => pendingTaskView(op, me)) : []),
+    [view, creates, me],
+  );
+  const serverCounts = q.data?.counts;
+  const counts = serverCounts
+    ? { ...serverCounts, todo: serverCounts.todo + creates.filter((c) => !c.done).length }
+    : undefined;
 
-  const toggle = async (task: TaskView) => {
+  const toggle = (task: TaskView) => {
     const status = task.status === 'done' ? 'open' : 'done';
-    try {
-      await endpoints.updateTask(task.id, { status });
-      if (status === 'done')
-        toast('Done', {
-          action: {
-            label: 'Undo',
-            onPress: () =>
-              void endpoints
-                .updateTask(task.id, { status: 'open' })
-                .then(() => qc.invalidateQueries({ queryKey: ['tasks'] })),
-          },
-        });
-    } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
-    } finally {
-      void qc.invalidateQueries({ queryKey: ['tasks'] });
-    }
+    useTaskOutbox.getState().setStatus(task, status);
+    if (status === 'done')
+      toast('Done', {
+        action: {
+          label: 'Undo',
+          onPress: () => useTaskOutbox.getState().setStatus(task, 'open'),
+        },
+      });
   };
+  const retry = (id: string) => useTaskOutbox.getState().retry(id);
+  const discard = (id: string) => useTaskOutbox.getState().discard(id);
 
-  const tasks = q.data?.tasks ?? [];
+  const tasks = [...unsent, ...(q.data?.tasks ?? [])];
   const empty = EMPTY[view] ?? EMPTY.todo!;
   return (
     <Screen edges={desktop ? [] : ['top']}>
@@ -104,7 +108,8 @@ export default function Actions() {
             ]}
           />
         </View>
-        {q.isPending && !q.data ? (
+        <ConnectionBanner />
+        {q.isPending && !q.data && !unsent.length ? (
           <SkeletonRows count={5} />
         ) : (
           <FlatList
@@ -117,6 +122,9 @@ export default function Actions() {
                 timeZone={timeZone}
                 locale={locale}
                 onToggle={toggle}
+                pending={pending.get(item.id)}
+                onRetry={retry}
+                onDiscard={discard}
               />
             )}
             ItemSeparatorComponent={() => <Divider inset={52} />}

@@ -1261,6 +1261,16 @@ export interface PersonalTokenView {
   expiresAt: string | null;
 }
 
+/**
+ * Someone's calendar feed (PRD §72): whether there is one and when a calendar last read it. Its
+ * address is shown only as it's made; only its hash is kept.
+ */
+export interface CalendarFeedView {
+  enabled: boolean;
+  createdAt: string | null;
+  lastReadAt: string | null;
+}
+
 /** A third-party app its developer registered (PRD §74): never its secret after it's made. */
 export interface OAuthAppView {
   id: string;

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { CalendarFeed } from '@/features/settings/CalendarFeed';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
@@ -63,8 +64,9 @@ function AppRow({ app }: { app: ConnectedAppView }) {
 }
 
 /**
- * Connected apps (PRD §74): every app someone let act for them, what it may do and when it last
- * did, and the one tap that ends it: its tokens stop at once.
+ * Connected apps (PRD §72, §74): the calendar that reads what's due, every app someone let act
+ * for them, what it may do and when it last did, and the one tap that ends it: its tokens stop
+ * at once.
  */
 export default function ConnectedApps() {
   const minor = useSession((s) => s.user?.minor ?? false);
@@ -76,6 +78,12 @@ export default function ConnectedApps() {
   const apps = q.data?.apps ?? [];
   return (
     <SettingsPage title="Connected apps">
+      <Group
+        title="Your calendar"
+        footer="Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once."
+      >
+        <CalendarFeed />
+      </Group>
       <Group
         title="Apps that act for you"
         footer="An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once."

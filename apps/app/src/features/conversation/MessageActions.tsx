@@ -1,6 +1,6 @@
 import type { MessageView } from '@caishy/core/api';
 import { previewText } from '@caishy/core/format';
-import { useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -10,6 +10,7 @@ import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
 import { SaveSheet } from '@/features/saved/SaveSheet';
 import { patchMessage, removeMessage } from '@/state/cache';
+import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import {
@@ -267,18 +268,17 @@ export function MessageActions({
             icon={ListChecks}
             title="Add to my actions"
             subtitle="Keeps a link back to this message"
-            onPress={close(async () => {
-              try {
-                await endpoints.createTask({
-                  title: previewText(text, 120),
-                  conversationId: m.conversationId,
-                  messageId: m.id,
-                });
-                toast('Added to your actions');
-                void qc.invalidateQueries({ queryKey: ['tasks'] });
-              } catch (e) {
-                toast((e as Error).message, { tone: 'danger' });
-              }
+            onPress={close(() => {
+              useTaskOutbox.getState().add({
+                title: previewText(text, 120),
+                conversationId: m.conversationId,
+                messageId: m.id,
+              });
+              toast(
+                onlineManager.isOnline()
+                  ? 'Added to your actions'
+                  : 'Added to your actions. It’s saved when you’re back online.',
+              );
             })}
           />
         ) : null}

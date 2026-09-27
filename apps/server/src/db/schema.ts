@@ -423,7 +423,17 @@ export interface TasksTable {
   updated_at: Generated<Date>;
   completed_at: NullableTimestamp;
   completed_by: string | null;
+  /** The device's own id for a task made offline, so a retry is the same task. */
+  client_id: string | null;
   search: ColumnType<string, never, never>;
+}
+
+/** A person's calendar feed (PRD §72): the hash of the secret in its address. */
+export interface CalendarFeedsTable {
+  user_id: string;
+  token_hash: Buffer;
+  created_at: Generated<Date>;
+  last_read_at: Date | null;
 }
 
 export interface DecisionsTable {
@@ -907,6 +917,7 @@ export interface Database {
   automations: AutomationsTable;
   saved_items: SavedItemsTable;
   tasks: TasksTable;
+  calendar_feeds: CalendarFeedsTable;
   decisions: DecisionsTable;
   notifications: NotificationsTable;
   push_subscriptions: PushSubscriptionsTable;

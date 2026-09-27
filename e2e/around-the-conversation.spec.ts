@@ -128,7 +128,7 @@ test.describe
       await expect(visible(page, /^Offline\./)).toBeVisible();
       await page.getByTestId('composer-input').fill('Sent from the tunnel');
       await page.getByTestId('composer-send').click();
-      await expect(visible(page, 'Offline. 1 message will send when you’re back.')).toBeVisible();
+      await expect(visible(page, 'Offline. 1 message will go when you’re back.')).toBeVisible();
       await expect(
         page.getByLabel(/Sent from the tunnel, .*(queued|sending)$/).filter({ visible: true }),
       ).toBeVisible();
@@ -143,6 +143,184 @@ test.describe
       expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
       alex.errors.length = 0; // The page lives on into the next tests; its offline noise doesn't.
       expect(noor.errors).toEqual([]);
+    });
+
+    test('offline, actions are added and ticked as Pending, and go when the network returns', async () => {
+      const { page } = alex;
+      const drill = `Return the drill ${stamp}`;
+      const tent = `Pack the tent ${stamp}`;
+      const made = await alexContext.request.post('/v1/tasks', {
+        headers: CLIENT,
+        data: { title: drill },
+      });
+      expect(made.ok()).toBe(true);
+      const drillId = (await made.json()).task.id;
+      await page.goto('/actions');
+      await expect(visible(page, drill)).toBeVisible();
+      await alexContext.setOffline(true);
+      await page.getByTestId('add-task').click();
+      await page.getByLabel('What needs doing').fill(tent);
+      await page.getByRole('button', { name: 'Add', exact: true }).click();
+      await expect(visible(page, 'Added. It’s saved when you’re back online.')).toBeVisible();
+      await expect(visible(page, tent)).toBeVisible();
+      await page
+        .getByRole('checkbox', { name: `Complete ${drill}` })
+        .filter({ visible: true })
+        .click();
+      await expect(
+        page.getByRole('checkbox', { name: `Reopen ${drill}` }).filter({ visible: true }),
+      ).toBeVisible();
+      // Both wait on the device, and say so, never that something failed.
+      await expect(page.getByTestId('task-pending').filter({ visible: true })).toHaveCount(2);
+      await expect(visible(page, 'Offline. 2 actions will go when you’re back.')).toBeVisible();
+      await expect(page.getByTestId('task-failed')).toHaveCount(0);
+      await page.screenshot({ path: 'e2e/screenshots/phone-actions-offline.png' });
+      await alexContext.setOffline(false);
+      await expect(page.getByTestId('task-pending').filter({ visible: true })).toHaveCount(0);
+      await expect(visible(page, tent)).toBeVisible();
+      const all = await (await alexContext.request.get('/v1/tasks?view=all')).json();
+      expect(all.tasks.filter((x: { title: string }) => x.title === tent)).toHaveLength(1);
+      expect(all.tasks.find((x: { id: string }) => x.id === drillId).status).toBe('done');
+      // Gone, so the tests after this one start from empty lists.
+      const tentId = all.tasks.find((x: { title: string }) => x.title === tent).id;
+      for (const id of [tentId, drillId])
+        expect(
+          (await alexContext.request.delete(`/v1/tasks/${id}`, { headers: CLIENT })).ok(),
+        ).toBe(true);
+      const offlineNoise = /ERR_INTERNET_DISCONNECTED|WebSocket|Failed to load resource/;
+      expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
+      alex.errors.length = 0;
+    });
+
+    test('offline, search finds what’s on the device and says so', async () => {
+      const { page } = alex;
+      // The conversation was read on this device, so its latest messages are kept on it.
+      await page.goto(`/c/${convo}`);
+      await expect(visible(page, 'Sent from the tunnel')).toBeVisible();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              localStorage.getItem('caishy.cache.v1')?.includes('Sent from the tunnel') ?? false,
+          ),
+        )
+        .toBe(true);
+      await page.goto('/search');
+      await expect(page.getByTestId('search-input').filter({ visible: true })).toBeVisible();
+      await alexContext.setOffline(true);
+      await page.getByTestId('search-input').fill('tunnel');
+      await expect(visible(page, 'Offline. Showing what’s on this device.')).toBeVisible();
+      const hit = page
+        .getByRole('button', { name: /^You, .*Sent from the tunnel/ })
+        .filter({ visible: true });
+      await expect(hit).toBeVisible();
+      await page.getByTestId('search-input').fill('nothing like this anywhere');
+      await expect(
+        visible(page, /^Nothing on this device for “nothing like this anywhere”/),
+      ).toBeVisible();
+      await alexContext.setOffline(false);
+      await page.getByTestId('search-input').fill('tunnel');
+      await expect(page.getByTestId('search-offline')).toHaveCount(0);
+      await expect(
+        page
+          .getByRole('button', { name: /^Alex Chen, .*Sent from the tunnel/ })
+          .filter({ visible: true }),
+      ).toBeVisible();
+      const offlineNoise = /ERR_INTERNET_DISCONNECTED|WebSocket|Failed to load resource/;
+      expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
+      alex.errors.length = 0;
+    });
+
+    test('the web app opens with no network, from what this browser kept of it', async () => {
+      const { page } = alex;
+      await page.goto('/');
+      await expect(visible(page, 'Noor Haddad')).toBeVisible();
+      // What the app shows is kept on the device (it writes at most every second and a half).
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => localStorage.getItem('caishy.cache.v1')?.includes('"queryKey":["inbox"') ?? false,
+          ),
+        )
+        .toBe(true);
+      // The service worker keeps this build's page and files once it's running.
+      await expect
+        .poll(
+          () =>
+            page.evaluate(async () => {
+              const kept = await (await caches.open('caishy-files-v1')).keys();
+              const paths = kept.map((r) => new URL(r.url).pathname);
+              return paths.includes('/') && paths.some((p) => p.startsWith('/_expo/static/'));
+            }),
+          { timeout: 20_000 },
+        )
+        .toBe(true);
+      await alexContext.setOffline(true);
+      // Nothing of the app can come from the network, the service worker's asking included.
+      const origin = new URL(page.url()).origin;
+      const app = (url: URL) => url.origin === origin && !url.pathname.startsWith('/v1/');
+      await alexContext.route(app, (r) => r.abort('internetdisconnected'));
+      await page.reload();
+      await expect(visible(page, 'Offline. Showing what’s on this device.')).toBeVisible();
+      await expect(visible(page, 'Noor Haddad')).toBeVisible();
+      // And screens it hadn't opened this time open too.
+      await page.getByTestId('tab-actions').filter({ visible: true }).click();
+      await expect(page.getByTestId('add-task').filter({ visible: true })).toBeVisible();
+      await alexContext.unroute(app);
+      await alexContext.setOffline(false);
+      await page.goto('/');
+      await expect(page.getByText(/^Offline\./).filter({ visible: true })).toHaveCount(0);
+      const offlineNoise = /ERR_INTERNET_DISCONNECTED|WebSocket|Failed to load resource/;
+      expect(alex.errors.filter((e) => !offlineNoise.test(e))).toEqual([]);
+      alex.errors.length = 0;
+    });
+
+    test('a calendar reads what’s due from an address shown once, and a new one ends it', async () => {
+      const { page, errors } = noor;
+      const due = new Date(Date.now() + 2 * 86_400_000).toISOString();
+      const title = `Sign the venue contract ${stamp}`;
+      const made = await noorContext.request.post('/v1/tasks', {
+        headers: CLIENT,
+        data: { title, dueAt: due, dueHasTime: true },
+      });
+      expect(made.ok()).toBe(true);
+      const taskId: string = (await made.json()).task.id;
+      await page.goto('/settings/connected');
+      await page.getByTestId('calendar-feed-make').click();
+      const first = (
+        await page.getByTestId('calendar-feed-url').filter({ visible: true }).innerText()
+      ).trim();
+      expect(first).toMatch(/\/v1\/calendar\/cal_[\w-]{43}\.ics$/);
+      // What the calendar app does: no cookie, no token, only the address.
+      const calendar = await request.newContext({ baseURL: new URL(first).origin });
+      const read = await calendar.get(new URL(first).pathname);
+      expect(read.status()).toBe(200);
+      expect(read.headers()['content-type']).toBe('text/calendar; charset=utf-8');
+      const ics = (await read.text()).replace(/\r\n /g, '');
+      expect(ics.startsWith('BEGIN:VCALENDAR')).toBe(true);
+      expect(ics).toContain(`SUMMARY:${title}`);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-calendar-feed.png' });
+      // Once away from the page, it isn't shown again: only that it's on.
+      await page.reload();
+      await expect(page.getByTestId('calendar-feed-url')).toHaveCount(0);
+      await expect(visible(page, /^On since .* · last read /)).toBeVisible();
+      await page.getByTestId('calendar-feed-replace').filter({ visible: true }).click();
+      await page.getByTestId('calendar-feed-confirm').filter({ visible: true }).click();
+      const second = (
+        await page.getByTestId('calendar-feed-url').filter({ visible: true }).innerText()
+      ).trim();
+      expect(second).not.toBe(first);
+      expect((await calendar.get(new URL(first).pathname)).status()).toBe(404);
+      expect((await calendar.get(new URL(second).pathname)).status()).toBe(200);
+      await page.getByTestId('calendar-feed-stop').filter({ visible: true }).click();
+      await page.getByTestId('calendar-feed-confirm').filter({ visible: true }).click();
+      await expect(page.getByTestId('calendar-feed-make').filter({ visible: true })).toBeVisible();
+      expect((await calendar.get(new URL(second).pathname)).status()).toBe(404);
+      await calendar.dispose();
+      // Gone, so the tests after this one start from empty lists.
+      const gone = await noorContext.request.delete(`/v1/tasks/${taskId}`, { headers: CLIENT });
+      expect(gone.ok()).toBe(true);
+      expect(errors).toEqual([]);
     });
 
     test('a message sent while the page is still connecting arrives', async () => {
@@ -2258,9 +2436,17 @@ test.describe
       expect(scope).toBe(`${new URL(page.url()).origin}/`);
       expect(errors).toEqual([]);
     });
-    test('a tab whose part of the app can’t be fetched says so, and opens when tried again', async () => {
-      // A page kept open across a deploy asks for a file the new version no longer has.
-      const page = await alexContext.newPage();
+    test('a tab whose part of the app can’t be fetched says so, and opens when tried again', async ({
+      browser,
+    }) => {
+      // A page kept open across a deploy asks for a file the new version no longer has, in a
+      // browser that hadn't kept it (the service worker would have).
+      const context = await browser.newContext({
+        storageState: await alexContext.storageState(),
+        serviceWorkers: 'block',
+        viewport: { width: 390, height: 844 },
+      });
+      const page = await context.newPage();
       const chunk = '**/_expo/static/js/web/PeopleList-*.js';
       await page.route(chunk, (r) => r.abort());
       await page.goto('/people');
@@ -2270,6 +2456,6 @@ test.describe
       await expect(
         page.getByText('Noor Haddad', { exact: true }).filter({ visible: true }).first(),
       ).toBeVisible();
-      await page.close();
+      await context.close();
     });
   });

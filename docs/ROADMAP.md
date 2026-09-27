@@ -159,7 +159,18 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       Ctrl/⌘ K search, Alt ↑/↓ between conversations, ↑ edits your last message, ? lists them
       (E2E)
 - [x] Realtime client with reconnect and catch-up; on-device cache with revalidation; offline
-      outbox: a message written offline sends the moment the network returns (E2E)
+      outbox: a message written offline sends the moment the network returns (E2E). Offline
+      first (PRD §49): an action added or ticked offline is on the list at once as Pending, kept
+      on the device and sent when the network returns, once however often it's sent (the
+      device's id for it makes a retry the same action); the last tick wins; one the server
+      refuses says why, with Try again or Discard. Offline, search reads what's on the device
+      (people, conversations, messages, actions; never a private conversation's words) and says
+      so (`taskOutbox.test.ts`, `onDevice.test.ts`, `actions.test.ts`, E2E). On the web the
+      service worker keeps the app itself, its page and every file of its build, replaced
+      together by the next build: Caishy opens and moves between screens with no network (or
+      while a deploy restarts the server), a page is always the network's while there is one,
+      and nothing the API answers is kept (`sw.test.ts`, `web.test.ts`, E2E). Opened offline,
+      it says Offline, not Connecting
 - [x] Stickers (Caishy Friends, 16): sent, and arrive live (E2E)
 - [~] Native: iOS and Android bundles export (Hermes); not yet run on a device or simulator.
       Share links open the app only once it claims its domain (iOS associated domains, Android
@@ -229,6 +240,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       its sharer while Caishy is open, keeps only the latest point, and ends at its time or when
       they stop it; the sharer always sees it's on. Never by anyone under 18, never with an
       organization (`live-location.test.ts`, E2E)
+- [x] Integrations (PRD §72): a calendar feed. Google Calendar, Outlook or Apple Calendar
+      subscribes to a secret address (shown once, kept as a hash; a new one ends the old) and
+      shows open actions with a due date, on their day or at their time, what you're waiting
+      on, and the meetings and appointments agreed in your conversations, busy for their length
+      and with where; done, cancelled or left, they go. Caishy stays the record: nothing in a
+      calendar changes anything in it (`calendar.test.ts`, `ics.test.ts`, E2E).
+      [ ] Storage, CRM and helpdesk connectors: apps and webhooks cover the Business inbox
+      (`docs/API.md`); two-way calendar sync needs each provider's OAuth app (⛔ credentials)
 - [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
       private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
       relationship's tone), translate a message, catch me up (offered when ten or more are
@@ -327,7 +346,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (434.3 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (447.1 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -641,3 +660,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   looks for the other's ring once free, and in Firefox a candidate that comes before its ICE
   restart's answer waits for it. Tests: 157 core, 49 brand, 257 server, 55 app, 34 E2E (three
   browsers in one call).
+- 2026-09-27 — Session 2 (cont.): offline first, and a calendar. An action added or ticked
+  offline is on the list at once as Pending, kept on the device and sent when the network
+  returns, once however often it's sent (the device's id for it; the server returns the one it
+  has, also when both copies arrive at once); one refused says why, with Try again or Discard.
+  Offline, search reads what's on the device and says so. On the web the service worker keeps
+  the app itself (its page and every file of its build, replaced together), so Caishy opens and
+  moves between screens with no network; opened offline it says Offline, where it used to say
+  Connecting forever. A calendar feed (PRD §72) gives Google Calendar, Outlook or Apple Calendar
+  a secret address with open actions that have a due date and agreed meetings and
+  appointments; its address is shown once and kept as a hash. Mutation-tested: 46 changes to
+  the new code, each caught by a test but two that change nothing observable. Tests: 193
+  core, 49 brand, 388 server, 100 app, 50 E2E (actions made and ticked offline, search offline,
+  the web app reloaded with no network, and a calendar reading its address).

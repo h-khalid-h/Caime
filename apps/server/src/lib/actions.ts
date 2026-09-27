@@ -48,6 +48,8 @@ export interface NewTask {
   source?: Task['source'];
   /** Whose relationship to snapshot: the other party of the task. */
   counterpartId?: string | null;
+  /** The device's own id for it (a task made offline): sent again, it's the same task. */
+  clientId?: string | null;
 }
 
 export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Task> {
@@ -70,6 +72,7 @@ export async function createTask(db: Q, ctx: AppContext, t: NewTask): Promise<Ta
       context_id: t.contextId ?? null,
       relationship_snapshot: snapshot ? JSON.stringify({ ...snapshot, userId: counterpart }) : null,
       source: t.source ?? 'manual',
+      client_id: t.clientId ?? null,
       created_at: ctx.now(),
       updated_at: ctx.now(),
     })

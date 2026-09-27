@@ -11,8 +11,11 @@ const PAGE = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), 'caishy-web-'));
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>Caishy</title>');
-  mkdirSync(join(dir, '_expo', 'static', 'js'), { recursive: true });
+  mkdirSync(join(dir, '_expo', 'static', 'js', 'web'), { recursive: true });
   writeFileSync(join(dir, '_expo', 'static', 'js', 'entry-abc.js'), 'console.log(1)');
+  writeFileSync(join(dir, '_expo', 'static', 'js', 'web', 'search-def.js'), 'console.log(2)');
+  mkdirSync(join(dir, 'assets'), { recursive: true });
+  writeFileSync(join(dir, 'assets', 'font-123.ttf'), 'font');
   t = await createTestApp({ WEB_DIR: dir });
 });
 afterAll(async () => {
@@ -42,6 +45,15 @@ describe('the web app on the API origin', () => {
     expect(missing.statusCode).toBe(404);
     expect(missing.json().error.code).toBe('not_found');
     expect((await get('/logo.png', 'image/avif,image/webp,*/*')).statusCode).toBe(404);
+  });
+
+  it('lists what the build is made of, for the app to be kept for offline', async () => {
+    const r = await get('/app-files.json', 'application/json');
+    expect(r.statusCode).toBe(200);
+    expect(r.headers['cache-control']).toBe('no-cache');
+    expect(r.json()).toEqual({
+      files: ['/_expo/static/js/entry-abc.js', '/_expo/static/js/web/search-def.js'],
+    });
   });
 
   it('keeps the API answering in JSON', async () => {

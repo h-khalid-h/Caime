@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
-import { Check } from '@/ui/icons';
+import { Check, Clock } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
@@ -23,12 +23,19 @@ export const TaskRow = memo(function TaskRow({
   timeZone,
   locale,
   onToggle,
+  pending,
+  onRetry,
+  onDiscard,
 }: {
   task: TaskView;
   now: Date;
   timeZone: string;
   locale: string;
   onToggle: (t: TaskView) => void;
+  /** Still on this device (PRD §49): waiting to go, or refused and why. */
+  pending?: { state: 'queued' | 'sending' | 'failed'; error?: string };
+  onRetry?: (id: string) => void;
+  onDiscard?: (id: string) => void;
 }) {
   const t = useTheme();
   const done = task.status === 'done';
@@ -101,7 +108,45 @@ export const TaskRow = memo(function TaskRow({
               {task.relationship}
             </Text>
           ) : null}
+          {pending && pending.state !== 'failed' ? (
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              testID="task-pending"
+            >
+              <Clock size={12} color={t.c.textTertiary} />
+              <Text variant="captionStrong" color="textTertiary">
+                Pending
+              </Text>
+            </View>
+          ) : null}
         </View>
+        {pending?.state === 'failed' ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }} testID="task-failed">
+            <Text variant="caption" color="danger">
+              {`Couldn’t add it: ${pending.error ?? 'try again'}`}
+            </Text>
+            {onRetry ? (
+              <Text
+                variant="captionStrong"
+                color="accentStrong"
+                accessibilityRole="button"
+                onPress={() => onRetry(task.id)}
+              >
+                Try again
+              </Text>
+            ) : null}
+            {onDiscard ? (
+              <Text
+                variant="captionStrong"
+                color="textSecondary"
+                accessibilityRole="button"
+                onPress={() => onDiscard(task.id)}
+              >
+                Discard
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         {task.source ? (
           <Text variant="caption" color="textTertiary" numberOfLines={1}>
             “{task.source.preview}”

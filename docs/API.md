@@ -105,7 +105,7 @@ it sends shows "via" the token's name.
 | `messages:read` | `GET /v1/inbox`, `GET /v1/conversations/:id`, `GET /v1/conversations/:id/messages`, `GET /v1/search?q=` | Their inbox, conversations and search |
 | `messages:write` | `POST /v1/conversations/:id/messages` | Send as them: `{ "clientId": "<uuid>", "body": "…" }` |
 | `actions:read` | `GET /v1/tasks` | Their actions and what they wait for |
-| `actions:write` | `POST /v1/tasks`, `PATCH /v1/tasks/:id` | Add, change and finish actions |
+| `actions:write` | `POST /v1/tasks`, `PATCH /v1/tasks/:id` | Add, change and finish actions. Send a `clientId` of your own (8 to 64 characters) with a new one and sending it again returns the same action |
 
 Anything else answers `403` with `token_route` (or `token_scope` without the permission): a
 token never changes a password, privacy or sessions, makes tokens, exports or deletes an
@@ -205,6 +205,26 @@ Each comes with an `error_description` a developer can read.
 - Removing the app in **Your apps** ends it for everyone who let it in.
 - Recovering an account with a recovery code ends every app it let in, as it ends its sessions
   and personal tokens: whoever lost it may not be the one who allowed them.
+
+## Your calendar
+
+Anyone over 18 can have Google Calendar, Outlook or Apple Calendar show their actions with a
+due date and the meetings and appointments they agreed in Caishy: **You → Connected apps → Your
+calendar → Get a calendar address**. The address is shown once, starts
+`https://…/v1/calendar/cal_` and is the only credential: a calendar app reads it with no
+sign-in. Caishy keeps only its hash, so it can't be shown again; getting a new one ends the old
+one at once, and **Stop** ends it. It answers `text/calendar` (RFC 5545), read at most 120 times
+an hour, and nothing in a calendar changes anything in Caishy.
+
+| What | In the calendar |
+| --- | --- |
+| An open action of yours, or one you were asked, with a due date | On its day, or at its time for half an hour, never busy. What you're waiting on reads "Waiting on Sarah: …" |
+| A meeting accepted, an appointment confirmed | At its time and for its length (an hour when it has none), busy, with where |
+| Done, cancelled, declined, deleted, or in a conversation you've left | Gone at the next read |
+
+Private conversations, message requests you haven't accepted and messages you deleted for
+yourself are never in it. Managing it (`GET`, `POST`, `DELETE /v1/calendar/feed`) needs you
+signed in: no token reaches it.
 
 ## Not yet
 

@@ -18,6 +18,64 @@ let tabs: Array<{
 let shown: Array<{ title: string; options: any; closed: boolean }>;
 let opened: string[];
 
+/** A fake network and Cache Storage: what the server has, whether it's reachable, what's kept. */
+type Res = { ok: boolean; status: number; body: string; type: string };
+let server: Map<string, Res>;
+let online: boolean;
+let fetched: string[];
+let kept: Map<string, Map<string, Res>>;
+const res = (body: string, type = 'text/javascript', status = 200): Res => ({
+  ok: status >= 200 && status < 300,
+  status,
+  body,
+  type,
+});
+const asResponse = (r: Res) => ({
+  ok: r.ok,
+  status: r.status,
+  body: r.body,
+  headers: { get: (h: string) => (h.toLowerCase() === 'content-type' ? r.type : null) },
+  clone: () => asResponse(r),
+  json: async () => JSON.parse(r.body),
+});
+const pathOf = (x: string | { url: string }) =>
+  new URL(typeof x === 'string' ? x : x.url, 'https://caishy.example').pathname;
+const caches = {
+  open: async (name: string) => {
+    const c = kept.get(name) ?? new Map<string, Res>();
+    kept.set(name, c);
+    return {
+      match: async (req: string | { url: string }) => {
+        const hit = c.get(pathOf(req));
+        return hit ? asResponse(hit) : undefined;
+      },
+      put: async (req: string | { url: string }, r: ReturnType<typeof asResponse>) =>
+        void c.set(pathOf(req), {
+          ok: r.ok,
+          status: r.status,
+          body: r.body,
+          type: r.headers.get('content-type') ?? '',
+        }),
+      keys: async () => [...c.keys()].map((path) => ({ url: `https://caishy.example${path}` })),
+      delete: async (req: { url: string }) => c.delete(pathOf(req)),
+    };
+  },
+  keys: async () => [...kept.keys()],
+  delete: async (name: string) => kept.delete(name),
+};
+const network = vi.fn(async (req: string | { url: string }) => {
+  const path = pathOf(req);
+  fetched.push(path);
+  if (!online) throw new TypeError('Failed to fetch');
+  // As the server does: any page is the app; anything shaped like a file must exist.
+  const page = !/\.[a-z0-9]{2,5}$/i.test(path) && !path.startsWith('/v1/');
+  const r =
+    server.get(path) ??
+    (page ? server.get('/') : undefined) ??
+    res('{"error":{"code":"not_found"}}', 'application/json', 404);
+  return asResponse(r);
+});
+
 const CHROME =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 const SAFARI =
@@ -34,6 +92,8 @@ function load(userAgent = CHROME) {
       listeners[type] = f;
     },
     skipWaiting: vi.fn(),
+    caches,
+    fetch: network,
     registration: {
       showNotification: async (title: string, options: { tag?: string }) => {
         // One per tag, as browsers keep them: a new one takes an older one's place.
@@ -78,7 +138,120 @@ const tab = (over: Partial<(typeof tabs)[number]> = {}) => ({
 
 beforeEach(() => {
   tabs = [];
+  kept = new Map();
+  fetched = [];
+  online = true;
+  server = new Map([
+    ['/', res('<!doctype html><title>Caishy v2</title>', 'text/html; charset=utf-8')],
+    [
+      '/app-files.json',
+      res(
+        JSON.stringify({
+          files: ['/_expo/static/js/web/entry-v2.js', '/_expo/static/js/web/search-v2.js'],
+        }),
+        'application/json',
+      ),
+    ],
+    ['/_expo/static/js/web/entry-v2.js', res('entry v2')],
+    ['/_expo/static/js/web/search-v2.js', res('search v2')],
+    ['/assets/font-1.ttf', res('font', 'font/ttf')],
+  ]);
   load();
+});
+
+/** A fetch event as the browser sends one: what the worker answers with, if it does. */
+async function request(url: string, init: { method?: string; mode?: string } = {}) {
+  let answer: Promise<ReturnType<typeof asResponse>> | undefined;
+  const waits: Promise<unknown>[] = [];
+  listeners.fetch?.({
+    request: {
+      url: `https://caishy.example${url}`,
+      method: init.method ?? 'GET',
+      mode: init.mode ?? 'cors',
+    },
+    respondWith: (p: Promise<ReturnType<typeof asResponse>>) => {
+      answer = p;
+    },
+    waitUntil: (p: Promise<unknown>) => void waits.push(p),
+  });
+  const r = answer ? await answer.catch((e: Error) => e) : undefined;
+  await Promise.all(waits);
+  return r;
+}
+const keptPaths = () => [...(kept.get('caishy-files-v1')?.keys() ?? [])].sort();
+
+describe('the app kept for offline (PRD §49)', () => {
+  it('a page is the network’s, and it’s kept with every file of its build', async () => {
+    const page = (await request('/c/123', { mode: 'navigate' })) as any;
+    expect(page.body).toContain('Caishy v2');
+    expect(keptPaths()).toEqual([
+      '/',
+      '/_expo/static/js/web/entry-v2.js',
+      '/_expo/static/js/web/search-v2.js',
+    ]);
+    // Offline, any page opens as the kept one, and its files come from what's kept.
+    online = false;
+    fetched = [];
+    expect(((await request('/actions', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/_expo/static/js/web/search-v2.js')) as any).body).toBe('search v2');
+    expect(fetched).toEqual(['/actions']);
+  });
+
+  it('opens the kept page while the server can’t answer, and says nothing kept when there’s none', async () => {
+    online = false;
+    expect(await request('/', { mode: 'navigate' })).toBeInstanceOf(TypeError);
+    online = true;
+    server.set('/', res('Bad gateway', 'text/html', 502));
+    expect(((await request('/', { mode: 'navigate' })) as any).status).toBe(502);
+    server.set('/', res('<!doctype html><title>Caishy v2</title>', 'text/html'));
+    await request('/', { mode: 'navigate' });
+    server.set('/', res('Bad gateway', 'text/html', 502));
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+  });
+
+  it('a new build replaces the last only once all of it is kept, and the last one’s files go', async () => {
+    await request('/', { mode: 'navigate' });
+    server.set('/', res('<!doctype html><title>Caishy v3</title>', 'text/html'));
+    server.set(
+      '/app-files.json',
+      res(JSON.stringify({ files: ['/_expo/static/js/web/entry-v3.js'] }), 'application/json'),
+    );
+    // One of the new build's files can't be fetched: the page kept is still the last one.
+    await request('/', { mode: 'navigate' });
+    online = false;
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    online = true;
+    server.set('/_expo/static/js/web/entry-v3.js', res('entry v3'));
+    await request('/', { mode: 'navigate' });
+    expect(keptPaths()).toEqual(['/', '/_expo/static/js/web/entry-v3.js']);
+    online = false;
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v3');
+  });
+
+  it('keeps a file of a build as it’s first asked for, and never what the API answers', async () => {
+    expect(((await request('/assets/font-1.ttf')) as any).body).toBe('font');
+    fetched = [];
+    expect(((await request('/assets/font-1.ttf')) as any).body).toBe('font');
+    expect(fetched).toEqual([]);
+    // A missing file is the network's answer, and isn't kept.
+    expect(((await request('/_expo/static/js/web/gone.js')) as any).status).toBe(404);
+    expect(keptPaths()).not.toContain('/_expo/static/js/web/gone.js');
+    for (const [url, init] of [
+      ['/v1/inbox', {}],
+      ['/v1/conversations/c1/messages', { method: 'POST' }],
+      ['/app-files.json', {}],
+      ['/sw.js', {}],
+      ['/_expo/static/js/web/entry-v2.js', { method: 'POST' }],
+    ] as const)
+      expect(await request(url, init), url).toBeUndefined();
+  });
+
+  it('as it starts, keeps the app already open, and drops what older versions of it kept', async () => {
+    kept.set('caishy-old', new Map([['/x', res('old')]]));
+    await fire('activate', {});
+    expect([...kept.keys()]).toEqual(['caishy-files-v1']);
+    expect(keptPaths()).toContain('/_expo/static/js/web/entry-v2.js');
+  });
 });
 
 describe('the service worker', () => {

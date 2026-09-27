@@ -18,6 +18,7 @@ import { useDrafts } from './drafts';
 import { useLive } from './live';
 import { useLiveShares } from './liveShares';
 import { useOutbox } from './outbox';
+import { useTaskOutbox } from './taskOutbox';
 
 const USER_KEY = 'caishy.user';
 
@@ -154,6 +155,7 @@ export const useSession = create<SessionState>((set, get) => ({
     queryClient.clear();
     await persister.removeClient();
     useOutbox.getState().clear();
+    useTaskOutbox.getState().clear();
     useDrafts.getState().reset();
     useLiveShares.getState().clear();
     useLive.getState().reset();

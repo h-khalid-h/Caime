@@ -59,6 +59,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       apps,
       connectedApps,
       following,
+      calendarFeed,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -165,6 +166,11 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('f.user_id', '=', me)
         .orderBy('f.created_at')
         .execute(),
+      ctx.db
+        .selectFrom('calendar_feeds')
+        .select(['created_at', 'last_read_at'])
+        .where('user_id', '=', me)
+        .executeTakeFirst(),
     ]);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
     const archive = {
@@ -258,6 +264,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         notify: f.notify,
         since: f.created_at.toISOString(),
       })),
+      // Whether a calendar reads your actions (PRD §72), never its address.
+      calendarFeed: calendarFeed
+        ? {
+            createdAt: calendarFeed.created_at.toISOString(),
+            lastReadAt: calendarFeed.last_read_at?.toISOString() ?? null,
+          }
+        : null,
       accessTokens: tokens.map((k) => ({
         name: k.name,
         scopes: k.scopes,

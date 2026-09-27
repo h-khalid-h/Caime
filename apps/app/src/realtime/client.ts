@@ -17,6 +17,7 @@ import { onNetworkChange } from '@/lib/network';
 import { type MessagePages, maxSeq, upsertMessage } from '@/state/cache';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
+import { useTaskOutbox } from '@/state/taskOutbox';
 import { applyEvent } from './apply';
 
 const PING_MS = 25_000;
@@ -33,6 +34,8 @@ class RealtimeClient {
   private everConnected = false;
   /** The server said hello on the current socket. */
   private ready = false;
+  /** As the device last said: offline, a socket that can't open is "offline", not "connecting". */
+  private online = true;
   private typingSentAt = new Map<string, number>();
   private unsubscribers: Array<() => void> = [];
 
@@ -78,6 +81,7 @@ class RealtimeClient {
         void this.catchUp(true);
       }
       useOutbox.getState().flush();
+      useTaskOutbox.getState().flush();
       return;
     }
     this.ws?.close();
@@ -93,6 +97,7 @@ class RealtimeClient {
   private listen(): void {
     this.unsubscribers.push(
       onNetworkChange((online) => {
+        this.online = online;
         if (!online) useLive.getState().setConnection('offline');
         else this.nudge();
       }),
@@ -120,7 +125,7 @@ class RealtimeClient {
   private connect(): void {
     if (!this.wanted || this.ws) return;
     this.clearTimers();
-    useLive.getState().setConnection('connecting');
+    useLive.getState().setConnection(this.online ? 'connecting' : 'offline');
     let ws: WebSocket;
     try {
       ws = new WebSocket(`${WS_URL}/v1/realtime`);
@@ -151,7 +156,7 @@ class RealtimeClient {
       this.ready = false;
       this.clearTimers();
       if (this.wanted) {
-        useLive.getState().setConnection('connecting');
+        useLive.getState().setConnection(this.online ? 'connecting' : 'offline');
         this.scheduleRetry();
       }
     };
@@ -176,6 +181,7 @@ class RealtimeClient {
     void this.catchUp(this.everConnected);
     this.everConnected = true;
     useOutbox.getState().flush();
+    useTaskOutbox.getState().flush();
   }
 
   private scheduleRetry(): void {

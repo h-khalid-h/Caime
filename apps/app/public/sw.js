@@ -1,11 +1,111 @@
 /*
- * Caishy's service worker (web): it shows what the server pushes when Caishy isn't open in front
- * of the person, and opens the right place when one is tapped. It caches nothing and reads
- * nothing but the push itself: {id, title, body, tag, level, data, quiet}.
+ * Caishy's service worker (web). It shows what the server pushes when Caishy isn't open in front
+ * of the person, and opens the right place when one is tapped; of a push it reads only
+ * {id, title, body, tag, level, data, quiet}. And it keeps the app itself (PRD §49): its page and
+ * the files this build is made of, so Caishy opens and moves between screens with no network,
+ * showing what's on the device. It never keeps what the API answers: the app keeps its own.
  */
 
+const FILES = 'caishy-files-v1';
+/** The app is one page for every path, kept once, under "/". */
+const SHELL = '/';
+let keeping = null;
+
+/**
+ * The page and every file of its build, kept together: the page replaces the one kept only once
+ * all of its files are, and the files of builds before it go. Anything unfinished is tried again
+ * on the next page load.
+ */
+async function keep(page) {
+  const list = await self.fetch('/app-files.json', { cache: 'no-store' });
+  if (!list.ok) return;
+  const { files } = await list.json();
+  if (!Array.isArray(files)) return;
+  const cache = await self.caches.open(FILES);
+  const have = new Set((await cache.keys()).map((r) => new URL(r.url).pathname));
+  for (const file of files) {
+    if (have.has(file)) continue;
+    const res = await self.fetch(file);
+    if (!res.ok) return;
+    await cache.put(file, res);
+  }
+  await cache.put(SHELL, page);
+  const current = new Set(files);
+  for (const r of await cache.keys()) {
+    const path = new URL(r.url).pathname;
+    if (path.startsWith('/_expo/static/') && !current.has(path)) await cache.delete(r);
+  }
+}
+
+function keepOnce(page) {
+  keeping ??= keep(page)
+    .catch(() => {})
+    .finally(() => {
+      keeping = null;
+    });
+  return keeping;
+}
+
+const keptPage = async () => (await self.caches.open(FILES)).match(SHELL);
+
+/**
+ * A page: always the network's while there is one. With none, or while the server can't answer
+ * (a deploy restarting it), the one kept.
+ */
+async function page(event) {
+  let res;
+  try {
+    res = await self.fetch(event.request);
+  } catch (err) {
+    const kept = await keptPage();
+    if (kept) return kept;
+    throw err;
+  }
+  if (res.status >= 500) return (await keptPage()) || res;
+  if (res.ok && (res.headers.get('content-type') || '').includes('text/html'))
+    event.waitUntil(keepOnce(res.clone()));
+  return res;
+}
+
+/** A file of a build: named for what's in it, so a kept one is always right. */
+async function file(request) {
+  const cache = await self.caches.open(FILES);
+  const kept = await cache.match(request);
+  if (kept) return kept;
+  const res = await self.fetch(request);
+  if (res.ok) await cache.put(request, res.clone());
+  return res;
+}
+
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (event) =>
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+      for (const name of await self.caches.keys())
+        if (name.startsWith('caishy-') && name !== FILES) await self.caches.delete(name);
+      // The app is open already: keep it now rather than on its next load.
+      const res = await self.fetch(SHELL, { cache: 'no-store' }).catch(() => null);
+      if (res?.ok) await keepOnce(res);
+    })(),
+  ),
+);
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  // The API, and the list of files itself, are always the network's.
+  if (url.pathname === '/v1' || url.pathname.startsWith('/v1/')) return;
+  if (url.pathname === '/app-files.json' || url.pathname === '/sw.js') return;
+  if (request.mode === 'navigate') {
+    event.respondWith(page(event));
+    return;
+  }
+  if (url.pathname.startsWith('/_expo/static/') || url.pathname.startsWith('/assets/'))
+    event.respondWith(file(request));
+});
 
 /** Where a notification leads, from what it's about. */
 function pathOf(data) {

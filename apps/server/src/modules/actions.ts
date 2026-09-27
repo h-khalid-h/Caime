@@ -257,6 +257,18 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(CreateTaskBody, req.body);
     const me = auth.userId;
+    // Made on a device while it was offline and sent again (ADR-8): the one that arrived first.
+    const sameTask = () =>
+      body.clientId
+        ? ctx.db
+            .selectFrom('tasks')
+            .selectAll()
+            .where('owner_id', '=', me)
+            .where('client_id', '=', body.clientId)
+            .executeTakeFirst()
+        : Promise.resolve(undefined);
+    const again = await sameTask();
+    if (again) return { task: (await taskViews(ctx, [again], me))[0] };
     const assignee = body.assigneeId ?? me;
     if (assignee !== me) {
       const b = await between(ctx.db, me, assignee);
@@ -280,22 +292,31 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       (me === business.customerId) !== (assignee === business.customerId)
     )
       throw forbidden('Requests between a customer and an organization aren’t available yet.');
-    const task = await ctx.db.transaction().execute((trx) =>
-      createTask(trx, ctx, {
-        ownerId: me,
-        assigneeId: assignee,
-        shared: body.shared ?? false,
-        title: body.title,
-        notes: body.notes ?? null,
-        dueAt: body.dueAt ?? null,
-        dueHasTime: body.dueHasTime ?? false,
-        remindAt: body.remindAt ?? null,
-        conversationId: body.conversationId ?? null,
-        messageId: body.messageId ?? null,
-        contextId: body.contextId ?? null,
-        source: body.shared ? 'request' : 'manual',
-      }),
-    );
+    let task: Awaited<ReturnType<typeof createTask>>;
+    try {
+      task = await ctx.db.transaction().execute((trx) =>
+        createTask(trx, ctx, {
+          ownerId: me,
+          assigneeId: assignee,
+          shared: body.shared ?? false,
+          title: body.title,
+          notes: body.notes ?? null,
+          dueAt: body.dueAt ?? null,
+          dueHasTime: body.dueHasTime ?? false,
+          remindAt: body.remindAt ?? null,
+          conversationId: body.conversationId ?? null,
+          messageId: body.messageId ?? null,
+          contextId: body.contextId ?? null,
+          source: body.shared ? 'request' : 'manual',
+          clientId: body.clientId ?? null,
+        }),
+      );
+    } catch (err) {
+      // The same send arriving twice at once: the other one made it.
+      const won = (err as { code?: string }).code === '23505' ? await sameTask() : undefined;
+      if (won) return { task: (await taskViews(ctx, [won], me))[0] };
+      throw err;
+    }
     if (task.shared) {
       const owner = await ctx.db
         .selectFrom('users')
