@@ -4,7 +4,7 @@ import { useCallHistory } from '@/api/hooks';
 import { Card, Divider } from '@/ui/Card';
 import { Phone } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
-import { CallRow } from './CallHistory';
+import { CallRows } from './history';
 
 /** On someone's profile: your latest calls with them, and the way to all of them (PRD §47). */
 export function PersonCalls({ personId, name }: { personId: string; name: string }) {
@@ -14,12 +14,7 @@ export function PersonCalls({ personId, name }: { personId: string; name: string
   return (
     <Card padded={false}>
       <View testID="person-calls">
-        {calls.map((c, i) => (
-          <View key={c.id}>
-            {i > 0 ? <Divider inset={72} /> : null}
-            <CallRow call={c} />
-          </View>
-        ))}
+        <CallRows calls={calls} />
         {q.data?.pages[0]?.nextBefore ? (
           <>
             <Divider inset={52} />

@@ -11,6 +11,7 @@ export const API_SCOPES = [
   'messages:read',
   'messages:write',
   'threads:write',
+  'updates',
 ] as const;
 export type ApiScope = (typeof API_SCOPES)[number];
 
@@ -19,6 +20,7 @@ export const API_SCOPE_LABELS: Record<ApiScope, string> = {
   'messages:read': 'Read customers’ conversations',
   'messages:write': 'Reply to customers (as a bot)',
   'threads:write': 'Assign, escalate and resolve',
+  updates: 'Post the organization’s updates',
 };
 
 /** What an app hears about. */

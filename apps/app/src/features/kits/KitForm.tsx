@@ -7,7 +7,6 @@ import { KITS, type KitDef, type KitField, kitsFor } from '@caishy/core/kits';
 import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
 import { firstFutureWhen } from '@caishy/core/when';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Location from 'expo-location';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -137,6 +136,7 @@ export function KitForm({
     setLocating(true);
     setError(null);
     try {
+      const Location = await import('expo-location');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setError('Caishy can’t see where you are. Allow it in your settings, or type a place.');

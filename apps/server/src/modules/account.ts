@@ -52,6 +52,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       tokens,
       apps,
       connectedApps,
+      following,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -151,6 +152,13 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('c.revoked_at', 'is', null)
         .orderBy('g.created_at')
         .execute(),
+      ctx.db
+        .selectFrom('org_follows as f')
+        .innerJoin('organizations as o', 'o.id', 'f.org_id')
+        .select(['o.name', 'o.handle', 'f.notify', 'f.created_at'])
+        .where('f.user_id', '=', me)
+        .orderBy('f.created_at')
+        .execute(),
     ]);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
     const archive = {
@@ -238,6 +246,11 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         title: o.title,
         joinedAt: o.joined_at.toISOString(),
         leftAt: o.left_at?.toISOString() ?? null,
+      })),
+      following: following.map((f) => ({
+        organization: { name: f.name, handle: f.handle },
+        notify: f.notify,
+        since: f.created_at.toISOString(),
       })),
       accessTokens: tokens.map((k) => ({
         name: k.name,

@@ -1,6 +1,6 @@
 import { formatClock } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Location from 'expo-location';
+import type { LocationSubscription } from 'expo-location';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,7 +50,7 @@ export function LiveLocationSharer() {
   useEffect(() => {
     if (!ids) return;
     let cancelled = false;
-    let watcher: Location.LocationSubscription | null = null;
+    let watcher: LocationSubscription | null = null;
     let pending: Point | null = null;
     let last = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -76,6 +76,8 @@ export function LiveLocationSharer() {
       timer = setTimeout(() => void send(), Math.max(0, last + EVERY_MS - Date.now()));
     };
     void (async () => {
+      // Loaded only once something is shared live: most people never do.
+      const Location = await import('expo-location');
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted' || cancelled) return;
       const sub = await Location.watchPositionAsync(

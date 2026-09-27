@@ -36,8 +36,12 @@ answers `401`.
 | `threads:write` | `POST /v1/business/:id/assign` | `{ "userId": "<person on the team>" }`, or `null` for nobody |
 | `threads:write` | `POST /v1/business/:id/resolve`, `…/reopen`, `…/escalate` | Escalate takes an optional `{ "note": "…" }` and tells the owner and admins |
 | `threads:write` | `DELETE /v1/business/:id/escalation` | Stop escalating |
+| `updates` | `GET /v1/orgs/:orgId/updates?before=&limit=` | The organization's updates, newest first, with who posted each and how many follow |
+| `updates` | `POST /v1/orgs/:orgId/updates` | Post one to everyone who follows it: `{ "body": "…" }` (up to 2,000 characters). It reads as the organization's |
+| `updates` | `PATCH /v1/orgs/:orgId/updates/:id`, `DELETE …` | Change one (`{ "body": "…" }`) or take it back |
 
-An app answers customers; it never writes to someone first. A person on the team does, from the
+An app answers customers; it never writes to someone first. Its updates go only to people who
+chose to follow the organization, and the app never learns who they are. A person on the team does, from the
 Business inbox, and it reaches them as a message request (R14).
 
 An organization can also turn on Caishy's own **AI agent** (the organization's page → AI agent),

@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { CallHistory } from '@/features/calls/CallHistory';
+import { CallHistory } from '@/features/calls/history';
 
 /** Call history (PRD §47): `?with=<id>&name=<name>` for the calls with one person. */
 export default function Calls() {

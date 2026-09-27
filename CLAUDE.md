@@ -211,6 +211,12 @@ These are rules, not preferences.
   `connection_sides.merged_into` always names a group's root (accepting a `duplicate` suggestion
   unions two groups), and `GET /connections` folds each group into its root's `also`. The app's
   card and section load only when there's one (`features/duplicates/`).
+- Organizations' updates (PRD §59): `lib/updates.ts` and `modules/updates.ts`, in tables of their
+  own (`org_updates`, `org_follows`), never conversations: nothing about following may reach the
+  inbox, attention, search, AI or anyone's connections. Only the team sees `postedBy` and the
+  follower count; nothing anywhere lists who follows. The app's section is
+  `features/updates/OrgUpdates.tsx` (in the organization page's chunk) and the Chats row
+  `UpdatesRow.tsx`.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
@@ -244,7 +250,7 @@ webhooks), personal access tokens, OAuth for third-party apps, plan entitlements
 (operations, product, organizations' insights), share links, your-data controls, the image and
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
 groups of up to eight) with their history, private conversations (end to end encrypted, web),
-billing with Stripe, and possible duplicates in People.
+billing with Stripe, possible duplicates in People, and organizations' updates.
 It's live on EasyPanel at https://caishy-caishy.0hqwb7.easypanel.host (`docs/DEPLOY.md`); sessions
 in this environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
 the live Stripe account's products, prices and webhook (tell the account's owner before creating

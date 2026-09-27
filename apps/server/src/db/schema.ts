@@ -456,6 +456,26 @@ export interface OrgBlocksTable {
   created_at: Generated<Date>;
 }
 
+/** An organization's update (PRD §59), posted to whoever follows it. */
+export interface OrgUpdatesTable {
+  id: string;
+  org_id: string;
+  posted_by: string | null;
+  body: string;
+  created_at: Generated<Date>;
+  edited_at: NullableTimestamp;
+  deleted_at: NullableTimestamp;
+}
+
+/** Someone following an organization's updates: neither a connection nor a conversation. */
+export interface OrgFollowsTable {
+  user_id: string;
+  org_id: string;
+  notify: Defaulted<boolean>;
+  read_at: Generated<Date>;
+  created_at: Generated<Date>;
+}
+
 export interface ReportsTable {
   id: string;
   reporter_id: string | null;
@@ -843,6 +863,8 @@ export interface Database {
   push_subscriptions: PushSubscriptionsTable;
   blocks: BlocksTable;
   org_blocks: OrgBlocksTable;
+  org_updates: OrgUpdatesTable;
+  org_follows: OrgFollowsTable;
   album_photos: AlbumPhotosTable;
   personal_tokens: PersonalTokensTable;
   oauth_clients: OAuthClientsTable;
@@ -884,6 +906,7 @@ export type Message = Selectable<MessagesTable>;
 export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;
+export type OrgUpdate = Selectable<OrgUpdatesTable>;
 export type OrgMember = Selectable<OrgMembersTable>;
 export type BusinessThread = Selectable<BusinessThreadsTable>;
 export type OrgApp = Selectable<OrgAppsTable>;

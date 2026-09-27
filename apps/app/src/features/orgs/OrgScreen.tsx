@@ -15,6 +15,7 @@ import { endpoints } from '@/api/endpoints';
 import { useBusinessSummary, useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
+import { OrgUpdates } from '@/features/updates/OrgUpdates';
 import { handleLink } from '@/lib/config';
 import { openLink } from '@/lib/links';
 import { shareLink } from '@/lib/share';
@@ -364,6 +365,8 @@ export function OrgScreen({ handle }: { handle: string }) {
             </Card>
           </View>
         ) : null}
+
+        <OrgUpdates org={org} />
 
         {manager ? (
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>

@@ -1755,4 +1755,62 @@ test.describe
         });
       expect(errors).toEqual([]);
     });
+    test('Lina follows Nile Dental, and its updates reach her apart from her conversations', async () => {
+      if (!linaContext) throw new Error('The link test signs Lina up first.');
+      const linas = linaContext;
+      const handle = `nile.dental.${stamp}`;
+      const name = `Nile Dental ${stamp}`;
+      const phone = lina.page;
+      await phone.goto(`/o/${handle}`);
+      await phone.getByTestId('org-follow').filter({ visible: true }).click();
+      await expect(visible(phone, `Following ${name}: its updates are in Updates`)).toBeVisible();
+
+      // Its owner posts; the team sees how many follow, never who.
+      const { page, errors } = noor;
+      await page.goto(`/o/${handle}`);
+      await expect(visible(page, '1 person follows it. Nobody sees who.')).toBeVisible();
+      await page.getByTestId('org-update-draft').fill('Open this Saturday from 9 to 1.');
+      await page.getByTestId('org-update-post').click();
+      await expect(visible(page, 'Posted')).toBeVisible();
+      await expect(page.getByTestId('org-update').first()).toContainText('by Noor Haddad');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-org-updates.png' });
+
+      // In Chats it's one row of its own; opened, it's what the organization said.
+      await phone.goto('/');
+      const row = phone.getByTestId('updates-row').filter({ visible: true });
+      await expect(row).toContainText(`New from ${name}`);
+      await row.click();
+      await phone.waitForURL('**/updates');
+      await expect(phone.getByTestId('following-row').filter({ visible: true })).toContainText(
+        'Open this Saturday from 9 to 1.',
+      );
+      await phone.screenshot({ path: 'e2e/screenshots/phone-updates.png' });
+      await phone.getByTestId('following-row').filter({ visible: true }).click();
+      const update = phone.getByTestId('org-update').filter({ visible: true }).first();
+      await expect(update).toContainText('Open this Saturday from 9 to 1.');
+      await expect(update).not.toContainText('Noor');
+
+      // Told of the next one, if she asks; one taken back is gone for her too.
+      await phone.getByTestId('org-notify').filter({ visible: true }).click();
+      await expect(visible(phone, 'You’ll be notified of its updates')).toBeVisible();
+      await page.getByTestId('org-update-draft').fill('Closed Monday for the holiday.');
+      await page.getByTestId('org-update-post').click();
+      await expect
+        .poll(async () =>
+          (
+            (await (await linas.request.get('/v1/notifications')).json()).notifications as Array<{
+              kind: string;
+              body: string | null;
+            }>
+          )
+            .filter((n) => n.kind === 'update')
+            .map((n) => n.body),
+        )
+        .toEqual(['Closed Monday for the holiday.']);
+      await page.getByTestId('org-update-remove').first().click();
+      await expect(visible(page, 'Update taken back')).toBeVisible();
+      await phone.reload();
+      await expect(phone.getByTestId('org-update').filter({ visible: true })).toHaveCount(1);
+      expect([...errors, ...lina.errors]).toEqual([]);
+    });
   });

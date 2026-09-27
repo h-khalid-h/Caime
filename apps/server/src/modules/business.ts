@@ -72,6 +72,12 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .values({ user_id: auth.userId, org_id: id, created_at: ctx.now() })
       .onConflict((oc) => oc.doNothing())
       .execute();
+    // Its updates stop reaching them too (PRD §59).
+    await ctx.db
+      .deleteFrom('org_follows')
+      .where('user_id', '=', auth.userId)
+      .where('org_id', '=', id)
+      .execute();
     const thread = await ctx.db
       .selectFrom('business_threads')
       .select(['conversation_id', 'resolved_at'])

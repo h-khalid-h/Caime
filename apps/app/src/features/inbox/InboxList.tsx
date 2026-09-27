@@ -7,6 +7,7 @@ import { Character } from '@/brand/Character';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useBadges } from '@/features/shell/useBadges';
+import { UpdatesRow } from '@/features/updates/UpdatesRow';
 import { useNow, useUserClock } from '@/lib/time';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
@@ -109,6 +110,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
       </View>
       <ConnectionBanner />
       <TeamInboxes />
+      <UpdatesRow />
       {caughtUp ? (
         <View
           style={{

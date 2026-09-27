@@ -24,6 +24,7 @@ import type {
   DecisionView,
   DeviceSessionView,
   DeviceView,
+  FollowingView,
   GroupCallView,
   HandleView,
   IceConfigView,
@@ -42,6 +43,8 @@ import type {
   OrgAppView,
   OrgInsightsView,
   OrgSummaryView,
+  OrgUpdatesView,
+  OrgUpdateView,
   OrgView,
   PeopleSearchResult,
   PersonalTokenView,
@@ -501,6 +504,23 @@ export const endpoints = {
   unblock: (userId: string) => api.del<Ok>(`/blocks/${userId}`),
   blockOrg: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/block`),
   unblockOrg: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/block`),
+
+  // Organizations' updates (PRD §59)
+  orgUpdates: (orgId: string, before?: string) =>
+    api.get<OrgUpdatesView>(`/orgs/${orgId}/updates${q({ before })}`),
+  postUpdate: (orgId: string, body: string) =>
+    api.post<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates`, { body }),
+  editUpdate: (orgId: string, id: string, body: string) =>
+    api.patch<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates/${id}`, { body }),
+  removeUpdate: (orgId: string, id: string) => api.del<Ok>(`/orgs/${orgId}/updates/${id}`),
+  follow: (orgId: string, notify?: boolean) =>
+    api.put<{ following: { notify: boolean } }>(
+      `/orgs/${orgId}/follow`,
+      notify === undefined ? {} : { notify },
+    ),
+  unfollow: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/follow`),
+  readUpdates: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/updates/read`),
+  following: () => api.get<{ following: FollowingView[] }>('/updates'),
   report: (body: {
     userId?: string;
     messageId?: string;

@@ -45,6 +45,8 @@ export default function Notifications() {
     else if (n.kind.startsWith('connection') && userId)
       router.navigate({ pathname: '/p/[id]', params: { id: userId } });
     else if (n.kind.includes('task') || n.kind.includes('reminder')) router.navigate('/actions');
+    else if (n.kind === 'update' && typeof n.data.handle === 'string')
+      router.navigate({ pathname: '/o/[handle]', params: { handle: n.data.handle } });
   };
 
   return (

@@ -505,6 +505,44 @@ export interface OrgRef {
   verifiedDomain: string | null;
 }
 
+/**
+ * An organization's update (PRD §59): posted by its team to whoever follows it, and read as the
+ * organization's, never a person's. Only the team sees who on it posted.
+ */
+export interface OrgUpdateView {
+  id: string;
+  org: OrgRef;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+  /** Who on the team posted it: for the team only (null for everyone else, or an app). */
+  postedBy: { id: string; displayName: string } | null;
+}
+
+/** An organization's updates as someone sees them on its page. */
+export interface OrgUpdatesView {
+  updates: OrgUpdateView[];
+  /** Older ones, from here (null when there are none). */
+  nextBefore: string | null;
+  /** Whether they follow it, and are told of each update. */
+  following: { notify: boolean } | null;
+  /** How many follow it: for its team only. */
+  followers: number | null;
+  /** They can post: its owner or an admin. */
+  canPost: boolean;
+  /** Following it isn't possible while they've blocked it. */
+  blockedByMe: boolean;
+}
+
+/** An organization someone follows, in their Updates. */
+export interface FollowingView {
+  org: OrgRef;
+  latest: OrgUpdateView | null;
+  /** Posted since they last looked. */
+  unread: number;
+  notify: boolean;
+}
+
 /** A customer's conversation with an organization, as its team works it (PRD §38). */
 export interface BusinessThreadView {
   conversationId: string;
@@ -1065,7 +1103,9 @@ export type RealtimeSignalType =
   | 'notifications.read'
   | 'block.changed'
   | 'me.updated'
-  | 'business.updated';
+  | 'business.updated'
+  /** An organization someone follows (or whose team they're on) posted, changed or took back an update. */
+  | 'updates.changed';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

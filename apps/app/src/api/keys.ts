@@ -30,6 +30,9 @@ export const qk = {
   calls: (filter: string) => ['calls', filter] as const,
   relationshipHistory: (id: string) => ['relationship-history', id] as const,
   connections: ['connections'] as const,
+  /** Updates: the organizations someone follows, and each one's updates (PRD §59). */
+  following: ['updates', 'following'] as const,
+  orgUpdates: (orgId: string) => ['updates', 'org', orgId] as const,
   requests: (direction: 'incoming' | 'outgoing') => ['requests', direction] as const,
   taxonomy: ['taxonomy'] as const,
   tasks: (view: string, scope?: string) => ['tasks', view, scope ?? ''] as const,

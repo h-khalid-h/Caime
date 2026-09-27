@@ -107,6 +107,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       until the new one is proven. The team is made of adult connections; owners and admins
       manage it and the domain; an owner who leaves or deletes their account hands it on; the
       last one out closes it (`orgs.test.ts`, E2E)
+- [x] Organizations' updates (PRD §59, §15 broadcast): an organization's owner and admins (or its
+      app, with `updates`) post to whoever follows it; anyone reads them on its page, as the
+      organization's. People follow from the page (and choose whether each update notifies
+      them); Updates is one row at the top of Chats and a screen of its own, never among their
+      conversations or what needs them. Nobody sees who follows; the team sees how many
+      (`updates.test.ts`, E2E)
 - [x] Business inbox: a customer messages an organization from its page (found in Connect or
       by its link) and gets one conversation with it; the whole team is in it and answers as the
       organization, so the customer never sees who (masked in every view, search, notification,

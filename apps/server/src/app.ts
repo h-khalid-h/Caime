@@ -58,6 +58,7 @@ import { searchRoutes } from './modules/search';
 import { spaceRoutes } from './modules/spaces';
 import { suggestionRoutes } from './modules/suggestions';
 import { tokenRoutes } from './modules/tokens';
+import { updateRoutes } from './modules/updates';
 import { registerWorkers } from './modules/workers';
 import { registerAuth } from './plugins/auth';
 import { registerWeb, type WebApp } from './plugins/static';
@@ -245,6 +246,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await orgRoutes(v1, ctx);
       await handleRoutes(v1, ctx);
       await businessRoutes(v1, ctx);
+      await updateRoutes(v1, ctx);
       await appRoutes(v1, ctx);
       await agentRoutes(v1, ctx);
       await tokenRoutes(v1, ctx);

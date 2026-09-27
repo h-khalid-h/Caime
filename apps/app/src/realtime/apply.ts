@@ -242,6 +242,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(qk.policies);
       invalidate(qk.inbox, 'inbox');
       return;
+    case 'updates.changed':
+      invalidate(['updates'], 'updates');
+      return;
     case 'suggestion.created':
     case 'suggestion.resolved':
       invalidate(['suggestions'], 'suggestions');

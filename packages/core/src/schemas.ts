@@ -10,7 +10,7 @@ import { REWRITE_STYLES } from './assist';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, type PublicJwk, type SealedMessage } from './e2ee';
-import { ORG_KINDS } from './orgs';
+import { ORG_KINDS, UPDATE_MAX } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
@@ -363,6 +363,17 @@ export const AcceptSuggestionBody = z.object({
   relationship: RelationshipInput.optional(),
   /** A possible duplicate (PRD §51): which of the two to keep them under. */
   keep: z.string().uuid().optional(),
+});
+
+// --- Organizations' updates (PRD §59) ----------------------------------------------------------
+
+export const PostUpdateBody = z.object({
+  body: z.string().trim().min(1).max(UPDATE_MAX),
+});
+
+export const FollowOrgBody = z.object({
+  /** Told of each update (a notification), or only shown them in Updates. */
+  notify: z.boolean().optional(),
 });
 
 // --- Conversations and messages ----------------------------------------------------------------

@@ -119,6 +119,20 @@ export const useOrg = (handle: string) =>
     enabled: Boolean(handle),
   });
 
+/** Updates: the organizations this person follows, the latest first (PRD §59). */
+export const useFollowing = (enabled = true) =>
+  useQuery({ queryKey: qk.following, queryFn: endpoints.following, enabled });
+
+/** An organization's updates on its page, newest first, a page at a time. */
+export const useOrgUpdates = (orgId: string) =>
+  useInfiniteQuery({
+    queryKey: qk.orgUpdates(orgId),
+    queryFn: ({ pageParam }) => endpoints.orgUpdates(orgId, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextBefore ?? undefined,
+    enabled: Boolean(orgId),
+  });
+
 /** Call history (PRD §47): `missed`, or `with:<id>` for the calls with one person. */
 export const useCallHistory = (filter: 'all' | 'missed' | `with:${string}`, limit = 30) =>
   useInfiniteQuery({

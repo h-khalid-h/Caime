@@ -132,6 +132,20 @@ export function CallRow({ call }: { call: CallHistoryItem }) {
 }
 
 /** The person's calls (PRD §47), newest first: every one, the missed ones, or those with one person. */
+/** A few calls, one under the other (someone's page shows their latest). */
+export function CallRows({ calls }: { calls: CallHistoryItem[] }) {
+  return (
+    <>
+      {calls.map((c, i) => (
+        <View key={c.id}>
+          {i > 0 ? <Divider inset={72} /> : null}
+          <CallRow call={c} />
+        </View>
+      ))}
+    </>
+  );
+}
+
 export function CallHistory({ withId, withName }: { withId?: string; withName?: string }) {
   const { desktop } = useLayout();
   const [view, setView] = useState<'all' | 'missed'>('all');

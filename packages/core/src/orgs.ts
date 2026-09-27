@@ -15,6 +15,9 @@ export const ORG_KINDS = [
 ] as const;
 export type OrgKind = (typeof ORG_KINDS)[number];
 
+/** An organization's update (PRD §59) is short: a paragraph or two, a link. */
+export const UPDATE_MAX = 2000;
+
 export const ORG_KIND_LABELS: Record<OrgKind, string> = {
   business: 'Business',
   shop: 'Shop',

@@ -42,6 +42,10 @@ export const API_ROUTES: Readonly<Record<string, ApiScope>> = {
   'POST /v1/business/:conversationId/reopen': 'threads:write',
   'POST /v1/business/:conversationId/escalate': 'threads:write',
   'DELETE /v1/business/:conversationId/escalation': 'threads:write',
+  'GET /v1/orgs/:id/updates': 'updates',
+  'POST /v1/orgs/:id/updates': 'updates',
+  'PATCH /v1/orgs/:id/updates/:updateId': 'updates',
+  'DELETE /v1/orgs/:id/updates/:updateId': 'updates',
 };
 
 export interface AppAuth {
