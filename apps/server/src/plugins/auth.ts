@@ -66,6 +66,11 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caishy-client']) {
       throw new AppError(403, 'csrf', 'Missing X-Caishy-Client header.');
     }
+    // The app says whose account it's showing: a call meant as one person never acts as another
+    // (another tab of the browser signed in as them since, and the cookie is theirs now).
+    const expected = req.headers['x-caishy-user'];
+    if (typeof expected === 'string' && expected !== session.userId)
+      throw new AppError(409, 'wrong_account', 'Someone else is signed in here now.');
     req.auth = { ...session, via: found.via };
   });
 }

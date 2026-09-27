@@ -36,4 +36,40 @@ describe('the API client', () => {
       expect(await api.get('/inbox').catch((e) => e), body).toBeInstanceOf(NetworkError);
     }
   });
+
+  it('says whose account it is, and starts again when someone else is signed in', async () => {
+    const { api, setExpectedUser, setWrongAccountHandler } = await import('./client');
+    const sent = answer(200, '{}');
+    vi.stubGlobal('fetch', sent);
+    const headersOf = (i: number) =>
+      (sent.mock.calls[i] as unknown as [string, { headers: Record<string, string> }])[1].headers;
+    setExpectedUser('u-noor');
+    await api.post('/conversations/c1/messages', { body: 'Hi' });
+    expect(headersOf(0)['x-caishy-user']).toBe('u-noor');
+    // What finds out who's signed in, or decides it, is asked as nobody in particular.
+    await api.get('/auth/session');
+    await api.post('/auth/login', {});
+    expect(headersOf(1)['x-caishy-user']).toBeUndefined();
+    expect(headersOf(2)['x-caishy-user']).toBeUndefined();
+    await api.post('/auth/logout');
+    expect(headersOf(3)['x-caishy-user']).toBe('u-noor');
+    setExpectedUser(null);
+    await api.get('/inbox');
+    expect(headersOf(4)['x-caishy-user']).toBeUndefined();
+
+    const startAgain = vi.fn();
+    setWrongAccountHandler(startAgain);
+    vi.stubGlobal(
+      'fetch',
+      answer(409, JSON.stringify({ error: { code: 'wrong_account', message: 'Someone else.' } })),
+    );
+    await api.post('/tasks', {}).catch(() => {});
+    expect(startAgain).toHaveBeenCalledTimes(1);
+    vi.stubGlobal(
+      'fetch',
+      answer(409, JSON.stringify({ error: { code: 'saved_full', message: 'Remove some.' } })),
+    );
+    await api.post('/messages/m1/save').catch(() => {});
+    expect(startAgain).toHaveBeenCalledTimes(1);
+  });
 });

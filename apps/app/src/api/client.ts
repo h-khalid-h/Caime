@@ -30,6 +30,29 @@ export class NetworkError extends Error {
 
 let token: string | null = null;
 let onUnauthorized: (() => void) | null = null;
+let expectedUser: string | null = null;
+let onWrongAccount: (() => void) | null = null;
+
+/**
+ * Whose account this app is showing. Every call says so, and the server refuses one that finds
+ * someone else signed in (another tab of the browser signed in as them since), so nothing meant
+ * as one person, a queued message or action above all, ever goes as another.
+ */
+export function setExpectedUser(id: string | null): void {
+  expectedUser = id;
+}
+
+/** What happens when the server, or the realtime socket, finds someone else signed in. */
+export function setWrongAccountHandler(handler: () => void): void {
+  onWrongAccount = handler;
+}
+
+export function wrongAccount(): void {
+  onWrongAccount?.();
+}
+
+/** Calls that find out, or decide, who is signed in: they're sent as nobody in particular. */
+const WHOEVER = new Set(['/auth/session', '/auth/login', '/auth/signup', '/auth/recover']);
 
 export function setAuthToken(value: string | null): void {
   token = value;
@@ -59,6 +82,8 @@ export async function request<T>(
   const headers: Record<string, string> = { accept: 'application/json', ...opts.headers };
   if (isWeb) headers['x-caishy-client'] = 'web';
   if (token) headers.authorization = `Bearer ${token}`;
+  if (expectedUser && !WHOEVER.has(path.split('?')[0] ?? ''))
+    headers['x-caishy-user'] = expectedUser;
   let body: BodyInit | undefined = opts.raw;
   if (opts.body !== undefined && !opts.raw) {
     headers['content-type'] = 'application/json';
@@ -91,6 +116,7 @@ export async function request<T>(
   if (!res.ok) {
     if (res.status === 401 && path !== '/auth/login') onUnauthorized?.();
     const e = data?.error ?? {};
+    if (res.status === 409 && e.code === 'wrong_account') onWrongAccount?.();
     throw new ApiError(
       res.status,
       e.code ?? 'error',

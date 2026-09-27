@@ -7,7 +7,13 @@ import type { AuthResponse, MeView } from '@caishy/core/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
-import { ApiError, setAuthToken, setUnauthorizedHandler } from '@/api/client';
+import {
+  ApiError,
+  setAuthToken,
+  setExpectedUser,
+  setUnauthorizedHandler,
+  setWrongAccountHandler,
+} from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { persister, queryClient } from '@/api/queryClient';
@@ -128,6 +134,13 @@ export const useSession = create<SessionState>((set, get) => ({
         await get().signOut({ remote: false });
         return;
       }
+      const was = get().user;
+      if (was && was.id !== res.user.id) {
+        // Someone else is signed in here now (in another tab): nothing of who this was stays.
+        await get().signOut({ remote: false });
+        await get().signedIn({ user: res.user, token: null });
+        return;
+      }
       get().setUser(res.user);
       adoptPreferences(res.user);
     } catch (err) {
@@ -171,6 +184,33 @@ setUnauthorizedHandler(() => {
   if (useSession.getState().status === 'signedIn')
     void useSession.getState().signOut({ remote: false });
 });
+
+// Every call says whose account this is (api/client.ts), from the moment it's known.
+useSession.subscribe((s) => setExpectedUser(s.status === 'signedIn' ? (s.user?.id ?? null) : null));
+
+/**
+ * The browser is signed in as someone else now, or no one: another tab signed out, or in as
+ * someone else. This one starts again as whoever that is, so nothing it shows or sends is the
+ * last person's. On a phone, where one app has one account, it signs out.
+ */
+function startAgain(): void {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.reload();
+  else if (useSession.getState().status === 'signedIn')
+    void useSession.getState().signOut({ remote: false });
+}
+setWrongAccountHandler(startAgain);
+
+if (Platform.OS === 'web' && typeof window !== 'undefined')
+  window.addEventListener?.('storage', (e: StorageEvent) => {
+    if (e.key !== USER_KEY || useSession.getState().status === 'booting') return;
+    let now: string | null = null;
+    try {
+      now = e.newValue ? (JSON.parse(e.newValue) as MeView).id : null;
+    } catch {
+      return;
+    }
+    if (now !== (useSession.getState().user?.id ?? null)) startAgain();
+  });
 
 /** The signed-in person's id; screens under the signed-in layout can rely on it. */
 export function useMe(): MeView {

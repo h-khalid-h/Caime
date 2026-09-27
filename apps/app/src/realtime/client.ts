@@ -6,7 +6,7 @@
 import type { RealtimeFrame } from '@caishy/core/api';
 import type { Query } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
-import { getAuthToken } from '@/api/client';
+import { getAuthToken, wrongAccount } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
@@ -150,8 +150,16 @@ class RealtimeClient {
       } catch {
         return;
       }
-      if (frame.type === 'hello') this.onHello();
-      else if (frame.type === 'event' && this.me) applyEvent(queryClient, frame.event, this.me);
+      if (frame.type === 'hello') {
+        // Signed in as someone else by now (another tab): nothing of theirs is shown as this
+        // person's, and the app starts again as them.
+        if (this.me && frame.userId !== this.me) {
+          this.stop();
+          wrongAccount();
+          return;
+        }
+        this.onHello();
+      } else if (frame.type === 'event' && this.me) applyEvent(queryClient, frame.event, this.me);
     };
     ws.onclose = () => {
       if (this.ws !== ws) return;

@@ -44,6 +44,8 @@ export const visible = (page: Page, text: string | RegExp) =>
  * Signs up and finishes onboarding through the API, sharing the context's cookies, for tests
  * about what comes after sign-up (the sign-up screens have their own test).
  */
+let signups = 0;
+
 export async function apiSignUp(
   context: BrowserContext,
   displayName: string,
@@ -51,7 +53,9 @@ export async function apiSignUp(
   opts: { birthYear?: number } = {},
 ) {
   const res = await context.request.post('/v1/auth/signup', {
-    headers: CLIENT,
+    // Each from a network of its own (a documentation range), as people sign up: the server
+    // takes only a few sign-ups an hour from one address, and the suite makes more than that.
+    headers: { ...CLIENT, 'x-forwarded-for': `198.51.100.${(signups++ % 250) + 1}` },
     data: {
       email: `${handle}@example.com`,
       password: PASSWORD,

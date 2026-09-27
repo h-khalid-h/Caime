@@ -754,3 +754,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   446.0 KB of initial JavaScript. Mutation-tested: 70 changes to the new code, each caught by a
   test but one that changes nothing observable. Tests: 209 core, 49 brand, 442 server, 123 app,
   52 E2E. The texts still want a lawyer's review.
+- 2026-09-27 — Session 2 (cont.): a tab never acts as an account it isn't showing. When another
+  tab signs out, or in as someone else, the cookie changes under every tab: a tab left open
+  showed the last person's account, and what it had waiting would have gone out as whoever was
+  signed in by then. The app now says whose account it shows on every call, and the server
+  refuses one that finds someone else signed in (409 wrong_account); a tab follows at once, as
+  whoever is signed in now or on the welcome page; the realtime socket checks the account its
+  hello names; opening on a saved account that isn't the one signed in signs it out here first.
+  Mutation-tested: 9 changes to the new code, each caught by a test. Tests: 209 core, 49 brand,
+  445 server, 126 app, 53 E2E (two tabs, one signed out and in as someone else under the other).

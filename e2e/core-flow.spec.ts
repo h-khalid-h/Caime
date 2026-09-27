@@ -3,7 +3,7 @@
  * labels, and talk in real time; Caishy offers one suggestion from the exchange, not two.
  */
 import { expect, type Page, test } from '@playwright/test';
-import { newPerson, visible } from './helpers';
+import { apiSignUp, CLIENT, newPerson, PASSWORD, visible } from './helpers';
 
 const stamp = Date.now().toString(36).slice(-6);
 const SHOTS = 'e2e/screenshots';
@@ -149,6 +149,49 @@ test('before signing up, the terms and privacy policy open as pages, each leadin
   await terms.waitForURL('**/welcome');
   await expect(terms.getByText('Messaging that understands your relationships.')).toBeVisible();
   expect(errors).toEqual([]);
+  await context.close();
+});
+
+test('a tab left open follows the browser when another signs out and in as someone else', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const stamp = Date.now().toString(36);
+  const noor = await apiSignUp(context, 'Noor Tabs', `noortabs${stamp}`);
+  const alex = await apiSignUp(context, 'Alex Tabs', `alextabs${stamp}`);
+  // The browser is Alex's now (signed up last): sign in as Noor.
+  const first = await newPerson(context);
+  const login = await context.request.post('/v1/auth/login', {
+    headers: CLIENT,
+    data: { identifier: noor.handle, password: PASSWORD, client: 'web' },
+  });
+  expect(login.ok()).toBe(true);
+  await first.page.goto('/you');
+  await expect(first.page.getByRole('img', { name: 'Noor Tabs' }).first()).toBeVisible();
+
+  // In a second tab, Noor signs out, and Alex signs in.
+  const second = await newPerson(context);
+  await second.page.goto('/you');
+  await second.page.getByTestId('sign-out').filter({ visible: true }).click();
+  await second.page.waitForURL('**/welcome');
+  // The first tab shows nobody's account either, as soon as it hears.
+  await first.page.waitForURL('**/welcome');
+  await second.page.goto('/sign-in');
+  await second.page.getByTestId('signin-identifier').fill(alex.handle);
+  await second.page.getByTestId('signin-password').fill(PASSWORD);
+  await second.page.getByTestId('signin-submit').click();
+  await expect(second.page.getByRole('img', { name: 'Alex Tabs' }).first()).toBeVisible();
+  // And follows the browser in as Alex, never still as Noor.
+  await expect(first.page.getByRole('img', { name: 'Alex Tabs' }).first()).toBeVisible();
+
+  // A call the app still meant as Noor (a queue sent late) is refused, never made as Alex.
+  const late = await context.request.post('/v1/tasks', {
+    headers: { ...CLIENT, 'x-caishy-user': noor.id },
+    data: { title: 'Queued as Noor' },
+  });
+  expect(late.status()).toBe(409);
+  // What the tabs asked in the moment the account changed under them is refused, and says so.
+  expect([...first.errors, ...second.errors].filter((e) => !/\b40[19]\b/.test(e))).toEqual([]);
   await context.close();
 });
 
