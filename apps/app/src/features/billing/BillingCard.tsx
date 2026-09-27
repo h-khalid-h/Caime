@@ -64,7 +64,11 @@ export function BillingCard({
   ) : null;
 
   if (sub) {
-    const paid = billing.prices.find((p) => p.interval === sub.interval);
+    // What it's charged: its own price, even after the list price changed.
+    const paid =
+      sub.amount != null && sub.currency
+        ? { plan, interval: sub.interval, amount: sub.amount, currency: sub.currency }
+        : billing.prices.find((p) => p.interval === sub.interval);
     return (
       <View style={{ gap: 10 }} testID="billing-subscription">
         <Text variant="bodyStrong">{paid ? `${name} · ${priceText(paid, locale)}` : name}</Text>

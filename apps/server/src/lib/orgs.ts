@@ -66,9 +66,10 @@ export interface TxtResolver {
 
 /**
  * An account is going: each organization it owns passes to the next in line (admins first),
- * and one with nobody else on its team closes. Runs before the account row goes.
+ * and one with nobody else on its team closes. Runs before the account row goes. Returns the
+ * ones that closed (what they paid for ends too, once this is committed).
  */
-export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<void> {
+export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<string[]> {
   const owned = await trx
     .selectFrom('org_members')
     .select('org_id')
@@ -76,7 +77,8 @@ export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<v
     .where('role', '=', 'owner')
     .where('left_at', 'is', null)
     .execute();
-  if (owned.length === 0) return;
+  if (owned.length === 0) return [];
+  const closed: string[] = [];
   await trx
     .updateTable('org_members')
     .set({ role: 'agent' })
@@ -108,11 +110,14 @@ export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<v
         .where('org_id', '=', org_id)
         .where('user_id', '=', heir)
         .execute();
-    else
+    else {
       await trx
         .updateTable('organizations')
         .set({ archived_at: now })
         .where('id', '=', org_id)
         .execute();
+      closed.push(org_id);
+    }
   }
+  return closed;
 }

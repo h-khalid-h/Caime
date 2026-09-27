@@ -196,9 +196,13 @@ These are rules, not preferences.
 - Billing: `lib/billing.ts` and `modules/billing.ts` (Stripe, with fetch in `lib/stripe.ts`, API
   version pinned). Prices are found by lookup key (`caishy_<plan>_<interval>`), never by id. The
   webhook takes the raw body (its own content-type parser), checks the signature, and applies
-  what `GET /v1/subscriptions/:id` says, never the event's copy. Tests talk to
-  `test/stripe-stub.ts`; the E2E to `e2e/stripe-stub.mjs`, whose Checkout and portal pages send
-  the signed webhooks.
+  what `GET /v1/subscriptions/:id` says, never the event's copy, in `syncSubscription` under an
+  advisory lock per subscription (a listing's copy is used only once it has ended). A plan's
+  `plan_source` says who set it (`default`, `operator`, `billing`): billing changes only its own
+  and the default. Ending a payer deletes its Stripe customer (`endBillingOf`, a
+  `billing.close` job if Stripe is away, and `reconcileBilling` every six hours). Tests talk to
+  `test/stripe-stub.ts` (`hold()` stages a race, `outage()` takes Stripe away); the E2E to
+  `e2e/stripe-stub.mjs`, whose Checkout and portal pages send the signed webhooks.
 - Private conversations (R18): the design is in `packages/core/src/e2ee.ts`'s header and the Web
   Crypto in `e2ee-crypto.ts`; the server never imports the latter and never sees a key or a
   word. The server's side is `lib/e2ee.ts` (live devices, `assertSealedForEveryone`) and

@@ -14,10 +14,19 @@ export class StripeError extends Error {
     public status: number,
     public type: string | null,
     message: string,
+    /** Stripe's error code: `resource_missing` for something it doesn't have. */
+    public code: string | null = null,
   ) {
     super(message);
   }
 }
+
+/** Something Stripe doesn't have (deleted there, or made with a key of the other mode). */
+export const missingAtStripe = (e: unknown) =>
+  e instanceof StripeError && (e.code === 'resource_missing' || e.status === 404);
+
+/** A live key (or a restricted live key): anything else is test mode. */
+export const liveKey = (key: string | null | undefined) => /^(sk|rk)_live_/.test(key ?? '');
 
 /** Stripe's form encoding: nested objects and arrays as `a[b][0]=c`. */
 export function stripeForm(params: Record<string, unknown>): string {
@@ -64,13 +73,14 @@ export function stripe(ctx: AppContext): Stripe | null {
       signal: AbortSignal.timeout(20_000),
     });
     const json = (await res.json().catch(() => ({}))) as {
-      error?: { type?: string; message?: string };
+      error?: { type?: string; message?: string; code?: string };
     };
     if (!res.ok)
       throw new StripeError(
         res.status,
         json.error?.type ?? null,
         json.error?.message ?? `Stripe answered ${res.status}.`,
+        json.error?.code ?? null,
       );
     return json as T;
   }

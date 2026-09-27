@@ -29,6 +29,7 @@ import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
 import { activeAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
+import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -404,6 +405,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('id', '=', id)
           .execute();
     });
+    // Closed: what it paid for ends (a job keeps trying if Stripe can't be reached now).
+    if (people.length === 1) await endBillingOf(ctx, { orgId: id });
     await ctx.bus.publish([userId], { type: 'business.updated', data: { orgId: id } });
     await audit(ctx.db, {
       actorId: auth.userId,

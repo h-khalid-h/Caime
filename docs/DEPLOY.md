@@ -116,11 +116,35 @@ Plans are bought in the app once Stripe is set up; until then, an operator sets 
    Sessions, Customer portal and Subscriptions, and read access to Prices) and
    `STRIPE_WEBHOOK_SECRET` on the service, and redeploy.
 
-Whatever a webhook says, the server asks Stripe how that subscription stands now, so events that
-come late or out of order change nothing wrongly; each event is handled once. A plan is on while
-its subscription is active, in a trial, or retrying a failed payment (`past_due`), and goes back
-to Personal or Free when it ends. It never replaces a plan an operator set (Enterprise), and a
-lower plan never takes anything away. Deleting an account ends its subscriptions first.
+Whatever a webhook says, the server asks Stripe how that subscription stands now, one delivery
+at a time for each subscription, so events that come late, out of order or two at once change
+nothing wrongly. Each event is handled once; one that failed is handled when Stripe sends it
+again. A subscription is Caishy's by its price's lookup key, or, once the key has moved to a new
+price, by what the server already knew of it and by whom its Checkout was for (the
+`caishy_payer` metadata), so people on an old price are followed to the end.
+
+- **The plan follows what's paid.** It's on while a subscription is active, in a trial, or
+  retrying a failed payment (`past_due`), and goes back to Personal or Free when it ends. A lower
+  plan never takes anything away. The plan page shows what the subscription itself costs, even
+  after the list price changes.
+- **An operator's plan stays.** Billing changes only a plan it set. A plan the operator set
+  (Enterprise, or a free year of Pro) stays whatever Stripe says, and there's nothing to buy over
+  it. The operator can't move someone who is paying back to Personal or Free: cancel the
+  subscription in Stripe instead, and the plan follows.
+- **Never sold twice.** Before each Checkout the server asks Stripe what the payer already has,
+  so a payment whose webhook hasn't come yet isn't sold again. Any older Checkout still open
+  closes, and a payer's Checkouts are made one at a time.
+- **Nothing is charged to someone gone.** Deleting an account, or an organization closing (its
+  last person leaving, or its owner's account deleted), deletes its Stripe customer. That ends
+  every subscription it has at once, whether or not the server had heard of them. If Stripe
+  can't be reached then, a job and the six-hourly check keep trying; deleting never waits on it.
+- **Checked every six hours.** Every customer's subscriptions are asked of Stripe, so a webhook
+  that never came can't leave a plan on or off wrongly.
+- **Test and live stay apart.** Customers are kept per mode. Moving from a test key to a live
+  key starts afresh, and what test mode paid for turns off. A customer deleted in Stripe's
+  dashboard is forgotten, and a new one is made when needed.
+- **An organization's receipts go to its owner.** They go to the owner's email, whichever admin
+  pays, and it's brought up to date whenever its billing is opened.
 
 ### 4. Continuous deployment
 
@@ -142,8 +166,9 @@ forever and nothing that makes Caishy useful is ever limited: plans count only A
 (3 people on Free, 100 on Business) and connected apps (1, 25). A lower plan never removes
 anything; it only stops additions until they fit.
 
-Billing is an integration that isn't built yet (⛔ Stripe). Until then, the operator sets plans
-with `ADMIN_TOKEN`, and each change is written to the audit log:
+Plans are bought through Stripe (Billing, above). The operator can also set one with
+`ADMIN_TOKEN`: a deal, a free year, Enterprise. Billing then leaves it alone, and setting
+Personal or Free hands it back to billing. Each change is written to the audit log:
 
 ```sh
 curl -X PUT https://caishy.example.com/v1/admin/people/noor/plan \

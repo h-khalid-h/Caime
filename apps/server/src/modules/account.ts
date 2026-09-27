@@ -9,7 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
-import { endSubscriptionsOf } from '../lib/billing';
+import { endBillingOf } from '../lib/billing';
 import { verifyPassword } from '../lib/crypto';
 import { AppError, notFound } from '../lib/errors';
 import { leaveAllGroupCalls } from '../lib/group-calls';
@@ -336,14 +336,15 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         )
         .execute(),
     ]);
-    // What it pays for ends first: nothing is charged to an account that's gone.
-    await endSubscriptionsOf(ctx, { userId: me });
+    // What it pays for ends first: nothing is charged to an account that's gone (Stripe away for
+    // a moment, a job keeps trying; deleting never waits on it).
+    await endBillingOf(ctx, { userId: me });
     // Out of any group call, so the others hear it and the call's line is written.
     await leaveAllGroupCalls(ctx, me);
-    await ctx.db.transaction().execute(async (trx) => {
+    const closed = await ctx.db.transaction().execute(async (trx) => {
       // Spaces and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());
-      await handOverOrgs(trx, me, ctx.now());
+      const closedOrgs = await handOverOrgs(trx, me, ctx.now());
       // The account first (its avatar points at a file), then the files only it could see.
       await trx.deleteFrom('users').where('id', '=', me).execute();
       if (orphanFiles.length)
@@ -355,7 +356,10 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
             orphanFiles.map((f) => f.id),
           )
           .execute();
+      return closedOrgs;
     });
+    // An organization that closed with it pays for nothing any more.
+    for (const orgId of closed) await endBillingOf(ctx, { orgId });
     await audit(ctx.db, { actorId: null, action: 'account.deleted', target: me });
     for (const f of orphanFiles) {
       await storage.remove(f.storage_key).catch(() => {});

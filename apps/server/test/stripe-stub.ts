@@ -12,7 +12,18 @@ export interface StubSubscription {
   status: string;
   cancel_at_period_end: boolean;
   current_period_end: number | null;
-  items: { data: Array<{ price: { id: string; lookup_key: string | null } }> };
+  metadata: Record<string, string>;
+  items: {
+    data: Array<{
+      price: {
+        id: string;
+        lookup_key: string | null;
+        unit_amount?: number;
+        currency?: string;
+        recurring?: { interval: string } | null;
+      };
+    }>;
+  };
 }
 
 export interface StripeStub {
@@ -23,8 +34,17 @@ export interface StripeStub {
     params: URLSearchParams;
     headers: IncomingMessage['headers'];
   }>;
-  customers: Map<string, { id: string; params: URLSearchParams }>;
-  sessions: Map<string, { id: string; customer: string; price: string; params: URLSearchParams }>;
+  customers: Map<string, { id: string; params: URLSearchParams; deleted?: boolean }>;
+  sessions: Map<
+    string,
+    {
+      id: string;
+      customer: string;
+      price: string;
+      params: URLSearchParams;
+      status: 'open' | 'complete' | 'expired';
+    }
+  >;
   subscriptions: Map<string, StubSubscription>;
   /** Pay for a Checkout session: its subscription starts, and the event Stripe would send. */
   pay(sessionId: string, status?: string): { subscription: StubSubscription; event: object };
@@ -32,6 +52,14 @@ export interface StripeStub {
   change(id: string, patch: Partial<StubSubscription>, type?: string): object;
   /** A subscription to a price of someone else's. */
   foreign(customer: string): { subscription: StubSubscription; event: object };
+  /**
+   * The next GET of this subscription (or, as `list:<customer>`, the next listing of a customer's)
+   * answers with what it is as that request comes in, but only once released: a slow answer, for
+   * two things at once.
+   */
+  hold(id: string): () => void;
+  /** Stripe can't be reached (or answers only errors) until this is turned off again. */
+  outage(on: boolean): void;
   close(): Promise<void>;
 }
 
@@ -57,6 +85,8 @@ export async function stripeStub(): Promise<StripeStub> {
   const byIdempotency = new Map<string, string>();
   const sessions: StripeStub['sessions'] = new Map();
   const subscriptions: StripeStub['subscriptions'] = new Map();
+  const held = new Map<string, Promise<void>>();
+  let down = false;
   const event = (type: string, object: object) => ({
     id: `evt_${(++events).toString().padStart(6, '0')}`,
     object: 'event',
@@ -75,6 +105,7 @@ export async function stripeStub(): Promise<StripeStub> {
       res.writeHead(status, { 'content-type': 'application/json' });
       res.end(JSON.stringify(body));
     };
+    if (down) return send(503, { error: { type: 'api_error', message: 'Stripe is away.' } });
     if (req.headers.authorization !== 'Bearer sk_test_stub_0123456789abcdef')
       return send(401, { error: { type: 'invalid_request_error', message: 'Invalid API key.' } });
     const path = url.pathname;
@@ -84,6 +115,14 @@ export async function stripeStub(): Promise<StripeStub> {
         .map(([, v]) => v);
       return send(200, { object: 'list', data: PRICES.filter((p) => keys.includes(p.lookup_key)) });
     }
+    const missing = (what: string) =>
+      send(404, {
+        error: {
+          type: 'invalid_request_error',
+          code: 'resource_missing',
+          message: `No such ${what}.`,
+        },
+      });
     if (req.method === 'POST' && path === '/v1/customers') {
       const key = req.headers['idempotency-key'];
       const known = typeof key === 'string' ? byIdempotency.get(key) : undefined;
@@ -92,13 +131,62 @@ export async function stripeStub(): Promise<StripeStub> {
       if (typeof key === 'string') byIdempotency.set(key, id);
       return send(200, { id, object: 'customer' });
     }
+    const customer = /^\/v1\/customers\/(\w+)$/.exec(path);
+    if (customer) {
+      const c = customers.get(customer[1] ?? '');
+      if (!c || c.deleted) return missing('customer');
+      if (req.method === 'DELETE') {
+        // Deleted: every subscription it has ends at once.
+        c.deleted = true;
+        for (const x of subscriptions.values()) if (x.customer === c.id) x.status = 'canceled';
+        return send(200, { id: c.id, object: 'customer', deleted: true });
+      }
+      // An update changes what it names, and nothing else.
+      if (req.method === 'POST') for (const [k, v] of params) c.params.set(k, v);
+      return send(200, { id: c.id, object: 'customer' });
+    }
+    if (req.method === 'GET' && path === '/v1/subscriptions') {
+      const of = params.get('customer');
+      const now = {
+        object: 'list',
+        data: [...subscriptions.values()]
+          .filter((x) => x.customer === of)
+          .map((x) => structuredClone({ object: 'subscription', ...x })),
+      };
+      const wait = held.get(`list:${of}`);
+      if (wait) {
+        held.delete(`list:${of}`);
+        await wait;
+      }
+      return send(200, now);
+    }
+    if (req.method === 'GET' && path === '/v1/checkout/sessions') {
+      const of = params.get('customer');
+      const status = params.get('status');
+      return send(200, {
+        object: 'list',
+        data: [...sessions.values()]
+          .filter((x) => x.customer === of && (!status || x.status === status))
+          .map((x) => ({ id: x.id, object: 'checkout.session', status: x.status })),
+      });
+    }
+    const expire = /^\/v1\/checkout\/sessions\/(\w+)\/expire$/.exec(path);
+    if (req.method === 'POST' && expire) {
+      const x = sessions.get(expire[1] ?? '');
+      if (!x) return missing('checkout session');
+      if (x.status === 'open') x.status = 'expired';
+      return send(200, { id: x.id, object: 'checkout.session', status: x.status });
+    }
     if (req.method === 'POST' && path === '/v1/checkout/sessions') {
       const id = next('cs');
+      const of = customers.get(params.get('customer') ?? '');
+      if (!of || of.deleted) return missing('customer');
       sessions.set(id, {
         id,
         customer: params.get('customer') ?? '',
         price: params.get('line_items[0][price]') ?? '',
         params,
+        status: 'open',
       });
       return send(200, {
         id,
@@ -114,12 +202,15 @@ export async function stripeStub(): Promise<StripeStub> {
     const sub = /^\/v1\/subscriptions\/([\w]+)$/.exec(path);
     if (sub) {
       const s = subscriptions.get(sub[1] ?? '');
-      if (!s)
-        return send(404, {
-          error: { type: 'invalid_request_error', message: 'No such subscription.' },
-        });
+      if (!s) return missing('subscription');
       if (req.method === 'DELETE') s.status = 'canceled';
-      return send(200, { object: 'subscription', ...s });
+      const now = structuredClone({ object: 'subscription', ...s });
+      const wait = held.get(s.id);
+      if (req.method === 'GET' && wait) {
+        held.delete(s.id);
+        await wait;
+      }
+      return send(200, now);
     }
     send(404, { error: { type: 'invalid_request_error', message: `No route ${path}` } });
   });
@@ -128,8 +219,9 @@ export async function stripeStub(): Promise<StripeStub> {
 
   const start = (
     customer: string,
-    price: { id: string; lookup_key: string | null },
+    price: StubSubscription['items']['data'][number]['price'],
     status: string,
+    metadata: Record<string, string> = {},
   ) => {
     const subscription: StubSubscription = {
       id: next('sub'),
@@ -137,6 +229,7 @@ export async function stripeStub(): Promise<StripeStub> {
       status,
       cancel_at_period_end: false,
       current_period_end: Date.parse('2026-10-23T14:00:00Z') / 1000,
+      metadata,
       items: { data: [{ price }] },
     };
     subscriptions.set(subscription.id, subscription);
@@ -151,9 +244,23 @@ export async function stripeStub(): Promise<StripeStub> {
     pay(sessionId, status = 'active') {
       const s = sessions.get(sessionId);
       if (!s) throw new Error(`No session ${sessionId}`);
+      if (s.status !== 'open') throw new Error(`Session ${sessionId} is ${s.status}`);
+      s.status = 'complete';
       const price = PRICES.find((p) => p.id === s.price);
       if (!price) throw new Error(`No price ${s.price}`);
-      const subscription = start(s.customer, price, status);
+      const payer = s.params.get('subscription_data[metadata][caishy_payer]');
+      const subscription = start(
+        s.customer,
+        {
+          id: price.id,
+          lookup_key: price.lookup_key,
+          unit_amount: price.unit_amount,
+          currency: price.currency,
+          recurring: price.recurring,
+        },
+        status,
+        payer ? { caishy_payer: payer } : {},
+      );
       return {
         subscription,
         event: event('checkout.session.completed', {
@@ -181,6 +288,19 @@ export async function stripeStub(): Promise<StripeStub> {
         subscription,
         event: event('customer.subscription.created', { ...subscription, object: 'subscription' }),
       };
+    },
+    hold(id) {
+      let release = () => {};
+      held.set(
+        id,
+        new Promise<void>((r) => {
+          release = r;
+        }),
+      );
+      return () => release();
+    },
+    outage(on) {
+      down = on;
     },
     close: () => new Promise((r) => server.close(() => r())),
   };

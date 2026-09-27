@@ -49,6 +49,9 @@ export interface SubscriptionView {
   periodEnd: string | null;
   /** Set to end at the end of the period it's paid for. */
   cancelAtPeriodEnd: boolean;
+  /** What it's charged, in the currency's smallest unit: its own price, kept when prices change. */
+  amount: number | null;
+  currency: string | null;
 }
 
 /** What a person (or an organization's owner or admin) sees of billing. */
@@ -65,18 +68,38 @@ export interface BillingView {
   unavailable: string | null;
 }
 
-/** "€6" or "€6.50": whole amounts without cents. */
+/** Stripe's currencies with no smaller unit (amounts are whole yen, won, …). */
+const ZERO_DECIMAL = new Set(
+  'bif clp djf gnf jpy kmf krw mga pyg rwf ugx vnd vuv xaf xof xpf'.split(' '),
+);
+/** And its currencies counted in thousandths. */
+const THREE_DECIMAL = new Set('bhd jod kwd omr tnd'.split(' '));
+
+/**
+ * How many digits a currency's smallest unit is below its whole one, as Stripe counts amounts: 0
+ * for yen, 3 for Bahrain's dinar, and 2 for everything else (the forint and the króna too, which
+ * Stripe counts in hundredths though nobody pays in them).
+ */
+export function minorDigits(currency: string): number {
+  const c = currency.toLowerCase();
+  return ZERO_DECIMAL.has(c) ? 0 : THREE_DECIMAL.has(c) ? 3 : 2;
+}
+
+/** "€6" or "€6.50", "¥980": whole amounts without cents. Amounts are in the smallest unit. */
 export function priceAmount(p: Pick<PriceView, 'amount' | 'currency'>, locale = 'en-US'): string {
-  const whole = p.amount % 100 === 0;
+  const digits = minorDigits(p.currency);
+  const scale = 10 ** digits;
+  const whole = p.amount % scale === 0;
+  const shown = whole ? 0 : digits;
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: p.currency.toUpperCase(),
-      minimumFractionDigits: whole ? 0 : 2,
-      maximumFractionDigits: whole ? 0 : 2,
-    }).format(p.amount / 100);
+      minimumFractionDigits: shown,
+      maximumFractionDigits: shown,
+    }).format(p.amount / scale);
   } catch {
-    return `${(p.amount / 100).toFixed(whole ? 0 : 2)} ${p.currency.toUpperCase()}`;
+    return `${(p.amount / scale).toFixed(shown)} ${p.currency.toUpperCase()}`;
   }
 }
 

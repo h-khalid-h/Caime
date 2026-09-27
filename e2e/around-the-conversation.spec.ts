@@ -699,7 +699,7 @@ test.describe
     test('on Business, an organization sees how its inbox is doing', async () => {
       const { page, errors } = noor;
       const handle = `nile.dental.${stamp}`;
-      // The operator moves it to Business (billing isn't connected yet).
+      // The operator moves it to Business (a deal of its own: billing never changes it).
       const upgraded = await noorContext.request.put(`/v1/admin/orgs/${handle}/plan`, {
         headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
         data: { plan: 'business' },

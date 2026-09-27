@@ -8,11 +8,15 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
-import { notFound } from '../lib/errors';
+import { paysThroughBilling } from '../lib/billing';
+import { AppError, notFound } from '../lib/errors';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
 import { parse } from '../lib/validate';
+
+const PAYING = (plan: string) =>
+  `${plan} is paid for through Stripe: cancel it there (at once, or at the end of what’s paid), and the plan follows.`;
 
 export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   const operator = (req: FastifyRequest) => requireOperator(ctx, req, ctx.config.ADMIN_TOKEN);
@@ -41,9 +45,18 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     if (!person) throw notFound('That person');
+    // Paying for Pro, they keep it until that ends: never charged for a plan they don't have.
+    if (plan === 'personal' && (await paysThroughBilling(ctx, { userId: person.id })))
+      throw new AppError(409, 'paying', PAYING('Pro'));
+    // The operator's say holds: billing never changes it (setting the plan everyone starts on
+    // hands it back to billing).
     await ctx.db
       .updateTable('users')
-      .set({ plan, updated_at: ctx.now() })
+      .set({
+        plan,
+        plan_source: plan === 'personal' ? 'default' : 'operator',
+        updated_at: ctx.now(),
+      })
       .where('id', '=', person.id)
       .execute();
     await audit(ctx.db, {
@@ -67,9 +80,11 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('archived_at', 'is', null)
       .executeTakeFirst();
     if (!org) throw notFound('That organization');
+    if (plan === 'free' && (await paysThroughBilling(ctx, { orgId: org.id })))
+      throw new AppError(409, 'paying', PAYING('Business'));
     await ctx.db
       .updateTable('organizations')
-      .set({ plan, updated_at: ctx.now() })
+      .set({ plan, plan_source: plan === 'free' ? 'default' : 'operator', updated_at: ctx.now() })
       .where('id', '=', org.id)
       .execute();
     await audit(ctx.db, {

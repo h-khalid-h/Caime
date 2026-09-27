@@ -77,6 +77,9 @@ const server = createServer(async (req, res) => {
     const s = sessions.get(checkout[1]);
     if (!s) return json(404, { error: 'No such session' });
     const price = PRICES.find((p) => p.id === s.price);
+    // As Stripe does: only an open session can be paid (a newer one closed it, say).
+    if (s.status !== 'open')
+      return html(page('Checkout', `<h1>This checkout has ${s.status}.</h1>`));
     if (!checkout[2])
       return html(
         page(
@@ -91,8 +94,22 @@ const server = createServer(async (req, res) => {
       status: 'active',
       cancel_at_period_end: false,
       current_period_end: Math.floor(Date.now() / 1000) + 30 * 86_400,
-      items: { data: [{ price: { id: price.id, lookup_key: price.lookup_key } }] },
+      metadata: s.payer ? { caishy_payer: s.payer } : {},
+      items: {
+        data: [
+          {
+            price: {
+              id: price.id,
+              lookup_key: price.lookup_key,
+              unit_amount: price.unit_amount,
+              currency: price.currency,
+              recurring: price.recurring,
+            },
+          },
+        ],
+      },
     };
+    s.status = 'complete';
     subscriptions.set(sub.id, sub);
     await tell('checkout.session.completed', {
       id: s.id,
@@ -127,6 +144,14 @@ const server = createServer(async (req, res) => {
   // The API.
   if (req.headers.authorization !== `Bearer ${KEY}`)
     return json(401, { error: { type: 'invalid_request_error', message: 'Invalid API key.' } });
+  const missing = (what) =>
+    json(404, {
+      error: {
+        type: 'invalid_request_error',
+        code: 'resource_missing',
+        message: `No such ${what}.`,
+      },
+    });
   if (req.method === 'GET' && path === '/v1/prices') {
     const keys = [...params.entries()]
       .filter(([k]) => k.startsWith('lookup_keys'))
@@ -135,17 +160,59 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === 'POST' && path === '/v1/customers') {
     const key = req.headers['idempotency-key'];
-    const id = (key && byIdempotency.get(key)) ?? next('cus');
-    customers.set(id, Object.fromEntries(params));
+    const known = key ? byIdempotency.get(key) : undefined;
+    const id = known ?? next('cus');
+    if (!known) customers.set(id, Object.fromEntries(params));
     if (key) byIdempotency.set(key, id);
     return json(200, { id, object: 'customer' });
   }
+  const customer = /^\/v1\/customers\/(\w+)$/.exec(path);
+  if (customer) {
+    const c = customers.get(customer[1]);
+    if (!c || c.deleted) return missing('customer');
+    if (req.method === 'DELETE') {
+      // Deleted: every subscription it has ends at once.
+      c.deleted = true;
+      for (const x of subscriptions.values()) if (x.customer === customer[1]) x.status = 'canceled';
+      return json(200, { id: customer[1], object: 'customer', deleted: true });
+    }
+    if (req.method === 'POST') Object.assign(c, Object.fromEntries(params));
+    return json(200, { id: customer[1], object: 'customer' });
+  }
+  if (req.method === 'GET' && path === '/v1/subscriptions') {
+    const of = params.get('customer');
+    return json(200, {
+      object: 'list',
+      data: [...subscriptions.values()].filter((x) => x.customer === of),
+    });
+  }
+  if (req.method === 'GET' && path === '/v1/checkout/sessions') {
+    const of = params.get('customer');
+    const status = params.get('status');
+    return json(200, {
+      object: 'list',
+      data: [...sessions.values()]
+        .filter((x) => x.customer === of && (!status || x.status === status))
+        .map((x) => ({ id: x.id, object: 'checkout.session', status: x.status })),
+    });
+  }
+  const expire = /^\/v1\/checkout\/sessions\/(\w+)\/expire$/.exec(path);
+  if (req.method === 'POST' && expire) {
+    const x = sessions.get(expire[1]);
+    if (!x) return missing('checkout session');
+    if (x.status === 'open') x.status = 'expired';
+    return json(200, { id: x.id, object: 'checkout.session', status: x.status });
+  }
   if (req.method === 'POST' && path === '/v1/checkout/sessions') {
+    const of = customers.get(params.get('customer'));
+    if (!of || of.deleted) return missing('customer');
     const id = next('cs');
     sessions.set(id, {
       id,
+      status: 'open',
       customer: params.get('customer'),
       price: params.get('line_items[0][price]'),
+      payer: params.get('subscription_data[metadata][caishy_payer]'),
       success_url: params.get('success_url'),
       cancel_url: params.get('cancel_url'),
     });
@@ -159,10 +226,7 @@ const server = createServer(async (req, res) => {
   const sub = /^\/v1\/subscriptions\/(\w+)$/.exec(path);
   if (sub) {
     const s = subscriptions.get(sub[1]);
-    if (!s)
-      return json(404, {
-        error: { type: 'invalid_request_error', message: 'No such subscription.' },
-      });
+    if (!s) return missing('subscription');
     if (req.method === 'DELETE') s.status = 'canceled';
     return json(200, s);
   }

@@ -193,9 +193,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       monthly or yearly, bought through Stripe Checkout and managed in Stripe's customer portal;
       prices are found in Stripe by their lookup keys, and the plan follows the subscription
       (on while it's paid, in a trial or being retried; off once it ends) from signed webhooks,
-      each re-read from Stripe. Only a person, or an organization's owner or admins, buy or
-      manage its plan; nobody under 18 buys (`billing.test.ts` against a Stripe stand-in, E2E
-      through the stand-in's Checkout and portal pages). ⛔ The live account's products, prices,
+      each re-read from Stripe, one at a time for each subscription. Only a person, or an
+      organization's owner or admins, buy or manage its plan; nobody under 18 buys. A review
+      found twelve ways it could charge wrongly or keep a plan wrongly, all fixed: people on a
+      price whose key moved are followed to the end, an organization that closes and an account
+      deleted end their customer at Stripe (a job and a six-hourly check if Stripe is away), an
+      operator's plan is never changed or sold over, nothing is sold twice while a webhook is
+      late, test and live mode stay apart, and the plan page shows what the subscription itself
+      costs (`billing.test.ts` against a Stripe stand-in, 34 mutations, E2E through the stand-in's
+      Checkout and portal pages). ⛔ The live account's products, prices,
       portal and webhook endpoint are set up once billing is deployed (`docs/DEPLOY.md`)
 - [x] Metrics: `/metrics` for the operator's scraper (PRD §81), product metrics from what Caishy
       already keeps (PRD §82–83: activation, engagement, the core rates, retention), and insights

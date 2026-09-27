@@ -56,15 +56,25 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('archived_at', 'is', null)
       .executeTakeFirst();
     if (!org) throw notFound('That organization');
+    // Its receipts and notices go to its owner, whoever of its admins pays: never to someone
+    // who has since left the team.
+    const owner = await ctx.db
+      .selectFrom('org_members as m')
+      .innerJoin('users as u', 'u.id', 'm.user_id')
+      .select('u.email')
+      .where('m.org_id', '=', orgId)
+      .where('m.role', '=', 'owner')
+      .where('m.left_at', 'is', null)
+      .executeTakeFirst();
     return {
       payer: { orgId } as Payer,
-      who: { name: org.name, email: me.email },
+      who: { name: org.name, email: owner?.email ?? me.email },
       back: `/o/${org.handle}`,
       minor,
     };
   }
-  const paced = (userId: string) =>
-    ctx.limiter.hit(`billing:${userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
+  // Each Checkout or portal visit asks Stripe for several things: thirty an hour is plenty.
+  const paced = (userId: string) => ctx.limiter.hit(`billing:${userId}`, 30, 3_600_000);
 
   app.get('/billing', async (req): Promise<BillingView> => {
     const auth = requireAuth(req);
@@ -94,8 +104,8 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(BillingPortalBody, req.body ?? {});
     paced(auth.userId);
-    const { payer, back } = await payerFor(auth.userId, body.orgId);
-    return { url: await openPortal(ctx, payer, back) };
+    const { payer, who, back } = await payerFor(auth.userId, body.orgId);
+    return { url: await openPortal(ctx, payer, who, back) };
   });
 
   // Stripe's webhook takes the body exactly as sent: its signature is over those bytes. It's the

@@ -32,6 +32,8 @@ export interface UsersTable {
   workweek: Defaulted<number[]>;
   quiet_hours: Json<{ days: number[]; start: string; end: string } | null> | null;
   plan: Defaulted<'personal' | 'pro' | 'business' | 'enterprise'>;
+  /** Where the plan came from: billing changes only its own, or the default. */
+  plan_source: Defaulted<PlanSource>;
   avatar_file_id: string | null;
   bio: string | null;
   pronouns: string | null;
@@ -232,6 +234,8 @@ export interface ContextsTable {
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
+
+export type PlanSource = 'default' | 'operator' | 'billing';
 
 export type ConversationKind = 'direct' | 'group' | 'business' | 'community' | 'broadcast';
 
@@ -606,6 +610,7 @@ export interface OrganizationsTable {
   created_by: string | null;
   archived_at: NullableTimestamp;
   plan: Defaulted<OrgPlan>;
+  plan_source: Defaulted<PlanSource>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -701,9 +706,11 @@ export interface CallMembersTable {
 /** Which Stripe customer is whose (R25): a person's, or an organization's. */
 export interface BillingCustomersTable {
   id: string;
+  livemode: boolean;
   user_id: string | null;
   org_id: string | null;
   created_at: Generated<Date>;
+  closed_at: NullableTimestamp;
 }
 
 /** Where each subscription stands, as Stripe last said. */
@@ -713,6 +720,8 @@ export interface BillingSubscriptionsTable {
   plan: 'pro' | 'business';
   interval: 'month' | 'year';
   status: string;
+  amount: number | null;
+  currency: string | null;
   current_period_end: NullableTimestamp;
   cancel_at_period_end: Defaulted<boolean>;
   updated_at: Generated<Date>;
