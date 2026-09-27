@@ -1,7 +1,8 @@
 import type { InboxItemView, InboxSectionView } from '@caishy/core/api';
+import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, SectionList, View } from 'react-native';
+import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
@@ -10,25 +11,28 @@ import { WaitingDevices } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
 import { PushPrompt } from '@/features/push/PushPrompt';
 import { useBadges } from '@/features/shell/useBadges';
+import { YouButton } from '@/features/shell/YouButton';
 import { UpdatesRow } from '@/features/updates/UpdatesRow';
 import { useNow, useUserClock } from '@/lib/time';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { Bell, ChevronDown, ChevronRight, Search, SquarePen, UserPlus } from '@/ui/icons';
+import { Bell, ChevronDown, ChevronRight, SquarePen, UserPlus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
-import { Segmented } from '@/ui/Segmented';
 import { SkeletonRows } from '@/ui/Skeleton';
+import { sphereIcon } from '@/ui/SphereIcon';
 import { Text } from '@/ui/Text';
 import { ConversationRow } from './ConversationRow';
 import { NewChatSheet } from './NewChatSheet';
 import { RowActions } from './RowActions';
 
-type View_ = 'attention' | 'all';
+/** What Chats shows: what needs you first, everything, or one kind of relationship. */
+type Show = 'attention' | 'all' | Sphere;
 /** Sections that stay folded until opened: they never compete for attention (R14). */
 const FOLDED = new Set(['requests', 'archived']);
 
@@ -37,9 +41,19 @@ export function InboxList({ pane }: { pane?: boolean }) {
   const { desktop } = useLayout();
   const pathname = usePathname();
   const selectedId = pathname.startsWith('/c/') ? pathname.slice(3) : null;
-  const [view, setView] = useState<View_>('attention');
+  const [chosen, setShow] = useState<Show>('attention');
   const attention = useInbox();
   const all = useInboxAll();
+  // A chip for each kind of relationship these conversations have, in the usual order.
+  const spheres = useMemo(() => {
+    const here = new Set((all.data?.conversations ?? []).map((c) => c.relationship?.sphere));
+    return SPHERES.filter((s) => here.has(s));
+  }, [all.data]);
+  // One whose last conversation went shows everything again.
+  const show: Show =
+    chosen === 'attention' || chosen === 'all' || spheres.includes(chosen) ? chosen : 'all';
+  const view = show === 'attention' ? 'attention' : 'all';
+  const sphere = show === 'attention' || show === 'all' ? null : show;
   const q = view === 'attention' ? attention : all;
   const now = useNow();
   const { timeZone, locale } = useUserClock();
@@ -51,14 +65,16 @@ export function InboxList({ pane }: { pane?: boolean }) {
 
   const sections = useMemo(() => {
     if (view === 'all') {
-      const items = all.data?.conversations ?? [];
+      const items = (all.data?.conversations ?? []).filter(
+        (c) => !sphere || c.relationship?.sphere === sphere,
+      );
       return items.length ? [{ section: 'recent', label: '', items, data: items }] : [];
     }
     return (attention.data?.sections ?? []).map((s: InboxSectionView) => ({
       ...s,
       data: FOLDED.has(s.section) && !open[s.section] ? [] : s.items,
     }));
-  }, [view, all.data, attention.data, open]);
+  }, [view, sphere, all.data, attention.data, open]);
 
   const onPress = useCallback((item: InboxItemView) => {
     router.navigate({ pathname: '/c/[id]', params: { id: item.id } });
@@ -78,15 +94,14 @@ export function InboxList({ pane }: { pane?: boolean }) {
       <PageHeader
         title="Chats"
         subtitle={caughtUp ? null : headline}
+        left={desktop ? undefined : <YouButton />}
         right={
           <>
-            {!desktop ? (
-              <IconButton icon={Search} label="Search" onPress={() => router.push('/search')} />
-            ) : null}
             {!desktop ? (
               <IconButton
                 icon={Bell}
                 label="Notifications"
+                filled
                 badge={badges.notifications > 0}
                 onPress={() => router.push('/notifications')}
               />
@@ -94,23 +109,47 @@ export function InboxList({ pane }: { pane?: boolean }) {
             <IconButton
               icon={SquarePen}
               label="New conversation"
+              tone="primary"
+              size={20}
               onPress={() => setNewChat(true)}
               testID="new-chat"
             />
           </>
         }
       />
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-        <Segmented
-          label="Inbox view"
-          value={view}
-          onChange={setView}
-          options={[
-            { value: 'attention', label: 'Attention', count: attention.data?.counts.needs_you },
-            { value: 'all', label: 'All' },
-          ]}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        accessibilityLabel="Show"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 6 }}
+      >
+        <Chip
+          label={
+            attention.data?.counts.needs_you
+              ? `Attention · ${attention.data.counts.needs_you}`
+              : 'Attention'
+          }
+          selected={show === 'attention'}
+          onPress={() => setShow('attention')}
+          testID="inbox-attention"
         />
-      </View>
+        <Chip
+          label="All"
+          selected={show === 'all'}
+          onPress={() => setShow('all')}
+          testID="inbox-all"
+        />
+        {spheres.map((s) => (
+          <Chip
+            key={s}
+            label={SPHERE_DEFS[s].plural}
+            icon={sphereIcon(t.sphere(s).icon)}
+            selected={show === s}
+            onPress={() => setShow(s)}
+            testID={`inbox-${s}`}
+          />
+        ))}
+      </ScrollView>
       <ConnectionBanner />
       {privateSupported ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>

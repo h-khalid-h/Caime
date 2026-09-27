@@ -203,7 +203,11 @@ test('a person can download their data and delete their account from settings', 
   const handle = `leaving.${stamp}`;
   await signUp(page, 'Leaving Soon', handle);
   await onboard(page, 'leaving', false);
-  await page.getByTestId('tab-you').click();
+  // You is your picture at the top of Chats: its sheet leads to everything else.
+  await page.getByTestId('you-button').click();
+  await expect(page.getByTestId('you-all')).toBeVisible();
+  await page.screenshot({ path: 'e2e/screenshots/phone-you.png' });
+  await page.getByTestId('you-all').click();
   await page.getByTestId('settings-security').click();
   const download = page.waitForEvent('download');
   await page.getByText('Download your data').click();

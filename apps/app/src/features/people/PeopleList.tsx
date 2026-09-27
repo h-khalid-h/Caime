@@ -6,6 +6,7 @@ import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useConnections, useRequests } from '@/api/hooks';
 import { DuplicateOffers } from '@/features/duplicates';
 import { RelationshipOffers } from '@/features/relationships/offers';
+import { YouButton } from '@/features/shell/YouButton';
 import { useLive } from '@/state/live';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -14,6 +15,7 @@ import { Chip, RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ChevronRight, Phone, Search, UserPlus } from '@/ui/icons';
+import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
@@ -94,6 +96,7 @@ function PersonRow({
 
 export function PeopleList({ pane }: { pane?: boolean }) {
   const t = useTheme();
+  const { desktop } = useLayout();
   const pathname = usePathname();
   const selectedId = pathname.startsWith('/p/') ? pathname.slice(3) : null;
   const q = useConnections();
@@ -187,17 +190,21 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         subtitle={
           people.length ? `${people.length} connection${people.length === 1 ? '' : 's'}` : null
         }
+        left={desktop ? undefined : <YouButton />}
         right={
-          <View style={{ flexDirection: 'row', gap: 2 }}>
+          <View style={{ flexDirection: 'row', gap: 6 }}>
             <IconButton
               icon={Phone}
               label="Calls"
+              filled
               onPress={() => router.push('/calls')}
               testID="people-calls"
             />
             <IconButton
               icon={UserPlus}
               label="Connect with someone"
+              tone="primary"
+              size={20}
               onPress={() => router.push('/connect')}
               testID="people-connect"
             />

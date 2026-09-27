@@ -196,10 +196,31 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 - **Motion:** 150–250 ms ease-out or gentle springs; celebrations may bounce once; reduced motion
   is respected everywhere.
 
+## Phone layout
+
+What the phone shows around the conversations, decided from how people already hold and read
+the messengers they use, and only where it serves Caishy's promise (relationships first):
+
+- **Four places and Search.** Chats, People, Spaces and Actions sit in a floating pill at the
+  bottom, the one you're in lit behind its name (Caishy Pink tint; the surface tone in dark).
+  Search is a circle of its own beside it, in a thumb's reach from anywhere. The bar floats over
+  the page's own colour with the overlay shadow, and never covers what's on the page.
+- **You is your picture.** It's at the top left of each place, with the dot the people you know
+  see. It opens a sheet with what you change most (your status and presence) and the way to
+  everything else. You isn't a tab: it's not somewhere you go to read.
+- **Round header buttons.** A page's secondary actions are tonal circles (`surfaceMuted`); its one
+  main action (a new conversation, connecting with someone, a space, an action) is a filled
+  circle in the primary colour. A conversation's calls are tonal circles too.
+- **Chats by relationship.** Under the header, chips: Attention (what needs you, with its count),
+  All, and one for each kind of relationship your conversations have (Family, Work, …), in the
+  sphere's own icon. It's the inbox's filter, and the relationship labels stay only yours.
+- **Not adopted:** a stories or status feed, a separate Communities or Updates tab (Spaces and an
+  organization's updates live where they belong), and ads or promoted rows.
+
 ## Iconography
 
 - **Working surfaces:** Lucide line icons, 2 px stroke, round caps and joins. The active tab's
-  icon gets a Caishy Pink tinted fill, echoing the boards' filled icons.
+  icon is drawn heavier, on its Caishy Pink tint, echoing the boards' filled icons.
 - **Expressive surfaces:** filled, colourful rounded icons on tinted tiles (heart, star, sprout,
   chat bubble, paw print, sparkles), for onboarding highlights and empty states.
 

@@ -292,7 +292,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           ? `Customer of ${org.name}`
           : other
             ? (presence ?? other.person.presence) === 'online'
-              ? 'Online'
+              ? ['Online', other.relationship?.label].filter(Boolean).join(' · ')
               : (other.relationship?.label ?? `@${other.person.handle}`)
             : conversation
               ? [ofGroup, groupLine ?? `${conversation.participants.length} people`]
@@ -312,19 +312,23 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         ) : null
       }
       right={
-        <View style={{ flexDirection: 'row', gap: 2 }}>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
           {other && conversation?.kind === 'direct' && !conversation.request && callsSupported ? (
             // Calls (PRD §47): between two people who can already write to each other.
             <>
               <IconButton
                 icon={Phone}
                 label={`Voice call ${other.person.displayName}`}
+                filled
+                size={20}
                 onPress={() => void startCall(conversation.id, 'voice')}
                 testID="call-voice"
               />
               <IconButton
                 icon={Video}
                 label={`Video call ${other.person.displayName}`}
+                filled
+                size={20}
                 onPress={() => void startCall(conversation.id, 'video')}
                 testID="call-video"
               />
@@ -338,12 +342,16 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               <IconButton
                 icon={Phone}
                 label={`Voice call ${heading || 'the group'}`}
+                filled
+                size={20}
                 onPress={() => void startGroupCall(conversation.id, 'voice')}
                 testID="group-call-voice"
               />
               <IconButton
                 icon={Video}
                 label={`Video call ${heading || 'the group'}`}
+                filled
+                size={20}
                 onPress={() => void startGroupCall(conversation.id, 'video')}
                 testID="group-call-video"
               />

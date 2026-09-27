@@ -7,7 +7,9 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
+import { IconButton } from '@/ui/IconButton';
 import {
+  ArrowLeft,
   Bell,
   Bookmark,
   Building,
@@ -114,7 +116,19 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
   if (!user) return null;
   const content = (
     <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-      <PageHeader title="You" />
+      <PageHeader
+        title="You"
+        left={
+          pane ? undefined : (
+            <IconButton
+              icon={ArrowLeft}
+              label="Back"
+              onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
+              testID="you-back"
+            />
+          )
+        }
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${user.displayName}, edit profile`}

@@ -6,6 +6,7 @@ import { useTasks } from '@/api/hooks';
 import { AddTaskSheet } from '@/features/actions/AddTaskSheet';
 import { TaskRow } from '@/features/actions/TaskRow';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { YouButton } from '@/features/shell/YouButton';
 import { useNow, useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
 import { pendingTaskView, usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
@@ -86,10 +87,13 @@ export default function Actions() {
         <PageHeader
           title="Actions"
           subtitle={counts?.overdue ? `${counts.overdue} overdue` : null}
+          left={desktop ? undefined : <YouButton />}
           right={
             <IconButton
               icon={Plus}
               label="New action"
+              tone="primary"
+              size={20}
               onPress={() => setAdding(true)}
               testID="add-task"
             />

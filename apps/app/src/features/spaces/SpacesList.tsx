@@ -4,6 +4,7 @@ import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
 import { router, usePathname } from 'expo-router';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { useSpaces } from '@/api/hooks';
+import { YouButton } from '@/features/shell/YouButton';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
@@ -11,6 +12,7 @@ import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { LayoutGrid, Plus } from '@/ui/icons';
+import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
@@ -86,6 +88,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
 
 /** Your spaces (PRD §40): families, teams, projects and communities, busiest first. */
 export function SpacesList({ pane }: { pane?: boolean }) {
+  const { desktop } = useLayout();
   const pathname = usePathname();
   const selectedId = pathname.startsWith('/s/') ? pathname.slice(3) : null;
   const q = useSpaces();
@@ -94,10 +97,13 @@ export function SpacesList({ pane }: { pane?: boolean }) {
     <PageHeader
       title="Spaces"
       subtitle={spaces.length ? `${spaces.length} space${spaces.length === 1 ? '' : 's'}` : null}
+      left={desktop ? undefined : <YouButton />}
       right={
         <IconButton
           icon={Plus}
           label="Start a space"
+          tone="primary"
+          size={20}
           onPress={() => router.push('/new-space')}
           testID="spaces-new"
         />

@@ -42,6 +42,7 @@ import {
   ImageIcon,
   Paperclip,
   Pencil,
+  Plus,
   Reply,
   SendHorizontal,
   Sticker,
@@ -480,8 +481,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         {privately ? null : (
           // Photos, files and cards aren't sealed yet: a private conversation is text for now.
           <IconButton
-            icon={Paperclip}
+            icon={Plus}
             label="Share a photo, a file or a card"
+            filled
             onPress={() => setAttach(true)}
             disabled={Boolean(editing)}
           />
@@ -604,6 +606,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           <IconButton
             icon={Sticker}
             label="Stickers"
+            filled
             onPress={() => setStickers(true)}
             disabled={Boolean(editing)}
           />
