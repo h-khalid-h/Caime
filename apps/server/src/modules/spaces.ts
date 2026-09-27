@@ -42,6 +42,7 @@ import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { generalOf, spaceSeat } from '../lib/spaces';
 import { suggestFromPlace } from '../lib/suggest';
+import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -299,12 +300,25 @@ async function spaceView(ctx: AppContext, userId: string, spaceId: string): Prom
     );
   const general = conversations.find((c) => c.is_general);
   if (!general) throw notFound('That space');
+  // Its calendar: what's ahead in the conversations of it they're in (PRD §41).
+  const titles = new Map(views.map((v) => [v.id, v.isGeneral ? summary.name : v.title]));
+  const upcoming = (
+    await cardsAhead(ctx, userId, {
+      ...aheadWindow(ctx.now()),
+      limit: 20,
+      conversationIds: joinedIds,
+    })
+  ).map((card) => ({
+    ...upcomingView(card),
+    conversationTitle: titles.get(card.conversationId) ?? summary.name,
+  }));
   return {
     ...summary,
     createdAt: created.created_at.toISOString(),
     generalId: general.id,
     members: memberViews,
     conversations: views,
+    upcoming,
   };
 }
 

@@ -3,7 +3,7 @@
  * and how it reads. The server validates and moves cards with these functions and the app
  * renders them with the same ones, so a card reads the same on every device.
  */
-import { formatAmount, formatClock, formatDue } from './format';
+import { formatAmount, formatWhenAt } from './format';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
@@ -418,15 +418,7 @@ const IN_HEADLINE: Partial<Record<KitId, string[]>> = {
 function whenText(v: unknown, now: Date, timeZone: string, locale: string): string {
   const w = v as Partial<KitWhen> | undefined;
   if (typeof w?.at !== 'string') return '';
-  const days = Math.abs(Date.parse(w.at) - now.getTime()) / 86_400_000;
-  if (days < 6) return formatDue(w.at, now, timeZone, locale, w.hasTime === true);
-  const date = dateFormat(locale, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone,
-  }).format(new Date(w.at));
-  return w.hasTime ? `${date}, ${formatClock(w.at, timeZone, locale)}` : date;
+  return formatWhenAt(w.at, w.hasTime === true, now, timeZone, locale);
 }
 
 /** The card's other lines, labelled: [{ label: "When", value: "Fri 3:00 PM" }]. */

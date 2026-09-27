@@ -136,6 +136,12 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       applyEditToInbox(qc, event.data);
       // Pinned, its words at the top are these now.
       patchPinned(qc, event.data);
+      // A card that moved (a meeting accepted, cancelled) changes what's coming up.
+      if (event.data.kind === 'kit') {
+        const id = event.data.conversationId;
+        soon(`memory:${id}`, () => void qc.invalidateQueries({ queryKey: qk.memory(id) }), 800);
+        soon('spaces', () => void qc.invalidateQueries({ queryKey: ['space'] }), 800);
+      }
       return;
     case 'message.deleted':
       patchMessage(qc, event.data.conversationId, event.data.id, (m) => ({

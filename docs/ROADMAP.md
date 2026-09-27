@@ -228,7 +228,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       conversations are open to join; a topic that keeps coming up in General becomes one.
       People join only through someone inside who is connected with them; owners and admins
       manage it; an owner who leaves or deletes their account hands it on; the last one out
-      closes it. Its kind picks the cards its conversations offer (`spaces.test.ts`, E2E)
+      closes it. Its kind picks the cards its conversations offer (`spaces.test.ts`, E2E). Its
+      page is also its calendar (PRD §41, a family's shared calendar): Coming up lists the
+      meetings and appointments proposed or agreed in its conversations each person is in,
+      soonest first, each opening its card, as a conversation's details do for its own
+      (`calendar.test.ts`, E2E)
 - [x] Connect Kits as cards: approval, meeting, review, order, delivery, invoice, purchase
       order, payment request, support ticket, appointment, and polls; offered only where they fit
       the relationship, moved by the right person, live (`kits.test.ts`, E2E). Checklists anyone

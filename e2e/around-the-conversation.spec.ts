@@ -473,6 +473,14 @@ test.describe
       await theirs.getByRole('button', { name: 'Accept', exact: true }).click();
       await expect(theirs).toContainText('Accepted');
       await expect(mine).toContainText('Accepted');
+      // It's coming up in the conversation's details, agreed, and opens its card from there.
+      const ahead = page
+        .getByTestId('coming-up-item')
+        .filter({ hasText: 'Venue walkthrough', visible: true });
+      await expect(ahead).toContainText('45 min · Cairo Opera House');
+      await expect(ahead).not.toContainText('Proposed');
+      await ahead.click();
+      await expect(page.getByTestId('message-highlighted')).toContainText('Venue walkthrough');
       await page.screenshot({ path: 'e2e/screenshots/desktop-kit-meeting.png' });
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-kit-meeting.png' });
       expect([...noor.errors, ...alex.errors]).toEqual([]);
@@ -572,6 +580,39 @@ test.describe
       await expect(page.getByTestId('space-conversation-Budget')).toContainText(
         'Alex Chen: Budget draft is in the drive.',
       );
+      // What's planned in its conversations is the space's calendar.
+      const budget = new URL(phone.url()).pathname.split('/').pop();
+      const planned = await alexContext.request.post(`/v1/conversations/${budget}/messages`, {
+        headers: CLIENT,
+        data: {
+          clientId: randomUUID(),
+          kind: 'kit',
+          payload: {
+            kit: 'meeting',
+            fields: {
+              title: 'Budget review',
+              start: { at: new Date(Date.now() + 3 * 86_400_000).toISOString(), hasTime: true },
+              durationMinutes: 30,
+            },
+          },
+        },
+      });
+      expect(planned.ok(), await planned.text()).toBe(true);
+      const review = page
+        .getByTestId('coming-up-item')
+        .filter({ hasText: 'Budget review', visible: true });
+      await expect(review).toContainText('30 min · in Budget');
+      await expect(review).toContainText('Proposed');
+      const cardId = (await planned.json()).message.id;
+      expect(
+        (
+          await noorContext.request.post(`/v1/messages/${cardId}/kit`, {
+            headers: CLIENT,
+            data: { to: 'accepted' },
+          })
+        ).ok(),
+      ).toBe(true);
+      await expect(review).not.toContainText('Proposed');
       // Noor makes Alex an admin.
       await page
         .getByRole('button', { name: /^Alex Chen/ })

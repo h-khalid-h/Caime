@@ -925,6 +925,8 @@ export interface SpaceView extends SpaceSummaryView {
   generalId: string;
   members: SpaceMemberView[];
   conversations: SpaceConversationView[];
+  /** The space's calendar (PRD §41): what's ahead in its conversations the viewer is in. */
+  upcoming: Array<UpcomingView & { conversationTitle: string }>;
 }
 
 /** AI assist for this account: the server has a provider, the person turned it on, and may. */
@@ -963,6 +965,21 @@ export interface AiActionsView {
   label: string;
 }
 
+/** A meeting or an appointment ahead, read from its card (PRD §41): asked, or agreed. */
+export interface UpcomingView {
+  messageId: string;
+  conversationId: string;
+  seq: number;
+  kit: 'meeting' | 'appointment';
+  title: string;
+  at: string;
+  hasTime: boolean;
+  durationMinutes: number | null;
+  place: string | null;
+  /** Accepted (a meeting) or confirmed (an appointment); otherwise only asked. */
+  agreed: boolean;
+}
+
 export interface MemoryView {
   summary: string;
   people: Array<{ id: string; displayName: string; role: string }>;
@@ -981,6 +998,8 @@ export interface MemoryView {
   }>;
   links: Array<{ id: string; url: string | null; host: string | null; messageId: string | null }>;
   places: Array<{ id: string; title: string | null; messageId: string | null }>;
+  /** Meetings and appointments ahead in it, soonest first. */
+  upcoming: UpcomingView[];
   topics: string[];
   /** Whole counts: decisions and files in it, and what's open for the viewer (PRD §57). */
   counts: { messages: number; decisions: number; openItems: number; files: number };

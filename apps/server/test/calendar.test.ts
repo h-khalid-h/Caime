@@ -313,3 +313,96 @@ describe('a calendar feed (PRD §72)', () => {
     expect((await read(url)).statusCode).toBe(404);
   });
 });
+
+describe('what’s coming up (PRD §41)', () => {
+  it('in a conversation: asked and agreed, soonest first, never past, declined or deleted', async () => {
+    const cal = await signup(t, { displayName: 'Cal Upcoming' });
+    const dan = await signup(t, { displayName: 'Dan Upcoming' });
+    const convo = await connect(cal, dan);
+    const at = (iso: string) => ({ at: iso, hasTime: true });
+    const later = await card(cal, convo, 'meeting', {
+      title: 'Budget review',
+      start: at('2026-10-05T10:00:00Z'),
+    });
+    const sooner = await card(cal, convo, 'meeting', {
+      title: 'Venue walkthrough',
+      start: at('2026-10-03T09:00:00Z'),
+      durationMinutes: 45,
+      place: 'Hall B',
+    });
+    const declined = await card(cal, convo, 'meeting', {
+      title: 'Lunch',
+      start: at('2026-10-04T12:00:00Z'),
+    });
+    const past = await card(cal, convo, 'meeting', {
+      title: 'Kick-off',
+      start: at('2026-09-01T09:00:00Z'),
+    });
+    await dan.post(`/v1/messages/${sooner.id}/kit`, { to: 'accepted' });
+    await dan.post(`/v1/messages/${declined.id}/kit`, { to: 'declined' });
+    await dan.post(`/v1/messages/${past.id}/kit`, { to: 'accepted' });
+    // One in another of Cal's conversations belongs to that one.
+    const eve = await signup(t, { displayName: 'Eve Upcoming' });
+    const elsewhere = await connect(cal, eve);
+    await card(cal, elsewhere, 'meeting', {
+      title: 'Elsewhere',
+      start: at('2026-10-02T09:00:00Z'),
+    });
+    const upcoming = async (c: Client) =>
+      (await c.get(`/v1/conversations/${convo}/memory`)).upcoming as any[];
+    expect(await upcoming(cal)).toEqual([
+      {
+        messageId: sooner.id,
+        conversationId: convo,
+        seq: sooner.seq,
+        kit: 'meeting',
+        title: 'Venue walkthrough',
+        at: '2026-10-03T09:00:00.000Z',
+        hasTime: true,
+        durationMinutes: 45,
+        place: 'Hall B',
+        agreed: true,
+      },
+      expect.objectContaining({ messageId: later.id, agreed: false, durationMinutes: null }),
+    ]);
+    // Deleted for himself, it's gone from his list only; cancelled, from everyone's.
+    await dan.del(`/v1/messages/${later.id}?forEveryone=false`);
+    expect((await upcoming(dan)).map((u) => u.messageId)).toEqual([sooner.id]);
+    expect((await upcoming(cal)).map((u) => u.messageId)).toEqual([sooner.id, later.id]);
+    await cal.post(`/v1/messages/${sooner.id}/kit`, { to: 'cancelled' });
+    expect((await upcoming(cal)).map((u) => u.messageId)).toEqual([later.id]);
+  });
+
+  it('in a space: its calendar, from the conversations of it each person is in', async () => {
+    const dee = await signup(t, { displayName: 'Dee Space' });
+    const eli = await signup(t, { displayName: 'Eli Space' });
+    await connect(dee, eli);
+    const space = (
+      await dee.post('/v1/spaces', {
+        name: 'The Nile family',
+        kind: 'family',
+        memberIds: [eli.user.id],
+      })
+    ).space;
+    const dinner = await card(dee, space.generalId, 'meeting', {
+      title: 'Dinner at Grandma’s',
+      start: { at: '2026-10-04T17:00:00Z', hasTime: true },
+    });
+    await eli.post(`/v1/messages/${dinner.id}/kit`, { to: 'accepted' });
+    // A conversation of the space only Dee is in.
+    const hers = (await dee.post(`/v1/spaces/${space.id}/conversations`, { title: 'Gift ideas' }))
+      .conversation.id;
+    const surprise = await card(dee, hers, 'meeting', {
+      title: 'Buy the cake',
+      start: { at: '2026-10-03T10:00:00Z', hasTime: true },
+    });
+    const view = async (c: Client) =>
+      (await c.get(`/v1/spaces/${space.id}`)).space.upcoming as any[];
+    expect((await view(dee)).map((u) => [u.title, u.conversationTitle, u.agreed])).toEqual([
+      ['Buy the cake', 'Gift ideas', false],
+      ['Dinner at Grandma’s', 'The Nile family', true],
+    ]);
+    expect((await view(eli)).map((u) => u.messageId)).toEqual([dinner.id]);
+    expect(surprise.id).toBeTruthy();
+  });
+});

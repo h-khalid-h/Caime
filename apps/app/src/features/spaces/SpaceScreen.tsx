@@ -15,6 +15,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useSpace } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { ComingUpList } from '@/features/common/comingUpLazy';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -259,6 +260,33 @@ export function SpaceScreen({ id }: { id: string }) {
             </Text>
           ) : null}
         </View>
+
+        {space.upcoming.length ? (
+          <>
+            <SectionTitle>Coming up</SectionTitle>
+            <View
+              style={{
+                marginHorizontal: 16,
+                padding: 14,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: t.c.border,
+                backgroundColor: t.c.surface,
+              }}
+            >
+              <ComingUpList
+                items={space.upcoming}
+                showWhere
+                onOpen={(u) =>
+                  router.navigate({
+                    pathname: '/c/[id]',
+                    params: { id: u.conversationId, seq: String(u.seq) },
+                  })
+                }
+              />
+            </View>
+          </>
+        ) : null}
 
         <SectionTitle
           action={

@@ -14,6 +14,7 @@ import { canEditConversation, contextEditable, contextVisible } from '../lib/con
 import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { fileUrl, notHiddenFor, participantsOf } from '../lib/messages';
+import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
@@ -325,7 +326,10 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         if (amounts.length < 10) amounts.push({ ...a, messageId: m.id });
       for (const t of e.topics ?? []) topicCount.set(t, (topicCount.get(t) ?? 0) + 1);
     }
-    const tasks = await taskViews(ctx, openTasks, auth.userId);
+    const [tasks, upcoming] = await Promise.all([
+      taskViews(ctx, openTasks, auth.userId),
+      cardsAhead(ctx, auth.userId, { ...aheadWindow(now), limit: 10, conversationIds: [id] }),
+    ]);
     const mineCount = tasks.filter(
       (t) => t.direction === 'mine' || t.direction === 'asked_me',
     ).length;
@@ -384,6 +388,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         .filter((a) => a.kind === 'location')
         .slice(0, 10)
         .map((a) => ({ id: a.id, title: a.title, messageId: a.message_id })),
+      upcoming: upcoming.map(upcomingView),
       topics: [...topicCount.entries()]
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)

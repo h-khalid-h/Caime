@@ -15,12 +15,12 @@ import {
   zonedParts,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { hashToken, newToken } from '../lib/crypto';
 import { forbidden, notFound } from '../lib/errors';
+import { cardsAhead } from '../lib/upcoming';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
@@ -113,75 +113,24 @@ export async function calendarEvents(
     });
   });
   // Meetings and appointments agreed in conversations they're still in, never one taken back.
-  const cards = await ctx.db
-    .selectFrom('messages as m')
-    .innerJoin('participants as p', (j) =>
-      j
-        .onRef('p.conversation_id', '=', 'm.conversation_id')
-        .on('p.user_id', '=', userId)
-        .on('p.left_at', 'is', null),
-    )
-    .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
-    .select(['m.id', 'm.conversation_id', 'm.payload', 'm.created_at', 'm.edited_at'])
-    .where('m.kind', '=', 'kit')
-    .where('m.deleted_at', 'is', null)
-    .where(sql`m.payload->>'kit'`, 'in', ['meeting', 'appointment'])
-    .where('c.privacy_class', '=', 'standard')
-    .where((eb) =>
-      eb.or([eb('p.request_state', 'is', null), eb('p.request_state', '=', 'accepted')]),
-    )
-    .where((eb) =>
-      eb.or([
-        eb.and([
-          eb(sql`m.payload->>'kit'`, '=', 'meeting'),
-          eb(sql`m.payload->>'state'`, '=', 'accepted'),
-        ]),
-        eb.and([
-          eb(sql`m.payload->>'kit'`, '=', 'appointment'),
-          eb(sql`m.payload->>'state'`, '=', 'confirmed'),
-        ]),
-      ]),
-    )
-    .where(({ not, exists, selectFrom }) =>
-      not(
-        exists(
-          selectFrom('hidden_messages as h')
-            .select('h.message_id')
-            .whereRef('h.message_id', '=', 'm.id')
-            .where('h.user_id', '=', userId),
-        ),
-      ),
-    )
-    .orderBy('m.created_at', 'desc')
-    .limit(MAX_EVENTS)
-    .execute();
-  for (const card of cards) {
-    const payload = (card.payload ?? {}) as {
-      kit?: 'meeting' | 'appointment';
-      title?: string;
-      fields?: {
-        start?: { at?: string; hasTime?: boolean };
-        durationMinutes?: number;
-        place?: unknown;
-      };
-      history?: Array<{ at?: string }>;
-    };
-    const at = payload.fields?.start?.at ? new Date(payload.fields.start.at) : null;
-    if (!at || Number.isNaN(at.getTime()) || at < from || at > until || !payload.kit) continue;
-    const minutes = Number(payload.fields?.durationMinutes) || MEETING_MINUTES;
-    const place = typeof payload.fields?.place === 'string' ? payload.fields.place : null;
-    const moved = payload.history?.at(-1)?.at;
-    const url = where(card.conversation_id);
+  for (const card of await cardsAhead(ctx, userId, {
+    from,
+    until,
+    limit: MAX_EVENTS,
+    agreedOnly: true,
+  })) {
+    const url = where(card.conversationId);
+    const minutes = card.durationMinutes ?? MEETING_MINUTES;
     events.push({
-      uid: `${payload.kit}-${card.id}@caishy`,
-      summary: payload.title || KITS[payload.kit].name,
-      description: `${KITS[payload.kit].name}, agreed in Caishy: ${url}`,
-      location: place,
+      uid: `${card.kit}-${card.messageId}@caishy`,
+      summary: card.title,
+      description: `${KITS[card.kit].name}, agreed in Caishy: ${url}`,
+      location: card.place,
       url,
-      ...(payload.fields?.start?.hasTime === false
-        ? { date: localDate(at, timeZone) }
-        : { start: at, end: new Date(at.getTime() + minutes * 60_000) }),
-      updated: moved ? new Date(moved) : ((card.edited_at ?? card.created_at) as Date),
+      ...(card.hasTime
+        ? { start: card.at, end: new Date(card.at.getTime() + minutes * 60_000) }
+        : { date: localDate(card.at, timeZone) }),
+      updated: card.updated,
       busy: true,
     });
   }

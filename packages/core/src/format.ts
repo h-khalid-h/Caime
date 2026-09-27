@@ -206,6 +206,25 @@ export function formatDue(
   return dateFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
 }
 
+/** When something is, as its reader says it: "Tomorrow 3:00 PM", "Sat 12 Oct, 11:00". */
+export function formatWhenAt(
+  at: string,
+  hasTime: boolean,
+  now: Date,
+  timeZone: string,
+  locale = 'en',
+): string {
+  const days = Math.abs(Date.parse(at) - now.getTime()) / 86_400_000;
+  if (days < 6) return formatDue(at, now, timeZone, locale, hasTime);
+  const date = dateFormat(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone,
+  }).format(new Date(at));
+  return hasTime ? `${date}, ${formatClock(at, timeZone, locale)}` : date;
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ['KB', 'MB', 'GB', 'TB'];

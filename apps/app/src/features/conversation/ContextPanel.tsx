@@ -11,6 +11,7 @@ import { qk } from '@/api/keys';
 import { taskWho } from '@/features/actions/TaskRow';
 import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
+import { ComingUpList } from '@/features/common/comingUpLazy';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { Choice } from '@/features/settings/SettingsPage';
 import { openCheckedLink, openLink } from '@/lib/links';
@@ -308,6 +309,21 @@ export function ContextPanel({
               </Text>
               {aiReady ? <AssistTools conversationId={conversation.id} /> : null}
             </Section>
+            {m.upcoming.length ? (
+              <Section title="Coming up">
+                <ComingUpList
+                  items={m.upcoming}
+                  onOpen={(u) =>
+                    onJump
+                      ? onJump(u.seq)
+                      : go({
+                          pathname: '/c/[id]',
+                          params: { id: conversation.id, seq: String(u.seq) },
+                        })
+                  }
+                />
+              </Section>
+            ) : null}
             {m.openItems.length ? (
               <Section title={`Open · ${m.openItems.length}`}>
                 {m.openItems.map((task) => (
