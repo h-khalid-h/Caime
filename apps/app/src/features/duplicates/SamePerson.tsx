@@ -1,7 +1,8 @@
 /**
  * Two of someone's connections who may be one person (PRD §51): offered in People, never done
  * for them (R12). Merged, one shows under the other in their People; both accounts and their
- * conversations stay, and either can be separated again.
+ * conversations stay, and either can be separated again. Loaded only when there's one to show
+ * (./index.tsx).
  */
 import type { ConnectionView, SuggestionView } from '@caishy/core/api';
 import { useQueryClient } from '@tanstack/react-query';

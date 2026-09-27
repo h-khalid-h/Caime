@@ -4,6 +4,7 @@ import { router, usePathname } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useConnections, useRequests } from '@/api/hooks';
+import { DuplicateOffers } from '@/features/duplicates';
 import { useLive } from '@/state/live';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -17,7 +18,6 @@ import { PageHeader, Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
-import { DuplicateOffers } from './SamePerson';
 
 type Filter = Sphere | 'all' | 'unlabelled';
 

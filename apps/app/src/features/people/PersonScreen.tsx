@@ -7,6 +7,7 @@ import { endpoints } from '@/api/endpoints';
 import { usePerson } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PersonCalls } from '@/features/calls/PersonCalls';
+import { OtherAccounts } from '@/features/duplicates';
 import { privateSupported } from '@/features/e2ee/support';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
 import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
@@ -38,7 +39,6 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { ConnectSheet } from './ConnectSheet';
 import { RelationshipHistory } from './RelationshipHistory';
-import { OtherAccounts } from './SamePerson';
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (

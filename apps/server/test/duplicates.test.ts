@@ -288,10 +288,11 @@ describe('possible duplicates (PRD §51)', () => {
     const b = await signup(t, { displayName: 'Ivo Lind' });
     await connect(noor, a);
     await connect(noor, b);
-    for (const [one, other] of [
+    const pairs: Array<[Client, Client]> = [
       [a, b],
       [b, a],
-    ])
+    ];
+    for (const [one, other] of pairs)
       await t.ctx.db
         .updateTable('connection_sides')
         .set({ merged_into: other.user.id })
