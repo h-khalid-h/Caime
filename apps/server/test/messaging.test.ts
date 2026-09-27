@@ -966,6 +966,27 @@ describe('pinned messages (PRD §22, §56)', () => {
     expect((await stranger.req('GET', `/v1/conversations/${g}/pins`)).statusCode).toBe(404);
     expect((await stranger.req('DELETE', `/v1/messages/${first.id}/pin`)).statusCode).toBe(404);
   });
+
+  it('a message that disappears takes its pin, and its link from what the conversation keeps', async () => {
+    const was = t.clock.now.toISOString();
+    await ana.patch(`/v1/conversations/${direct}`, { retentionDays: 1 });
+    const m = await send(bo, direct, 'The plan is at https://venue.example/plan');
+    await pin(ana, m.id);
+    const links = async () =>
+      (await ana.get(`/v1/conversations/${direct}/assets?kind=link`)).assets as any[];
+    expect((await links()).map((a) => a.messageId)).toContain(m.id);
+    t.clock.advance(2 * 86_400_000);
+    try {
+      await runPeriodic(t.ctx);
+      expect(await pins(ana, direct)).toEqual([]);
+      expect((await links()).map((a) => a.messageId)).not.toContain(m.id);
+      const memory = await ana.get(`/v1/conversations/${direct}/memory`);
+      expect(JSON.stringify(memory.links)).not.toContain('venue.example');
+    } finally {
+      t.clock.set(was);
+      await ana.patch(`/v1/conversations/${direct}`, { retentionDays: null });
+    }
+  });
 });
 
 describe('forwarding (PRD §22)', () => {

@@ -103,14 +103,22 @@ export function registerWorkers(): void {
     name: 'retention',
     everyMs: 3_600_000,
     run: async (ctx) => {
+      // Disappeared (PRD §60): its words and envelope go, and so does everything kept of it
+      // elsewhere, as when it's deleted for everyone: the files and links in the conversation's
+      // index and memory, a pin, and what Caishy was about to offer about it.
       await sql`
-        update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}', entities = '{}',
-          sealed = null
-        from conversations c
-        where m.conversation_id = c.id and c.retention_days is not null and m.deleted_at is null
-          and m.created_at < ${ctx.now()}::timestamptz - make_interval(days => c.retention_days)`.execute(
-        ctx.db,
-      );
+        with gone as (
+          update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}',
+            entities = '{}', sealed = null, pinned_at = null, pinned_by = null
+          from conversations c
+          where m.conversation_id = c.id and c.retention_days is not null and m.deleted_at is null
+            and m.created_at < ${ctx.now()}::timestamptz - make_interval(days => c.retention_days)
+          returning m.id
+        ),
+        assets_gone as (delete from assets where message_id in (select id from gone)),
+        files_gone as (delete from message_files where message_id in (select id from gone))
+        update suggestions set status = 'expired', resolved_at = ${ctx.now()}
+        where status = 'pending' and message_id in (select id from gone)`.execute(ctx.db);
       await ctx.db
         .updateTable('participants')
         .set({ archived_at: ctx.now() })
