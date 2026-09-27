@@ -104,3 +104,18 @@ export const useOrg = (handle: string) =>
     queryFn: () => endpoints.orgByHandle(handle),
     enabled: Boolean(handle),
   });
+
+/** Call history (PRD §47): `missed`, or `with:<id>` for the calls with one person. */
+export const useCallHistory = (filter: 'all' | 'missed' | `with:${string}`, limit = 30) =>
+  useInfiniteQuery({
+    queryKey: [...qk.calls(filter), limit],
+    queryFn: ({ pageParam }) =>
+      endpoints.callHistory({
+        before: pageParam,
+        limit,
+        missed: filter === 'missed' || undefined,
+        with: filter.startsWith('with:') ? filter.slice(5) : undefined,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextBefore ?? undefined,
+  });

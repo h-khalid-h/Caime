@@ -76,3 +76,29 @@ function groupCallText(
   if (viewerStarted) return outcome === 'cancelled' ? `${name} · cancelled` : `${name} · no answer`;
   return `Missed ${name.toLowerCase()}`;
 }
+
+/** How a call went for one person, for their call history. */
+export type CallResult = 'answered' | 'missed' | 'declined' | 'unanswered' | 'cancelled' | 'failed';
+
+/**
+ * A call as it went for one person: `outgoing` when they called (or started the group call).
+ * Whoever calls is never told they were turned down ("no answer", as the call's line says); in a
+ * group call, someone rung was in it if they joined at any point.
+ */
+export function callResult(input: {
+  outcome: CallOutcome;
+  outgoing: boolean;
+  group?: boolean;
+  /** A group call: they joined it at some point. */
+  joined?: boolean;
+  /** A group call: they turned it down. */
+  declined?: boolean;
+}): CallResult {
+  const { outcome, outgoing } = input;
+  if (outcome === 'failed') return 'failed';
+  if (input.group && !outgoing)
+    return input.joined ? 'answered' : input.declined ? 'declined' : 'missed';
+  if (outcome === 'completed') return 'answered';
+  if (outgoing) return outcome === 'cancelled' ? 'cancelled' : 'unanswered';
+  return outcome === 'declined' ? 'declined' : 'missed';
+}

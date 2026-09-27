@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type CallOutcome, callDuration, callText } from './calls';
+import { type CallOutcome, callDuration, callResult, callText } from './calls';
 import { systemText } from './format';
 
 describe('calls (PRD §47)', () => {
@@ -34,5 +34,33 @@ describe('a group call’s line', () => {
     expect(callText('voice', 'missed', 0, false, true)).toBe('Missed group voice call');
     expect(callText('voice', 'cancelled', 0, true, true)).toBe('Group voice call · cancelled');
     expect(callText('voice', 'cancelled', 0, false, true)).toBe('Missed group voice call');
+  });
+});
+
+describe('a call, as it went for each person in it', () => {
+  it('whoever calls is never told they were turned down', () => {
+    expect(callResult({ outcome: 'completed', outgoing: true })).toBe('answered');
+    expect(callResult({ outcome: 'declined', outgoing: true })).toBe('unanswered');
+    expect(callResult({ outcome: 'missed', outgoing: true })).toBe('unanswered');
+    expect(callResult({ outcome: 'cancelled', outgoing: true })).toBe('cancelled');
+    expect(callResult({ outcome: 'failed', outgoing: true })).toBe('failed');
+  });
+  it('whoever was called missed it, turned it down or took it', () => {
+    expect(callResult({ outcome: 'completed', outgoing: false })).toBe('answered');
+    expect(callResult({ outcome: 'declined', outgoing: false })).toBe('declined');
+    expect(callResult({ outcome: 'missed', outgoing: false })).toBe('missed');
+    expect(callResult({ outcome: 'cancelled', outgoing: false })).toBe('missed');
+  });
+  it('in a group call, by whether they joined it', () => {
+    const group = { group: true, outgoing: false };
+    expect(callResult({ ...group, outcome: 'completed', joined: true })).toBe('answered');
+    expect(callResult({ ...group, outcome: 'completed' })).toBe('missed');
+    expect(callResult({ ...group, outcome: 'completed', declined: true })).toBe('declined');
+    expect(callResult({ group: true, outgoing: true, outcome: 'missed', joined: true })).toBe(
+      'unanswered',
+    );
+    expect(callResult({ group: true, outgoing: true, outcome: 'completed', joined: true })).toBe(
+      'answered',
+    );
   });
 });

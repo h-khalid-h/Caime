@@ -15,6 +15,7 @@ import type {
   BusinessInboxView,
   BusinessSummaryView,
   BusinessThreadView,
+  CallHistoryResponse,
   CallView,
   ConnectedAppView,
   ConnectionRequestView,
@@ -328,6 +329,10 @@ export const endpoints = {
   ) => api.post<Ok>(`/calls/${id}/signal`, body),
   callAlive: (id: string, deviceId: string) =>
     api.post<{ call: CallView }>(`/calls/${id}/alive`, { deviceId }),
+  callHistory: (params: { before?: string; limit?: number; with?: string; missed?: boolean }) =>
+    api.get<CallHistoryResponse>(
+      `/calls/history${q({ ...params, missed: params.missed ? '1' : undefined })}`,
+    ),
   // Group calls: every device in one connects to every other
   liveGroupCall: () => api.get<{ call: GroupCallView | null }>('/group-calls/live'),
   groupCallIn: (conversationId: string) =>

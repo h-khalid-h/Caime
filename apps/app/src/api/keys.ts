@@ -22,6 +22,8 @@ export const qk = {
   memory: (id: string) => ['memory', id] as const,
   suggestions: (conversationId?: string) => ['suggestions', conversationId ?? 'all'] as const,
   person: (id: string) => ['person', id] as const,
+  /** Call history: every call, the missed ones, or those with one person. */
+  calls: (filter: string) => ['calls', filter] as const,
   relationshipHistory: (id: string) => ['relationship-history', id] as const,
   connections: ['connections'] as const,
   requests: (direction: 'incoming' | 'outgoing') => ['requests', direction] as const,

@@ -11,7 +11,7 @@ import { Button } from '@/ui/Button';
 import { Chip, RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ChevronRight, Search, UserPlus } from '@/ui/icons';
+import { ChevronRight, Phone, Search, UserPlus } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
@@ -143,12 +143,20 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         title="People"
         subtitle={all.length ? `${all.length} connection${all.length === 1 ? '' : 's'}` : null}
         right={
-          <IconButton
-            icon={UserPlus}
-            label="Connect with someone"
-            onPress={() => router.push('/connect')}
-            testID="people-connect"
-          />
+          <View style={{ flexDirection: 'row', gap: 2 }}>
+            <IconButton
+              icon={Phone}
+              label="Calls"
+              onPress={() => router.push('/calls')}
+              testID="people-calls"
+            />
+            <IconButton
+              icon={UserPlus}
+              label="Connect with someone"
+              onPress={() => router.push('/connect')}
+              testID="people-connect"
+            />
+          </View>
         }
       />
       {incoming ? (

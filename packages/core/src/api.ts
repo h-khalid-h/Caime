@@ -9,7 +9,7 @@ import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { BusinessView, ThreadState } from './business';
-import type { CallKind, CallOutcome, CallState, GroupCallMemberState } from './calls';
+import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { OrgKind, OrgRole } from './orgs';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
@@ -1164,6 +1164,34 @@ export interface GroupCallView {
 /** A group call's signal says whose device it's from too: it's that device of that person. */
 export interface GroupCallSignalView extends CallSignalView {
   fromUser: string;
+}
+
+/** One call in someone's history (PRD §47): a 1:1 or a group call, as it went for them. */
+export interface CallHistoryItem {
+  id: string;
+  conversationId: string;
+  /** The group's name, for a group call. */
+  conversationTitle: string | null;
+  kind: CallKind;
+  group: boolean;
+  /** They called, or were called. */
+  direction: 'outgoing' | 'incoming';
+  result: CallResult;
+  /**
+   * Who else: the other person, or those in the group call with them; for a group call nobody
+   * else joined, whoever started it (none, to them).
+   */
+  with: CallPersonView[];
+  /** How long it lasted, if it was answered. */
+  seconds: number;
+  createdAt: string;
+  endedAt: string | null;
+}
+
+export interface CallHistoryResponse {
+  calls: CallHistoryItem[];
+  /** Pass as `before` for the next page; null at the end. */
+  nextBefore: string | null;
 }
 
 /** How two devices reach each other (WebRTC), passed from one to the other. */

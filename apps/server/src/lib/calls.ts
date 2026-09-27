@@ -11,8 +11,11 @@
 import { createHmac } from 'node:crypto';
 import {
   CALL_RING_SECONDS,
+  type CallHistoryItem,
+  type CallHistoryResponse,
   type CallOutcome,
   type CallView,
+  callResult,
   type IceConfigView,
 } from '@caishy/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
@@ -358,6 +361,178 @@ export function iceConfig(ctx: AppContext, userId: string): IceConfigView {
     iceServers.push({ urls: ctx.config.turnUrls, username, credential });
   }
   return { iceServers, relay: iceServers.some((s) => s.username !== undefined) };
+}
+
+/**
+ * Someone's calls (PRD §47), newest first: the 1:1 calls they placed or were rung for, and the
+ * group calls they were rung for or started, each as it went for them. Only calls that are over.
+ * `withId` narrows it to calls with one person (1:1, or a group call you were both in); `missed`
+ * to the calls they missed.
+ */
+export async function callHistory(
+  ctx: AppContext,
+  me: string,
+  opts: { before?: string; limit: number; withId?: string; missed?: boolean },
+): Promise<CallHistoryResponse> {
+  const direct = ctx.db
+    .selectFrom('calls as c')
+    .select([
+      'c.id',
+      'c.conversation_id',
+      'c.kind',
+      'c.is_group',
+      'c.outcome',
+      'c.caller_id',
+      'c.callee_id',
+      'c.created_at',
+      'c.answered_at',
+      'c.ended_at',
+      sql<string | null>`null`.as('my_state'),
+      sql<Date | null>`null`.as('my_joined_at'),
+    ])
+    .where('c.is_group', '=', false)
+    .where('c.state', '=', 'ended')
+    .where((eb) => eb.or([eb('c.caller_id', '=', me), eb('c.callee_id', '=', me)]))
+    .$if(Boolean(opts.withId), (q) =>
+      q.where((eb) =>
+        eb.or([
+          eb.and([eb('c.caller_id', '=', me), eb('c.callee_id', '=', opts.withId!)]),
+          eb.and([eb('c.callee_id', '=', me), eb('c.caller_id', '=', opts.withId!)]),
+        ]),
+      ),
+    )
+    .$if(Boolean(opts.missed), (q) =>
+      q.where('c.callee_id', '=', me).where('c.outcome', 'in', ['missed', 'cancelled']),
+    );
+  const group = ctx.db
+    .selectFrom('calls as c')
+    .innerJoin('call_members as m', (j) =>
+      j.onRef('m.call_id', '=', 'c.id').on('m.user_id', '=', me),
+    )
+    .select([
+      'c.id',
+      'c.conversation_id',
+      'c.kind',
+      'c.is_group',
+      'c.outcome',
+      'c.caller_id',
+      'c.callee_id',
+      'c.created_at',
+      'c.answered_at',
+      'c.ended_at',
+      sql<string | null>`m.state`.as('my_state'),
+      sql<Date | null>`m.joined_at`.as('my_joined_at'),
+    ])
+    .where('c.is_group', '=', true)
+    .where('c.state', '=', 'ended')
+    .$if(Boolean(opts.withId), (q) =>
+      q.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('call_members as o')
+            .select('o.user_id')
+            .whereRef('o.call_id', '=', 'c.id')
+            .where('o.user_id', '=', opts.withId!)
+            .where('o.joined_at', 'is not', null),
+        ),
+      ),
+    )
+    .$if(Boolean(opts.missed), (q) =>
+      q
+        .where('m.joined_at', 'is', null)
+        .where('m.state', '<>', 'declined')
+        .where((eb) => eb.or([eb('c.caller_id', 'is', null), eb('c.caller_id', '<>', me)])),
+    );
+  const rows = await ctx.db
+    .selectFrom(direct.unionAll(group).as('x'))
+    .selectAll()
+    .$if(Boolean(opts.before), (q) => q.where('x.id', '<', opts.before!))
+    .orderBy('x.id', 'desc')
+    .limit(opts.limit + 1)
+    .execute();
+  const page = rows.slice(0, opts.limit);
+  const groupIds = page.filter((r) => r.is_group).map((r) => r.id);
+  const members = groupIds.length
+    ? await ctx.db
+        .selectFrom('call_members')
+        .select(['call_id', 'user_id', 'joined_at', 'rung_at'])
+        .where('call_id', 'in', groupIds)
+        .orderBy('rung_at')
+        .orderBy('user_id')
+        .execute()
+    : [];
+  const people = new Set<string>();
+  for (const r of page)
+    for (const id of [r.caller_id, r.callee_id]) if (id && id !== me) people.add(id);
+  for (const m of members) if (m.user_id !== me) people.add(m.user_id);
+  const ids = [...people];
+  const [users, views, titles] = await Promise.all([
+    ids.length
+      ? ctx.db.selectFrom('users').select(['id', 'display_name']).where('id', 'in', ids).execute()
+      : [],
+    personViewsFor(ctx, me, ids),
+    groupIds.length
+      ? ctx.db
+          .selectFrom('conversations')
+          .select(['id', 'title'])
+          .where(
+            'id',
+            'in',
+            page.filter((r) => r.is_group).map((r) => r.conversation_id),
+          )
+          .execute()
+      : [],
+  ]);
+  // Each by the name they show whoever asks (PRD §35).
+  const person = (id: string | null) => {
+    const u = id ? users.find((x) => x.id === id) : undefined;
+    return {
+      id: id ?? '',
+      displayName: (id && views.get(id)?.displayName) || u?.display_name || 'Deleted account',
+      avatarUrl: id ? (views.get(id)?.avatarUrl ?? null) : null,
+    };
+  };
+  return {
+    calls: page.map((r): CallHistoryItem => {
+      const outgoing = r.caller_id === me;
+      const outcome = (r.outcome ?? 'missed') as CallOutcome;
+      let others: Array<string | null>;
+      if (!r.is_group) others = [outgoing ? r.callee_id : r.caller_id];
+      else {
+        const of = members.filter((m) => m.call_id === r.id && m.user_id !== me);
+        const joined = of.filter((m) => m.joined_at);
+        // Who else was in it; for a call nobody else joined, who started it (and to whoever
+        // did, nobody: who it rang would say who it didn't, a block or R29).
+        others = joined.length ? joined.map((m) => m.user_id) : outgoing ? [] : [r.caller_id];
+      }
+      const answered = r.answered_at && r.ended_at;
+      return {
+        id: r.id,
+        conversationId: r.conversation_id,
+        conversationTitle: r.is_group
+          ? (titles.find((c) => c.id === r.conversation_id)?.title ?? null)
+          : null,
+        kind: r.kind,
+        group: r.is_group,
+        direction: outgoing ? 'outgoing' : 'incoming',
+        result: callResult({
+          outcome,
+          outgoing,
+          group: r.is_group,
+          joined: Boolean(r.my_joined_at),
+          declined: r.my_state === 'declined',
+        }),
+        with: others.map(person),
+        seconds:
+          answered && outcome === 'completed'
+            ? Math.max(0, Math.round((r.ended_at!.getTime() - r.answered_at!.getTime()) / 1000))
+            : 0,
+        createdAt: r.created_at.toISOString(),
+        endedAt: r.ended_at?.toISOString() ?? null,
+      };
+    }),
+    nextBefore: rows.length > opts.limit ? (page.at(-1)?.id ?? null) : null,
+  };
 }
 
 /** Whoever is on the other side of a call from `userId`. */

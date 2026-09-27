@@ -1561,4 +1561,35 @@ test.describe
       await expect(lina.page.getByTestId('group-call-banner')).toHaveCount(0);
       expect([...errors, ...alex.errors, ...lina.errors]).toEqual([]);
     });
+
+    test('every call is kept: newest first, the missed ones, and those with one person', async () => {
+      const { page, errors } = noor;
+      await page.goto('/calls');
+      const rows = page.getByTestId('call-history-row');
+      await expect(rows.first()).toContainText('Weekend plans');
+      await expect(rows.first()).toContainText('Outgoing · under a minute');
+      // Alex turned one down; to Noor, who called, it went unanswered.
+      await expect(
+        rows.filter({ hasText: 'Alex Chen' }).filter({ hasText: 'No answer' }),
+      ).toHaveCount(1);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-call-history.png' });
+
+      // Alex finds his from People; he missed none.
+      await alex.page.goto('/people');
+      await alex.page.getByTestId('people-calls').click();
+      await expect(alex.page).toHaveURL(/\/calls$/);
+      const his = alex.page.getByTestId('call-history-row');
+      await expect(his.filter({ hasText: 'You declined a voice call' })).toHaveCount(1);
+      await expect(his.filter({ hasText: 'Incoming · under a minute' })).toHaveCount(3);
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-call-history.png' });
+      await alex.page.getByRole('tab', { name: 'Missed' }).click();
+      await expect(visible(alex.page, 'No missed calls')).toBeVisible();
+
+      // On Alex's profile, Noor sees their latest calls.
+      await page.goto(`/p/${alexId}`);
+      const theirs = page.getByTestId('person-calls').filter({ visible: true });
+      await expect(theirs.getByTestId('call-history-row')).toHaveCount(3);
+      await expect(theirs).toContainText('Alex Chen');
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
   });

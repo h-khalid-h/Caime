@@ -6,6 +6,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePerson } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { PersonCalls } from '@/features/calls/PersonCalls';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
 import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
 import { useLive } from '@/state/live';
@@ -314,6 +315,8 @@ export function PersonScreen({ id }: { id: string }) {
             </View>
           </Card>
         ) : null}
+
+        {state === 'connected' ? <PersonCalls personId={id} name={name} /> : null}
 
         {p.conversations.length ? (
           <Card padded={false}>

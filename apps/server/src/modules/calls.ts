@@ -6,6 +6,7 @@
 import {
   CALL_RING_SECONDS,
   CallDeviceBody,
+  type CallHistoryResponse,
   CallSignalBody,
   type CallView,
   type IceConfigView,
@@ -17,6 +18,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call } from '../db/schema';
 import {
+  callHistory,
   callView,
   endCall,
   iceConfig,
@@ -67,6 +69,28 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/calls/ice', async (req): Promise<IceConfigView> => {
     const auth = requireAuth(req);
     return iceConfig(ctx, auth.userId);
+  });
+
+  /** My calls, newest first (PRD §47): all of them, with one person, or the ones I missed. */
+  app.get('/calls/history', async (req): Promise<CallHistoryResponse> => {
+    const auth = requireAuth(req);
+    const q = parse(
+      z
+        .object({
+          before: z.string().uuid().optional(),
+          limit: z.coerce.number().int().min(1).max(100).default(30),
+          with: z.string().uuid().optional(),
+          missed: z.enum(['1', 'true']).optional(),
+        })
+        .strict(),
+      req.query,
+    );
+    return callHistory(ctx, auth.userId, {
+      before: q.before,
+      limit: q.limit,
+      withId: q.with,
+      missed: Boolean(q.missed),
+    });
   });
 
   /** The call ringing or running for me now: a page opened mid-call finds it. */

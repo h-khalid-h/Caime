@@ -59,11 +59,14 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'call.updated':
     case 'call.signal':
       onCallEvent(event);
+      // Over: it's in the call history now.
+      if (event.type === 'call.updated' && event.data.state === 'ended') invalidate(['calls']);
       return;
     case 'groupcall.ringing':
     case 'groupcall.updated':
     case 'groupcall.signal':
       onGroupCallEvent(event);
+      if (event.type === 'groupcall.updated' && event.data.state === 'ended') invalidate(['calls']);
       return;
     case 'message.created': {
       const m = event.data;
