@@ -1,267 +1,29 @@
-import { useEffect, useRef } from 'react';
-import { View } from 'react-native';
-import { useCall } from '@/state/calls';
-import { useSession } from '@/state/session';
-import { Avatar } from '@/ui/Avatar';
-import {
-  Mic,
-  MicOff,
-  Phone,
-  PhoneOff,
-  ScreenShare,
-  ScreenShareOff,
-  Video,
-  VideoOff,
-} from '@/ui/icons';
-import { Text } from '@/ui/Text';
-import {
-  INK,
-  Media,
-  OVER_VIDEO,
-  Round,
-  useElapsed,
-  useFocusInside,
-  useRingtone,
-} from './callUi.web';
-import {
-  answer,
-  checkLiveCall,
-  hangUp,
-  screenShareSupported,
-  startSharing,
-  stopSharing,
-  toggleCamera,
-  toggleMute,
-} from './engine';
-import { GroupCallLayer } from './GroupCallLayer.web';
-
 /**
- * The call screen (PRD §47), over everything while a call rings or runs: who it's with, how
- * long it's been, and the three things you do in a call: mute, camera, hang up.
+ * Where the call screens go (the app's layout): nothing, until there's a call to show, and then
+ * the screens, loaded with the calls themselves (calls.web.ts).
  */
-function OneToOneCallLayer() {
-  const me = useSession((s) => s.user?.id ?? '');
-  const { call, phase, local, remote, muted, cameraOff, sharing, theirs, note } = useCall();
-  useEffect(() => {
-    if (me) void checkLiveCall(me);
-  }, [me]);
-  const elapsed = useElapsed(call?.answeredAt ?? null, phase === 'active');
-  useRingtone(phase === 'incoming');
-  // Keyboard and screen reader users land on what to do now: answer, or hang up.
-  const primary = useRef<View>(null);
-  useEffect(() => {
-    if (phase === 'incoming' || phase === 'outgoing' || phase === 'active')
-      (primary.current as unknown as HTMLElement | null)?.focus?.();
-  }, [phase]);
-  const shown = Boolean(call && phase && phase !== 'starting');
-  const root = useFocusInside(shown);
-  if (!call || !phase || phase === 'starting') return null;
+import { lazy, Suspense, useEffect } from 'react';
+import { useCall } from '@/state/calls';
+import { useGroupCall } from '@/state/groupCall';
+import { useSession } from '@/state/session';
+import { checkLiveCall, checkLiveGroupCall, loadCallStack } from './calls.web';
 
-  const other = call.caller.id === me ? call.callee : call.caller;
-  const video = call.kind === 'video';
-  // Their screen when they share it; their camera in a video call, unless they turned it off.
-  const theyShare = Boolean(theirs?.sharing);
-  const seeThem =
-    phase === 'active' &&
-    Boolean(remote?.getVideoTracks().length) &&
-    (theyShare || (video && theirs?.camera !== false));
-  const status =
-    phase === 'incoming'
-      ? video
-        ? 'Video call'
-        : 'Voice call'
-      : phase === 'outgoing'
-        ? 'Calling…'
-        : phase === 'connecting'
-          ? 'Connecting…'
-          : phase === 'reconnecting'
-            ? 'Reconnecting…'
-            : phase === 'ended'
-              ? (note ?? 'Call ended')
-              : elapsed;
+const CallScreens = lazy(() => loadCallStack().then((s) => ({ default: s.CallScreens })));
 
-  const hasCamera = Boolean(local?.getVideoTracks().length);
-
-  return (
-    <View
-      ref={root}
-      role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
-      aria-modal
-      aria-label={`${video ? 'Video' : 'Voice'} call with ${other.displayName}`}
-      testID="call-screen"
-      style={{
-        position: 'fixed' as 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
-        backgroundColor: INK,
-      }}
-    >
-      {remote && phase !== 'ended' ? (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-          <Media
-            stream={remote}
-            video={seeThem}
-            fit={theyShare ? 'contain' : 'cover'}
-            testID="call-remote"
-          />
-        </View>
-      ) : null}
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: seeThem ? 'flex-start' : 'center',
-          paddingTop: seeThem ? 24 : 0,
-          gap: 10,
-        }}
-      >
-        {seeThem ? null : (
-          <Avatar id={other.id} name={other.displayName} url={other.avatarUrl} size={112} />
-        )}
-        <Text variant="title" style={{ color: '#FFFFFF', ...OVER_VIDEO }} numberOfLines={1}>
-          {other.displayName}
-        </Text>
-        {phase === 'active' && (theyShare || theirs?.muted) ? (
-          <Text
-            variant="caption"
-            style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
-            testID="call-theirs"
-          >
-            {[
-              theyShare ? `${other.displayName.split(' ')[0]} is sharing their screen` : null,
-              theirs?.muted ? 'Muted' : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-        ) : null}
-        <Text
-          variant="body"
-          style={{ color: '#FFFFFFDD', ...OVER_VIDEO }}
-          // What's happening is said (calling, connecting, how it ended); the running clock isn't.
-          aria-live={phase === 'active' ? 'off' : 'polite'}
-          role={phase === 'active' ? 'timer' : undefined}
-          testID="call-status"
-        >
-          {phase === 'incoming' ? `${status} · calling you` : status}
-        </Text>
-      </View>
-      {sharing && phase === 'active' ? (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 140,
-            right: 16,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 999,
-            backgroundColor: '#FFFFFF29',
-          }}
-          testID="call-you-share"
-        >
-          <Text variant="caption" style={{ color: '#FFFFFF' }}>
-            You’re sharing your screen
-          </Text>
-        </View>
-      ) : video && local && hasCamera && !cameraOff && phase !== 'incoming' && phase !== 'ended' ? (
-        <View
-          style={{
-            position: 'absolute',
-            // Above the controls, clear of the name at the top on a narrow screen.
-            bottom: 140,
-            right: 16,
-            width: 112,
-            height: 156,
-            borderRadius: 16,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: '#FFFFFF33',
-          }}
-        >
-          <Media stream={local} video mine testID="call-local" />
-        </View>
-      ) : null}
-      {phase === 'ended' ? null : (
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: 28,
-            paddingBottom: 40,
-            paddingTop: 16,
-          }}
-          testID={phase === 'incoming' ? 'call-incoming' : 'call-controls'}
-        >
-          {phase === 'incoming' ? (
-            <>
-              <Round
-                icon={PhoneOff}
-                label="Decline"
-                tone="end"
-                onPress={() => void hangUp()}
-                testID="call-decline"
-              />
-              <Round
-                icon={video ? Video : Phone}
-                label="Answer"
-                tone="go"
-                onPress={() => void answer()}
-                focusRef={primary}
-                testID="call-accept"
-              />
-            </>
-          ) : (
-            <>
-              <Round
-                icon={muted ? MicOff : Mic}
-                label={muted ? 'Unmute' : 'Mute'}
-                on={muted}
-                onPress={toggleMute}
-                testID="call-mute"
-              />
-              {screenShareSupported && phase === 'active' ? (
-                <Round
-                  icon={sharing ? ScreenShareOff : ScreenShare}
-                  label={sharing ? 'Stop sharing' : 'Share screen'}
-                  on={sharing}
-                  onPress={() => void (sharing ? stopSharing() : startSharing())}
-                  testID="call-share"
-                />
-              ) : null}
-              {video && hasCamera ? (
-                <Round
-                  icon={cameraOff ? VideoOff : Video}
-                  label={cameraOff ? 'Camera on' : 'Camera off'}
-                  on={cameraOff}
-                  onPress={toggleCamera}
-                  testID="call-camera"
-                />
-              ) : null}
-              <Round
-                icon={PhoneOff}
-                label={phase === 'outgoing' ? 'Cancel' : 'Hang up'}
-                tone="end"
-                onPress={() => void hangUp()}
-                focusRef={primary}
-                testID="call-hangup"
-              />
-            </>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
-/** The call screens: a 1:1 call's, and a group call's. One call at a time is ever on a device. */
 export function CallLayer() {
+  const me = useSession((s) => s.user?.id ?? '');
+  // A call this device is in (the page reloaded mid-call), or one ringing for it: asked as it opens.
+  useEffect(() => {
+    if (!me) return;
+    void checkLiveCall(me).catch(() => {});
+    void checkLiveGroupCall(me).catch(() => {});
+  }, [me]);
+  const oneToOne = useCall((s) => Boolean(s.call && s.phase));
+  const group = useGroupCall((s) => Boolean(s.call && s.phase));
+  if (!oneToOne && !group) return null;
   return (
-    <>
-      <OneToOneCallLayer />
-      <GroupCallLayer />
-    </>
+    <Suspense fallback={null}>
+      <CallScreens />
+    </Suspense>
   );
 }

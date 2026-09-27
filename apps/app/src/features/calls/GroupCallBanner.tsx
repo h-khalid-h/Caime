@@ -6,7 +6,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Phone, Video } from '@/ui/icons';
 import { Text } from '@/ui/Text';
-import { checkGroupCallIn, groupCallsSupported, joinGroupCall } from './group';
+import { checkGroupCallIn, groupCallsSupported, joinGroupCall } from './calls';
 
 /**
  * While a call is on in a group, its conversation says so and offers to join it: who's in it,

@@ -26,7 +26,6 @@ import {
 } from './callUi.web';
 import { screenShareSupported } from './engine';
 import {
-  checkLiveGroupCall,
   joinGroupCall,
   leaveGroupCall,
   startGroupSharing,
@@ -146,9 +145,6 @@ const linkNote = (p: GroupPeer) =>
 export function GroupCallLayer() {
   const me = useSession((s) => s.user);
   const { call, phase, local, peers, muted, cameraOff, sharing, note } = useGroupCall();
-  useEffect(() => {
-    if (me?.id) void checkLiveGroupCall(me.id);
-  }, [me?.id]);
   const elapsed = useElapsed(call?.answeredAt ?? null, phase === 'in');
   useRingtone(phase === 'incoming');
   const primary = useRef<View>(null);

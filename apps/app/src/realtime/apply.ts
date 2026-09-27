@@ -6,8 +6,7 @@ import type { RealtimeEvent } from '@caishy/core/api';
 import type { QueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { onCallEvent } from '@/features/calls/engine';
-import { onGroupCallEvent } from '@/features/calls/group';
+import { onCallEvent, onGroupCallEvent } from '@/features/calls/calls';
 import {
   applyEditToInbox,
   applyMessageToInbox,

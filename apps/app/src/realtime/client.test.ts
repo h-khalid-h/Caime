@@ -44,8 +44,10 @@ vi.mock('@/api/queryClient', () => ({
     invalidateQueries: async () => {},
   },
 }));
-vi.mock('@/features/calls/engine', () => ({ checkLiveCall: async () => {} }));
-vi.mock('@/features/calls/group', () => ({ checkLiveGroupCall: async () => {} }));
+vi.mock('@/features/calls/calls', () => ({
+  checkLiveCall: async () => {},
+  checkLiveGroupCall: async () => {},
+}));
 vi.mock('@/lib/config', () => ({ WS_URL: 'ws://caishy.example' }));
 vi.mock('@/lib/network', () => ({ onNetworkChange: () => () => {} }));
 vi.mock('@/state/cache', () => ({ maxSeq: () => 0, upsertMessage: () => {} }));

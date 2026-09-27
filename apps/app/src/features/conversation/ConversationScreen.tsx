@@ -21,9 +21,13 @@ import { CATCH_UP_AFTER, CatchUpBanner } from '@/features/assist/CatchUpBanner';
 import { catchUp } from '@/features/assist/catchUp';
 import { useAiReady } from '@/features/assist/ready';
 import { ThreadBar } from '@/features/business/ThreadBar';
-import { callsSupported, startCall } from '@/features/calls/engine';
+import {
+  callsSupported,
+  groupCallsSupported,
+  startCall,
+  startGroupCall,
+} from '@/features/calls/calls';
 import { GroupCallBanner } from '@/features/calls/GroupCallBanner';
-import { groupCallsSupported, startGroupCall } from '@/features/calls/group';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useKnownPrivate } from '@/features/e2ee/hooks';
 import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/parts';
