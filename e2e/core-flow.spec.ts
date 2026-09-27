@@ -113,6 +113,45 @@ test('a signed-out visitor lands on the welcome page with no errors', async ({ b
   await context.close();
 });
 
+test('before signing up, the terms and privacy policy open as pages, each leading to the others', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const { page, errors } = await newPerson(context);
+  await page.goto('/sign-up');
+  const opened = context.waitForEvent('page');
+  await page.getByTestId('signup-terms').click();
+  const terms = await opened;
+  // A page is only its own text and styles: nothing it loads or runs is refused.
+  terms.on('console', (m) => {
+    if (m.type() === 'error') errors.push(`console: ${m.text()}`);
+  });
+  await expect(terms).toHaveURL(/\/terms$/);
+  await expect(terms.getByRole('heading', { name: 'Terms', level: 1 })).toBeVisible();
+  await expect(terms.getByText('DATA C OÜ').first()).toBeVisible();
+  await terms.getByRole('navigation').getByRole('link', { name: 'Privacy' }).click();
+  await expect(terms).toHaveURL(/\/privacy$/);
+  await expect(terms.getByRole('heading', { name: 'Privacy', level: 1 })).toBeVisible();
+  await expect(terms.getByRole('link', { name: 'hello@caishy.com' }).first()).toHaveAttribute(
+    'href',
+    'mailto:hello@caishy.com',
+  );
+  // Help is published somewhere else here (playwright.config.ts): Caishy's page sends people there.
+  await expect(terms.getByRole('navigation').getByRole('link', { name: 'Help' })).toHaveAttribute(
+    'href',
+    '/help',
+  );
+  const help = await context.request.get('/help', { maxRedirects: 0 });
+  expect(help.status()).toBe(302);
+  expect(help.headers().location).toBe('https://policies.example/help');
+  // And back to Caishy itself, signed out: its welcome.
+  await terms.getByRole('link', { name: 'Open Caishy' }).click();
+  await terms.waitForURL('**/welcome');
+  await expect(terms.getByText('Messaging that understands your relationships.')).toBeVisible();
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
 test('a person can download their data and delete their account from settings', async ({
   browser,
 }) => {

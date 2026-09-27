@@ -66,8 +66,15 @@ const Env = z.object({
   /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
   PLANS_URL: z.string().url().optional(),
   /**
-   * Where the app's About links to the privacy policy, the terms and help (full https
-   * addresses, on whatever domain they're published). Without one, About shows no link for it.
+   * Who runs this Caishy, and where people write to them, as its own privacy, terms and help
+   * pages say (PUBLIC_URL/privacy, /terms, /help).
+   */
+  LEGAL_NAME: z.string().trim().min(1).max(120).default('DATA C OÜ'),
+  CONTACT_EMAIL: z.string().email().default('hello@caishy.com'),
+  /**
+   * The privacy policy, the terms and help, when they're published somewhere else (full http(s)
+   * addresses): About links there, and Caishy's own page for it sends people there too, so there
+   * is only ever one of each. Without one, it's Caishy's own page.
    */
   PRIVACY_URL: webPage.optional(),
   TERMS_URL: webPage.optional(),
@@ -104,8 +111,8 @@ export type Config = z.infer<typeof Env> & {
   isProduction: boolean;
   isTest: boolean;
   secureCookies: boolean;
-  /** About's links (PRIVACY_URL, TERMS_URL, HELP_URL), or null for one not set. */
-  aboutLinks: { privacyUrl: string | null; termsUrl: string | null; helpUrl: string | null };
+  /** About's links: PRIVACY_URL, TERMS_URL and HELP_URL, or Caishy's own page for each. */
+  aboutLinks: { privacyUrl: string; termsUrl: string; helpUrl: string };
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -117,6 +124,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`Invalid configuration:\n${problems}`);
   }
   const c = parsed.data;
+  const own = (page: string) => `${c.PUBLIC_URL.replace(/\/+$/, '')}/${page}`;
   const list = (v: string) =>
     v
       .split(',')
@@ -131,9 +139,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     isTest: c.NODE_ENV === 'test',
     secureCookies: c.PUBLIC_URL.startsWith('https://'),
     aboutLinks: {
-      privacyUrl: c.PRIVACY_URL ?? null,
-      termsUrl: c.TERMS_URL ?? null,
-      helpUrl: c.HELP_URL ?? null,
+      privacyUrl: c.PRIVACY_URL ?? own('privacy'),
+      termsUrl: c.TERMS_URL ?? own('terms'),
+      helpUrl: c.HELP_URL ?? own('help'),
     },
   };
 }

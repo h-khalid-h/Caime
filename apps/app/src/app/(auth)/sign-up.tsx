@@ -13,6 +13,8 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { AuthLayout } from '@/features/auth/AuthLayout';
 import { deviceInfo } from '@/features/auth/device';
+import { WEB_URL } from '@/lib/config';
+import { openLink, opensWithEnter } from '@/lib/links';
 import { handleIn } from '@/lib/paths';
 import { peekLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
@@ -261,6 +263,10 @@ export default function SignUp() {
         onPress={submit}
         testID="signup-submit"
       />
+      <Text variant="caption" color="textSecondary" align="center">
+        By creating an account, you agree to the <PageLink name="terms">terms</PageLink>. The{' '}
+        <PageLink name="privacy">privacy policy</PageLink> says what Caishy keeps, and why.
+      </Text>
       <Pressable
         accessibilityRole="link"
         onPress={() => router.replace('/sign-in')}
@@ -274,5 +280,22 @@ export default function SignUp() {
         </Text>
       </Pressable>
     </AuthLayout>
+  );
+}
+
+/** One of Caishy's own pages (the server's), opened as a page, never a screen of the app. */
+function PageLink({ name, children }: { name: 'terms' | 'privacy'; children: string }) {
+  const open = () => openLink(`${WEB_URL}/${name}`);
+  return (
+    <Text
+      variant="captionStrong"
+      color="link"
+      accessibilityRole="link"
+      onPress={open}
+      {...opensWithEnter(open)}
+      testID={`signup-${name}`}
+    >
+      {children}
+    </Text>
   );
 }

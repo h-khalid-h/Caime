@@ -5,8 +5,8 @@ import type { AppContext } from '../context';
 
 export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/healthz', async () => ({ ok: true }));
-  // Where this Caishy's policies and help live, as its operator set them: never a domain of
-  // the code's own.
+  // Where this Caishy's policies and help live: its own pages (pages.ts), or where its operator
+  // published them. Never a domain of the code's own.
   app.get('/about', async (): Promise<AboutView> => ctx.config.aboutLinks);
   app.get('/readyz', async (_req, reply) => {
     try {

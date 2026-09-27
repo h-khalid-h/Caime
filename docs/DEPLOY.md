@@ -89,7 +89,9 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `DNS_SERVERS` | the system's | Resolvers for checking organizations' domains, comma-separated (`1.1.1.1,8.8.8.8`). Set it if the host's resolver caches a new record too long. |
 | `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
 | `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits when billing isn't set up; without either, it says upgrades can't be bought yet. |
-| `PRIVACY_URL`, `TERMS_URL`, `HELP_URL` | — | Where You → About links to the privacy policy, the terms and help (full https addresses, on whatever domain they're published, e.g. `https://caishy.com/privacy`). The app reads them from the server (`GET /v1/about`), so no domain is built into it; one not set has no link. |
+| `LEGAL_NAME` | `DATA C OÜ` | Who runs this Caishy, as its privacy policy, terms and help say. |
+| `CONTACT_EMAIL` | `hello@caishy.com` | Where those pages tell people to write (data requests, security reports, help). |
+| `PRIVACY_URL`, `TERMS_URL`, `HELP_URL` | Caishy's own pages | Caishy serves its own privacy policy, terms and help at `/privacy`, `/terms` and `/help` on `PUBLIC_URL`, for anyone, signed in or not (link app store listings there). Set one of these (a full http(s) address) to publish that page somewhere else instead: You → About links there, and Caishy's own page redirects there, so there's only ever one of each. The app reads them from the server (`GET /v1/about`), so no domain is built into it. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | — | Billing (below): Stripe's secret or restricted key, and the signing secret of the webhook endpoint at `/v1/billing/webhook`. With both, Pro and Business are bought in the app through Stripe Checkout and managed in Stripe's customer portal. |
 | `STRIPE_PORTAL_CONFIGURATION` | the account's default | The customer portal configuration (`bpc_…`) to open. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
@@ -143,8 +145,10 @@ price, by what the server already knew of it and by whom its Checkout was for (t
   so a payment whose webhook hasn't come yet isn't sold again. Any older Checkout still open
   closes, and a payer's Checkouts are made one at a time.
 - **Nothing is charged to someone gone.** Deleting an account, or an organization closing (its
-  last person leaving, or its owner's account deleted), deletes its Stripe customer. That ends
-  every subscription it has at once, whether or not the server had heard of them. If Stripe
+  last person leaving, or deleting their account), deletes its Stripe customer. That ends every
+  subscription it has at once, whether or not the server had heard of them. An organization that
+  passes to someone else keeps its Business plan, and the card it's paid with: the terms tell
+  whoever pays to cancel it first. If Stripe
   can't be reached then, a job and the six-hourly check keep trying; deleting never waits on it.
 - **Checked every six hours.** Every customer's subscriptions are asked of Stripe, so a webhook
   that never came can't leave a plan on or off wrongly.

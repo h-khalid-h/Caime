@@ -360,6 +360,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
+- [x] Caishy's own privacy policy, terms and help at `/privacy`, `/terms` and `/help`, for
+      anyone and linked from About and sign-up, each claim checked against the code; what's
+      recorded of use kept only for set times (`lib/retention.ts`). [ ] A lawyer's review of the
+      texts, and the operator's name and contact confirmed (`LEGAL_NAME`, `CONTACT_EMAIL`)
 - [ ] EAS config and store builds ⛔ Apple and Google developer accounts, `EXPO_ACCESS_TOKEN`
 - [x] Deployed to EasyPanel: https://caishy-caishy.0hqwb7.easypanel.host (project `caishy`,
       services `caishy` and `db`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
@@ -731,3 +735,22 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   a test but one the tests can't tell apart (a row lock two sequential moves don't need). Tests:
   208 core, 49 brand, 420 server, 118 app, 51 E2E (an app's card sent by token, moved by the
   customer, and one sent by hand from Share).
+- 2026-09-27 — Session 2 (cont.): Caishy's own privacy policy, terms and help at `/privacy`,
+  `/terms` and `/help`, for anyone, linked from About and sign-up, served as their own text (no
+  script, nothing loaded, never framed), each written from a claim-by-claim check against the
+  code, then reviewed page by page again. Where the code fell short of what the pages say, the
+  code changed: a request's assignee never sees how its owner described them; a rename renames
+  the name people see; a photo whose details can't be removed isn't kept; the Order card is
+  adults-only; what's recorded of use goes after a year (security), 30 days (activity, AI use,
+  ended sign-ins, copies for apps) or 400 days (counts that name nobody), a few thousand rows at a
+  time beside the worker loop; a message deleted or disappeared takes its words out of every
+  notification (a burst's too, with a quiet replacement for a browser that isn't open), what
+  Caishy offered from it and an album's photos; a disappearing message keeps the setting it was
+  sent with, so turning it on no longer empties years of both people's history; "Verified at" is
+  one of your professional details; reporting an organization's message works; a sign-in ended
+  anywhere clears the browser's cache of photos; the age to sign up is counted on New Year's Day
+  where you are. Where the code was right and the words weren't, the words changed. The web app
+  copies and picks photos without the Expo modules (the tap opens the chooser, as Safari wants):
+  446.0 KB of initial JavaScript. Mutation-tested: 70 changes to the new code, each caught by a
+  test but one that changes nothing observable. Tests: 209 core, 49 brand, 442 server, 123 app,
+  52 E2E. The texts still want a lawyer's review.

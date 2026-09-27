@@ -1228,10 +1228,25 @@ test.describe
           page.getByRole('heading', { name: title }).filter({ visible: true }),
         ).toBeVisible();
         if (path === 'about') {
-          // It links where this Caishy's operator put its policies, and to nothing else.
-          await expect(page.getByTestId('about-privacy').filter({ visible: true })).toBeVisible();
-          await expect(page.getByTestId('about-help').filter({ visible: true })).toBeVisible();
-          await expect(page.getByTestId('about-terms')).toHaveCount(0);
+          // Caishy's own privacy policy and terms, and help where this Caishy's operator put it,
+          // each opened as the page it is, never as a screen of the app.
+          await page
+            .context()
+            .route('https://policies.example/**', (r) =>
+              r.fulfill({ contentType: 'text/html', body: '<h1>Help, published elsewhere</h1>' }),
+            );
+          for (const [id, url, heading] of [
+            ['about-privacy', /\/privacy$/, 'Privacy'],
+            ['about-terms', /\/terms$/, 'Terms'],
+            ['about-help', 'https://policies.example/help', 'Help, published elsewhere'],
+          ] as const) {
+            const opened = page.context().waitForEvent('page');
+            await page.getByTestId(id).filter({ visible: true }).click();
+            const tab = await opened;
+            await expect(tab).toHaveURL(url);
+            await expect(tab.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+            await tab.close();
+          }
         }
       }
       const scheme = () => page.evaluate(() => document.documentElement.style.colorScheme);

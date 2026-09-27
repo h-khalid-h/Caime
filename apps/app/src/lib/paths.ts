@@ -3,16 +3,24 @@
  * from other people, and a bad one must open nothing rather than somewhere unexpected.
  */
 
+import { SITE_PAGES } from '@caishy/core/api';
+
 /** The way in, never a place to return someone to. */
 const ENTRY = /^\/(?:welcome|sign-in|sign-up|recover|onboarding)?(?:[/?#]|$)/;
+/** Caishy's own pages outside the app (the server's): never a screen of it. */
+const SITE_PAGE = new RegExp(`^/(?:${SITE_PAGES.join('|')})/?(?:[?#]|$)`, 'i');
 // A query may carry a colon (an app's scope=messages:read, as browsers leave it); a path never.
 const SAFE = /^\/(?!\/)[\w@.~%/=&+-]*(?:\?[\w@.~%/?=&+:-]*)?$/;
 // Long enough for an app's authorization request (/oauth/authorize?…), short of junk.
 const MAX_PATH = 1000;
 
-/** A path inside the app worth opening from a link, or null (the way in, junk, another site). */
+/**
+ * A path inside the app worth opening from a link, or null (the way in, junk, another site, or
+ * one of Caishy's own pages, which open as the pages they are).
+ */
 export function appPath(path: string | null | undefined): string | null {
   if (!path || path.length > MAX_PATH || !SAFE.test(path) || ENTRY.test(path)) return null;
+  if (SITE_PAGE.test(path)) return null;
   return path;
 }
 

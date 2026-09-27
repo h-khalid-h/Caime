@@ -24,6 +24,8 @@ const deadline = () =>
     : {};
 /** What a build is made of: its scripts, and its fonts and images. */
 const BUILT = ['/_expo/static/', '/assets/'];
+/** Caishy's own pages, the server's alone (@caishy/core SITE_PAGES): never the app. */
+const SITE_PAGES = ['/privacy', '/terms', '/help'];
 
 async function keep(page) {
   const list = await self.fetch('/app-files.json', { cache: 'no-store', ...deadline() });
@@ -32,10 +34,11 @@ async function keep(page) {
   if (!Array.isArray(files)) return;
   const current = new Set(files);
   // A page and a list from two builds (a deploy half done): kept only when the list is the
-  // page's own, so nothing is mixed and nothing the page needs is deleted.
+  // page's own, so nothing is mixed and nothing the page needs is deleted. A page with none of a
+  // build's files isn't the app at all (Caishy's privacy page, a portal's sign-in): never kept.
   const html = await page.clone().text();
   const own = [...html.matchAll(/(?:src|href)="(\/_expo\/static\/[^"]+)"/g)].map((m) => m[1]);
-  if (!own.every((f) => current.has(f))) return;
+  if (!own.length || !own.every((f) => current.has(f))) return;
   const cache = await self.caches.open(FILES);
   const have = new Set((await cache.keys()).map((r) => new URL(r.url).pathname));
   for (const file of files) {
@@ -126,6 +129,8 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname === '/v1' || url.pathname.startsWith('/v1/')) return;
   if (url.pathname === '/app-files.json' || url.pathname === '/sw.js') return;
   if (request.mode === 'navigate') {
+    // Opened with no network, the browser says so, rather than the app on a page it hasn't got.
+    if (SITE_PAGES.includes(url.pathname.replace(/\/+$/, '').toLowerCase())) return;
     event.respondWith(page(event));
     return;
   }

@@ -2,8 +2,10 @@
  * The service worker (public/sw.js) in a fake worker scope: what a push shows, when it shows
  * nothing, and where a tapped notification leads.
  */
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { SITE_PAGES } from '@caishy/core/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Listener = (event: any) => void;
@@ -47,6 +49,9 @@ const asResponse = (r: Res, signal?: AbortSignal): any => {
     text: read,
   };
 };
+/** The app's page for build v`n`, naming its files as Expo's export does. */
+const appPage = (n: number) =>
+  `<!doctype html><title>Caishy v${n}</title><script src="/_expo/static/js/web/entry-v${n}.js"></script>`;
 const pathOf = (x: string | { url: string }) =>
   new URL(typeof x === 'string' ? x : x.url, 'https://caishy.example').pathname;
 const caches = {
@@ -151,7 +156,7 @@ beforeEach(() => {
   fetched = [];
   online = true;
   server = new Map([
-    ['/', res('<!doctype html><title>Caishy v2</title>', 'text/html; charset=utf-8')],
+    ['/', res(appPage(2), 'text/html; charset=utf-8')],
     [
       '/app-files.json',
       res(
@@ -212,7 +217,7 @@ describe('the app kept for offline (PRD §49)', () => {
     online = true;
     server.set('/', res('Bad gateway', 'text/html', 502));
     expect(((await request('/', { mode: 'navigate' })) as any).status).toBe(502);
-    server.set('/', res('<!doctype html><title>Caishy v2</title>', 'text/html'));
+    server.set('/', res(appPage(2), 'text/html'));
     await request('/', { mode: 'navigate' });
     server.set('/', res('Bad gateway', 'text/html', 502));
     expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
@@ -220,7 +225,7 @@ describe('the app kept for offline (PRD §49)', () => {
 
   it('a new build replaces the last only once all of it is kept, and the last one’s files go', async () => {
     await request('/', { mode: 'navigate' });
-    server.set('/', res('<!doctype html><title>Caishy v3</title>', 'text/html'));
+    server.set('/', res(appPage(3), 'text/html'));
     server.set(
       '/app-files.json',
       res(JSON.stringify({ files: ['/_expo/static/js/web/entry-v3.js'] }), 'application/json'),
@@ -292,18 +297,9 @@ describe('the app kept for offline (PRD §49)', () => {
   });
 
   it('never keeps a page with another build’s list of files, nor lets it delete what it needs', async () => {
-    const v2 =
-      '<!doctype html><title>Caishy v2</title><script src="/_expo/static/js/web/entry-v2.js"></script>';
-    server.set('/', res(v2, 'text/html'));
     await request('/', { mode: 'navigate' });
     // A deploy half done: the next build's page, with this build's list (or the other way round).
-    server.set(
-      '/',
-      res(
-        '<!doctype html><title>Caishy v3</title><script src="/_expo/static/js/web/entry-v3.js"></script>',
-        'text/html',
-      ),
-    );
+    server.set('/', res(appPage(3), 'text/html'));
     server.set('/_expo/static/js/web/entry-v3.js', res('entry v3'));
     await request('/', { mode: 'navigate' });
     expect(keptPaths()).toEqual([
@@ -313,6 +309,33 @@ describe('the app kept for offline (PRD §49)', () => {
     ]);
     online = false;
     expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+  });
+
+  it('never takes a page that isn’t the app for it: the server’s own, a portal’s sign-in', async () => {
+    const notice = '<!doctype html><title>Down for a moment · Caishy</title><h1>Back soon</h1>';
+    server.set('/maintenance', res(notice, 'text/html; charset=utf-8'));
+    // Opened first, before the app ever was: nothing is kept.
+    expect(((await request('/maintenance', { mode: 'navigate' })) as any).body).toBe(notice);
+    expect(keptPaths()).toEqual([]);
+    await request('/', { mode: 'navigate' });
+    expect(((await request('/maintenance', { mode: 'navigate' })) as any).body).toBe(notice);
+    // A network that answers every page with its own sign-in, with the list still reachable.
+    server.set('/', res('<!doctype html><title>Sign in to the Wi-Fi</title>', 'text/html'));
+    await request('/', { mode: 'navigate' });
+    online = false;
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+  });
+
+  it('leaves Caishy’s own pages to the browser, online or not, never opening the app on one', async () => {
+    await request('/', { mode: 'navigate' });
+    for (const page of SITE_PAGES)
+      for (const path of [`/${page}`, `/${page}/`]) {
+        expect(await request(path, { mode: 'navigate' }), path).toBeUndefined();
+        online = false;
+        expect(await request(path, { mode: 'navigate' }), path).toBeUndefined();
+        online = true;
+      }
+    expect(((await request('/helpers', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
   });
 
   it('keeps a build’s fonts and images with it, and lets go of the last one’s', async () => {

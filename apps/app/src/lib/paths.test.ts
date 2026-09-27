@@ -48,6 +48,23 @@ describe('paths from links', () => {
     const base = 'https://caishy.example';
     expect(ownLinkPath('https://caishy.example/@noor#x', base)).toBe('/@noor');
     expect(ownLinkPath('https://caishy.example.evil.io/@noor', base)).toBeNull();
+    // Caishy's own pages open as pages: in the app they'd be nothing there. Never remembered
+    // as a place to come back to after signing in either.
+    for (const page of [
+      'privacy',
+      'terms',
+      'help',
+      'help/',
+      'terms?x=1',
+      'privacy#children',
+      'Privacy',
+    ]) {
+      expect(ownLinkPath(`${base}/${page}`, base)).toBeNull();
+      expect(appPath(`/${page}`)).toBeNull();
+    }
+    expect(appPath('/helpers')).toBe('/helpers');
+    expect(ownLinkPath(`${base}/@help`, base)).toBe('/@help');
+    expect(ownLinkPath(`${base}/o/help`, base)).toBe('/o/help');
     expect(ownLinkPath('https://other.example/@noor', base)).toBeNull();
     expect(ownLinkPath('https://caishy.example/@noor', '')).toBeNull();
   });

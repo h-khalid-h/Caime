@@ -55,6 +55,7 @@ import { metricsRoutes } from './modules/metrics';
 import { notificationRoutes } from './modules/notifications';
 import { oauthDiscovery, oauthRoutes } from './modules/oauth';
 import { orgRoutes } from './modules/orgs';
+import { pageRoutes, sitePageAt } from './modules/pages';
 import { peopleRoutes } from './modules/people';
 import { policyRoutes } from './modules/policies';
 import { realtimeRoutes } from './modules/realtime';
@@ -201,6 +202,9 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   });
   let web: WebApp | null = null;
   app.setNotFoundHandler((req, reply) => {
+    // Caishy's own pages however they're spelled (/Privacy, /terms/): the page, never the app.
+    const page = req.method === 'GET' || req.method === 'HEAD' ? sitePageAt(req.url) : null;
+    if (page) return reply.redirect(`/${page}`, 301);
     if (web?.handles(req)) return web.serve(reply);
     reply.status(404).send({
       error: {
@@ -219,6 +223,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   });
   await metricsRoutes(app, ctx);
   await oauthDiscovery(app, ctx);
+  await pageRoutes(app, ctx);
 
   await app.register(
     async (v1) => {

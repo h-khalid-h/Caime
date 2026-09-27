@@ -669,7 +669,17 @@ export interface BusinessSummaryView {
 }
 
 /** An organization's app (PRD §73–75): its token, its bot, its webhook. Managers only. */
-/** Where this Caishy keeps its policies and help (the server's environment), for About. */
+/**
+ * Caishy's own pages about itself, outside the app, at PUBLIC_URL/privacy, /terms and /help: a
+ * link to one opens the page, never the app.
+ */
+export const SITE_PAGES = ['privacy', 'terms', 'help'] as const;
+export type SitePage = (typeof SITE_PAGES)[number];
+
+/**
+ * Where this Caishy keeps its policies and help, for About: its own pages, or where its operator
+ * published them (the server's environment).
+ */
 export interface AboutView {
   privacyUrl: string | null;
   termsUrl: string | null;
