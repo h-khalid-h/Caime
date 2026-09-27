@@ -1,11 +1,11 @@
 import { displayNameError, handleError, normalizeHandle } from '@caishy/core/rules';
-import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { uploadFile } from '@/api/upload';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { pickFromLibrary } from '@/lib/photos';
 import { useMe, useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
@@ -61,7 +61,7 @@ export default function Profile() {
   };
 
   const changePhoto = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
+    const res = await pickFromLibrary({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],

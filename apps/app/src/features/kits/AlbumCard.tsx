@@ -2,7 +2,6 @@ import type { AlbumPhotoView, AlbumView, FileView, MessageView } from '@caishy/c
 import { kitMoves, kitStateLabel } from '@caishy/core/kit-cards';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
@@ -10,6 +9,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { uploadFile } from '@/api/upload';
 import { openLink } from '@/lib/links';
+import { pickFromLibrary } from '@/lib/photos';
 import { upsertMessage } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -147,7 +147,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const more = album.count - album.photos.length;
 
   const add = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
+    const res = await pickFromLibrary({
       mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: true,
       selectionLimit: 20,

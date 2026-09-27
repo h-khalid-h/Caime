@@ -1,7 +1,6 @@
 import type { MessageView } from '@caishy/core/api';
 import { previewText } from '@caishy/core/format';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
-import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -9,6 +8,7 @@ import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
 import { SaveSheet } from '@/features/saved/SaveSheet';
+import { copyText } from '@/lib/clipboard';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
@@ -237,7 +237,7 @@ export function MessageActions({
             icon={Copy}
             title="Copy text"
             onPress={close(async () => {
-              await Clipboard.setStringAsync(shown);
+              await copyText(shown);
               toast('Copied');
             })}
             testID="message-copy"

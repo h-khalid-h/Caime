@@ -3,7 +3,6 @@ import { listTitle } from '@caishy/core/format';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caishy/core/mentions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
 import {
   forwardRef,
   useCallback,
@@ -26,6 +25,7 @@ import { iconNamed, KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
+import { pickFromLibrary } from '@/lib/photos';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
@@ -314,7 +314,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
 
   const pickPhotos = async () => {
     setAttach(false);
-    const res = await ImagePicker.launchImageLibraryAsync({
+    const res = await pickFromLibrary({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
       selectionLimit: 10,

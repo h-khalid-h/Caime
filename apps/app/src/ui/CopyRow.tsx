@@ -1,5 +1,5 @@
-import * as Clipboard from 'expo-clipboard';
 import { View } from 'react-native';
+import { copyText } from '@/lib/clipboard';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from './IconButton';
 import { Copy } from './icons';
@@ -43,7 +43,7 @@ export function CopyRow({
         <IconButton
           icon={Copy}
           label={`Copy the ${label.toLowerCase()}`}
-          onPress={() => void Clipboard.setStringAsync(value).then(() => toast(`${label} copied`))}
+          onPress={() => void copyText(value).then(() => toast(`${label} copied`))}
         />
       </View>
     </View>

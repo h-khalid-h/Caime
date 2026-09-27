@@ -2,13 +2,13 @@ import type { DeviceSessionView } from '@caishy/core/api';
 import { formatListTime } from '@caishy/core/format';
 import { passwordError } from '@caishy/core/rules';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { PrivateDevices } from '@/features/e2ee/parts';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { copyText } from '@/lib/clipboard';
 import { API_URL, isWeb } from '@/lib/config';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
@@ -169,7 +169,7 @@ export default function Security() {
                 label="Copy all"
                 variant="secondary"
                 onPress={async () => {
-                  await Clipboard.setStringAsync(codes.join('\n'));
+                  await copyText(codes.join('\n'));
                   toast('Copied. Keep them somewhere safe.');
                 }}
               />

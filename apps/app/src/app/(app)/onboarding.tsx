@@ -1,11 +1,11 @@
 import { SPHERE_DEFS, type Sphere } from '@caishy/core/taxonomy';
-import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { Character } from '@/brand/Character';
+import { copyText } from '@/lib/clipboard';
 import { handleLink } from '@/lib/config';
 import { handleIn, isAuthorizeLink } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
@@ -138,7 +138,7 @@ export default function Onboarding() {
               variant="secondary"
               block
               onPress={async () => {
-                await Clipboard.setStringAsync(codes.join('\n'));
+                await copyText(codes.join('\n'));
                 toast('Copied. Paste them into your password manager or notes.');
                 setSaved(true);
               }}

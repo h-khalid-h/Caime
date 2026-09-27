@@ -1,6 +1,6 @@
-import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
 import { toast } from '@/ui/Toast';
+import { copyText } from './clipboard';
 import { isWeb } from './config';
 
 /**
@@ -19,7 +19,7 @@ export async function shareLink(text: string, url: string): Promise<void> {
       }
     }
     try {
-      await Clipboard.setStringAsync(url);
+      await copyText(url);
       toast('Link copied');
     } catch {
       toast(url);
