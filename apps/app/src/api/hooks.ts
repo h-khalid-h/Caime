@@ -1,4 +1,5 @@
 /** Query hooks shared by screens, the shell's badges and the desktop panes. */
+import type { AssetView } from '@caishy/core/api';
 import type { BusinessView } from '@caishy/core/business';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { endpoints, type TaskViewFilter } from './endpoints';
@@ -138,6 +139,21 @@ export const useOrgUpdates = (orgId: string) =>
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextBefore ?? undefined,
     enabled: Boolean(orgId),
+  });
+
+/** What's been shared in a conversation, of some kinds, newest first (PRD §26). */
+export const useAssets = (
+  conversationId: string,
+  tab: string,
+  kinds: readonly AssetView['kind'][],
+) =>
+  useInfiniteQuery({
+    queryKey: qk.assets(conversationId, tab),
+    queryFn: ({ pageParam }) => endpoints.assets(conversationId, kinds, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextBefore ?? undefined,
+    // Another tab keeps the counts it had (they're of everything) while its own list loads.
+    placeholderData: keepPreviousData,
   });
 
 /** Call history (PRD §47): `missed`, or `with:<id>` for the calls with one person. */

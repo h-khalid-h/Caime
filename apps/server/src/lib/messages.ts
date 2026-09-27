@@ -22,7 +22,7 @@ import {
   messagePreview as sharedPreview,
   uuidv7,
 } from '@caishy/core';
-import type { Kysely, Transaction } from 'kysely';
+import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
@@ -37,6 +37,9 @@ import { privacyOf } from './users';
 type Q = Kysely<Database> | Transaction<Database>;
 
 export type { FileView, MessageView };
+
+/** Where a file is downloaded from, by whoever may read it. */
+export const fileUrl = (id: string) => `/v1/files/${id}`;
 
 export function fileView(f: {
   id: string;
@@ -58,9 +61,17 @@ export function fileView(f: {
     width: f.width,
     height: f.height,
     durationMs: f.duration_ms,
-    url: `/v1/files/${f.id}`,
-    thumbUrl: f.thumb_key ? `/v1/files/${f.id}/thumb` : null,
+    url: fileUrl(f.id),
+    thumbUrl: f.thumb_key ? `${fileUrl(f.id)}/thumb` : null,
   };
+}
+
+/**
+ * Not from a message the viewer deleted for themselves: what came in it stays out of their sight
+ * wherever it's gathered. `column` holds the message's id, or null for something in no message.
+ */
+export function notHiddenFor(userId: string, column: string) {
+  return sql<SqlBool>`not exists (select 1 from hidden_messages h where h.message_id = ${sql.ref(column)} and h.user_id = ${userId})`;
 }
 
 export function messagePreview(
@@ -293,19 +304,49 @@ const LINK_ASSET = (url: string, host: string) => ({
   title: null,
 });
 
+export interface SendOptions {
+  forwardedFromId?: string | null;
+  /** A token or an app sent it for its sender (PRD §74): its name, shown with the message. */
+  sentVia?: string | null;
+  /** The server's own cards (task requests) are sent as built, not as a client's kit card. */
+  trusted?: boolean;
+}
+
+/**
+ * Every refusal sending this would meet, and nothing sent: for sending one thing to several
+ * conversations (forwarding), where it goes to all of them or to none.
+ */
+export async function assertCanSend(
+  ctx: AppContext,
+  senderId: string,
+  conversationId: string,
+  body: SendMessageBodyT,
+  opts: SendOptions = {},
+): Promise<void> {
+  await sendMessage(ctx, senderId, conversationId, body, { ...opts, checkOnly: true });
+}
+
 export async function sendMessage(
   ctx: AppContext,
   senderId: string,
   conversationId: string,
   body: SendMessageBodyT,
-  opts: {
-    forwardedFromId?: string | null;
-    /** A token or an app sent it for its sender (PRD §74): its name, shown with the message. */
-    sentVia?: string | null;
-    /** The server's own cards (task requests) are sent as built, not as a client's kit card. */
-    trusted?: boolean;
-  } = {},
-): Promise<SendResult> {
+  opts: SendOptions & { checkOnly: true },
+): Promise<null>;
+export async function sendMessage(
+  ctx: AppContext,
+  senderId: string,
+  conversationId: string,
+  body: SendMessageBodyT,
+  opts?: SendOptions,
+): Promise<SendResult>;
+export async function sendMessage(
+  ctx: AppContext,
+  senderId: string,
+  conversationId: string,
+  body: SendMessageBodyT,
+  opts: SendOptions & { checkOnly?: boolean } = {},
+): Promise<SendResult | null> {
   const existing = await ctx.db
     .selectFrom('messages')
     .selectAll()
@@ -315,7 +356,7 @@ export async function sendMessage(
   if (existing) {
     if (existing.conversation_id !== conversationId)
       throw badRequest('That clientId was already used.');
-    return { message: existing, created: false, analysis: null };
+    return opts.checkOnly ? null : { message: existing, created: false, analysis: null };
   }
 
   const conversation = await ctx.db
@@ -543,6 +584,9 @@ export async function sendMessage(
       };
     }
   }
+
+  // Everything that could refuse it has had its say.
+  if (opts.checkOnly) return null;
 
   // Needs you was right (PRD §83): this answers something in it that asked the sender, since they
   // last wrote and since they said it didn't need them. Read now, as it stands before sending;

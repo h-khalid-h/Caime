@@ -233,6 +233,31 @@ export interface FileView {
   thumbUrl: string | null;
 }
 
+/** Something shared in a conversation, from its asset index (PRD §26). */
+export interface AssetView {
+  id: string;
+  kind: 'photo' | 'video' | 'document' | 'audio' | 'link' | 'location' | 'contact';
+  url: string | null;
+  title: string | null;
+  host: string | null;
+  messageId: string | null;
+  /** Where its message is in the conversation, to go to it. */
+  messageSeq: number | null;
+  /** To a customer, someone on an organization's team shows as the organization (R15). */
+  senderId: string | null;
+  createdAt: string;
+  file: FileView | null;
+}
+
+export interface AssetsResponse {
+  /** Everything of each kind the viewer can see, whole; a kind with none is left out. */
+  counts: Partial<Record<AssetView['kind'], number>>;
+  /** Newest first. */
+  assets: AssetView[];
+  /** Where the next page starts, when there's more. */
+  nextBefore: string | null;
+}
+
 export interface ReactionView {
   emoji: string;
   count: number;
@@ -931,6 +956,8 @@ export interface MemoryView {
     id: string;
     title: string | null;
     fileId: string | null;
+    /** Where it downloads from, while the file is still there. */
+    url: string | null;
     messageId: string | null;
   }>;
   links: Array<{ id: string; url: string | null; host: string | null; messageId: string | null }>;

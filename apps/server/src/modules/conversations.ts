@@ -4,6 +4,7 @@
 
 import type {
   AlbumPhotoView,
+  AssetsResponse,
   ConversationBusinessView,
   ConversationView,
   MessagesPage,
@@ -66,12 +67,14 @@ import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
-import { afterMessage } from '../lib/message-effects';
+import { afterMentioning, afterMessage } from '../lib/message-effects';
 import {
   assertCanMessage,
+  assertCanSend,
   fileView,
   insertSystemMessage,
   messageViews,
+  notHiddenFor,
   participantsOf,
   sendMessage,
 } from '../lib/messages';
@@ -1057,22 +1060,34 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     // A private one is edited by sealing it again, as the next edit of the same message.
     if (m.sealed) {
       const was = m.sealed as { edit?: number };
-      if (!body.sealed || body.body !== undefined)
+      if (!body.sealed || body.body !== undefined || body.mentions?.length)
         throw badRequest('Messages in a private conversation are text, sealed on your device.');
       if (body.sealed.cid !== m.client_id || body.sealed.edit <= (was.edit ?? 0))
         throw badRequest('That message isn’t sealed properly.');
       await assertSealedForEveryone(ctx, m.conversation_id, auth.userId, body.sealed);
     } else if (body.sealed) throw badRequest('Only private conversations take sealed messages.');
+    // Who it mentions is who its words now name (PRD §20): people in it, other than its sender.
+    const members = new Set(
+      (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
+    );
+    const mentions =
+      body.mentions === undefined
+        ? undefined
+        : [...new Set(body.mentions)].filter((u) => members.has(u) && u !== auth.userId);
     const updated = await ctx.db
       .updateTable('messages')
       .set({
         ...(body.body !== undefined ? { body: body.body, edited_at: ctx.now() } : {}),
         ...(body.sealed ? { sealed: JSON.stringify(body.sealed), edited_at: ctx.now() } : {}),
         ...(body.mode !== undefined ? { mode: body.mode, mode_source: 'user' } : {}),
+        ...(mentions ? { mentions } : {}),
       })
       .where('id', '=', id)
       .returningAll()
       .executeTakeFirstOrThrow();
+    // Someone it names now who it didn't before is told, as they would be of a new message.
+    const added = mentions?.filter((u) => !m.mentions.includes(u)) ?? [];
+    if (added.length) ctx.defer('after-message', () => afterMentioning(ctx, updated, added));
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await recordEvent(ctx.db, 'message.edited', auth.userId, { messageId: id });
     await ctx.bus.publish(
@@ -1502,6 +1517,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         type: 'message.hidden',
         data: { id, conversationId: m.conversation_id },
       });
+      // Pinned, it leaves the top of their view too (it stays pinned for everyone else).
+      if (m.pinned_at)
+        await ctx.bus.publish([auth.userId], {
+          type: 'pins.changed',
+          data: { conversationId: m.conversation_id },
+        });
       return { ok: true };
     }
     // A line about the conversation (who joined, who changed what) is its record, for everyone.
@@ -1604,6 +1625,24 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       throw badRequest('Pinned messages are for conversations between people.');
     if (!canPin(conversation.kind, me.role))
       throw forbidden('Only the group’s owner and admins pin messages.');
+    // Either way it changes what everyone sees at the top, and pinning says so in a line: only
+    // from someone who may write there (blocks), and not while a message request is unanswered,
+    // which allows one message and nothing more (R14).
+    await assertCanWrite(ctx, m.conversation_id, userId);
+    const waiting = await ctx.db
+      .selectFrom('participants')
+      .select('user_id')
+      .where('conversation_id', '=', m.conversation_id)
+      .where('left_at', 'is', null)
+      .where('request_state', 'in', ['pending', 'declined'])
+      .executeTakeFirst();
+    if (waiting)
+      throw new AppError(
+        403,
+        'awaiting_acceptance',
+        'Messages are pinned once the message request is answered.',
+      );
+    ctx.limiter.hit(`pin:${userId}`, ctx.config.isTest ? 1000 : 30, 60_000);
     return m;
   }
 
@@ -1613,19 +1652,28 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const m = await pinnable(auth.userId, id);
     if (m.kind === 'system') throw badRequest('Lines about the conversation aren’t pinned.');
     if (m.pinned_at) return { ok: true };
-    // Its line goes in the conversation: only from someone who may write there (blocks).
-    await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const pinned = await ctx.db.transaction().execute(async (trx) => {
       await lockConversation(trx, m.conversation_id);
-      const { n } = await trx
+      // The top is the conversation's, so all its pins count, even one they deleted for
+      // themselves (it's still at the top for the others), and the refusal says so.
+      const { n, hidden } = await trx
         .selectFrom('messages')
-        .select(sql<number>`count(*)::int`.as('n'))
+        .select([
+          sql<number>`count(*)::int`.as('n'),
+          sql<number>`(count(*) filter (where not ${notHiddenFor(auth.userId, 'messages.id')}))::int`.as(
+            'hidden',
+          ),
+        ])
         .where('conversation_id', '=', m.conversation_id)
         .where('pinned_at', 'is not', null)
         .where('deleted_at', 'is', null)
         .executeTakeFirstOrThrow();
       if (n >= PINNED_MAX)
-        throw badRequest(`${PINNED_MAX} messages are pinned already. Unpin one first.`);
+        throw badRequest(
+          hidden
+            ? `${PINNED_MAX} messages are pinned already, including ${hidden === 1 ? 'one' : hidden} you deleted for yourself. Unpin one first.`
+            : `${PINNED_MAX} messages are pinned already. Unpin one first.`,
+        );
       const done = await trx
         .updateTable('messages')
         .set({ pinned_at: ctx.now(), pinned_by: auth.userId })
@@ -1778,35 +1826,42 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const live = m.kind === 'location' && Boolean((m.payload as { live?: unknown } | null)?.live);
     if (m.kind === 'system' || m.kind === 'kit' || m.kind === 'poll' || live)
       throw badRequest('Cards, polls and live locations stay where they were shared.');
-    // Every one checked first, so it goes to all of them or to none.
-    const targets = [...new Set(body.conversationIds)];
-    for (const conversationId of targets) {
-      const { conversation } = await membership(ctx, auth.userId, conversationId);
-      if (conversation.privacy_class === 'private')
-        throw badRequest('Nothing is forwarded into a private conversation.');
-      await assertCanWrite(ctx, conversationId, auth.userId);
-    }
+    const kind = m.kind;
     const files = await ctx.db
       .selectFrom('message_files')
       .select('file_id')
       .where('message_id', '=', id)
       .orderBy('position')
       .execute();
+    // One copy for each, known by where it goes: sent again after an answer that never came, or
+    // with another conversation added, each still arrives once.
+    const copy = (conversationId: string) => ({
+      clientId: `${body.clientId}:${conversationId}`,
+      kind,
+      body: m.body,
+      payload: m.payload,
+      fileIds: files.map((f) => f.file_id),
+    });
+    // Every one checked first, with all that sending there would check (blocks, a message request
+    // not yet answered, an organization that has closed), so it goes to all of them or to none.
+    const targets = [...new Set(body.conversationIds)];
+    for (const conversationId of targets) {
+      const { conversation } = await membership(ctx, auth.userId, conversationId);
+      if (conversation.privacy_class === 'private')
+        throw badRequest('Nothing is forwarded into a private conversation.');
+      await assertCanWrite(ctx, conversationId, auth.userId);
+      await assertCanSend(ctx, auth.userId, conversationId, copy(conversationId), {
+        forwardedFromId: id,
+      });
+    }
+    // Each copy is a message sent, and counts as one.
+    for (const _ of targets)
+      ctx.limiter.hit(`send:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
     const out: string[] = [];
-    for (const [i, conversationId] of targets.entries()) {
-      const result = await sendMessage(
-        ctx,
-        auth.userId,
-        conversationId,
-        {
-          clientId: `${body.clientId}:${i}`,
-          kind: m.kind,
-          body: m.body,
-          payload: m.payload,
-          fileIds: files.map((f) => f.file_id),
-        },
-        { forwardedFromId: id },
-      );
+    for (const conversationId of targets) {
+      const result = await sendMessage(ctx, auth.userId, conversationId, copy(conversationId), {
+        forwardedFromId: id,
+      });
       out.push(result.message.id);
       if (result.created) {
         const [view] = await messageViews(ctx.db, [result.message], auth.userId);
@@ -1822,31 +1877,43 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   });
 
   /** The asset index (PRD §26): everything shared, without scrolling. */
-  app.get('/conversations/:id/assets', async (req) => {
+  app.get('/conversations/:id/assets', async (req): Promise<AssetsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const { kind, limit } = parse(
+    const { kind, before, limit } = parse(
       z.object({
+        // One kind, or several: kind=photo,video.
         kind: z
-          .enum(['photo', 'video', 'document', 'audio', 'link', 'location', 'contact'])
+          .string()
+          .transform((s) => s.split(','))
+          .pipe(
+            z
+              .array(z.enum(['photo', 'video', 'document', 'audio', 'link', 'location', 'contact']))
+              .min(1),
+          )
           .optional(),
+        // Newest first; the next page starts after the last one shown.
+        before: z.string().uuid().optional(),
         limit: z.coerce.number().int().min(1).max(200).default(60),
       }),
       req.query,
     );
     await membership(ctx, auth.userId, id);
+    const shown = notHiddenFor(auth.userId, 'assets.message_id');
     const rows = await ctx.db
-      .selectFrom('assets as a')
-      .leftJoin('files as f', 'f.id', 'a.file_id')
+      .selectFrom('assets')
+      .leftJoin('files as f', 'f.id', 'assets.file_id')
+      .leftJoin('messages as m', 'm.id', 'assets.message_id')
       .select([
-        'a.id',
-        'a.kind',
-        'a.url',
-        'a.title',
-        'a.host',
-        'a.message_id',
-        'a.sender_id',
-        'a.created_at',
+        'm.seq as message_seq',
+        'assets.id',
+        'assets.kind',
+        'assets.url',
+        'assets.title',
+        'assets.host',
+        'assets.message_id',
+        'assets.sender_id',
+        'assets.created_at',
         'f.id as file_id',
         'f.name',
         'f.mime',
@@ -1857,27 +1924,33 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         'f.duration_ms',
         'f.thumb_key',
       ])
-      .where('a.conversation_id', '=', id)
-      .$if(Boolean(kind), (qb) => qb.where('a.kind', '=', kind!))
-      .orderBy('a.created_at', 'desc')
-      .limit(limit)
+      .where('assets.conversation_id', '=', id)
+      .where(shown)
+      .$if(Boolean(kind), (qb) => qb.where('assets.kind', 'in', kind!))
+      .$if(Boolean(before), (qb) => qb.where('assets.id', '<', before!))
+      .orderBy('assets.id', 'desc')
+      .limit(limit + 1)
       .execute();
+    const page = rows.slice(0, limit);
     const counts = await ctx.db
       .selectFrom('assets')
       .select(['kind', sql<number>`count(*)::int`.as('n')])
       .where('conversation_id', '=', id)
+      .where(shown)
       .groupBy('kind')
       .execute();
     const mask = await maskFor(ctx.db, id, auth.userId);
     return {
       counts: Object.fromEntries(counts.map((c) => [c.kind, c.n])),
-      assets: rows.map((r) => ({
+      nextBefore: rows.length > limit ? (page.at(-1)?.id ?? null) : null,
+      assets: page.map((r) => ({
         id: r.id,
         kind: r.kind,
         url: r.url,
         title: r.title,
         host: r.host,
         messageId: r.message_id,
+        messageSeq: r.message_seq === null ? null : Number(r.message_seq),
         senderId: mask ? maskId(mask, r.sender_id) : r.sender_id,
         createdAt: r.created_at.toISOString(),
         file: r.file_id

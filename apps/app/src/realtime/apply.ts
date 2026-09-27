@@ -14,6 +14,7 @@ import {
   patchCache,
   patchMessage,
   removeMessage,
+  updateMessage,
   upsertMessage,
 } from '@/state/cache';
 import { useLive } from '@/state/live';
@@ -109,10 +110,13 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       if (!known) invalidate(qk.inbox, 'inbox');
       else soon('inbox', () => void qc.invalidateQueries({ queryKey: qk.inbox }), 1200);
       if (!mine) ackDelivered(m.conversationId, m.seq);
-      // Dates, amounts and open items are read from messages: refresh the memory panel.
+      // Dates, amounts, open items and what's shared are read from messages: refresh them.
       soon(
         `memory:${m.conversationId}`,
-        () => void qc.invalidateQueries({ queryKey: qk.memory(m.conversationId) }),
+        () => {
+          void qc.invalidateQueries({ queryKey: qk.memory(m.conversationId) });
+          void qc.invalidateQueries({ queryKey: qk.assets(m.conversationId) });
+        },
         1500,
       );
       // A space shows its conversations' unread counts: refresh whichever space is on screen.
@@ -127,8 +131,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     }
     case 'message.updated':
-      upsertMessage(qc, event.data);
+      updateMessage(qc, event.data, me);
       applyEditToInbox(qc, event.data);
+      // Pinned, its words at the top are these now.
+      if (event.data.pinnedAt) invalidate(qk.pins(event.data.conversationId));
       return;
     case 'message.deleted':
       patchMessage(qc, event.data.conversationId, event.data.id, (m) => ({
@@ -143,6 +149,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         deletedAt: new Date().toISOString(),
       }));
       invalidate(qk.inbox, 'inbox');
+      // What it shared, and what was read from it, go with it.
+      invalidate(qk.memory(event.data.conversationId));
+      invalidate(qk.assets(event.data.conversationId));
       return;
     case 'pins.changed':
       if (typeof event.data.conversationId === 'string')
@@ -151,6 +160,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'message.hidden':
       removeMessage(qc, event.data.conversationId, event.data.id);
       invalidate(qk.inbox, 'inbox');
+      invalidate(qk.memory(event.data.conversationId));
+      invalidate(qk.assets(event.data.conversationId));
+      invalidate(qk.pins(event.data.conversationId));
       return;
     case 'message.sent':
       useOutbox.getState().resolve(event.data.clientId);

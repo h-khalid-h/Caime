@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mentionAt, mentionCandidates, mentionedIn } from './mentions';
+import { mentionAt, mentionCandidates, mentionedIn, mentionText } from './mentions';
 
 const people = [
   { userId: 'al', displayName: 'Al', handle: 'al.b' },
@@ -44,5 +44,47 @@ describe('mentions (PRD §20)', () => {
     // A longer word isn't the name, and an address isn't a mention.
     expect(mentionedIn('@Alfred and sam@noor', people)).toEqual([]);
     expect(mentionedIn('@Noor @Noor', people)).toEqual(['noor']);
+  });
+
+  it('a name two people share: the picker writes the handle, and the name alone names neither', () => {
+    const twins = [
+      { userId: 'sam-k', displayName: 'Sam', handle: 'sam.k' },
+      { userId: 'sam-b', displayName: 'Sam', handle: 'sam.b' },
+      { userId: 'noor', displayName: 'Noor Haddad', handle: 'noor' },
+    ];
+    expect(mentionText(twins[1]!, twins)).toBe('sam.b');
+    expect(mentionText(twins[2]!, twins)).toBe('Noor Haddad');
+    expect(mentionedIn('@sam.b can you drive?', twins)).toEqual(['sam-b']);
+    expect(mentionedIn('@Sam can you drive?', twins)).toEqual([]);
+    // Someone whose name is another's handle is written by their own handle too.
+    const clash = [
+      { userId: 'a', displayName: 'noor', handle: 'noor.a' },
+      { userId: 'b', displayName: 'Noor B', handle: 'noor' },
+    ];
+    expect(mentionText(clash[0]!, clash)).toBe('noor.a');
+    expect(mentionedIn('@noor.a thanks', clash)).toEqual(['a']);
+    expect(mentionedIn('Thanks @noor.', clash)).toEqual([]);
+  });
+
+  it('as written first, and accents set aside only where a letter can go without them', () => {
+    const names = [
+      { userId: 'zoe', displayName: 'Zoe', handle: 'zoe1' },
+      { userId: 'zoë', displayName: 'Zoë', handle: 'zoe2' },
+      { userId: 'yuko', displayName: 'ゆうこ', handle: 'yuko' },
+      { userId: 'yugo', displayName: 'ゆうご', handle: 'yugo' },
+      { userId: 'mohan', displayName: 'मोहन', handle: 'mohan' },
+      { userId: 'mahan', displayName: 'महान', handle: 'mahan' },
+      { userId: 'tanaka', displayName: '田中', handle: 'tanaka' },
+    ];
+    expect(mentionedIn('@Zoë hi', names)).toEqual(['zoë']);
+    expect(mentionedIn('@Zoe hi', names)).toEqual(['zoe']);
+    expect(mentionCandidates('ゆうご', names).map((p) => p.userId)).toEqual(['yugo']);
+    expect(mentionedIn('@ゆうご 明日', names)).toEqual(['yugo']);
+    expect(mentionCandidates('मोहन', names).map((p) => p.userId)).toEqual(['mohan']);
+    expect(mentionedIn('@महान hi', names)).toEqual(['mahan']);
+    // Written without spaces, a name runs straight into what follows it.
+    expect(mentionedIn('@田中さん、お願いします', names)).toEqual(['tanaka']);
+    // Without its accent, a name still finds the one person it could be.
+    expect(mentionedIn('@jose ruiz, thanks', people)).toEqual(['jose']);
   });
 });

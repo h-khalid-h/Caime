@@ -15,12 +15,12 @@ Deployed 2026-09-26 on EasyPanel.
 
 | | |
 | --- | --- |
-| Public URL | https://caishy-caishy.0hqwb7.easypanel.host (EasyPanel's default service domain, HTTPS) |
+| Public URL | https://caishy.datac.com (`PUBLIC_URL`); also served at EasyPanel's default service domain, https://caishy-caishy.0hqwb7.easypanel.host |
 | Project | `caishy` |
 | Services | `caishy` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
 | Source | **GitHub** `h-khalid-h/Caishy`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caishy/caishy:latest`) |
 | Auto deploy | On, from `production`: every move of `production` rebuilds and redeploys `caishy`, and only a green CI run moves it (below). The old container serves until the new one passes its `/v1/readyz` health check. |
-| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (set in EasyPanel only), so AI assist is available |
+| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (so AI assist is available), `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET` and `STRIPE_PORTAL_CONFIGURATION`, all set in EasyPanel only |
 | Panel | https://host.datac.com |
 
 Verified after the deploy (first on the published image, then again on the GitHub build):
@@ -31,6 +31,13 @@ throwaway account signed up and deleted itself through the API.
 Switched to `production` on 2026-09-26 and redeployed with `ANTHROPIC_API_KEY`: the source reads
 back as branch `production` with auto deploy on, `/v1/readyz` answers 200, and a throwaway
 account's `GET /v1/ai` answered `"available": true` before it deleted itself.
+
+Billing went live on 2026-09-27 on the live Stripe account, with the webhook at
+`https://caishy.datac.com/v1/billing/webhook` and a portal configuration of its own. On both
+domains an unsigned delivery is refused as `bad_signature` (the secret is loaded), and a
+throwaway account's `GET /v1/billing` offered Pro at €6.00 a month and €60.00 a year before it
+deleted itself. Business is priced per organization and shows on an organization's plan page.
+The first real delivery is the one that proves the signing secret matches the endpoint.
 
 Only what passed CI is deployed. A push to `main` runs every check (lint, typecheck, the tests on
 real Postgres, the web budget, the end-to-end suite, then the image's smoke test); the last step

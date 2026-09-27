@@ -558,6 +558,8 @@ export const EditMessageBody = z
     body: z.string().trim().min(1).max(10_000).optional(),
     /** A private conversation's message, sealed again as edited. */
     sealed: SealedSchema.optional(),
+    /** Who the edited words mention (PRD §20), as a new message says. */
+    mentions: z.array(z.string().uuid()).max(50).optional(),
     mode: z
       .enum(['talk', 'ask', 'plan', 'decide', 'share', 'request', 'confirm', 'pay', 'track'])
       .optional(),

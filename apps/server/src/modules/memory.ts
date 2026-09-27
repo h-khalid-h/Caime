@@ -13,7 +13,7 @@ import { maskFor } from '../lib/business';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
 import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { participantsOf } from '../lib/messages';
+import { fileUrl, notHiddenFor, participantsOf } from '../lib/messages';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
@@ -261,11 +261,13 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         )
         .orderBy(sql`due_at`, sql`asc nulls last`)
         .execute(),
+      // Nothing from a message they deleted for themselves (it's gone from their sight).
       ctx.db
         .selectFrom('messages')
         .select(['id', 'entities', 'created_at', 'sender_id'])
         .where('conversation_id', '=', id)
         .where('deleted_at', 'is', null)
+        .where(notHiddenFor(auth.userId, 'messages.id'))
         .orderBy('seq', 'desc')
         .limit(300)
         .execute(),
@@ -273,6 +275,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
         .selectFrom('assets')
         .select(['id', 'kind', 'title', 'url', 'host', 'file_id', 'message_id', 'created_at'])
         .where('conversation_id', '=', id)
+        .where(notHiddenFor(auth.userId, 'assets.message_id'))
         .orderBy('created_at', 'desc')
         .limit(50)
         .execute(),
@@ -294,7 +297,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
           sql<number>`(select count(*) from decisions d where d.conversation_id = ${id} and d.status = 'active')::int`.as(
             'decisions',
           ),
-          sql<number>`(select count(*) from assets a where a.conversation_id = ${id} and a.kind in ('photo', 'video', 'document', 'audio'))::int`.as(
+          sql<number>`(select count(*) from assets a where a.conversation_id = ${id} and a.kind in ('photo', 'video', 'document', 'audio') and ${notHiddenFor(auth.userId, 'a.message_id')})::int`.as(
             'files',
           ),
         ])
@@ -366,7 +369,13 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
       documents: assets
         .filter((a) => a.kind === 'document')
         .slice(0, 10)
-        .map((a) => ({ id: a.id, title: a.title, fileId: a.file_id, messageId: a.message_id })),
+        .map((a) => ({
+          id: a.id,
+          title: a.title,
+          fileId: a.file_id,
+          url: a.file_id ? fileUrl(a.file_id) : null,
+          messageId: a.message_id,
+        })),
       links: assets
         .filter((a) => a.kind === 'link')
         .slice(0, 10)

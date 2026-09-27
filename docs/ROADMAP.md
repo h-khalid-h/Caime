@@ -49,13 +49,18 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       owned, and says so; renaming it is said; someone removed while it's open sees it go
       (`messaging.test.ts`, E2E). A group's header says what it has gathered,
       "6 people · 3 decisions · 4 open · 8 files · Friday" (PRD §57), and "@" in the composer
-      offers who's in it: whoever a message names is told, and sees it marked (PRD §20;
-      `mentions.test.ts`, E2E)
+      offers who's in it: whoever a message names is told, and sees it marked, edited or not; a
+      name two people share names neither, so the picker writes that person's handle (PRD §20;
+      `mentions.test.ts`, `messaging.test.ts`, E2E)
 - [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls; pinned
       messages (PRD §22), five at most, kept at the top for everyone and gone once deleted, by
-      whoever may change the conversation (`messaging.test.ts`, E2E); forwarding from a message's
-      actions to up to 20 conversations, to all of them or none, never from or into a private one;
-      cards, polls and live locations stay where they were shared (`messaging.test.ts`, E2E)
+      whoever may change the conversation, and never while a message request is unanswered
+      (`messaging.test.ts`, `blocking.test.ts`, E2E); forwarding from a message's actions to up to
+      20 conversations, each checked as sending there would be first, so to all of them or none,
+      never from or into a private one; cards, polls and live locations stay where they were
+      shared (`messaging.test.ts`, E2E). A change to a message (an edit, a card moved on, a pin)
+      reaches other devices as a change to the one they show, never a message added to their
+      history, and keeps what's theirs: their votes, which reactions are theirs (`cache.test.ts`)
 - [x] Realtime hub (WebSocket + pg NOTIFY), typing, presence
 - [x] Attention inbox API
 - [x] Message requests from non-connections (R14): links inert until accepted; declined, one stays
@@ -68,7 +73,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       conversation and a context its maker can see; a customer sees the organization decide, never
       which of its team (`actions.test.ts`, `business.test.ts`, E2E)
 - [x] Suggestions from message intelligence (and emerging topics, follow-ups)
-- [x] Conversation memory and asset index
+- [x] Conversation memory and asset index: what's been shared, a kind at a time (photos and
+      videos, files, links), newest first and a page at a time, from the conversation's details,
+      each opening from there or shown where it was said; what someone deleted for themselves
+      stays out of what they're shown, and of what the memory counts (PRD §24, §26;
+      `messaging.test.ts`, `files.test.ts`, E2E)
 - [x] Search across people, relationships, orgs, messages, assets, actions, contexts
 - [~] Notifications: levels, burst consolidation, schedules, and Web Push: a service worker
       (`apps/app/public/sw.js`) shows what the server pushes when Caishy isn't open in front (a

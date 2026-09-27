@@ -1,16 +1,19 @@
 /**
  * Forward a message (PRD §22) to other conversations, up to 20 at once. Never from a private
- * conversation, nor into one (what's there is sealed on a device, R18): those aren't offered, and
- * the server refuses them too. It arrives marked as forwarded, and goes to all of them or none.
+ * conversation, nor into one (what's there is sealed on a device, R18): those aren't offered, nor
+ * any this device has seen as private whatever the server says now, and the server refuses them
+ * too. Nor is a message request that has had its one message. It arrives marked as forwarded,
+ * and goes to all of them or none.
  */
 import type { MessageView } from '@caishy/core/api';
 import { uuidv4 } from '@caishy/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useInboxAll } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { knownPrivate } from '@/features/e2ee/known';
 import { PickMark, toggled } from '@/features/people/PeoplePicker';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
@@ -32,11 +35,28 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
   const [busy, setBusy] = useState(false);
   // One forward, sent again after an answer that never came, arrives once.
   const [clientId] = useState(uuidv4);
+  // Which of them this device has seen as private: until it's known, one isn't offered.
+  const [seen, setSeen] = useState<ReadonlyMap<string, boolean>>(new Map());
+  useEffect(() => {
+    const ids = (inbox.data?.conversations ?? []).map((c) => c.id).filter((id) => !seen.has(id));
+    if (!ids.length) return;
+    let live = true;
+    void Promise.all(ids.map(async (id) => [id, await knownPrivate(id)] as const)).then((known) => {
+      if (live) setSeen((was) => new Map([...was, ...known]));
+    });
+    return () => {
+      live = false;
+    };
+  }, [inbox.data, seen]);
+  const checking = (inbox.data?.conversations ?? []).some((c) => !seen.has(c.id));
   const term = find.trim().toLocaleLowerCase();
   const places = (inbox.data?.conversations ?? []).filter(
     (c) =>
       c.id !== m.conversationId &&
       c.privacyClass !== 'private' &&
+      seen.get(c.id) === false &&
+      // Their request unanswered, it takes one message, and has had it.
+      !(c.request === 'outgoing' && c.lastMessage) &&
       (!term || c.title.toLocaleLowerCase().includes(term)),
   );
   const send = async () => {
@@ -80,7 +100,7 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
           accessibilityLabel="Find a conversation"
           testID="forward-find"
         />
-        {inbox.isPending ? (
+        {inbox.isPending || checking ? (
           <Text variant="body" color="textSecondary">
             Loading your conversations…
           </Text>

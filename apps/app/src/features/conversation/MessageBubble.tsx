@@ -469,6 +469,7 @@ export const MessageBubble = memo(function MessageBubble({
     mine ? 'You' : (senderName ?? ''),
     forMe ? 'mentions you' : '',
     m.pinnedAt && !deleted ? 'pinned' : '',
+    m.forwarded && !deleted ? 'forwarded' : '',
     m.automated ? (m.aiAgent ? 'AI agent' : 'automated') : '',
     m.sentVia ? `sent via ${m.sentVia}` : '',
     deleted ? 'Message deleted' : (text ?? opened.note ?? sticker?.label ?? m.kind),

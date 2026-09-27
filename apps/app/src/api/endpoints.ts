@@ -11,6 +11,8 @@ import type {
   AiStatusView,
   AiTranslationView,
   AlbumPhotoView,
+  AssetsResponse,
+  AssetView,
   AuthResponse,
   BusinessInboxView,
   BusinessSummaryView,
@@ -246,10 +248,11 @@ export const endpoints = {
     api.get<MessagesPage>(`/conversations/${id}/messages${q(params)}`),
   send: (conversationId: string, body: SendBody) =>
     api.post<{ message: MessageView }>(`/conversations/${conversationId}/messages`, body),
-  editMessage: (id: string, body: string | { sealed: SealedMessage }) =>
+  /** A new text, and who it mentions (in a group), or a private message sealed again. */
+  editMessage: (id: string, body: string | { sealed: SealedMessage }, mentions?: string[]) =>
     api.patch<{ message: MessageView }>(
       `/messages/${id}`,
-      typeof body === 'string' ? { body } : body,
+      typeof body === 'string' ? { body, ...(mentions ? { mentions } : {}) } : body,
     ),
   deleteMessage: (id: string, forEveryone: boolean) =>
     api.del<Ok>(`/messages/${id}${q({ forEveryone })}`),
@@ -502,6 +505,11 @@ export const endpoints = {
     api.get<{ decisions: DecisionView[] }>(`/decisions${q(params)}`),
   createDecision: (body: { conversationId: string; title: string; messageId?: string }) =>
     api.post<{ id: string }>('/decisions', body),
+  /** What's been shared in a conversation, of these kinds: newest first, a page at a time. */
+  assets: (conversationId: string, kinds: readonly AssetView['kind'][], before?: string) =>
+    api.get<AssetsResponse>(
+      `/conversations/${conversationId}/assets${q({ kind: kinds.join(','), before })}`,
+    ),
   pins: (conversationId: string) =>
     api.get<{ messages: MessageView[] }>(`/conversations/${conversationId}/pins`),
   pin: (messageId: string) => api.post<Ok>(`/messages/${messageId}/pin`),

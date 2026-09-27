@@ -3,6 +3,7 @@ import { uuidv4 } from '@caishy/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
+import type { BusMessage } from '../src/lib/bus';
 import { runDueJobs, runPeriodic } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -455,6 +456,47 @@ describe('groups (PRD §14, §56)', () => {
     await send(sarah, g.id, 'Lina, can you book the cabin?', { mentions: [lina.user.id] });
     expect(sectionOf(await inbox(lina), g.id).section).toBe('needs_you');
     expect(sectionOf(await inbox(hassan), g.id).section).toBe('recent');
+  });
+
+  it('an edit mentions whoever its words now name, and tells only who it newly names', async () => {
+    const kim = await signup(t, { displayName: 'Kim Edit' });
+    const lee = await signup(t, { displayName: 'Lee Edit' });
+    const outsider = await signup(t, { displayName: 'Out Edit' });
+    await connect(sarah, kim);
+    await connect(sarah, lee);
+    const g = (
+      await sarah.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Carpool',
+        memberIds: [kim.user.id, lee.user.id],
+      })
+    ).conversation.id;
+    const m = await send(sarah, g, '@Kim Edit can you drive?', { mentions: [kim.user.id] });
+    await t.ctx.flush();
+    const mentioned = async (c: Client) =>
+      ((await c.get('/v1/notifications')).notifications as any[]).filter(
+        (n) => n.kind === 'mention',
+      ).length;
+    expect(await mentioned(kim)).toBe(1);
+    // Only people in it, and never its sender.
+    const edited = await sarah.patch(`/v1/messages/${m.id}`, {
+      body: '@Lee Edit can you drive?',
+      mentions: [lee.user.id, outsider.user.id, sarah.user.id],
+    });
+    expect(edited.message.mentions).toEqual([lee.user.id]);
+    await t.ctx.flush();
+    expect(await mentioned(lee)).toBe(1);
+    expect(await mentioned(kim)).toBe(1);
+    // Edited again naming Lee still, Lee isn't told twice; an edit without them leaves them be.
+    await sarah.patch(`/v1/messages/${m.id}`, {
+      body: '@Lee Edit can you drive, please?',
+      mentions: [lee.user.id],
+    });
+    await sarah.patch(`/v1/messages/${m.id}`, { body: 'Can anyone drive?' });
+    await t.ctx.flush();
+    expect(await mentioned(lee)).toBe(1);
+    const last = ((await lee.get(`/v1/conversations/${g}/messages`)).messages as any[]).at(-1);
+    expect(last).toMatchObject({ body: 'Can anyone drive?', mentions: [lee.user.id] });
   });
 });
 
@@ -987,6 +1029,55 @@ describe('pinned messages (PRD §22, §56)', () => {
       await ana.patch(`/v1/conversations/${direct}`, { retentionDays: null });
     }
   });
+
+  it('not while a message request is unanswered: it allows one message and nothing more', async () => {
+    const zed = await signup(t, { displayName: 'Zed Pins' });
+    const request = (await zed.post('/v1/conversations', { kind: 'direct', userId: ana.user.id }))
+      .conversation.id;
+    const hello = await send(zed, request, 'Hi Ana, about the concert');
+    for (const who of [zed, ana]) {
+      const r = await pin(who, hello.id);
+      expect(r.statusCode).toBe(403);
+      expect(r.json().error.code).toBe('awaiting_acceptance');
+    }
+    expect(await pinLines(ana, request)).toEqual([]);
+    // Answered, either of them pins.
+    await send(ana, request, 'Hi Zed!');
+    expect((await pin(zed, hello.id)).statusCode).toBe(200);
+    expect(await pins(ana, request)).toEqual(['Hi Ana, about the concert']);
+  });
+
+  it('one deleted for yourself leaves your own top at once, and still counts toward the five', async () => {
+    const heard: BusMessage[] = [];
+    const stop = t.ctx.bus.subscribe((m) => heard.push(m));
+    try {
+      const top = (await bo.get(`/v1/conversations/${g}/pins`)).messages as any[];
+      expect(top).toHaveLength(4);
+      const bus = top.find((m) => m.body === 'Bus at 5');
+      await bo.req('DELETE', `/v1/messages/${bus.id}?forEveryone=false`);
+      const told = () =>
+        heard.some(
+          (m) =>
+            m.event.type === 'pins.changed' &&
+            m.userIds.includes(bo.user.id) &&
+            (m.event.data as { conversationId?: string }).conversationId === g,
+        );
+      for (let i = 0; i < 300 && !told(); i++) await new Promise((r) => setTimeout(r, 10));
+      expect(told()).toBe(true);
+      expect(await pins(bo, g)).toHaveLength(3);
+      expect(await pins(ana, g)).toHaveLength(4);
+      expect((await pin(ana, (await send(ana, g, 'Encore: Bolero')).id)).statusCode).toBe(200);
+      const his = await pin(bo, (await send(bo, g, 'Parking at the back')).id);
+      expect(his.statusCode).toBe(400);
+      expect(his.json().error.message).toBe(
+        '5 messages are pinned already, including one you deleted for yourself. Unpin one first.',
+      );
+      const hers = await pin(ana, (await send(ana, g, 'Programme notes')).id);
+      expect(hers.json().error.message).toBe('5 messages are pinned already. Unpin one first.');
+    } finally {
+      stop();
+    }
+  });
 });
 
 describe('forwarding (PRD §22)', () => {
@@ -1060,6 +1151,34 @@ describe('forwarding (PRD §22)', () => {
     // Bo's conversation with Ana got nothing either, though it came first.
     expect((await last(bo, ab)).id).toBe(before.id);
   });
+
+  it('a message request that has had its one message stops all of it, as sending there would', async () => {
+    const dee = await signup(t, { displayName: 'Dee Forward' });
+    const request = (await ana.post('/v1/conversations', { kind: 'direct', userId: dee.user.id }))
+      .conversation.id;
+    await send(ana, request, 'Hi Dee, we met at the fair');
+    const m = await send(bo, g, 'Tickets are on sale');
+    const before = await last(bo, ab);
+    const r = await forward(ana, m.id, [ab, request]);
+    expect(r.statusCode).toBe(403);
+    expect(r.json().error.code).toBe('awaiting_acceptance');
+    expect((await last(bo, ab)).id).toBe(before.id);
+    // Answered, it goes to both; sent again, in any order and with one more, each gets it once.
+    await send(dee, request, 'Hi Ana!');
+    const clientId = uuidv4();
+    const again = (conversationIds: string[]) =>
+      ana.req('POST', `/v1/messages/${m.id}/forward`, { conversationIds, clientId });
+    const first = await again([ab]);
+    expect(first.statusCode).toBe(200);
+    const both = await again([request, ab]);
+    expect(both.statusCode).toBe(200);
+    expect(both.json().messageIds).toHaveLength(2);
+    expect(both.json().messageIds[1]).toBe(first.json().messageIds[0]);
+    expect(await last(dee, request)).toMatchObject({
+      body: 'Tickets are on sale',
+      forwarded: true,
+    });
+  });
 });
 
 describe('message features', () => {
@@ -1116,6 +1235,65 @@ describe('message features', () => {
     const assets = await hassan.get(`/v1/conversations/${convo}/assets?kind=link`);
     expect(assets.counts.link).toBeGreaterThanOrEqual(2);
     expect(assets.assets[0]).toMatchObject({ kind: 'link' });
+  });
+
+  it('what was shared leaves out a message someone deleted for themselves (PRD §24, §26)', async () => {
+    const link = await send(
+      sarah,
+      convo,
+      'Minutes: https://minutes.example.org/q3, review next Tuesday at 10am',
+    );
+    const seen = async (c: Client) => {
+      const r = await c.get(`/v1/conversations/${convo}/assets?kind=link`);
+      const memory = await c.get(`/v1/conversations/${convo}/memory`);
+      return {
+        hosts: r.assets.map((a: any) => a.host),
+        links: (r.counts.link ?? 0) as number,
+        remembered: memory.links.map((l: any) => l.host),
+        dates: memory.dates.map((d: any) => d.messageId),
+      };
+    };
+    const before = await seen(hassan);
+    expect(before.hosts).toContain('minutes.example.org');
+    expect(before.remembered).toContain('minutes.example.org');
+    expect(before.dates).toContain(link.id);
+    await hassan.del(`/v1/messages/${link.id}?forEveryone=false`);
+    const after = await seen(hassan);
+    expect(after.hosts).not.toContain('minutes.example.org');
+    expect(after.links).toBe(before.links - 1);
+    expect(after.remembered).not.toContain('minutes.example.org');
+    expect(after.dates).not.toContain(link.id);
+    // Still Sarah's to see.
+    const hers = await seen(sarah);
+    expect(hers.hosts).toContain('minutes.example.org');
+    expect(hers.links).toBe(before.links);
+    expect(hers.remembered).toContain('minutes.example.org');
+    expect(hers.dates).toContain(link.id);
+  });
+
+  it('what was shared comes a page at a time, newest first, of one kind or several', async () => {
+    const sent = [];
+    for (const n of [1, 2, 3])
+      sent.push(await send(hassan, convo, `Draft ${n}: https://drafts${n}.example.net/`));
+    const url = `/v1/conversations/${convo}/assets?kind=link&limit=2`;
+    const first = await sarah.get(url);
+    expect(first.assets.map((a: any) => a.host)).toEqual([
+      'drafts3.example.net',
+      'drafts2.example.net',
+    ]);
+    // Each says where its message is, to go to it.
+    expect(first.assets[0]).toMatchObject({ messageId: sent[2].id, messageSeq: sent[2].seq });
+    expect(first.nextBefore).toBe(first.assets[1].id);
+    const next = await sarah.get(`${url}&before=${first.nextBefore}`);
+    expect(next.assets[0].host).toBe('drafts1.example.net');
+    const all = await sarah.get(`/v1/conversations/${convo}/assets?kind=link&limit=200`);
+    expect(all.nextBefore).toBeNull();
+    expect(all.assets).toHaveLength(all.counts.link);
+    // Several kinds at once, and nothing that isn't one.
+    const mixed = await sarah.get(`/v1/conversations/${convo}/assets?kind=link,photo&limit=200`);
+    expect(mixed.assets).toHaveLength(all.assets.length);
+    const wrong = await sarah.req('GET', `/v1/conversations/${convo}/assets?kind=link,secret`);
+    expect(wrong.statusCode).toBe(400);
   });
 });
 

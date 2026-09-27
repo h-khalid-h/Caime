@@ -164,6 +164,32 @@ describe('who can read a file', () => {
     expect(steal.statusCode).toBe(404);
   });
 
+  it('a photo someone deleted for themselves leaves what they see shared, not the others’', async () => {
+    const f = await upload(hassan, 'receipt.jpg', 'image/jpeg', photoJpeg);
+    const sent = await hassan.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'media',
+      fileIds: [f.id],
+    });
+    const seen = async (c: Client) => {
+      const shared = await c.get(`/v1/conversations/${convo}/assets?kind=photo,video`);
+      const memory = await c.get(`/v1/conversations/${convo}/memory`);
+      return {
+        photos: shared.assets.map((a: any) => a.file.id),
+        counted: (shared.counts.photo ?? 0) as number,
+        files: memory.counts.files as number,
+      };
+    };
+    const before = await seen(sarah);
+    expect(before.photos).toContain(f.id);
+    await sarah.del(`/v1/messages/${sent.message.id}?forEveryone=false`);
+    const after = await seen(sarah);
+    expect(after.photos).not.toContain(f.id);
+    expect(after.counted).toBe(before.counted - 1);
+    expect(after.files).toBe(before.files - 1);
+    expect(await seen(hassan)).toEqual(before);
+  });
+
   it('serves byte ranges for media players', async () => {
     const f = await upload(hassan, 'clip.jpg', 'image/jpeg', photoJpeg);
     const res = await download(hassan, f.url, { range: 'bytes=0-9' });

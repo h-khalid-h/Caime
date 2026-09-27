@@ -680,14 +680,26 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         <View style={{ flex: 1, minWidth: 0 }}>{main}</View>
         {desktop && panel && conversation ? (
           <View style={{ width: 340, borderLeftWidth: 1, borderLeftColor: t.c.border }}>
-            <ContextPanel conversation={conversation} onClose={() => setPanel(false)} />
+            <ContextPanel
+              conversation={conversation}
+              onClose={() => setPanel(false)}
+              onJump={setFocus}
+            />
           </View>
         ) : null}
       </View>
       {!desktop && conversation ? (
         <Sheet open={details} onClose={() => setDetails(false)} scroll={false}>
           <View style={{ height: height * 0.8 }}>
-            <ContextPanel conversation={conversation} onClose={() => setDetails(false)} />
+            <ContextPanel
+              conversation={conversation}
+              onClose={() => setDetails(false)}
+              onJump={(seq) => {
+                // The details are over the conversation here: they step aside for it.
+                setDetails(false);
+                setFocus(seq);
+              }}
+            />
           </View>
         </Sheet>
       ) : null}

@@ -2,7 +2,7 @@ import type { MessagesPage, MessageView } from '@caishy/core/api';
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { qk } from '@/api/keys';
-import { flatMessages, type MessagePages, upsertMessage } from './cache';
+import { flatMessages, type MessagePages, updateMessage, upsertMessage } from './cache';
 
 const id = 'c1';
 const msg = (seq: number, body = `m${seq}`): MessageView =>
@@ -80,5 +80,48 @@ describe('live messages and loading pages', () => {
     // Still due for its refetch, which brings 3; its age is still the fetch's.
     expect(state?.isInvalidated).toBe(true);
     expect(state?.dataUpdatedAt).toBe(fetchedAt);
+  });
+});
+
+describe('a message someone else changed', () => {
+  const shown = (m: Partial<MessageView>) => ({ ...msg(2), ...m }) as MessageView;
+  const withPoll = (mine: string[], reactions: MessageView['reactions']) =>
+    shown({
+      poll: { counts: { a: 1, b: 1 }, mine, voters: 2 },
+      reactions,
+    } as Partial<MessageView>);
+
+  it('changes only one already shown, and keeps what’s the viewer’s own', () => {
+    const qc = new QueryClient();
+    const mine = withPoll(['a'], [{ emoji: '👍', count: 1, mine: true, userIds: ['me'] }]);
+    qc.setQueryData<MessagePages>(qk.messages(id), {
+      pages: [{ ...page(1), messages: [msg(1), mine] }],
+      pageParams: [undefined],
+    });
+    // As the one who changed it sees it: their vote, their reactions.
+    const theirs = {
+      ...withPoll(
+        ['b'],
+        [
+          { emoji: '👍', count: 2, mine: false, userIds: ['me', 'them'] },
+          { emoji: '🎉', count: 1, mine: true, userIds: ['them'] },
+        ],
+      ),
+      body: 'Edited',
+      pinnedAt: '2026-09-27T10:00:00.000Z',
+    } as MessageView;
+    updateMessage(qc, theirs, 'me');
+    const now = flatMessages(qc.getQueryData<MessagePages>(qk.messages(id))).find(
+      (m) => m.id === 'm2',
+    );
+    expect(now).toMatchObject({ body: 'Edited', pinnedAt: '2026-09-27T10:00:00.000Z' });
+    expect(now?.poll?.mine).toEqual(['a']);
+    expect(now?.reactions).toEqual([
+      { emoji: '👍', count: 2, mine: true, userIds: ['me', 'them'] },
+      { emoji: '🎉', count: 1, mine: false, userIds: ['them'] },
+    ]);
+    // One further back, or deleted for oneself, isn't brought in by it.
+    updateMessage(qc, { ...theirs, id: 'm0', seq: 0 } as MessageView, 'me');
+    expect(seqs(qc)).toEqual([1, 2]);
   });
 });

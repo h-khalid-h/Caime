@@ -12,7 +12,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePins } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { useOpened } from '@/features/e2ee/hooks';
+import { readAs, useOpened } from '@/features/e2ee/hooks';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from '@/ui/IconButton';
 import { Pin, PinOff } from '@/ui/icons';
@@ -34,7 +34,10 @@ export function PinnedBar({
 }) {
   const t = useTheme();
   const qc = useQueryClient();
-  const pins = usePins(where.conversationId).data?.messages ?? [];
+  // What isn't sealed in a private conversation isn't shown there (R18), at its top neither.
+  const pins = (usePins(where.conversationId).data?.messages ?? []).filter(
+    (p) => readAs(p, where) !== 'unverified',
+  );
   const [at, setAt] = useState(0);
   const i = pins.length ? at % pins.length : 0;
   const m = pins[i];

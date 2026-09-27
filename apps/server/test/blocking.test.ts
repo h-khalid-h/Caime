@@ -50,6 +50,8 @@ describe('blocking a person (PRD §55)', () => {
       })
     ).json().message;
 
+    await noor.post(`/v1/messages/${note.id}/pin`);
+
     await noor.post('/v1/blocks', { userId: sam.user.id });
     const tries = {
       send: await send(sam, dm, { body: 'Hello?' }),
@@ -58,6 +60,8 @@ describe('blocking a person (PRD §55)', () => {
       vote: await sam.req('POST', `/v1/messages/${poll.id}/vote`, { optionIds: ['a'] }),
       move: await sam.req('POST', `/v1/messages/${card.id}/kit`, { to: 'approved' }),
       typing: await sam.req('POST', `/v1/conversations/${dm}/typing`, {}),
+      pin: await sam.req('POST', `/v1/messages/${poll.id}/pin`),
+      unpin: await sam.req('DELETE', `/v1/messages/${note.id}/pin`),
     };
     for (const [what, res] of Object.entries(tries)) expect(res.statusCode, what).toBe(403);
     // Blocking is both ways: the blocker can't write there either until they unblock.

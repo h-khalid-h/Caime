@@ -1,10 +1,18 @@
 import type { ConversationView, MessageView } from '@caishy/core/api';
-import { mentionAt, mentionCandidates, mentionedIn } from '@caishy/core/mentions';
+import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caishy/core/mentions';
 import { useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Platform, TextInput, View } from 'react-native';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { AccessibilityInfo, Platform, TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
 import { RewriteSheet } from '@/features/assist/RewriteSheet';
@@ -148,9 +156,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const typing = mentionable && !editing ? mentionAt(value, caret) : null;
   const options = typing && typing.start !== settled ? mentionCandidates(typing.query, people) : [];
   const chosen = options[Math.min(active, options.length - 1)];
+  // Focus stays in the text, so the picker is told to a screen reader as it changes: who Enter
+  // would mention. A live region does it on the web and Android; iOS is told outright.
+  const offered = chosen
+    ? `${chosen.displayName}, ${options.indexOf(chosen) + 1} of ${options.length}. Enter mentions them, Escape closes the list.`
+    : '';
+  useEffect(() => {
+    if (offered && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(offered);
+  }, [offered]);
   const pickMention = (p: (typeof people)[number]) => {
     if (!typing) return;
-    const name = `@${p.displayName} `;
+    // Their name, or their handle where someone else here has that name too.
+    const name = `@${mentionText(p, people)} `;
     const next = value.slice(0, typing.start) + name + value.slice(caret);
     const at = typing.start + name.length;
     onChange(next);
@@ -188,7 +205,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       try {
         const message = editing.sealed
           ? await (await loadPrivate()).editPrivate(editing, body)
-          : (await endpoints.editMessage(editing.id, body)).message;
+          : (
+              await endpoints.editMessage(
+                editing.id,
+                body,
+                mentionable ? mentionedIn(body, people) : undefined,
+              )
+            ).message;
         upsertMessage(qc, message);
         applyEditToInbox(qc, message);
       } catch (e) {
@@ -386,6 +409,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   return (
     <View style={{ backgroundColor: t.c.surface, borderTopWidth: 1, borderTopColor: t.c.border }}>
       {banner}
+      {offered && Platform.OS !== 'ios' ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          style={{ position: 'absolute', left: -10_000, width: 1, height: 1, overflow: 'hidden' }}
+        >
+          {offered}
+        </Text>
+      ) : null}
       {options.length ? (
         <View
           accessibilityRole="menu"

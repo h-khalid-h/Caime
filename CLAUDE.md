@@ -263,6 +263,11 @@ These are rules, not preferences.
   desktop panes and the tabs that show them take them lazily from `features/shell/panes.ts`, so
   none is in the first download. Measure with `node scripts/bundle-budget.mjs <dist>` after an
   `expo export --source-maps`, and look at what's in `__common` before splitting anything.
+  A part that is a whole tab or pane takes a failure screen (`lazyPart(load, ScreenError)`).
+- A `message.updated` event is the message as whoever changed it sees it (their poll votes,
+  their reactions). The app applies it with `updateMessage` (`state/cache.ts`): only to a
+  message it already shows, never adding one, and with the viewer's own parts worked out again.
+  `upsertMessage` is for `message.created` and the app's own answers.
 
 ## Credentials and environment
 
@@ -284,9 +289,10 @@ webhooks), personal access tokens, OAuth for third-party apps, plan entitlements
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
 groups of up to eight) with their history, private conversations (end to end encrypted, web),
 billing with Stripe, possible duplicates in People, and organizations' updates.
-It's live on EasyPanel at https://caishy-caishy.0hqwb7.easypanel.host (`docs/DEPLOY.md`); sessions
-in this environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
-the live Stripe account's products, prices and webhook (tell the account's owner before creating
-anything there: it's live), a TURN relay for calls (⛔), calls and private conversations in the
+It's live on EasyPanel at https://caishy.datac.com (also its default domain,
+https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
+Stripe account (tell its owner before changing anything there: it's live); sessions in this
+environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
+a TURN relay for calls (⛔), calls and private conversations in the
 phone apps, a third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).

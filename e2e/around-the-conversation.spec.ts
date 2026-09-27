@@ -1865,6 +1865,29 @@ test.describe
         page.getByText('Forwarded', { exact: true }).filter({ visible: true }),
       ).toBeVisible();
 
+      // What's shared in it is kept in its details, a kind at a time, and each goes back to
+      // where it was said.
+      await page.getByTestId('composer-input').fill('Reading list: https://books.example.org/list');
+      await page.getByTestId('composer-send').click();
+      await expect(
+        page.getByLabel(/Reading list: .*, (sent|delivered|read)$/).filter({ visible: true }),
+      ).toBeVisible();
+      await page.getByTestId('open-shared').filter({ visible: true }).click();
+      await expect(page.getByRole('tab', { name: 'Links, 1' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      const shared = page.getByTestId('shared-link').filter({ visible: true });
+      await expect(shared).toContainText('books.example.org');
+      await expect(shared).toContainText('You');
+      await page.getByRole('tab', { name: 'Photos' }).click();
+      await expect(page.getByTestId('shared-empty').filter({ visible: true })).toHaveText(
+        'No photos or videos shared here yet.',
+      );
+      await page.getByRole('tab', { name: 'Links, 1' }).click();
+      await shared.getByTestId('shared-jump').click();
+      await expect(page.getByTestId('message-highlighted')).toContainText('Reading list');
+
       // Removed, Lina is out of it, and her open screen says so at once; Noor leaves, and Alex
       // owns it now.
       await lina.page.goto(`/c/${id}`);
@@ -2005,5 +2028,19 @@ test.describe
       });
       expect(scope).toBe(`${new URL(page.url()).origin}/`);
       expect(errors).toEqual([]);
+    });
+    test('a tab whose part of the app can’t be fetched says so, and opens when tried again', async () => {
+      // A page kept open across a deploy asks for a file the new version no longer has.
+      const page = await alexContext.newPage();
+      const chunk = '**/_expo/static/js/web/PeopleList-*.js';
+      await page.route(chunk, (r) => r.abort());
+      await page.goto('/people');
+      await expect(visible(page, 'Something went wrong on this screen')).toBeVisible();
+      await page.unroute(chunk);
+      await page.getByRole('button', { name: 'Try again' }).filter({ visible: true }).click();
+      await expect(
+        page.getByText('Noor Haddad', { exact: true }).filter({ visible: true }).first(),
+      ).toBeVisible();
+      await page.close();
     });
   });

@@ -95,6 +95,39 @@ type Recipient = {
   attention: string;
 };
 
+/** An edit names people it didn't before (PRD §20): they're told, as of a message for them. */
+export async function afterMentioning(
+  ctx: AppContext,
+  message: Message,
+  userIds: string[],
+): Promise<void> {
+  const conversation = await ctx.db
+    .selectFrom('conversations')
+    .selectAll()
+    .where('id', '=', message.conversation_id)
+    .executeTakeFirstOrThrow();
+  // Nobody is mentioned to an organization's team, nor to its customer (R15).
+  if (conversation.kind === 'business' || !message.sender_id) return;
+  const sender = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'display_name'])
+    .where('id', '=', message.sender_id)
+    .executeTakeFirst();
+  if (!sender) return;
+  const recipients = await ctx.db
+    .selectFrom('participants')
+    .select(['user_id', 'request_state', 'muted_until', 'attention'])
+    .where('conversation_id', '=', conversation.id)
+    .where('left_at', 'is', null)
+    .where('user_id', 'in', userIds)
+    .execute();
+  await Promise.all(
+    recipients.map((r) =>
+      notifyRecipient(ctx, conversation, message, sender, r, true, false, { edited: true }),
+    ),
+  );
+}
+
 /**
  * A business conversation (R15): the customer hears from the organization, never who on its
  * team wrote; the team hears from the customer, but only whoever has the thread, or everyone
@@ -163,7 +196,11 @@ async function notifyRecipient(
   recipient: Recipient,
   addressed: boolean,
   isReplyToThem: boolean,
-  opts: { context?: string } = {},
+  opts: {
+    context?: string;
+    /** An edit named them: news of its own, never counted as another message in a burst. */
+    edited?: boolean;
+  } = {},
 ): Promise<void> {
   const user = await ctx.db
     .selectFrom('users')
@@ -226,16 +263,18 @@ async function notifyRecipient(
   const preview =
     conversation.privacy_class === 'private' ? 'New message' : messagePreview(message);
   const groupKey = `conv:${conversation.id}`;
-  const existing = await ctx.db
-    .selectFrom('notifications')
-    .selectAll()
-    .where('user_id', '=', recipient.user_id)
-    .where('group_key', '=', groupKey)
-    .where('read_at', 'is', null)
-    .where('dismissed_at', 'is', null)
-    .where('updated_at', '>', new Date(now.getTime() - BURST_WINDOW_MS))
-    .orderBy('updated_at', 'desc')
-    .executeTakeFirst();
+  const existing = opts.edited
+    ? undefined
+    : await ctx.db
+        .selectFrom('notifications')
+        .selectAll()
+        .where('user_id', '=', recipient.user_id)
+        .where('group_key', '=', groupKey)
+        .where('read_at', 'is', null)
+        .where('dismissed_at', 'is', null)
+        .where('updated_at', '>', new Date(now.getTime() - BURST_WINDOW_MS))
+        .orderBy('updated_at', 'desc')
+        .executeTakeFirst();
 
   const data = {
     conversationId: conversation.id,

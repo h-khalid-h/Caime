@@ -2,7 +2,9 @@ import type { ConversationView, TaskView } from '@caishy/core/api';
 import { formatDue, retentionText } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { mediaUrl } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useMemory } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -11,16 +13,29 @@ import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { Choice } from '@/features/settings/SettingsPage';
+import { openCheckedLink, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { Calendar, CircleCheck, FileText, LayoutGrid, Link, Lock, Star, X } from '@/ui/icons';
+import {
+  Calendar,
+  ChevronRight,
+  CircleCheck,
+  FileText,
+  ImageIcon,
+  LayoutGrid,
+  Link,
+  Lock,
+  Star,
+  X,
+} from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { SharedFiles } from './SharedFiles';
 
 // Who's in a group, and running it: loaded when a group's details are first shown.
 const GroupPeople = lazyPart(() => import('./GroupPeople').then((m) => m.GroupPeople));
@@ -145,11 +160,15 @@ function BusinessCard({
 export function ContextPanel({
   conversation,
   onClose,
+  onJump,
 }: {
   conversation: ConversationView;
   onClose?: () => void;
+  /** Show a message in the conversation beside (or under) the panel. */
+  onJump?: (seq: number) => void;
 }) {
   const t = useTheme();
+  const [sharing, setSharing] = useState(false);
   const qc = useQueryClient();
   const memory = useMemory(conversation.id);
   const aiReady = useAiReady(conversation);
@@ -319,24 +338,55 @@ export function ContextPanel({
                 ))}
               </Section>
             ) : null}
-            {m.documents.length || m.links.length ? (
+            {m.counts.files || m.links.length ? (
               <Section title="Shared">
-                {m.documents.map((d) => (
-                  <View key={d.id} style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                {m.documents.slice(0, 3).map((d) => (
+                  <Pressable
+                    key={d.id}
+                    accessibilityRole="link"
+                    accessibilityLabel={d.title ?? 'Document'}
+                    disabled={!d.url}
+                    onPress={() => {
+                      const url = mediaUrl(d.url);
+                      if (url) openLink(url);
+                    }}
+                    style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
+                  >
                     <FileText size={14} color={t.c.textSecondary} />
                     <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
                       {d.title ?? 'Document'}
                     </Text>
-                  </View>
+                  </Pressable>
                 ))}
-                {m.links.map((l) => (
-                  <View key={l.id} style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                {m.links.slice(0, 3).map((l) => (
+                  <Pressable
+                    key={l.id}
+                    accessibilityRole="link"
+                    accessibilityLabel={l.host ?? l.url ?? 'Link'}
+                    disabled={!l.url}
+                    onPress={() => {
+                      if (l.url) void openCheckedLink(l.url);
+                    }}
+                    style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
+                  >
                     <Link size={14} color={t.c.textSecondary} />
                     <Text variant="body" numberOfLines={1} style={{ flex: 1 }} color="link">
                       {l.host ?? l.url}
                     </Text>
-                  </View>
+                  </Pressable>
                 ))}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSharing(true)}
+                  style={{ flexDirection: 'row', gap: 8, alignItems: 'center', paddingVertical: 4 }}
+                  testID="open-shared"
+                >
+                  <ImageIcon size={14} color={t.c.accentStrong} />
+                  <Text variant="captionStrong" color="link" style={{ flex: 1 }}>
+                    Photos, files and links
+                  </Text>
+                  <ChevronRight size={16} color={t.c.textTertiary} />
+                </Pressable>
               </Section>
             ) : null}
             {!m.openItems.length && !m.decisions.length && !m.dates.length ? (
@@ -354,6 +404,13 @@ export function ContextPanel({
         ) : null}
         <Disappearing conversation={conversation} />
       </ScrollView>
+      {sharing ? (
+        <SharedFiles
+          conversation={conversation}
+          onClose={() => setSharing(false)}
+          onJump={onJump}
+        />
+      ) : null}
     </View>
   );
 }

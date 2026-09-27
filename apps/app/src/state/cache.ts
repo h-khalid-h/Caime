@@ -108,6 +108,22 @@ function upsertNow(qc: QueryClient, m: MessageView): void {
   });
 }
 
+/**
+ * Someone changed a message (edited it, moved its card along, pinned it): the change, onto the
+ * one shown. Only one already loaded changes: one further back is fetched as it is once it's
+ * scrolled to, and one deleted for oneself stays gone. A change is sent as whoever made it sees
+ * it, so what's the viewer's own is worked out again for them: which reactions are theirs (from
+ * who reacted), and their poll choices (kept, since a change never carries them).
+ */
+export function updateMessage(qc: QueryClient, m: MessageView, me: string): void {
+  patchMessage(qc, m.conversationId, m.id, (was) => ({
+    ...m,
+    clientId: m.clientId ?? was.clientId ?? null,
+    poll: m.poll && was.poll ? { ...m.poll, mine: was.poll.mine } : m.poll,
+    reactions: m.reactions.map((r) => ({ ...r, mine: r.userIds.includes(me) })),
+  }));
+}
+
 export function patchMessage(
   qc: QueryClient,
   conversationId: string,
