@@ -1,4 +1,5 @@
-import type { MessageView } from '@caishy/core/api';
+import type { ConversationView, MessageView } from '@caishy/core/api';
+import { customDetails, customMoves, customState, isCustomCard } from '@caishy/core/custom-kits';
 import { formatDue } from '@caishy/core/format';
 import {
   isCardKit,
@@ -8,21 +9,22 @@ import {
   kitStateTone,
 } from '@caishy/core/kit-cards';
 import { KITS } from '@caishy/core/kits';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { useNow, useUserClock } from '@/lib/time';
 import { upsertMessage } from '@/state/cache';
 import { useTheme } from '@/theme/theme';
-import { Button } from '@/ui/Button';
+import { Button, type IconComponent } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { ListChecks } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
-import { KIT_ICONS } from './icons';
+import { iconNamed, KIT_ICONS } from './icons';
 
 interface CardPayload {
   kit?: unknown;
@@ -35,23 +37,48 @@ interface CardPayload {
 
 const TONE = { positive: 'success', negative: 'danger', neutral: 'neutral' } as const;
 
-function StateChip({ state }: { state: string }) {
-  return <Chip label={kitStateLabel(state)} tone={TONE[kitStateTone(state)]} size="sm" />;
-}
-
 /**
  * A Connect Kit card in a conversation: what it is, where it stands, and the moves this person
- * can make on it (core kit-cards.ts). The server's request cards (a task asked of someone) read
- * the same way, and change from Actions.
+ * can make on it (core kit-cards.ts). An organization's own kinds of card read and move as the
+ * kit they were sent with (custom-kits.ts). The server's request cards (a task asked of
+ * someone) read the same way, and change from Actions.
  */
 export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const t = useTheme();
-  const qc = useQueryClient();
   const now = useNow();
+  // In a conversation with an organization, whether this person is on its team (the team's view
+  // of it has its thread), followed as the conversation loads: never fetched from here.
+  const thread = useQuery({
+    queryKey: qk.conversation(m.conversationId),
+    queryFn: () => endpoints.conversation(m.conversationId),
+    enabled: false,
+    select: (d: { conversation: ConversationView }) => d.conversation.business?.thread ?? null,
+  }).data;
   const { timeZone, locale } = useUserClock();
-  const [busy, setBusy] = useState<string | null>(null);
+  const clock = { now, timeZone, locale };
   const p = (m.payload ?? {}) as CardPayload;
   const state = p.state ?? '';
+
+  if (isCustomCard(m.payload)) {
+    const card = m.payload;
+    // Its moves are the organization's (its team's) or its customer's: none until it's known
+    // which this person is.
+    const at = customState(card);
+    return (
+      <CardBody
+        m={m}
+        Icon={iconNamed(card.icon)}
+        label={card.label}
+        state={at.label}
+        tone={at.tone}
+        title={card.title}
+        details={customDetails(card, clock)}
+        moves={m.deletedAt || thread === undefined ? [] : customMoves(card, thread !== null)}
+        from={card.app.name}
+        testID={`kit-custom-${card.key}`}
+      />
+    );
+  }
 
   if (!isCardKit(p.kit)) {
     return (
@@ -61,7 +88,9 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           <Text variant="overline" color="textSecondary" style={{ flex: 1 }}>
             Request
           </Text>
-          {state ? <StateChip state={state} /> : null}
+          {state ? (
+            <Chip label={kitStateLabel(state)} tone={TONE[kitStateTone(state)]} size="sm" />
+          ) : null}
         </View>
         <Text variant="bodyStrong">{p.title ?? 'Request'}</Text>
         {p.dueAt ? (
@@ -76,9 +105,59 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const kit = p.kit;
   if (kit === 'checklist') return <ChecklistCard m={m} mine={mine} />;
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
-  const Icon = KIT_ICONS[kit];
-  const details = kitDetails(kit, p.fields ?? {}, { now, timeZone, locale });
-  const moves = m.deletedAt ? [] : kitMoves(kit, state, mine);
+  return (
+    <CardBody
+      m={m}
+      Icon={KIT_ICONS[kit]}
+      label={p.label ?? KITS[kit].name}
+      state={kitStateLabel(state)}
+      tone={kitStateTone(state)}
+      title={p.title ?? ''}
+      details={kitDetails(kit, p.fields ?? {}, clock)}
+      // In a conversation with an organization, the team is one side: anyone on it moves a card
+      // the team sent, as the server has it.
+      moves={
+        m.deletedAt
+          ? []
+          : kitMoves(
+              kit,
+              state,
+              mine || Boolean(thread?.customer && m.senderId !== thread.customer.id),
+            )
+      }
+      testID={`kit-${kit}`}
+    />
+  );
+}
+
+/** What a card says, and the buttons for the moves this person may make on it. */
+function CardBody({
+  m,
+  Icon,
+  label,
+  state,
+  tone,
+  title,
+  details,
+  moves,
+  from,
+  testID,
+}: {
+  m: MessageView;
+  Icon: IconComponent;
+  label: string;
+  state: string;
+  tone: keyof typeof TONE;
+  title: string;
+  details: Array<{ key: string; label: string; value: string }>;
+  moves: Array<{ to: string; label: string }>;
+  /** The organization's app whose kind of card it is. */
+  from?: string;
+  testID: string;
+}) {
+  const t = useTheme();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<string | null>(null);
   const go = async (to: string) => {
     setBusy(to);
     try {
@@ -92,19 +171,19 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   };
 
   return (
-    <View style={{ gap: 8, minWidth: 220, maxWidth: 340 }} testID={`kit-${kit}`}>
+    <View style={{ gap: 8, minWidth: 220, maxWidth: 340 }} testID={testID}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Icon size={16} color={t.c.accentStrong} />
         <Text variant="overline" color="textSecondary" style={{ flex: 1 }}>
-          {p.label ?? KITS[kit].name}
+          {label}
         </Text>
-        <StateChip state={state} />
+        <Chip label={state} tone={TONE[tone]} size="sm" />
       </View>
-      <Text variant="bodyStrong">{p.title}</Text>
+      <Text variant="bodyStrong">{title}</Text>
       {details.length ? (
         <View style={{ gap: 3 }}>
           {details.map((d) => (
-            <View key={d.label} style={{ flexDirection: 'row', gap: 10 }}>
+            <View key={d.key} style={{ flexDirection: 'row', gap: 10 }}>
               <Text variant="caption" color="textTertiary" style={{ width: 76 }}>
                 {d.label}
               </Text>
@@ -114,6 +193,11 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
             </View>
           ))}
         </View>
+      ) : null}
+      {from ? (
+        <Text variant="caption" color="textTertiary">
+          From {from}
+        </Text>
       ) : null}
       {moves.length ? (
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingTop: 2 }}>

@@ -48,6 +48,7 @@ import { groupCallRoutes } from './modules/group-calls';
 import { handleRoutes } from './modules/handles';
 import { healthRoutes } from './modules/health';
 import { inboxRoutes } from './modules/inbox';
+import { kitRoutes } from './modules/kits';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
 import { metricsRoutes } from './modules/metrics';
@@ -249,6 +250,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await businessRoutes(v1, ctx);
       await updateRoutes(v1, ctx);
       await appRoutes(v1, ctx);
+      await kitRoutes(v1, ctx);
       await agentRoutes(v1, ctx);
       await tokenRoutes(v1, ctx);
       await oauthRoutes(v1, ctx);

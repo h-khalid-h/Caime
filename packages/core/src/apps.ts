@@ -12,6 +12,7 @@ export const API_SCOPES = [
   'messages:write',
   'threads:write',
   'updates',
+  'kits',
 ] as const;
 export type ApiScope = (typeof API_SCOPES)[number];
 
@@ -21,15 +22,23 @@ export const API_SCOPE_LABELS: Record<ApiScope, string> = {
   'messages:write': 'Reply to customers (as a bot)',
   'threads:write': 'Assign, escalate and resolve',
   updates: 'Post, change and take back the organization’s updates',
+  kits: 'Make its own cards, send them and move them on',
 };
 
 /** What an app hears about. */
-export const WEBHOOK_EVENTS = ['business.message', 'business.thread'] as const;
+export const WEBHOOK_EVENTS = [
+  'business.message',
+  'business.thread',
+  'kit.posted',
+  'kit.moved',
+] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 
 export const WEBHOOK_EVENT_LABELS: Record<WebhookEvent, string> = {
   'business.message': 'A customer writes',
   'business.thread': 'A conversation is assigned, escalated, resolved or reopened',
+  'kit.posted': 'Someone on the team sends one of its cards',
+  'kit.moved': 'Someone moves one of its cards on',
 };
 
 /** Tokens say what they are, so a leaked one is recognisable (and scannable). */

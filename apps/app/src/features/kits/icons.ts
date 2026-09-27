@@ -34,3 +34,23 @@ export const KIT_ICONS: Record<CardKitId | 'poll' | 'location', IconComponent> =
   poll: ChartBar,
   location: MapPin,
 };
+
+const BY_NAME: Record<string, IconComponent> = {
+  'badge-check': BadgeCheck,
+  'calendar-clock': CalendarClock,
+  'file-check': FileCheck,
+  package: Package,
+  truck: Truck,
+  receipt: Receipt,
+  'clipboard-list': ClipboardList,
+  'hand-coins': HandCoins,
+  'life-buoy': LifeBuoy,
+  'calendar-check': CalendarCheck,
+  'list-checks': ListChecks,
+  images: Images,
+  'chart-bar': ChartBar,
+  'map-pin': MapPin,
+};
+
+/** An organization's own card's icon, by the name its kit gives (core CUSTOM_KIT_ICONS). */
+export const iconNamed = (name: string): IconComponent => BY_NAME[name] ?? ClipboardList;

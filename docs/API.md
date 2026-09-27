@@ -39,6 +39,9 @@ answers `401`.
 | `updates` | `GET /v1/orgs/:orgId/updates?before=&limit=` | The organization's updates, newest first, with who posted each (`postedBy`, `"automated": true` for an app's bot) and how many follow, never who |
 | `updates` | `POST /v1/orgs/:orgId/updates` | Post one to everyone who follows it: `{ "body": "…", "clientId": "<uuid>" }` (up to 2,000 characters). It reads as the organization's. A retried `clientId` returns the first update (200), posted and told once. At most 30 an hour for each organization, its team and its apps together (then 429) |
 | `updates` | `PATCH /v1/orgs/:orgId/updates/:id`, `DELETE …` | Change one (`{ "body": "…" }`) or take it back. Followers' notifications of it change with it, or go. At most 60 changes an hour for each organization (then 429); the same text again changes nothing |
+| `kits` | `GET /v1/kits`, `PUT /v1/kits/:key`, `DELETE /v1/kits/:key` | The app's own kinds of card (below) |
+| `kits` + `messages:write` | `POST /v1/conversations/:id/messages` | Send one: `{ "clientId", "kind": "kit", "payload": { "kit": "custom", "key", "fields" } }` |
+| `kits` | `POST /v1/messages/:id/kit`, `PATCH /v1/messages/:id/kit` | Move one of its cards on (`{ "to": "<state>" }`), or change what it says (`{ "fields": { … } }`) |
 
 An app answers customers; it never writes to someone first. A person on the team does, from the
 Business inbox, and it reaches them as a message request (R14). An organization's updates go only
@@ -61,6 +64,8 @@ Caishy `POST`s JSON to the app's address (https only) for the events it listens 
 | --- | --- | --- |
 | `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
 | `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee`, `by` (`person`, `app` or `ai_agent`) |
+| `kit.posted` | Someone on the team sends one of the app's kinds of card | `conversationId`, `message` (`id`, `seq`, `createdAt`), `kit` (`key`, `name`, `custom`), `fields`, `state`, `by` (`person`), `customer` |
+| `kit.moved` | Someone moves one of its cards on (or a card of Caishy's own its bot sent), never when the app did | as `kit.posted`, with `from` and `to`, and `by`: `person` (the team) or `customer` |
 | `ping` | You pressed "Send a test delivery" | `appId` |
 
 Every body is `{ "id", "event", "orgId", "createdAt", "data" }`, with the headers
@@ -206,6 +211,57 @@ Each comes with an `error_description` a developer can read.
 - Recovering an account with a recovery code ends every app it let in, as it ends its sessions
   and personal tokens: whoever lost it may not be the one who allowed them.
 
+## Your own cards
+
+An app can make its own kinds of card (PRD §74): a pharmacy's prescription that's being prepared,
+then ready to collect; a school's permission slip; a workshop's repair. A card of one reads
+like Caishy's own, in the organization's conversations with its customers: what it is, its
+main line, its details, where it stands and the moves each side may make. A kind of card is
+data, never code or markup: whatever it and its cards say is shown as text.
+
+```json
+PUT /v1/kits/prescription
+{
+  "name": "Prescription",
+  "description": "A prescription, and when it's ready",
+  "icon": "clipboard-list",
+  "fields": [
+    { "key": "medicine", "label": "Medicine", "type": "text", "required": true },
+    { "key": "readyBy", "label": "Ready by", "type": "datetime" }
+  ],
+  "states": [
+    { "id": "preparing", "label": "Being prepared" },
+    { "id": "ready", "label": "Ready to collect", "tone": "positive" },
+    { "id": "collected", "label": "Collected", "tone": "positive" }
+  ],
+  "moves": [
+    { "from": "preparing", "to": "ready", "label": "Mark ready", "who": "organization" },
+    { "from": "ready", "to": "collected", "label": "I collected it", "who": "customer" }
+  ]
+}
+```
+
+| Part | Rules |
+| --- | --- |
+| key (in the address) | 2 to 40 lowercase letters, digits or `_`, from a letter. `PUT` makes it (201) or replaces it whole (200) |
+| `name`, `description` | Up to 40 and 120 characters |
+| `icon` | One of `clipboard-list` (the default), `package`, `truck`, `receipt`, `hand-coins`, `life-buoy`, `calendar-check`, `calendar-clock`, `badge-check`, `file-check`, `list-checks`, `images`, `chart-bar`, `map-pin` |
+| `fields` | 1 to 12, each a `key`, a `label` and a `type`: `text`, `longtext`, `date` (`"2026-10-02"`), `datetime` (`{ "at": "<ISO time>", "hasTime": true }`), `amount` (`{ "value": 12.5, "currency": "EGP" }`) or `options` (with 2 to 12 `choices`, each a `value` and a `label`); `required` and `placeholder` if you like. The card's main line is its first required text field |
+| `states` | 1 to 8, each an `id` and a `label`, and a `tone` (`positive`, `negative` or `neutral`). A card starts in the first |
+| `moves` | Up to 24, each `from` one state `to` another, with the button's `label` and `who` makes it: `organization` (its team and its apps), `customer`, or `anyone` |
+| `adultsOnly` | Never offered or sent in a conversation with anyone under 18. Any kind of card with an amount is |
+
+Labels are plain text: control characters and the marks that reorder text are refused. An app
+has up to 20 kinds of card. Its owners see them on the app's sheet, and its team can send them
+from a customer's conversation (**Share → Cards**), which the app hears as `kit.posted`.
+
+A card keeps the kind it was sent with: changing a kind or removing it (`DELETE /v1/kits/:key`),
+or removing the app, never changes a card already sent, and it still moves as it did. An app
+moves and changes only its own cards (and Caishy's own cards its bot sent), and only as their
+moves say: `PATCH` takes the fields to change (`null` removes one that isn't required) and
+never where the card stands. Customers never send an organization's cards; they make the
+customer's moves.
+
 ## Your calendar
 
 Anyone over 18 can have Google Calendar, Outlook or Apple Calendar show their actions with a
@@ -229,4 +285,5 @@ signed in: no token reaches it.
 
 ## Not yet
 
-Webhooks for anything outside the Business inbox.
+Webhooks for anything outside the Business inbox and the app's own cards. An app's own cards
+in conversations other than with its organization's customers.

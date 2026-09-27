@@ -8,6 +8,7 @@ export * from './automations';
 export * from './billing';
 export * from './business';
 export * from './calls';
+export * from './custom-kits';
 export * from './e2ee';
 export * from './format';
 export * from './history';

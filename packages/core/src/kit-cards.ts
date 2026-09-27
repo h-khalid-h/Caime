@@ -7,6 +7,7 @@ import { formatAmount, formatWhenAt } from './format';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
+import { zonedParts } from './time';
 
 /** The kits posted as cards. Poll is posted as a poll message, and location as a location. */
 export const CARD_KITS = [
@@ -359,9 +360,18 @@ export function prepareKitFields(
   | { ok: false; error: string } {
   if (!isCardKit(kit)) return { ok: false, error: 'That card isn’t available.' };
   const def = KITS[kit];
+  const checked = cleanKitFields(def.fields, raw);
+  return checked.ok ? { ok: true, kit, def, fields: checked.fields } : checked;
+}
+
+/** Checks fields against a list of them (a kit's, or a card's own) and keeps only those. */
+export function cleanKitFields(
+  defs: readonly KitField[],
+  raw: unknown,
+): { ok: true; fields: Record<string, unknown> } | { ok: false; error: string } {
   const input = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const fields: Record<string, unknown> = {};
-  for (const field of def.fields) {
+  for (const field of defs) {
     const result = clean(field, input[field.key]);
     if (result === null) {
       if (field.required) return { ok: false, error: `${field.label} is needed.` };
@@ -370,7 +380,7 @@ export function prepareKitFields(
     if ('error' in result) return { ok: false, error: result.error };
     fields[field.key] = result.value;
   }
-  return { ok: true, kit, def, fields };
+  return { ok: true, fields };
 }
 
 // --- Reading a card -----------------------------------------------------------------------------
@@ -426,11 +436,25 @@ export function kitDetails(
   kit: KitId,
   fields: Record<string, unknown>,
   opts: { now: Date; timeZone: string; locale: string },
-): Array<{ label: string; value: string }> {
+): Array<{ key: string; label: string; value: string }> {
   // A checklist's items are the card itself, not a detail of it.
-  const skip = new Set(['title', 'items', ...(IN_HEADLINE[kit] ?? [])]);
-  const out: Array<{ label: string; value: string }> = [];
-  for (const field of KITS[kit].fields) {
+  return fieldDetails(
+    KITS[kit].fields,
+    fields,
+    opts,
+    new Set(['title', 'items', ...(IN_HEADLINE[kit] ?? [])]),
+  );
+}
+
+/** Fields as a card's labelled lines, but those the card already says elsewhere. */
+export function fieldDetails(
+  defs: readonly KitField[],
+  fields: Record<string, unknown>,
+  opts: { now: Date; timeZone: string; locale: string },
+  skip: ReadonlySet<string>,
+): Array<{ key: string; label: string; value: string }> {
+  const out: Array<{ key: string; label: string; value: string }> = [];
+  for (const field of defs) {
     if (skip.has(field.key) || fields[field.key] === undefined) continue;
     const v = fields[field.key];
     let value = '';
@@ -441,9 +465,15 @@ export function kitDetails(
       case 'date':
         value =
           typeof v === 'string'
-            ? dateFormat(opts.locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
-                new Date(`${v}T12:00:00Z`),
-              )
+            ? dateFormat(opts.locale, {
+                day: 'numeric',
+                month: 'short',
+                // Another year says which.
+                ...(v.slice(0, 4) !== String(zonedParts(opts.now, opts.timeZone).year)
+                  ? { year: 'numeric' as const }
+                  : {}),
+                timeZone: 'UTC',
+              }).format(new Date(`${v}T12:00:00Z`))
             : '';
         break;
       case 'amount':
@@ -455,7 +485,7 @@ export function kitDetails(
       default:
         value = asText(v);
     }
-    if (value) out.push({ label: field.label, value });
+    if (value) out.push({ key: field.key, label: field.label, value });
   }
   return out;
 }

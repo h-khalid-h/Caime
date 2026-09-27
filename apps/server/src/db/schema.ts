@@ -2,6 +2,7 @@
  * Kysely table types for the SQL in ./migrations. Keep in step with the migrations: a column
  * added there is added here in the same commit.
  */
+import type { CustomKitDef } from '@caishy/core';
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
@@ -807,6 +808,17 @@ export interface OrgAppsTable {
   revoked_at: NullableTimestamp;
 }
 
+/** An app's own kind of card (PRD §74, §86): its definition as core's parseCustomKit left it. */
+export interface AppKitsTable {
+  id: string;
+  app_id: string;
+  org_id: string;
+  key: string;
+  definition: Json<CustomKitDef>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface ApiTokensTable {
   id: string;
   app_id: string;
@@ -945,6 +957,7 @@ export interface Database {
   org_members: OrgMembersTable;
   business_threads: BusinessThreadsTable;
   org_apps: OrgAppsTable;
+  app_kits: AppKitsTable;
   org_agents: OrgAgentsTable;
   calls: CallsTable;
   call_members: CallMembersTable;

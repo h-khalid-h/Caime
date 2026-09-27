@@ -216,10 +216,15 @@ export function formatWhenAt(
 ): string {
   const days = Math.abs(Date.parse(at) - now.getTime()) / 86_400_000;
   if (days < 6) return formatDue(at, now, timeZone, locale, hasTime);
+  // Another year says which ("Fri, 12 Mar 2027"); this one needn't.
+  const otherYear =
+    Number.isFinite(Date.parse(at)) &&
+    zonedParts(new Date(at), timeZone).year !== zonedParts(now, timeZone).year;
   const date = dateFormat(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    ...(otherYear ? { year: 'numeric' as const } : {}),
     timeZone,
   }).format(new Date(at));
   return hasTime ? `${date}, ${formatClock(at, timeZone, locale)}` : date;

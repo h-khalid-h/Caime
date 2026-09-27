@@ -22,6 +22,8 @@ export const qk = {
   inboxAll: ['inbox', 'all'] as const,
   conversation: (id: string) => ['conversation', id] as const,
   about: ['about'] as const,
+  /** The organization's own kinds of card its team may send in this conversation. */
+  conversationKits: (id: string) => ['conversation-kits', id] as const,
   messages: (id: string) => ['messages', id] as const,
   album: (messageId: string) => ['album', messageId] as const,
   memory: (id: string) => ['memory', id] as const,

@@ -27,6 +27,7 @@ import type {
   ConnectionView,
   ConversationDevicesView,
   ConversationView,
+  CustomKitOfferView,
   DecisionView,
   DeviceSessionView,
   DeviceView,
@@ -278,6 +279,9 @@ export const endpoints = {
   about: () => api.get<AboutView>('/about'),
   moveKit: (id: string, to: string) =>
     api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
+  /** The organization's own kinds of card its team may send here (PRD §74). */
+  customKits: (conversationId: string) =>
+    api.get<{ kits: CustomKitOfferView[] }>(`/conversations/${conversationId}/kits`),
   checklist: (id: string, op: ChecklistOp) =>
     api.post<{ message: MessageView }>(`/messages/${id}/checklist`, op),
   album: (id: string) => api.get<{ photos: AlbumPhotoView[] }>(`/messages/${id}/album`),

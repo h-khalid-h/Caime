@@ -122,9 +122,9 @@ describe('how a card reads', () => {
     };
     expect(kitHeadline('meeting', fields)).toBe('Venue walkthrough');
     expect(kitDetails('meeting', fields, opts)).toEqual([
-      { label: 'When', value: 'Fri 2:00 PM' },
-      { label: 'Duration', value: '45 min' },
-      { label: 'Where', value: 'Cairo Opera House' },
+      { key: 'start', label: 'When', value: 'Fri 2:00 PM' },
+      { key: 'durationMinutes', label: 'Duration', value: '45 min' },
+      { key: 'place', label: 'Where', value: 'Cairo Opera House' },
     ]);
     const pay = {
       amount: { value: 1200, currency: 'EGP' },
@@ -135,7 +135,13 @@ describe('how a card reads', () => {
     expect(kitHeadline('payment_request', pay)).toBe(
       `${formatAmount(1200, 'EGP')} for the tickets`,
     );
-    expect(kitDetails('payment_request', pay, opts)).toEqual([{ label: 'Due', value: 'Oct 15' }]);
+    expect(kitDetails('payment_request', pay, opts)).toEqual([
+      { key: 'due', label: 'Due', value: 'Oct 15' },
+    ]);
+    // Another year says which.
+    expect(kitDetails('payment_request', { ...pay, due: '2027-10-15' }, opts)[0]?.value).toBe(
+      'Oct 15, 2027',
+    );
     expect(kitHeadline('invoice', { reference: 'INV-204' })).toBe('Invoice INV-204');
   });
 

@@ -27,10 +27,11 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
 import { assertCanWrite } from './blocks';
-import { maskFor, maskMessage, recordBusinessMessage } from './business';
+import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
+import { customCardFor } from './kits';
 import { isBlockedEitherWay, shareAConnection } from './relations';
 import { privacyOf } from './users';
 
@@ -310,6 +311,8 @@ export interface SendOptions {
   sentVia?: string | null;
   /** The server's own cards (task requests) are sent as built, not as a client's kit card. */
   trusted?: boolean;
+  /** The app whose token sends it: it sends only its own kinds of card (PRD §74). */
+  app?: { id: string; orgId: string; scopes: string[] } | null;
 }
 
 /**
@@ -528,7 +531,21 @@ export async function sendMessage(
   // the card says and where it starts, and only POST /messages/:id/kit moves it on.
   let payload = body.payload ?? {};
   let kitMode: Mode | null = null;
-  if (body.kind === 'kit' && !opts.trusted) {
+  if (
+    body.kind === 'kit' &&
+    !opts.trusted &&
+    (body.payload as { kit?: unknown })?.kit === 'custom'
+  ) {
+    // One of the organization's own kinds of card, made by one of its apps (PRD §74, §86).
+    payload = await customCardFor(ctx, {
+      mask: await customerMask(ctx.db, conversationId),
+      senderId,
+      app: opts.app ?? null,
+      raw: body.payload as { key?: unknown; app?: unknown; fields?: unknown },
+      memberIds: members.map((p) => p.user_id),
+    });
+    kitMode = 'track';
+  } else if (body.kind === 'kit' && !opts.trusted) {
     const raw = (body.payload ?? {}) as { kit?: unknown; fields?: unknown };
     const card = prepareKitFields(raw.kit, raw.fields);
     if (!card.ok) throw badRequest(card.error);

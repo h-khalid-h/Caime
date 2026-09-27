@@ -949,6 +949,112 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('an app’s own kind of card: it sends one, the customer moves it, the team sends one too', async () => {
+      const handle = `nile.dental.${stamp}`;
+      const { page, errors } = noor;
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-app-add').click();
+      await page.getByTestId('org-app-name').fill('Nile Pharmacy');
+      await page.getByTestId('org-app-scope-messages:write').click();
+      await page.getByTestId('org-app-scope-kits').click();
+      await page.getByTestId('org-app-create').click();
+      const token = ((await page.getByTestId('org-app-token').textContent()) ?? '').trim();
+      await page.getByTestId('org-app-secrets-done').click();
+      const bearer = { authorization: `Bearer ${token}` };
+
+      // The app makes its kind of card through its token, and sends one to a customer.
+      const made = await noorContext.request.put('/v1/kits/prescription', {
+        headers: bearer,
+        data: {
+          name: 'Prescription',
+          description: 'A prescription, and when it’s ready',
+          fields: [
+            { key: 'medicine', label: 'Medicine', type: 'text', required: true },
+            { key: 'branch', label: 'Branch', type: 'text' },
+          ],
+          states: [
+            { id: 'preparing', label: 'Being prepared' },
+            { id: 'ready', label: 'Ready to collect', tone: 'positive' },
+            { id: 'collected', label: 'Collected', tone: 'positive' },
+          ],
+          moves: [
+            { from: 'preparing', to: 'ready', label: 'Mark ready', who: 'organization' },
+            { from: 'ready', to: 'collected', label: 'I collected it', who: 'customer' },
+          ],
+        },
+      });
+      expect(made.status()).toBe(201);
+      const orgId = (await (await noorContext.request.get(`/v1/orgs/by-handle/${handle}`)).json())
+        .org.id;
+      const { conversationId } = await (
+        await linaContext!.request.post(`/v1/orgs/${orgId}/conversations`, { headers: CLIENT })
+      ).json();
+      const sent = await noorContext.request.post(`/v1/conversations/${conversationId}/messages`, {
+        headers: bearer,
+        data: {
+          clientId: randomUUID(),
+          kind: 'kit',
+          payload: { kit: 'custom', key: 'prescription', fields: { medicine: 'Amoxicillin' } },
+        },
+      });
+      expect(sent.status()).toBe(201);
+      const cardId = (await sent.json()).message.id;
+
+      // The customer reads it, and has no move of the organization's.
+      const customer = lina.page;
+      await customer.goto(`/c/${conversationId}`);
+      const theirs = customer
+        .getByTestId('kit-custom-prescription')
+        .filter({ hasText: 'Amoxicillin', visible: true });
+      await expect(theirs).toContainText('Being prepared');
+      await expect(theirs).toContainText('From Nile Pharmacy');
+      await expect(theirs.getByRole('button')).toHaveCount(0);
+      // The app moves it; the customer sees it at once, and answers it.
+      const ready = await noorContext.request.post(`/v1/messages/${cardId}/kit`, {
+        headers: bearer,
+        data: { to: 'ready' },
+      });
+      expect(ready.status()).toBe(200);
+      await expect(theirs).toContainText('Ready to collect');
+      await theirs.getByRole('button', { name: 'I collected it' }).click();
+      await expect(theirs).toContainText('Collected');
+      await customer.screenshot({ path: 'e2e/screenshots/phone-kit-custom.png' });
+
+      // Someone on the team sends one by hand, from what the organization's apps have made.
+      await page.goto(`/c/${conversationId}`);
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await page.getByTestId('kit-option-custom-prescription').click();
+      await page.getByLabel('Medicine').fill('Ibuprofen');
+      await page.getByTestId('kit-send').click();
+      const mine = page
+        .getByTestId('kit-custom-prescription')
+        .filter({ hasText: 'Ibuprofen', visible: true });
+      await expect(mine).toContainText('Being prepared');
+      await mine.getByRole('button', { name: 'Mark ready' }).click();
+      await expect(mine).toContainText('Ready to collect');
+      await expect(
+        customer
+          .getByTestId('kit-custom-prescription')
+          .filter({ hasText: 'Ibuprofen', visible: true }),
+      ).toContainText('Ready to collect');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-kit-custom.png' });
+
+      // The app's sheet says what it has made.
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-app-Nile Pharmacy').click();
+      await expect(page.getByTestId('org-app-kits')).toHaveText('Its cards: Prescription');
+      // A card from the team is the team writing since the conversation was resolved, so the
+      // customer's next message would answer it, not go to the AI agent: resolved again after
+      // it, as it was.
+      for (const step of ['reopen', 'resolve']) {
+        const done = await noorContext.request.post(`/v1/business/${conversationId}/${step}`, {
+          headers: CLIENT,
+        });
+        expect(done.status(), step).toBe(200);
+      }
+      expect([...errors, ...lina.errors]).toEqual([]);
+    });
+
     test('a customer blocks an organization, and its team can no longer write to them', async () => {
       const handle = `nile.dental.${stamp}`;
       const orgName = `Nile Dental ${stamp}`;

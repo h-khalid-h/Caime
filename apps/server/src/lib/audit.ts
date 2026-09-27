@@ -28,6 +28,8 @@ export type AuditAction =
   | 'app.updated'
   | 'app.token_replaced'
   | 'app.secret_replaced'
+  | 'app.kit_saved'
+  | 'app.kit_removed'
   | 'app.revoked'
   | 'oauth.app_created'
   | 'oauth.app_removed'

@@ -1,11 +1,13 @@
-import type { ConversationView } from '@caishy/core/api';
+import type { ConversationView, CustomKitOfferView } from '@caishy/core/api';
+import { prepareCustomFields } from '@caishy/core/custom-kits';
 import { formatAmount } from '@caishy/core/format';
 import { uuidv4 } from '@caishy/core/ids';
 import { extractAmounts } from '@caishy/core/intelligence';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caishy/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caishy/core/kits';
 import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
-import { firstFutureWhen } from '@caishy/core/when';
+import { zonedParts } from '@caishy/core/time';
+import { firstFutureWhen, parseWhen } from '@caishy/core/when';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -52,24 +54,32 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
 
 type Clock = { now: Date; timeZone: string; locale: string; workweek: number[] };
 
-/** What a typed value means, for the preview under the field and for sending. */
+/**
+ * What a typed value means, for the preview under the field and for sending. Caishy's own cards
+ * look ahead (a meeting, a due date); an organization's own may say when something was, too.
+ */
 function readField(
   field: KitField,
   text: string,
   clock: Clock,
+  anyTense = false,
 ): { value?: unknown; shown?: string } {
   const raw = text.trim();
   if (!raw) return {};
   switch (field.type) {
     case 'datetime':
     case 'date': {
-      const when = firstFutureWhen(raw, clock);
+      const when = anyTense ? parseWhen(raw, clock)[0] : firstFutureWhen(raw, clock);
       if (!when) return { shown: 'Say a day, and a time if there is one: “Friday 3pm”' };
       const at = new Date(when.at);
       const shown = new Intl.DateTimeFormat(clock.locale, {
         weekday: 'short',
         day: 'numeric',
         month: 'short',
+        // Another year says which, so a date that rolled on to next year shows it did.
+        ...(when.date.slice(0, 4) !== String(zonedParts(clock.now, clock.timeZone).year)
+          ? { year: 'numeric' as const }
+          : {}),
         ...(field.type === 'datetime' && when.time ? { hour: 'numeric', minute: '2-digit' } : {}),
         timeZone: clock.timeZone,
       }).format(at);
@@ -98,10 +108,13 @@ const PLACEHOLDERS: Partial<Record<KitField['type'], string>> = {
 export function KitForm({
   conversation,
   kit,
+  custom = null,
   onClose,
 }: {
   conversation: ConversationView;
   kit: KitChoice | null;
+  /** Or one of the organization's own kinds of card, made by one of its apps (PRD §74). */
+  custom?: CustomKitOfferView | null;
   onClose: () => void;
 }) {
   const t = useTheme();
@@ -158,8 +171,10 @@ export function KitForm({
     }
   };
 
+  const def: Pick<KitDef, 'name' | 'description' | 'fields'> | null =
+    custom ?? (kit ? KITS[kit] : null);
   const send = async () => {
-    if (!kit) return;
+    if (!def) return;
     let body: { kind: 'kit' | 'poll' | 'location'; payload: unknown };
     if (kit === 'location') {
       const label = (texts.label ?? '').trim();
@@ -187,7 +202,7 @@ export function KitForm({
       };
     } else {
       const fields: Record<string, unknown> = {};
-      for (const field of KITS[kit].fields) {
+      for (const field of def.fields) {
         if (field.type === 'items') {
           const lines = options.map((o) => o.trim()).filter(Boolean);
           if (lines.length) fields[field.key] = lines;
@@ -197,14 +212,19 @@ export function KitForm({
           if (picked[field.key] !== undefined) fields[field.key] = picked[field.key];
           continue;
         }
-        const read = readField(field, texts[field.key] ?? '', clock);
+        const read = readField(field, texts[field.key] ?? '', clock, Boolean(custom));
         if ((texts[field.key] ?? '').trim() && read.value === undefined)
           return setError(`${field.label}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
       }
-      const checked = prepareKitFields(kit, fields);
+      const checked = custom ? prepareCustomFields(custom, fields) : prepareKitFields(kit, fields);
       if (!checked.ok) return setError(checked.error);
-      body = { kind: 'kit', payload: { kit, fields: checked.fields } };
+      body = {
+        kind: 'kit',
+        payload: custom
+          ? { kit: 'custom', app: custom.app.id, key: custom.key, fields: checked.fields }
+          : { kit, fields: checked.fields },
+      };
     }
     setBusy(true);
     setError(null);
@@ -225,10 +245,9 @@ export function KitForm({
     }
   };
 
-  const def = kit ? KITS[kit] : null;
   return (
     <Sheet
-      open={kit !== null}
+      open={def !== null}
       onClose={close}
       title={def?.name}
       subtitle={def?.description}
@@ -376,7 +395,7 @@ export function KitForm({
                 onChangeText={(v) => setTexts((s) => ({ ...s, [field.key]: v }))}
                 multiline={field.type === 'longtext'}
                 autoFocus={i === 0}
-                hint={readField(field, texts[field.key] ?? '', clock).shown}
+                hint={readField(field, texts[field.key] ?? '', clock, Boolean(custom)).shown}
               />
             ),
           )}

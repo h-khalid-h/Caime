@@ -11,7 +11,9 @@ import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
+import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
+import type { KitField } from './kits';
 import type { OrgKind, OrgRole } from './orgs';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
@@ -686,6 +688,24 @@ export interface OrgAppView {
   tokenPrefix: string | null;
   lastUsedAt: string | null;
   createdAt: string;
+  /** The kinds of card it has made (PRD §74), by name. */
+  kits: Array<{ key: string; name: string }>;
+}
+
+/** One of an app's own kinds of card, as its token reads it back (GET /v1/kits). */
+export interface AppKitView extends CustomKitDef {
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A kind of card someone on the team may send here, made by one of its apps. */
+export interface CustomKitOfferView {
+  app: { id: string; name: string };
+  key: string;
+  name: string;
+  description: string;
+  icon: CustomKitIcon;
+  fields: KitField[];
 }
 
 /** What's shown once, when an app is made or its token or secret is replaced. */

@@ -1,7 +1,7 @@
-import type { ConversationView, MessageView } from '@caishy/core/api';
+import type { ConversationView, CustomKitOfferView, MessageView } from '@caishy/core/api';
 import { listTitle } from '@caishy/core/format';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caishy/core/mentions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -15,13 +15,14 @@ import {
 } from 'react';
 import { AccessibilityInfo, Platform, TextInput, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { type LocalFile, uploadFile } from '@/api/upload';
 import { RewriteSheet } from '@/features/assist/RewriteSheet';
 import { useAiReady } from '@/features/assist/ready';
 import { loadPrivate, useOpened, useThisDevice, whyNotWritten } from '@/features/e2ee/hooks';
 import { StartOverSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
-import { KIT_ICONS } from '@/features/kits/icons';
+import { iconNamed, KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
@@ -108,10 +109,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
   const [kit, setKit] = useState<KitChoice | null>(null);
+  const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
   const [rewrite, setRewrite] = useState(false);
   const aiReady = useAiReady(conversation);
   const me = useMe();
   const kits = kitsOffered(conversation, me.minor);
+  // With a customer, the team also has the organization's own kinds of card, made by its apps.
+  const own = useQuery({
+    queryKey: qk.conversationKits(id),
+    queryFn: () => endpoints.customKits(id),
+    enabled: attach && Boolean(conversation.business?.thread),
+    staleTime: 60_000,
+  }).data?.kits;
   const [uploading, setUploading] = useState<string | null>(null);
   const [editText, setEditText] = useState<string | null>(null);
   const editingText = useOpened(editing, where).text;
@@ -623,7 +632,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             subtitle="Documents, PDFs, anything up to 100 MB"
             onPress={() => void pickFiles()}
           />
-          {kits.length ? (
+          {kits.length || own?.length ? (
             <>
               <Text
                 variant="overline"
@@ -645,11 +654,32 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                   }}
                 />
               ))}
+              {own?.map((k) => (
+                <ListRow
+                  key={`${k.app.id}:${k.key}`}
+                  icon={iconNamed(k.icon)}
+                  title={k.name}
+                  subtitle={k.description || `From ${k.app.name}`}
+                  testID={`kit-option-custom-${k.key}`}
+                  onPress={() => {
+                    setAttach(false);
+                    setCustom(k);
+                  }}
+                />
+              ))}
             </>
           ) : null}
         </View>
       </Sheet>
-      <KitForm conversation={conversation} kit={kit} onClose={() => setKit(null)} />
+      <KitForm
+        conversation={conversation}
+        kit={kit}
+        custom={custom}
+        onClose={() => {
+          setKit(null);
+          setCustom(null);
+        }}
+      />
       {aiReady ? (
         <RewriteSheet
           open={rewrite}

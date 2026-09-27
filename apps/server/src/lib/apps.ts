@@ -18,6 +18,7 @@ import {
   uuidv7,
   type WebhookEvent,
 } from '@caishy/core';
+import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OrgApp } from '../db/schema';
 import { hashToken } from './crypto';
@@ -46,6 +47,11 @@ export const API_ROUTES: Readonly<Record<string, ApiScope>> = {
   'POST /v1/orgs/:id/updates': 'updates',
   'PATCH /v1/orgs/:id/updates/:updateId': 'updates',
   'DELETE /v1/orgs/:id/updates/:updateId': 'updates',
+  'GET /v1/kits': 'kits',
+  'PUT /v1/kits/:key': 'kits',
+  'DELETE /v1/kits/:key': 'kits',
+  'POST /v1/messages/:id/kit': 'kits',
+  'PATCH /v1/messages/:id/kit': 'kits',
 };
 
 export interface AppAuth {
@@ -341,7 +347,7 @@ export async function appViews(ctx: AppContext, apps: OrgApp[]): Promise<OrgAppV
   if (apps.length === 0) return [];
   const ids = apps.map((a) => a.id);
   const bots = apps.map((a) => a.bot_user_id).filter((x): x is string => Boolean(x));
-  const [tokens, users] = await Promise.all([
+  const [tokens, users, kits] = await Promise.all([
     ctx.db
       .selectFrom('api_tokens')
       .select(['app_id', 'prefix', 'last_used_at'])
@@ -355,6 +361,13 @@ export async function appViews(ctx: AppContext, apps: OrgApp[]): Promise<OrgAppV
           .where('id', 'in', bots)
           .execute()
       : Promise.resolve([]),
+    ctx.db
+      .selectFrom('app_kits')
+      .select(['app_id', 'key', sql<string>`definition->>'name'`.as('name')])
+      .where('app_id', 'in', ids)
+      .orderBy('created_at')
+      .orderBy('key')
+      .execute(),
   ]);
   return apps.map((a) => {
     const token = tokens.find((k) => k.app_id === a.id);
@@ -369,6 +382,7 @@ export async function appViews(ctx: AppContext, apps: OrgApp[]): Promise<OrgAppV
       tokenPrefix: token?.prefix ?? null,
       lastUsedAt: token?.last_used_at?.toISOString() ?? null,
       createdAt: a.created_at.toISOString(),
+      kits: kits.filter((k) => k.app_id === a.id).map((k) => ({ key: k.key, name: k.name })),
     };
   });
 }

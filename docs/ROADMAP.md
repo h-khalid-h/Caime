@@ -244,7 +244,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       (`albums.test.ts`, E2E). Where you are, live for 15 minutes, an hour or 8 hours: it follows
       its sharer while Caishy is open, keeps only the latest point, and ends at its time or when
       they stop it; the sharer always sees it's on. Never by anyone under 18, never with an
-      organization (`live-location.test.ts`, E2E)
+      organization (`live-location.test.ts`, E2E). An organization's own kinds of card (PRD §74,
+      §86 "Custom"): its app makes them through its token (fields, states, and who makes each
+      move), and it or the team sends them to customers, who make the customer's moves; the app
+      moves and changes its own cards and hears on its webhook when someone sends or moves one.
+      Data, never code; a card keeps the kind it was sent with; none about money reaches anyone
+      under 18 (`custom-kits.test.ts` in core and on the server, E2E; `docs/API.md`)
 - [x] Integrations (PRD §72): a calendar feed. Google Calendar, Outlook or Apple Calendar
       subscribes to a secret address (shown once, kept as a hash; a new one ends the old) and
       shows open actions with a due date, on their day or at their time, what you're waiting
@@ -713,3 +718,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   offline E2E proves the page came from it. Mutation-tested: 24 changes to the fixes, each
   caught by a test but one that changes nothing observable. Tests: 198 core, 49 brand, 405
   server, 118 app, 50 E2E; 449.4 KB of initial JavaScript.
+- 2026-09-27 — Session 2 (cont.): an organization's own kinds of card (PRD §74, §86 "Custom").
+  Its app makes them through its token (fields, states, and who makes each move: the
+  organization, its customer or either); the app or its team sends them to customers, each side
+  makes only its own moves, and the app moves and changes its own cards and hears on its webhook
+  when someone sends or moves one. A kind of card is data, never code: plain-text labels, each
+  its own, fixed field types and icons; a card keeps the kind it was sent with; none about money
+  reaches anyone under 18, and one organization's never go in another's conversations. A review
+  found eleven more (two changes to a card at once, moves limited, history kept to its last 50,
+  a teammate shown the customer's moves, past dates, invisible characters); all fixed. Offers from
+  a whole team or space are one read. Mutation-tested: 54 changes to the new code, each caught by
+  a test but one the tests can't tell apart (a row lock two sequential moves don't need). Tests:
+  208 core, 49 brand, 420 server, 118 app, 51 E2E (an app's card sent by token, moved by the
+  customer, and one sent by hand from Share).

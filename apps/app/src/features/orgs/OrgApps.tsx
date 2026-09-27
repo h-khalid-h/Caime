@@ -353,6 +353,13 @@ export function OrgApps({ org }: { org: OrgView }) {
             <Text variant="caption" color="textSecondary">
               {app.scopes.map((s) => API_SCOPE_LABELS[s]).join(' · ') || 'No permissions'}
             </Text>
+            {/* (An app kept on this device from before this was listed has none.) */}
+            {app.kits?.length ? (
+              // The kinds of card it made, which the team sends from a customer's conversation.
+              <Text variant="caption" color="textSecondary" testID="org-app-kits">
+                Its cards: {app.kits.map((k) => k.name).join(', ')}
+              </Text>
+            ) : null}
             <Text variant="caption" color="textSecondary">
               Token {app.tokenPrefix ?? '—'}…
               {app.lastUsedAt

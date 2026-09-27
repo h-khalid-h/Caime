@@ -12,6 +12,7 @@ import type {
 } from '@caishy/core';
 import {
   applyChecklistOp,
+  type CardKitId,
   ChecklistOpBody,
   CreateConversationBody,
   canChangeSpaceRole,
@@ -19,9 +20,12 @@ import {
   canRemoveFromSpace,
   checklistItems,
   checklistState,
+  customMoves,
+  customState,
   EditMessageBody,
   ForwardBody,
   isCardKit,
+  isCustomCard,
   isMinor,
   KITS,
   kitMoves,
@@ -72,6 +76,7 @@ import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
+import { tellCardApp } from '../lib/kits';
 import { afterMentioning, afterMessage } from '../lib/message-effects';
 import {
   assertCanMessage,
@@ -1264,10 +1269,16 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     ctx.limiter.hit(`send:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
     const result = await sendMessage(ctx, auth.userId, id, body, {
       sentVia: auth.grant?.name ?? null,
+      app: auth.app ?? null,
     });
     const [view] = await messageViews(ctx.db, [result.message], auth.userId);
     if (result.created) {
       reply.status(201);
+      // One of an app's cards, sent by someone on the team: the app hears of it (PRD §74).
+      if (result.message.kind === 'kit' && isCustomCard(result.message.payload)) {
+        const mask = await customerMask(ctx.db, id);
+        if (mask) await tellCardApp(ctx, result.message, mask, auth.userId, 'kit.posted');
+      }
       const members = await participantsOf(ctx.db, id);
       await ctx.bus.publish(
         members.map((m) => m.user_id).filter((u) => u !== auth.userId),
@@ -1361,33 +1372,63 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       title?: string;
       history?: Array<{ state: string; by: string; at: string }>;
     };
-    if (m.kind !== 'kit' || m.deleted_at || !isCardKit(card.kit))
+    const own = isCustomCard(m.payload) ? m.payload : null;
+    if (m.kind !== 'kit' || m.deleted_at || !(own || isCardKit(card.kit)))
       throw badRequest('That isn’t a card that can change.');
+    // An app moves only its own cards: those of its kits, and Caishy's own its bot sent.
+    if (auth.app && !(own ? own.app.id === auth.app.id : m.sender_id === auth.userId))
+      throw forbidden('An app moves only its own cards.');
     const from = card.state ?? '';
     // In a business conversation the team is one side: anyone on it acts for a card it sent.
     const business = await customerMask(ctx.db, m.conversation_id);
     const onTeam = (userId: string | null) => Boolean(business && userId !== business.customerId);
     const senderSide = m.sender_id === auth.userId || (onTeam(m.sender_id) && onTeam(auth.userId));
-    const move = kitMoves(card.kit, from, senderSide).find((x) => x.to === to);
+    // An organization's own card says who moves it: the organization (its team and its apps),
+    // its customer, or either.
+    const move = own
+      ? business
+        ? customMoves(own, onTeam(auth.userId)).find((x) => x.to === to)
+        : undefined
+      : isCardKit(card.kit)
+        ? kitMoves(card.kit, from, senderSide).find((x) => x.to === to)
+        : undefined;
     if (!move) throw forbidden('You can’t make that change to this card.');
-    const updated = await ctx.db
-      .updateTable('messages')
-      .set({
-        payload: JSON.stringify({
-          ...card,
-          state: to,
-          history: [...(card.history ?? []), { state: to, by: auth.userId, at: ctx.now() }],
-        }),
-      })
-      .where('id', '=', id)
-      .where(sql<boolean>`payload->>'state' = ${from}`)
-      .returningAll()
-      .executeTakeFirst();
+    // Each move tells the other side: one person, or one app, moves a conversation's cards only
+    // so often.
+    ctx.limiter.hit(
+      `kit-move:${auth.userId}:${m.conversation_id}`,
+      ctx.config.isTest ? 10_000 : 10,
+      60_000,
+    );
+    // Only if nobody moved it first, and only where it stands (merged into the card, so an app's
+    // change to its fields at the same moment is kept): its row is locked while its history is
+    // added to, from the row as it is, the last 50 moves kept.
+    const updated = await ctx.db.transaction().execute(async (trx) => {
+      const row = await trx
+        .selectFrom('messages')
+        .select(['deleted_at', 'payload'])
+        .where('id', '=', id)
+        .forUpdate()
+        .executeTakeFirst();
+      const now = (row?.payload ?? {}) as typeof card;
+      if (!row || row.deleted_at || now.state !== from) return null;
+      const history = [...(now.history ?? []), { state: to, by: auth.userId, at: ctx.now() }];
+      return trx
+        .updateTable('messages')
+        .set({
+          payload: sql`payload || ${JSON.stringify({ state: to, history: history.slice(-50) })}::jsonb`,
+        })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+    });
     if (!updated) throw new AppError(409, 'conflict', 'Someone just changed this card.');
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await recordEvent(ctx.db, 'kit.moved', auth.userId, { messageId: id, kit: card.kit, to });
     await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    // The card's app hears who moved it, unless it did (PRD §74).
+    if (business) await tellCardApp(ctx, updated, business, auth.userId, 'kit.moved', { from, to });
     const mover = await ctx.db
       .selectFrom('users')
       .select('display_name')
@@ -1403,8 +1444,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         userId,
         kind: 'kit',
         level: userId === m.sender_id ? 'attention' : 'activity',
-        title: `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${kitStateLabel(to)}`,
-        body: `${KITS[card.kit].name} · ${card.title ?? ''}`,
+        title: `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : kitStateLabel(to)}`,
+        body: `${own ? own.label : KITS[card.kit as CardKitId].name} · ${card.title ?? ''}`,
+        // A card's moves are one notification, its latest.
+        groupKey: `kit:${id}`,
         data: { conversationId: m.conversation_id, messageId: id },
       });
     }
