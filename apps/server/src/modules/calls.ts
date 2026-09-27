@@ -23,6 +23,7 @@ import {
   liveCallOf,
   lockCallEntry,
   nameShownTo,
+  otherCallIn,
   otherSide,
   publishCall,
   ringStopped,
@@ -183,8 +184,12 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!call.callee_rung) throw over();
     const answered = await ctx.db.transaction().execute(async (trx) => {
       await lockCallEntry(trx, auth.userId);
-      // One call at a time: leave a group call to take this one.
-      if (await joinedGroupCallOf(ctx, auth.userId, trx))
+      // One call at a time: leave a group call to take this one, or end the other 1:1 call (two
+      // people calling at once can't both be answered).
+      if (
+        (await joinedGroupCallOf(ctx, auth.userId, trx)) ||
+        (await otherCallIn(ctx, auth.userId, id, trx))
+      )
         throw new AppError(409, 'in_call', 'You’re already in a call.');
       return trx
         .updateTable('calls')

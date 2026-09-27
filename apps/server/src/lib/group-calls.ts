@@ -17,7 +17,7 @@ import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView, isMinor } from
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
-import { CALL_SEEN_MS, callInOf, nameShownTo } from './calls';
+import { CALL_SEEN_MS, callInOf, lockCallEntry, nameShownTo } from './calls';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify } from './notify';
@@ -28,9 +28,10 @@ type Db = Kysely<Database> | Transaction<Database>;
 
 /**
  * The call as `viewerId` sees it. Who's in it (joined), and their own place in it; never who
- * else was rung, turned it down or missed it, which would tell the group who was left out (a
- * block, R29) or who was around and said no. Names and photos as each person shows the viewer.
- * Someone no longer in the conversation (`outsider`) sees only their own place in it.
+ * else was rung, turned it down or missed it, nor whether anyone still is, which would tell the
+ * group who was left out (a block, R29) or who was around and said no. Devices only to someone
+ * in it too. Names and photos as each person shows the viewer. Someone no longer in the
+ * conversation (`outsider`) sees only their own place in it.
  */
 export async function groupCallView(
   ctx: AppContext,
@@ -64,6 +65,7 @@ export async function groupCallView(
     .orderBy('m.user_id')
     .execute();
   const members = all.filter((m) => m.user_id === viewerId || (!outsider && m.state === 'joined'));
+  const inIt = all.some((m) => m.user_id === viewerId && m.state === 'joined');
   const ids = [...new Set([call.caller_id, ...members.map((m) => m.user_id)])].filter(
     (x): x is string => Boolean(x),
   );
@@ -118,10 +120,9 @@ export async function groupCallView(
         avatar_file_id: m.avatar_file_id,
       }),
       state: m.state,
-      device: m.state === 'joined' ? m.device : null,
+      device: m.state === 'joined' && (inIt || m.user_id === viewerId) ? m.device : null,
       joinedAt: m.joined_at?.toISOString() ?? null,
     })),
-    ringing: !outsider && call.state !== 'ended' && all.some((m) => m.state === 'ringing'),
     createdAt: call.created_at.toISOString(),
     answeredAt: call.answered_at?.toISOString() ?? null,
     endedAt: call.ended_at?.toISOString() ?? null,
@@ -309,23 +310,30 @@ async function tellMissed(ctx: AppContext, call: Call, who: string[]) {
 
 /**
  * How a call stands after a change: one that has had two people in it ends when fewer than two
- * are left; one nobody else joined ends once nobody is still being rung, or when whoever started
- * it isn't in it any more. Otherwise it goes on (null).
+ * are left; one nobody else joined ends when whoever started it isn't in it any more, or once its
+ * ring time is up. Never sooner, even if everyone rung has said no: when it ends mustn't say
+ * who was rung, or who turned it down. Otherwise it goes on (null).
  */
-function outcomeOf(call: Call, members: { user_id: string; state: string }[]): CallOutcome | null {
+function outcomeOf(
+  call: Call,
+  members: { user_id: string; state: string }[],
+  now: Date,
+): CallOutcome | null {
   const joined = members.filter((m) => m.state === 'joined');
   if (call.state === 'active') return joined.length < 2 ? 'completed' : null;
   if (!joined.some((m) => m.user_id === call.caller_id)) return 'cancelled';
-  if (members.some((m) => m.state === 'ringing')) return null;
-  // Everyone rung turned it down, or some didn't answer.
-  return members.some((m) => m.state === 'declined') && !members.some((m) => m.state === 'missed')
-    ? 'declined'
-    : 'missed';
+  const rang = now.getTime() >= call.created_at.getTime() + CALL_RING_SECONDS * 1000;
+  return rang && !members.some((m) => m.state === 'ringing') ? 'missed' : null;
 }
 
 /** What a change to who's in a call did: whether anything changed, and who missed it. */
 export interface CallChange {
   changed: boolean;
+  /**
+   * Nobody else can see it (a ring turned down, run out or stopped): the call's revision stays,
+   * and only `tell` hear how it stands now, so nobody counts what they can't see.
+   */
+  unseen?: { tell: string[] };
   /** Rung, and their ring ran out: they missed it. */
   missed?: string[];
   /** If the call ends now, when it lasted until (the last moment someone was there). */
@@ -402,7 +410,15 @@ export async function settleGroupCall(
       .select(['user_id', 'state'])
       .where('call_id', '=', callId)
       .execute();
-    const outcome = outcomeOf(call, members);
+    const outcome = outcomeOf(call, members, ctx.now());
+    if (!outcome && made.unseen)
+      return {
+        call,
+        changed: true,
+        ended: false,
+        missed: made.missed ?? [],
+        tell: made.unseen.tell,
+      };
     if (!outcome) {
       // Who's in it has just changed: its revision goes up, so older views read as older.
       const bumped = await trx
@@ -442,7 +458,14 @@ export async function settleGroupCall(
   });
   if (!done.call) return undefined;
   await tellMissed(ctx, done.call, done.missed);
-  if (done.changed) await publishGroupCall(ctx, done.call);
+  const tell = 'tell' in done ? done.tell : undefined;
+  if (done.changed && tell) {
+    for (const userId of tell)
+      await ctx.bus.publish([userId], {
+        type: 'groupcall.updated',
+        data: await groupCallView(ctx, done.call, userId),
+      });
+  } else if (done.changed) await publishGroupCall(ctx, done.call);
   if (done.ended) await callLine(ctx, done.call);
   return done.call;
 }
@@ -457,28 +480,34 @@ export async function takeOutOfGroupCall(
   userId: string,
   rung: 'declined' | 'left',
 ): Promise<void> {
-  let out = false;
+  let out: 'joined' | 'rung' | null = null;
   const call = await settleGroupCall(ctx, callId, async (trx) => {
     const member = trx
       .updateTable('call_members')
       .where('call_id', '=', callId)
       .where('user_id', '=', userId);
-    const row =
-      (await member
+    if (
+      await member
         .set({ state: 'left', left_at: ctx.now(), device: null })
         .where('state', '=', 'joined')
         .returning('user_id')
-        .executeTakeFirst()) ??
-      (await member
+        .executeTakeFirst()
+    )
+      out = 'joined';
+    else if (
+      await member
         .set({ state: rung, device: null })
         .where('state', '=', 'ringing')
         .returning('user_id')
-        .executeTakeFirst());
-    out = Boolean(row);
-    return { changed: out };
+        .executeTakeFirst()
+    )
+      out = 'rung';
+    // A ring stopped is theirs to hear, nobody else's.
+    return { changed: out !== null, unseen: out === 'rung' ? { tell: [userId] } : undefined };
   });
   if (!out || !call) return;
   await ringStoppedFor(ctx, callId, [userId]);
+  if (out === 'rung') return;
   const people = await participantsOf(ctx.db, call.conversation_id);
   if (!people.some((p) => p.user_id === userId))
     await ctx.bus.publish([userId], {
@@ -488,27 +517,44 @@ export async function takeOutOfGroupCall(
 }
 
 /**
+ * While none of these people can start or join a call (the lock those take), do `f`: a join or
+ * start under way finishes first and is seen by it, or begins after and sees what `f` changed.
+ */
+async function whileNoneEnter(
+  ctx: AppContext,
+  userIds: string[],
+  f: (trx: Transaction<Database>) => Promise<void>,
+) {
+  await ctx.db.transaction().execute(async (trx) => {
+    for (const id of [...new Set(userIds)].sort()) await lockCallEntry(trx, id);
+    await f(trx);
+  });
+}
+
+/**
  * One blocked the other while both are in a call or rung for it. Whoever blocked leaves it, or
  * is no longer rung; unless they're in it and the other is only rung, whose ring then stops.
  * Nobody is told why.
  */
 export async function leaveGroupCallsWith(ctx: AppContext, blockerId: string, otherId: string) {
-  const shared = await ctx.db
-    .selectFrom('call_members as a')
-    .innerJoin('call_members as b', 'b.call_id', 'a.call_id')
-    .innerJoin('calls as c', 'c.id', 'a.call_id')
-    .select(['a.call_id', 'a.state as mine', 'b.state as theirs'])
-    .where('a.user_id', '=', blockerId)
-    .where('b.user_id', '=', otherId)
-    .where('a.state', 'in', ['joined', 'ringing'])
-    .where('b.state', 'in', ['joined', 'ringing'])
-    .where('c.state', '<>', 'ended')
-    .execute();
-  for (const s of shared) {
-    if (s.mine === 'joined' && s.theirs === 'ringing')
-      await takeOutOfGroupCall(ctx, s.call_id, otherId, 'left');
-    else await takeOutOfGroupCall(ctx, s.call_id, blockerId, 'declined');
-  }
+  await whileNoneEnter(ctx, [blockerId, otherId], async (trx) => {
+    const shared = await trx
+      .selectFrom('call_members as a')
+      .innerJoin('call_members as b', 'b.call_id', 'a.call_id')
+      .innerJoin('calls as c', 'c.id', 'a.call_id')
+      .select(['a.call_id', 'a.state as mine', 'b.state as theirs'])
+      .where('a.user_id', '=', blockerId)
+      .where('b.user_id', '=', otherId)
+      .where('a.state', 'in', ['joined', 'ringing'])
+      .where('b.state', 'in', ['joined', 'ringing'])
+      .where('c.state', '<>', 'ended')
+      .execute();
+    for (const s of shared) {
+      if (s.mine === 'joined' && s.theirs === 'ringing')
+        await takeOutOfGroupCall(ctx, s.call_id, otherId, 'left');
+      else await takeOutOfGroupCall(ctx, s.call_id, blockerId, 'declined');
+    }
+  });
 }
 
 /**
@@ -536,29 +582,33 @@ export async function leaveGroupCallsIn(
   conversationIds: string[],
 ) {
   if (!conversationIds.length) return;
-  const calls = await ctx.db
-    .selectFrom('call_members as m')
-    .innerJoin('calls as c', 'c.id', 'm.call_id')
-    .select('m.call_id')
-    .where('m.user_id', '=', userId)
-    .where('m.state', 'in', ['joined', 'ringing'])
-    .where('c.state', '<>', 'ended')
-    .where('c.conversation_id', 'in', conversationIds)
-    .execute();
-  for (const c of calls) await takeOutOfGroupCall(ctx, c.call_id, userId, 'left');
+  await whileNoneEnter(ctx, [userId], async (trx) => {
+    const calls = await trx
+      .selectFrom('call_members as m')
+      .innerJoin('calls as c', 'c.id', 'm.call_id')
+      .select('m.call_id')
+      .where('m.user_id', '=', userId)
+      .where('m.state', 'in', ['joined', 'ringing'])
+      .where('c.state', '<>', 'ended')
+      .where('c.conversation_id', 'in', conversationIds)
+      .execute();
+    for (const c of calls) await takeOutOfGroupCall(ctx, c.call_id, userId, 'left');
+  });
 }
 
 /** An account is being deleted: it leaves every call it's in, and stops being rung for any. */
 export async function leaveAllGroupCalls(ctx: AppContext, userId: string) {
-  const calls = await ctx.db
-    .selectFrom('call_members as m')
-    .innerJoin('calls as c', 'c.id', 'm.call_id')
-    .select('m.call_id')
-    .where('m.user_id', '=', userId)
-    .where('m.state', 'in', ['joined', 'ringing'])
-    .where('c.state', '<>', 'ended')
-    .execute();
-  for (const c of calls) await takeOutOfGroupCall(ctx, c.call_id, userId, 'declined');
+  await whileNoneEnter(ctx, [userId], async (trx) => {
+    const calls = await trx
+      .selectFrom('call_members as m')
+      .innerJoin('calls as c', 'c.id', 'm.call_id')
+      .select('m.call_id')
+      .where('m.user_id', '=', userId)
+      .where('m.state', 'in', ['joined', 'ringing'])
+      .where('c.state', '<>', 'ended')
+      .execute();
+    for (const c of calls) await takeOutOfGroupCall(ctx, c.call_id, userId, 'declined');
+  });
 }
 
 /**
@@ -590,7 +640,8 @@ export async function sweepGroupCalls(ctx: AppContext): Promise<void> {
         .where('state', '=', 'ringing')
         .returning('user_id')
         .execute();
-      return { changed: were.length > 0, missed: were.map((m) => m.user_id) };
+      const who = were.map((m) => m.user_id);
+      return { changed: who.length > 0, missed: who, unseen: { tell: who } };
     });
 
   const seenBefore = new Date(now - CALL_SEEN_MS);
@@ -655,7 +706,8 @@ export async function sweepGroupCalls(ctx: AppContext): Promise<void> {
         eb.and([
           eb('c.state', '=', 'ringing'),
           eb.or([
-            eb.not(eb.exists(members('ringing'))),
+            // Its ring time is up (everyone rung may have said no long before: it waited).
+            eb('c.created_at', '<=', rungBefore),
             eb.not(eb.exists(members('joined').whereRef('m.user_id', '=', 'c.caller_id'))),
           ]),
         ]),

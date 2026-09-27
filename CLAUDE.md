@@ -174,8 +174,12 @@ These are rules, not preferences.
   in a group call only through `settleGroupCall(ctx, id, change)`, which runs `change` under the
   call's row lock (the one a join takes) and tells nobody when it changed nothing; and put
   anyone in a call (placing, answering, starting, joining) only under `lockCallEntry`. A call's
-  view shows others only while they're joined (`groupCallView`): never who was rung or declined.
-  Peers are keyed by person and device (`keyOf`), and signals carry `fromUser` / `toUser`.
+  view shows others only while they're joined (`groupCallView`): never who was rung or declined,
+  and devices only to someone in the call. A change others can't see (a ring declined, run out
+  or stopped) passes `unseen` to settle: no revision, told only to whoever it was for. An
+  unanswered call ends only at its ring time or when its starter leaves. Peers are keyed by
+  person and device (`keyOf`), and signals carry `fromUser` / `toUser`; hooks that take someone
+  out (blocks, removals, disconnects) run under `whileNoneEnter`.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from

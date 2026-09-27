@@ -211,7 +211,6 @@ const view = (members: Member[], over: Record<string, unknown> = {}) =>
       device: (m.state ?? 'joined') === 'joined' ? (m.device ?? `dev-${m.id}-0000`) : null,
       joinedAt: m.joinedAt ?? null,
     })),
-    ringing: false,
     createdAt: new Date().toISOString(),
     answeredAt: new Date().toISOString(),
     endedAt: null,

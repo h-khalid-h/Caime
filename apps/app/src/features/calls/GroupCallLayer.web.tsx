@@ -175,7 +175,7 @@ export function GroupCallLayer() {
           ? (note ?? 'Call ended')
           : others.length
             ? elapsed
-            : call.ringing
+            : call.state === 'ringing'
               ? 'Calling…'
               : 'Waiting for others…';
   // A shared screen is shown large, with everyone else beside it.

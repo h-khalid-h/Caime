@@ -1,8 +1,9 @@
 import { uuidv7 } from '@caishy/core';
+import { sql } from 'kysely';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
 import { sweepCalls } from '../src/lib/calls';
-import { sweepGroupCalls } from '../src/lib/group-calls';
+import { settleGroupCall, sweepGroupCalls } from '../src/lib/group-calls';
 import { type NotifyInput, onNotification } from '../src/lib/notify';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -151,9 +152,9 @@ describe('group calls (PRD §47)', () => {
       Omar: 'ringing',
       Lina: 'ringing',
     });
-    // Who's in it, and that it's still ringing someone: never who.
+    // Who's in it: never who else it rings, nor whether it still rings anyone.
     expect(where(call)).toEqual({ Noor: 'joined' });
-    expect(call.ringing).toBe(true);
+    expect('ringing' in call).toBe(false);
     // Only the device in it is named: signals go only between joined devices.
     expect(call.members.map((m: any) => m.device)).toEqual(['noor-tab-1']);
     // Each rung sees who's in it and their own ring, not who else was rung.
@@ -355,12 +356,14 @@ describe('group calls (PRD §47)', () => {
       Sam: 'joined',
       Lina: 'declined',
     });
-    expect(turnedDown.json().call).toMatchObject({ state: 'active', ringing: true });
+    expect(turnedDown.json().call).toMatchObject({ state: 'active' });
     expect(await inCall(id)).toMatchObject({ Lina: 'declined', Omar: 'ringing' });
-    const toSam = (await heardSoon('groupcall.updated', 4)).find(
-      (m) => m.userIds[0] === sam.user.id,
-    );
-    expect(where(toSam?.event.data)).toEqual({ Noor: 'joined', Sam: 'joined' });
+    // Only Lina's own devices hear it (to stop ringing): nobody else can count it, or time it.
+    expect((await heardSoon('groupcall.updated', 1)).map((m) => m.userIds)).toEqual([
+      [lina.user.id],
+    ]);
+    await sleep(150);
+    expect(events('groupcall.updated')).toHaveLength(1);
     // Turning it down again changes nothing, and nobody hears of it.
     heard.length = 0;
     const rev = turnedDown.json().call.rev;
@@ -374,8 +377,11 @@ describe('group calls (PRD §47)', () => {
     t.clock.advance(16_000);
     // Past its 45 seconds it doesn't ring, even before the sweep says he missed it.
     expect((await omar.get('/v1/group-calls/live')).call).toBeNull();
-    // Two sweeps at once (two workers) tell him once.
+    // Two sweeps at once (two workers) tell him once; and only him.
+    heard.length = 0;
     await Promise.all([sweepGroupCalls(t.ctx), sweepGroupCalls(t.ctx)]);
+    await sleep(150);
+    expect(events('groupcall.updated').every((m) => m.userIds[0] === omar.user.id)).toBe(true);
     expect((await omar.get('/v1/group-calls/live')).call).toBeNull();
     const told = (await aboutCall(omar, id)).sort((a, b) => a.title.localeCompare(b.title));
     expect(told.map((n) => [n.title, n.body, n.read])).toEqual([
@@ -457,13 +463,17 @@ describe('group calls (PRD §47)', () => {
         'Missed group video call',
       );
 
+    // Everyone rung turned it down: it still rings until its time is up, so when it ends (and
+    // how) says nothing about who said no.
     const declined = (await start(noor)).json().call.id;
     await decline(sam, declined);
     await decline(omar, declined);
-    expect((await decline(lina, declined)).json().call).toMatchObject({
-      state: 'ended',
-      outcome: 'declined',
-    });
+    expect((await decline(lina, declined)).json().call).toMatchObject({ state: 'ringing' });
+    await sweepGroupCalls(t.ctx);
+    expect((await noor.get('/v1/group-calls/live')).call).toMatchObject({ id: declined });
+    t.clock.advance(46_000);
+    await sweepGroupCalls(t.ctx);
+    expect((await noor.get('/v1/group-calls/live')).call).toBeNull();
     expect((await aboutCall(sam, declined)).map((n) => n.title)).toEqual([
       'Noor Haddad is calling Trip',
     ]);
@@ -477,7 +487,7 @@ describe('group calls (PRD §47)', () => {
       (await lines(noor)).slice(before).map((l) => [l.payload.outcome, l.payload.group]),
     ).toEqual([
       ['cancelled', true],
-      ['declined', true],
+      ['missed', true],
       ['missed', true],
     ]);
   });
@@ -617,7 +627,7 @@ describe('group calls (PRD §47)', () => {
     expect(told.length).toBeGreaterThan(0);
     // Only his own place in it: not who's in it now, nor what the group is called.
     expect(where(told.at(-1)?.event.data)).toEqual({ Omar: 'left' });
-    expect(told.at(-1)?.event.data).toMatchObject({ conversationTitle: null, ringing: false });
+    expect(told.at(-1)?.event.data).toMatchObject({ conversationTitle: null });
     // And out of it, the call is none of his business any more.
     expect((await join(omar, id)).statusCode).toBe(404);
     expect((await alive(omar, id)).statusCode).toBe(404);
@@ -750,39 +760,53 @@ describe('group calls (PRD §47)', () => {
       candidate: { candidate: 'candidate:1 1 udp 1 192.0.2.1 1 typ host' },
     } as any;
     expect((await signal(noor, id, 'noor-tab-1', 'sam-phone-1', candidate)).statusCode).toBe(200);
-    // Noor used up what she has for Sam's device only: not hers for Omar, nor Sam's for her.
+    // Noor used up what she has for Sam's device only: not hers for Omar (even on a device id
+    // like Sam's), nor Sam's for her.
     expect((await signal(noor, id, 'noor-tab-1', 'omar-tab-1')).statusCode).toBe(200);
+    await join(omar, id, 'sam-phone-1');
+    expect(
+      (await signal(noor, id, 'noor-tab-1', 'sam-phone-1', offer, omar.user.id)).statusCode,
+    ).toBe(200);
     expect(
       (await signal(sam, id, 'sam-phone-1', 'noor-tab-1', { kind: 'answer', sdp: 'v=0 a' }))
         .statusCode,
     ).toBe(200);
   });
 
-  it('a change to who’s in it waits for any other: leaving never ends a call just joined', async () => {
+  it('a change to who’s in it holds the call: a join waits for it, and sees what it decided', async () => {
     const id = (await start(noor)).json().call.id;
     await join(sam, id, 'sam-phone-1');
-    let leaving: Promise<any> | undefined;
-    await t.ctx.db.transaction().execute(async (trx) => {
-      // Omar joins (holding the call, as a join does) while Sam leaves.
-      await trx.selectFrom('calls').select('id').where('id', '=', id).forUpdate().execute();
-      leaving = leave(sam, id, 'sam-phone-1');
-      await sleep(250);
+    let open: () => void = () => {};
+    const gate = new Promise<void>((r) => {
+      open = r;
+    });
+    // Sam leaves, and the change takes its time (a slow database, say).
+    const settling = settleGroupCall(t.ctx, id, async (trx) => {
       await trx
         .updateTable('call_members')
-        .set({
-          state: 'joined',
-          device: 'omar-tab-1',
-          joined_at: t.ctx.now(),
-          seen_at: t.ctx.now(),
-        })
+        .set({ state: 'left', left_at: t.ctx.now(), device: null })
         .where('call_id', '=', id)
-        .where('user_id', '=', omar.user.id)
+        .where('user_id', '=', sam.user.id)
         .execute();
+      await gate;
+      return { changed: true };
     });
-    const left = await leaving;
-    // Sam's leaving was decided on the call as it then was: Noor and Omar, so it goes on.
-    expect(left?.json().call.state).toBe('active');
-    expect(await inCall(id)).toMatchObject({ Noor: 'joined', Sam: 'left', Omar: 'joined' });
+    await sleep(50);
+    let done = false;
+    const joining = join(omar, id).then((r) => {
+      done = true;
+      return r;
+    });
+    await sleep(250);
+    // Omar's join waits for it: nothing is decided on a call as it no longer is.
+    const waited = !done;
+    open();
+    await settling;
+    expect(waited).toBe(true);
+    const joined = await joining;
+    // Sam's leaving left Noor alone, so it ended; Omar's join sees that, and isn't told otherwise.
+    expect(joined.statusCode).toBe(409);
+    expect(joined.json().error.code).toBe('call_ended');
   });
 
   it('the sweep decides again under the call’s lock: whoever is back meanwhile stays', async () => {
@@ -845,23 +869,21 @@ describe('group calls (PRD §47)', () => {
     expect((await sam.req('POST', `/v1/group-calls/${id}/leave`, {})).statusCode).toBe(400);
   });
 
-  it('a device is in a call for one person only', async () => {
+  it('a device id someone else holds is theirs only: signals go by person and device', async () => {
     const id = (await start(noor)).json().call.id;
     await join(sam, id, 'sam-phone-1');
-    // Omar can see Sam's device in the call; joining with it gets him nowhere.
-    const taken = await join(omar, id, 'sam-phone-1');
-    expect(taken.statusCode).toBe(409);
-    expect(taken.json().error.code).toBe('device_in_call');
-    expect((await inCall(id)).Omar).toBe('ringing');
-    // Nor can the database hold two people on one device in a call.
-    await expect(
-      t.ctx.db
-        .updateTable('call_members')
-        .set({ state: 'joined', device: 'sam-phone-1' })
-        .where('call_id', '=', id)
-        .where('user_id', '=', omar.user.id)
-        .execute(),
-    ).rejects.toMatchObject({ code: '23505' });
+    // Omar joins with the same device id as Sam's (he could read it): it takes nothing from Sam.
+    expect((await join(omar, id, 'sam-phone-1')).statusCode).toBe(200);
+    expect((await alive(sam, id, 'sam-phone-1')).statusCode).toBe(200);
+    heard.length = 0;
+    await signal(noor, id, 'noor-tab-1', 'sam-phone-1', offer, sam.user.id);
+    await signal(noor, id, 'noor-tab-1', 'sam-phone-1', offer, omar.user.id);
+    const sent = await heardSoon('groupcall.signal', 2);
+    expect(sent.map((m) => m.userIds[0]).sort()).toEqual(ids([sam, omar]));
+    // Nobody outside the call learns its devices: the banner doesn't need them.
+    const banner = (await lina.get(`/v1/conversations/${trip}/group-call`)).call;
+    expect(banner.members).toHaveLength(4);
+    expect(banner.members.every((m: any) => m.device === null)).toBe(true);
   });
 
   it('whoever started it deleting their account leaves it: it goes on, and keeps its line', async () => {
@@ -938,6 +960,40 @@ describe('group calls (PRD §47)', () => {
     expect(await inCall(call)).toEqual({ Noor: 'joined', Uma: 'joined', Vic: 'joined' });
   });
 
+  it('two people calling someone at once can’t both be answered', async () => {
+    const fromOmar = (
+      await omar.post(`/v1/conversations/${omarSam}/calls`, {
+        kind: 'voice',
+        deviceId: 'omar-phone-1',
+      })
+    ).call.id;
+    // Noor called at the same moment: both saw Sam free, so both ring him.
+    const fromNoor = uuidv7();
+    await t.ctx.db
+      .insertInto('calls')
+      .values({
+        id: fromNoor,
+        conversation_id: noorSam,
+        caller_id: noor.user.id,
+        callee_id: sam.user.id,
+        kind: 'voice',
+        state: 'ringing',
+        caller_device: 'noor-tab-1',
+        created_at: t.ctx.now(),
+        seen_at: t.ctx.now(),
+        caller_seen_at: t.ctx.now(),
+        callee_rung: true,
+      })
+      .execute();
+    const answered = await Promise.all([
+      sam.req('POST', `/v1/calls/${fromOmar}/accept`, { deviceId: 'sam-phone-1' }),
+      sam.req('POST', `/v1/calls/${fromNoor}/accept`, { deviceId: 'sam-laptop-1' }),
+    ]);
+    expect(answered.map((r) => r.statusCode).sort()).toEqual([200, 409]);
+    await omar.post(`/v1/calls/${fromOmar}/end`, {});
+    await noor.post(`/v1/calls/${fromNoor}/end`, {});
+  });
+
   it('two devices can’t put someone in two calls at once', async () => {
     for (let round = 0; round < 3; round++) {
       // Omar rings Sam, and just as Sam's phone answers, his laptop joins the group's call.
@@ -1003,5 +1059,91 @@ describe('group calls (PRD §47)', () => {
     );
     expect(missed?.body).toBe('from Dr. S. Rivera');
     await sam.patch(`/v1/connections/${connection.connection_id}`, { identityId: null });
+  });
+
+  it('who turned it down, missed it, or was never rung is nobody else’s business', async () => {
+    // Lina blocked Noor: Noor's call rings only Sam and Omar.
+    await lina.post('/v1/blocks', { userId: noor.user.id });
+    const call = (await start(noor)).json().call;
+    const joined = (await join(sam, call.id, 'sam-phone-1')).json().call;
+    expect(joined.rev).toBe(1);
+    heard.length = 0;
+    // Omar says no: the call's revision stays, and only Omar hears it.
+    await decline(omar, call.id);
+    await sleep(150);
+    expect(events('groupcall.updated').map((m) => m.userIds[0])).toEqual([omar.user.id]);
+    expect((await alive(sam, call.id, 'sam-phone-1')).json().call.rev).toBe(1);
+    await leave(sam, call.id, 'sam-phone-1');
+    await lina.req('DELETE', `/v1/blocks/${noor.user.id}`);
+    // A ring stopped by a block is nobody else's either: Lina, only rung, blocks Sam, who's in it.
+    const next = (await start(noor)).json().call.id;
+    await join(sam, next, 'sam-phone-1');
+    heard.length = 0;
+    await lina.post('/v1/blocks', { userId: sam.user.id });
+    await sleep(150);
+    expect(events('groupcall.updated').map((m) => m.userIds[0])).toEqual([lina.user.id]);
+    expect((await inCall(next)).Lina).toBe('declined');
+    await lina.req('DELETE', `/v1/blocks/${sam.user.id}`);
+  });
+
+  it('a join under way when a block lands: the block waits for it, and they aren’t in it together', async () => {
+    const id = (await start(noor)).json().call.id;
+    let blocking: Promise<unknown> | undefined;
+    await t.ctx.db.transaction().execute(async (trx) => {
+      // Sam's join, holding his entry into calls, as a join does.
+      await sql`select pg_advisory_xact_lock(hashtext(${`call-entry:${sam.user.id}`}))`.execute(
+        trx,
+      );
+      await trx
+        .updateTable('call_members')
+        .set({
+          state: 'joined',
+          device: 'sam-phone-1',
+          joined_at: t.ctx.now(),
+          seen_at: t.ctx.now(),
+        })
+        .where('call_id', '=', id)
+        .where('user_id', '=', sam.user.id)
+        .execute();
+      blocking = noor.post('/v1/blocks', { userId: sam.user.id });
+      await sleep(250);
+    });
+    await blocking;
+    const now = await inCall(id);
+    expect(now.Noor === 'joined' && now.Sam === 'joined').toBe(false);
+    await noor.req('DELETE', `/v1/blocks/${sam.user.id}`);
+  });
+
+  it('whoever shouldn’t be in it any more is out of it by their next beat', async () => {
+    const id = (await start(noor)).json().call.id;
+    await join(sam, id, 'sam-phone-1');
+    await join(omar, id);
+    // A block that reached nobody's call (as a race might leave it).
+    await t.ctx.db
+      .insertInto('blocks')
+      .values({ blocker_id: sam.user.id, blocked_id: omar.user.id })
+      .execute();
+    const beat = await alive(omar, id);
+    expect(beat.statusCode).toBe(403);
+    expect(beat.json().error.code).toBe('not_in_call');
+    expect((await inCall(id)).Omar).toBe('left');
+    await t.ctx.db.deleteFrom('blocks').where('blocker_id', '=', sam.user.id).execute();
+    // Out of the conversation (the same): out of the call, and nothing it sends is passed on.
+    await join(omar, id);
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ left_at: t.ctx.now() })
+      .where('conversation_id', '=', trip)
+      .where('user_id', '=', omar.user.id)
+      .execute();
+    expect((await signal(omar, id, 'omar-tab-1', 'noor-tab-1')).statusCode).toBe(403);
+    expect((await alive(omar, id)).statusCode).toBe(403);
+    expect((await inCall(id)).Omar).toBe('left');
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ left_at: null })
+      .where('conversation_id', '=', trip)
+      .where('user_id', '=', omar.user.id)
+      .execute();
   });
 });

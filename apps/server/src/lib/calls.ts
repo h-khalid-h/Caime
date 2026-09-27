@@ -140,6 +140,41 @@ export async function callInOf(
 }
 
 /**
+ * A 1:1 call other than `except` that someone is in now: one they answered or placed and is
+ * under way (both sides still there), or one they placed that still rings.
+ */
+export async function otherCallIn(
+  ctx: AppContext,
+  userId: string,
+  except: string,
+  db: Kysely<Database> | Transaction<Database> = ctx.db,
+): Promise<Call | undefined> {
+  const now = ctx.now().getTime();
+  const fresh = new Date(now - CALL_SEEN_MS);
+  return db
+    .selectFrom('calls')
+    .selectAll()
+    .where('is_group', '=', false)
+    .where('id', '<>', except)
+    .where((eb) =>
+      eb.or([
+        eb.and([
+          eb('state', '=', 'active'),
+          eb.or([eb('caller_id', '=', userId), eb('callee_id', '=', userId)]),
+          eb('caller_seen_at', '>', fresh),
+          eb('callee_seen_at', '>', fresh),
+        ]),
+        eb.and([
+          eb('state', '=', 'ringing'),
+          eb('caller_id', '=', userId),
+          eb('created_at', '>', new Date(now - CALL_RING_SECONDS * 1000)),
+        ]),
+      ]),
+    )
+    .executeTakeFirst();
+}
+
+/**
  * One call at a time, for real: whatever puts someone in a call (placing one, answering, starting
  * or joining a group call) holds this for them from checking they aren't in one until it's done,
  * so two of their devices can't both get in. Taken before any call's own lock, never after.

@@ -1144,17 +1144,18 @@ export interface GroupCallView {
   startedBy: CallPersonView;
   /**
    * Who's in it (joined), and the viewer's own place in it: never who else was rung, turned it
-   * down or missed it.
+   * down or missed it, nor whether anyone still is.
    */
   members: Array<{
     person: CallPersonView;
     state: GroupCallMemberState;
-    /** The device they're in it on, while they are: signals go only between these. */
+    /**
+     * The device they're in it on, while they are, shown only to someone in it too: signals go
+     * only between these.
+     */
     device: string | null;
     joinedAt: string | null;
   }>;
-  /** Someone is still being rung (not who). */
-  ringing: boolean;
   createdAt: string;
   answeredAt: string | null;
   endedAt: string | null;
