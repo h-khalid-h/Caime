@@ -67,7 +67,8 @@ function validateRole(
 }
 
 /** May `owner` classify `subject`? Connected, requested either way, or sharing a conversation. */
-async function mayClassify(db: Q, owner: string, subject: string): Promise<boolean> {
+/** Whether someone may say how they know another: never someone who blocked them. */
+export async function mayClassify(db: Q, owner: string, subject: string): Promise<boolean> {
   const b = await between(db, owner, subject);
   if (b.blockedMe) return false;
   if (b.connected || b.outgoingRequestId || b.incomingRequestId) return true;
@@ -162,6 +163,16 @@ export async function createRelationship(
       })
       .execute();
   await recordEvent(db, 'relationship.assigned', ownerId, { relationshipId: row.id, subjectId });
+  // Said how they know them: what Caishy offered about it is answered, here and on every device
+  // (the relationship's own event says so).
+  await db
+    .updateTable('suggestions')
+    .set({ status: 'expired', resolved_at: ctx.now() })
+    .where('user_id', '=', ownerId)
+    .where('subject_user_id', '=', subjectId)
+    .where('kind', '=', 'relationship')
+    .where('status', '=', 'pending')
+    .execute();
   return row;
 }
 

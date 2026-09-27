@@ -212,8 +212,9 @@ Anyone over 18 can have Google Calendar, Outlook or Apple Calendar show their ac
 due date and the meetings and appointments they agreed in Caishy: **You → Connected apps → Your
 calendar → Get a calendar address**. The address is shown once, starts
 `https://…/v1/calendar/cal_` and is the only credential: a calendar app reads it with no
-sign-in. Caishy keeps only its hash, so it can't be shown again; getting a new one ends the old
-one at once, and **Stop** ends it. It answers `text/calendar` (RFC 5545), read at most 120 times
+sign-in. Caishy keeps only its hash (and never writes the address to its log), so it can't be
+shown again; getting a new one ends the old one at once, **Stop** ends it, and so does
+recovering the account. It answers `text/calendar` (RFC 5545), read at most 120 times
 an hour, and nothing in a calendar changes anything in Caishy.
 
 | What | In the calendar |

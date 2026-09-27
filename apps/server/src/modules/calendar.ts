@@ -15,6 +15,7 @@ import {
   zonedParts,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
@@ -76,20 +77,36 @@ export async function calendarEvents(
   const base = ctx.config.PUBLIC_URL.replace(/\/$/, '');
   const where = (conversationId: string | null) =>
     conversationId ? `${base}/c/${conversationId}` : `${base}/actions`;
-  // Open actions with a due date that are theirs to see: their own, and what they were asked.
+  // Open actions with a due date that are theirs to see: their own, and what they were asked,
+  // never from a message request they haven't accepted (or declined). What's ahead comes first,
+  // so however much is overdue, what's coming is there.
   const rows = await ctx.db
     .selectFrom('tasks')
     .selectAll()
     .where((eb) =>
       eb.or([
         eb('owner_id', '=', userId),
-        eb.and([eb('assignee_id', '=', userId), eb('shared', '=', true)]),
+        eb.and([
+          eb('assignee_id', '=', userId),
+          eb('shared', '=', true),
+          eb.not(
+            eb.exists(
+              eb
+                .selectFrom('participants as p')
+                .select('p.user_id')
+                .whereRef('p.conversation_id', '=', 'tasks.conversation_id')
+                .where('p.user_id', '=', userId)
+                .where('p.request_state', 'in', ['pending', 'declined']),
+            ),
+          ),
+        ]),
       ]),
     )
     .where('status', 'in', ['open', 'accepted'])
     .where('due_at', 'is not', null)
     .where('due_at', '>', from)
     .where('due_at', '<', until)
+    .orderBy(sql`due_at < ${now}`)
     .orderBy('due_at')
     .limit(MAX_EVENTS)
     .execute();

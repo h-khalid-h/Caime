@@ -20,6 +20,7 @@ import { endpoints } from '@/api/endpoints';
 import { useSaved } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { Choice } from '@/features/settings/SettingsPage';
+import { SwitchRow } from '@/features/settings/SwitchRow';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { Pressable } from '@/ui/Pressable';
@@ -62,6 +63,7 @@ export function AutomationSheet({
   const [kinds, setKinds] = useState<SaveKind[]>(automation?.when.kinds ?? ['document']);
   const [words, setWords] = useState((automation?.when.words ?? []).join(', '));
   const [collection, setCollection] = useState(automation?.collection ?? '');
+  const [enabled, setEnabled] = useState(automation?.enabled ?? true);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const when = {
@@ -81,9 +83,10 @@ export function AutomationSheet({
   const save = async () => {
     setBusy(true);
     try {
-      if (automation) await endpoints.updateAutomation(automation.id, { when, collection: target });
+      if (automation)
+        await endpoints.updateAutomation(automation.id, { when, collection: target, enabled });
       else await endpoints.createAutomation({ when, collection: target });
-      toast(automation ? 'Automation changed' : 'Automation on');
+      toast(automation ? (enabled ? 'Automation changed' : 'Automation off') : 'Automation on');
       done();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -129,6 +132,17 @@ export function AutomationSheet({
       }
     >
       <View style={{ gap: 12 }} testID="automation-sheet">
+        {automation ? (
+          <SwitchRow
+            label="On"
+            detail={
+              enabled ? 'Keeps what matches as it arrives' : 'Keeps nothing until it’s on again'
+            }
+            value={enabled}
+            onChange={setEnabled}
+            testID="automation-enabled"
+          />
+        ) : null}
         <Overline>When</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<string>
@@ -224,7 +238,7 @@ export function AutomationSheet({
             <Pressable
               accessibilityRole="button"
               onPress={() => setConfirming(true)}
-              style={{ paddingVertical: 10 }}
+              style={{ paddingVertical: 10, minHeight: 44, justifyContent: 'center' }}
               testID="automation-delete"
             >
               <Text variant="captionStrong" color="danger">

@@ -34,8 +34,10 @@ export const ErrorBoundary = ScreenError;
  * Bump when a cached shape changes incompatibly (a view gains a field the screens rely on); old
  * caches are dropped, not misread. 2: connections say who's merged into whom (PRD §51). 3: a
  * conversation lists its topics, and a one-to-one says whether it's between connections (§58).
+ * 4: a person's page says who they are to you (§67), and a conversation's details and a space's
+ * page say what's coming up (§41).
  */
-const CACHE_VERSION = '3';
+const CACHE_VERSION = '4';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

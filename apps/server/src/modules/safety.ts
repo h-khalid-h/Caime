@@ -83,6 +83,25 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
         eb.selectFrom('conversations').select('id').where('direct_key', '=', key),
       )
       .execute();
+    // Nor is either offered what the other may be to them (taken back, not answered: unblocked,
+    // it may be offered again).
+    const offers = await ctx.db
+      .deleteFrom('suggestions')
+      .where('kind', '=', 'relationship')
+      .where('status', '=', 'pending')
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('user_id', '=', auth.userId), eb('subject_user_id', '=', userId)]),
+          eb.and([eb('user_id', '=', userId), eb('subject_user_id', '=', auth.userId)]),
+        ]),
+      )
+      .returning(['id', 'user_id'])
+      .execute();
+    for (const o of offers.filter((o) => o.user_id === auth.userId))
+      await ctx.bus.publish([auth.userId], {
+        type: 'suggestion.resolved',
+        data: { id: o.id, status: 'expired' },
+      });
     await ctx.bus.publish([auth.userId], {
       type: 'block.changed',
       data: { userId, blocked: true },

@@ -33,6 +33,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { tellSaved } from '../lib/automations';
 import { handOverGroups } from '../lib/conversations';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -41,7 +42,7 @@ import { participantsOf } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { generalOf, spaceSeat } from '../lib/spaces';
-import { suggestFromPlace } from '../lib/suggest';
+import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -347,7 +348,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       const members = (await activeMembers(ctx, spaceId)).map((m) => m.user_id);
       await suggestFromPlace(
         ctx,
-        { kind: 'space', name: space.name, spaceKind: space.kind as SpaceKind },
+        { kind: 'space', id: spaceId, name: space.name, spaceKind: space.kind as SpaceKind },
         newcomers,
         members,
       );
@@ -614,6 +615,10 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       return { left, handed };
     });
     await ctx.bus.publish([userId], { type: 'space.removed', data: { spaceId: id } });
+    // What they saved of its conversations is out of their Saved now, and what Caishy offered
+    // because they were both in it goes.
+    if (left.length) await tellSaved(ctx, [userId]);
+    await withdrawPlaceOffers(ctx, { kind: 'space', id }, userId);
     await leaveGroupCallsIn(ctx, userId, left);
     for (const { conversationId, heir: owner } of handed)
       if (owner)

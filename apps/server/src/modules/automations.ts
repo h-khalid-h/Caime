@@ -24,7 +24,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { automationView, savedCount } from '../lib/automations';
+import { automationView, lockSaved, savedCount, visibleSaved } from '../lib/automations';
 import { maskId, masksFor } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
@@ -67,30 +67,36 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/automations', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(AutomationBody, req.body);
-    const { n } = await ctx.db
-      .selectFrom('automations')
-      .select(sql<number>`count(*)::int`.as('n'))
-      .where('user_id', '=', auth.userId)
-      .executeTakeFirstOrThrow();
-    if (n >= AUTOMATIONS_MAX)
-      throw conflict(
-        'too_many_automations',
-        `You have ${AUTOMATIONS_MAX} automations. Remove one to add another.`,
-      );
     const id = uuidv7();
-    await ctx.db
-      .insertInto('automations')
-      .values({
-        id,
-        user_id: auth.userId,
-        name: body.name?.trim() || null,
-        ...tidyWhen(body.when),
-        collection: collectionName(body.collection),
-        enabled: body.enabled ?? true,
-        created_at: ctx.now(),
-        updated_at: ctx.now(),
-      })
-      .execute();
+    // Counted and added one at a time for each person, so the most holds with two at once.
+    await ctx.db.transaction().execute(async (trx) => {
+      await sql`select pg_advisory_xact_lock(hashtext(${`automations:${auth.userId}`}))`.execute(
+        trx,
+      );
+      const { n } = await trx
+        .selectFrom('automations')
+        .select(sql<number>`count(*)::int`.as('n'))
+        .where('user_id', '=', auth.userId)
+        .executeTakeFirstOrThrow();
+      if (n >= AUTOMATIONS_MAX)
+        throw conflict(
+          'too_many_automations',
+          `You have ${AUTOMATIONS_MAX} automations. Remove one to add another.`,
+        );
+      await trx
+        .insertInto('automations')
+        .values({
+          id,
+          user_id: auth.userId,
+          name: body.name?.trim() || null,
+          ...tidyWhen(body.when),
+          collection: collectionName(body.collection),
+          enabled: body.enabled ?? true,
+          created_at: ctx.now(),
+          updated_at: ctx.now(),
+        })
+        .execute();
+    });
     await changed(auth.userId);
     reply.status(201);
     return { id };
@@ -133,17 +139,8 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- What's saved -------------------------------------------------------------------------
 
-  /** Saved items their owner can still see: in a conversation they're in, not deleted. */
-  const visible = (userId: string) =>
-    ctx.db
-      .selectFrom('saved_items as s')
-      .innerJoin('messages as m', 'm.id', 's.message_id')
-      .innerJoin('participants as p', (j) =>
-        j.onRef('p.conversation_id', '=', 's.conversation_id').on('p.user_id', '=', userId),
-      )
-      .where('s.user_id', '=', userId)
-      .where('p.left_at', 'is', null)
-      .where('m.deleted_at', 'is', null);
+  /** Saved items their owner can still see (lib/automations.ts). */
+  const visible = (userId: string) => visibleSaved(ctx.db, userId);
 
   app.get('/saved', async (req): Promise<SavedCollectionsResponse> => {
     const auth = requireAuth(req);
@@ -162,7 +159,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('user_id', '=', auth.userId)
         .groupBy('collection')
         .execute(),
-      savedCount(ctx, auth.userId),
+      savedCount(ctx.db, auth.userId),
     ]);
     const byName = new Map<string, SavedCollectionView>(
       rows.map((r) => [
@@ -364,25 +361,30 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
         .executeTakeFirst();
     const existing = await find();
     if (existing) return { id: existing.id, collection, existing: true };
-    if ((await savedCount(ctx, auth.userId)) >= SAVED_MAX)
-      throw conflict(
-        'saved_full',
-        `You’ve saved ${SAVED_MAX} things, the most there’s room for. Remove some to save more.`,
-      );
-    const inserted = await ctx.db
-      .insertInto('saved_items')
-      .values({
-        id: uuidv7(),
-        user_id: auth.userId,
-        collection,
-        conversation_id: m.conversation_id,
-        message_id: id,
-        asset_id: body.assetId ?? null,
-        created_at: ctx.now(),
-      })
-      .onConflict((oc) => oc.doNothing())
-      .returning('id')
-      .executeTakeFirst();
+    // Counted and added under the person's lock, so saving on two devices at once can't pass
+    // the most there's room for.
+    const inserted = await ctx.db.transaction().execute(async (trx) => {
+      await lockSaved(trx, auth.userId);
+      if ((await savedCount(trx, auth.userId)) >= SAVED_MAX)
+        throw conflict(
+          'saved_full',
+          `You’ve saved ${SAVED_MAX} things, the most there’s room for. Remove some to save more.`,
+        );
+      return trx
+        .insertInto('saved_items')
+        .values({
+          id: uuidv7(),
+          user_id: auth.userId,
+          collection,
+          conversation_id: m.conversation_id,
+          message_id: id,
+          asset_id: body.assetId ?? null,
+          created_at: ctx.now(),
+        })
+        .onConflict((oc) => oc.doNothing())
+        .returning('id')
+        .executeTakeFirst();
+    });
     // Saved at the same moment from another device: that one.
     const savedId = inserted?.id ?? (await find())?.id;
     if (!savedId) throw notFound('That message');

@@ -1,6 +1,8 @@
 import { SAVED_MAX, uuidv4 } from '@caishy/core';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runAutomations } from '../src/lib/automations';
+import type { BusMessage } from '../src/lib/bus';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -22,13 +24,13 @@ async function connect(a: Client, b: Client, sphere: string, role?: string) {
     .conversationId as string;
 }
 
-async function upload(c: Client, name: string, mime = 'application/pdf') {
+async function upload(c: Client, name: string, mime = 'application/pdf', data?: Buffer) {
   const boundary = `----caishy${uuidv4()}`;
   const payload = Buffer.concat([
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: ${mime}\r\n\r\n`,
     ),
-    Buffer.from('%PDF-1.4 a small document'),
+    data ?? Buffer.from('%PDF-1.4 a small document'),
     Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
   const res = await t.app.inject({
@@ -224,7 +226,7 @@ describe('automations (PRD §69)', () => {
     await t.ctx.db
       .insertInto('automations')
       .values(
-        Array.from({ length: 50 - automations.length }, () => ({
+        Array.from({ length: 49 - automations.length }, () => ({
           id: uuidv4(),
           user_id: noor.user.id,
           kinds: ['photo'],
@@ -232,6 +234,14 @@ describe('automations (PRD §69)', () => {
         })),
       )
       .execute();
+    // With room for one, two added at once make fifty, never fifty-one.
+    const both = await Promise.all(
+      [1, 2].map(() =>
+        noor.req('POST', '/v1/automations', { when: { kinds: ['photo'] }, collection: 'More' }),
+      ),
+    );
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 409]);
+    expect((await noor.get('/v1/automations')).automations).toHaveLength(50);
     const res = await noor.req('POST', '/v1/automations', {
       when: { kinds: ['photo'] },
       collection: 'More',
@@ -241,7 +251,7 @@ describe('automations (PRD §69)', () => {
     await t.ctx.db
       .deleteFrom('automations')
       .where('user_id', '=', noor.user.id)
-      .where('collection', '=', 'Photos')
+      .where('collection', 'in', ['Photos', 'More'])
       .execute();
   });
 });
@@ -365,8 +375,28 @@ describe('saving by hand, and what’s saved (PRD §69)', () => {
     ).message;
     await noor.post(`/v1/messages/${said.id}/save`, { collection: 'Books' });
     expect((await items(noor, 'Books')).map((i) => i.message.id)).toEqual([said.id]);
+    const before = (await noor.get('/v1/saved')).total;
     await noor.del(`/v1/conversations/${club}/members/${noor.user.id}`);
     expect(await items(noor, 'Books')).toEqual([]);
+    // Nor does it count toward what she has room for: nothing she can't see or remove fills it.
+    expect((await noor.get('/v1/saved')).total).toBe(before - 1);
+    // Deleted for herself while an automation was keeping it: never listed, whichever was first.
+    const c = await sendFile(cara, withCara, 'invoice-c.pdf');
+    expect(await ids()).toContain(c.message.id);
+    const counted = (await noor.get('/v1/saved')).total;
+    const keptOfIt = await t.ctx.db
+      .selectFrom('saved_items')
+      .select('id')
+      .where('message_id', '=', c.message.id)
+      .where('user_id', '=', noor.user.id)
+      .execute();
+    expect(keptOfIt.length).toBeGreaterThan(0);
+    await t.ctx.db
+      .insertInto('hidden_messages')
+      .values({ message_id: c.message.id, user_id: noor.user.id })
+      .execute();
+    expect(await ids()).not.toContain(c.message.id);
+    expect((await noor.get('/v1/saved')).total).toBe(counted - keptOfIt.length);
   });
 
   it('refuses a private conversation, a request not yet accepted, and past the most there’s room for', async () => {
@@ -396,7 +426,7 @@ describe('saving by hand, and what’s saved (PRD §69)', () => {
     await t.ctx.db
       .insertInto('saved_items')
       .values(
-        Array.from({ length: room }, () => ({
+        Array.from({ length: room - 1 }, () => ({
           id: uuidv4(),
           user_id: noor.user.id,
           collection: 'Filler',
@@ -406,6 +436,14 @@ describe('saving by hand, and what’s saved (PRD §69)', () => {
         })).map((row, i) => ({ ...row, collection: `Filler ${i}` })),
       )
       .execute();
+    // With room for one, two saved at once make the most, never one more.
+    const both = await Promise.all(
+      ['Both A', 'Both B'].map((collection) =>
+        noor.req('POST', `/v1/messages/${text.id}/save`, { collection }),
+      ),
+    );
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 409]);
+    expect((await noor.get('/v1/saved')).total).toBe(SAVED_MAX);
     const full = await noor.req('POST', `/v1/messages/${text.id}/save`, { collection: 'Last' });
     expect(full.statusCode).toBe(409);
     expect(full.json().error.code).toBe('saved_full');
@@ -434,8 +472,16 @@ describe('automations in a conversation with an organization', () => {
       when: { sphere: 'organization', kinds: ['document'], words: ['invoice'] },
       collection: 'Bills',
     });
+    // Another of the team keeps what customers send, never what her own side does.
+    await owner.post('/v1/automations', {
+      when: { sphere: 'customer', kinds: ['document'] },
+      collection: 'Customer Files',
+    });
     await sendFile(lina, convo, 'order-17.pdf');
     await sendFile(omar, convo, 'invoice-17.pdf');
+    expect((await items(owner, 'Customer Files')).map((i) => i.files[0]?.name)).toEqual([
+      'order-17.pdf',
+    ]);
     const [order] = await items(omar, 'Orders');
     expect(order).toMatchObject({
       files: [expect.objectContaining({ name: 'order-17.pdf' })],
@@ -452,5 +498,91 @@ describe('automations in a conversation with an organization', () => {
     expect(JSON.stringify(bill)).not.toContain('Omar');
     // Only one's own is kept for one: the invoice isn't an order.
     expect(await items(omar, 'Orders')).toHaveLength(1);
+    // Lina once blocked Omar: what the organization sends is kept whoever on it wrote, so
+    // what's missing never says who that was.
+    await lina.post('/v1/blocks', { userId: omar.user.id });
+    await sendFile(owner, convo, 'invoice-q1.pdf');
+    await sendFile(omar, convo, 'invoice-q2.pdf');
+    expect((await items(lina, 'Bills')).map((i) => i.files[0]?.name)).toEqual([
+      'invoice-q2.pdf',
+      'invoice-q1.pdf',
+      'invoice-17.pdf',
+    ]);
+    // And the team keeps nothing of each other's.
+    expect(await items(owner, 'Customer Files')).toHaveLength(1);
+    await lina.del(`/v1/blocks/${omar.user.id}`);
+  });
+});
+
+describe('every device catches up with what’s saved', () => {
+  it('is told when an automation keeps something, and when what they saved goes', async () => {
+    const heard: BusMessage[] = [];
+    const stop = t.ctx.bus.subscribe((m) => heard.push(m));
+    const told = async (type: string, userId: string) => {
+      for (let i = 0; i < 300; i++) {
+        if (heard.some((m) => m.event.type === type && m.userIds.includes(userId))) return true;
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      return false;
+    };
+    try {
+      const ada = await signup(t, { displayName: 'Ada Keeper' });
+      const ben = await signup(t, { displayName: 'Ben Sender' });
+      const direct = await connect(ada, ben, 'friend');
+      await ada.post('/v1/automations', { when: { kinds: ['document'] }, collection: 'Files' });
+      // (Making it says so too: heard, then set aside.)
+      expect(await told('automations.changed', ada.user.id)).toBe(true);
+      heard.length = 0;
+      // Kept: what's saved and the automation's count, on each of her devices.
+      await sendFile(ben, direct, 'notes.pdf');
+      expect(await told('automations.changed', ada.user.id)).toBe(true);
+      // A photo she saved from an album goes when it's taken out of the album.
+      const card = (
+        await ben.post(`/v1/conversations/${direct}/messages`, {
+          clientId: uuidv4(),
+          kind: 'kit',
+          payload: { kit: 'shared_album', fields: { title: 'Trip' } },
+        })
+      ).message;
+      const jpeg = await sharp({
+        create: { width: 32, height: 24, channels: 3, background: '#3a86ff' },
+      })
+        .jpeg()
+        .toBuffer();
+      const pic = await upload(ben, 'beach.jpg', 'image/jpeg', jpeg);
+      await ben.post(`/v1/messages/${card.id}/album`, { fileIds: [pic.id] });
+      const asset = await t.ctx.db
+        .selectFrom('assets')
+        .select('id')
+        .where('message_id', '=', card.id)
+        .where('file_id', '=', pic.id)
+        .executeTakeFirstOrThrow();
+      await ada.post(`/v1/messages/${card.id}/save`, { collection: 'Trip', assetId: asset.id });
+      expect(await items(ada, 'Trip')).toHaveLength(1);
+      heard.length = 0;
+      await ben.del(`/v1/messages/${card.id}/album/${pic.id}`);
+      expect(await told('saved.changed', ada.user.id)).toBe(true);
+      expect(await items(ada, 'Trip')).toEqual([]);
+      // Out of a group, what she saved of it goes from her lists at once.
+      const group = (
+        await ben.post('/v1/conversations', {
+          kind: 'group',
+          title: 'Reading',
+          memberIds: [ada.user.id],
+        })
+      ).conversation.id;
+      const said = (
+        await ben.post(`/v1/conversations/${group}/messages`, {
+          clientId: uuidv4(),
+          body: 'Chapter 3 by Friday',
+        })
+      ).message;
+      await ada.post(`/v1/messages/${said.id}/save`, { collection: 'Reading' });
+      heard.length = 0;
+      await ada.del(`/v1/conversations/${group}/members/${ada.user.id}`);
+      expect(await told('saved.changed', ada.user.id)).toBe(true);
+    } finally {
+      stop();
+    }
   });
 });

@@ -29,6 +29,7 @@ import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
 import { activeAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
+import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
 import { joinThreads, leaveThreads } from '../lib/business';
@@ -39,7 +40,7 @@ import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
-import { suggestFromPlace } from '../lib/suggest';
+import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { endFollowsOf } from '../lib/updates';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -351,7 +352,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       const people = (await team(ctx, id)).filter((m) => m.kind === 'human').map((m) => m.user_id);
       await suggestFromPlace(
         ctx,
-        { kind: 'org', name: org.name, verified: org.verified_at !== null },
+        { kind: 'org', id, name: org.name, verified: org.verified_at !== null },
         adding,
         people,
       );
@@ -418,6 +419,10 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('id', '=', id)
           .execute();
     });
+    // What they saved of its customers' conversations is out of their Saved now, and what
+    // Caishy offered because they were on its team goes.
+    await tellSaved(ctx, [userId]);
+    await withdrawPlaceOffers(ctx, { kind: 'org', id }, userId);
     // Closed: what it paid for ends (a job keeps trying if Stripe can't be reached now).
     if (people.length === 1) {
       await endBillingOf(ctx, { orgId: id });

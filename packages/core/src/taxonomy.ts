@@ -477,6 +477,11 @@ export function relationshipOfferText(
   if (role) return `${name} may be your ${role.label.toLowerCase()}${at}`;
   if (sphere === 'family') return `${name} may be family`;
   if (sphere === 'work') return `${name} may be someone you work with${at}`;
+  // The spheres that name a group are said of a person: never "may be a community".
+  if (sphere === 'community') return `${name} may be someone from your community${at}`;
+  if (sphere === 'organization')
+    return `${name} may be someone from ${offer.orgName || 'an organization'}`;
+  if (sphere === 'public' || sphere === 'other') return `${name} may be someone you know${at}`;
   const label = SPHERE_DEFS[sphere].label.toLowerCase();
   return `${name} may be ${/^[aeiou]/.test(label) ? 'an' : 'a'} ${label}${at}`;
 }

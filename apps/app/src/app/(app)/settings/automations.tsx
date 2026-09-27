@@ -24,6 +24,7 @@ import { Button } from '@/ui/Button';
 import { Bookmark, Clock, Moon } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
+import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -44,7 +45,7 @@ function whom(p: Pick<PolicyView, 'scope'>): string {
     case 'community':
       return 'people from your community';
     case 'public':
-      return 'people you don’t know';
+      return 'public figures, creators and services';
     case 'other':
       return 'everyone else';
     default:
@@ -126,34 +127,65 @@ function RuleFor({
 function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void }) {
   const qc = useQueryClient();
   const t = useTheme();
-  const [on, setOn] = useState(a.enabled);
-  const flip = async (v: boolean) => {
-    setOn(v);
+  // As it's saved, here or on another device; turned here, it shows at once.
+  const flip = async (enabled: boolean) => {
+    const show = (on: boolean) =>
+      qc.setQueryData<{ automations: AutomationView[] }>(qk.automations, (old) =>
+        old
+          ? {
+              ...old,
+              automations: old.automations.map((x) => (x.id === a.id ? { ...x, enabled: on } : x)),
+            }
+          : old,
+      );
+    show(enabled);
     try {
-      await endpoints.updateAutomation(a.id, { enabled: v });
-      void qc.invalidateQueries({ queryKey: qk.automations });
+      await endpoints.updateAutomation(a.id, { enabled });
     } catch (e) {
-      setOn(!v);
+      show(!enabled);
       toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      void qc.invalidateQueries({ queryKey: qk.automations });
     }
   };
+  const status = !a.enabled ? 'Off' : a.runs ? `${a.runs} kept so far` : 'Nothing kept yet';
+  // What it does opens it; the switch beside it turns it on or off, and is never inside it.
   return (
-    <ListRow
-      icon={Bookmark}
-      title={a.description}
-      subtitle={!on ? 'Off' : a.runs ? `${a.runs} kept so far` : 'Nothing kept yet'}
-      onPress={onOpen}
-      right={
-        <Switch
-          value={on}
-          onValueChange={(v) => void flip(v)}
-          trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-          accessibilityLabel={`${a.description}: ${on ? 'on' : 'off'}`}
-          testID="automation-toggle"
-        />
-      }
-      testID="automation-row"
-    />
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 16 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${a.description}. ${status}`}
+        onPress={onOpen}
+        style={({ hovered, pressed }) => ({
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          minHeight: 52,
+          paddingLeft: 16,
+          paddingRight: 12,
+          paddingVertical: 10,
+          backgroundColor: pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : undefined,
+        })}
+        testID="automation-row"
+      >
+        <Bookmark size={20} color={t.c.textSecondary} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="bodyStrong">{a.description}</Text>
+          <Text variant="caption" color="textSecondary">
+            {status}
+          </Text>
+        </View>
+      </Pressable>
+      <Switch
+        value={a.enabled}
+        onValueChange={(v) => void flip(v)}
+        trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
+        // Its state is the switch's own (on or off), never part of its name.
+        accessibilityLabel={a.description}
+        testID="automation-toggle"
+      />
+    </View>
   );
 }
 
@@ -204,7 +236,23 @@ export default function Automations() {
         title="Keep what arrives"
         footer="Kept in your Saved collections, for as long as its message is there."
       >
-        {mine.length ? (
+        {automations.isPending ? (
+          <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
+            Loading your automations…
+          </Text>
+        ) : automations.isError && !mine.length ? (
+          <View style={{ padding: 16, gap: 10, alignItems: 'flex-start' }}>
+            <Text variant="body" color="textSecondary">
+              Your automations didn’t load.
+            </Text>
+            <Button
+              label="Try again"
+              size="sm"
+              variant="secondary"
+              onPress={() => void automations.refetch()}
+            />
+          </View>
+        ) : mine.length ? (
           mine.map((a, i) => (
             <View key={a.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
               <AutomationRow a={a} onOpen={() => setEditing(a)} />

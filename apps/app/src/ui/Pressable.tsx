@@ -48,6 +48,37 @@ function ariaOf(
   return aria;
 }
 
+type KeyEvent = {
+  key?: string;
+  repeat?: boolean;
+  nativeEvent?: { key?: string; repeat?: boolean };
+  preventDefault?: () => void;
+};
+
+/**
+ * On the web, Space presses a button but nothing else (react-native-web): a checkbox, a radio or
+ * a switch would scroll the page instead of ticking. Space ticks them, as it does a real one.
+ */
+function spacePresses(
+  role: RNPressableProps['accessibilityRole'],
+  disabled: boolean | null | undefined,
+  onPress: RNPressableProps['onPress'],
+  onKeyDown: ((e: KeyEvent) => void) | undefined,
+): object {
+  if (Platform.OS !== 'web' || !role || !['checkbox', 'radio', 'switch'].includes(role)) return {};
+  return {
+    onKeyDown: (e: KeyEvent) => {
+      onKeyDown?.(e);
+      const key = e.nativeEvent?.key ?? e.key;
+      if ((key !== ' ' && key !== 'Spacebar') || disabled) return;
+      e.preventDefault?.();
+      // Held down, it's pressed once, as a real checkbox is: never again with each repeat.
+      if (e.nativeEvent?.repeat || e.repeat) return;
+      onPress?.(e as never);
+    },
+  };
+}
+
 /** Pressable with hover and keyboard-focus states on the web and haptics on phones. */
 export function Pressable({
   style,
@@ -64,6 +95,12 @@ export function Pressable({
     <RNPressable
       {...rest}
       {...ariaOf(rest.accessibilityRole, rest.accessibilityState)}
+      {...spacePresses(
+        rest.accessibilityRole,
+        rest.disabled ?? rest.accessibilityState?.disabled,
+        onPress,
+        (rest as { onKeyDown?: (e: KeyEvent) => void }).onKeyDown,
+      )}
       onPress={(e) => {
         if (haptic && Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => {});
         onPress?.(e);

@@ -46,6 +46,8 @@ function OfferCard({
       qk.connections,
       qk.inbox,
       qk.relationshipHistory(person.id),
+      ['conversation'],
+      ['policy-for'],
     ])
       void qc.invalidateQueries({ queryKey: key });
   };

@@ -1185,6 +1185,16 @@ test.describe
       await expect(page.getByTestId('person-rule').filter({ visible: true })).not.toContainText(
         'Just for them',
       );
+      // Opened and closed with nothing changed, there's still no rule of his own: reopened, it
+      // has nothing to take away.
+      await page.getByTestId('person-rule').filter({ visible: true }).click();
+      await expect(sheet).toBeVisible();
+      await closeSheet();
+      await page.reload();
+      await page.getByTestId('person-rule').filter({ visible: true }).click();
+      await expect(sheet).toBeVisible();
+      await expect(sheet.getByTestId('rule-delete')).toHaveCount(0);
+      await closeSheet();
       expect(errors).toEqual([]);
     });
 
@@ -1198,12 +1208,20 @@ test.describe
       await sheet.getByTestId('automation-words').fill('invoice');
       await sheet.getByTestId('automation-collection').fill('Invoices');
       await page.getByTestId('automation-save').click();
-      await expect(
-        page.getByTestId('automation-row').filter({
-          visible: true,
-          hasText: 'When anyone sends a file with “invoice”, save it to Invoices',
-        }),
-      ).toBeVisible();
+      const row = page.getByTestId('automation-row').filter({
+        visible: true,
+        hasText: 'When anyone sends a file with “invoice”, save it to Invoices',
+      });
+      await expect(row).toBeVisible();
+      await expect(row).toContainText('Nothing kept yet');
+      // Its switch sits beside it: turned off and on again at once, without opening it.
+      const toggle = page.getByTestId('automation-toggle').filter({ visible: true }).first();
+      await toggle.click();
+      await expect(row).toContainText('Off');
+      await expect(sheet).toHaveCount(0);
+      await toggle.click();
+      await expect(row).toContainText('Nothing kept yet');
+      await expect(sheet).toHaveCount(0);
       // Alex writes, then sends one.
       const said = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
         headers: CLIENT,
@@ -1268,6 +1286,27 @@ test.describe
         .getByTestId('saved-remove')
         .click();
       await expect(page.getByTestId('saved-item').filter({ visible: true })).toHaveCount(0);
+      // One file of a message, from what's shared in the conversation, on its own.
+      await page.goto(`/c/${convo}`);
+      await page.getByTestId('open-shared').filter({ visible: true }).click();
+      await page.getByRole('tab', { name: /^Files/ }).click();
+      await page
+        .getByTestId('shared-file')
+        .filter({ visible: true, hasText: 'invoice-0927.pdf' })
+        .getByTestId('shared-save')
+        .click();
+      await page.getByRole('radio', { name: 'A new collection' }).click();
+      await page.getByTestId('save-new-name').fill('Receipts');
+      await page.getByTestId('save-confirm').click();
+      await expect(visible(page, 'Saved to Receipts')).toBeVisible();
+      await page.goto('/settings/saved');
+      await page
+        .getByTestId('saved-collection')
+        .filter({ visible: true, hasText: 'Receipts' })
+        .click();
+      const receipt = page.getByTestId('saved-item').filter({ visible: true });
+      await expect(receipt).toHaveCount(1);
+      await expect(receipt).toContainText('invoice-0927.pdf');
       expect(errors).toEqual([]);
     });
 
@@ -2066,6 +2105,20 @@ test.describe
       await alex.page.getByTestId('composer-send').click();
       await expect(visible(page, answer)).toBeVisible();
 
+      // Nothing of it is kept where its words would be sent to the server: no action, no
+      // decision, nothing saved. Copying it stays hers.
+      await visible(page, secret).hover();
+      await page.getByRole('button', { name: 'React', exact: true }).click();
+      await expect(page.getByTestId('message-copy').filter({ visible: true })).toBeVisible();
+      await expect(page.getByText('Add to my actions', { exact: true })).toHaveCount(0);
+      await expect(page.getByTestId('message-decision')).toHaveCount(0);
+      await expect(page.getByTestId('message-save')).toHaveCount(0);
+      // (Escape closes a sheet once its fade-in has finished.)
+      await expect(async () => {
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('message-copy')).toHaveCount(0, { timeout: 500 });
+      }).toPass();
+
       // They compare codes: the one Noor sees as hers is the one Alex sees as Noor's.
       await page.getByTestId('private-info').click();
       const hers = ((await page.getByTestId('private-my-code').textContent()) ?? '').trim();
@@ -2209,6 +2262,8 @@ test.describe
       await panel.getByTestId('group-edit').click();
       await page.getByTestId('group-edit-purpose').fill('One book a month');
       await page.getByTestId('group-edit-save').click();
+      // Closed, and gone: what's typed next goes to the conversation, never into the sheet.
+      await expect(page.getByTestId('group-edit-save')).toHaveCount(0);
       await expect(visible(page, 'One book a month')).toBeVisible();
 
       // One of its messages becomes a decision: said in it, gathered in its details, and counted

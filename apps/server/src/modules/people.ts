@@ -9,6 +9,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { notFound } from '../lib/errors';
+import { notHiddenFor } from '../lib/messages';
 import {
   activeRelationships,
   between,
@@ -199,6 +200,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
                 .select(sql<number>`count(*)::int`.as('n'))
                 .where('conversation_id', 'in', conversationIds)
                 .where('deleted_at', 'is', null)
+                .where(notHiddenFor(auth.userId, 'messages.id'))
                 .as('messages'),
             (eb) =>
               eb
@@ -206,6 +208,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
                 .select(sql<number>`count(*)::int`.as('n'))
                 .where('conversation_id', 'in', conversationIds)
                 .where('kind', 'in', ['photo', 'video', 'document', 'audio'])
+                .where(notHiddenFor(auth.userId, 'assets.message_id'))
                 .as('files'),
             (eb) =>
               eb
@@ -213,6 +216,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
                 .select(sql<number>`count(*)::int`.as('n'))
                 .where('conversation_id', 'in', conversationIds)
                 .where('kind', '=', 'link')
+                .where(notHiddenFor(auth.userId, 'assets.message_id'))
                 .as('links'),
             (eb) =>
               eb
@@ -271,6 +275,8 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('conversation_id', 'in', conversationIds)
           .where('deleted_at', 'is', null)
           .where('kind', '<>', 'system')
+          // What the viewer deleted for themselves isn't part of it for them.
+          .where(notHiddenFor(auth.userId, 'messages.id'))
           .executeTakeFirstOrThrow()
       : { weeks: 0, last: null, mine: null, theirs: null };
     const asks = async (from: string, since: string | null) =>
@@ -282,6 +288,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
               .where('conversation_id', 'in', conversationIds)
               .where('sender_id', '=', from)
               .where('deleted_at', 'is', null)
+              .where(notHiddenFor(auth.userId, 'messages.id'))
               .where((w) => w.or([w('is_question', '=', true), w('is_request', '=', true)]))
               .$if(Boolean(since), (qb) => qb.where('id', '>', since!))
               .executeTakeFirstOrThrow()

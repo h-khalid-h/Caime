@@ -353,4 +353,89 @@ describe('policies (R11)', () => {
     expect(forSarah.inherited.notify).toBe('always');
     expect(forSarah.inherited.sources.some((s: any) => s.level === 'connection')).toBe(false);
   });
+
+  it('two devices making the same rule at once make one; a rule can’t be moved onto another', async () => {
+    const zed = await signup(t, { displayName: 'Zed Twice' });
+    const asked = await hassan.post('/v1/connections/requests', { toUserId: zed.user.id });
+    await zed.post(`/v1/connections/requests/${asked.requestId}/accept`, {});
+    const conn = (await hassan.get('/v1/connections')).connections.find(
+      (c: any) => c.person.id === zed.user.id,
+    );
+    const scope = { connectionId: conn.connectionId };
+    const [a, b] = await Promise.all([
+      hassan.req('POST', '/v1/policies', { scope, settings: { notify: 'mute' } }),
+      hassan.req('POST', '/v1/policies', { scope, settings: { priority: 'quiet' } }),
+    ]);
+    expect(a.json().id).toBe(b.json().id);
+    const mine = (await hassan.get('/v1/policies')).policies.filter(
+      (p: any) => p.scope.connectionId === conn.connectionId,
+    );
+    expect(mine).toHaveLength(1);
+    expect(mine[0].settings).toEqual({ notify: 'mute', priority: 'quiet' });
+    // Two changes to it at once both hold: neither is written over a copy read before the other.
+    await Promise.all([
+      hassan.patch(`/v1/policies/${mine[0].id}`, { settings: { aiTone: 'friendly' } }),
+      hassan.patch(`/v1/policies/${mine[0].id}`, { settings: { allowUrgent: false } }),
+      hassan.patch(`/v1/policies/${mine[0].id}`, { settings: { followUpHours: 48 } }),
+    ]);
+    expect(
+      (await hassan.get('/v1/policies')).policies.find((p: any) => p.id === mine[0].id).settings,
+    ).toEqual({
+      notify: 'mute',
+      priority: 'quiet',
+      aiTone: 'friendly',
+      allowUrgent: false,
+      followUpHours: 48,
+    });
+    // Two resets at once leave the defaults once.
+    const before = (await hassan.get('/v1/policies')).policies.filter(
+      (p: any) => !p.scope.connectionId,
+    ).length;
+    await Promise.all([hassan.post('/v1/policies/reset'), hassan.post('/v1/policies/reset')]);
+    const after = (await hassan.get('/v1/policies')).policies;
+    expect(after.filter((p: any) => !p.scope.connectionId)).toHaveLength(before);
+    // A rule moved onto a scope another rule has is refused.
+    const friend = after.find((p: any) => p.scope.sphere === 'friend' && !p.scope.role);
+    const vendor = after.find((p: any) => p.scope.sphere === 'vendor' && !p.scope.role);
+    const moved = await hassan.req('PATCH', `/v1/policies/${vendor.id}`, {
+      scope: { sphere: 'friend' },
+    });
+    expect(moved.statusCode).toBe(409);
+    expect(moved.json().error.code).toBe('rule_exists');
+    expect(
+      (await hassan.get('/v1/policies')).policies.find((p: any) => p.id === friend.id),
+    ).toMatchObject({ scope: { sphere: 'friend' } });
+  });
+
+  it('each rule reads as it applies, and the work week moves the rules that keep to it', async () => {
+    // An account in Egypt works Sunday to Thursday.
+    const wes = await signup(t, {
+      displayName: 'Wes Week',
+      timeZone: 'Africa/Cairo',
+      locale: 'ar-EG',
+    });
+    const rules = async () => (await wes.get('/v1/policies')).policies as any[];
+    const find = (all: any[], sphere: string, role?: string) =>
+      all.find((p) => p.scope.sphere === sphere && (p.scope.role ?? undefined) === role);
+    const first = await rules();
+    expect(find(first, 'work').settings.schedule.days).toEqual([0, 1, 2, 3, 4]);
+    // A manager's rule keeps to Work's hours, and says so; a new rule for clients, to customers'.
+    expect(find(first, 'work', 'manager').description).toMatch(/^Notify Sun.Thu 08:00.20:00 · /);
+    const clients = await wes.post('/v1/policies', {
+      scope: { sphere: 'customer', role: 'client' },
+      settings: {},
+    });
+    expect((await rules()).find((p) => p.id === clients.id).description).toMatch(/^Notify Sun.Thu/);
+    // A rule with days of its own keeps them.
+    await wes.post('/v1/policies', {
+      scope: { sphere: 'friend' },
+      settings: { notify: 'schedule', schedule: { days: [5, 6], start: '10:00', end: '22:00' } },
+    });
+    await wes.patch('/v1/me', { workweek: [1, 2, 3, 4, 5] });
+    const moved = await rules();
+    for (const sphere of ['work', 'customer', 'professional'])
+      expect(find(moved, sphere).settings.schedule.days, sphere).toEqual([1, 2, 3, 4, 5]);
+    expect(find(moved, 'friend').settings.schedule.days).toEqual([5, 6]);
+    expect(find(moved, 'work', 'manager').description).toMatch(/^Notify Mon.Fri 08:00.20:00 · /);
+  });
 });

@@ -24,6 +24,7 @@ import { registerCallSweep } from './lib/calls';
 import { AppError } from './lib/errors';
 import { registerGroupCallSweep } from './lib/group-calls';
 import { startWorkers } from './lib/jobs';
+import { requestForLog } from './lib/log';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
 import { registerUpdateJobs } from './lib/updates';
@@ -92,14 +93,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       : {
           level: config.LOG_LEVEL,
           redact: ['req.headers.authorization', 'req.headers.cookie', 'body.password'],
-          serializers: {
-            // Query strings carry search terms and handles: log the path only.
-            req: (req: { method: string; url: string; ip?: string }) => ({
-              method: req.method,
-              url: req.url.split('?')[0],
-              remoteAddress: req.ip,
-            }),
-          },
+          // The path only, and never a secret in it (lib/log.ts).
+          serializers: { req: requestForLog },
         },
     trustProxy: config.TRUST_PROXY,
     bodyLimit: 1_048_576,

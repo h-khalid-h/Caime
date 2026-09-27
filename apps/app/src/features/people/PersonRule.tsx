@@ -1,7 +1,7 @@
 /**
  * How Caishy treats one person (PRD §68): what their relationship's rule says, and a rule just for
- * them on top of it, changed from their page. A rule of theirs that ends up saying nothing is
- * taken away again, so "just for them" always means something.
+ * them on top of it, changed from their page. Theirs is made with its first change, so "just for
+ * them" always means something, and nothing is made or taken away by opening and closing it.
  */
 import type { RelationshipView } from '@caishy/core/api';
 import { resolvePolicy } from '@caishy/core/policy';
@@ -15,7 +15,6 @@ import { Card } from '@/ui/Card';
 import { Bell } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
-import { toast } from '@/ui/Toast';
 
 // Shared with Notifications and Automations: loaded when their rule is opened.
 const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
@@ -38,7 +37,6 @@ export function PersonRule({
     queryFn: () => endpoints.policyFor(personId),
   });
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
   const all = policies.data?.policies ?? [];
   const theirs = all.find((p) => p.scope.connectionId === connectionId) ?? null;
   // The server's, which knows the organization they're with; until it answers, from their role.
@@ -51,31 +49,11 @@ export function PersonRule({
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.policies });
     void qc.invalidateQueries({ queryKey: ['policy-for', personId] });
+    // Their page says what they see of you.
+    void qc.invalidateQueries({ queryKey: qk.person(personId) });
   };
-  const edit = async () => {
-    if (theirs) {
-      setOpen(true);
-      return;
-    }
-    setBusy(true);
-    try {
-      await endpoints.createPolicy({ scope: { connectionId }, settings: {} });
-      await qc.invalidateQueries({ queryKey: qk.policies });
-      setOpen(true);
-    } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
-    } finally {
-      setBusy(false);
-    }
-  };
-  const close = async () => {
+  const close = () => {
     setOpen(false);
-    // Nothing changed for them: no rule of their own.
-    const now = (await endpoints.policies().catch(() => null))?.policies.find(
-      (p) => p.scope.connectionId === connectionId,
-    );
-    if (now && Object.keys(now.settings).length === 0)
-      await endpoints.deletePolicy(now.id).catch(() => {});
     refresh();
   };
   return (
@@ -92,18 +70,20 @@ export function PersonRule({
             .join(' · ') || null
         }
         chevron
-        onPress={busy ? undefined : () => void edit()}
+        onPress={() => setOpen(true)}
         testID="person-rule"
       />
-      {open && theirs ? (
+      {open ? (
         <RuleSheet
-          key={theirs.id}
+          // Theirs once it's made is the same sheet: it's keyed by them, not by the rule.
+          key={connectionId}
           rule={theirs}
+          scope={{ connectionId }}
           inherited={inherited}
           title={name}
           subtitle="Just for them, over how you know them"
           open
-          onClose={() => void close()}
+          onClose={close}
           deleteLabel={`Treat ${name} like everyone you know this way`}
           onDeleted={refresh}
         />

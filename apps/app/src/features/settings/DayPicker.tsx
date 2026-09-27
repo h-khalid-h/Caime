@@ -20,7 +20,12 @@ export function DayPicker({
 }) {
   const t = useTheme();
   return (
-    <View accessibilityLabel={label} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+    // A group named for what it is ("Your work week", "Days"), so each day says whose it is.
+    <View
+      role="group"
+      accessibilityLabel={label}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+    >
       {DAYS.map((d, i) => {
         const on = days.includes(i);
         return (
@@ -35,7 +40,7 @@ export function DayPicker({
             }}
             style={{
               minWidth: 44,
-              minHeight: 36,
+              minHeight: 44,
               paddingHorizontal: 12,
               borderRadius: 12,
               alignItems: 'center',

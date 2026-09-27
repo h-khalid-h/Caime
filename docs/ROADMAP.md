@@ -103,7 +103,8 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       known a way (or anyone) that's a file, photo, video, voice note or link, with a word in
       its name or its message ("invoice"), in a collection of one's own ("Customer Files"). A
       reminder when someone hasn't answered and quiet hours are rules, listed with them on one
-      Automations page. A message, or one file of it, is saved by hand from its actions. Saved
+      Automations page. A message is saved by hand from its actions, and one file or link of
+      it from what's shared in the conversation. Saved
       lists every collection and what's in it, each opening where it is and shown where it was
       said; what's deleted or disappears, or is deleted for oneself, goes from it too
       (`automations.test.ts`, core `automations.test.ts`, E2E)
@@ -350,7 +351,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 - [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
       smoke-tested by CI on every push to `main` (readiness, the page, security headers)
-- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (447.1 KB gzip against 450 KB),
+- [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (448.4 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
@@ -677,3 +678,24 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   the new code, each caught by a test but two that change nothing observable. Tests: 193
   core, 49 brand, 388 server, 100 app, 50 E2E (actions made and ticked offline, search offline,
   the web app reloaded with no network, and a calendar reading its address).
+- 2026-09-27 — Session 2 (cont.): what's coming up, in a conversation's details and on a
+  space's page (its shared calendar), soonest first and each opening its card.
+- 2026-09-27 — Session 2 (cont.): automations, rules and Caishy's offers, after a review. With
+  an organization, its team keeps only what the customer sends, and the customer what the
+  organization sends whoever on it wrote (blocks of people on its team included), so a missing
+  file never says who sent it. Only what someone can see and remove counts toward what they may
+  keep, counted and added one at a time; Saved and Automations catch up on every device; words
+  are found in camelCase, after digits, next to Chinese or Japanese, after the Arabic
+  article and in names written decomposed, each text folded once; automations and what's saved are in the export; one file or link is saved from
+  what's shared; nothing of a private message (or one still waiting to go) becomes an action,
+  a decision or something saved. Opening someone's rule makes none, closing it removes none, and quick changes
+  never undo each other (merged as written). An offer goes once you've said how you know them,
+  blocked them or left where it came from, is offered once however it came, names them as they show themselves, and
+  reads as a person. A calendar's address is never in the server's log, recovering the account
+  ends it, a message request's asks never reach it (and one that can't be sent leaves no action),
+  and what's ahead is always in it, however much is behind. Cached pages from before are dropped
+  rather than misread. Migrations 0028
+  (automations by person), 0029 (offers in one form) and 0030 (the cards a calendar reads, by
+  kind, so a message's payload changes in place again). Mutation-tested: 29 changes to the fixes, each caught by a test. Tests: 198
+  core, 49 brand, 405 server, 100 app, 50 E2E (an automation turned off beside it, one file saved
+  from what's shared, and someone's rule opened and closed without making one).

@@ -11,13 +11,13 @@ import type { AppContext } from '../context';
 import type { Suggestion } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
-import { badRequest, notFound } from '../lib/errors';
+import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { isBlockedEitherWay, relationshipView } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { assertCanStartTopic, createTopicConversation, membership } from './conversations';
-import { createRelationship } from './relationships';
+import { createRelationship, mayClassify } from './relationships';
 
 export function suggestionView(s: Suggestion): SuggestionView {
   return {
@@ -55,6 +55,41 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .$if(Boolean(q.conversationId), (qb) => qb.where('conversation_id', '=', q.conversationId!))
       .$if(Boolean(q.kind), (qb) => qb.where('kind', '=', q.kind!))
       .$if(Boolean(q.subjectUserId), (qb) => qb.where('subject_user_id', '=', q.subjectUserId!))
+      // What someone may be to you, only while you haven't said, and never across a block.
+      .where(({ or, and, eb, not, exists, selectFrom }) =>
+        or([
+          eb('kind', '<>', 'relationship'),
+          and([
+            not(
+              exists(
+                selectFrom('relationships as r')
+                  .select('r.id')
+                  .whereRef('r.owner_id', '=', 'suggestions.user_id')
+                  .whereRef('r.subject_id', '=', 'suggestions.subject_user_id')
+                  .where('r.status', '=', 'active'),
+              ),
+            ),
+            not(
+              exists(
+                selectFrom('blocks as b')
+                  .select('b.blocker_id')
+                  .where((w) =>
+                    w.or([
+                      w.and([
+                        w('b.blocker_id', '=', w.ref('suggestions.user_id')),
+                        w('b.blocked_id', '=', w.ref('suggestions.subject_user_id')),
+                      ]),
+                      w.and([
+                        w('b.blocker_id', '=', w.ref('suggestions.subject_user_id')),
+                        w('b.blocked_id', '=', w.ref('suggestions.user_id')),
+                      ]),
+                    ]),
+                  ),
+              ),
+            ),
+          ]),
+        ]),
+      )
       .orderBy('created_at', 'desc')
       .limit(100)
       .execute();
@@ -233,6 +268,12 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
         }
         case 'relationship': {
           if (!s.subject_user_id) throw badRequest('This suggestion is missing its person.');
+          // As when it's said by hand: never about someone blocked, either way.
+          if (
+            (await isBlockedEitherWay(trx, auth.userId, s.subject_user_id)) ||
+            !(await mayClassify(trx, auth.userId, s.subject_user_id))
+          )
+            throw forbidden('Connect with this person first.');
           const input = (edits.relationship ?? payload) as RelationshipInputT;
           const r = await createRelationship(trx, ctx, auth.userId, s.subject_user_id, input, {
             source: 'suggestion',
@@ -328,6 +369,12 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       await ctx.bus.publish([auth.userId], {
         type: 'connection.updated',
         data: { connectionId: (result.view as { connectionId: string }).connectionId },
+      });
+    // How they know them now, on every device: their page, People, the inbox.
+    else if (result.type === 'relationship')
+      await ctx.bus.publish([auth.userId], {
+        type: 'relationship.changed',
+        data: { subjectId: s.subject_user_id },
       });
     else
       await ctx.bus.publish(affected, {

@@ -22,7 +22,13 @@ import { customerMask, maskFor } from '../lib/business';
 import { canEditConversation, contextVisible } from '../lib/contexts';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { messagePreview, messageViews, participantsOf, sendMessage } from '../lib/messages';
+import {
+  assertCanSend,
+  messagePreview,
+  messageViews,
+  participantsOf,
+  sendMessage,
+} from '../lib/messages';
 import { notify } from '../lib/notify';
 import { between } from '../lib/relations';
 import { parse } from '../lib/validate';
@@ -292,6 +298,31 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       (me === business.customerId) !== (assignee === business.customerId)
     )
       throw forbidden('Requests between a customer and an organization aren’t available yet.');
+    // A request's card goes in the conversation: whatever would refuse it refuses it before
+    // anything is written (a message request that has had its one message, a closed business
+    // conversation, a private one), so nothing is asked that nobody was told of.
+    const cardClientId = body.clientId ?? `req:${uuidv4()}`;
+    const requestCard = (taskId: string, title: string, dueAt: string | null) => ({
+      clientId: cardClientId,
+      kind: 'kit' as const,
+      payload: {
+        kit: 'request',
+        fields: {},
+        taskId,
+        title,
+        dueAt,
+        state: 'open',
+        assigneeId: assignee,
+      },
+    });
+    if (body.shared && body.conversationId)
+      await assertCanSend(
+        ctx,
+        me,
+        body.conversationId,
+        requestCard(uuidv4(), body.title, body.dueAt ?? null),
+        { trusted: true },
+      );
     let task: Awaited<ReturnType<typeof createTask>>;
     try {
       task = await ctx.db.transaction().execute((trx) =>
@@ -332,26 +363,22 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         ? ` · due ${formatDue(task.due_at.toISOString(), ctx.now(), assigneeUser.time_zone, 'en', task.due_has_time)}`
         : '';
       if (body.conversationId) {
-        // The structured request appears in the conversation as a live card (PRD §21).
-        const sent = await sendMessage(
-          ctx,
-          me,
-          body.conversationId,
-          {
-            clientId: body.clientId ?? `req:${uuidv4()}`,
-            kind: 'kit',
-            payload: {
-              kit: 'request',
-              fields: {},
-              taskId: task.id,
-              title: task.title,
-              dueAt: task.due_at?.toISOString() ?? null,
-              state: 'open',
-              assigneeId: assignee,
-            },
-          },
-          { trusted: true },
-        );
+        // The structured request appears in the conversation as a live card (PRD §21). One that
+        // can't go after all (something changed since it was checked) means nothing was asked:
+        // the action goes with it, and sending again tries again.
+        let sent: Awaited<ReturnType<typeof sendMessage>>;
+        try {
+          sent = await sendMessage(
+            ctx,
+            me,
+            body.conversationId,
+            requestCard(task.id, task.title, task.due_at?.toISOString() ?? null),
+            { trusted: true },
+          );
+        } catch (err) {
+          await ctx.db.deleteFrom('tasks').where('id', '=', task.id).execute();
+          throw err;
+        }
         if (sent.created) {
           await ctx.db
             .updateTable('tasks')

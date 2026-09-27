@@ -1,4 +1,5 @@
 import { uuidv4 } from '@caishy/core';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -301,6 +302,92 @@ describe('a calendar feed (PRD §72)', () => {
     await ben.del(`/v1/conversations/${group}/members/${ben.user.id}`);
     expect(event(await lines(benFeed), `meeting-${standup.id}@caishy`)).toBeNull();
     expect(event(await lines(url), `meeting-${standup.id}@caishy`)).not.toBeNull();
+  });
+
+  it('ends when the account is recovered: whoever had it may have made it', async () => {
+    const eve = await signup(t, { displayName: 'Eve Recovered' });
+    const { url } = await eve.post('/v1/calendar/feed');
+    expect((await read(url)).statusCode).toBe(200);
+    const res = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/recover',
+      payload: {
+        identifier: eve.user.handle,
+        code: eve.recoveryCodes[0],
+        newPassword: 'a brand new passphrase',
+        client: 'native',
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect((await read(url)).statusCode).toBe(404);
+  });
+
+  it('never has what a message request asked, and a request refused leaves no action', async () => {
+    const mal = await signup(t, { displayName: 'Mal Stranger' });
+    const vic = await signup(t, { displayName: 'Vic Asked' });
+    const { url } = await vic.post('/v1/calendar/feed');
+    const dm = (await mal.post('/v1/conversations', { kind: 'direct', userId: vic.user.id }))
+      .conversation.id;
+    const ask = (title: string) =>
+      mal.req('POST', '/v1/tasks', {
+        title,
+        assigneeId: vic.user.id,
+        shared: true,
+        conversationId: dm,
+        dueAt: '2026-10-01T09:00:00Z',
+        dueHasTime: true,
+      });
+    // Its one message is the request's card, waiting in Requests: not in Vic's calendar.
+    const first = await ask('Verify your account');
+    expect(first.statusCode).toBe(201);
+    expect(event(await lines(url), `task-${first.json().task.id}@caishy`)).toBeNull();
+    // Another has nowhere to go: refused, and nothing of it is kept.
+    const second = await ask('Verify it again');
+    expect(second.statusCode).toBe(403);
+    const made = await t.ctx.db
+      .selectFrom('tasks')
+      .select('title')
+      .where('owner_id', '=', mal.user.id)
+      .execute();
+    expect(made.map((m) => m.title)).toEqual(['Verify your account']);
+  });
+
+  it('keeps what’s ahead, however much is behind it', async () => {
+    const kai = await signup(t, { displayName: 'Kai Busy' });
+    const lu = await signup(t, { displayName: 'Lu Busy' });
+    const withLu = await connect(kai, lu);
+    const { url } = await kai.post('/v1/calendar/feed');
+    const ahead = await card(kai, withLu, 'meeting', {
+      title: 'Next Tuesday',
+      start: { at: '2026-10-06T09:00:00Z', hasTime: true },
+    });
+    await lu.post(`/v1/messages/${ahead.id}/kit`, { to: 'accepted' });
+    // Hundreds agreed since, for long ago: never in the window, never crowding it out.
+    await sql`
+      insert into messages (id, conversation_id, seq, sender_id, kind, payload, created_at)
+      select gen_random_uuid(), conversation_id, seq + 1000 + g, sender_id, kind,
+        jsonb_set(payload, '{fields,start,at}', '"2025-01-06T09:00:00.000Z"'),
+        created_at + make_interval(secs => g)
+      from messages, generate_series(1, 510) g where id = ${ahead.id}`.execute(t.ctx.db);
+    // And hundreds of actions overdue, with one coming up.
+    const soon = (
+      await kai.post('/v1/tasks', { title: 'Coming up', dueAt: '2026-10-02T09:00:00Z' })
+    ).task.id;
+    await t.ctx.db
+      .insertInto('tasks')
+      .values(
+        Array.from({ length: 505 }, (_, i) => ({
+          id: uuidv4(),
+          owner_id: kai.user.id,
+          assignee_id: kai.user.id,
+          title: `Overdue ${i}`,
+          due_at: new Date(Date.parse('2026-08-01T09:00:00Z') + i * 60_000),
+        })),
+      )
+      .execute();
+    const all = await lines(url);
+    expect(event(all, `meeting-${ahead.id}@caishy`)).not.toBeNull();
+    expect(event(all, `task-${soon}@caishy`)).not.toBeNull();
   });
 
   it('goes with the account', async () => {

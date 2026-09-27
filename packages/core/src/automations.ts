@@ -51,34 +51,111 @@ export interface Arrival {
 
 /**
  * Compared without case, nor the accents a Latin, Greek or Cyrillic letter can go without
- * ("facture" finds "Facturé"), as mentions are.
+ * ("facture" finds "Facturé"), as mentions are. The same on every device whatever its language
+ * (never a Turkish dotless i), and a Greek word's last sigma is its sigma.
  */
 const fold = (s: string) =>
   s
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .normalize('NFC')
-    .toLocaleLowerCase();
+    .toLowerCase()
+    .replace(/\u03c2/g, '\u03c3');
 
 const WORDISH = /[\p{L}\p{N}]/u;
+const LETTER = /\p{L}/u;
+const DIGIT = /\p{N}/u;
 /** Scripts written without spaces between words: a word there can start anywhere. */
 const UNSPACED = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u;
+/** Arabic's article, and the one-letter words written onto it (and, so, with, as, for). */
+const ARTICLE = '\u0627\u0644';
+const ARTICLE_LAM = '\u0644\u0644';
+const CLITICS = '\u0648\u0641\u0628\u0643\u0644';
+
+interface Folded {
+  hay: string;
+  /** For each character of `hay`, whether the one it came from was a capital (camelCase). */
+  upper: boolean[];
+}
+
+/**
+ * The text folded as words are compared, keeping where its capitals were: folding can change a
+ * text's length, so it's done a character at a time, of the text composed first (a name written
+ * decomposed, as macOS keeps them, folds as it reads). Most names are plain ASCII, folded
+ * without decomposing anything.
+ */
+function foldKeepingCase(text: string): Folded {
+  let hay = '';
+  const upper: boolean[] = [];
+  for (const ch of text.normalize('NFC')) {
+    const code = ch.charCodeAt(0);
+    if (code < 128) {
+      const capital = code >= 65 && code <= 90;
+      hay += capital ? String.fromCharCode(code + 32) : ch;
+      upper.push(capital);
+      continue;
+    }
+    const f = fold(ch);
+    const capital = ch !== ch.toLowerCase() && LETTER.test(ch);
+    hay += f;
+    for (let i = 0; i < f.length; i++) upper.push(capital);
+  }
+  return { hay, upper };
+}
+
+/**
+ * The same texts are looked in again and again (a message's words, for each automation of each
+ * person it arrives for, and each of its files): each is folded once.
+ */
+const FOLDED = new Map<string, Folded>();
+function folded(text: string): Folded {
+  let f = FOLDED.get(text);
+  if (!f) {
+    if (FOLDED.size >= 64) FOLDED.clear();
+    f = foldKeepingCase(text);
+    FOLDED.set(text, f);
+  }
+  return f;
+}
+
+/** Whether a word found at `at` starts one: "Invoice" in "CustomerInvoice", "0923invoice". */
+function startsWord(hay: string, upper: boolean[], at: number, word: string): boolean {
+  if (at === 0) return true;
+  const before = hay.charAt(at - 1);
+  const first = word.charAt(0);
+  if (!WORDISH.test(before) || UNSPACED.test(first)) return true;
+  // Another script, or a number, just before: "請求書invoice", "0923invoice".
+  if (UNSPACED.test(before) && !UNSPACED.test(first)) return true;
+  if (DIGIT.test(before) && LETTER.test(first)) return true;
+  // camelCase: a capital after a small letter.
+  if (upper[at] && !upper[at - 1] && LETTER.test(before)) return true;
+  // Arabic: "الفاتورة" and "بالفاتورة" are the word "فاتورة".
+  const two = hay.slice(Math.max(0, at - 2), at);
+  if (two === ARTICLE || two === ARTICLE_LAM) {
+    // At most two letter-words before it ("and with the"), and a word starts before those.
+    let p = at - 2;
+    for (let i = 0; i < 2 && two === ARTICLE && p > 0 && CLITICS.includes(hay.charAt(p - 1)); i++)
+      if (p - 1 === 0 || !WORDISH.test(hay.charAt(p - 2))) return true;
+      else p--;
+    return at - 2 === 0 || !WORDISH.test(hay.charAt(at - 3));
+  }
+  return false;
+}
 
 /**
  * Whether one of the words starts a word in the text: "invoice" finds "Invoice_0923.pdf",
- * "invoices" and "my-invoice", never "reinvoice". Several words ("purchase order") are found
- * together, as written.
+ * "invoices", "my-invoice", "CustomerInvoice.pdf" and "0923invoice.pdf", never "reinvoice".
+ * Several words ("purchase order") are found together, as written.
  */
 export function hasWord(text: string, words: string[]): boolean {
   if (!text) return false;
-  const hay = fold(text);
+  const { hay, upper } = folded(text);
   for (const raw of words) {
     const word = fold(raw.trim());
     if (!word) continue;
     let at = hay.indexOf(word);
     while (at !== -1) {
-      const before = hay.charAt(at - 1);
-      if (at === 0 || !WORDISH.test(before) || UNSPACED.test(word.charAt(0))) return true;
+      if (startsWord(hay, upper, at, word)) return true;
       at = hay.indexOf(word, at + 1);
     }
   }
@@ -93,11 +170,14 @@ export function automationMatches(when: AutomationWhen, a: Arrival): boolean {
   return hasWord(a.name, when.words) || hasWord(a.text, when.words);
 }
 
-/** The words an automation looks for, as typed: "invoice, receipt" → ["invoice", "receipt"]. */
+/**
+ * The words an automation looks for, as typed: "invoice, receipt" → ["invoice", "receipt"], with
+ * the commas and semicolons of Arabic, Chinese and Japanese too ("发票，收据").
+ */
 export function wordsFrom(typed: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const w of typed.split(/[,،、;\n]/)) {
+  for (const w of typed.split(/[,;\n\u060c\u061b\u3001\uff0c\uff1b\uff64]/)) {
     const word = w.trim().replace(/^["“”'‘’«»]+|["“”'‘’«»]+$/g, '');
     if (!word || seen.has(fold(word))) continue;
     seen.add(fold(word));
@@ -121,8 +201,10 @@ export function whoSends(when: Pick<AutomationWhen, 'sphere' | 'role'>): string 
       return 'someone from work';
     case 'community':
       return 'someone from your community';
+    // Someone you said is a public figure, a creator or a public service: never a stranger,
+    // who has no relationship to match.
     case 'public':
-      return 'someone you don’t know';
+      return 'someone public';
     case 'other':
       return 'anyone else';
     default:

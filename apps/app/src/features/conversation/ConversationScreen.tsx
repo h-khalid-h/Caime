@@ -64,6 +64,7 @@ import { MessageBubble } from './MessageBubble';
 import { PinnedBar } from './PinnedBar';
 import { RequestBanner } from './RequestBanner';
 import { buildRows, type Row } from './rows';
+import { mayKeepFrom } from './SharedFiles';
 import { SuggestionBar } from './SuggestionBar';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
 
@@ -719,6 +720,8 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         }
         canPin={pinner}
         onForward={setForwarding}
+        // Nothing of a request is kept until it's accepted, nor once declined (the server's rule).
+        canSave={conversation ? mayKeepFrom(conversation) : false}
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {

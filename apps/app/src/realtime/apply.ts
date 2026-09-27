@@ -286,11 +286,17 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['relationship-history'], 'relationship-history');
       invalidate(['conversation'], 'conversation');
       invalidate(qk.inbox, 'inbox');
+      // Which rule applies to them follows how you know them, and what Caishy offered is
+      // answered once you've said.
+      invalidate(['policy-for'], 'policy-for');
+      invalidate(['suggestions'], 'suggestions');
       return;
     case 'policies.changed':
       invalidate(qk.policies);
       invalidate(['policy-for'], 'policy-for');
       invalidate(qk.inbox, 'inbox');
+      // A person's page says what they see of you.
+      invalidate(['person'], 'person');
       return;
     case 'saved.changed':
       invalidate(qk.saved, 'saved');

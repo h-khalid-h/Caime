@@ -2,10 +2,17 @@
  * Background handlers: follow-up checks (PRD §69), reminders (PRD §28), held notifications
  * released when their window opens (PRD §32), retention (PRD §60) and temporary conversations.
  */
-import { previewText } from '@caishy/core';
+import { previewText, resolvePolicy } from '@caishy/core';
 import { sql } from 'kysely';
-import { registerJob, registerPeriodic } from '../lib/jobs';
+import { tellSaved } from '../lib/automations';
+import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
 import { notify, runNotificationHooks } from '../lib/notify';
+import {
+  activeRelationships,
+  isBlockedEitherWay,
+  loadPolicies,
+  policyTargetFor,
+} from '../lib/relations';
 
 export function registerWorkers(): void {
   registerJob('follow_up_check', async (ctx, p) => {
@@ -17,19 +24,61 @@ export function registerWorkers(): void {
       .where('seq', '>', String(p.seq))
       .executeTakeFirst();
     if (reply) return;
-    const [original, other] = await Promise.all([
+    const senderId = String(p.senderId);
+    const otherId = String(p.otherId);
+    const [original, other, conversation, seat, hidden, blocked] = await Promise.all([
       ctx.db
         .selectFrom('messages')
-        .select(['body', 'deleted_at'])
+        .select(['body', 'deleted_at', 'created_at'])
         .where('id', '=', String(p.messageId))
         .executeTakeFirst(),
       ctx.db
         .selectFrom('users')
         .select(['display_name'])
-        .where('id', '=', String(p.otherId))
+        .where('id', '=', otherId)
         .executeTakeFirst(),
+      ctx.db
+        .selectFrom('conversations')
+        .select('connection_id')
+        .where('id', '=', String(p.conversationId))
+        .executeTakeFirst(),
+      ctx.db
+        .selectFrom('participants')
+        .select('user_id')
+        .where('conversation_id', '=', String(p.conversationId))
+        .where('user_id', '=', senderId)
+        .where('left_at', 'is', null)
+        .executeTakeFirst(),
+      ctx.db
+        .selectFrom('hidden_messages')
+        .select('message_id')
+        .where('message_id', '=', String(p.messageId))
+        .where('user_id', '=', senderId)
+        .executeTakeFirst(),
+      isBlockedEitherWay(ctx.db, senderId, otherId),
     ]);
-    if (!original || original.deleted_at || !other) return;
+    // Only what they'd still want: a message they can still see, from someone they can still
+    // hear from, and a rule that still says to remind them (it may have changed since).
+    if (!original || original.deleted_at || !other || !conversation || !seat || hidden || blocked)
+      return;
+    const [policies, rels] = await Promise.all([
+      loadPolicies(ctx.db, senderId),
+      activeRelationships(ctx.db, senderId, [otherId]),
+    ]);
+    const hours = resolvePolicy(
+      policies,
+      policyTargetFor(rels[0], conversation.connection_id),
+    ).followUpHours;
+    if (!hours) return;
+    const due = new Date(original.created_at.getTime() + hours * 3_600_000);
+    if (due > ctx.now()) {
+      // Made longer since it was asked: then.
+      await enqueue(ctx, 'follow_up_check', p, {
+        runAt: due,
+        dedupeKey: `follow_up:${String(p.messageId)}:${hours}`,
+      });
+      return;
+    }
     await notify(ctx, {
       userId: String(p.senderId),
       kind: 'follow_up',
@@ -106,7 +155,7 @@ export function registerWorkers(): void {
       // Disappeared (PRD §60): its words and envelope go, and so does everything kept of it
       // elsewhere, as when it's deleted for everyone: the files and links in the conversation's
       // index and memory, a pin, what anyone saved of it, and what Caishy was about to offer.
-      await sql`
+      const savers = await sql<{ user_id: string }>`
         with gone as (
           update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}',
             entities = '{}', sealed = null, pinned_at = null, pinned_by = null
@@ -117,9 +166,19 @@ export function registerWorkers(): void {
         ),
         assets_gone as (delete from assets where message_id in (select id from gone)),
         files_gone as (delete from message_files where message_id in (select id from gone)),
-        saved_gone as (delete from saved_items where message_id in (select id from gone))
-        update suggestions set status = 'expired', resolved_at = ${ctx.now()}
-        where status = 'pending' and message_id in (select id from gone)`.execute(ctx.db);
+        saved_gone as (
+          delete from saved_items where message_id in (select id from gone) returning user_id
+        ),
+        offers_gone as (
+          update suggestions set status = 'expired', resolved_at = ${ctx.now()}
+          where status = 'pending' and message_id in (select id from gone)
+        )
+        select distinct user_id from saved_gone`.execute(ctx.db);
+      // Whoever had saved something of it sees their lists without it, on every device.
+      await tellSaved(
+        ctx,
+        savers.rows.map((r) => r.user_id),
+      );
       await ctx.db
         .updateTable('participants')
         .set({ archived_at: ctx.now() })

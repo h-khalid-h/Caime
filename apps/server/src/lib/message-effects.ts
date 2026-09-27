@@ -20,7 +20,13 @@ import { isGroupTopic } from './conversations';
 import { enqueue } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
-import { activeRelationships, loadPolicies, policyTargetFor, relationshipView } from './relations';
+import {
+  activeConnectionId,
+  activeRelationships,
+  loadPolicies,
+  policyTargetFor,
+  relationshipView,
+} from './relations';
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion } from './suggest';
 import { identityShownTo } from './users';
@@ -211,15 +217,18 @@ async function notifyRecipient(
     .select(['time_zone', 'quiet_hours'])
     .where('id', '=', recipient.user_id)
     .executeTakeFirstOrThrow();
-  const [policies, rels, shown] = await Promise.all([
+  const [policies, rels, shown, connectionId] = await Promise.all([
     loadPolicies(ctx.db, recipient.user_id),
     activeRelationships(ctx.db, recipient.user_id, [sender.id]),
     // Named as the sender shows themselves to this person (PRD §35), on a lock screen too; an
     // organization speaking in its own conversation keeps its name.
     identityShownTo(ctx, sender.id, recipient.user_id),
+    // A rule just for the sender holds wherever they write: in a group too, by their connection.
+    conversation.kind === 'direct'
+      ? conversation.connection_id
+      : activeConnectionId(ctx.db, recipient.user_id, sender.id),
   ]);
   const senderName = shown?.displayName ?? sender.display_name;
-  const connectionId = conversation.kind === 'direct' ? conversation.connection_id : null;
   const policy = resolvePolicy(policies, policyTargetFor(rels[0], connectionId));
   const kind: NotificationKind = message.mentions.includes(recipient.user_id)
     ? 'mention'

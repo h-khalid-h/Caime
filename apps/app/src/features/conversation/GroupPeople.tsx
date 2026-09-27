@@ -452,7 +452,8 @@ export function GroupPeople({
             <TextField
               label="Name"
               value={form.title}
-              onChangeText={(title) => setEditing({ ...form, title })}
+              // Only while it's open: a keystroke as it closes never opens it again.
+              onChangeText={(title) => setEditing((e) => (e ? { ...e, title } : e))}
               maxLength={NAME_MAX}
               autoFocus
               testID="group-edit-title"
@@ -460,7 +461,7 @@ export function GroupPeople({
             <TextField
               label="What it’s for"
               value={form.purpose}
-              onChangeText={(purpose) => setEditing({ ...form, purpose })}
+              onChangeText={(purpose) => setEditing((e) => (e ? { ...e, purpose } : e))}
               maxLength={PURPOSE_MAX}
               multiline
               placeholder="A line everyone in it sees"

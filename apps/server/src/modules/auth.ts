@@ -407,6 +407,17 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .execute();
     await revokeGrantsOf(ctx, user.id);
+    // And so does a calendar's address: whoever had the account may have made it.
+    const feed = await ctx.db
+      .deleteFrom('calendar_feeds')
+      .where('user_id', '=', user.id)
+      .executeTakeFirst();
+    if (Number(feed.numDeletedRows) > 0)
+      await audit(ctx.db, {
+        actorId: user.id,
+        action: 'calendar.feed_stopped',
+        ...clientInfo(req),
+      });
     const remaining = await ctx.db
       .selectFrom('recovery_codes')
       .select(sql<number>`count(*)::int`.as('n'))

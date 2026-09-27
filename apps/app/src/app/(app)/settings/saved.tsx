@@ -238,7 +238,8 @@ export default function Saved() {
         />
       ) : null}
       {chosen ? (
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        // On a phone the confirmation wraps rather than pushing "Keep it" off the screen.
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <Button
             label="Rename"
             variant="ghost"

@@ -30,8 +30,49 @@ describe('hasWord', () => {
     expect(hasWord('invoice', ['  '])).toBe(false);
   });
 
+  it('finds a word that starts inside a name: camelCase, after a number, another script', () => {
+    expect(hasWord('CustomerInvoice.pdf', ['invoice'])).toBe(true);
+    expect(hasWord('0923invoice.pdf', ['invoice'])).toBe(true);
+    expect(hasWord('請求書invoice.pdf', ['invoice'])).toBe(true);
+    // Still never inside a word.
+    expect(hasWord('REINVOICE.pdf', ['invoice'])).toBe(false);
+    expect(hasWord('Reinvoice.pdf', ['invoice'])).toBe(false);
+  });
+
+  it('finds an Arabic word with its article, and with a letter-word written onto it', () => {
+    expect(hasWord('الفاتورة.pdf', ['فاتورة'])).toBe(true);
+    expect(hasWord('مرفق الفاتورة', ['فاتورة'])).toBe(true);
+    expect(hasWord('وبالفاتورة', ['فاتورة'])).toBe(true);
+    expect(hasWord('بالفاتورة', ['فاتورة'])).toBe(true);
+    expect(hasWord('للفاتورة', ['فاتورة'])).toBe(true);
+    expect(hasWord('كالفاتورة', ['فاتورة'])).toBe(true);
+    // Not a word inside another.
+    expect(hasWord('مالفاتورة', ['فاتورة'])).toBe(false);
+  });
+
   it('finds a word inside text written without spaces', () => {
     expect(hasWord('今月の請求書です', ['請求書'])).toBe(true);
+  });
+
+  it('finds a word in a name written decomposed, as macOS keeps file names', () => {
+    // Korean, Japanese voiced kana and an Arabic hamza, each as its letter and its marks.
+    expect(hasWord('인보이스_9월.pdf'.normalize('NFD'), ['인보이스'])).toBe(true);
+    expect(hasWord('請求書がある.pdf'.normalize('NFD'), ['が'])).toBe(true);
+    expect(hasWord('أمر شراء.pdf'.normalize('NFD'), ['أمر'])).toBe(true);
+    // And a word typed decomposed finds one written composed.
+    expect(hasWord('Facturé.pdf', ['facturé'.normalize('NFD')])).toBe(true);
+  });
+
+  it('finds a Greek word whatever its last sigma, in capitals or not', () => {
+    expect(hasWord('ΛΟΓΑΡΙΑΣΜΟΣ Σεπτεμβρίου.pdf', ['λογαριασμος'])).toBe(true);
+    expect(hasWord('λογαριασμός.pdf', ['ΛΟΓΑΡΙΑΣΜΟΣ'])).toBe(true);
+  });
+
+  it('is quick on a long message looked in many times', () => {
+    const text = `${'Here are the links for the project, see '.repeat(100)}invoice`;
+    const started = performance.now();
+    for (let i = 0; i < 2000; i++) hasWord(text, ['invoice', 'receipt']);
+    expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it('keeps marks that make another letter', () => {
@@ -103,6 +144,8 @@ describe('words and collections as typed', () => {
   it('splits words on commas, drops quotes and repeats, and keeps at most ten', () => {
     expect(wordsFrom(' invoice, “Receipt” , receipt,,')).toEqual(['invoice', 'Receipt']);
     expect(wordsFrom('فاتورة، إيصال')).toEqual(['فاتورة', 'إيصال']);
+    expect(wordsFrom('发票，收据；领收书')).toEqual(['发票', '收据', '领收书']);
+    expect(wordsFrom('فاتورة؛ إيصال')).toEqual(['فاتورة', 'إيصال']);
     expect(wordsFrom(Array.from({ length: 12 }, (_, i) => `w${i}`).join(','))).toHaveLength(10);
   });
 

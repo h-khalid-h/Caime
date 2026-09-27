@@ -10,6 +10,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
+import { automationView, visibleSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { handOverGroups } from '../lib/conversations';
 import { verifyPassword } from '../lib/crypto';
@@ -60,6 +61,8 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       connectedApps,
       following,
       calendarFeed,
+      automations,
+      saved,
     ] = await Promise.all([
       ctx.db.selectFrom('identities').selectAll().where('user_id', '=', me).execute(),
       ctx.db
@@ -171,6 +174,28 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         .select(['created_at', 'last_read_at'])
         .where('user_id', '=', me)
         .executeTakeFirst(),
+      ctx.db
+        .selectFrom('automations')
+        .selectAll()
+        .where('user_id', '=', me)
+        .orderBy('created_at')
+        .execute(),
+      // What you saved, and where it is: never the words of someone else's message, and only
+      // what you can still see (not a link from a conversation you've left).
+      visibleSaved(ctx.db, me)
+        .leftJoin('assets as a', 'a.id', 's.asset_id')
+        .select([
+          's.collection',
+          's.conversation_id',
+          's.message_id',
+          's.created_at',
+          'a.kind as asset_kind',
+          'a.file_id',
+          'a.url',
+        ])
+        .orderBy('s.created_at')
+        .orderBy('s.id')
+        .execute(),
     ]);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
     const archive = {
@@ -263,6 +288,33 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         organization: { name: f.name, handle: f.handle },
         notify: f.notify,
         since: f.created_at.toISOString(),
+      })),
+      // What you set Caishy to keep, and what it kept or you saved (PRD §69).
+      automations: automations.map((a) => {
+        const view = automationView(a);
+        return {
+          name: view.name,
+          description: view.description,
+          when: view.when,
+          collection: view.collection,
+          enabled: view.enabled,
+          runs: view.runs,
+          lastRunAt: view.lastRunAt,
+          createdAt: view.createdAt,
+        };
+      }),
+      saved: saved.map((s) => ({
+        collection: s.collection,
+        savedAt: s.created_at.toISOString(),
+        conversationId: s.conversation_id,
+        messageId: s.message_id,
+        kept: s.asset_kind
+          ? {
+              kind: s.asset_kind,
+              file: s.file_id ? `/v1/files/${s.file_id}` : null,
+              link: s.file_id ? null : s.url,
+            }
+          : null,
       })),
       // Whether a calendar reads your actions (PRD §72), never its address.
       calendarFeed: calendarFeed

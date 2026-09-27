@@ -88,6 +88,36 @@ describe('your data', () => {
       decision: 'allow',
     });
     const calendar = await hassan.post('/v1/calendar/feed');
+    // What he set Caishy to keep, and what he saved: where it is, never someone else's words.
+    await hassan.post('/v1/automations', {
+      when: { sphere: 'work', kinds: ['link'] },
+      collection: 'Work links',
+    });
+    const brief = await sarah.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      body: 'The brief is at https://brief.example/q3',
+    });
+    await t.ctx.flush();
+    const fromSarah = await t.ctx.db
+      .selectFrom('messages')
+      .select('id')
+      .where('body', '=', 'From Sarah')
+      .executeTakeFirstOrThrow();
+    await hassan.post(`/v1/messages/${fromSarah.id}/save`, { collection: 'Keep' });
+    // A link he saved from a group he's left isn't his to see any more, nor in his export.
+    const club = (
+      await sarah.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Reading',
+        memberIds: [hassan.user.id],
+      })
+    ).conversation.id;
+    const gone = await sarah.post(`/v1/conversations/${club}/messages`, {
+      clientId: uuidv4(),
+      body: 'Notes at https://notes.example/secret',
+    });
+    await hassan.post(`/v1/messages/${gone.message.id}/save`, { collection: 'Keep' });
+    await hassan.del(`/v1/conversations/${club}/members/${hassan.user.id}`);
     const res = await hassan.req('GET', '/v1/me/export');
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-disposition']).toMatch(
@@ -100,7 +130,10 @@ describe('your data', () => {
       label: 'Manager · DATA C',
       person: { displayName: 'Sarah Ahmed' },
     });
-    expect(archive.messages.map((m: any) => m.body)).toEqual(['From Hassan']);
+    // (Leaving the group wrote a line about it, his too.)
+    expect(
+      archive.messages.filter((m: any) => m.kind !== 'system').map((m: any) => m.body),
+    ).toEqual(['From Hassan']);
     expect(JSON.stringify(archive)).not.toContain('From Sarah');
     expect(JSON.stringify(archive)).not.toContain('password');
     expect(archive.accessTokens).toEqual([
@@ -124,6 +157,27 @@ describe('your data', () => {
       lastReadAt: null,
     });
     expect(JSON.stringify(archive)).not.toContain(/cal_[\w-]{43}/.exec(calendar.url)![0]);
+    expect(archive.automations).toEqual([
+      expect.objectContaining({
+        description: 'When someone from work sends a link, save it to Work links',
+        when: expect.objectContaining({ sphere: 'work', kinds: ['link'] }),
+        collection: 'Work links',
+        enabled: true,
+        // Sarah's link here and the one in the group (what it kept there is gone with him).
+        runs: 2,
+      }),
+    ]);
+    expect(archive.saved).toEqual([
+      expect.objectContaining({
+        collection: 'Work links',
+        conversationId: convo,
+        messageId: brief.message.id,
+        kept: { kind: 'link', file: null, link: 'https://brief.example/q3' },
+      }),
+      expect.objectContaining({ collection: 'Keep', messageId: fromSarah.id, kept: null }),
+    ]);
+    expect(JSON.stringify(archive)).not.toContain('The brief is at');
+    expect(JSON.stringify(archive)).not.toContain('notes.example');
   });
 
   it('deletes an account only with its password, and leaves others a consistent history', async () => {

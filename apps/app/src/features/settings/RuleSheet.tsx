@@ -9,18 +9,20 @@ import type {
   AiTone,
   EffectivePolicy,
   NotifyMode,
+  PolicyScope,
   PolicySettings,
   Priority,
   PrivacyPreset,
 } from '@caishy/core/policy';
 import { type Schedule, workHours } from '@caishy/core/time';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { Switch, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { DayPicker } from '@/features/settings/DayPicker';
 import { Choice } from '@/features/settings/SettingsPage';
+import { SwitchRow } from '@/features/settings/SwitchRow';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -50,41 +52,6 @@ function Overline({ children }: { children: string }) {
   );
 }
 
-function Toggle({
-  label,
-  detail,
-  value,
-  onChange,
-  testID,
-}: {
-  label: string;
-  detail?: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-  testID?: string;
-}) {
-  const t = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="bodyStrong">{label}</Text>
-        {detail ? (
-          <Text variant="caption" color="textSecondary">
-            {detail}
-          </Text>
-        ) : null}
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-        accessibilityLabel={label}
-        testID={testID}
-      />
-    </View>
-  );
-}
-
 /** A 24-hour time, kept only once it is one. */
 function TimeInput({
   label,
@@ -100,6 +67,18 @@ function TimeInput({
   const [text, setText] = useState(value);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setText(value), [value]);
+  // Closed without leaving the field (a sheet's X or its backdrop on a phone), a time typed in
+  // full still counts.
+  const latest = useRef({ text, value, onChange });
+  latest.current = { text, value, onChange };
+  useEffect(
+    () => () => {
+      const { text: typed, value: was, onChange: commit } = latest.current;
+      const v = typed.trim();
+      if (TIME.test(v) && v !== was) commit(v);
+    },
+    [],
+  );
   const settle = () => {
     const v = text.trim();
     if (!TIME.test(v)) {
@@ -130,6 +109,7 @@ function TimeInput({
 
 export function RuleSheet({
   rule,
+  scope: newScope,
   inherited,
   title,
   subtitle,
@@ -139,6 +119,11 @@ export function RuleSheet({
   onDeleted,
 }: {
   rule: PolicyView | null;
+  /**
+   * For a rule not made yet (one person's): what it would be for. It's made with its first change,
+   * so there's never a rule of theirs that says nothing.
+   */
+  scope?: PolicyScope;
   /** What applies where this rule says nothing. */
   inherited: EffectivePolicy;
   title: string;
@@ -156,44 +141,95 @@ export function RuleSheet({
   const [draft, setDraft] = useState<PolicySettings>(rule?.settings ?? {});
   const [name, setName] = useState(rule?.name ?? '');
   const [confirming, setConfirming] = useState(false);
-  // Saved (here or on another device), the rule as it's stored now. Another rule is another
-  // sheet: callers key it by the rule's id.
+  // The rule's id once it's saved, and how many changes are still on their way to the server.
+  const ruleId = useRef(rule?.id ?? null);
+  const pending = useRef(0);
+  // Taken away here: nothing typed and not yet saved brings it back as the sheet closes.
+  const removed = useRef(false);
+  // Saved (here or on another device), the rule as it's stored now, once nothing changed here
+  // is still on its way: an answer from before a change must never undo it. Another rule is
+  // another sheet: callers key it by the rule (or the person) it's for.
+  const seen = useRef(Boolean(rule?.id));
   useEffect(() => {
-    setDraft(rule?.settings ?? {});
-  }, [rule?.settings]);
-  if (!rule) return null;
+    if (rule?.id) {
+      seen.current = true;
+      ruleId.current ??= rule.id;
+    } else if (seen.current && pending.current === 0) {
+      // It was there and it's gone, taken away elsewhere (another device): the next change
+      // makes it again, rather than changing one that no longer is.
+      seen.current = false;
+      ruleId.current = null;
+    }
+    if (pending.current === 0) setDraft(rule?.settings ?? {});
+  }, [rule?.id, rule?.settings]);
+  // Its name as renamed elsewhere, unless it's being typed here; and closed while it was being
+  // typed, what was typed still counts (never a name it opened with, over a rename since).
+  const typing = useRef(false);
+  useEffect(() => {
+    if (!typing.current) setName(rule?.name ?? '');
+  }, [rule?.name]);
+  const latestName = useRef({ name, saved: rule?.name ?? null });
+  latestName.current = { name, saved: rule?.name ?? null };
+  useEffect(
+    () => () => {
+      const next = latestName.current.name.trim() || null;
+      if (typing.current && !removed.current && ruleId.current && next !== latestName.current.saved)
+        void endpoints
+          .updatePolicy(ruleId.current, { name: next })
+          .then(() => qc.invalidateQueries({ queryKey: qk.policies }))
+          .catch(() => {});
+    },
+    [qc],
+  );
+  const scope = rule?.scope ?? newScope;
+  if (!scope) return null;
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.policies });
     void qc.invalidateQueries({ queryKey: ['policy-for'] });
     void qc.invalidateQueries({ queryKey: qk.inbox });
+    // A person's page says what they see of you.
+    void qc.invalidateQueries({ queryKey: ['person'] });
   };
   const save = async (settings: PolicySettings) => {
+    if (removed.current) return;
     setDraft((d) => ({ ...d, ...settings }));
+    pending.current += 1;
     try {
-      await endpoints.updatePolicy(rule.id, { settings });
-      refresh();
+      if (ruleId.current) await endpoints.updatePolicy(ruleId.current, { settings });
+      // The first change makes it; one made meanwhile (another device) is the same rule.
+      else
+        ruleId.current = (
+          await endpoints.createPolicy({ scope, settings: settings as Record<string, unknown> })
+        ).id;
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      pending.current -= 1;
+      if (pending.current === 0) refresh();
     }
   };
   const saveName = async () => {
     const next = name.trim() || null;
-    if (next === (rule.name ?? null)) return;
+    typing.current = false;
+    if (!ruleId.current || next === (rule?.name ?? null)) return;
     try {
-      await endpoints.updatePolicy(rule.id, { name: next });
+      await endpoints.updatePolicy(ruleId.current, { name: next });
       refresh();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
   };
   const remove = async () => {
+    if (!ruleId.current) return;
+    removed.current = true;
     try {
-      await endpoints.deletePolicy(rule.id);
+      await endpoints.deletePolicy(ruleId.current);
       refresh();
       toast('Rule removed');
       onDeleted?.();
       onClose();
     } catch (e) {
+      removed.current = false;
       toast((e as Error).message, { tone: 'danger' });
     }
   };
@@ -209,11 +245,14 @@ export function RuleSheet({
   return (
     <Sheet open={open} onClose={onClose} title={title} subtitle={subtitle}>
       <View style={{ gap: 12 }} testID="rule-sheet">
-        {rule.scope.connectionId ? null : (
+        {scope.connectionId ? null : (
           <TextField
             label="Its name (optional)"
             value={name}
-            onChangeText={setName}
+            onChangeText={(v) => {
+              typing.current = true;
+              setName(v);
+            }}
             onBlur={() => void saveName()}
             onSubmitEditing={() => void saveName()}
             placeholder="My customers"
@@ -268,7 +307,7 @@ export function RuleSheet({
             </View>
           </View>
         ) : null}
-        <Toggle
+        <SwitchRow
           label="Urgent messages still reach me"
           detail="When they mark one urgent, at any hour"
           value={Boolean(pick('allowUrgent'))}
@@ -293,7 +332,7 @@ export function RuleSheet({
           />
         </View>
         {priority === 'priority' ? (
-          <Toggle
+          <SwitchRow
             label="Priority only in these hours"
             detail="Like a manager during the work week"
             value={inHoursOnly}
@@ -351,7 +390,7 @@ export function RuleSheet({
             ]}
           />
         </View>
-        {confirming ? (
+        {!rule ? null : confirming ? (
           <View style={{ flexDirection: 'row', gap: 10, paddingTop: 8 }}>
             <Button
               label="Remove it"
@@ -371,7 +410,7 @@ export function RuleSheet({
           <Pressable
             accessibilityRole="button"
             onPress={() => setConfirming(true)}
-            style={{ paddingVertical: 10 }}
+            style={{ paddingVertical: 10, minHeight: 44, justifyContent: 'center' }}
             testID="rule-delete"
           >
             <Text variant="captionStrong" color="danger">
@@ -380,7 +419,7 @@ export function RuleSheet({
           </Pressable>
         )}
         <Text variant="caption" color={t.c.textTertiary}>
-          {rule.scope.connectionId
+          {scope.connectionId
             ? 'Only for them. Everything it doesn’t change follows how you know them.'
             : 'For everyone you know this way, unless one of them has a rule of their own.'}
         </Text>

@@ -27,5 +27,17 @@ describe('who someone is to you, in words (PRD §12, §67, §71)', () => {
     );
     expect(relationshipOfferText('Cy', { sphere: 'customer' })).toBe('Cy may be a customer');
     expect(relationshipOfferText('Zed', {})).toBe('Zed may be someone you know');
+    // A sphere that names a group is said of the person.
+    expect(relationshipOfferText('Gil', { sphere: 'community' })).toBe(
+      'Gil may be someone from your community',
+    );
+    expect(relationshipOfferText('Oz', { sphere: 'organization', orgName: 'Acme' })).toBe(
+      'Oz may be someone from Acme',
+    );
+    expect(relationshipOfferText('Oz', { sphere: 'organization' })).toBe(
+      'Oz may be someone from an organization',
+    );
+    expect(relationshipOfferText('Pat', { sphere: 'public' })).toBe('Pat may be someone you know');
+    expect(relationshipOfferText('Ola', { sphere: 'other' })).toBe('Ola may be someone you know');
   });
 });

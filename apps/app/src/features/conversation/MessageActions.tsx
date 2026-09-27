@@ -91,6 +91,7 @@ export function MessageActions({
   moderator = false,
   canPin = false,
   onForward,
+  canSave = true,
 }: {
   m: MessageView | null;
   me: string;
@@ -107,6 +108,8 @@ export function MessageActions({
   canPin?: boolean;
   /** Forward it to other conversations (never from a private one). */
   onForward?: (m: MessageView) => void;
+  /** Whether it may be saved here: never from a message request not yet accepted. */
+  canSave?: boolean;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -128,6 +131,10 @@ export function MessageActions({
   const deleted = m.deletedAt !== null;
   // What Caishy may read (translate, find a task in): never a private message's words.
   const text = m.sealed ? '' : (m.body ?? '');
+  // What's kept from it on the server (an action, a decision): only from a message the server
+  // has (not one still waiting to go, which it doesn't know by this id), and never from a
+  // private conversation, whose words it must never be sent (R18).
+  const keepable = !where.private && !m.sealed && m.seq !== Number.MAX_SAFE_INTEGER;
   const shown = m.sealed ? (opened.text ?? '') : text;
   const close = (fn: () => void | Promise<void>) => () => {
     dismiss();
@@ -151,7 +158,7 @@ export function MessageActions({
       setSaving(false);
     }
   };
-  if (keeping === m.id) return <SaveSheet message={m} onClose={dismiss} />;
+  if (keeping === m.id) return <SaveSheet messageId={m.id} onClose={dismiss} />;
   if (decision !== null)
     return (
       <Sheet
@@ -245,7 +252,7 @@ export function MessageActions({
           />
         ) : null}
         {/* Kept only where Caishy can read it: never a private message, nor a line about it. */}
-        {!deleted && !where.private && !m.sealed && m.kind !== 'system' ? (
+        {canSave && keepable && !deleted && m.kind !== 'system' ? (
           <ListRow
             icon={Bookmark}
             title="Save"
@@ -263,7 +270,7 @@ export function MessageActions({
             testID="message-translate"
           />
         ) : null}
-        {!deleted && text ? (
+        {keepable && !deleted && text ? (
           <ListRow
             icon={ListChecks}
             title="Add to my actions"
@@ -282,7 +289,7 @@ export function MessageActions({
             })}
           />
         ) : null}
-        {!deleted && text ? (
+        {keepable && !deleted && text ? (
           <ListRow
             icon={Star}
             title="Save as a decision"

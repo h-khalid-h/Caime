@@ -94,9 +94,38 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       patch.avatar_file_id = body.avatarFileId;
     }
     if (body.onboarded) patch.onboarded_at = current.onboarded_at ?? ctx.now();
-    await ctx.db.updateTable('users').set(patch).where('id', '=', auth.userId).execute();
+    const week = (days: number[]) => [...days].sort((a, b) => a - b).join(',');
+    const oldWeek = week(current.workweek ?? []);
+    const weekMoved = patch.workweek !== undefined && week(patch.workweek as number[]) !== oldWeek;
+    await ctx.db.transaction().execute(async (trx) => {
+      await trx.updateTable('users').set(patch).where('id', '=', auth.userId).execute();
+      if (!weekMoved) return;
+      // The rules that keep to the work week move with it (work, customers, professionals):
+      // those whose days are the week it was. A rule with days of its own keeps them.
+      const rules = await trx
+        .selectFrom('relationship_policies')
+        .select(['id', 'settings'])
+        .where('user_id', '=', auth.userId)
+        .execute();
+      for (const r of rules) {
+        const settings = (r.settings ?? {}) as { schedule?: { days?: number[] } };
+        if (!settings.schedule?.days || week(settings.schedule.days) !== oldWeek) continue;
+        await trx
+          .updateTable('relationship_policies')
+          .set({
+            settings: JSON.stringify({
+              ...settings,
+              schedule: { ...settings.schedule, days: patch.workweek },
+            }),
+            updated_at: ctx.now(),
+          })
+          .where('id', '=', r.id)
+          .execute();
+      }
+    });
     const user = await load(auth.userId);
     await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
+    if (weekMoved) await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     return { user: meView(user, ctx.now()) };
   });
 

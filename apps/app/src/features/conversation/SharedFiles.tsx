@@ -1,8 +1,9 @@
 /**
  * Everything shared in a conversation (PRD §26), without scrolling back for it: photos and
  * videos, files and voice notes, and links, newest first, a page at a time. A photo or a file
- * opens from here, a link is checked before it opens (PRD §60), and each can be shown where it
- * was shared. What someone deleted for themselves isn't here for them (the server leaves it out).
+ * opens from here, a link is checked before it opens (PRD §60), each can be shown where it was
+ * shared, and each saved on its own to a collection (PRD §69). What someone deleted for
+ * themselves isn't here for them (the server leaves it out).
  */
 import type { AssetView, ConversationView } from '@caishy/core/api';
 import { formatBytes, formatDuration, formatListTime } from '@caishy/core/format';
@@ -11,13 +12,14 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { useAssets } from '@/api/hooks';
+import { SaveSheet } from '@/features/saved/SaveSheet';
 import { openCheckedLink, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
-import { FileText, Link, MessageCircle, Mic, Video } from '@/ui/icons';
+import { Bookmark, FileText, Link, MessageCircle, Mic, Video } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Segmented } from '@/ui/Segmented';
@@ -38,6 +40,15 @@ const EMPTY: Record<Tab, string> = {
   links: 'No links shared here yet.',
 };
 
+/**
+ * Whether anything of a conversation may be saved (the server's rules): never a private one's,
+ * nor a message request's until it's accepted, nor once it's declined.
+ */
+export function mayKeepFrom(conversation: ConversationView): boolean {
+  const state = conversation.me.requestState;
+  return conversation.privacyClass !== 'private' && state !== 'pending' && state !== 'declined';
+}
+
 export function SharedFiles({
   conversation,
   onClose,
@@ -54,6 +65,8 @@ export function SharedFiles({
   const { timeZone, locale } = useUserClock();
   // Chosen by them; until then, the first kind there's anything of.
   const [chosen, setChosen] = useState<Tab | null>(null);
+  // The one being saved, in place of this sheet while it is.
+  const [keeping, setKeeping] = useState<AssetView | null>(null);
   const [first, setFirst] = useState<Tab>('media');
   const tab = chosen ?? first;
   const shown = TABS.find((x) => x.value === tab) ?? TABS[0]!;
@@ -92,6 +105,17 @@ export function SharedFiles({
     const url = mediaUrl(a.file?.url);
     if (url) openLink(url);
   };
+  const mayKeep = mayKeepFrom(conversation);
+  const keepIt = (a: AssetView) =>
+    mayKeep && a.messageId ? (
+      <IconButton
+        icon={Bookmark}
+        label="Save it"
+        size={18}
+        onPress={() => setKeeping(a)}
+        testID="shared-save"
+      />
+    ) : null;
   const showIt = (a: AssetView) =>
     jump && a.messageSeq !== null ? (
       <IconButton
@@ -103,6 +127,14 @@ export function SharedFiles({
       />
     ) : null;
 
+  if (keeping?.messageId)
+    return (
+      <SaveSheet
+        messageId={keeping.messageId}
+        assetId={keeping.id}
+        onClose={() => setKeeping(null)}
+      />
+    );
   return (
     <Sheet open onClose={onClose} title="Shared here">
       <View style={{ gap: 12 }}>
@@ -207,6 +239,29 @@ export function SharedFiles({
                       <MessageCircle size={15} color="#fff" />
                     </Pressable>
                   ) : null}
+                  {mayKeep && a.messageId ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Save this ${what.toLowerCase()}`}
+                      onPress={() => setKeeping(a)}
+                      hitSlop={8}
+                      focusRadius={14}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      testID="shared-save"
+                    >
+                      <Bookmark size={15} color="#fff" />
+                    </Pressable>
+                  ) : null}
                 </View>
               );
             })}
@@ -242,6 +297,7 @@ export function SharedFiles({
                     />
                   )}
                 </View>
+                {keepIt(a)}
                 {showIt(a)}
               </View>
             ))}

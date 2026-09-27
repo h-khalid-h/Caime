@@ -15,9 +15,6 @@ const AGREED: Record<CardKit, string> = { meeting: 'accepted', appointment: 'con
 /** Asked, and not yet answered. */
 const ASKED: Record<CardKit, string> = { meeting: 'proposed', appointment: 'requested' };
 
-/** How many cards are read to find what's ahead: the newest, which is where plans are. */
-const SCAN = 500;
-
 export interface CardAhead {
   messageId: string;
   conversationId: string;
@@ -32,6 +29,9 @@ export interface CardAhead {
   /** When it last changed: the last move on it, or when it was made or edited. */
   updated: Date;
 }
+
+/** A card's start, as prepareKitFields keeps it (core kit-cards.ts: `toISOString()`). */
+const START = sql<string>`m.payload->'fields'->'start'->>'at'`;
 
 export async function cardsAhead(
   ctx: Pick<AppContext, 'db'>,
@@ -88,8 +88,12 @@ export async function cardsAhead(
         ),
       ),
     )
-    .orderBy('m.created_at', 'desc')
-    .limit(SCAN)
+    // When it is, as it's kept (always an ISO time, so compared as text): only what's in the
+    // window, soonest first, however long ago each was planned.
+    .where(START, '>=', opts.from.toISOString())
+    .where(START, '<=', opts.until.toISOString())
+    .orderBy(START, 'asc')
+    .limit(opts.limit)
     .execute();
   const ahead: CardAhead[] = [];
   for (const row of rows) {

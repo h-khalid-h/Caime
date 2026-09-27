@@ -745,6 +745,103 @@ describe('follow-ups (PRD §69)', () => {
     expect(itemOf(ib, c).reasons.map((r: any) => r.code)).toContain('follow_up_due');
     t.clock.set('2026-09-23T14:00:00Z');
   });
+
+  it('reminds as the rule says when it’s due, and never about someone since blocked', async () => {
+    const start = t.clock.now.toISOString();
+    const followUps = async (c: Client) =>
+      (
+        await t.ctx.db
+          .selectFrom('notifications')
+          .select('title')
+          .where('user_id', '=', c.user.id)
+          .where('kind', '=', 'follow_up')
+          .execute()
+      ).map((n) => n.title);
+    try {
+      // Turned off after asking: no reminder.
+      const ups = await signup(t, { displayName: 'UPS Desk' });
+      const u = await connect(hassan, ups, { sphere: 'vendor', role: 'delivery_provider' });
+      await send(hassan, u, 'When does the parcel arrive?');
+      await t.ctx.flush();
+      const vendor = (await hassan.get('/v1/policies')).policies.find(
+        (p: any) => p.scope.sphere === 'vendor' && !p.scope.role,
+      );
+      await hassan.patch(`/v1/policies/${vendor.id}`, { settings: { followUpHours: null } });
+      t.clock.advance(49 * 3_600_000);
+      await runDueJobs(t.ctx);
+      expect(await followUps(hassan)).not.toContain('No reply from UPS Desk yet');
+      // Made longer after asking: when the new time comes, not before.
+      t.clock.set(start);
+      await hassan.patch(`/v1/policies/${vendor.id}`, { settings: { followUpHours: 48 } });
+      const fedex = await signup(t, { displayName: 'FedEx Desk' });
+      const f = await connect(hassan, fedex, { sphere: 'vendor', role: 'delivery_provider' });
+      await send(hassan, f, 'Can you confirm the pickup?');
+      await t.ctx.flush();
+      await hassan.patch(`/v1/policies/${vendor.id}`, { settings: { followUpHours: 96 } });
+      t.clock.advance(49 * 3_600_000);
+      await runDueJobs(t.ctx);
+      expect(await followUps(hassan)).not.toContain('No reply from FedEx Desk yet');
+      t.clock.advance(48 * 3_600_000);
+      await runDueJobs(t.ctx);
+      expect(await followUps(hassan)).toContain('No reply from FedEx Desk yet');
+      // Blocked after asking: never "no reply" from someone who can't answer.
+      t.clock.set(start);
+      await hassan.patch(`/v1/policies/${vendor.id}`, { settings: { followUpHours: 48 } });
+      const tnt = await signup(t, { displayName: 'TNT Desk' });
+      const b = await connect(hassan, tnt, { sphere: 'vendor', role: 'delivery_provider' });
+      await send(hassan, b, 'Is the invoice ready?');
+      await t.ctx.flush();
+      await hassan.post('/v1/blocks', { userId: tnt.user.id });
+      t.clock.advance(49 * 3_600_000);
+      await runDueJobs(t.ctx);
+      expect(await followUps(hassan)).not.toContain('No reply from TNT Desk yet');
+    } finally {
+      t.clock.set(start);
+    }
+  });
+});
+
+describe('a rule just for one person (PRD §68)', () => {
+  it('holds wherever they write: in a group too, over their relationship’s', async () => {
+    const kai = await signup(t, { displayName: 'Kai Group' });
+    const lea = await signup(t, { displayName: 'Lea Group' });
+    const max = await signup(t, { displayName: 'Max Group' });
+    await connect(kai, lea, { sphere: 'family' });
+    await connect(kai, max, { sphere: 'family' });
+    const conn = (await kai.get('/v1/connections')).connections.find(
+      (c: any) => c.person.id === lea.user.id,
+    );
+    await kai.post('/v1/policies', {
+      scope: { connectionId: conn.connectionId },
+      settings: { notify: 'mute' },
+    });
+    const group = async (title: string) =>
+      (
+        await kai.post('/v1/conversations', {
+          kind: 'group',
+          title,
+          memberIds: [lea.user.id, max.user.id],
+        })
+      ).conversation.id as string;
+    const delivery = async (conversationId: string) =>
+      (
+        await t.ctx.db
+          .selectFrom('notifications')
+          .select('delivery')
+          .where('user_id', '=', kai.user.id)
+          .where('group_key', '=', `conv:${conversationId}`)
+          .executeTakeFirstOrThrow()
+      ).delivery;
+    const muted = await group('Siblings');
+    await send(lea, muted, 'Anyone up?');
+    await t.ctx.flush();
+    expect(await delivery(muted)).toBe('silent');
+    // Someone without a rule of their own reaches Kai as family does.
+    const other = await group('Cousins');
+    await send(max, other, 'Anyone up?');
+    await t.ctx.flush();
+    expect(await delivery(other)).toBe('push');
+  });
 });
 
 describe('groups (PRD §14, §56)', () => {
@@ -1344,8 +1441,17 @@ describe('pinned messages (PRD §22, §56)', () => {
       (await ana.get(`/v1/conversations/${direct}/assets?kind=link`)).assets as any[];
     expect((await links()).map((a) => a.messageId)).toContain(m.id);
     t.clock.advance(2 * 86_400_000);
+    const heard: BusMessage[] = [];
+    const stop = t.ctx.bus.subscribe((msg) => heard.push(msg));
     try {
       await runPeriodic(t.ctx);
+      // Whoever saved it sees their lists without it, on every device.
+      const told = () =>
+        heard.some(
+          (msg) => msg.event.type === 'saved.changed' && msg.userIds.includes(ana.user.id),
+        );
+      for (let i = 0; i < 300 && !told(); i++) await new Promise((r) => setTimeout(r, 10));
+      expect(told()).toBe(true);
       expect(await pins(ana, direct)).toEqual([]);
       expect((await links()).map((a) => a.messageId)).not.toContain(m.id);
       expect(await saved()).not.toContain(m.id);
@@ -1358,6 +1464,7 @@ describe('pinned messages (PRD §22, §56)', () => {
       const memory = await ana.get(`/v1/conversations/${direct}/memory`);
       expect(JSON.stringify(memory.links)).not.toContain('venue.example');
     } finally {
+      stop();
       t.clock.set(was);
       await ana.patch(`/v1/conversations/${direct}`, { retentionDays: null });
     }

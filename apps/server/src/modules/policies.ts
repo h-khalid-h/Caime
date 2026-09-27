@@ -6,15 +6,28 @@
 import type { PolicyView } from '@caishy/core';
 import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
+import { sql, type Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { notFound } from '../lib/errors';
+import type { Database } from '../db/schema';
+import { conflict, notFound } from '../lib/errors';
 import { activeRelationships, between, loadPolicies, policyTargetFor } from '../lib/relations';
 import { seedDefaults } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 type Scope = z.infer<typeof PolicyBody>['scope'];
+
+/** One person's rules are changed one write at a time: their row is the lock. */
+async function lockRules(trx: Transaction<Database>, userId: string): Promise<void> {
+  await trx.selectFrom('users').select('id').where('id', '=', userId).forUpdate().execute();
+}
+
+const sameScope = (a: Scope, b: Scope) =>
+  (a.sphere ?? null) === (b.sphere ?? null) &&
+  (a.role ?? null) === (b.role ?? null) &&
+  (a.orgId ?? null) === (b.orgId ?? null) &&
+  (a.connectionId ?? null) === (b.connectionId ?? null);
 
 /** A rule for one person is for one of your own connections. */
 async function assertOwnConnection(ctx: AppContext, userId: string, scope: Scope) {
@@ -35,12 +48,14 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     return {
       policies: policies.map((p) => ({
         ...p,
+        // As it applies: with the broader rules it leaves to (a manager's rule keeps to Work's
+        // hours). One person's rule is shown on their page, with their relationship's.
         description: describePolicy(
-          resolvePolicy([p], {
+          resolvePolicy(p.scope.connectionId ? [p] : policies, {
             sphere: p.scope.sphere ?? null,
-            role: p.scope.role,
-            orgId: p.scope.orgId,
-            connectionId: p.scope.connectionId,
+            role: p.scope.role ?? null,
+            orgId: p.scope.orgId ?? null,
+            connectionId: p.scope.connectionId ?? null,
           }),
         ),
       })),
@@ -51,44 +66,46 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(PolicyBody, req.body);
     await assertOwnConnection(ctx, auth.userId, body.scope);
-    // Only one rule applies to a scope, so the same scope again is the same rule, changed.
-    const same = (await loadPolicies(ctx.db, auth.userId)).find(
-      (p) =>
-        (p.scope.sphere ?? null) === (body.scope.sphere ?? null) &&
-        (p.scope.role ?? null) === (body.scope.role ?? null) &&
-        (p.scope.orgId ?? null) === (body.scope.orgId ?? null) &&
-        (p.scope.connectionId ?? null) === (body.scope.connectionId ?? null),
-    );
-    if (same) {
-      await ctx.db
-        .updateTable('relationship_policies')
-        .set({
-          ...(body.name !== undefined ? { name: body.name } : {}),
-          settings: JSON.stringify({ ...same.settings, ...body.settings }),
-          updated_at: ctx.now(),
+    // Only one rule applies to a scope, so the same scope again is the same rule, changed; one
+    // person's rules are written one at a time, so two devices at once never make two.
+    const result = await ctx.db.transaction().execute(async (trx) => {
+      await lockRules(trx, auth.userId);
+      const same = (await loadPolicies(trx, auth.userId)).find((p) =>
+        sameScope(p.scope, body.scope),
+      );
+      if (same) {
+        await trx
+          .updateTable('relationship_policies')
+          .set({
+            ...(body.name !== undefined ? { name: body.name } : {}),
+            settings: JSON.stringify({ ...same.settings, ...body.settings }),
+            updated_at: ctx.now(),
+          })
+          .where('id', '=', same.id)
+          .execute();
+        return { id: same.id, existing: true as const };
+      }
+      const id = uuidv7();
+      await trx
+        .insertInto('relationship_policies')
+        .values({
+          id,
+          user_id: auth.userId,
+          name: body.name ?? null,
+          scope_sphere: body.scope.sphere ?? null,
+          scope_role: body.scope.role ?? null,
+          scope_org_id: body.scope.orgId ?? null,
+          scope_connection_id: body.scope.connectionId ?? null,
+          settings: JSON.stringify(body.settings),
+          created_at: ctx.now(),
         })
-        .where('id', '=', same.id)
         .execute();
-      await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
-      return { id: same.id, existing: true };
-    }
-    const id = uuidv7();
-    await ctx.db
-      .insertInto('relationship_policies')
-      .values({
-        id,
-        user_id: auth.userId,
-        name: body.name ?? null,
-        scope_sphere: body.scope.sphere ?? null,
-        scope_role: body.scope.role ?? null,
-        scope_org_id: body.scope.orgId ?? null,
-        scope_connection_id: body.scope.connectionId ?? null,
-        settings: JSON.stringify(body.settings),
-      })
-      .execute();
+      return { id };
+    });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
+    if ('existing' in result) return result;
     reply.status(201);
-    return { id };
+    return result;
   });
 
   app.patch('/policies/:id', async (req) => {
@@ -103,25 +120,36 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!existing) throw notFound('That rule');
     if (body.scope) await assertOwnConnection(ctx, auth.userId, body.scope);
-    await ctx.db
-      .updateTable('relationship_policies')
-      .set({
-        ...(body.name !== undefined ? { name: body.name } : {}),
-        ...(body.scope
-          ? {
-              scope_sphere: body.scope.sphere ?? null,
-              scope_role: body.scope.role ?? null,
-              scope_org_id: body.scope.orgId ?? null,
-              scope_connection_id: body.scope.connectionId ?? null,
-            }
-          : {}),
-        ...(body.settings
-          ? { settings: JSON.stringify({ ...(existing.settings as object), ...body.settings }) }
-          : {}),
-        updated_at: ctx.now(),
-      })
-      .where('id', '=', id)
-      .execute();
+    await ctx.db.transaction().execute(async (trx) => {
+      await lockRules(trx, auth.userId);
+      if (
+        body.scope &&
+        (await loadPolicies(trx, auth.userId)).some(
+          (p) => p.id !== id && sameScope(p.scope, body.scope!),
+        )
+      )
+        throw conflict('rule_exists', 'There’s a rule for them already: change that one.');
+      await trx
+        .updateTable('relationship_policies')
+        .set({
+          ...(body.name !== undefined ? { name: body.name } : {}),
+          ...(body.scope
+            ? {
+                scope_sphere: body.scope.sphere ?? null,
+                scope_role: body.scope.role ?? null,
+                scope_org_id: body.scope.orgId ?? null,
+                scope_connection_id: body.scope.connectionId ?? null,
+              }
+            : {}),
+          // Merged as it's written, never from a copy read before: two changes at once both hold.
+          ...(body.settings
+            ? { settings: sql`settings || ${JSON.stringify(body.settings)}::jsonb` }
+            : {}),
+          updated_at: ctx.now(),
+        })
+        .where('id', '=', id)
+        .execute();
+    });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     return { ok: true };
   });
@@ -147,6 +175,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     await ctx.db.transaction().execute(async (trx) => {
+      await lockRules(trx, auth.userId);
       await trx
         .deleteFrom('relationship_policies')
         .where('user_id', '=', auth.userId)

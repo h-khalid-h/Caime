@@ -993,6 +993,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     });
     if (!done) return { ok: true };
     const { heir, topics } = done;
+    // What they saved of it is out of their Saved now, on every device.
+    await tellSaved(ctx, [userId]);
     // Out of the conversation is out of its call, and its topics' calls.
     await leaveGroupCallsIn(ctx, userId, [
       id,
@@ -1719,18 +1721,34 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     // Whoever added it, or whoever made the album, takes it out.
     if (photo.added_by !== auth.userId && m.sender_id !== auth.userId)
       throw forbidden('Only whoever added it, or made the album, can take it out.');
-    await ctx.db.transaction().execute(async (trx) => {
+    const savers = await ctx.db.transaction().execute(async (trx) => {
       await trx
         .deleteFrom('album_photos')
         .where('message_id', '=', id)
         .where('file_id', '=', fileId)
+        .execute();
+      // What anyone saved of it goes with it, and their lists say so.
+      const saved = await trx
+        .deleteFrom('saved_items')
+        .where(
+          'asset_id',
+          'in',
+          trx
+            .selectFrom('assets')
+            .select('id')
+            .where('message_id', '=', id)
+            .where('file_id', '=', fileId),
+        )
+        .returning('user_id')
         .execute();
       await trx
         .deleteFrom('assets')
         .where('message_id', '=', id)
         .where('file_id', '=', fileId)
         .execute();
+      return [...new Set(saved.map((r) => r.user_id))];
     });
+    await tellSaved(ctx, savers);
     const { view } = await albumChanged(id, m.conversation_id, auth.userId);
     return { message: view };
   });

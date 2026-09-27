@@ -2,7 +2,6 @@
  * Saving a message, or one file of it, to a collection of one's own (PRD §69): the one saved to
  * last, another one there is, or a new one. What's saved stays only as long as the message does.
  */
-import type { MessageView } from '@caishy/core/api';
 import { COLLECTION_MAX, collectionName, SAVED_DEFAULT } from '@caishy/core/automations';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -20,11 +19,11 @@ import { toast } from '@/ui/Toast';
 const NEW = ' new';
 
 export function SaveSheet({
-  message,
+  messageId,
   assetId,
   onClose,
 }: {
-  message: MessageView;
+  messageId: string;
   /** One file or link of it, rather than all of it. */
   assetId?: string;
   onClose: () => void;
@@ -43,7 +42,7 @@ export function SaveSheet({
   const save = async () => {
     setBusy(true);
     try {
-      const res = await endpoints.saveMessage(message.id, {
+      const res = await endpoints.saveMessage(messageId, {
         collection: target,
         ...(assetId ? { assetId } : {}),
       });

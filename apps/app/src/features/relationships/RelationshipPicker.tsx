@@ -8,7 +8,7 @@ import {
   secondarySpheres,
 } from '@caishy/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useTaxonomy } from '@/api/hooks';
@@ -238,8 +238,12 @@ export function RelationshipPicker({
   const qc = useQueryClient();
   const [form, setForm] = useState<FormState>(() => initialForm(current ?? initial));
   const [busy, setBusy] = useState(false);
+  // It starts from what it's given each time it opens, and never again while it's open: a
+  // refetch underneath (a minute ticking, someone coming online) mustn't undo what's chosen.
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (open) setForm(initialForm(current ?? initial));
+    if (open && !wasOpen.current) setForm(initialForm(current ?? initial));
+    wasOpen.current = open;
   }, [open, current, initial]);
   const name = person.displayName.split(' ')[0] ?? person.displayName;
 
@@ -265,6 +269,9 @@ export function RelationshipPicker({
         qk.inbox,
         qk.relationshipHistory(person.id),
         ['conversation'],
+        // Which rule applies to them follows how you know them; what Caishy offered is answered.
+        ['policy-for'],
+        ['suggestions'],
       ])
         void qc.invalidateQueries({ queryKey: key });
     } catch (e) {

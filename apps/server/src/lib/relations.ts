@@ -77,6 +77,19 @@ export async function between(db: Q, me: string, other: string): Promise<Between
   };
 }
 
+/** The pair's connection while it's active: what a rule just for one person is scoped by. */
+export async function activeConnectionId(db: Q, a: string, b: string): Promise<string | null> {
+  const { low, high } = pairKey(a, b);
+  const row = await db
+    .selectFrom('connections')
+    .select('id')
+    .where('user_a', '=', low)
+    .where('user_b', '=', high)
+    .where('status', '=', 'active')
+    .executeTakeFirst();
+  return row?.id ?? null;
+}
+
 export async function isBlockedEitherWay(db: Q, a: string, b: string): Promise<boolean> {
   const row = await db
     .selectFrom('blocks')
@@ -138,10 +151,13 @@ export async function ownerSpheresFor(db: Q, ownerId: string, viewerId: string):
 }
 
 export async function loadPolicies(db: Q, userId: string): Promise<RelationshipPolicy[]> {
+  // Oldest first, always the same order: two rules never apply by chance of storage.
   const rows = await db
     .selectFrom('relationship_policies')
     .selectAll()
     .where('user_id', '=', userId)
+    .orderBy('created_at')
+    .orderBy('id')
     .execute();
   return rows.map((p) => ({
     id: p.id,

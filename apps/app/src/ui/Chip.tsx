@@ -70,15 +70,32 @@ export function Chip({
       accessibilityLabel={label}
       onPress={onPress}
       haptic
-      focusRadius={h / 2}
-      style={({ hovered, pressed }) => [
-        base,
-        { minHeight: 34, height: undefined, paddingVertical: size === 'sm' ? 4 : 0 },
-        !selected && (hovered || pressed) ? { backgroundColor: t.c.surfacePressed } : null,
+      focusRadius={h / 2 + 5}
+      // 34 high, and 44 to a finger, in the phone apps and a phone's browser alike (a hitSlop
+      // does nothing on the web): the pill sits in a larger, invisible target that takes no
+      // more room, so a tap never lands on the chip beside it by mistake.
+      style={[
+        {
+          alignSelf: 'flex-start',
+          paddingVertical: 5,
+          paddingHorizontal: 4,
+          marginVertical: -5,
+          marginHorizontal: -4,
+        },
         style,
       ]}
     >
-      {body}
+      {({ hovered, pressed }) => (
+        <View
+          style={[
+            base,
+            { minHeight: 34, height: undefined, paddingVertical: size === 'sm' ? 4 : 0 },
+            !selected && (hovered || pressed) ? { backgroundColor: t.c.surfacePressed } : null,
+          ]}
+        >
+          {body}
+        </View>
+      )}
     </Pressable>
   );
 }
