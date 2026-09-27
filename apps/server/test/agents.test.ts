@@ -377,13 +377,15 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await agentTurn();
     expect(requests).toHaveLength(0);
 
+    // Made private after the question came in (a private one only takes sealed messages): the
+    // agent looks again when it's its turn, and stays out of it.
     const quiet = await newCustomer('Hala Private');
+    await send(quiet.c, 'Are you open on Saturday?', quiet.conversationId);
     await t.ctx.db
       .updateTable('conversations')
       .set({ privacy_class: 'private' })
       .where('id', '=', quiet.conversationId)
       .execute();
-    await send(quiet.c, 'Are you open on Saturday?', quiet.conversationId);
     await agentTurn();
     expect(requests).toHaveLength(0);
 
