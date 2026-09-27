@@ -1776,6 +1776,57 @@ test.describe
         });
       expect(errors).toEqual([]);
     });
+    test('a group is run from its details: people added, an admin made, someone removed, and it passes on', async () => {
+      const { page, errors } = noor;
+      const title = `Book club ${stamp}`;
+      await page.goto('/new-group');
+      await page.getByLabel('Group name').fill(title);
+      await page.getByTestId(`pick-alex.${stamp}`).click();
+      await page.getByRole('button', { name: 'Create group' }).click();
+      await page.waitForURL('**/c/**');
+      const id = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+      // Its details say who's in it and who runs it.
+      const panel = page.getByTestId('group-people').filter({ visible: true });
+      await expect(panel).toContainText('Noor Haddad (you)');
+      await expect(panel).toContainText('Owner');
+
+      // Noor adds Lina, and makes Alex an admin.
+      await panel.getByTestId('group-add').click();
+      await page.getByTestId(`pick-lina.${stamp}`).filter({ visible: true }).click();
+      await page.getByTestId('group-add-confirm').click();
+      await expect(visible(page, 'Added 1 person')).toBeVisible();
+      await expect(panel.getByTestId('group-person')).toHaveCount(3);
+      await panel.getByTestId('group-person').filter({ hasText: 'Alex Chen' }).click();
+      await page.getByTestId('group-toggle-admin').click();
+      await expect(visible(page, 'Alex Chen is an admin')).toBeVisible();
+      await expect(visible(page, 'You made Alex Chen an admin')).toBeVisible();
+
+      // Its name and what it's for change from there too.
+      await panel.getByTestId('group-edit').click();
+      await page.getByTestId('group-edit-purpose').fill('One book a month');
+      await page.getByTestId('group-edit-save').click();
+      await expect(visible(page, 'One book a month')).toBeVisible();
+
+      // Removed, Lina is out of it; Noor leaves, and Alex owns it now.
+      await panel.getByTestId('group-person').filter({ hasText: 'Lina Farah' }).click();
+      await page.getByTestId('group-remove').click();
+      await expect(visible(page, 'Removed Lina Farah')).toBeVisible();
+      await expect(panel.getByTestId('group-person')).toHaveCount(2);
+      await panel.getByTestId('group-leave').click();
+      await page.getByTestId('group-leave-confirm').click();
+      await page.waitForURL((url) => new URL(url).pathname === '/');
+
+      const phone = alex.page;
+      await phone.goto(`/c/${id}`);
+      await expect(visible(phone, 'You own the group now')).toBeVisible();
+      await phone.getByRole('button', { name: /, details$/ }).click();
+      const his = phone.getByTestId('group-people').filter({ visible: true });
+      await expect(his).toContainText('Alex Chen (you)');
+      await expect(his).toContainText('Owner');
+      await expect(his.getByTestId('group-person')).toHaveCount(1);
+      await phone.screenshot({ path: 'e2e/screenshots/phone-group-details.png' });
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
     test('Lina follows Nile Dental, and its updates reach her apart from her conversations', async () => {
       if (!linaContext) throw new Error('The link test signs Lina up first.');
       const linas = linaContext;

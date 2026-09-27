@@ -12,6 +12,8 @@ import {
   applyChecklistOp,
   ChecklistOpBody,
   CreateConversationBody,
+  canChangeSpaceRole,
+  canRemoveFromSpace,
   checklistItems,
   checklistState,
   EditMessageBody,
@@ -31,6 +33,8 @@ import {
   ReactionBody,
   ReceiptsBody,
   SendMessageBody,
+  type SpaceRole,
+  SpaceRoleBody,
   UpdateConversationBody,
   uuidv7,
   VoteBody,
@@ -48,7 +52,8 @@ const privateGroupFull = () =>
 import type { Conversation, Participant } from '../db/schema';
 import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
-import { ensureDirectConversation } from '../lib/conversations';
+import { canEditConversation, contextVisible } from '../lib/contexts';
+import { ensureDirectConversation, handOverGroup } from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -411,7 +416,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           body.title ?? 'Private',
           body.private ? 'private' : 'standard',
         );
-        if (body.contextId)
+        // Only a context they can see: an id alone opens nothing.
+        if (body.contextId && (await contextVisible(ctx.db, auth.userId, body.contextId)))
           await ctx.db
             .updateTable('conversations')
             .set({ context_id: body.contextId })
@@ -509,8 +515,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       body.contextId !== undefined ||
       body.retentionDays !== undefined
     ) {
-      const canEdit = conversation.kind === 'direct' || ['owner', 'admin'].includes(me.role);
-      if (!canEdit) throw forbidden('Only admins can change this.');
+      if (!canEditConversation(conversation.kind, me.role))
+        throw forbidden('Only admins can change this.');
+      // Linked only to a context they can see: an id alone opens nothing.
+      if (body.contextId && !(await contextVisible(ctx.db, auth.userId, body.contextId)))
+        throw notFound('That context');
       if (body.title !== undefined) {
         if (conversation.kind === 'direct' && conversation.is_general)
           throw badRequest('The general conversation takes the person’s name.');
@@ -655,14 +664,37 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           ? 'Leave the space to leave its General conversation.'
           : 'Remove them from the space instead.',
       );
-    if (userId !== auth.userId && !['owner', 'admin'].includes(me.role))
-      throw forbidden('Only admins can remove people.');
-    await ctx.db
-      .updateTable('participants')
-      .set({ left_at: ctx.now() })
-      .where('conversation_id', '=', id)
-      .where('user_id', '=', userId)
-      .execute();
+    const target =
+      userId === auth.userId
+        ? me
+        : await ctx.db
+            .selectFrom('participants')
+            .selectAll()
+            .where('conversation_id', '=', id)
+            .where('user_id', '=', userId)
+            .where('left_at', 'is', null)
+            .executeTakeFirst();
+    if (!target) throw notFound('That person in this conversation');
+    // The owner removes anyone; admins remove members; anyone may leave (PRD §56).
+    if (
+      userId !== auth.userId &&
+      !canRemoveFromSpace(me.role as SpaceRole, target.role as SpaceRole)
+    )
+      throw forbidden(
+        me.role === 'admin'
+          ? 'Admins remove members; the owner removes admins.'
+          : 'Only admins can remove people.',
+      );
+    // Whoever owned it hands it on as they go, so someone can always run it.
+    const heir = await ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('participants')
+        .set({ left_at: ctx.now(), ...(target.role === 'owner' ? { role: 'member' } : {}) })
+        .where('conversation_id', '=', id)
+        .where('user_id', '=', userId)
+        .execute();
+      return target.role === 'owner' ? handOverGroup(trx, id, userId) : null;
+    });
     // Out of the conversation is out of its call.
     await leaveGroupCallsIn(ctx, userId, [id]);
     await sendSystem(
@@ -672,6 +704,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       userId === auth.userId ? 'member_left' : 'member_removed',
       { userId },
     );
+    if (heir) await sendSystem(ctx, id, auth.userId, 'owner_changed', { userId: heir });
     await ctx.bus.publish([userId, ...(await participantsOf(ctx.db, id)).map((p) => p.user_id)], {
       type: 'conversation.updated',
       data: { conversationId: id },
@@ -679,10 +712,68 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
+  /** Make someone in a group an admin, or a member again: its owner does (PRD §56). */
+  app.patch('/conversations/:id/members/:userId', async (req) => {
+    const auth = requireAuth(req);
+    const { id, userId } = parse(
+      z.object({ id: z.string().uuid(), userId: z.string().uuid() }),
+      req.params,
+    );
+    const body = parse(SpaceRoleBody, req.body);
+    const { conversation, me } = await membership(ctx, auth.userId, id);
+    if (conversation.kind === 'direct' || conversation.kind === 'business')
+      throw badRequest('Only a group has admins.');
+    if (conversation.space_id && conversation.is_general)
+      throw badRequest('Make them an admin of the space instead.');
+    const target = await ctx.db
+      .selectFrom('participants')
+      .select('role')
+      .where('conversation_id', '=', id)
+      .where('user_id', '=', userId)
+      .where('left_at', 'is', null)
+      .executeTakeFirst();
+    if (!target || !['admin', 'member'].includes(target.role))
+      throw notFound('That person in this conversation');
+    if (!canChangeSpaceRole(me.role as SpaceRole, target.role as SpaceRole))
+      throw forbidden('Only the owner makes admins.');
+    if (target.role === body.role) return { ok: true };
+    await ctx.db
+      .updateTable('participants')
+      .set({ role: body.role })
+      .where('conversation_id', '=', id)
+      .where('user_id', '=', userId)
+      .execute();
+    await sendSystem(
+      ctx,
+      id,
+      auth.userId,
+      body.role === 'admin' ? 'admin_added' : 'admin_removed',
+      { userId },
+    );
+    await ctx.bus.publish(
+      (await participantsOf(ctx.db, id)).map((p) => p.user_id),
+      {
+        type: 'conversation.updated',
+        data: { conversationId: id },
+      },
+    );
+    return { ok: true };
+  });
+
   app.post('/conversations/:id/receipts', async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(ReceiptsBody, req.body);
+    // A device that hasn't heard yet that its person left (or was removed) may still say what
+    // arrived: that's nothing to do now, and nothing to refuse. Anyone never in it is refused.
+    const gone = await ctx.db
+      .selectFrom('participants')
+      .select('left_at')
+      .where('conversation_id', '=', id)
+      .where('user_id', '=', auth.userId)
+      .where('left_at', 'is not', null)
+      .executeTakeFirst();
+    if (gone) return { ok: true };
     const { conversation, me } = await membership(ctx, auth.userId, id);
     const last = Number(conversation.last_seq);
     const read = body.read !== undefined ? Math.min(body.read, last) : undefined;

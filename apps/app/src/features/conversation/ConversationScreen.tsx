@@ -656,6 +656,10 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         me={me.id}
         aiReady={aiReady}
         where={where}
+        moderator={
+          conversation?.kind !== 'direct' &&
+          (conversation?.me.role === 'owner' || conversation?.me.role === 'admin')
+        }
         onClose={() => setActionsFor(null)}
         onReply={onReply}
         onEdit={(m) => {

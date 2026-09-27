@@ -221,6 +221,13 @@ These are rules, not preferences.
   `connection_sides.merged_into` always names a group's root (accepting a `duplicate` suggestion
   unions two groups), and `GET /connections` folds each group into its root's `also`. The app's
   card and section load only when there's one (`features/duplicates/`).
+- Groups (PRD §56): who may change a conversation (name, purpose, context, disappearing
+  messages) is `canEditConversation` in `lib/contexts.ts`, with `contextVisible` and
+  `contextEditable` for contexts; roles follow the space rules in `packages/core/src/spaces.ts`
+  (`canRemoveFromSpace`, `canChangeSpaceRole`, `nextOwner`), and an owner who goes hands on
+  through `handOverGroup`/`handOverGroups` (`lib/conversations.ts`). Anything new that changes a
+  group checks one of these, never `me.role` by hand. The app's panel is
+  `features/conversation/GroupPeople.tsx` (loaded with the details).
 - Organizations' updates (PRD §59): `lib/updates.ts` and `modules/updates.ts`, in tables of their
   own (`org_updates`, `org_follows`), never conversations: nothing about following may reach the
   inbox, attention, search, AI or anyone's connections. Only the team sees `postedBy` and the

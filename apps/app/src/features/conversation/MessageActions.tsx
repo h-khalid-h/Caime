@@ -56,6 +56,7 @@ export function MessageActions({
   onEdit,
   aiReady,
   where,
+  moderator = false,
 }: {
   m: MessageView | null;
   me: string;
@@ -66,6 +67,8 @@ export function MessageActions({
   aiReady?: boolean;
   /** The conversation shown, and whether it's private (R18). */
   where: { conversationId: string; private: boolean };
+  /** A group's owner or admin: they take down anyone's message, for everyone (PRD §56). */
+  moderator?: boolean;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -167,11 +170,13 @@ export function MessageActions({
         {mine && m.kind === 'text' && !deleted ? (
           <ListRow icon={Pencil} title="Edit" onPress={close(() => onEdit(m))} />
         ) : null}
-        {mine && !deleted ? (
+        {(mine || (moderator && m.kind !== 'system')) && !deleted ? (
           <ListRow
             icon={Trash}
             title="Delete for everyone"
+            subtitle={mine ? undefined : 'As one of the group’s admins'}
             destructive
+            testID="message-delete-everyone"
             onPress={close(async () => {
               try {
                 await endpoints.deleteMessage(m.id, true);

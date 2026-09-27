@@ -38,7 +38,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 ## M3 — Messaging
 
-- [x] Direct, group, topic conversations; participants; drafts
+- [x] Direct, group, topic conversations; participants; drafts. Groups are run from their details
+      (PRD §56): who's in it and who runs it, adding people and removing them, making admins,
+      its name and what it's for, and leaving; an owner who leaves (or whose account goes) hands
+      it to the admin there longest, else whoever has been in it longest. Only its owner and admins
+      change it, its context or disappearing messages; a decision changes only by whoever made or
+      recorded it, or them; a context is linked only by someone who can see it; admins take down
+      anyone's message (`messaging.test.ts`, E2E)
 - [x] Messages: ordered, idempotent; replies, reactions, edit, delete; read state; polls; forward
 - [x] Realtime hub (WebSocket + pg NOTIFY), typing, presence
 - [x] Attention inbox API

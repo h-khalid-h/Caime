@@ -110,6 +110,7 @@ export { default as Target } from 'lucide-react-native/icons/target';
 export { default as Trash } from 'lucide-react-native/icons/trash';
 export { default as TriangleAlert } from 'lucide-react-native/icons/triangle-alert';
 export { default as Truck } from 'lucide-react-native/icons/truck';
+export { default as UserMinus } from 'lucide-react-native/icons/user-minus';
 export { default as UserPlus } from 'lucide-react-native/icons/user-plus';
 export { default as UserRound } from 'lucide-react-native/icons/user-round';
 export { default as Users } from 'lucide-react-native/icons/users';

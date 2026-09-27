@@ -62,6 +62,16 @@ describe('systemText', () => {
     expect(
       systemText({ event: 'retention_changed', byId: 'u1', by: 'Noor', days: null }, 'u1'),
     ).toBe('You turned off disappearing messages');
+    // Who runs a group, said to everyone in it.
+    const made = { event: 'admin_added', byId: 'u1', by: 'Noor', userId: 'u2', name: 'Omar' };
+    expect(systemText(made)).toBe('Noor made Omar an admin');
+    expect(systemText(made, 'u2')).toBe('Noor made you an admin');
+    const unmade = { event: 'admin_removed', byId: 'u1', by: 'Noor', userId: 'u2', name: 'Omar' };
+    expect(systemText(unmade)).toBe('Omar is no longer an admin');
+    expect(systemText(unmade, 'u2')).toBe('You’re no longer an admin');
+    const heir = { event: 'owner_changed', byId: 'u1', by: 'Noor', userId: 'u2', name: 'Omar' };
+    expect(systemText(heir)).toBe('Omar owns the group now');
+    expect(systemText(heir, 'u2')).toBe('You own the group now');
     // Events written before names were recorded still read as a sentence.
     expect(systemText({ event: 'members_added', userIds: ['u3'] })).toBe('Someone added people');
     expect(systemText(null)).toBe('Conversation updated');

@@ -1,4 +1,4 @@
-import { uuidv7 } from '@caishy/core';
+import { nextOwner, uuidv7 } from '@caishy/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../db/schema';
 import { pairKey } from './relations';
@@ -69,4 +69,61 @@ export async function ensureDirectConversation(
     ])
     .execute();
   return { id, created: true };
+}
+
+/**
+ * A group whose owner goes (they leave, or their account does) passes to whoever has been its
+ * admin longest, else whoever has been in it longest, so someone can always run it (PRD §56).
+ * Returns who owns it now, or null when nobody is left.
+ */
+export async function handOverGroup(
+  db: Q,
+  conversationId: string,
+  leaving: string,
+): Promise<string | null> {
+  const people = await db
+    .selectFrom('participants as p')
+    .innerJoin('users as u', 'u.id', 'p.user_id')
+    .select(['p.user_id', 'p.role', 'p.joined_at'])
+    .where('p.conversation_id', '=', conversationId)
+    .where('p.left_at', 'is', null)
+    .where('p.role', 'in', ['admin', 'member'])
+    // People only: an app's bot or an agent never runs someone's group.
+    .where('u.kind', '=', 'human')
+    .execute();
+  const heir = nextOwner(
+    people.map((p) => ({ userId: p.user_id, role: p.role, joinedAt: p.joined_at.toISOString() })),
+    leaving,
+  );
+  if (heir)
+    await db
+      .updateTable('participants')
+      .set({ role: 'owner' })
+      .where('conversation_id', '=', conversationId)
+      .where('user_id', '=', heir)
+      .execute();
+  return heir;
+}
+
+/** Before an account goes: every group it owned passes on (a space's General goes with the space). */
+export async function handOverGroups(db: Q, userId: string): Promise<void> {
+  const owned = await db
+    .selectFrom('participants as p')
+    .innerJoin('conversations as c', 'c.id', 'p.conversation_id')
+    .select('p.conversation_id')
+    .where('p.user_id', '=', userId)
+    .where('p.role', '=', 'owner')
+    .where('p.left_at', 'is', null)
+    .where('c.kind', 'not in', ['direct', 'business'])
+    .where('c.is_general', '=', false)
+    .execute();
+  for (const { conversation_id } of owned) {
+    await db
+      .updateTable('participants')
+      .set({ role: 'member' })
+      .where('conversation_id', '=', conversation_id)
+      .where('user_id', '=', userId)
+      .execute();
+    await handOverGroup(db, conversation_id, userId);
+  }
 }

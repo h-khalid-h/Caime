@@ -233,6 +233,13 @@ export const endpoints = {
     }),
   updateConversation: (id: string, patch: Record<string, unknown>) =>
     api.patch<{ conversation: ConversationView }>(`/conversations/${id}`, patch),
+  // Running a group (PRD §56): who's in it, and who runs it.
+  addToGroup: (id: string, userIds: string[]) =>
+    api.post<Ok>(`/conversations/${id}/members`, { userIds }),
+  removeFromGroup: (id: string, userId: string) =>
+    api.del<Ok>(`/conversations/${id}/members/${userId}`),
+  setGroupRole: (id: string, userId: string, role: 'admin' | 'member') =>
+    api.patch<Ok>(`/conversations/${id}/members/${userId}`, { role }),
   answerRequest: (id: string, decision: 'accept' | 'decline') =>
     api.post<Ok>(`/conversations/${id}/request`, { decision }),
   messages: (id: string, params: { before?: number; after?: number; limit?: number } = {}) =>

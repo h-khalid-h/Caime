@@ -11,6 +11,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { endBillingOf } from '../lib/billing';
+import { handOverGroups } from '../lib/conversations';
 import { verifyPassword } from '../lib/crypto';
 import { rerootMerged } from '../lib/duplicates';
 import { AppError, notFound } from '../lib/errors';
@@ -352,8 +353,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', me)
       .execute();
     const closed = await ctx.db.transaction().execute(async (trx) => {
-      // Spaces and organizations it owned stay with the people in them.
+      // Spaces, groups and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());
+      await handOverGroups(trx, me);
       const closedOrgs = await handOverOrgs(trx, me, ctx.now());
       // Anyone who merged others under this account still sees them as one person.
       await rerootMerged(trx, me);

@@ -35,8 +35,31 @@ function soon(key: string, fn: () => void, ms = 400): void {
 }
 
 const deliveredAcks = new Map<string, number>();
+/** Conversations this device's person left here: nothing more is said to the server about them. */
+const left = new Set<string>();
+
+/**
+ * Just left a conversation: what was waiting to be sent about it (that its messages arrived) and
+ * refetches of it are dropped, since the server would only answer that they aren't in it.
+ */
+export function leftConversation(conversationId: string): void {
+  left.add(conversationId);
+  // Only what was already under way: added back later, it's theirs again.
+  setTimeout(() => left.delete(conversationId), 30_000);
+  deliveredAcks.delete(conversationId);
+  for (const key of [
+    `delivered:${conversationId}`,
+    JSON.stringify(qk.conversation(conversationId)),
+    JSON.stringify(qk.memory(conversationId)),
+  ]) {
+    const timer = pending.get(key);
+    if (timer) clearTimeout(timer);
+    pending.delete(key);
+  }
+}
 
 function ackDelivered(conversationId: string, seq: number): void {
+  if (left.has(conversationId)) return;
   const prev = deliveredAcks.get(conversationId) ?? 0;
   if (seq <= prev) return;
   deliveredAcks.set(conversationId, seq);

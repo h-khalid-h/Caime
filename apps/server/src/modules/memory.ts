@@ -10,7 +10,8 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { maskFor } from '../lib/business';
-import { notFound } from '../lib/errors';
+import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
+import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { participantsOf } from '../lib/messages';
 import { parse } from '../lib/validate';
@@ -18,35 +19,17 @@ import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
 import { membership } from './conversations';
 
-async function contextVisible(
-  ctx: AppContext,
-  userId: string,
-  contextId: string,
-): Promise<boolean> {
-  const row = await ctx.db
-    .selectFrom('conversations as c')
-    .innerJoin('participants as p', (j) =>
-      j.onRef('p.conversation_id', '=', 'c.id').on('p.user_id', '=', userId),
-    )
-    .select('c.id')
-    .where('c.context_id', '=', contextId)
-    .where('p.left_at', 'is', null)
-    .executeTakeFirst();
-  if (row) return true;
-  const own = await ctx.db
-    .selectFrom('contexts')
-    .select('id')
-    .where('id', '=', contextId)
-    .where('created_by', '=', userId)
-    .executeTakeFirst();
-  return Boolean(own);
-}
-
 export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/contexts', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(CreateContextBody, req.body);
-    if (body.conversationId) await membership(ctx, auth.userId, body.conversationId);
+    // Giving a conversation its context is changing it: either person in a one-to-one, a group's
+    // owner and admins.
+    if (body.conversationId) {
+      const { conversation, me } = await membership(ctx, auth.userId, body.conversationId);
+      if (!canEditConversation(conversation.kind, me.role))
+        throw forbidden('Only admins can change this.');
+    }
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
@@ -83,7 +66,11 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(UpdateContextBody, req.body);
-    if (!(await contextVisible(ctx, auth.userId, id))) throw notFound('That context');
+    if (!(await contextEditable(ctx.db, auth.userId, id))) {
+      if (await contextVisible(ctx.db, auth.userId, id))
+        throw forbidden('Only admins can change this.');
+      throw notFound('That context');
+    }
     await ctx.db
       .updateTable('contexts')
       .set({
@@ -151,7 +138,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/contexts/:id', async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    if (!(await contextVisible(ctx, auth.userId, id))) throw notFound('That context');
+    if (!(await contextVisible(ctx.db, auth.userId, id))) throw notFound('That context');
     const c = await ctx.db
       .selectFrom('contexts')
       .selectAll()

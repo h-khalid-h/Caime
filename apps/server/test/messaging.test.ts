@@ -456,6 +456,196 @@ describe('groups (PRD §14, §56)', () => {
   });
 });
 
+describe('running a group (PRD §56)', () => {
+  let ana: Client; // owner
+  let bo: Client; // made an admin
+  let cal: Client; // a member
+  let dan: Client; // a member
+  let g: string;
+  const say = async (c: Client, body: string) => (await send(c, g, body)).id as string;
+  const roles = async (c: Client) =>
+    Object.fromEntries(
+      ((await c.get(`/v1/conversations/${g}`)).conversation.participants as any[]).map((p) => [
+        p.person.displayName,
+        p.role,
+      ]),
+    );
+  const lines = async (c: Client) =>
+    ((await c.get(`/v1/conversations/${g}/messages`)).messages as any[])
+      .filter((m) => m.kind === 'system')
+      .map((m) => m.payload.event);
+
+  beforeAll(async () => {
+    ana = await signup(t, { displayName: 'Ana' });
+    bo = await signup(t, { displayName: 'Bo' });
+    cal = await signup(t, { displayName: 'Cal' });
+    dan = await signup(t, { displayName: 'Dan' });
+    for (const c of [bo, cal, dan]) await connect(ana, c);
+    g = (
+      await ana.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Book club',
+        memberIds: [bo.user.id, cal.user.id, dan.user.id],
+      })
+    ).conversation.id;
+  });
+
+  it('its owner makes admins, and only its owner; everyone sees who runs it', async () => {
+    expect(await roles(cal)).toEqual({ Ana: 'owner', Bo: 'member', Cal: 'member', Dan: 'member' });
+    const asMember = await cal.req('PATCH', `/v1/conversations/${g}/members/${dan.user.id}`, {
+      role: 'admin',
+    });
+    expect(asMember.statusCode).toBe(403);
+    await ana.patch(`/v1/conversations/${g}/members/${bo.user.id}`, { role: 'admin' });
+    expect((await roles(cal)).Bo).toBe('admin');
+    expect(await lines(cal)).toContain('admin_added');
+    // An admin makes nobody else one, and nobody makes the owner anything.
+    for (const [who, target] of [
+      [bo, cal],
+      [ana, ana],
+    ] as const)
+      expect(
+        (
+          await who.req('PATCH', `/v1/conversations/${g}/members/${target.user.id}`, {
+            role: 'admin',
+          })
+        ).statusCode,
+      ).toBe(who === ana ? 404 : 403);
+    // Not in a one-to-one.
+    const direct = await connect(cal, dan);
+    expect(
+      (
+        await cal.req('PATCH', `/v1/conversations/${direct}/members/${dan.user.id}`, {
+          role: 'admin',
+        })
+      ).statusCode,
+    ).toBe(400);
+  });
+
+  it('a member reads it and writes in it, and changes nothing about it; an admin does', async () => {
+    const theirs = await say(ana, 'We meet on the first Friday.');
+    const context = (
+      await ana.post('/v1/contexts', {
+        kind: 'project',
+        title: 'Autumn reading',
+        conversationId: g,
+      })
+    ).id as string;
+    const decision = (
+      await ana.post('/v1/decisions', { conversationId: g, title: 'Read Middlemarch first' })
+    ).id as string;
+    const refused = [
+      cal.req('POST', `/v1/conversations/${g}/members`, { userIds: [dan.user.id] }),
+      cal.req('DELETE', `/v1/conversations/${g}/members/${dan.user.id}`),
+      cal.req('PATCH', `/v1/conversations/${g}`, { title: 'Cal’s club' }),
+      cal.req('POST', '/v1/contexts', { kind: 'project', title: 'Mine', conversationId: g }),
+      cal.req('PATCH', `/v1/contexts/${context}`, { title: 'Winter reading' }),
+      cal.req('PATCH', `/v1/decisions/${decision}`, { status: 'reversed' }),
+      cal.req('DELETE', `/v1/messages/${theirs}`),
+    ];
+    for (const r of await Promise.all(refused)) expect(r.statusCode).toBe(403);
+    // Nothing changed.
+    const now = (await cal.get(`/v1/conversations/${g}`)).conversation;
+    expect(now.title).toBe('Book club');
+    expect(now.context).toMatchObject({ id: context, title: 'Autumn reading' });
+    // An admin does all of it.
+    expect(
+      (await bo.req('PATCH', `/v1/conversations/${g}`, { title: 'The book club' })).statusCode,
+    ).toBe(200);
+    expect(
+      (await bo.req('PATCH', `/v1/contexts/${context}`, { title: 'Winter reading' })).statusCode,
+    ).toBe(200);
+    expect(
+      (await bo.req('PATCH', `/v1/decisions/${decision}`, { title: 'Read Middlemarch' }))
+        .statusCode,
+    ).toBe(200);
+    expect((await bo.req('DELETE', `/v1/messages/${theirs}`)).statusCode).toBe(200);
+    // A decision is also theirs who recorded it.
+    const calls = (await cal.post('/v1/decisions', { conversationId: g, title: 'Snacks by rota' }))
+      .id as string;
+    expect(
+      (await cal.req('PATCH', `/v1/decisions/${calls}`, { status: 'reversed' })).statusCode,
+    ).toBe(200);
+  });
+
+  it('a context is linked only where it can be seen: an id alone opens nothing', async () => {
+    const aside = await connect(ana, await signup(t, { displayName: 'Eve' }));
+    const secret = (
+      await ana.post('/v1/contexts', {
+        kind: 'project',
+        title: 'Surprise party',
+        conversationId: aside,
+      })
+    ).id as string;
+    const mine = await connect(cal, bo);
+    expect(
+      (await cal.req('PATCH', `/v1/conversations/${mine}`, { contextId: secret })).statusCode,
+    ).toBe(404);
+    expect((await cal.req('GET', `/v1/contexts/${secret}`)).statusCode).toBe(404);
+  });
+
+  it('admins remove members; the owner removes admins; nobody removes the owner', async () => {
+    expect(
+      (await bo.req('DELETE', `/v1/conversations/${g}/members/${ana.user.id}`)).statusCode,
+    ).toBe(403);
+    await ana.patch(`/v1/conversations/${g}/members/${cal.user.id}`, { role: 'admin' });
+    expect(
+      (await bo.req('DELETE', `/v1/conversations/${g}/members/${cal.user.id}`)).statusCode,
+    ).toBe(403);
+    await ana.patch(`/v1/conversations/${g}/members/${cal.user.id}`, { role: 'member' });
+    expect(await lines(cal)).toContain('admin_removed');
+    expect(
+      (await bo.req('DELETE', `/v1/conversations/${g}/members/${cal.user.id}`)).statusCode,
+    ).toBe(200);
+    // Someone who isn't in it any more isn't removed again; what their device says late of it is
+    // let go, while someone never in it is refused.
+    expect(
+      (await bo.req('DELETE', `/v1/conversations/${g}/members/${cal.user.id}`)).statusCode,
+    ).toBe(404);
+    expect(
+      (await cal.req('POST', `/v1/conversations/${g}/receipts`, { delivered: 3 })).statusCode,
+    ).toBe(200);
+    const stranger = await signup(t, { displayName: 'Stranger' });
+    expect(
+      (await stranger.req('POST', `/v1/conversations/${g}/receipts`, { delivered: 3 })).statusCode,
+    ).toBe(404);
+    await ana.post(`/v1/conversations/${g}/members`, { userIds: [cal.user.id] });
+  });
+
+  it('its owner leaving hands it to the admin there longest; their account going does the same', async () => {
+    // Cal has been in it longest, but Bo is its admin: an admin comes first.
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ joined_at: new Date('2020-01-01T00:00:00Z') })
+      .where('conversation_id', '=', g)
+      .where('user_id', '=', cal.user.id)
+      .execute();
+    await ana.req('DELETE', `/v1/conversations/${g}/members/${ana.user.id}`);
+    expect(await roles(bo)).toEqual({ Bo: 'owner', Cal: 'member', Dan: 'member' });
+    expect(await lines(bo)).toContain('owner_changed');
+    // No admin: whoever has been in it longest.
+    const kin = (
+      await bo.post('/v1/conversations', { kind: 'group', title: 'Kin', memberIds: [ana.user.id] })
+    ).conversation.id;
+    await bo.post(`/v1/conversations/${kin}/members`, { userIds: [cal.user.id] });
+    await t.ctx.db
+      .updateTable('participants')
+      .set({ joined_at: new Date('2020-01-01T00:00:00Z') })
+      .where('conversation_id', '=', kin)
+      .where('user_id', '=', cal.user.id)
+      .execute();
+    const gone = await bo.req('DELETE', '/v1/me', { password: 'correct horse battery' });
+    expect(gone.statusCode).toBe(200);
+    const kept = (await cal.get(`/v1/conversations/${kin}`)).conversation.participants as any[];
+    expect(kept.map((p) => [p.person.displayName, p.role]).sort()).toEqual([
+      ['Ana', 'member'],
+      ['Cal', 'owner'],
+    ]);
+    // And Book club, which Bo owned, is Cal's or Dan's now: someone runs it.
+    expect(Object.values(await roles(cal))).toContain('owner');
+  });
+});
+
 describe('message features', () => {
   it('reactions, replies, edits, deletes and delete-for-me', async () => {
     const m = await send(sarah, convo, 'Original');

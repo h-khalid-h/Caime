@@ -18,6 +18,7 @@ import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { customerMask } from '../lib/business';
+import { canEditConversation } from '../lib/contexts';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { messagePreview, messageViews, participantsOf, sendMessage } from '../lib/messages';
@@ -514,7 +515,15 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .executeTakeFirst();
     if (!d) throw notFound('That decision');
-    await membership(ctx, auth.userId, d.conversation_id);
+    // Whoever recorded or made it changes it, or reverses it; in a group so do its owner and
+    // admins, and either person in a one-to-one.
+    const { conversation, me } = await membership(ctx, auth.userId, d.conversation_id);
+    if (
+      d.recorded_by !== auth.userId &&
+      d.decided_by !== auth.userId &&
+      !canEditConversation(conversation.kind, me.role)
+    )
+      throw forbidden('Only whoever recorded it, or the group’s admins, change a decision.');
     await ctx.db.updateTable('decisions').set(body).where('id', '=', id).execute();
     await ctx.bus.publish(
       (await participantsOf(ctx.db, d.conversation_id)).map((p) => p.user_id),

@@ -282,6 +282,14 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return `${p.name ?? by} left`;
     case 'member_removed':
       return `${by} removed ${them}`;
+    case 'owner_changed':
+      return them === 'you' ? 'You own the group now' : `${p.name ?? 'Someone'} owns the group now`;
+    case 'admin_added':
+      return `${by} made ${them} an admin`;
+    case 'admin_removed':
+      return them === 'you'
+        ? 'You’re no longer an admin'
+        : `${p.name ?? 'Someone'} is no longer an admin`;
     case 'decision_recorded':
       return p.title ? `${by} recorded a decision: ${p.title}` : `${by} recorded a decision`;
     case 'retention_changed':

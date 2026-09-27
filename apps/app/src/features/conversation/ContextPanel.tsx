@@ -17,9 +17,13 @@ import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
 import { Calendar, CircleCheck, FileText, LayoutGrid, Link, Lock, Star, X } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+// Who's in a group, and running it: loaded when a group's details are first shown.
+const GroupPeople = lazyPart(() => import('./GroupPeople').then((m) => m.GroupPeople));
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -217,7 +221,7 @@ export function ContextPanel({
             )}
           </Pressable>
         ) : (
-          <Section title={`${conversation.participants.length} people`}>
+          <>
             {conversation.space ? (
               <Pressable
                 accessibilityRole="link"
@@ -236,23 +240,13 @@ export function ContextPanel({
                 </Text>
               </Pressable>
             ) : null}
-            {conversation.participants.map((p) => (
-              <View key={p.userId} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Avatar
-                  id={p.userId}
-                  name={p.person.displayName}
-                  url={p.person.avatarUrl}
-                  size={32}
-                />
-                <Text variant="body" style={{ flex: 1 }} numberOfLines={1}>
-                  {p.person.displayName}
-                </Text>
-                {p.relationship ? (
-                  <RelationshipChip label={p.relationship.label} sphere={p.relationship.sphere} />
-                ) : null}
-              </View>
-            ))}
-          </Section>
+            {conversation.purpose ? (
+              <Text variant="body" color="textSecondary" style={{ paddingHorizontal: 16 }}>
+                {conversation.purpose}
+              </Text>
+            ) : null}
+            <GroupPeople conversation={conversation} />
+          </>
         )}
         {m ? (
           <>
