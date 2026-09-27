@@ -174,6 +174,69 @@ describe('call history (PRD §47)', () => {
     await sam.patch(`/v1/connections/${side.connection_id}`, { identityId: null });
   });
 
+  it('someone out of the group sees only their own place in its calls; someone added, only who was there with them', async () => {
+    const pia = await signup(t, { displayName: 'Pia Berg' });
+    await connect(noor, pia);
+    await connect(noor, zed);
+    const party = (
+      await noor.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Party',
+        memberIds: [sam.user.id, omar.user.id, pia.user.id],
+      })
+    ).conversation.id;
+    const start = () =>
+      noor.post(`/v1/conversations/${party}/group-calls`, {
+        kind: 'voice',
+        deviceId: 'dev-tab-0001',
+      });
+    const join = (c: Client, id: string) =>
+      c.post(`/v1/group-calls/${id}/join`, { deviceId: `dev-${c.user.handle}` });
+    const leave = (c: Client, id: string, device = `dev-${c.user.handle}`) =>
+      c.post(`/v1/group-calls/${id}/leave`, { deviceId: device });
+    // Omar is rung, and leaves the group while it rings; Sam and Pia join it for a minute.
+    const first = (await start()).call.id;
+    await omar.del(`/v1/conversations/${party}/members/${omar.user.id}`);
+    await join(sam, first);
+    await join(pia, first);
+    t.clock.advance(60_000);
+    await leave(sam, first);
+    await leave(pia, first);
+    await leave(noor, first, 'dev-tab-0001');
+    await sweepGroupCalls(t.ctx);
+    await noor.patch(`/v1/conversations/${party}`, { title: 'Surprise party for Omar' });
+    const [out] = (await history(omar)).calls;
+    expect(out).toMatchObject({ id: first, conversationTitle: null, with: [], seconds: 0 });
+    expect((await history(omar, `?with=${pia.user.id}`)).calls.map((c: any) => c.id)).not.toContain(
+      first,
+    );
+    // Everyone still in it sees it all.
+    const [pias] = (await history(pia)).calls;
+    expect(pias.conversationTitle).toBe('Surprise party for Omar');
+    expect(pias.with.map((p: any) => p.displayName).sort()).toEqual(['Noor Haddad', 'Sam Rivera']);
+    // Zed is added while a call is on, after Sam left it: he sees who was there with him.
+    const second = (await start()).call.id;
+    await join(sam, second);
+    await join(pia, second);
+    t.clock.advance(10_000);
+    await leave(sam, second);
+    t.clock.advance(1000);
+    await noor.post(`/v1/conversations/${party}/members`, { userIds: [zed.user.id] });
+    await join(zed, second);
+    t.clock.advance(30_000);
+    await leave(zed, second);
+    await leave(pia, second);
+    await leave(noor, second, 'dev-tab-0001');
+    await sweepGroupCalls(t.ctx);
+    const [added] = (await history(zed)).calls;
+    expect(added).toMatchObject({ id: second, conversationTitle: 'Surprise party for Omar' });
+    expect(added.with.map((p: any) => p.displayName).sort()).toEqual(['Noor Haddad', 'Pia Berg']);
+    expect((await history(zed, `?with=${sam.user.id}`)).calls).toEqual([]);
+    expect((await history(zed, `?with=${pia.user.id}`)).calls.map((c: any) => c.id)).toContain(
+      second,
+    );
+  });
+
   it('only calls that are over', async () => {
     const live = (await call(noor, noorSam)).call.id;
     expect((await history(noor)).calls.map((c: any) => c.id)).not.toContain(live);

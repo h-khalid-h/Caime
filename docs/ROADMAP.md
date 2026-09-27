@@ -80,8 +80,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       they show it, the same nickname, or one name inside the other from the same place) are
       offered at the top of People, never merged for them. Merged, one row stands for both,
       only in that person's view, each account keeps its conversations, and either can be
-      separated again. Only what the person sees is compared, never an email or a phone number
-      (`duplicates.test.ts`, E2E)
+      separated again. Only what the person sees is compared, never an email or a phone number;
+      every one of their people is compared (however many), with every account of anyone
+      merged, in any script; blocking takes an offer back, and losing the account the others
+      show under keeps them one person (`duplicates.test.ts`, E2E)
 - [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
 - [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
       download your data and delete your account (E2E)
@@ -230,8 +232,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       and leaving the group leaves its call (`group-calls.test.ts`, `group.web.test.ts`, E2E with
       three browsers). Call history: every call a person was in or was rung for, newest first,
       the missed ones, and those with one person (People → Calls, and on a person's page), each
-      with how it ended and how long it lasted; a group call shows only who was in it
-      (`call-history.test.ts`, E2E).
+      with how it ended and how long it lasted; a group call shows only who was in it while the
+      person was part of it, and someone who's left a group sees only their own place in its
+      calls; indexed, so it reads only that person's calls (`call-history.test.ts`, E2E).
 - [x] Private conversations (R18, PRD §61), end to end encrypted, on the web: with a connection
       (or a group of them), started from their page; every message sealed on the sender's device
       for every device of everyone in it and signed by it, so the server keeps only envelopes it

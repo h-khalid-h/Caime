@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { nameWords, sameness } from '../src/lib/duplicates';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -65,6 +66,13 @@ describe('possible duplicates (PRD §51)', () => {
     expect(
       sameness(seen('Ana', { nickname: 'Mum' }), seen('Angela', { nickname: 'mum' })).reasons,
     ).toEqual(['the same nickname']);
+    // Other scripts' marks belong to their letters: one first name is one word, and a vowel
+    // sign makes another name.
+    for (const one of ['प्रिया', 'राहुल', 'அருண்', 'محمّد', 'ごとう', '민준'])
+      expect(nameWords(one)).toHaveLength(1);
+    expect(sameness(seen('राहुल'), seen('राहुल')).confidence).toBe(0.5);
+    expect(sameness(seen('प्रिया'), seen('प्रिय')).confidence).toBe(0);
+    expect(sameness(seen('प्रिया शर्मा'), seen('प्रिया शर्मा')).confidence).toBe(0.8);
   });
 
   it('offers it to whoever knows both, from what they can see, and nobody else', async () => {
@@ -281,6 +289,119 @@ describe('possible duplicates (PRD §51)', () => {
     const list = await connections(noor);
     expect(row(list, u2)).toMatchObject({ mergedInto: null });
     expect(row(list, u2).also.map((a: any) => a.person.id)).toEqual([u3.user.id]);
+  });
+
+  it('an account merged into another is looked at as well: a new one like it is offered as that person', async () => {
+    const old = await signup(t, { displayName: 'S. Weller' });
+    const now = await signup(t, { displayName: 'Sarah Weller' });
+    await connect(noor, old);
+    await connect(noor, now);
+    const list = await connections(noor);
+    for (const c of [old, now])
+      await noor.patch(`/v1/connections/${row(list, c).connectionId}`, { nickname: 'Sarah W' });
+    const [pair] = (await duplicates(noor)).filter((d) => d.subjectUserId === now.user.id);
+    await noor.post(`/v1/suggestions/${pair.id}/accept`, { keep: old.user.id });
+    const third = await signup(t, { displayName: 'Sarah Weller' });
+    await connect(noor, third);
+    const offers = (await duplicates(noor)).filter((d) => d.subjectUserId === third.user.id);
+    expect(offers.map((d) => d.payload)).toEqual([{ keep: old.user.id, merge: third.user.id }]);
+    expect(offers[0].rationale).toContain('the same name');
+  });
+
+  it('losing the account the others are shown under never splits the person', async () => {
+    const r = await signup(t, { displayName: 'Tess Hale' });
+    const a = await signup(t, { displayName: 'Tess Hale' });
+    const b = await signup(t, { displayName: 'Tess Hale' });
+    for (const c of [r, a, b]) await connect(noor, c);
+    const offers = (await duplicates(noor)).filter((d) =>
+      [a.user.id, b.user.id].includes(d.subjectUserId),
+    );
+    const of = (x: Client, y: Client) =>
+      offers.find(
+        (d) =>
+          [d.payload.keep, d.payload.merge].sort().join() === [x.user.id, y.user.id].sort().join(),
+      );
+    const ab = of(a, b);
+    await noor.post(`/v1/suggestions/${of(r, a).id}/accept`, { keep: r.user.id });
+    await noor.post(`/v1/suggestions/${of(r, b).id}/accept`, { keep: r.user.id });
+    // The pair already one person is gone, not spent: it can be asked again if they're apart.
+    expect(
+      await t.ctx.db.selectFrom('suggestions').select('id').where('id', '=', ab.id).execute(),
+    ).toEqual([]);
+    // R deletes the account: A and B are still one person, under the one known longer.
+    expect(
+      (await r.req('DELETE', '/v1/me', { password: 'correct horse battery' })).statusCode,
+    ).toBe(200);
+    let list = await connections(noor);
+    expect(row(list, a)).toMatchObject({ mergedInto: null });
+    expect(row(list, a).also.map((x: any) => x.person.id)).toEqual([b.user.id]);
+    expect(row(list, b).mergedInto).toBe(a.user.id);
+    // And when the one they're under is disconnected, the other takes its place.
+    const c = await signup(t, { displayName: 'Tess Hale' });
+    await connect(noor, c);
+    const [bc] = (await duplicates(noor)).filter((d) => d.subjectUserId === c.user.id);
+    await noor.post(`/v1/suggestions/${bc.id}/accept`, { keep: a.user.id });
+    await noor.req('DELETE', `/v1/connections/${row(await connections(noor), a).connectionId}`);
+    list = await connections(noor);
+    expect(row(list, b)).toMatchObject({ mergedInto: null });
+    expect(row(list, b).also.map((x: any) => x.person.id)).toEqual([c.user.id]);
+  });
+
+  it('an offer goes when either blocks the other, and a blocked one is never merged', async () => {
+    const one = await signup(t, { displayName: 'Uma Vale' });
+    const two = await signup(t, { displayName: 'Uma Vale' });
+    await connect(noor, one);
+    await connect(noor, two);
+    const [offer] = (await duplicates(noor)).filter((d) => d.subjectUserId === two.user.id);
+    expect(offer).toBeDefined();
+    await two.post('/v1/blocks', { userId: noor.user.id });
+    expect((await duplicates(noor)).filter((d) => d.subjectUserId === two.user.id)).toEqual([]);
+    const late = await noor.req('POST', `/v1/suggestions/${offer.id}/accept`, {});
+    expect(late.statusCode).toBeGreaterThanOrEqual(400);
+    expect(row(await connections(noor), two)?.mergedInto ?? null).toBeNull();
+    // An offer still standing, accepted after a block: refused.
+    await two.req('DELETE', `/v1/blocks/${noor.user.id}`);
+    await noor.patch(`/v1/connections/${row(await connections(noor), two).connectionId}`, {
+      nickname: 'Uma',
+    });
+    const [again] = (await duplicates(noor)).filter((d) =>
+      [one.user.id, two.user.id].includes(d.subjectUserId),
+    );
+    expect(again).toBeDefined();
+    await t.ctx.db
+      .insertInto('blocks')
+      .values({ blocker_id: noor.user.id, blocked_id: two.user.id })
+      .execute();
+    const refused = await noor.req('POST', `/v1/suggestions/${again.id}/accept`, {});
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.message).toBe('One of them is blocked: it can’t be merged.');
+  });
+
+  it('whoever has more than a thousand connections is still offered one', async () => {
+    const lots = await signup(t, { displayName: 'Lots Of Friends' });
+    await sql`
+      with made as (
+        insert into users (id, email, handle, password_hash, display_name, privacy)
+        select gen_random_uuid(), 'bulk' || g || '@example.com', 'bulk' || g, 'x', 'Person ' || g, '{}'
+          from generate_series(1, 1001) g
+        returning id
+      ), linked as (
+        insert into connections (id, user_a, user_b)
+        select gen_random_uuid(), least(${lots.user.id}::uuid, id), greatest(${lots.user.id}::uuid, id)
+          from made
+        returning id, user_a, user_b
+      )
+      insert into connection_sides (connection_id, owner_id, other_id, created_at)
+      select id, ${lots.user.id}::uuid,
+          case when user_a = ${lots.user.id}::uuid then user_b else user_a end,
+          now() - interval '1 day'
+        from linked`.execute(t.ctx.db);
+    const first = await signup(t, { displayName: 'Vera Quinn' });
+    const second = await signup(t, { displayName: 'Vera Quinn' });
+    await connect(lots, first);
+    await connect(lots, second);
+    const offers = await duplicates(lots);
+    expect(offers.map((d) => d.payload)).toEqual([{ keep: first.user.id, merge: second.user.id }]);
   });
 
   it('never goes round in a circle, whatever is stored', async () => {

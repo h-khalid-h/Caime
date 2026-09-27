@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { endCallsBetween } from '../lib/calls';
+import { withdrawDuplicatesOf } from '../lib/duplicates';
 import { badRequest } from '../lib/errors';
 import { leaveGroupCallsWith } from '../lib/group-calls';
 import { parse } from '../lib/validate';
@@ -53,8 +54,10 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
       .values({ blocker_id: auth.userId, blocked_id: userId })
       .onConflict((oc) => oc.doNothing())
       .execute();
-    // A call between them ends now, and pending requests quietly end.
+    // A call between them ends now, pending requests quietly end, and neither is offered as one
+    // of the other's duplicates.
     await endCallsBetween(ctx, auth.userId, userId);
+    await withdrawDuplicatesOf(ctx.db, auth.userId, userId);
     await leaveGroupCallsWith(ctx, auth.userId, userId);
     await ctx.db
       .updateTable('connection_requests')

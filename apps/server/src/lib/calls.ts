@@ -389,6 +389,8 @@ export async function callHistory(
       'c.ended_at',
       sql<string | null>`null`.as('my_state'),
       sql<Date | null>`null`.as('my_joined_at'),
+      sql<Date | null>`null`.as('my_left_at'),
+      sql<Date | null>`null`.as('my_rung_at'),
     ])
     .where('c.is_group', '=', false)
     .where('c.state', '=', 'ended')
@@ -422,18 +424,26 @@ export async function callHistory(
       'c.ended_at',
       sql<string | null>`m.state`.as('my_state'),
       sql<Date | null>`m.joined_at`.as('my_joined_at'),
+      sql<Date | null>`m.left_at`.as('my_left_at'),
+      sql<Date | null>`m.rung_at`.as('my_rung_at'),
     ])
     .where('c.is_group', '=', true)
     .where('c.state', '=', 'ended')
+    // With someone: who was in it once they were part of it (and they're still in the group).
     .$if(Boolean(opts.withId), (q) =>
       q.where((eb) =>
         eb.exists(
           eb
             .selectFrom('call_members as o')
+            .innerJoin('participants as p', (j) =>
+              j.onRef('p.conversation_id', '=', 'c.conversation_id').on('p.user_id', '=', me),
+            )
             .select('o.user_id')
             .whereRef('o.call_id', '=', 'c.id')
             .where('o.user_id', '=', opts.withId!)
-            .where('o.joined_at', 'is not', null),
+            .where('o.joined_at', 'is not', null)
+            .where('p.left_at', 'is', null)
+            .where(sql<boolean>`coalesce(o.left_at, c.ended_at, now()) > m.rung_at`),
         ),
       ),
     )
@@ -452,10 +462,28 @@ export async function callHistory(
     .execute();
   const page = rows.slice(0, opts.limit);
   const groupIds = page.filter((r) => r.is_group).map((r) => r.id);
+  // Where they stand in each group now: someone who's left sees only their own place in its
+  // calls, never its name, who else was there, or how long it went on after them.
+  const memberships = groupIds.length
+    ? await ctx.db
+        .selectFrom('participants')
+        .select(['conversation_id', 'left_at'])
+        .where('user_id', '=', me)
+        .where(
+          'conversation_id',
+          'in',
+          page.filter((r) => r.is_group).map((r) => r.conversation_id),
+        )
+        .execute()
+    : [];
+  const inGroup = (conversationId: string) => {
+    const p = memberships.find((x) => x.conversation_id === conversationId);
+    return p && p.left_at === null ? p : null;
+  };
   const members = groupIds.length
     ? await ctx.db
         .selectFrom('call_members')
-        .select(['call_id', 'user_id', 'joined_at', 'rung_at'])
+        .select(['call_id', 'user_id', 'joined_at', 'left_at', 'rung_at'])
         .where('call_id', 'in', groupIds)
         .orderBy('rung_at')
         .orderBy('user_id')
@@ -471,14 +499,14 @@ export async function callHistory(
       ? ctx.db.selectFrom('users').select(['id', 'display_name']).where('id', 'in', ids).execute()
       : [],
     personViewsFor(ctx, me, ids),
-    groupIds.length
+    groupIds.length && memberships.some((p) => p.left_at === null)
       ? ctx.db
           .selectFrom('conversations')
           .select(['id', 'title'])
           .where(
             'id',
             'in',
-            page.filter((r) => r.is_group).map((r) => r.conversation_id),
+            memberships.filter((p) => p.left_at === null).map((p) => p.conversation_id),
           )
           .execute()
       : [],
@@ -497,18 +525,39 @@ export async function callHistory(
       const outgoing = r.caller_id === me;
       const outcome = (r.outcome ?? 'missed') as CallOutcome;
       let others: Array<string | null>;
+      const member = r.is_group ? inGroup(r.conversation_id) : null;
       if (!r.is_group) others = [outgoing ? r.callee_id : r.caller_id];
+      else if (!member) others = [];
       else {
+        // Who else was in it once they were part of it (rung, or added while it was on): not
+        // someone who'd left the call before then.
+        const from = r.my_rung_at?.getTime() ?? 0;
         const of = members.filter((m) => m.call_id === r.id && m.user_id !== me);
-        const joined = of.filter((m) => m.joined_at);
-        // Who else was in it; for a call nobody else joined, who started it (and to whoever
-        // did, nobody: who it rang would say who it didn't, a block or R29).
+        const joined = of.filter(
+          (m) => m.joined_at && (m.left_at ?? r.ended_at ?? ctx.now()).getTime() > from,
+        );
+        // For a call nobody else joined, who started it (and to whoever did, nobody: who it
+        // rang would say who it didn't, a block or R29).
         others = joined.length ? joined.map((m) => m.user_id) : outgoing ? [] : [r.caller_id];
       }
       const answered = r.answered_at && r.ended_at;
+      // Out of the group: only as long as they were in the call themselves.
+      const mine =
+        r.is_group && !member
+          ? r.my_joined_at
+            ? Math.max(
+                0,
+                Math.round(
+                  ((r.my_left_at ?? r.ended_at ?? ctx.now()).getTime() - r.my_joined_at.getTime()) /
+                    1000,
+                ),
+              )
+            : 0
+          : null;
       return {
         id: r.id,
         conversationId: r.conversation_id,
+        // Only of groups they're still in: nothing else was looked up.
         conversationTitle: r.is_group
           ? (titles.find((c) => c.id === r.conversation_id)?.title ?? null)
           : null,
@@ -524,9 +573,10 @@ export async function callHistory(
         }),
         with: others.map(person),
         seconds:
-          answered && outcome === 'completed'
+          mine ??
+          (answered && outcome === 'completed'
             ? Math.max(0, Math.round((r.ended_at!.getTime() - r.answered_at!.getTime()) / 1000))
-            : 0,
+            : 0),
         createdAt: r.created_at.toISOString(),
         endedAt: r.ended_at?.toISOString() ?? null,
       };

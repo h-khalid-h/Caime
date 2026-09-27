@@ -19,7 +19,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
 import { ensureDirectConversation } from '../lib/conversations';
-import { suggestDuplicatesOf } from '../lib/duplicates';
+import { rerootMerged, suggestDuplicatesOf } from '../lib/duplicates';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsAfterDisconnect } from '../lib/group-calls';
@@ -542,6 +542,9 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
         .set({ status: 'removed', removed_at: ctx.now() })
         .where('id', '=', id)
         .execute();
+      // Anyone either had merged under the other stays one person, under the next of them.
+      await rerootMerged(trx, conn.user_b, [conn.user_a]);
+      await rerootMerged(trx, conn.user_a, [conn.user_b]);
       await recordEvent(trx, 'connection.removed', auth.userId, { connectionId: id });
     });
     await ctx.bus.publish([conn.user_a, conn.user_b], {

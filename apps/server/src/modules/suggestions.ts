@@ -12,7 +12,7 @@ import type { Suggestion } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { badRequest, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { relationshipView } from '../lib/relations';
+import { isBlockedEitherWay, relationshipView } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { createTopicConversation } from './conversations';
@@ -132,6 +132,10 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
           const merging = await shownUnder(merged);
           if (!keeping || !merging)
             throw badRequest('You aren’t connected with both of them any more.');
+          // Someone blocked either way (since it was offered) isn't anyone's duplicate.
+          for (const other of pair)
+            if (await isBlockedEitherWay(trx, auth.userId, other))
+              throw badRequest('One of them is blocked: it can’t be merged.');
           const into = keeping.one;
           if (into !== merging.one) {
             // The one kept under stands on its own; the one merged, and anyone already under it,
@@ -151,7 +155,8 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
               )
               .execute();
           }
-          // Any other pair now within this one person has nothing left to ask.
+          // Any other pair now within this one person has nothing left to ask; gone, rather than
+          // spent, so it can be asked again if they're ever apart.
           const one = await trx
             .selectFrom('connection_sides')
             .select('other_id')
@@ -160,8 +165,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
             .execute();
           const ids = one.map((r) => r.other_id);
           await trx
-            .updateTable('suggestions')
-            .set({ status: 'expired', resolved_at: ctx.now() })
+            .deleteFrom('suggestions')
             .where('user_id', '=', auth.userId)
             .where('kind', '=', 'duplicate')
             .where('status', '=', 'pending')
