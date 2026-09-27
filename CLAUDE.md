@@ -165,6 +165,12 @@ These are rules, not preferences.
   `CallLayer.tsx`, so phones build). Each tab's `DEVICE_ID` (`state/calls.ts`) is how a call
   runs on the one device that answered. E2E runs Chromium with a fake camera and microphone and
   the server with `STUN_URLS=''`.
+- Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
+  person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
+  ignores a view older than the one it holds. `features/calls/group.web.ts` holds a connection
+  per other joined device (the later joiner offers; a tie goes by device id),
+  `GroupCallLayer.web.tsx` draws the grid, and `GroupCallBanner.tsx` offers to join a call that's
+  on. Every 1:1 query in `lib/calls.ts` says `is_group = false`; keep it that way.
 - Live location: the server sets `live.until` and refuses moves after it (`liveNow` in
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
@@ -206,9 +212,10 @@ albums), AI assist, Spaces, Organizations with DNS verification, the Business in
 organizations writing first as requests), apps for organizations (scoped tokens, bots, signed
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
-CI are built and verified, and so are an organization's AI support agent and 1:1 web calls.
+CI are built and verified, and so are an organization's AI support agent and web calls (1:1
+and in groups of up to eight).
 It's live on EasyPanel at https://caishy-caishy.0hqwb7.easypanel.host (`docs/DEPLOY.md`); sessions
 in this environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
-billing (⛔ Stripe), a TURN relay for calls (⛔), group calls and calls in the phone apps, a
+billing (⛔ Stripe), a TURN relay for calls (⛔), calls in the phone apps, a
 third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).

@@ -25,3 +25,14 @@ describe('calls (PRD §47)', () => {
     expect(callText('voice', 'missed', 0, false)).toBe('Missed voice call');
   });
 });
+
+describe('a group call’s line', () => {
+  it('says how long it lasted, or, when nobody else joined, who missed it', () => {
+    expect(callText('video', 'completed', 720, false, true)).toBe('Group video call · 12 min');
+    expect(callText('video', 'completed', 720, true, true)).toBe('Group video call · 12 min');
+    expect(callText('voice', 'missed', 0, true, true)).toBe('Group voice call · no answer');
+    expect(callText('voice', 'missed', 0, false, true)).toBe('Missed group voice call');
+    expect(callText('voice', 'cancelled', 0, true, true)).toBe('Group voice call · cancelled');
+    expect(callText('voice', 'cancelled', 0, false, true)).toBe('Missed group voice call');
+  });
+});

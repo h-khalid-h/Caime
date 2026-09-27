@@ -7,6 +7,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { onCallEvent } from '@/features/calls/engine';
+import { onGroupCallEvent } from '@/features/calls/group';
 import {
   applyEditToInbox,
   applyMessageToInbox,
@@ -58,6 +59,11 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'call.updated':
     case 'call.signal':
       onCallEvent(event);
+      return;
+    case 'groupcall.ringing':
+    case 'groupcall.updated':
+    case 'groupcall.signal':
+      onGroupCallEvent(event);
       return;
     case 'message.created': {
       const m = event.data;

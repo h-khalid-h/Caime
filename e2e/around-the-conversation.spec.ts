@@ -1460,4 +1460,105 @@ test.describe
       await expect(visible(alex.page, 'You declined a voice call')).toBeVisible();
       expect([...errors, ...alex.errors]).toEqual([]);
     });
+
+    test('a group video call rings everyone in the group and connects all three', async () => {
+      if (!linaContext) throw new Error('The link test signs Lina up first.');
+      const { page, errors } = noor;
+      const linaId = (await (await linaContext.request.get('/v1/me')).json()).user.id as string;
+      const asked = await noorContext.request.post('/v1/connections/requests', {
+        headers: CLIENT,
+        data: { toUserId: linaId },
+      });
+      if (asked.ok())
+        await linaContext.request.post(
+          `/v1/connections/requests/${(await asked.json()).requestId}/accept`,
+          { headers: CLIENT, data: {} },
+        );
+      const made = await noorContext.request.post('/v1/conversations', {
+        headers: CLIENT,
+        data: { kind: 'group', title: 'Weekend plans', memberIds: [alexId, linaId] },
+      });
+      expect(made.ok(), await made.text()).toBe(true);
+      const group = (await made.json()).conversation.id as string;
+      await page.goto(`/c/${group}`);
+      await alex.page.goto('/');
+      await lina.page.goto('/');
+
+      // It rings for both, and says who's calling where.
+      await page.getByTestId('group-call-video').click();
+      for (const p of [alex.page, lina.page]) {
+        await expect(
+          p.getByRole('alertdialog', { name: 'Group video call in Weekend plans' }),
+        ).toBeVisible();
+        await expect(p.getByTestId('group-call-status')).toHaveText(
+          'Noor Haddad is calling · Group video call',
+        );
+        await expect(p.getByTestId('group-call-join')).toBeFocused();
+      }
+      await expect(page.getByTestId('group-call-status')).toHaveText('Calling…');
+      await expect(page.getByTestId('group-call-count')).toHaveText('Only you so far');
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-group-call-incoming.png' });
+
+      // Each who joins connects to everyone already in it, and the clock runs.
+      await alex.page.getByTestId('group-call-join').click();
+      await expect(page.getByTestId('group-call-status')).toHaveText(/^0:\d\d$/, {
+        timeout: 20_000,
+      });
+      await lina.page.getByTestId('group-call-join').click();
+      const seeing = (p: Page) =>
+        p
+          .getByTestId('group-call-remote')
+          .evaluateAll(
+            (vs) =>
+              vs.filter((v) => v instanceof HTMLVideoElement && v.videoWidth > 0 && !v.paused)
+                .length,
+          )
+          .catch(() => 0);
+      for (const p of [page, alex.page, lina.page]) {
+        await expect(p.getByTestId('group-call-count')).toHaveText('3 in the call');
+        await expect.poll(() => seeing(p), { timeout: 20_000 }).toBe(2);
+      }
+
+      // What each shows is said on their tile, on every other device.
+      await page.getByTestId('group-call-mute').click();
+      await expect(page.getByTestId('group-call-mute')).toHaveAccessibleName('Unmute');
+      for (const p of [alex.page, lina.page])
+        await expect(p.locator('[aria-label="Noor Haddad, muted"]')).toBeVisible();
+      await page.getByTestId('group-call-share').click();
+      for (const p of [alex.page, lina.page])
+        await expect(p.getByTestId('group-call-spotlight')).toContainText(
+          'Noor is sharing their screen',
+        );
+      await page.screenshot({ path: 'e2e/screenshots/desktop-group-call.png' });
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-group-call-shared.png' });
+      await page.getByTestId('group-call-share').click();
+      await expect(alex.page.getByTestId('group-call-spotlight')).toHaveCount(0);
+
+      // One leaves, and it goes on for the other two.
+      await lina.page.getByTestId('group-call-leave').click();
+      await expect(lina.page.getByTestId('group-call-screen')).toHaveCount(0);
+      for (const p of [page, alex.page]) {
+        await expect(p.getByTestId('group-call-count')).toHaveText('2 in the call');
+        await expect.poll(() => seeing(p)).toBe(1);
+      }
+      // Lina finds it on in the group, and joins again from there.
+      await lina.page.goto(`/c/${group}`);
+      const banner = lina.page.getByTestId('group-call-banner').filter({ visible: true });
+      await expect(banner).toContainText(/Video call on · (Noor and Alex|Alex and Noor)/);
+      await lina.page.screenshot({ path: 'e2e/screenshots/phone-group-call-banner.png' });
+      await banner.getByTestId('group-call-banner-join').click();
+      for (const p of [page, alex.page, lina.page])
+        await expect(p.getByTestId('group-call-count')).toHaveText('3 in the call');
+      await expect.poll(() => seeing(lina.page), { timeout: 20_000 }).toBe(2);
+
+      // With fewer than two left in it, it ends, and the group gets its line.
+      await lina.page.getByTestId('group-call-leave').click();
+      await alex.page.getByTestId('group-call-leave').click();
+      await expect(page.getByTestId('group-call-screen')).toHaveCount(0);
+      await expect(alex.page.getByTestId('group-call-screen')).toHaveCount(0);
+      await expect(visible(page, 'Group video call · under a minute')).toBeVisible();
+      await expect(visible(lina.page, 'Group video call · under a minute')).toBeVisible();
+      await expect(lina.page.getByTestId('group-call-banner')).toHaveCount(0);
+      expect([...errors, ...alex.errors, ...lina.errors]).toEqual([]);
+    });
   });

@@ -27,6 +27,7 @@ import {
   stillThere,
 } from '../lib/calls';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
+import { joinedGroupCallOf } from '../lib/group-calls';
 import { participantsOf } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { personViewsFor } from '../lib/people-batch';
@@ -52,6 +53,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('calls')
       .selectAll()
       .where('id', '=', callId)
+      .where('is_group', '=', false)
       .where((eb) => eb.or([eb('caller_id', '=', userId), eb('callee_id', '=', userId)]))
       .executeTakeFirst();
     if (!call) throw notFound('That call');
@@ -98,10 +100,10 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (callee?.kind !== 'human') throw badRequest('There’s nobody to call here.');
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
-    if (await liveCallOf(ctx, auth.userId))
+    if ((await liveCallOf(ctx, auth.userId)) || (await joinedGroupCallOf(ctx, auth.userId)))
       throw new AppError(409, 'in_call', 'You’re already in a call.');
     let rung = true;
-    if (await liveCallOf(ctx, other.user_id)) {
+    if ((await liveCallOf(ctx, other.user_id)) || (await joinedGroupCallOf(ctx, other.user_id))) {
       // "On another call" says they're around right now: only to someone who may see that.
       const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
       if (shown?.presence != null && callee.presence !== 'invisible')
@@ -166,6 +168,9 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     if (call.callee_id !== auth.userId) throw forbidden('Only the person called can answer.');
     // Never rung for them (they were on another call): nothing to answer.
     if (!call.callee_rung) throw over();
+    // One call at a time: leave a group call to take this one.
+    if (await joinedGroupCallOf(ctx, auth.userId))
+      throw new AppError(409, 'in_call', 'You’re already in a call.');
     const answered = await ctx.db
       .updateTable('calls')
       .set({

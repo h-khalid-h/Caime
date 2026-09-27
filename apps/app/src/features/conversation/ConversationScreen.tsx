@@ -1,4 +1,5 @@
 import type { MessageView } from '@caishy/core/api';
+import { GROUP_CALL_MAX } from '@caishy/core/calls';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,6 +19,8 @@ import { catchUp } from '@/features/assist/catchUp';
 import { useAiReady } from '@/features/assist/ready';
 import { ThreadBar } from '@/features/business/ThreadBar';
 import { callsSupported, startCall } from '@/features/calls/engine';
+import { GroupCallBanner } from '@/features/calls/GroupCallBanner';
+import { groupCallsSupported, startGroupCall } from '@/features/calls/group';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
@@ -264,6 +267,25 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               />
             </>
           ) : null}
+          {conversation?.kind === 'group' &&
+          conversation.participants.length <= GROUP_CALL_MAX &&
+          groupCallsSupported ? (
+            // A group of up to eight: every device in the call connects to every other.
+            <>
+              <IconButton
+                icon={Phone}
+                label={`Voice call ${conversation.title ?? 'the group'}`}
+                onPress={() => void startGroupCall(conversation.id, 'voice')}
+                testID="group-call-voice"
+              />
+              <IconButton
+                icon={Video}
+                label={`Video call ${conversation.title ?? 'the group'}`}
+                onPress={() => void startGroupCall(conversation.id, 'video')}
+                testID="group-call-video"
+              />
+            </>
+          ) : null}
           {desktop ? (
             <IconButton
               icon={PanelRight}
@@ -427,6 +449,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const body = (
     <View style={{ flex: 1, backgroundColor: t.c.canvas }}>
       <ConnectionBanner />
+      {conversation?.kind === 'group' ? <GroupCallBanner conversationId={conversation.id} /> : null}
       {conversation && thread ? <ThreadBar conversation={conversation} thread={thread} /> : null}
       {conversation ? <RequestBanner conversation={conversation} /> : null}
       {offerCatchUp ? (

@@ -44,6 +44,7 @@ import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/busin
 import { ensureDirectConversation } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { leaveGroupCallsIn } from '../lib/group-calls';
 import { afterMessage } from '../lib/message-effects';
 import {
   assertCanMessage,
@@ -609,6 +610,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('conversation_id', '=', id)
       .where('user_id', '=', userId)
       .execute();
+    // Out of the conversation is out of its call.
+    await leaveGroupCallsIn(ctx, userId, [id]);
     await sendSystem(
       ctx,
       id,

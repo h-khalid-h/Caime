@@ -127,6 +127,28 @@ export const CallSignalBody = z
     message: 'Send an SDP with an offer or answer, and a candidate with a candidate.',
   });
 
+/** How this device reaches one other device in a group call: `to` is that device. */
+export const GroupCallSignalBody = z
+  .object({
+    deviceId: CallDevice,
+    to: CallDevice,
+    kind: z.enum(['offer', 'answer', 'candidate']),
+    sdp: z.string().max(20_000).optional(),
+    candidate: z
+      .object({
+        candidate: z.string().max(1000),
+        sdpMid: z.string().max(64).nullable().optional(),
+        sdpMLineIndex: z.number().int().min(0).max(64).nullable().optional(),
+        usernameFragment: z.string().max(256).nullable().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((b) => (b.kind === 'candidate' ? Boolean(b.candidate) : Boolean(b.sdp)), {
+    message: 'Send an SDP with an offer or answer, and a candidate with a candidate.',
+  });
+
 /** An organization's AI agent: its name and what it answers from (PRD §75). */
 export const SetOrgAgentBody = z
   .object({

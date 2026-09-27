@@ -192,7 +192,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       (video goes both ways from the start); the two devices tell each other what they show, so
       the other side sees the screen whole, the avatar rather than black when a camera is off,
       and a muted mark (`engine.web.test.ts`, E2E with Chromium's fake screen).
-      [ ] Group calls, calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
+      Group calls in groups of up to eight: every device in one connects to every other (whoever
+      joined later makes the offer, so two never offer each other), everyone who can take part is
+      rung, a call that's on shows a banner to join it, and it goes on while two are in it, then
+      leaves its line ("Group video call · 12 min"). Blocks and R29 keep people apart in a call,
+      and leaving the group leaves its call (`group-calls.test.ts`, `group.web.test.ts`, E2E with
+      three browsers).
+      [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
       ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
 
 ## M7 — Ship

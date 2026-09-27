@@ -21,6 +21,7 @@ import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCallSweep } from './lib/calls';
 import { AppError } from './lib/errors';
+import { registerGroupCallSweep } from './lib/group-calls';
 import { startWorkers } from './lib/jobs';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
@@ -36,6 +37,7 @@ import { callRoutes } from './modules/calls';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
 import { fileRoutes } from './modules/files';
+import { groupCallRoutes } from './modules/group-calls';
 import { handleRoutes } from './modules/handles';
 import { healthRoutes } from './modules/health';
 import { inboxRoutes } from './modules/inbox';
@@ -228,6 +230,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await suggestionRoutes(v1, ctx);
       await conversationRoutes(v1, ctx);
       await callRoutes(v1, ctx);
+      await groupCallRoutes(v1, ctx);
       await inboxRoutes(v1, ctx);
       await realtimeRoutes(v1, ctx);
       await actionRoutes(v1, ctx);
@@ -255,6 +258,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerWebhookJob();
   registerAgentJob();
   registerCallSweep();
+  registerGroupCallSweep();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
 
   app.addHook('onClose', async () => {

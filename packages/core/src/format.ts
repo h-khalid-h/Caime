@@ -289,12 +289,18 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
         ? `${by} set messages to disappear after ${retentionText(p.days)}`
         : `${by} turned off disappearing messages`;
     case 'call': {
-      const c = payload as { kind?: CallKind; outcome?: CallOutcome; seconds?: number };
+      const c = payload as {
+        kind?: CallKind;
+        outcome?: CallOutcome;
+        seconds?: number;
+        group?: boolean;
+      };
       return callText(
         c.kind ?? 'voice',
         c.outcome ?? 'missed',
         c.seconds ?? 0,
         Boolean(viewerId && p.byId === viewerId),
+        c.group === true,
       );
     }
     default:

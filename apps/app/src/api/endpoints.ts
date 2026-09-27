@@ -22,6 +22,7 @@ import type {
   ConversationView,
   DecisionView,
   DeviceSessionView,
+  GroupCallView,
   HandleView,
   IceConfigView,
   InboxAllResponse,
@@ -327,6 +328,29 @@ export const endpoints = {
   ) => api.post<Ok>(`/calls/${id}/signal`, body),
   callAlive: (id: string, deviceId: string) =>
     api.post<{ call: CallView }>(`/calls/${id}/alive`, { deviceId }),
+  // Group calls: every device in one connects to every other
+  liveGroupCall: () => api.get<{ call: GroupCallView | null }>('/group-calls/live'),
+  groupCallIn: (conversationId: string) =>
+    api.get<{ call: GroupCallView | null }>(`/conversations/${conversationId}/group-call`),
+  startGroupCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
+    api.post<{ call: GroupCallView }>(`/conversations/${conversationId}/group-calls`, body),
+  joinGroupCall: (id: string, deviceId: string) =>
+    api.post<{ call: GroupCallView }>(`/group-calls/${id}/join`, { deviceId }),
+  declineGroupCall: (id: string) =>
+    api.post<{ call: GroupCallView }>(`/group-calls/${id}/decline`, {}),
+  leaveGroupCall: (id: string) => api.post<{ call: GroupCallView }>(`/group-calls/${id}/leave`, {}),
+  signalGroupCall: (
+    id: string,
+    body: {
+      deviceId: string;
+      to: string;
+      kind: 'offer' | 'answer' | 'candidate';
+      sdp?: string;
+      candidate?: RTCIceCandidateInit;
+    },
+  ) => api.post<Ok>(`/group-calls/${id}/signal`, body),
+  groupCallAlive: (id: string, deviceId: string) =>
+    api.post<{ call: GroupCallView }>(`/group-calls/${id}/alive`, { deviceId }),
   // Live location (R29): the sharer's device moves it; only they stop it
   moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
     api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),

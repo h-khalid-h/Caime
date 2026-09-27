@@ -644,6 +644,22 @@ export interface CallsTable {
   callee_seen_at: NullableTimestamp;
   /** False for a call placed while they were busy and hidden: it rings only for the caller. */
   callee_rung: Generated<boolean>;
+  /** A call in a group conversation: its people are in call_members, and it has no callee. */
+  is_group: Generated<boolean>;
+  /** A group call's revision: up by one with every change to who's in it. */
+  rev: Generated<number>;
+}
+
+/** Where each person in a group call is (PRD §47). */
+export interface CallMembersTable {
+  call_id: string;
+  user_id: string;
+  state: 'ringing' | 'joined' | 'left' | 'declined' | 'missed';
+  device: string | null;
+  rung_at: Generated<Date>;
+  joined_at: NullableTimestamp;
+  left_at: NullableTimestamp;
+  seen_at: NullableTimestamp;
 }
 
 /** An organization's AI agent (PRD §74–75): one per organization, answering as its own user. */
@@ -806,6 +822,7 @@ export interface Database {
   org_apps: OrgAppsTable;
   org_agents: OrgAgentsTable;
   calls: CallsTable;
+  call_members: CallMembersTable;
   api_tokens: ApiTokensTable;
   webhook_deliveries: WebhookDeliveriesTable;
 }

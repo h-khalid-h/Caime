@@ -15,6 +15,15 @@ export type CallOutcome = 'completed' | 'missed' | 'declined' | 'cancelled' | 'f
 /** How long a call rings before it's missed. */
 export const CALL_RING_SECONDS = 45;
 
+/**
+ * A group call connects every device in it to every other (no server in the middle), so it's
+ * for small groups: up to this many people in the conversation.
+ */
+export const GROUP_CALL_MAX = 8;
+
+/** Where each person in a group call is. */
+export type GroupCallMemberState = 'ringing' | 'joined' | 'left' | 'declined' | 'missed';
+
 /** "under a minute", "4 min", "1 h 5 min": how long two people talked. */
 export function callDuration(seconds: number): string {
   if (seconds < 60) return 'under a minute';
@@ -33,7 +42,9 @@ export function callText(
   outcome: CallOutcome,
   seconds: number,
   viewerCalled: boolean,
+  group = false,
 ): string {
+  if (group) return groupCallText(kind, outcome, seconds, viewerCalled);
   const name = kind === 'video' ? 'Video call' : 'Voice call';
   switch (outcome) {
     case 'completed':
@@ -47,4 +58,21 @@ export function callText(
     default:
       return viewerCalled ? `${name} · no answer` : `Missed ${name.toLowerCase()}`;
   }
+}
+
+/**
+ * A group call's line: "Group video call · 12 min" for everyone, or, when nobody else joined,
+ * "Group voice call · no answer" to whoever started it and "Missed group voice call" to the rest.
+ */
+function groupCallText(
+  kind: CallKind,
+  outcome: CallOutcome,
+  seconds: number,
+  viewerStarted: boolean,
+): string {
+  const name = kind === 'video' ? 'Group video call' : 'Group voice call';
+  if (outcome === 'completed') return `${name} · ${callDuration(seconds)}`;
+  if (outcome === 'failed') return `${name} · couldn’t connect`;
+  if (viewerStarted) return outcome === 'cancelled' ? `${name} · cancelled` : `${name} · no answer`;
+  return `Missed ${name.toLowerCase()}`;
 }

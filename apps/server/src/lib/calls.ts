@@ -91,6 +91,7 @@ export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call 
   return ctx.db
     .selectFrom('calls')
     .selectAll()
+    .where('is_group', '=', false)
     .where((eb) =>
       eb.or([
         eb('caller_id', '=', userId),
@@ -112,6 +113,15 @@ export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call 
     )
     .orderBy('created_at', 'desc')
     .executeTakeFirst();
+}
+
+/**
+ * The 1:1 call someone is in now: one they placed (ringing or under way), or one they answered.
+ * A call merely ringing for them isn't one they're in.
+ */
+export async function callInOf(ctx: AppContext, userId: string): Promise<Call | undefined> {
+  const call = await liveCallOf(ctx, userId);
+  return call && (call.caller_id === userId || call.state === 'active') ? call : undefined;
 }
 
 /**
@@ -196,12 +206,16 @@ export async function endCall(
   return ended;
 }
 
-/** Calls nobody answered in time are missed; calls nobody is in any more are over. */
+/**
+ * Calls nobody answered in time are missed; calls nobody is in any more are over. Group calls
+ * have their own sweep (lib/group-calls.ts).
+ */
 export async function sweepCalls(ctx: AppContext): Promise<void> {
   const now = ctx.now().getTime();
   const unanswered = await ctx.db
     .selectFrom('calls')
     .selectAll()
+    .where('is_group', '=', false)
     .where('state', '=', 'ringing')
     .where('created_at', '<=', new Date(now - CALL_RING_SECONDS * 1000))
     .limit(200)
@@ -211,6 +225,7 @@ export async function sweepCalls(ctx: AppContext): Promise<void> {
   const abandoned = await ctx.db
     .selectFrom('calls')
     .selectAll()
+    .where('is_group', '=', false)
     .where('state', '=', 'active')
     .where((eb) =>
       eb.or([
@@ -237,6 +252,7 @@ export async function endCallsBetween(ctx: AppContext, blockerId: string, otherI
   const calls = await ctx.db
     .selectFrom('calls')
     .selectAll()
+    .where('is_group', '=', false)
     .where('state', '<>', 'ended')
     .where((eb) =>
       eb.or([

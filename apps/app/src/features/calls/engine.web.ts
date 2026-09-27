@@ -19,8 +19,10 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
 import { DEVICE_ID, useCall } from '@/state/calls';
+import { useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { toast } from '@/ui/Toast';
+import { media, mediaTrouble } from './media.web';
 
 export const callsSupported =
   typeof window !== 'undefined' && 'RTCPeerConnection' in window && Boolean(navigator.mediaDevices);
@@ -56,43 +58,13 @@ const STAGE = { ringing: 0, active: 1, ended: 2 } as const;
 const store = () => useCall.getState();
 const current = () => store().call;
 const me = () => useSession.getState().user?.id ?? '';
+/** A group call on this device: one call at a time, so nothing rings over it. */
+const inGroupCall = () => {
+  const phase = useGroupCall.getState().phase;
+  return Boolean(phase && phase !== 'ended');
+};
 const mineOn = (c: CallView) =>
   c.callerDevice === DEVICE_ID || (c.calleeDevice !== null && c.calleeDevice === DEVICE_ID);
-
-/**
- * The microphone, and for a video call the camera. Without a camera (none, or another app has
- * it) a video call goes ahead with the voice alone; a refusal stays a refusal.
- */
-async function media(kind: CallKind): Promise<{ stream: MediaStream; cameraOff: boolean }> {
-  const audio = { echoCancellation: true, noiseSuppression: true };
-  const voiceOnly = () => navigator.mediaDevices.getUserMedia({ audio, video: false });
-  if (kind === 'voice') return { stream: await voiceOnly(), cameraOff: false };
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio,
-      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-    });
-    return { stream, cameraOff: false };
-  } catch (e) {
-    const name = e instanceof DOMException ? e.name : '';
-    if (name === 'NotAllowedError' || name === 'SecurityError') throw e;
-    return { stream: await voiceOnly(), cameraOff: true };
-  }
-}
-
-/** Why the microphone or camera couldn't be used, and what to do about it. */
-function mediaTrouble(e: unknown, kind: CallKind): string {
-  const name = e instanceof DOMException ? e.name : '';
-  if (name === 'NotAllowedError' || name === 'SecurityError')
-    return kind === 'video'
-      ? 'Allow Caishy to use your camera and microphone in your browser’s site settings, then try again.'
-      : 'Allow Caishy to use your microphone in your browser’s site settings, then try again.';
-  if (name === 'NotFoundError' || name === 'OverconstrainedError')
-    return 'Caishy can’t find a microphone on this device.';
-  if (name === 'NotReadableError' || name === 'AbortError')
-    return 'Another app is using your microphone. Close it, then try again.';
-  return 'Caishy couldn’t use your microphone.';
-}
 
 /**
  * Signed out (here, or from another device): whatever call this device holds is let go of, so
@@ -302,7 +274,7 @@ async function onSignal(s: CallSignalView): Promise<void> {
 
 /** Call the other person in a direct conversation. */
 export async function startCall(conversationId: string, kind: CallKind): Promise<void> {
-  if (store().phase) return;
+  if (store().phase || inGroupCall()) return;
   watchSignOut();
   store().patch({ phase: 'starting', note: null });
   let got: Awaited<ReturnType<typeof media>>;
@@ -444,7 +416,7 @@ export function onCallEvent(event: RealtimeEvent): void {
   const mine = current();
   if (event.type === 'call.ringing') {
     // Busy with another here (or just ending one): it's looked for again once this is over.
-    if (!store().phase) ring(call);
+    if (!store().phase && !inGroupCall()) ring(call);
     return;
   }
   // Once this device has hung up, what comes after is old news; so is a view older than the
@@ -520,7 +492,7 @@ export async function checkLiveCall(person: string = me()): Promise<void> {
     }
     return;
   }
-  if (ringing && !store().phase) ring(ringing);
+  if (ringing && !store().phase && !inGroupCall()) ring(ringing);
 }
 
 // Closing the tab mid-call hangs up, so nobody is left waiting on it. A tab only ringing (or

@@ -34,6 +34,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { leaveGroupCallsIn } from '../lib/group-calls';
 import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { generalOf, spaceSeat } from '../lib/spaces';
@@ -564,6 +565,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       return convos.map((c) => c.conversation_id);
     });
     await ctx.bus.publish([userId], { type: 'space.removed', data: { spaceId: id } });
+    await leaveGroupCallsIn(ctx, userId, left);
     for (const conversationId of left)
       await ctx.bus.publish([userId], {
         type: 'conversation.updated',

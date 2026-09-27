@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { endCallsBetween } from '../lib/calls';
 import { badRequest } from '../lib/errors';
+import { leaveGroupCallsWith } from '../lib/group-calls';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -54,6 +55,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
       .execute();
     // A call between them ends now, and pending requests quietly end.
     await endCallsBetween(ctx, auth.userId, userId);
+    await leaveGroupCallsWith(ctx, auth.userId, userId);
     await ctx.db
       .updateTable('connection_requests')
       .set({ status: 'cancelled', responded_at: ctx.now() })
