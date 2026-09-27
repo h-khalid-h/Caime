@@ -42,6 +42,7 @@ import type { Conversation, Participant } from '../db/schema';
 import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
 import { ensureDirectConversation } from '../lib/conversations';
+import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
@@ -318,10 +319,11 @@ export async function createTopicConversation(
   userId: string,
   parentId: string,
   title: string,
+  privacy: 'standard' | 'private' = 'standard',
 ) {
   const { conversation } = await membership(ctx, userId, parentId);
   // In a space, a topic that keeps coming up in General becomes a conversation for everyone.
-  if (conversation.space_id && conversation.is_general)
+  if (conversation.space_id && conversation.is_general && privacy === 'standard')
     return createSpaceConversation(ctx, userId, conversation.space_id, { title, everyone: true });
   if (conversation.kind !== 'direct' || !conversation.direct_key)
     throw badRequest('Topics branch off a direct conversation.');
@@ -336,6 +338,7 @@ export async function createTopicConversation(
         title,
         direct_key: conversation.direct_key,
         connection_id: conversation.connection_id,
+        privacy_class: privacy,
         is_general: false,
         parent_id: conversation.is_general ? parentId : (conversation.parent_id ?? parentId),
         created_by: userId,
@@ -362,13 +365,25 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (body.userId === auth.userId) throw badRequest('That’s you.');
       const b = await between(ctx.db, auth.userId, body.userId);
       if (b.blockedByMe || b.blockedMe) throw forbidden('You can’t message this person.');
-      if (body.title) {
-        if (!b.connected) throw forbidden('Connect first to start topics.');
+      if (body.title || body.private) {
+        if (!b.connected)
+          throw forbidden(
+            body.private
+              ? 'Connect first to start a private conversation.'
+              : 'Connect first to start topics.',
+          );
         const general = await ensureDirectConversation(ctx.db, auth.userId, body.userId, {
           connectionId: b.connectionId,
           createdBy: auth.userId,
         });
-        const id = await createTopicConversation(ctx, auth.userId, general.id, body.title);
+        // A private one (R18) is a conversation of its own with them, end to end encrypted.
+        const id = await createTopicConversation(
+          ctx,
+          auth.userId,
+          general.id,
+          body.title ?? 'Private',
+          body.private ? 'private' : 'standard',
+        );
         if (body.contextId)
           await ctx.db
             .updateTable('conversations')
@@ -410,6 +425,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           kind: 'group',
           title: body.title,
           purpose: body.purpose ?? null,
+          privacy_class: body.private ? 'private' : 'standard',
           created_by: auth.userId,
         })
         .execute();
@@ -843,10 +859,20 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (m.deleted_at) throw badRequest('That message was deleted.');
     if (body.body !== undefined && m.kind !== 'text')
       throw badRequest('Only text messages can be edited.');
+    // A private one is edited by sealing it again, as the next edit of the same message.
+    if (m.sealed) {
+      const was = m.sealed as { edit?: number };
+      if (!body.sealed || body.body !== undefined)
+        throw badRequest('Messages in a private conversation are text, sealed on your device.');
+      if (body.sealed.cid !== m.client_id || body.sealed.edit <= (was.edit ?? 0))
+        throw badRequest('That message isn’t sealed properly.');
+      await assertSealedForEveryone(ctx, m.conversation_id, auth.userId, body.sealed);
+    } else if (body.sealed) throw badRequest('Only private conversations take sealed messages.');
     const updated = await ctx.db
       .updateTable('messages')
       .set({
         ...(body.body !== undefined ? { body: body.body, edited_at: ctx.now() } : {}),
+        ...(body.sealed ? { sealed: JSON.stringify(body.sealed), edited_at: ctx.now() } : {}),
         ...(body.mode !== undefined ? { mode: body.mode, mode_source: 'user' } : {}),
       })
       .where('id', '=', id)
@@ -1289,7 +1315,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('messages')
-        .set({ deleted_at: ctx.now(), body: null, payload: '{}', entities: '{}' })
+        .set({ deleted_at: ctx.now(), body: null, payload: '{}', entities: '{}', sealed: null })
         .where('id', '=', id)
         .execute();
       await trx.deleteFrom('assets').where('message_id', '=', id).execute();
@@ -1425,6 +1451,8 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .executeTakeFirst();
     if (!m || m.deleted_at) throw notFound('That message');
     await membership(ctx, auth.userId, m.conversation_id);
+    // Its words are only on the devices it was sealed for, and stay in the private conversation.
+    if (m.sealed) throw badRequest('Messages in a private conversation stay in it.');
     const files = await ctx.db
       .selectFrom('message_files')
       .select('file_id')

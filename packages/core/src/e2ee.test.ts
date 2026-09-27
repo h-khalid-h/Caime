@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { canonical, isPublicKey, isSealed, type PublicDevice, type SealedMessage } from './e2ee';
 import {
-  canonical,
   type DeviceKeys,
-  isPublicKey,
-  isSealed,
   newDeviceKeys,
   open,
-  type PublicDevice,
   publicKeys,
-  type SealedMessage,
   seal,
   securityCode,
-} from './e2ee';
+} from './e2ee-crypto';
 
 async function device(
   id: string,

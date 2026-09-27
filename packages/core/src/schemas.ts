@@ -8,6 +8,7 @@ import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { CALL_KINDS } from './calls';
+import { isPublicKey, isSealed, type PublicJwk, type SealedMessage } from './e2ee';
 import { ORG_KINDS } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
@@ -370,12 +371,16 @@ export const CreateConversationBody = z.discriminatedUnion('kind', [
     /** A titled topic conversation with the same person (PRD §16). */
     title: z.string().trim().min(1).max(80).optional(),
     contextId: z.string().uuid().optional(),
+    /** End to end encrypted (R18): a conversation of its own with the same person. */
+    private: z.boolean().optional(),
   }),
   z.object({
     kind: z.literal('group'),
     title: z.string().trim().min(1, 'Name the group.').max(80),
     purpose: z.string().trim().max(200).optional(),
     memberIds: z.array(z.string().uuid()).min(1, 'Add at least one person.').max(255),
+    /** End to end encrypted (R18). */
+    private: z.boolean().optional(),
   }),
 ]);
 
@@ -447,6 +452,22 @@ const KitPayload = z.object({
   state: z.string().max(40).optional(),
 });
 
+/** A private conversation's message as its sender's device sealed it (checked for shape only). */
+export const SealedSchema = z.custom<SealedMessage>((v) => isSealed(v), {
+  message: 'That message isn’t sealed properly.',
+});
+
+/** A device's public keys for private conversations (R18). */
+export const RegisterDeviceBody = z
+  .object({
+    encryptionKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
+      message: 'That key isn’t right.',
+    }),
+    signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), { message: 'That key isn’t right.' }),
+    name: z.string().trim().max(80).optional(),
+  })
+  .strict();
+
 export const SendMessageBody = z
   .object({
     clientId: z.string().min(8).max(64),
@@ -463,6 +484,8 @@ export const SendMessageBody = z
     mode: z
       .enum(['talk', 'ask', 'plan', 'decide', 'share', 'request', 'confirm', 'pay', 'track'])
       .optional(),
+    /** In a private conversation (R18): the message, sealed on the sender's device. */
+    sealed: SealedSchema.optional(),
   })
   .superRefine((m, ctx) => {
     const need = (ok: boolean, message: string) => {
@@ -470,7 +493,7 @@ export const SendMessageBody = z
     };
     switch (m.kind) {
       case 'text':
-        need(Boolean(m.body?.trim()), 'Write a message.');
+        need(Boolean(m.body?.trim()) || Boolean(m.sealed), 'Write a message.');
         break;
       case 'media':
       case 'file':
@@ -499,6 +522,8 @@ export type SendMessageBodyT = z.infer<typeof SendMessageBody>;
 export const EditMessageBody = z
   .object({
     body: z.string().trim().min(1).max(10_000).optional(),
+    /** A private conversation's message, sealed again as edited. */
+    sealed: SealedSchema.optional(),
     mode: z
       .enum(['talk', 'ask', 'plan', 'decide', 'share', 'request', 'confirm', 'pay', 'track'])
       .optional(),

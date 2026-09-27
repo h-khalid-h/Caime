@@ -312,6 +312,8 @@ export interface MessagesTable {
   search: ColumnType<string, never, never>;
   /** What sent it when its sender didn't type it in Caishy: their token's name, or an app's. */
   sent_via: string | null;
+  /** In a private conversation (R18): the message as an envelope only its devices can open. */
+  sealed: Json<Record<string, unknown>> | null;
 }
 
 export interface ReactionsTable {
@@ -650,6 +652,18 @@ export interface CallsTable {
   rev: Generated<number>;
 }
 
+/** A device's public keys for private conversations (R18), tied to the session it signed in with. */
+export interface E2eeDevicesTable {
+  id: string;
+  user_id: string;
+  session_id: string;
+  name: string | null;
+  encryption_key: Json;
+  signing_key: Json;
+  created_at: Generated<Date>;
+  revoked_at: NullableTimestamp;
+}
+
 /** Where each person in a group call is (PRD §47). */
 export interface CallMembersTable {
   call_id: string;
@@ -823,6 +837,7 @@ export interface Database {
   org_agents: OrgAgentsTable;
   calls: CallsTable;
   call_members: CallMembersTable;
+  e2ee_devices: E2eeDevicesTable;
   api_tokens: ApiTokensTable;
   webhook_deliveries: WebhookDeliveriesTable;
 }

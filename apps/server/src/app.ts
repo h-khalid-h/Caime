@@ -36,6 +36,7 @@ import { businessRoutes } from './modules/business';
 import { callRoutes } from './modules/calls';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
+import { e2eeRoutes } from './modules/e2ee';
 import { fileRoutes } from './modules/files';
 import { groupCallRoutes } from './modules/group-calls';
 import { handleRoutes } from './modules/handles';
@@ -231,6 +232,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await conversationRoutes(v1, ctx);
       await callRoutes(v1, ctx);
       await groupCallRoutes(v1, ctx);
+      await e2eeRoutes(v1, ctx);
       await inboxRoutes(v1, ctx);
       await realtimeRoutes(v1, ctx);
       await actionRoutes(v1, ctx);

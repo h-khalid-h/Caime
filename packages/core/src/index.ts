@@ -6,6 +6,7 @@ export * from './assist';
 export * from './attention';
 export * from './business';
 export * from './calls';
+export * from './e2ee';
 export * from './format';
 export * from './history';
 export * from './ids';

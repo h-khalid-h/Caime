@@ -17,6 +17,7 @@ import {
   type MessageView,
   type Mode,
   prepareKitFields,
+  type SealedMessage,
   type SendMessageBodyT,
   messagePreview as sharedPreview,
   uuidv7,
@@ -27,6 +28,7 @@ import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
 import { assertCanWrite } from './blocks';
 import { maskFor, maskMessage, recordBusinessMessage } from './business';
+import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { isBlockedEitherWay, shareAConnection } from './relations';
@@ -191,12 +193,14 @@ export async function messageViews(
             id: reply.id,
             seq: Number(reply.seq),
             senderId: reply.sender_id,
-            preview: messagePreview(reply),
+            // A private one's words are only on the devices it was sealed for.
+            preview: reply.sealed ? '' : messagePreview(reply),
             kind: reply.kind,
           }
         : null,
       forwarded: m.forwarded_from_id !== null,
       sentVia: m.sent_via,
+      sealed: deleted ? null : ((m.sealed as SealedMessage | null) ?? null),
       urgent: m.urgent,
       isQuestion: m.is_question,
       isRequest: m.is_request,
@@ -325,6 +329,24 @@ export async function sendMessage(
   if (conversation.kind === 'broadcast' && !['owner', 'admin'].includes(me.role)) {
     throw forbidden('Only admins can post here.');
   }
+  // End to end encrypted (R18): only text sealed on one of the sender's own devices, for every
+  // device of everyone in it. Nothing the server could read, so nothing it would work from.
+  if (conversation.privacy_class === 'private') {
+    if (opts.sentVia || opts.trusted)
+      throw forbidden('Only a person, on their own device, writes in a private conversation.');
+    if (
+      !body.sealed ||
+      body.kind !== 'text' ||
+      body.body ||
+      body.payload !== undefined ||
+      body.fileIds?.length ||
+      body.mentions?.length
+    )
+      throw badRequest('Messages in a private conversation are text, sealed on your device.');
+    if (body.sealed.cid !== body.clientId || body.sealed.edit !== 0)
+      throw badRequest('That message isn’t sealed properly.');
+    await assertSealedForEveryone(ctx, conversationId, senderId, body.sealed);
+  } else if (body.sealed) throw badRequest('Only private conversations take sealed messages.');
   if (conversation.kind === 'business' && conversation.org_id) {
     const org = await ctx.db
       .selectFrom('organizations')
@@ -583,6 +605,7 @@ export async function sendMessage(
           reply_to_id: body.replyToId ?? null,
           forwarded_from_id: opts.forwardedFromId ?? null,
           sent_via: opts.sentVia ?? null,
+          sealed: body.sealed ? JSON.stringify(body.sealed) : null,
           urgent: body.urgent ?? false,
           is_question: analysis?.isQuestion ?? body.kind === 'poll',
           is_request: analysis?.isRequest ?? false,

@@ -10,6 +10,7 @@ import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
+import type { PublicJwk, SealedMessage } from './e2ee';
 import type { OrgKind, OrgRole } from './orgs';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { NotificationLevel, RelationshipPolicy } from './policy';
@@ -280,6 +281,11 @@ export interface MessageView {
   album: AlbumView | null;
   /** Sent through a token or an app its sender let act for them, not typed in Caishy: its name. */
   sentVia: string | null;
+  /**
+   * In a private conversation (R18): the message as its sender's device sealed it, for this
+   * device to open; `body` is null. The sender's id for it is `sealed.cid`.
+   */
+  sealed: SealedMessage | null;
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
@@ -1013,6 +1019,8 @@ export type RealtimeDataEvent =
   | { type: 'groupcall.ringing' | 'groupcall.updated'; data: GroupCallView }
   | { type: 'groupcall.signal'; data: GroupCallSignalView }
   | { type: 'presence'; data: { userId: string; state: PresenceState; at: string } }
+  /** Someone's devices for private conversations changed: seal for the new set (R18). */
+  | { type: 'devices.changed'; data: { userId: string; conversationIds: string[] } }
   | {
       type: 'notification.created' | 'notification.updated';
       data: {
@@ -1192,6 +1200,22 @@ export interface CallHistoryResponse {
   calls: CallHistoryItem[];
   /** Pass as `before` for the next page; null at the end. */
   nextBefore: string | null;
+}
+
+/** A device that reads private conversations (R18), as anyone writing to it gets it. */
+export interface DeviceView {
+  id: string;
+  userId: string;
+  encryptionKey: PublicJwk;
+  signingKey: PublicJwk;
+  createdAt: string;
+}
+
+/** One of my own devices, for Settings: which it is, and when it was added. */
+export interface MyDeviceView extends DeviceView {
+  name: string | null;
+  /** This is the device asking. */
+  current: boolean;
 }
 
 /** How two devices reach each other (WebRTC), passed from one to the other. */
