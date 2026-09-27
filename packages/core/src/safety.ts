@@ -14,12 +14,25 @@ export function isMinor(birthYear: number | null | undefined, now: Date = new Da
   return now.getUTCFullYear() - birthYear <= ADULT_AGE;
 }
 
+/** The year it is where someone is: in UTC when their time zone isn't known. */
+export function yearIn(now: Date, timeZone?: string | null): number {
+  if (timeZone)
+    try {
+      return Number(new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' }).format(now));
+    } catch {
+      // Not a time zone: UTC's year.
+    }
+  return now.getUTCFullYear();
+}
+
+/** Old enough to sign up: from 1 January, where they are, of the year they turn one over the age. */
 export function meetsMinimumAge(
   birthYear: number,
   now: Date = new Date(),
   minimumAge: number = DEFAULT_MINIMUM_AGE,
+  timeZone?: string | null,
 ): boolean {
-  return now.getUTCFullYear() - birthYear > minimumAge;
+  return yearIn(now, timeZone) - birthYear > minimumAge;
 }
 
 export function plausibleBirthYear(year: number, now: Date = new Date()): boolean {

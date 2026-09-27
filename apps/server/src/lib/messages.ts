@@ -329,6 +329,14 @@ export async function assertCanSend(
   await sendMessage(ctx, senderId, conversationId, body, { ...opts, checkOnly: true });
 }
 
+/**
+ * When a message disappears: its conversation's setting as it's sent, so a change applies only to
+ * what's sent after it (PRD §60), and never to what came before.
+ */
+function expiresAt(now: Date, retentionDays: number | null): Date | null {
+  return retentionDays ? new Date(now.getTime() + retentionDays * 86_400_000) : null;
+}
+
 export async function sendMessage(
   ctx: AppContext,
   senderId: string,
@@ -646,7 +654,7 @@ export async function sendMessage(
         .updateTable('conversations')
         .set({ last_seq: sql`last_seq + 1`, last_message_at: ctx.now(), updated_at: ctx.now() })
         .where('id', '=', conversationId)
-        .returning('last_seq')
+        .returning(['last_seq', 'retention_days'])
         .executeTakeFirstOrThrow();
       const seq = bumped.last_seq;
       const row = await trx
@@ -671,6 +679,7 @@ export async function sendMessage(
           urgent: body.urgent ?? false,
           is_question: analysis?.isQuestion ?? body.kind === 'poll',
           is_request: analysis?.isRequest ?? false,
+          expires_at: expiresAt(ctx.now(), bumped.retention_days),
           created_at: ctx.now(),
         })
         .returningAll()
@@ -803,7 +812,7 @@ export async function insertSystemMessage(
       .updateTable('conversations')
       .set({ last_seq: sql`last_seq + 1`, updated_at: ctx.now() })
       .where('id', '=', conversationId)
-      .returning('last_seq')
+      .returning(['last_seq', 'retention_days'])
       .executeTakeFirstOrThrow();
     const row = await trx
       .insertInto('messages')
@@ -816,6 +825,7 @@ export async function insertSystemMessage(
         kind: 'system',
         body: null,
         payload: JSON.stringify(payload),
+        expires_at: expiresAt(ctx.now(), bumped.retention_days),
         created_at: ctx.now(),
       })
       .returningAll()

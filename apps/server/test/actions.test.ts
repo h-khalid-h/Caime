@@ -70,6 +70,10 @@ describe('requests are one record seen from two sides (R13)', () => {
       direction: 'asked_me',
       owner: { displayName: 'Hassan Khalid' },
     });
+    // How Hassan described her is his alone: never on her side of it, however she finds it.
+    expect(todo.tasks[0].relationship).toBeNull();
+    const found = await sarah.get(`/v1/search?q=${encodeURIComponent('Q3 report')}`);
+    expect(found.results.tasks.map((x: any) => [x.id, x.relationship])).toEqual([[taskId, null]]);
     expect(todo.counts.asked_me).toBe(1);
     const note = await t.ctx.db
       .selectFrom('notifications')

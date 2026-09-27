@@ -125,6 +125,8 @@ export const KITS: Record<KitId, KitDef> = {
     icon: 'package',
     spheres: ['customer', 'vendor', 'organization'],
     groups: false,
+    // It says what it cost: like every card about money, never where someone under 18 is.
+    adultsOnly: true,
     fields: [
       { key: 'reference', label: 'Order number', type: 'text', required: true },
       { key: 'summary', label: 'What was ordered', type: 'text' },

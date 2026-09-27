@@ -65,7 +65,7 @@ describe('system messages', () => {
     await lina.patch(`/v1/conversations/${convo}`, { retentionDays: 7 });
     await omar.patch(`/v1/conversations/${convo}`, { retentionDays: null });
     expect(await lines(omar, convo, omar.user.id)).toEqual([
-      'Lina Aziz set messages to disappear after 7 days',
+      'Lina Aziz set new messages to disappear after 7 days',
       'You turned off disappearing messages',
     ]);
     expect((await omar.get(`/v1/conversations/${convo}`)).conversation.retentionDays).toBeNull();

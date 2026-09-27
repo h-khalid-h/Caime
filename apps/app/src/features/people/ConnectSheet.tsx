@@ -115,7 +115,7 @@ export function ConnectSheet({
       <View style={{ marginHorizontal: -20 }}>
         <ListRow
           title={label ? 'How you know them' : `How do you know ${name}?`}
-          subtitle={label ? undefined : 'Optional. Only you see it.'}
+          subtitle={label ? undefined : `Optional. ${name} never sees your label.`}
           right={
             label && draft ? (
               <RelationshipChip label={label} sphere={draft.sphere} size="md" />

@@ -12,6 +12,7 @@ import {
   prepareCustomFields,
 } from './custom-kits';
 import { messagePreview } from './format';
+import { KITS } from './kits';
 
 /** A pharmacy's prescription card: prepared, then ready, then collected (or cancelled). */
 const prescription = {
@@ -264,6 +265,9 @@ describe('an app’s own kit', () => {
       adultsOnly: false,
     });
     expect(parsed('prescription', priced).adultsOnly).toBe(true);
+    // The same rule as Caishy's own cards: every one with an amount is for adults only.
+    for (const kit of Object.values(KITS))
+      if (kit.fields.some((f) => f.type === 'amount')) expect(kit.adultsOnly, kit.id).toBe(true);
   });
 });
 

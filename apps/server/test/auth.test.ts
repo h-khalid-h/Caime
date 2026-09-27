@@ -65,6 +65,32 @@ describe('sign-up', () => {
     expect(res.json().error.code).toBe('too_young');
   });
 
+  it('lets someone turning 14 sign up from New Year’s Day where they are', async () => {
+    const was = t.clock.now.toISOString();
+    // 08:00 on 1 January in Tokyo, still 31 December in UTC and in New York.
+    t.clock.set('2025-12-31T23:00:00.000Z');
+    try {
+      const at = (timeZone: string, handle: string) =>
+        t.app.inject({
+          method: 'POST',
+          url: '/v1/auth/signup',
+          payload: {
+            ...base,
+            email: `${handle}@example.com`,
+            handle,
+            birthYear: 2012,
+            timeZone,
+          },
+        });
+      const york = await at('America/New_York', 'yorkteen');
+      expect(york.statusCode).toBe(400);
+      expect(york.json().error.code).toBe('too_young');
+      expect((await at('Asia/Tokyo', 'tokyoteen')).statusCode).toBe(201);
+    } finally {
+      t.clock.set(was);
+    }
+  });
+
   it('gives teen accounts protective privacy defaults (R29)', async () => {
     const res = await t.app.inject({
       method: 'POST',

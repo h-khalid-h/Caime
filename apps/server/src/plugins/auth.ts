@@ -136,4 +136,7 @@ export function clearSessionCookie(reply: FastifyReply, ctx: AppContext): void {
     sameSite: 'lax',
     httpOnly: true,
   });
+  // However it ended (signed out here or elsewhere, the account deleted), the photos and files
+  // this browser kept go too; the app's own files are the worker's.
+  reply.header('clear-site-data', '"cache"');
 }

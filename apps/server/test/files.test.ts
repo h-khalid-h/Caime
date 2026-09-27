@@ -80,6 +80,58 @@ describe('uploads', () => {
     expect((await sharp(thumb.rawPayload).metadata()).width).toBe(480);
   });
 
+  it('never keeps a photo as it came when its details can’t be taken out', async () => {
+    // Cut short: its header (with the place it was taken) is whole, the picture isn't.
+    const cut = photoJpeg.subarray(0, Math.floor(photoJpeg.length * 0.6));
+    expect((await sharp(cut).metadata()).exif).toBeDefined();
+    const before = await t.ctx.db
+      .selectFrom('files')
+      .select('id')
+      .where('owner_id', '=', hassan.user.id)
+      .execute();
+    await expect(upload(hassan, 'cut.jpg', 'image/jpeg', cut)).rejects.toThrow(
+      /^400 .*couldn’t be read/,
+    );
+    const after = await t.ctx.db
+      .selectFrom('files')
+      .select('id')
+      .where('owner_id', '=', hassan.user.id)
+      .execute();
+    expect(after).toEqual(before);
+  });
+
+  it('refuses it the same way when it comes in pieces, and counts none of it', async () => {
+    const cut = photoJpeg.subarray(0, Math.floor(photoJpeg.length * 0.6));
+    const used = async () => (await hassan.get('/v1/me/plan')).used.storageBytes;
+    const was = await used();
+    const start = await hassan.post('/v1/uploads', {
+      name: 'cut.jpg',
+      mime: 'image/jpeg',
+      size: cut.length,
+    });
+    // Under way, it counts at its full size.
+    expect(await used()).toBe(was + cut.length);
+    const res = await t.app.inject({
+      method: 'PATCH',
+      url: `/v1/uploads/${start.id}`,
+      payload: cut,
+      headers: {
+        authorization: `Bearer ${hassan.token}`,
+        'content-type': 'application/offset+octet-stream',
+        'upload-offset': '0',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/couldn’t be read/);
+    const row = await t.ctx.db
+      .selectFrom('files')
+      .select('status')
+      .where('id', '=', start.id)
+      .executeTakeFirstOrThrow();
+    expect(row.status).toBe('failed');
+    expect(await used()).toBe(was);
+  });
+
   it('trusts the bytes, not the name: an HTML file posing as a photo downloads as an attachment', async () => {
     const f = await upload(
       hassan,

@@ -107,8 +107,10 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`signup:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const body = parse(SignupBody, req.body);
     const now = ctx.now();
+    const timeZone = body.timeZone && isValidTimeZone(body.timeZone) ? body.timeZone : 'UTC';
     if (!plausibleBirthYear(body.birthYear, now)) throw badRequest('Enter the year you were born.');
-    if (!meetsMinimumAge(body.birthYear, now, ctx.config.MINIMUM_AGE)) {
+    // Their New Year's Day, where they are.
+    if (!meetsMinimumAge(body.birthYear, now, ctx.config.MINIMUM_AGE, timeZone)) {
       throw new AppError(
         400,
         'too_young',
@@ -133,7 +135,6 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const locale = safeLocale(body.locale);
     const region = regionFromLocale(locale);
     const workweek = workweekFor(region, locale);
-    const timeZone = body.timeZone && isValidTimeZone(body.timeZone) ? body.timeZone : 'UTC';
     const passwordHash = await hashPassword(body.password);
     // The link that brought them, if it named someone (PRD §82); a handle that names nobody
     // is simply not counted.

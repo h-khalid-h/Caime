@@ -315,6 +315,8 @@ export interface MessagesTable {
   is_request: Defaulted<boolean>;
   edited_at: NullableTimestamp;
   deleted_at: NullableTimestamp;
+  /** When it disappears: the conversation's setting when it was sent (0032). */
+  expires_at: NullableTimestamp;
   created_at: Generated<Date>;
   search: ColumnType<string, never, never>;
   /** What sent it when its sender didn't type it in Caishy: their token's name, or an app's. */
@@ -460,6 +462,8 @@ export interface NotificationsTable {
   title: string;
   body: string | null;
   data: JsonDefaulted<Record<string, unknown>>;
+  /** The messages whose words it shows (0032): it goes when they do. */
+  quotes: Defaulted<string[]>;
   group_key: string | null;
   count: Defaulted<number>;
   delivery: Defaulted<'push' | 'silent' | 'held'>;

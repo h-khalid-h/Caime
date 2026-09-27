@@ -45,6 +45,7 @@ async function finalize(
   let width: number | null = null;
   let height: number | null = null;
   let thumbKey: string | null = null;
+  let cleaned = false;
   if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {
     try {
       const input = storage.path(tempKey);
@@ -63,6 +64,7 @@ async function finalize(
         await encoded.toFile(out);
         await storage.remove(tempKey);
         await storage.moveFrom(`${tempKey}.clean`, tempKey);
+        cleaned = true;
       }
       const meta = await sharp(storage.path(tempKey)).metadata();
       width = meta.width ?? null;
@@ -76,6 +78,13 @@ async function finalize(
     } catch (err) {
       ctx.log.warn({ err }, 'image processing failed');
       thumbKey = null;
+      // A photo whose hidden details (where it was taken among them) couldn't be taken out is
+      // never kept as it came.
+      if (REENCODE.has(sniffed.mime) && !cleaned) {
+        await storage.remove(tempKey);
+        await storage.remove(`${tempKey}.clean`);
+        throw badRequest('That photo couldn’t be read, so it wasn’t sent. Try another.');
+      }
     }
   }
   await storage.moveFrom(tempKey, key);
@@ -339,7 +348,18 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute();
       return { id, offset: written, complete: false };
     }
-    const done = await finalize(ctx, storage, id, f.storage_key, f.mime, f.name, f.duration_ms);
+    const done = await finalize(
+      ctx,
+      storage,
+      id,
+      f.storage_key,
+      f.mime,
+      f.name,
+      f.duration_ms,
+    ).catch(async (err) => {
+      await ctx.db.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
+      throw err;
+    });
     const updated = await ctx.db
       .updateTable('files')
       .set({

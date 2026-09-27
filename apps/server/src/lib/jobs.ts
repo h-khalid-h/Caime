@@ -13,6 +13,11 @@ export type PeriodicTask = {
   name: string;
   everyMs: number;
   run: (ctx: AppContext) => Promise<void>;
+  /**
+   * Long work (a sweep of old records): the loop starts it and goes on with jobs and the other
+   * tasks meanwhile, and never starts it again while it's still going.
+   */
+  background?: boolean;
 };
 
 const handlers = new Map<string, JobHandler>();
@@ -133,17 +138,25 @@ export async function runPeriodic(ctx: AppContext): Promise<void> {
 export function startWorkers(ctx: AppContext): () => void {
   let stopped = false;
   const lastRun = new Map<string, number>();
+  const going = new Set<string>();
   const loop = async () => {
     while (!stopped) {
       try {
         const ran = await runDueJobs(ctx);
         const now = Date.now();
         for (const task of periodic) {
+          if (going.has(task.name)) continue;
           if (now - (lastRun.get(task.name) ?? 0) >= task.everyMs) {
             lastRun.set(task.name, now);
-            await task
+            const run = task
               .run(ctx)
               .catch((err) => ctx.log.warn({ err, task: task.name }, 'periodic task failed'));
+            if (!task.background) {
+              await run;
+              continue;
+            }
+            going.add(task.name);
+            void run.finally(() => going.delete(task.name));
           }
         }
         if (ran === 0) await new Promise((r) => setTimeout(r, 1000));

@@ -130,7 +130,10 @@ export function personView(
     trust: trustFor({
       known: viewer.isConnected || Boolean(viewer.sharesConversation),
       emailVerified: user.email_verified_at !== null,
-      verifiedOrgName: viewer.verifiedOrgName ?? null,
+      // Who a person works for is one of their professional details, shown as those are; a bot
+      // or an agent is always said to be the organization's.
+      verifiedOrgName:
+        user.kind !== 'human' || see('identityDetails') ? (viewer.verifiedOrgName ?? null) : null,
       kind: user.kind,
     }),
   };

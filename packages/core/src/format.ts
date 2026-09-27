@@ -359,7 +359,7 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return p.title ? `${by} recorded a decision: ${p.title}` : `${by} recorded a decision`;
     case 'retention_changed':
       return typeof p.days === 'number'
-        ? `${by} set messages to disappear after ${retentionText(p.days)}`
+        ? `${by} set new messages to disappear after ${retentionText(p.days)}`
         : `${by} turned off disappearing messages`;
     case 'call': {
       const c = payload as {

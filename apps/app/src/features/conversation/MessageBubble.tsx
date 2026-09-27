@@ -548,8 +548,14 @@ export const MessageBubble = memo(function MessageBubble({
                 size={132}
                 label={sticker.label}
               />
-              <Text variant="caption" color="textTertiary" style={{ fontSize: 11 }}>
-                {time}
+              <Text
+                variant="caption"
+                color="textTertiary"
+                style={{ fontSize: 11 }}
+                testID={m.automated ? 'message-automated' : undefined}
+              >
+                {/* A bot's sticker says it's a bot's too (R16). */}
+                {m.automated ? `${m.aiAgent ? 'AI agent' : 'Automated'} · ${time}` : time}
               </Text>
             </View>
           ) : (

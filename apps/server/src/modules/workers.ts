@@ -6,13 +6,21 @@ import { previewText, resolvePolicy } from '@caishy/core';
 import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
-import { notify, runNotificationHooks } from '../lib/notify';
+import { participantsOf } from '../lib/messages';
+import {
+  forgetNotificationsOf,
+  notify,
+  replaceShown,
+  runNotificationHooks,
+  tellForgotten,
+} from '../lib/notify';
 import {
   activeRelationships,
   isBlockedEitherWay,
   loadPolicies,
   policyTargetFor,
 } from '../lib/relations';
+import { sweepRecords } from '../lib/retention';
 
 export function registerWorkers(): void {
   registerJob('follow_up_check', async (ctx, p) => {
@@ -148,37 +156,107 @@ export function registerWorkers(): void {
     },
   });
 
+  // What Caishy records of how it's used goes when its time is up (lib/retention.ts).
+  registerPeriodic({ name: 'records', everyMs: 86_400_000, background: true, run: sweepRecords });
+
+  // A browser that isn't open still shows what it was pushed of a message that's gone: the same
+  // line, quietly, without the words (lib/notify.ts tellForgotten).
+  registerJob('notifications.replace', async (ctx, p) => {
+    const notes = p.notes as Array<{
+      id: string;
+      kind: string;
+      title: string;
+      groupKey: string | null;
+      data: Record<string, unknown>;
+      kept: boolean;
+    }>;
+    for (const n of notes)
+      await replaceShown(ctx, n.id, {
+        userId: String(p.userId),
+        kind: n.kind,
+        level: 'activity',
+        title: n.title,
+        body: n.kept ? null : 'Message deleted',
+        data: n.data,
+        groupKey: n.groupKey,
+      });
+  });
+
   registerPeriodic({
     name: 'retention',
     everyMs: 3_600_000,
+    background: true,
     run: async (ctx) => {
-      // Disappeared (PRD §60): its words and envelope go, and so does everything kept of it
-      // elsewhere, as when it's deleted for everyone: the files and links in the conversation's
-      // index and memory, a pin, what anyone saved of it, and what Caishy was about to offer.
-      const savers = await sql<{ user_id: string }>`
-        with gone as (
-          update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}',
-            entities = '{}', sealed = null, pinned_at = null, pinned_by = null
-          from conversations c
-          where m.conversation_id = c.id and c.retention_days is not null and m.deleted_at is null
-            and m.created_at < ${ctx.now()}::timestamptz - make_interval(days => c.retention_days)
-          returning m.id
-        ),
-        assets_gone as (delete from assets where message_id in (select id from gone)),
-        files_gone as (delete from message_files where message_id in (select id from gone)),
-        saved_gone as (
-          delete from saved_items where message_id in (select id from gone) returning user_id
-        ),
-        offers_gone as (
-          update suggestions set status = 'expired', resolved_at = ${ctx.now()}
-          where status = 'pending' and message_id in (select id from gone)
-        )
-        select distinct user_id from saved_gone`.execute(ctx.db);
-      // Whoever had saved something of it sees their lists without it, on every device.
-      await tellSaved(
-        ctx,
-        savers.rows.map((r) => r.user_id),
-      );
+      // Disappeared (PRD §60), its own time up: its words and envelope go, and so does everything
+      // kept of it elsewhere, as when it's deleted for everyone: the files and links in the
+      // conversation's index and memory, an album's photos, a pin, what anyone saved of it, the
+      // words of what Caishy offered from it, and the notifications showing its words. A lot at a
+      // time, each lot with all that's kept of it.
+      const LOT = 500;
+      const told = new Map<string, number>();
+      const members = new Map<string, string[]>();
+      for (;;) {
+        const { done, forgotten } = await ctx.db.transaction().execute(async (trx) => {
+          const done = await sql<{
+            what: 'saved' | 'gone';
+            id: string;
+            conversation_id: string | null;
+          }>`
+            with due as (
+              select id from messages
+              where expires_at < ${ctx.now()} and deleted_at is null
+              order by expires_at
+              limit ${LOT} for update skip locked
+            ),
+            gone as (
+              update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}',
+                entities = '{}', sealed = null, pinned_at = null, pinned_by = null
+              from due where m.id = due.id
+              returning m.id, m.conversation_id
+            ),
+            assets_gone as (delete from assets where message_id in (select id from gone)),
+            files_gone as (delete from message_files where message_id in (select id from gone)),
+            album_gone as (delete from album_photos where message_id in (select id from gone)),
+            saved_gone as (
+              delete from saved_items where message_id in (select id from gone) returning user_id
+            ),
+            offers_gone as (
+              update suggestions set title = '', rationale = '', payload = '{}', due_text = null,
+                status = case when status = 'pending' then 'expired' else status end,
+                resolved_at = coalesce(resolved_at, ${ctx.now()})
+              where message_id in (select id from gone)
+            )
+            select distinct 'saved' as what, user_id::text as id, null as conversation_id
+            from saved_gone
+            union all
+            select 'gone', id::text, conversation_id::text from gone`.execute(trx);
+          const gone = done.rows.filter((r) => r.what === 'gone').map((r) => r.id);
+          return { done: done.rows, forgotten: await forgetNotificationsOf(trx, gone) };
+        });
+        // Whoever had saved something of it sees their lists without it, on every device.
+        await tellSaved(
+          ctx,
+          done.filter((r) => r.what === 'saved').map((r) => r.id),
+        );
+        await tellForgotten(ctx, forgotten);
+        // The open apps in its conversation show it gone (a few hundred at most; more, as they
+        // reload).
+        const gone = done.filter((r) => r.what === 'gone');
+        for (const r of gone) {
+          if (!r.conversation_id || (told.get(r.conversation_id) ?? 0) >= 200) continue;
+          told.set(r.conversation_id, (told.get(r.conversation_id) ?? 0) + 1);
+          let who = members.get(r.conversation_id);
+          if (!who) {
+            who = (await participantsOf(ctx.db, r.conversation_id)).map((p) => p.user_id);
+            members.set(r.conversation_id, who);
+          }
+          await ctx.bus.publish(who, {
+            type: 'message.deleted',
+            data: { id: r.id, conversationId: r.conversation_id },
+          });
+        }
+        if (gone.length < LOT) break;
+      }
       await ctx.db
         .updateTable('participants')
         .set({ archived_at: ctx.now() })

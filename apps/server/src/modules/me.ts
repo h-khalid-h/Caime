@@ -98,7 +98,25 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const oldWeek = week(current.workweek ?? []);
     const weekMoved = patch.workweek !== undefined && week(patch.workweek as number[]) !== oldWeek;
     await ctx.db.transaction().execute(async (trx) => {
+      // The name as it is now, with renames from other devices one at a time.
+      const was = await trx
+        .selectFrom('users')
+        .select('display_name')
+        .where('id', '=', auth.userId)
+        .forUpdate()
+        .executeTakeFirstOrThrow();
       await trx.updateTable('users').set(patch).where('id', '=', auth.userId).execute();
+      // People see someone by the identity they're shown (lib/users.ts identityShownTo): the
+      // personal one is the profile's own name, so it's renamed with it. One given a name of its
+      // own keeps it.
+      if (patch.display_name !== undefined && patch.display_name !== was.display_name)
+        await trx
+          .updateTable('identities')
+          .set({ display_name: patch.display_name })
+          .where('user_id', '=', auth.userId)
+          .where('kind', '=', 'personal')
+          .where('display_name', '=', was.display_name)
+          .execute();
       if (!weekMoved) return;
       // The rules that keep to the work week move with it (work, customers, professionals):
       // those whose days are the week it was. A rule with days of its own keeps them.

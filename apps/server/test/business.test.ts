@@ -142,6 +142,20 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     expect(teamNamed(JSON.stringify(item))).toBe(false);
     expect((await aboutIt(lina)).map((n: any) => n.title)).toContain('DATA C');
     expect(teamNamed(JSON.stringify(await aboutIt(lina)))).toBe(false);
+    // Reported from the message she sees, it's the organization's message, and kept as such.
+    const reported = await lina.post('/v1/reports', {
+      messageId: reply.message.id,
+      conversationId: convo,
+      userId: orgId,
+      reason: 'other',
+    });
+    expect(reported.ok).toBe(true);
+    const kept = await t.ctx.db
+      .selectFrom('reports')
+      .select(['target_user_id', 'org_id', 'message_id'])
+      .where('reporter_id', '=', lina.user.id)
+      .executeTakeFirstOrThrow();
+    expect(kept).toEqual({ target_user_id: null, org_id: orgId, message_id: reply.message.id });
 
     // Live, the team hears Omar; Lina hears DATA C.
     await until(

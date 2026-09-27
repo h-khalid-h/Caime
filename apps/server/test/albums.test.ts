@@ -146,6 +146,13 @@ describe('shared albums (PRD §41)', () => {
     expect((await download(sam, p.id)).statusCode).toBe(200);
     await noor.req('DELETE', `/v1/messages/${gone.id}`);
     expect((await download(sam, p.id)).statusCode).toBe(404);
+    // Out of the album for good: the photo is hers alone, and goes with her account.
+    const left = await t.ctx.db
+      .selectFrom('album_photos')
+      .select('file_id')
+      .where('message_id', '=', gone.id)
+      .execute();
+    expect(left).toEqual([]);
 
     const kept = await album(noor, 'Kept');
     const s = await upload(sam, 's.jpg', 'image/jpeg', photo);

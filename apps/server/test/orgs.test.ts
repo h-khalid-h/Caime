@@ -159,6 +159,11 @@ describe('organizations (PRD §36, R15)', () => {
     const claim = await omar.req('PUT', `/v1/orgs/${copycat.id}/domain`, { domain: 'datac.com' });
     expect(claim.json().error.code).toBe('domain_taken');
     expect(await trustOf(customer, omar)).toBe('Verified at DATA C');
+    // Where someone works is one of their professional details: hidden, so is this.
+    await omar.req('PUT', '/v1/me/privacy', { fields: { identityDetails: { kind: 'nobody' } } });
+    expect(await trustOf(customer, omar)).not.toMatch(/Verified at/);
+    await omar.req('PUT', '/v1/me/privacy', { fields: { identityDetails: { kind: 'everyone' } } });
+    expect(await trustOf(customer, omar)).toBe('Verified at DATA C');
   });
 
   it('changing the domain unverifies it until the new one is proven', async () => {

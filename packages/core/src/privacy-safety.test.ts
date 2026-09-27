@@ -77,6 +77,14 @@ describe('age', () => {
     expect(meetsMinimumAge(2013, now)).toBe(false); // 12 or 13
     expect(meetsMinimumAge(2012, now)).toBe(true);
   });
+  it('counts the year where someone is: New Year’s Day in Tokyo is still 31 December in UTC', () => {
+    const tokyoMorning = new Date('2025-12-31T23:00:00Z');
+    expect(meetsMinimumAge(2012, tokyoMorning)).toBe(false);
+    expect(meetsMinimumAge(2012, tokyoMorning, 13, 'Asia/Tokyo')).toBe(true);
+    expect(meetsMinimumAge(2012, tokyoMorning, 13, 'America/New_York')).toBe(false);
+    // A time zone that isn't one counts as UTC.
+    expect(meetsMinimumAge(2012, tokyoMorning, 13, 'Nowhere/Else')).toBe(false);
+  });
   it('adults never find minors in search', () => {
     expect(searchable(false, true)).toBe(false);
     expect(searchable(true, true)).toBe(true);

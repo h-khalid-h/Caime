@@ -198,7 +198,7 @@ export function RelationshipForm({
             <View style={{ flex: 1 }}>
               <Text variant="bodyStrong">Share with {name}</Text>
               <Text variant="caption" color="textSecondary">
-                {name} sees how you described them and can confirm how they see you.
+                If {name} shares too, each of you sees how the other described you.
               </Text>
             </View>
             <Switch

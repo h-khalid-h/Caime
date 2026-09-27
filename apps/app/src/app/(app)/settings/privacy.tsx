@@ -97,16 +97,16 @@ export default function Privacy() {
       <Group title="Finding you">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">By your @handle</Text>
+            <Text variant="bodyStrong">By your name or @handle</Text>
             <Text variant="caption" color="textSecondary">
-              People can search for @{me.handle}
+              People can search for {me.displayName} or @{me.handle}
             </Text>
           </View>
           <Switch
             value={me.privacy.discoverByHandle}
             onValueChange={(v) => void save({ discoverByHandle: v })}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Findable by handle"
+            accessibilityLabel="Findable by name or handle"
           />
         </View>
         <View

@@ -5,7 +5,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
+import { dehydrate, focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
 import type { PersistedClient } from '@tanstack/react-query-persist-client';
 import { AppState, Platform } from 'react-native';
 import { onNetworkChange } from '@/lib/network';
@@ -56,12 +56,49 @@ function trim(client: PersistedClient): PersistedClient {
   return { ...client, clientState: { ...client.clientState, queries: out, mutations: [] } };
 }
 
+const CACHE_KEY = 'caishy.cache.v1';
+
 export const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
-  key: 'caishy.cache.v1',
+  key: CACHE_KEY,
   throttleTime: 1500,
   serialize: (client) => JSON.stringify(trim(client)),
 });
+
+let restored = false;
+
+/**
+ * Saved at once, not a moment later as the persister's throttle would: the next launch opens on
+ * what was last shown, never on a photo taken out of an album the second before. Only once the
+ * saved cache is back, so leaving while it loads never overwrites it with nothing.
+ */
+export function saveCacheNow(buster: string): void {
+  if (!restored) return;
+  const client: PersistedClient = {
+    buster,
+    timestamp: Date.now(),
+    clientState: dehydrate(queryClient),
+  };
+  void AsyncStorage.setItem(CACHE_KEY, JSON.stringify(trim(client))).catch(() => {});
+}
+
+/** Once the saved cache is back: it's saved again whenever the page or the app is left. */
+export function saveCacheWhenLeft(buster: string): void {
+  if (restored) return;
+  restored = true;
+  const save = () => saveCacheNow(buster);
+  if (Platform.OS !== 'web') {
+    AppState.addEventListener('change', (s) => {
+      if (s !== 'active') save();
+    });
+    return;
+  }
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  window.addEventListener('pagehide', save);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') save();
+  });
+}
 
 export const PERSIST_MAX_AGE = 7 * 24 * 60 * 60_000;
 

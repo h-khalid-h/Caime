@@ -585,10 +585,11 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
         retentionDays: value === 'off' ? null : Number(value),
       });
       void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
+      // Only what's sent from now on: what came before keeps the time it was sent with.
       toast(
         value === 'off'
-          ? 'Messages stay'
-          : `Messages disappear after ${retentionText(Number(value))}`,
+          ? 'New messages stay'
+          : `New messages disappear after ${retentionText(Number(value))}`,
       );
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -603,7 +604,7 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
           onChange={(v) => void set(v)}
           options={KEEP.map((v) =>
             v === 'off'
-              ? { value: v, label: 'Off', detail: 'Messages stay until someone deletes them' }
+              ? { value: v, label: 'Off', detail: 'New messages stay until someone deletes them' }
               : { value: v, label: retentionText(Number(v)) },
           )}
         />

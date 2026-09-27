@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { PERSIST_MAX_AGE, persister, queryClient } from '@/api/queryClient';
+import { PERSIST_MAX_AGE, persister, queryClient, saveCacheWhenLeft } from '@/api/queryClient';
 import { HeartMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
 import { keepAppForOffline } from '@/lib/offline';
@@ -72,6 +72,7 @@ export default function RootLayout() {
           client={queryClient}
           persistOptions={{ persister, maxAge: PERSIST_MAX_AGE, buster: CACHE_VERSION }}
           onSuccess={() => {
+            saveCacheWhenLeft(CACHE_VERSION);
             // Show the restored cache at once, then refresh whatever is on screen.
             void queryClient.invalidateQueries();
             useOutbox.getState().flush();

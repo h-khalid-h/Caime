@@ -495,12 +495,12 @@ test.describe
       await page.getByRole('button', { name: /, details$/ }).click();
       await expect(visible(page, 'About this conversation')).toBeVisible();
       await page.getByRole('radio', { name: '7 days', exact: true }).click();
-      await expect(visible(page, 'Messages disappear after 7 days')).toBeVisible();
+      await expect(visible(page, 'New messages disappear after 7 days')).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/phone-details.png' });
       await page.getByRole('button', { name: 'Close panel' }).click();
-      await expect(visible(page, 'You set messages to disappear after 7 days')).toBeVisible();
+      await expect(visible(page, 'You set new messages to disappear after 7 days')).toBeVisible();
       await expect(
-        visible(noor.page, 'Alex Chen set messages to disappear after 7 days'),
+        visible(noor.page, 'Alex Chen set new messages to disappear after 7 days'),
       ).toBeVisible();
       expect([...noor.errors, ...alex.errors]).toEqual([]);
     });

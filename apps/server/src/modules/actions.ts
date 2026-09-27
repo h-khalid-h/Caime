@@ -96,7 +96,8 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
           }
         : null,
       contextId: t.context_id,
-      relationship: snap?.label ?? null,
+      // How its owner described the other person: theirs alone, never shown to that person.
+      relationship: t.owner_id === me ? (snap?.label ?? null) : null,
       origin: t.source,
       createdAt: t.created_at.toISOString(),
       completedAt: t.completed_at?.toISOString() ?? null,

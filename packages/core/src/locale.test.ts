@@ -58,7 +58,7 @@ describe('systemText', () => {
       ),
     ).toBe('Noor removed you');
     expect(systemText({ event: 'retention_changed', byId: 'u1', by: 'Noor', days: 7 })).toBe(
-      'Noor set messages to disappear after 7 days',
+      'Noor set new messages to disappear after 7 days',
     );
     expect(
       systemText({ event: 'retention_changed', byId: 'u1', by: 'Noor', days: null }, 'u1'),

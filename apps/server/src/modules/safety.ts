@@ -7,7 +7,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { endCallsBetween } from '../lib/calls';
 import { withdrawDuplicatesOf } from '../lib/duplicates';
-import { badRequest } from '../lib/errors';
+import { badRequest, notFound } from '../lib/errors';
 import { leaveGroupCallsWith } from '../lib/group-calls';
 import { pairKey } from '../lib/relations';
 import { parse } from '../lib/validate';
@@ -142,15 +142,34 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!update) throw badRequest('Choose what you’re reporting.');
     }
     ctx.limiter.hit(`report:${auth.userId}`, 30, 3_600_000);
+    // A customer sees an organization's team, apps and agent as the organization
+    // (lib/business.ts), so what they report of one comes with the organization's id: it's
+    // reported as the organization's, with the message saying who wrote it.
+    const person = body.userId
+      ? await ctx.db
+          .selectFrom('users')
+          .select('id')
+          .where('id', '=', body.userId)
+          .executeTakeFirst()
+      : undefined;
+    const speaker =
+      body.userId && !person
+        ? await ctx.db
+            .selectFrom('organizations')
+            .select('id')
+            .where('id', '=', body.userId)
+            .executeTakeFirst()
+        : undefined;
+    if (body.userId && !person && !speaker) throw notFound('That person');
     await ctx.db
       .insertInto('reports')
       .values({
         id: uuidv7(),
         reporter_id: auth.userId,
-        target_user_id: body.userId ?? null,
+        target_user_id: person?.id ?? null,
         message_id: body.messageId ?? null,
         conversation_id: body.conversationId ?? null,
-        org_id: body.orgId ?? null,
+        org_id: body.orgId ?? speaker?.id ?? null,
         update_id: body.updateId ?? null,
         reason: body.reason,
         details: body.details ?? null,

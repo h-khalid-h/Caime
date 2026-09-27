@@ -311,6 +311,8 @@ async function notifyRecipient(
     const level =
       LEVEL_RANK[decision.level] > LEVEL_RANK[existing.level] ? decision.level : existing.level;
     const salient = kind !== 'message' || !(existing.data as { salient?: boolean }).salient;
+    // Whatever its words have been, since a device may still show them (forgetNotificationsOf).
+    const quotes = salient ? [...new Set([...existing.quotes, message.id])] : existing.quotes;
     const title = isGroup
       ? `${count} new messages in ${groupTitle}`
       : `${senderName} sent ${count} messages${context}`;
@@ -322,6 +324,7 @@ async function notifyRecipient(
         title,
         body: salient ? preview : existing.body,
         data: JSON.stringify({ ...data, salient: salient && kind !== 'message' }),
+        quotes,
         delivery: decision.deliver === 'push' ? 'push' : existing.delivery,
         hold_until: decision.holdUntil ? new Date(decision.holdUntil) : existing.hold_until,
         reason: decision.reason,
@@ -342,6 +345,7 @@ async function notifyRecipient(
     title: isGroup ? `${senderName} · ${groupTitle}` : `${senderName}${context}`,
     body: preview,
     data: { ...data, salient: kind !== 'message' },
+    quotes: [message.id],
     groupKey,
     delivery: decision.deliver,
     holdUntil: decision.holdUntil ? new Date(decision.holdUntil) : null,
