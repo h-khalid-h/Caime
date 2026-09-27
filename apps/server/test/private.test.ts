@@ -1,4 +1,4 @@
-import { type PublicDevice, type SealedMessage, uuidv7 } from '@caishy/core';
+import { type PublicDevice, type SealedMessage, uuidv4, uuidv7 } from '@caishy/core';
 import {
   chainRoot,
   type DeviceKeys,
@@ -22,6 +22,20 @@ let zed: Client;
 let convo: string;
 let secret: string;
 const heard: BusMessage[] = [];
+/**
+ * Everything published so far has reached the bus's listener: events travel by NOTIFY, which
+ * arrives a moment after the request that sent them answers, in the order they were sent. So a
+ * marker sent now, once heard, means everything before it was.
+ */
+async function drained() {
+  const mark = uuidv4();
+  await t.ctx.bus.publish([mark], { type: 'me.updated', data: {} });
+  for (let i = 0; i < 300 && !heard.some((m) => m.userIds.includes(mark)); i++)
+    await new Promise((r) => setTimeout(r, 10));
+  const at = heard.findIndex((m) => m.userIds.includes(mark));
+  if (at < 0) throw new Error('the bus never delivered its marker');
+  heard.splice(at, 1);
+}
 
 /** A device of someone's, signed in on its own session, with its keys. */
 interface Device {
@@ -249,7 +263,7 @@ describe('private conversations (R18, PRD §61)', () => {
   });
 
   it('a message is kept only as an envelope each of their devices opens, and nothing else can', async () => {
-    const envelope = await sealed(noorLaptop, secret, 'The door code is 4471');
+    const envelope = await sealed(noorLaptop, secret, 'The door code is QUOKKA');
     const res = await send(noorLaptop, secret, envelope);
     expect(res.statusCode, res.body).toBe(201);
     const message = res.json().message;
@@ -261,24 +275,24 @@ describe('private conversations (R18, PRD §61)', () => {
       .where('id', '=', message.id)
       .executeTakeFirstOrThrow();
     expect(row.body).toBeNull();
-    expect(JSON.stringify(row)).not.toContain('4471');
+    expect(JSON.stringify(row)).not.toContain('QUOKKA');
     // Sam's laptop reads it from what the server hands out; so do Noor's devices.
     const { messages } = await sam.get(`/v1/conversations/${secret}/messages`);
     for (const d of [samLaptop, noorLaptop, noorPhone])
       expect(await read(d, secret, messages.at(-1))).toEqual({
         ok: true,
-        payload: { body: 'The door code is 4471' },
+        payload: { body: 'The door code is QUOKKA' },
       });
     // Search never finds it; the inbox and the notification never say it.
-    expect((await sam.get('/v1/search?q=4471')).results?.messages ?? []).toEqual([]);
+    expect((await sam.get('/v1/search?q=QUOKKA')).results?.messages ?? []).toEqual([]);
     const inbox = await sam.get('/v1/inbox?view=all');
     const row2 = JSON.stringify(inbox);
-    expect(row2).not.toContain('4471');
+    expect(row2).not.toContain('QUOKKA');
     await t.ctx.flush();
     const alerts = (await sam.get('/v1/notifications')).notifications.filter(
       (n: any) => n.data?.conversationId === secret,
     );
-    expect(alerts.every((n: any) => !String(n.body).includes('4471'))).toBe(true);
+    expect(alerts.every((n: any) => !String(n.body).includes('QUOKKA'))).toBe(true);
   });
 
   it('sealed for every device of everyone in it, or it isn’t taken', async () => {
@@ -402,6 +416,7 @@ describe('private conversations (R18, PRD §61)', () => {
     // Sam's own devices hear of it (it's theirs to approve); nobody else yet.
     const told = () =>
       heard.filter((m) => m.event.type === 'devices.changed').flatMap((m) => m.userIds);
+    await drained();
     expect(told()).toEqual([sam.user.id]);
     expect((await devicesOf(noor, secret)).map((d) => d.id)).not.toContain(tablet.id);
     // Waiting, it isn't sealed for, and can't write either.
@@ -420,6 +435,7 @@ describe('private conversations (R18, PRD §61)', () => {
     const ok = await approve(samLaptop, tablet);
     expect(ok.statusCode, ok.body).toBe(200);
     expect(ok.json().device).toMatchObject({ approved: true, introducedBy: samLaptop.id });
+    await drained();
     expect(told()).toContain(noor.user.id);
     expect((await devicesOf(noor, secret)).map((d) => d.id)).toContain(tablet.id);
     expect((await approve(samLaptop, tablet)).statusCode).toBe(404);
@@ -561,6 +577,7 @@ describe('private conversations (R18, PRD §61)', () => {
     heard.length = 0;
     const another = await device(await signIn(noor), 'Tablet');
     await approve(noorLaptop, another);
+    await drained();
     expect(
       heard.filter((m) => m.event.type === 'devices.changed').flatMap((m) => m.userIds),
     ).not.toContain(pia.user.id);

@@ -1853,12 +1853,13 @@ test.describe
       await page.getByTestId('group-remove').click();
       await expect(visible(page, 'Removed Lina Farah')).toBeVisible();
       await expect(visible(lina.page, 'This conversation isn’t available')).toBeVisible();
-      // What her browser logged of it answering "not found" is what was meant to happen.
-      lina.errors.splice(
-        0,
-        lina.errors.length,
-        ...lina.errors.filter((e) => !/status of 404/.test(e)),
-      );
+      // What her browser logged of it answering "not found" is what was meant to happen: once
+      // she's elsewhere, nothing more of it is asked for.
+      await lina.page.goto('/');
+      const itsNotFound = (e: string) =>
+        (/^404 GET /.test(e) && e.includes(`/v1/conversations/${id}`)) ||
+        /^console: Failed to load resource: the server responded with a status of 404/.test(e);
+      lina.errors.splice(0, lina.errors.length, ...lina.errors.filter((e) => !itsNotFound(e)));
       await expect(panel.getByTestId('group-person')).toHaveCount(2);
       await panel.getByTestId('group-leave').click();
       await expect(

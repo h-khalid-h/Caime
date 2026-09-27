@@ -222,10 +222,10 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     conversation !== undefined &&
     conversation.kind !== 'direct' &&
     conversation.kind !== 'business';
-  const gathered = useMemory(id, isGroup && !where.private).data;
   // Taken out of it (or left from another device) while it's open: it isn't theirs any more,
   // whatever this device kept of it, so nothing more of it is asked for or sent.
   const gone = conv.error instanceof ApiError && conv.error.status === 404;
+  const gathered = useMemory(id, isGroup && !where.private && !gone).data;
   useEffect(() => {
     if (!gone) return;
     leftConversation(id);

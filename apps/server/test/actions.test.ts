@@ -200,7 +200,7 @@ describe('decisions, context and memory (PRD §17, §24, §30)', () => {
     const r = await sarah.post('/v1/connections/requests', { toUserId: nadia.user.id });
     const theirs = (await nadia.post(`/v1/connections/requests/${r.requestId}/accept`, {}))
       .conversationId;
-    const elsewhere = await send(sarah, theirs, 'The pin is 4417');
+    const elsewhere = await send(sarah, theirs, 'The pin is WOMBAT');
     const hidden = await nadia.post('/v1/contexts', { kind: 'project', title: 'Hers' });
     const tries = [
       ['POST', '/v1/decisions', { conversationId: convo, title: 'x', messageId: elsewhere.id }],
@@ -213,7 +213,7 @@ describe('decisions, context and memory (PRD §17, §24, §30)', () => {
     const loose = await hassan.req('POST', '/v1/tasks', { title: 'x', messageId: elsewhere.id });
     expect(loose.statusCode).toBe(400);
     // So no task of his quotes it.
-    expect(JSON.stringify(await hassan.get('/v1/tasks'))).not.toContain('4417');
+    expect(JSON.stringify(await hassan.get('/v1/tasks'))).not.toContain('WOMBAT');
   });
 });
 
