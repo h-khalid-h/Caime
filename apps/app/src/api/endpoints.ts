@@ -338,12 +338,14 @@ export const endpoints = {
     api.post<{ call: GroupCallView }>(`/group-calls/${id}/join`, { deviceId }),
   declineGroupCall: (id: string) =>
     api.post<{ call: GroupCallView }>(`/group-calls/${id}/decline`, {}),
-  leaveGroupCall: (id: string) => api.post<{ call: GroupCallView }>(`/group-calls/${id}/leave`, {}),
+  leaveGroupCall: (id: string, deviceId: string) =>
+    api.post<{ call: GroupCallView }>(`/group-calls/${id}/leave`, { deviceId }),
   signalGroupCall: (
     id: string,
     body: {
       deviceId: string;
       to: string;
+      toUser: string;
       kind: 'offer' | 'answer' | 'candidate';
       sdp?: string;
       candidate?: RTCIceCandidateInit;

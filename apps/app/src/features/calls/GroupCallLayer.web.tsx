@@ -164,7 +164,6 @@ export function GroupCallLayer() {
   const where = call.conversationTitle ?? 'the group';
   const others = Object.values(peers);
   const joined = call.members.filter((m) => m.state === 'joined');
-  const ringingFor = call.members.filter((m) => m.state === 'ringing');
   const hasCamera = Boolean(local?.getVideoTracks().length);
   const kindName = video ? 'Group video call' : 'Group voice call';
   const status =
@@ -176,7 +175,7 @@ export function GroupCallLayer() {
           ? (note ?? 'Call ended')
           : others.length
             ? elapsed
-            : ringingFor.length
+            : call.ringing
               ? 'Calling…'
               : 'Waiting for others…';
   // A shared screen is shown large, with everyone else beside it.
@@ -191,7 +190,7 @@ export function GroupCallLayer() {
       .filter((p) => p !== spotlight)
       .map((p) => (
         <Tile
-          key={p.device}
+          key={p.key}
           person={p.person}
           stream={p.stream}
           picture={picture(p)}

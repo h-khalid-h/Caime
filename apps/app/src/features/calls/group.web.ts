@@ -15,7 +15,7 @@
 
 import type {
   CallPersonView,
-  CallSignalView,
+  GroupCallSignalView,
   GroupCallView,
   RealtimeEvent,
 } from '@caishy/core/api';
@@ -44,6 +44,9 @@ const TRIES = 3;
 const EARLY_MAX = 200;
 
 interface Peer {
+  /** Whose device, and which: a device is in the call for one person, and signals say whose. */
+  key: string;
+  userId: string;
   device: string;
   pc: RTCPeerConnection;
   remote: MediaStream;
@@ -62,9 +65,11 @@ interface Peer {
   tries: number;
 }
 
+/** Each other device in the call, by `keyOf` its person and itself. */
 const peers = new Map<string, Peer>();
+const keyOf = (userId: string, device: string) => `${userId}|${device}`;
 /** Signals from devices this one hasn't heard have joined yet. */
-let early: CallSignalView[] = [];
+let early: GroupCallSignalView[] = [];
 let beat: ReturnType<typeof setInterval> | null = null;
 let ringTimer: ReturnType<typeof setTimeout> | null = null;
 /** The screen shown instead of the camera, while it is. */
@@ -73,6 +78,8 @@ let iceServers: RTCIceServer[] = [];
 let lastRefresh = 0;
 /** Calls this device has heard ended: nothing later brings one back. */
 const over = new Set<string>();
+/** Each join from this device: only the latest one's answer is acted on. */
+let joins = 0;
 
 const store = () => useGroupCall.getState();
 /** What the server said about a call in one of the person's groups: for its banner. */
@@ -113,14 +120,14 @@ function watchSignOut(): void {
   });
 }
 
-function closePeer(device: string): void {
-  const peer = peers.get(device);
+function closePeer(key: string): void {
+  const peer = peers.get(key);
   if (!peer) return;
-  peers.delete(device);
+  peers.delete(key);
   if (peer.timer) clearTimeout(peer.timer);
   peer.control.close();
   peer.pc.close();
-  store().peer(device, null);
+  store().peer(key, null);
 }
 
 /** Everything this device holds for the call, let go of. */
@@ -134,7 +141,7 @@ function release(): void {
     screen.stop();
   }
   screen = null;
-  for (const device of [...peers.keys()]) closePeer(device);
+  for (const key of [...peers.keys()]) closePeer(key);
   early = [];
   lastRefresh = 0;
   for (const t of store().local?.getTracks() ?? []) t.stop();
@@ -176,11 +183,16 @@ function tellState(only?: Peer): void {
     if (p.control.readyState === 'open') p.control.send(said);
 }
 
-function signal(to: string, kind: 'offer' | 'answer' | 'candidate', rest: object): void {
+function signal(
+  to: Pick<Peer, 'userId' | 'device'>,
+  kind: 'offer' | 'answer' | 'candidate',
+  rest: object,
+): void {
   const call = current();
   if (!call) return;
+  const body = { deviceId: DEVICE_ID, to: to.device, toUser: to.userId, kind, ...rest };
   const send = (tries: number): Promise<unknown> =>
-    endpoints.signalGroupCall(call.id, { deviceId: DEVICE_ID, to, kind, ...rest }).catch((e) => {
+    endpoints.signalGroupCall(call.id, body).catch((e) => {
       // An offer or an answer is the connection itself: try it again. A candidate has others.
       const again = !(e instanceof ApiError) || e.status >= 500 || e.status === 429;
       if (kind !== 'candidate' && again && tries > 1 && current()?.id === call.id)
@@ -196,26 +208,26 @@ async function offer(peer: Peer, restart = false): Promise<void> {
   if (!pc.getTransceivers().some((t) => t.receiver.track.kind === 'video'))
     pc.addTransceiver('video', { direction: 'sendrecv' });
   await pc.setLocalDescription(await pc.createOffer(restart ? { iceRestart: true } : undefined));
-  signal(peer.device, 'offer', { sdp: pc.localDescription?.sdp });
+  signal(peer, 'offer', { sdp: pc.localDescription?.sdp });
 }
 
 /** Two devices that haven't found each other yet: the one that offered tries again. */
 function tryAgain(peer: Peer): void {
-  if (peers.get(peer.device) !== peer) return;
+  if (peers.get(peer.key) !== peer) return;
   if (peer.timer) clearTimeout(peer.timer);
   peer.timer = null;
   if (peer.tries >= TRIES) {
-    store().peer(peer.device, { link: 'failed' });
+    store().peer(peer.key, { link: 'failed' });
     return;
   }
   peer.tries++;
-  store().peer(peer.device, { link: 'reconnecting' });
+  store().peer(peer.key, { link: 'reconnecting' });
   peer.timer = setTimeout(() => tryAgain(peer), CONNECT_MS);
   if (peer.offers) peer.queue = peer.queue.then(() => offer(peer, true)).catch(() => {});
 }
 
-async function onSignalFor(peer: Peer, s: CallSignalView): Promise<void> {
-  if (peers.get(peer.device) !== peer) return;
+async function onSignalFor(peer: Peer, s: GroupCallSignalView): Promise<void> {
+  if (peers.get(peer.key) !== peer) return;
   const { pc } = peer;
   if (s.kind === 'candidate' && s.candidate) {
     if (peer.described) await pc.addIceCandidate(s.candidate).catch(() => {});
@@ -233,11 +245,11 @@ async function onSignalFor(peer: Peer, s: CallSignalView): Promise<void> {
     s.kind === 'offer' &&
     (peer.offers || (peer.fingerprint && fingerprint && fingerprint !== peer.fingerprint))
   ) {
-    const person = store().peers[peer.device]?.person;
-    closePeer(peer.device);
+    const person = store().peers[peer.key]?.person;
+    closePeer(peer.key);
     if (!person) return;
-    openPeer(peer.device, person, false, null);
-    const fresh = peers.get(peer.device);
+    openPeer(peer.userId, peer.device, person, false, null);
+    const fresh = peers.get(peer.key);
     if (fresh) fresh.queue = fresh.queue.then(() => onSignalFor(fresh, s)).catch(() => {});
     return;
   }
@@ -254,19 +266,21 @@ async function onSignalFor(peer: Peer, s: CallSignalView): Promise<void> {
     const sender = videoSender(pc);
     if (picture && sender && !sender.track) await sender.replaceTrack(picture).catch(() => {});
     await pc.setLocalDescription(await pc.createAnswer());
-    signal(peer.device, 'answer', { sdp: pc.localDescription?.sdp });
+    signal(peer, 'answer', { sdp: pc.localDescription?.sdp });
   }
 }
 
 /** A connection to another device in the call: offered from here, or waiting for its offer. */
 function openPeer(
+  userId: string,
   device: string,
   person: CallPersonView,
   offers: boolean,
   joinedAt: string | null,
 ): void {
+  const key = keyOf(userId, device);
   const local = store().local;
-  if (!local || peers.has(device)) return;
+  if (!local || peers.has(key)) return;
   const pc = new RTCPeerConnection({ iceServers });
   const remote = new MediaStream();
   for (const track of local.getAudioTracks()) pc.addTrack(track, local);
@@ -275,6 +289,8 @@ function openPeer(
   // Made the same way on both devices (negotiated, id 0), so neither waits for the other's.
   const control = pc.createDataChannel('state', { negotiated: true, id: 0 });
   const peer: Peer = {
+    key,
+    userId,
     device,
     pc,
     remote,
@@ -288,13 +304,13 @@ function openPeer(
     timer: null,
     tries: 0,
   };
-  peers.set(device, peer);
-  store().peer(device, { person, stream: remote, link: 'connecting', theirs: null });
+  peers.set(key, peer);
+  store().peer(key, { device, person, stream: remote, link: 'connecting', theirs: null });
   control.onopen = () => tellState(peer);
   control.onmessage = (e) => {
     try {
       const m = JSON.parse(String(e.data)) as Record<string, unknown>;
-      store().peer(device, {
+      store().peer(key, {
         theirs: {
           camera: m.camera !== false,
           sharing: m.sharing === true,
@@ -307,21 +323,21 @@ function openPeer(
   };
   pc.ontrack = (e) => {
     if (!remote.getTracks().includes(e.track)) remote.addTrack(e.track);
-    store().peer(device, { stream: remote });
+    store().peer(key, { stream: remote });
   };
   pc.onicecandidate = (e) => {
-    if (e.candidate) signal(device, 'candidate', { candidate: e.candidate.toJSON() });
+    if (e.candidate) signal(peer, 'candidate', { candidate: e.candidate.toJSON() });
   };
   pc.onconnectionstatechange = () => {
-    if (peers.get(device) !== peer) return;
+    if (peers.get(key) !== peer) return;
     const state = pc.connectionState;
     if (state === 'connected') {
       if (peer.timer) clearTimeout(peer.timer);
       peer.timer = null;
       peer.tries = 0;
-      store().peer(device, { link: 'connected' });
+      store().peer(key, { link: 'connected' });
     } else if (state === 'disconnected') {
-      store().peer(device, { link: 'reconnecting' });
+      store().peer(key, { link: 'reconnecting' });
       if (peer.timer) clearTimeout(peer.timer);
       peer.timer = setTimeout(() => tryAgain(peer), DROP_MS);
     } else if (state === 'failed') tryAgain(peer);
@@ -329,8 +345,9 @@ function openPeer(
   peer.timer = setTimeout(() => tryAgain(peer), CONNECT_MS);
   if (offers) peer.queue = peer.queue.then(() => offer(peer)).catch(() => {});
   // What it sent before this device knew it had joined.
-  const theirs = early.filter((s) => s.from === device);
-  early = early.filter((s) => s.from !== device);
+  const sentBy = (s: GroupCallSignalView) => s.from === device && s.fromUser === userId;
+  const theirs = early.filter(sentBy);
+  early = early.filter((s) => !sentBy(s));
   for (const s of theirs) peer.queue = peer.queue.then(() => onSignalFor(peer, s)).catch(() => {});
 }
 
@@ -346,23 +363,25 @@ function offersTo(
 
 /** Connect to every device in the call, and to no other. */
 function reconcile(call: GroupCallView): void {
-  const self = call.members.find((m) => m.device === DEVICE_ID && m.state === 'joined');
-  if (!self) return;
-  const others = call.members.filter(
-    (m) => m.state === 'joined' && m.device && m.device !== DEVICE_ID,
+  const self = call.members.find(
+    (m) => m.person.id === me() && m.device === DEVICE_ID && m.state === 'joined',
   );
-  for (const device of [...peers.keys()])
-    if (!others.some((m) => m.device === device)) closePeer(device);
-  for (const m of others) {
-    const device = m.device as string;
-    const held = peers.get(device);
+  if (!self) return;
+  const others = new Map(
+    call.members
+      .filter((m) => m.state === 'joined' && m.device && m.person.id !== me())
+      .map((m) => [keyOf(m.person.id, m.device as string), m]),
+  );
+  for (const key of [...peers.keys()]) if (!others.has(key)) closePeer(key);
+  for (const [key, m] of others) {
+    const held = peers.get(key);
     // Joined again since (a device leaving and coming back, unheard): a new connection.
-    if (held?.joinedAt && held.joinedAt !== m.joinedAt) closePeer(device);
-    const peer = peers.get(device);
+    if (held?.joinedAt && held.joinedAt !== m.joinedAt) closePeer(key);
+    const peer = peers.get(key);
     if (peer) {
       peer.joinedAt ??= m.joinedAt;
-      store().peer(device, { person: m.person });
-    } else openPeer(device, m.person, offersTo(self, m), m.joinedAt);
+      store().peer(key, { person: m.person });
+    } else openPeer(m.person.id, m.device as string, m.person, offersTo(self, m), m.joinedAt);
   }
 }
 
@@ -430,12 +449,12 @@ function heartbeat(): void {
   beat = setInterval(() => void refresh(true), BEAT_MS);
 }
 
-function onSignal(s: CallSignalView): void {
+function onSignal(s: GroupCallSignalView): void {
   const call = current();
   const phase = store().phase;
   if (s.to !== DEVICE_ID || !call || s.callId !== call.id) return;
   if (phase !== 'in' && phase !== 'joining') return;
-  const peer = peers.get(s.from);
+  const peer = peers.get(keyOf(s.fromUser, s.from));
   if (peer) {
     peer.queue = peer.queue.then(() => onSignalFor(peer, s)).catch(() => {});
     return;
@@ -499,6 +518,7 @@ export async function joinGroupCall(target?: GroupCallView): Promise<void> {
     return;
   }
   const wasRinging = phase === 'incoming';
+  const attempt = ++joins;
   watchSignOut();
   if (ringTimer) clearTimeout(ringTimer);
   store().patch({ call, phase: 'joining', note: null });
@@ -523,7 +543,13 @@ export async function joinGroupCall(target?: GroupCallView): Promise<void> {
   try {
     iceServers = (await endpoints.callIce().catch(() => ({ iceServers: [] }))).iceServers;
     const { call: joined } = await endpoints.joinGroupCall(call.id, DEVICE_ID);
-    if (current()?.id !== call.id || store().phase !== 'joining') return;
+    // A later join from this device answers for itself.
+    if (attempt !== joins) return;
+    if (current()?.id !== call.id || store().phase !== 'joining') {
+      // Left (or it ended) while it was joining: out of it again, so nobody waits for this one.
+      void endpoints.leaveGroupCall(call.id, DEVICE_ID).catch(() => {});
+      return;
+    }
     heard(joined);
     store().patch({ call: joined, phase: 'in' });
     heartbeat();
@@ -551,7 +577,7 @@ export async function leaveGroupCall(): Promise<void> {
   finish(null);
   if (phase === 'in' || phase === 'joining')
     await endpoints
-      .leaveGroupCall(call.id)
+      .leaveGroupCall(call.id, DEVICE_ID)
       .then(({ call: now }) => heard(now))
       .catch(() => {});
 }
@@ -618,7 +644,7 @@ export async function stopGroupSharing(): Promise<void> {
 /** What the server says about group calls, from the realtime connection. */
 export function onGroupCallEvent(event: RealtimeEvent): void {
   if (event.type === 'groupcall.signal') {
-    onSignal(event.data as CallSignalView);
+    onSignal(event.data as GroupCallSignalView);
     return;
   }
   if (event.type !== 'groupcall.ringing' && event.type !== 'groupcall.updated') return;
@@ -683,6 +709,7 @@ if (typeof window !== 'undefined')
       keepalive: true,
       credentials: 'include',
       headers: { 'content-type': 'application/json', 'x-caishy-client': 'web' },
-      body: '{}',
+      // Only this device leaves: the person may be in the call on another one now.
+      body: JSON.stringify({ deviceId: DEVICE_ID }),
     }).catch(() => {});
   });

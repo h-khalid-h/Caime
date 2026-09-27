@@ -1011,7 +1011,7 @@ export type RealtimeDataEvent =
   | { type: 'call.ringing' | 'call.updated'; data: CallView }
   | { type: 'call.signal'; data: CallSignalView }
   | { type: 'groupcall.ringing' | 'groupcall.updated'; data: GroupCallView }
-  | { type: 'groupcall.signal'; data: CallSignalView }
+  | { type: 'groupcall.signal'; data: GroupCallSignalView }
   | { type: 'presence'; data: { userId: string; state: PresenceState; at: string } }
   | {
       type: 'notification.created' | 'notification.updated';
@@ -1142,6 +1142,10 @@ export interface GroupCallView {
   rev: number;
   outcome: CallOutcome | null;
   startedBy: CallPersonView;
+  /**
+   * Who's in it (joined), and the viewer's own place in it: never who else was rung, turned it
+   * down or missed it.
+   */
   members: Array<{
     person: CallPersonView;
     state: GroupCallMemberState;
@@ -1149,9 +1153,16 @@ export interface GroupCallView {
     device: string | null;
     joinedAt: string | null;
   }>;
+  /** Someone is still being rung (not who). */
+  ringing: boolean;
   createdAt: string;
   answeredAt: string | null;
   endedAt: string | null;
+}
+
+/** A group call's signal says whose device it's from too: it's that device of that person. */
+export interface GroupCallSignalView extends CallSignalView {
+  fromUser: string;
 }
 
 /** How two devices reach each other (WebRTC), passed from one to the other. */

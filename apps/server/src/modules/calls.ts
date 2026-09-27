@@ -21,6 +21,8 @@ import {
   endCall,
   iceConfig,
   liveCallOf,
+  lockCallEntry,
+  nameShownTo,
   otherSide,
   publishCall,
   ringStopped,
@@ -100,36 +102,50 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (callee?.kind !== 'human') throw badRequest('There’s nobody to call here.');
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
-    if ((await liveCallOf(ctx, auth.userId)) || (await joinedGroupCallOf(ctx, auth.userId)))
-      throw new AppError(409, 'in_call', 'You’re already in a call.');
-    let rung = true;
-    if ((await liveCallOf(ctx, other.user_id)) || (await joinedGroupCallOf(ctx, other.user_id))) {
-      // "On another call" says they're around right now: only to someone who may see that.
-      const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
-      if (shown?.presence != null && callee.presence !== 'invisible')
-        throw new AppError(409, 'busy', `${callee.display_name} is on another call.`);
-      // To anyone else it rings like any call nobody answers, and is missed like one: they
-      // aren't rung, and find it among their missed calls.
-      rung = false;
-    }
-
-    const call = await ctx.db
-      .insertInto('calls')
-      .values({
-        id: uuidv7(),
-        conversation_id: id,
-        caller_id: auth.userId,
-        callee_id: other.user_id,
-        kind: body.kind,
-        state: 'ringing',
-        caller_device: body.deviceId,
-        created_at: ctx.now(),
-        seen_at: ctx.now(),
-        caller_seen_at: ctx.now(),
-        callee_rung: rung,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    // "On another call" says they're around right now: only to someone who may see that.
+    const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
+    const mayKnowBusy = shown?.presence != null && callee.presence !== 'invisible';
+    const { call, rung } = await ctx.db.transaction().execute(async (trx) => {
+      await lockCallEntry(trx, auth.userId);
+      if (
+        (await liveCallOf(ctx, auth.userId, trx)) ||
+        (await joinedGroupCallOf(ctx, auth.userId, trx))
+      )
+        throw new AppError(409, 'in_call', 'You’re already in a call.');
+      let rung = true;
+      if (
+        (await liveCallOf(ctx, other.user_id, trx)) ||
+        (await joinedGroupCallOf(ctx, other.user_id, trx))
+      ) {
+        if (mayKnowBusy)
+          throw new AppError(
+            409,
+            'busy',
+            `${shown?.displayName ?? callee.display_name} is on another call.`,
+          );
+        // To anyone else it rings like any call nobody answers, and is missed like one: they
+        // aren't rung, and find it among their missed calls.
+        rung = false;
+      }
+      const call = await trx
+        .insertInto('calls')
+        .values({
+          id: uuidv7(),
+          conversation_id: id,
+          caller_id: auth.userId,
+          callee_id: other.user_id,
+          kind: body.kind,
+          state: 'ringing',
+          caller_device: body.deviceId,
+          created_at: ctx.now(),
+          seen_at: ctx.now(),
+          caller_seen_at: ctx.now(),
+          callee_rung: rung,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      return { call, rung };
+    });
     reply.status(201);
     if (!rung) {
       await ctx.bus.publish([auth.userId], {
@@ -139,16 +155,13 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       return { call: await callView(ctx, call, auth.userId) };
     }
     await publishCall(ctx, call, 'call.ringing');
-    const me = await ctx.db
-      .selectFrom('users')
-      .select('display_name')
-      .where('id', '=', auth.userId)
-      .executeTakeFirstOrThrow();
+    // By the name they know the caller by.
+    const me = await nameShownTo(ctx, other.user_id, auth.userId);
     await notify(ctx, {
       userId: other.user_id,
       kind: 'call',
       level: 'urgency',
-      title: `${me.display_name} is calling`,
+      title: `${me ?? 'Someone'} is calling`,
       body: body.kind === 'video' ? 'Video call' : 'Voice call',
       data: { conversationId: id, callId: call.id },
       groupKey: `call:${call.id}`,
@@ -168,23 +181,26 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     if (call.callee_id !== auth.userId) throw forbidden('Only the person called can answer.');
     // Never rung for them (they were on another call): nothing to answer.
     if (!call.callee_rung) throw over();
-    // One call at a time: leave a group call to take this one.
-    if (await joinedGroupCallOf(ctx, auth.userId))
-      throw new AppError(409, 'in_call', 'You’re already in a call.');
-    const answered = await ctx.db
-      .updateTable('calls')
-      .set({
-        state: 'active',
-        callee_device: deviceId,
-        answered_at: ctx.now(),
-        seen_at: ctx.now(),
-        caller_seen_at: ctx.now(),
-        callee_seen_at: ctx.now(),
-      })
-      .where('id', '=', id)
-      .where('state', '=', 'ringing')
-      .returningAll()
-      .executeTakeFirst();
+    const answered = await ctx.db.transaction().execute(async (trx) => {
+      await lockCallEntry(trx, auth.userId);
+      // One call at a time: leave a group call to take this one.
+      if (await joinedGroupCallOf(ctx, auth.userId, trx))
+        throw new AppError(409, 'in_call', 'You’re already in a call.');
+      return trx
+        .updateTable('calls')
+        .set({
+          state: 'active',
+          callee_device: deviceId,
+          answered_at: ctx.now(),
+          seen_at: ctx.now(),
+          caller_seen_at: ctx.now(),
+          callee_seen_at: ctx.now(),
+        })
+        .where('id', '=', id)
+        .where('state', '=', 'ringing')
+        .returningAll()
+        .executeTakeFirst();
+    });
     if (!answered) throw over();
     await ringStopped(ctx, answered);
     await publishCall(ctx, answered);

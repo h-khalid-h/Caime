@@ -19,5 +19,7 @@ create table call_members (
   primary key (call_id, user_id)
 );
 create index call_members_live on call_members (user_id) where state in ('ringing', 'joined');
+-- A device is in a call for one person only: signals are addressed to devices.
+create unique index call_members_device on call_members (call_id, device) where state = 'joined';
 -- One call on at a time in a conversation: two people starting one at once get the same call.
 create unique index calls_group_live on calls (conversation_id) where is_group and state <> 'ended';

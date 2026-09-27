@@ -21,6 +21,7 @@ import type { Database } from '../db/schema';
 import { ensureDirectConversation } from '../lib/conversations';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { leaveGroupCallsAfterDisconnect } from '../lib/group-calls';
 import { notify } from '../lib/notify';
 import {
   activeRelationships,
@@ -488,6 +489,12 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       type: 'connection.removed',
       data: { connectionId: id },
     });
+    // Someone under 18 is in a call only with people they're connected with (R29).
+    await leaveGroupCallsAfterDisconnect(
+      ctx,
+      auth.userId,
+      conn.user_a === auth.userId ? conn.user_b : conn.user_a,
+    );
     return { ok: true };
   });
 }

@@ -11,6 +11,7 @@ import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { verifyPassword } from '../lib/crypto';
 import { AppError, notFound } from '../lib/errors';
+import { leaveAllGroupCalls } from '../lib/group-calls';
 import { handOverOrgs } from '../lib/orgs';
 import { relationshipView } from '../lib/relations';
 import { handOverSpaces } from '../lib/spaces';
@@ -321,6 +322,8 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
         )
         .execute(),
     ]);
+    // Out of any group call first, so the others hear it and the call's line is written.
+    await leaveAllGroupCalls(ctx, me);
     await ctx.db.transaction().execute(async (trx) => {
       // Spaces and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());

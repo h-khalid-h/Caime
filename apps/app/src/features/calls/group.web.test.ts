@@ -211,6 +211,7 @@ const view = (members: Member[], over: Record<string, unknown> = {}) =>
       device: (m.state ?? 'joined') === 'joined' ? (m.device ?? `dev-${m.id}-0000`) : null,
       joinedAt: m.joinedAt ?? null,
     })),
+    ringing: false,
     createdAt: new Date().toISOString(),
     answeredAt: new Date().toISOString(),
     endedAt: null,
@@ -312,10 +313,14 @@ describe('the web group call engine', () => {
         ['audio', 'sendrecv'],
         ['video', 'sendrecv'],
       ]);
+    // Each by whose device it is, and which.
     expect(Object.keys(useGroupCall.getState().peers).sort()).toEqual([
-      'dev-noor-0000',
-      'dev-sam-0000',
+      'noor|dev-noor-0000',
+      'sam|dev-sam-0000',
     ]);
+    expect(
+      h.endpoints.signalGroupCall.mock.calls.map((c) => (c[1] as { toUser: string }).toUser).sort(),
+    ).toEqual(['noor', 'sam']);
   });
 
   it('someone joining later offers to this device: it waits, then answers them', async () => {
@@ -336,6 +341,7 @@ describe('the web group call engine', () => {
       data: {
         callId,
         from: 'dev-lina-0000',
+        fromUser: 'lina',
         to: DEVICE_ID,
         kind: 'offer',
         sdp: 'v=0',
@@ -382,8 +388,8 @@ describe('the web group call engine', () => {
     expect(noorPc.closed).toBe(false);
     expect(samPc.closed).toBe(true);
     expect(Object.keys(useGroupCall.getState().peers).sort()).toEqual([
-      'dev-noor-0000',
-      'dev-sam-laptop',
+      'noor|dev-noor-0000',
+      'sam|dev-sam-laptop',
     ]);
     // Sam joined again later than this device: he offers.
     expect((pcs.at(-1) as FakePC).offers).toHaveLength(0);
@@ -396,7 +402,15 @@ describe('the web group call engine', () => {
     const offer = (sdp: string) =>
       engine.onGroupCallEvent({
         type: 'groupcall.signal',
-        data: { callId, from: 'dev-noor-0000', to: DEVICE_ID, kind: 'offer', sdp, candidate: null },
+        data: {
+          callId,
+          from: 'dev-noor-0000',
+          fromUser: 'noor',
+          to: DEVICE_ID,
+          kind: 'offer',
+          sdp,
+          candidate: null,
+        },
       });
     offer('v=0\r\na=fingerprint:sha-256 AA:BB\r\n');
     await settle();
@@ -474,6 +488,7 @@ describe('the web group call engine', () => {
       data: {
         callId,
         from: 'dev-kai-0000',
+        fromUser: 'kai',
         to: DEVICE_ID,
         kind: 'offer',
         sdp: 'v=0',
@@ -491,6 +506,7 @@ describe('the web group call engine', () => {
       data: {
         callId: `${callId}-other`,
         from: 'dev-kai-0000',
+        fromUser: 'kai',
         to: DEVICE_ID,
         kind: 'offer',
         sdp: 'x',
@@ -579,9 +595,9 @@ describe('the web group call engine', () => {
     pc.become('failed');
     await settle();
     expect(pc.offers).toEqual([undefined, { iceRestart: true }]);
-    expect(useGroupCall.getState().peers['dev-noor-0000']?.link).toBe('reconnecting');
+    expect(useGroupCall.getState().peers['noor|dev-noor-0000']?.link).toBe('reconnecting');
     pc.become('connected');
-    expect(useGroupCall.getState().peers['dev-noor-0000']?.link).toBe('connected');
+    expect(useGroupCall.getState().peers['noor|dev-noor-0000']?.link).toBe('connected');
     // A lasting drop is tried again too; after three tries, the tile says it couldn't.
     for (let i = 0; i < 3; i++) {
       pc.become('failed');
@@ -589,7 +605,7 @@ describe('the web group call engine', () => {
     }
     pc.become('failed');
     await settle();
-    expect(useGroupCall.getState().peers['dev-noor-0000']?.link).toBe('failed');
+    expect(useGroupCall.getState().peers['noor|dev-noor-0000']?.link).toBe('failed');
     expect(pc.offers).toHaveLength(5);
   });
 
@@ -661,6 +677,8 @@ describe('the web group call engine', () => {
     expect(fetched.map((f) => f.url)).toEqual([
       `https://api.example/v1/group-calls/${callId}/leave`,
     ]);
+    // Only this device: the person may be in the call on another one by now.
+    expect(JSON.parse(fetched[0]?.body ?? '{}')).toEqual({ deviceId: DEVICE_ID });
   });
 
   it('a ring stops once it’s joined elsewhere, turned down, or its time is up', async () => {
@@ -748,6 +766,7 @@ describe('the web group call engine', () => {
     await engine.leaveGroupCall();
     await settle();
     expect(phase()).toBe('ended');
+    expect(h.endpoints.leaveGroupCall).toHaveBeenCalledWith(callId, DEVICE_ID);
     expect(useGroupCall.getState().on['conv-g']?.id).toBe(callId);
     engine.onGroupCallEvent({
       type: 'groupcall.updated',
@@ -776,5 +795,83 @@ describe('the web group call engine', () => {
     expect(useGroupCall.getState().on['conv-g']).toBeUndefined();
     engine.onGroupCallEvent({ type: 'groupcall.updated', data: on });
     expect(useGroupCall.getState().on['conv-g']).toBeUndefined();
+  });
+
+  it('a signal says whose device it’s from: another person’s, on a known device, isn’t that one’s', async () => {
+    await inCall([{ id: 'noor', joinedAt: at(0) }]);
+    const fake = (from: string) =>
+      engine.onGroupCallEvent({
+        type: 'groupcall.signal',
+        data: {
+          callId,
+          from,
+          fromUser: 'omar',
+          to: DEVICE_ID,
+          kind: 'offer',
+          sdp: 'v=0\r\na=fingerprint:sha-256 EE:FF\r\n',
+          candidate: null,
+        },
+      });
+    // Someone sending from a device id Sam holds, before this device has heard Sam joined: it
+    // waits, and the server says the device is Sam's. It isn't handed to Sam's connection.
+    h.endpoints.groupCallAlive.mockResolvedValue({
+      call: view([{ id: 'noor', joinedAt: at(0) }, meIn(), { id: 'sam', joinedAt: at(39) }], {
+        rev: 2,
+      }),
+    });
+    fake('dev-sam-0000');
+    await settle();
+    expect(h.endpoints.groupCallAlive).toHaveBeenCalledWith(callId, DEVICE_ID);
+    const samPc = pcs.at(-1) as FakePC;
+    expect(Object.keys(useGroupCall.getState().peers).sort()).toEqual([
+      'noor|dev-noor-0000',
+      'sam|dev-sam-0000',
+    ]);
+    expect(samPc.remote).toEqual([]);
+    // Nor once it is known.
+    fake('dev-sam-0000');
+    await settle();
+    expect(samPc.closed).toBe(false);
+    expect(samPc.remote).toEqual([]);
+    expect(sent().filter(([, kind]) => kind === 'answer')).toEqual([]);
+  });
+
+  it('left while it was joining: once the join lands, this device is out of it again', async () => {
+    const others = [{ id: 'noor', joinedAt: at(0) }];
+    let land!: (v: unknown) => void;
+    h.endpoints.joinGroupCall.mockReturnValue(new Promise((r) => (land = r)));
+    const joining = engine.joinGroupCall(view(others));
+    await settle();
+    expect(phase()).toBe('joining');
+    await engine.leaveGroupCall();
+    h.endpoints.leaveGroupCall.mockClear();
+    land({ call: view([...others, meIn()]) });
+    await joining;
+    await settle();
+    expect(h.endpoints.leaveGroupCall).toHaveBeenCalledWith(callId, DEVICE_ID);
+    expect(pcs).toHaveLength(0);
+  });
+
+  it('only the latest join from this device is acted on', async () => {
+    const others = [{ id: 'noor', joinedAt: at(0) }];
+    const lands: Array<(v: unknown) => void> = [];
+    h.endpoints.joinGroupCall.mockImplementation(() => new Promise((r) => lands.push(r)));
+    const first = engine.joinGroupCall(view(others));
+    await settle();
+    await engine.leaveGroupCall();
+    await vi.advanceTimersByTimeAsync(2000);
+    const second = engine.joinGroupCall(view(others));
+    await settle();
+    h.endpoints.leaveGroupCall.mockClear();
+    // The first join's answer comes last of all but the second: it leaves nothing behind.
+    lands[0]?.({ call: view([...others, meIn(at(35))]) });
+    await first;
+    await settle();
+    expect(h.endpoints.leaveGroupCall).not.toHaveBeenCalled();
+    lands[1]?.({ call: view([...others, meIn(at(39))]) });
+    await second;
+    await settle();
+    expect(phase()).toBe('in');
+    expect(h.endpoints.leaveGroupCall).not.toHaveBeenCalled();
   });
 });

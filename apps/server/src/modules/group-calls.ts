@@ -13,10 +13,11 @@ import {
   uuidv7,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
+import { sql, type Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import type { Call } from '../db/schema';
+import type { Call, Database } from '../db/schema';
+import { lockCallEntry, nameShownTo } from '../lib/calls';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import {
   groupCallView,
@@ -40,6 +41,12 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   const over = (call?: GroupCallView) =>
     new AppError(409, 'call_ended', 'That call has ended.', call ? { call } : undefined);
   const busy = () => new AppError(409, 'in_call', 'You’re already in a call.');
+  const deviceTaken = () =>
+    new AppError(409, 'device_in_call', 'That device is already in this call.');
+  const callOn = () => new AppError(409, 'call_on', 'There’s a call on here already: join it.');
+  /** Joining, turning down and leaving: plenty for anyone, never a way to flood the group. */
+  const paced = (userId: string, callId: string) =>
+    ctx.limiter.hit(`group-call:${callId}:${userId}`, ctx.config.isTest ? 1000 : 30, 60_000);
 
   /** Who in a conversation can be in its call: people in it (not a request still open). */
   async function callable(conversationId: string) {
@@ -58,10 +65,13 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   }
 
   /**
-   * A group call in a conversation this person is in, or was rung for or joined: otherwise it
-   * doesn't exist for them.
+   * A group call in a conversation this person is in; or, once they're out of the conversation,
+   * one they're still rung for or in (so they can leave it). Otherwise it doesn't exist for them.
    */
-  async function theirs(userId: string, callId: string): Promise<Call> {
+  async function theirs(
+    userId: string,
+    callId: string,
+  ): Promise<{ call: Call; outsider: boolean }> {
     const call = await ctx.db
       .selectFrom('calls')
       .selectAll()
@@ -79,13 +89,14 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
         .executeTakeFirst(),
       ctx.db
         .selectFrom('call_members')
-        .select('user_id')
+        .select('state')
         .where('call_id', '=', callId)
         .where('user_id', '=', userId)
         .executeTakeFirst(),
     ]);
-    if (!inConversation && !member) throw notFound('That call');
-    return call;
+    const stillIn = member?.state === 'joined' || member?.state === 'ringing';
+    if (!inConversation && !stillIn) throw notFound('That call');
+    return { call, outsider: !inConversation };
   }
 
   /** The call ringing for me, or the one I'm in: a page opened mid-call finds it. */
@@ -102,7 +113,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     await membership(ctx, auth.userId, id);
     const call = await liveGroupCallIn(ctx, id);
-    return { call: call ? await groupCallView(ctx, call, auth.userId) : null };
+    return { call: call ? await groupCallView(ctx, call, auth.userId, { outsider: false }) : null };
   });
 
   /** Start a call: everyone else who can take part is rung, and it's on until they've answered. */
@@ -121,9 +132,6 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       if (people.length > GROUP_CALL_MAX)
         throw badRequest(`Calls are for groups of up to ${GROUP_CALL_MAX} people.`);
       ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
-      if (await inACall(ctx, auth.userId)) throw busy();
-      if (await liveGroupCallIn(ctx, id))
-        throw new AppError(409, 'call_on', 'There’s a call on here already: join it.');
       // Everyone who can take part is rung, except anyone kept apart from whoever calls.
       const apart = await keptApartFrom(
         ctx,
@@ -138,6 +146,10 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       let call: Call;
       try {
         call = await ctx.db.transaction().execute(async (trx) => {
+          // One call at a time: checked, and started, under this person's lock.
+          await lockCallEntry(trx, auth.userId);
+          if (await inACall(ctx, auth.userId, undefined, trx)) throw busy();
+          if (await liveGroupCallIn(ctx, id, trx)) throw callOn();
           const row = await trx
             .insertInto('calls')
             .values({
@@ -179,8 +191,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
         });
       } catch (err) {
         // Two people started one at once: the other's is the call (one per conversation).
-        if ((err as { code?: string }).code === '23505')
-          throw new AppError(409, 'call_on', 'There’s a call on here already: join it.');
+        if ((err as { code?: string }).code === '23505') throw callOn();
         throw err;
       }
       await publishGroupCall(
@@ -204,7 +215,10 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
           userId: p.id,
           kind: 'call',
           level: 'urgency',
-          title: `${me.display_name} is calling ${conversation.title ?? 'the group'}`,
+          // By the name each of them knows the caller by.
+          title: `${(await nameShownTo(ctx, p.id, me.id)) ?? 'Someone'} is calling ${
+            conversation.title ?? 'the group'
+          }`,
           body: body.kind === 'video' ? 'Group video call' : 'Group voice call',
           data: { conversationId: id, callId: call.id },
           groupKey: `call:${call.id}`,
@@ -214,7 +228,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
           pushTo: 'web',
         });
       reply.status(201);
-      return { call: await groupCallView(ctx, call, auth.userId) };
+      return { call: await groupCallView(ctx, call, auth.userId, { outsider: false }) };
     },
   );
 
@@ -226,12 +240,16 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
-    const call = await theirs(auth.userId, id);
-    if (call.state === 'ended') throw over(await groupCallView(ctx, call, auth.userId));
+    paced(auth.userId, id);
+    const { call, outsider } = await theirs(auth.userId, id);
+    if (call.state === 'ended')
+      throw over(await groupCallView(ctx, call, auth.userId, { outsider }));
     if (!(await callable(call.conversation_id)).some((p) => p.id === auth.userId))
       throw forbidden('You can join once you’ve joined the conversation.');
-    if (await inACall(ctx, auth.userId, id)) throw busy();
-    const joined = await ctx.db.transaction().execute(async (trx) => {
+    const joinable = async (trx: Transaction<Database>) => {
+      // One call at a time: checked, and joined, under this person's lock.
+      await lockCallEntry(trx, auth.userId);
+      if (await inACall(ctx, auth.userId, id, trx)) throw busy();
       // One join at a time, so the call never takes more than it holds.
       const locked = await trx
         .selectFrom('calls')
@@ -247,12 +265,19 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('call_id', '=', id)
           .where('state', '=', 'joined')
           .execute()
-      )
-        .map((m) => m.user_id)
-        .filter((u) => u !== auth.userId);
+      ).filter((m) => m.user_id !== auth.userId);
       if (inIt.length >= GROUP_CALL_MAX) throw new AppError(409, 'call_full', 'This call is full.');
       // Nobody joins a call with someone they're kept apart from (a block, R29).
-      if ((await keptApartFrom(ctx, trx, auth.userId, inIt)).size)
+      if (
+        (
+          await keptApartFrom(
+            ctx,
+            trx,
+            auth.userId,
+            inIt.map((m) => m.user_id),
+          )
+        ).size
+      )
         throw forbidden('You can’t join this call.');
       const now = ctx.now();
       await trx
@@ -287,46 +312,68 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', id)
         .returningAll()
         .executeTakeFirstOrThrow();
-    });
-    if (joined.state === 'ended') throw over(await groupCallView(ctx, joined, auth.userId));
+    };
+    let joined: Call;
+    try {
+      joined = await ctx.db.transaction().execute(joinable);
+    } catch (err) {
+      // A device is in a call for one person only (call_members_device): signals go to it.
+      if ((err as { code?: string }).code === '23505') throw deviceTaken();
+      throw err;
+    }
+    if (joined.state === 'ended')
+      throw over(await groupCallView(ctx, joined, auth.userId, { outsider }));
     await ringStoppedFor(ctx, id, [auth.userId]);
     await publishGroupCall(ctx, joined);
-    return { call: await groupCallView(ctx, joined, auth.userId) };
+    return { call: await groupCallView(ctx, joined, auth.userId, { outsider }) };
   });
 
   /** Turned down: it stops ringing for them, and a call nobody else is rung for ends. */
   app.post('/group-calls/:id/decline', async (req): Promise<{ call: GroupCallView }> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
-    await theirs(auth.userId, id);
-    await ctx.db
-      .updateTable('call_members')
-      .set({ state: 'declined' })
-      .where('call_id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .where('state', '=', 'ringing')
-      .execute();
-    await ringStoppedFor(ctx, id, [auth.userId]);
-    const now = await settleGroupCall(ctx, id);
+    paced(auth.userId, id);
+    const { outsider } = await theirs(auth.userId, id);
+    const now = await settleGroupCall(ctx, id, async (trx) => {
+      const row = await trx
+        .updateTable('call_members')
+        .set({ state: 'declined' })
+        .where('call_id', '=', id)
+        .where('user_id', '=', auth.userId)
+        .where('state', '=', 'ringing')
+        .returning('user_id')
+        .executeTakeFirst();
+      return { changed: Boolean(row) };
+    });
     if (!now) throw notFound('That call');
-    return { call: await groupCallView(ctx, now, auth.userId) };
+    await ringStoppedFor(ctx, id, [auth.userId]);
+    return { call: await groupCallView(ctx, now, auth.userId, { outsider }) };
   });
 
-  /** Left: the call goes on for the others, and ends when fewer than two are left in it. */
+  /**
+   * Left, from the device in the call (a tab left behind can't take them out of it on the one
+   * they moved to): it goes on for the others, and ends when fewer than two are left in it.
+   */
   app.post('/group-calls/:id/leave', async (req): Promise<{ call: GroupCallView }> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
-    await theirs(auth.userId, id);
-    await ctx.db
-      .updateTable('call_members')
-      .set({ state: 'left', left_at: ctx.now(), device: null })
-      .where('call_id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .where('state', '=', 'joined')
-      .execute();
-    const now = await settleGroupCall(ctx, id);
+    const { deviceId } = parse(CallDeviceBody, req.body);
+    paced(auth.userId, id);
+    const { outsider } = await theirs(auth.userId, id);
+    const now = await settleGroupCall(ctx, id, async (trx) => {
+      const row = await trx
+        .updateTable('call_members')
+        .set({ state: 'left', left_at: ctx.now(), device: null })
+        .where('call_id', '=', id)
+        .where('user_id', '=', auth.userId)
+        .where('state', '=', 'joined')
+        .where('device', '=', deviceId)
+        .returning('user_id')
+        .executeTakeFirst();
+      return { changed: Boolean(row) };
+    });
     if (!now) throw notFound('That call');
-    return { call: await groupCallView(ctx, now, auth.userId) };
+    return { call: await groupCallView(ctx, now, auth.userId, { outsider }) };
   });
 
   /**
@@ -337,7 +384,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const body = parse(GroupCallSignalBody, req.body);
-    const call = await theirs(auth.userId, id);
+    const { call } = await theirs(auth.userId, id);
     if (call.state === 'ended') throw over();
     const joined = await ctx.db
       .selectFrom('call_members')
@@ -346,19 +393,21 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('state', '=', 'joined')
       .execute();
     const mine = joined.find((m) => m.user_id === auth.userId);
-    const to = joined.find((m) => m.device === body.to && m.user_id !== auth.userId);
+    const to = joined.find(
+      (m) => m.user_id === body.toUser && m.device === body.to && m.user_id !== auth.userId,
+    );
     if (!mine || mine.device !== body.deviceId || !to)
       throw forbidden('This device isn’t in that call.');
     ctx.limiter.hit(`call-signal:${id}:${auth.userId}`, ctx.config.isTest ? 10_000 : 600, 60_000);
-    // An offer or an answer for each of the others, and one more each per reconnect; only
-    // candidates are many.
-    if (body.sdp)
-      ctx.limiter.hit(`call-sdp:${id}:${auth.userId}`, 20 * GROUP_CALL_MAX, 10 * 60_000);
+    // An offer or an answer each way, and one more per reconnect; only candidates are many.
+    // Counted for each pair of devices, so nobody can spend what someone has for the others.
+    if (body.sdp) ctx.limiter.hit(`call-sdp:${id}:${auth.userId}:${body.to}`, 20, 10 * 60_000);
     await ctx.bus.publish([to.user_id], {
       type: 'groupcall.signal',
       data: {
         callId: id,
         from: body.deviceId,
+        fromUser: auth.userId,
         to: body.to,
         kind: body.kind,
         sdp: body.sdp ?? null,
@@ -383,8 +432,9 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
-    const call = await theirs(auth.userId, id);
-    if (call.state === 'ended') throw over(await groupCallView(ctx, call, auth.userId));
+    const { call, outsider } = await theirs(auth.userId, id);
+    if (call.state === 'ended')
+      throw over(await groupCallView(ctx, call, auth.userId, { outsider }));
     const seen = await ctx.db
       .updateTable('call_members')
       .set({ seen_at: ctx.now() })
@@ -397,8 +447,8 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
     // Taken out (the sweep, a block) or moved to another device: this one isn't in it.
     if (!seen)
       throw new AppError(403, 'not_in_call', 'This device isn’t in that call.', {
-        call: await groupCallView(ctx, call, auth.userId),
+        call: await groupCallView(ctx, call, auth.userId, { outsider }),
       });
-    return { call: await groupCallView(ctx, call, auth.userId) };
+    return { call: await groupCallView(ctx, call, auth.userId, { outsider }) };
   });
 }

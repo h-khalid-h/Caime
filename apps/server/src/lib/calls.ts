@@ -15,8 +15,9 @@ import {
   type CallView,
   type IceConfigView,
 } from '@caishy/core';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
-import type { Call } from '../db/schema';
+import type { Call, Database } from '../db/schema';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify } from './notify';
@@ -46,7 +47,13 @@ export async function callView(ctx: AppContext, call: Call, viewerId: string): P
     const u = users.find((x) => x.id === id);
     const avatar =
       id === viewerId && u ? avatarUrl(u) : id ? (others.get(id)?.avatarUrl ?? null) : null;
-    return { id: id ?? '', displayName: u?.display_name ?? 'Deleted account', avatarUrl: avatar };
+    // The name the viewer knows them by: the identity they show this viewer (PRD §35).
+    const name = id && id !== viewerId ? others.get(id)?.displayName : undefined;
+    return {
+      id: id ?? '',
+      displayName: name ?? u?.display_name ?? 'Deleted account',
+      avatarUrl: avatar,
+    };
   };
   return {
     id: call.id,
@@ -85,10 +92,14 @@ export async function publishCall(
  * A call someone is in or being rung for now, if any: both sides still there. A call they
  * weren't rung for (it came while they were busy and hidden) is only the caller's.
  */
-export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call | undefined> {
+export async function liveCallOf(
+  ctx: AppContext,
+  userId: string,
+  db: Kysely<Database> | Transaction<Database> = ctx.db,
+): Promise<Call | undefined> {
   const now = ctx.now().getTime();
   const fresh = new Date(now - CALL_SEEN_MS);
-  return ctx.db
+  return db
     .selectFrom('calls')
     .selectAll()
     .where('is_group', '=', false)
@@ -119,9 +130,39 @@ export async function liveCallOf(ctx: AppContext, userId: string): Promise<Call 
  * The 1:1 call someone is in now: one they placed (ringing or under way), or one they answered.
  * A call merely ringing for them isn't one they're in.
  */
-export async function callInOf(ctx: AppContext, userId: string): Promise<Call | undefined> {
-  const call = await liveCallOf(ctx, userId);
+export async function callInOf(
+  ctx: AppContext,
+  userId: string,
+  db: Kysely<Database> | Transaction<Database> = ctx.db,
+): Promise<Call | undefined> {
+  const call = await liveCallOf(ctx, userId, db);
   return call && (call.caller_id === userId || call.state === 'active') ? call : undefined;
+}
+
+/**
+ * One call at a time, for real: whatever puts someone in a call (placing one, answering, starting
+ * or joining a group call) holds this for them from checking they aren't in one until it's done,
+ * so two of their devices can't both get in. Taken before any call's own lock, never after.
+ */
+export async function lockCallEntry(trx: Transaction<Database>, userId: string): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtext(${`call-entry:${userId}`}))`.execute(trx);
+}
+
+/** The name `viewerId` knows someone by (the identity shown to them), for a ring or a notice. */
+export async function nameShownTo(
+  ctx: AppContext,
+  viewerId: string,
+  personId: string,
+): Promise<string | null> {
+  if (personId === viewerId) {
+    const u = await ctx.db
+      .selectFrom('users')
+      .select('display_name')
+      .where('id', '=', personId)
+      .executeTakeFirst();
+    return u?.display_name ?? null;
+  }
+  return (await personViewsFor(ctx, viewerId, [personId])).get(personId)?.displayName ?? null;
 }
 
 /**
@@ -188,17 +229,13 @@ export async function endCall(
     ended.callee_id &&
     ended.caller_id
   ) {
-    const caller = await ctx.db
-      .selectFrom('users')
-      .select('display_name')
-      .where('id', '=', ended.caller_id)
-      .executeTakeFirst();
+    const caller = await nameShownTo(ctx, ended.callee_id, ended.caller_id);
     await notify(ctx, {
       userId: ended.callee_id,
       kind: 'call',
       level: 'attention',
       title: `Missed ${ended.kind} call`,
-      body: caller ? `from ${caller.display_name}` : null,
+      body: caller ? `from ${caller}` : null,
       data: { conversationId: ended.conversation_id, callId: ended.id },
       groupKey: `call:${ended.id}`,
     });

@@ -9,25 +9,45 @@
  * CALL_SEEN_MS. Someone rung who doesn't join in CALL_RING_SECONDS has missed it, and hears so.
  * Two people where one blocked the other, or where one is under 18 and they aren't connected,
  * are never in a call together.
+ *
+ * Who's in a call changes one change at a time, under the call's own row lock (the one a join
+ * takes): what's decided about a call is decided on the call as it is.
  */
 import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView, isMinor } from '@caishy/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
-import { CALL_SEEN_MS, callInOf } from './calls';
+import { CALL_SEEN_MS, callInOf, nameShownTo } from './calls';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify } from './notify';
 import { personViewsFor } from './people-batch';
 import { avatarUrl } from './users';
 
-/** The call as `viewerId` sees it: others' photos only where they'd see them anyway. */
+type Db = Kysely<Database> | Transaction<Database>;
+
+/**
+ * The call as `viewerId` sees it. Who's in it (joined), and their own place in it; never who
+ * else was rung, turned it down or missed it, which would tell the group who was left out (a
+ * block, R29) or who was around and said no. Names and photos as each person shows the viewer.
+ * Someone no longer in the conversation (`outsider`) sees only their own place in it.
+ */
 export async function groupCallView(
   ctx: AppContext,
   call: Call,
   viewerId: string,
+  opts: { outsider?: boolean } = {},
 ): Promise<GroupCallView> {
-  const members = await ctx.db
+  const outsider =
+    opts.outsider ??
+    !(await ctx.db
+      .selectFrom('participants')
+      .select('user_id')
+      .where('conversation_id', '=', call.conversation_id)
+      .where('user_id', '=', viewerId)
+      .where('left_at', 'is', null)
+      .executeTakeFirst());
+  const all = await ctx.db
     .selectFrom('call_members as m')
     .innerJoin('users as u', 'u.id', 'm.user_id')
     .select([
@@ -43,6 +63,7 @@ export async function groupCallView(
     .orderBy('m.rung_at')
     .orderBy('m.user_id')
     .execute();
+  const members = all.filter((m) => m.user_id === viewerId || (!outsider && m.state === 'joined'));
   const ids = [...new Set([call.caller_id, ...members.map((m) => m.user_id)])].filter(
     (x): x is string => Boolean(x),
   );
@@ -59,16 +80,26 @@ export async function groupCallView(
           .where('id', '=', call.caller_id)
           .executeTakeFirst()
       : undefined,
-    ctx.db
-      .selectFrom('conversations')
-      .select('title')
-      .where('id', '=', call.conversation_id)
-      .executeTakeFirst(),
+    outsider
+      ? undefined
+      : ctx.db
+          .selectFrom('conversations')
+          .select('title')
+          .where('id', '=', call.conversation_id)
+          .executeTakeFirst(),
   ]);
-  const photo = (id: string, own: { avatar_file_id: string | null }) =>
-    id === viewerId
-      ? avatarUrl({ id, avatar_file_id: own.avatar_file_id })
-      : (others.get(id)?.avatarUrl ?? null);
+  const person = (u: { id: string; display_name: string; avatar_file_id: string | null }) =>
+    u.id === viewerId
+      ? {
+          id: u.id,
+          displayName: u.display_name,
+          avatarUrl: avatarUrl({ id: u.id, avatar_file_id: u.avatar_file_id }),
+        }
+      : {
+          id: u.id,
+          displayName: others.get(u.id)?.displayName ?? u.display_name,
+          avatarUrl: others.get(u.id)?.avatarUrl ?? null,
+        };
   return {
     id: call.id,
     conversationId: call.conversation_id,
@@ -77,21 +108,20 @@ export async function groupCallView(
     state: call.state,
     rev: call.rev,
     outcome: call.outcome,
-    startedBy: {
-      id: call.caller_id ?? '',
-      displayName: starter?.display_name ?? 'Deleted account',
-      avatarUrl: starter ? photo(starter.id, starter) : null,
-    },
+    startedBy: starter
+      ? person(starter)
+      : { id: call.caller_id ?? '', displayName: 'Deleted account', avatarUrl: null },
     members: members.map((m) => ({
-      person: {
+      person: person({
         id: m.user_id,
-        displayName: m.display_name,
-        avatarUrl: photo(m.user_id, m),
-      },
+        display_name: m.display_name,
+        avatar_file_id: m.avatar_file_id,
+      }),
       state: m.state,
       device: m.state === 'joined' ? m.device : null,
       joinedAt: m.joined_at?.toISOString() ?? null,
     })),
+    ringing: !outsider && call.state !== 'ended' && all.some((m) => m.state === 'ringing'),
     createdAt: call.created_at.toISOString(),
     answeredAt: call.answered_at?.toISOString() ?? null,
     endedAt: call.ended_at?.toISOString() ?? null,
@@ -100,26 +130,26 @@ export async function groupCallView(
 
 /**
  * Tell the conversation how the call stands, each person as they'd see it: those being rung
- * hear it ring (`ringing`), everyone else in the conversation sees it for its banner.
+ * hear it ring (`rung`), everyone else in the conversation sees it for its banner.
  */
 export async function publishGroupCall(
   ctx: AppContext,
   call: Call,
-  ringing: string[] = [],
+  rung: string[] = [],
 ): Promise<void> {
   const people = (await participantsOf(ctx.db, call.conversation_id)).map((p) => p.user_id);
-  for (const userId of new Set([...people, ...ringing])) {
-    const view = await groupCallView(ctx, call, userId);
+  for (const userId of people) {
+    const view = await groupCallView(ctx, call, userId, { outsider: false });
     await ctx.bus.publish([userId], {
-      type: ringing.includes(userId) ? 'groupcall.ringing' : 'groupcall.updated',
+      type: rung.includes(userId) ? 'groupcall.ringing' : 'groupcall.updated',
       data: view,
     });
   }
 }
 
 /** The group call someone is in now (joined, and still there), if any. */
-export async function joinedGroupCallOf(ctx: AppContext, userId: string) {
-  return ctx.db
+export async function joinedGroupCallOf(ctx: AppContext, userId: string, db: Db = ctx.db) {
+  return db
     .selectFrom('call_members as m')
     .innerJoin('calls as c', 'c.id', 'm.call_id')
     .selectAll('c')
@@ -146,8 +176,8 @@ export async function ringingGroupCallFor(ctx: AppContext, userId: string) {
 }
 
 /** The call on in a conversation now, if any. */
-export async function liveGroupCallIn(ctx: AppContext, conversationId: string) {
-  return ctx.db
+export async function liveGroupCallIn(ctx: AppContext, conversationId: string, db: Db = ctx.db) {
+  return db
     .selectFrom('calls')
     .selectAll()
     .where('conversation_id', '=', conversationId)
@@ -161,9 +191,9 @@ export async function liveGroupCallIn(ctx: AppContext, conversationId: string) {
  * In a call now: a 1:1 call they placed or answered, or a group call other than `except`. One
  * merely ringing for them isn't one they're in.
  */
-export async function inACall(ctx: AppContext, userId: string, except?: string) {
-  if (await callInOf(ctx, userId)) return true;
-  const group = await joinedGroupCallOf(ctx, userId);
+export async function inACall(ctx: AppContext, userId: string, except?: string, db: Db = ctx.db) {
+  if (await callInOf(ctx, userId, db)) return true;
+  const group = await joinedGroupCallOf(ctx, userId, db);
   return Boolean(group && group.id !== except);
 }
 
@@ -174,7 +204,7 @@ export async function inACall(ctx: AppContext, userId: string, except?: string) 
  */
 export async function keptApartFrom(
   ctx: Pick<AppContext, 'now'>,
-  db: Kysely<Database> | Transaction<Database>,
+  db: Db,
   userId: string,
   others: string[],
 ): Promise<Set<string>> {
@@ -236,35 +266,27 @@ export async function ringStoppedFor(ctx: AppContext, callId: string, userIds: s
   }
 }
 
-/** Those rung who never joined have missed it, and each hears so once. */
-async function missed(ctx: AppContext, call: Call, userIds: string[]) {
-  if (!userIds.length) return;
-  const were = await ctx.db
-    .updateTable('call_members')
-    .set({ state: 'missed' })
-    .where('call_id', '=', call.id)
-    .where('user_id', 'in', userIds)
-    .where('state', '=', 'ringing')
-    .returning('user_id')
-    .execute();
-  const who = were.map((m) => m.user_id);
+/** Those rung who never joined have missed it, and each hears so once (quietly, if muted). */
+async function tellMissed(ctx: AppContext, call: Call, who: string[]) {
   if (!who.length) return;
   await ringStoppedFor(ctx, call.id, who);
-  const [starter, conversation] = await Promise.all([
-    call.caller_id
-      ? ctx.db
-          .selectFrom('users')
-          .select('display_name')
-          .where('id', '=', call.caller_id)
-          .executeTakeFirst()
-      : undefined,
+  const [conversation, muted] = await Promise.all([
     ctx.db
       .selectFrom('conversations')
       .select('title')
       .where('id', '=', call.conversation_id)
       .executeTakeFirst(),
+    ctx.db
+      .selectFrom('participants')
+      .select('user_id')
+      .where('conversation_id', '=', call.conversation_id)
+      .where('user_id', 'in', who)
+      .where('muted_until', '>', ctx.now())
+      .execute(),
   ]);
-  for (const userId of who)
+  const quiet = new Set(muted.map((p) => p.user_id));
+  for (const userId of who) {
+    const starter = call.caller_id ? await nameShownTo(ctx, userId, call.caller_id) : null;
     await notify(ctx, {
       userId,
       kind: 'call',
@@ -272,120 +294,157 @@ async function missed(ctx: AppContext, call: Call, userIds: string[]) {
       title: `Missed group ${call.kind} call`,
       body:
         [
-          starter ? `from ${starter.display_name}` : null,
+          starter ? `from ${starter}` : null,
           conversation?.title ? `in ${conversation.title}` : null,
         ]
           .filter(Boolean)
           .join(' ') || null,
       data: { conversationId: call.conversation_id, callId: call.id },
       groupKey: `call:${call.id}`,
+      // A group someone has muted doesn't reach their phone about its calls.
+      delivery: quiet.has(userId) ? 'silent' : 'push',
     });
+  }
 }
 
 /**
- * End a group call, once: whoever is still ringing has missed it, whoever is in it has left,
- * everyone in the conversation hears it, and the conversation gets its line.
+ * How a call stands after a change: one that has had two people in it ends when fewer than two
+ * are left; one nobody else joined ends once nobody is still being rung, or when whoever started
+ * it isn't in it any more. Otherwise it goes on (null).
  */
-export async function endGroupCall(
-  ctx: AppContext,
-  call: Call,
-  outcome: CallOutcome,
-  endedAt: Date = ctx.now(),
-): Promise<Call | null> {
-  const ended = await ctx.db
-    .updateTable('calls')
-    .set({ state: 'ended', outcome, ended_at: endedAt, rev: sql`rev + 1` })
-    .where('id', '=', call.id)
-    .where('state', '<>', 'ended')
-    .returningAll()
-    .executeTakeFirst();
-  if (!ended) return null;
-  const ringing = await ctx.db
-    .selectFrom('call_members')
-    .select('user_id')
-    .where('call_id', '=', ended.id)
-    .where('state', '=', 'ringing')
-    .execute();
-  await missed(
-    ctx,
-    ended,
-    ringing.map((m) => m.user_id),
-  );
-  await ctx.db
-    .updateTable('call_members')
-    .set({ state: 'left', left_at: endedAt, device: null })
-    .where('call_id', '=', ended.id)
-    .where('state', '=', 'joined')
-    .execute();
-  await publishGroupCall(ctx, ended);
-  const seconds =
-    outcome === 'completed' && ended.answered_at
-      ? Math.max(0, Math.round((endedAt.getTime() - ended.answered_at.getTime()) / 1000))
-      : 0;
-  if (ended.caller_id) {
-    const joined = await ctx.db
+function outcomeOf(call: Call, members: { user_id: string; state: string }[]): CallOutcome | null {
+  const joined = members.filter((m) => m.state === 'joined');
+  if (call.state === 'active') return joined.length < 2 ? 'completed' : null;
+  if (!joined.some((m) => m.user_id === call.caller_id)) return 'cancelled';
+  if (members.some((m) => m.state === 'ringing')) return null;
+  // Everyone rung turned it down, or some didn't answer.
+  return members.some((m) => m.state === 'declined') && !members.some((m) => m.state === 'missed')
+    ? 'declined'
+    : 'missed';
+}
+
+/** What a change to who's in a call did: whether anything changed, and who missed it. */
+export interface CallChange {
+  changed: boolean;
+  /** Rung, and their ring ran out: they missed it. */
+  missed?: string[];
+  /** If the call ends now, when it lasted until (the last moment someone was there). */
+  at?: Date;
+}
+
+/** The conversation's line for a call that ended, from whoever started it. */
+async function callLine(ctx: AppContext, ended: Call) {
+  const [joined, first] = await Promise.all([
+    ctx.db
       .selectFrom('call_members')
       .select(sql<number>`count(*)::int`.as('n'))
       .where('call_id', '=', ended.id)
       .where('joined_at', 'is not', null)
-      .executeTakeFirstOrThrow();
-    const line = await insertSystemMessage(ctx, ended.conversation_id, ended.caller_id, 'call', {
-      kind: ended.kind,
-      outcome,
-      seconds,
-      group: true,
-      people: joined.n,
-    });
-    const [view] = await messageViews(ctx.db, [line], ended.caller_id);
-    await ctx.bus.publish(
-      (await participantsOf(ctx.db, ended.conversation_id)).map((p) => p.user_id),
-      { type: 'message.created', data: view },
-    );
-  }
-  return ended;
+      .executeTakeFirstOrThrow(),
+    ctx.db
+      .selectFrom('call_members')
+      .select('user_id')
+      .where('call_id', '=', ended.id)
+      .where('joined_at', 'is not', null)
+      .orderBy('joined_at')
+      .orderBy('user_id')
+      .executeTakeFirst(),
+  ]);
+  // Whoever started it deleted their account: the call still happened, so its line is from the
+  // first who joined it (a completed call reads the same to everyone).
+  const actor = ended.caller_id ?? first?.user_id;
+  if (!actor) return;
+  const seconds =
+    ended.outcome === 'completed' && ended.answered_at && ended.ended_at
+      ? Math.max(0, Math.round((ended.ended_at.getTime() - ended.answered_at.getTime()) / 1000))
+      : 0;
+  const line = await insertSystemMessage(ctx, ended.conversation_id, actor, 'call', {
+    kind: ended.kind,
+    outcome: ended.outcome,
+    seconds,
+    group: true,
+    people: joined.n,
+  });
+  const [view] = await messageViews(ctx.db, [line], actor);
+  await ctx.bus.publish(
+    (await participantsOf(ctx.db, ended.conversation_id)).map((p) => p.user_id),
+    { type: 'message.created', data: view },
+  );
 }
 
 /**
- * After someone leaves, declines, misses it or is taken out: a call that has had two people in
- * it ends when fewer than two are left; one nobody else joined ends once nobody is still being
- * rung, or when whoever started it isn't in it any more. Whoever is left hears how it stands.
+ * Change who's in a call (`change`, under the call's lock) and settle it: if it's over now it
+ * ends, once (whoever is still ringing has missed it, whoever is in it has left, and the
+ * conversation gets its line); otherwise its revision goes up and everyone hears how it stands.
+ * A change that changed nothing tells nobody anything. With no `change`, the call is settled as
+ * it is (people who went some other way, an account deleted).
  */
 export async function settleGroupCall(
   ctx: AppContext,
   callId: string,
+  change?: (trx: Transaction<Database>, call: Call) => Promise<CallChange>,
   at: Date = ctx.now(),
 ): Promise<Call | undefined> {
-  const load = () =>
-    ctx.db.selectFrom('calls').selectAll().where('id', '=', callId).executeTakeFirst();
-  // Who's in it has just changed: its revision goes up, so older views read as older.
-  const call =
-    (await ctx.db
-      .updateTable('calls')
-      .set({ rev: sql`rev + 1` })
+  const done = await ctx.db.transaction().execute(async (trx) => {
+    const call = await trx
+      .selectFrom('calls')
+      .selectAll()
       .where('id', '=', callId)
-      .where('state', '<>', 'ended')
+      .where('is_group', '=', true)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!call || call.state === 'ended')
+      return { call, changed: false, ended: false, missed: [] as string[] };
+    const made = change ? await change(trx, call) : { changed: true };
+    if (!made.changed) return { call, changed: false, ended: false, missed: [] as string[] };
+    const members = await trx
+      .selectFrom('call_members')
+      .select(['user_id', 'state'])
+      .where('call_id', '=', callId)
+      .execute();
+    const outcome = outcomeOf(call, members);
+    if (!outcome) {
+      // Who's in it has just changed: its revision goes up, so older views read as older.
+      const bumped = await trx
+        .updateTable('calls')
+        .set({ rev: sql`rev + 1` })
+        .where('id', '=', callId)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      return { call: bumped, changed: true, ended: false, missed: made.missed ?? [] };
+    }
+    const endedAt = made.at ?? at;
+    const ended = await trx
+      .updateTable('calls')
+      .set({ state: 'ended', outcome, ended_at: endedAt, rev: sql`rev + 1` })
+      .where('id', '=', callId)
       .returningAll()
-      .executeTakeFirst()) ?? (await load());
-  if (!call || call.state === 'ended') return call;
-  const members = await ctx.db
-    .selectFrom('call_members')
-    .select(['user_id', 'state'])
-    .where('call_id', '=', callId)
-    .execute();
-  const joined = members.filter((m) => m.state === 'joined');
-  let outcome: CallOutcome | null = null;
-  if (call.state === 'active') {
-    if (joined.length < 2) outcome = 'completed';
-  } else if (!joined.some((m) => m.user_id === call.caller_id)) outcome = 'cancelled';
-  else if (!members.some((m) => m.state === 'ringing'))
-    // Everyone rung turned it down, or some didn't answer.
-    outcome =
-      members.some((m) => m.state === 'declined') && !members.some((m) => m.state === 'missed')
-        ? 'declined'
-        : 'missed';
-  if (outcome) return (await endGroupCall(ctx, call, outcome, at)) ?? (await load());
-  await publishGroupCall(ctx, call);
-  return call;
+      .executeTakeFirstOrThrow();
+    const stillRinging = await trx
+      .updateTable('call_members')
+      .set({ state: 'missed' })
+      .where('call_id', '=', callId)
+      .where('state', '=', 'ringing')
+      .returning('user_id')
+      .execute();
+    await trx
+      .updateTable('call_members')
+      .set({ state: 'left', left_at: endedAt, device: null })
+      .where('call_id', '=', callId)
+      .where('state', '=', 'joined')
+      .execute();
+    return {
+      call: ended,
+      changed: true,
+      ended: true,
+      missed: [...(made.missed ?? []), ...stillRinging.map((m) => m.user_id)],
+    };
+  });
+  if (!done.call) return undefined;
+  await tellMissed(ctx, done.call, done.missed);
+  if (done.changed) await publishGroupCall(ctx, done.call);
+  if (done.ended) await callLine(ctx, done.call);
+  return done.call;
 }
 
 /**
@@ -398,30 +457,33 @@ export async function takeOutOfGroupCall(
   userId: string,
   rung: 'declined' | 'left',
 ): Promise<void> {
-  const member = ctx.db
-    .updateTable('call_members')
-    .where('call_id', '=', callId)
-    .where('user_id', '=', userId);
-  const out =
-    (await member
-      .set({ state: 'left', left_at: ctx.now(), device: null })
-      .where('state', '=', 'joined')
-      .returning('user_id')
-      .executeTakeFirst()) ??
-    (await member
-      .set({ state: rung, device: null })
-      .where('state', '=', 'ringing')
-      .returning('user_id')
-      .executeTakeFirst());
-  if (!out) return;
+  let out = false;
+  const call = await settleGroupCall(ctx, callId, async (trx) => {
+    const member = trx
+      .updateTable('call_members')
+      .where('call_id', '=', callId)
+      .where('user_id', '=', userId);
+    const row =
+      (await member
+        .set({ state: 'left', left_at: ctx.now(), device: null })
+        .where('state', '=', 'joined')
+        .returning('user_id')
+        .executeTakeFirst()) ??
+      (await member
+        .set({ state: rung, device: null })
+        .where('state', '=', 'ringing')
+        .returning('user_id')
+        .executeTakeFirst());
+    out = Boolean(row);
+    return { changed: out };
+  });
+  if (!out || !call) return;
   await ringStoppedFor(ctx, callId, [userId]);
-  const call = await settleGroupCall(ctx, callId);
-  if (!call) return;
   const people = await participantsOf(ctx.db, call.conversation_id);
   if (!people.some((p) => p.user_id === userId))
     await ctx.bus.publish([userId], {
       type: 'groupcall.updated',
-      data: await groupCallView(ctx, call, userId),
+      data: await groupCallView(ctx, call, userId, { outsider: true }),
     });
 }
 
@@ -449,6 +511,24 @@ export async function leaveGroupCallsWith(ctx: AppContext, blockerId: string, ot
   }
 }
 
+/**
+ * A connection between two people ended. Where one of them is under 18 they're no longer in a
+ * call together (R29): as with a block, whoever removed it leaves the calls they share.
+ */
+export async function leaveGroupCallsAfterDisconnect(
+  ctx: AppContext,
+  removerId: string,
+  otherId: string,
+) {
+  const people = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'birth_year'])
+    .where('id', 'in', [removerId, otherId])
+    .execute();
+  if (people.some((u) => isMinor(u.birth_year, ctx.now())))
+    await leaveGroupCallsWith(ctx, removerId, otherId);
+}
+
 /** Someone left, or was taken out of, these conversations: they're out of their calls too. */
 export async function leaveGroupCallsIn(
   ctx: AppContext,
@@ -468,57 +548,84 @@ export async function leaveGroupCallsIn(
   for (const c of calls) await takeOutOfGroupCall(ctx, c.call_id, userId, 'left');
 }
 
+/** An account is being deleted: it leaves every call it's in, and stops being rung for any. */
+export async function leaveAllGroupCalls(ctx: AppContext, userId: string) {
+  const calls = await ctx.db
+    .selectFrom('call_members as m')
+    .innerJoin('calls as c', 'c.id', 'm.call_id')
+    .select('m.call_id')
+    .where('m.user_id', '=', userId)
+    .where('m.state', 'in', ['joined', 'ringing'])
+    .where('c.state', '<>', 'ended')
+    .execute();
+  for (const c of calls) await takeOutOfGroupCall(ctx, c.call_id, userId, 'declined');
+}
+
 /**
  * Whoever's ring ran out has missed it; whoever stopped saying they're there has left; and a
- * call whose people went some other way (an account deleted) is settled.
+ * call whose people went some other way is settled. Each is decided again under the call's lock,
+ * so someone who came back (or joined again) meanwhile stays.
  */
 export async function sweepGroupCalls(ctx: AppContext): Promise<void> {
   const now = ctx.now().getTime();
+  const rungBefore = new Date(now - CALL_RING_SECONDS * 1000);
   const lapsed = await ctx.db
     .selectFrom('call_members as m')
     .innerJoin('calls as c', 'c.id', 'm.call_id')
     .select(['m.call_id', 'm.user_id'])
     .where('m.state', '=', 'ringing')
-    .where('m.rung_at', '<=', new Date(now - CALL_RING_SECONDS * 1000))
+    .where('m.rung_at', '<=', rungBefore)
     .where('c.state', '<>', 'ended')
     .limit(500)
     .execute();
   const byCall = new Map<string, string[]>();
   for (const m of lapsed) byCall.set(m.call_id, [...(byCall.get(m.call_id) ?? []), m.user_id]);
-  for (const [callId, userIds] of byCall) {
-    const call = await ctx.db
-      .selectFrom('calls')
-      .selectAll()
-      .where('id', '=', callId)
-      .executeTakeFirstOrThrow();
-    await missed(ctx, call, userIds);
-    await settleGroupCall(ctx, callId);
-  }
+  for (const [callId, userIds] of byCall)
+    await settleGroupCall(ctx, callId, async (trx) => {
+      const were = await trx
+        .updateTable('call_members')
+        .set({ state: 'missed' })
+        .where('call_id', '=', callId)
+        .where('user_id', 'in', userIds)
+        .where('state', '=', 'ringing')
+        .returning('user_id')
+        .execute();
+      return { changed: were.length > 0, missed: were.map((m) => m.user_id) };
+    });
 
+  const seenBefore = new Date(now - CALL_SEEN_MS);
   const gone = await ctx.db
     .selectFrom('call_members as m')
     .innerJoin('calls as c', 'c.id', 'm.call_id')
-    .select(['m.call_id', 'm.user_id', 'm.seen_at'])
+    .select(['m.call_id', 'm.user_id', 'm.device', 'm.seen_at'])
     .where('m.state', '=', 'joined')
-    .where('m.seen_at', '<=', new Date(now - CALL_SEEN_MS))
+    .where('m.seen_at', '<=', seenBefore)
     .where('c.state', '<>', 'ended')
     .limit(500)
     .execute();
-  const lastThere = new Map<string, Date>();
-  for (const m of gone) {
-    const at = m.seen_at ?? ctx.now();
-    await ctx.db
-      .updateTable('call_members')
-      .set({ state: 'left', left_at: at, device: null })
-      .where('call_id', '=', m.call_id)
-      .where('user_id', '=', m.user_id)
-      .where('state', '=', 'joined')
-      .execute();
-    const last = lastThere.get(m.call_id);
-    if (!last || at > last) lastThere.set(m.call_id, at);
-  }
-  // It lasted until the last of those who left was there.
-  for (const [callId, at] of lastThere) await settleGroupCall(ctx, callId, at);
+  const goneByCall = new Map<string, typeof gone>();
+  for (const m of gone) goneByCall.set(m.call_id, [...(goneByCall.get(m.call_id) ?? []), m]);
+  for (const [callId, stale] of goneByCall)
+    await settleGroupCall(ctx, callId, async (trx) => {
+      let last: Date | undefined;
+      for (const m of stale) {
+        const at = m.seen_at ?? ctx.now();
+        // Still gone, on the same device: one that came back, or joined again, stays.
+        const out = await trx
+          .updateTable('call_members')
+          .set({ state: 'left', left_at: at, device: null })
+          .where('call_id', '=', callId)
+          .where('user_id', '=', m.user_id)
+          .where('state', '=', 'joined')
+          .where('seen_at', '<=', seenBefore)
+          .where((eb) => (m.device ? eb('device', '=', m.device) : eb('device', 'is', null)))
+          .returning('user_id')
+          .executeTakeFirst();
+        if (out && (!last || at > last)) last = at;
+      }
+      // It lasted until the last of those who left was there.
+      return { changed: Boolean(last), at: last };
+    });
 
   const unsettled = await ctx.db
     .selectFrom('calls as c')

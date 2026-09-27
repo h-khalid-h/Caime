@@ -20,6 +20,8 @@ export type GroupCallPhase =
 
 /** Another device in the call, as this one sees it. */
 export interface GroupPeer {
+  /** Whose device, and which (a device is in a call for one person). */
+  key: string;
   device: string;
   person: CallPersonView;
   stream: MediaStream | null;
@@ -33,7 +35,7 @@ interface GroupCallStore {
   call: GroupCallView | null;
   phase: GroupCallPhase | null;
   local: MediaStream | null;
-  /** Every other device in the call, by its id. */
+  /** Every other device in the call, by its `key`. */
   peers: Record<string, GroupPeer>;
   muted: boolean;
   cameraOff: boolean;
@@ -43,7 +45,7 @@ interface GroupCallStore {
   on: Record<string, GroupCallView>;
   patch: (p: Partial<Omit<GroupCallStore, 'patch' | 'peer' | 'seen' | 'reset' | 'on'>>) => void;
   /** Update one other device's tile. */
-  peer: (device: string, p: Partial<GroupPeer> | null) => void;
+  peer: (key: string, p: Partial<GroupPeer> | null) => void;
   /** What the server said about a call in one of the person's groups. */
   seen: (call: GroupCallView) => void;
   reset: () => void;
@@ -64,15 +66,15 @@ export const useGroupCall = create<GroupCallStore>((set) => ({
   ...idle,
   on: {},
   patch: (p) => set(p),
-  peer: (device, p) =>
+  peer: (key, p) =>
     set((s) => {
       const peers = { ...s.peers };
-      if (p === null) delete peers[device];
+      if (p === null) delete peers[key];
       else {
-        const was = peers[device];
-        if (!was && !p.person) return {};
-        peers[device] = {
-          device,
+        const was = peers[key];
+        if (!was && !(p.person && p.device)) return {};
+        peers[key] = {
+          key,
           stream: null,
           link: 'connecting',
           theirs: null,

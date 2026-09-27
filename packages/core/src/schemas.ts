@@ -127,11 +127,12 @@ export const CallSignalBody = z
     message: 'Send an SDP with an offer or answer, and a candidate with a candidate.',
   });
 
-/** How this device reaches one other device in a group call: `to` is that device. */
+/** How this device reaches one other device in a group call: `to`, of the person `toUser`. */
 export const GroupCallSignalBody = z
   .object({
     deviceId: CallDevice,
     to: CallDevice,
+    toUser: z.string().uuid(),
     kind: z.enum(['offer', 'answer', 'candidate']),
     sdp: z.string().max(20_000).optional(),
     candidate: z
