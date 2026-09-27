@@ -521,6 +521,14 @@ export const endpoints = {
   unfollow: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/follow`),
   readUpdates: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/updates/read`),
   following: () => api.get<{ following: FollowingView[] }>('/updates'),
+
+  // Notifications in this browser (web push)
+  pushKey: () => api.get<{ publicKey: string }>('/push/vapid'),
+  subscribePush: (body: {
+    kind: 'webpush';
+    subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
+  }) => api.post<Ok>('/push/subscriptions', body),
+  unsubscribePush: (endpoint: string) => api.del<Ok>('/push/subscriptions', { endpoint }),
   report: (body: {
     userId?: string;
     messageId?: string;

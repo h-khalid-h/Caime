@@ -48,6 +48,9 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     setHeaders(res, path) {
       if (path.includes(`${join('_expo', 'static')}`)) {
         res.header('cache-control', 'public, max-age=31536000, immutable');
+      } else if (path.endsWith('sw.js')) {
+        // The service worker: a new one reaches every browser on its next check.
+        res.header('cache-control', 'no-cache');
       } else if (path.endsWith('.html')) {
         res.header('cache-control', 'no-cache');
         res.header('content-security-policy', csp);

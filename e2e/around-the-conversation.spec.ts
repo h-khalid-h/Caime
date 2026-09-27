@@ -1813,4 +1813,24 @@ test.describe
       await expect(phone.getByTestId('org-update').filter({ visible: true })).toHaveCount(1);
       expect([...errors, ...lina.errors]).toEqual([]);
     });
+    test('this browser can show calls and messages when Caishy isn’t open', async () => {
+      const { page, errors } = noor;
+      // The service worker is served fresh on every check, as a script.
+      const sw = await noorContext.request.get('/sw.js');
+      expect(sw.ok()).toBe(true);
+      expect(sw.headers()['cache-control']).toBe('no-cache');
+      expect(sw.headers()['content-type']).toContain('javascript');
+      await page.goto('/settings/notifications');
+      await expect(
+        page.getByTestId('browser-notifications').filter({ visible: true }),
+      ).toBeVisible();
+      // It registers under the app's own content security policy.
+      const scope = await page.evaluate(async () => {
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+        return reg.scope;
+      });
+      expect(scope).toBe(`${new URL(page.url()).origin}/`);
+      expect(errors).toEqual([]);
+    });
   });

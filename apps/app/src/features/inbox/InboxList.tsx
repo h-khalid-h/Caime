@@ -6,6 +6,7 @@ import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { PushPrompt } from '@/features/push/PushPrompt';
 import { useBadges } from '@/features/shell/useBadges';
 import { UpdatesRow } from '@/features/updates/UpdatesRow';
 import { useNow, useUserClock } from '@/lib/time';
@@ -109,6 +110,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
         />
       </View>
       <ConnectionBanner />
+      <PushPrompt />
       <TeamInboxes />
       <UpdatesRow />
       {caughtUp ? (

@@ -95,7 +95,8 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, { body: body ?? {} }),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, { body: body ?? {} }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body: body ?? {} }),
-  del: <T>(path: string) => request<T>('DELETE', path),
+  del: <T>(path: string, body?: unknown) =>
+    request<T>('DELETE', path, body === undefined ? {} : { body }),
 };
 
 /** Absolute URL for media the server serves (images, files, avatars). */

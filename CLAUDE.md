@@ -217,6 +217,10 @@ These are rules, not preferences.
   follower count; nothing anywhere lists who follows. The app's section is
   `features/updates/OrgUpdates.tsx` (in the organization page's chunk) and the Chats row
   `UpdatesRow.tsx`.
+- Web push: `apps/app/public/sw.js` (copied to the web root by the export; plain JS, no build)
+  and `features/push/webPush.web.ts`. The worker never shows a push while Caishy is open in front,
+  and opens a tapped one by messaging the open tab (`caishy.open`), never by reloading it: a call
+  may be on. Anything new pushed with a `data` field it can open belongs in `pathOf` there.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;

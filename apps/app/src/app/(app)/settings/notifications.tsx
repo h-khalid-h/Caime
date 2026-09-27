@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { BrowserNotifications } from '@/features/push/BrowserNotifications';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -52,6 +53,7 @@ export default function Notifications() {
         Caishy decides who reaches you by how you know them. Family can always get through; work
         waits for work hours; everyone else stays quiet unless it’s important. Change any of it.
       </Text>
+      <BrowserNotifications />
       <Group title="By relationship">
         {policies.map((p, i) => (
           <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>

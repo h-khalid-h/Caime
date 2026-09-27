@@ -51,8 +51,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Suggestions from message intelligence (and emerging topics, follow-ups)
 - [x] Conversation memory and asset index
 - [x] Search across people, relationships, orgs, messages, assets, actions, contexts
-- [~] Notifications: levels, burst consolidation, schedules, Web Push (VAPID) done; Expo push
-      implemented but ⛔ needs EAS credentials for production builds; not yet exercised end to end
+- [~] Notifications: levels, burst consolidation, schedules, and Web Push: a service worker
+      (`apps/app/public/sw.js`) shows what the server pushes when Caishy isn't open in front (a
+      call rings until it's answered) and a tap opens it in the open tab without a reload; each
+      browser is asked once, from Settings → Notifications or Chats, and every later sign-in there
+      gets its pushes (`sw.test.ts`, `webPush.test.ts`, E2E registers the worker under the app's
+      CSP; a real push service isn't reachable from the E2E). Expo push implemented but ⛔ needs
+      EAS credentials for production builds; not yet exercised end to end
 - [x] Jobs: reminders, held notifications, follow-ups, retention
 
 ## M5 — App (iOS, Android, Web)

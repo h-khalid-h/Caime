@@ -42,6 +42,20 @@ export default function AppLayout() {
       .then((m) => (m.privateSupported ? m.ensureDevice() : undefined))
       .catch(() => {});
   }, [onboarded, user?.id]);
+  // Notifications in this browser (web push): a sign-in where they already said yes gets its
+  // pushes too, and a tapped notification moves the open tab to it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per person signed in
+  useEffect(() => {
+    if (!onboarded) return;
+    let stop = () => {};
+    void import('@/features/push/webPush')
+      .then((m) => {
+        void m.resumeWebPush();
+        stop = m.onOpenFromNotification((path) => router.push(path as never));
+      })
+      .catch(() => {});
+    return () => stop();
+  }, [onboarded, user?.id]);
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;
   // Onboarding, and an app asking to act for them, have the whole window: nothing else to do there.
