@@ -18,6 +18,7 @@ import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
 import { CALL_SEEN_MS, callInOf, lockCallEntry, nameShownTo } from './calls';
+import { titleWithGroup } from './conversations';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify, replaceShown } from './notify';
@@ -85,9 +86,9 @@ export async function groupCallView(
     outsider
       ? undefined
       : ctx.db
-          .selectFrom('conversations')
-          .select('title')
-          .where('id', '=', call.conversation_id)
+          .selectFrom('conversations as c')
+          .select(titleWithGroup('c').as('title'))
+          .where('c.id', '=', call.conversation_id)
           .executeTakeFirst(),
   ]);
   const person = (u: { id: string; display_name: string; avatar_file_id: string | null }) =>
@@ -278,7 +279,7 @@ export async function ringStoppedFor(
       title = await ctx.db
         .selectFrom('calls as k')
         .innerJoin('conversations as c', 'c.id', 'k.conversation_id')
-        .select('c.title')
+        .select(titleWithGroup('c').as('title'))
         .where('k.id', '=', callId)
         .executeTakeFirst()
         .then((r) => `${r?.title ?? 'Group'} call`);
@@ -303,9 +304,9 @@ async function tellMissed(ctx: AppContext, call: Call, who: string[]) {
   await ringStoppedFor(ctx, call.id, who, 'missed');
   const [conversation, muted] = await Promise.all([
     ctx.db
-      .selectFrom('conversations')
-      .select('title')
-      .where('id', '=', call.conversation_id)
+      .selectFrom('conversations as c')
+      .select(titleWithGroup('c').as('title'))
+      .where('c.id', '=', call.conversation_id)
       .executeTakeFirst(),
     ctx.db
       .selectFrom('participants')

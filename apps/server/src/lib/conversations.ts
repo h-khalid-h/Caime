@@ -1,5 +1,5 @@
 import { nextOwner, uuidv7 } from '@caishy/core';
-import type { Kysely, Transaction } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import type { Database } from '../db/schema';
 import { pairKey } from './relations';
 
@@ -130,6 +130,27 @@ export async function handOverGroup(
 export const isGroupTopic = (c: { kind: string; parent_id: string | null }) =>
   c.kind === 'group' && c.parent_id !== null;
 
+/**
+ * A conversation's name where nothing else says what it is (a call, a notification, a search
+ * result): a group's topic goes by its group's with its own, "Book club · Middlemarch".
+ */
+export function titleWithGroup(alias: string) {
+  const c = (col: string) => sql.ref(`${alias}.${col}`);
+  return sql<string | null>`case when ${c('kind')} = 'group' and ${c('parent_id')} is not null
+    then coalesce((select g.title from conversations g where g.id = ${c('parent_id')}) || ' · ', '')
+      || ${c('title')}
+    else ${c('title')} end`;
+}
+
+export async function shownTitle(db: Q, conversationId: string): Promise<string | null> {
+  const row = await db
+    .selectFrom('conversations as c')
+    .select(titleWithGroup('c').as('title'))
+    .where('c.id', '=', conversationId)
+    .executeTakeFirst();
+  return row?.title ?? null;
+}
+
 /** Who a topic's people change for: who came into it, who went, whose role moved. */
 export interface TopicChange {
   topicId: string;
@@ -141,8 +162,8 @@ export interface TopicChange {
 /**
  * A group's topics have its people, in the roles they have in it: after any change to who's in
  * the group or who runs it, each topic is made to match, under the same lock (the group's, which
- * the caller holds, then each topic's in order). Someone new is caught up, as in the group;
- * someone gone is nobody in its topics either.
+ * the caller holds, then each topic's in order). Someone new is caught up, as in the group, and
+ * has it as quiet as they have the group; someone gone is nobody in its topics either.
  */
 export async function mirrorTopics(
   trx: Transaction<Database>,
@@ -162,11 +183,11 @@ export async function mirrorTopics(
     (
       await trx
         .selectFrom('participants')
-        .select(['user_id', 'role'])
+        .select(['user_id', 'role', 'muted_until', 'attention'])
         .where('conversation_id', '=', parentId)
         .where('left_at', 'is', null)
         .execute()
-    ).map((p) => [p.user_id, p.role]),
+    ).map((p) => [p.user_id, p]),
   );
   const changes: TopicChange[] = [];
   for (const topic of topics) {
@@ -176,9 +197,12 @@ export async function mirrorTopics(
       .where('conversation_id', '=', topic.id)
       .execute();
     const change: TopicChange = { topicId: topic.id, joined: [], left: [], changed: [] };
-    for (const [userId, role] of people) {
+    for (const [userId, { role, muted_until, attention }] of people) {
       const seat = seats.find((x) => x.user_id === userId);
       if (!seat || seat.left_at) {
+        // Coming into a topic, it's as quiet for them as the group is: muted, or only when
+        // they're named, if that's how they have the group. A topic's own setting is theirs after.
+        const quiet = { muted_until, attention };
         await trx
           .insertInto('participants')
           .values({
@@ -188,6 +212,7 @@ export async function mirrorTopics(
             joined_at: now,
             last_read_seq: topic.last_seq,
             last_delivered_seq: topic.last_seq,
+            ...quiet,
           })
           .onConflict((oc) =>
             oc.columns(['conversation_id', 'user_id']).doUpdateSet({
@@ -196,6 +221,7 @@ export async function mirrorTopics(
               joined_at: now,
               last_read_seq: topic.last_seq,
               last_delivered_seq: topic.last_seq,
+              ...quiet,
             }),
           )
           .execute();

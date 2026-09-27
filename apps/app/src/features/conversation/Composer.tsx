@@ -1,4 +1,5 @@
 import type { ConversationView, MessageView } from '@caishy/core/api';
+import { listTitle } from '@caishy/core/format';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caishy/core/mentions';
 import { useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
@@ -489,7 +490,17 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           <TextInput
             ref={input}
             testID="composer-input"
-            accessibilityLabel={editing ? 'Edit message' : `Message ${conversation.title}`}
+            accessibilityLabel={
+              editing
+                ? 'Edit message'
+                : `Message ${listTitle({
+                    title: conversation.title,
+                    topic: conversation.topic,
+                    other: conversation.other && {
+                      displayName: conversation.other.person.displayName,
+                    },
+                  })}`
+            }
             placeholder={editing ? 'Edit message' : (placeholder ?? 'Message')}
             placeholderTextColor={t.c.textTertiary}
             value={value}

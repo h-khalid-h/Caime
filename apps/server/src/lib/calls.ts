@@ -21,6 +21,7 @@ import {
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
+import { titleWithGroup } from './conversations';
 import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify, replaceShown } from './notify';
@@ -524,10 +525,10 @@ export async function callHistory(
     personViewsFor(ctx, me, ids),
     groupIds.length && memberships.some((p) => p.left_at === null)
       ? ctx.db
-          .selectFrom('conversations')
-          .select(['id', 'title'])
+          .selectFrom('conversations as c')
+          .select(['c.id', titleWithGroup('c').as('title')])
           .where(
-            'id',
+            'c.id',
             'in',
             memberships.filter((p) => p.left_at === null).map((p) => p.conversation_id),
           )

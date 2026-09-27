@@ -3,7 +3,7 @@
  */
 
 import type { SuggestionView } from '@caishy/core';
-import { AcceptSuggestionBody, type RelationshipInputT } from '@caishy/core';
+import { AcceptSuggestionBody, type RelationshipInputT, TopicBody } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import { recordEvent } from '../lib/events';
 import { isBlockedEitherWay, relationshipView } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { createTopicConversation } from './conversations';
+import { assertCanStartTopic, createTopicConversation, membership } from './conversations';
 import { createRelationship } from './relationships';
 
 export function suggestionView(s: Suggestion): SuggestionView {
@@ -71,6 +71,26 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
+    // A topic someone else here started from the same suggestion is the topic: it opens.
+    if (s?.kind === 'topic' && s.status === 'expired') {
+      const started = await ctx.db
+        .selectFrom('suggestions')
+        .select('result_ref')
+        .where('fingerprint', '=', s.fingerprint)
+        .where('status', '=', 'accepted')
+        .executeTakeFirst();
+      const ref = started?.result_ref as { type?: string; id?: string } | null | undefined;
+      if (ref?.type === 'conversation' && ref.id) {
+        const seat = await ctx.db
+          .selectFrom('participants')
+          .select('user_id')
+          .where('conversation_id', '=', ref.id)
+          .where('user_id', '=', auth.userId)
+          .where('left_at', 'is', null)
+          .executeTakeFirst();
+        if (seat) return { accepted: { type: 'conversation', id: ref.id } };
+      }
+    }
     if (s?.status !== 'pending') throw notFound('That suggestion');
     // About a conversation they're no longer in: nothing of it is theirs to act on any more (a
     // decision would be recorded in a group they've left, a task would quote it).
@@ -97,7 +117,11 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
 
     if (s.kind === 'topic') {
       const parentId = String(payload.parentId ?? s.conversation_id);
-      const conversationId = await createTopicConversation(ctx, auth.userId, parentId, title);
+      // Started this way as it is from the conversation's details: the same rules and name.
+      const { title: name } = parse(TopicBody, { title });
+      const { conversation } = await membership(ctx, auth.userId, parentId);
+      await assertCanStartTopic(ctx, auth.userId, conversation);
+      const conversationId = await createTopicConversation(ctx, auth.userId, parentId, name);
       await ctx.db
         .updateTable('suggestions')
         .set({
@@ -107,17 +131,24 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
         })
         .where('id', '=', id)
         .execute();
-      // Everyone else's copy of this topic suggestion is now answered too.
-      await ctx.db
+      // Everyone else's copy of this topic suggestion is now answered too, and goes from their
+      // screens.
+      const others = await ctx.db
         .updateTable('suggestions')
         .set({ status: 'expired', resolved_at: ctx.now() })
         .where('fingerprint', '=', s.fingerprint)
         .where('status', '=', 'pending')
+        .returning(['id', 'user_id'])
         .execute();
       await ctx.bus.publish([auth.userId], {
         type: 'suggestion.resolved',
         data: { id, status: 'accepted' },
       });
+      for (const o of others)
+        await ctx.bus.publish([o.user_id], {
+          type: 'suggestion.resolved',
+          data: { id: o.id, status: 'expired' },
+        });
       return { accepted: { type: 'conversation', id: conversationId } };
     }
 

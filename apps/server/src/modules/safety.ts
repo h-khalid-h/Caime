@@ -9,6 +9,7 @@ import { endCallsBetween } from '../lib/calls';
 import { withdrawDuplicatesOf } from '../lib/duplicates';
 import { badRequest } from '../lib/errors';
 import { leaveGroupCallsWith } from '../lib/group-calls';
+import { pairKey } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -68,6 +69,18 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
           eb.and([eb('from_user', '=', auth.userId), eb('to_user', '=', userId)]),
           eb.and([eb('from_user', '=', userId), eb('to_user', '=', auth.userId)]),
         ]),
+      )
+      .execute();
+    // Nor does either of them start a topic with the other from a suggestion made before.
+    const { key } = pairKey(auth.userId, userId);
+    await ctx.db
+      .updateTable('suggestions')
+      .set({ status: 'expired', resolved_at: ctx.now() })
+      .where('kind', '=', 'topic')
+      .where('status', '=', 'pending')
+      .where('user_id', 'in', [auth.userId, userId])
+      .where('conversation_id', 'in', (eb) =>
+        eb.selectFrom('conversations').select('id').where('direct_key', '=', key),
       )
       .execute();
     await ctx.bus.publish([auth.userId], {

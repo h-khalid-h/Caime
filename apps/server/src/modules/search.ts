@@ -16,6 +16,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { maskId, masksFor } from '../lib/business';
+import { titleWithGroup } from '../lib/conversations';
 import { recordEvent } from '../lib/events';
 import { fileView } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
@@ -412,7 +413,7 @@ export async function runSearch(
       .leftJoin('contexts as x', 'x.id', 'c.context_id')
       .select([
         'c.id',
-        'c.title',
+        titleWithGroup('c').as('title'),
         'c.kind',
         'x.title as context_title',
         'x.kind as context_kind',

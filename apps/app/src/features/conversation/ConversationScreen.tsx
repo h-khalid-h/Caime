@@ -276,7 +276,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const subtitle = privately
     ? typingNames.length
       ? 'typing…'
-      : 'Private · end to end encrypted'
+      : [ofGroup, 'Private · end to end encrypted'].filter(Boolean).join(' · ')
     : typingNames.length
       ? 'typing…'
       : org && !thread
@@ -332,13 +332,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             <>
               <IconButton
                 icon={Phone}
-                label={`Voice call ${conversation.title ?? 'the group'}`}
+                label={`Voice call ${heading || 'the group'}`}
                 onPress={() => void startGroupCall(conversation.id, 'voice')}
                 testID="group-call-voice"
               />
               <IconButton
                 icon={Video}
-                label={`Video call ${conversation.title ?? 'the group'}`}
+                label={`Video call ${heading || 'the group'}`}
                 onPress={() => void startGroupCall(conversation.id, 'video')}
                 testID="group-call-video"
               />
@@ -364,7 +364,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${heading}, details`}
+        accessibilityLabel={`${ofGroup ? `${ofGroup} · ` : ''}${heading}, details`}
         onPress={() => {
           if (desktop) setPanel(true);
           else setDetails(true);

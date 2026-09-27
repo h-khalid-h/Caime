@@ -244,6 +244,18 @@ export async function conversationView(
   const space = conversation.space_id
     ? ((await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id) ?? null)
     : null;
+  // A one-to-one between connections, now: topics start only there (assertCanStartTopic).
+  const connected =
+    conversation.kind === 'direct' && conversation.connection_id
+      ? Boolean(
+          await ctx.db
+            .selectFrom('connections')
+            .select('id')
+            .where('id', '=', conversation.connection_id)
+            .where('status', '=', 'active')
+            .executeTakeFirst(),
+        )
+      : false;
   // A group's topic goes by the group's name, with its own as the topic (PRD §58).
   const group =
     isGroupTopic(conversation) && conversation.parent_id
@@ -326,6 +338,7 @@ export async function conversationView(
       (conversation.kind === 'direct' && !conversation.is_general) || group
         ? conversation.title
         : null,
+    connected,
     topics: topics.map((c) => ({
       id: c.id,
       title: c.title ?? 'Topic',
@@ -378,6 +391,37 @@ export async function conversationView(
 
 /** Why a topic's people aren't changed in it. */
 const TOPIC_PEOPLE = 'A topic’s people are its group’s: add, remove or make admins there.';
+
+/**
+ * Whether someone may start a topic from a conversation (PRD §58), however they start it (from
+ * its details, or by accepting a suggestion): someone who may write there (blocks), from a
+ * one-to-one only with someone they're connected with and never a private one, and never with an
+ * organization. A few an hour.
+ */
+export async function assertCanStartTopic(
+  ctx: AppContext,
+  userId: string,
+  conversation: Pick<Conversation, 'id' | 'kind' | 'privacy_class'>,
+): Promise<void> {
+  await assertCanWrite(ctx, conversation.id, userId);
+  if (conversation.kind === 'business')
+    throw badRequest('Topics are for conversations between people.');
+  if (conversation.kind === 'direct') {
+    // Connected now: a connection removed since leaves the pair's one-to-one, not its topics.
+    const other = await ctx.db
+      .selectFrom('participants')
+      .select('user_id')
+      .where('conversation_id', '=', conversation.id)
+      .where('user_id', '<>', userId)
+      .executeTakeFirst();
+    if (!other || !(await between(ctx.db, userId, other.user_id)).connected)
+      throw forbidden('Connect first to start topics.');
+    // A private one-to-one keeps to itself: a topic of it would be written in the clear.
+    if (conversation.privacy_class === 'private')
+      throw badRequest('A private conversation keeps to itself: start a topic from your main one.');
+  }
+  ctx.limiter.hit(`topic:${userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
+}
 
 export async function createTopicConversation(
   ctx: AppContext,
@@ -633,16 +677,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { title } = parse(TopicBody, req.body);
     const { conversation } = await membership(ctx, auth.userId, id);
-    // Only between people who may write to each other: connected, and not blocked.
-    await assertCanWrite(ctx, id, auth.userId);
-    if (conversation.kind === 'direct' && !conversation.connection_id)
-      throw forbidden('Connect first to start topics.');
-    if (conversation.kind === 'business')
-      throw badRequest('Topics are for conversations between people.');
-    // A private one-to-one keeps to itself: a topic of it would be written in the clear.
-    if (conversation.kind === 'direct' && conversation.privacy_class === 'private')
-      throw badRequest('A private conversation keeps to itself: start a topic from your main one.');
-    ctx.limiter.hit(`topic:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
+    await assertCanStartTopic(ctx, auth.userId, conversation);
     const conversationId = await createTopicConversation(ctx, auth.userId, id, title);
     reply.status(201);
     return { conversationId };
@@ -672,6 +707,9 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     ) {
       if (!canEditConversation(conversation.kind, me.role))
         throw forbidden('Only admins can change this.');
+      // A topic's messages disappear as its group's do: that's changed in the group.
+      if (body.retentionDays !== undefined && isGroupTopic(conversation))
+        throw badRequest('A topic’s messages disappear as its group’s do: change it there.');
       // Linked only to a context they may change: an id alone opens nothing, and one they only
       // read (a group's, where they're a member) isn't theirs to take somewhere they'd run it.
       if (body.contextId) {
@@ -704,6 +742,45 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         });
       if (body.retentionDays !== undefined && body.retentionDays !== conversation.retention_days)
         await sendSystem(ctx, id, auth.userId, 'retention_changed', { days: body.retentionDays });
+      // A group's topics go as it goes: its disappearing messages are theirs, and each says so.
+      if (conversation.kind === 'group' && !conversation.parent_id) {
+        const topics = await ctx.db
+          .selectFrom('conversations')
+          .select(['id', 'retention_days'])
+          .where('parent_id', '=', id)
+          .where('kind', '=', 'group')
+          .execute();
+        if (body.retentionDays !== undefined) {
+          const days = body.retentionDays;
+          const moved = topics.filter((x) => x.retention_days !== days);
+          if (moved.length) {
+            await ctx.db
+              .updateTable('conversations')
+              .set({ retention_days: days, updated_at: ctx.now() })
+              .where(
+                'id',
+                'in',
+                moved.map((x) => x.id),
+              )
+              .execute();
+            for (const x of moved)
+              await sendSystem(ctx, x.id, auth.userId, 'retention_changed', { days });
+          }
+        }
+        // Each topic shows the group's name (and its disappearing messages): theirs changed too.
+        if (topics.length && (body.title !== undefined || body.retentionDays !== undefined))
+          for (const x of topics)
+            await ctx.bus.publish(
+              (await participantsOf(ctx.db, x.id)).map((p) => p.user_id),
+              { type: 'conversation.updated', data: { conversationId: x.id } },
+            );
+      }
+      // A group lists its topics by name.
+      if (body.title !== undefined && isGroupTopic(conversation) && conversation.parent_id)
+        await ctx.bus.publish(
+          (await participantsOf(ctx.db, conversation.parent_id)).map((p) => p.user_id),
+          { type: 'conversation.updated', data: { conversationId: conversation.parent_id } },
+        );
     }
     const mine = {
       ...(body.attention !== undefined ? { attention: body.attention } : {}),

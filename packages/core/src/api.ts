@@ -371,6 +371,8 @@ export interface ConversationView {
   topic: string | null;
   /** Its topics the viewer is in, the liveliest first. */
   topics: Array<{ id: string; title: string; lastMessageAt: string | null }>;
+  /** A one-to-one between two people connected now: topics start only there (PRD §58). */
+  connected: boolean;
   purpose: string | null;
   isGeneral: boolean;
   parentId: string | null;

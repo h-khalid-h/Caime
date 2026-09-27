@@ -74,9 +74,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       which of its team (`actions.test.ts`, `business.test.ts`, E2E)
 - [x] Suggestions from message intelligence (and emerging topics, follow-ups)
 - [x] Topics (PRD §58), offered when a subject keeps coming up or started from a conversation's
-      details: of a one-to-one, the two of them on one subject; of a group, the group again with
-      its people in the roles they have there, who come and go with it, as private as it is and
-      listed in it; never from a private one-to-one (`messaging.test.ts`, E2E)
+      details: of a one-to-one, the two of them on one subject, while they're connected; of a
+      group, the group again with its people in the roles they have there, who come and go with
+      it (as muted as they have the group), as private as it is, disappearing as it does, and
+      listed in it; never from a private one-to-one. Accepting an offer follows the same rules,
+      and once one person has, the others' offers open the same topic. A topic goes by its
+      group's name with its own in chats, notifications, calls, call history and search
+      (`messaging.test.ts`, E2E)
 - [x] Conversation memory and asset index: what's been shared, a kind at a time (photos and
       videos, files, links), newest first and a page at a time, from the conversation's details,
       each opening from there or shown where it was said; what someone deleted for themselves

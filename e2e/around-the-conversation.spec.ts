@@ -2001,6 +2001,13 @@ test.describe
       await page.waitForURL((url) => !url.pathname.endsWith(group));
       await expect(visible(page, `You started this topic in “${title}”`)).toBeVisible();
       await expect(visible(page, `${title} · 2 people`)).toBeVisible();
+      // Written in, it's the topic of the group; its messages go as the group's do.
+      await expect(
+        page.getByLabel(`Message ${title} · Documentaries`).filter({ visible: true }),
+      ).toBeVisible();
+      await expect(page.getByTestId('disappearing-shown').filter({ visible: true })).toHaveText(
+        `As ${title}: Off`,
+      );
       // Its people are the group's: they're changed there.
       const people = page.getByTestId('group-people').filter({ visible: true });
       await expect(people).toContainText('Alex Chen');

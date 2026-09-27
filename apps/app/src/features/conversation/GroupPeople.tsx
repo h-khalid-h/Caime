@@ -147,7 +147,11 @@ export function GroupPeople({
       {manager && !general ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Change the group’s name and what it’s for"
+          accessibilityLabel={
+            topicOf
+              ? 'Change the topic’s name and what it’s for'
+              : 'Change the group’s name and what it’s for'
+          }
           onPress={() =>
             setEditing({
               title: conversation.name ?? conversation.title,
@@ -411,7 +415,7 @@ export function GroupPeople({
       <Sheet
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title="The group"
+        title={topicOf ? 'The topic' : 'The group'}
         footer={
           <Button
             label="Save"

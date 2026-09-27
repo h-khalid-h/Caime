@@ -428,7 +428,15 @@ const TOPIC_MAX = 80;
  * connected with, or a group that isn't in a space (a space has its own conversations).
  */
 function topicsFor(c: ConversationView): 'direct' | 'group' | null {
-  if (c.kind === 'direct' && c.isGeneral && c.other && !c.request && c.privacyClass !== 'private')
+  // Only between people connected now (a view from before says nothing, so offers nothing).
+  if (
+    c.kind === 'direct' &&
+    c.isGeneral &&
+    c.other &&
+    !c.request &&
+    c.privacyClass !== 'private' &&
+    c.connected === true
+  )
     return 'direct';
   if (c.kind === 'group' && !c.space && !c.parentId) return 'group';
   return null;
@@ -449,7 +457,8 @@ function Topics({
   const [busy, setBusy] = useState(false);
   const where = topicsFor(conversation);
   if (!where) return null;
-  const topics = conversation.topics;
+  // A view kept from before topics were listed has none.
+  const topics = conversation.topics ?? [];
   const start = async () => {
     setBusy(true);
     try {
@@ -537,8 +546,12 @@ const KEEP = ['off', '1', '7', '30', '90', '365'] as const;
 function Disappearing({ conversation }: { conversation: ConversationView }) {
   const qc = useQueryClient();
   const days = conversation.retentionDays;
+  // A group's topic goes as its group does: that's where it's changed (PRD §58).
+  const ofGroup =
+    conversation.kind === 'group' && conversation.parentId ? conversation.title : null;
   const canChange =
-    conversation.kind === 'direct' || ['owner', 'admin'].includes(conversation.me.role);
+    !ofGroup &&
+    (conversation.kind === 'direct' || ['owner', 'admin'].includes(conversation.me.role));
   const current = (days === null ? 'off' : String(days)) as (typeof KEEP)[number];
   const set = async (value: (typeof KEEP)[number]) => {
     try {
@@ -569,8 +582,14 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
           )}
         />
       ) : (
-        <Text variant="body" color="textSecondary">
-          {days === null ? 'Off' : `After ${retentionText(days)}`}
+        <Text variant="body" color="textSecondary" testID="disappearing-shown">
+          {[
+            ofGroup ? `As ${ofGroup}` : null,
+            days === null ? 'Off' : `after ${retentionText(days)}`,
+          ]
+            .filter(Boolean)
+            .join(': ')
+            .replace(/^after/, 'After')}
         </Text>
       )}
     </Section>

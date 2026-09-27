@@ -586,6 +586,144 @@ describe('topics in a group (PRD §58)', () => {
     expect(await roles(bo, topic)).toEqual({ 'Bo Topics': 'member', 'Dee Topics': 'owner' });
     expect(await lines(bo, topic)).toContain('owner_changed');
   });
+
+  it('its messages disappear as the group’s do, and its name follows the group’s', async () => {
+    const heard: BusMessage[] = [];
+    const stop = t.ctx.bus.subscribe((m) => heard.push(m));
+    try {
+      const poetry = (
+        await ana.post('/v1/conversations', {
+          kind: 'group',
+          title: 'Poetry',
+          memberIds: [bo.user.id, dee.user.id],
+        })
+      ).conversation.id;
+      const keats = (await start(bo, poetry, 'Keats')).json().conversationId;
+      await ana.patch(`/v1/conversations/${poetry}`, { retentionDays: 1 });
+      expect((await view(bo, keats)).retentionDays).toBe(1);
+      expect(await lines(bo, keats)).toContain('retention_changed');
+      // Changed in the group, never in a topic.
+      const own = await ana.req('PATCH', `/v1/conversations/${keats}`, { retentionDays: 30 });
+      expect(own.statusCode).toBe(400);
+      expect(own.json().error.message).toBe(
+        'A topic’s messages disappear as its group’s do: change it there.',
+      );
+      await ana.patch(`/v1/conversations/${poetry}`, { retentionDays: null });
+      expect((await view(bo, keats)).retentionDays).toBeNull();
+      // Renamed, the group's topics show its new name; a topic renamed, the group lists it so.
+      const updated = (id: string) =>
+        heard.some(
+          (m) =>
+            m.event.type === 'conversation.updated' &&
+            m.userIds.includes(bo.user.id) &&
+            (m.event.data as { conversationId?: string }).conversationId === id,
+        );
+      heard.length = 0;
+      await ana.patch(`/v1/conversations/${poetry}`, { title: 'Verse' });
+      for (let i = 0; i < 300 && !updated(keats); i++) await new Promise((r) => setTimeout(r, 10));
+      expect(updated(keats)).toBe(true);
+      expect((await view(bo, keats)).title).toBe('Verse');
+      heard.length = 0;
+      await ana.patch(`/v1/conversations/${keats}`, { title: 'John Keats' });
+      for (let i = 0; i < 300 && !updated(poetry); i++) await new Promise((r) => setTimeout(r, 10));
+      expect(updated(poetry)).toBe(true);
+      // Coming into a topic, it's as quiet as the group is for them.
+      const until = new Date(t.clock.now.getTime() + 7 * 86_400_000).toISOString();
+      await bo.patch(`/v1/conversations/${poetry}`, { mutedUntil: until });
+      const shelley = (await start(ana, poetry, 'Shelley')).json().conversationId;
+      expect((await view(bo, shelley)).me.mutedUntil).toBe(until);
+      expect((await view(ana, shelley)).me.mutedUntil).toBeNull();
+      // Its calls ring by the group's name with its own.
+      await t.ctx.flush();
+      const call = await ana.req('POST', `/v1/conversations/${shelley}/group-calls`, {
+        kind: 'voice',
+        deviceId: 'ana-tab-1',
+      });
+      expect(call.statusCode).toBe(201);
+      expect(call.json().call.conversationTitle).toBe('Verse · Shelley');
+      await t.ctx.flush();
+      const ring = (await bo.get('/v1/notifications')).notifications.find(
+        (n: any) => n.kind === 'call' && n.data?.conversationId === shelley,
+      );
+      expect(ring?.title).toBe('Ana Topics is calling Verse · Shelley');
+      // Found by name, it says which group it's of.
+      const found = (await bo.get('/v1/search?q=Shelley')).results.contexts ?? [];
+      expect(found.map((c: any) => c.title)).toContain('Verse · Shelley');
+    } finally {
+      stop();
+    }
+  });
+
+  it('started from a suggestion as from its details: the same rules, and it opens for everyone', async () => {
+    const heard: BusMessage[] = [];
+    const stop = t.ctx.bus.subscribe((m) => heard.push(m));
+    try {
+      const fay = await signup(t, { displayName: 'Fay Topics' });
+      const gus = await signup(t, { displayName: 'Gus Topics' });
+      const seed = async (a: Client, b: Client, where: string, subject: string) => {
+        await send(a, where, `${subject} flights are up`);
+        await send(b, where, `Who books ${subject} hotels?`);
+        await send(a, where, `${subject} hotels are with me`);
+        await t.ctx.flush();
+      };
+      const offered = async (c: Client, where: string) =>
+        (await c.get(`/v1/suggestions?conversationId=${where}&kind=topic`)).suggestions[0];
+      // Between connections: a blocked one can't start it, nor can a pair no longer connected.
+      const faygus = await connect(fay, gus);
+      expect((await view(fay, faygus)).connected).toBe(true);
+      await seed(fay, gus, faygus, 'Project Porto');
+      const gusCopy = await offered(gus, faygus);
+      expect(gusCopy).toMatchObject({ title: 'Project Porto' });
+      await fay.post('/v1/blocks', { userId: gus.user.id });
+      expect((await gus.req('POST', `/v1/suggestions/${gusCopy.id}/accept`)).statusCode).toBe(404);
+      expect(await offered(fay, faygus)).toBeUndefined();
+      await fay.del(`/v1/blocks/${gus.user.id}`);
+      await seed(fay, gus, faygus, 'Project Faro');
+      const faro = await offered(fay, faygus);
+      const conn = (await fay.get('/v1/connections')).connections.find(
+        (c: any) => c.person.id === gus.user.id,
+      );
+      await gus.del(`/v1/connections/${conn.connectionId}`);
+      expect((await view(fay, faygus)).connected).toBe(false);
+      const late = await fay.req('POST', `/v1/suggestions/${faro.id}/accept`);
+      expect(late.statusCode).toBe(403);
+      expect(late.json().error.message).toBe('Connect first to start topics.');
+      expect((await start(fay, faygus, 'Faro')).statusCode).toBe(403);
+      // A name as long as one started from the details may be, no longer.
+      const trip = (
+        await ana.post('/v1/conversations', {
+          kind: 'group',
+          title: 'Road trip',
+          memberIds: [dee.user.id],
+        })
+      ).conversation.id;
+      await seed(ana, dee, trip, 'Project Braga');
+      const anas = await offered(ana, trip);
+      const deesCopy = await offered(dee, trip);
+      const long = await ana.req('POST', `/v1/suggestions/${anas.id}/accept`, {
+        title: 'x'.repeat(81),
+      });
+      expect(long.statusCode).toBe(400);
+      // Accepted by one of them, the others' offers go, and theirs opens the same topic.
+      heard.length = 0;
+      const made = (await ana.post(`/v1/suggestions/${anas.id}/accept`)).accepted.id;
+      const resolved = () =>
+        heard.some(
+          (m) =>
+            m.event.type === 'suggestion.resolved' &&
+            m.userIds.includes(dee.user.id) &&
+            (m.event.data as { id?: string }).id === deesCopy.id,
+        );
+      for (let i = 0; i < 300 && !resolved(); i++) await new Promise((r) => setTimeout(r, 10));
+      expect(resolved()).toBe(true);
+      expect((await dee.post(`/v1/suggestions/${deesCopy.id}/accept`)).accepted).toEqual({
+        type: 'conversation',
+        id: made,
+      });
+    } finally {
+      stop();
+    }
+  });
 });
 
 describe('follow-ups (PRD §69)', () => {

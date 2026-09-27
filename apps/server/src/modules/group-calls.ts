@@ -18,6 +18,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
 import { lockCallEntry, nameShownTo } from '../lib/calls';
+import { shownTitle } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import {
   groupCallView,
@@ -211,15 +212,15 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
             .execute()
         ).map((p) => p.user_id),
       );
+      // A topic by its group's name with its own ("Book club · Middlemarch").
+      const where = (await shownTitle(ctx.db, id)) ?? 'the group';
       for (const p of rung)
         await notify(ctx, {
           userId: p.id,
           kind: 'call',
           level: 'urgency',
           // By the name each of them knows the caller by.
-          title: `${(await nameShownTo(ctx, p.id, auth.userId)) ?? 'Someone'} is calling ${
-            conversation.title ?? 'the group'
-          }`,
+          title: `${(await nameShownTo(ctx, p.id, auth.userId)) ?? 'Someone'} is calling ${where}`,
           body: body.kind === 'video' ? 'Group video call' : 'Group voice call',
           data: { conversationId: id, callId: call.id },
           groupKey: `call:${call.id}`,
