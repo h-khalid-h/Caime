@@ -45,7 +45,9 @@ describe('private conversations on screen (R18)', () => {
   it('a private message’s links are checked here, from its words', async () => {
     const lookalike = 'https://paypa1.com/login';
     expect(await suspiciousLink({ sealed, entities: {} }, lookalike)).toBe(true);
-    expect(await suspiciousLink({ sealed, entities: {} }, 'https://caishy.app/about')).toBe(false);
+    expect(await suspiciousLink({ sealed, entities: {} }, 'https://caishy.example/about')).toBe(
+      false,
+    );
     // Elsewhere, as the server found them.
     expect(await suspiciousLink({ sealed: null, entities: {} }, lookalike)).toBe(false);
     expect(

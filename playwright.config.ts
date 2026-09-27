@@ -95,6 +95,9 @@ export default defineConfig({
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
             // Calls between two browsers on this machine need no STUN server out there.
             STUN_URLS: '',
+            // Where About links: two of its three, so it shows those and not the third.
+            PRIVACY_URL: 'https://policies.example/privacy',
+            HELP_URL: 'https://policies.example/help',
             STRIPE_SECRET_KEY: STRIPE_KEY,
             STRIPE_WEBHOOK_SECRET,
             STRIPE_API_BASE: STRIPE_STUB,

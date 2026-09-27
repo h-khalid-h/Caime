@@ -667,6 +667,13 @@ export interface BusinessSummaryView {
 }
 
 /** An organization's app (PRD §73–75): its token, its bot, its webhook. Managers only. */
+/** Where this Caishy keeps its policies and help (the server's environment), for About. */
+export interface AboutView {
+  privacyUrl: string | null;
+  termsUrl: string | null;
+  helpUrl: string | null;
+}
+
 export interface OrgAppView {
   id: string;
   name: string;

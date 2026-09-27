@@ -21,6 +21,7 @@ export const qk = {
   inbox: ['inbox'] as const,
   inboxAll: ['inbox', 'all'] as const,
   conversation: (id: string) => ['conversation', id] as const,
+  about: ['about'] as const,
   messages: (id: string) => ['messages', id] as const,
   album: (messageId: string) => ['album', messageId] as const,
   memory: (id: string) => ['memory', id] as const,

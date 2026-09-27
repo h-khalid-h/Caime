@@ -4,6 +4,7 @@
  */
 
 import type {
+  AboutView,
   AgentTryView,
   AiActionsView,
   AiCatchUpView,
@@ -273,6 +274,8 @@ export const endpoints = {
   vote: (id: string, optionIds: string[]) =>
     api.post<{ message: MessageView }>(`/messages/${id}/vote`, { optionIds }),
   /** Move a kit card along: approve, accept, mark paid (core kit-cards.ts says who may). */
+  /** Where this Caishy keeps its policies and help, as its operator set them. */
+  about: () => api.get<AboutView>('/about'),
   moveKit: (id: string, to: string) =>
     api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
   checklist: (id: string, op: ChecklistOp) =>

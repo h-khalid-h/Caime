@@ -50,7 +50,7 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
           start: new Date('2026-10-02T11:00:00Z'),
           end: new Date('2026-10-02T11:45:00Z'),
           location: 'Hall B, 2nd floor',
-          url: 'https://caishy.app/c/abc',
+          url: 'https://caishy.example/c/abc',
           busy: true,
           updated: new Date('2026-09-21T08:00:00.123Z'),
         },
@@ -69,7 +69,7 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
     expect(lines).toContain('DTSTART:20261002T110000Z');
     expect(lines).toContain('DTEND:20261002T114500Z');
     expect(lines).toContain('LOCATION:Hall B\\, 2nd floor');
-    expect(lines).toContain('URL:https://caishy.app/c/abc');
+    expect(lines).toContain('URL:https://caishy.example/c/abc');
     expect(lines).toContain('LAST-MODIFIED:20260921T080000Z');
     expect(lines.filter((l) => l === 'TRANSP:OPAQUE')).toHaveLength(1);
     expect(lines.filter((l) => l === 'TRANSP:TRANSPARENT')).toHaveLength(1);
@@ -85,7 +85,7 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
           uid: 'task-3@caishy',
           summary: 'Pay\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Injected',
           date: '2026-10-01',
-          url: 'https://caishy.app/c/x\r\nATTACH:https://evil.example',
+          url: 'https://caishy.example/c/x\r\nATTACH:https://evil.example',
           updated: now,
         },
         {

@@ -8,6 +8,12 @@ const bool = z
   .enum(['true', 'false', '1', '0', 'yes', 'no'])
   .transform((v) => v === 'true' || v === '1' || v === 'yes');
 
+/** A page people open: an http(s) address, never another scheme. */
+const webPage = z
+  .string()
+  .url()
+  .refine((v) => /^https?:\/\//i.test(v), 'an http(s) address');
+
 const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8787),
@@ -60,6 +66,13 @@ const Env = z.object({
   /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
   PLANS_URL: z.string().url().optional(),
   /**
+   * Where the app's About links to the privacy policy, the terms and help (full https
+   * addresses, on whatever domain they're published). Without one, About shows no link for it.
+   */
+  PRIVACY_URL: webPage.optional(),
+  TERMS_URL: webPage.optional(),
+  HELP_URL: webPage.optional(),
+  /**
    * Billing (R25): Stripe's secret (or restricted) key, and the signing secret of the webhook
    * endpoint Stripe sends to at /v1/billing/webhook. Plans can be bought in the app only with
    * both; the prices are Stripe's own, found by their lookup keys (docs/DEPLOY.md).
@@ -91,6 +104,8 @@ export type Config = z.infer<typeof Env> & {
   isProduction: boolean;
   isTest: boolean;
   secureCookies: boolean;
+  /** About's links (PRIVACY_URL, TERMS_URL, HELP_URL), or null for one not set. */
+  aboutLinks: { privacyUrl: string | null; termsUrl: string | null; helpUrl: string | null };
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -115,5 +130,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     isProduction: c.NODE_ENV === 'production',
     isTest: c.NODE_ENV === 'test',
     secureCookies: c.PUBLIC_URL.startsWith('https://'),
+    aboutLinks: {
+      privacyUrl: c.PRIVACY_URL ?? null,
+      termsUrl: c.TERMS_URL ?? null,
+      helpUrl: c.HELP_URL ?? null,
+    },
   };
 }

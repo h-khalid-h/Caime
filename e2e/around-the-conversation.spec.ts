@@ -1121,6 +1121,12 @@ test.describe
         await expect(
           page.getByRole('heading', { name: title }).filter({ visible: true }),
         ).toBeVisible();
+        if (path === 'about') {
+          // It links where this Caishy's operator put its policies, and to nothing else.
+          await expect(page.getByTestId('about-privacy').filter({ visible: true })).toBeVisible();
+          await expect(page.getByTestId('about-help').filter({ visible: true })).toBeVisible();
+          await expect(page.getByTestId('about-terms')).toHaveCount(0);
+        }
       }
       const scheme = () => page.evaluate(() => document.documentElement.style.colorScheme);
       const saved = page.waitForResponse(
