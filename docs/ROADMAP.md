@@ -699,3 +699,17 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   kind, so a message's payload changes in place again). Mutation-tested: 29 changes to the fixes, each caught by a test. Tests: 198
   core, 49 brand, 405 server, 100 app, 50 E2E (an automation turned off beside it, one file saved
   from what's shared, and someone's rule opened and closed without making one).
+- 2026-09-27 — Session 2 (cont.): offline, after a review and a review of its fixes. A deploy's
+  error page counts as no network, so what's waiting stays Pending; a browser's tabs share one
+  queue, each showing and sending what another queued, the later change winning; a tick or an
+  Undo made while an action is being sent, or after an answer was lost, reaches the server as
+  the row says; the queue is only ever the signed-in person's. A screen reader can retry or
+  discard a refused action. Offline search understands the same questions as the server
+  ("tasks from Sarah", "my manager", "from Uncle O"), finds only what's still to do, makes
+  only the results it shows, names an organization's messages by it and never a group as a
+  sender, forgets a group left and its topics, and folds case the same in every language. The
+  service worker keeps the app as it installs (open tabs never wait on it), keeps the page on a
+  slow first visit, and only with its own build's files, fonts and images included; the
+  offline E2E proves the page came from it. Mutation-tested: 24 changes to the fixes, each
+  caught by a test but one that changes nothing observable. Tests: 198 core, 49 brand, 405
+  server, 118 app, 50 E2E; 449.4 KB of initial JavaScript.

@@ -30,14 +30,23 @@ const res = (body: string, type = 'text/javascript', status = 200): Res => ({
   body,
   type,
 });
-const asResponse = (r: Res) => ({
-  ok: r.ok,
-  status: r.status,
-  body: r.body,
-  headers: { get: (h: string) => (h.toLowerCase() === 'content-type' ? r.type : null) },
-  clone: () => asResponse(r),
-  json: async () => JSON.parse(r.body),
-});
+/** A response as the network gives it: its body can't be read once its request is aborted. */
+const asResponse = (r: Res, signal?: AbortSignal): any => {
+  const read = async () => {
+    if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+    return r.body;
+  };
+  return {
+    ok: r.ok,
+    status: r.status,
+    statusText: '',
+    body: r.body,
+    headers: new Headers({ 'content-type': r.type }),
+    clone: () => asResponse(r, signal),
+    json: async () => JSON.parse(await read()),
+    text: read,
+  };
+};
 const pathOf = (x: string | { url: string }) =>
   new URL(typeof x === 'string' ? x : x.url, 'https://caishy.example').pathname;
 const caches = {
@@ -49,11 +58,11 @@ const caches = {
         const hit = c.get(pathOf(req));
         return hit ? asResponse(hit) : undefined;
       },
-      put: async (req: string | { url: string }, r: ReturnType<typeof asResponse>) =>
+      put: async (req: string | { url: string }, r: Response) =>
         void c.set(pathOf(req), {
           ok: r.ok,
           status: r.status,
-          body: r.body,
+          body: await r.text(),
           type: r.headers.get('content-type') ?? '',
         }),
       keys: async () => [...c.keys()].map((path) => ({ url: `https://caishy.example${path}` })),
@@ -63,7 +72,7 @@ const caches = {
   keys: async () => [...kept.keys()],
   delete: async (name: string) => kept.delete(name),
 };
-const network = vi.fn(async (req: string | { url: string }) => {
+const network = vi.fn(async (req: string | { url: string }, init?: { signal?: AbortSignal }) => {
   const path = pathOf(req);
   fetched.push(path);
   if (!online) throw new TypeError('Failed to fetch');
@@ -73,7 +82,7 @@ const network = vi.fn(async (req: string | { url: string }) => {
     server.get(path) ??
     (page ? server.get('/') : undefined) ??
     res('{"error":{"code":"not_found"}}', 'application/json', 404);
-  return asResponse(r);
+  return asResponse(r, init?.signal);
 });
 
 const CHROME =
@@ -246,11 +255,86 @@ describe('the app kept for offline (PRD §49)', () => {
       expect(await request(url, init), url).toBeUndefined();
   });
 
-  it('as it starts, keeps the app already open, and drops what older versions of it kept', async () => {
+  it('as it installs, keeps the app already open; as it takes charge, drops what older ones kept', async () => {
     kept.set('caishy-old', new Map([['/x', res('old')]]));
-    await fire('activate', {});
-    expect([...kept.keys()]).toEqual(['caishy-files-v1']);
+    await fire('install', {});
     expect(keptPaths()).toContain('/_expo/static/js/web/entry-v2.js');
+    // Taking charge downloads nothing: every request from the open tabs waits on it.
+    fetched = [];
+    await fire('activate', {});
+    expect(fetched).toEqual([]);
+    expect([...kept.keys()]).toEqual(['caishy-files-v1']);
+  });
+
+  it('keeps the page it installs with, however long its build takes to download', async () => {
+    // Each request's deadline, in the test's hands: the page's passes while its build downloads.
+    const deadlines: AbortController[] = [];
+    const timeout = AbortSignal.timeout;
+    const base = network.getMockImplementation()!;
+    AbortSignal.timeout = () => {
+      const c = new AbortController();
+      deadlines.push(c);
+      return c.signal;
+    };
+    network.mockImplementation(async (req, init) => {
+      if (pathOf(req).startsWith('/_expo/')) deadlines[0]?.abort();
+      return base(req, init);
+    });
+    try {
+      await fire('install', {});
+      expect(keptPaths()).toContain('/');
+      online = false;
+      expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy');
+    } finally {
+      AbortSignal.timeout = timeout;
+      network.mockImplementation(base);
+    }
+  });
+
+  it('never keeps a page with another build’s list of files, nor lets it delete what it needs', async () => {
+    const v2 =
+      '<!doctype html><title>Caishy v2</title><script src="/_expo/static/js/web/entry-v2.js"></script>';
+    server.set('/', res(v2, 'text/html'));
+    await request('/', { mode: 'navigate' });
+    // A deploy half done: the next build's page, with this build's list (or the other way round).
+    server.set(
+      '/',
+      res(
+        '<!doctype html><title>Caishy v3</title><script src="/_expo/static/js/web/entry-v3.js"></script>',
+        'text/html',
+      ),
+    );
+    server.set('/_expo/static/js/web/entry-v3.js', res('entry v3'));
+    await request('/', { mode: 'navigate' });
+    expect(keptPaths()).toEqual([
+      '/',
+      '/_expo/static/js/web/entry-v2.js',
+      '/_expo/static/js/web/search-v2.js',
+    ]);
+    online = false;
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+  });
+
+  it('keeps a build’s fonts and images with it, and lets go of the last one’s', async () => {
+    server.set(
+      '/app-files.json',
+      res(
+        JSON.stringify({ files: ['/_expo/static/js/web/entry-v2.js', '/assets/font-1.ttf'] }),
+        'application/json',
+      ),
+    );
+    await request('/', { mode: 'navigate' });
+    expect(keptPaths()).toContain('/assets/font-1.ttf');
+    server.set(
+      '/app-files.json',
+      res(
+        JSON.stringify({ files: ['/_expo/static/js/web/entry-v2.js', '/assets/font-2.ttf'] }),
+        'application/json',
+      ),
+    );
+    server.set('/assets/font-2.ttf', res('font 2', 'font/ttf'));
+    await request('/', { mode: 'navigate' });
+    expect(keptPaths()).toEqual(['/', '/_expo/static/js/web/entry-v2.js', '/assets/font-2.ttf']);
   });
 });
 

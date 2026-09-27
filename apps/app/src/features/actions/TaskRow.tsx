@@ -81,6 +81,20 @@ export const TaskRow = memo(function TaskRow({
                 router.navigate({ pathname: '/c/[id]', params: { id: task.conversationId ?? '' } })
             : undefined
         }
+        // Refused, what can be done about it is reachable by a screen reader too: on a phone
+        // the row is one element, and its "Try again" and "Discard" are inside it.
+        {...(pending?.state === 'failed'
+          ? {
+              accessibilityActions: [
+                ...(onRetry ? [{ name: 'retry', label: 'Try again' }] : []),
+                ...(onDiscard ? [{ name: 'discard', label: 'Discard' }] : []),
+              ],
+              onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+                if (e.nativeEvent.actionName === 'retry') onRetry?.(task.id);
+                if (e.nativeEvent.actionName === 'discard') onDiscard?.(task.id);
+              },
+            }
+          : {})}
         style={{ flex: 1, gap: 3 }}
       >
         <Text

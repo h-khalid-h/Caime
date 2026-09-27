@@ -31,11 +31,15 @@ export function webCsp(publicUrl: string): string {
 
 /** Every file of the build under _expo/static, as the paths the app asks for them by. */
 export function builtFiles(dir: string): string[] {
-  const root = join(dir, '_expo', 'static');
-  if (!existsSync(root)) return [];
-  return (readdirSync(root, { recursive: true }) as string[])
-    .map((name) => join(root, name))
-    .filter((path) => statSync(path).isFile())
+  // Its scripts, and the fonts and images they use (without which it opens offline in the
+  // wrong font).
+  return [join(dir, '_expo', 'static'), join(dir, 'assets')]
+    .filter((root) => existsSync(root))
+    .flatMap((root) =>
+      (readdirSync(root, { recursive: true }) as string[])
+        .map((name) => join(root, name))
+        .filter((path) => statSync(path).isFile()),
+    )
     .map((path) => `/${relative(dir, path).split(sep).join('/')}`)
     .sort();
 }

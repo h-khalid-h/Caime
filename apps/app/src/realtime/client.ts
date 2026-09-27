@@ -95,6 +95,9 @@ class RealtimeClient {
   }
 
   private listen(): void {
+    // Whatever it was when last listened to (signed out while offline, say), it's as the
+    // browser says now; after this, as it changes.
+    this.online = typeof navigator === 'undefined' || navigator.onLine !== false;
     this.unsubscribers.push(
       onNetworkChange((online) => {
         this.online = online;

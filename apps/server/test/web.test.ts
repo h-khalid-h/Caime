@@ -51,8 +51,13 @@ describe('the web app on the API origin', () => {
     const r = await get('/app-files.json', 'application/json');
     expect(r.statusCode).toBe(200);
     expect(r.headers['cache-control']).toBe('no-cache');
+    // Its scripts, and its fonts and images.
     expect(r.json()).toEqual({
-      files: ['/_expo/static/js/entry-abc.js', '/_expo/static/js/web/search-def.js'],
+      files: [
+        '/_expo/static/js/entry-abc.js',
+        '/_expo/static/js/web/search-def.js',
+        '/assets/font-123.ttf',
+      ],
     });
   });
 

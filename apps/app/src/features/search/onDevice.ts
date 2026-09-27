@@ -17,19 +17,23 @@ import type {
   TaskView,
 } from '@caishy/core/api';
 import { MATCH_END, MATCH_START } from '@caishy/core/format';
+import { parseSearchQuery, type SearchScope } from '@caishy/core/search';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 const MAX = 20;
 /** Around a match in a message: enough to recognise it. */
 const AROUND = 40;
 
-/** Without case, nor the accents a letter can go without ("cafe" finds "Café"). */
+/**
+ * Without case, nor the accents a letter can go without ("cafe" finds "Café"): the same on every
+ * device, whatever its language (a Turkish one's capital I is still i).
+ */
 const fold = (s: string) =>
   s
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .normalize('NFC')
-    .toLocaleLowerCase();
+    .toLowerCase();
 
 /** The words searched for, each to be found. */
 export function searchWords(term: string): string[] {
@@ -95,107 +99,195 @@ function conversations(qc: QueryClient): InboxItemView[] {
   return [...byId.values()];
 }
 
-/** Who wrote a message, as the conversation on this device names them. */
+/**
+ * Who wrote a message, as the conversation on this device names them. Someone it doesn't list
+ * (who has left a group) has no name here rather than the group's; in a one-to-one, the other
+ * person is the conversation.
+ */
 function senderName(
   qc: QueryClient,
   conversationId: string,
   senderId: string | null,
   meId: string,
-  fallback: string | null,
+  direct: string | null,
 ): string | null {
-  if (!senderId) return fallback;
+  if (!senderId) return direct;
   if (senderId === meId) return 'You';
   const convo = qc.getQueryData<{ conversation: ConversationView }>([
     'conversation',
     conversationId,
   ])?.conversation;
   const p = convo?.participants.find((x) => x.userId === senderId);
-  return p?.person.displayName ?? fallback;
+  return p?.person.displayName ?? direct;
 }
 
+/** What the server would look for, understood the same way ("my manager", "tasks from Sarah"). */
 export function searchOnDevice(qc: QueryClient, term: string, meId: string): SearchResults {
-  const words = searchWords(term);
-  if (!words.length) return {};
+  const q = parseSearchQuery(term);
+  const words = searchWords(q.text);
+  const person = q.person ? searchWords(q.person) : [];
+  const rel = q.relationship;
+  // As typed (without a last "?"): someone is also found by what they're called ("uncle" is
+  // Omar, nicknamed "Uncle O", as well as whoever is labelled an uncle).
+  const plain = searchWords(term.trim().replace(/[?.!]+$/, ''));
+  // Files, links and decisions aren't kept on the device to be searched: offline, nothing.
+  if (!words.length && !person.length && !rel && !['people', 'tasks', 'waiting'].includes(q.scope))
+    return {};
+  const wants = (scope: SearchScope) => q.scope === 'all' || q.scope === scope;
   const convos = conversations(qc);
   const titleOf = new Map(convos.map((c) => [c.id, c.title]));
+  // Whose a one-to-one is: the other person, or, in a customer's conversation with an
+  // organization, the organization (as the server names its team to them).
+  const directOf = new Map(
+    convos.map((c) => [c.id, c.org ? c.org.name : c.kind === 'direct' ? c.title : null]),
+  );
 
   const connections = qc.getQueryData<{ connections: ConnectionView[] }>(['connections']);
-  const people = (connections?.connections ?? [])
-    .filter((c) =>
-      hasAll(
-        [
-          c.person.displayName,
-          c.person.handle,
-          c.nickname ?? '',
-          ...c.relationships.map((r) => `${r.label} ${r.orgName ?? ''}`),
-        ].join(' '),
-        words,
-      ),
-    )
-    .slice(0, MAX)
-    .map((c) => ({ person: c.person, relationship: c.relationships[0] ?? null }));
-
-  const contexts = convos
-    .filter(
-      (c) =>
-        c.privacyClass === 'standard' &&
-        hasAll([c.title, c.topic ?? '', c.space?.name ?? ''].join(' '), words),
-    )
-    .slice(0, MAX)
-    .map((c) => ({ conversationId: c.id, title: c.title, kind: c.kind, context: null }));
-
-  const messages: SearchMessageHit[] = [];
-  for (const [key, data] of qc.getQueriesData<InfiniteData<MessagesPage>>({
-    queryKey: ['messages'],
-  })) {
-    const conversationId = String(key[1]);
-    for (const page of data?.pages ?? [])
-      for (const m of page.messages) {
-        // Only words the device holds: never a private one's (sealed), never one taken back.
-        if (!m.body || m.sealed || m.deletedAt || m.kind === 'system') continue;
-        if (!hasAll(m.body, words)) continue;
-        messages.push({
-          id: m.id,
-          conversationId,
-          seq: m.seq,
-          senderId: m.senderId,
-          senderName: senderName(
-            qc,
-            conversationId,
-            m.senderId,
-            meId,
-            titleOf.get(conversationId) ?? null,
-          ),
-          conversationTitle: titleOf.get(conversationId) ?? null,
-          snippet: snippetOf(m.body, words),
-          createdAt: m.createdAt,
-        });
-      }
-  }
-  messages.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  const tasks = new Map<string, TaskView>();
-  for (const [, data] of qc.getQueriesData<TasksResponse>({ queryKey: ['tasks'] }))
-    for (const t of data?.tasks ?? [])
-      if (
-        !tasks.has(t.id) &&
-        hasAll(
-          [
-            t.title,
-            t.notes ?? '',
-            t.owner.displayName,
-            t.assignee.displayName,
-            t.relationship ?? '',
-          ].join(' '),
-          words,
+  // Whom "from X" means, as the server finds them: a connection by name, nickname or handle,
+  // known by id, so it holds in a group they've since left.
+  const handle = fold((q.person ?? '').trim().replace(/^@/, ''));
+  const fromIds = new Set(
+    person.length
+      ? (connections?.connections ?? [])
+          .filter(
+            (c) =>
+              hasAll(c.person.displayName, person) ||
+              hasAll(c.nickname ?? '', person) ||
+              (handle.length > 0 && fold(c.person.handle).startsWith(handle)),
+          )
+          .map((c) => c.person.id)
+      : [],
+  );
+  const people = wants('people')
+    ? (connections?.connections ?? [])
+        .filter(
+          (c) =>
+            (rel !== null &&
+              c.relationships.some(
+                (r) => r.sphere === rel.sphere && (!rel.role || r.role === rel.role),
+              )) ||
+            (plain.length > 0 &&
+              hasAll(
+                [
+                  c.person.displayName,
+                  c.person.handle,
+                  c.nickname ?? '',
+                  ...c.relationships.map((r) => `${r.label} ${r.orgName ?? ''}`),
+                ].join(' '),
+                plain,
+              )),
         )
-      )
+        .slice(0, MAX)
+        .map((c) => ({ person: c.person, relationship: c.relationships[0] ?? null }))
+    : [];
+
+  const contexts =
+    wants('contexts') && words.length
+      ? convos
+          .filter(
+            (c) =>
+              c.privacyClass === 'standard' &&
+              hasAll([c.title, c.topic ?? '', c.space?.name ?? ''].join(' '), words),
+          )
+          .slice(0, MAX)
+          .map((c) => ({ conversationId: c.id, title: c.title, kind: c.kind, context: null }))
+      : [];
+
+  // Every message that matches, newest first, and only the ones shown made into hits.
+  const found: Array<{ m: MessagesPage['messages'][number]; conversationId: string }> = [];
+  if (wants('messages') && (words.length || person.length))
+    for (const [key, data] of qc.getQueriesData<InfiniteData<MessagesPage>>({
+      queryKey: ['messages'],
+    })) {
+      const conversationId = String(key[1]);
+      for (const page of data?.pages ?? [])
+        for (const m of page.messages) {
+          // Only words the device holds: never a private one's (sealed), never one taken back.
+          if (!m.body || m.sealed || m.deletedAt || m.kind === 'system') continue;
+          if (words.length && !hasAll(m.body, words)) continue;
+          if (
+            person.length &&
+            !(m.senderId !== null && fromIds.has(m.senderId)) &&
+            !hasAll(
+              senderName(
+                qc,
+                conversationId,
+                m.senderId,
+                meId,
+                directOf.get(conversationId) ?? null,
+              ) ?? '',
+              person,
+            )
+          )
+            continue;
+          found.push({ m, conversationId });
+        }
+    }
+  found.sort((a, b) => b.m.createdAt.localeCompare(a.m.createdAt));
+  const messages: SearchMessageHit[] = found.slice(0, MAX).map(({ m, conversationId }) => ({
+    id: m.id,
+    conversationId,
+    seq: m.seq,
+    senderId: m.senderId,
+    senderName: senderName(
+      qc,
+      conversationId,
+      m.senderId,
+      meId,
+      directOf.get(conversationId) ?? null,
+    ),
+    conversationTitle: titleOf.get(conversationId) ?? null,
+    snippet: snippetOf(m.body ?? '', words),
+    createdAt: m.createdAt,
+  }));
+
+  // Actions: what the words find; "tasks from Sarah", "what Sarah asked me", "waiting on Sarah".
+  const directions =
+    q.scope === 'waiting'
+      ? ['waiting', 'i_asked']
+      : q.direction === 'asked_me' || (q.scope === 'tasks' && !q.direction && person.length > 0)
+        ? ['asked_me']
+        : q.direction === 'i_asked'
+          ? ['i_asked', 'waiting']
+          : null;
+  const tasks = new Map<string, TaskView>();
+  if (wants('tasks') || q.scope === 'waiting')
+    for (const [, data] of qc.getQueriesData<TasksResponse>({ queryKey: ['tasks'] }))
+      for (const t of data?.tasks ?? []) {
+        if (tasks.has(t.id)) continue;
+        // As the server's search: only what's still to happen, never one done, declined or
+        // cancelled.
+        if (t.status !== 'open' && t.status !== 'accepted') continue;
+        if (directions && !directions.includes(t.direction)) continue;
+        if (
+          words.length &&
+          !hasAll(
+            [
+              t.title,
+              t.notes ?? '',
+              t.owner.displayName,
+              t.assignee.displayName,
+              t.relationship ?? '',
+            ].join(' '),
+            words,
+          )
+        )
+          continue;
+        if (
+          person.length &&
+          !fromIds.has(t.owner.id) &&
+          !(t.assignee.id !== null && fromIds.has(t.assignee.id)) &&
+          !hasAll(`${t.owner.displayName} ${t.assignee.displayName}`, person)
+        )
+          continue;
+        if (!words.length && !person.length && q.scope === 'all') continue;
         tasks.set(t.id, t);
+      }
 
   return {
     people,
     contexts,
-    messages: messages.slice(0, MAX),
+    messages,
     tasks: [...tasks.values()].slice(0, MAX),
   };
 }

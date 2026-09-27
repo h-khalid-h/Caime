@@ -260,7 +260,9 @@ test.describe
       const origin = new URL(page.url()).origin;
       const app = (url: URL) => url.origin === origin && !url.pathname.startsWith('/v1/');
       await alexContext.route(app, (r) => r.abort('internetdisconnected'));
-      await page.reload();
+      const reloaded = await page.reload();
+      // The page itself came from what the worker kept.
+      expect(reloaded?.fromServiceWorker()).toBe(true);
       await expect(visible(page, 'Offline. Showing what’s on this device.')).toBeVisible();
       await expect(visible(page, 'Noor Haddad')).toBeVisible();
       // And screens it hadn't opened this time open too.

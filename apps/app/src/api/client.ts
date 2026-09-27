@@ -78,7 +78,16 @@ export async function request<T>(
     throw new NetworkError();
   }
   const text = await res.text();
-  const data = text ? JSON.parse(text) : undefined;
+  let data:
+    | { error?: { code?: string; message?: string; details?: ApiError['details'] } }
+    | undefined;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    // Not the API answering (a proxy's page while a deploy restarts it, a captive portal): as
+    // good as no network, so what's waiting to go waits rather than failing or being dropped.
+    throw new NetworkError();
+  }
   if (!res.ok) {
     if (res.status === 401 && path !== '/auth/login') onUnauthorized?.();
     const e = data?.error ?? {};

@@ -36,6 +36,10 @@ export interface PendingCreate {
   attempts: number;
   /** Ticked before it was sent: finished as soon as it's made. */
   done?: boolean;
+  /** Whose it is: only ever sent, or shown, while they're the one signed in. */
+  userId?: string;
+  /** When it was last changed where it waits (ticked again): of two tabs' copies, the later. */
+  changedAt?: string;
 }
 
 /** Finishing an action, or undoing that, not yet on the server. */
@@ -48,6 +52,8 @@ export interface PendingStatus {
   createdAt: string;
   state: SendState;
   attempts: number;
+  userId?: string;
+  changedAt?: string;
 }
 
 export type PendingTaskOp = PendingCreate | PendingStatus;
@@ -66,6 +72,76 @@ interface TaskOutboxState {
 
 let flushing = false;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * An action made here, by this device's id for it, once the server has it: a tick or an Undo
+ * on its row a moment later goes to the server's.
+ */
+const landed = new Map<string, string>();
+
+const KEY = 'caishy.task-outbox';
+
+/** Of two copies of one op (two tabs'), whether `a` was changed after `b`. */
+const later = (a: PendingTaskOp, b: PendingTaskOp) =>
+  (a.changedAt ?? a.createdAt) > (b.changedAt ?? b.createdAt);
+
+/** Who's signed in (session.ts says): the queue is only ever theirs. */
+let owner: string | null = null;
+const mine = (o: PendingTaskOp) => !o.userId || o.userId === owner;
+
+/**
+ * Ops this device finished with (sent, discarded, or someone else's), and when the queue was
+ * last cleared: never brought back from what another tab wrote.
+ */
+const finished = new Set<string>();
+let clearedAt = 0;
+
+export function setTaskOutboxUser(id: string | null): void {
+  if (id === owner) return;
+  owner = id;
+  if (!id) return;
+  // Someone else's, left by another tab or before a sign-out: never sent as this person's.
+  const theirs = useTaskOutbox.getState().ops.filter((o) => !mine(o));
+  for (const o of theirs) finished.add(o.id);
+  if (theirs.length) useTaskOutbox.setState((s) => ({ ops: s.ops.filter((o) => mine(o)) }));
+  useTaskOutbox.getState().flush();
+}
+
+/**
+ * On the web, a browser's tabs share one queue in one place: each write keeps what another tab
+ * added meanwhile, so an action added offline in one isn't lost to a tick in another.
+ */
+const shared = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  removeItem: (key: string) => AsyncStorage.removeItem(key),
+  setItem: async (key: string, value: string) => {
+    // (Only a browser has other tabs: there's a document there, and never in the phone apps.)
+    if (typeof document === 'undefined') return AsyncStorage.setItem(key, value);
+    try {
+      const next = JSON.parse(value) as { state: { ops: PendingTaskOp[] } };
+      const stored = JSON.parse((await AsyncStorage.getItem(key)) ?? 'null') as {
+        state?: { ops?: PendingTaskOp[] };
+      } | null;
+      const theirs = new Map(
+        (stored?.state?.ops ?? [])
+          .filter((o) => !finished.has(o.id) && Date.parse(o.createdAt) > clearedAt)
+          .map((o) => [o.id, o]),
+      );
+      // One both have, still waiting: whichever tab changed it last.
+      next.state.ops = next.state.ops.map((o) => {
+        const t = theirs.get(o.id);
+        return t && o.state === 'queued' && later(t, o)
+          ? ({ ...t, state: 'queued' } as PendingTaskOp)
+          : o;
+      });
+      const here = new Set(next.state.ops.map((o) => o.id));
+      const others = [...theirs.values()].filter((o) => !here.has(o.id));
+      if (others.length) next.state.ops = [...next.state.ops, ...others];
+      return AsyncStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      return AsyncStorage.setItem(key, value);
+    }
+  },
+};
 
 function scheduleRetry(attempts: number): void {
   if (retryTimer) return;
@@ -116,15 +192,38 @@ async function sendOne(op: PendingTaskOp): Promise<'sent' | 'offline' | 'failed'
   try {
     if (op.kind === 'create') {
       const { task } = await endpoints.createTask({ ...op.body, clientId: op.id });
-      // Ticked while it waited: read again now, since it may have been ticked while sending.
-      const done = (useTaskOutbox.getState().ops.find((o) => o.id === op.id) as PendingCreate)
-        ?.done;
-      if (done) await endpoints.updateTask(task.id, { status: 'done' });
+      landed.set(op.id, task.id);
+      // Ticked while it waited, or while it was being sent (or unticked again): what the server
+      // has is made to match the row, read again after every answer until nothing changed.
+      const doneNow = () =>
+        Boolean(
+          (useTaskOutbox.getState().ops.find((o) => o.id === op.id) as PendingCreate | undefined)
+            ?.done,
+        );
+      // Sent before (its answer lost), the server may have it done already.
+      let sent = task.status === 'done';
+      const match = async () => {
+        while (doneNow() !== sent) {
+          sent = doneNow();
+          await endpoints.updateTask(task.id, { status: sent ? 'done' : 'open' });
+        }
+      };
+      await match();
+      const read = sent;
       await refresh(op.body.conversationId);
+      await match();
+      // Ticked or unticked while the lists were read again: the rows say so, and every list is
+      // left due to be read again as refresh() left it (a write to the cache calls it fresh).
+      if (sent !== read) {
+        showStatus(task.id, sent ? 'done' : 'open');
+        void queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'none' });
+        void queryClient.invalidateQueries({ queryKey: ['memory'], refetchType: 'none' });
+      }
     } else {
       const { task } = await endpoints.updateTask(op.taskId, { status: op.status });
       await refresh(task.conversationId);
     }
+    finished.add(op.id);
     useTaskOutbox.setState((s) => ({ ops: s.ops.filter((o) => o.id !== op.id) }));
     return 'sent';
   } catch (err) {
@@ -137,6 +236,7 @@ async function sendOne(op: PendingTaskOp): Promise<'sent' | 'offline' | 'failed'
       update({ state: 'failed', error: message });
     } else {
       // Nothing to keep: say so, and show the action as it really is.
+      finished.add(op.id);
       useTaskOutbox.setState((s) => ({ ops: s.ops.filter((o) => o.id !== op.id) }));
       toast(`Couldn’t update “${op.title}”: ${message}`, { tone: 'danger' });
       void refresh();
@@ -158,32 +258,39 @@ export const useTaskOutbox = create<TaskOutboxState>()(
           createdAt: new Date().toISOString(),
           state: 'queued',
           attempts: 0,
+          ...(owner ? { userId: owner } : {}),
         };
         set((s) => ({ ops: [...s.ops, op] }));
         get().flush();
         return id;
       },
-      setStatus: (task, status) => {
+      setStatus: (row, status) => {
         const made = get().ops.find(
-          (o): o is PendingCreate => o.kind === 'create' && o.id === task.id,
+          (o): o is PendingCreate => o.kind === 'create' && o.id === row.id,
         );
         if (made) {
+          const changedAt = new Date().toISOString();
           set((s) => ({
-            ops: s.ops.map((o) => (o.id === made.id ? { ...made, done: status === 'done' } : o)),
+            ops: s.ops.map((o) =>
+              o.id === made.id ? { ...made, done: status === 'done', changedAt } : o,
+            ),
           }));
           return;
         }
+        // A row still showing this device's id for an action the server has now: the server's.
+        const task = { ...row, id: landed.get(row.id) ?? row.id };
         showStatus(task.id, status);
-        // The last word wins: one that hasn't gone yet is changed rather than followed.
-        const waiting = get().ops.find(
-          (o): o is PendingStatus =>
-            o.kind === 'status' && o.taskId === task.id && o.state === 'queued',
-        );
-        if (waiting)
+        // The last word wins: the last one that hasn't gone yet is changed rather than followed
+        // (an earlier one sends first, and this one after it).
+        let waiting: PendingStatus | undefined;
+        for (const o of get().ops)
+          if (o.kind === 'status' && o.taskId === task.id && o.state === 'queued') waiting = o;
+        if (waiting) {
+          const changedAt = new Date().toISOString();
           set((s) => ({
-            ops: s.ops.map((o) => (o.id === waiting.id ? { ...waiting, status } : o)),
+            ops: s.ops.map((o) => (o.id === waiting.id ? { ...waiting, status, changedAt } : o)),
           }));
-        else
+        } else
           set((s) => ({
             ops: [
               ...s.ops,
@@ -196,6 +303,7 @@ export const useTaskOutbox = create<TaskOutboxState>()(
                 createdAt: new Date().toISOString(),
                 state: 'queued',
                 attempts: 0,
+                ...(owner ? { userId: owner } : {}),
               },
             ],
           }));
@@ -209,15 +317,22 @@ export const useTaskOutbox = create<TaskOutboxState>()(
         }));
         get().flush();
       },
-      discard: (id) => set((s) => ({ ops: s.ops.filter((o) => o.id !== id) })),
+      discard: (id) => {
+        finished.add(id);
+        set((s) => ({ ops: s.ops.filter((o) => o.id !== id) }));
+      },
       flush: () => {
-        if (flushing) return;
+        // Nobody signed in: nothing is anybody's to send.
+        if (flushing || !owner) return;
         flushing = true;
         void (async () => {
           try {
+            // In a browser, what another tab queued is this one's to send too.
+            if (typeof document !== 'undefined')
+              adopt(await AsyncStorage.getItem(KEY).catch(() => null));
             // In order, one at a time: an action is made before it's ticked.
             for (;;) {
-              const next = get().ops.find((o) => o.state === 'queued');
+              const next = get().ops.find((o) => o.state === 'queued' && mine(o));
               if (!next) break;
               const result = await sendOne(next);
               if (result === 'offline') {
@@ -230,11 +345,15 @@ export const useTaskOutbox = create<TaskOutboxState>()(
           }
         })();
       },
-      clear: () => set({ ops: [] }),
+      clear: () => {
+        for (const o of get().ops) finished.add(o.id);
+        clearedAt = Date.now();
+        set({ ops: [] });
+      },
     }),
     {
-      name: 'caishy.task-outbox',
-      storage: createJSONStorage(() => AsyncStorage),
+      name: KEY,
+      storage: createJSONStorage(() => shared),
       // Anything mid-send when the app closed goes back in the queue.
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -277,13 +396,58 @@ export function pendingTaskView(
 }
 
 /** What a row says about an action still on this device: waiting to go, or refused. */
+/**
+ * What another tab of this browser queued, or changed since: shown and sent here too, never
+ * someone else's, one this device finished with, or one from before the queue was last cleared.
+ * One being sent here is left alone.
+ */
+function adopt(raw: string | null): void {
+  let stored: PendingTaskOp[];
+  try {
+    stored =
+      (JSON.parse(raw ?? 'null') as { state?: { ops?: PendingTaskOp[] } } | null)?.state?.ops ?? [];
+  } catch {
+    return;
+  }
+  const take = stored.filter(
+    (o) => mine(o) && !finished.has(o.id) && Date.parse(o.createdAt) > clearedAt,
+  );
+  if (!take.length) return;
+  useTaskOutbox.setState((s) => {
+    const byId = new Map(s.ops.map((o) => [o.id, o]));
+    let changed = false;
+    for (const t of take) {
+      const here = byId.get(t.id);
+      if (!here) byId.set(t.id, { ...t, state: t.state === 'sending' ? 'queued' : t.state });
+      else if (here.state === 'queued' && later(t, here))
+        byId.set(t.id, { ...t, state: 'queued', attempts: here.attempts } as PendingTaskOp);
+      else continue;
+      changed = true;
+    }
+    if (!changed) return s;
+    // In the order they were made: an action is made before it's ticked.
+    return {
+      ops: [...byId.values()].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)),
+    };
+  });
+}
+
+// Another tab wrote the queue down: it's this one's to show and send too.
+if (typeof window !== 'undefined' && typeof document !== 'undefined')
+  window.addEventListener?.('storage', (e: StorageEvent) => {
+    if (e.key !== KEY) return;
+    adopt(e.newValue);
+    useTaskOutbox.getState().flush();
+  });
+
 export function usePendingTasks(): {
   creates: PendingCreate[];
   /** By action id: "queued" while it waits, "failed" with why when the server refused it. */
   pending: Map<string, { state: SendState; error?: string }>;
 } {
-  const ops = useTaskOutbox((s) => s.ops);
+  const all = useTaskOutbox((s) => s.ops);
   return useMemo(() => {
+    const ops = all.filter(mine);
     const creates = ops.filter((o): o is PendingCreate => o.kind === 'create');
     const pending = new Map<string, { state: SendState; error?: string }>();
     for (const o of ops)
@@ -292,5 +456,5 @@ export function usePendingTasks(): {
         ...(o.kind === 'create' && o.error ? { error: o.error } : {}),
       });
     return { creates, pending };
-  }, [ops]);
+  }, [all]);
 }

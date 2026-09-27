@@ -18,7 +18,7 @@ import { useDrafts } from './drafts';
 import { useLive } from './live';
 import { useLiveShares } from './liveShares';
 import { useOutbox } from './outbox';
-import { useTaskOutbox } from './taskOutbox';
+import { setTaskOutboxUser, useTaskOutbox } from './taskOutbox';
 
 const USER_KEY = 'caishy.user';
 
@@ -178,3 +178,6 @@ export function useMe(): MeView {
   if (!user) throw new Error('useMe outside a signed-in screen');
   return user;
 }
+
+// The queue of actions made offline is only ever the signed-in person's (taskOutbox.ts).
+useSession.subscribe((s) => setTaskOutboxUser(s.user?.id ?? null));

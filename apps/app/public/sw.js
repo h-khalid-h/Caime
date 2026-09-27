@@ -16,24 +16,42 @@ let keeping = null;
  * all of its files are, and the files of builds before it go. Anything unfinished is tried again
  * on the next page load.
  */
+/** A file that takes longer than this is tried again on the next page load. */
+const DEADLINE_MS = 20_000;
+const deadline = () =>
+  typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? { signal: AbortSignal.timeout(DEADLINE_MS) }
+    : {};
+/** What a build is made of: its scripts, and its fonts and images. */
+const BUILT = ['/_expo/static/', '/assets/'];
+
 async function keep(page) {
-  const list = await self.fetch('/app-files.json', { cache: 'no-store' });
+  const list = await self.fetch('/app-files.json', { cache: 'no-store', ...deadline() });
   if (!list.ok) return;
   const { files } = await list.json();
   if (!Array.isArray(files)) return;
+  const current = new Set(files);
+  // A page and a list from two builds (a deploy half done): kept only when the list is the
+  // page's own, so nothing is mixed and nothing the page needs is deleted.
+  const html = await page.clone().text();
+  const own = [...html.matchAll(/(?:src|href)="(\/_expo\/static\/[^"]+)"/g)].map((m) => m[1]);
+  if (!own.every((f) => current.has(f))) return;
   const cache = await self.caches.open(FILES);
   const have = new Set((await cache.keys()).map((r) => new URL(r.url).pathname));
   for (const file of files) {
     if (have.has(file)) continue;
-    const res = await self.fetch(file);
+    const res = await self.fetch(file, deadline());
     if (!res.ok) return;
     await cache.put(file, res);
   }
-  await cache.put(SHELL, page);
-  const current = new Set(files);
+  // From what was read of it at the start: its own download may be past its deadline by now.
+  await cache.put(
+    SHELL,
+    new Response(html, { status: page.status, statusText: page.statusText, headers: page.headers }),
+  );
   for (const r of await cache.keys()) {
     const path = new URL(r.url).pathname;
-    if (path.startsWith('/_expo/static/') && !current.has(path)) await cache.delete(r);
+    if (BUILT.some((dir) => path.startsWith(dir)) && !current.has(path)) await cache.delete(r);
   }
 }
 
@@ -77,16 +95,24 @@ async function file(request) {
   return res;
 }
 
-self.addEventListener('install', () => self.skipWaiting());
+// The app is open already: it's kept as this worker installs, while it controls nothing and
+// nothing waits on it. Activating (when every request from open tabs does wait) is only taking
+// charge and letting go of what earlier ones kept.
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    self
+      .fetch(SHELL, { cache: 'no-store', ...deadline() })
+      .then((res) => (res.ok ? keepOnce(res) : null))
+      .catch(() => {}),
+  );
+});
 self.addEventListener('activate', (event) =>
   event.waitUntil(
     (async () => {
       await self.clients.claim();
       for (const name of await self.caches.keys())
         if (name.startsWith('caishy-') && name !== FILES) await self.caches.delete(name);
-      // The app is open already: keep it now rather than on its next load.
-      const res = await self.fetch(SHELL, { cache: 'no-store' }).catch(() => null);
-      if (res?.ok) await keepOnce(res);
     })(),
   ),
 );

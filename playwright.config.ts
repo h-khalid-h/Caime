@@ -7,6 +7,10 @@ import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { ADMIN_TOKEN, DNS_STUB, METRICS_TOKEN } from './e2e/helpers';
 
+// Going offline and routing reach the service worker's own requests too, so a test that says
+// the app opens with no network shows it did, from what the worker kept.
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS ??= '1';
+
 const PORT = Number(process.env.E2E_PORT ?? 8787);
 const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 /** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */

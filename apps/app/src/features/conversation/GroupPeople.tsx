@@ -391,12 +391,18 @@ export function GroupPeople({
                 try {
                   await endpoints.removeFromGroup(conversation.id, me);
                   // Out of it, nothing of it is asked for again: its page goes, and so does
-                  // what was kept of it and anything waiting to be sent about it.
-                  leftConversation(conversation.id);
+                  // what was kept of it and anything waiting to be sent about it. Out of a
+                  // group is out of its topics too (the server's mirrorTopics): each goes as it
+                  // does.
+                  const gone = [conversation.id, ...(conversation.topics ?? []).map((x) => x.id)];
+                  for (const id of gone) leftConversation(id);
                   setLeaving(false);
                   router.replace('/');
-                  qc.removeQueries({ queryKey: qk.conversation(conversation.id) });
-                  qc.removeQueries({ queryKey: qk.memory(conversation.id) });
+                  for (const id of gone) {
+                    qc.removeQueries({ queryKey: qk.conversation(id) });
+                    qc.removeQueries({ queryKey: qk.memory(id) });
+                    qc.removeQueries({ queryKey: qk.messages(id) });
+                  }
                   void qc.invalidateQueries({ queryKey: qk.inbox });
                   toast(`You left “${conversation.title}”`);
                 } catch (e) {
