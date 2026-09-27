@@ -61,7 +61,7 @@ async function sealed(
     cid: opts.cid ?? `cid-${Math.random().toString(36).slice(2, 12)}`,
     edit: opts.edit,
     payload: { body: text },
-    from: { id: from.id, keys: from.keys },
+    from: { id: from.id, userId: from.client.user.id, keys: from.keys },
     to: opts.to ?? (await devicesOf(from.client, conversationId)),
   });
 }
@@ -155,6 +155,24 @@ describe('private conversations (R18, PRD §61)', () => {
     });
     secret = res.conversation.id;
     expect(secret).not.toBe(convo);
+    // Asked again, it's the same one; a named one is another.
+    const again = await sam.post('/v1/conversations', {
+      kind: 'direct',
+      userId: noor.user.id,
+      private: true,
+    });
+    expect(again.conversation.id).toBe(secret);
+    const named = await noor.post('/v1/conversations', {
+      kind: 'direct',
+      userId: sam.user.id,
+      private: true,
+      title: 'Surprise for Omar',
+    });
+    expect(named.conversation).toMatchObject({
+      privacyClass: 'private',
+      title: 'Surprise for Omar',
+    });
+    expect(named.conversation.id).not.toBe(secret);
     expect(
       (
         await zed.req('POST', '/v1/conversations', {
@@ -224,6 +242,15 @@ describe('private conversations (R18, PRD §61)', () => {
     // Only from one of the sender's own devices.
     const asSam = await sealed(samLaptop, secret, 'hi');
     expect((await send({ ...noorLaptop }, secret, asSam)).json().error.code).toBe('unknown_device');
+    // And only as the person whose device it is: Noor's device can't sign as Sam.
+    const signedAsSam = await seal({
+      conversationId: secret,
+      cid: 'cid-as-sam-01',
+      payload: { body: 'hi' },
+      from: { id: noorLaptop.id, userId: sam.user.id, keys: noorLaptop.keys },
+      to: all,
+    });
+    expect((await send(noorLaptop, secret, signedAsSam)).json().error.code).toBe('unknown_device');
     // Only sealed text: no words the server could read, nothing it would have to.
     const env = await sealed(noorLaptop, secret, 'hi');
     expect((await send(noorLaptop, secret, env, { body: 'hi' })).statusCode).toBe(400);

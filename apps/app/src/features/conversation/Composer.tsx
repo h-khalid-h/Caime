@@ -8,6 +8,7 @@ import { endpoints } from '@/api/endpoints';
 import { type LocalFile, uploadFile } from '@/api/upload';
 import { RewriteSheet } from '@/features/assist/RewriteSheet';
 import { useAiReady } from '@/features/assist/ready';
+import { editPrivate, useOpened } from '@/features/e2ee/private';
 import { KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
@@ -91,6 +92,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const kits = kitsOffered(conversation, me.minor);
   const [uploading, setUploading] = useState<string | null>(null);
   const [editText, setEditText] = useState<string | null>(null);
+  // End to end encrypted (R18): text only, sealed on this device; its words are opened here.
+  const privately = conversation.privacyClass === 'private';
+  const editingText = useOpened(editing).text;
+  const replyingText = useOpened(replyTo).text;
   const input = useRef<TextInput>(null);
   const enterPref = usePrefs((p) => p.enterToSend);
   const enterSends = enterPref ?? Platform.OS === 'web';
@@ -98,7 +103,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   useImperativeHandle(ref, () => ({ focus: () => input.current?.focus() }), []);
 
   // Entering edit mode loads the message's text; leaving restores the draft.
-  const value = editing ? (editText ?? editing.body ?? '') : text;
+  const value = editing ? (editText ?? editingText ?? '') : text;
 
   const onChange = (v: string) => {
     if (editing) {
@@ -113,16 +118,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const send = useCallback(async () => {
     if (disabled) return;
     if (editing) {
-      const body = (editText ?? editing.body ?? '').trim();
-      if (!body || body === editing.body) {
+      const body = (editText ?? editingText ?? '').trim();
+      if (!body || body === editingText) {
         setEditText(null);
         onDoneEditing();
         return;
       }
       try {
-        const res = await endpoints.editMessage(editing.id, body);
-        upsertMessage(qc, res.message);
-        applyEditToInbox(qc, res.message);
+        const message = editing.sealed
+          ? await editPrivate(editing, body)
+          : (await endpoints.editMessage(editing.id, body)).message;
+        upsertMessage(qc, message);
+        applyEditToInbox(qc, message);
       } catch (e) {
         toast((e as Error).message, { tone: 'danger' });
       }
@@ -140,17 +147,31 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             id: replyTo.id,
             seq: replyTo.seq,
             senderId: replyTo.senderId,
-            preview: replyTo.body ?? '',
+            preview: replyingText ?? replyTo.body ?? '',
             kind: replyTo.kind,
           }
         : null,
+      { private: privately },
     );
     setText('');
     setHeight(MIN_H);
     useDrafts.getState().clear(id);
     onClearReply();
     input.current?.focus();
-  }, [disabled, editing, editText, text, id, replyTo, onClearReply, onDoneEditing, qc]);
+  }, [
+    disabled,
+    editing,
+    editText,
+    editingText,
+    text,
+    id,
+    replyTo,
+    replyingText,
+    privately,
+    onClearReply,
+    onDoneEditing,
+    qc,
+  ]);
 
   const sendFiles = async (files: LocalFile[], kind: 'media' | 'file') => {
     setUploading(files.length === 1 ? files[0]!.name : `${files.length} files`);
@@ -247,7 +268,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     <Banner
       icon={Pencil}
       title="Editing message"
-      body={editing.body ?? ''}
+      body={editingText ?? ''}
       onClose={() => {
         setEditText(null);
         onDoneEditing();
@@ -257,7 +278,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     <Banner
       icon={Reply}
       title={`Replying to ${replyName ?? 'message'}`}
-      body={replyTo.body ?? replyTo.kind}
+      body={replyingText ?? replyTo.kind}
       onClose={onClearReply}
     />
   ) : uploading ? (
@@ -276,12 +297,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           paddingVertical: 6,
         }}
       >
-        <IconButton
-          icon={Paperclip}
-          label="Share a photo, a file or a card"
-          onPress={() => setAttach(true)}
-          disabled={Boolean(editing)}
-        />
+        {privately ? null : (
+          // Photos, files and cards aren't sealed yet: a private conversation is text for now.
+          <IconButton
+            icon={Paperclip}
+            label="Share a photo, a file or a card"
+            onPress={() => setAttach(true)}
+            disabled={Boolean(editing)}
+          />
+        )}
         <View
           style={{
             flex: 1,
@@ -361,7 +385,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             onPress={() => void send()}
             testID="composer-send"
           />
-        ) : (
+        ) : privately ? null : (
           <IconButton
             icon={Sticker}
             label="Stickers"

@@ -2,12 +2,14 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { privateSupported } from '@/features/e2ee/private';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
+import { Segmented } from '@/ui/Segmented';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -17,6 +19,7 @@ export default function NewGroup() {
   const [title, setTitle] = useState('');
   const [purpose, setPurpose] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [privacy, setPrivacy] = useState<'standard' | 'private'>('standard');
   const [busy, setBusy] = useState(false);
   const create = async () => {
     if (!title.trim() || picked.size === 0) {
@@ -29,6 +32,7 @@ export default function NewGroup() {
         title.trim(),
         [...picked],
         purpose.trim() || undefined,
+        { private: privacy === 'private' },
       );
       router.replace({ pathname: '/c/[id]', params: { id: conversation.id } });
     } catch (e) {
@@ -71,6 +75,24 @@ export default function NewGroup() {
           onChangeText={setPurpose}
           maxLength={200}
         />
+        {privateSupported ? (
+          <>
+            <Segmented
+              label="What kind of group"
+              value={privacy}
+              onChange={setPrivacy}
+              options={[
+                { value: 'standard', label: 'Standard' },
+                { value: 'private', label: 'Private' },
+              ]}
+            />
+            <Text variant="caption" color="textSecondary">
+              {privacy === 'private'
+                ? 'End to end encrypted: only the devices of the people in it can read it, so there’s no search, Caishy AI or previews, and it’s text for now.'
+                : 'Search, suggestions and Caishy AI work here.'}
+            </Text>
+          </>
+        ) : null}
         <Text variant="overline" color="textTertiary">
           People · {picked.size} chosen
         </Text>

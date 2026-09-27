@@ -11,6 +11,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { ApiError, NetworkError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
 import { queryClient } from '@/api/queryClient';
+import { sendPrivate } from '@/features/e2ee/private';
 import { applyMessageToInbox, upsertMessage } from './cache';
 
 export interface OutboxItem {
@@ -22,6 +23,8 @@ export interface OutboxItem {
   status: 'queued' | 'sending' | 'failed';
   error?: string;
   attempts: number;
+  /** For a private conversation: sealed on this device when it's sent (R18). */
+  private?: boolean;
 }
 
 interface OutboxState {
@@ -30,6 +33,7 @@ interface OutboxState {
     conversationId: string,
     body: Omit<SendBody, 'clientId'>,
     replyTo?: MessageView['replyTo'],
+    opts?: { private?: boolean },
   ) => string;
   resolve: (clientId: string) => void;
   retry: (clientId: string) => void;
@@ -58,7 +62,10 @@ async function sendOne(item: OutboxItem): Promise<'sent' | 'offline' | 'failed'>
     }));
   update({ status: 'sending', attempts: item.attempts + 1 });
   try {
-    const { message } = await endpoints.send(item.conversationId, item.body);
+    // A private one is sealed now, for the devices in it now (R18).
+    const { message } = item.private
+      ? await sendPrivate(item.conversationId, item.body)
+      : await endpoints.send(item.conversationId, item.body);
     upsertMessage(queryClient, message);
     applyMessageToInbox(queryClient, message, { mine: true, reading: true });
     useOutbox.getState().resolve(item.clientId);
@@ -83,7 +90,7 @@ export const useOutbox = create<OutboxState>()(
   persist(
     (set, get) => ({
       items: [],
-      enqueue: (conversationId, body, replyTo = null) => {
+      enqueue: (conversationId, body, replyTo = null, opts = {}) => {
         const clientId = uuidv4();
         const item: OutboxItem = {
           clientId,
@@ -93,6 +100,7 @@ export const useOutbox = create<OutboxState>()(
           createdAt: new Date().toISOString(),
           status: 'queued',
           attempts: 0,
+          ...(opts.private ? { private: true } : {}),
         };
         set((s) => ({ items: [...s.items, item] }));
         get().flush();

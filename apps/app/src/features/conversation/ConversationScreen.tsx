@@ -22,6 +22,8 @@ import { callsSupported, startCall } from '@/features/calls/engine';
 import { GroupCallBanner } from '@/features/calls/GroupCallBanner';
 import { groupCallsSupported, startGroupCall } from '@/features/calls/group';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { CodeChangedBanner, PrivateSheet } from '@/features/e2ee/PrivateSheet';
+import { privateSupported } from '@/features/e2ee/private';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { flatMessages, type MessagePages, markInboxRead, maxSeq } from '@/state/cache';
@@ -81,6 +83,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const [panel, setPanel] = useState(wide);
   const [details, setDetails] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageView | null>(null);
+  const [privateInfo, setPrivateInfo] = useState(false);
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -221,21 +224,26 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     );
   }
 
-  const subtitle = typingNames.length
-    ? 'typing…'
-    : org && !thread
-      ? org.verified
-        ? `Business · Verified · ${org.verifiedDomain}`
-        : 'Business · Not verified yet'
-      : thread && org
-        ? `Customer of ${org.name}`
-        : other
-          ? (presence ?? other.person.presence) === 'online'
-            ? 'Online'
-            : (other.relationship?.label ?? `@${other.person.handle}`)
-          : conversation
-            ? `${conversation.participants.length} people`
-            : '';
+  const privately = conversation?.privacyClass === 'private';
+  const subtitle = privately
+    ? typingNames.length
+      ? 'typing…'
+      : 'Private · end to end encrypted'
+    : typingNames.length
+      ? 'typing…'
+      : org && !thread
+        ? org.verified
+          ? `Business · Verified · ${org.verifiedDomain}`
+          : 'Business · Not verified yet'
+        : thread && org
+          ? `Customer of ${org.name}`
+          : other
+            ? (presence ?? other.person.presence) === 'online'
+              ? 'Online'
+              : (other.relationship?.label ?? `@${other.person.handle}`)
+            : conversation
+              ? `${conversation.participants.length} people`
+              : '';
 
   const header = (
     <TopBar
@@ -285,6 +293,14 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
                 testID="group-call-video"
               />
             </>
+          ) : null}
+          {privately ? (
+            <IconButton
+              icon={Lock}
+              label="About this private conversation"
+              onPress={() => setPrivateInfo(true)}
+              testID="private-info"
+            />
           ) : null}
           {desktop ? (
             <IconButton
@@ -449,6 +465,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const body = (
     <View style={{ flex: 1, backgroundColor: t.c.canvas }}>
       <ConnectionBanner />
+      {conversation && privately ? (
+        <CodeChangedBanner conversation={conversation} onOpen={() => setPrivateInfo(true)} />
+      ) : null}
       {conversation?.kind === 'group' ? <GroupCallBanner conversationId={conversation.id} /> : null}
       {conversation && thread ? <ThreadBar conversation={conversation} thread={thread} /> : null}
       {conversation ? <RequestBanner conversation={conversation} /> : null}
@@ -548,7 +567,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         ? 'You can write again once they answer.'
         : conversation && !conversation.participants.some((p) => p.userId === me.id)
           ? 'You’re no longer in this conversation.'
-          : null;
+          : conversation?.privacyClass === 'private' && !privateSupported
+            ? 'Private conversations open in Caishy on the web.'
+            : null;
   const disabledAction =
     closed && !thread && org
       ? {
@@ -631,6 +652,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           composer.current?.focus();
         }}
       />
+      {conversation && privately ? (
+        <PrivateSheet
+          conversation={conversation}
+          open={privateInfo}
+          onClose={() => setPrivateInfo(false)}
+        />
+      ) : null}
     </Screen>
   );
 }

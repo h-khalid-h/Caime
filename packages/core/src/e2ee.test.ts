@@ -28,7 +28,7 @@ describe('end-to-end encryption (R18, PRD §61)', () => {
       conversationId,
       cid: 'client-000001',
       payload: { body: 'The door code is 4471' },
-      from: { id: noorLaptop.pub.id, keys: noorLaptop.keys },
+      from: { id: noorLaptop.pub.id, userId: 'noor', keys: noorLaptop.keys },
       to: [noorLaptop.pub, noorPhone.pub, sam.pub],
     });
     // Nothing in it reads as the message.
@@ -61,7 +61,7 @@ describe('end-to-end encryption (R18, PRD §61)', () => {
       conversationId,
       cid: 'client-000002',
       payload: { body: 'Meet at 6' },
-      from: { id: noor.pub.id, keys: noor.keys },
+      from: { id: noor.pub.id, userId: 'noor', keys: noor.keys },
       to: [noor.pub, sam.pub],
     });
     const read = (s: SealedMessage, over: Partial<Parameters<typeof open>[0]> = {}) =>
@@ -93,12 +93,21 @@ describe('end-to-end encryption (R18, PRD §61)', () => {
       conversationId,
       cid: 'client-000003',
       payload: { body: 'Send me the code' },
-      from: { id: 'dev-noor', keys: server.keys },
+      from: { id: 'dev-noor', userId: 'noor', keys: server.keys },
       to: [sam.pub],
     });
     expect(await read(forged)).toEqual({ ok: false, reason: 'unverified' });
     expect(await read(sealed, { sender: null })).toEqual({ ok: false, reason: 'unverified' });
     expect(await read(sealed)).toMatchObject({ ok: true });
+    // Nor pass Noor's words off as someone else's: her device listed as Sam's, or the envelope
+    // saying it's Sam's, doesn't open.
+    expect(await read(sealed, { sender: { ...noor.pub, userId: 'sam' } })).toEqual({
+      ok: false,
+      reason: 'unverified',
+    });
+    expect(
+      await read({ ...sealed, by: 'sam' }, { sender: { ...noor.pub, userId: 'sam' } }),
+    ).toEqual({ ok: false, reason: 'unverified' });
   });
 
   it('a device’s private keys never leave it', async () => {
@@ -129,7 +138,7 @@ describe('end-to-end encryption (R18, PRD §61)', () => {
       conversationId,
       cid: 'client-000004',
       payload: { body: 'hi' },
-      from: { id: noor.pub.id, keys: noor.keys },
+      from: { id: noor.pub.id, userId: 'noor', keys: noor.keys },
       to: [noor.pub],
     });
     expect(isSealed(sealed)).toBe(true);
@@ -138,6 +147,7 @@ describe('end-to-end encryption (R18, PRD §61)', () => {
     expect(isSealed({ ...sealed, ct: 'not base64!' })).toBe(false);
     expect(isSealed({ ...sealed, epk: { ...sealed.epk, d: 'secret' } })).toBe(false);
     expect(isSealed({ ...sealed, keys: {} })).toBe(false);
+    expect(isSealed({ ...sealed, by: '' })).toBe(false);
     expect(isSealed({ body: 'plain text' })).toBe(false);
     expect(canonical({ b: 1, a: [2, { d: 3, c: 4 }] })).toBe('{"a":[2,{"c":4,"d":3}],"b":1}');
   });

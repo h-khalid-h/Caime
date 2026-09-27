@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
+import { useOpened, useReplyPreview } from '@/features/e2ee/private';
 import { KitCard } from '@/features/kits/KitCard';
 import { LocationBody } from '@/features/location/LocationBody';
 import { stickerById } from '@/features/stickers/pack';
@@ -155,6 +156,10 @@ export const MessageBubble = memo(function MessageBubble({
   const t = useTheme();
   const meId = useSession((s) => s.user?.id ?? null);
   const translation = useTranslations((s) => s.byId[m.id]);
+  // A private message's words are opened here, on this device (R18).
+  const opened = useOpened(m);
+  const text = m.sealed ? opened.text : m.body;
+  const replyText = useReplyPreview(m.replyTo, m.conversationId);
   // Hover actions (web) sit beside the bubble, not inside it: a pressable inside another ends
   // the outer one's hover, which took the buttons away just as the pointer reached them. Moving
   // from the bubble to the buttons gets a moment's grace.
@@ -231,7 +236,7 @@ export const MessageBubble = memo(function MessageBubble({
         {m.replyTo.senderId === m.senderId ? 'Replying to themselves' : 'Reply'}
       </Text>
       <Text variant="caption" color={mine ? fg : 'textSecondary'} numberOfLines={2}>
-        {m.replyTo.preview}
+        {replyText}
       </Text>
     </View>
   ) : null;
@@ -239,9 +244,9 @@ export const MessageBubble = memo(function MessageBubble({
   const links =
     (m.entities as { links?: Array<{ url: string; suspicious?: boolean }> }).links ?? [];
   const suspicious = (url: string) => links.some((l) => l.url === url && l.suspicious);
-  const bodyText = m.body ? (
-    <Text variant="message" color={fg} selectable auto={m.body}>
-      {linkify(m.body).map((part) =>
+  const bodyText = text ? (
+    <Text variant="message" color={fg} selectable auto={text}>
+      {linkify(text).map((part) =>
         part.url && !inertLinks ? (
           <Text
             key={`${part.start}`}
@@ -355,6 +360,18 @@ export const MessageBubble = memo(function MessageBubble({
     );
   } else if (m.kind === 'kit') {
     content = <KitCard m={m} mine={mine} />;
+  } else if (m.sealed && !text) {
+    // Opening it, or why this device can't show it.
+    content = (
+      <Text
+        variant="message"
+        color={meta}
+        style={{ fontStyle: 'italic' }}
+        testID={opened.note ? 'message-sealed-note' : undefined}
+      >
+        {opened.note ?? '…'}
+      </Text>
+    );
   } else {
     content = bodyText;
   }
@@ -411,7 +428,7 @@ export const MessageBubble = memo(function MessageBubble({
     mine ? 'You' : (senderName ?? ''),
     m.automated ? (m.aiAgent ? 'AI agent' : 'automated') : '',
     m.sentVia ? `sent via ${m.sentVia}` : '',
-    deleted ? 'Message deleted' : (m.body ?? sticker?.label ?? m.kind),
+    deleted ? 'Message deleted' : (text ?? opened.note ?? sticker?.label ?? m.kind),
     time,
     delivery && mine ? delivery : '',
   ]

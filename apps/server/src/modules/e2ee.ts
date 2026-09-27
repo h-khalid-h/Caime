@@ -94,16 +94,48 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  /** Everyone's devices in a private conversation: what to seal a message for. */
-  app.get('/conversations/:id/devices', async (req): Promise<{ devices: DeviceView[] }> => {
-    const auth = signedIn(req);
-    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const { conversation } = await membership(ctx, auth.userId, id);
-    if (conversation.privacy_class !== 'private')
-      throw badRequest('Only private conversations are sealed.');
-    const people = (await participantsOf(ctx.db, id)).map((p) => p.user_id);
-    return { devices: (await liveDevicesOf(ctx, people)).map(deviceView) };
-  });
+  /**
+   * Everyone's devices in a private conversation, to seal a message for; and, by `ids`, devices
+   * that sealed messages in it before, even signed out since, to check those messages with.
+   */
+  app.get(
+    '/conversations/:id/devices',
+    async (req): Promise<{ devices: DeviceView[]; senders: DeviceView[] }> => {
+      const auth = signedIn(req);
+      const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+      const q = parse(z.object({ ids: z.string().max(4000).optional() }).strict(), req.query);
+      const { conversation } = await membership(ctx, auth.userId, id);
+      if (conversation.privacy_class !== 'private')
+        throw badRequest('Only private conversations are sealed.');
+      const people = (await participantsOf(ctx.db, id)).map((p) => p.user_id);
+      const wanted = [...new Set((q.ids ?? '').split(',').filter(Boolean))].slice(0, 100);
+      const uuid = z.string().uuid();
+      const ids = wanted.filter((x) => uuid.safeParse(x).success);
+      const senders = ids.length
+        ? await ctx.db
+            .selectFrom('e2ee_devices')
+            .select(['id', 'user_id', 'encryption_key', 'signing_key', 'created_at'])
+            .where('id', 'in', ids)
+            // Only devices of people who are, or were, in this conversation.
+            .where(
+              'user_id',
+              'in',
+              ctx.db.selectFrom('participants').select('user_id').where('conversation_id', '=', id),
+            )
+            .execute()
+        : [];
+      return {
+        devices: (await liveDevicesOf(ctx, people)).map(deviceView),
+        senders: senders.map((d) => ({
+          id: d.id,
+          userId: d.user_id,
+          encryptionKey: d.encryption_key as DeviceView['encryptionKey'],
+          signingKey: d.signing_key as DeviceView['signingKey'],
+          createdAt: d.created_at.toISOString(),
+        })),
+      };
+    },
+  );
 
   /** Someone's devices changed: those in private conversations with them hear so. */
   async function tellDevicesChanged(userId: string) {

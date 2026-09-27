@@ -8,6 +8,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { onCallEvent } from '@/features/calls/engine';
 import { onGroupCallEvent } from '@/features/calls/group';
+import { devicesChanged } from '@/features/e2ee/private';
 import {
   applyEditToInbox,
   applyMessageToInbox,
@@ -61,6 +62,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       onCallEvent(event);
       // Over: it's in the call history now.
       if (event.type === 'call.updated' && event.data.state === 'ended') invalidate(['calls']);
+      return;
+    case 'devices.changed':
+      // Someone's devices for private conversations changed: seal for the new set (R18).
+      devicesChanged(event.data.conversationIds);
       return;
     case 'groupcall.ringing':
     case 'groupcall.updated':

@@ -45,6 +45,8 @@ export function pendingAsMessage(item: OutboxItem, me: string): MessageView {
     poll: null,
     album: null,
     sentVia: null,
+    // Still on this device: its words are the ones written here, sealed when it's sent.
+    sealed: null,
     editedAt: null,
     deletedAt: null,
     createdAt: item.createdAt,

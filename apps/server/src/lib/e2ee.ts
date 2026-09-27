@@ -78,7 +78,7 @@ export async function assertSealedForEveryone(
       .execute()
   ).map((p) => p.user_id);
   const devices = await liveDevicesOf(ctx, people);
-  if (!devices.some((d) => d.id === sealed.from && d.userId === senderId))
+  if (sealed.by !== senderId || !devices.some((d) => d.id === sealed.from && d.userId === senderId))
     throw new AppError(
       403,
       'unknown_device',

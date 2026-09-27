@@ -376,7 +376,27 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           connectionId: b.connectionId,
           createdBy: auth.userId,
         });
-        // A private one (R18) is a conversation of its own with them, end to end encrypted.
+        // A private one (R18) is a conversation of its own with them, end to end encrypted: the
+        // one already there, unless it's given a name of its own.
+        const existing =
+          body.private && !body.title
+            ? await ctx.db
+                .selectFrom('conversations as c')
+                .innerJoin('participants as p', 'p.conversation_id', 'c.id')
+                .select('c.id')
+                .where('c.direct_key', '=', pairKey(auth.userId, body.userId).key)
+                .where('c.privacy_class', '=', 'private')
+                .where('c.is_general', '=', false)
+                .where('c.title', '=', 'Private')
+                .where('p.user_id', '=', auth.userId)
+                .where('p.left_at', 'is', null)
+                .orderBy('c.created_at')
+                .executeTakeFirst()
+            : undefined;
+        if (existing) {
+          const m = await membership(ctx, auth.userId, existing.id);
+          return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
+        }
         const id = await createTopicConversation(
           ctx,
           auth.userId,

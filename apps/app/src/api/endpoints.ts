@@ -23,6 +23,7 @@ import type {
   ConversationView,
   DecisionView,
   DeviceSessionView,
+  DeviceView,
   GroupCallView,
   HandleView,
   IceConfigView,
@@ -32,6 +33,7 @@ import type {
   MessagesPage,
   MessageView,
   MeView,
+  MyDeviceView,
   NotificationsResponse,
   OAuthAppView,
   OAuthConsentView,
@@ -63,6 +65,7 @@ import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
 import type { RewriteStyle } from '@caishy/core/assist';
 import type { BusinessView } from '@caishy/core/business';
 import type { CallKind } from '@caishy/core/calls';
+import type { PublicJwk, SealedMessage } from '@caishy/core/e2ee';
 import type { ChecklistOp } from '@caishy/core/kit-cards';
 import type { OrgKind } from '@caishy/core/orgs';
 import type { SpaceKind } from '@caishy/core/spaces';
@@ -96,6 +99,8 @@ export interface SendBody {
   fileIds?: string[];
   urgent?: boolean;
   mentions?: string[];
+  /** In a private conversation: the message, sealed on this device (R18). */
+  sealed?: SealedMessage;
 }
 
 export type TaskViewFilter = 'todo' | 'waiting' | 'asked_me' | 'i_asked' | 'done' | 'all';
@@ -193,18 +198,25 @@ export const endpoints = {
   inbox: () => api.get<InboxResponse>('/inbox'),
   inboxAll: () => api.get<InboxAllResponse>('/inbox?view=all'),
   conversation: (id: string) => api.get<{ conversation: ConversationView }>(`/conversations/${id}`),
-  openDirect: (userId: string, title?: string) =>
+  openDirect: (userId: string, title?: string, opts: { private?: boolean } = {}) =>
     api.post<{ conversation: ConversationView }>('/conversations', {
       kind: 'direct',
       userId,
       title,
+      ...(opts.private ? { private: true } : {}),
     }),
-  createGroup: (title: string, memberIds: string[], purpose?: string) =>
+  createGroup: (
+    title: string,
+    memberIds: string[],
+    purpose?: string,
+    opts: { private?: boolean } = {},
+  ) =>
     api.post<{ conversation: ConversationView }>('/conversations', {
       kind: 'group',
       title,
       memberIds,
       purpose,
+      ...(opts.private ? { private: true } : {}),
     }),
   updateConversation: (id: string, patch: Record<string, unknown>) =>
     api.patch<{ conversation: ConversationView }>(`/conversations/${id}`, patch),
@@ -214,8 +226,11 @@ export const endpoints = {
     api.get<MessagesPage>(`/conversations/${id}/messages${q(params)}`),
   send: (conversationId: string, body: SendBody) =>
     api.post<{ message: MessageView }>(`/conversations/${conversationId}/messages`, body),
-  editMessage: (id: string, body: string) =>
-    api.patch<{ message: MessageView }>(`/messages/${id}`, { body }),
+  editMessage: (id: string, body: string | { sealed: SealedMessage }) =>
+    api.patch<{ message: MessageView }>(
+      `/messages/${id}`,
+      typeof body === 'string' ? { body } : body,
+    ),
   deleteMessage: (id: string, forEveryone: boolean) =>
     api.del<Ok>(`/messages/${id}${q({ forEveryone })}`),
   react: (id: string, emoji: string) => api.post<Ok>(`/messages/${id}/reactions`, { emoji }),
@@ -329,6 +344,15 @@ export const endpoints = {
   ) => api.post<Ok>(`/calls/${id}/signal`, body),
   callAlive: (id: string, deviceId: string) =>
     api.post<{ call: CallView }>(`/calls/${id}/alive`, { deviceId }),
+  // Private conversations (R18): this device's public keys, and everyone's to seal for
+  registerDevice: (body: { encryptionKey: PublicJwk; signingKey: PublicJwk; name?: string }) =>
+    api.post<{ device: MyDeviceView }>('/e2ee/devices', body),
+  myDevices: () => api.get<{ devices: MyDeviceView[] }>('/e2ee/devices'),
+  removeDevice: (id: string) => api.del<Ok>(`/e2ee/devices/${id}`),
+  conversationDevices: (conversationId: string, ids: string[] = []) =>
+    api.get<{ devices: DeviceView[]; senders: DeviceView[] }>(
+      `/conversations/${conversationId}/devices${q({ ids: ids.length ? ids.join(',') : undefined })}`,
+    ),
   callHistory: (params: { before?: string; limit?: number; with?: string; missed?: boolean }) =>
     api.get<CallHistoryResponse>(
       `/calls/history${q({ ...params, missed: params.missed ? '1' : undefined })}`,

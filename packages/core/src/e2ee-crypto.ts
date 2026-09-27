@@ -13,10 +13,18 @@ import {
   type SealedMessage,
 } from './e2ee';
 
+type Subtle = typeof globalThis.crypto.subtle;
+/** A Web Crypto key, in whichever runtime's types (the browser's, or Node's for tests). */
+export type Key = Awaited<ReturnType<Subtle['importKey']>>;
+export interface KeyPair {
+  publicKey: Key;
+  privateKey: Key;
+}
+
 /** A device's keys, as kept on the device: the private halves can't be exported. */
 export interface DeviceKeys {
-  encryption: CryptoKeyPair;
-  signing: CryptoKeyPair;
+  encryption: KeyPair;
+  signing: KeyPair;
 }
 
 export type OpenResult =
@@ -55,7 +63,7 @@ export async function newDeviceKeys(): Promise<DeviceKeys> {
     subtle().generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']),
     subtle().generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']),
   ]);
-  return { encryption, signing };
+  return { encryption: encryption as KeyPair, signing: signing as KeyPair };
 }
 
 /** A device's public keys, to register with the server. */
@@ -79,11 +87,11 @@ const importVerify = (k: PublicJwk) =>
 
 /** The key that wraps a message's key for one device, from an ECDH secret shared with it. */
 async function wrappingKey(
-  privateKey: CryptoKey,
-  publicKey: CryptoKey,
+  privateKey: Key,
+  publicKey: Key,
   cid: string,
   deviceId: string,
-): Promise<CryptoKey> {
+): Promise<Key> {
   const secret = await subtle().deriveBits({ name: 'ECDH', public: publicKey }, privateKey, 256);
   const hkdf = await subtle().importKey('raw', secret, 'HKDF', false, ['deriveKey']);
   return subtle().deriveKey(
@@ -95,9 +103,11 @@ async function wrappingKey(
   );
 }
 
-/** Bound into the encryption: which conversation, which message, which device sent it. */
-const associated = (conversationId: string, s: Pick<SealedMessage, 'cid' | 'edit' | 'from'>) =>
-  utf8(`${LABEL}|${conversationId}|${s.cid}|${s.edit}|${s.from}`);
+/** Bound into the encryption: which conversation, which message, which device (and whose). */
+const associated = (
+  conversationId: string,
+  s: Pick<SealedMessage, 'cid' | 'edit' | 'from' | 'by'>,
+) => utf8(`${LABEL}|${conversationId}|${s.cid}|${s.edit}|${s.from}|${s.by}`);
 
 /** The bytes the sending device signs: everything in the envelope, and its conversation. */
 const signed = (conversationId: string, s: Omit<SealedMessage, 'sig'>) =>
@@ -114,11 +124,18 @@ export async function seal(input: {
   cid: string;
   edit?: number;
   payload: PrivatePayload;
-  from: { id: string; keys: DeviceKeys };
+  /** This device, and whose it is. */
+  from: { id: string; userId: string; keys: DeviceKeys };
   to: Array<Pick<PublicDevice, 'id' | 'encryptionKey'>>;
 }): Promise<SealedMessage> {
   const s = subtle();
-  const head = { v: 1 as const, cid: input.cid, edit: input.edit ?? 0, from: input.from.id };
+  const head = {
+    v: 1 as const,
+    cid: input.cid,
+    edit: input.edit ?? 0,
+    from: input.from.id,
+    by: input.from.userId,
+  };
   const messageKey = await s.generateKey({ name: 'AES-GCM', length: 256 }, true, [
     'encrypt',
     'decrypt',
@@ -160,18 +177,19 @@ export async function seal(input: {
 
 /**
  * Read a message on this device: only if it was sealed for it, and only if the device it says
- * it's from signed it. `sender` is that device as the server lists it.
+ * it's from signed it, as the person the server lists that device under. `sender` is that
+ * device as the server lists it.
  */
 export async function open(input: {
   conversationId: string;
   sealed: SealedMessage;
   me: { id: string; keys: DeviceKeys };
-  sender: Pick<PublicDevice, 'id' | 'signingKey'> | null;
+  sender: Pick<PublicDevice, 'id' | 'userId' | 'signingKey'> | null;
 }): Promise<OpenResult> {
   const { sealed } = input;
   const s = subtle();
   try {
-    if (!input.sender || input.sender.id !== sealed.from)
+    if (!input.sender || input.sender.id !== sealed.from || input.sender.userId !== sealed.by)
       return { ok: false, reason: 'unverified' };
     const { sig, ...body } = sealed;
     const good = await s.verify(

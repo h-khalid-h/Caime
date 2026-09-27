@@ -1592,4 +1592,76 @@ test.describe
       await expect(theirs).toContainText('Alex Chen');
       expect([...errors, ...alex.errors]).toEqual([]);
     });
+
+    test('a private conversation only their devices read, with a code to check it’s them', async ({
+      browser,
+    }) => {
+      const { page, errors } = noor;
+      // Both have been signed in on the web here, so each browser has its keys already.
+      await page.goto(`/p/${alexId}`);
+      await page.getByTestId('person-private').click();
+      await page.waitForURL('**/c/**');
+      const privateId = page.url().split('/c/')[1]?.split(/[?#]/)[0] as string;
+      await expect(visible(page, 'Private · end to end encrypted')).toBeVisible();
+      const code = randomBytes(3).toString('hex');
+      const secret = `The door code is ${code}`;
+      await page.getByTestId('composer-input').fill(secret);
+      await page.getByTestId('composer-send').click();
+      await expect(visible(page, secret)).toBeVisible();
+
+      // What the server keeps is an envelope: the words are never in it.
+      const kept = await noorContext.request.get(`/v1/conversations/${privateId}/messages`, {
+        headers: CLIENT,
+      });
+      expect(await kept.text()).not.toContain(code);
+      const sealed = ((await kept.json()).messages as Array<{ body: unknown; sealed: unknown }>)
+        .filter((m) => m.sealed)
+        .map((m) => m.body);
+      expect(sealed).toEqual([null]);
+
+      // Alex reads it on his phone, and answers.
+      await alex.page.goto(`/c/${privateId}`);
+      await expect(visible(alex.page, secret)).toBeVisible();
+      const answer = 'Got it, thanks';
+      await alex.page.getByTestId('composer-input').fill(answer);
+      await alex.page.getByTestId('composer-send').click();
+      await expect(visible(page, answer)).toBeVisible();
+
+      // They compare codes: the one Noor sees as hers is the one Alex sees as Noor's.
+      await page.getByTestId('private-info').click();
+      const hers = ((await page.getByTestId('private-my-code').textContent()) ?? '').trim();
+      expect(hers).toMatch(/^\d{5}( \d{5}){5}$/);
+      await alex.page.getByTestId('private-info').click();
+      const card = alex.page.getByTestId('private-code');
+      await expect(card).toContainText(hers);
+      await card.getByTestId('private-code-accept').click();
+      await expect(card).toContainText('You compared it with Noor');
+      await alex.page.screenshot({ path: 'e2e/screenshots/phone-private-code.png' });
+      await page.screenshot({ path: 'e2e/screenshots/desktop-private.png' });
+      await page.keyboard.press('Escape');
+      await alex.page.keyboard.press('Escape');
+
+      // Alex signs in on a laptop too. Noor is told his code changed; the laptop can't read what
+      // was sent before it, and reads what's sent after.
+      const laptop = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const signedIn = await laptop.request.post('/v1/auth/login', {
+        headers: CLIENT,
+        data: { identifier: `alex.${stamp}`, password: PASSWORD },
+      });
+      expect(signedIn.ok(), await signedIn.text()).toBe(true);
+      const second = await newPerson(laptop);
+      await second.page.goto(`/c/${privateId}`);
+      await expect(second.page.getByTestId('message-sealed-note').first()).toHaveText(
+        'Sent before this device could read private messages.',
+      );
+      await expect(page.getByTestId('private-code-changed')).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-private-code-changed.png' });
+      const later = 'And the laptop reads this one';
+      await page.getByTestId('composer-input').fill(later);
+      await page.getByTestId('composer-send').click();
+      await expect(visible(second.page, later)).toBeVisible();
+      await expect(visible(alex.page, later)).toBeVisible();
+      expect([...errors, ...alex.errors, ...second.errors]).toEqual([]);
+      await laptop.close();
+    });
   });

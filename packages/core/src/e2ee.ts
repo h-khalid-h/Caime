@@ -9,8 +9,9 @@
  * wrapped for each device allowed to read it (every device of everyone in the conversation, the
  * sender's included) with a key derived by HKDF from an ephemeral ECDH exchange with that device.
  * The sending device signs the whole envelope, so the server can neither read a message, nor
- * alter or forge one, nor move one to another conversation: the conversation and the sender's
- * message id are bound into the encryption (as associated data) and into the signature.
+ * alter or forge one, nor move one to another conversation, nor pass it off as someone else's:
+ * the conversation, the sender's message id, the device and whose it is are bound into the
+ * encryption (as associated data) and into the signature.
  *
  * What this doesn't hide, and the app says so: who is in a conversation, when messages are sent
  * and how long they are, and reactions. The server hands out the device keys, so it could add a
@@ -47,6 +48,8 @@ export interface SealedMessage {
   edit: number;
   /** The sending device. */
   from: string;
+  /** Whose device it is (their user id): no device can be passed off as someone else's. */
+  by: string;
   /** This message's ephemeral public key, for every device to derive its wrapping key. */
   epk: PublicJwk;
   iv: string;
@@ -101,6 +104,9 @@ export function isSealed(value: unknown): value is SealedMessage {
     (v.edit as number) < 10_000 &&
     typeof v.from === 'string' &&
     v.from.length <= 64 &&
+    typeof v.by === 'string' &&
+    v.by.length > 0 &&
+    v.by.length <= 64 &&
     isPublicKey(v.epk) &&
     b64(v.iv, 16) &&
     b64(v.ct, 64_000) &&

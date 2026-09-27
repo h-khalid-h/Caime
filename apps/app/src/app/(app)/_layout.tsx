@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { BusinessInbox } from '@/features/business/BusinessInbox';
 import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
+import { ensureDevice, privateSupported } from '@/features/e2ee/private';
 import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
 import { PeopleList } from '@/features/people/PeopleList';
@@ -32,6 +33,12 @@ export default function AppLayout() {
     const link = takeLink();
     if (link) setTimeout(() => router.push(link), 0);
   }, [onboarded]);
+  // This browser can read a private message from the first one anyone writes to this person
+  // (R18): its keys are made, or found again, as soon as they're signed in here.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per person signed in
+  useEffect(() => {
+    if (onboarded && privateSupported) void ensureDevice().catch(() => {});
+  }, [onboarded, user?.id]);
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;
   // Onboarding, and an app asking to act for them, have the whole window: nothing else to do there.
