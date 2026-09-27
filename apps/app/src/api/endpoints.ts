@@ -248,6 +248,9 @@ export const endpoints = {
     api.get<MessagesPage>(`/conversations/${id}/messages${q(params)}`),
   send: (conversationId: string, body: SendBody) =>
     api.post<{ message: MessageView }>(`/conversations/${conversationId}/messages`, body),
+  /** A topic of a one-to-one or a group (PRD §58): the conversation it is. */
+  startTopic: (conversationId: string, title: string) =>
+    api.post<{ conversationId: string }>(`/conversations/${conversationId}/topics`, { title }),
   /** A new text, and who it mentions (in a group), or a private message sealed again. */
   editMessage: (id: string, body: string | { sealed: SealedMessage }, mentions?: string[]) =>
     api.patch<{ message: MessageView }>(

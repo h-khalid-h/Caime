@@ -270,6 +270,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           next: gathered.dates[0] ? formatDue(gathered.dates[0].at, now, timeZone, locale) : null,
         })
       : null;
+  // A topic goes by its own name; a group's says which group it's of (PRD §58).
+  const heading = conversation?.topic ?? conversation?.title ?? '';
+  const ofGroup = conversation?.topic && conversation.kind === 'group' ? conversation.title : null;
   const subtitle = privately
     ? typingNames.length
       ? 'typing…'
@@ -287,7 +290,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               ? 'Online'
               : (other.relationship?.label ?? `@${other.person.handle}`)
             : conversation
-              ? (groupLine ?? `${conversation.participants.length} people`)
+              ? [ofGroup, groupLine ?? `${conversation.participants.length} people`]
+                  .filter(Boolean)
+                  .join(' · ')
               : '';
 
   const header = (
@@ -359,7 +364,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${conversation?.title ?? ''}, details`}
+        accessibilityLabel={`${heading}, details`}
         onPress={() => {
           if (desktop) setPanel(true);
           else setDetails(true);
@@ -394,7 +399,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         )}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text variant="label" numberOfLines={1} auto>
-            {conversation?.title ?? ''}
+            {heading}
           </Text>
           <Text
             variant="caption"

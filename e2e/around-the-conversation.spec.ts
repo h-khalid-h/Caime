@@ -1931,6 +1931,43 @@ test.describe
       );
       expect([...errors, ...alex.errors]).toEqual([]);
     });
+    test('a group’s topic is started from its details, has its people, and is run from the group', async () => {
+      const { page, errors } = noor;
+      const title = `Film night ${stamp}`;
+      await page.goto('/new-group');
+      await page.getByLabel('Group name').fill(title);
+      await page.getByTestId(`pick-alex.${stamp}`).click();
+      await page.getByRole('button', { name: 'Create group' }).click();
+      await page.waitForURL('**/c/**');
+      const group = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+
+      // Started from the group's details, it opens, named for its subject and for the group.
+      await page.getByTestId('topic-start').filter({ visible: true }).click();
+      await page.getByTestId('topic-name').fill('Documentaries');
+      await page.getByTestId('topic-save').click();
+      await page.waitForURL((url) => !url.pathname.endsWith(group));
+      await expect(visible(page, `You started this topic in “${title}”`)).toBeVisible();
+      await expect(visible(page, `${title} · 2 people`)).toBeVisible();
+      // Its people are the group's: they're changed there.
+      const people = page.getByTestId('group-people').filter({ visible: true });
+      await expect(people).toContainText('Alex Chen');
+      await expect(people.getByTestId('group-add')).toHaveCount(0);
+      await expect(people.getByTestId('group-leave')).toHaveCount(0);
+      await people.getByTestId('topic-group').click();
+      await page.waitForURL(`**/c/${group}`);
+      // The group lists it, and its line opens it.
+      await expect(
+        page.getByTestId('topic-row').filter({ visible: true, hasText: 'Documentaries' }),
+      ).toBeVisible();
+      await page.getByTestId('topic-line').filter({ visible: true }).click();
+      await page.waitForURL((url) => !url.pathname.endsWith(group));
+
+      // Alex has it too, named for the group in his chats.
+      const phone = alex.page;
+      await phone.goto('/');
+      await expect(visible(phone, `${title} · Documentaries`)).toBeVisible();
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
     test('Lina follows Nile Dental, and its updates reach her apart from her conversations', async () => {
       if (!linaContext) throw new Error('The link test signs Lina up first.');
       const linas = linaContext;

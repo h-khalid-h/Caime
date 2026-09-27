@@ -17,6 +17,7 @@ import { openCheckedLink, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
+import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
 import {
@@ -24,6 +25,7 @@ import {
   ChevronRight,
   CircleCheck,
   FileText,
+  Hash,
   ImageIcon,
   LayoutGrid,
   Link,
@@ -33,7 +35,9 @@ import {
 } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
+import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { SharedFiles } from './SharedFiles';
 
@@ -290,6 +294,7 @@ export function ContextPanel({
             <GroupPeople conversation={conversation} onNavigate={onClose} />
           </>
         )}
+        <Topics conversation={conversation} go={go} />
         {m ? (
           <>
             <Section title="Right now">
@@ -412,6 +417,117 @@ export function ContextPanel({
         />
       ) : null}
     </View>
+  );
+}
+
+/** The server's limit on a topic's name. */
+const TOPIC_MAX = 80;
+
+/**
+ * Where a subject can have a conversation of its own (PRD §58): a one-to-one with someone you're
+ * connected with, or a group that isn't in a space (a space has its own conversations).
+ */
+function topicsFor(c: ConversationView): 'direct' | 'group' | null {
+  if (c.kind === 'direct' && c.isGeneral && c.other && !c.request && c.privacyClass !== 'private')
+    return 'direct';
+  if (c.kind === 'group' && !c.space && !c.parentId) return 'group';
+  return null;
+}
+
+/** A conversation's topics, and starting one: in a group, everyone in it is in it. */
+function Topics({
+  conversation,
+  go,
+}: {
+  conversation: ConversationView;
+  go: (to: Parameters<typeof router.navigate>[0]) => void;
+}) {
+  const t = useTheme();
+  const qc = useQueryClient();
+  const [starting, setStarting] = useState(false);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const where = topicsFor(conversation);
+  if (!where) return null;
+  const topics = conversation.topics;
+  const start = async () => {
+    setBusy(true);
+    try {
+      const { conversationId } = await endpoints.startTopic(conversation.id, name.trim());
+      setStarting(false);
+      setName('');
+      void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
+      void qc.invalidateQueries({ queryKey: qk.inbox });
+      go({ pathname: '/c/[id]', params: { id: conversationId } });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title={topics.length ? `Topics · ${topics.length}` : 'Topics'}>
+      {topics.map((topic) => (
+        <Pressable
+          key={topic.id}
+          accessibilityRole="link"
+          accessibilityLabel={`${topic.title}, topic`}
+          onPress={() => go({ pathname: '/c/[id]', params: { id: topic.id } })}
+          style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
+          testID="topic-row"
+        >
+          <Hash size={14} color={t.c.textSecondary} />
+          <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
+            {topic.title}
+          </Text>
+          <ChevronRight size={16} color={t.c.textTertiary} />
+        </Pressable>
+      ))}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setStarting(true)}
+        style={{ flexDirection: 'row', gap: 8, alignItems: 'center', paddingVertical: 4 }}
+        testID="topic-start"
+      >
+        <Hash size={14} color={t.c.accentStrong} />
+        <Text variant="captionStrong" color="link">
+          Start a topic
+        </Text>
+      </Pressable>
+      <Sheet
+        open={starting}
+        onClose={() => setStarting(false)}
+        title="Start a topic"
+        subtitle={
+          where === 'group'
+            ? `A conversation of its own, with everyone in ${conversation.title}.`
+            : `A conversation of its own with ${conversation.title}, on one subject.`
+        }
+        footer={
+          <Button
+            label="Start"
+            block
+            size="lg"
+            disabled={!name.trim()}
+            loading={busy}
+            onPress={() => void start()}
+            testID="topic-save"
+          />
+        }
+      >
+        <TextField
+          label="What it’s about"
+          value={name}
+          onChangeText={setName}
+          maxLength={TOPIC_MAX}
+          autoFocus
+          onSubmitEditing={() => {
+            if (name.trim() && !busy) void start();
+          }}
+          testID="topic-name"
+        />
+      </Sheet>
+    </Section>
   );
 }
 

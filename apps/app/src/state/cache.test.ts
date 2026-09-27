@@ -2,7 +2,13 @@ import type { MessagesPage, MessageView } from '@caishy/core/api';
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { qk } from '@/api/keys';
-import { flatMessages, type MessagePages, updateMessage, upsertMessage } from './cache';
+import {
+  flatMessages,
+  type MessagePages,
+  patchPinned,
+  updateMessage,
+  upsertMessage,
+} from './cache';
 
 const id = 'c1';
 const msg = (seq: number, body = `m${seq}`): MessageView =>
@@ -123,5 +129,14 @@ describe('a message someone else changed', () => {
     // One further back, or deleted for oneself, isn't brought in by it.
     updateMessage(qc, { ...theirs, id: 'm0', seq: 0 } as MessageView, 'me');
     expect(seqs(qc)).toEqual([1, 2]);
+  });
+
+  it('at the top of the conversation, says what it says now', () => {
+    const qc = new QueryClient();
+    qc.setQueryData(qk.pins(id), { messages: [msg(2, 'Rehearsal at 5pm'), msg(4, 'Bus at 6')] });
+    patchPinned(qc, { ...msg(2, 'Rehearsal at 6pm'), reactions: [] } as unknown as MessageView);
+    patchPinned(qc, { ...msg(9, 'Not pinned'), reactions: [] } as unknown as MessageView);
+    const top = qc.getQueryData<{ messages: MessageView[] }>(qk.pins(id))?.messages ?? [];
+    expect(top.map((m) => m.body)).toEqual(['Rehearsal at 6pm', 'Bus at 6']);
   });
 });

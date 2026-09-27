@@ -1,6 +1,7 @@
 import type { MessageView } from '@caishy/core/api';
 import { formatBytes, formatClock, systemText } from '@caishy/core/format';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { memo, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
@@ -211,20 +212,40 @@ export const MessageBubble = memo(function MessageBubble({
   const time = formatClock(m.createdAt, timeZone, locale);
 
   if (m.kind === 'system') {
+    // A topic started from here opens from its line (PRD §58).
+    const said = m.payload as { event?: string; conversationId?: unknown };
+    const topic =
+      said.event === 'topic_started' && typeof said.conversationId === 'string'
+        ? said.conversationId
+        : null;
+    const line = (
+      <View
+        style={{
+          backgroundColor: t.c.surfaceMuted,
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+        }}
+      >
+        <Text variant="caption" color={topic ? 'link' : 'textSecondary'} align="center">
+          {m.body ?? systemText(m.payload, meId)}
+        </Text>
+      </View>
+    );
     return (
       <View style={{ alignItems: 'center', paddingVertical: 6, paddingHorizontal: 24 }}>
-        <View
-          style={{
-            backgroundColor: t.c.surfaceMuted,
-            borderRadius: 12,
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-          }}
-        >
-          <Text variant="caption" color="textSecondary" align="center">
-            {m.body ?? systemText(m.payload, meId)}
-          </Text>
-        </View>
+        {topic ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityHint="Opens the topic"
+            onPress={() => router.navigate({ pathname: '/c/[id]', params: { id: topic } })}
+            testID="topic-line"
+          >
+            {line}
+          </Pressable>
+        ) : (
+          line
+        )}
       </View>
     );
   }

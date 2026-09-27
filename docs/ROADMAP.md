@@ -73,6 +73,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       conversation and a context its maker can see; a customer sees the organization decide, never
       which of its team (`actions.test.ts`, `business.test.ts`, E2E)
 - [x] Suggestions from message intelligence (and emerging topics, follow-ups)
+- [x] Topics (PRD §58), offered when a subject keeps coming up or started from a conversation's
+      details: of a one-to-one, the two of them on one subject; of a group, the group again with
+      its people in the roles they have there, who come and go with it, as private as it is and
+      listed in it; never from a private one-to-one (`messaging.test.ts`, E2E)
 - [x] Conversation memory and asset index: what's been shared, a kind at a time (photos and
       videos, files, links), newest first and a page at a time, from the conversation's details,
       each opening from there or shown where it was said; what someone deleted for themselves

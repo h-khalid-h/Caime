@@ -295,6 +295,10 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
   switch (p.event) {
     case 'group_created':
       return p.title ? `${by} created “${p.title}”` : `${by} created the group`;
+    case 'topic_created':
+      return p.title ? `${by} started this topic in “${p.title}”` : `${by} started this topic`;
+    case 'topic_started':
+      return p.title ? `${by} started a topic: ${p.title}` : `${by} started a topic`;
     case 'space_created':
       return p.title ? `${by} started the space “${p.title}”` : `${by} started the space`;
     case 'space_renamed':
@@ -349,6 +353,18 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
     default:
       return 'Conversation updated';
   }
+}
+
+/**
+ * How a conversation is named in a list: a topic (PRD §58) with who, or which group, it's of:
+ * "Sarah · Project Alpha", "Book club · Middlemarch".
+ */
+export function listTitle(c: {
+  title: string;
+  topic: string | null;
+  other?: { displayName: string } | null;
+}): string {
+  return c.topic ? `${c.other?.displayName ?? c.title} · ${c.topic}` : c.title;
 }
 
 /** A message preview for lists and notifications: first line, trimmed. */

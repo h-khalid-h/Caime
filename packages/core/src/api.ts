@@ -367,7 +367,10 @@ export interface ConversationView {
    */
   name: string | null;
   space: SpaceRef | null;
+  /** A topic's own name (PRD §58): of a one-to-one, or of a group, whose name is `title`. */
   topic: string | null;
+  /** Its topics the viewer is in, the liveliest first. */
+  topics: Array<{ id: string; title: string; lastMessageAt: string | null }>;
   purpose: string | null;
   isGeneral: boolean;
   parentId: string | null;

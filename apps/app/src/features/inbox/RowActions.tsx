@@ -1,4 +1,5 @@
 import type { InboxItemView } from '@caishy/core/api';
+import { listTitle } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -29,7 +30,7 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
     <Sheet
       open
       onClose={onClose}
-      title={item.title}
+      title={listTitle(item)}
       subtitle={item.relationship?.label ?? undefined}
     >
       {item.unreadCount > 0 ? (

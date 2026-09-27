@@ -405,6 +405,189 @@ describe('topics emerge from the conversation (PRD §58)', () => {
   });
 });
 
+describe('topics in a group (PRD §58)', () => {
+  let ana: Client; // the group's owner
+  let bo: Client;
+  let cal: Client;
+  let dee: Client;
+  let g: string;
+  const view = async (c: Client, id: string) =>
+    (await c.get(`/v1/conversations/${id}`)).conversation;
+  const roles = async (c: Client, id: string) =>
+    Object.fromEntries(
+      ((await view(c, id)).participants as any[]).map((p) => [p.person.displayName, p.role]),
+    );
+  const start = (c: Client, id: string, title: string) =>
+    c.req('POST', `/v1/conversations/${id}/topics`, { title });
+  const lines = async (c: Client, id: string) =>
+    ((await c.get(`/v1/conversations/${id}/messages`)).messages as any[])
+      .filter((m) => m.kind === 'system')
+      .map((m) => m.payload.event);
+
+  beforeAll(async () => {
+    ana = await signup(t, { displayName: 'Ana Topics' });
+    bo = await signup(t, { displayName: 'Bo Topics' });
+    cal = await signup(t, { displayName: 'Cal Topics' });
+    dee = await signup(t, { displayName: 'Dee Topics' });
+    for (const c of [bo, cal, dee]) await connect(ana, c);
+    g = (
+      await ana.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Book club',
+        memberIds: [bo.user.id, cal.user.id],
+      })
+    ).conversation.id;
+    await ana.patch(`/v1/conversations/${g}/members/${bo.user.id}`, { role: 'admin' });
+  });
+
+  it('anyone in it starts one: the group again, on one subject, run as the group is', async () => {
+    const r = await start(cal, g, 'Middlemarch');
+    expect(r.statusCode).toBe(201);
+    const topic = r.json().conversationId;
+    expect(await view(bo, topic)).toMatchObject({
+      kind: 'group',
+      title: 'Book club',
+      topic: 'Middlemarch',
+      name: 'Middlemarch',
+      parentId: g,
+    });
+    expect(await roles(bo, topic)).toEqual({
+      'Ana Topics': 'owner',
+      'Bo Topics': 'admin',
+      'Cal Topics': 'member',
+    });
+    // The group lists it, and says who started it; the topic says where it's from.
+    expect((await view(ana, g)).topics).toEqual([
+      expect.objectContaining({ id: topic, title: 'Middlemarch' }),
+    ]);
+    expect(await lines(ana, g)).toContain('topic_started');
+    expect(await lines(ana, topic)).toContain('topic_created');
+    // In the inbox it goes by the group's name, with its own as the topic.
+    const item = itemOf(await inbox(bo), topic);
+    expect(item).toMatchObject({ title: 'Book club', topic: 'Middlemarch' });
+    // The same subject again is the same topic; a topic's topic is one of the group's.
+    expect((await start(bo, g, 'middlemarch')).json().conversationId).toBe(topic);
+    const beloved = (await start(bo, topic, 'Beloved')).json().conversationId;
+    expect((await view(ana, beloved)).parentId).toBe(g);
+    // Nobody outside it starts one.
+    expect((await start(dee, g, 'Gatecrash')).statusCode).toBe(404);
+  });
+
+  it('its people are the group’s: they come and go with it, in the roles they have there', async () => {
+    const topic = (await start(ana, g, 'Next month')).json().conversationId;
+    // Added to the group, Dee is in its topics too, caught up.
+    await ana.post(`/v1/conversations/${g}/members`, { userIds: [dee.user.id] });
+    expect(await roles(dee, topic)).toMatchObject({ 'Dee Topics': 'member' });
+    expect(itemOf(await inbox(dee), topic).unreadCount).toBe(0);
+    // Made an admin there, she's one here.
+    await ana.patch(`/v1/conversations/${g}/members/${dee.user.id}`, { role: 'admin' });
+    expect((await roles(ana, topic))['Dee Topics']).toBe('admin');
+    // Removed from the group, Cal is out of its topics: nothing of them reaches him.
+    await ana.req('DELETE', `/v1/conversations/${g}/members/${cal.user.id}`);
+    expect((await cal.req('GET', `/v1/conversations/${topic}`)).statusCode).toBe(404);
+    expect(
+      (await inbox(cal)).sections.flatMap((x: any) => x.items).map((i: any) => i.id),
+    ).not.toContain(topic);
+    // They're changed in the group, not in a topic.
+    for (const r of [
+      await ana.req('POST', `/v1/conversations/${topic}/members`, { userIds: [cal.user.id] }),
+      await ana.req('DELETE', `/v1/conversations/${topic}/members/${dee.user.id}`),
+      await ana.req('PATCH', `/v1/conversations/${topic}/members/${dee.user.id}`, {
+        role: 'member',
+      }),
+    ]) {
+      expect(r.statusCode).toBe(400);
+      expect(r.json().error.message).toBe(
+        'A topic’s people are its group’s: add, remove or make admins there.',
+      );
+    }
+    const leave = await bo.req('DELETE', `/v1/conversations/${topic}/members/${bo.user.id}`);
+    expect(leave.json().error.message).toBe(
+      'Leave the group to leave its topics. You can archive this one.',
+    );
+    // Its owner gone, whoever runs the group next runs its topics.
+    await ana.req('DELETE', `/v1/conversations/${g}/members/${ana.user.id}`);
+    expect(await roles(bo, g)).toEqual({ 'Bo Topics': 'owner', 'Dee Topics': 'admin' });
+    expect(await roles(bo, topic)).toEqual({ 'Bo Topics': 'owner', 'Dee Topics': 'admin' });
+  });
+
+  it('as private as its group, and one that keeps coming up is offered as a topic', async () => {
+    const secret = (
+      await ana.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Surprise party',
+        memberIds: [dee.user.id],
+        private: true,
+      })
+    ).conversation.id;
+    const hidden = (await start(ana, secret, 'Venue')).json().conversationId;
+    expect((await view(dee, hidden)).privacyClass).toBe('private');
+    const plans = (
+      await ana.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Trip planning',
+        memberIds: [dee.user.id],
+      })
+    ).conversation.id;
+    await send(ana, plans, 'Project Lisbon flights are up');
+    await send(dee, plans, 'Who books Project Lisbon hotels?');
+    await send(ana, plans, 'Project Lisbon hotels are with me');
+    await t.ctx.flush();
+    const s = (await dee.get(`/v1/suggestions?conversationId=${plans}&kind=topic`)).suggestions[0];
+    expect(s).toMatchObject({ title: 'Project Lisbon' });
+    const made = (await dee.post(`/v1/suggestions/${s.id}/accept`)).accepted.id;
+    expect(await view(ana, made)).toMatchObject({
+      kind: 'group',
+      title: 'Trip planning',
+      topic: 'Project Lisbon',
+      parentId: plans,
+    });
+  });
+
+  it('a one-to-one’s topics are the two of them; never from a private one, nor with an organization', async () => {
+    const direct = (await ana.get(`/v1/people/${dee.user.id}/conversations`)).conversations.find(
+      (c: any) => c.isGeneral,
+    ).id;
+    const topic = (await start(dee, direct, 'Birthday')).json().conversationId;
+    expect(await view(ana, topic)).toMatchObject({ kind: 'direct', topic: 'Birthday' });
+    expect((await view(ana, direct)).topics.map((x: any) => x.title)).toContain('Birthday');
+    const sealed = (
+      await ana.post('/v1/conversations', { kind: 'direct', userId: dee.user.id, private: true })
+    ).conversation.id;
+    const refused = await start(ana, sealed, 'Leak');
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.message).toBe(
+      'A private conversation keeps to itself: start a topic from your main one.',
+    );
+    // A stranger's message request isn't the place for one either.
+    const zed = await signup(t, { displayName: 'Zed Topics' });
+    const request = (await zed.post('/v1/conversations', { kind: 'direct', userId: ana.user.id }))
+      .conversation.id;
+    expect((await start(zed, request, 'Sell')).statusCode).toBe(403);
+  });
+
+  it('an owner whose account goes hands on the group and its topics alike', async () => {
+    const eve = await signup(t, { displayName: 'Eve Topics' });
+    await connect(eve, bo);
+    await connect(eve, dee);
+    const club = (
+      await eve.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Choir',
+        memberIds: [bo.user.id, dee.user.id],
+      })
+    ).conversation.id;
+    await eve.patch(`/v1/conversations/${club}/members/${dee.user.id}`, { role: 'admin' });
+    const topic = (await start(bo, club, 'Concert')).json().conversationId;
+    expect(
+      (await eve.req('DELETE', '/v1/me', { password: 'correct horse battery' })).statusCode,
+    ).toBe(200);
+    expect(await roles(bo, club)).toEqual({ 'Bo Topics': 'member', 'Dee Topics': 'owner' });
+    expect(await roles(bo, topic)).toEqual({ 'Bo Topics': 'member', 'Dee Topics': 'owner' });
+    expect(await lines(bo, topic)).toContain('owner_changed');
+  });
+});
+
 describe('follow-ups (PRD §69)', () => {
   it('no reply from a vendor within 48 h surfaces a follow-up', async () => {
     const dhl = await signup(t, { displayName: 'DHL Desk' });

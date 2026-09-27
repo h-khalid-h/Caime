@@ -526,7 +526,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('user_id', '=', userId)
         .execute();
       // The space's conversations they started pass on as they go, as a group's do (PRD §56).
-      const handed = await handOverGroups(trx, userId, { spaceId: id });
+      const handed = await handOverGroups(trx, userId, { spaceId: id }, ctx.now());
       const convos = await trx
         .updateTable('participants')
         .set({ left_at: ctx.now(), role: 'member' })

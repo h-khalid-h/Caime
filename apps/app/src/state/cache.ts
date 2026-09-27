@@ -124,6 +124,23 @@ export function updateMessage(qc: QueryClient, m: MessageView, me: string): void
   }));
 }
 
+/**
+ * A message at the top of its conversation changed (an edit, a live location moving on): the
+ * pinned bar shows it as it is now, without asking for the top again each time.
+ */
+export function patchPinned(qc: QueryClient, m: MessageView): void {
+  patchCache<{ messages: MessageView[] }>(qc, qk.pins(m.conversationId), (data) =>
+    data?.messages.some((p) => p.id === m.id)
+      ? {
+          ...data,
+          messages: data.messages.map((p) =>
+            p.id === m.id ? { ...m, poll: p.poll, reactions: p.reactions } : p,
+          ),
+        }
+      : data,
+  );
+}
+
 export function patchMessage(
   qc: QueryClient,
   conversationId: string,

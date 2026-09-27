@@ -58,6 +58,11 @@ export function GroupPeople({
   // A space's General holds the space's people: they're added and removed there. Its other
   // conversations take only people in the space, who can join them again from it.
   const general = Boolean(conversation.space) && conversation.isGeneral;
+  // A group's topic has the group's people, in the roles they have there (PRD §58): they're
+  // changed in the group, and leaving it is leaving its topics.
+  const topicOf =
+    conversation.kind === 'group' && conversation.parentId ? conversation.parentId : null;
+  const fixed = general || topicOf !== null;
   const spaceOf = conversation.space && !conversation.isGeneral ? conversation.space : null;
   const [adding, setAdding] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -129,7 +134,7 @@ export function GroupPeople({
         >
           {people.length === 1 ? '1 person' : `${people.length} people`}
         </Text>
-        {manager && !general ? (
+        {manager && !fixed ? (
           <Button
             label="Add"
             size="sm"
@@ -162,9 +167,7 @@ export function GroupPeople({
         const self = p.userId === me;
         const role = roleOf(p.role);
         const manageable =
-          !self &&
-          !general &&
-          (canRemoveFromSpace(myRole, role) || canChangeSpaceRole(myRole, role));
+          !self && !fixed && (canRemoveFromSpace(myRole, role) || canChangeSpaceRole(myRole, role));
         return (
           <Pressable
             key={p.userId}
@@ -199,7 +202,23 @@ export function GroupPeople({
           </Pressable>
         );
       })}
-      {general ? null : (
+      {topicOf ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => {
+            onNavigate?.();
+            router.navigate({ pathname: '/c/[id]', params: { id: topicOf } });
+          }}
+          testID="topic-group"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 6 }}
+        >
+          <MessageCircle size={14} color={t.c.accentStrong} />
+          <Text variant="captionStrong" color="link" style={{ flex: 1 }}>
+            Its people are {conversation.title}’s: open the group to change them
+          </Text>
+        </Pressable>
+      ) : null}
+      {fixed ? null : (
         <Pressable
           accessibilityRole="button"
           onPress={() => setLeaving(true)}

@@ -13,6 +13,7 @@ import {
   applyMessageToInbox,
   patchCache,
   patchMessage,
+  patchPinned,
   removeMessage,
   updateMessage,
   upsertMessage,
@@ -134,7 +135,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       updateMessage(qc, event.data, me);
       applyEditToInbox(qc, event.data);
       // Pinned, its words at the top are these now.
-      if (event.data.pinnedAt) invalidate(qk.pins(event.data.conversationId));
+      patchPinned(qc, event.data);
       return;
     case 'message.deleted':
       patchMessage(qc, event.data.conversationId, event.data.id, (m) => ({

@@ -1,5 +1,5 @@
 import type { InboxItemView } from '@caishy/core/api';
-import { formatListTime, joinNames } from '@caishy/core/format';
+import { formatListTime, joinNames, listTitle } from '@caishy/core/format';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { OrgMark } from '@/features/orgs/kinds';
@@ -51,9 +51,7 @@ export const ConversationRow = memo(function ConversationRow({
   const presence = useLive((s) => (item.other ? s.presence[item.other.id] : undefined));
   const reason = item.reasons.find((r) => EXPLAINING.has(r.code));
   const unread = item.unreadCount > 0;
-  const title = item.topic
-    ? `${item.other?.displayName ?? item.title} · ${item.topic}`
-    : item.title;
+  const title = listTitle(item);
   const preview = typing
     ? 'typing…'
     : item.draft

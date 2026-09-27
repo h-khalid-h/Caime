@@ -15,6 +15,7 @@ import {
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
+import { isGroupTopic } from './conversations';
 import { enqueue } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
@@ -257,9 +258,19 @@ async function notifyRecipient(
   const space = conversation.space_id
     ? (await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id)
     : undefined;
+  // A group's topic is named with its group: "Book club · Middlemarch".
+  const group = isGroupTopic(conversation)
+    ? await ctx.db
+        .selectFrom('conversations')
+        .select('title')
+        .where('id', '=', conversation.parent_id as string)
+        .executeTakeFirst()
+    : undefined;
   const groupTitle = space
     ? spaceConversationTitle(space, conversation)
-    : (conversation.title ?? 'Group');
+    : group
+      ? `${group.title ?? 'Group'} · ${conversation.title ?? 'Topic'}`
+      : (conversation.title ?? 'Group');
   const preview =
     conversation.privacy_class === 'private' ? 'New message' : messagePreview(message);
   const groupKey = `conv:${conversation.id}`;
@@ -592,7 +603,11 @@ async function detectTopic(
   conversation: Conversation,
   message: Message,
 ): Promise<void> {
-  if (!conversation.is_general) return;
+  // Where a subject can become a topic: a one-to-one, a space's General, or a group that isn't
+  // one itself (PRD §58).
+  const plainGroup =
+    conversation.kind === 'group' && !conversation.space_id && !conversation.parent_id;
+  if (!conversation.is_general && !plainGroup) return;
   const topics = (message.entities as { topics?: string[] }).topics ?? [];
   if (topics.length === 0) return;
   const recent = await ctx.db

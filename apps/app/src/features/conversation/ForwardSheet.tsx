@@ -6,6 +6,7 @@
  * and goes to all of them or none.
  */
 import type { MessageView } from '@caishy/core/api';
+import { listTitle } from '@caishy/core/format';
 import { uuidv4 } from '@caishy/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -57,7 +58,7 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
       seen.get(c.id) === false &&
       // Their request unanswered, it takes one message, and has had it.
       !(c.request === 'outgoing' && c.lastMessage) &&
-      (!term || c.title.toLocaleLowerCase().includes(term)),
+      (!term || listTitle(c).toLocaleLowerCase().includes(term)),
   );
   const send = async () => {
     setBusy(true);
@@ -115,7 +116,7 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
               return (
                 <ListRow
                   key={c.id}
-                  title={c.title}
+                  title={listTitle(c)}
                   subtitle={c.relationship?.label ?? (c.other ? null : `${c.memberCount} people`)}
                   checked={on}
                   left={

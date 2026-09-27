@@ -357,7 +357,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     const { closed, handed } = await ctx.db.transaction().execute(async (trx) => {
       // Spaces, groups and organizations it owned stay with the people in them.
       await handOverSpaces(trx, me, ctx.now());
-      const handed = await handOverGroups(trx, me);
+      const handed = await handOverGroups(trx, me, {}, ctx.now());
       const closedOrgs = await handOverOrgs(trx, me, ctx.now());
       // Anyone who merged others under this account still sees them as one person.
       await rerootMerged(trx, me);

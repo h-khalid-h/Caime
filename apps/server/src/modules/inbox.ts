@@ -57,6 +57,12 @@ export async function buildInbox(
       'c.created_at',
       'c.privacy_class',
       'c.space_id',
+      // A group's topic goes by its group's name, with its own as the topic (PRD §58).
+      sql<
+        string | null
+      >`(select g.title from conversations g where g.id = c.parent_id and c.kind = 'group')`.as(
+        'group_title',
+      ),
       'p.last_read_seq',
       'p.attention',
       'p.muted_until',
@@ -288,10 +294,15 @@ export async function buildInbox(
             ? r.is_general
               ? (other?.displayName ?? 'Deleted account')
               : (r.title ?? 'Topic')
-            : (r.title ?? 'Group'),
+            : r.parent_id && r.kind === 'group'
+              ? (r.group_title ?? 'Group')
+              : (r.title ?? 'Group'),
       space,
       org,
-      topic: r.kind === 'direct' && !r.is_general ? r.title : null,
+      topic:
+        (r.kind === 'direct' && !r.is_general) || (r.parent_id && r.kind === 'group')
+          ? r.title
+          : null,
       isGeneral: r.is_general,
       parentId: r.parent_id,
       privacyClass: r.privacy_class,

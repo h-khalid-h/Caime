@@ -264,6 +264,10 @@ These are rules, not preferences.
   none is in the first download. Measure with `node scripts/bundle-budget.mjs <dist>` after an
   `expo export --source-maps`, and look at what's in `__common` before splitting anything.
   A part that is a whole tab or pane takes a failure screen (`lazyPart(load, ScreenError)`).
+- A group's topics (`isGroupTopic`: a group with a `parent_id`) have its people in its roles.
+  Any change to a group's participants or roles calls `mirrorTopics(trx, groupId, ctx.now())`
+  under the group's lock, and tells what changed with `tellTopics`; a topic's own member routes
+  refuse. A new path that changes who's in a group, or who runs it, does the same.
 - A `message.updated` event is the message as whoever changed it sees it (their poll votes,
   their reactions). The app applies it with `updateMessage` (`state/cache.ts`): only to a
   message it already shows, never adding one, and with the viewer's own parts worked out again.

@@ -39,6 +39,7 @@ import {
   SendMessageBody,
   type SpaceRole,
   SpaceRoleBody,
+  TopicBody,
   UpdateConversationBody,
   uuidv7,
   VoteBody,
@@ -60,8 +61,11 @@ import { canEditConversation, contextEditable, contextVisible } from '../lib/con
 import {
   ensureDirectConversation,
   handOverGroup,
+  isGroupTopic,
   lockConversation,
+  mirrorTopics,
   seatIn,
+  type TopicChange,
 } from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -240,13 +244,37 @@ export async function conversationView(
   const space = conversation.space_id
     ? ((await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id) ?? null)
     : null;
+  // A group's topic goes by the group's name, with its own as the topic (PRD §58).
+  const group =
+    isGroupTopic(conversation) && conversation.parent_id
+      ? await ctx.db
+          .selectFrom('conversations')
+          .select('title')
+          .where('id', '=', conversation.parent_id)
+          .executeTakeFirst()
+      : undefined;
+  // Its topics that the viewer is in, the liveliest first; a topic has none of its own.
+  const topics = group
+    ? []
+    : await ctx.db
+        .selectFrom('conversations as c')
+        .innerJoin('participants as p', 'p.conversation_id', 'c.id')
+        .select(['c.id', 'c.title', 'c.last_message_at'])
+        .where('c.parent_id', '=', conversation.id)
+        .where('p.user_id', '=', userId)
+        .where('p.left_at', 'is', null)
+        .orderBy(sql`c.last_message_at desc nulls last`)
+        .limit(50)
+        .execute();
   let title = space
     ? spaceConversationTitle(space, conversation)
     : conversation.kind === 'direct'
       ? conversation.is_general
         ? (other?.person.displayName ?? 'Deleted account')
         : (conversation.title ?? 'Topic')
-      : (conversation.title ?? 'Group');
+      : group
+        ? (group.title ?? 'Group')
+        : (conversation.title ?? 'Group');
   let shown = participants;
   let business: ConversationBusinessView | null = null;
   if (conversation.kind === 'business') {
@@ -294,7 +322,15 @@ export async function conversationView(
     title,
     name: conversation.is_general || conversation.kind === 'business' ? null : conversation.title,
     space,
-    topic: conversation.kind === 'direct' && !conversation.is_general ? conversation.title : null,
+    topic:
+      (conversation.kind === 'direct' && !conversation.is_general) || group
+        ? conversation.title
+        : null,
+    topics: topics.map((c) => ({
+      id: c.id,
+      title: c.title ?? 'Topic',
+      lastMessageAt: c.last_message_at?.toISOString() ?? null,
+    })),
     purpose: conversation.purpose,
     isGeneral: conversation.is_general,
     parentId: conversation.parent_id,
@@ -340,6 +376,9 @@ export async function conversationView(
   };
 }
 
+/** Why a topic's people aren't changed in it. */
+const TOPIC_PEOPLE = 'A topic’s people are its group’s: add, remove or make admins there.';
+
 export async function createTopicConversation(
   ctx: AppContext,
   userId: string,
@@ -351,8 +390,10 @@ export async function createTopicConversation(
   // In a space, a topic that keeps coming up in General becomes a conversation for everyone.
   if (conversation.space_id && conversation.is_general && privacy === 'standard')
     return createSpaceConversation(ctx, userId, conversation.space_id, { title, everyone: true });
+  if (conversation.kind === 'group' && !conversation.space_id)
+    return createGroupTopic(ctx, userId, conversation.parent_id ?? conversation.id, title);
   if (conversation.kind !== 'direct' || !conversation.direct_key)
-    throw badRequest('Topics branch off a direct conversation.');
+    throw badRequest('Topics branch off a one-to-one, a group, or a space’s General.');
   const members = await participantsOf(ctx.db, parentId);
   const id = uuidv7();
   await ctx.db.transaction().execute(async (trx) => {
@@ -381,6 +422,79 @@ export async function createTopicConversation(
     { type: 'conversation.created', data: { conversationId: id } },
   );
   return id;
+}
+
+/**
+ * A group's topic (PRD §58): the group again, on one subject. Its people are the group's, in the
+ * roles they have there, and stay so (mirrorTopics); it's as private as the group, and its
+ * messages disappear as the group's do. A topic of a topic is one of the group's. The same
+ * subject started twice is the one topic.
+ */
+async function createGroupTopic(
+  ctx: AppContext,
+  userId: string,
+  groupId: string,
+  title: string,
+): Promise<string> {
+  const name = title.trim();
+  const made = await ctx.db.transaction().execute(async (trx) => {
+    await lockConversation(trx, groupId);
+    if (!(await seatIn(trx, groupId, userId))) throw notFound('That conversation');
+    const group = await trx
+      .selectFrom('conversations')
+      .selectAll()
+      .where('id', '=', groupId)
+      .executeTakeFirstOrThrow();
+    const same = await trx
+      .selectFrom('conversations')
+      .select('id')
+      .where('parent_id', '=', groupId)
+      .where('kind', '=', 'group')
+      .where(sql`lower(title)`, '=', sql`lower(${name})`)
+      .executeTakeFirst();
+    if (same) return { id: same.id, group, fresh: false };
+    const id = uuidv7();
+    await trx
+      .insertInto('conversations')
+      .values({
+        id,
+        kind: 'group',
+        title: name,
+        parent_id: groupId,
+        privacy_class: group.privacy_class,
+        retention_days: group.retention_days,
+        created_by: userId,
+      })
+      .execute();
+    await mirrorTopics(trx, groupId, ctx.now());
+    await recordEvent(trx, 'conversation.created', userId, { conversationId: id, kind: 'topic' });
+    return { id, group, fresh: true };
+  });
+  if (!made.fresh) return made.id;
+  const by = await ctx.db
+    .selectFrom('users')
+    .select('display_name')
+    .where('id', '=', userId)
+    .executeTakeFirstOrThrow();
+  await sendSystem(ctx, made.id, userId, 'topic_created', {
+    title: made.group.title,
+    by: by.display_name,
+  });
+  await sendSystem(ctx, groupId, userId, 'topic_started', {
+    title: name,
+    by: by.display_name,
+    conversationId: made.id,
+  });
+  await ctx.bus.publish(
+    (await participantsOf(ctx.db, made.id)).map((p) => p.user_id),
+    { type: 'conversation.created', data: { conversationId: made.id } },
+  );
+  // The group lists its topics.
+  await ctx.bus.publish(
+    (await participantsOf(ctx.db, groupId)).map((p) => p.user_id),
+    { type: 'conversation.updated', data: { conversationId: groupId } },
+  );
+  return made.id;
 }
 
 export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -513,6 +627,27 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
   });
 
+  /** Start a topic (PRD §58): in a one-to-one, a group, or a space's General. */
+  app.post('/conversations/:id/topics', async (req, reply) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { title } = parse(TopicBody, req.body);
+    const { conversation } = await membership(ctx, auth.userId, id);
+    // Only between people who may write to each other: connected, and not blocked.
+    await assertCanWrite(ctx, id, auth.userId);
+    if (conversation.kind === 'direct' && !conversation.connection_id)
+      throw forbidden('Connect first to start topics.');
+    if (conversation.kind === 'business')
+      throw badRequest('Topics are for conversations between people.');
+    // A private one-to-one keeps to itself: a topic of it would be written in the clear.
+    if (conversation.kind === 'direct' && conversation.privacy_class === 'private')
+      throw badRequest('A private conversation keeps to itself: start a topic from your main one.');
+    ctx.limiter.hit(`topic:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
+    const conversationId = await createTopicConversation(ctx, auth.userId, id, title);
+    reply.status(201);
+    return { conversationId };
+  });
+
   app.get('/conversations/:id', async (req): Promise<{ conversation: ConversationView }> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
@@ -619,6 +754,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
+  /** A topic's people changed with its group's: everyone in it, and whoever went, sees so. */
+  async function tellTopics(changes: TopicChange[]) {
+    for (const c of changes)
+      await ctx.bus.publish(
+        [...c.left, ...(await participantsOf(ctx.db, c.topicId)).map((p) => p.user_id)],
+        { type: 'conversation.updated', data: { conversationId: c.topicId } },
+      );
+  }
+
   app.post('/conversations/:id/members', async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
@@ -627,6 +771,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (conversation.kind === 'direct') throw badRequest('Start a group to add people.');
     if (conversation.kind === 'business')
       throw badRequest('Its team is the organization’s: add people to the team instead.');
+    if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE);
     if (!['owner', 'admin'].includes(me.role)) throw forbidden('Only admins can add people.');
     if (conversation.space_id) {
       // A space's conversations hold its people: General all of them, the others who join.
@@ -693,10 +838,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
               .where('participants.left_at', 'is not', null),
           )
           .execute();
-      return fresh;
+      // Its topics have its people.
+      return { fresh, topics: await mirrorTopics(trx, id, ctx.now()) };
     });
-    if (!added.length) return { ok: true };
-    await sendSystem(ctx, id, auth.userId, 'members_added', { userIds: added });
+    await tellTopics(added.topics);
+    if (!added.fresh.length) return { ok: true };
+    await sendSystem(ctx, id, auth.userId, 'members_added', { userIds: added.fresh });
     await ctx.bus.publish([...(await participantsOf(ctx.db, id)).map((p) => p.user_id)], {
       type: 'conversation.updated',
       data: { conversationId: id },
@@ -715,6 +862,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct' || conversation.kind === 'business')
       throw badRequest('You can archive this conversation instead.');
+    if (isGroupTopic(conversation))
+      throw badRequest(
+        userId === auth.userId
+          ? 'Leave the group to leave its topics. You can archive this one.'
+          : TOPIC_PEOPLE,
+      );
     if (conversation.space_id && conversation.is_general)
       throw badRequest(
         userId === auth.userId
@@ -746,21 +899,28 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .where('user_id', '=', userId)
         .where('left_at', 'is', null)
         .execute();
-      // What Caishy offered them about it is gone with it.
+      // Whoever owned it hands it on as they go, so someone can always run it.
+      const heir = target.role === 'owner' ? await handOverGroup(trx, id, userId) : null;
+      // Out of the group is out of its topics, and they're run as it is now.
+      const topics = await mirrorTopics(trx, id, ctx.now());
+      // What Caishy offered them about it, and its topics, is gone with them.
       await trx
         .updateTable('suggestions')
         .set({ status: 'expired', resolved_at: ctx.now() })
         .where('user_id', '=', userId)
-        .where('conversation_id', '=', id)
+        .where('conversation_id', 'in', [id, ...topics.map((t) => t.topicId)])
         .where('status', '=', 'pending')
         .execute();
-      // Whoever owned it hands it on as they go, so someone can always run it.
-      return { heir: target.role === 'owner' ? await handOverGroup(trx, id, userId) : null };
+      return { heir, topics };
     });
     if (!done) return { ok: true };
-    const { heir } = done;
-    // Out of the conversation is out of its call.
-    await leaveGroupCallsIn(ctx, userId, [id]);
+    const { heir, topics } = done;
+    // Out of the conversation is out of its call, and its topics' calls.
+    await leaveGroupCallsIn(ctx, userId, [
+      id,
+      ...topics.filter((t) => t.left.includes(userId)).map((t) => t.topicId),
+    ]);
+    await tellTopics(topics);
     await sendSystem(
       ctx,
       id,
@@ -788,6 +948,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct' || conversation.kind === 'business')
       throw badRequest('Only a group has admins.');
+    if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE);
     if (conversation.space_id && conversation.is_general)
       throw badRequest('Make them an admin of the space instead.');
     const changed = await ctx.db.transaction().execute(async (trx) => {
@@ -810,9 +971,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .where('left_at', 'is', null)
         .where('role', '=', target.role)
         .executeTakeFirst();
-      return Number(done.numUpdatedRows) > 0;
+      if (Number(done.numUpdatedRows) === 0) return null;
+      // Its topics are run by the same people.
+      return mirrorTopics(trx, id, ctx.now());
     });
     if (!changed) return { ok: true };
+    await tellTopics(changed);
     await sendSystem(
       ctx,
       id,

@@ -404,6 +404,9 @@ export const CreateConversationBody = z.discriminatedUnion('kind', [
   }),
 ]);
 
+/** A topic started from a conversation (PRD §58): its subject, as its name. */
+export const TopicBody = z.object({ title: z.string().trim().min(1, 'Name the topic.').max(80) });
+
 export const UpdateConversationBody = z
   .object({
     title: z.string().trim().min(1).max(80).optional(),

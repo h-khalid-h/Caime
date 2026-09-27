@@ -2,6 +2,7 @@ import type { SuggestionView } from '@caishy/core/api';
 import { AI_LABEL } from '@caishy/core/assist';
 import { formatDue } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -54,8 +55,13 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   const accept = async () => {
     setBusy(true);
     try {
-      await endpoints.acceptSuggestion(s.id);
+      const { accepted } = await endpoints.acceptSuggestion(s.id);
       toast(DONE[s.kind] ?? 'Done');
+      // A topic started is opened, as one started from the details is.
+      if (accepted.type === 'conversation') {
+        void qc.invalidateQueries({ queryKey: qk.conversation(conversationId) });
+        router.navigate({ pathname: '/c/[id]', params: { id: accepted.id } });
+      }
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
