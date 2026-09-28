@@ -82,7 +82,7 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       minimumAge: 13,
       publicUrl: BASE,
       stun: 'google',
-      relay: false,
+      relay: 'none',
     };
     const privacy = (over: Partial<PageFacts>) =>
       read(renderPage('privacy', { ...facts, ...over }));
@@ -90,7 +90,12 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
     expect(privacy({})).not.toContain('relay');
     expect(privacy({ stun: 'other' })).toContain('a public server that tells a device its own.');
     expect(privacy({ stun: 'none' })).not.toContain('public server');
-    expect(privacy({ relay: true })).toContain('the call goes through Caime&rsquo;s relay instead');
+    expect(privacy({ relay: 'own' })).toContain(
+      'the call goes through Caime&rsquo;s relay instead',
+    );
+    expect(privacy({ relay: 'cloudflare' })).toContain(
+      'the call goes through a relay Cloudflare runs for Caime instead',
+    );
     expect(privacy({})).toContain(
       'Security records are kept for a year, and a device&rsquo;s sign-in for 30 days after it ended.',
     );
@@ -105,6 +110,16 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       expect(page).toContain('the call goes through Caime&rsquo;s relay instead');
     } finally {
       await t.close();
+    }
+    const cf = await createTestApp({
+      CLOUDFLARE_TURN_KEY_ID: 'key-1',
+      CLOUDFLARE_TURN_API_TOKEN: 'token-1',
+    });
+    try {
+      const page = read((await cf.app.inject({ method: 'GET', url: '/privacy' })).body);
+      expect(page).toContain('a relay Cloudflare runs for Caime');
+    } finally {
+      await cf.close();
     }
   });
 

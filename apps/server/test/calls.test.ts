@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { createServer } from 'node:http';
 import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -438,7 +439,7 @@ describe('calls (PRD §47)', () => {
     expect((await call(omar, omarSam, 'voice', 'omar-phone-1')).statusCode).toBe(403);
   });
 
-  it('reaches the other side through STUN, and a relay with credentials that expire', () => {
+  it('reaches the other side through STUN, and a relay with credentials that expire', async () => {
     const at = new Date('2026-09-26T12:00:00Z');
     const secret = 'relay-shared-secret-0123456789';
     const ctx = {
@@ -449,7 +450,7 @@ describe('calls (PRD §47)', () => {
       },
       now: () => at,
     } as unknown as TestApp['ctx'];
-    const { iceServers, relay } = iceConfig(ctx, 'user-1');
+    const { iceServers, relay } = await iceConfig(ctx, 'user-1');
     expect(relay).toBe(true);
     expect(iceServers[0]).toEqual({ urls: ['stun:stun.example:3478'] });
     const expiry = at.getTime() / 1000 + 12 * 3600;
@@ -459,9 +460,94 @@ describe('calls (PRD §47)', () => {
       credential: createHmac('sha1', secret).update(`${expiry}:user-1`).digest('base64'),
     });
     // The default: STUN only, and it says there's no relay.
-    expect(iceConfig(t.ctx, 'user-1')).toEqual({
+    expect(await iceConfig(t.ctx, 'user-1')).toEqual({
       iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
       relay: false,
     });
+  });
+
+  it('asks Cloudflare for relay credentials of its own, and goes on without when it fails', async () => {
+    const asked: Array<{ url?: string; auth?: string; body: string }> = [];
+    let answer: { status: number; body: unknown } = {
+      status: 201,
+      body: {
+        iceServers: [
+          { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
+          {
+            urls: [
+              'turn:turn.cloudflare.com:3478?transport=udp',
+              'turn:turn.cloudflare.com:53?transport=udp',
+              'turn:turn.cloudflare.com:3478?transport=tcp',
+              'turns:turn.cloudflare.com:5349?transport=tcp',
+              'turns:turn.cloudflare.com:443?transport=tcp',
+            ],
+            username: 'cf-user',
+            credential: 'cf-secret',
+          },
+        ],
+      },
+    };
+    const stub = createServer((req, res) => {
+      let body = '';
+      req.on('data', (c) => {
+        body += c;
+      });
+      req.on('end', () => {
+        asked.push({ url: req.url, auth: req.headers.authorization, body });
+        res.writeHead(answer.status, { 'content-type': 'application/json' });
+        res.end(JSON.stringify(answer.body));
+      });
+    });
+    await new Promise<void>((r) => stub.listen(0, '127.0.0.1', r));
+    const { port } = stub.address() as { port: number };
+    const cf = await createTestApp({
+      CLOUDFLARE_TURN_KEY_ID: 'key/1',
+      CLOUDFLARE_TURN_API_TOKEN: 'cf-token',
+      CLOUDFLARE_TURN_API_BASE: `http://127.0.0.1:${port}/`,
+    });
+    try {
+      const noor = await signup(cf, { displayName: 'Noor Haddad' });
+      expect(await noor.get('/v1/calls/ice')).toEqual({
+        iceServers: [
+          { urls: ['stun:stun.l.google.com:19302'] },
+          {
+            // Only the relay, and never on port 53, which browsers refuse.
+            urls: [
+              'turn:turn.cloudflare.com:3478?transport=udp',
+              'turn:turn.cloudflare.com:3478?transport=tcp',
+              'turns:turn.cloudflare.com:5349?transport=tcp',
+              'turns:turn.cloudflare.com:443?transport=tcp',
+            ],
+            username: 'cf-user',
+            credential: 'cf-secret',
+          },
+        ],
+        relay: true,
+      });
+      expect(asked).toEqual([
+        {
+          url: '/v1/turn/keys/key%2F1/credentials/generate-ice-servers',
+          auth: 'Bearer cf-token',
+          body: JSON.stringify({ ttl: 12 * 3600 }),
+        },
+      ]);
+      // Cloudflare refusing (a revoked token) or answering nonsense: the call goes on with STUN.
+      for (const a of [
+        { status: 401, body: { error: 'unauthorized' } },
+        { status: 201, body: { iceServers: [{ urls: ['stun:stun.cloudflare.com:3478'] }] } },
+      ]) {
+        answer = a;
+        expect(await noor.get('/v1/calls/ice')).toEqual({
+          iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
+          relay: false,
+        });
+      }
+      const scrape = cf.ctx.metrics.render();
+      expect(scrape).toContain('caime_turn_credentials_total{outcome="issued"} 1');
+      expect(scrape).toContain('caime_turn_credentials_total{outcome="failed"} 2');
+    } finally {
+      await cf.close();
+      await new Promise((r) => stub.close(r));
+    }
   });
 });

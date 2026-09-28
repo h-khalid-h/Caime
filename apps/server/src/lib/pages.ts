@@ -23,8 +23,11 @@ export interface PageFacts {
   publicUrl: string;
   /** Whose public server tells a device its own address for calls, if any (STUN_URLS). */
   stun: 'google' | 'other' | 'none';
-  /** Whether calls that can't connect directly go through a relay (TURN_URLS). */
-  relay: boolean;
+  /**
+   * Whose relay carries calls that can't connect directly, if any: Caime's own (TURN_URLS) or
+   * Cloudflare's (CLOUDFLARE_TURN_KEY_ID).
+   */
+  relay: 'own' | 'cloudflare' | 'none';
 }
 
 /** When each page last changed in what it says. */
@@ -44,10 +47,11 @@ function privacy(f: PageFacts, mail: string): string {
       ? ''
       : ` To connect, each device learns the network address of every other device in the call,
 with the help of a public server that tells a device its own${f.stun === 'google' ? ' (Google&rsquo;s)' : ''}.`;
-  const relay = f.relay
-    ? ` When a network won&rsquo;t let two devices connect directly, the call goes through
-Caime&rsquo;s relay instead, still encrypted: the relay sees both network addresses.`
-    : '';
+  const relay =
+    f.relay === 'none'
+      ? ''
+      : ` When a network won&rsquo;t let two devices connect directly, the call goes through
+${f.relay === 'cloudflare' ? 'a relay Cloudflare runs for Caime' : 'Caime&rsquo;s relay'} instead, still encrypted: the relay sees both network addresses.`;
   return `
 <h1>Privacy</h1>
 <p class="updated">Last updated ${UPDATED}</p>

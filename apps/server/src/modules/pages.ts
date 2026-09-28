@@ -79,7 +79,7 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
         : config.stunUrls.length
           ? 'other'
           : 'none',
-      relay: config.turnUrls.length > 0,
+      relay: config.cloudflareTurn ? 'cloudflare' : config.turnUrls.length > 0 ? 'own' : 'none',
     });
     app.get(`/${name}`, async (req, reply) => {
       const away = there[name];

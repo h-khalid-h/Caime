@@ -372,7 +372,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       on the server and in the app, E2E with two browsers and a third device approved from the
       phone). [ ] Private conversations in the phone apps
       [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
-      ⛔ A TURN relay for calls on strict networks (`TURN_URLS`, `TURN_SECRET`, `docs/DEPLOY.md`)
+      ⛔ A TURN relay for calls on strict networks. Production has none, so a call between two
+      networks that won't connect directly (most mobile carriers, many offices) waits on
+      "Connecting…" and ends after 30 seconds. Caime takes either its own coturn (`TURN_URLS`,
+      `TURN_SECRET`) or Cloudflare's (`CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN`,
+      credentials for each person that expire, STUN only if Cloudflare doesn't answer;
+      `calls.test.ts`); needed: a TURN key from the Cloudflare dashboard (Realtime → TURN
+      Server) set on the `caime` service. Without one, a call that can't connect says a network
+      may be blocking it and to try another (`engine.web.test.ts`)
 
 ## M7 — Ship
 
@@ -943,3 +950,12 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   check that looked for a hold before a holder would miss a handle let go of between the two. It
   looks for the holder first, and a test commits a change exactly there. Tests: 223 core, 50
   brand, 479 server, 156 app; E2E not run this session.
+- 2026-09-28 — The sidebar's mark is the favicon's: the heart with a face (`IconMark`), drawn
+  from the same geometry as `favicon.svg` (`ICON_MARK`, generated), and the boot screen shows
+  it too. The web app's head links a vector favicon (the .ico, 16/32/48, only for browsers
+  without SVG), an apple-touch icon and an install manifest with a maskable icon, all made by
+  the brand script; `favicon.svg` and `manifest.webmanifest` are reserved handles. Calls stuck
+  on "Connecting…" in production: there's no relay there (only Google's STUN), so calls across
+  strict networks can't connect; Cloudflare's relay is supported now and waits on a TURN key
+  (⛔, M6), and a failed call without one says what to try. Web budget 448.6 KB (448.3 before).
+  Tests: 223 core, 50 brand, 480 server, 159 app; E2E left to CI.

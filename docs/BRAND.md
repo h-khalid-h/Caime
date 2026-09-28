@@ -96,7 +96,8 @@ on, or the nearest to it; roles derived from the palette are listed further down
 - **App icon:** the flat Caime head (v3 brand icon) on a Caime Pink tile; generated squares use
   a 22.5% corner radius and platforms apply their own masks.
 - **Icon mark:** the heart with a face — favicons, notification icons, the Android monochrome
-  icon, loading states and anything under 32 px.
+  icon, loading states, the desktop sidebar and anything under 32 px. The app draws it with
+  `IconMark` from the same geometry as `favicon.svg` (`ICON_MARK`), never a bare heart.
 - **Monogram:** a rounded "C" on Dark Purple, for surfaces that need a letter rather than a face
   (organization and developer contexts, per B2).
 - **Clear space:** the height of the heart on every side. **Minimum size:** wordmark 72 px wide,

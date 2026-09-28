@@ -29,7 +29,6 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/brand/favicon.png",
       "name": "Caime",
       "shortName": "Caime",
       "description": "Messaging that understands your relationships.",

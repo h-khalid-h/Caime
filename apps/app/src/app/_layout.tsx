@@ -22,7 +22,7 @@ import {
   queryClient,
   saveCacheWhenLeft,
 } from '@/api/queryClient';
-import { HeartMark } from '@/brand/Wordmark';
+import { IconMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
 import { keepAppForOffline } from '@/lib/offline';
 import { useOutbox } from '@/state/outbox';
@@ -113,7 +113,7 @@ function Boot() {
       }}
       accessibilityLabel="Caime is starting"
     >
-      <HeartMark size={44} />
+      <IconMark size={64} />
     </View>
   );
 }

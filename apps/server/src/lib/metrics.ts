@@ -144,6 +144,10 @@ export function createMetrics(pool: pg.Pool) {
       [0.25, 0.5, 1, 2, 5, 10, 20, 40],
     ),
     push: new Counter('caime_push_total', 'Push notifications, by channel and outcome.'),
+    turn: new Counter(
+      'caime_turn_credentials_total',
+      'Relay credentials asked of Cloudflare for calls, by outcome (issued, failed).',
+    ),
   };
   const process_ = [
     new Gauge('caime_db_pool_connections', 'Database connections, by state.', () => [

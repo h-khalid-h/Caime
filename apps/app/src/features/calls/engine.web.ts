@@ -52,6 +52,8 @@ let ringTimer: ReturnType<typeof setTimeout> | null = null;
 let control: RTCDataChannel | null = null;
 /** The screen being shown instead of the camera, while it is. */
 let screen: MediaStreamTrack | null = null;
+/** Whether this call had a relay to fall back on, for what to say when it couldn't connect. */
+let relayed = true;
 
 /** How far along a call is: a view never moves one back. */
 const STAGE = { ringing: 0, active: 1, ended: 2 } as const;
@@ -105,6 +107,7 @@ function release(): void {
   pc?.close();
   pc = null;
   remoteDescribed = false;
+  relayed = true;
   waiting = [];
   early = [];
   for (const t of store().local?.getTracks() ?? []) t.stop();
@@ -182,12 +185,22 @@ function heartbeat(callId: string): void {
   }, BEAT_MS);
 }
 
+/**
+ * The two devices never found each other. With no relay to go through, a strict network (a mobile
+ * carrier's, an office's) is the likely reason, so the person hears what might work, longer than
+ * the call screen stays.
+ */
+function couldntConnect(): void {
+  if (!relayed)
+    toast('One of your networks may be blocking calls. Try again on another, such as Wi-Fi.');
+  void hangUp('The call couldn’t connect.', true);
+}
+
 /** Answered: the two devices find each other soon, or the call couldn't connect. */
 function connectBy(callId: string): void {
   if (connectTimer) clearTimeout(connectTimer);
   connectTimer = setTimeout(() => {
-    if (current()?.id === callId && store().phase === 'connecting')
-      void hangUp('The call couldn’t connect.', true);
+    if (current()?.id === callId && store().phase === 'connecting') couldntConnect();
   }, CONNECT_MS);
 }
 
@@ -229,7 +242,10 @@ function tellState(): void {
 }
 
 async function connect(local: MediaStream): Promise<RTCPeerConnection> {
-  const { iceServers } = await endpoints.callIce().catch(() => ({ iceServers: [] }));
+  const { iceServers, relay } = await endpoints
+    .callIce()
+    .catch(() => ({ iceServers: [], relay: false }));
+  relayed = relay;
   const peer = new RTCPeerConnection({ iceServers });
   const remote = new MediaStream();
   for (const track of local.getTracks()) peer.addTrack(track, local);
@@ -269,7 +285,7 @@ async function connect(local: MediaStream): Promise<RTCPeerConnection> {
       // A moment's loss comes back by itself; a lasting one ends the call.
       dropTimer = setTimeout(() => void hangUp('The call dropped.'), 15_000);
     } else if (state === 'failed') {
-      void hangUp('The call couldn’t connect.', true);
+      couldntConnect();
     }
   };
   pc = peer;
@@ -488,7 +504,7 @@ export function onCallEvent(event: RealtimeEvent): void {
         await peer.setLocalDescription(await peer.createOffer());
         signal('offer', { sdp: peer.localDescription?.sdp });
       })
-      .catch(() => void hangUp('The call couldn’t connect.', true));
+      .catch(() => couldntConnect());
   }
 }
 

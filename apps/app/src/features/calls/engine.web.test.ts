@@ -23,7 +23,7 @@ const h = vi.hoisted(() => {
     endCall: vi.fn(async () => ({})),
     signalCall: vi.fn(async () => ({ ok: true })),
     callAlive: vi.fn(),
-    callIce: vi.fn(async () => ({ iceServers: [] })),
+    callIce: vi.fn(async () => ({ iceServers: [] as unknown[], relay: false })),
     liveCall: vi.fn(async () => ({ call: null as unknown })),
   };
   // A signed-in account that can sign out, as the session store does.
@@ -274,7 +274,7 @@ beforeEach(() => {
   h.endpoints.declineCall.mockResolvedValue({});
   h.endpoints.endCall.mockResolvedValue({});
   h.endpoints.signalCall.mockResolvedValue({ ok: true });
-  h.endpoints.callIce.mockResolvedValue({ iceServers: [] });
+  h.endpoints.callIce.mockResolvedValue({ iceServers: [], relay: false });
   h.endpoints.liveCall.mockResolvedValue({ call: null });
   media = async (c) =>
     new FakeStream([
@@ -501,6 +501,61 @@ describe('the web call engine, when the network misbehaves', () => {
     });
     expect(phase()).toBeNull();
     expect(h.checkLiveGroupCall).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('a call that can’t connect', () => {
+  async function placedAndFailed(relay: boolean) {
+    h.endpoints.callIce.mockResolvedValue({ iceServers: [], relay });
+    h.endpoints.startCall.mockResolvedValue({ call: placed() });
+    await engine.startCall('conv-1', 'voice');
+    engine.onCallEvent({
+      type: 'call.updated',
+      data: placed({ state: 'active', calleeDevice: 'dev-callee-00' }),
+    });
+    await settle();
+    const pc = pcs.at(-1)!;
+    pc.connectionState = 'failed';
+    pc.onconnectionstatechange?.();
+    await settle();
+  }
+
+  it('with no relay to go through, says a network may be blocking it and what to try', async () => {
+    await placedAndFailed(false);
+    expect(phase()).toBe('ended');
+    expect(useCall.getState().note).toBe('The call couldn’t connect.');
+    expect(h.toasts).toEqual([
+      'One of your networks may be blocking calls. Try again on another, such as Wi-Fi.',
+    ]);
+    expect(h.endpoints.endCall).toHaveBeenCalledWith('call-1', {
+      deviceId: DEVICE_ID,
+      failed: true,
+    });
+  });
+
+  it('through a relay, it only says it couldn’t connect', async () => {
+    await placedAndFailed(true);
+    expect(useCall.getState().note).toBe('The call couldn’t connect.');
+    expect(h.toasts).toEqual([]);
+  });
+
+  it('never finding each other in time ends it the same way', async () => {
+    h.endpoints.callIce.mockResolvedValue({ iceServers: [], relay: false });
+    h.endpoints.startCall.mockResolvedValue({ call: placed() });
+    await engine.startCall('conv-1', 'voice');
+    engine.onCallEvent({
+      type: 'call.updated',
+      data: placed({ state: 'active', calleeDevice: 'dev-callee-00' }),
+    });
+    await settle();
+    expect(phase()).toBe('connecting');
+    // The server still has it on all the while: only the two devices can't find each other.
+    h.endpoints.callAlive.mockResolvedValue({
+      call: placed({ state: 'active', calleeDevice: 'dev-callee-00' }),
+    });
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(phase()).toBe('ended');
+    expect(h.toasts).toHaveLength(1);
   });
 });
 

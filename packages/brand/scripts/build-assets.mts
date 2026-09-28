@@ -17,6 +17,8 @@ const fontPath = join(root, 'node_modules/@expo-google-fonts/nunito/900Black/Nun
 const appAssets = join(root, 'apps/app/assets/brand');
 const docsAssets = join(root, 'docs/brand');
 const generated = join(here, '..', 'src', 'generated');
+/** Served at the web app's root (the export copies it): what the page's head links to. */
+const webPublic = join(root, 'apps/app/public');
 
 const INK = '#3B2E5B';
 const PINK = '#FF8FB1';
@@ -24,6 +26,30 @@ const PINK_STRONG = '#C8285F';
 
 const HEART =
   'M12 21.2s-8.6-5.2-10.6-10.3C0 7.1 2.4 3.6 6 3.6c2.2 0 3.7 1.2 4.6 2.6.3.5.6.9.9 1.4.3-.5.6-.9.9-1.4.9-1.4 2.4-2.6 4.6-2.6 3.6 0 6 3.5 4.6 7.3C20.6 16 12 21.2 12 21.2Z';
+
+/**
+ * The icon mark's face, in its 256 box: the favicon's heart and face, and the app's own mark
+ * (`IconMark`), are drawn from this one description.
+ */
+const MARK = {
+  viewBox: '0 0 256 256',
+  heartTransform: 'translate(26 30) scale(8.5)',
+  eyes: [
+    { cx: 102, cy: 126, rx: 12, ry: 13 },
+    { cx: 154, cy: 126, rx: 12, ry: 13 },
+  ],
+  glints: [
+    { cx: 106, cy: 121, r: 4 },
+    { cx: 158, cy: 121, r: 4 },
+  ],
+  smile: 'M114 150 q14 14 28 0',
+  smileWidth: 8,
+  cheeks: [
+    { cx: 80, cy: 150, rx: 12, ry: 7 },
+    { cx: 176, cy: 150, rx: 12, ry: 7 },
+  ],
+  cheekOpacity: 0.35,
+};
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
@@ -95,13 +121,25 @@ function iconMarkSvg(
     ? // Monochrome icons use alpha only: cut the face out of the heart.
       `<mask id="m"><rect width="256" height="256" fill="#fff"/><circle cx="102" cy="126" r="11" fill="#000"/><circle cx="154" cy="126" r="11" fill="#000"/><path d="M114 150 q14 14 28 0" stroke="#000" stroke-width="9" fill="none" stroke-linecap="round"/></mask>`
     : '';
-  const heartPath = `<path transform="translate(26 30) scale(8.5)" d="${HEART}" fill="${fill}"${opts.monochrome ? ' mask="url(#m)"' : ''}/>`;
+  const heartPath = `<path transform="${MARK.heartTransform}" d="${HEART}" fill="${fill}"${opts.monochrome ? ' mask="url(#m)"' : ''}/>`;
   const features = opts.monochrome
     ? ''
-    : `<ellipse cx="102" cy="126" rx="12" ry="13" fill="${faceColor}"/><ellipse cx="154" cy="126" rx="12" ry="13" fill="${faceColor}"/>` +
-      `<circle cx="106" cy="121" r="4" fill="#FFFFFF"/><circle cx="158" cy="121" r="4" fill="#FFFFFF"/>` +
-      `<path d="M114 150 q14 14 28 0" stroke="${faceColor}" stroke-width="8" fill="none" stroke-linecap="round"/>` +
-      `<ellipse cx="80" cy="150" rx="12" ry="7" fill="#FFFFFF" opacity="0.35"/><ellipse cx="176" cy="150" rx="12" ry="7" fill="#FFFFFF" opacity="0.35"/>`;
+    : MARK.eyes
+        .map(
+          (e) =>
+            `<ellipse cx="${e.cx}" cy="${e.cy}" rx="${e.rx}" ry="${e.ry}" fill="${faceColor}"/>`,
+        )
+        .join('') +
+      MARK.glints
+        .map((g) => `<circle cx="${g.cx}" cy="${g.cy}" r="${g.r}" fill="#FFFFFF"/>`)
+        .join('') +
+      `<path d="${MARK.smile}" stroke="${faceColor}" stroke-width="${MARK.smileWidth}" fill="none" stroke-linecap="round"/>` +
+      MARK.cheeks
+        .map(
+          (c) =>
+            `<ellipse cx="${c.cx}" cy="${c.cy}" rx="${c.rx}" ry="${c.ry}" fill="#FFFFFF" opacity="${MARK.cheekOpacity}"/>`,
+        )
+        .join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">${face}${bg}${heartPath}${features}</svg>`;
 }
 
@@ -111,6 +149,14 @@ function appIconSvg() {
     .replace(/^<svg[^>]*>/, '')
     .replace(/<\/svg>$/, '');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE3EC"/><stop offset="1" stop-color="#FFC7D8"/></linearGradient></defs><rect width="256" height="256" fill="url(#g)"/><g transform="translate(24 30) scale(0.8125)">${character}</g></svg>`;
+}
+
+/** The app icon for masks (an installed web app on Android): the character inside the safe circle. */
+function maskableIconSvg() {
+  const inner = adaptiveForegroundSvg()
+    .replace(/^<svg[^>]*>/, '')
+    .replace(/<\/svg>$/, '');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE3EC"/><stop offset="1" stop-color="#FFC7D8"/></linearGradient></defs><rect width="256" height="256" fill="url(#g)"/>${inner}</svg>`;
 }
 
 function adaptiveForegroundSvg() {
@@ -126,6 +172,32 @@ async function png(svg: string, size: number, file: string) {
   await sharp(Buffer.from(svg), { density: 300 }).resize(size, size).png().toFile(file);
 }
 
+/** A .ico of PNGs (as browsers read them since Vista), for the few without SVG favicons. */
+async function ico(svg: string, sizes: number[], file: string) {
+  const images = await Promise.all(
+    sizes.map((size) =>
+      sharp(Buffer.from(svg), { density: 300 }).resize(size, size).png().toBuffer(),
+    ),
+  );
+  const header = Buffer.alloc(6 + 16 * images.length);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(images.length, 4);
+  let offset = header.length;
+  images.forEach((image, i) => {
+    const at = 6 + 16 * i;
+    const size = sizes[i] as number;
+    header.writeUInt8(size >= 256 ? 0 : size, at);
+    header.writeUInt8(size >= 256 ? 0 : size, at + 1);
+    header.writeUInt16LE(1, at + 4);
+    header.writeUInt16LE(32, at + 6);
+    header.writeUInt32LE(image.length, at + 8);
+    header.writeUInt32LE(offset, at + 12);
+    offset += image.length;
+  });
+  await writeFile(file, Buffer.concat([header, ...images]));
+}
+
 async function main() {
   await mkdir(appAssets, { recursive: true });
   await mkdir(generated, { recursive: true });
@@ -133,7 +205,7 @@ async function main() {
 
   await writeFile(
     join(generated, 'wordmark.ts'),
-    `// Generated by scripts/build-assets.mts from Nunito Black. Do not edit.\nexport const WORDMARK = ${JSON.stringify(w, null, 2)} as const;\nexport const HEART_PATH = ${JSON.stringify(HEART)};\n`,
+    `// Generated by scripts/build-assets.mts from Nunito Black. Do not edit.\nexport const WORDMARK = ${JSON.stringify(w, null, 2)} as const;\nexport const HEART_PATH = ${JSON.stringify(HEART)};\nexport const ICON_MARK = ${JSON.stringify(MARK, null, 2)} as const;\n`,
   );
 
   const svgs: Record<string, string> = {
@@ -159,6 +231,20 @@ async function main() {
   // Web app manifest icons.
   await png(appIconSvg(), 192, join(appAssets, 'icon-192.png'));
   await png(appIconSvg(), 512, join(appAssets, 'icon-512.png'));
+
+  // The web app's root: a vector favicon (sharp at any size and density), the home screen icon
+  // iOS asks for, the notification icon, and the install manifest's icons.
+  await mkdir(webPublic, { recursive: true });
+  await writeFile(
+    join(webPublic, 'favicon.svg'),
+    iconMarkSvg().replace(/^<svg([^>]*)>/, '<svg$1 role="img"><title>Caime</title>'),
+  );
+  await ico(iconMarkSvg(), [16, 32, 48], join(webPublic, 'favicon.ico'));
+  await png(appIconSvg(), 180, join(webPublic, 'apple-touch-icon.png'));
+  await png(appIconSvg(), 192, join(webPublic, 'icon-192.png'));
+  await png(appIconSvg(), 512, join(webPublic, 'icon-512.png'));
+  await png(maskableIconSvg(), 512, join(webPublic, 'icon-maskable-512.png'));
+  await png(iconMarkSvg({ monochrome: true }), 96, join(webPublic, 'notification-icon.png'));
 
   // Review sheet: wordmarks on light and dark, the icon mark and the app icon.
   const wordmarkPng = await sharp(Buffer.from(wordmarkSvg(w, INK)), { density: 300 })

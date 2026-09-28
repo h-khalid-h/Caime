@@ -68,7 +68,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/calls/ice', async (req): Promise<IceConfigView> => {
     const auth = requireAuth(req);
-    return iceConfig(ctx, auth.userId);
+    return await iceConfig(ctx, auth.userId);
   });
 
   /** My calls, newest first (PRD §47): all of them, with one person, or the ones I missed. */

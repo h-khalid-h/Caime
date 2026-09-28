@@ -102,12 +102,22 @@ const Env = z.object({
    */
   TURN_URLS: z.string().default(''),
   TURN_SECRET: z.string().min(16).optional(),
+  /**
+   * Or Cloudflare's TURN relay: a TURN key's id and its API token (Cloudflare dashboard, Realtime,
+   * TURN Server). Each person gets credentials of their own that expire, asked of Cloudflare when
+   * a call starts; if it doesn't answer, calls go on with STUN only.
+   */
+  CLOUDFLARE_TURN_KEY_ID: z.string().min(1).optional(),
+  CLOUDFLARE_TURN_API_TOKEN: z.string().min(1).optional(),
+  CLOUDFLARE_TURN_API_BASE: z.string().url().default('https://rtc.live.cloudflare.com'),
 });
 
 export type Config = z.infer<typeof Env> & {
   corsOrigins: string[];
   stunUrls: string[];
   turnUrls: string[];
+  /** Cloudflare's relay, when both its key id and token are set. */
+  cloudflareTurn: { keyId: string; token: string } | null;
   isProduction: boolean;
   isTest: boolean;
   secureCookies: boolean;
@@ -135,6 +145,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     corsOrigins: list(c.CORS_ORIGINS),
     stunUrls: list(c.STUN_URLS),
     turnUrls: c.TURN_SECRET ? list(c.TURN_URLS) : [],
+    cloudflareTurn:
+      c.CLOUDFLARE_TURN_KEY_ID && c.CLOUDFLARE_TURN_API_TOKEN
+        ? { keyId: c.CLOUDFLARE_TURN_KEY_ID, token: c.CLOUDFLARE_TURN_API_TOKEN }
+        : null,
     isProduction: c.NODE_ENV === 'production',
     isTest: c.NODE_ENV === 'test',
     secureCookies: c.PUBLIC_URL.startsWith('https://'),

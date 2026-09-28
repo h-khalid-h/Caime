@@ -371,11 +371,15 @@ export function registerCallSweep(): void {
   registerPeriodic({ name: 'calls', everyMs: 5000, run: sweepCalls });
 }
 
+/** How long Cloudflare gets to hand out a relay's credentials before a call goes on without. */
+const CLOUDFLARE_TURN_WAIT_MS = 4000;
+
 /**
- * Where a device finds its way to the other: the STUN servers, and the relay with credentials
- * that expire (coturn's REST scheme: a username of expiry:user, signed with the shared secret).
+ * Where a device finds its way to the other: the STUN servers, and a relay with credentials that
+ * expire. Caime's own relay uses coturn's REST scheme (a username of expiry:user, signed with the
+ * shared secret); Cloudflare's hands out credentials for each person when asked.
  */
-export function iceConfig(ctx: AppContext, userId: string): IceConfigView {
+export async function iceConfig(ctx: AppContext, userId: string): Promise<IceConfigView> {
   const iceServers: IceConfigView['iceServers'] = [];
   if (ctx.config.stunUrls.length) iceServers.push({ urls: ctx.config.stunUrls });
   const secret = ctx.config.TURN_SECRET;
@@ -384,7 +388,52 @@ export function iceConfig(ctx: AppContext, userId: string): IceConfigView {
     const credential = createHmac('sha1', secret).update(username).digest('base64');
     iceServers.push({ urls: ctx.config.turnUrls, username, credential });
   }
+  const cloudflare = await cloudflareRelay(ctx);
+  if (cloudflare) iceServers.push(cloudflare);
   return { iceServers, relay: iceServers.some((s) => s.username !== undefined) };
+}
+
+/**
+ * Credentials for Cloudflare's relay, for 12 hours, or null (not set up, or no answer in time).
+ * Only its turn: and turns: addresses are passed on, and none on port 53, which browsers refuse
+ * and wait on: its STUN isn't STUN_URLS, and the privacy page says whose STUN a call uses.
+ */
+async function cloudflareRelay(
+  ctx: AppContext,
+): Promise<IceConfigView['iceServers'][number] | null> {
+  const cf = ctx.config.cloudflareTurn;
+  if (!cf) return null;
+  const base = ctx.config.CLOUDFLARE_TURN_API_BASE.replace(/\/+$/, '');
+  try {
+    const res = await fetch(
+      `${base}/v1/turn/keys/${encodeURIComponent(cf.keyId)}/credentials/generate-ice-servers`,
+      {
+        method: 'POST',
+        headers: { authorization: `Bearer ${cf.token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ ttl: TURN_TTL_S }),
+        signal: AbortSignal.timeout(CLOUDFLARE_TURN_WAIT_MS),
+      },
+    );
+    if (!res.ok) throw new Error(`Cloudflare answered ${res.status}`);
+    const body = (await res.json()) as { iceServers?: unknown };
+    const given = Array.isArray(body.iceServers) ? body.iceServers : [body.iceServers];
+    for (const s of given) {
+      if (!s || typeof s !== 'object') continue;
+      const { urls, username, credential } = s as Record<string, unknown>;
+      if (typeof username !== 'string' || typeof credential !== 'string') continue;
+      const relays = (Array.isArray(urls) ? urls : [urls]).filter(
+        (u): u is string => typeof u === 'string' && /^turns?:/.test(u) && !/:53(\?|$)/.test(u),
+      );
+      if (!relays.length) continue;
+      ctx.metrics.turn.inc({ outcome: 'issued' });
+      return { urls: relays, username, credential };
+    }
+    throw new Error('Cloudflare gave no relay');
+  } catch (err) {
+    ctx.metrics.turn.inc({ outcome: 'failed' });
+    ctx.log.warn({ detail: (err as Error).message }, 'cloudflare turn credentials failed');
+    return null;
+  }
 }
 
 /**

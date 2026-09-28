@@ -103,6 +103,9 @@ These are rules, not preferences.
   `setQueryData`: a bare write marks the data fresh, and a restored copy then never refetches.
 - A sheet whose content depends on the state that closes it should keep the last content while
   it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
+- The web page's head is `apps/app/public/index.html` (Expo's template, with Caime's icon links);
+  the icons beside it are made by `pnpm --filter @caime/brand assets`, never by hand, and any new
+  file at the web root is also a reserved handle (`paths.test.ts` checks).
 - Handles have dots, so a page path can look like a file (`/o/nile.dental`). The server serves
   the app to anything that asks for HTML (`plugins/static.ts`); test new link shapes with a
   reload, not only by navigating inside the app.
@@ -315,6 +318,7 @@ It's live on EasyPanel at https://caime.datac.com (also its default domain,
 https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
 Stripe account (tell its owner before changing anything there: it's live); sessions in this
 environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
-a TURN relay for calls (⛔), calls and private conversations in the
+a TURN relay for calls (⛔: supported, Cloudflare's or coturn, and needs its key set in EasyPanel;
+without it calls across strict networks never connect), calls and private conversations in the
 phone apps, a third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).

@@ -165,6 +165,8 @@ export const RESERVED_HANDLES: readonly string[] = [
   'sw.js',
   'index.html',
   'favicon.ico',
+  'favicon.svg',
+  'manifest.webmanifest',
 ];
 
 /**

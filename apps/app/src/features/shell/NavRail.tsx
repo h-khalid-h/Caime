@@ -1,7 +1,7 @@
 import { type Href, router } from 'expo-router';
 import { View } from 'react-native';
 import { useBusinessSummary } from '@/api/hooks';
-import { HeartMark } from '@/brand/Wordmark';
+import { IconMark } from '@/brand/Wordmark';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -130,7 +130,7 @@ export function NavRail() {
       }}
     >
       <View style={{ height: 44, justifyContent: 'center' }} accessibilityLabel="Caime">
-        <HeartMark size={30} />
+        <IconMark size={40} />
       </View>
       {ITEMS.map((i) => (
         <RailItem

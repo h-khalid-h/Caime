@@ -99,6 +99,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `ANTHROPIC_BASE_URL` | — | Another Messages API endpoint, such as a gateway. |
 | `STUN_URLS` | `stun:stun.l.google.com:19302` | Calls: STUN servers that tell each device its public address, comma-separated. Set it empty for none (calls then connect only on the same network). |
 | `TURN_URLS`, `TURN_SECRET` | — | Calls: a TURN relay (such as coturn, with `use-auth-secret` and `static-auth-secret` set to `TURN_SECRET`), comma-separated `turn:` and `turns:` addresses. Each person gets credentials that expire after 12 hours. Without a relay, calls between people on strict networks (some offices, some mobile carriers) won't connect. |
+| `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN` | — | Calls: Cloudflare's TURN relay instead of running one. In the Cloudflare dashboard, **Realtime → TURN Server → Create**, then set the key's id and its API token here. Each person gets credentials for 12 hours when a call starts; if Cloudflare doesn't answer in 4 seconds the call goes on with STUN only (`caime_turn_credentials_total{outcome}` counts both). The privacy page then says calls may go through a relay Cloudflare runs. |
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |

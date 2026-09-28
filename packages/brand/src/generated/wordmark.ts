@@ -9,3 +9,50 @@ export const WORDMARK = {
 } as const;
 export const HEART_PATH =
   'M12 21.2s-8.6-5.2-10.6-10.3C0 7.1 2.4 3.6 6 3.6c2.2 0 3.7 1.2 4.6 2.6.3.5.6.9.9 1.4.3-.5.6-.9.9-1.4.9-1.4 2.4-2.6 4.6-2.6 3.6 0 6 3.5 4.6 7.3C20.6 16 12 21.2 12 21.2Z';
+export const ICON_MARK = {
+  viewBox: '0 0 256 256',
+  heartTransform: 'translate(26 30) scale(8.5)',
+  eyes: [
+    {
+      cx: 102,
+      cy: 126,
+      rx: 12,
+      ry: 13,
+    },
+    {
+      cx: 154,
+      cy: 126,
+      rx: 12,
+      ry: 13,
+    },
+  ],
+  glints: [
+    {
+      cx: 106,
+      cy: 121,
+      r: 4,
+    },
+    {
+      cx: 158,
+      cy: 121,
+      r: 4,
+    },
+  ],
+  smile: 'M114 150 q14 14 28 0',
+  smileWidth: 8,
+  cheeks: [
+    {
+      cx: 80,
+      cy: 150,
+      rx: 12,
+      ry: 7,
+    },
+    {
+      cx: 176,
+      cy: 150,
+      rx: 12,
+      ry: 7,
+    },
+  ],
+  cheekOpacity: 0.35,
+} as const;
