@@ -16,10 +16,15 @@ const open = async (c: Client) =>
 beforeAll(async () => {
   t = await createTestApp();
   noor = await signup(t, { displayName: 'Noor Haddad' });
-  rami = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+  rami = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
   lina = await signup(t, { displayName: 'Lina Parent' });
   orgId = (
-    await noor.post('/v1/orgs', { name: 'Nile School', handle: 'nile.school', kind: 'school' })
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Nile School',
+      handle: 'nile.school',
+      kind: 'school',
+    })
   ).org.id;
 });
 

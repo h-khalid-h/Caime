@@ -13,7 +13,7 @@
  * Who's in a call changes one change at a time, under the call's own row lock (the one a join
  * takes): what's decided about a call is decided on the call as it is.
  */
-import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView, isMinor } from '@caishy/core';
+import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView } from '@caishy/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
@@ -23,7 +23,7 @@ import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify, replaceShown } from './notify';
 import { personViewsFor } from './people-batch';
-import { avatarUrl } from './users';
+import { avatarUrl, minorOf } from './users';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -226,7 +226,7 @@ export async function keptApartFrom(
       .execute(),
     db
       .selectFrom('users')
-      .select(['id', 'birth_year'])
+      .select(['id', 'birth_date', 'time_zone'])
       .where('id', 'in', [userId, ...ids])
       .execute(),
     db
@@ -242,7 +242,7 @@ export async function keptApartFrom(
       .execute(),
   ]);
   for (const b of blocks) apart.add(b.blocker_id === userId ? b.blocked_id : b.blocker_id);
-  const minors = new Set(people.filter((u) => isMinor(u.birth_year, ctx.now())).map((u) => u.id));
+  const minors = new Set(people.filter((u) => minorOf(u, ctx.now())).map((u) => u.id));
   const connected = new Set(connections.map((c) => (c.user_a === userId ? c.user_b : c.user_a)));
   for (const id of ids)
     if ((minors.has(userId) || minors.has(id)) && !connected.has(id)) apart.add(id);
@@ -599,11 +599,10 @@ export async function leaveGroupCallsAfterDisconnect(
 ) {
   const people = await ctx.db
     .selectFrom('users')
-    .select(['id', 'birth_year'])
+    .select(['id', 'birth_date', 'time_zone'])
     .where('id', 'in', [removerId, otherId])
     .execute();
-  if (people.some((u) => isMinor(u.birth_year, ctx.now())))
-    await leaveGroupCallsWith(ctx, removerId, otherId);
+  if (people.some((u) => minorOf(u, ctx.now()))) await leaveGroupCallsWith(ctx, removerId, otherId);
 }
 
 /** Someone left, or was taken out of, these conversations: they're out of their calls too. */

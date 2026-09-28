@@ -50,7 +50,7 @@ export async function apiSignUp(
   context: BrowserContext,
   displayName: string,
   handle: string,
-  opts: { birthYear?: number } = {},
+  opts: { birthDate?: string } = {},
 ) {
   const res = await context.request.post('/v1/auth/signup', {
     // Each from a network of its own (a documentation range), as people sign up: the server
@@ -61,7 +61,8 @@ export async function apiSignUp(
       password: PASSWORD,
       displayName,
       handle,
-      birthYear: opts.birthYear ?? 1990,
+      birthDate: opts.birthDate ?? '1990-12-31',
+      country: 'EG',
       timeZone: 'UTC',
       client: 'web',
     },

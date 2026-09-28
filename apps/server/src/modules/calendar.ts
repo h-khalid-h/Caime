@@ -9,7 +9,6 @@ import {
   buildIcs,
   type CalendarFeedView,
   type IcsEvent,
-  isMinor,
   KITS,
   type TaskView,
   zonedParts,
@@ -22,6 +21,7 @@ import { audit } from '../lib/audit';
 import { hashToken, newToken } from '../lib/crypto';
 import { forbidden, notFound } from '../lib/errors';
 import { cardsAhead } from '../lib/upcoming';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
@@ -170,10 +170,10 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (isMinor(me.birth_year, ctx.now())) throw forbidden('Calendars are for people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden('Calendars are for people over 18.');
     ctx.limiter.hit(`calendar-feed:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const token = newToken('cal');
     const row = await ctx.db
@@ -218,7 +218,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const feed = await ctx.db
       .selectFrom('calendar_feeds as f')
       .innerJoin('users as u', 'u.id', 'f.user_id')
-      .select(['f.user_id', 'f.last_read_at', 'u.time_zone', 'u.birth_year'])
+      .select(['f.user_id', 'f.last_read_at', 'u.time_zone', 'u.birth_date'])
       .where('f.token_hash', '=', hash)
       .where('u.deleted_at', 'is', null)
       .executeTakeFirst();
@@ -231,7 +231,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       ctx.config.isTest ? 10_000 : 120,
       3_600_000,
     );
-    if (isMinor(feed.birth_year, ctx.now())) throw notFound('That calendar');
+    if (minorOf(feed, ctx.now())) throw notFound('That calendar');
     const now = ctx.now();
     const events = await calendarEvents(ctx, feed.user_id, feed.time_zone);
     if (!feed.last_read_at || now.getTime() - feed.last_read_at.getTime() > READ_EVERY_MS) {

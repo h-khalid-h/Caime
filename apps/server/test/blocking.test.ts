@@ -91,8 +91,14 @@ describe('blocking an organization (PRD §55, R15)', () => {
     omar = await signup(t, { displayName: 'Omar Farouk' });
     lina = await signup(t, { displayName: 'Lina Customer' });
     await connect(noor, omar);
-    orgId = (await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' }))
-      .org.id;
+    orgId = (
+      await noor.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Tiles Co',
+        handle: 'tiles.co',
+        kind: 'shop',
+      })
+    ).org.id;
     await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
     botToken = (
       await noor.post(`/v1/orgs/${orgId}/apps`, { name: 'Tiles Bot', scopes: ['messages:write'] })

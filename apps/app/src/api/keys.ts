@@ -1,6 +1,7 @@
 /** Query keys, in one place so realtime events invalidate exactly what they change. */
 export const qk = {
   me: ['me'] as const,
+  countries: (locale: string, timeZone: string) => ['countries', locale, timeZone] as const,
   ai: ['ai'] as const,
   plan: ['plan'] as const,
   billing: ['billing'] as const,

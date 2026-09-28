@@ -30,7 +30,7 @@ beforeAll(async () => {
   noor = await signup(t, { displayName: 'Noor Haddad' });
   sara = await signup(t, { displayName: 'Sara Ali' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
-  teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+  teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
   customer = await signup(t, { displayName: 'Lina Customer', handle: 'lina.customer' });
   await connect(noor, sara);
   await connect(noor, omar);
@@ -46,29 +46,51 @@ describe('organizations (PRD §36, R15)', () => {
 
   it('an adult creates one; its handle is one namespace with people', async () => {
     const young = await teen.req('POST', '/v1/orgs', {
+      country: 'EG',
       name: 'Rami’s shop',
       handle: 'ramishop',
       kind: 'shop',
     });
     expect(young.statusCode).toBe(403);
     const clash = await noor.req('POST', '/v1/orgs', {
+      country: 'EG',
       name: 'Lina Co',
       handle: 'lina.customer',
       kind: 'business',
     });
     expect(clash.json().error.code).toBe('handle_taken');
 
+    // Where it's based, and the year it began.
+    const nowhere = await noor.req('POST', '/v1/orgs', {
+      name: 'DATA C',
+      handle: 'datac',
+      kind: 'business',
+    });
+    expect(nowhere.json().error.details.fields[0].path).toBe('country');
+    const soon = await noor.req('POST', '/v1/orgs', {
+      country: 'EG',
+      name: 'DATA C',
+      handle: 'datac',
+      kind: 'business',
+      foundedYear: 2099,
+    });
+    expect(soon.json().error.details.fields[0].path).toBe('foundedYear');
     const { org } = await noor.post('/v1/orgs', {
+      country: 'EG',
       name: 'DATA C',
       handle: 'datac',
       kind: 'business',
       about: 'Data and analytics for clinics',
       website: 'https://datac.com',
+      foundedYear: 2019,
     });
     orgId = org.id;
     expect(org).toMatchObject({
       name: 'DATA C',
       handle: 'datac',
+      country: 'EG',
+      currency: 'EGP',
+      foundedYear: 2019,
       verified: false,
       verifiedDomain: null,
       memberCount: 1,
@@ -96,6 +118,14 @@ describe('organizations (PRD §36, R15)', () => {
     // Its team isn't shown to a customer, and they can't change anything.
     const edit = await customer.req('PATCH', `/v1/orgs/${orgId}`, { name: 'Mine' });
     expect(edit.statusCode).toBe(404);
+  });
+
+  it('its owner says where it moved, and that it doesn’t say when it began', async () => {
+    const { org } = await noor.patch(`/v1/orgs/${orgId}`, { country: 'AE', foundedYear: null });
+    expect(org).toMatchObject({ country: 'AE', currency: 'AED', foundedYear: null });
+    const nowhere = await noor.req('PATCH', `/v1/orgs/${orgId}`, { country: 'ZZ' });
+    expect(nowhere.statusCode).toBe(400);
+    await noor.patch(`/v1/orgs/${orgId}`, { country: 'EG', foundedYear: 2019 });
   });
 
   it('the team is made of people you’re connected with, adults only; admins can’t make admins', async () => {
@@ -154,7 +184,12 @@ describe('organizations (PRD §36, R15)', () => {
 
     // Nobody else can claim the same domain.
     const copycat = (
-      await omar.post('/v1/orgs', { name: 'DATA C (real)', handle: 'datac.real', kind: 'business' })
+      await omar.post('/v1/orgs', {
+        country: 'EG',
+        name: 'DATA C (real)',
+        handle: 'datac.real',
+        kind: 'business',
+      })
     ).org;
     const claim = await omar.req('PUT', `/v1/orgs/${copycat.id}/domain`, { domain: 'datac.com' });
     expect(claim.json().error.code).toBe('domain_taken');
@@ -180,6 +215,7 @@ describe('organizations (PRD §36, R15)', () => {
     const leaving = await signup(t, { displayName: 'Rana Owner' });
     await connect(leaving, sara);
     const { org } = await leaving.post('/v1/orgs', {
+      country: 'EG',
       name: 'Clinic One',
       handle: 'clinicone',
       kind: 'clinic',

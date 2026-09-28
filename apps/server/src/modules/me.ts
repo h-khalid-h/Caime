@@ -2,9 +2,9 @@
  * The account owner's profile, preferences, privacy and identities (PRD §34, §35).
  */
 import {
+  defaultWorkweek,
   Handle,
   IdentityBody,
-  isMinor,
   isValidTimeZone,
   type PlanUsageView,
   PrivacyBody,
@@ -17,9 +17,10 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { badRequest, conflict, notFound } from '../lib/errors';
+import { isCountry } from '../lib/geo';
 import { handleTaken } from '../lib/handles';
 import { planUsage } from '../lib/plans';
-import { avatarUrl, meView, privacyOf } from '../lib/users';
+import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -72,7 +73,15 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       patch.time_zone = body.timeZone;
     }
     if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
-    if (body.region !== undefined) patch.region = body.region;
+    if (body.country !== undefined && body.country !== current.country) {
+      if (!isCountry(body.country)) throw badRequest('Choose where you live.');
+      patch.country = body.country;
+      // A work week that was where they lived's own follows them to the new one (R31); one they
+      // set themselves stays theirs.
+      const had = defaultWorkweek(current.country).join(',');
+      if (body.workweek === undefined && (current.workweek ?? []).join(',') === had)
+        patch.workweek = defaultWorkweek(body.country);
+    }
     if (body.workweek !== undefined)
       patch.workweek = [...new Set(body.workweek)].sort((a, b) => a - b);
     if (body.quietHours !== undefined)
@@ -159,7 +168,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       discoverByEmail: body.discoverByEmail ?? current.discoverByEmail,
       messageRequests: body.messageRequests ?? current.messageRequests,
     };
-    if (isMinor(user.birth_year, now)) {
+    if (minorOf(user, now)) {
       // Protections for under-18 accounts are rules, not defaults (R29).
       next.discoverByEmail = false;
       if (next.messageRequests === 'everyone') next.messageRequests = 'shared_connections';

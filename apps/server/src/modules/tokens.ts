@@ -3,13 +3,14 @@
  * the permissions it needs and how long it lasts, shown once, and revoked at any time. Only a
  * signed-in person reaches these routes: no token can make or list tokens.
  */
-import { CreatePersonalTokenBody, isMinor, type PersonalTokenView, uuidv7 } from '@caishy/core';
+import { CreatePersonalTokenBody, type PersonalTokenView, uuidv7 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { newPersonalToken, personalTokenView } from '../lib/access';
 import { audit } from '../lib/audit';
 import { badRequest, forbidden, notFound } from '../lib/errors';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -35,10 +36,10 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreatePersonalTokenBody, req.body);
     const me = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (isMinor(me.birth_year, ctx.now())) throw forbidden('Access tokens are for people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden('Access tokens are for people over 18.');
     ctx.limiter.hit(`token-create:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
     const live = await ctx.db
       .selectFrom('personal_tokens')

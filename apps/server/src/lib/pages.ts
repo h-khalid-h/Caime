@@ -75,12 +75,13 @@ to it.</li>
 
 <h2>What Caishy keeps</h2>
 <ul>
-<li><strong>Your account.</strong> Your email address, your name and @handle, the year you were
-born, and your password, kept only as a salted hash, never the password itself. Caishy asks only
-for the year, to check you&rsquo;re old enough and for the protections that apply under 18. It
-also keeps your device&rsquo;s language and time zone, so times and quiet hours are right, and, if
-you joined from someone&rsquo;s link, whose it was: that&rsquo;s only counted, and never shown to
-anyone.</li>
+<li><strong>Your account.</strong> Your email address, your name and @handle, your date of birth,
+the country you live in, and your password, kept only as a salted hash, never the password
+itself. Your date of birth is only to check you&rsquo;re old enough and for the protections that
+apply under 18; your country only sets your defaults (the days your work notifications wait for,
+the currency of amounts). Neither is shown to anyone. Caishy also keeps your device&rsquo;s
+language and time zone, so times and quiet hours are right, and, if you joined from someone&rsquo;s
+link, whose it was: that&rsquo;s only counted, and never shown to anyone.</li>
 <li><strong>Your profile.</strong> What you choose to show: a photo, About you, pronouns, a status
 and your presence (Automatic, Busy, Away or Invisible). Caishy also keeps when you were last
 active.</li>
@@ -251,7 +252,7 @@ now; reports about you, which would say who made them; secrets, which Caishy kee
 or never shows; and the server&rsquo;s own log. To ask about anything in it, or not in it, write to
 ${mail}.</li>
 <li><strong>Correct it:</strong> change your name, @handle, photo, pronouns, About you and status
-in You &rarr; Profile at any time. To correct your email address or the year you were born, write
+in You &rarr; Profile at any time. To correct your email address or your date of birth, write
 to ${mail}.</li>
 <li><strong>Delete it:</strong> You &rarr; Security &rarr; Delete your account.</li>
 <li><strong>Choose who sees what:</strong> You &rarr; Privacy decides who sees your profile photo,
@@ -270,9 +271,8 @@ the UK, for example), you can also complain to your data protection authority. W
 and we&rsquo;ll answer within a month.</p>
 
 <h2>Children</h2>
-<p>Caishy is for people ${f.minimumAge} and older. It asks only the year you were born, so you can
-sign up from 1 January of the year you turn ${f.minimumAge + 1}, and the rules for people under 18
-apply until the end of the year you turn 18. Under 18:</p>
+<p>Caishy is for people ${f.minimumAge} and older, from the day they turn ${f.minimumAge} where they
+live, and the rules for people under 18 apply until the day they turn 18. Under 18:</p>
 <ul>
 <li>Adults you&rsquo;re not connected with can&rsquo;t find you, by name, @handle or email, and
 can&rsquo;t send you a connection or message request unless you share a connection.</li>
@@ -328,11 +328,9 @@ Caishy. By creating an account, you agree to them. How Caishy handles your data 
 
 <h2>1. Your account</h2>
 <ul>
-<li>You need to be ${f.minimumAge} or older, and to tell Caishy the truth about the year you were
-born. Caishy asks only the year, so you can sign up from 1 January of the year you turn
-${f.minimumAge + 1}, and what&rsquo;s for people 18 or over is yours from 1 January of the year you
-turn 19. Use any name you like, as long as it doesn&rsquo;t pretend you&rsquo;re someone
-you&rsquo;re not.</li>
+<li>You need to be ${f.minimumAge} or older, and to tell Caishy the truth about your date of birth
+and where you live. What&rsquo;s for people 18 or over is yours from the day you turn 18. Use any
+name you like, as long as it doesn&rsquo;t pretend you&rsquo;re someone you&rsquo;re not.</li>
 <li>Keep your password and recovery codes safe: you&rsquo;re responsible for what&rsquo;s done with
 your account.</li>
 <li>An account is one person&rsquo;s. By creating an organization on Caishy, you confirm you may
@@ -528,9 +526,8 @@ an organization from its page, or block it when it writes to you first.</li>
 you&rsquo;re online, when you were last seen and when you&rsquo;ve read a message, who can find
 you, and who can send you a message request. From 18, it&rsquo;s also where you turn Use AI assist
 on or off.</li>
-<li>Under 18, Caishy keeps more in place: see <a href="/privacy">privacy</a>. Caishy knows only the
-year you were born, so &ldquo;18 and over&rdquo; here means from 1 January of the year you turn
-19.</li>
+<li>Under 18, Caishy keeps more in place: see <a href="/privacy">privacy</a>. That changes on the
+day you turn 18.</li>
 </ul>
 
 <h2>Your account</h2>
@@ -540,6 +537,9 @@ recovery codes and deletes your account. Download your data there on the web; th
 you to the web for it.</li>
 <li>Forgot your password? On the sign-in screen, tap Forgot your password? and use one of your
 recovery codes to set a new one.</li>
+<li>Where you live is in You &rarr; Profile, and sets your defaults. Your date of birth can&rsquo;t
+be changed in the app, so the protections for people under 18 hold: if it&rsquo;s wrong, write to
+${mail} and we&rsquo;ll correct it.</li>
 </ul>
 
 <h2>Still stuck?</h2>

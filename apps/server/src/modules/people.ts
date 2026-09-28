@@ -3,7 +3,7 @@
  */
 
 import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caishy/core';
-import { ADULT_AGE, isMinor, resolvePolicy, rhythmOf } from '@caishy/core';
+import { ADULT_AGE, resolvePolicy, rhythmOf } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -20,7 +20,7 @@ import {
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
-import { identityShownTo, personView } from '../lib/users';
+import { identityShownTo, minorOf, personView } from '../lib/users';
 
 export { identityShownTo };
 
@@ -54,15 +54,14 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`people-search:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 60_000);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_year'])
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const now = ctx.now();
-    const viewerIsMinor = isMinor(me.birth_year, now);
+    const viewerIsMinor = minorOf(me, now);
     const term = q.replace(/^@/, '').toLowerCase();
     const like = `${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const contains = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    const year = now.getUTCFullYear();
 
     const rows = await ctx.db
       .selectFrom('users as u')
@@ -128,8 +127,9 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         qb.where((eb) =>
           eb.or([
             sql<boolean>`c.id is not null`,
-            eb('u.birth_year', 'is', null),
-            sql<boolean>`${year} - u.birth_year > ${ADULT_AGE}`,
+            eb('u.birth_date', 'is', null),
+            // 18 or over on the day where they are (packages/core safety.ts isMinor).
+            sql<boolean>`u.birth_date <= (${now}::timestamptz at time zone u.time_zone)::date - ${`${ADULT_AGE} years`}::interval`,
           ]),
         ),
       )

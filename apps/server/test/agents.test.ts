@@ -48,8 +48,8 @@ async function agentTurn() {
 }
 const threadOf = async (c: Client, conversationId = convo) =>
   (await c.get(`/v1/conversations/${conversationId}`)).conversation.business.thread;
-async function newCustomer(name: string, birthYear = 1990) {
-  const c = await signup(t, { displayName: name, birthYear });
+async function newCustomer(name: string, birthDate = '1990-12-31') {
+  const c = await signup(t, { displayName: name, birthDate });
   const conversationId = (await c.post(`/v1/orgs/${orgId}/conversations`, {})).conversationId;
   return { c, conversationId };
 }
@@ -76,11 +76,16 @@ beforeAll(async () => {
   noor = await signup(t, { displayName: 'Noor Haddad' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
   lina = await signup(t, { displayName: 'Lina Farah', email: 'lina.farah@example.com' });
-  teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+  teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
   const r = await noor.post('/v1/connections/requests', { toUserId: omar.user.id });
   await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {});
   orgId = (
-    await noor.post('/v1/orgs', { name: 'Nile Dental', handle: 'nile.dental', kind: 'business' })
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Nile Dental',
+      handle: 'nile.dental',
+      kind: 'business',
+    })
   ).org.id;
   // Verified, so someone under 18 can write to it (R29): the agent still never answers them.
   await t.ctx.db

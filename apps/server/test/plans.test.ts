@@ -48,8 +48,14 @@ beforeAll(async () => {
   sara = await signup(t, { displayName: 'Sara Ali' });
   lina = await signup(t, { displayName: 'Lina Customer' });
   for (const c of [omar, alex, sara]) await connect(noor, c);
-  orgId = (await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' })).org
-    .id;
+  orgId = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Tiles Co',
+      handle: 'tiles.co',
+      kind: 'shop',
+    })
+  ).org.id;
 });
 
 afterAll(async () => {

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { canSee, defaultPrivacy, readReceiptsVisible, type Viewer } from './privacy';
-import { assessLink, isMinor, meetsMinimumAge, searchable } from './safety';
+import {
+  ageOn,
+  assessLink,
+  isMinor,
+  meetsMinimumAge,
+  plausibleBirthDate,
+  searchable,
+} from './safety';
 
 const connected: Viewer = {
   isSelf: false,
@@ -70,20 +77,45 @@ describe('privacy', () => {
 });
 
 describe('age', () => {
-  const now = new Date('2026-06-01T00:00:00Z');
-  it('is conservative with a birth year only', () => {
-    expect(isMinor(2008, now)).toBe(true); // 17 or 18: treated as a minor
-    expect(isMinor(2007, now)).toBe(false);
-    expect(meetsMinimumAge(2013, now)).toBe(false); // 12 or 13
-    expect(meetsMinimumAge(2012, now)).toBe(true);
+  const now = new Date('2026-06-01T12:00:00Z');
+  it('is exact, from the date of birth', () => {
+    expect(ageOn('2008-06-01', now)).toBe(18);
+    expect(ageOn('2008-06-02', now)).toBe(17);
+    expect(isMinor('2008-06-02', now)).toBe(true);
+    expect(isMinor('2008-06-01', now)).toBe(false);
+    expect(meetsMinimumAge('2013-06-01', now)).toBe(true);
+    expect(meetsMinimumAge('2013-06-02', now)).toBe(false);
+    // An app or an agent has no date of birth; one that isn't a date is nobody's to trust.
+    expect(isMinor(null, now)).toBe(false);
+    expect(isMinor('2008-02-30', now)).toBe(true);
+    expect(meetsMinimumAge('not a day', now)).toBe(false);
   });
-  it('counts the year where someone is: New Year’s Day in Tokyo is still 31 December in UTC', () => {
-    const tokyoMorning = new Date('2025-12-31T23:00:00Z');
-    expect(meetsMinimumAge(2012, tokyoMorning)).toBe(false);
-    expect(meetsMinimumAge(2012, tokyoMorning, 13, 'Asia/Tokyo')).toBe(true);
-    expect(meetsMinimumAge(2012, tokyoMorning, 13, 'America/New_York')).toBe(false);
+  it('comes on the birthday where someone is: in Tokyo it is already 1 June', () => {
+    const tokyoMorning = new Date('2026-05-31T20:00:00Z');
+    expect(isMinor('2008-06-01', tokyoMorning)).toBe(true);
+    expect(isMinor('2008-06-01', tokyoMorning, 'Asia/Tokyo')).toBe(false);
+    expect(isMinor('2008-06-01', tokyoMorning, 'America/New_York')).toBe(true);
+    expect(meetsMinimumAge('2013-06-01', tokyoMorning, 13, 'Asia/Tokyo')).toBe(true);
     // A time zone that isn't one counts as UTC.
-    expect(meetsMinimumAge(2012, tokyoMorning, 13, 'Nowhere/Else')).toBe(false);
+    expect(meetsMinimumAge('2013-06-01', tokyoMorning, 13, 'Nowhere/Else')).toBe(false);
+  });
+  it('takes 29 February as 1 March in the years without one', () => {
+    expect(ageOn('2008-02-29', new Date('2026-02-28T12:00:00Z'))).toBe(17);
+    expect(ageOn('2008-02-29', new Date('2026-03-01T12:00:00Z'))).toBe(18);
+    expect(ageOn('2008-02-29', new Date('2028-02-29T12:00:00Z'))).toBe(20);
+  });
+  it('takes a date of birth only when it is a real day that has come', () => {
+    expect(plausibleBirthDate('1990-05-17', now)).toBe(true);
+    expect(plausibleBirthDate('2026-06-01', now)).toBe(true);
+    expect(plausibleBirthDate('2026-06-02', now)).toBe(false);
+    expect(plausibleBirthDate('2026-06-02', new Date('2026-06-01T20:00:00Z'), 'Asia/Tokyo')).toBe(
+      true,
+    );
+    expect(plausibleBirthDate('1990-02-30', now)).toBe(false);
+    // 120 at most: the day before the 121st birthday, and not on it.
+    expect(plausibleBirthDate('1905-06-02', now)).toBe(true);
+    expect(plausibleBirthDate('1905-06-01', now)).toBe(false);
+    expect(plausibleBirthDate('17/05/1990', now)).toBe(false);
   });
   it('adults never find minors in search', () => {
     expect(searchable(false, true)).toBe(false);

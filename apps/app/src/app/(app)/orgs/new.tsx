@@ -7,7 +7,10 @@ import { ScrollView, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { CountryField } from '@/features/geo/CountryField';
+import { foundedError } from '@/features/orgs/founded';
 import { ORG_ICONS } from '@/features/orgs/kinds';
+import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
@@ -22,12 +25,16 @@ import { toast } from '@/ui/Toast';
 export default function NewOrganization() {
   const { desktop } = useLayout();
   const qc = useQueryClient();
+  const me = useMe();
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
   const [handleTouched, setHandleTouched] = useState(false);
   const [kind, setKind] = useState<OrgKind | null>(null);
   const [about, setAbout] = useState('');
   const [website, setWebsite] = useState('');
+  // Where it's based: where its maker lives, until they say otherwise.
+  const [country, setCountry] = useState<string | null>(me.country);
+  const [founded, setFounded] = useState('');
   const [taken, setTaken] = useState<{ handle: string; reason: string | null } | null>(null);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [busy, setBusy] = useState(false);
@@ -60,15 +67,19 @@ export default function NewOrganization() {
         handleError(h) ??
         (taken?.handle === h ? (taken.reason ?? 'That handle is taken.') : undefined),
       kind: kind ? undefined : 'Choose what kind of organization it is.',
+      country: country ? undefined : 'Choose where it’s based.',
+      foundedYear: foundedError(founded),
     };
     setErrors(next);
-    if (Object.values(next).some(Boolean) || !kind) return;
+    if (Object.values(next).some(Boolean) || !kind || !country) return;
     setBusy(true);
     try {
       const { org } = await endpoints.createOrg({
         name: name.trim(),
         handle: h,
         kind,
+        country,
+        ...(founded ? { foundedYear: Number(founded) } : {}),
         ...(about.trim() ? { about: about.trim() } : {}),
         ...(website.trim() ? { website: website.trim() } : {}),
       });
@@ -159,6 +170,28 @@ export default function NewOrganization() {
             </Text>
           ) : null}
         </View>
+        <CountryField
+          label="Where it’s based"
+          value={country}
+          onChange={setCountry}
+          locale={me.locale}
+          error={errors.country}
+          hint="Sets its defaults, like the currency of its cards."
+          testID="org-country"
+        />
+        <TextField
+          label="Year it began (optional)"
+          value={founded}
+          onChangeText={(v) => setFounded(v.replace(/\D/g, '').slice(0, 4))}
+          keyboardType="number-pad"
+          inputMode="numeric"
+          maxLength={4}
+          placeholder={String(new Date().getFullYear())}
+          error={errors.foundedYear}
+          hint="Shown on its page."
+          style={{ maxWidth: 220 }}
+          testID="org-founded"
+        />
         <TextField
           label="About (optional)"
           value={about}

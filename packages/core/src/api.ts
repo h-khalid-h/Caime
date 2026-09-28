@@ -41,6 +41,12 @@ export interface QuietHours {
   end: string;
 }
 
+/** Every country, named in the asker's language, and the one their device suggests. */
+export interface CountriesView {
+  countries: Array<{ code: string; name: string }>;
+  suggested: string | null;
+}
+
 export interface MeView {
   id: string;
   email: string;
@@ -48,11 +54,15 @@ export interface MeView {
   handle: string;
   displayName: string;
   kind: UserKind;
-  birthYear: number | null;
+  /** 'YYYY-MM-DD', never shown to anyone else; none for an app or an agent. */
+  birthDate: string | null;
   minor: boolean;
   locale: string;
   timeZone: string;
-  region: string | null;
+  /** Where they live (ISO 3166-1), which sets their defaults. */
+  country: string | null;
+  /** Their country's currency (ISO 4217), the default for an amount they write. */
+  currency: string | null;
   workweek: number[];
   quietHours: QuietHours | null;
   plan: Plan;
@@ -757,6 +767,11 @@ export interface OrgSummaryView {
   memberCount: number;
   /** Your role, when you're on its team. */
   myRole: OrgRole | null;
+  /** Where it's based (ISO 3166-1), and its currency, the default for its cards' amounts. */
+  country: string | null;
+  currency: string | null;
+  /** The year it began, if it says. */
+  foundedYear: number | null;
 }
 
 export interface OrgMemberView {

@@ -26,10 +26,12 @@ export interface UsersTable {
   password_hash: string;
   display_name: string;
   kind: Defaulted<'human' | 'bot' | 'agent'>;
-  birth_year: number | null;
+  /** 'YYYY-MM-DD'; every person has one (0034), an app or an agent doesn't. */
+  birth_date: string | null;
   locale: Defaulted<string>;
   time_zone: Defaulted<string>;
-  region: string | null;
+  /** Where they live (ISO 3166-1): it sets their defaults (lib/geo.ts). */
+  country: string | null;
   workweek: Defaulted<number[]>;
   quiet_hours: Json<{ days: number[]; start: string; end: string } | null> | null;
   plan: Defaulted<'personal' | 'pro' | 'business' | 'enterprise'>;
@@ -663,6 +665,10 @@ export interface OrganizationsTable {
   archived_at: NullableTimestamp;
   plan: Defaulted<OrgPlan>;
   plan_source: Defaulted<PlanSource>;
+  /** Where it's based (ISO 3166-1), for its defaults (lib/geo.ts). */
+  country: string | null;
+  /** The year it began, shown on its page if it says. */
+  founded_year: number | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }

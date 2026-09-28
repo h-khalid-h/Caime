@@ -48,10 +48,21 @@ beforeAll(async () => {
   lina = await signup(t, { displayName: 'Lina Customer' });
   const r = await noor.post('/v1/connections/requests', { toUserId: omar.user.id });
   await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {});
-  orgId = (await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' })).org
-    .id;
+  orgId = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Tiles Co',
+      handle: 'tiles.co',
+      kind: 'shop',
+    })
+  ).org.id;
   otherOrgId = (
-    await omar.post('/v1/orgs', { name: 'Other Shop', handle: 'other.shop', kind: 'shop' })
+    await omar.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Other Shop',
+      handle: 'other.shop',
+      kind: 'shop',
+    })
   ).org.id;
   // On Business, so it can have more than one app: plans have their own tests (plans.test.ts).
   await t.ctx.db

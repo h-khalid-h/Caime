@@ -10,7 +10,6 @@
 import {
   type ConnectedAppView,
   CreateOAuthAppBody,
-  isMinor,
   isPersonalScope,
   OAUTH_REFRESH_PREFIX,
   type OAuthAppView,
@@ -40,6 +39,7 @@ import {
   revokeGrant,
   secretMatches,
 } from '../lib/oauth';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -108,10 +108,10 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreateOAuthAppBody, req.body);
     const me = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (isMinor(me.birth_year, ctx.now())) throw forbidden('Apps are made by people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden('Apps are made by people over 18.');
     ctx.limiter.hit(`oauth-app:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const live = await ctx.db
       .selectFrom('oauth_clients')
@@ -229,10 +229,10 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const me = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (isMinor(me.birth_year, ctx.now())) throw forbidden('Apps act for people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden('Apps act for people over 18.');
     ctx.limiter.hit(`oauth-allow:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     // One grant per app and person, and allowing again only adds to it: an app asking for one
     // more thing (or another install of it asking for less) never loses what it was allowed.

@@ -8,7 +8,6 @@
  */
 import {
   type BusinessThreadView,
-  isMinor,
   type MessageView,
   type OrgRef,
   threadState,
@@ -22,6 +21,7 @@ import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
 import { messagePreview } from './messages';
 import { personViewsFor } from './people-batch';
+import { minorOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -290,7 +290,7 @@ export async function recordBusinessMessage(
   if (!thread) return;
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['kind', 'display_name', 'handle', 'birth_year'])
+    .select(['kind', 'display_name', 'handle', 'birth_date', 'time_zone'])
     .where('id', '=', senderId)
     .executeTakeFirst();
   if (sender && sender.kind !== 'human') {
@@ -344,7 +344,7 @@ export async function recordBusinessMessage(
         displayName: sender.display_name,
         handle: sender.handle,
         // Integrations must know, too: nothing an organization sends a minor is marketing (R29).
-        under18: isMinor(sender.birth_year, at),
+        under18: minorOf(sender, at),
       },
     });
   if (senderId === thread.customer_id)
@@ -442,13 +442,13 @@ export async function threadViews(
     customerIds.length
       ? ctx.db
           .selectFrom('users')
-          .select(['id', 'birth_year'])
+          .select(['id', 'birth_date', 'time_zone'])
           .where('id', 'in', customerIds)
           .execute()
       : Promise.resolve([]),
   ]);
   const now = ctx.now();
-  const under18 = new Set(ages.filter((u) => isMinor(u.birth_year, now)).map((u) => u.id));
+  const under18 = new Set(ages.filter((u) => minorOf(u, now)).map((u) => u.id));
   const closed = new Set(blocked.map((b) => b.conversation_id));
   const awaiting = new Set(requests.map((r) => r.conversation_id));
   const nameOf = (id: string | null) =>

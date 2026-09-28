@@ -36,6 +36,10 @@ export const Password = z
 export const DisplayName = z.string().trim().min(1, 'Enter your name.').max(80);
 
 const TimeZone = z.string().min(1).max(64);
+/** A day of the calendar as it's kept, 'YYYY-MM-DD' (whether it's a real one is checked where it's used). */
+const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a date like 1990-05-17.');
+/** A country or territory by its ISO 3166-1 code (the server checks it's one: lib/geo.ts). */
+const Country = z.string().regex(/^[A-Z]{2}$/, 'Choose a country.');
 const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM.');
 export const ScheduleSchema = z.object({
   days: z.array(z.number().int().min(0).max(6)).max(7),
@@ -52,7 +56,10 @@ export const SignupBody = z.object({
   password: Password,
   displayName: DisplayName,
   handle: Handle,
-  birthYear: z.number().int(),
+  /** 'YYYY-MM-DD': only for their age (R29), never shown to anyone. */
+  birthDate: Day,
+  /** Where they live (ISO 3166-1), which sets their defaults. */
+  country: Country,
   timeZone: TimeZone.optional(),
   locale: z.string().max(35).optional(),
   client: z.enum(['web', 'native']).default('web'),
@@ -229,7 +236,7 @@ export const UpdateMeBody = z
     presence: z.enum(['auto', 'available', 'busy', 'away', 'invisible']).optional(),
     timeZone: TimeZone.optional(),
     locale: z.string().max(35).optional(),
-    region: z.string().length(2).toUpperCase().nullable().optional(),
+    country: Country.optional(),
     workweek: z.array(z.number().int().min(0).max(6)).min(1).max(7).optional(),
     quietHours: ScheduleSchema.nullable().optional(),
     preferences: Preferences.optional(),
@@ -751,6 +758,12 @@ export const CreateSpaceConversationBody = z
 /** Organizations (PRD §36). */
 const OrgName = z.string().trim().min(1, 'Give the organization a name.').max(100);
 const OrgAbout = z.string().trim().max(500).nullable();
+/** The year an organization began: from the year 1000 to this one. */
+const FoundedYear = z
+  .number()
+  .int()
+  .min(1000, 'Enter the year it began.')
+  .refine((y) => y <= new Date().getUTCFullYear(), 'That year hasn’t come yet.');
 const OrgWebsite = z
   .string()
   .trim()
@@ -766,6 +779,9 @@ export const CreateOrgBody = z
     kind: z.enum(ORG_KINDS),
     about: OrgAbout.optional(),
     website: OrgWebsite.optional(),
+    /** Where it's based (ISO 3166-1), for its defaults. */
+    country: Country,
+    foundedYear: FoundedYear.nullable().optional(),
   })
   .strict();
 
@@ -775,6 +791,8 @@ export const UpdateOrgBody = z
     kind: z.enum(ORG_KINDS).optional(),
     about: OrgAbout.optional(),
     website: OrgWebsite.optional(),
+    country: Country.optional(),
+    foundedYear: FoundedYear.nullable().optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');

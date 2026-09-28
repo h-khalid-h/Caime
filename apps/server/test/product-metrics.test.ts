@@ -41,8 +41,14 @@ beforeAll(async () => {
   await say(sam, dm, 'Hi Noor');
 
   // A customer writes to Noor's organization and waits a quarter of an hour.
-  const org = (await noor.post('/v1/orgs', { name: 'Tiles', handle: 'tiles.pm', kind: 'shop' }))
-    .org;
+  const org = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Tiles',
+      handle: 'tiles.pm',
+      kind: 'shop',
+    })
+  ).org;
   t.clock.advance(HOUR);
   const { conversationId } = await cara.post(`/v1/orgs/${org.id}/conversations`);
   await say(cara, conversationId, 'Do you have tiles?');
@@ -236,7 +242,8 @@ describe('product metrics (PRD §82–83)', () => {
           password: 'correct horse battery',
           displayName: 'New Person',
           handle,
-          birthYear: 1990,
+          birthDate: '1990-12-31',
+          country: 'EG',
           client: 'native',
           invite,
         },

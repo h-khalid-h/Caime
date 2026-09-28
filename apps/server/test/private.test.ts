@@ -522,8 +522,8 @@ describe('private conversations (R18, PRD §61)', () => {
     expect(tooBig.statusCode).toBe(400);
     expect(tooBig.json().error.message).toMatch(/^A private group holds up to 64 people/);
     for (const id of many.slice(0, 61))
-      await sql`insert into users (id, email, handle, password_hash, display_name, privacy)
-        values (${id}, ${`${id}@example.com`}, ${`u${id.slice(-12)}`}, 'x', 'Someone', '{}')`.execute(
+      await sql`insert into users (id, email, handle, password_hash, display_name, privacy, birth_date)
+        values (${id}, ${`${id}@example.com`}, ${`u${id.slice(-12)}`}, 'x', 'Someone', '{}', '1990-12-31')`.execute(
         t.ctx.db,
       );
     await t.ctx.db

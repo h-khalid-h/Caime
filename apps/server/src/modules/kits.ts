@@ -10,7 +10,6 @@ import {
   type CustomKitOfferView,
   customTitle,
   isCustomCard,
-  isMinor,
   mergeCustomFields,
   parseCustomKit,
   uuidv7,
@@ -25,6 +24,7 @@ import { customerMask } from '../lib/business';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { appKitView } from '../lib/kits';
 import { messageViews, participantsOf } from '../lib/messages';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { membership } from './conversations';
@@ -157,11 +157,11 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
     const people = await ctx.db
       .selectFrom('participants as p')
       .innerJoin('users as u', 'u.id', 'p.user_id')
-      .select('u.birth_year')
+      .select(['u.birth_date', 'u.time_zone'])
       .where('p.conversation_id', '=', id)
       .where('p.left_at', 'is', null)
       .execute();
-    const minor = people.some((u) => isMinor(u.birth_year, ctx.now()));
+    const minor = people.some((u) => minorOf(u, ctx.now()));
     return {
       kits: rows
         .filter((r) => !(minor && r.definition.adultsOnly))

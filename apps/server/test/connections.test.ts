@@ -265,14 +265,37 @@ describe('requests: decline, cancel, mutual intent, blocks', () => {
 
 describe('teen protections (R29)', () => {
   it('adults cannot find teens in search or request them without a shared connection', async () => {
-    const teen = await signup(t, { displayName: 'Tess Teen', handle: 'tessteen', birthYear: 2010 });
+    const teen = await signup(t, {
+      displayName: 'Tess Teen',
+      handle: 'tessteen',
+      birthDate: '2010-12-31',
+    });
     const adult = await signup(t, { displayName: 'Adam Adult' });
     expect((await adult.get('/v1/people/search?q=tessteen')).results).toEqual([]);
     const res = await adult.req('POST', '/v1/connections/requests', { toUserId: teen.user.id });
     expect(res.statusCode).toBe(403);
     expect(res.json().error.code).toBe('not_accepting_requests');
-    const otherTeen = await signup(t, { displayName: 'Omar Teen', birthYear: 2011 });
+    const otherTeen = await signup(t, { displayName: 'Omar Teen', birthDate: '2011-12-31' });
     expect((await otherTeen.get('/v1/people/search?q=tessteen')).results).toHaveLength(1);
+  });
+
+  it('finds someone from their 18th birthday, where they are, and not a day before', async () => {
+    const was = t.clock.now.toISOString();
+    // 05:00 on 1 June in Tokyo, still 31 May in New York.
+    t.clock.set('2026-05-31T20:00:00.000Z');
+    try {
+      const adult = await signup(t, { displayName: 'Ada Searcher' });
+      const born = (handle: string, timeZone: string) =>
+        signup(t, { displayName: 'Turning Eighteen', handle, birthDate: '2008-06-01', timeZone });
+      await born('eighteen.tokyo', 'Asia/Tokyo');
+      await born('eighteen.york', 'America/New_York');
+      const found = (await adult.get('/v1/people/search?q=eighteen')).results.map(
+        (r: { person: { handle: string } }) => r.person.handle,
+      );
+      expect(found).toEqual(['eighteen.tokyo']);
+    } finally {
+      t.clock.set(was);
+    }
   });
 });
 

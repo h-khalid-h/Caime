@@ -27,6 +27,7 @@ import type {
   ConnectionView,
   ConversationDevicesView,
   ConversationView,
+  CountriesView,
   CustomKitOfferView,
   DecisionView,
   DeviceSessionView,
@@ -127,7 +128,10 @@ export const endpoints = {
     password: string;
     displayName: string;
     handle: string;
-    birthYear: number;
+    /** YYYY-MM-DD. */
+    birthDate: string;
+    /** Where they live (ISO 3166-1). */
+    country: string;
     timeZone?: string;
     locale?: string;
     client: 'web' | 'native';
@@ -166,6 +170,9 @@ export const endpoints = {
   updateMe: (patch: Record<string, unknown>) => api.patch<{ user: MeView }>('/me', patch),
   updatePrivacy: (body: Record<string, unknown>) =>
     api.put<{ privacy: MeView['privacy'] }>('/me/privacy', body),
+  /** Every country named in `locale`'s language, and the one the device suggests (lib/geo.ts). */
+  countries: (locale: string, timeZone?: string) =>
+    api.get<CountriesView>(`/countries${q({ locale, timeZone })}`),
   handleAvailable: (handle: string) =>
     api.get<{ available: boolean; reason: string | null; suggestion: string | null }>(
       `/me/handle-available${q({ handle })}`,
@@ -324,6 +331,9 @@ export const endpoints = {
     name: string;
     handle: string;
     kind: OrgKind;
+    /** Where it's based (ISO 3166-1). */
+    country: string;
+    foundedYear?: number | null;
     about?: string;
     website?: string;
   }) => api.post<{ org: OrgView }>('/orgs', body),

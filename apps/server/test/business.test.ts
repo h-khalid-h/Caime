@@ -48,12 +48,18 @@ beforeAll(async () => {
   hana = await signup(t, { displayName: 'Hana Said' });
   lina = await signup(t, { displayName: 'Lina Customer' });
   rana = await signup(t, { displayName: 'Rana Other' });
-  teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+  teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
   for (const p of [sara, omar, hana]) await connect(noor, p);
   // Lina happens to know Omar: even so, she must not learn he's the one answering.
   await connect(lina, omar);
-  orgId = (await noor.post('/v1/orgs', { name: 'DATA C', handle: 'datac.biz', kind: 'business' }))
-    .org.id;
+  orgId = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'DATA C',
+      handle: 'datac.biz',
+      kind: 'business',
+    })
+  ).org.id;
   // On Business, so its team can grow past three: plans have their own tests (plans.test.ts).
   await t.ctx.db
     .updateTable('organizations')

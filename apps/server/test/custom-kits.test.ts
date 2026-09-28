@@ -91,15 +91,26 @@ beforeAll(async () => {
   noor = await signup(t, { displayName: 'Noor Haddad' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
   lina = await signup(t, { displayName: 'Lina Customer' });
-  rami = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+  rami = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
   const r = await noor.post('/v1/connections/requests', { toUserId: omar.user.id });
   await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {});
   direct = (await noor.post('/v1/conversations', { kind: 'direct', userId: omar.user.id }))
     .conversation.id;
-  orgId = (await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' })).org
-    .id;
+  orgId = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Tiles Co',
+      handle: 'tiles.co',
+      kind: 'shop',
+    })
+  ).org.id;
   otherOrgId = (
-    await omar.post('/v1/orgs', { name: 'Other Shop', handle: 'other.shop', kind: 'shop' })
+    await omar.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Other Shop',
+      handle: 'other.shop',
+      kind: 'shop',
+    })
   ).org.id;
   // On Business, for more than one app, and verified, so someone under 18 may write to it.
   await t.ctx.db

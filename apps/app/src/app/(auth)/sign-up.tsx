@@ -13,6 +13,8 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { AuthLayout } from '@/features/auth/AuthLayout';
 import { deviceInfo } from '@/features/auth/device';
+import { CountryField } from '@/features/geo/CountryField';
+import { useCountries } from '@/features/geo/countries';
 import { WEB_URL } from '@/lib/config';
 import { openLink, opensWithEnter } from '@/lib/links';
 import { handleIn } from '@/lib/paths';
@@ -20,12 +22,17 @@ import { peekLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { DateField } from '@/ui/DateField';
+import { dayOf, yearsBefore } from '@/ui/dates';
 import { AtSign, Check } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 
-type Field = 'displayName' | 'handle' | 'email' | 'password' | 'birthYear';
+type Field = 'displayName' | 'handle' | 'email' | 'password' | 'birthDate' | 'country';
+
+/** Nobody is older than this, and the day is one that's come. */
+const OLDEST_YEARS = 120;
 
 export default function SignUp() {
   const t = useTheme();
@@ -34,7 +41,15 @@ export default function SignUp() {
   const [handleTouched, setHandleTouched] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [birthYear, setBirthYear] = useState('');
+  const [birthDate, setBirthDate] = useState<string | null>(null);
+  const [country, setCountry] = useState<string | null>(null);
+  const [device] = useState(deviceInfo);
+  const countries = useCountries(device.locale, device.timeZone);
+  // Where the device says it is, until they choose (its time zone, else its language's region).
+  useEffect(() => {
+    const suggested = countries.data?.suggested;
+    if (suggested) setCountry((chosen) => chosen ?? suggested);
+  }, [countries.data?.suggested]);
   const [errors, setErrors] = useState<Partial<Record<Field | 'form', string>>>({});
   const [busy, setBusy] = useState(false);
   const [availability, setAvailability] = useState<{
@@ -47,7 +62,6 @@ export default function SignUp() {
     handle: useRef<TextInput>(null),
     email: useRef<TextInput>(null),
     password: useRef<TextInput>(null),
-    birthYear: useRef<TextInput>(null),
   };
 
   // Suggest a handle from the name until the person edits it themselves.
@@ -71,7 +85,8 @@ export default function SignUp() {
     return () => clearTimeout(timer);
   }, [handle]);
 
-  const currentYear = new Date().getFullYear();
+  const today = dayOf(new Date());
+  const oldest = yearsBefore(today, OLDEST_YEARS);
 
   const validate = (): boolean => {
     const next: typeof errors = {};
@@ -83,11 +98,11 @@ export default function SignUp() {
         : undefined);
     next.email = emailError(email) ?? undefined;
     next.password = passwordError(password) ?? undefined;
-    const year = Number(birthYear);
-    next.birthYear =
-      !/^\d{4}$/.test(birthYear) || year < currentYear - 120 || year > currentYear
-        ? 'Enter the year you were born.'
+    next.birthDate =
+      !birthDate || birthDate > today || birthDate < oldest
+        ? 'Enter the day you were born.'
         : undefined;
+    next.country = country ? undefined : 'Choose where you live.';
     setErrors(next);
     return !Object.values(next).some(Boolean);
   };
@@ -102,8 +117,9 @@ export default function SignUp() {
         handle: normalizeHandle(handle),
         email: email.trim(),
         password,
-        birthYear: Number(birthYear),
-        ...deviceInfo(),
+        birthDate: birthDate ?? '',
+        country: country ?? '',
+        ...device,
         // Whose @handle link brought them, counted for the operator and told to nobody.
         ...(handleIn(peekLink()) ? { invite: handleIn(peekLink()) ?? undefined } : {}),
       });
@@ -112,11 +128,18 @@ export default function SignUp() {
       if (err instanceof ApiError) {
         const fields = err.fieldErrors();
         const mapped: typeof errors = {};
-        for (const key of ['displayName', 'handle', 'email', 'password', 'birthYear'] as const)
+        for (const key of [
+          'displayName',
+          'handle',
+          'email',
+          'password',
+          'birthDate',
+          'country',
+        ] as const)
           if (fields[key]) mapped[key] = fields[key];
         if (err.code === 'email_taken') mapped.email = err.message;
         else if (err.code === 'handle_taken') mapped.handle = err.message;
-        else if (err.code === 'too_young') mapped.birthYear = err.message;
+        else if (err.code === 'too_young') mapped.birthDate = err.message;
         else if (!Object.keys(mapped).length) mapped.form = err.message;
         setErrors(mapped);
       } else {
@@ -229,25 +252,29 @@ export default function SignUp() {
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="next"
-          onSubmitEditing={() => refs.birthYear.current?.focus()}
           error={errors.password}
           hint="At least 10 characters. A short sentence works well."
           testID="signup-password"
         />
-        <TextField
-          ref={refs.birthYear}
-          label="Year you were born"
-          value={birthYear}
-          onChangeText={(v) => setBirthYear(v.replace(/\D/g, '').slice(0, 4))}
-          keyboardType="number-pad"
-          inputMode="numeric"
-          autoComplete="birthdate-year"
-          returnKeyType="done"
-          onSubmitEditing={submit}
-          error={errors.birthYear}
-          hint="Only to keep younger people safer. Never shown to anyone."
-          testID="signup-birth-year"
-          style={{ maxWidth: 220 }}
+        <DateField
+          label="Date of birth"
+          value={birthDate}
+          onChange={setBirthDate}
+          min={oldest}
+          max={today}
+          memorable
+          error={errors.birthDate}
+          hint="Only to keep younger people safer, from the day you turn 18. Never shown to anyone."
+          testID="signup-birth-date"
+        />
+        <CountryField
+          label="Where you live"
+          value={country}
+          onChange={setCountry}
+          locale={device.locale}
+          error={errors.country}
+          hint="Sets your defaults, like your work week and the currency of amounts. Never shown to anyone."
+          testID="signup-country"
         />
       </View>
       {errors.form ? (

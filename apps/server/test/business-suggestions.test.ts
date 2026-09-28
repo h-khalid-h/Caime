@@ -32,8 +32,14 @@ beforeAll(async () => {
   omar = await signup(t, { displayName: 'Omar Farouk' });
   lina = await signup(t, { displayName: 'Lina Customer' });
   await connect(noor, omar);
-  orgId = (await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' })).org
-    .id;
+  orgId = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Tiles Co',
+      handle: 'tiles.co',
+      kind: 'shop',
+    })
+  ).org.id;
   await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
   convo = (await lina.post(`/v1/orgs/${orgId}/conversations`)).conversationId;
 });

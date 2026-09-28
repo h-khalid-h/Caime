@@ -460,7 +460,12 @@ describe('automations in a conversation with an organization', () => {
     const lina = await signup(t, { displayName: 'Lina Buyer' });
     await connect(owner, omar, 'work');
     const org = (
-      await owner.post('/v1/orgs', { name: 'Acme Parts', handle: 'acme.parts', kind: 'business' })
+      await owner.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Acme Parts',
+        handle: 'acme.parts',
+        kind: 'business',
+      })
     ).org.id;
     await owner.post(`/v1/orgs/${org}/members`, { userIds: [omar.user.id] });
     const convo = (await lina.post(`/v1/orgs/${org}/conversations`)).conversationId as string;

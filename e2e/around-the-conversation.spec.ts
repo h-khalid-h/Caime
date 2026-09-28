@@ -745,7 +745,8 @@ test.describe
       await lina.page.getByTestId('signup-handle').fill(linaHandle);
       await lina.page.getByTestId('signup-email').fill(`${linaHandle}@example.com`);
       await lina.page.getByTestId('signup-password').fill('a long enough passphrase');
-      await lina.page.getByTestId('signup-birth-year').fill('1990');
+      await lina.page.getByTestId('signup-birth-date').fill('1990-12-31');
+      await expect(lina.page.getByTestId('signup-country')).toContainText('United States');
       await expect(lina.page.getByText('Available')).toBeVisible();
       await lina.page.getByTestId('signup-submit').click();
       await lina.page.waitForURL('**/onboarding');
@@ -1174,7 +1175,7 @@ test.describe
         deviceScaleFactor: 2,
       });
       try {
-        await apiSignUp(teenContext, 'Rami Young', `rami.${stamp}`, { birthYear: 2011 });
+        await apiSignUp(teenContext, 'Rami Young', `rami.${stamp}`, { birthDate: '2011-12-31' });
         const teen = await newPerson(teenContext);
         await teen.page.goto(`/@${handle}`);
         await expect(visible(teen.page, 'Its team will see you’re under 18.')).toBeVisible();
@@ -1852,7 +1853,8 @@ test.describe
       await fresh.page.getByTestId('signup-handle').fill(freshHandle);
       await fresh.page.getByTestId('signup-email').fill(`${freshHandle}@example.com`);
       await fresh.page.getByTestId('signup-password').fill(PASSWORD);
-      await fresh.page.getByTestId('signup-birth-year').fill('1990');
+      await fresh.page.getByTestId('signup-birth-date').fill('1990-12-31');
+      await expect(fresh.page.getByTestId('signup-country')).toContainText('United States');
       await expect(fresh.page.getByText('Available')).toBeVisible();
       await fresh.page.getByTestId('signup-submit').click();
       await fresh.page.waitForURL('**/onboarding');

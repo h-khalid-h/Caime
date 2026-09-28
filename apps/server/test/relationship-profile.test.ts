@@ -113,7 +113,12 @@ describe('who someone is to you (PRD §67, §71)', () => {
 describe('how Caishy thinks you know someone (PRD §12)', () => {
   it('two people on the same team are offered as colleagues, each only for themselves', async () => {
     const org = (
-      await ana.post('/v1/orgs', { name: 'Acme Parts', handle: 'acme.profile', kind: 'business' })
+      await ana.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Acme Parts',
+        handle: 'acme.profile',
+        kind: 'business',
+      })
     ).org.id;
     await ana.post(`/v1/orgs/${org}/members`, { userIds: [ben.user.id] });
     const [forAna] = await offers(ana, ben);
@@ -205,7 +210,12 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     await connect(ana, jo);
     await connect(ana, kim);
     const org = (
-      await ana.post('/v1/orgs', { name: 'Parts Co', handle: 'parts.profile', kind: 'business' })
+      await ana.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Parts Co',
+        handle: 'parts.profile',
+        kind: 'business',
+      })
     ).org.id;
     await ana.post(`/v1/orgs/${org}/members`, { userIds: [jo.user.id, kim.user.id] });
     await connect(jo, kim);
@@ -221,7 +231,12 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     // Two reasons to think so: an email domain, then a team.
     expect((await offers(mo, nia)).map((o) => o.title)).toEqual(['Colleague · Nileworks']);
     const org = (
-      await mo.post('/v1/orgs', { name: 'Delta Works', handle: 'delta.profile', kind: 'business' })
+      await mo.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Delta Works',
+        handle: 'delta.profile',
+        kind: 'business',
+      })
     ).org.id;
     await mo.post(`/v1/orgs/${org}/members`, { userIds: [nia.user.id] });
     const both = await offers(mo, nia);
@@ -290,7 +305,12 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     expect(await offers(quin, pia)).toEqual([]);
     expect((await quin.req('POST', `/v1/suggestions/${quins.id}/accept`)).statusCode).toBe(404);
     const team = (
-      await pia.post('/v1/orgs', { name: 'Choir Co', handle: 'choir.profile', kind: 'business' })
+      await pia.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Choir Co',
+        handle: 'choir.profile',
+        kind: 'business',
+      })
     ).org.id;
     await pia.post(`/v1/orgs/${team}/members`, { userIds: [quin.user.id] }).catch(() => null);
     expect(await offers(pia, quin)).toEqual([]);
@@ -328,7 +348,12 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     const sue = await signup(t, { displayName: 'Sue Harbor', email: 'sue@gmail.com' });
     await connect(ray, sue);
     const harbor = (
-      await ray.post('/v1/orgs', { name: 'Harbor', handle: 'harbor.profile', kind: 'business' })
+      await ray.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Harbor',
+        handle: 'harbor.profile',
+        kind: 'business',
+      })
     ).org.id;
     await ray.post(`/v1/orgs/${harbor}/members`, { userIds: [sue.user.id] });
     expect((await offers(ray, sue))[0]).toMatchObject({ title: 'Colleague · Harbor' });
@@ -391,7 +416,12 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
       .executeTakeFirstOrThrow();
     await samira.patch(`/v1/connections/${side.connection_id}`, { identityId: identity });
     const clinic = (
-      await ana.post('/v1/orgs', { name: 'Clinic', handle: 'clinic.profile', kind: 'business' })
+      await ana.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Clinic',
+        handle: 'clinic.profile',
+        kind: 'business',
+      })
     ).org.id;
     await ana.post(`/v1/orgs/${clinic}/members`, { userIds: [samira.user.id] });
     const [toAna] = await offers(ana, samira);

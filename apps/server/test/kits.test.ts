@@ -98,7 +98,7 @@ describe('kit cards (PRD §41)', () => {
     );
 
     // Money cards are never offered to or by anyone under 18 (R29).
-    const teen = await signup(t, { displayName: 'Tess Teen', birthYear: 2011 });
+    const teen = await signup(t, { displayName: 'Tess Teen', birthDate: '2011-12-31' });
     const r = await teen.post('/v1/connections/requests', { toUserId: noor.user.id });
     const withTeen = (await noor.post(`/v1/connections/requests/${r.requestId}/accept`, {}))
       .conversationId;
@@ -241,7 +241,7 @@ describe('locations (R29)', () => {
     ).toBe(201);
     expect((await place(noor, convo, { label: 'Café Riche, Downtown' })).statusCode).toBe(201);
     expect((await place(noor, convo, { lat: 30.0444 })).statusCode).toBe(400);
-    const teen = await signup(t, { displayName: 'Rami Teen', birthYear: 2011 });
+    const teen = await signup(t, { displayName: 'Rami Teen', birthDate: '2011-12-31' });
     const withTeen = await connect(teen, noor);
     const refused = await place(teen, withTeen, { label: 'Home' });
     expect(refused.statusCode).toBe(403);

@@ -554,7 +554,7 @@ describe('your data', () => {
   it('says only what the app shows: not what others did in their name, nor what changed after', async () => {
     const db = t.ctx.db;
     const karim = await signup(t, { displayName: 'Karim Adel' });
-    const yara = await signup(t, { displayName: 'Yara Young', birthYear: 2011 });
+    const yara = await signup(t, { displayName: 'Yara Young', birthDate: '2011-12-31' });
     // Rana came through Yara's link: that a person's link brought her is counted, never whose.
     const joined = await t.app.inject({
       method: 'POST',
@@ -564,7 +564,8 @@ describe('your data', () => {
         password: 'correct horse battery',
         displayName: 'Rana Aziz',
         handle: `rana${uuidv4().slice(0, 8)}`,
-        birthYear: 1990,
+        birthDate: '1990-12-31',
+        country: 'EG',
         client: 'native',
         invite: `@${yara.user.handle}`,
       },
@@ -672,6 +673,7 @@ describe('your data', () => {
         name: 'Rana Studio',
         handle: `studio.${uuidv4().slice(0, 6)}`,
         kind: 'shop',
+        country: 'EG',
       })
     ).org.id;
     await rana.post(`/v1/orgs/${studio}/members`, { userIds: [karim.user.id] });
@@ -699,6 +701,7 @@ describe('your data', () => {
         name: 'Karim’s Lab',
         handle: `lab.${uuidv4().slice(0, 6)}`,
         kind: 'shop',
+        country: 'EG',
       })
     ).org.id;
     await karim.post(`/v1/orgs/${lab}/members`, { userIds: [rana.user.id] });
@@ -723,6 +726,7 @@ describe('your data', () => {
         name: 'Karim’s Shop',
         handle: `shop.${uuidv4().slice(0, 6)}`,
         kind: 'shop',
+        country: 'EG',
       })
     ).org.id;
     await db

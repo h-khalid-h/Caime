@@ -22,10 +22,21 @@ beforeAll(async () => {
   noor = await signup(t, { displayName: 'Noor Haddad' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
   await connect(noor, omar);
-  orgId = (await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' })).org
-    .id;
+  orgId = (
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Tiles Co',
+      handle: 'tiles.co',
+      kind: 'shop',
+    })
+  ).org.id;
   freeOrgId = (
-    await omar.post('/v1/orgs', { name: 'Omar Shop', handle: 'omar.shop', kind: 'shop' })
+    await omar.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Omar Shop',
+      handle: 'omar.shop',
+      kind: 'shop',
+    })
   ).org.id;
   await t.ctx.db
     .updateTable('organizations')

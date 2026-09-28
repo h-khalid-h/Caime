@@ -301,7 +301,7 @@ describe('OAuth for third-party apps (PRD §74)', () => {
       /^cao_/,
     );
 
-    const teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+    const teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
     const minor = await teen.req('POST', '/v1/oauth/authorize', {
       ...request(pkce().challenge),
       decision: 'allow',

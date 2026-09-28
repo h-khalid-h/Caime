@@ -381,8 +381,8 @@ describe('possible duplicates (PRD §51)', () => {
     const lots = await signup(t, { displayName: 'Lots Of Friends' });
     await sql`
       with made as (
-        insert into users (id, email, handle, password_hash, display_name, privacy)
-        select gen_random_uuid(), 'bulk' || g || '@example.com', 'bulk' || g, 'x', 'Person ' || g, '{}'
+        insert into users (id, email, handle, password_hash, display_name, privacy, birth_date)
+        select gen_random_uuid(), 'bulk' || g || '@example.com', 'bulk' || g, 'x', 'Person ' || g, '{}', '1990-12-31'
           from generate_series(1, 1001) g
         returning id
       ), linked as (

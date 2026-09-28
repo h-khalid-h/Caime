@@ -133,7 +133,7 @@ describe('a calendar feed (PRD §72)', () => {
       expect(res.json().error.code).toBe('token_route');
     }
     expect((await t.app.inject({ method: 'POST', url: '/v1/calendar/feed' })).statusCode).toBe(401);
-    const teen = await signup(t, { displayName: 'Tess Teen', birthYear: 2011 });
+    const teen = await signup(t, { displayName: 'Tess Teen', birthDate: '2011-12-31' });
     const refused = await teen.req('POST', '/v1/calendar/feed', {});
     expect(refused.statusCode).toBe(403);
     expect(refused.json().error.message).toBe('Calendars are for people over 18.');

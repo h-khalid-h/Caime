@@ -14,8 +14,16 @@ beforeAll(async () => {
   noor = await signup(t, { displayName: 'Noor Haddad', handle: 'noor.links' });
   sara = await signup(t, { displayName: 'Sara Ali', handle: 'sara.links' });
   quiet = await signup(t, { displayName: 'Quiet Person', handle: 'quiet.links' });
-  teen = await signup(t, { displayName: 'Rami Young', handle: 'rami.links', birthYear: 2011 });
-  teen2 = await signup(t, { displayName: 'Dina Young', handle: 'dina.links', birthYear: 2012 });
+  teen = await signup(t, {
+    displayName: 'Rami Young',
+    handle: 'rami.links',
+    birthDate: '2011-12-31',
+  });
+  teen2 = await signup(t, {
+    displayName: 'Dina Young',
+    handle: 'dina.links',
+    birthDate: '2012-12-31',
+  });
   blocker = await signup(t, { displayName: 'Blocker', handle: 'blocker.links' });
   await quiet.req('PUT', '/v1/me/privacy', { discoverByHandle: false });
   await blocker.post('/v1/blocks', { userId: noor.user.id });
@@ -35,6 +43,7 @@ describe('@handle links', () => {
       handle: 'sara.links',
     });
     const { org } = await noor.post('/v1/orgs', {
+      country: 'EG',
       name: 'Links Clinic',
       handle: 'links.clinic',
       kind: 'clinic',

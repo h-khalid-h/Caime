@@ -76,7 +76,8 @@ export async function signup(
     displayName: string;
     handle: string;
     email: string;
-    birthYear: number;
+    birthDate: string;
+    country: string;
     locale: string;
     timeZone: string;
   }> = {},
@@ -91,7 +92,9 @@ export async function signup(
       password: 'correct horse battery',
       displayName: patch.displayName ?? `User ${counter}`,
       handle,
-      birthYear: patch.birthYear ?? 1990,
+      birthDate: patch.birthDate ?? '1990-12-31',
+      // Where the language says, as a person's device would suggest (ar-EG: Egypt).
+      country: patch.country ?? patch.locale?.split('-')[1] ?? 'US',
       timeZone: patch.timeZone ?? 'America/New_York',
       locale: patch.locale ?? 'en-US',
       client: 'native',

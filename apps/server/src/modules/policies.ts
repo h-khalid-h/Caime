@@ -171,7 +171,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['workweek', 'region', 'locale'])
+      .select(['workweek', 'country'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     await ctx.db.transaction().execute(async (trx) => {
@@ -184,7 +184,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       await seedDefaults(
         trx,
         auth.userId,
-        me.workweek?.length ? me.workweek : defaultWorkweek(me.region ?? me.locale),
+        me.workweek?.length ? me.workweek : defaultWorkweek(me.country),
       );
     });
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });

@@ -2,6 +2,9 @@ import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 import type { Database } from './schema';
 
+// A date column (a date of birth) is the day it says, 'YYYY-MM-DD', not midnight somewhere.
+pg.types.setTypeParser(pg.types.builtins.DATE, (value) => value);
+
 export interface Db {
   pool: pg.Pool;
   db: Kysely<Database>;

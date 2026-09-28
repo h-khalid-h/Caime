@@ -10,7 +10,6 @@ import {
   canChangeOrgRole,
   canManageOrg,
   canRemoveFromOrg,
-  isMinor,
   nextOwner,
   normalizeDomain,
   OrgDomainBody,
@@ -34,6 +33,7 @@ import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
+import { currencyOf, isCountry } from '../lib/geo';
 import { handleTaken } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
@@ -42,7 +42,7 @@ import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
 import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { endFollowsOf } from '../lib/updates';
-import { personView } from '../lib/users';
+import { minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -84,6 +84,9 @@ async function summaryOf(
     verifiedDomain: org.verified_at ? org.domain : null,
     memberCount: n,
     myRole,
+    country: org.country,
+    currency: currencyOf(org.country),
+    foundedYear: org.founded_year,
   };
 }
 
@@ -150,10 +153,10 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
 async function adult(ctx: AppContext, userIds: string[]): Promise<boolean> {
   const rows = await ctx.db
     .selectFrom('users')
-    .select('birth_year')
+    .select(['birth_date', 'time_zone'])
     .where('id', 'in', userIds)
     .execute();
-  return rows.length === userIds.length && rows.every((u) => !isMinor(u.birth_year, ctx.now()));
+  return rows.length === userIds.length && rows.every((u) => !minorOf(u, ctx.now()));
 }
 
 async function managerSeat(ctx: AppContext, userId: string, orgId: string) {
@@ -175,6 +178,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       throw forbidden('Organizations are for people over 18.');
     if (await handleTaken(ctx.db, body.handle))
       throw conflict('handle_taken', 'That handle is taken. Try another.');
+    if (!isCountry(body.country)) throw badRequest('Choose where it’s based.');
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
@@ -186,6 +190,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           kind: body.kind,
           about: body.about ?? null,
           website: body.website ?? null,
+          country: body.country,
+          founded_year: body.foundedYear ?? null,
           created_by: auth.userId,
         })
         .execute();
@@ -273,6 +279,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(UpdateOrgBody, req.body);
     await orgById(ctx.db, id);
     await managerSeat(ctx, auth.userId, id);
+    if (body.country !== undefined && !isCountry(body.country))
+      throw badRequest('Choose where it’s based.');
     await ctx.db
       .updateTable('organizations')
       .set({
@@ -280,6 +288,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.kind !== undefined ? { kind: body.kind } : {}),
         ...(body.about !== undefined ? { about: body.about } : {}),
         ...(body.website !== undefined ? { website: body.website } : {}),
+        ...(body.country !== undefined ? { country: body.country } : {}),
+        ...(body.foundedYear !== undefined ? { founded_year: body.foundedYear } : {}),
         updated_at: ctx.now(),
       })
       .where('id', '=', id)

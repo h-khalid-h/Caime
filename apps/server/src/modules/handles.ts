@@ -2,12 +2,13 @@
  * @handle links (PRD §11): a shared link names a handle, and handles are one namespace, so it
  * opens a person or an organization. A person is found here exactly as search would find them.
  */
-import { type HandleView, handleError, isMinor, normalizeHandle } from '@caishy/core';
+import { type HandleView, handleError, normalizeHandle } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { notFound } from '../lib/errors';
 import { between } from '../lib/relations';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -31,7 +32,7 @@ export async function handleRoutes(app: FastifyInstance, ctx: AppContext) {
 
     const user = await ctx.db
       .selectFrom('users')
-      .select(['id', 'handle', 'birth_year', 'privacy'])
+      .select(['id', 'handle', 'birth_date', 'time_zone', 'privacy'])
       .where('handle', '=', wanted)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
@@ -47,11 +48,11 @@ export async function handleRoutes(app: FastifyInstance, ctx: AppContext) {
       throw nobody();
     const me = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const now = ctx.now();
-    if (isMinor(user.birth_year, now) && !isMinor(me.birth_year, now)) throw nobody();
+    if (minorOf(user, now) && !minorOf(me, now)) throw nobody();
     return found;
   });
 }

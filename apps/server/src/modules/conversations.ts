@@ -26,7 +26,6 @@ import {
   ForwardBody,
   isCardKit,
   isCustomCard,
-  isMinor,
   KITS,
   kitMoves,
   kitStateLabel,
@@ -98,7 +97,7 @@ import {
   viewerRelation,
 } from '../lib/relations';
 import { spaceChanged, spaceConversationTitle, spaceRefs } from '../lib/spaces';
-import { personView } from '../lib/users';
+import { minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { identityShownTo } from './people';
@@ -388,7 +387,7 @@ export async function conversationView(
         : otherRequest === 'pending' || otherRequest === 'declined'
           ? 'outgoing'
           : null,
-    hasMinor: members.some((m) => isMinor(m.birth_year, now)),
+    hasMinor: members.some((m) => minorOf(m, now)),
     lastSeq: Number(conversation.last_seq),
     lastMessageAt: conversation.last_message_at?.toISOString() ?? null,
     createdAt: conversation.created_at.toISOString(),

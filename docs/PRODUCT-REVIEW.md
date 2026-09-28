@@ -185,16 +185,18 @@ to feel right to each of them.
   custom roles. A name is one free-text field, in any script, of any length, and can be a single
   word.
 - **R29 — Age-aware safety.** The minimum age is 13 (16 where local law requires), asked once as a
-  birth year and never shown to anyone. Accounts under 18 get protective defaults: discoverable
+  date of birth and never shown to anyone: an age is exact, from the day someone turns it where
+  they live (29 February counts as 1 March in other years), and can't be changed in the app. Accounts under 18 get protective defaults: discoverable
   by handle only (never by email), message requests only from people who share a connection, no
   location sharing. Adults can never find an under-18 account through people search.
 - **R30 — Comfortable for older adults and for anyone on a hard day.** Text follows the system
   size up to 200% without clipping; touch targets are at least 44 pt; every swipe and long press
   has a visible alternative; tab bars always show labels; voice notes and calls are one tap from
   every conversation; copy is plain language.
-- **R31 — Culture and locale are data, not assumptions.** Work-hour defaults follow the local
-  workweek (Sunday–Thursday in Egypt and Saudi Arabia, Monday–Friday in most of Europe and the
-  Americas) and are editable; dates, 12/24-hour time, numbers and name order follow the locale;
+- **R31 — Culture and locale are data, not assumptions.** Work-hour defaults follow the workweek of
+  the country someone lives in (Sunday–Thursday in Egypt and Saudi Arabia, Monday–Friday in most of
+  Europe and the Americas; asked at sign-up, suggested from the device's time zone) and are
+  editable; dates, 12/24-hour time, numbers and name order follow the locale;
   layouts are right-to-left safe (R21); icons and colours avoid culture-specific meanings; slow
   networks and low-end phones are first-class (offline-first, no media auto-download on cellular
   by default).

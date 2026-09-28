@@ -10,7 +10,6 @@ import {
   type CustomKitDef,
   customTitle,
   isCustomCard,
-  isMinor,
   isUuid,
   KITS,
   prepareCustomFields,
@@ -20,6 +19,7 @@ import type { Message } from '../db/schema';
 import { queueDelivery } from './apps';
 import type { CustomerMask } from './business';
 import { AppError, badRequest, forbidden } from './errors';
+import { minorOf } from './users';
 
 export function appKitView(row: {
   definition: CustomKitDef;
@@ -76,10 +76,10 @@ export async function customCardFor(
   if (def.adultsOnly) {
     const people = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', 'in', args.memberIds)
       .execute();
-    if (people.some((u) => isMinor(u.birth_year, ctx.now())))
+    if (people.some((u) => minorOf(u, ctx.now())))
       throw forbidden(`${def.name} cards aren’t available in this conversation.`);
   }
   return {
@@ -150,7 +150,7 @@ export async function tellCardApp(
   const own = isCustomCard(m.payload) ? m.payload : null;
   const customer = await ctx.db
     .selectFrom('users')
-    .select(['id', 'display_name', 'handle', 'birth_year'])
+    .select(['id', 'display_name', 'handle', 'birth_date', 'time_zone'])
     .where('id', '=', mask.customerId)
     .executeTakeFirst();
   await queueDelivery(ctx, app.id, mask.orgId, event, {
@@ -173,7 +173,7 @@ export async function tellCardApp(
           displayName: customer.display_name,
           handle: customer.handle,
           // Integrations must know, too: nothing an organization sends a minor is marketing (R29).
-          under18: isMinor(customer.birth_year, ctx.now()),
+          under18: minorOf(customer, ctx.now()),
         }
       : null,
   });

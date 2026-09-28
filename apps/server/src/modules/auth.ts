@@ -11,7 +11,7 @@ import {
   LoginBody,
   meetsMinimumAge,
   normalizeHandle,
-  plausibleBirthYear,
+  plausibleBirthDate,
   RecoverBody,
   SignupBody,
   safeLocale,
@@ -35,9 +35,10 @@ import {
 } from '../lib/crypto';
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { isCountry } from '../lib/geo';
 import { handleTaken } from '../lib/handles';
 import { revokeGrantsOf } from '../lib/oauth';
-import { meView, regionFromLocale, seedDefaults, workweekFor } from '../lib/users';
+import { meView, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth, setSessionCookie, tokenFrom } from '../plugins/auth';
 
@@ -114,9 +115,12 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(SignupBody, req.body);
     const now = ctx.now();
     const timeZone = body.timeZone && isValidTimeZone(body.timeZone) ? body.timeZone : 'UTC';
-    if (!plausibleBirthYear(body.birthYear, now)) throw badRequest('Enter the year you were born.');
-    // Their New Year's Day, where they are.
-    if (!meetsMinimumAge(body.birthYear, now, ctx.config.MINIMUM_AGE, timeZone)) {
+    if (!plausibleBirthDate(body.birthDate, now, timeZone))
+      throw badRequest('Enter the day you were born.', {
+        fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],
+      });
+    // Their birthday, where they are.
+    if (!meetsMinimumAge(body.birthDate, now, ctx.config.MINIMUM_AGE, timeZone)) {
       throw new AppError(
         400,
         'too_young',
@@ -139,8 +143,11 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const id = uuidv7();
     const locale = safeLocale(body.locale);
-    const region = regionFromLocale(locale);
-    const workweek = workweekFor(region, locale);
+    if (!isCountry(body.country))
+      throw badRequest('Choose where you live.', {
+        fields: [{ path: 'country', message: 'Choose where you live.' }],
+      });
+    const workweek = workweekFor(body.country);
     const passwordHash = await hashPassword(body.password);
     // The link that brought them, if it named someone (PRD §82); a handle that names nobody
     // is simply not counted.
@@ -171,12 +178,14 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
           handle: body.handle,
           password_hash: passwordHash,
           display_name: body.displayName,
-          birth_year: body.birthYear,
+          birth_date: body.birthDate,
           locale,
           time_zone: timeZone,
-          region,
+          country: body.country,
           workweek,
-          privacy: JSON.stringify(defaultPrivacy({ minor: isMinor(body.birthYear, now) })),
+          privacy: JSON.stringify(
+            defaultPrivacy({ minor: isMinor(body.birthDate, now, timeZone) }),
+          ),
           invited_by: inviter?.id ?? null,
           invited_by_org: inviterOrg?.id ?? null,
         })

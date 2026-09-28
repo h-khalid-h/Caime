@@ -17,7 +17,8 @@ const base = {
   password: 'correct horse battery',
   displayName: 'Sarah Smith',
   handle: 'sarah',
-  birthYear: 1990,
+  birthDate: '1990-12-31',
+  country: 'EG',
   timeZone: 'Africa/Cairo',
   locale: 'ar-EG',
   client: 'native',
@@ -39,7 +40,9 @@ describe('sign-up', () => {
       handle: 'sarah',
       displayName: 'Sarah Smith',
       timeZone: 'Africa/Cairo',
-      region: 'EG',
+      country: 'EG',
+      currency: 'EGP',
+      birthDate: '1990-12-31',
       minor: false,
     });
     expect(body.user.workweek).toEqual([0, 1, 2, 3, 4]); // Sunday–Thursday in Egypt (R31)
@@ -65,39 +68,50 @@ describe('sign-up', () => {
     expect(dupHandle.json().error.code).toBe('handle_taken');
   });
 
-  it('enforces the minimum age conservatively (R29)', async () => {
-    const res = await t.app.inject({
-      method: 'POST',
-      url: '/v1/auth/signup',
-      payload: { ...base, email: 'kid@example.com', handle: 'kid', birthYear: 2014 },
-    });
-    expect(res.statusCode).toBe(400);
-    expect(res.json().error.code).toBe('too_young');
-  });
-
-  it('lets someone turning 14 sign up from New Year’s Day where they are', async () => {
+  it('takes the minimum age on the birthday, where they are (R29)', async () => {
     const was = t.clock.now.toISOString();
-    // 08:00 on 1 January in Tokyo, still 31 December in UTC and in New York.
-    t.clock.set('2025-12-31T23:00:00.000Z');
+    // 05:00 on 1 June in Tokyo, still 31 May in UTC and in New York: a 13th birthday.
+    t.clock.set('2026-05-31T20:00:00.000Z');
     try {
-      const at = (timeZone: string, handle: string) =>
+      const at = (timeZone: string, handle: string, birthDate = '2013-06-01') =>
         t.app.inject({
           method: 'POST',
           url: '/v1/auth/signup',
-          payload: {
-            ...base,
-            email: `${handle}@example.com`,
-            handle,
-            birthYear: 2012,
-            timeZone,
-          },
+          payload: { ...base, email: `${handle}@example.com`, handle, birthDate, timeZone },
         });
       const york = await at('America/New_York', 'yorkteen');
       expect(york.statusCode).toBe(400);
       expect(york.json().error.code).toBe('too_young');
-      expect((await at('Asia/Tokyo', 'tokyoteen')).statusCode).toBe(201);
+      const tokyo = await at('Asia/Tokyo', 'tokyoteen');
+      expect(tokyo.statusCode).toBe(201);
+      expect(tokyo.json().user).toMatchObject({ birthDate: '2013-06-01', minor: true });
+      // A day younger, in Tokyo too.
+      expect((await at('Asia/Tokyo', 'tokyokid', '2013-06-02')).json().error.code).toBe(
+        'too_young',
+      );
     } finally {
       t.clock.set(was);
+    }
+  });
+
+  it('asks for a day that has come, and a country that is one', async () => {
+    const tryWith = (patch: Record<string, unknown>, handle: string) =>
+      t.app.inject({
+        method: 'POST',
+        url: '/v1/auth/signup',
+        payload: { ...base, email: `${handle}@example.com`, handle, ...patch },
+      });
+    const cases = [
+      [{ birthDate: '1990-02-30' }, 'birthDate'],
+      [{ birthDate: '2099-01-01' }, 'birthDate'],
+      [{ birthDate: '17/05/1990' }, 'birthDate'],
+      [{ country: 'ZZ' }, 'country'],
+      [{ country: undefined }, 'country'],
+    ] as const;
+    for (const [i, [patch, field]] of cases.entries()) {
+      const res = await tryWith(patch, `wrong${i}`);
+      expect(res.statusCode, JSON.stringify(patch)).toBe(400);
+      expect(res.json().error.details.fields[0].path).toBe(field);
     }
   });
 
@@ -105,7 +119,7 @@ describe('sign-up', () => {
     const res = await t.app.inject({
       method: 'POST',
       url: '/v1/auth/signup',
-      payload: { ...base, email: 'teen@example.com', handle: 'teen', birthYear: 2010 },
+      payload: { ...base, email: 'teen@example.com', handle: 'teen', birthDate: '2010-12-31' },
     });
     expect(res.statusCode).toBe(201);
     const u = res.json().user;
@@ -124,6 +138,36 @@ describe('sign-up', () => {
     expect(res.json().error.details.fields.map((f: { path: string }) => f.path)).toEqual(
       expect.arrayContaining(['email', 'handle']),
     );
+  });
+});
+
+describe('where someone lives', () => {
+  it('lists every country in their language, and suggests the one their device is in', async () => {
+    const get = async (query: string) =>
+      (await t.app.inject({ method: 'GET', url: `/v1/countries?${query}` })).json();
+    const cairo = await get('locale=ar&timeZone=Africa%2FCairo');
+    expect(cairo.suggested).toBe('EG');
+    expect(cairo.countries).toHaveLength(249);
+    expect(cairo.countries).toContainEqual({ code: 'EG', name: 'مصر' });
+    // An English phone in Cairo is still in Cairo; an older name for a zone still counts.
+    expect((await get('locale=en-US&timeZone=Africa%2FCairo')).suggested).toBe('EG');
+    expect((await get('locale=en&timeZone=Asia%2FCalcutta')).suggested).toBe('IN');
+    // No time zone: the language's region, if it names one.
+    expect((await get('locale=en-GB')).suggested).toBe('GB');
+    expect((await get('locale=en')).suggested).toBeNull();
+    expect((await get('timeZone=UTC')).suggested).toBeNull();
+  });
+
+  it('moves the work week with them, unless they chose their own', async () => {
+    const eg = await signup(t, { locale: 'ar-EG', timeZone: 'Africa/Cairo' });
+    expect(eg.user).toMatchObject({ country: 'EG', currency: 'EGP', workweek: [0, 1, 2, 3, 4] });
+    const moved = (await eg.patch('/v1/me', { country: 'DE' })).user;
+    expect(moved).toMatchObject({ country: 'DE', currency: 'EUR', workweek: [1, 2, 3, 4, 5] });
+    // Days of their own stay theirs.
+    await eg.patch('/v1/me', { workweek: [1, 2, 3, 4] });
+    expect((await eg.patch('/v1/me', { country: 'EG' })).user.workweek).toEqual([1, 2, 3, 4]);
+    const nowhere = await eg.req('PATCH', '/v1/me', { country: 'ZZ' });
+    expect(nowhere.statusCode).toBe(400);
   });
 });
 

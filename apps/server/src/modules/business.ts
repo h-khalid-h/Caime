@@ -14,7 +14,6 @@ import {
   EscalateThreadBody,
   handleError,
   inBusinessView,
-  isMinor,
   normalizeHandle,
   StartThreadBody,
   type StartThreadResult,
@@ -36,7 +35,7 @@ import { notify } from '../lib/notify';
 import { orgById, orgSeat } from '../lib/orgs';
 import { assertStartRoom } from '../lib/plans';
 import { isBlockedEitherWay } from '../lib/relations';
-import { privacyOf } from '../lib/users';
+import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -153,11 +152,11 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       throw badRequest('You’re on its team: its conversations are in its inbox.');
     const me = await ctx.db
       .selectFrom('users')
-      .select('birth_year')
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     // Under 18, only an organization that has proved who it is: a school, a club, a clinic (R29).
-    if (isMinor(me.birth_year, ctx.now()) && !org.verified_at)
+    if (minorOf(me, ctx.now()) && !org.verified_at)
       throw forbidden(
         `Under 18, you can message organizations that have verified who they are. ${org.name} hasn’t yet.`,
       );
@@ -291,7 +290,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       const privacy = privacyOf(target, now);
       if (
         !privacy.discoverByHandle ||
-        isMinor(target.birth_year, now) ||
+        minorOf(target, now) ||
         (await orgBlocked(ctx.db, target.id, id)) ||
         (await isBlockedEitherWay(ctx.db, auth.userId, target.id))
       )

@@ -92,7 +92,12 @@ describe('live location (R29)', () => {
   it('is never shared with an organization, nor by anyone under 18, and starts where you are', async () => {
     const lina = await signup(t, { displayName: 'Lina Customer' });
     const orgId = (
-      await noor.post('/v1/orgs', { name: 'Tiles Co', handle: 'tiles.co', kind: 'shop' })
+      await noor.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Tiles Co',
+        handle: 'tiles.co',
+        kind: 'shop',
+      })
     ).org.id;
     const withOrg = (await lina.post(`/v1/orgs/${orgId}/conversations`)).conversationId;
     const toOrg = await share(lina, withOrg, { lat: 30, lng: 31, live: { minutes: 15 } });
@@ -100,7 +105,7 @@ describe('live location (R29)', () => {
       'Live location is for people you know, not organizations.',
     );
 
-    const teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+    const teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
     // Under 18, they ask to connect (R29): an adult can't ask them.
     const r = await teen.post('/v1/connections/requests', {
       toUserId: noor.user.id,

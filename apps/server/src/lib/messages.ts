@@ -9,7 +9,6 @@ import {
   analyzeMessage,
   assessLink,
   type FileView,
-  isMinor,
   KIT_MODES,
   kitHeadline,
   kitsFor,
@@ -33,7 +32,7 @@ import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { customCardFor } from './kits';
 import { isBlockedEitherWay, shareAConnection } from './relations';
-import { privacyOf } from './users';
+import { minorOf, privacyOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -270,7 +269,7 @@ export async function assertCanMessage(
       .executeTakeFirst(),
     ctx.db
       .selectFrom('users')
-      .select(['birth_year'])
+      .select(['birth_date', 'time_zone'])
       .where('id', '=', senderId)
       .executeTakeFirstOrThrow(),
   ]);
@@ -287,7 +286,7 @@ export async function assertCanMessage(
   // Under-18 accounts only hear from adults they share a connection with (R29).
   const needsSharedConnection =
     privacy.messageRequests === 'shared_connections' ||
-    (isMinor(target.birth_year, now) && !isMinor(sender.birth_year, now));
+    (minorOf(target, now) && !minorOf(sender, now));
   if (needsSharedConnection && !(await shareAConnection(ctx.db, senderId, targetId)))
     throw refuse();
 }
@@ -503,11 +502,11 @@ export async function sendMessage(
 
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['time_zone', 'locale', 'workweek', 'birth_year'])
+    .select(['time_zone', 'locale', 'workweek', 'birth_date'])
     .where('id', '=', senderId)
     .executeTakeFirstOrThrow();
   // Under-18 accounts don't share where they are (R29).
-  if (body.kind === 'location' && isMinor(sender.birth_year, ctx.now()))
+  if (body.kind === 'location' && minorOf(sender, ctx.now()))
     throw forbidden('Sharing a location is for people over 18.');
   const text = body.body?.trim() ?? '';
   const analysis = text
@@ -571,14 +570,14 @@ export async function sendMessage(
     if (card.def.adultsOnly) {
       const people = await ctx.db
         .selectFrom('users')
-        .select('birth_year')
+        .select(['birth_date', 'time_zone'])
         .where(
           'id',
           'in',
           members.map((p) => p.user_id),
         )
         .execute();
-      if (people.some((u) => isMinor(u.birth_year, ctx.now())))
+      if (people.some((u) => minorOf(u, ctx.now())))
         throw forbidden(`${card.def.name} cards aren’t available in this conversation.`);
     }
     payload = {

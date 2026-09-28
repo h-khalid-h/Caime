@@ -77,7 +77,7 @@ beforeAll(async () => {
   off = await createTestApp();
   noor = await signup(t, { displayName: 'Noor Haddad', email: 'noor@example.com' });
   sam = await signup(t, { displayName: 'Sam Rivera' });
-  teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+  teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
 });
 afterAll(async () => {
   await t.close();
@@ -315,7 +315,12 @@ describe('billing (PRD §84, R25)', () => {
     expect(await planOf(lea)).toBe('personal');
     // The same for an organization.
     const shop = (
-      await lea.post('/v1/orgs', { name: 'Lea’s Gifts', handle: 'leasgifts', kind: 'shop' })
+      await lea.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Lea’s Gifts',
+        handle: 'leasgifts',
+        kind: 'shop',
+      })
     ).org;
     expect((await operator(`/orgs/${shop.handle}/plan`, { plan: 'business' })).statusCode).toBe(
       200,
@@ -343,7 +348,12 @@ describe('billing (PRD §84, R25)', () => {
 
   it('Business is bought for an organization by its owner or an admin, never anyone else', async () => {
     const org = (
-      await noor.post('/v1/orgs', { name: 'Haddad Clinic', handle: 'haddadclinic', kind: 'clinic' })
+      await noor.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Haddad Clinic',
+        handle: 'haddadclinic',
+        kind: 'clinic',
+      })
     ).org;
     // Sam is on the team, but doesn't run it.
     const request = await noor.post('/v1/connections/requests', { toUserId: sam.user.id });
@@ -381,8 +391,14 @@ describe('billing (PRD §84, R25)', () => {
 
   it('an organization that closes stops paying at once', async () => {
     const ada = await signup(t, { displayName: 'Ada Owner' });
-    const shop = (await ada.post('/v1/orgs', { name: 'Ada Shop', handle: 'adashop', kind: 'shop' }))
-      .org;
+    const shop = (
+      await ada.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Ada Shop',
+        handle: 'adashop',
+        kind: 'shop',
+      })
+    ).org;
     const left = await buy(ada, { plan: 'business', interval: 'month', orgId: shop.id });
     expect(await planOfOrg(shop.id)).toBe('business');
     // The only person on its team leaves: it closes, and its customer at Stripe ends with it.
@@ -393,8 +409,14 @@ describe('billing (PRD §84, R25)', () => {
     expect(stub.subscriptions.get(left.subscription.id)?.status).toBe('canceled');
     // The same when the account that ran it is deleted.
     const bea = await signup(t, { displayName: 'Bea Owner' });
-    const cafe = (await bea.post('/v1/orgs', { name: 'Bea Cafe', handle: 'beacafe', kind: 'shop' }))
-      .org;
+    const cafe = (
+      await bea.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Bea Cafe',
+        handle: 'beacafe',
+        kind: 'shop',
+      })
+    ).org;
     const deleted = await buy(bea, { plan: 'business', interval: 'year', orgId: cafe.id });
     expect((await bea.req('DELETE', '/v1/me', { password: PASSWORD })).statusCode).toBeLessThan(
       300,

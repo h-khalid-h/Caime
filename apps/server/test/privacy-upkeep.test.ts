@@ -452,6 +452,7 @@ describe('what Caishy keeps, and for how long', () => {
 
   it('keeps what was sent to an organization’s apps for 30 days', async () => {
     const org = await noor.post('/v1/orgs', {
+      country: 'EG',
       name: 'Nile Dental',
       handle: 'nileupkeep',
       kind: 'business',

@@ -17,7 +17,6 @@ import {
   AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
   type AgentAction,
-  isMinor,
   ORG_ALLOWANCES,
   SendMessageBody,
   uuidv4,
@@ -34,6 +33,7 @@ import { afterMessage } from './message-effects';
 import { messagePreview, messageViews, participantsOf, sendMessage } from './messages';
 import { notify } from './notify';
 import { agentRepliesToday } from './plans';
+import { minorOf } from './users';
 
 /** How long it waits after a customer writes, so a message sent in three parts is read whole. */
 export const AGENT_DELAY_MS = 3000;
@@ -351,11 +351,11 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (!agent) return;
   const customer = await ctx.db
     .selectFrom('users')
-    .select(['birth_year', 'time_zone', 'locale'])
+    .select(['birth_date', 'time_zone', 'locale'])
     .where('id', '=', thread.customer_id)
     .executeTakeFirst();
   // A person answers anyone under 18 (R29).
-  if (!customer || isMinor(customer.birth_year, ctx.now())) return;
+  if (!customer || minorOf(customer, ctx.now())) return;
   if (
     (await agentRepliesToday(ctx, thread.org_id)) >= ORG_ALLOWANCES[thread.plan].agentRepliesPerDay
   )

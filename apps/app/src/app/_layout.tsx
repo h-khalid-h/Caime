@@ -35,9 +35,10 @@ export const ErrorBoundary = ScreenError;
  * caches are dropped, not misread. 2: connections say who's merged into whom (PRD §51). 3: a
  * conversation lists its topics, and a one-to-one says whether it's between connections (§58).
  * 4: a person's page says who they are to you (§67), and a conversation's details and a space's
- * page say what's coming up (§41).
+ * page say what's coming up (§41). 5: you have a date of birth and a country (a currency from it),
+ * not a birth year and a region; an organization has a country, a currency and a founding year.
  */
-const CACHE_VERSION = '4';
+const CACHE_VERSION = '5';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

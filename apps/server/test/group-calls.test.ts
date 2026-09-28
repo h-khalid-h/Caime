@@ -579,7 +579,7 @@ describe('group calls (PRD §47)', () => {
   });
 
   it('someone under 18 is only in a call with people they’re connected with (R29)', async () => {
-    const rami = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+    const rami = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
     await connect(rami, noor);
     const family = await group(noor, 'Family', [sam, rami]);
     // Sam and Rami aren't connected: Sam's call doesn't ring Rami, and Rami can't join it.
@@ -940,7 +940,7 @@ describe('group calls (PRD §47)', () => {
   });
 
   it('a connection removed mid-call leaves nobody under 18 in it with them (R29)', async () => {
-    const tia = await signup(t, { displayName: 'Tia Young', birthYear: 2012 });
+    const tia = await signup(t, { displayName: 'Tia Young', birthDate: '2012-12-31' });
     await connect(tia, noor);
     await connect(tia, sam);
     const kin = await group(noor, 'Kin', [sam, tia]);

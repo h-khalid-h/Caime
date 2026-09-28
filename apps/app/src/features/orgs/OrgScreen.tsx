@@ -14,6 +14,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useBusinessSummary, useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { useCountries } from '@/features/geo/countries';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { OrgUpdates } from '@/features/updates/OrgUpdates';
 import { handleLink } from '@/lib/config';
@@ -36,6 +37,7 @@ import {
   Inbox,
   LogOut,
   MessageCircle,
+  Pencil,
   Settings,
   Share,
   UserPlus,
@@ -51,6 +53,7 @@ import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
 import { OrgAgent } from './OrgAgent';
 import { OrgApps } from './OrgApps';
+import { OrgDetailsSheet } from './OrgDetails';
 import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
 
@@ -176,6 +179,9 @@ export function OrgScreen({ handle }: { handle: string }) {
   const [blocking, setBlocking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const locale = useSession((s) => s.user?.locale) ?? 'en';
+  const countries = useCountries(locale).data?.countries;
   const minor = useSession((s) => s.user?.minor ?? false);
   const teams = useBusinessSummary(Boolean(org?.myRole)).data?.orgs;
   const waiting = teams?.find((x) => x.org.id === org?.id);
@@ -252,12 +258,22 @@ export function OrgScreen({ handle }: { handle: string }) {
         left={desktop ? undefined : back}
         title={org.name}
         right={
-          <IconButton
-            icon={Share}
-            label={`Share ${org.name}’s link`}
-            onPress={() => void shareLink(`${org.name} on Caishy:`, handleLink(org.handle))}
-            testID="org-share"
-          />
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {manager ? (
+              <IconButton
+                icon={Pencil}
+                label="Edit details"
+                onPress={() => setEditing(true)}
+                testID="org-edit"
+              />
+            ) : null}
+            <IconButton
+              icon={Share}
+              label={`Share ${org.name}’s link`}
+              onPress={() => void shareLink(`${org.name} on Caishy:`, handleLink(org.handle))}
+              testID="org-share"
+            />
+          </View>
         }
       />
       <ScrollView
@@ -285,6 +301,18 @@ export function OrgScreen({ handle }: { handle: string }) {
             {orgKindName(org.kind)} · @{org.handle}
           </Text>
           <VerifiedLine org={org} />
+          {org.country || org.foundedYear ? (
+            <Text variant="caption" color="textSecondary" align="center" testID="org-place">
+              {[
+                org.country
+                  ? `Based in ${countries?.find((c) => c.code === org.country)?.name ?? org.country}`
+                  : null,
+                org.foundedYear ? `Since ${org.foundedYear}` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          ) : null}
           {org.about ? (
             <Text variant="body" color="textSecondary" align="center" auto>
               {org.about}
@@ -674,6 +702,15 @@ export function OrgScreen({ handle }: { handle: string }) {
       >
         <View />
       </Sheet>
+      {manager ? (
+        <OrgDetailsSheet
+          key={`${org.id}:${editing}`}
+          org={org}
+          open={editing}
+          onClose={() => setEditing(false)}
+          onSaved={put}
+        />
+      ) : null}
     </Screen>
   );
 }

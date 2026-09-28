@@ -69,7 +69,7 @@ beforeAll(async () => {
   });
   noor = await signup(t, { displayName: 'Noor Haddad', email: 'noor.haddad@example.com' });
   sam = await signup(t, { displayName: 'Sam Rivera' });
-  teen = await signup(t, { displayName: 'Rami Teen', birthYear: 2011 });
+  teen = await signup(t, { displayName: 'Rami Teen', birthDate: '2011-12-31' });
   convo = await connect(noor, sam, { sphere: 'work', role: 'colleague', orgName: 'DATA C' });
 });
 afterAll(async () => {
@@ -378,6 +378,7 @@ describe('AI assist with an organization (R15)', () => {
     const dina = await signup(t, { displayName: 'Dina Customer' });
     await dina.patch('/v1/me', { aiEnabled: true });
     const { org } = await sam.post('/v1/orgs', {
+      country: 'EG',
       name: 'Rivera Tiles',
       handle: 'rivera.tiles',
       kind: 'shop',

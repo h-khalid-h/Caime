@@ -15,7 +15,14 @@ async function signUp(page: Page, name: string, handle: string) {
   await page.getByTestId('signup-handle').fill(handle);
   await page.getByTestId('signup-email').fill(`${handle}@example.com`);
   await page.getByTestId('signup-password').fill('a long enough passphrase');
-  await page.getByTestId('signup-birth-year').fill('1990');
+  // The browser's own date field, typed as the day it is.
+  await page.getByTestId('signup-birth-date').fill('1990-12-31');
+  // Where they live starts as where the browser is (en-US here), and is found by typing.
+  await expect(page.getByTestId('signup-country')).toContainText('United States');
+  await page.getByTestId('signup-country').click();
+  await page.getByTestId('signup-country-search').fill('egy');
+  await page.getByTestId('country-EG').click();
+  await expect(page.getByTestId('signup-country')).toContainText('Egypt');
   await expect(page.getByText('Available')).toBeVisible();
   await page.getByTestId('signup-submit').click();
   await page.waitForURL('**/onboarding');

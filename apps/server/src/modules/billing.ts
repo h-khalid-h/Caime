@@ -3,13 +3,7 @@
  * or Business (an organization, by its owner or an admin), Stripe's portal to manage it, and the
  * webhook Stripe tells how each subscription stands. The work is in lib/billing.ts.
  */
-import {
-  BillingPortalBody,
-  type BillingView,
-  CheckoutBody,
-  canManageOrg,
-  isMinor,
-} from '@caishy/core';
+import { BillingPortalBody, type BillingView, CheckoutBody, canManageOrg } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -23,6 +17,7 @@ import {
 import { AppError, forbidden, notFound } from '../lib/errors';
 import { orgSeat } from '../lib/orgs';
 import { stripe, stripeSigned } from '../lib/stripe';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -34,10 +29,10 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
   async function payerFor(userId: string, orgId?: string) {
     const me = await ctx.db
       .selectFrom('users')
-      .select(['display_name', 'email', 'birth_year'])
+      .select(['display_name', 'email', 'birth_date', 'time_zone'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
-    const minor = isMinor(me.birth_year, ctx.now());
+    const minor = minorOf(me, ctx.now());
     if (!orgId)
       return {
         payer: { userId } as Payer,

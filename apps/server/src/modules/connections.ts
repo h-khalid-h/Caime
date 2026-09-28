@@ -6,7 +6,6 @@ import type { ConnectionRequestView, ConnectionView } from '@caishy/core';
 import {
   AcceptRequestBody,
   ConnectionRequestBody,
-  isMinor,
   type RelationshipInputT,
   SPHERE_DEFS,
   type Sphere,
@@ -33,7 +32,7 @@ import {
   viewerRelation,
 } from '../lib/relations';
 import { suggestRelationships } from '../lib/suggest';
-import { personView, privacyOf } from '../lib/users';
+import { minorOf, personView, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { identityShownTo } from './people';
@@ -174,7 +173,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       throw conflict('already_requested', 'Your request is waiting for them.');
 
     const privacy = privacyOf(target, now);
-    const targetMinor = isMinor(target.birth_year, now);
+    const targetMinor = minorOf(target, now);
     const allowed =
       privacy.messageRequests === 'everyone' ||
       (privacy.messageRequests === 'shared_connections' &&
@@ -182,7 +181,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     if (
       !allowed ||
       (targetMinor &&
-        !isMinor(me.birth_year, now) &&
+        !minorOf(me, now) &&
         !(await shareAConnection(ctx.db, auth.userId, target.id)))
     ) {
       throw new AppError(

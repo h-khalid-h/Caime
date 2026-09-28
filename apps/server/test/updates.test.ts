@@ -44,7 +44,12 @@ beforeAll(async () => {
   const r = await noor.post('/v1/connections/requests', { toUserId: omar.user.id });
   await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {});
   orgId = (
-    await noor.post('/v1/orgs', { name: 'Nile Dental', handle: 'nile.dental', kind: 'clinic' })
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Nile Dental',
+      handle: 'nile.dental',
+      kind: 'clinic',
+    })
   ).org.id;
   await t.ctx.db
     .updateTable('organizations')
@@ -186,7 +191,12 @@ describe('an organization’s updates (PRD §59)', () => {
     const noScope = await as(readOnly, 'POST', `/v1/orgs/${orgId}/updates`, { body: 'x' });
     expect(noScope.json().error.code).toBe('token_scope');
     const otherOrg = (
-      await omar.post('/v1/orgs', { name: 'Other Shop', handle: 'other.shop', kind: 'shop' })
+      await omar.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Other Shop',
+        handle: 'other.shop',
+        kind: 'shop',
+      })
     ).org.id;
     const theirs = (
       await omar.post(`/v1/orgs/${otherOrg}/apps`, { name: 'Theirs', scopes: ['updates'] })
@@ -284,7 +294,12 @@ describe('what followers are told, and when (PRD §59)', () => {
     const r = await ada.post('/v1/connections/requests', { toUserId: ben.user.id });
     await ben.post(`/v1/connections/requests/${r.requestId}/accept`, {});
     books = (
-      await ada.post('/v1/orgs', { name: 'Harbor Books', handle: 'harbor.books', kind: 'shop' })
+      await ada.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Harbor Books',
+        handle: 'harbor.books',
+        kind: 'shop',
+      })
     ).org.id;
     await t.ctx.db
       .updateTable('organizations')
@@ -460,7 +475,12 @@ describe('what followers are told, and when (PRD §59)', () => {
   it('closed (its last person gone), nobody follows it any more', async () => {
     const zoe = await signup(t, { displayName: 'Zoe Hart' });
     const stall = (
-      await zoe.post('/v1/orgs', { name: 'Pop-up Stall', handle: 'popup.stall', kind: 'shop' })
+      await zoe.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Pop-up Stall',
+        handle: 'popup.stall',
+        kind: 'shop',
+      })
     ).org.id;
     await cy.req('PUT', `/v1/orgs/${stall}/follow`, { notify: true });
     await zoe.req('DELETE', `/v1/orgs/${stall}/members/${zoe.user.id}`);

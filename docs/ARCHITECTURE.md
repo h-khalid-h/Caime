@@ -83,7 +83,7 @@ The primary object is the **connection**, not the chat (PRD §4).
 
 | Table | Meaning |
 | --- | --- |
-| `users` | Accounts: email, handle, password hash, locale, timezone, workweek, birth year, plan, kind (`human`, `bot`, `agent`) |
+| `users` | Accounts: email, handle, password hash, locale, timezone, workweek, date of birth (every person has one: ages are exact, on the day where they live), country (ISO 3166-1: their defaults, such as the work week and currency), plan, kind (`human`, `bot`, `agent`) |
 | `identities` | How a user appears: personal, professional, organization identities (PRD §35) |
 | `sessions` | Device sessions (web cookie or native bearer), revocable |
 | `connections` | The symmetric link between two users |
@@ -104,7 +104,7 @@ The primary object is the **connection**, not the chat (PRD §4).
 | `decisions` | Recorded decisions with source message and context |
 | `notifications` | In-app notifications with level (activity, attention, urgency) and burst grouping |
 | `push_subscriptions` | Web Push and Expo push endpoints per session |
-| `organizations`, `org_members`, `org_accounts` | Organizations with DNS verification, membership, customer and vendor accounts (PRD §36–39) |
+| `organizations`, `org_members`, `org_accounts` | Organizations with DNS verification, membership, customer and vendor accounts (PRD §36–39); each has a country (its defaults, such as its cards' currency) and may say the year it began |
 | `business_threads` | Business inbox state per conversation: status, assignee, account |
 | `spaces`, `space_members` | Spaces around an organization, family or community (PRD §40) |
 | `blocks`, `reports` | Safety |

@@ -33,7 +33,12 @@ beforeAll(async () => {
   lina = await signup(t, { displayName: 'Lina Customer' });
   await connect(noor, omar);
   orgId = (
-    await noor.post('/v1/orgs', { name: 'Nile Dental', handle: 'nile.dental', kind: 'clinic' })
+    await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Nile Dental',
+      handle: 'nile.dental',
+      kind: 'clinic',
+    })
   ).org.id;
   await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
 });
@@ -134,7 +139,7 @@ describe('an organization writes to someone first (R14)', () => {
 
   it('never reaches anyone under 18, anyone who blocked it, or who only hears from people they know', async () => {
     const nobody = 'Nobody by that handle can hear from Nile Dental.';
-    const teen = await signup(t, { displayName: 'Rami Young', birthYear: 2011 });
+    const teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
     const hidden = await signup(t, { displayName: 'Hidden Person' });
     await hidden.req('PUT', '/v1/me/privacy', { discoverByHandle: false });
     const blocker = await signup(t, { displayName: 'Blocker' });

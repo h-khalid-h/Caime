@@ -24,7 +24,6 @@ import {
   AiTranslateBody,
   firstFutureWhen,
   firstName,
-  isMinor,
   messagePreview,
   resolvePolicy,
   systemText,
@@ -41,6 +40,7 @@ import { AppError, notFound } from '../lib/errors';
 import { assertAiAllowance } from '../lib/plans';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
 import { createSuggestion } from '../lib/suggest';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { membership } from './conversations';
@@ -109,7 +109,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   const person = (userId: string) =>
     ctx.db
       .selectFrom('users')
-      .select(['ai_enabled', 'birth_year', 'locale', 'time_zone', 'workweek'])
+      .select(['ai_enabled', 'birth_date', 'locale', 'time_zone', 'workweek'])
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
 
@@ -118,7 +118,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const ai = ctx.ai;
     if (!ai) throw new AppError(503, 'ai_unavailable', 'AI assist isn’t set up on this server.');
     const me = await person(userId);
-    if (isMinor(me.birth_year, ctx.now()))
+    if (minorOf(me, ctx.now()))
       throw new AppError(403, 'ai_adults_only', 'AI assist is for adults for now.');
     if (!me.ai_enabled)
       throw new AppError(403, 'ai_off', 'Turn on AI assist in Settings to use it.');
@@ -306,7 +306,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     return {
       available: Boolean(ctx.ai),
       enabled: me.ai_enabled,
-      eligible: !isMinor(me.birth_year, ctx.now()),
+      eligible: !minorOf(me, ctx.now()),
     };
   });
 
