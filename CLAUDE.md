@@ -11,7 +11,7 @@ without re-deriving decisions.
 2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R33 override the PRD) and `docs/ARCHITECTURE.md`
    (ADRs). Open `docs/PRD.md` (cited as `PRD §n`) and `docs/BRAND.md` when a task touches them.
 3. Run `pnpm install` then `pnpm check`. If anything is red, fixing it comes first.
-4. Check the latest CI run on GitHub (`h-khalid-h/Caishy`, workflow `CI`). A red `main` is work now.
+4. Check the latest CI run on GitHub (`h-khalid-h/Caime`, workflow `CI`). A red `main` is work now.
 5. At the end of a work block: update `docs/ROADMAP.md` (tick only what is verified, add a log
    line), update this file if a convention or command changed, commit and push to `main`.
 

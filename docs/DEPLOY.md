@@ -15,12 +15,12 @@ Deployed 2026-09-26 on EasyPanel.
 
 | | |
 | --- | --- |
-| Public URL | https://caishy.datac.com (`PUBLIC_URL`); also served at EasyPanel's default service domain, https://caishy-caishy.0hqwb7.easypanel.host |
-| Domain to come | `cai.me` (R35), once it's bought: point it here (an A or CNAME record to EasyPanel, and the domain added to the `caishy` service), then set `PUBLIC_URL=https://cai.me`, and share links read `cai.me/@handle` |
+| Public URL | https://caime.datac.com (`PUBLIC_URL`, a Cloudflare-proxied record); also served at EasyPanel's default service domain, https://caishy-caishy.0hqwb7.easypanel.host |
+| Domain to come | `cai.me` (R35), once it's bought: point it here (an A or CNAME record to EasyPanel, and the domain added to the `caime` service), then set `PUBLIC_URL=https://cai.me`, and share links read `cai.me/@handle` |
 | Project | `caishy` |
-| Services | `caishy` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
-| Source | **GitHub** `h-khalid-h/Caishy`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caime/caime:latest`) |
-| Auto deploy | On, from `production`: every move of `production` rebuilds and redeploys `caishy`, and only a green CI run moves it (below). The old container serves until the new one passes its `/v1/readyz` health check. |
+| Services | `caime` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
+| Source | **GitHub** `h-khalid-h/Caime`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caime/caime:latest`) |
+| Auto deploy | On, from `production`: every move of `production` rebuilds and redeploys `caime`, and only a green CI run moves it (below). The old container serves until the new one passes its `/v1/readyz` health check. |
 | Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (so AI assist is available), `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET` and `STRIPE_PORTAL_CONFIGURATION`, all set in EasyPanel only |
 | Panel | https://host.datac.com |
 
@@ -34,7 +34,7 @@ back as branch `production` with auto deploy on, `/v1/readyz` answers 200, and a
 account's `GET /v1/ai` answered `"available": true` before it deleted itself.
 
 Billing went live on 2026-09-27 on the live Stripe account, with the webhook at
-`https://caishy.datac.com/v1/billing/webhook` and a portal configuration of its own. On both
+`https://caime.datac.com/v1/billing/webhook` and a portal configuration of its own. On both
 domains an unsigned delivery is refused as `bad_signature` (the secret is loaded), and a
 throwaway account's `GET /v1/billing` offered Pro at €6.00 a month and €60.00 a year before it
 deleted itself. Business is priced per organization and shows on an organization's plan page.
@@ -66,7 +66,7 @@ In your EasyPanel project, **+ Service → Postgres**. Name it `db`, version 16.
 | Mounts | **Volume** named `data` mounted at `/data` (uploads and thumbnails live here). |
 | Deploy | Deploy. The health check waits for `/v1/readyz` (database reachable, migrations applied). |
 
-Alternatively, choose **Source → GitHub** (`h-khalid-h/Caishy`, branch `main`) with **Build →
+Alternatively, choose **Source → GitHub** (`h-khalid-h/Caime`, branch `main`) with **Build →
 Dockerfile** and EasyPanel builds the image itself. The web export needs about 4 GB of RAM during
 the build; the published image avoids that.
 
@@ -165,7 +165,7 @@ Every push to `main` runs CI (lint, typecheck, 230+ tests on real Postgres, the 
 end-to-end suite), then builds and publishes the image and smoke-tests it. To have EasyPanel
 redeploy automatically after that:
 
-1. In the `caishy` service, copy the **Deploy Webhook** URL.
+1. In the `caime` service, copy the **Deploy Webhook** URL.
 2. In GitHub: repository **Settings → Secrets and variables → Actions → New repository secret**,
    name `EASYPANEL_DEPLOY_WEBHOOK`, value the URL.
 

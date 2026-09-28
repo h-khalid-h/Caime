@@ -12,7 +12,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Monorepo (pnpm, hoisted), TypeScript, Biome, shared configs
 - [x] Docs: PRD, product review, brand, competitive strategy, architecture, roadmap, goal
 - [x] CLAUDE.md operating manual
-- [x] GitHub repository [`h-khalid-h/Caishy`](https://github.com/h-khalid-h/Caishy), `main`
+- [x] GitHub repository [`h-khalid-h/Caime`](https://github.com/h-khalid-h/Caime) (formerly Caishy), `main`
 - [x] One API contract (`packages/core/src/api.ts`); server views annotated against it
 
 ## M1 — Core domain (`packages/core`)
@@ -387,8 +387,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       recorded of use kept only for set times (`lib/retention.ts`). [ ] A lawyer's review of the
       texts, and the operator's name and contact confirmed (`LEGAL_NAME`, `CONTACT_EMAIL`)
 - [ ] EAS config and store builds ⛔ Apple and Google developer accounts, `EXPO_ACCESS_TOKEN`
-- [x] Deployed to EasyPanel: https://caishy-caishy.0hqwb7.easypanel.host (project `caime`,
-      services `caime` and `db`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
+- [x] Deployed to EasyPanel: https://caime.datac.com, also at
+      https://caishy-caishy.0hqwb7.easypanel.host (project `caishy`, services `caime` and `db`,
+      built from `h-khalid-h/Caime`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
       readiness, the page and its headers, and a sign-up whose realtime socket connected
       through EasyPanel's proxy before the account deleted itself. Only what passed CI is
       deployed: a green run fast-forwards the `production` branch, which EasyPanel builds from;
