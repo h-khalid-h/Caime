@@ -376,8 +376,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 
 ## M7 — Ship
 
-- [x] One image (API, realtime, web): built, pushed to `ghcr.io/h-khalid-h/caishy` and
-      smoke-tested by CI on every push to `main` (readiness, the page, security headers)
+- [x] One image (API, realtime, web), built from the `Dockerfile` and smoke-tested by CI on every
+      push to `main` (readiness, the page, security headers); EasyPanel builds the same one from
+      source, and none is published
 - [x] CI: lint, typecheck, tests on Postgres 16, build, web budget (448.4 KB gzip against 450 KB),
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the

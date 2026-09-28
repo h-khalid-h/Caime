@@ -1,13 +1,9 @@
 # Deploying Caime
 
-Caime ships as **one image**: the API, realtime (WebSocket) and the web app on one origin, so the
-session cookie is first-party (ARCHITECTURE.md ADR-7). It needs PostgreSQL 16 and a volume for
-uploads. Everything else is optional.
-
-```
-ghcr.io/h-khalid-h/caishy:latest     # published by CI on every green push to main
-ghcr.io/h-khalid-h/caishy:<sha>      # the same build, pinned
-```
+Caime ships as **one image**, built from the `Dockerfile`: the API, realtime (WebSocket) and the
+web app on one origin, so the session cookie is first-party (ARCHITECTURE.md ADR-7). It needs
+PostgreSQL 16 and a volume for uploads. Everything else is optional. CI builds the image and
+tries it on every push to `main`, but publishes it nowhere: EasyPanel builds it from source.
 
 ## Live deployment
 
@@ -60,15 +56,14 @@ In your EasyPanel project, **+ Service → Postgres**. Name it `db`, version 16.
 
 | Tab | Setting |
 | --- | --- |
-| Source | **Docker Image** `ghcr.io/h-khalid-h/caishy:latest`. If the package is private, add registry credentials: your GitHub username and a token with `read:packages` (or make the package public under the repository's Packages). |
+| Source | **GitHub** `h-khalid-h/Caime`, branch `production` (or `main`), **Build → Dockerfile**. The web export needs about 4 GB of RAM while it builds. |
 | Environment | See below. |
 | Domains | Your domain → port **8787**, HTTPS on. |
 | Mounts | **Volume** named `data` mounted at `/data` (uploads and thumbnails live here). |
 | Deploy | Deploy. The health check waits for `/v1/readyz` (database reachable, migrations applied). |
 
-Alternatively, choose **Source → GitHub** (`h-khalid-h/Caime`, branch `main`) with **Build →
-Dockerfile** and EasyPanel builds the image itself. The web export needs about 4 GB of RAM during
-the build; the published image avoids that.
+To run an image instead, build it (`docker build -t caime .`) and push it to a registry of
+your own; none is published.
 
 ### 3. Environment
 
@@ -239,7 +234,7 @@ docker run -d --name db --network caime -e POSTGRES_PASSWORD=change-me postgres:
 docker run -d --name caime --network caime -p 8787:8787 -v caime-data:/data \
   -e DATABASE_URL=postgres://postgres:change-me@db:5432/postgres \
   -e PUBLIC_URL=http://localhost:8787 \
-  ghcr.io/h-khalid-h/caishy:latest
+  caime   # built with: docker build -t caime .
 ```
 
 ## Checks after a deploy

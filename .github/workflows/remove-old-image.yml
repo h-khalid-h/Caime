@@ -1,0 +1,21 @@
+name: Remove the old image
+# Once, by hand: ghcr.io/<owner>/caishy, published before the rename. Nothing deploys from it
+# (EasyPanel builds from source) and CI no longer publishes one. This file goes once it has run.
+on: workflow_dispatch
+permissions:
+  packages: write
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the caishy container package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          code=$(curl -s -o out.json -w '%{http_code}' -X DELETE \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/$OWNER/packages/container/caishy")
+          cat out.json 2>/dev/null || true
+          echo "HTTP $code"
+          test "$code" = 204
