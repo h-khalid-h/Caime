@@ -625,6 +625,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .select(['o.name', 'o.handle', 'u.body', 'u.created_at', 'u.edited_at', 'u.deleted_at'])
       .where('u.posted_by', '=', me)
       .orderBy('u.created_at')
+      .orderBy('u.id')
       .execute(),
     // An app they made is the organization's: how it's set up is theirs to see only while they
     // still run it with the team.
