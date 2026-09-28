@@ -1,7 +1,7 @@
-# How Caishy wins
+# How Caime wins
 
 "Outperform every alternative" has to be realistic to be useful. No new messenger beats WhatsApp's
-network or Slack's install base head-on in its first year. Caishy wins by doing **one job no
+network or Slack's install base head-on in its first year. Caime wins by doing **one job no
 alternative does — knowing who each person is to you, and acting on it — so well that people
 bring the other side over**, and by being measurably better on the fundamentals everyone
 compares (speed, reliability, clarity, trust). Every target below is checked by a test, a
@@ -17,8 +17,9 @@ benchmark or a metric; none is an adjective.
 | Business messaging | WhatsApp Business, Intercom, Front, Zendesk | Reaching customers where they are | The relationship lives in a CRM tab beside the conversation, not in it; the customer's side is a generic chat |
 | Personal CRMs | Clay, Dex, Folk | Remembering people | Need data entry nobody keeps up; no conversation lives there |
 | Unified inboxes | Beeper and similar | One list for many networks | Aggregate chats without adding relationship, attention or action; depend on fragile bridges |
+| Super-apps | WeChat, Grab, Revolut | Payments, mini-programs and daily reach in one market | Rest on licensed payment businesses and a dominant home market; a person is still a contact, and every service competes for the same screen. Caime doesn't compete there (PRODUCT-REVIEW R38–R40) |
 
-## Where Caishy wins, and for whom first
+## Where Caime wins, and for whom first
 
 **Who first:** people whose communication mixes personal and professional in one place:
 founders, freelancers, small-business owners, account and sales managers, consultants, agents,
@@ -27,7 +28,7 @@ already used for business (Middle East and North Africa, Latin America, South an
 Africa), because there the pain of *boss, customer and mother in one chronological list* is
 sharpest.
 
-**Not first:** replacing WhatsApp for everyone, or Slack inside a large enterprise. Caishy
+**Not first:** replacing WhatsApp for everyone, or Slack inside a large enterprise. Caime
 coexists with both and takes the conversations where context matters.
 
 ## Dimension by dimension
@@ -46,7 +47,7 @@ Answer, at a glance, *who is this to me, what needs me, what am I waiting for*.
 
 ### 2. Interface (UI)
 
-Calm, warm, legible, recognisably Caishy. The three-column desktop layout with a live context
+Calm, warm, legible, recognisably Caime. The three-column desktop layout with a live context
 panel is something WhatsApp Web, Telegram Desktop and Slack do not have.
 
 | Target | Verified by |

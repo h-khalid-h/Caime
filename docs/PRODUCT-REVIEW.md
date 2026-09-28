@@ -10,7 +10,7 @@ and the PRD disagree, the refinement wins.
 ## 1. Adoption: the cold-start problem
 
 A messaging product is only as useful as the other side's presence. The wedge needs both people
-on Caishy, and the PRD does not say how the second person arrives.
+on Caime, and the PRD does not say how the second person arrives.
 
 - **R1 — Invites carry context and land in the conversation.** An invite link says who is
   inviting and, optionally, the context ("Hassan · Work · DATA C"). It opens in a browser, sign-up
@@ -62,7 +62,7 @@ An inbox that decides what matters fails the first time it hides something impor
 
 The PRD describes relationship-aware notifications (§32), smart inbox rules (§68), templates
 (§70) and privacy by sphere (§34) as separate features. For a user they are one question: **"How
-should Caishy treat my Customers?"**
+should Caime treat my Customers?"**
 
 - **R11 — Relationship policies.** A policy matches a sphere, optionally a role and organization,
   or a single connection, and sets notifications (always, schedule, important only, mute), inbox
@@ -113,7 +113,7 @@ change or dismiss.
   summaries have deterministic implementations that run on every client and the server, so the
   product works with no AI provider at all. When an account enables AI, a model improves quality
   (rewrite, translate, summarize, natural-language search). All model output is labelled
-  "Suggested by Caishy" and is never applied without a tap.
+  "Suggested by Caime" and is never applied without a tap.
 - **R18 — Two conversation privacy classes, said plainly.** *Standard* conversations are
   encrypted in transit and at rest by the platform and get server features (search, AI, push
   previews). *Private* conversations are end-to-end encrypted and say what that costs: no server
@@ -167,14 +167,14 @@ change or dismiss.
 
 ## 15. For everyone: any gender, any age, any use case
 
-Caishy is for a grandparent, a teenager, a founder, a nurse and a support team. The same app has
+Caime is for a grandparent, a teenager, a founder, a nurse and a support team. The same app has
 to feel right to each of them.
 
 - **R26 — Neutral defaults, personal expression.** The default look is neutral: Plum bubbles for
   your own messages, ink for actions. Expression is a personal choice: bubble colour from the
   brand palette, and a Playful or Minimal character layer (see `BRAND.md` B7). Business and
   organization surfaces are always Minimal.
-- **R27 — Never assume gender.** Caishy never infers gender from a name or a photo (PRD §44), and
+- **R27 — Never assume gender.** Caime never infers gender from a name or a photo (PRD §44), and
   its copy never needs to: *"Sarah's role?"*, not *"What's her role?"* (the PRD's §11 example is
   corrected). Pronouns are an optional field the person sets for themselves, shown under their
   own privacy rules. Where the product refers to someone, it uses their name.
@@ -211,6 +211,69 @@ to feel right to each of them.
 ## 16. Brand
 
 - **R33 — The brand board is adopted, calibrated for communication.** Identity (wordmark with the
-  heart-dotted *i*, the character mark, palette, Nunito + Inter, voice) is Caishy everywhere; the
+  heart-dotted *i*, the character mark, palette, Nunito + Inter, voice) is Caime everywhere; the
   characters become the Caishy Friends stickers and the guides of empty states; the board's shop,
   collectibles and story feed are out of scope (PRD §85). Details and rules: `BRAND.md`.
+
+## 17. The name, and a super-app brainstorm (2026-09-28)
+
+The owner renamed the product **Caime**, for the domain **cai.me**, keeping the brand and its
+characters, and shared a brainstorm by another AI agent that describes Caime as a super-app: a
+ledger of its own with pay-in and pay-out rails, a mini-app runtime, an autonomous agent,
+passkeys, Signal-protocol encryption for every chat, stories and feeds. Each idea was weighed
+against the PRD's centre of gravity (§85: people, relationships, communication, context) and
+against what it would take to do properly. What fits is adopted below; what doesn't is recorded
+with its reason, so it isn't proposed again without new facts.
+
+- **R34 — The product is Caime.** One name everywhere: the apps, the pages, the wordmark (the
+  same heavy rounded lettering, with the pink heart over the dotless *i*), links, and the
+  assistance layer ("Suggested by Caime"; an organization's agent is "Caime Support Agent").
+  Formerly Caishy, and before that CONNIQT. The rest of the brand stands (R33): palette, type,
+  voice, and the characters with their names, including Caishy *The Dreamer*, who keeps leading
+  the Caishy Friends stickers, a mascot with a name of its own as Duolingo's is Duo. The assistant
+  gets no human name ("Cai"): a person's name on an AI blurs the line §75 keeps sharp, and Cai is
+  also people's name (a Welsh given name, a common Chinese surname).
+- **R35 — A link people can say: `cai.me/@handle`.** Every person and organization has one, for a
+  card, an email signature or a QR code. It opens their public profile on the web, or the app
+  where it's installed (universal links on iOS, app links on Android), and survives sign-up as
+  `@handle` links do now. It is a way in, not around: messages still go only as the person's
+  privacy and message requests allow (R14). The brainstorm's `/pay`, `/request`, `/claim` and
+  `/app` routes are not adopted (R38, R39).
+- **R36 — Passkeys, once the domain is final.** Signing in with a passkey (Face ID, a
+  fingerprint, a security key) on web, iOS and Android becomes the first way in; a password is
+  optional once a passkey exists, and recovery codes stay (R24). It waits for `cai.me` because a
+  passkey belongs to the domain it was made on: one made on today's address would stop working
+  after the move. Profiles, contacts and history are not encrypted with a key from a seed phrase
+  ("self-sovereign identity"): a lost phrase would lose the whole account, and search, requests,
+  safety and relationships need the server to read what they work on. End-to-end encryption
+  stays R18's choice, made per conversation, with its cost said plainly; making it the only kind
+  would take search, AI, previews and relationship intelligence from every conversation.
+- **R37 — Several steps, one approval.** When the assistant finds more than one thing to do in a
+  conversation (a task, a reminder, a reply), it can offer them as one card listing each step,
+  done only when the person approves it, each step undoable as today (§42–43, R12). A suggestion
+  never books, buys, pays or shares on its own, and nothing reaches a service outside Caime from
+  one without the person's explicit tap.
+- **R38 — Money stays with those licensed to hold it.** Caime never holds, moves or converts
+  money: no wallet or balance, no transfers between people, no cash-out, payout claim links,
+  currency exchange, stablecoins or ledger of its own. Each would make its operator a regulated
+  payment or e-money institution in every country it serves (licences, safeguarding customers'
+  funds, anti-money-laundering and know-your-customer programmes, fraud and chargeback liability)
+  and the system of record §72 says Caime should not become. What the PRD does ask for (§41, §86's
+  "Payments" kit, §87's "Act: Payment"): an organization's card (an invoice, an order, an
+  appointment) can carry **Pay**, which opens the organization's own checkout (through Stripe
+  Connect, the organization being the merchant, or a payment link it gives), and the card says
+  it's paid when the provider tells Caime so; and a **Split** card records who owes whom, and when
+  it's settled, moving nothing. Both are later work; Pay needs the owner to decide on Stripe
+  Connect for the live account, and whether Caime takes a fee on it (R23 stands until then).
+- **R39 — Extensions stay declarative.** Others extend Caime through the API with scoped
+  permissions: cards (custom Connect Kits), bots, agents and webhooks (§74). There is no runtime
+  for other people's code inside the app and no mini-app marketplace: running third parties'
+  code beside people's conversations is a large attack surface, the app stores restrict it, and
+  a marketplace exposed everywhere is what §41 and §85 rule out. What fits is a typed SDK for the
+  API and webhook signatures (`@caime/sdk`), later.
+- **R40 — No stories, feeds or engagement targets.** The brainstorm wants people to open the app
+  "dozens of times daily"; the PRD measures the opposite, how much useful communication someone
+  manages without feeling overwhelmed (§82). Stories and ranked feeds are the social network §85
+  rules out. Broadcasts (§59) stay chronological and apart from personal connections; paid
+  subscriptions and tips on them are payments (R38). Watches show Caime's notifications from the
+  phone, and the web app is the desktop app, so neither needs an app of its own.

@@ -1,6 +1,8 @@
-# Caishy — Full Product Requirements Document
+# Caime — Full Product Requirements Document
 
-> **Caishy** (formerly named **CONNIQT**). Every mention of CONNIQT in earlier drafts refers to Caishy.
+> **Caime** (formerly **Caishy**, and before that **CONNIQT**). Every mention of Caishy or CONNIQT
+> in earlier drafts refers to Caime. The name, and what of a later super-app brainstorm the
+> product takes and leaves, are refinements R34–R40 in `PRODUCT-REVIEW.md`.
 >
 > This document is the product source of truth. Section numbers 1–90 are stable and are cited
 > across the codebase and docs as `PRD §n`. The Problem and the Wedge were added after the
@@ -11,7 +13,8 @@
 
 | | |
 | --- | --- |
-| Product | Caishy |
+| Product | Caime |
+| Domain | cai.me (links: `cai.me/@handle`, R35) |
 | Category | Relationship-aware communication platform |
 | Platforms | iOS, Android, Web |
 | Product stage | Full product specification — not MVP |
@@ -21,12 +24,12 @@
 
 ## 1. Executive Summary
 
-Caishy is a communication platform designed around a simple observation:
+Caime is a communication platform designed around a simple observation:
 
 > The meaning of a conversation depends on the relationship between the people communicating.
 
 Traditional messaging systems primarily organize communication around contacts, conversations,
-groups, channels and notifications. Caishy adds a fundamental layer underneath all of these:
+groups, channels and notifications. Caime adds a fundamental layer underneath all of these:
 **Relationship**.
 
 A person is not simply "John." John may be:
@@ -39,7 +42,7 @@ A person is not simply "John." John may be:
 - Professional → Lawyer
 - Service Provider → Doctor
 
-Caishy captures this relationship context and uses it to organize communication, permissions,
+Caime captures this relationship context and uses it to organize communication, permissions,
 notifications, tools, AI assistance, search, identity, and shared information.
 
 The product therefore consists of four fundamental layers:
@@ -54,15 +57,15 @@ COMMUNICATION
 CONTEXT + ACTION
 ```
 
-Caishy should remain a communication product first. Tasks, payments, documents, scheduling, AI,
-business workflows, and mini-apps should extend communication rather than turn Caishy into an
+Caime should remain a communication product first. Tasks, payments, documents, scheduling, AI,
+business workflows, and mini-apps should extend communication rather than turn Caime into an
 overloaded general-purpose productivity platform.
 
 ## 2. Product Vision
 
 **Vision:** Make every digital connection understandable, manageable, and useful.
 
-Caishy should make it immediately clear:
+Caime should make it immediately clear:
 
 - Who is this person?
 - What is my relationship with them?
@@ -74,7 +77,7 @@ Caishy should make it immediately clear:
 
 ## 3. Product Mission
 
-Caishy helps people communicate with less noise and more context. It should:
+Caime helps people communicate with less noise and more context. It should:
 
 1. reduce communication overload;
 2. preserve relationship context;
@@ -186,7 +189,7 @@ the person.
 ### P6. Existing communication products optimize the wrong primitive
 
 Most communication products are fundamentally organized around: Chat, Channel, Inbox, Contact.
-Caishy proposes a different foundation:
+Caime proposes a different foundation:
 
 ```
 Connection
@@ -207,7 +210,7 @@ relationship.**
 
 ## 3.B The Wedge
 
-Caishy should not attempt to replace every communication product on day one. The initial
+Caime should not attempt to replace every communication product on day one. The initial
 strategic wedge is:
 
 > **Relationship-aware 1:1 communication**
@@ -218,7 +221,7 @@ The first experience should solve one simple problem exceptionally well:
 
 ### W1. The first wedge
 
-When a user connects with someone, Caishy asks: **Who is this person to you?**
+When a user connects with someone, Caime asks: **Who is this person to you?**
 
 The user selects: Family · Friend · Work · Customer · Vendor · Professional · Other.
 
@@ -238,7 +241,7 @@ piece of information unlocks the rest of the product.
 
 ### W3. The wedge creates immediate product value
 
-Once Caishy knows `Sarah → Manager → DATA C`, the system can immediately make communication more
+Once Caime knows `Sarah → Manager → DATA C`, the system can immediately make communication more
 contextual:
 
 | Capability | Example |
@@ -266,25 +269,25 @@ RELATIONSHIP → BETTER COMMUNICATION → BETTER ATTENTION → BETTER MEMORY →
 - **Layer 5 — Action:** What needs to happen next?
 - **Layer 6 — Contextual workflows:** What tools are useful for this relationship?
 
-This gives Caishy a natural path from messaging into a broader communication operating system
+This gives Caime a natural path from messaging into a broader communication operating system
 without requiring the user to adopt everything at once.
 
 ### W5. The initial user promise
 
 The product should be explainable in one sentence:
 
-> Caishy helps you communicate with people based on who they are to you.
+> Caime helps you communicate with people based on who they are to you.
 
 Or, more product-oriented:
 
 > **Messaging that understands your relationships.**
 
 The second statement is especially useful as an early positioning concept because it immediately
-differentiates Caishy from generic messaging.
+differentiates Caime from generic messaging.
 
 ### W6. The wedge is not "relationship management"
 
-Caishy should avoid positioning itself as a relationship-management tool. That sounds like CRM,
+Caime should avoid positioning itself as a relationship-management tool. That sounds like CRM,
 contact management, sales software, or personal relationship tracking. That is not the desired
 experience. The user should feel: *"I'm just messaging someone."* The system should quietly
 understand: *"This is your customer,"* or *"This is your manager,"* or *"This is your father."*
@@ -307,14 +310,14 @@ Manager · DATA C
 
 ### W8. The competitive entry point
 
-Caishy does not need to convince users that they need a new category of productivity software.
-The entry behavior is familiar — *Find person → Connect → Message*. Caishy simply adds:
+Caime does not need to convince users that they need a new category of productivity software.
+The entry behavior is familiar — *Find person → Connect → Message*. Caime simply adds:
 *Connect → Who is this person to you? → Message*. That small difference becomes the foundation for
 everything else.
 
 ### W9. The long-term wedge expansion
 
-Once a user has a meaningful relationship graph, Caishy can become increasingly useful without
+Once a user has a meaningful relationship graph, Caime can become increasingly useful without
 changing the basic communication behavior:
 
 ```
@@ -330,11 +333,11 @@ Not a social graph based primarily on "Who follows whom?" but a practical graph 
 The wedge should remain focused on `Person → Relationship → Conversation`. Everything else should
 be earned by that relationship. Tasks, AI, payments, files, calendars, business workflows,
 integrations, and agents are expansion layers. They should not become the reason a user has to
-learn Caishy.
+learn Caime.
 
 ### W11. The core insight
 
-> Messaging apps know who you are talking to. **Caishy understands who that person is to you.**
+> Messaging apps know who you are talking to. **Caime understands who that person is to you.**
 
 That distinction creates the wedge. From there, `Who → Relationship → Why → Conversation →
 Context → Action` becomes the product architecture.
@@ -352,7 +355,7 @@ Context → Action` becomes the product architecture.
 
 ## 4. Product Thesis
 
-The fundamental Caishy object is not the message. It is the **Connection**. A connection can
+The fundamental Caime object is not the message. It is the **Connection**. A connection can
 contain:
 
 ```
@@ -360,12 +363,12 @@ Person → Relationship → Conversation → Context → Actions → History
 ```
 
 This distinction drives the entire architecture. A conversation can disappear. A connection
-persists. A relationship can evolve. A conversation can have many purposes. Therefore, Caishy
+persists. A relationship can evolve. A conversation can have many purposes. Therefore, Caime
 must model these separately.
 
 ## 5. Core Product Model
 
-Caishy consists of seven primary objects.
+Caime consists of seven primary objects.
 
 - **5.1 Person** — a human identity (Hassan, Sarah, Ahmed).
 - **5.2 Connection** — the relationship between two identities (Hassan ↕ Sarah).
@@ -383,7 +386,7 @@ Caishy consists of seven primary objects.
 - **5.7 Evidence** — useful information generated or shared through communication: document,
   image, receipt, voice note, location, link, agreement, decision.
 
-## 6. The Caishy Relationship Model
+## 6. The Caime Relationship Model
 
 The relationship system is the product's primary differentiator. However, it should not become a
 complicated taxonomy users have to maintain manually. The design principle is:
@@ -392,7 +395,7 @@ complicated taxonomy users have to maintain manually. The design principle is:
 
 ## 7. Relationship Structure
 
-Caishy uses a flexible relationship model: `Sphere → Role → Context`.
+Caime uses a flexible relationship model: `Sphere → Role → Context`.
 
 ```
 Family        └── Father
@@ -414,7 +417,7 @@ Initial system spheres:
 - **Social / Collective:** Community, Organization, Public
 - **Fallback:** Other
 
-These are system-level categories, not rigid universal definitions. Caishy should eventually
+These are system-level categories, not rigid universal definitions. Caime should eventually
 support custom relationship types.
 
 ## 9. Relationship Roles
@@ -429,7 +432,7 @@ Roles are configurable. Examples:
 
 ## 10. Relationship Ownership
 
-A relationship belongs to the person defining it. Caishy must never assume: *"This is objectively
+A relationship belongs to the person defining it. Caime must never assume: *"This is objectively
 what you are to each other."* Instead: *"This is how I classify this connection."* This prevents
 social ambiguity and allows asymmetric relationships.
 
@@ -447,7 +450,7 @@ How do you know Sarah?
 ```
 
 After selecting Work — *Sarah's role?* `[ Manager ] [ Colleague ] [ HR ] [ Partner ] [ Other ]`.
-(The original draft asked "What's her role?"; Caishy never assumes gender — PRODUCT-REVIEW R27.)
+(The original draft asked "What's her role?"; Caime never assumes gender — PRODUCT-REVIEW R27.)
 Then — *Where?* `[ DATA C ] [ Add organization ]`. Then — **Done**.
 
 The system should aim for **one to three interactions**. The user must never be forced through a
@@ -455,18 +458,18 @@ long profile form.
 
 ## 12. Relationship Intelligence
 
-Caishy can suggest relationships based on available signals: verified organization, email domain,
+Caime can suggest relationships based on available signals: verified organization, email domain,
 invitation source, mutual organization, user-entered information, existing connection context,
 conversation context. However: **suggestions are never silently converted into facts.**
 
 ```
-Caishy thinks Sarah may be your colleague at DATA C.
+Caime thinks Sarah may be your colleague at DATA C.
 [Accept] [Change]
 ```
 
 ## 13. Relationship Evolution
 
-Relationships change (Friend → Colleague → Customer; Colleague / Manager → Former Manager). Caishy
+Relationships change (Friend → Colleague → Customer; Colleague / Manager → Former Manager). Caime
 should maintain relationship history rather than overwrite it destructively. The user can change,
 add, end, archive, restore, and merge relationships.
 
@@ -478,7 +481,7 @@ separate identity (`Group: "The Khalid Family"`). This distinction is essential.
 
 ## 15. Conversation Model
 
-Caishy supports:
+Caime supports:
 
 - **Direct conversations** — one person ↔ one person.
 - **Group conversations** — multiple people.
@@ -489,7 +492,7 @@ Caishy supports:
 
 ## 16. Multiple Conversations per Connection
 
-Caishy should not force every interaction with a person into one endless thread. Sarah is a
+Caime should not force every interaction with a person into one endless thread. Sarah is a
 manager; conversations could include:
 
 ```
@@ -500,7 +503,7 @@ Sarah
  └── Performance Review
 ```
 
-However, the UX should avoid forcing users to manually create conversations constantly. Caishy
+However, the UX should avoid forcing users to manually create conversations constantly. Caime
 can automatically recommend a new context when appropriate.
 
 ## 17. Conversation Context
@@ -523,7 +526,7 @@ Deadline: Oct 15
 
 ## 18. Communication Modes
 
-Caishy should distinguish communication from action. Core modes:
+Caime should distinguish communication from action. Core modes:
 
 | Mode | Meaning |
 | --- | --- |
@@ -541,7 +544,7 @@ These modes can be detected automatically but must remain user-controlled.
 
 ## 19. The Inbox
 
-Caishy should not simply display a chronological list. The primary inbox is **Attention**. It
+Caime should not simply display a chronological list. The primary inbox is **Attention**. It
 answers: *What deserves my attention now?* Possible sections:
 
 - **Needs You** — messages requiring action.
@@ -572,8 +575,8 @@ context.
 
 ## 23. Message Intelligence
 
-Caishy can recognize commitments, dates, amounts, locations, people, organizations, documents,
-questions, decisions, and tasks. Example — "I'll send the proposal tomorrow." Caishy may display:
+Caime can recognize commitments, dates, amounts, locations, people, organizations, documents,
+questions, decisions, and tasks. Example — "I'll send the proposal tomorrow." Caime may display:
 
 ```
 Possible action
@@ -627,8 +630,8 @@ reason the task exists.
 
 ## 29. Waiting
 
-One of the most important concepts in Caishy is **Waiting**. Example — "I'll send you the
-contract tomorrow." Caishy can offer: *Waiting for Sarah — Contract.* This creates a lightweight
+One of the most important concepts in Caime is **Waiting**. Example — "I'll send you the
+contract tomorrow." Caime can offer: *Waiting for Sarah — Contract.* This creates a lightweight
 follow-up state without becoming a full project-management application.
 
 ## 30. Decisions
@@ -639,7 +642,7 @@ independently of messages.
 
 ## 31. Notifications
 
-Caishy separates **Activity** (something happened), **Attention** (something may require you) and
+Caime separates **Activity** (something happened), **Attention** (something may require you) and
 **Urgency** (something needs immediate attention). These are not equivalent.
 
 ## 32. Relationship-Aware Notifications
@@ -657,7 +660,7 @@ Users can override everything.
 
 ## 33. Notification Intelligence
 
-Caishy can consolidate bursts. Instead of four separate notifications ("Hi", "Are you there?",
+Caime can consolidate bursts. Instead of four separate notifications ("Hi", "Are you there?",
 "I need something", "Can you call me?"), show:
 
 ```
@@ -675,7 +678,7 @@ contact discovery. Rules can apply by relationship sphere.
 
 ## 35. Identity
 
-Caishy separates **account identity** (the person's Caishy account), **profile identity** (how
+Caime separates **account identity** (the person's Caime account), **profile identity** (how
 they appear), **professional identity** (their professional representation) and **organization
 identity** (their relationship with an organization). Example: *Hassan Khalid* (personal) ·
 *Hassan* (profile) · *Hassan Khalid — DATA C CEO* (professional/organization).
@@ -686,9 +689,9 @@ Organizations can have verified profiles. A business can create: organization pr
 employees; departments; customer relationships; vendor relationships; communication channels;
 automated services.
 
-## 37. Caishy Business
+## 37. Caime Business
 
-Caishy Business extends the same relationship model. Instead of *Unknown customer #5821*, the
+Caime Business extends the same relationship model. Instead of *Unknown customer #5821*, the
 organization can understand `Customer └── USPA └── Account └── Active conversation`. Business
 users can manage customer conversations, support, sales, vendors, partners, internal
 communication.
@@ -713,7 +716,7 @@ events, workflows, policies.
 
 ## 41. Connect Kits
 
-Caishy should support small contextual capabilities. A Connect Kit is an action module that can
+Caime should support small contextual capabilities. A Connect Kit is an action module that can
 appear within an appropriate context:
 
 - **Family:** shared calendar, shared album, location
@@ -733,10 +736,10 @@ classifications).
 
 ## 43. AI Principles
 
-Caishy AI must follow: (1) user control; (2) transparency; (3) reversibility; (4) privacy; (5) no
+Caime AI must follow: (1) user control; (2) transparency; (3) reversibility; (4) privacy; (5) no
 silent destructive actions; (6) clear distinction between fact and inference.
 
-Bad: *Sarah is your manager.* Better: *Caishy suggests Sarah may be your manager based on your
+Bad: *Sarah is your manager.* Better: *Caime suggests Sarah may be your manager based on your
 organization information.*
 
 ## 44. AI Relationship Inference
@@ -759,7 +762,7 @@ becoming a separate social network.
 
 ## 47. Calls
 
-Caishy supports voice, video, group calls, screen sharing, and call history. Calls are associated
+Caime supports voice, video, group calls, screen sharing, and call history. Calls are associated
 with person, relationship, conversation, and context. After a call, users may optionally receive a
 call summary with decisions, actions, and follow-ups.
 
@@ -777,7 +780,7 @@ create local tasks, and view relationships. Outgoing actions queue automatically
 
 ## 50. Contacts
 
-Caishy should not simply replicate the phone address book. It should maintain **People** (known
+Caime should not simply replicate the phone address book. It should maintain **People** (known
 identities), **Connections** (user-defined relationships), **Organizations** (associated
 entities) and **Relationship history** (how the connection has evolved).
 
@@ -796,12 +799,12 @@ without being forced to classify the relationship immediately.
 ## 53. Mutual Relationship Confirmation
 
 The two users may independently define their relationship (Hassan: Sarah → Manager; Sarah: Hassan
-→ Direct Report). Caishy can recognize these as complementary relationships.
+→ Direct Report). Caime can recognize these as complementary relationships.
 
 ## 54. Trust
 
-Caishy should distinguish **Known** (identity is known to the user), **Verified** (identity has
-been verified by Caishy or an authoritative organization), **Organization verified** (the person
+Caime should distinguish **Known** (identity is known to the user), **Verified** (identity has
+been verified by Caime or an authoritative organization), **Organization verified** (the person
 has a verified association) and **Unknown** (identity is not sufficiently established). Trust
 should never be represented merely by a decorative badge.
 
@@ -817,12 +820,12 @@ tasks, decisions, moderation. The group should remain simple for ordinary users.
 
 ## 57. Group Context
 
-Instead of only *842 messages*, Caishy can show: `Family Trip · People: 6 · Decisions: 3 ·
+Instead of only *842 messages*, Caime can show: `Family Trip · People: 6 · Decisions: 3 ·
 Tasks: 4 · Files: 8 · Upcoming: Friday`.
 
 ## 58. Topic Handling
 
-Caishy should not force users to manually create threads. The system can detect emerging topics
+Caime should not force users to manually create threads. The system can detect emerging topics
 and offer: *This conversation is becoming a separate topic. [Create topic] [Keep here]*.
 
 ## 59. Public Communication
@@ -839,7 +842,7 @@ organizational retention policies.
 
 ## 61. Encryption
 
-Private communication should use strong transport and storage security. Caishy should support
+Private communication should use strong transport and storage security. Caime should support
 end-to-end encrypted conversations where technically appropriate. Important product trade-off:
 server-side AI/search capabilities may be limited in E2EE contexts. **The UX must explain this
 rather than silently weakening encryption.**
@@ -939,15 +942,15 @@ Analytics must avoid turning personal relationships into surveillance metrics.
 
 ## 72. Integrations
 
-Caishy should provide an integration layer rather than hard-code every external service.
+Caime should provide an integration layer rather than hard-code every external service.
 Categories: Calendar (Google Calendar, Microsoft Outlook), Storage (Google Drive, OneDrive,
 Dropbox), Business (CRM, helpdesk, ERP), Finance (payments and accounting), Productivity
 (task/project systems). External systems remain authoritative for their respective records where
-appropriate. Caishy should not attempt to become every underlying system of record.
+appropriate. Caime should not attempt to become every underlying system of record.
 
 ## 73. API
 
-Caishy should expose APIs for identity, connections, relationships, conversations, messages,
+Caime should expose APIs for identity, connections, relationships, conversations, messages,
 files, events, tasks, organizations, integrations, and webhooks.
 
 ## 74. Developer Platform
@@ -958,8 +961,8 @@ actors). All applications operate through scoped permissions.
 
 ## 75. Agent Model
 
-Future Caishy agents may act as a customer support agent, scheduling agent, purchasing assistant,
-family assistant, or vendor assistant. Agents must have an explicit identity (e.g., *Caishy
+Future Caime agents may act as a customer support agent, scheduling agent, purchasing assistant,
+family assistant, or vendor assistant. Agents must have an explicit identity (e.g., *Caime
 Support Agent*). **Never make an AI agent indistinguishable from a human.**
 
 ## 76. Permissions
@@ -984,7 +987,7 @@ automation without coupling every subsystem together.
 
 ## 79. Performance Requirements
 
-Caishy should optimize for perceived responsiveness: immediate local message rendering;
+Caime should optimize for perceived responsiveness: immediate local message rendering;
 near-instant conversation navigation; fast cached inbox rendering; incremental synchronization;
 lazy loading of historical content; resumable media transfers. Exact SLOs should be finalized
 during engineering architecture.
@@ -1033,7 +1036,7 @@ can manage without feeling overwhelmed.*
 - **Enterprise (custom):** security; compliance; identity integration; retention; administration;
   private deployment options where justified.
 
-## 85. What Caishy Should NOT Become
+## 85. What Caime Should NOT Become
 
 Another Slack; another WhatsApp clone; another CRM; another project-management system; another
 social network; another email replacement; another app marketplace; an AI chatbot with messaging
@@ -1044,7 +1047,7 @@ attached. Its center of gravity must remain:
 ## 86. Full Feature Map
 
 ```
-Caishy
+Caime
 ├── Identity: Personal Identity · Professional Identity · Organization Identity · Verification
 ├── Connections: People · Organizations · Connection Requests · Relationship · Relationship History
 ├── Communication: Messages · Voice · Video · Groups · Broadcast · Calls
@@ -1066,28 +1069,28 @@ Caishy
 5. **Act** — Task · Reminder · Decision · Request · Payment · Event.
 6. **Maintain** — Follow-up · Waiting · History · Relationship evolution.
 
-This creates the fundamental Caishy loop:
+This creates the fundamental Caime loop:
 
 > **Connect → Communicate → Understand → Act → Follow up**
 
 ## 88. The Most Important UX Principle
 
-Caishy should never make users think *"Where is the feature?"* Instead, it should recognize
+Caime should never make users think *"Where is the feature?"* Instead, it should recognize
 *"What am I trying to accomplish with this person?"* — then expose the appropriate capability.
 
 A user opens a vendor conversation. Instead of displaying 20 generic tools (Message, Files, Call,
-Poll, Calendar, Task, Payment, …), Caishy might surface: `Vendor · Order #4821 · Delivery ·
+Poll, Calendar, Task, Payment, …), Caime might surface: `Vendor · Order #4821 · Delivery ·
 Invoice · Files · Message...`. The interface becomes contextual rather than feature-heavy.
 
 ## 89. Product North Star
 
-The ultimate Caishy experience should feel like: *a communication system that understands the
+The ultimate Caime experience should feel like: *a communication system that understands the
 difference between people without making the user manage the complexity.* The user supplies the
-fundamental relationship. Caishy handles the organization around it.
+fundamental relationship. Caime handles the organization around it.
 
 ## 90. Final Product Definition
 
-> **Caishy** — a relationship-aware communication platform that connects people, preserves
+> **Caime** — a relationship-aware communication platform that connects people, preserves
 > context, and turns conversations into useful action.
 
 Its fundamental innovation is not another messaging interface. It is the introduction of a
@@ -1100,4 +1103,4 @@ WHO → RELATIONSHIP → WHY → CONVERSATION → CONTEXT → ACTION
 That becomes the foundation on which messaging, search, AI, privacy, notifications, business
 communication, and future capabilities are built. The product is therefore engineered around
 **Connection** as the primary domain object, rather than around **Chat** as the primary domain
-object. That architectural decision is what makes the rest of Caishy coherent.
+object. That architectural decision is what makes the rest of Caime coherent.

@@ -5,9 +5,9 @@ The condition this project works toward, kept under 4,000 characters so it can b
 
 ---
 
-Build and ship Caishy (formerly CONNIQT), a relationship-aware communication platform, in
-github.com/h-khalid-h/caishy: production-grade on iOS, Android and Web, deployed on EasyPanel
-with HTTPS.
+Build and ship Caime (formerly Caishy, and CONNIQT), a relationship-aware communication platform,
+in github.com/h-khalid-h/caishy: production-grade on iOS, Android and Web, deployed on EasyPanel
+with HTTPS, at cai.me once the owner has the domain (R34–R36).
 
 Sources of truth: docs/PRD.md (product), docs/PRODUCT-REVIEW.md (refinements that override it),
 CLAUDE.md (architecture, conventions, commands), docs/ROADMAP.md (status). Read them first;
@@ -16,7 +16,8 @@ re-deriving decisions.
 
 Core rule: Connection (person to person) is the primary domain object, not Chat. Relationships
 are directional, owned by their definer, private unless shared, versioned and never overwritten.
-Suggestions are never silently facts.
+Suggestions are never silently facts. Caime is a communication product, not a super-app: it never
+holds or moves money, runs no third-party code and has no feeds (R38–R40).
 
 Done means each layer works end to end against the real server and is tested:
 1. Identity: accounts, handles, personal/professional/org identities, web + native sessions,

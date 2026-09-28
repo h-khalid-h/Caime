@@ -394,6 +394,34 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       deployed: a green run fast-forwards the `production` branch, which EasyPanel builds from;
       AI assist is on there (`ANTHROPIC_API_KEY`)
 
+## M8 — Caime (R34–R40)
+
+The product's name is Caime, for the domain cai.me; the brand and its characters stay. What of a
+super-app brainstorm the product takes, and what it leaves with the reason, is R34–R40.
+
+- [~] The name everywhere (R34): the product docs say Caime; the apps, server, pages, emails,
+      wordmark and technical docs follow in the rename (the characters, Caishy included, keep
+      their names)
+- [ ] ⛔ `cai.me`: on 2026-09-28 the domain is registered and parked for sale at Afternic (its
+      name servers are Afternic's), not free to register, and `caime.com` belongs to someone
+      else. The owner buys `cai.me` and points it at EasyPanel; until then production stays at
+      its current addresses. `caime.app` and `caime.me` didn't resolve that day, a fallback
+      if the price is wrong (a registrar has the last word)
+- [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
+      `apple-app-site-association` and `assetlinks.json` served by the server, the app's
+      associated domains. After the domain
+- [ ] Passkeys (R36): WebAuthn sign-in on web, iOS and Android, password optional once a passkey
+      exists, recovery codes kept. After the domain, since a passkey is bound to it
+- [ ] Several steps, one approval (R37): the assistant's suggestions from one conversation offered
+      as one card, each step undoable
+- [ ] Pay on an organization's card (R38), through its own checkout (Stripe Connect or its link),
+      the card saying it's paid from the provider's webhook. ⛔ The owner's decision on Stripe
+      Connect for the live account, and on a fee. And a Split card that records who owes whom and
+      moves nothing
+- [ ] `@caime/sdk` (R39): a typed client for the API and webhook signatures, for organizations'
+      apps
+- [ ] Broadcasts (§59, R40): fan-out measured at 500,000 followers before any is that big
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
