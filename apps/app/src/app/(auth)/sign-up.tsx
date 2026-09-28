@@ -44,13 +44,20 @@ export default function SignUp() {
   const [birthDate, setBirthDate] = useState<string | null>(null);
   const [country, setCountry] = useState<string | null>(null);
   const [device] = useState(deviceInfo);
+  const [errors, setErrors] = useState<Partial<Record<Field | 'form', string>>>({});
+  // One request for the list and the suggestion (CountryField asks with the same time zone).
   const countries = useCountries(device.locale, device.timeZone);
+  const chooseCountry = (code: string) => {
+    setCountry(code);
+    setErrors((e) => (e.country ? { ...e, country: undefined } : e));
+  };
   // Where the device says it is, until they choose (its time zone, else its language's region).
   useEffect(() => {
     const suggested = countries.data?.suggested;
-    if (suggested) setCountry((chosen) => chosen ?? suggested);
+    if (!suggested) return;
+    setCountry((chosen) => chosen ?? suggested);
+    setErrors((e) => (e.country ? { ...e, country: undefined } : e));
   }, [countries.data?.suggested]);
-  const [errors, setErrors] = useState<Partial<Record<Field | 'form', string>>>({});
   const [busy, setBusy] = useState(false);
   const [availability, setAvailability] = useState<{
     handle: string;
@@ -251,7 +258,8 @@ export default function SignUp() {
           onChangeText={setPassword}
           autoComplete="new-password"
           textContentType="newPassword"
-          returnKeyType="next"
+          returnKeyType="done"
+          onSubmitEditing={() => void submit()}
           error={errors.password}
           hint="At least 10 characters. A short sentence works well."
           testID="signup-password"
@@ -259,7 +267,10 @@ export default function SignUp() {
         <DateField
           label="Date of birth"
           value={birthDate}
-          onChange={setBirthDate}
+          onChange={(day) => {
+            setBirthDate(day);
+            if (day) setErrors((e) => (e.birthDate ? { ...e, birthDate: undefined } : e));
+          }}
           min={oldest}
           max={today}
           memorable
@@ -270,8 +281,9 @@ export default function SignUp() {
         <CountryField
           label="Where you live"
           value={country}
-          onChange={setCountry}
+          onChange={chooseCountry}
           locale={device.locale}
+          timeZone={device.timeZone}
           error={errors.country}
           hint="Sets your defaults, like your work week and the currency of amounts. Never shown to anyone."
           testID="signup-country"

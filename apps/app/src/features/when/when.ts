@@ -2,7 +2,7 @@
  * A day, and a time on it if there is one, where the person is (their time zone, not the
  * device's): what an action's due date, a card's date and a mute's end are chosen as.
  */
-import { addDays, zonedParts, zonedTimeToUtc } from '@caishy/core/time';
+import { addDays, weekStart, zonedParts, zonedTimeToUtc } from '@caishy/core/time';
 
 export interface Chosen {
   /** YYYY-MM-DD, where the person is. */
@@ -39,8 +39,10 @@ export interface QuickPick {
 }
 
 /**
- * The days people most often mean: today, tomorrow, and the first day of their next work week
- * (Sunday in Egypt, Monday in most of Europe), from their own work week.
+ * The days people most often mean: today, tomorrow, and the first day of their next week (Sunday
+ * in Egypt, Monday in most of Europe), from their own work week, as "next week" typed in a title
+ * reads (core when.ts): the coming week's first day, a week on when that's today. Next week isn't
+ * offered again when it's tomorrow.
  */
 export function quickPicks(timeZone: string, workweek: number[], now = new Date()): QuickPick[] {
   const today = zonedParts(now, timeZone);
@@ -48,14 +50,11 @@ export function quickPicks(timeZone: string, workweek: number[], now = new Date(
     { label: 'Today', chosen: { date: dayText(today), time: null } },
     { label: 'Tomorrow', chosen: { date: dayText(addDays(today, 1)), time: null } },
   ];
-  // The next week's first working day: after the next day off, the first day worked.
-  const works = new Set(workweek);
-  let i = 1;
-  while (i < 8 && works.has(addDays(today, i).weekday)) i++;
-  while (i < 15 && !works.has(addDays(today, i).weekday)) i++;
-  if (i > 1 && i < 15) {
-    const d = addDays(today, i);
-    picks.push({ label: 'Next week', chosen: { date: dayText(d), time: null } });
-  }
+  const ahead = (weekStart(workweek) - today.weekday + 7) % 7 || 7;
+  if (ahead > 1)
+    picks.push({
+      label: 'Next week',
+      chosen: { date: dayText(addDays(today, ahead)), time: null },
+    });
   return picks;
 }

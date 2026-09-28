@@ -18,6 +18,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { maskPayload, orgRef } from '../lib/business';
+import { overdueAtSql } from '../lib/due';
 import { messagePreview } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import {
@@ -155,10 +156,10 @@ export async function buildInbox(
         sql<number>`count(*) filter (where assignee_id = ${userId} and owner_id <> ${userId} and shared and status in ('open','accepted'))::int`.as(
           'requests_to_me',
         ),
-        sql<number>`count(*) filter (where assignee_id = ${userId} and status in ('open','accepted') and due_at < ${now})::int`.as(
+        sql<number>`count(*) filter (where assignee_id = ${userId} and status in ('open','accepted') and ${overdueAtSql} < ${now})::int`.as(
           'overdue',
         ),
-        sql<number>`count(*) filter (where assignee_id = ${userId} and status in ('open','accepted') and due_at >= ${now} and due_at < ${new Date(now.getTime() + 86_400_000)})::int`.as(
+        sql<number>`count(*) filter (where assignee_id = ${userId} and status in ('open','accepted') and ${overdueAtSql} >= ${now} and due_at < ${new Date(now.getTime() + 86_400_000)})::int`.as(
           'due_soon',
         ),
       ])

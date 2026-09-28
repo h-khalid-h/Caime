@@ -147,6 +147,30 @@ describe('requests are one record seen from two sides (R13)', () => {
   });
 });
 
+describe('when an action is overdue', () => {
+  it('at its time, or once its day is over when it has none', async () => {
+    const was = t.clock.now.toISOString();
+    // 14:00 on 1 October in New York.
+    t.clock.set('2026-10-01T18:00:00.000Z');
+    try {
+      const ny = await signup(t, { timeZone: 'America/New_York' });
+      const add = (title: string, dueAt: string, dueHasTime: boolean) =>
+        ny.post('/v1/tasks', { title, dueAt, dueHasTime });
+      // Today at 09:00, and today with no time (kept at 09:00 too), and yesterday with none.
+      await add('Call the bank at nine', '2026-10-01T13:00:00.000Z', true);
+      await add('Pay rent today', '2026-10-01T13:00:00.000Z', false);
+      await add('Send the forms yesterday', '2026-09-30T13:00:00.000Z', false);
+      const { counts, tasks } = await ny.get('/v1/tasks');
+      expect(counts.overdue).toBe(2);
+      expect(tasks.find((x: { title: string }) => x.title === 'Pay rent today').dueHasTime).toBe(
+        false,
+      );
+    } finally {
+      t.clock.set(was);
+    }
+  });
+});
+
 describe('decisions, context and memory (PRD §17, §24, §30)', () => {
   it('records a decision in the timeline and finds it later', async () => {
     const d = await sarah.post('/v1/decisions', {

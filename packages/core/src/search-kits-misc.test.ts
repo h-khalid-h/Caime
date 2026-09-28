@@ -5,6 +5,7 @@ import {
   formatWhen,
   initials,
   joinNames,
+  overdueAt,
   textDirection,
 } from './format';
 import { isUuid, uuidv7, uuidv7Time } from './ids';
@@ -169,6 +170,13 @@ describe('format', () => {
   it('due dates', () => {
     expect(formatDue('2026-09-24T13:00:00Z', now, tz)).toBe('Tomorrow');
     expect(formatDue('2026-09-21T13:00:00Z', now, tz)).toBe('2 days ago');
+  });
+  it('overdue at its time, or when its day is over if it has none', () => {
+    // A day with no time is kept at 09:00 where the person is (New York here): it's overdue at
+    // the midnight after it, never at nine that morning.
+    const nine = '2026-09-24T13:00:00Z';
+    expect(overdueAt(nine, true)).toBe(Date.parse(nine));
+    expect(overdueAt(nine, false)).toBe(Date.parse('2026-09-25T04:00:00Z'));
   });
 });
 

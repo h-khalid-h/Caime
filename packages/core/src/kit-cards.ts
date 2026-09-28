@@ -3,7 +3,7 @@
  * and how it reads. The server validates and moves cards with these functions and the app
  * renders them with the same ones, so a card reads the same on every device.
  */
-import { formatAmount, formatWhenAt } from './format';
+import { formatAmount, formatWhenAt, roundAmount } from './format';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
@@ -300,16 +300,15 @@ function clean(field: KitField, raw: unknown): Cleaned {
     }
     case 'amount': {
       const a = raw as Partial<KitAmount>;
-      if (
-        typeof a?.value !== 'number' ||
-        !Number.isFinite(a.value) ||
-        a.value <= 0 ||
-        a.value > 1e12
-      )
-        return { error: `${field.label}: enter an amount.` };
       const currency =
-        typeof a.currency === 'string' && /^[A-Z]{3}$/.test(a.currency) ? a.currency : null;
-      return { value: { value: Math.round(a.value * 100) / 100, currency } };
+        typeof a?.currency === 'string' && /^[A-Z]{3}$/.test(a.currency) ? a.currency : null;
+      // As its currency keeps it (KWD 12.345, JPY 1200), and more than nothing once it is.
+      const value =
+        typeof a?.value === 'number' && Number.isFinite(a.value)
+          ? roundAmount(a.value, currency)
+          : Number.NaN;
+      if (!(value > 0) || value > 1e12) return { error: `${field.label}: enter an amount.` };
+      return { value: { value, currency } };
     }
     case 'options':
       return field.choices?.some((c) => c.value === raw)

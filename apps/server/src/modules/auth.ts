@@ -7,7 +7,6 @@ import {
   ChangePasswordBody,
   defaultPrivacy,
   isMinor,
-  isValidTimeZone,
   LoginBody,
   meetsMinimumAge,
   normalizeHandle,
@@ -96,15 +95,23 @@ function passwordTry(ctx: AppContext, userId: string): void {
   ctx.limiter.hit(`password-try:${userId}`, ctx.config.isTest ? 1000 : 10, 600_000);
 }
 
+/**
+ * New recovery codes in place of the old, all under one salt: made one set at a time for an
+ * account (its row locked), so two made at once never leave codes of both behind, nor a second
+ * salt that would make a try on the account take two slow hashes.
+ */
 async function storeRecoveryCodes(ctx: AppContext, userId: string): Promise<string[]> {
   const codes = recoveryCodes();
   const salt = recoverySalt();
   const hashes = await Promise.all(codes.map((c) => hashRecoveryCode(c, salt)));
-  await ctx.db.deleteFrom('recovery_codes').where('user_id', '=', userId).execute();
-  await ctx.db
-    .insertInto('recovery_codes')
-    .values(hashes.map((code_hash) => ({ id: uuidv7(), user_id: userId, code_hash, salt })))
-    .execute();
+  await ctx.db.transaction().execute(async (trx) => {
+    await trx.selectFrom('users').select('id').where('id', '=', userId).forUpdate().execute();
+    await trx.deleteFrom('recovery_codes').where('user_id', '=', userId).execute();
+    await trx
+      .insertInto('recovery_codes')
+      .values(hashes.map((code_hash) => ({ id: uuidv7(), user_id: userId, code_hash, salt })))
+      .execute();
+  });
   return codes;
 }
 
@@ -114,10 +121,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`signup:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const body = parse(SignupBody, req.body);
     const now = ctx.now();
-    const timeZone =
-      body.timeZone && isValidTimeZone(body.timeZone)
-        ? (currentZone(body.timeZone) ?? body.timeZone)
-        : 'UTC';
+    // The device's zone by the name it has now; UTC for one that isn't a zone.
+    const timeZone = currentZone(body.timeZone) ?? 'UTC';
     if (!plausibleBirthDate(body.birthDate, now, timeZone))
       throw badRequest('Enter the day you were born.', {
         fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],

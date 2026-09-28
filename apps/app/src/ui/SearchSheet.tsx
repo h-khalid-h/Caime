@@ -5,6 +5,7 @@
 import { type ReactNode, useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useTheme } from '@/theme/theme';
+import { Button } from './Button';
 import { Check, Search } from './icons';
 import { ListRow } from './ListRow';
 import { useLayout } from './layout';
@@ -32,6 +33,7 @@ export function SearchSheet({
   searchLabel,
   loading = false,
   failed = false,
+  onRetry,
   empty = 'Nothing by that name.',
   testID,
 }: {
@@ -46,6 +48,8 @@ export function SearchSheet({
   searchLabel: string;
   loading?: boolean;
   failed?: boolean;
+  /** Asks for the list again, offered when it didn't load. */
+  onRetry?: () => void;
   empty?: string;
   testID?: string;
 }) {
@@ -76,13 +80,14 @@ export function SearchSheet({
         autoFocus={desktop}
         testID={testID ? `${testID}-search` : undefined}
       />
-      <View accessibilityRole="radiogroup" accessibilityLabel={title}>
+      <View accessibilityRole="radiogroup" accessibilityLabel={title} style={{ flexShrink: 1 }}>
         <FlatList
           data={list}
           keyExtractor={(i) => i.key}
           keyboardShouldPersistTaps="handled"
           initialNumToRender={16}
-          style={{ maxHeight: Math.max(240, height * 0.55), marginHorizontal: -20 }}
+          // As tall as fits: shorter while a keyboard is up (the sheet gives way to it).
+          style={{ maxHeight: Math.max(240, height * 0.55), flexShrink: 1, marginHorizontal: -20 }}
           renderItem={({ item }) => {
             const on = item.key === value;
             return (
@@ -103,13 +108,23 @@ export function SearchSheet({
             );
           }}
           ListEmptyComponent={
-            <Text variant="body" color="textSecondary" style={{ padding: 20 }}>
-              {failed
-                ? 'The list didn’t load. Check your connection and try again.'
-                : loading
-                  ? 'Loading…'
-                  : empty}
-            </Text>
+            <View style={{ padding: 20, gap: 12, alignItems: 'flex-start' }}>
+              <Text variant="body" color="textSecondary" accessibilityLiveRegion="polite">
+                {failed
+                  ? 'The list didn’t load. Check your connection and try again.'
+                  : loading
+                    ? 'Loading…'
+                    : empty}
+              </Text>
+              {failed && onRetry ? (
+                <Button
+                  label="Try again"
+                  variant="secondary"
+                  onPress={onRetry}
+                  testID={testID ? `${testID}-retry` : undefined}
+                />
+              ) : null}
+            </View>
           }
         />
       </View>

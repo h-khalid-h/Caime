@@ -6,6 +6,7 @@
  *
  * Avoids regex lookbehind so it runs on every JavaScript engine the app targets.
  */
+import { asciiDigits } from './digits';
 import {
   addDays,
   daysInMonth,
@@ -131,17 +132,8 @@ const DAY_PARTS: Record<string, number> = { morning: 9, afternoon: 15, evening: 
 /** Locales that write month before day. */
 const MONTH_FIRST = /^(en-US|en-PH|en-CA|en-FM|en-MH|en-GU|es-US|en-AS|en-UM|en-PR|en-VI)$/i;
 
-const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
-
 function normaliseDigits(text: string): string {
-  let out = '';
-  for (const ch of text) {
-    const a = AR_DIGITS.indexOf(ch);
-    const f = FA_DIGITS.indexOf(ch);
-    out += a >= 0 ? String(a) : f >= 0 ? String(f) : ch;
-  }
-  return out;
+  return asciiDigits(text);
 }
 
 function pad(n: number): string {

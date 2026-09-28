@@ -3,7 +3,6 @@ import { firstFutureWhen } from '@caishy/core/when';
 import { onlineManager } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { WhenSheet } from '@/features/when/WhenSheet';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
@@ -12,10 +11,14 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
 import { Calendar, X } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** Choosing a day, loaded the first time it's opened. */
+const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
 
 /**
  * "Call the bank tomorrow at 10" becomes a task due tomorrow at 10:00, in your time zone; or its
@@ -37,9 +40,9 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
     [title, timeZone, locale, me.workweek],
   );
   const due = picked
-    ? { at: instantOf(picked, timeZone).toISOString() }
+    ? { at: instantOf(picked, timeZone).toISOString(), hasTime: Boolean(picked.time) }
     : when && useDate
-      ? { at: when.at }
+      ? { at: when.at, hasTime: Boolean(when.time) }
       : null;
   // On the list at once, online or not; sent when it can be (PRD §49).
   const save = () => {
@@ -77,10 +80,10 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
           <>
             <Chip
               icon={Calendar}
-              label={`Due ${formatDue(due.at, new Date(), timeZone, locale)}`}
+              label={`Due ${formatDue(due.at, new Date(), timeZone, locale, due.hasTime)}`}
               selected
               onPress={() => setChoosing(true)}
-              accessibilityLabel={`Due ${formatDue(due.at, new Date(), timeZone, locale)}. Change the day`}
+              accessibilityLabel={`Due ${formatDue(due.at, new Date(), timeZone, locale, due.hasTime)}. Change the day`}
               testID="task-due"
             />
             <IconButton

@@ -142,6 +142,28 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Search: finds a message and opens its conversation scrolled to it, marked (E2E)
 - [x] Settings: every page opens; the theme follows the account to a fresh device (E2E);
       download your data and delete your account (E2E)
+- [x] Where someone lives and when they were born, and what follows from them (R29, R31):
+      sign-up asks a date of birth (13 or over, an age exact to the day where they live, never
+      shown, not changed in the app) and a country, suggested from the device's time zone; an
+      organization says where it's based and, if it likes, the year it was founded. From them
+      come the work week, the currency a card's amount starts in (rounded as that currency is)
+      and who is under 18. Language and region holds the country, the time zone, the language
+      things are written in and the work week (`auth.test.ts`, `geo.test.ts`, `orgs.test.ts`,
+      `migrations.test.ts`, E2E)
+- [x] Pickers made for each platform: a date on the phone's own wheel or dialog and on a
+      calendar on the web, a time the same way, in 12 or 24 hours as the person's language
+      writes it; for when something is due, a mute ends or a card's day falls, quick picks
+      before a day and a time; countries (250, Kosovo among them), currencies, time zones (by
+      city, in the person's language, with the offset now) and languages in lists found as
+      they're typed, in any script, by several words, with or without accents, dots or hamza;
+      amounts typed with any language's separators or digits; a status's emoji from a grid; a
+      collection picked like a folder, one of the person's or a new one made there, never twice
+      for a difference of case; and where you know someone from picked from where you've said before, one
+      organization however it's typed. A due date is changed on any action in
+      Actions (`find.test.ts`, `when.test.ts`, `times.test.ts`, `dates.test.ts`,
+      `amounts.test.ts`, core `time.test.ts`, `digits.test.ts`, `emoji.test.ts`,
+      `connections.test.ts`, `automations.test.ts`, E2E). [ ] A map to pick a location card's
+      place ⛔ a map provider
 - [x] Rules (PRD §68–70): how Caishy treats a kind of relationship, a role in it, or one
       person, all of it changed from Settings → Notifications and priorities: notifications
       (always, in set days and hours, only if important, never), urgent messages, priority (in
@@ -802,3 +824,26 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   Mutation-tested: 35 changes to its rules, each caught by a test but one that changes nothing
   observable today; another showed a check that could never matter, now gone. Tests: 209 core,
   49 brand, 452 server, 132 app, 53 E2E.
+- 2026-09-28 — Session 2 (cont.): a date of birth and a country for everyone, and a country
+  (and, if it likes, the year it began) for every organization, because the defaults that matter
+  come from them: the work week, the currency a card's amount starts in, and who is under 18,
+  now exact to the day where someone lives rather than to the year. Accounts made before keep an
+  age from the last day of the year they gave and choose their country again; none is guessed
+  for them (0035). Every picker was redone for where it runs (M5): the phone's own date and time
+  wheels and dialogs, a calendar on the web, lists found as they're typed, quick picks for when,
+  amounts in any language's writing, a grid of emoji for a status, and collections and
+  organizations picked from the person's own. Recovery codes are only slow hashes now: the few
+  kept as fast ones went (0036), and making new ones asks for the password. Two reviews found 61
+  things (23, then 38), each now fixed and tested. Among them: Android's time dialog crashed on
+  Expo's theme as the date one had; on iOS one sheet swapped for another in the same render and
+  the second never opened; a due day without a time was overdue at nine that morning; an amount
+  typed with the keypad's other separator was read a thousand times too big or too small; the
+  lists found nothing once a second word was typed; Make new codes never sent the password it
+  needs; an amount in Kuwaiti dinars lost its third decimal; a report opened two sheets on a
+  desktop; and a collection or an organization typed in another case became a second one.
+  Mutation-tested: 48 changes to the new rules, each caught by a test but one that changed
+  nothing (a check another already made, now gone); two that first survived had no test, and a
+  third showed the names of languages a phone can't name were a variety's ("Austrian German"),
+  now the language's. The sheets that open on a tap (a new conversation, how you know someone,
+  asking to connect) load the first time they're opened, so the app still starts in 448.4 KB of
+  JavaScript. Tests: 219 core, 49 brand, 466 server, 155 app, 53 E2E.

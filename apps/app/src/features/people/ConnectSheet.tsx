@@ -1,9 +1,11 @@
 import type { PersonView } from '@caishy/core/api';
 import { relationshipLabel, SPHERE_DEFS } from '@caishy/core/taxonomy';
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import {
   type FormState,
   initialForm,
@@ -37,6 +39,7 @@ export function ConnectSheet({
 }) {
   const t = useTheme();
   const [step, setStep] = useState<'details' | 'classify'>('details');
+  const qc = useQueryClient();
   const [form, setForm] = useState<FormState>(() => initialForm());
   const [note, setNote] = useState('');
   const [shareContext, setShareContext] = useState(true);
@@ -63,6 +66,8 @@ export function ConnectSheet({
       });
       onClose();
       onSent?.();
+      // Where they know them from is offered the next time they're asked.
+      if (draft?.orgName) void qc.invalidateQueries({ queryKey: qk.taxonomy });
       if (res.status === 'connected' && res.conversationId) {
         toast(`You’re connected with ${name}`);
         router.navigate({ pathname: '/c/[id]', params: { id: res.conversationId } });

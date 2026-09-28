@@ -466,7 +466,7 @@ test.describe
       await expect(page.getByTestId('kit-option-invoice')).toHaveCount(0);
       await page.getByTestId('kit-option-meeting').click();
       await page.getByLabel('Title').fill('Venue walkthrough');
-      await page.getByLabel('When').fill('Friday 3pm');
+      await page.getByLabel('When', { exact: true }).fill('Friday 3pm');
       await expect(visible(page, /^Fri, .*3:00/)).toBeVisible();
       await page.getByRole('button', { name: '45 min', exact: true }).click();
       await page.getByLabel('Where (optional)').fill('Cairo Opera House');
@@ -1345,7 +1345,12 @@ test.describe
       const sheet = page.getByTestId('automation-sheet').filter({ visible: true });
       await expect(sheet).toBeVisible();
       await sheet.getByTestId('automation-words').fill('invoice');
-      await sheet.getByTestId('automation-collection').fill('Invoices');
+      // Her first collection: named where it's chosen (with some already, New collection first).
+      const name = sheet.getByTestId('automation-collection-name');
+      const fresh = sheet.getByTestId('automation-collection-new');
+      await expect(name.or(fresh)).toBeVisible();
+      if (await fresh.isVisible()) await fresh.click();
+      await name.fill('Invoices');
       await page.getByTestId('automation-save').click();
       const row = page.getByTestId('automation-row').filter({
         visible: true,
@@ -1398,8 +1403,9 @@ test.describe
       await visible(page, 'The venue is 12 Nile St.').hover();
       await page.getByRole('button', { name: 'React', exact: true }).click();
       await page.getByTestId('message-save').click();
-      await page.getByRole('radio', { name: 'A new collection' }).click();
-      await page.getByTestId('save-new-name').fill('Venue');
+      // Kept where it's chosen: one they have, or a new one named there.
+      await page.getByRole('radio', { name: 'New collection' }).click();
+      await page.getByTestId('save-sheet-name').fill('Venue');
       await page.getByTestId('save-confirm').click();
       await expect(visible(page, 'Saved to Venue')).toBeVisible();
       await page.goto('/settings/saved');
@@ -1434,8 +1440,11 @@ test.describe
         .filter({ visible: true, hasText: 'invoice-0927.pdf' })
         .getByTestId('shared-save')
         .click();
-      await page.getByRole('radio', { name: 'A new collection' }).click();
-      await page.getByTestId('save-new-name').fill('Receipts');
+      await page.getByRole('radio', { name: 'New collection' }).click();
+      // A name they have, in another case, is the one they have.
+      await page.getByTestId('save-sheet-name').fill('invoices');
+      await expect(visible(page, 'You have Invoices: it goes there.')).toBeVisible();
+      await page.getByTestId('save-sheet-name').fill('Receipts');
       await page.getByTestId('save-confirm').click();
       await expect(visible(page, 'Saved to Receipts')).toBeVisible();
       await page.goto('/settings/saved');

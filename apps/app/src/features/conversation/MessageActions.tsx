@@ -7,13 +7,14 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
-import { report } from '@/features/safety/ReportSheet';
+import { report } from '@/features/safety/report';
 import { SaveSheet } from '@/features/saved/SaveSheet';
 import { copyText } from '@/lib/clipboard';
 import { patchMessage, removeMessage } from '@/state/cache';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { MORE_REACTIONS, QUICK_REACTIONS } from '@/ui/emoji';
 import {
   Bookmark,
   Copy,
@@ -37,59 +38,6 @@ import { toast } from '@/ui/Toast';
 
 /** A decision's longest title (the server's). */
 const DECISION_MAX = 300;
-
-export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
-/** More to react with, a tap away: the ones people reach for after the quick six. */
-const MORE_REACTIONS = [
-  '🔥',
-  '🎉',
-  '👏',
-  '💯',
-  '✅',
-  '👀',
-  '🤔',
-  '😍',
-  '🥰',
-  '😊',
-  '😅',
-  '🤣',
-  '😎',
-  '🤩',
-  '🥳',
-  '😴',
-  '😡',
-  '😱',
-  '🤯',
-  '🥲',
-  '😭',
-  '🙌',
-  '💪',
-  '🤝',
-  '👌',
-  '✌️',
-  '🤞',
-  '👋',
-  '💔',
-  '💙',
-  '💚',
-  '💛',
-  '⭐',
-  '✨',
-  '🌹',
-  '☕',
-  '🍰',
-  '🎂',
-  '🎁',
-  '📌',
-  '⏰',
-  '🚀',
-  '💡',
-  '📷',
-  '🏆',
-  '⚽',
-  '🤗',
-  '🤲',
-];
 
 /**
  * What can be forwarded (the server's rule): not a private message, a line about the
@@ -178,6 +126,7 @@ export function MessageActions({
   const dismiss = () => {
     setDeciding(null);
     setKeeping(null);
+    setMore(false);
     onClose();
   };
   const mine = m.senderId === me;

@@ -147,8 +147,14 @@ describe('where someone lives', () => {
       (await t.app.inject({ method: 'GET', url: `/v1/countries?${query}` })).json();
     const cairo = await get('locale=ar&timeZone=Africa%2FCairo');
     expect(cairo.suggested).toBe('EG');
-    expect(cairo.countries).toHaveLength(249);
+    expect(cairo.countries).toHaveLength(250);
     expect(cairo.countries).toContainEqual({ code: 'EG', name: 'مصر' });
+    // Kosovo, which ISO's own list leaves out, is there to choose; and names are as the whole tag
+    // writes them (Traditional Chinese in Taiwan, European Portuguese in Portugal).
+    expect((await get('locale=en')).countries).toContainEqual({ code: 'XK', name: 'Kosovo' });
+    expect((await get('locale=zh-TW')).countries).toContainEqual({ code: 'US', name: '美國' });
+    expect((await get('locale=zh-CN')).countries).toContainEqual({ code: 'US', name: '美国' });
+    expect((await get('locale=pt-PT')).countries).toContainEqual({ code: 'IR', name: 'Irão' });
     // An English phone in Cairo is still in Cairo; an older name for a zone still counts.
     expect((await get('locale=en-US&timeZone=Africa%2FCairo')).suggested).toBe('EG');
     expect((await get('locale=en&timeZone=Asia%2FCalcutta')).suggested).toBe('IN');
@@ -337,6 +343,39 @@ describe('recovery without email', () => {
     // A code works only for its own account.
     expect((await recover(b.user.handle, a.recoveryCodes[0]!)).statusCode).toBe(400);
     expect((await recover(a.user.handle, a.recoveryCodes[3]!)).statusCode).toBe(200);
+  });
+
+  it('makes one set of new codes at a time: two at once leave one set, under one salt', async () => {
+    const u = await signup(t);
+    const make = () =>
+      u.req('POST', '/v1/auth/recovery-codes', { password: 'correct horse battery' });
+    // While another holds the account, new codes wait for it rather than going in beside its
+    // (a lock the codes' own foreign key doesn't wait for, so only the account's lock does).
+    let waiting!: ReturnType<typeof make>;
+    await t.ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .selectFrom('users')
+        .select('id')
+        .where('id', '=', u.user.id)
+        .forNoKeyUpdate()
+        .execute();
+      waiting = make();
+      const first = await Promise.race([
+        waiting.then(() => 'made'),
+        new Promise((r) => setTimeout(() => r('waited'), 1500)),
+      ]);
+      expect(first).toBe('waited');
+    });
+    expect((await waiting).statusCode).toBe(200);
+    const made = await Promise.all([make(), make()]);
+    expect(made.map((r) => r.statusCode)).toEqual([200, 200]);
+    const kept = await t.ctx.db
+      .selectFrom('recovery_codes')
+      .select(['salt'])
+      .where('user_id', '=', u.user.id)
+      .execute();
+    expect(kept).toHaveLength(10);
+    expect(new Set(kept.map((k) => k.salt.toString('hex'))).size).toBe(1);
   });
 
   it('makes one slow hash a try, whatever it finds, so its time says nothing', async () => {

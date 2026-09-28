@@ -174,16 +174,30 @@ export function automationMatches(when: AutomationWhen, a: Arrival): boolean {
  * The words an automation looks for, as typed: "invoice, receipt" → ["invoice", "receipt"], with
  * the commas and semicolons of Arabic, Chinese and Japanese too ("发票，收据").
  */
+/** What separates words as they're typed: commas and semicolons of every script, new lines. */
+const BETWEEN_WORDS = /[,;\n\u060c\u061b\u3001\uff0c\uff1b\uff64]/;
+const unquoted = (w: string) => w.trim().replace(/^["“”'‘’«»]+|["“”'‘’«»]+$/g, '');
+
 export function wordsFrom(typed: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const w of typed.split(/[,;\n\u060c\u061b\u3001\uff0c\uff1b\uff64]/)) {
-    const word = w.trim().replace(/^["“”'‘’«»]+|["“”'‘’«»]+$/g, '');
+  for (const w of typed.split(BETWEEN_WORDS)) {
+    const word = unquoted(w);
     if (!word || seen.has(fold(word))) continue;
     seen.add(fold(word));
     out.push(word.slice(0, WORD_MAX));
   }
   return out.slice(0, WORDS_MAX);
+}
+
+/** What was typed without one of its words (as `wordsFrom` shows it), the rest as typed. */
+export function withoutWord(typed: string, word: string): string {
+  const gone = fold(word);
+  return typed
+    .split(BETWEEN_WORDS)
+    .map((w) => w.trim())
+    .filter((w) => w && fold(unquoted(w).slice(0, WORD_MAX)) !== gone)
+    .join(', ');
 }
 
 const a = (noun: string) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);

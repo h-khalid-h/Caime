@@ -13,6 +13,7 @@ import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useTaxonomy } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { wordsMatch } from '@/features/geo/find';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -23,6 +24,9 @@ import { sphereIcon } from '@/ui/SphereIcon';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** How many of the places someone knows people from are offered at once for "Where?". */
+const PLACES = 6;
 
 export interface RelationshipDraft {
   sphere: Sphere;
@@ -85,6 +89,14 @@ export function RelationshipForm({
     [...(taxonomy.data?.primary ?? []), ...(taxonomy.data?.more ?? [])].find(
       (s) => s.id === value.sphere,
     )?.customRoles ?? [];
+  // The places they've named before (and their own organizations), narrowed as one is typed;
+  // one they have is kept as they wrote it there, whatever the case it's typed in.
+  const where = value.orgName.replace(/\s+/g, ' ').trim();
+  const organizations = taxonomy.data?.organizations ?? [];
+  const had = organizations.find((o) => o.name.toLowerCase() === where.toLowerCase());
+  const places = had
+    ? [had, ...organizations.filter((o) => o !== had)].slice(0, PLACES)
+    : organizations.filter((o) => !where || wordsMatch([o.name], where)).slice(0, PLACES);
 
   const tile = (s: Sphere) => {
     const st = t.sphere(s);
@@ -186,13 +198,32 @@ export function RelationshipForm({
             accessibilityLabel="Role in your own words"
           />
           {def.asksOrganization ? (
-            <TextField
-              label="Where? (optional)"
-              placeholder="Company, school or organization"
-              value={value.orgName}
-              onChangeText={(orgName) => set({ orgName })}
-              maxLength={120}
-            />
+            <>
+              <TextField
+                label="Where? (optional)"
+                placeholder="Company, school or organization"
+                value={value.orgName}
+                onChangeText={(orgName) => set({ orgName })}
+                maxLength={120}
+              />
+              {places.length ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {places.map((o) => (
+                    <Chip
+                      key={o.name}
+                      label={o.name}
+                      selected={o === had}
+                      accessibilityLabel={
+                        o.people
+                          ? `${o.name}, where you know ${o.people === 1 ? '1 person' : `${o.people} people`}`
+                          : o.name
+                      }
+                      onPress={() => set({ orgName: o === had ? '' : o.name })}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </>
           ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 2 }}>
             <View style={{ flex: 1 }}>
@@ -259,8 +290,12 @@ export function RelationshipPicker({
     try {
       if (current) await endpoints.changeRelationship(current.id, draft);
       else await endpoints.classify(person.id, draft);
+      // Their own words for a role, and where they know them from, offered next time.
       if (draft.roleLabel)
-        void endpoints.addCustomRole(draft.sphere, draft.roleLabel).catch(() => {});
+        void endpoints
+          .addCustomRole(draft.sphere, draft.roleLabel)
+          .then(() => qc.invalidateQueries({ queryKey: qk.taxonomy }))
+          .catch(() => {});
       toast(draft.shared ? `Saved and shared with ${name}` : 'Saved. Only you see it.');
       onClose();
       for (const key of [
@@ -272,6 +307,7 @@ export function RelationshipPicker({
         // Which rule applies to them follows how you know them; what Caishy offered is answered.
         ['policy-for'],
         ['suggestions'],
+        qk.taxonomy,
       ])
         void qc.invalidateQueries({ queryKey: key });
     } catch (e) {

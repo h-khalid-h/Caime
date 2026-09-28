@@ -216,6 +216,13 @@ describe('relationships evolve without losing history (PRD §13)', () => {
 
 describe('privacy by relationship (PRD §34)', () => {
   it('status visible to family only hides it from a work contact', async () => {
+    // A status's emoji is one whole emoji, never words or half of one.
+    for (const statusEmoji of ['ab', '🌴🌴', '🧑‍\ud83d'])
+      expect((await sarah.req('PATCH', '/v1/me', { statusEmoji })).statusCode).toBe(400);
+    expect((await sarah.patch('/v1/me', { statusEmoji: '👩🏽‍💻' })).user.statusEmoji).toBe(
+      '👩🏽‍💻',
+    );
+    await sarah.patch('/v1/me', { statusEmoji: null });
     await sarah.patch('/v1/me', { statusText: 'At the beach' });
     const put = await sarah.req('PUT', '/v1/me/privacy', {
       fields: { status: { kind: 'spheres', spheres: ['family'] } },
@@ -289,6 +296,14 @@ describe('teen protections (R29)', () => {
         signup(t, { displayName: 'Turning Eighteen', handle, birthDate: '2008-06-01', timeZone });
       await born('eighteen.tokyo', 'Asia/Tokyo');
       await born('eighteen.york', 'America/New_York');
+      // A zone kept from before zones were checked, which Postgres doesn't know, reads as UTC
+      // (still 31 May) rather than failing everyone's search.
+      const mars = await born('eighteen.mars', 'UTC');
+      await t.ctx.db
+        .updateTable('users')
+        .set({ time_zone: 'Mars/Olympus' })
+        .where('id', '=', mars.user.id)
+        .execute();
       const found = (await adult.get('/v1/people/search?q=eighteen')).results.map(
         (r: { person: { handle: string } }) => r.person.handle,
       );
@@ -460,5 +475,61 @@ describe('policies (R11)', () => {
       expect(find(moved, sphere).settings.schedule.days, sphere).toEqual([1, 2, 3, 4, 5]);
     expect(find(moved, 'friend').settings.schedule.days).toEqual([5, 6]);
     expect(find(moved, 'work', 'manager').description).toMatch(/^Notify Mon.Fri 08:00.20:00 · /);
+  });
+});
+
+describe('where someone is known from (PRD §11)', () => {
+  it('is one organization however it’s typed, and offered to pick next time', async () => {
+    // Hassan knows Sarah from DATA C (above); Omar he types as " data   c ": the same place.
+    const omar = await signup(t, { displayName: 'Omar Farouk' });
+    const req = await hassan.post('/v1/connections/requests', {
+      toUserId: omar.user.id,
+      relationship: { sphere: 'work', role: 'colleague', orgName: ' data   c ' },
+    });
+    await omar.post(`/v1/connections/requests/${req.requestId}/accept`, {});
+    const [first] = (await hassan.get(`/v1/people/${omar.user.id}`)).relationships;
+    expect(first.label).toBe('Colleague · DATA C');
+    // Changed to it in another case, nothing changes: no new version of the relationship.
+    const same = await hassan.patch(`/v1/relationships/${first.id}`, { orgName: 'Data C' });
+    expect(same.relationship).toMatchObject({ id: first.id, orgName: 'DATA C' });
+    // Offered to pick, with how many people they know there; one organization in search.
+    const { organizations } = await hassan.get('/v1/relationships/taxonomy');
+    expect(organizations).toEqual([{ name: 'DATA C', people: 2 }]);
+    expect((await hassan.get('/v1/search?q=data')).results.organizations).toEqual([
+      { name: 'DATA C', people: 2 },
+    ]);
+    // Even two spellings kept from before are one there.
+    await t.ctx.db
+      .updateTable('relationships')
+      .set({ org_name: 'Data c' })
+      .where('owner_id', '=', hassan.user.id)
+      .where('subject_id', '=', omar.user.id)
+      .execute();
+    const found = (await hassan.get('/v1/search?q=data')).results.organizations;
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ name: expect.stringMatching(/^data c$/i), people: 2 });
+  });
+
+  it('their own organization comes first, as it’s written there', async () => {
+    await hassan.post('/v1/orgs', {
+      name: 'Nile Labs',
+      handle: 'nilelabs',
+      kind: 'business',
+      country: 'EG',
+    });
+    const zein = await signup(t, { displayName: 'Zein Adel' });
+    const req = await hassan.post('/v1/connections/requests', {
+      toUserId: zein.user.id,
+      relationship: { sphere: 'work', role: 'colleague', orgName: 'NILE LABS' },
+    });
+    await zein.post(`/v1/connections/requests/${req.requestId}/accept`, {});
+    expect((await hassan.get(`/v1/people/${zein.user.id}`)).relationships[0].label).toBe(
+      'Colleague · Nile Labs',
+    );
+    const { organizations } = await hassan.get('/v1/relationships/taxonomy');
+    expect(organizations[0]).toEqual({ name: 'Nile Labs', people: 1 });
+    expect(organizations.map((o: any) => o.name.toLowerCase())).toEqual(['nile labs', 'data c']);
+    // Nobody else's.
+    expect((await zein.get('/v1/relationships/taxonomy')).organizations).toEqual([]);
   });
 });

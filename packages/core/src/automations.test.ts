@@ -7,6 +7,7 @@ import {
   hasWord,
   SAVED_DEFAULT,
   whoSends,
+  withoutWord,
   wordsFrom,
 } from './automations';
 
@@ -146,6 +147,14 @@ describe('words and collections as typed', () => {
     expect(wordsFrom('فاتورة، إيصال')).toEqual(['فاتورة', 'إيصال']);
     expect(wordsFrom('发票，收据；领收书')).toEqual(['发票', '收据', '领收书']);
     expect(wordsFrom('فاتورة؛ إيصال')).toEqual(['فاتورة', 'إيصال']);
+    // Taking one out leaves the rest as typed: past the tenth, longer than a chip shows, quoted.
+    const eleven = 'a, b, c, d, e, f, g, h, i, j, k';
+    expect(withoutWord(eleven, 'a')).toBe('b, c, d, e, f, g, h, i, j, k');
+    expect(withoutWord('Invoice, “receipt”, INVOICE', 'invoice')).toBe('“receipt”');
+    const long = 'x'.repeat(45);
+    expect(withoutWord(`${long}, bill`, 'bill')).toBe(long);
+    expect(withoutWord(`${long}, bill`, 'x'.repeat(40))).toBe('bill');
+    expect(withoutWord('فاتورة، إيصال', 'فاتورة')).toBe('إيصال');
     expect(wordsFrom(Array.from({ length: 12 }, (_, i) => `w${i}`).join(','))).toHaveLength(10);
   });
 

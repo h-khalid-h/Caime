@@ -4,7 +4,7 @@
  * screen around it stays. Shown again, it's tried again. A part that is the whole screen (a tab,
  * a pane) says so when it can't be shown instead, with a way to try again: never a blank page.
  */
-import { Component, type ComponentType, lazy, type ReactNode, Suspense } from 'react';
+import { Component, type ComponentType, lazy, type ReactNode, Suspense, useState } from 'react';
 import { Platform } from 'react-native';
 
 /** What a part that's a whole screen shows when it can't be: the route's own error screen. */
@@ -76,4 +76,14 @@ export function lazyPart<P extends object>(
       />
     );
   };
+}
+
+/**
+ * Whether something loaded as it's shown has been open yet: a sheet is mounted the first time
+ * it opens, and stays mounted after so that it can slide away as it closes.
+ */
+export function useOpened(open: boolean): boolean {
+  const [opened, setOpened] = useState(open);
+  if (open && !opened) setOpened(true);
+  return opened || open;
 }

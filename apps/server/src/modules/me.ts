@@ -5,7 +5,6 @@ import {
   defaultWorkweek,
   Handle,
   IdentityBody,
-  isValidTimeZone,
   type PlanUsageView,
   PrivacyBody,
   safeLocale,
@@ -69,9 +68,10 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.statusEmoji !== undefined) patch.status_emoji = body.statusEmoji;
     if (body.presence !== undefined) patch.presence = body.presence;
     if (body.timeZone !== undefined) {
-      if (!isValidTimeZone(body.timeZone)) throw badRequest('Unknown time zone.');
       // By the name it has now: a device may still report an older one (Asia/Calcutta).
-      patch.time_zone = currentZone(body.timeZone) ?? body.timeZone;
+      const zone = currentZone(body.timeZone);
+      if (!zone) throw badRequest('Choose a time zone from the list.');
+      patch.time_zone = zone;
     }
     if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
     if (body.country !== undefined && body.country !== current.country) {

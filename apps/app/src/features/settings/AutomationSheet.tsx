@@ -5,11 +5,10 @@
  */
 import type { AutomationView } from '@caishy/core/api';
 import {
-  COLLECTION_MAX,
-  collectionName,
   describeAutomation,
   SAVE_KINDS,
   type SaveKind,
+  withoutWord,
   wordsFrom,
 } from '@caishy/core/automations';
 import { ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
@@ -23,6 +22,7 @@ import { Choice } from '@/features/settings/SettingsPage';
 import { SwitchRow } from '@/features/settings/SwitchRow';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
+import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -48,6 +48,11 @@ function Overline({ children }: { children: string }) {
   );
 }
 
+/** Choosing where it's kept, loaded as the sheet opens (the two sheets that use it share it). */
+const CollectionPicker = lazyPart(() =>
+  import('@/features/saved/CollectionPicker').then((m) => m.CollectionPicker),
+);
+
 export function AutomationSheet({
   automation,
   onClose,
@@ -62,7 +67,7 @@ export function AutomationSheet({
   const [role, setRole] = useState<string>(automation?.when.role ?? ALL);
   const [kinds, setKinds] = useState<SaveKind[]>(automation?.when.kinds ?? ['document']);
   const [words, setWords] = useState((automation?.when.words ?? []).join(', '));
-  const [collection, setCollection] = useState(automation?.collection ?? '');
+  const [collection, setCollection] = useState<string | null>(automation?.collection ?? null);
   const [enabled, setEnabled] = useState(automation?.enabled ?? true);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -72,8 +77,7 @@ export function AutomationSheet({
     kinds,
     words: wordsFrom(words),
   };
-  const target = collection.trim() ? collectionName(collection) : '';
-  const others = (saved.data?.collections ?? []).map((c) => c.name).filter((n) => n !== target);
+  const target = collection ?? '';
   const roles = sphere === ANYONE ? [] : ROLES[sphere as Sphere];
   const done = () => {
     void qc.invalidateQueries({ queryKey: qk.automations });
@@ -210,33 +214,20 @@ export function AutomationSheet({
                 label={`${w}  ×`}
                 size="sm"
                 accessibilityLabel={`Take out “${w}”`}
-                onPress={() =>
-                  setWords(
-                    wordsFrom(words)
-                      .filter((x) => x !== w)
-                      .join(', '),
-                  )
-                }
+                onPress={() => setWords(withoutWord(words, w))}
               />
             ))}
           </View>
         ) : null}
         <Overline>Save it to</Overline>
-        <TextField
-          label="A collection"
+        <CollectionPicker
+          label="Save it to"
           value={collection}
-          onChangeText={setCollection}
+          onChange={setCollection}
+          collections={saved.data?.collections ?? []}
           placeholder="Customer Files"
-          maxLength={COLLECTION_MAX}
           testID="automation-collection"
         />
-        {others.length ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {others.slice(0, 8).map((n) => (
-              <Chip key={n} label={n} size="sm" onPress={() => setCollection(n)} />
-            ))}
-          </View>
-        ) : null}
         {automation ? (
           confirming ? (
             <View style={{ flexDirection: 'row', gap: 10, paddingTop: 8 }}>

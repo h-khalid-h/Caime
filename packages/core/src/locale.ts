@@ -27,6 +27,8 @@ export function safeLocale(input: string | null | undefined): string {
       // Try the next, shorter candidate.
     }
   }
+  // Any string can be asked for (a query parameter): what's kept stays bounded.
+  if (cache.size >= 500) cache.clear();
   cache.set(raw, out);
   return out;
 }

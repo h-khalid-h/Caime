@@ -7,10 +7,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useRequests } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import {
-  type RelationshipDraft,
-  RelationshipPicker,
-} from '@/features/relationships/RelationshipPicker';
+import type { RelationshipDraft } from '@/features/relationships/RelationshipPicker';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -19,11 +16,17 @@ import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft, UserPlus } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+/** How they know someone, in its sheet: loaded the first time it's asked for. */
+const RelationshipPicker = lazyPart(() =>
+  import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
+);
 
 export default function Requests() {
   const t = useTheme();

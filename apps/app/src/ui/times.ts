@@ -2,6 +2,7 @@
  * Times of day as Caishy keeps them (24-hour HH:MM, as a quiet hour's start or a schedule's end),
  * for the time fields (TimeField): shown as the person's language says times.
  */
+import { asciiDigits } from '@caishy/core/digits';
 
 export interface TimeFieldProps {
   label: string;
@@ -15,12 +16,14 @@ export interface TimeFieldProps {
 
 export const TIME_OF_DAY = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-/** The time as a date today where the device is, for a picker to start on. */
+/**
+ * The time as a date for a picker to start on, on a day no clock changes on (1 January 2000,
+ * where the device is): on a day clocks go forward, a time in the gap would open an hour later
+ * and be saved so.
+ */
 export function timeDate(time: string): Date {
   const [h, m] = TIME_OF_DAY.test(time) ? time.split(':').map(Number) : [9, 0];
-  const d = new Date();
-  d.setHours(h ?? 9, m ?? 0, 0, 0);
-  return d;
+  return new Date(2000, 0, 1, h ?? 9, m ?? 0, 0, 0);
 }
 
 /** A picker's date as the time it shows. */
@@ -46,11 +49,12 @@ export function formatTime(time: string, locale?: string): string {
 /** Whether the person's language counts the day's hours to 24 (for Android's clock). */
 export function uses24Hours(locale?: string): boolean {
   try {
-    // One o'clock in the afternoon, as the language writes it: 13 on a 24-hour clock.
-    const one = new Intl.DateTimeFormat(locale, { hour: 'numeric', timeZone: 'UTC' }).format(
-      new Date(Date.UTC(2000, 0, 1, 13)),
-    );
-    return /13/.test(one);
+    const f = new Intl.DateTimeFormat(locale, { hour: 'numeric', timeZone: 'UTC' });
+    const cycle = f.resolvedOptions().hourCycle;
+    if (cycle) return cycle === 'h23' || cycle === 'h24';
+    // One o'clock in the afternoon, as the language writes it in its own digits (۱۳ in Persian):
+    // 13 on a 24-hour clock.
+    return /13/.test(asciiDigits(f.format(new Date(Date.UTC(2000, 0, 1, 13)))));
   } catch {
     return true;
   }

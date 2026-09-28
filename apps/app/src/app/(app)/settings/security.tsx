@@ -39,6 +39,26 @@ export default function Security() {
   const [pwError, setPwError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [codes, setCodes] = useState<string[] | null>(null);
+  // New codes are made once the password says it's them, as a stolen session can't.
+  const [making, setMaking] = useState(false);
+  const [codesPassword, setCodesPassword] = useState('');
+  const [codesError, setCodesError] = useState<string | null>(null);
+  const [codesBusy, setCodesBusy] = useState(false);
+  const makeCodes = async () => {
+    if (!codesPassword) return setCodesError('Enter your password.');
+    setCodesBusy(true);
+    setCodesError(null);
+    try {
+      const res = await endpoints.newRecoveryCodes(codesPassword);
+      setCodes(res.recoveryCodes);
+      setMaking(false);
+      setCodesPassword('');
+    } catch (e) {
+      setCodesError((e as Error).message);
+    } finally {
+      setCodesBusy(false);
+    }
+  };
   const [deleting, setDeleting] = useState(false);
   const [confirm, setConfirm] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -178,14 +198,11 @@ export default function Security() {
             <Button
               label="Make new codes"
               variant="secondary"
-              onPress={async () => {
-                try {
-                  const res = await endpoints.newRecoveryCodes();
-                  setCodes(res.recoveryCodes);
-                } catch (e) {
-                  toast((e as Error).message, { tone: 'danger' });
-                }
+              onPress={() => {
+                setCodesError(null);
+                setMaking(true);
               }}
+              testID="codes-new"
             />
           )}
           <Text variant="caption" color="textTertiary">
@@ -220,6 +237,37 @@ export default function Security() {
         </View>
       </Group>
       <Sheet
+        open={making}
+        onClose={() => setMaking(false)}
+        title="Make new recovery codes"
+        subtitle="The ones you have now stop working."
+        footer={
+          <Button
+            label="Make new codes"
+            block
+            loading={codesBusy}
+            onPress={() => void makeCodes()}
+            testID="codes-make"
+          />
+        }
+      >
+        <TextField
+          label="Your password"
+          value={codesPassword}
+          onChangeText={(v) => {
+            setCodesPassword(v);
+            setCodesError(null);
+          }}
+          secret
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="done"
+          onSubmitEditing={() => void makeCodes()}
+          error={codesError}
+          testID="codes-password"
+        />
+      </Sheet>
+      <Sheet
         open={deleting}
         onClose={() => setDeleting(false)}
         title="Delete your account?"
@@ -252,6 +300,7 @@ export default function Security() {
           onChangeText={setConfirm}
           error={deleteError}
           autoComplete="current-password"
+          testID="delete-password"
         />
       </Sheet>
     </SettingsPage>

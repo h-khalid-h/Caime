@@ -23,7 +23,7 @@ import {
   uuidv7,
 } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
-import type { Kysely, Transaction } from 'kysely';
+import { type Kysely, sql, type Transaction } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Database, Relationship } from '../db/schema';
@@ -35,6 +35,9 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 type Q = Kysely<Database> | Transaction<Database>;
+
+/** How many places someone knows people from are offered to pick. */
+const ORGANIZATIONS_OFFERED = 50;
 
 function snapshot(
   r: Pick<
@@ -81,6 +84,36 @@ export async function mayClassify(db: Q, owner: string, subject: string): Promis
     .limit(1)
     .executeTakeFirst();
   return Boolean(shared);
+}
+
+/**
+ * Where someone is known from, as the person already writes it: a place they've named before or
+ * an organization they're on the team of ("data c" is their "DATA C"), else as it's typed. One
+ * organization is never two for a difference of case or spacing.
+ */
+async function theirOrganization(
+  db: Q,
+  ownerId: string,
+  typed: string | null | undefined,
+): Promise<string | null> {
+  const name = typed?.replace(/\s+/g, ' ').trim();
+  if (!name) return null;
+  const named = await db
+    .selectFrom('relationships')
+    .select(sql<string>`min(org_name)`.as('name'))
+    .where('owner_id', '=', ownerId)
+    .where(sql<boolean>`lower(org_name) = ${name.toLowerCase()}`)
+    .executeTakeFirst();
+  if (named?.name) return named.name;
+  const team = await db
+    .selectFrom('org_members as m')
+    .innerJoin('organizations as o', 'o.id', 'm.org_id')
+    .select(sql<string>`min(o.name)`.as('name'))
+    .where('m.user_id', '=', ownerId)
+    .where('m.left_at', 'is', null)
+    .where(sql<boolean>`lower(o.name) = ${name.toLowerCase()}`)
+    .executeTakeFirst();
+  return team?.name ?? name;
 }
 
 export async function createRelationship(
@@ -141,7 +174,7 @@ export async function createRelationship(
       sphere: input.sphere,
       role: input.role ?? null,
       role_label: input.roleLabel ?? null,
-      org_name: input.orgName ?? null,
+      org_name: await theirOrganization(db, ownerId, input.orgName),
       context_note: input.contextNote ?? null,
       shared: input.shared ?? false,
       is_primary: makePrimary,
@@ -239,7 +272,43 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
           .map((c) => ({ id: c.id, label: c.label })),
       };
     };
-    return { primary: primarySpheres().map(describe), more: secondarySpheres().map(describe) };
+    // Where they know people from, to pick rather than type again: the organizations they're on
+    // the team of, then the places they've named, most people first.
+    const [teams, named] = await Promise.all([
+      ctx.db
+        .selectFrom('org_members as m')
+        .innerJoin('organizations as o', 'o.id', 'm.org_id')
+        .select('o.name')
+        .where('m.user_id', '=', auth.userId)
+        .where('m.left_at', 'is', null)
+        .where('o.archived_at', 'is', null)
+        .orderBy('o.name')
+        .execute(),
+      ctx.db
+        .selectFrom('relationships')
+        .select([
+          sql<string>`min(org_name)`.as('name'),
+          sql<number>`count(distinct subject_id)::int`.as('people'),
+        ])
+        .where('owner_id', '=', auth.userId)
+        .where('status', '=', 'active')
+        .where('org_name', 'is not', null)
+        .groupBy(sql`lower(org_name)`)
+        .orderBy('people', 'desc')
+        .orderBy('name')
+        .limit(ORGANIZATIONS_OFFERED)
+        .execute(),
+    ]);
+    const people = new Map(named.map((n) => [n.name.toLowerCase(), n.people]));
+    const organizations = [
+      ...teams.map((o) => ({ name: o.name, people: people.get(o.name.toLowerCase()) ?? 0 })),
+      ...named.filter((n) => !teams.some((o) => o.name.toLowerCase() === n.name.toLowerCase())),
+    ].slice(0, ORGANIZATIONS_OFFERED);
+    return {
+      primary: primarySpheres().map(describe),
+      more: secondarySpheres().map(describe),
+      organizations,
+    };
   });
 
   app.post('/relationships/custom-roles', async (req, reply) => {
@@ -283,11 +352,16 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     const current = await owned(ctx.db, auth.userId, id);
     if (current.status !== 'active')
       throw badRequest('Restore this relationship before changing it.');
+    // "data c" for their "DATA C" changes nothing.
+    const orgName =
+      body.orgName !== undefined
+        ? await theirOrganization(ctx.db, auth.userId, body.orgName)
+        : undefined;
     const classificationChanged =
       (body.sphere !== undefined && body.sphere !== current.sphere) ||
       (body.role !== undefined && body.role !== current.role) ||
       (body.roleLabel !== undefined && body.roleLabel !== current.role_label) ||
-      (body.orgName !== undefined && body.orgName !== current.org_name);
+      (orgName !== undefined && orgName !== current.org_name);
     const result = await ctx.db.transaction().execute(async (trx) => {
       if (!classificationChanged) {
         // Sharing and the context note are properties of the same relationship, not a new version.
@@ -330,7 +404,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
             : body.sphere && body.sphere !== current.sphere
               ? null
               : current.role_label,
-        orgName: body.orgName !== undefined ? body.orgName : current.org_name,
+        orgName: orgName !== undefined ? orgName : current.org_name,
         contextNote: body.contextNote !== undefined ? body.contextNote : current.context_note,
         shared: body.shared ?? current.shared,
       };

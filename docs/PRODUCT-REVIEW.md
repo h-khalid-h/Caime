@@ -196,8 +196,11 @@ to feel right to each of them.
 - **R31 — Culture and locale are data, not assumptions.** Work-hour defaults follow the workweek of
   the country someone lives in (Sunday–Thursday in Egypt and Saudi Arabia, Monday–Friday in most of
   Europe and the Americas; asked at sign-up, suggested from the device's time zone) and are
-  editable; dates, 12/24-hour time, numbers and name order follow the locale;
-  layouts are right-to-left safe (R21); icons and colours avoid culture-specific meanings; slow
+  editable; an amount on a card starts in the currency of where the organization is based in a
+  business conversation, else of where the person lives, and is rounded as that currency is
+  (three decimals for the Kuwaiti dinar, none for the yen); dates, 12/24-hour time, numbers and
+  name order follow the language someone chooses to have things written in (Language and region;
+  the device's until they choose), the pickers' too; layouts are right-to-left safe (R21); icons and colours avoid culture-specific meanings; slow
   networks and low-end phones are first-class (offline-first, no media auto-download on cellular
   by default).
 - **R32 — One product, every use case, through the model, not modes.** Families, friends,

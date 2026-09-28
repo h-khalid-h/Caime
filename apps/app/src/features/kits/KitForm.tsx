@@ -1,6 +1,6 @@
 import type { ConversationView, CustomKitOfferView } from '@caishy/core/api';
 import { prepareCustomFields } from '@caishy/core/custom-kits';
-import { formatAmount } from '@caishy/core/format';
+import { formatAmount, roundAmount } from '@caishy/core/format';
 import { uuidv4 } from '@caishy/core/ids';
 import { extractAmounts } from '@caishy/core/intelligence';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caishy/core/kit-cards';
@@ -13,7 +13,6 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { CurrencyField } from '@/features/geo/CurrencyField';
-import { WhenSheet } from '@/features/when/WhenSheet';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
 import { applyMessageToInbox, upsertMessage } from '@/state/cache';
@@ -24,11 +23,15 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
 import { Calendar, MapPin, Plus } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
-import { parseNumber } from './amounts';
+import { exampleAmount, parseNumber } from './amounts';
+
+/** Choosing a day, loaded the first time it's opened. */
+const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
 
 export type KitChoice = CardKitId | 'poll' | 'location';
 
@@ -113,9 +116,15 @@ function readField(
       const typed = parseNumber(raw, clock.locale);
       const found = typed === null ? extractAmounts(raw)[0] : undefined;
       const value = typed ?? found?.value;
-      if (!value || !Number.isFinite(value)) return { shown: 'Write an amount: “1,200”' };
+      if (!value || !Number.isFinite(value))
+        return { shown: `Write an amount: “${exampleAmount(clock.locale)}”` };
       const currency = found?.currency ?? extra.currency ?? null;
-      return { value: { value, currency }, shown: formatAmount(value, currency, clock.locale) };
+      // Shown as it will be kept (core roundAmount: a dinar to its thousandth, a yen whole).
+      const kept = roundAmount(value, currency);
+      return {
+        value: { value: kept, currency },
+        shown: formatAmount(kept, currency, clock.locale),
+      };
     }
     default:
       return { value: raw };
@@ -125,7 +134,6 @@ function readField(
 const PLACEHOLDERS: Partial<Record<KitField['type'], string>> = {
   datetime: 'Friday 3pm',
   date: 'October 15',
-  amount: '1,200',
 };
 
 export function KitForm({
@@ -170,6 +178,10 @@ export function KitForm({
   const close = () => {
     setTexts({});
     setPicked({});
+    // A card's currency and days are its own: the next one starts from the defaults.
+    setCurrencies({});
+    setPickedDays({});
+    setChoosing(null);
     setOptions(['', '']);
     setMultiple(false);
     setError(null);
@@ -429,7 +441,10 @@ export function KitForm({
               <TextField
                 key={field.key}
                 label={field.required ? field.label : `${field.label} (optional)`}
-                placeholder={field.placeholder ?? PLACEHOLDERS[field.type]}
+                placeholder={
+                  field.placeholder ??
+                  (field.type === 'amount' ? exampleAmount(clock.locale) : PLACEHOLDERS[field.type])
+                }
                 value={texts[field.key] ?? ''}
                 onChangeText={(v) => setTexts((s) => ({ ...s, [field.key]: v }))}
                 multiline={field.type === 'longtext'}

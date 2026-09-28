@@ -141,14 +141,19 @@ export default function Privacy() {
       </Group>
       <Group
         title="Message requests"
-        footer="Messages from people you’re not connected with wait in Requests. They never interrupt you."
+        footer={
+          me.minor
+            ? 'Messages from people you’re not connected with wait in Requests. Under 18, only people you share a connection with can send one.'
+            : 'Messages from people you’re not connected with wait in Requests. They never interrupt you.'
+        }
       >
         <Choice
           label="Who can send you a message request"
           value={me.privacy.messageRequests}
           onChange={(messageRequests) => void save({ messageRequests })}
           options={[
-            { value: 'everyone', label: 'Anyone' },
+            // Not offered under 18: the server would only turn it back (R29).
+            ...(me.minor ? [] : [{ value: 'everyone' as const, label: 'Anyone' }]),
             { value: 'shared_connections', label: 'People you share a connection with' },
             { value: 'nobody', label: 'Nobody' },
           ]}

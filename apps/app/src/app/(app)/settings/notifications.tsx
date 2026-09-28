@@ -204,7 +204,7 @@ export default function Notifications() {
       />
       <Group
         title="Your work week"
-        footer="Work notifications wait for these days. Set from your country (in Profile); change them if yours are different."
+        footer="Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different."
       >
         <View style={{ padding: 16 }}>
           <DayPicker label="Your work week" days={me.workweek} onChange={(d) => void saveWeek(d)} />

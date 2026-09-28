@@ -2,11 +2,13 @@ import type { TaskView } from '@caishy/core/api';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import type { TaskViewFilter } from '@/api/endpoints';
+import { endpoints } from '@/api/endpoints';
 import { useTasks } from '@/api/hooks';
 import { AddTaskSheet } from '@/features/actions/AddTaskSheet';
 import { TaskRow } from '@/features/actions/TaskRow';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { YouButton } from '@/features/shell/YouButton';
+import { chosenOf, instantOf } from '@/features/when/when';
 import { useNow, useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
 import { pendingTaskView, usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
@@ -15,6 +17,7 @@ import { Divider } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { CircleCheck, Plus } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { PageHeader, Screen } from '@/ui/Screen';
 import { Segmented } from '@/ui/Segmented';
@@ -45,12 +48,26 @@ const EMPTY: Record<string, { title: string; body: string; character: 'momo' | '
     },
   };
 
+/** Choosing a day, loaded the first time it's opened. */
+const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
+
 export default function Actions() {
   const t = useTheme();
   const me = useMe();
   const { desktop } = useLayout();
   const [view, setView] = useState<TaskViewFilter>('todo');
   const [adding, setAdding] = useState(false);
+  // The action whose due date is being chosen, in the person's own days and times.
+  const [dueFor, setDueFor] = useState<TaskView | null>(null);
+  const setDue = async (task: TaskView, due: { dueAt: string | null; dueHasTime: boolean }) => {
+    try {
+      await endpoints.updateTask(task.id, due);
+      void q.refetch();
+      toast(due.dueAt ? 'Due date changed' : 'Due date removed');
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  };
   const q = useTasks(view);
   const now = useNow();
   const { timeZone, locale } = useUserClock();
@@ -129,6 +146,7 @@ export default function Actions() {
                 pending={pending.get(item.id)}
                 onRetry={retry}
                 onDiscard={discard}
+                onDue={setDueFor}
               />
             )}
             ItemSeparatorComponent={() => <Divider inset={52} />}
@@ -150,6 +168,23 @@ export default function Actions() {
           />
         )}
       </View>
+      {dueFor ? (
+        <WhenSheet
+          open
+          onClose={() => setDueFor(null)}
+          title="Due"
+          value={dueFor.dueAt ? chosenOf(dueFor.dueAt, timeZone, dueFor.dueHasTime) : null}
+          onChange={(c) =>
+            void setDue(dueFor, {
+              dueAt: instantOf(c, timeZone).toISOString(),
+              dueHasTime: Boolean(c.time),
+            })
+          }
+          onClear={() => void setDue(dueFor, { dueAt: null, dueHasTime: false })}
+          clearLabel="No due date"
+          testID="task-when"
+        />
+      ) : null}
       <AddTaskSheet open={adding} onClose={() => setAdding(false)} />
     </Screen>
   );

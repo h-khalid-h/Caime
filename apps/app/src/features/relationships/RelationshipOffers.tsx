@@ -12,17 +12,22 @@ import { View } from 'react-native';
 import { endpoints, type RelationshipInput } from '@/api/endpoints';
 import { useRelationshipOffers } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Sparkles } from '@/ui/icons';
+import { lazyPart, useOpened } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 type Offer = { sphere?: string | null; role?: string | null; orgName?: string | null };
 
 const offerOf = (s: SuggestionView) => (s.payload ?? {}) as Offer;
+
+/** How they know someone, in its sheet: loaded the first time it's asked for. */
+const RelationshipPicker = lazyPart(() =>
+  import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
+);
 
 function OfferCard({
   s,
@@ -38,6 +43,7 @@ function OfferCard({
   const qc = useQueryClient();
   const [busy, setBusy] = useState<'accept' | 'dismiss' | null>(null);
   const [changing, setChanging] = useState(false);
+  const picking = useOpened(changing);
   const first = person.displayName.split(' ')[0] ?? person.displayName;
   const refresh = () => {
     for (const key of [
@@ -117,17 +123,19 @@ function OfferCard({
           Only you see how you know {first}, and nothing changes until you say so.
         </Text>
       </View>
-      <RelationshipPicker
-        open={changing}
-        onClose={() => setChanging(false)}
-        person={person}
-        initial={{
-          sphere: (offer.sphere ?? undefined) as never,
-          role: offer.role ?? null,
-          orgName: offer.orgName ?? null,
-        }}
-        onPick={(draft) => void accept(draft)}
-      />
+      {picking ? (
+        <RelationshipPicker
+          open={changing}
+          onClose={() => setChanging(false)}
+          person={person}
+          initial={{
+            sphere: (offer.sphere ?? undefined) as never,
+            role: offer.role ?? null,
+            orgName: offer.orgName ?? null,
+          }}
+          onPick={(draft) => void accept(draft)}
+        />
+      ) : null}
     </Card>
   );
 }

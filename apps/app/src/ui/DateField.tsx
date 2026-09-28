@@ -4,9 +4,9 @@
  * otherwise, in a sheet with Done. Shown in the field as the person's language writes dates.
  */
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import { getLocales } from 'expo-localization';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
+import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
 import { type DateFieldProps, dateOf, dayOf, formatDay } from './dates';
@@ -28,7 +28,8 @@ export function DateField({
   testID,
 }: DateFieldProps) {
   const t = useTheme();
-  const locale = getLocales()[0]?.languageTag;
+  // As the person writes dates and times (Language and region), not the device.
+  const { locale } = useUserClock();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Date>(new Date());
   const minimumDate = dateOf(min) ?? undefined;
@@ -43,17 +44,16 @@ export function DateField({
   const shown = value ? formatDay(value, locale) : null;
   const choose = () => {
     if (Platform.OS === 'android') {
+      // The system's own dialog, which works in local days and with the app's theme (Material 3's
+      // needs a Material theme, and reads its dates as UTC days).
       DateTimePickerAndroid.open({
         value: start(),
         mode: 'date',
-        design: 'material',
-        title: label,
+        design: 'default',
         startOnYearSelection: memorable,
         minimumDate,
         maximumDate,
-        onChange: (event, date) => {
-          if (event.type === 'set' && date) onChange(dayOf(date));
-        },
+        onValueChange: (_, date) => onChange(dayOf(date)),
       });
       return;
     }
@@ -128,9 +128,7 @@ export function DateField({
             accentColor={t.c.accent}
             minimumDate={minimumDate}
             maximumDate={maximumDate}
-            onChange={(_, date) => {
-              if (date) setDraft(date);
-            }}
+            onValueChange={(_, date) => setDraft(date)}
             style={{ alignSelf: 'center' }}
           />
         </Sheet>

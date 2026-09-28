@@ -1,10 +1,11 @@
 import type { TaskView } from '@caishy/core/api';
-import { formatDue } from '@caishy/core/format';
+import { formatDue, overdueAt } from '@caishy/core/format';
 import { router } from 'expo-router';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
-import { Check, Clock } from '@/ui/icons';
+import { IconButton } from '@/ui/IconButton';
+import { CalendarClock, Check, Clock } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
@@ -26,8 +27,11 @@ export const TaskRow = memo(function TaskRow({
   pending,
   onRetry,
   onDiscard,
+  onDue,
 }: {
   task: TaskView;
+  /** Changes when it's due; offered on the actions the reader asked for, while they're open. */
+  onDue?: (t: TaskView) => void;
   now: Date;
   timeZone: string;
   locale: string;
@@ -39,7 +43,9 @@ export const TaskRow = memo(function TaskRow({
 }) {
   const t = useTheme();
   const done = task.status === 'done';
-  const overdue = !done && task.dueAt !== null && Date.parse(task.dueAt) < now.getTime();
+  // A day with no time is due all that day (core overdueAt).
+  const overdue =
+    !done && task.dueAt !== null && overdueAt(task.dueAt, task.dueHasTime) < now.getTime();
   const who = taskWho(task);
   return (
     <View
@@ -109,7 +115,7 @@ export const TaskRow = memo(function TaskRow({
           {task.dueAt ? (
             <Text variant="captionStrong" color={overdue ? 'warning' : 'textSecondary'}>
               {overdue ? 'Overdue · ' : ''}
-              {formatDue(task.dueAt, now, timeZone, locale)}
+              {formatDue(task.dueAt, now, timeZone, locale, task.dueHasTime)}
             </Text>
           ) : null}
           {who ? (
@@ -167,6 +173,16 @@ export const TaskRow = memo(function TaskRow({
           </Text>
         ) : null}
       </Pressable>
+      {onDue && !done && !pending && task.direction !== 'asked_me' ? (
+        <IconButton
+          icon={CalendarClock}
+          label={
+            task.dueAt ? `Change when ${task.title} is due` : `Add a due date to ${task.title}`
+          }
+          onPress={() => onDue(task)}
+          testID={`task-due-${task.id}`}
+        />
+      ) : null}
     </View>
   );
 });

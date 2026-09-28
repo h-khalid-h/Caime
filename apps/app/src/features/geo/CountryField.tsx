@@ -6,11 +6,15 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { ChevronDown } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
-import { type SearchItem, SearchSheet } from '@/ui/SearchSheet';
+import type { SearchItem } from '@/ui/SearchSheet';
 import { Text } from '@/ui/Text';
 import { useCountries } from './countries';
 import { countryMatches, flagOf } from './find';
+
+/** The list, loaded the first time it's opened. */
+const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));
 
 export interface CountryFieldProps {
   label: string;
@@ -19,6 +23,11 @@ export interface CountryFieldProps {
   onChange: (code: string) => void;
   /** The language to name countries in (BCP 47). */
   locale: string;
+  /**
+   * The device's time zone, when the screen also wants the country it suggests (sign-up): one
+   * request for both.
+   */
+  timeZone?: string;
   hint?: string;
   error?: string | null;
   testID?: string;
@@ -32,13 +41,16 @@ export function CountryField({
   value,
   onChange,
   locale,
+  timeZone,
   hint,
   error,
   testID,
 }: CountryFieldProps) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
-  const countries = useCountries(locale);
+  // Mounted from the first time it's opened, so it can slide away as it closes.
+  const [opened, setOpened] = useState(false);
+  const countries = useCountries(locale, timeZone);
   const items = useMemo(
     () =>
       (countries.data?.countries ?? []).map((c) => ({
@@ -59,7 +71,12 @@ export function CountryField({
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${name ?? 'not chosen'}`}
         accessibilityHint="Opens the list of countries"
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          setOpen(true);
+          setOpened(true);
+          // A list that didn't load is asked for again as it's opened.
+          if (countries.isError) void countries.refetch();
+        }}
         testID={testID}
         style={{
           flexDirection: 'row',
@@ -92,20 +109,23 @@ export function CountryField({
           {hint}
         </Text>
       ) : null}
-      <SearchSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        title={label}
-        items={items}
-        value={value}
-        onPick={onChange}
-        matches={matches}
-        searchLabel="Search countries"
-        loading={countries.isPending}
-        failed={countries.isError}
-        empty="No country by that name."
-        testID={testID}
-      />
+      {opened ? (
+        <SearchSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          title={label}
+          items={items}
+          value={value}
+          onPick={onChange}
+          matches={matches}
+          searchLabel="Search countries"
+          loading={countries.isPending}
+          failed={countries.isError}
+          onRetry={() => void countries.refetch()}
+          empty="No country by that name."
+          testID={testID}
+        />
+      ) : null}
     </View>
   );
 }

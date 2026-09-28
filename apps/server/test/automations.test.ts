@@ -125,6 +125,9 @@ describe('automations (PRD §69)', () => {
       (await noor.req('POST', '/v1/automations', { when: { kinds: [] }, collection: 'x' }))
         .statusCode,
     ).toBe(400);
+    // Changed to it as it's typed, it's still the one they have.
+    await noor.patch(`/v1/automations/${invoices}`, { collection: 'customer files' });
+    expect((await noor.get('/v1/automations')).automations[0].collection).toBe('Customer Files');
     // Its collection is there before anything is in it.
     const { collections } = await noor.get('/v1/saved');
     expect(collections).toEqual([
@@ -273,6 +276,10 @@ describe('saving by hand, and what’s saved (PRD §69)', () => {
     expect(again.json()).toMatchObject({ id: first.json().id, existing: true });
     // The same message in another collection is another saved item.
     await noor.post(`/v1/messages/${text.id}/save`, { collection: 'Venues' });
+    // Typed in another case or spacing, it's the collection they have, not a second one.
+    expect(
+      await noor.post(`/v1/messages/${text.id}/save`, { collection: '  venues ' }),
+    ).toMatchObject({ collection: 'Venues', existing: true });
     const [saved] = await items(noor, 'Saved');
     expect(saved).toMatchObject({
       automationId: null,
@@ -313,17 +320,22 @@ describe('saving by hand, and what’s saved (PRD §69)', () => {
 
   it('moves, renames and removes, and a collection an automation uses stays', async () => {
     const [venue] = await items(noor, 'Venues');
-    await noor.patch(`/v1/saved/${venue.id}`, { collection: 'Saved' });
+    // Moved or renamed to a collection as it's typed, it's the one they have.
+    await noor.patch(`/v1/saved/${venue.id}`, { collection: 'saved' });
     expect((await items(noor, 'Saved')).map((i) => i.id)).toContain(venue.id);
     // Renamed into one that exists, the two are one, and nothing is in it twice.
-    await noor.post('/v1/saved/collections/rename', { from: 'Venues', to: 'Saved' });
+    await noor.post('/v1/saved/collections/rename', { from: 'Venues', to: 'SAVED' });
     const saved = await items(noor, 'Saved');
     expect(new Set(saved.map((i) => `${i.message.id}:${i.files[0]?.id ?? ''}`)).size).toBe(
       saved.length,
     );
     expect(await items(noor, 'Venues')).toEqual([]);
+    const names = (await noor.get('/v1/saved')).collections.map((c: any) => c.name);
+    expect(names.filter((n: string) => n.toLowerCase() === 'saved')).toEqual(['Saved']);
     // An automation's collection is renamed with it, and isn't removed while it's used.
-    await noor.post('/v1/saved/collections/rename', { from: 'Customer Files', to: 'Clients' });
+    await noor.post('/v1/saved/collections/rename', { from: 'Customer Files', to: 'clients' });
+    // Renamed to its own name in another case, it's written as asked.
+    await noor.post('/v1/saved/collections/rename', { from: 'clients', to: 'Clients' });
     expect((await noor.get('/v1/automations')).automations.map((a: any) => a.collection)).toEqual([
       'Clients',
       'Everything',

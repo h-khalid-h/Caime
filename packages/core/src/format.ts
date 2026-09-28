@@ -184,6 +184,18 @@ export function formatSoon(iso: string, now: Date, timeZone: string, locale = 'e
   return `${today ? '' : 'tomorrow '}at ${formatClock(iso, timeZone, locale)}`;
 }
 
+/**
+ * How long a day with no time stays due: it's kept at 09:00 of that day (when.ts), and it's due
+ * all day, so it's overdue only once the day is over, fifteen hours on (an hour either way on the
+ * day clocks change).
+ */
+export const DAY_DUE_MS = 15 * 3_600_000;
+
+/** When an action is overdue: at its time, or once its day is over when it has none. */
+export function overdueAt(dueAt: string | Date, hasTime: boolean): number {
+  return new Date(dueAt).getTime() + (hasTime ? 0 : DAY_DUE_MS);
+}
+
 /** Due dates: "Today", "Tomorrow 3:00 PM", "Fri", "Oct 15", "2 days ago". */
 export function formatDue(
   iso: string,
@@ -241,6 +253,46 @@ export function formatBytes(bytes: number): string {
   }
   // "5 GB", not "5.0 GB"; "1.5 MB" keeps its tenth.
   return `${(v < 10 ? v.toFixed(1) : String(Math.round(v))).replace(/\.0$/, '')} ${units[u]}`;
+}
+
+/**
+ * How many places after the point a currency's amounts have (ISO 4217): 3 for the Kuwaiti dinar,
+ * 0 for the yen, 2 for most, and for an amount in no currency.
+ */
+const EXPONENTS: Readonly<Record<string, number>> = {
+  BHD: 3,
+  IQD: 3,
+  JOD: 3,
+  KWD: 3,
+  LYD: 3,
+  OMR: 3,
+  TND: 3,
+  BIF: 0,
+  CLP: 0,
+  DJF: 0,
+  GNF: 0,
+  ISK: 0,
+  JPY: 0,
+  KMF: 0,
+  KRW: 0,
+  PYG: 0,
+  RWF: 0,
+  UGX: 0,
+  VND: 0,
+  VUV: 0,
+  XAF: 0,
+  XOF: 0,
+  XPF: 0,
+};
+
+export function minorUnits(currency: string | null): number {
+  return currency && Object.hasOwn(EXPONENTS, currency) ? (EXPONENTS[currency] as number) : 2;
+}
+
+/** An amount as its currency keeps it: to the dinar's thousandth, the yen, most to the cent. */
+export function roundAmount(value: number, currency: string | null): number {
+  const scale = 10 ** minorUnits(currency);
+  return Math.round(value * scale) / scale;
 }
 
 export function formatAmount(value: number, currency: string | null, locale = 'en'): string {

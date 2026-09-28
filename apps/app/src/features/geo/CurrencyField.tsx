@@ -8,21 +8,16 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Chip } from '@/ui/Chip';
 import { ChevronDown } from '@/ui/icons';
-import { type SearchItem, SearchSheet } from '@/ui/SearchSheet';
-import { folded } from './find';
+import { lazyPart } from '@/ui/Lazy';
+import type { SearchItem } from '@/ui/SearchSheet';
+import { wordsMatch } from './find';
+
+/** The list, loaded the first time it's opened. */
+const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));
 
 const DAY = 86_400_000;
 
-const matches = (i: SearchItem, term: string) => {
-  const q = folded(term);
-  return (
-    !q ||
-    i.key.toLowerCase().startsWith(q) ||
-    folded(i.title)
-      .split(/\s+/)
-      .some((w) => w.startsWith(q))
-  );
-};
+const matches = (i: SearchItem, term: string) => wordsMatch([i.key, i.title], term);
 
 export function CurrencyField({
   value,
@@ -38,6 +33,8 @@ export function CurrencyField({
   testID?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // Mounted from the first time it's opened, so it can slide away as it closes.
+  const [opened, setOpened] = useState(false);
   const currencies = useQuery({
     queryKey: qk.currencies(locale),
     queryFn: () => endpoints.currencies(locale),
@@ -60,24 +57,32 @@ export function CurrencyField({
       <Chip
         label={value ?? 'Currency'}
         icon={ChevronDown}
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          setOpen(true);
+          setOpened(true);
+          // A list that didn't load is asked for again as it's opened.
+          if (currencies.isError) void currencies.refetch();
+        }}
         accessibilityLabel={`${label}, ${name ?? value ?? 'not chosen'}. Change it`}
         testID={testID}
       />
-      <SearchSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        title={label}
-        items={items}
-        value={value}
-        onPick={onChange}
-        matches={matches}
-        searchLabel="Search currencies"
-        loading={currencies.isPending}
-        failed={currencies.isError}
-        empty="No currency by that name."
-        testID={testID}
-      />
+      {opened ? (
+        <SearchSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          title={label}
+          items={items}
+          value={value}
+          onPick={onChange}
+          matches={matches}
+          searchLabel="Search currencies"
+          loading={currencies.isPending}
+          failed={currencies.isError}
+          onRetry={() => void currencies.refetch()}
+          empty="No currency by that name."
+          testID={testID}
+        />
+      ) : null}
     </>
   );
 }

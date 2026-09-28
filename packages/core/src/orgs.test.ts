@@ -3,6 +3,7 @@ import {
   canChangeOrgRole,
   canManageOrg,
   canRemoveFromOrg,
+  latestFoundedYear,
   normalizeDomain,
   orgKindName,
   recordMatches,
@@ -11,6 +12,13 @@ import {
 import { nextOwner } from './spaces';
 
 describe('organizations', () => {
+  it('may have begun in the year it already is anywhere, and no later', () => {
+    // 10:00 UTC on 31 December is midnight on 1 January in Kiribati (UTC+14).
+    expect(latestFoundedYear(new Date('2026-12-31T09:59:59Z'))).toBe(2026);
+    expect(latestFoundedYear(new Date('2026-12-31T10:00:00Z'))).toBe(2027);
+    expect(latestFoundedYear(new Date('2027-06-01T00:00:00Z'))).toBe(2027);
+  });
+
   it('names a kind the way a profile says it', () => {
     expect(orgKindName('clinic')).toBe('Clinic or practice');
     expect(orgKindName('other')).toBe('Organization');

@@ -1,8 +1,6 @@
-import type { ConnectionView } from '@caishy/core/api';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { endpoints } from '@/api/endpoints';
 import { useConnections } from '@/api/hooks';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
@@ -11,20 +9,7 @@ import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
-import { toast } from '@/ui/Toast';
-
-export async function openChatWith(c: Pick<ConnectionView, 'conversationId' | 'person'>) {
-  if (c.conversationId) {
-    router.navigate({ pathname: '/c/[id]', params: { id: c.conversationId } });
-    return;
-  }
-  try {
-    const { conversation } = await endpoints.openDirect(c.person.id);
-    router.navigate({ pathname: '/c/[id]', params: { id: conversation.id } });
-  } catch (e) {
-    toast((e as Error).message, { tone: 'danger' });
-  }
-}
+import { openChatWith } from './openChat';
 
 export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const connections = useConnections();

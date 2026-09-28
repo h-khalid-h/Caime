@@ -72,6 +72,26 @@ describe('prepareKitFields', () => {
     expect(
       prepareKitFields('payment_request', { amount: { value: 1200.456, currency: 'EGP' } }),
     ).toMatchObject({ ok: true, fields: { amount: { value: 1200.46, currency: 'EGP' } } });
+    // As each currency keeps amounts: the Kuwaiti dinar to its thousandth, the yen whole.
+    expect(
+      prepareKitFields('payment_request', { amount: { value: 12.345, currency: 'KWD' } }),
+    ).toMatchObject({ ok: true, fields: { amount: { value: 12.345, currency: 'KWD' } } });
+    expect(
+      prepareKitFields('payment_request', { amount: { value: 1200.6, currency: 'JPY' } }),
+    ).toMatchObject({ ok: true, fields: { amount: { value: 1201, currency: 'JPY' } } });
+    // Checking again changes nothing, and what rounds to nothing isn't an amount.
+    const once = prepareKitFields('payment_request', { amount: { value: 7.777, currency: 'OMR' } });
+    expect(once.ok && prepareKitFields('payment_request', once.fields)).toEqual(once);
+    expect(
+      prepareKitFields('payment_request', { amount: { value: 0.004, currency: 'EGP' } }),
+    ).toEqual({ ok: false, error: 'Amount: enter an amount.' });
+    // Nor what no one asks for: a trillion is the most.
+    expect(prepareKitFields('payment_request', { amount: { value: 1e12 } })).toMatchObject({
+      ok: true,
+    });
+    expect(
+      prepareKitFields('payment_request', { amount: { value: 1e12 + 1, currency: 'EGP' } }),
+    ).toEqual({ ok: false, error: 'Amount: enter an amount.' });
   });
 
   it('says what is missing or wrong, in the field’s own words', () => {

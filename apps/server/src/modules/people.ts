@@ -122,14 +122,15 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           ]),
         ]),
       )
-      // Adults never find under-18 accounts (R29) unless already connected.
+      // Adults never find under-18 accounts (R29) unless already connected: here everyone who
+      // may be 18 somewhere today (no zone is more than a day ahead of UTC), and below, exactly,
+      // whoever is 18 on the day where they are.
       .$if(!viewerIsMinor, (qb) =>
         qb.where((eb) =>
           eb.or([
             sql<boolean>`c.id is not null`,
             eb('u.birth_date', 'is', null),
-            // 18 or over on the day where they are (packages/core safety.ts isMinor).
-            sql<boolean>`u.birth_date <= (${now}::timestamptz at time zone u.time_zone)::date - ${`${ADULT_AGE} years`}::interval`,
+            sql<boolean>`u.birth_date <= (${now}::timestamptz at time zone 'UTC')::date + 1 - ${`${ADULT_AGE} years`}::interval`,
           ]),
         ),
       )
@@ -140,10 +141,12 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .limit(limit)
       .execute();
 
-    const ids = rows.map((r) => r.id);
+    // Their birthday where they are (packages/core safety.ts isMinor), as every other gate has it.
+    const found = viewerIsMinor ? rows : rows.filter((u) => u.is_connection || !minorOf(u, now));
+    const ids = found.map((r) => r.id);
     const mine = await activeRelationships(ctx.db, auth.userId, ids);
     const results = await Promise.all(
-      rows.map(async (u) => {
+      found.map(async (u) => {
         const [relation, b, identity] = await Promise.all([
           viewerRelation(ctx.db, u.id, auth.userId),
           between(ctx.db, auth.userId, u.id),

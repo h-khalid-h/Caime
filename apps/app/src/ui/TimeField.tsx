@@ -3,9 +3,9 @@
  * the person's language uses; iOS's wheels, in a sheet with Done), shown as the language says it.
  */
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import { getLocales } from 'expo-localization';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
+import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
 import { Clock } from './icons';
@@ -16,21 +16,20 @@ import { formatTime, type TimeFieldProps, timeDate, timeOf, uses24Hours } from '
 
 export function TimeField({ label, value, onChange, hint, error, testID }: TimeFieldProps) {
   const t = useTheme();
-  const locale = getLocales()[0]?.languageTag;
+  // As the person writes dates and times (Language and region), not the device.
+  const { locale } = useUserClock();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => timeDate(value));
   const shown = formatTime(value, locale);
   const choose = () => {
     if (Platform.OS === 'android') {
+      // The system's own clock, which works with the app's theme (Material 3's needs its own).
       DateTimePickerAndroid.open({
         value: timeDate(value),
         mode: 'time',
-        design: 'material',
-        title: label,
+        design: 'default',
         is24Hour: uses24Hours(locale),
-        onChange: (event, date) => {
-          if (event.type === 'set' && date) onChange(timeOf(date));
-        },
+        onValueChange: (_, date) => onChange(timeOf(date)),
       });
       return;
     }
@@ -98,9 +97,7 @@ export function TimeField({ label, value, onChange, hint, error, testID }: TimeF
             display="spinner"
             locale={locale}
             themeVariant={t.scheme}
-            onChange={(_, date) => {
-              if (date) setDraft(date);
-            }}
+            onValueChange={(_, date) => setDraft(date)}
             style={{ alignSelf: 'center' }}
           />
         </Sheet>

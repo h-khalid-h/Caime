@@ -19,6 +19,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { hashToken, newToken } from '../lib/crypto';
+import { overdueAtSql } from '../lib/due';
 import { forbidden, notFound } from '../lib/errors';
 import { cardsAhead } from '../lib/upcoming';
 import { minorOf } from '../lib/users';
@@ -106,7 +107,7 @@ export async function calendarEvents(
     .where('due_at', 'is not', null)
     .where('due_at', '>', from)
     .where('due_at', '<', until)
-    .orderBy(sql`due_at < ${now}`)
+    .orderBy(sql`${overdueAtSql} < ${now}`)
     .orderBy('due_at')
     .limit(MAX_EVENTS)
     .execute();

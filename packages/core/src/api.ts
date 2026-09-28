@@ -247,6 +247,11 @@ export interface SphereInfo {
 export interface TaxonomyResponse {
   primary: SphereInfo[];
   more: SphereInfo[];
+  /**
+   * Where the person knows people from, to pick for "Where?": the organizations they're on the
+   * team of, then the places they've named, most people first.
+   */
+  organizations: Array<{ name: string; people: number }>;
 }
 
 // --- Messaging ------------------------------------------------------------------------------

@@ -96,7 +96,7 @@ function TaskLine({
         </Text>
         <Text variant="caption" color="textSecondary">
           {taskWho(task) ?? 'Yours'}
-          {task.dueAt ? ` · ${formatDue(task.dueAt, now, timeZone, locale)}` : ''}
+          {task.dueAt ? ` · ${formatDue(task.dueAt, now, timeZone, locale, task.dueHasTime)}` : ''}
           {pending ? ' · Pending' : ''}
         </Text>
       </View>

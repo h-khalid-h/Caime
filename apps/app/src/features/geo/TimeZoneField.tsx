@@ -10,21 +10,18 @@ import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { ChevronDown } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
-import { type SearchItem, SearchSheet } from '@/ui/SearchSheet';
+import type { SearchItem } from '@/ui/SearchSheet';
 import { Text } from '@/ui/Text';
-import { folded } from './find';
+import { wordsMatch } from './find';
+
+/** The list, loaded the first time it's opened. */
+const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));
 
 const HOUR = 3_600_000;
 
-const matches = (i: SearchItem, term: string) => {
-  const q = folded(term);
-  if (!q) return true;
-  const words = `${i.title} ${i.subtitle ?? ''} ${i.key}`;
-  return folded(words)
-    .split(/[\s/·_,()-]+/)
-    .some((w) => w.startsWith(q));
-};
+const matches = (i: SearchItem, term: string) => wordsMatch([i.title, i.subtitle, i.key], term);
 
 export function TimeZoneField({
   label,
@@ -46,6 +43,8 @@ export function TimeZoneField({
 }) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
+  // Mounted from the first time it's opened, so it can slide away as it closes.
+  const [opened, setOpened] = useState(false);
   const zones = useQuery({
     queryKey: qk.timeZones(locale, deviceZone ?? ''),
     queryFn: () => endpoints.timeZones(locale, deviceZone),
@@ -73,7 +72,12 @@ export function TimeZoneField({
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${shown ? `${shown.title}, ${shown.subtitle}` : value}`}
         accessibilityHint="Opens the list of time zones"
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          setOpen(true);
+          setOpened(true);
+          // A list that didn't load is asked for again as it's opened.
+          if (zones.isError) void zones.refetch();
+        }}
         testID={testID}
         style={{
           flexDirection: 'row',
@@ -115,20 +119,23 @@ export function TimeZoneField({
           {hint}
         </Text>
       ) : null}
-      <SearchSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        title={label}
-        items={items}
-        value={value}
-        onPick={onChange}
-        matches={matches}
-        searchLabel="Search cities or countries"
-        loading={zones.isPending}
-        failed={zones.isError}
-        empty="No time zone by that name."
-        testID={testID}
-      />
+      {opened ? (
+        <SearchSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          title={label}
+          items={items}
+          value={value}
+          onPick={onChange}
+          matches={matches}
+          searchLabel="Search cities or countries"
+          loading={zones.isPending}
+          failed={zones.isError}
+          onRetry={() => void zones.refetch()}
+          empty="No time zone by that name."
+          testID={testID}
+        />
+      ) : null}
     </View>
   );
 }

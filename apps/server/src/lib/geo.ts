@@ -19,8 +19,7 @@ export function suggestCountry(
   timeZone: string | null | undefined,
   locale: string | null | undefined,
 ): string | null {
-  const byZone = timeZone ? ZONE_COUNTRY[timeZone] : undefined;
-  if (byZone) return byZone;
+  if (timeZone && Object.hasOwn(ZONE_COUNTRY, timeZone)) return ZONE_COUNTRY[timeZone] ?? null;
   try {
     const region = locale ? new Intl.Locale(locale).region : undefined;
     return isCountry(region) ? region : null;
@@ -39,14 +38,14 @@ export interface CountryName {
   name: string;
 }
 
-/** Lists kept, one per language (and script): names don't change with the region (en-GB, en-US). */
+/** Lists kept, one per language as asked for (zh-TW, pt-PT), the oldest let go past `KEPT`. */
 const lists = new Map<string, CountryName[]>();
 const KEPT = 64;
 
 /** Every country, named and ordered in `locale`'s language (English names where ICU has none). */
 export function countriesIn(locale: string | null | undefined): CountryName[] {
-  const tag = new Intl.Locale(safeLocale(locale ?? 'en'));
-  const lang = tag.script ? `${tag.language}-${tag.script}` : tag.language;
+  // As the tag says, region too: zh-TW's names are Traditional Chinese, pt-PT's European.
+  const lang = new Intl.Locale(safeLocale(locale ?? 'en')).baseName;
   const cached = lists.get(lang);
   if (cached) return cached;
   let names: Intl.DisplayNames | null = null;
@@ -74,8 +73,7 @@ const currencyLists = new Map<string, CountryName[]>();
  * that name; the code alone where ICU has no name for it.
  */
 export function currenciesIn(locale: string | null | undefined): CountryName[] {
-  const tag = new Intl.Locale(safeLocale(locale ?? 'en'));
-  const lang = tag.script ? `${tag.language}-${tag.script}` : tag.language;
+  const lang = new Intl.Locale(safeLocale(locale ?? 'en')).baseName;
   const cached = currencyLists.get(lang);
   if (cached) return cached;
   let names: Intl.DisplayNames | null = null;
@@ -105,21 +103,35 @@ export interface TimeZoneName {
   offset: string;
 }
 
-const offsets = new Map<string, Intl.DateTimeFormat>();
-function offsetNow(zone: string, now: Date): string {
-  let f = offsets.get(zone);
-  if (!f) {
-    f = new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'shortOffset' });
-    offsets.set(zone, f);
-  }
-  return f.formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? 'GMT';
-}
+const ZONE_SET = new Set(ZONES);
 
-/** A time zone by the name it has now (a device may report Asia/Calcutta for Asia/Kolkata). */
+/**
+ * A time zone by the name it has now (a device may report Asia/Calcutta for Asia/Kolkata, or
+ * Etc/UTC), or null for anything that isn't one: an offset (+05:00), an abbreviation (EST), a name
+ * tzdata doesn't have. Offsets and abbreviations mean different things to ICU and to Postgres, so
+ * only a zone's name is kept.
+ */
 export function currentZone(zone: string | null | undefined): string | null {
   if (!zone) return null;
-  if (ZONES.includes(zone)) return zone;
-  return ZONE_LINKS[zone] ?? null;
+  if (ZONE_SET.has(zone)) return zone;
+  return Object.hasOwn(ZONE_LINKS, zone) ? (ZONE_LINKS[zone] ?? null) : null;
+}
+
+/** Each zone's offset formatter; null for one this runtime's ICU doesn't have yet. */
+const offsets = new Map<string, Intl.DateTimeFormat | null>();
+function offsetNow(zone: string, now: Date): string | null {
+  if (!offsets.has(zone)) {
+    try {
+      offsets.set(
+        zone,
+        new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'shortOffset' }),
+      );
+    } catch {
+      offsets.set(zone, null);
+    }
+  }
+  const f = offsets.get(zone);
+  return f ? (f.formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? 'GMT') : null;
 }
 
 /**
@@ -129,14 +141,18 @@ export function currentZone(zone: string | null | undefined): string | null {
 export function timeZonesIn(locale: string | null | undefined, now: Date): TimeZoneName[] {
   const names = new Map(countriesIn(locale).map((c) => [c.code, c.name]));
   const collator = new Intl.Collator(new Intl.Locale(safeLocale(locale ?? 'en')).language);
-  return ZONES.map((zone) => {
+  const list: TimeZoneName[] = [];
+  for (const zone of ZONES) {
+    const offset = offsetNow(zone, now);
+    if (!offset) continue;
     const country = ZONE_COUNTRY[zone] ?? null;
-    return {
+    list.push({
       zone,
       city: zone === 'UTC' ? 'UTC' : (zone.split('/').at(-1) ?? zone).replace(/_/g, ' '),
       country,
       countryName: country ? (names.get(country) ?? null) : null,
-      offset: offsetNow(zone, now),
-    };
-  }).sort((a, b) => collator.compare(a.city, b.city));
+      offset,
+    });
+  }
+  return list.sort((a, b) => collator.compare(a.city, b.city));
 }

@@ -16,11 +16,12 @@ import {
 } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { persister, queryClient } from '@/api/queryClient';
+import { CACHE_VERSION, persister, queryClient } from '@/api/queryClient';
 import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
 import { DEFAULT_PREFS, usePrefs } from '@/theme/prefs';
 import { useDrafts } from './drafts';
+import { keepUser, keptId, keptUser } from './kept';
 import { useLive } from './live';
 import { useLiveShares } from './liveShares';
 import { useOutbox } from './outbox';
@@ -58,7 +59,7 @@ function adoptPreferences(user: MeView): void {
 
 async function remember(user: MeView | null): Promise<void> {
   try {
-    if (user) await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (user) await AsyncStorage.setItem(USER_KEY, keepUser(user, CACHE_VERSION));
     else await AsyncStorage.removeItem(USER_KEY);
   } catch {
     // Storage full or unavailable: the next boot asks the server instead.
@@ -76,7 +77,7 @@ export const useSession = create<SessionState>((set, get) => ({
       AsyncStorage.getItem(USER_KEY).catch(() => null),
     ]);
     if (token) setAuthToken(token);
-    const user = cached ? (JSON.parse(cached) as MeView) : null;
+    const user = keptUser(cached, CACHE_VERSION);
     if (Platform.OS !== 'web' && !token) {
       set({ status: 'signedOut', user: null });
       return;
@@ -203,12 +204,10 @@ setWrongAccountHandler(startAgain);
 if (Platform.OS === 'web' && typeof window !== 'undefined')
   window.addEventListener?.('storage', (e: StorageEvent) => {
     if (e.key !== USER_KEY || useSession.getState().status === 'booting') return;
-    let now: string | null = null;
-    try {
-      now = e.newValue ? (JSON.parse(e.newValue) as MeView).id : null;
-    } catch {
-      return;
-    }
+    // Whose account the other tab keeps, whichever version of the app wrote it; something that
+    // isn't an account is left alone.
+    const now = keptId(e.newValue);
+    if (e.newValue && !now) return;
     if (now !== (useSession.getState().user?.id ?? null)) startAgain();
   });
 

@@ -15,7 +15,7 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useOrgUpdates } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { report } from '@/features/safety/ReportSheet';
+import { report } from '@/features/safety/report';
 import { linkify, openCheckedLink, opensWithEnter } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';

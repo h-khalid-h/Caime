@@ -8,11 +8,14 @@ import { PresenceChoice } from '@/features/settings/PresenceChoice';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { pickFromLibrary } from '@/lib/photos';
 import { useMe, useSession } from '@/state/session';
+import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { formatDay } from '@/ui/dates';
+import { EmojiSheet } from '@/ui/EmojiSheet';
 import { AtSign, Camera } from '@/ui/icons';
+import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -31,6 +34,7 @@ type Presence = 'auto' | 'available' | 'busy' | 'away' | 'invisible';
 
 export default function Profile() {
   const me = useMe();
+  const t = useTheme();
   const [displayName, setDisplayName] = useState(me.displayName);
   const [handle, setHandle] = useState(me.handle);
   const [bio, setBio] = useState(me.bio ?? '');
@@ -57,9 +61,6 @@ export default function Profile() {
         ...(normalizeHandle(handle) !== me.handle ? { handle: normalizeHandle(handle) } : {}),
         bio: bio.trim() || null,
         pronouns: pronouns.trim() || null,
-        statusText: statusText.trim() || null,
-        statusEmoji: statusEmoji.trim() || null,
-        presence,
       });
       useSession.getState().setUser(res.user);
       toast('Saved');
@@ -68,6 +69,34 @@ export default function Profile() {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
       setBusy(false);
+    }
+  };
+
+  // Status and presence take effect as they're chosen, here as in the You sheet.
+  const [choosingEmoji, setChoosingEmoji] = useState(false);
+  const saveStatus = async (emoji: string, text: string) => {
+    setStatusEmoji(emoji);
+    setStatusText(text);
+    try {
+      const res = await endpoints.updateMe({
+        statusEmoji: emoji || null,
+        statusText: text.trim() || null,
+      });
+      useSession.getState().setUser(res.user);
+      toast(emoji || text.trim() ? 'Status set' : 'Status cleared');
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  };
+  const choosePresence = async (next: Presence) => {
+    const was = presence;
+    setPresence(next);
+    try {
+      const res = await endpoints.updateMe({ presence: next });
+      useSession.getState().setUser(res.user);
+    } catch (e) {
+      setPresence(was);
+      toast((e as Error).message, { tone: 'danger' });
     }
   };
 
@@ -188,23 +217,58 @@ export default function Profile() {
       ) : null}
       <Group title="Status">
         <View style={{ padding: 16, gap: 14 }}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TextField
-              label="Emoji"
-              value={statusEmoji}
-              onChangeText={(v) => setStatusEmoji(v.slice(0, 4))}
-              style={{ width: 84 }}
-              placeholder="🌴"
-            />
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
+            <View style={{ gap: 6 }}>
+              <Text variant="captionStrong" color="textSecondary">
+                Emoji
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Status emoji, ${statusEmoji || 'none'}`}
+                accessibilityHint="Opens the emoji to choose from"
+                onPress={() => setChoosingEmoji(true)}
+                testID="status-emoji"
+                style={{
+                  width: 56,
+                  height: 48,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: t.c.border,
+                  backgroundColor: t.c.surface,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 22, lineHeight: 28 }} maxFontSizeMultiplier={1}>
+                  {statusEmoji || '🙂'}
+                </Text>
+              </Pressable>
+            </View>
             <TextField
               label="What’s up?"
               value={statusText}
               onChangeText={setStatusText}
+              // Set once it's written: on leaving the field, or with the keyboard's Done.
+              onBlur={() => {
+                if (statusText.trim() !== (me.statusText ?? ''))
+                  void saveStatus(statusEmoji, statusText);
+              }}
+              onSubmitEditing={() => void saveStatus(statusEmoji, statusText)}
+              returnKeyType="done"
               maxLength={80}
               style={{ flex: 1 }}
               placeholder="On holiday until the 12th"
+              testID="status-text"
             />
           </View>
+          <EmojiSheet
+            open={choosingEmoji}
+            onClose={() => setChoosingEmoji(false)}
+            title="Status emoji"
+            value={statusEmoji || null}
+            onPick={(emoji) => void saveStatus(emoji ?? '', statusText)}
+            testID="status-emoji-sheet"
+          />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {STATUSES.map((st) => {
               const on = statusEmoji === st.emoji && statusText === st.text;
@@ -215,22 +279,12 @@ export default function Profile() {
                   size="sm"
                   selected={on}
                   accessibilityLabel={st.text}
-                  onPress={() => {
-                    setStatusEmoji(on ? '' : st.emoji);
-                    setStatusText(on ? '' : st.text);
-                  }}
+                  onPress={() => void (on ? saveStatus('', '') : saveStatus(st.emoji, st.text))}
                 />
               );
             })}
             {statusEmoji || statusText ? (
-              <Chip
-                label="Clear"
-                size="sm"
-                onPress={() => {
-                  setStatusEmoji('');
-                  setStatusText('');
-                }}
-              />
+              <Chip label="Clear" size="sm" onPress={() => void saveStatus('', '')} />
             ) : null}
           </View>
         </View>
@@ -241,7 +295,7 @@ export default function Profile() {
       >
         <PresenceChoice
           value={presence === 'available' ? 'auto' : presence}
-          onChange={setPresence}
+          onChange={(v) => void choosePresence(v)}
         />
       </Group>
       <Button label="Save changes" size="lg" block onPress={save} loading={busy} />

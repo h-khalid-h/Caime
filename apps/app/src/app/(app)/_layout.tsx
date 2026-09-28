@@ -1,11 +1,11 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
-import { ReportSheet } from '@/features/safety/ReportSheet';
+import { useReport } from '@/features/safety/report';
 import { NavRail } from '@/features/shell/NavRail';
 import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
@@ -13,6 +13,7 @@ import { KeyboardShortcuts } from '@/features/shell/shortcuts';
 import { takeLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 
 export const ErrorBoundary = ScreenError;
@@ -65,8 +66,7 @@ export default function AppLayout() {
         <KeyboardShortcuts />
         <LiveLocationSharer />
         <CallLayer />
-        <ReportSheet />
-        <ReportSheet />
+        <ReportLayer />
       </>
     );
   return (
@@ -78,7 +78,7 @@ export default function AppLayout() {
       <KeyboardShortcuts />
       <LiveLocationSharer />
       <CallLayer />
-      <ReportSheet />
+      <ReportLayer />
     </>
   );
 }
@@ -119,4 +119,17 @@ function DesktopShell() {
       </View>
     </View>
   );
+}
+
+/** The report sheet, loaded the first time something's reported, then kept for the next. */
+const LazyReportSheet = lazyPart(() =>
+  import('@/features/safety/ReportSheet').then((m) => m.ReportSheet),
+);
+function ReportLayer() {
+  const asked = useReport((s) => s.target !== null);
+  const [wanted, setWanted] = useState(false);
+  useEffect(() => {
+    if (asked) setWanted(true);
+  }, [asked]);
+  return wanted || asked ? <LazyReportSheet /> : null;
 }

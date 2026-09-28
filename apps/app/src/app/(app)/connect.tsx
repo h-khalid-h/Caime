@@ -5,9 +5,8 @@ import { useEffect, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { openChatWith } from '@/features/inbox/NewChatSheet';
+import { openChatWith } from '@/features/inbox/openChat';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
-import { ConnectSheet } from '@/features/people/ConnectSheet';
 import { handleLink } from '@/lib/config';
 import { shareLink } from '@/lib/share';
 import { useMe } from '@/state/session';
@@ -18,6 +17,7 @@ import { RelationshipChip } from '@/ui/Chip';
 import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft, Search, UserPlus } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -32,6 +32,11 @@ function useDebounced<T>(value: T, ms = 300): T {
   }, [value, ms]);
   return v;
 }
+
+/** Asking to connect, in its sheet: loaded the first time it's asked for. */
+const ConnectSheet = lazyPart(() =>
+  import('@/features/people/ConnectSheet').then((m) => m.ConnectSheet),
+);
 
 export default function Connect() {
   const t = useTheme();

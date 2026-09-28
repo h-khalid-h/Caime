@@ -1,11 +1,11 @@
 /**
  * Reporting a person, a message, an organization or one of its updates: what's wrong, chosen
  * from what Caishy's safety team acts on, and anything else they should know. Opened from
- * anywhere with `report(target, name)`; one sheet, mounted once.
+ * anywhere with `report(target, name)` (report.ts); one sheet, loaded the first time it's asked
+ * for.
  */
 import { useState } from 'react';
 import { View } from 'react-native';
-import { create } from 'zustand';
 import { endpoints } from '@/api/endpoints';
 import { Choice, Group } from '@/features/settings/SettingsPage';
 import { Button } from '@/ui/Button';
@@ -13,10 +13,7 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
-
-type Body = Parameters<typeof endpoints.report>[0];
-type Reason = Body['reason'];
-type Target = Omit<Body, 'reason' | 'details'>;
+import { type Reason, useReport } from './report';
 
 const REASONS: Array<{ value: Reason; label: string; detail: string }> = [
   { value: 'spam', label: 'Spam', detail: 'Ads, or the same message again and again' },
@@ -30,16 +27,6 @@ const REASONS: Array<{ value: Reason; label: string; detail: string }> = [
   { value: 'inappropriate', label: 'Inappropriate', detail: 'Violence, sexual content, hate' },
   { value: 'other', label: 'Something else', detail: 'Say what below' },
 ];
-
-const useReport = create<{ target: Target | null; name: string }>(() => ({
-  target: null,
-  name: '',
-}));
-
-/** Asks what's wrong with `target` (named `name` in the sheet), and sends the report. */
-export function report(target: Target, name: string) {
-  useReport.setState({ target, name });
-}
 
 export function ReportSheet() {
   const { target, name } = useReport();

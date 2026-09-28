@@ -142,11 +142,15 @@ export async function runSearch(
     if (text && !parsed.relationship) {
       const orgs = await ctx.db
         .selectFrom('relationships')
-        .select(['org_name', sql<number>`count(distinct subject_id)::int`.as('people')])
+        .select([
+          sql<string>`min(org_name)`.as('org_name'),
+          sql<number>`count(distinct subject_id)::int`.as('people'),
+        ])
         .where('owner_id', '=', me)
         .where('status', '=', 'active')
         .where('org_name', 'ilike', like(text))
-        .groupBy('org_name')
+        // One organization however its name was written.
+        .groupBy(sql`lower(org_name)`)
         .limit(5)
         .execute();
       results.organizations = orgs.map((o) => ({ name: o.org_name, people: o.people }));

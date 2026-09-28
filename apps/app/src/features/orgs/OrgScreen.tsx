@@ -16,7 +16,7 @@ import { useBusinessSummary, useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useCountries } from '@/features/geo/countries';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
-import { report } from '@/features/safety/ReportSheet';
+import { report } from '@/features/safety/report';
 import { OrgUpdates } from '@/features/updates/OrgUpdates';
 import { handleLink } from '@/lib/config';
 import { openLink } from '@/lib/links';

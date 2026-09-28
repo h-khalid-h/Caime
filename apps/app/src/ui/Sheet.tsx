@@ -80,6 +80,9 @@ export function Sheet({
             width: '100%',
             maxWidth: phone ? undefined : maxWidth,
             maxHeight: phone ? height * 0.92 : height * 0.86,
+            // It gives way to the keyboard (iOS pads the space below by its height), so its title
+            // and whatever's being typed in stay on screen, and what's inside scrolls.
+            flexShrink: 1,
             backgroundColor: t.c.surface,
             borderTopLeftRadius: t.radii.xxl,
             borderTopRightRadius: t.radii.xxl,
@@ -121,7 +124,7 @@ export function Sheet({
             </View>
           ) : null}
           <Body
-            style={{ flexGrow: 0 }}
+            style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={
               scroll ? { paddingHorizontal: 20, paddingVertical: 12, gap: 12 } : undefined
             }
@@ -130,7 +133,7 @@ export function Sheet({
             {scroll ? (
               children
             ) : (
-              <View style={{ paddingHorizontal: 20, paddingVertical: 12, gap: 12 }}>
+              <View style={{ paddingHorizontal: 20, paddingVertical: 12, gap: 12, flexShrink: 1 }}>
                 {children}
               </View>
             )}

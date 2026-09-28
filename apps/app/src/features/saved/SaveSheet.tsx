@@ -1,22 +1,23 @@
 /**
  * Saving a message, or one file of it, to a collection of one's own (PRD §69): the one saved to
- * last, another one there is, or a new one. What's saved stays only as long as the message does.
+ * last, another one there is (found by name once there are many), or a new one. What's saved
+ * stays only as long as the message does.
  */
-import { COLLECTION_MAX, collectionName, SAVED_DEFAULT } from '@caishy/core/automations';
+import { SAVED_DEFAULT } from '@caishy/core/automations';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useSaved } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { Choice } from '@/features/settings/SettingsPage';
 import { Button } from '@/ui/Button';
+import { lazyPart } from '@/ui/Lazy';
 import { Sheet } from '@/ui/Sheet';
-import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
-/** The choice that means "a collection not made yet": no name kept starts with a space. */
-const NEW = ' new';
+/** Choosing where it's kept, loaded as the sheet opens (the two sheets that use it share it). */
+const CollectionPicker = lazyPart(() =>
+  import('@/features/saved/CollectionPicker').then((m) => m.CollectionPicker),
+);
 
 export function SaveSheet({
   messageId,
@@ -31,15 +32,16 @@ export function SaveSheet({
   const qc = useQueryClient();
   const saved = useSaved();
   // Newest first, as the server lists them; the default one is always offered.
-  const names = [
-    ...new Set([...(saved.data?.collections ?? []).map((c) => c.name), SAVED_DEFAULT]),
-  ].slice(0, 12);
-  const [picked, setPicked] = useState<string | null>(null);
-  const [fresh, setFresh] = useState('');
+  const listed = saved.data?.collections ?? [];
+  const collections = listed.some((c) => c.name === SAVED_DEFAULT)
+    ? listed
+    : [...listed, { name: SAVED_DEFAULT, count: 0 }];
+  // The one saved to last, until another is chosen.
+  const [picked, setPicked] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
-  const choice = picked ?? names[0] ?? SAVED_DEFAULT;
-  const target = choice === NEW ? collectionName(fresh) : choice;
+  const target = picked === undefined ? (collections[0]?.name ?? SAVED_DEFAULT) : picked;
   const save = async () => {
+    if (!target) return;
     setBusy(true);
     try {
       const res = await endpoints.saveMessage(messageId, {
@@ -63,43 +65,24 @@ export function SaveSheet({
       subtitle="Kept for you, as long as the message is there"
       footer={
         <Button
-          label={`Save to ${target}`}
+          label={target ? `Save to ${target}` : 'Save'}
           block
           size="lg"
           loading={busy}
-          disabled={choice === NEW && !fresh.trim()}
+          disabled={!target}
           onPress={() => void save()}
           testID="save-confirm"
         />
       }
     >
-      <View style={{ gap: 12 }} testID="save-sheet">
-        <View style={{ marginHorizontal: -20 }}>
-          <Choice<string>
-            label="Where to keep it"
-            value={choice}
-            onChange={setPicked}
-            options={[
-              ...names.map((n) => ({ value: n, label: n })),
-              { value: NEW, label: 'A new collection' },
-            ]}
-          />
-        </View>
-        {choice === NEW ? (
-          <TextField
-            label="Its name"
-            value={fresh}
-            onChangeText={setFresh}
-            placeholder="Receipts"
-            maxLength={COLLECTION_MAX}
-            autoFocus
-            onSubmitEditing={() => {
-              if (fresh.trim() && !busy) void save();
-            }}
-            testID="save-new-name"
-          />
-        ) : null}
-      </View>
+      <CollectionPicker
+        label="Where to keep it"
+        value={target}
+        onChange={setPicked}
+        collections={collections}
+        placeholder="Receipts"
+        testID="save-sheet"
+      />
     </Sheet>
   );
 }

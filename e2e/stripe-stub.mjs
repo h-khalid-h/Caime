@@ -30,7 +30,9 @@ const PRICES = [
 }));
 
 let n = 0;
-const next = (prefix) => `${prefix}_${(++n).toString().padStart(8, '0')}`;
+// Unique across runs, as Stripe's are: a database kept from an earlier run has seen evt_00000004.
+const run = Date.now().toString(36);
+const next = (prefix) => `${prefix}_${run}${(++n).toString().padStart(8, '0')}`;
 const customers = new Map();
 const byIdempotency = new Map();
 const sessions = new Map();

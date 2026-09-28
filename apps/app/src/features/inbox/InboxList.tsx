@@ -21,6 +21,7 @@ import { ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { Bell, ChevronDown, ChevronRight, SquarePen, UserPlus } from '@/ui/icons';
+import { lazyPart, useOpened } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';
@@ -28,11 +29,13 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { sphereIcon } from '@/ui/SphereIcon';
 import { Text } from '@/ui/Text';
 import { ConversationRow } from './ConversationRow';
-import { NewChatSheet } from './NewChatSheet';
 import { RowActions } from './RowActions';
 
 /** What Chats shows: what needs you first, everything, or one kind of relationship. */
 type Show = 'attention' | 'all' | Sphere;
+/** Starting a chat, loaded the first time it's asked for. */
+const NewChatSheet = lazyPart(() => import('./NewChatSheet').then((m) => m.NewChatSheet));
+
 /** Sections that stay folded until opened: they never compete for attention (R14). */
 const FOLDED = new Set(['requests', 'archived']);
 
@@ -65,6 +68,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [actionsFor, setActionsFor] = useState<InboxItemView | null>(null);
   const [newChat, setNewChat] = useState(false);
+  const chatOpened = useOpened(newChat);
   const playful = usePrefs((p) => p.personality === 'playful');
 
   const sections = useMemo(() => {
@@ -271,7 +275,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
     <>
       {body}
       <RowActions item={actionsFor} onClose={() => setActionsFor(null)} />
-      <NewChatSheet open={newChat} onClose={() => setNewChat(false)} />
+      {chatOpened ? <NewChatSheet open={newChat} onClose={() => setNewChat(false)} /> : null}
     </>
   );
   if (pane) return <View style={{ flex: 1 }}>{content}</View>;

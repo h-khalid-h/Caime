@@ -20,6 +20,7 @@ import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask, maskFor } from '../lib/business';
 import { canEditConversation, contextVisible } from '../lib/contexts';
+import { overdueAtSql } from '../lib/due';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import {
@@ -246,7 +247,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         sql<number>`count(*) filter (where assignee_id = ${me} and owner_id <> ${me} and shared and status in ('open','accepted'))::int`.as(
           'asked_me',
         ),
-        sql<number>`count(*) filter (where assignee_id = ${me} and status in ('open','accepted') and due_at < ${ctx.now()})::int`.as(
+        sql<number>`count(*) filter (where assignee_id = ${me} and status in ('open','accepted') and ${overdueAtSql} < ${ctx.now()})::int`.as(
           'overdue',
         ),
       ])

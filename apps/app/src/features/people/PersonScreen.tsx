@@ -10,10 +10,9 @@ import { qk } from '@/api/keys';
 import { PersonCalls } from '@/features/calls/PersonCalls';
 import { OtherAccounts } from '@/features/duplicates';
 import { privateSupported } from '@/features/e2ee/support';
-import { openChatWith } from '@/features/inbox/NewChatSheet';
+import { openChatWith } from '@/features/inbox/openChat';
 import { PersonOffer } from '@/features/relationships/offers';
-import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
-import { report } from '@/features/safety/ReportSheet';
+import { report } from '@/features/safety/report';
 import { useNow, useUserClock } from '@/lib/time';
 import { useLive } from '@/state/live';
 import { useMe } from '@/state/session';
@@ -36,16 +35,22 @@ import {
   UserPlus,
   Users,
 } from '@/ui/icons';
+import { lazyPart, useOpened } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
-import { ConnectSheet } from './ConnectSheet';
 import { PersonRule } from './PersonRule';
 import { RelationshipHistory } from './RelationshipHistory';
 
 /** One line of who someone is to you (PRD §67): what it is, and what there is of it. */
+/** How they know them, and asking to connect: each in its sheet, loaded the first time it opens. */
+const RelationshipPicker = lazyPart(() =>
+  import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
+);
+const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.ConnectSheet));
+
 function Fact({ label, value, testID }: { label: string; value: string; testID?: string }) {
   return (
     <View
@@ -78,7 +83,9 @@ export function PersonScreen({ id }: { id: string }) {
     open: false,
     current: null,
   });
+  const picking = useOpened(picker.open);
   const [connect, setConnect] = useState(false);
+  const connecting = useOpened(connect);
   const [busy, setBusy] = useState<string | null>(null);
   const now = useNow();
   const { timeZone, locale } = useUserClock();
@@ -458,18 +465,22 @@ export function PersonScreen({ id }: { id: string }) {
           </Card>
         ) : null}
       </ScrollView>
-      <RelationshipPicker
-        open={picker.open}
-        current={picker.current}
-        onClose={() => setPicker({ open: false, current: null })}
-        person={person}
-      />
-      <ConnectSheet
-        open={connect}
-        onClose={() => setConnect(false)}
-        person={person}
-        onSent={refresh}
-      />
+      {picking ? (
+        <RelationshipPicker
+          open={picker.open}
+          current={picker.current}
+          onClose={() => setPicker({ open: false, current: null })}
+          person={person}
+        />
+      ) : null}
+      {connecting ? (
+        <ConnectSheet
+          open={connect}
+          onClose={() => setConnect(false)}
+          person={person}
+          onSent={refresh}
+        />
+      ) : null}
     </Screen>
   );
 }

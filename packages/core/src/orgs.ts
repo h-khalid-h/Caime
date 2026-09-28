@@ -4,6 +4,14 @@
  * then do its people show as "Verified at <name>": the claim is the organization's, checked.
  */
 
+/**
+ * The latest year an organization can have begun: the year it already is somewhere (UTC+14), so
+ * the form and the server agree on New Year's Day wherever it's filled in.
+ */
+export function latestFoundedYear(now: Date = new Date()): number {
+  return new Date(now.getTime() + 14 * 3_600_000).getUTCFullYear();
+}
+
 export const ORG_KINDS = [
   'business',
   'shop',

@@ -152,7 +152,9 @@ export const endpoints = {
   revokeSession: (id: string) => api.del<Ok>(`/auth/sessions/${id}`),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post<Ok>('/auth/password', { currentPassword, newPassword }),
-  newRecoveryCodes: () => api.post<{ recoveryCodes: string[] }>('/auth/recovery-codes'),
+  /** New recovery codes in place of the old, once the password says it's them. */
+  newRecoveryCodes: (password: string) =>
+    api.post<{ recoveryCodes: string[] }>('/auth/recovery-codes', { password }),
   recover: (body: {
     identifier: string;
     code: string;

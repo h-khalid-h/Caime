@@ -45,5 +45,19 @@ describe('when, where the person is', () => {
     expect(days(monFri, new Date('2026-10-02T07:00:00Z')).at(-1)).toBe('Next week 2026-10-05');
     // On Saturday, it's the day after tomorrow.
     expect(days(monFri, new Date('2026-10-03T07:00:00Z')).at(-1)).toBe('Next week 2026-10-05');
+    // On the last day off, the week that starts tomorrow is next week, as typed "next week" is;
+    // Tomorrow says it already.
+    expect(days(monFri, new Date('2026-10-04T07:00:00Z'))).toEqual([
+      'Today 2026-10-04',
+      'Tomorrow 2026-10-05',
+    ]);
+    expect(days(sunThu, new Date('2026-10-03T07:00:00Z'))).toEqual([
+      'Today 2026-10-03',
+      'Tomorrow 2026-10-04',
+    ]);
+    // On Friday in Egypt, the day after tomorrow.
+    expect(days(sunThu, new Date('2026-10-02T07:00:00Z')).at(-1)).toBe('Next week 2026-10-04');
+    // On the week's first day, a week on.
+    expect(days(sunThu, new Date('2026-10-04T07:00:00Z')).at(-1)).toBe('Next week 2026-10-11');
   });
 });

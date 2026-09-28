@@ -41,15 +41,6 @@ function formatter(timeZone: string): Intl.DateTimeFormat {
 
 const WEEKDAYS: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-export function isValidTimeZone(timeZone: string): boolean {
-  try {
-    formatter(timeZone);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** Wall-clock parts of `date` in `timeZone`. */
 export function zonedParts(date: Date, timeZone: string): ZonedParts {
   const parts: Record<string, string> = {};
@@ -73,28 +64,27 @@ export function timeZoneOffsetMinutes(date: Date, timeZone: string): number {
 }
 
 /**
- * The instant at which the wall clock in `timeZone` reads the given local time. Non-existent
- * local times (spring-forward gaps) resolve to the instant just after the gap.
+ * The instant at which the wall clock in `timeZone` reads the given local time. A time that
+ * happens twice (clocks going back) is the first; one that never happens (clocks going forward)
+ * is read with the offset from before the change, so it lands as far past the gap as it was into
+ * it (02:30 on New York's spring-forward day is 03:30, 00:30 on Santiago's is 01:30), as
+ * JavaScript's own dates and Temporal do.
  */
 export function zonedTimeToUtc(
   local: { year: number; month: number; day: number; hour?: number; minute?: number },
   timeZone: string,
 ): Date {
-  const guess = Date.UTC(
-    local.year,
-    local.month - 1,
-    local.day,
-    local.hour ?? 0,
-    local.minute ?? 0,
-  );
-  let offset = timeZoneOffsetMinutes(new Date(guess), timeZone);
-  let result = guess - offset * 60000;
-  const second = timeZoneOffsetMinutes(new Date(result), timeZone);
-  if (second !== offset) {
-    offset = second;
-    result = guess - offset * 60000;
-  }
-  return new Date(result);
+  const wall = Date.UTC(local.year, local.month - 1, local.day, local.hour ?? 0, local.minute ?? 0);
+  // The offsets on either side of it: no zone changes twice within a couple of days.
+  const before = timeZoneOffsetMinutes(new Date(wall - 86_400_000), timeZone);
+  const after = timeZoneOffsetMinutes(new Date(wall + 86_400_000), timeZone);
+  const reads = (at: number) => {
+    const p = zonedParts(new Date(at), timeZone);
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) === wall;
+  };
+  const candidates = [wall - before * 60000, wall - after * 60000].sort((a, b) => a - b);
+  const exact = candidates.find(reads);
+  return new Date(exact ?? wall - before * 60000);
 }
 
 /** Calendar arithmetic on a local date (no time-zone involvement). */

@@ -77,6 +77,18 @@ test('two people connect with private labels and talk in real time', async ({ br
   await a.page.getByRole('button', { name: 'Direct report' }).click();
   await a.page.getByTestId('relationship-save').click();
   await a.page.waitForURL('**/c/**');
+  const conversation = new URL(a.page.url()).pathname;
+
+  // A new conversation with someone he knows is the one they already have.
+  await a.page.goto('/');
+  await a.page.getByTestId('new-chat').filter({ visible: true }).click();
+  await expect(a.page.getByText('New conversation', { exact: true })).toBeVisible();
+  await a.page.getByPlaceholder('Search your people').fill('sarah');
+  await a.page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^Sarah Ahmed, @/ })
+    .click();
+  await expect.poll(() => new URL(a.page.url()).pathname).toBe(conversation);
 
   // They talk. The request and the reply that answers it become one suggestion.
   const ask = 'Hi Sarah! Can you send me the Q3 report by Friday?';
@@ -104,6 +116,22 @@ test('two people connect with private labels and talk in real time', async ({ br
   await b.page.emulateMedia({ colorScheme: 'dark' });
   await b.page.waitForTimeout(300);
   await b.page.screenshot({ path: `${SHOTS}/desktop-conversation-dark.png` });
+  await b.page.emulateMedia({ colorScheme: 'light' });
+
+  // Sarah mutes it from its row: the choices, and a day and time, open in the row's own sheet.
+  await b.page.goto('/');
+  const row = b.page.locator('[data-testid^="conversation-"]').filter({ hasText: 'Hassan Khalid' });
+  await row.first().click({ delay: 700 });
+  await b.page.getByTestId('row-mute').click();
+  await expect(b.page.getByText('Mute notifications', { exact: true })).toBeVisible();
+  await b.page.getByTestId('mute-until').click();
+  await expect(b.page.getByTestId('mute-when-day')).toBeVisible();
+  await b.page.getByRole('button', { name: 'Back' }).click();
+  await b.page.getByTestId('mute-hour').click();
+  await expect(visible(b.page, 'Muted for an hour')).toBeVisible();
+  await row.first().click({ delay: 700 });
+  await b.page.getByRole('button', { name: 'Unmute' }).click();
+  await expect(visible(b.page, 'Unmuted')).toBeVisible();
 
   expect([...a.errors, ...b.errors]).toEqual([]);
   await phone.close();
@@ -233,18 +261,28 @@ test('a person can download their data and delete their account from settings', 
     'Family, Friends',
   );
   // You is your picture at the top of Chats: its sheet leads to everything else.
+  await page.goto('/');
   await page.getByTestId('you-button').click();
   // The sheet slides up; the picture is of it in place.
   await expect(page.getByTestId('you-all')).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: 'e2e/screenshots/phone-you.png', animations: 'disabled' });
   await page.getByTestId('you-all').click();
   await page.getByTestId('settings-security').click();
+  // New recovery codes, once the password says it's them.
+  await page.getByTestId('codes-new').click();
+  await page.getByTestId('codes-password').fill('not the password');
+  await page.getByTestId('codes-make').click();
+  await expect(visible(page, 'Your password isn’t right.')).toBeVisible();
+  errors.length = 0; // That 400 was asked for.
+  await page.getByTestId('codes-password').fill('a long enough passphrase');
+  await page.getByTestId('codes-make').click();
+  await expect(page.getByText(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/)).toHaveCount(10);
   const download = page.waitForEvent('download');
   await page.getByText('Download your data').click();
   const file = await download;
   expect(file.suggestedFilename()).toMatch(/^caishy-export-\d{4}-\d{2}-\d{2}\.json$/);
   await page.getByTestId('delete-account').click();
-  await page.getByLabel('Your password').fill('a long enough passphrase');
+  await page.getByTestId('delete-password').fill('a long enough passphrase');
   await page.getByTestId('delete-confirm').click();
   await page.waitForURL('**/welcome');
   await expect(page.getByText('Your account is deleted.', { exact: false })).toBeVisible();

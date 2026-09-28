@@ -30,6 +30,10 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: BASE,
+    // What CI's machines are, pinned so a run anywhere is the same run: the country sign-up
+    // suggests (from the time zone, else the language) and every date and time shown depend on it.
+    locale: 'en-US',
+    timezoneId: 'UTC',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     permissions: ['clipboard-read', 'clipboard-write', 'camera', 'microphone'],

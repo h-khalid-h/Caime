@@ -44,6 +44,34 @@ function tidyWhen(when: z.infer<typeof AutomationBody>['when']) {
   };
 }
 
+/**
+ * A collection by the name the person already has for it, whatever its case or spacing
+ * ("customer files" is their "Customer Files"), else as it's written: never the same one twice.
+ */
+async function theirCollection(
+  db: AppContext['db'],
+  userId: string,
+  typed: string | null | undefined,
+): Promise<string> {
+  const name = collectionName(typed);
+  const same = sql<boolean>`lower(collection) = ${name.toLowerCase()}`;
+  const had =
+    (await db
+      .selectFrom('saved_items')
+      .select(sql<string>`min(collection)`.as('collection'))
+      .where('user_id', '=', userId)
+      .where(same)
+      .executeTakeFirst()) ?? null;
+  if (had?.collection) return had.collection;
+  const set = await db
+    .selectFrom('automations')
+    .select(sql<string>`min(collection)`.as('collection'))
+    .where('user_id', '=', userId)
+    .where(same)
+    .executeTakeFirst();
+  return set?.collection ?? name;
+}
+
 export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
   const changed = (userId: string) =>
     ctx.bus.publish([userId], { type: 'automations.changed', data: {} });
@@ -90,7 +118,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
           user_id: auth.userId,
           name: body.name?.trim() || null,
           ...tidyWhen(body.when),
-          collection: collectionName(body.collection),
+          collection: await theirCollection(trx, auth.userId, body.collection),
           enabled: body.enabled ?? true,
           created_at: ctx.now(),
           updated_at: ctx.now(),
@@ -106,12 +134,16 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(AutomationPatch, req.body);
+    const collection =
+      body.collection !== undefined
+        ? await theirCollection(ctx.db, auth.userId, body.collection)
+        : undefined;
     const res = await ctx.db
       .updateTable('automations')
       .set({
         ...(body.name !== undefined ? { name: body.name?.trim() || null } : {}),
         ...(body.when ? tidyWhen(body.when) : {}),
-        ...(body.collection !== undefined ? { collection: collectionName(body.collection) } : {}),
+        ...(collection !== undefined ? { collection } : {}),
         ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
         updated_at: ctx.now(),
       })
@@ -347,7 +379,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!asset) throw notFound('That file');
     }
     ctx.limiter.hit(`save:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 60_000);
-    const collection = collectionName(body.collection ?? SAVED_DEFAULT);
+    const collection = await theirCollection(ctx.db, auth.userId, body.collection ?? SAVED_DEFAULT);
     const find = () =>
       ctx.db
         .selectFrom('saved_items')
@@ -398,7 +430,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { collection: to } = parse(MoveSavedBody, req.body);
-    const collection = collectionName(to);
+    const collection = await theirCollection(ctx.db, auth.userId, to);
     const item = await ctx.db
       .selectFrom('saved_items')
       .selectAll()
@@ -442,7 +474,11 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(RenameCollectionBody, req.body);
     const from = collectionName(body.from);
-    const to = collectionName(body.to);
+    // Into one they have, by its own name; renamed to its own name in another case, as asked.
+    const to =
+      collectionName(body.to).toLowerCase() === from.toLowerCase()
+        ? collectionName(body.to)
+        : await theirCollection(ctx.db, auth.userId, body.to);
     if (from === to) return { ok: true, collection: to };
     await ctx.db.transaction().execute(async (trx) => {
       // Whatever is in both stays once, where it's going.

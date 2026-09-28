@@ -100,6 +100,17 @@ export function saveCacheWhenLeft(buster: string): void {
   });
 }
 
+/**
+ * Bump when a cached shape changes incompatibly (a view gains a field the screens rely on): old
+ * caches, and the account kept on the device (state/session.ts), are dropped, not misread.
+ * 2: connections say who's merged into whom (PRD §51). 3: a conversation lists its topics, and a
+ * one-to-one says whether it's between connections (§58). 4: a person's page says who they are to
+ * you (§67), and a conversation's details and a space's page say what's coming up (§41). 5: you
+ * have a date of birth and a country (a currency from it), not a birth year and a region; an
+ * organization has a country, a currency and a founding year.
+ */
+export const CACHE_VERSION = '5';
+
 export const PERSIST_MAX_AGE = 7 * 24 * 60 * 60_000;
 
 // Online and focus signals: lib/network on every platform, AppState on native.

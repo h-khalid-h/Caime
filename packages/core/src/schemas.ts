@@ -11,7 +11,8 @@ import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
-import { ORG_KINDS, UPDATE_MAX } from './orgs';
+import { isEmoji } from './emoji';
+import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
@@ -232,7 +233,8 @@ export const UpdateMeBody = z
     bio: z.string().trim().max(280).nullable().optional(),
     pronouns: z.string().trim().max(40).nullable().optional(),
     statusText: z.string().trim().max(80).nullable().optional(),
-    statusEmoji: z.string().max(16).nullable().optional(),
+    // One whole emoji, as the app's picker gives it (emoji.ts).
+    statusEmoji: z.string().max(16).refine(isEmoji, 'Choose an emoji.').nullable().optional(),
     presence: z.enum(['auto', 'available', 'busy', 'away', 'invisible']).optional(),
     timeZone: TimeZone.optional(),
     locale: z.string().max(35).optional(),
@@ -763,7 +765,7 @@ const FoundedYear = z
   .number()
   .int()
   .min(1000, 'Enter the year it began.')
-  .refine((y) => y <= new Date().getUTCFullYear(), 'That year hasn’t come yet.');
+  .refine((y) => y <= latestFoundedYear(), 'That year hasn’t come yet.');
 const OrgWebsite = z
   .string()
   .trim()
