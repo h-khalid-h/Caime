@@ -324,27 +324,19 @@ describe('recovery without email', () => {
       [...a.recoveryCodes, ...b.recoveryCodes].map((c) => hashToken(c).toString('hex')),
     );
     expect(kept.some((k) => fast.has(k.code_hash.toString('hex')))).toBe(false);
-    const salts = new Set(kept.map((k) => k.salt?.toString('hex')));
+    const salts = new Set(kept.map((k) => k.salt.toString('hex')));
     expect(salts.size).toBe(2);
-    expect(salts.has(undefined)).toBe(false);
+    expect(kept.every((k) => k.salt.length === 16)).toBe(true);
+    // Nor can one be kept without its salt, as a fast hash was.
+    await expect(
+      t.ctx.db
+        .insertInto('recovery_codes')
+        .values({ id: uuidv7(), user_id: a.user.id, code_hash: hashToken('ABCD-2345') } as never)
+        .execute(),
+    ).rejects.toMatchObject({ code: '23502' });
     // A code works only for its own account.
     expect((await recover(b.user.handle, a.recoveryCodes[0]!)).statusCode).toBe(400);
     expect((await recover(a.user.handle, a.recoveryCodes[3]!)).statusCode).toBe(200);
-  });
-
-  it('still takes a code made before they were hashed slowly, once', async () => {
-    const u = await signup(t);
-    await t.ctx.db.deleteFrom('recovery_codes').where('user_id', '=', u.user.id).execute();
-    await t.ctx.db
-      .insertInto('recovery_codes')
-      .values({ id: uuidv7(), user_id: u.user.id, code_hash: hashToken('ABCD-EFGH') })
-      .execute();
-    expect((await recover(u.user.handle, 'abcd efgh')).statusCode).toBe(200);
-    expect((await recover(u.user.handle, 'ABCD-EFGH')).statusCode).toBe(400);
-    // Anyone, or nobody: the same answer.
-    const nobody = await recover('nobody.here', 'ABCD-EFGH');
-    expect(nobody.statusCode).toBe(400);
-    expect(nobody.json().error.code).toBe('invalid_recovery');
   });
 
   it('makes one slow hash a try, whatever it finds, so its time says nothing', async () => {
@@ -357,7 +349,7 @@ describe('recovery without email', () => {
     const theirs = await hashRecoveryCode('ABCD-EFGH', salt);
     const cases: Array<[Parameters<typeof matchRecoveryCode>[1], string | null]> = [
       [[], null],
-      [[{ id: 'old', code_hash: hashToken('ABCD-EFGH'), salt: null }], 'old'],
+      [[{ id: 'wrong', code_hash: await hashRecoveryCode('WXYZ-2345', salt), salt }], null],
       [
         [
           { id: 'other', code_hash: await hashRecoveryCode('WXYZ-2345', salt), salt },

@@ -87,8 +87,8 @@ export interface RecoveryCodesTable {
   id: string;
   user_id: string;
   code_hash: Buffer;
-  /** The account's salt for its slow hashes; none on a code hashed fast, before 0033. */
-  salt: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+  /** The account's salt for its slow hashes. */
+  salt: Buffer;
   used_at: NullableTimestamp;
   created_at: Generated<Date>;
 }
