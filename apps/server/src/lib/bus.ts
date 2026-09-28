@@ -22,7 +22,7 @@ export type BusTransform = (
   event: RealtimeEvent,
 ) => Promise<Array<[string[], RealtimeEvent]>>;
 
-const CHANNEL = 'caishy_realtime';
+const CHANNEL = 'caime_realtime';
 const MAX_INLINE = 7000;
 
 export class Bus {

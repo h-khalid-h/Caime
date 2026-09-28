@@ -1,4 +1,4 @@
-import { breakpoints } from '@caishy/brand/tokens';
+import { breakpoints } from '@caime/brand/tokens';
 import { useWindowDimensions } from 'react-native';
 
 export interface Layout {

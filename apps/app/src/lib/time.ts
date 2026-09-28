@@ -1,4 +1,4 @@
-import { safeLocale } from '@caishy/core/locale';
+import { safeLocale } from '@caime/core/locale';
 import { getLocales } from 'expo-localization';
 import { useEffect, useState } from 'react';
 import { useSession } from '@/state/session';

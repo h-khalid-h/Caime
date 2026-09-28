@@ -1,5 +1,5 @@
-import type { RelationshipView } from '@caishy/core/api';
-import { formatListTime, RHYTHM_TEXT } from '@caishy/core/format';
+import type { RelationshipView } from '@caime/core/api';
+import { formatListTime, RHYTHM_TEXT } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

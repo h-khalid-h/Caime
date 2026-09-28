@@ -1,4 +1,4 @@
-import type { MeView } from '@caishy/core/api';
+import type { MeView } from '@caime/core/api';
 import { describe, expect, it } from 'vitest';
 import { keepUser, keptId, keptUser } from './kept';
 

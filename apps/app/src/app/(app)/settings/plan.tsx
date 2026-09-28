@@ -1,6 +1,6 @@
-import type { PlanUsageView } from '@caishy/core/api';
-import { formatBytes, formatSoon } from '@caishy/core/format';
-import { nextPersonPlan, PERSON_ALLOWANCES, PLAN_NAMES } from '@caishy/core/plans';
+import type { PlanUsageView } from '@caime/core/api';
+import { formatBytes, formatSoon } from '@caime/core/format';
+import { nextPersonPlan, PERSON_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
 import { View } from 'react-native';
 import { useBilling, useMyPlan } from '@/api/hooks';
 import { qk } from '@/api/keys';

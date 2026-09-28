@@ -1,6 +1,6 @@
 /**
  * The core promise, end to end: two people sign up (phone and desktop), connect with private
- * labels, and talk in real time; Caishy offers one suggestion from the exchange, not two.
+ * labels, and talk in real time; Caime offers one suggestion from the exchange, not two.
  */
 import { expect, type Page, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, PASSWORD, visible } from './helpers';
@@ -167,11 +167,11 @@ test('before signing up, the terms and privacy policy open as pages, each leadin
   await terms.getByRole('navigation').getByRole('link', { name: 'Privacy' }).click();
   await expect(terms).toHaveURL(/\/privacy$/);
   await expect(terms.getByRole('heading', { name: 'Privacy', level: 1 })).toBeVisible();
-  await expect(terms.getByRole('link', { name: 'hello@caishy.com' }).first()).toHaveAttribute(
+  await expect(terms.getByRole('link', { name: 'hello@cai.me' }).first()).toHaveAttribute(
     'href',
-    'mailto:hello@caishy.com',
+    'mailto:hello@cai.me',
   );
-  // Help is published somewhere else here (playwright.config.ts): Caishy's page sends people there.
+  // Help is published somewhere else here (playwright.config.ts): Caime's page sends people there.
   await expect(terms.getByRole('navigation').getByRole('link', { name: 'Help' })).toHaveAttribute(
     'href',
     '/help',
@@ -179,8 +179,8 @@ test('before signing up, the terms and privacy policy open as pages, each leadin
   const help = await context.request.get('/help', { maxRedirects: 0 });
   expect(help.status()).toBe(302);
   expect(help.headers().location).toBe('https://policies.example/help');
-  // And back to Caishy itself, signed out: its welcome.
-  await terms.getByRole('link', { name: 'Open Caishy' }).click();
+  // And back to Caime itself, signed out: its welcome.
+  await terms.getByRole('link', { name: 'Open Caime' }).click();
   await terms.waitForURL('**/welcome');
   await expect(terms.getByText('Messaging that understands your relationships.')).toBeVisible();
   expect(errors).toEqual([]);
@@ -221,7 +221,7 @@ test('a tab left open follows the browser when another signs out and in as someo
 
   // A call the app still meant as Noor (a queue sent late) is refused, never made as Alex.
   const late = await context.request.post('/v1/tasks', {
-    headers: { ...CLIENT, 'x-caishy-user': noor.id },
+    headers: { ...CLIENT, 'x-caime-user': noor.id },
     data: { title: 'Queued as Noor' },
   });
   expect(late.status()).toBe(409);
@@ -280,7 +280,7 @@ test('a person can download their data and delete their account from settings', 
   const download = page.waitForEvent('download');
   await page.getByText('Download your data').click();
   const file = await download;
-  expect(file.suggestedFilename()).toMatch(/^caishy-export-\d{4}-\d{2}-\d{2}\.json$/);
+  expect(file.suggestedFilename()).toMatch(/^caime-export-\d{4}-\d{2}-\d{2}\.json$/);
   await page.getByTestId('delete-account').click();
   await page.getByTestId('delete-password').fill('a long enough passphrase');
   await page.getByTestId('delete-confirm').click();

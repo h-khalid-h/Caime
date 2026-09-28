@@ -5,8 +5,8 @@ import type {
   MessageView,
   TasksResponse,
   TaskView,
-} from '@caishy/core/api';
-import { snippetParts } from '@caishy/core/format';
+} from '@caime/core/api';
+import { snippetParts } from '@caime/core/format';
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { searchOnDevice, searchWords, snippetOf } from './onDevice';

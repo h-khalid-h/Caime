@@ -88,7 +88,7 @@ The other person must be able to join in under a minute without installing anyth
 - **Contextual invites:** "Hassan invited you · Work · DATA C" by link, QR code or share sheet
   (R1). The link opens the web app; sign-up takes under 30 s; the invitee lands in the
   conversation already connected. *Target:* invite → first reply ≤ 60 s in the E2E test.
-- **Handles as links:** `caishy.com/@hassan` works on any device.
+- **Handles as links:** `cai.me/@hassan` works on any device.
 - **Free core forever** (R23): nobody hits a paywall before value.
 - **Single-player value** (R2): waiting items, reminders and decisions help from day one.
 - **Continuity (later):** import of exported WhatsApp chats; in the EU, the Digital Markets Act

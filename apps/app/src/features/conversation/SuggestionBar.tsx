@@ -1,6 +1,6 @@
-import type { SuggestionView } from '@caishy/core/api';
-import { AI_LABEL } from '@caishy/core/assist';
-import { formatDue } from '@caishy/core/format';
+import type { SuggestionView } from '@caime/core/api';
+import { AI_LABEL } from '@caime/core/assist';
+import { formatDue } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -34,7 +34,7 @@ const DONE: Record<string, string> = {
 };
 
 /**
- * Caishy's suggestions for this conversation, one at a time. They're offers, never facts (R12):
+ * Caime's suggestions for this conversation, one at a time. They're offers, never facts (R12):
  * nothing happens until the person says yes, and "Not now" is always there.
  */
 export function SuggestionBar({ conversationId }: { conversationId: string }) {

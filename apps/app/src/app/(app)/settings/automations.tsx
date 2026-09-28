@@ -1,13 +1,13 @@
 /**
- * Automations (PRD §69), all in one place: what Caishy keeps of what arrives, when it reminds
+ * Automations (PRD §69), all in one place: what Caime keeps of what arrives, when it reminds
  * you that someone hasn't answered, and when it keeps quiet. The last two are rules
  * (Notifications and priorities): here they're listed as what they do, and open the same rule.
  * Nothing here happens until it's set up.
  */
-import type { AutomationView, PolicyView } from '@caishy/core/api';
-import { resolvePolicy, scheduleText } from '@caishy/core/policy';
-import { findRole, SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
-import { workHours } from '@caishy/core/time';
+import type { AutomationView, PolicyView } from '@caime/core/api';
+import { resolvePolicy, scheduleText } from '@caime/core/policy';
+import { findRole, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
+import { workHours } from '@caime/core/time';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -229,7 +229,7 @@ export default function Automations() {
   return (
     <SettingsPage title="Automations">
       <Text variant="body" color="textSecondary">
-        What Caishy does for you by itself, only as you set it up here: keeping what arrives,
+        What Caime does for you by itself, only as you set it up here: keeping what arrives,
         reminding you when someone hasn’t answered, and keeping quiet when you’d rather it did.
       </Text>
       <Group

@@ -1,5 +1,5 @@
 /**
- * Your data (docs/SECURITY.md): download everything Caishy keeps about you (lib/export.ts), and
+ * Your data (docs/SECURITY.md): download everything Caime keeps about you (lib/export.ts), and
  * delete your account for good. Deleting removes the account row, and with it (through the schema's foreign
  * keys) sessions, relationships, rules, suggestions, notifications, connections and memberships.
  * Messages you sent stay in other people's conversations without your name; files you uploaded
@@ -44,7 +44,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
     const date = now.toISOString().slice(0, 10);
     return reply
-      .header('content-disposition', `attachment; filename="caishy-export-${date}.json"`)
+      .header('content-disposition', `attachment; filename="caime-export-${date}.json"`)
       .header('cache-control', 'no-store')
       .type('application/json; charset=utf-8')
       .send(JSON.stringify(archive, null, 2));

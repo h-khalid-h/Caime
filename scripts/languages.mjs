@@ -1,4 +1,4 @@
-// Writes packages/core/src/languages.ts: the languages (and regions) Caishy writes dates, times
+// Writes packages/core/src/languages.ts: the languages (and regions) Caime writes dates, times
 // and numbers in, each named in English and in itself, from this Node's ICU. Run it again when
 // the list below changes: node scripts/languages.mjs
 import { writeFileSync } from 'node:fs';

@@ -3,7 +3,7 @@
  * what's still open. Counts and times only; nothing anyone wrote, and nobody on the team is
  * singled out, so it measures the service, not the people (PRD §71's "not surveillance").
  */
-import type { OrgInsightsView, ReplyTimesView } from '@caishy/core';
+import type { OrgInsightsView, ReplyTimesView } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 

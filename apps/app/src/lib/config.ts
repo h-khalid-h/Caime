@@ -17,7 +17,7 @@ function resolveApiUrl(): string {
 }
 
 export const API_URL = resolveApiUrl();
-/** Where links to Caishy point: the web app is served from the API's origin. */
+/** Where links to Caime point: the web app is served from the API's origin. */
 export const WEB_URL = API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 export const WS_URL = WEB_URL.replace(/^http/, 'ws');
 export const isWeb = Platform.OS === 'web';

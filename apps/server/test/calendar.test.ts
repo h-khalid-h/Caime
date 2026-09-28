@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -177,7 +177,7 @@ describe('a calendar feed (PRD §72)', () => {
     ).task;
     const undated = (await ana.post('/v1/tasks', { title: 'Someday' })).task;
     const all = await lines(url);
-    expect(event(all, `task-${passport.id}@caishy`)).toEqual(
+    expect(event(all, `task-${passport.id}@caime`)).toEqual(
       expect.arrayContaining([
         'DTSTART;VALUE=DATE:20261002',
         'DTEND;VALUE=DATE:20261003',
@@ -186,38 +186,38 @@ describe('a calendar feed (PRD §72)', () => {
         'URL:http://localhost:8787/actions',
       ]),
     );
-    expect(event(all, `task-${bank.id}@caishy`)).toEqual(
+    expect(event(all, `task-${bank.id}@caime`)).toEqual(
       expect.arrayContaining([
         'DTSTART:20261005T070000Z',
         'DTEND:20261005T073000Z',
         'SUMMARY:Call the bank\\, then the notary',
-        'DESCRIPTION:Ask about the fee\\n\\nOne of your actions. In Caishy: http://localhost:8787/actions',
+        'DESCRIPTION:Ask about the fee\\n\\nOne of your actions. In Caime: http://localhost:8787/actions',
       ]),
     );
-    expect(event(all, `task-${deck.id}@caishy`)).toEqual(
+    expect(event(all, `task-${deck.id}@caime`)).toEqual(
       expect.arrayContaining([
         'SUMMARY:Waiting on Ben Calendar: Send the deck',
         `URL:http://localhost:8787/c/${withBen}`,
       ]),
     );
-    expect(event(all, `task-${quiet.id}@caishy`)).toEqual(
+    expect(event(all, `task-${quiet.id}@caime`)).toEqual(
       expect.arrayContaining(['SUMMARY:Waiting on Ben Calendar: Contract from Ben']),
     );
-    expect(event(all, `task-${undated.id}@caishy`)).toBeNull();
+    expect(event(all, `task-${undated.id}@caime`)).toBeNull();
     // Ben sees what he was asked, in his own time zone, and never what Ana keeps to herself.
     const his = await lines(benFeed);
     expect(his).toContain('X-WR-TIMEZONE:Europe/London');
-    expect(event(his, `task-${deck.id}@caishy`)).toEqual(
+    expect(event(his, `task-${deck.id}@caime`)).toEqual(
       expect.arrayContaining([
         'SUMMARY:Send the deck',
-        `DESCRIPTION:Ana Calendar asked you. In Caishy: http://localhost:8787/c/${withBen}`,
+        `DESCRIPTION:Ana Calendar asked you. In Caime: http://localhost:8787/c/${withBen}`,
       ]),
     );
-    expect(event(his, `task-${quiet.id}@caishy`)).toBeNull();
-    expect(event(his, `task-${passport.id}@caishy`)).toBeNull();
+    expect(event(his, `task-${quiet.id}@caime`)).toBeNull();
+    expect(event(his, `task-${passport.id}@caime`)).toBeNull();
     // Done, it leaves the calendar.
     await ana.patch(`/v1/tasks/${passport.id}`, { status: 'done' });
-    expect(event(await lines(url), `task-${passport.id}@caishy`)).toBeNull();
+    expect(event(await lines(url), `task-${passport.id}@caime`)).toBeNull();
   });
 
   it('shows meetings and appointments once agreed, and not once taken back or left', async () => {
@@ -229,7 +229,7 @@ describe('a calendar feed (PRD §72)', () => {
       durationMinutes: 45,
       place: 'Hall B, 2nd floor',
     });
-    const uid = `meeting-${meeting.id}@caishy`;
+    const uid = `meeting-${meeting.id}@caime`;
     expect(event(await lines(url), uid)).toBeNull();
     expect(
       (await ben.req('POST', `/v1/messages/${meeting.id}/kit`, { to: 'accepted' })).statusCode,
@@ -259,16 +259,16 @@ describe('a calendar feed (PRD §72)', () => {
       start: { at: '2026-10-09T22:00:00Z', hasTime: false },
     });
     await ben.post(`/v1/messages/${allDay.id}/kit`, { to: 'accepted' });
-    expect(event(await lines(url), `meeting-${allDay.id}@caishy`)).toEqual(
+    expect(event(await lines(url), `meeting-${allDay.id}@caime`)).toEqual(
       expect.arrayContaining(['DTSTART;VALUE=DATE:20261010', 'DTEND;VALUE=DATE:20261011']),
     );
-    expect(event(await lines(benFeed), `meeting-${allDay.id}@caishy`)).toEqual(
+    expect(event(await lines(benFeed), `meeting-${allDay.id}@caime`)).toEqual(
       expect.arrayContaining(['DTSTART;VALUE=DATE:20261009', 'DTEND;VALUE=DATE:20261010']),
     );
     // Deleted for everyone, it's gone from everyone's.
     await ana.del(`/v1/messages/${allDay.id}`);
-    expect(event(await lines(url), `meeting-${allDay.id}@caishy`)).toBeNull();
-    expect(event(await lines(benFeed), `meeting-${allDay.id}@caishy`)).toBeNull();
+    expect(event(await lines(url), `meeting-${allDay.id}@caime`)).toBeNull();
+    expect(event(await lines(benFeed), `meeting-${allDay.id}@caime`)).toBeNull();
 
     // An appointment is there once confirmed.
     const dentist = await signup(t, { displayName: 'Dr Dee' });
@@ -277,9 +277,9 @@ describe('a calendar feed (PRD §72)', () => {
       title: 'Check-up',
       start: { at: '2026-10-06T08:30:00Z', hasTime: true },
     });
-    expect(event(await lines(url), `appointment-${visit.id}@caishy`)).toBeNull();
+    expect(event(await lines(url), `appointment-${visit.id}@caime`)).toBeNull();
     await dentist.post(`/v1/messages/${visit.id}/kit`, { to: 'confirmed' });
-    expect(event(await lines(url), `appointment-${visit.id}@caishy`)).toEqual(
+    expect(event(await lines(url), `appointment-${visit.id}@caime`)).toEqual(
       expect.arrayContaining(['DTSTART:20261006T083000Z', 'DTEND:20261006T093000Z']),
     );
 
@@ -298,10 +298,10 @@ describe('a calendar feed (PRD §72)', () => {
       start: { at: '2026-10-07T09:00:00Z', hasTime: true },
     });
     await cy.post(`/v1/messages/${standup.id}/kit`, { to: 'accepted' });
-    expect(event(await lines(benFeed), `meeting-${standup.id}@caishy`)).not.toBeNull();
+    expect(event(await lines(benFeed), `meeting-${standup.id}@caime`)).not.toBeNull();
     await ben.del(`/v1/conversations/${group}/members/${ben.user.id}`);
-    expect(event(await lines(benFeed), `meeting-${standup.id}@caishy`)).toBeNull();
-    expect(event(await lines(url), `meeting-${standup.id}@caishy`)).not.toBeNull();
+    expect(event(await lines(benFeed), `meeting-${standup.id}@caime`)).toBeNull();
+    expect(event(await lines(url), `meeting-${standup.id}@caime`)).not.toBeNull();
   });
 
   it('ends when the account is recovered: whoever had it may have made it', async () => {
@@ -340,7 +340,7 @@ describe('a calendar feed (PRD §72)', () => {
     // Its one message is the request's card, waiting in Requests: not in Vic's calendar.
     const first = await ask('Verify your account');
     expect(first.statusCode).toBe(201);
-    expect(event(await lines(url), `task-${first.json().task.id}@caishy`)).toBeNull();
+    expect(event(await lines(url), `task-${first.json().task.id}@caime`)).toBeNull();
     // Another has nowhere to go: refused, and nothing of it is kept.
     const second = await ask('Verify it again');
     expect(second.statusCode).toBe(403);
@@ -386,8 +386,8 @@ describe('a calendar feed (PRD §72)', () => {
       )
       .execute();
     const all = await lines(url);
-    expect(event(all, `meeting-${ahead.id}@caishy`)).not.toBeNull();
-    expect(event(all, `task-${soon}@caishy`)).not.toBeNull();
+    expect(event(all, `meeting-${ahead.id}@caime`)).not.toBeNull();
+    expect(event(all, `task-${soon}@caime`)).not.toBeNull();
   });
 
   it('goes with the account', async () => {

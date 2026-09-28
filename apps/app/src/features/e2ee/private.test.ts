@@ -6,8 +6,8 @@
  * its newest edit, and each person's security code: their first device's, remembered and
  * compared.
  */
-import type { DeviceView, MessageView } from '@caishy/core/api';
-import { introductionText } from '@caishy/core/e2ee';
+import type { DeviceView, MessageView } from '@caime/core/api';
+import { introductionText } from '@caime/core/e2ee';
 import {
   type DeviceKeys,
   introduce,
@@ -15,7 +15,7 @@ import {
   open,
   publicKeys,
   seal,
-} from '@caishy/core/e2ee-crypto';
+} from '@caime/core/e2ee-crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => {
@@ -205,7 +205,7 @@ describe('private conversations on this device (R18)', () => {
       false,
       ['verify'],
     );
-    const { fromBase64Url } = await import('@caishy/core/e2ee-crypto');
+    const { fromBase64Url } = await import('@caime/core/e2ee-crypto');
     expect(
       await crypto.subtle.verify(
         { name: 'ECDSA', hash: 'SHA-256' },
@@ -554,7 +554,7 @@ describe('private conversations on this device (R18)', () => {
       [string, { introduction: string }],
     ];
     expect(id).toBe(laptop.view.id);
-    const { chainRoot } = await import('@caishy/core/e2ee-crypto');
+    const { chainRoot } = await import('@caime/core/e2ee-crypto');
     const self = registered();
     const approvedLaptop = { ...laptop.view, introducedBy: me.id, introduction: body.introduction };
     expect((await chainRoot(approvedLaptop, (x) => (x === self.id ? self : undefined)))?.id).toBe(

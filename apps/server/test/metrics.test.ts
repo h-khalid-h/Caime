@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { enqueue, registerJob, runDueJobs } from '../src/lib/jobs';
 import { Counter, Histogram } from '../src/lib/metrics';
@@ -50,13 +50,13 @@ describe('/metrics (PRD §81)', () => {
     await sam.get(`/v1/conversations/${convo}/messages`);
     const body = (await scrape()).body;
     expect(body).toContain(
-      'caishy_http_requests_total{method="GET",route="/v1/conversations/:id/messages",status="200"} 1',
+      'caime_http_requests_total{method="GET",route="/v1/conversations/:id/messages",status="200"} 1',
     );
     expect(body).toContain(
-      'caishy_http_request_duration_seconds_count{method="GET",route="/v1/conversations/:id/messages"} 1',
+      'caime_http_request_duration_seconds_count{method="GET",route="/v1/conversations/:id/messages"} 1',
     );
-    expect(body).toContain('caishy_messages_total{kind="text"} 1');
-    expect(body).toMatch(/^caishy_db_pool_connections\{state="total"\} \d+$/m);
+    expect(body).toContain('caime_messages_total{kind="text"} 1');
+    expect(body).toMatch(/^caime_db_pool_connections\{state="total"\} \d+$/m);
     expect(body).toMatch(/^process_uptime_seconds \d+$/m);
     // Nothing anyone said, and nothing that identifies anyone or anything.
     for (const secret of [
@@ -79,9 +79,9 @@ describe('/metrics (PRD §81)', () => {
     await enqueue(t.ctx, 'test_metrics_fail', {});
     await runDueJobs(t.ctx);
     const body = (await scrape()).body;
-    expect(body).toContain('caishy_jobs_total{kind="test_metrics_ok",outcome="done"} 1');
-    expect(body).toContain('caishy_jobs_total{kind="test_metrics_fail",outcome="failed"} 1');
-    expect(body).toContain('caishy_job_duration_seconds_count{kind="test_metrics_ok"} 1');
+    expect(body).toContain('caime_jobs_total{kind="test_metrics_ok",outcome="done"} 1');
+    expect(body).toContain('caime_jobs_total{kind="test_metrics_fail",outcome="failed"} 1');
+    expect(body).toContain('caime_job_duration_seconds_count{kind="test_metrics_ok"} 1');
   });
 
   it('writes Prometheus text: escaped labels, cumulative buckets', () => {

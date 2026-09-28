@@ -12,7 +12,7 @@ import {
   OAUTH_REFRESH_PREFIX,
   OAUTH_SECRET_PREFIX,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { AppContext } from '../context';
 import type { PersonGrant } from './access';
 import { hashToken } from './crypto';

@@ -5,7 +5,7 @@
  * says what sent it.
  */
 import { randomBytes } from 'node:crypto';
-import { PERSONAL_TOKEN_PREFIX, type PersonalScope, type PersonalTokenView } from '@caishy/core';
+import { PERSONAL_TOKEN_PREFIX, type PersonalScope, type PersonalTokenView } from '@caime/core';
 import type { Selectable } from 'kysely';
 import type { AppContext } from '../context';
 import type { PersonalTokensTable } from '../db/schema';

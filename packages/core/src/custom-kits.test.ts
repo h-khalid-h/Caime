@@ -265,7 +265,7 @@ describe('an app’s own kit', () => {
       adultsOnly: false,
     });
     expect(parsed('prescription', priced).adultsOnly).toBe(true);
-    // The same rule as Caishy's own cards: every one with an amount is for adults only.
+    // The same rule as Caime's own cards: every one with an amount is for adults only.
     for (const kit of Object.values(KITS))
       if (kit.fields.some((f) => f.type === 'amount')) expect(kit.adultsOnly, kit.id).toBe(true);
   });
@@ -286,7 +286,7 @@ describe('a card of an app’s kit', () => {
     def: { fields: def.fields, states: def.states, moves: def.moves, adultsOnly: def.adultsOnly },
   });
 
-  it('holds only what its kit has, checked as Caishy’s own cards are', () => {
+  it('holds only what its kit has, checked as Caime’s own cards are', () => {
     expect(prepareCustomFields(def, { medicine: '  Amoxicillin ', extra: 'x' })).toEqual({
       ok: true,
       fields: { medicine: 'Amoxicillin' },
@@ -318,7 +318,7 @@ describe('a card of an app’s kit', () => {
     expect(mergeCustomFields(def, now, ['notes'])).toMatchObject({ ok: false });
   });
 
-  it('reads like Caishy’s own cards: its main line, its details, where it stands', () => {
+  it('reads like Caime’s own cards: its main line, its details, where it stands', () => {
     const c = card('preparing', {
       medicine: 'Amoxicillin',
       readyBy: { at: '2026-10-02T13:00:00.000Z', hasTime: true },
@@ -377,7 +377,7 @@ describe('a card of an app’s kit', () => {
     expect(customMoves(card('collected', { medicine: 'A' }), false)).toEqual([]);
   });
 
-  it('is told apart from Caishy’s own cards and anything else', () => {
+  it('is told apart from Caime’s own cards and anything else', () => {
     expect(isCustomCard({ kit: 'order_status', state: 'placed' })).toBe(false);
     expect(isCustomCard({ kit: 'custom', key: 'x', state: 'a', app: { id: 'a' } })).toBe(false);
     expect(isCustomCard(null)).toBe(false);

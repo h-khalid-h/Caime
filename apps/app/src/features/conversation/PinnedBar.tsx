@@ -4,8 +4,8 @@
  * Whoever may pin takes the one shown down from here. A private conversation's pinned messages
  * are opened here, on this device, like any of its messages (R18).
  */
-import type { MessageView } from '@caishy/core/api';
-import { messagePreview } from '@caishy/core/format';
+import type { MessageView } from '@caime/core/api';
+import { messagePreview } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

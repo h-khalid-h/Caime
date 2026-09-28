@@ -1,7 +1,7 @@
 /**
- * Caishy's own pages about itself: its privacy policy, its terms and its help, served on its
+ * Caime's own pages about itself: its privacy policy, its terms and its help, served on its
  * own address (PUBLIC_URL) at /privacy, /terms and /help, so they work before signing in, in any
- * browser, and for anyone reviewing the apps. Plain HTML and CSS, no script. Who runs Caishy and
+ * browser, and for anyone reviewing the apps. Plain HTML and CSS, no script. Who runs Caime and
  * how to reach them come from the environment (LEGAL_NAME, CONTACT_EMAIL), as do the minimum age
  * (MINIMUM_AGE) and how calls connect (STUN_URLS, TURN_URLS); how long records are kept comes
  * from lib/retention.ts.
@@ -10,7 +10,7 @@
  * other (docs/SECURITY.md).
  */
 
-import type { SitePage } from '@caishy/core/api';
+import type { SitePage } from '@caime/core/api';
 import { KEPT_DAYS } from './retention';
 
 export type PageName = SitePage;
@@ -19,7 +19,7 @@ export interface PageFacts {
   legalName: string;
   contactEmail: string;
   minimumAge: number;
-  /** Where Caishy is, as people reach it: PUBLIC_URL. */
+  /** Where Caime is, as people reach it: PUBLIC_URL. */
   publicUrl: string;
   /** Whose public server tells a device its own address for calls, if any (STUN_URLS). */
   stun: 'google' | 'other' | 'none';
@@ -46,14 +46,14 @@ function privacy(f: PageFacts, mail: string): string {
 with the help of a public server that tells a device its own${f.stun === 'google' ? ' (Google&rsquo;s)' : ''}.`;
   const relay = f.relay
     ? ` When a network won&rsquo;t let two devices connect directly, the call goes through
-Caishy&rsquo;s relay instead, still encrypted: the relay sees both network addresses.`
+Caime&rsquo;s relay instead, still encrypted: the relay sees both network addresses.`
     : '';
   return `
 <h1>Privacy</h1>
 <p class="updated">Last updated ${UPDATED}</p>
-<p>Caishy is messaging that understands the difference between the people in your life. This page
-says what Caishy keeps about you, why, who else sees it, how long it&rsquo;s kept, and what you
-can do about it. Caishy is run by ${f.legalName}, which is responsible for your data. Questions
+<p>Caime is messaging that understands the difference between the people in your life. This page
+says what Caime keeps about you, why, who else sees it, how long it&rsquo;s kept, and what you
+can do about it. Caime is run by ${f.legalName}, which is responsible for your data. Questions
 about it go to ${mail}.</p>
 
 <section class="short">
@@ -64,8 +64,8 @@ describe sees it only if you both turn on Share with <em>name</em>, and nobody e
 ask to connect, they see which kind it is and
 where, such as &ldquo;Work &middot; Acme&rdquo;, unless you turn off Show <em>name</em> the
 context.</li>
-<li>Caishy keeps your messages so they reach the people you write to and your own devices. In a
-private conversation, what messages say is encrypted end to end: Caishy can&rsquo;t read it.</li>
+<li>Caime keeps your messages so they reach the people you write to and your own devices. In a
+private conversation, what messages say is encrypted end to end: Caime can&rsquo;t read it.</li>
 <li>No ads, no selling your data, and no tracking you across other sites or apps.</li>
 <li>AI assist is off until you turn it on, and nothing from a private conversation is ever sent
 to it.</li>
@@ -73,24 +73,24 @@ to it.</li>
 </ul>
 </section>
 
-<h2>What Caishy keeps</h2>
+<h2>What Caime keeps</h2>
 <ul>
 <li><strong>Your account.</strong> Your email address, your name and @handle, your date of birth,
 the country you live in, and your password, kept only as a salted hash, never the password
 itself. Your date of birth is only to check you&rsquo;re old enough and for the protections that
 apply under 18; your country only sets your defaults (the days your work notifications wait for,
-the currency of amounts). Neither is shown to anyone. Caishy also keeps your device&rsquo;s
+the currency of amounts). Neither is shown to anyone. Caime also keeps your device&rsquo;s
 language and time zone, so times and quiet hours are right, and, if you joined from someone&rsquo;s
 link, whose it was: that&rsquo;s only counted, and never shown to anyone.</li>
 <li><strong>Your profile.</strong> What you choose to show: a photo, About you, pronouns, a status
-and your presence (Automatic, Busy, Away or Invisible). Caishy also keeps when you were last
+and your presence (Automatic, Busy, Away or Invisible). Caime also keeps when you were last
 active.</li>
 <li><strong>The people you know.</strong> Who you&rsquo;re connected with, how you&rsquo;ve told
-Caishy you know each of them (and how you described them before), what you call them, your
+Caime you know each of them (and how you described them before), what you call them, your
 requests to connect, and who you&rsquo;ve blocked.</li>
 <li><strong>What you send.</strong> Messages, photos, videos, files, voice messages, places you
 share, cards (a meeting, an order, a poll) and your votes, and reactions, with which messages each
-person has received and read, so Caishy can show them to the people they&rsquo;re for. A live
+person has received and read, so Caime can show them to the people they&rsquo;re for. A live
 location keeps only its latest point, which stays in the conversation. What you start typing is
 kept as a draft, so it&rsquo;s there on your other devices too; in a private conversation it stays
 on the device you&rsquo;re writing on. Where a photo was taken, and its other hidden details, are
@@ -104,8 +104,8 @@ answers, reactions, and who has read what. Private conversations carry text only
 <li><strong>Your calls.</strong> Who called whom, voice or video, when, for how long, and whether
 it was answered, missed or declined. What&rsquo;s said and shown in a call isn&rsquo;t kept: it
 goes between the devices in it.</li>
-<li><strong>What Caishy works out for you.</strong> In conversations that aren&rsquo;t private,
-Caishy notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
+<li><strong>What Caime works out for you.</strong> In conversations that aren&rsquo;t private,
+Caime notes the dates, amounts, links, email addresses, phone numbers, reference numbers (an order,
 an invoice, a ticket), topics (such as Project Atlas), questions and requests in each message. From these, and from a team, a space or a work email domain you share with someone,
 it suggests actions, decisions, reminders and how you may know someone (such as &ldquo;Sarah may be
 your colleague at Acme&rdquo;). They stay suggestions, with the reason for them, until you accept
@@ -123,14 +123,14 @@ them on; and, for private conversations, its public keys.</li>
 for you, and your calendar&rsquo;s address, with when each was last used. Their tokens and secrets
 are kept only as hashes.</li>
 <li><strong>Security records.</strong> When you sign up, sign in, sign out, sign out a device,
-change your password, make new recovery codes or recover your account, Caishy records the time,
+change your password, make new recovery codes or recover your account, Caime records the time,
 the network address it came from and the browser or device. A sign-in that fails is recorded the
 same way, with the email or @handle that was typed. Other changes, such as approving a device for
 private conversations, making an access token, letting an app in or downloading your data, are
 recorded with the time.</li>
-<li><strong>How Caishy is used.</strong> Counts and times, such as how many people are active and
+<li><strong>How Caime is used.</strong> Counts and times, such as how many people are active and
 how long an answer takes, never what anyone wrote or searched for. To apply your plan&rsquo;s
-limits and keep Caishy safe, it also keeps a log of what you do, never the words: when you send
+limits and keep Caime safe, it also keeps a log of what you do, never the words: when you send
 and read messages, connect with someone or use an AI feature, and which one. The server&rsquo;s own
 log notes each address asked of it (which can include an @handle) and the network address it came
 from.</li>
@@ -138,9 +138,9 @@ from.</li>
 
 <h2>Why</h2>
 <ul>
-<li>To give you Caishy: to deliver your messages and run the features you use (our agreement with
+<li>To give you Caime: to deliver your messages and run the features you use (our agreement with
 you, the <a href="/terms">terms</a>).</li>
-<li>To keep Caishy safe: limits on how fast things can be sent, blocks, reports and security
+<li>To keep Caime safe: limits on how fast things can be sent, blocks, reports and security
 records (our legitimate interest in protecting the people on it).</li>
 <li>To bill a paid plan, and keep the records accounting law asks for.</li>
 <li>With your permission: AI assist, and notifications on your devices. Turn either off at any time
@@ -153,26 +153,26 @@ browser).</li>
 <li><strong>The people you talk with</strong> see what you send them, your name and @handle, when
 their messages reach your device, and when you&rsquo;re typing. You &rarr; Privacy decides whether
 they also see your profile photo, About you, pronouns, status, your professional details (with an
-organization Caishy has verified you&rsquo;re on the team of), when you&rsquo;re online, when you
+organization Caime has verified you&rsquo;re on the team of), when you&rsquo;re online, when you
 were last seen, and when you&rsquo;ve read their messages.</li>
-<li><strong>Anyone on Caishy</strong> who finds you by your name or @handle (unless you turn off By
+<li><strong>Anyone on Caime</strong> who finds you by your name or @handle (unless you turn off By
 your name or @handle), or by your email address (unless you turn off By your email), sees your
 name, @handle and what You &rarr; Privacy shows everyone: at first, your profile photo, About you
 and your professional details. People in your groups and spaces see the same.</li>
 <li><strong>Organizations you write to.</strong> When you message a business, a clinic, a school
-or any organization on Caishy, its team and the apps it uses see your messages, your name and
+or any organization on Caime, its team and the apps it uses see your messages, your name and
 @handle, and what You &rarr; Privacy shows everyone. Its apps can pass them on to the
-organization&rsquo;s own systems, outside Caishy, and the organization is responsible for what it
+organization&rsquo;s own systems, outside Caime, and the organization is responsible for what it
 does with them. If it has an AI agent, the agent reads your messages (not your name) and answers
 first; it always says it&rsquo;s an AI, and everything it writes is marked &ldquo;AI agent&rdquo;.
 You see the organization, not which person on its team wrote. If you&rsquo;re under 18, the
 organization and its apps are told so.</li>
 <li><strong>Apps you let in</strong> do only what you allowed. Remove one in You &rarr; Connected
 apps; what it already has stays with it.</li>
-<li><strong>Companies that help run Caishy</strong>, each only for what it does for Caishy:
+<li><strong>Companies that help run Caime</strong>, each only for what it does for Caime:
 <ul>
-<li>Our hosting provider runs Caishy&rsquo;s servers, database and file storage.</li>
-<li>Stripe processes payments for paid plans. Caishy gives Stripe your name and email address (for
+<li>Our hosting provider runs Caime&rsquo;s servers, database and file storage.</li>
+<li>Stripe processes payments for paid plans. Caime gives Stripe your name and email address (for
 an organization, its name and its owner&rsquo;s email), and keeps your plan and Stripe&rsquo;s
 reference to you, never your card details.</li>
 <li>Anthropic provides the AI behind AI assist and organizations&rsquo; AI agents (Claude). AI
@@ -201,7 +201,7 @@ advertising.</p>
 
 <h2>How long it&rsquo;s kept</h2>
 <ul>
-<li>What you keep in Caishy stays while your account exists.</li>
+<li>What you keep in Caime stays while your account exists.</li>
 <li>In a conversation with disappearing messages, each message is emptied within about an hour of
 its time being up: the setting when it was sent, counted from then, so a change to the setting
 applies only to messages sent after it. It then shows as &ldquo;Message deleted&rdquo;:
@@ -217,7 +217,7 @@ apps, for ${span(KEPT_DAYS.appDeliveries)}. Counts that name nobody are kept a l
 a year.</li>
 <li>Billing records (your plan, what it cost and Stripe&rsquo;s reference to you) are kept as
 accounting law requires, also after you delete your account. Reports are kept so the people who
-run Caishy can look into them.</li>
+run Caime can look into them.</li>
 <li>When you delete your account, it goes at once, with your profile, devices, connections, how
 you describe people, rules, automations, suggestions, actions, notifications, what you saved, and
 your reactions and poll votes. Messages you sent stay in other people&rsquo;s conversations, shown
@@ -234,12 +234,12 @@ to privately can still check your messages.</li>
 <h2>Your choices, and your rights</h2>
 <ul>
 <li><strong>Download your data:</strong> on the web, You &rarr; Security &rarr; Download your data
-gives you a file with everything Caishy keeps about you, for as long as it keeps each, as the app
+gives you a file with everything Caime keeps about you, for as long as it keeps each, as the app
 shows it to you: your account and profile, your privacy settings, how you describe people, your
 rules, connections, requests to connect and who you&rsquo;ve blocked; the conversations you&rsquo;re
 in or were in, with your settings and drafts, the messages you sent, what you added to
 others&rsquo; checklists, your reactions and votes; your files, each with a link; your actions, and
-those people asked of you; what Caishy suggested, and the decisions you&rsquo;re part of; your
+those people asked of you; what Caime suggested, and the decisions you&rsquo;re part of; your
 notifications and calls; your devices, with where each signed in from and which service delivers
 its notifications; your spaces, organizations and automations, what you&rsquo;ve saved, the apps
 and tokens that can act for you, and your billing; what an organization&rsquo;s apps were sent of
@@ -248,7 +248,7 @@ and when you used AI features. It leaves out other people&rsquo;s words (their m
 added to a checklist, their notes, and a notification&rsquo;s or a suggestion&rsquo;s quote of
 them); what the app doesn&rsquo;t show you either, such as who on an organization&rsquo;s team did
 what, whether a call or a request was turned down, and what a group you&rsquo;ve left is called
-now; reports about you, which would say who made them; secrets, which Caishy keeps only as hashes
+now; reports about you, which would say who made them; secrets, which Caime keeps only as hashes
 or never shows; and the server&rsquo;s own log. To ask about anything in it, or not in it, write to
 ${mail}.</li>
 <li><strong>Correct it:</strong> change your name, @handle, photo, pronouns, About you and status
@@ -271,7 +271,7 @@ the UK, for example), you can also complain to your data protection authority. W
 and we&rsquo;ll answer within a month.</p>
 
 <h2>Children</h2>
-<p>Caishy is for people ${f.minimumAge} and older, from the day they turn ${f.minimumAge} where they
+<p>Caime is for people ${f.minimumAge} and older, from the day they turn ${f.minimumAge} where they
 live, and the rules for people under 18 apply until the day they turn 18. Under 18:</p>
 <ul>
 <li>Adults you&rsquo;re not connected with can&rsquo;t find you, by name, @handle or email, and
@@ -293,22 +293,22 @@ organization&rsquo;s apps get what you write to it.</li>
 <h2>Security</h2>
 <p>Passwords are kept as salted scrypt hashes. Sign-in sessions, recovery codes, access tokens,
 your calendar&rsquo;s address, and apps&rsquo; tokens, codes and secrets are kept only as hashes;
-the exception is an organization&rsquo;s webhook secret, which Caishy keeps so it can sign what it
-sends. Caishy is served over HTTPS, so what passes between your device and Caishy is encrypted in
+the exception is an organization&rsquo;s webhook secret, which Caime keeps so it can sign what it
+sends. Caime is served over HTTPS, so what passes between your device and Caime is encrypted in
 transit. The keys of private conversations are made on your devices and never leave them. No
 system is perfect: if you find a weakness, please tell us at ${mail}.</p>
 
 <h2>On your device</h2>
-<p>On the web, Caishy sets one cookie, to keep you signed in, and no advertising or analytics
+<p>On the web, Caime sets one cookie, to keep you signed in, and no advertising or analytics
 cookies; the phone apps keep your sign-in in the phone&rsquo;s secure storage. So it opens quickly
 and works offline, the app keeps what you&rsquo;ve seen recently on your device: your account
 details, your inbox, the latest messages in up to 30 conversations, your people, actions and
 notifications, and messages, drafts and actions still waiting to be sent. Of a private
 conversation it keeps only messages that are still sealed. Signing out removes all of this from
 that device, and on the web asks your browser to clear the photos and files it kept. If
-you&rsquo;re signed out from another device, all of this goes the next time Caishy is opened on
+you&rsquo;re signed out from another device, all of this goes the next time Caime is opened on
 that device with a network; until then, it opens on what it kept. On the
-web, Caishy also keeps its own files (never your messages) so it can open without a network.</p>
+web, Caime also keeps its own files (never your messages) so it can open without a network.</p>
 
 <h2>Changes</h2>
 <p>When this page changes, its date above does. For a change that matters, we&rsquo;ll say so here
@@ -323,34 +323,34 @@ function terms(f: PageFacts, mail: string): string {
 <h1>Terms</h1>
 <p class="updated">Last updated ${UPDATED}</p>
 <p>These terms are the agreement between you and ${f.legalName} (&ldquo;we&rdquo;) about using
-Caishy. By creating an account, you agree to them. How Caishy handles your data is on the
+Caime. By creating an account, you agree to them. How Caime handles your data is on the
 <a href="/privacy">privacy</a> page.</p>
 
 <h2>1. Your account</h2>
 <ul>
-<li>You need to be ${f.minimumAge} or older, and to tell Caishy the truth about your date of birth
+<li>You need to be ${f.minimumAge} or older, and to tell Caime the truth about your date of birth
 and where you live. What&rsquo;s for people 18 or over is yours from the day you turn 18. Use any
 name you like, as long as it doesn&rsquo;t pretend you&rsquo;re someone you&rsquo;re not.</li>
 <li>Keep your password and recovery codes safe: you&rsquo;re responsible for what&rsquo;s done with
 your account.</li>
-<li>An account is one person&rsquo;s. By creating an organization on Caishy, you confirm you may
+<li>An account is one person&rsquo;s. By creating an organization on Caime, you confirm you may
 act for it.</li>
 </ul>
 
 <h2>2. What you send is yours</h2>
 <p>You keep every right you have in what you send and share. You let us store, process and
-deliver it, only to run Caishy for you and for the people and organizations you send it to. We
+deliver it, only to run Caime for you and for the people and organizations you send it to. We
 don&rsquo;t use it for advertising.</p>
 
-<h2>3. Using Caishy well</h2>
-<p>Don&rsquo;t use Caishy to:</p>
+<h2>3. Using Caime well</h2>
+<p>Don&rsquo;t use Caime to:</p>
 <ul>
 <li>break the law, or help anyone else break it;</li>
 <li>harass, threaten or exploit anyone, or harm children in any way;</li>
 <li>send spam or messages people didn&rsquo;t ask for, in bulk;</li>
 <li>pretend to be a person or an organization you&rsquo;re not;</li>
 <li>share someone&rsquo;s private information without their permission;</li>
-<li>spread malware, get around Caishy&rsquo;s security or limits, scrape it, or overload it.</li>
+<li>spread malware, get around Caime&rsquo;s security or limits, scrape it, or overload it.</li>
 </ul>
 <p>We may limit, suspend or close an account or an organization that does, and we act on
 reports.</p>
@@ -361,9 +361,9 @@ reports.</p>
 following the law on marketing and on its customers&rsquo; data, above all for anyone under 18.
 Its apps can receive what its customers write to it and pass it on to the organization&rsquo;s
 own systems.</li>
-<li>In a conversation, Caishy always says when an app or an AI agent writes, and never passes one
+<li>In a conversation, Caime always says when an app or an AI agent writes, and never passes one
 off as a person. An organization&rsquo;s updates read as the organization&rsquo;s, whoever posted
-them. Caishy keeps an organization&rsquo;s apps to the permissions it gave them. Keep your tokens,
+them. Caime keeps an organization&rsquo;s apps to the permissions it gave them. Keep your tokens,
 client secrets and webhook secrets secret.</li>
 <li>&ldquo;Verified&rdquo; on an organization means it proved, with a DNS record, that it
 controlled its domain when it verified. On a person, &ldquo;Verified at&rdquo; an organization
@@ -371,7 +371,7 @@ means that organization has them on its team. Neither is an endorsement.</li>
 </ul>
 
 <h2>5. AI features</h2>
-<p>What Caishy&rsquo;s AI suggests (a rewrite, a summary, a translation, a follow-up) can be wrong.
+<p>What Caime&rsquo;s AI suggests (a rewrite, a summary, a translation, a follow-up) can be wrong.
 Check it before you rely on it: you decide what&rsquo;s sent. AI assist is off until you turn it
 on. An organization can have an AI agent answer its customers: when you write to one that does,
 its agent reads your messages and answers first, and says it&rsquo;s an AI agent. It stays out once
@@ -393,8 +393,8 @@ people on a team, apps), it all stays, but you can&rsquo;t add more until it fit
 apply.</li>
 </ul>
 
-<h2>7. Caishy as it is</h2>
-<p>We work to keep Caishy running, safe and useful, but it&rsquo;s provided as it is, without a
+<h2>7. Caime as it is</h2>
+<p>We work to keep Caime running, safe and useful, but it&rsquo;s provided as it is, without a
 promise that it will never fail. Features change; when we take one away, we&rsquo;ll say so here
 first.</p>
 
@@ -408,7 +408,7 @@ us.</p>
 
 <h2>9. Liability</h2>
 <p>As far as the law allows, we aren&rsquo;t liable for indirect or unforeseeable losses, and our
-liability to you is limited to what you paid us for Caishy in the 12 months before the claim.
+liability to you is limited to what you paid us for Caime in the 12 months before the claim.
 Nothing here limits a liability that the law doesn&rsquo;t let us limit, or your rights as a
 consumer.</p>
 
@@ -424,12 +424,12 @@ function help(f: PageFacts, mail: string): string {
   const handle = `${escapeHtml(f.publicUrl)}/@<em>yourhandle</em>`;
   return `
 <h1>Help</h1>
-<p>Caishy is messaging that knows who&rsquo;s who: your family, your friends, your team, the
+<p>Caime is messaging that knows who&rsquo;s who: your family, your friends, your team, the
 businesses you deal with. Here&rsquo;s how it works.</p>
 
 <h2>Getting started</h2>
 <ul>
-<li><strong>Your link.</strong> Your @handle is your address on Caishy: ${handle}. Share it, and
+<li><strong>Your link.</strong> Your @handle is your address on Caime: ${handle}. Share it, and
 whoever opens it can sign in and ask to connect, as You &rarr; Privacy allows (Finding you, and
 Message requests). An adult can open the link of someone under 18 only once they&rsquo;re
 connected, or one has asked to connect with the other.</li>
@@ -439,9 +439,9 @@ their link, and ask to connect. Anyone can find you by your name or @handle whil
 By your email starts on if you sign up as an adult. Under 18, adults you&rsquo;re not connected
 with can&rsquo;t find you, and nobody can find you by email.</li>
 <li><strong>Say how you know them.</strong> Family, friend, work, a client: only you see it, and
-Caishy uses it to put what matters first. If you both turn on Share with <em>name</em>, each of you
+Caime uses it to put what matters first. If you both turn on Share with <em>name</em>, each of you
 sees how the other described you. Asking to connect shows them which kind it is and where, unless
-you turn off Show <em>name</em> the context. Caishy may suggest one, and says why; nothing changes
+you turn off Show <em>name</em> the context. Caime may suggest one, and says why; nothing changes
 until you accept it.</li>
 </ul>
 
@@ -462,7 +462,7 @@ Checklist, an Album, a Location, a Payment request and, for work and businesses,
 Order, a Delivery, an Invoice, a Purchase order, a Support ticket or an Appointment, and an
 organization&rsquo;s own. Each conversation offers only the ones that fit, and private
 conversations don&rsquo;t have them yet. A Location can be where you are now, or live for 15
-minutes, an hour or 8 hours while Caishy is open: stop it from the Sharing your location live
+minutes, an hour or 8 hours while Caime is open: stop it from the Sharing your location live
 bar.</li>
 <li><strong>A message&rsquo;s menu</strong> lets you react, Reply, Forward, Pin, Edit or Delete.
 You edit only your own text messages. Forward isn&rsquo;t in private conversations, nor for cards,
@@ -474,7 +474,7 @@ messages (and a group&rsquo;s owner and admins); Delete for me is always there.<
 <h2>What needs you</h2>
 <ul>
 <li>Chats puts first what needs you: a question someone asked you, something they asked you to do,
-a mention, and actions due soon or overdue (a private conversation&rsquo;s messages, which Caishy
+a mention, and actions due soon or overdue (a private conversation&rsquo;s messages, which Caime
 can&rsquo;t read, never count). That&rsquo;s the Attention view, which also keeps message requests
 and archived conversations, folded away at its end. All lists every other conversation.</li>
 <li>You &rarr; Notifications and priorities sets who reaches you and when: a rule for each kind of
@@ -486,7 +486,7 @@ priority. Quiet hours are in You &rarr; Automations.</li>
 <ul>
 <li>Turn a message into an action with Add to my actions, in its menu (not in a private
 conversation). When you ask someone to do something in a one-to-one, or @mention them in a group,
-Caishy offers to track it. See what you were asked (Asked me) and
+Caime offers to track it. See what you were asked (Asked me) and
 what you&rsquo;re waiting on (Waiting) in Actions.</li>
 <li>You &rarr; Connected apps &rarr; Your calendar gives Google Calendar, Outlook or Apple Calendar
 a private address with your open actions with a due date, and the meetings and appointments
@@ -497,12 +497,12 @@ people 18 and over.</li>
 <h2>With no network</h2>
 <p>Messages and actions you make offline wait on your device and go when the network is back.
 Photos, files and cards need the network, and in a private conversation a message waits only while
-Caishy stays open. Search finds what&rsquo;s on your device, and on the web Caishy opens without a
+Caime stays open. Search finds what&rsquo;s on your device, and on the web Caime opens without a
 network once you&rsquo;ve opened it there before.</p>
 
 <h2>Organizations</h2>
 <ul>
-<li>Businesses, clinics, schools and nonprofits have a page anyone on Caishy can find, and a team
+<li>Businesses, clinics, schools and nonprofits have a page anyone on Caime can find, and a team
 that answers as the organization, from one shared inbox.</li>
 <li>An organization verifies its domain with a DNS record, and then reads as
 &ldquo;Verified&rdquo;. Its updates reach those who follow it.</li>
@@ -514,7 +514,7 @@ an app in You &rarr; Developer.</li>
 </ul>
 
 <h2>Plans</h2>
-<p>Caishy is free. Pro, for a person, and Business, for an organization, add more. See Pro, buy it
+<p>Caime is free. Pro, for a person, and Business, for an organization, add more. See Pro, buy it
 or cancel it in You &rarr; Plan; Business is on the organization&rsquo;s page, for its owner and
 admins. Plans are bought by someone 18 or over.</p>
 
@@ -526,7 +526,7 @@ an organization from its page, or block it when it writes to you first.</li>
 you&rsquo;re online, when you were last seen and when you&rsquo;ve read a message, who can find
 you, and who can send you a message request. From 18, it&rsquo;s also where you turn Use AI assist
 on or off.</li>
-<li>Under 18, Caishy keeps more in place: see <a href="/privacy">privacy</a>. That changes on the
+<li>Under 18, Caime keeps more in place: see <a href="/privacy">privacy</a>. That changes on the
 day you turn 18.</li>
 </ul>
 
@@ -552,7 +552,7 @@ const TITLES: Record<PageName, string> = {
   help: 'Help',
 };
 
-/** One of Caishy's pages, whole: a small document with its own styles and no script. */
+/** One of Caime's pages, whole: a small document with its own styles and no script. */
 export function renderPage(name: PageName, facts: PageFacts): string {
   const f = {
     ...facts,
@@ -574,8 +574,8 @@ export function renderPage(name: PageName, facts: PageFacts): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${TITLES[name]} · Caishy</title>
-<meta name="description" content="Caishy's ${TITLES[name].toLowerCase()}">
+<title>${TITLES[name]} · Caime</title>
+<meta name="description" content="Caime's ${TITLES[name].toLowerCase()}">
 <meta name="color-scheme" content="light dark">
 <style>
 :root{--bg:#FAF8FC;--ink:#1F1830;--soft:#5B5270;--line:#E6E0EE;--brand:#3B2E5B;--link:#5A3FA0}
@@ -599,10 +599,10 @@ footer{color:var(--soft);font-size:15px;padding-top:32px;padding-bottom:40px}
 </style>
 </head>
 <body>
-<header><a class="brand" href="/">Caishy</a><nav aria-label="About Caishy">${nav}</nav></header>
+<header><a class="brand" href="/">Caime</a><nav aria-label="About Caime">${nav}</nav></header>
 <main>${body}
 </main>
-<footer>${f.legalName} &middot; ${mail} &middot; <a href="/">Open Caishy</a></footer>
+<footer>${f.legalName} &middot; ${mail} &middot; <a href="/">Open Caime</a></footer>
 </body>
 </html>
 `;

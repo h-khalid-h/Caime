@@ -9,8 +9,8 @@ let dir: string;
 const PAGE = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 
 beforeAll(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'caishy-web-'));
-  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>Caishy</title>');
+  dir = mkdtempSync(join(tmpdir(), 'caime-web-'));
+  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>Caime</title>');
   mkdirSync(join(dir, '_expo', 'static', 'js', 'web'), { recursive: true });
   writeFileSync(join(dir, '_expo', 'static', 'js', 'entry-abc.js'), 'console.log(1)');
   writeFileSync(join(dir, '_expo', 'static', 'js', 'web', 'search-def.js'), 'console.log(2)');

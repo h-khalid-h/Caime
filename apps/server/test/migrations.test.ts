@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { migrate, migrationsDir } from '../src/db/migrate';
 import { adminUrl, dropDatabase, urlFor } from './global-setup';
 
-const name = `caishy_t_migrations_${randomBytes(4).toString('hex')}`;
+const name = `caime_t_migrations_${randomBytes(4).toString('hex')}`;
 let pool: pg.Pool;
 let dir: string;
 
@@ -30,7 +30,7 @@ beforeAll(async () => {
   await admin.query(`create database ${name}`);
   await admin.end();
   pool = new pg.Pool({ connectionString: urlFor(name), max: 1 });
-  dir = await mkdtemp(join(tmpdir(), 'caishy-migrations-'));
+  dir = await mkdtemp(join(tmpdir(), 'caime-migrations-'));
 });
 afterAll(async () => {
   await pool.end();

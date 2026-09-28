@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -359,7 +359,7 @@ describe('what followers are told, and when (PRD §59)', () => {
       .where('kind', '=', 'update')
       .execute();
     if (!told) throw new Error('Cy was told of nothing');
-    const { uuidv7 } = await import('@caishy/core');
+    const { uuidv7 } = await import('@caime/core');
     await expect(
       t.ctx.db
         .insertInto('notifications')

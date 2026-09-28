@@ -1,6 +1,6 @@
-import { PERSONAL_SCOPE_LABELS, type PersonalScope } from '@caishy/core/access';
-import type { ConnectedAppView } from '@caishy/core/api';
-import { formatWhen } from '@caishy/core/format';
+import { PERSONAL_SCOPE_LABELS, type PersonalScope } from '@caime/core/access';
+import type { ConnectedAppView } from '@caime/core/api';
+import { formatWhen } from '@caime/core/format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

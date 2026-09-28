@@ -1,4 +1,4 @@
-import type { TypeStyle } from '@caishy/brand/tokens';
+import type { TypeStyle } from '@caime/brand/tokens';
 
 /** Each weight is its own font file, so the family name carries the weight. */
 const FAMILIES = {

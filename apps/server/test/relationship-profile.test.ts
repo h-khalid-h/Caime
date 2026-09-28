@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
@@ -110,7 +110,7 @@ describe('who someone is to you (PRD §67, §71)', () => {
   });
 });
 
-describe('how Caishy thinks you know someone (PRD §12)', () => {
+describe('how Caime thinks you know someone (PRD §12)', () => {
   it('two people on the same team are offered as colleagues, each only for themselves', async () => {
     const org = (
       await ana.post('/v1/orgs', {
@@ -126,7 +126,7 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
       title: 'Colleague · Acme Parts',
       payload: { sphere: 'work', role: 'colleague', orgName: 'Acme Parts' },
     });
-    expect(forAna.rationale).toBe('You and Ben Profile are both on Acme Parts’s team in Caishy.');
+    expect(forAna.rationale).toBe('You and Ben Profile are both on Acme Parts’s team in Caime.');
     expect((await offers(ben, ana))[0]).toMatchObject({ title: 'Colleague · Acme Parts' });
     // Accepted, it's a label of Ana's only; Ben still decides for himself.
     await ana.post(`/v1/suggestions/${forAna.id}/accept`);
@@ -221,7 +221,7 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     await connect(jo, kim);
     const [offered] = await offers(jo, kim);
     expect(offered).toMatchObject({ title: 'Colleague · Parts Co' });
-    expect(offered.rationale).toBe('You and Kim Team are both on Parts Co’s team in Caishy.');
+    expect(offered.rationale).toBe('You and Kim Team are both on Parts Co’s team in Caime.');
   });
 
   it('goes once you say how you know them, and is never about someone blocked', async () => {
@@ -393,7 +393,7 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     await sol.post(`/v1/suggestions/${first.id}/dismiss`);
     await rae.post('/v1/spaces', { name: 'Cousins', kind: 'family', memberIds: [sol.user.id] });
     expect(await offers(sol, rae)).toEqual([]);
-    // Samira shows herself to Ana as Sam Haddad: Caishy's reasons name Sam, as she asks to
+    // Samira shows herself to Ana as Sam Haddad: Caime's reasons name Sam, as she asks to
     // connect and later.
     const samira = await signup(t, { displayName: 'Samira Khoury', email: 'samira@gmail.com' });
     const identity = (
@@ -425,10 +425,10 @@ describe('how Caishy thinks you know someone (PRD §12)', () => {
     ).org.id;
     await ana.post(`/v1/orgs/${clinic}/members`, { userIds: [samira.user.id] });
     const [toAna] = await offers(ana, samira);
-    expect(toAna.rationale).toBe('You and Sam Haddad are both on Clinic’s team in Caishy.');
+    expect(toAna.rationale).toBe('You and Sam Haddad are both on Clinic’s team in Caime.');
     // Samira, who shows Ana nothing but herself, reads Ana's own name.
     expect((await offers(samira, ana))[0].rationale).toBe(
-      'You and Ana Profile are both on Clinic’s team in Caishy.',
+      'You and Ana Profile are both on Clinic’s team in Caime.',
     );
   });
 

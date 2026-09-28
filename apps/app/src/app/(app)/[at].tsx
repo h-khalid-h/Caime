@@ -46,7 +46,7 @@ export default function HandleLink() {
             />
           )
         }
-        title={handle ? `@${handle}` : 'Caishy'}
+        title={handle ? `@${handle}` : 'Caime'}
       />
       {missing ? (
         <EmptyState

@@ -1,11 +1,11 @@
 /**
  * OAuth for third-party apps (PRD §74). A developer registers an app with the addresses people
- * return to; someone the app sends to Caishy sees who made it and what it asks to do, and lets
+ * return to; someone the app sends to Caime sees who made it and what it asks to do, and lets
  * it in or not; the app trades the code it gets back, with its PKCE verifier, for tokens that act
  * as that person, within what they allowed. They see and end it under Connected apps.
  *
  * The token and revocation endpoints answer as RFC 6749 and RFC 7009 say, so any OAuth library
- * works with them: `{ "error": "invalid_grant" }` rather than Caishy's own error shape.
+ * works with them: `{ "error": "invalid_grant" }` rather than Caime's own error shape.
  */
 import {
   type ConnectedAppView,
@@ -19,7 +19,7 @@ import {
   PERSONAL_SCOPES,
   type PersonalScope,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { type Selectable, sql } from 'kysely';
 import { z } from 'zod';
@@ -57,7 +57,7 @@ function appView(c: Selectable<OAuthClientsTable>): OAuthAppView {
   };
 }
 
-/** An OAuth error, in the shape the specifications give (never Caishy's own). */
+/** An OAuth error, in the shape the specifications give (never Caime's own). */
 function oauthError(reply: FastifyReply, status: number, error: string, description: string) {
   reply.status(status).header('cache-control', 'no-store');
   return { error, error_description: description };
@@ -184,7 +184,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('c.client_id', '=', r.client_id)
       .where('c.revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!client) throw badRequest('That app isn’t registered with Caishy.');
+    if (!client) throw badRequest('That app isn’t registered with Caime.');
     // Exactly one it registered, or nowhere at all: never an address it didn't name.
     if (!client.redirect_uris.includes(r.redirect_uri))
       throw badRequest('That app didn’t register this return address.');
@@ -298,7 +298,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     oauthError(reply, 401, 'invalid_client', 'That app isn’t known, or its secret is wrong.');
 
   // Only these two take forms, as OAuth clients send them, and they answer every refusal the
-  // way RFC 6749 does. A form anywhere else would let any site post to Caishy: a login, say.
+  // way RFC 6749 does. A form anywhere else would let any site post to Caime: a login, say.
   await app.register(async (forms) => {
     forms.addContentTypeParser(
       'application/x-www-form-urlencoded',

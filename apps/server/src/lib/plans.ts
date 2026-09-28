@@ -1,6 +1,6 @@
 /**
  * Plan entitlements (PRD §84, R23), checked where something is added: an AI assist, a file, a
- * person on a team, an app. What each plan includes lives in `@caishy/core/plans`; this is the
+ * person on a team, an app. What each plan includes lives in `@caime/core/plans`; this is the
  * one place that counts usage against it. Nothing here gates the wedge.
  */
 import {
@@ -15,7 +15,7 @@ import {
   type Plan,
   type PlanUsageView,
   safeLocale,
-} from '@caishy/core';
+} from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { AppError } from './errors';

@@ -1,5 +1,5 @@
-import { formatListTime, snippetParts } from '@caishy/core/format';
-import { parseSearchQuery } from '@caishy/core/search';
+import { formatListTime, snippetParts } from '@caime/core/format';
+import { parseSearchQuery } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';

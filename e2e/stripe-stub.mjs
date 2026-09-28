@@ -86,7 +86,7 @@ const server = createServer(async (req, res) => {
       return html(
         page(
           'Checkout',
-          `<h1>Pay Caishy</h1><p>${price.lookup_key} · ${price.unit_amount / 100} EUR a ${price.recurring.interval}</p><form method="post" action="/checkout/${s.id}/pay"><button type="submit">Pay</button></form>`,
+          `<h1>Pay Caime</h1><p>${price.lookup_key} · ${price.unit_amount / 100} EUR a ${price.recurring.interval}</p><form method="post" action="/checkout/${s.id}/pay"><button type="submit">Pay</button></form>`,
         ),
       );
     const sub = {
@@ -133,7 +133,7 @@ const server = createServer(async (req, res) => {
       return html(
         page(
           'Billing',
-          `<h1>Your billing</h1>${sub ? `<form method="post" action="/portal/${customer}/cancel?return=${encodeURIComponent(returnTo)}"><button type="submit">Cancel plan</button></form>` : '<p>Nothing to cancel.</p>'}<p><a href="${returnTo}">Back to Caishy</a></p>`,
+          `<h1>Your billing</h1>${sub ? `<form method="post" action="/portal/${customer}/cancel?return=${encodeURIComponent(returnTo)}"><button type="submit">Cancel plan</button></form>` : '<p>Nothing to cancel.</p>'}<p><a href="${returnTo}">Back to Caime</a></p>`,
         ),
       );
     if (sub) {

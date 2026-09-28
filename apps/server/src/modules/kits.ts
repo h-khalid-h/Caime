@@ -13,7 +13,7 @@ import {
   mergeCustomFields,
   parseCustomKit,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

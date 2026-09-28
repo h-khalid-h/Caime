@@ -9,7 +9,7 @@ import type {
   ConversationView,
   MessagesPage,
   MessageView,
-} from '@caishy/core';
+} from '@caime/core';
 import {
   applyChecklistOp,
   type CardKitId,
@@ -46,7 +46,7 @@ import {
   UpdateConversationBody,
   uuidv7,
   VoteBody,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -985,7 +985,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       const heir = target.role === 'owner' ? await handOverGroup(trx, id, userId) : null;
       // Out of the group is out of its topics, and they're run as it is now.
       const topics = await mirrorTopics(trx, id, ctx.now());
-      // What Caishy offered them about it, and its topics, is gone with them.
+      // What Caime offered them about it, and its topics, is gone with them.
       await trx
         .updateTable('suggestions')
         .set({ status: 'expired', resolved_at: ctx.now() })
@@ -1374,7 +1374,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const own = isCustomCard(m.payload) ? m.payload : null;
     if (m.kind !== 'kit' || m.deleted_at || !(own || isCardKit(card.kit)))
       throw badRequest('That isn’t a card that can change.');
-    // An app moves only its own cards: those of its kits, and Caishy's own its bot sent.
+    // An app moves only its own cards: those of its kits, and Caime's own its bot sent.
     if (auth.app && !(own ? own.app.id === auth.app.id : m.sender_id === auth.userId))
       throw forbidden('An app moves only its own cards.');
     const from = card.state ?? '';
@@ -1855,7 +1855,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       await trx.deleteFrom('assets').where('message_id', '=', id).execute();
       await trx.deleteFrom('message_files').where('message_id', '=', id).execute();
       await trx.deleteFrom('album_photos').where('message_id', '=', id).execute();
-      // What Caishy offered from it: an offer still open closes, and none keeps its words.
+      // What Caime offered from it: an offer still open closes, and none keeps its words.
       await trx
         .updateTable('suggestions')
         .set({ status: 'expired', resolved_at: ctx.now() })

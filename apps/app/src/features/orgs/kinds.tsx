@@ -1,5 +1,5 @@
-import type { OrgSummaryView } from '@caishy/core/api';
-import type { OrgKind } from '@caishy/core/orgs';
+import type { OrgSummaryView } from '@caime/core/api';
+import type { OrgKind } from '@caime/core/orgs';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
@@ -47,7 +47,7 @@ export function OrgMark({ kind, size = 46 }: { kind: OrgKind; size?: number }) {
   );
 }
 
-/** What Caishy knows about who this is, said in words (PRD §54). */
+/** What Caime knows about who this is, said in words (PRD §54). */
 export function VerifiedLine({
   org,
 }: {

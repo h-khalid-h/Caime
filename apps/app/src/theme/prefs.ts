@@ -2,7 +2,7 @@
  * Appearance and composer preferences. Kept on the device so the first frame is already right,
  * and mirrored to the account (`me.preferences`) so every device agrees (BRAND.md B7).
  */
-import type { BubbleTheme } from '@caishy/brand/tokens';
+import type { BubbleTheme } from '@caime/brand/tokens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -38,7 +38,7 @@ export const usePrefs = create<PrefsState>()(
       set: (patch) => set(patch),
     }),
     {
-      name: 'caishy.prefs',
+      name: 'caime.prefs',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({ set: _set, ...values }) => values,
     },

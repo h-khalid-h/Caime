@@ -1,7 +1,7 @@
 /**
  * Someone's calendar (PRD §72): a secret address that Google Calendar, Outlook or Apple Calendar
  * subscribes to, with their open actions that have a due date and the meetings and appointments
- * agreed in their conversations. Caishy stays the record; the calendar shows it and changes
+ * agreed in their conversations. Caime stays the record; the calendar shows it and changes
  * nothing. The address is shown once, as it's made, and only its hash is kept; making a new one
  * ends the old one. Only a signed-in person over 18 makes one (no token reaches these routes).
  */
@@ -12,7 +12,7 @@ import {
   KITS,
   type TaskView,
   zonedParts,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -120,9 +120,9 @@ export async function calendarEvents(
     const url = where(t.conversationId);
     const notes = t.notes ? `${t.notes}\n\n` : '';
     events.push({
-      uid: `task-${t.id}@caishy`,
+      uid: `task-${t.id}@caime`,
       summary: taskSummary(t),
-      description: `${notes}${taskWho(t)} In Caishy: ${url}`,
+      description: `${notes}${taskWho(t)} In Caime: ${url}`,
       url,
       ...(t.dueHasTime
         ? { start: due, end: new Date(due.getTime() + TASK_MINUTES * 60_000) }
@@ -140,9 +140,9 @@ export async function calendarEvents(
     const url = where(card.conversationId);
     const minutes = card.durationMinutes ?? MEETING_MINUTES;
     events.push({
-      uid: `${card.kit}-${card.messageId}@caishy`,
+      uid: `${card.kit}-${card.messageId}@caime`,
       summary: card.title,
-      description: `${KITS[card.kit].name}, agreed in Caishy: ${url}`,
+      description: `${KITS[card.kit].name}, agreed in Caime: ${url}`,
       location: card.place,
       url,
       ...(card.hasTime
@@ -244,8 +244,8 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute();
     }
     const body = buildIcs({
-      name: 'Caishy',
-      description: 'Your actions with a due date, and the meetings you agreed in Caishy.',
+      name: 'Caime',
+      description: 'Your actions with a due date, and the meetings you agreed in Caime.',
       timeZone: feed.time_zone,
       refreshMinutes: 60,
       now,
@@ -253,7 +253,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     return reply
       .header('content-type', 'text/calendar; charset=utf-8')
-      .header('content-disposition', 'inline; filename="caishy.ics"')
+      .header('content-disposition', 'inline; filename="caime.ics"')
       .header('cache-control', 'private, no-store')
       .header('x-robots-tag', 'noindex, nofollow')
       .send(body);

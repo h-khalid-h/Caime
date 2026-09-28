@@ -1,4 +1,4 @@
-import { formatClock } from '@caishy/core/format';
+import { formatClock } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import type { LocationSubscription } from 'expo-location';
 import { useEffect, useState } from 'react';
@@ -23,7 +23,7 @@ const round = (n: number) => Math.round(n * 1e6) / 1e6;
 type Point = { lat: number; lng: number; accuracy?: number };
 
 /**
- * Keeps this device's live locations moving while Caishy is open (R29), and says so on screen
+ * Keeps this device's live locations moving while Caime is open (R29), and says so on screen
  * for as long as any is live, with a way to stop. A share that ended elsewhere, or ran out, lets go.
  */
 export function LiveLocationSharer() {

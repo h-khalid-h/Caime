@@ -88,8 +88,8 @@ export default function NewGroup() {
             />
             <Text variant="caption" color="textSecondary">
               {privacy === 'private'
-                ? 'End to end encrypted: only the devices of the people in it can read it, so there’s no search, Caishy AI or previews, and it’s text for now.'
-                : 'Search, suggestions and Caishy AI work here.'}
+                ? 'End to end encrypted: only the devices of the people in it can read it, so there’s no search, Caime AI or previews, and it’s text for now.'
+                : 'Search, suggestions and Caime AI work here.'}
             </Text>
           </>
         ) : null}

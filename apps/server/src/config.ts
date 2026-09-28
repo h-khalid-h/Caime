@@ -18,7 +18,7 @@ const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8787),
   HOST: z.string().default('0.0.0.0'),
-  /** Public origin, e.g. https://caishy.example.com — used for cookies, links and web push. */
+  /** Public origin, e.g. https://caime.example.com — used for cookies, links and web push. */
   PUBLIC_URL: z.string().url().default('http://localhost:8787'),
   DATABASE_URL: z.string().min(1),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
@@ -43,7 +43,7 @@ const Env = z.object({
   /** Web Push. Generated and stored on first boot when absent. */
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_SUBJECT: z.string().default('mailto:hello@caishy.com'),
+  VAPID_SUBJECT: z.string().default('mailto:hello@cai.me'),
   /** Expo push access token (mobile push). */
   EXPO_ACCESS_TOKEN: z.string().optional(),
   /** AI assist (Anthropic). Off without a key; each person still turns it on for themselves. */
@@ -66,15 +66,15 @@ const Env = z.object({
   /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
   PLANS_URL: z.string().url().optional(),
   /**
-   * Who runs this Caishy, and where people write to them, as its own privacy, terms and help
+   * Who runs this Caime, and where people write to them, as its own privacy, terms and help
    * pages say (PUBLIC_URL/privacy, /terms, /help).
    */
   LEGAL_NAME: z.string().trim().min(1).max(120).default('DATA C OÜ'),
-  CONTACT_EMAIL: z.string().email().default('hello@caishy.com'),
+  CONTACT_EMAIL: z.string().email().default('hello@cai.me'),
   /**
    * The privacy policy, the terms and help, when they're published somewhere else (full http(s)
-   * addresses): About links there, and Caishy's own page for it sends people there too, so there
-   * is only ever one of each. Without one, it's Caishy's own page.
+   * addresses): About links there, and Caime's own page for it sends people there too, so there
+   * is only ever one of each. Without one, it's Caime's own page.
    */
   PRIVACY_URL: webPage.optional(),
   TERMS_URL: webPage.optional(),
@@ -111,7 +111,7 @@ export type Config = z.infer<typeof Env> & {
   isProduction: boolean;
   isTest: boolean;
   secureCookies: boolean;
-  /** About's links: PRIVACY_URL, TERMS_URL and HELP_URL, or Caishy's own page for each. */
+  /** About's links: PRIVACY_URL, TERMS_URL and HELP_URL, or Caime's own page for each. */
   aboutLinks: { privacyUrl: string; termsUrl: string; helpUrl: string };
 };
 

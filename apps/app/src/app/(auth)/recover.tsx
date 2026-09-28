@@ -1,4 +1,4 @@
-import { passwordError } from '@caishy/core/rules';
+import { passwordError } from '@caime/core/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -84,8 +84,8 @@ export default function Recover() {
       ) : null}
       <Button label="Set new password" size="lg" block loading={busy} onPress={submit} />
       <Text variant="caption" color="textTertiary">
-        No codes left? For your safety Caishy can’t reset an account without one. If you signed in
-        on another device, you can make new codes there under You → Security.
+        No codes left? For your safety Caime can’t reset an account without one. If you signed in on
+        another device, you can make new codes there under You → Security.
       </Text>
     </AuthLayout>
   );

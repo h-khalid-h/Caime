@@ -1,4 +1,4 @@
-import type { FileView } from '@caishy/core/api';
+import type { FileView } from '@caime/core/api';
 import { Platform } from 'react-native';
 import { request } from './client';
 

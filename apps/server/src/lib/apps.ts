@@ -17,7 +17,7 @@ import {
   signatureBase,
   uuidv7,
   type WebhookEvent,
-} from '@caishy/core';
+} from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OrgApp } from '../db/schema';
@@ -310,10 +310,10 @@ export function registerWebhookJob(): void {
         body,
         {
           'content-type': 'application/json',
-          'user-agent': 'Caishy-Webhooks/1',
-          'caishy-event': delivery.event,
-          'caishy-delivery': delivery.id,
-          'caishy-signature': `t=${timestamp},v1=${signWebhook(delivery.webhook_secret, timestamp, body)}`,
+          'user-agent': 'Caime-Webhooks/1',
+          'caime-event': delivery.event,
+          'caime-delivery': delivery.id,
+          'caime-signature': `t=${timestamp},v1=${signWebhook(delivery.webhook_secret, timestamp, body)}`,
         },
         { allowPrivate: ctx.config.WEBHOOKS_ALLOW_PRIVATE },
       );

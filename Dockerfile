@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# Caishy in one image: the API, realtime and the web app on one origin (docs/DEPLOY.md).
+# Caime in one image: the API, realtime and the web app on one origin (docs/DEPLOY.md).
 
 ARG NODE_VERSION=22
 
@@ -22,9 +22,9 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 # The web app is exported without an API URL: it talks to the server that serves it.
-RUN pnpm --filter @caishy/app build:web \
- && pnpm --filter @caishy/server build \
- && pnpm --filter @caishy/server deploy --prod --legacy /out
+RUN pnpm --filter @caime/app build:web \
+ && pnpm --filter @caime/server build \
+ && pnpm --filter @caime/server deploy --prod --legacy /out
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ENV NODE_ENV=production \

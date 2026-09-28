@@ -1,4 +1,4 @@
-import { systemText, uuidv4, uuidv7 } from '@caishy/core';
+import { systemText, uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 

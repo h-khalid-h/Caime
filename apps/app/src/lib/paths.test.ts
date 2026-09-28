@@ -44,11 +44,11 @@ describe('paths from links', () => {
     expect(appPath('/c:/x')).toBeNull();
   });
 
-  it('opens a link to Caishy here, and only those', () => {
-    const base = 'https://caishy.example';
-    expect(ownLinkPath('https://caishy.example/@noor#x', base)).toBe('/@noor');
-    expect(ownLinkPath('https://caishy.example.evil.io/@noor', base)).toBeNull();
-    // Caishy's own pages open as pages: in the app they'd be nothing there. Never remembered
+  it('opens a link to Caime here, and only those', () => {
+    const base = 'https://caime.example';
+    expect(ownLinkPath('https://caime.example/@noor#x', base)).toBe('/@noor');
+    expect(ownLinkPath('https://caime.example.evil.io/@noor', base)).toBeNull();
+    // Caime's own pages open as pages: in the app they'd be nothing there. Never remembered
     // as a place to come back to after signing in either.
     for (const page of [
       'privacy',
@@ -66,14 +66,14 @@ describe('paths from links', () => {
     expect(ownLinkPath(`${base}/@help`, base)).toBe('/@help');
     expect(ownLinkPath(`${base}/o/help`, base)).toBe('/o/help');
     expect(ownLinkPath('https://other.example/@noor', base)).toBeNull();
-    expect(ownLinkPath('https://caishy.example/@noor', '')).toBeNull();
+    expect(ownLinkPath('https://caime.example/@noor', '')).toBeNull();
   });
 
   it('reads deep links from the web and the app scheme', () => {
-    expect(deepLinkPath('https://caishy.example/@noor.haddad')).toBe('/@noor.haddad');
-    expect(deepLinkPath('caishy://o/datac')).toBe('/o/datac');
-    expect(deepLinkPath('caishy:///@noor')).toBe('/@noor');
-    expect(deepLinkPath('https://caishy.example/')).toBeNull();
+    expect(deepLinkPath('https://caime.example/@noor.haddad')).toBe('/@noor.haddad');
+    expect(deepLinkPath('caime://o/datac')).toBe('/o/datac');
+    expect(deepLinkPath('caime:///@noor')).toBe('/@noor');
+    expect(deepLinkPath('https://caime.example/')).toBeNull();
     expect(deepLinkPath('not a url')).toBeNull();
   });
 

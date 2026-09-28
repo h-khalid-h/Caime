@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -16,7 +16,7 @@ let otherConvo: string; // Lina and another shop
 let direct: string; // Noor and Omar
 /** Tiles Co's pharmacy app, its second app, and one that may not make cards. */
 const apps = {} as Record<'pharmacy' | 'second' | 'plain', { id: string; token: string }>;
-const HOOK = 'http://127.0.0.1:9/caishy';
+const HOOK = 'http://127.0.0.1:9/caime';
 
 const as = (
   token: string,
@@ -394,7 +394,7 @@ describe('an app’s own kinds of card (PRD §74, §86)', () => {
     expect(notMine.statusCode).toBe(403);
   });
 
-  it('let an app move Caishy’s own cards its bot sent, never those someone else did', async () => {
+  it('let an app move Caime’s own cards its bot sent, never those someone else did', async () => {
     const order = await send(apps.pharmacy.token, convo, {
       clientId: uuidv4(),
       kind: 'kit',

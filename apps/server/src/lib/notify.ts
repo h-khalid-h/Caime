@@ -2,7 +2,7 @@
  * In-app notifications plus realtime delivery. The full pipeline (relationship policy, burst
  * consolidation, push) lives in modules/notifications; this is the entry point every module uses.
  */
-import { uuidv7 } from '@caishy/core';
+import { uuidv7 } from '@caime/core';
 import { type Kysely, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';

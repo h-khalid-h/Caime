@@ -1,4 +1,4 @@
-import type { ConversationView } from '@caishy/core/api';
+import type { ConversationView } from '@caime/core/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

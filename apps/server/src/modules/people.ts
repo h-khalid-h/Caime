@@ -2,8 +2,8 @@
  * Finding people and the relationship profile (PRD §25 "People", §50, §54, §67).
  */
 
-import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caishy/core';
-import { ADULT_AGE, resolvePolicy, rhythmOf } from '@caishy/core';
+import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caime/core';
+import { ADULT_AGE, resolvePolicy, rhythmOf } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

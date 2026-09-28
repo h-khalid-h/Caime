@@ -1,4 +1,4 @@
-import type { TaskView } from '@caishy/core/api';
+import type { TaskView } from '@caime/core/api';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import type { TaskViewFilter } from '@/api/endpoints';
@@ -38,7 +38,7 @@ const EMPTY: Record<string, { title: string; body: string; character: 'momo' | '
     },
     waiting: {
       title: 'You’re not waiting on anyone',
-      body: 'Ask for something in a conversation and Caishy can keep track of it.',
+      body: 'Ask for something in a conversation and Caime can keep track of it.',
       character: 'panda',
     },
     done: {

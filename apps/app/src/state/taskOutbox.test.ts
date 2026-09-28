@@ -2,7 +2,7 @@
  * Actions made or ticked offline (PRD §49): on screen at once, marked Pending, kept on the
  * device, and sent when the network allows, with the device's id so a retry is the same action.
  */
-import type { TasksResponse, TaskView } from '@caishy/core/api';
+import type { TasksResponse, TaskView } from '@caime/core/api';
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -79,7 +79,7 @@ describe('actions made offline', () => {
       expect.objectContaining({ kind: 'create', id, state: 'queued', attempts: 1 }),
     ]);
     // Kept on the device: it's there when the app opens again.
-    expect(h.stored.get('caishy.task-outbox')).toContain('Renew the passport');
+    expect(h.stored.get('caime.task-outbox')).toContain('Renew the passport');
     await vi.advanceTimersByTimeAsync(2000);
     expect(h.endpoints.createTask).toHaveBeenCalledTimes(2);
     for (const [body] of h.endpoints.createTask.mock.calls)
@@ -198,7 +198,7 @@ describe('ticking an action offline', () => {
 describe('the queue on the device', () => {
   it('sends again what was mid-send when the app closed', async () => {
     h.stored.set(
-      'caishy.task-outbox',
+      'caime.task-outbox',
       JSON.stringify({
         state: {
           ops: [
@@ -283,7 +283,7 @@ describe('ticks as an action arrives, and in more than one tab', () => {
     const mod = await load();
     // Another tab wrote down someone else's (signed in there before), and it's read again here.
     h.stored.set(
-      'caishy.task-outbox',
+      'caime.task-outbox',
       JSON.stringify({
         state: {
           ops: [
@@ -319,7 +319,7 @@ describe('ticks as an action arrives, and in more than one tab', () => {
       h.endpoints.updateTask.mockRejectedValue(new h.NetworkError());
       // Another tab added one while offline, and wrote it down.
       h.stored.set(
-        'caishy.task-outbox',
+        'caime.task-outbox',
         JSON.stringify({
           state: {
             ops: [
@@ -340,7 +340,7 @@ describe('ticks as an action arrives, and in more than one tab', () => {
       // This one ticks something: what it writes keeps the other tab's too.
       useTaskOutbox.getState().setStatus({ id: 'srv-5', title: 'Call the bank' }, 'done');
       await vi.advanceTimersByTimeAsync(0);
-      const written = JSON.parse(h.stored.get('caishy.task-outbox') ?? '{}');
+      const written = JSON.parse(h.stored.get('caime.task-outbox') ?? '{}');
       expect(written.state.ops.map((o: { id: string }) => o.id)).toContain('other-tab');
       // Someone else signs in here: what was queued as the last person is never sent as theirs.
       useTaskOutbox.setState((s) => ({
@@ -419,8 +419,8 @@ describe('ticks as an action arrives, and in more than one tab', () => {
         state: { ops: [op('other-tab', 'me', 'Renew passport'), op('theirs', 'them', 'Secret')] },
         version: 0,
       });
-      h.stored.set('caishy.task-outbox', written);
-      heard.storage?.({ key: 'caishy.task-outbox', newValue: written });
+      h.stored.set('caime.task-outbox', written);
+      heard.storage?.({ key: 'caime.task-outbox', newValue: written });
       await vi.advanceTimersByTimeAsync(0);
       expect(h.endpoints.createTask).toHaveBeenCalledTimes(1);
       expect(h.endpoints.createTask).toHaveBeenCalledWith(
@@ -444,7 +444,7 @@ describe('ticks as an action arrives, and in more than one tab', () => {
       const [mine] = useTaskOutbox.getState().ops;
       // Another tab unticked it afterwards, and wrote that down.
       h.stored.set(
-        'caishy.task-outbox',
+        'caime.task-outbox',
         JSON.stringify({
           state: {
             ops: [
@@ -477,7 +477,7 @@ describe('ticks as an action arrives, and in more than one tab', () => {
       const tick = ops.find((o) => o.kind === 'status')!;
       // Another tab unticked the garage afterwards, and wrote that down.
       h.stored.set(
-        'caishy.task-outbox',
+        'caime.task-outbox',
         JSON.stringify({
           state: {
             ops: ops.map((o) =>
@@ -493,7 +493,7 @@ describe('ticks as an action arrives, and in more than one tab', () => {
       // the other tab's untick.
       useTaskOutbox.getState().setStatus({ id: made, title: 'Book the car' }, 'done');
       await vi.advanceTimersByTimeAsync(0);
-      const written = JSON.parse(h.stored.get('caishy.task-outbox') ?? '{}');
+      const written = JSON.parse(h.stored.get('caime.task-outbox') ?? '{}');
       expect(written.state.ops.find((o: { id: string }) => o.id === tick.id)).toMatchObject({
         status: 'open',
       });

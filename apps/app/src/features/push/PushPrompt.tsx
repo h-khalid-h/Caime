@@ -6,7 +6,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { pushState } from './support';
 
-const SEEN = 'caishy.push-prompt';
+const SEEN = 'caime.push-prompt';
 const answered = () => {
   try {
     return globalThis.localStorage?.getItem(SEEN) === '1';
@@ -17,7 +17,7 @@ const answered = () => {
 
 /**
  * Once, at the top of Chats in a browser that hasn't been asked: calls and messages can reach
- * them when Caishy isn't open. The browser asks only when they press Turn on.
+ * them when Caime isn't open. The browser asks only when they press Turn on.
  */
 export function PushPrompt() {
   const t = useTheme();
@@ -44,7 +44,7 @@ export function PushPrompt() {
       testID="push-prompt"
     >
       <Text variant="bodyStrong" color={t.scheme === 'dark' ? 'text' : 'accentStrong'}>
-        Hear calls and messages when Caishy isn’t open
+        Hear calls and messages when Caime isn’t open
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Button

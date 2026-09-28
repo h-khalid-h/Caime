@@ -1,6 +1,6 @@
-# Caishy — operating manual
+# Caime — operating manual
 
-Caishy (formerly CONNIQT) is a relationship-aware communication platform for iOS, Android and Web:
+Caime (formerly CONNIQT) is a relationship-aware communication platform for iOS, Android and Web:
 **messaging that understands your relationships.** The primary domain object is the
 **connection** between two people, not the chat. This file is how any session picks up the work
 without re-deriving decisions.
@@ -20,7 +20,7 @@ without re-deriving decisions.
 | Path | What |
 | --- | --- |
 | `packages/core` | Pure TypeScript shared by server and app: the API contract (`api.ts`), taxonomy, field rules, zod schemas, attention and policy engines, message intelligence, privacy, search parser, Connect Kits, formatting, safe locales. No platform APIs. |
-| `packages/brand` | Tokens (contrast-tested), the wordmark, the seven characters as SVG builders, and `pnpm --filter @caishy/brand assets` to regenerate every icon, splash and favicon. |
+| `packages/brand` | Tokens (contrast-tested), the wordmark, the seven characters as SVG builders, and `pnpm --filter @caime/brand assets` to regenerate every icon, splash and favicon. |
 | `apps/server` | Fastify 5 API (`/v1`), WebSocket realtime, Postgres (Kysely + SQL migrations), jobs, push, files; serves the exported web app from `WEB_DIR`. |
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
@@ -41,7 +41,7 @@ pnpm budget                  # initial web JS, gzip, must stay under 450 KB
 pnpm e2e                     # Playwright against the bundle; set E2E_DATABASE_URL
                              #   (default .../caishy_e2e, create it first)
 pnpm start                   # run the bundled server (what the Docker image runs)
-docker build -t caishy .     # the production image (docs/DEPLOY.md)
+docker build -t caime .     # the production image (docs/DEPLOY.md)
 ```
 
 ## Conventions
@@ -68,7 +68,7 @@ These are rules, not preferences.
    stickers), never on security or money surfaces (BRAND.md B2). Colours come from the theme,
    which reads contrast-checked tokens; no raw hex in components beyond white text on fills.
 10. **The web bundle is a budget.** The app imports core and brand by subpath
-    (`@caishy/core/format`), never the package root (it would pull in zod), and icons one file
+    (`@caime/core/format`), never the package root (it would pull in zod), and icons one file
     each through `src/ui/icons.ts`. `pnpm budget` fails CI above 450 KB.
 11. **Nothing trusts device input.** Locales go through `safeLocale`, time zones fall back to UTC,
     and formatting never throws: a bad value from one device must not break a screen.
@@ -107,7 +107,7 @@ These are rules, not preferences.
   the app to anything that asks for HTML (`plugins/static.ts`); test new link shapes with a
   reload, not only by navigating inside the app.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
-- Links to Caishy are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
+- Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
 - Business conversations (R15): anything a customer is sent about one goes through the mask in
   `apps/server/src/lib/business.ts`. New endpoints that return user ids or names for a
@@ -149,7 +149,7 @@ These are rules, not preferences.
 - OAuth apps' tokens (`cao_`) go through the same `PERSON_ROUTES`; `resolveOAuthAccess`
   (`apps/server/src/lib/oauth.ts`) checks the token, its grant, its app and its person are all
   live. `/v1/oauth/token` and `/v1/oauth/revoke` answer RFC 6749/7009 errors
-  (`{error, error_description}`), not Caishy's shape, and take forms. The consent screen is
+  (`{error, error_description}`), not Caime's shape, and take forms. The consent screen is
   `apps/app/src/app/(app)/oauth/authorize.tsx`; a signed-out visitor's authorize link survives
   sign-in through `state/pendingLink.ts` (`appPath` allows 1,000 characters and colons in the
   query for it).
@@ -194,7 +194,7 @@ These are rules, not preferences.
   `animations: 'disabled'`. Photos to upload come from `photo()` in `e2e/helpers.ts`, through
   `page.waitForEvent('filechooser')`.
 - Billing: `lib/billing.ts` and `modules/billing.ts` (Stripe, with fetch in `lib/stripe.ts`, API
-  version pinned). Prices are found by lookup key (`caishy_<plan>_<interval>`), never by id. The
+  version pinned). Prices are found by lookup key (`caime_<plan>_<interval>`), never by id. The
   webhook takes the raw body (its own content-type parser), checks the signature, and applies
   what `GET /v1/subscriptions/:id` says, never the event's copy, in `syncSubscription` under an
   advisory lock per subscription (a listing's copy is used only once it has ended). A plan's
@@ -238,12 +238,12 @@ These are rules, not preferences.
   Chats row `UpdatesRow.tsx`.
 - Web push: `apps/app/public/sw.js` (copied to the web root by the export; plain JS, no build)
   and `features/push/webPush.web.ts`. Every push shows something in Safari (it takes pushes away
-  from a site whose pushes show nothing), briefly and silently while Caishy is in front; other
+  from a site whose pushes show nothing), briefly and silently while Caime is in front; other
   browsers show nothing then. A push that replaces one that's over (a ring answered) is sent with
   `replaceShown` (`quiet`), never as a push that shows nothing. The worker opens a tapped one by
-  messaging the open tab (`caishy.open`), never by reloading it: a call may be on. Anything new
+  messaging the open tab (`caime.open`), never by reloading it: a call may be on. Anything new
   pushed with a `data` field it can open belongs in `pathOf` there. Turn off is remembered in the
-  browser (`caishy.push-off`); sign-out drops the subscription and closes what's shown.
+  browser (`caime.push-off`); sign-out drops the subscription and closes what's shown.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
@@ -298,7 +298,7 @@ webhooks), personal access tokens, OAuth for third-party apps, plan entitlements
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
 groups of up to eight) with their history, private conversations (end to end encrypted, web),
 billing with Stripe, possible duplicates in People, and organizations' updates.
-It's live on EasyPanel at https://caishy.datac.com (also its default domain,
+It's live on EasyPanel at https://caime.datac.com (also its default domain,
 https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
 Stripe account (tell its owner before changing anything there: it's live); sessions in this
 environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:

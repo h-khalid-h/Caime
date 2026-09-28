@@ -1,7 +1,7 @@
-import type { MessageView } from '@caishy/core/api';
-import { GROUP_CALL_MAX } from '@caishy/core/calls';
-import { contextLine, formatDue } from '@caishy/core/format';
-import { canPin } from '@caishy/core/pins';
+import type { MessageView } from '@caime/core/api';
+import { GROUP_CALL_MAX } from '@caime/core/calls';
+import { contextLine, formatDue } from '@caime/core/format';
+import { canPin } from '@caime/core/pins';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -636,7 +636,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         : conversation && !conversation.participants.some((p) => p.userId === me.id)
           ? 'You’re no longer in this conversation.'
           : conversation?.privacyClass === 'private' && !privateSupported
-            ? 'Private conversations open in Caishy on the web.'
+            ? 'Private conversations open in Caime on the web.'
             : null;
   const disabledAction =
     closed && !thread && org

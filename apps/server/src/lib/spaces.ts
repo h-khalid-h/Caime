@@ -3,7 +3,7 @@
  * space a conversation belongs to, and the title a space conversation goes by elsewhere
  * ("Family" for its General conversation, "Family · Venue" for the others).
  */
-import { nextSpaceOwner, type SpaceRef } from '@caishy/core';
+import { nextSpaceOwner, type SpaceRef } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Space, SpaceMember } from '../db/schema';

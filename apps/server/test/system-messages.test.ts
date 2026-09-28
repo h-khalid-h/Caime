@@ -1,4 +1,4 @@
-import { systemText } from '@caishy/core';
+import { systemText } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 

@@ -1,4 +1,4 @@
-import type { ConversationView } from '@caishy/core/api';
+import type { ConversationView } from '@caime/core/api';
 import { useAiStatus } from '@/api/hooks';
 import { useMe } from '@/state/session';
 

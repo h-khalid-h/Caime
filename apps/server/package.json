@@ -1,8 +1,8 @@
 {
-  "name": "@caishy/server",
+  "name": "@caime/server",
   "version": "0.1.0",
   "private": true,
-  "description": "Caishy API, realtime and workers.",
+  "description": "Caime API, realtime and workers.",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
-    "@caishy/core": "workspace:*",
+    "@caime/core": "workspace:*",
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
     "@fastify/helmet": "^13.1.1",

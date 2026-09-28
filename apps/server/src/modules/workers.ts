@@ -2,7 +2,7 @@
  * Background handlers: follow-up checks (PRD §69), reminders (PRD §28), held notifications
  * released when their window opens (PRD §32), retention (PRD §60) and temporary conversations.
  */
-import { previewText, resolvePolicy } from '@caishy/core';
+import { previewText, resolvePolicy } from '@caime/core';
 import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
@@ -156,7 +156,7 @@ export function registerWorkers(): void {
     },
   });
 
-  // What Caishy records of how it's used goes when its time is up (lib/retention.ts).
+  // What Caime records of how it's used goes when its time is up (lib/retention.ts).
   registerPeriodic({ name: 'records', everyMs: 86_400_000, background: true, run: sweepRecords });
 
   // A browser that isn't open still shows what it was pushed of a message that's gone: the same
@@ -190,7 +190,7 @@ export function registerWorkers(): void {
       // Disappeared (PRD §60), its own time up: its words and envelope go, and so does everything
       // kept of it elsewhere, as when it's deleted for everyone: the files and links in the
       // conversation's index and memory, an album's photos, a pin, what anyone saved of it, the
-      // words of what Caishy offered from it, and the notifications showing its words. A lot at a
+      // words of what Caime offered from it, and the notifications showing its words. A lot at a
       // time, each lot with all that's kept of it.
       const LOT = 500;
       const told = new Map<string, number>();

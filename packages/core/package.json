@@ -1,8 +1,8 @@
 {
-  "name": "@caishy/core",
+  "name": "@caime/core",
   "version": "0.1.0",
   "private": true,
-  "description": "Caishy domain logic shared by the server and every client.",
+  "description": "Caime domain logic shared by the server and every client.",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",

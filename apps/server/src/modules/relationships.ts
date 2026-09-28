@@ -4,7 +4,7 @@
  * (PRD §13), so history is preserved.
  */
 
-import type { RelationshipHistoryView, TaxonomyResponse } from '@caishy/core';
+import type { RelationshipHistoryView, TaxonomyResponse } from '@caime/core';
 import {
   ChangeRelationshipBody,
   CreateRelationshipBody,
@@ -21,7 +21,7 @@ import {
   type Sphere,
   secondarySpheres,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import { z } from 'zod';
@@ -196,7 +196,7 @@ export async function createRelationship(
       })
       .execute();
   await recordEvent(db, 'relationship.assigned', ownerId, { relationshipId: row.id, subjectId });
-  // Said how they know them: what Caishy offered about it is answered, here and on every device
+  // Said how they know them: what Caime offered about it is answered, here and on every device
   // (the relationship's own event says so).
   await db
     .updateTable('suggestions')

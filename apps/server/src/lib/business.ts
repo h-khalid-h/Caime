@@ -12,7 +12,7 @@ import {
   type OrgRef,
   threadState,
   waitingSince,
-} from '@caishy/core';
+} from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';

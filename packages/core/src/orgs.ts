@@ -90,13 +90,13 @@ export function normalizeDomain(input: string): string | null {
 }
 
 /** Where the TXT record goes, and what it says. */
-export const VERIFY_RECORD_PREFIX = '_caishy-verify';
+export const VERIFY_RECORD_PREFIX = '_caime-verify';
 
 export function verificationRecord(domain: string, token: string) {
   return {
     name: `${VERIFY_RECORD_PREFIX}.${domain}`,
     type: 'TXT' as const,
-    value: `caishy-verify=${token}`,
+    value: `caime-verify=${token}`,
   };
 }
 
@@ -105,6 +105,6 @@ export function recordMatches(
   records: ReadonlyArray<ReadonlyArray<string>>,
   token: string,
 ): boolean {
-  const want = `caishy-verify=${token}`;
+  const want = `caime-verify=${token}`;
   return records.some((chunks) => chunks.join('').trim() === want);
 }

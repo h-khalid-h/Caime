@@ -2,7 +2,7 @@
  * Kysely table types for the SQL in ./migrations. Keep in step with the migrations: a column
  * added there is added here in the same commit.
  */
-import type { CustomKitDef } from '@caishy/core';
+import type { CustomKitDef } from '@caime/core';
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
@@ -323,7 +323,7 @@ export interface MessagesTable {
   expires_at: NullableTimestamp;
   created_at: Generated<Date>;
   search: ColumnType<string, never, never>;
-  /** What sent it when its sender didn't type it in Caishy: their token's name, or an app's. */
+  /** What sent it when its sender didn't type it in Caime: their token's name, or an app's. */
   sent_via: string | null;
   /** In a private conversation (R18): the message as an envelope only its devices can open. */
   sealed: Json<Record<string, unknown>> | null;
@@ -378,7 +378,7 @@ export interface AssetsTable {
   created_at: Generated<Date>;
 }
 
-/** Automations (PRD §69): what someone set Caishy to keep of what arrives. */
+/** Automations (PRD §69): what someone set Caime to keep of what arrives. */
 export interface AutomationsTable {
   id: string;
   user_id: string;

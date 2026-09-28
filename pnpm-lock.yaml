@@ -24,10 +24,10 @@ importers:
 
   apps/app:
     dependencies:
-      '@caishy/brand':
+      '@caime/brand':
         specifier: workspace:*
         version: link:../../packages/brand
-      '@caishy/core':
+      '@caime/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@expo-google-fonts/inter':
@@ -160,7 +160,7 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.128.0
         version: 0.128.0(zod@4.6.5)
-      '@caishy/core':
+      '@caime/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@fastify/cookie':
@@ -227,7 +227,7 @@ importers:
 
   packages/brand:
     dependencies:
-      '@caishy/core':
+      '@caime/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:

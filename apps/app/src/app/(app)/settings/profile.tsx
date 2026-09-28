@@ -1,4 +1,4 @@
-import { displayNameError, handleError, normalizeHandle } from '@caishy/core/rules';
+import { displayNameError, handleError, normalizeHandle } from '@caime/core/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';

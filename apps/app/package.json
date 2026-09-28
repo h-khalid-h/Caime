@@ -1,10 +1,10 @@
 {
-  "name": "@caishy/app",
+  "name": "@caime/app",
   "main": "expo-router/entry",
   "version": "0.1.0",
   "dependencies": {
-    "@caishy/brand": "workspace:*",
-    "@caishy/core": "workspace:*",
+    "@caime/brand": "workspace:*",
+    "@caime/core": "workspace:*",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",

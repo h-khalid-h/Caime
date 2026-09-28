@@ -1,4 +1,4 @@
-import { SPHERE_DEFS, type Sphere } from '@caishy/core/taxonomy';
+import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -107,7 +107,7 @@ export default function Onboarding() {
               </Text>
               <Text variant="body" color="textSecondary" align="center">
                 First, one thing to keep safe. If you ever forget your password, these codes get you
-                back in. Caishy never asks for your phone number.
+                back in. Caime never asks for your phone number.
               </Text>
             </View>
             <Card>
@@ -182,8 +182,8 @@ export default function Onboarding() {
                 People aren’t all the same. Neither are their messages.
               </Text>
               <Text variant="body" color="textSecondary" align="center">
-                When you add someone, you tell Caishy how you know them (only you see it). Caishy
-                then treats them the right way:
+                When you add someone, you tell Caime how you know them (only you see it). Caime then
+                treats them the right way:
               </Text>
             </View>
             <Card padded={false}>
@@ -260,7 +260,7 @@ export default function Onboarding() {
                   size="lg"
                   block
                   onPress={() =>
-                    void shareLink(`I’m on Caishy as @${me.handle}.`, handleLink(me.handle))
+                    void shareLink(`I’m on Caime as @${me.handle}.`, handleLink(me.handle))
                   }
                   testID="onboarding-share"
                 />

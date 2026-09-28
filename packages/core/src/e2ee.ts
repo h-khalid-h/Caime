@@ -29,7 +29,7 @@
  */
 
 export const E2EE_VERSION = 1;
-export const E2EE_LABEL = 'caishy-e2ee/1';
+export const E2EE_LABEL = 'caime-e2ee/1';
 
 /** At most this many devices read one person's private conversations. */
 export const MAX_DEVICES = 20;

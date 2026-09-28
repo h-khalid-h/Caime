@@ -2,7 +2,7 @@
  * @handle links (PRD §11): a shared link names a handle, and handles are one namespace, so it
  * opens a person or an organization. A person is found here exactly as search would find them.
  */
-import { type HandleView, handleError, normalizeHandle } from '@caishy/core';
+import { type HandleView, handleError, normalizeHandle } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';

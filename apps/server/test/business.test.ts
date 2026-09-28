@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';

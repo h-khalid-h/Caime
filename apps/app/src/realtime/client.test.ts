@@ -48,7 +48,7 @@ vi.mock('@/features/calls/calls', () => ({
   checkLiveCall: async () => {},
   checkLiveGroupCall: async () => {},
 }));
-vi.mock('@/lib/config', () => ({ WS_URL: 'ws://caishy.example' }));
+vi.mock('@/lib/config', () => ({ WS_URL: 'ws://caime.example' }));
 vi.mock('@/lib/network', () => ({ onNetworkChange: () => () => {} }));
 vi.mock('@/state/cache', () => ({ maxSeq: () => 0, upsertMessage: () => {} }));
 vi.mock('@/state/live', () => ({

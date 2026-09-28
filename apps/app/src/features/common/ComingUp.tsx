@@ -2,8 +2,8 @@
  * What's coming up (PRD §41): the meetings and appointments ahead in a conversation, or in a
  * space's conversations (its shared calendar), soonest first. Each opens its card.
  */
-import type { UpcomingView } from '@caishy/core/api';
-import { formatWhenAt } from '@caishy/core/format';
+import type { UpcomingView } from '@caime/core/api';
+import { formatWhenAt } from '@caime/core/format';
 import { View } from 'react-native';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';

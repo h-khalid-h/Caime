@@ -1,4 +1,4 @@
-import { type BubbleTheme, bubbleThemes } from '@caishy/brand/tokens';
+import { type BubbleTheme, bubbleThemes } from '@caime/brand/tokens';
 import { Platform, Switch, View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
@@ -129,7 +129,7 @@ export default function Appearance() {
       </Group>
       <Group
         title="Style"
-        footer="The same Caishy either way. Minimal keeps the characters for special moments."
+        footer="The same Caime either way. Minimal keeps the characters for special moments."
       >
         <View style={{ flexDirection: 'row', gap: 12, padding: 16 }}>
           {(

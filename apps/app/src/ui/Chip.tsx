@@ -1,4 +1,4 @@
-import type { Sphere } from '@caishy/core/taxonomy';
+import type { Sphere } from '@caime/core/taxonomy';
 import { ScrollView, View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';

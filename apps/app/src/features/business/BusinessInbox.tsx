@@ -1,11 +1,11 @@
-import type { BusinessThreadView } from '@caishy/core/api';
+import type { BusinessThreadView } from '@caime/core/api';
 import {
   BUSINESS_VIEW_LABELS,
   BUSINESS_VIEWS,
   type BusinessView,
   waitedFor,
-} from '@caishy/core/business';
-import { formatListTime } from '@caishy/core/format';
+} from '@caime/core/business';
+import { formatListTime } from '@caime/core/format';
 import { router, usePathname } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';

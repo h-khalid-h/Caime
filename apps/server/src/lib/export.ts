@@ -1,6 +1,6 @@
 /**
- * Download your data (docs/SECURITY.md, the privacy page): everything Caishy keeps about someone,
- * and by them, as one file. What they sent and set, what Caishy worked out for them, and what it
+ * Download your data (docs/SECURITY.md, the privacy page): everything Caime keeps about someone,
+ * and by them, as one file. What they sent and set, what Caime worked out for them, and what it
  * recorded of their use, for as long as it keeps each (lib/retention.ts).
  *
  * The file shows only what the app would show them. So three things stay out: other people's
@@ -8,10 +8,10 @@
  * on an action or a decision, a notification's title or preview, a suggestion's quote), what's
  * kept from them in the app (who on a team did what, a request declined, a call turned down, what
  * a group they left is called now, an app of an organization they've left), and secrets, which
- * Caishy keeps only as hashes or never shows (a password, tokens, recovery codes, a calendar's
+ * Caime keeps only as hashes or never shows (a password, tokens, recovery codes, a calendar's
  * address, a device's address for notifications).
  */
-import { callResult } from '@caishy/core';
+import { callResult } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { automationView, visibleSaved } from './automations';
@@ -536,7 +536,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('m.user_id', '=', me)
       .orderBy('m.rung_at')
       .execute(),
-    // Reports they made. Those about them stay with the people who run Caishy: they'd name who made them.
+    // Reports they made. Those about them stay with the people who run Caime: they'd name who made them.
     db
       .selectFrom('reports as r')
       .leftJoin('users as u', 'u.id', 'r.target_user_id')
@@ -820,9 +820,9 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     }
   };
   return {
-    format: 'caishy-export/2',
+    format: 'caime-export/2',
     exportedAt: now.toISOString(),
-    note: 'Everything Caishy keeps about you and by you: what you sent and set, what it worked out for you, and what it recorded of your use, for as long as it keeps each, as the app shows it to you. Other people’s words aren’t in it (their messages, their items and notes, quotes of them), nor reports others made about you, nor secrets, which Caishy keeps only as hashes or never shows. Files are listed; each downloads from its link while you are signed in.',
+    note: 'Everything Caime keeps about you and by you: what you sent and set, what it worked out for you, and what it recorded of your use, for as long as it keeps each, as the app shows it to you. Other people’s words aren’t in it (their messages, their items and notes, quotes of them), nor reports others made about you, nor secrets, which Caime keeps only as hashes or never shows. Files are listed; each downloads from its link while you are signed in.',
     account: {
       ...meView(user, now),
       lastActiveAt: iso(user.last_active_at),
@@ -957,7 +957,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       kind: m.kind,
       body: m.deleted_at ? null : m.body,
       payload: m.deleted_at ? null : asTheySee(m, me, masks),
-      // What Caishy noted in it (dates, amounts, links and how safe they look, topics), and
+      // What Caime noted in it (dates, amounts, links and how safe they look, topics), and
       // whether it took it for a question or a request.
       noted: m.deleted_at ? null : m.entities,
       question: m.is_question,
@@ -1044,7 +1044,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         completedAt: iso(t.completed_at),
       };
     }),
-    // Why Caishy suggested each, when that came from something other than a message: a reason
+    // Why Caime suggested each, when that came from something other than a message: a reason
     // built from messages quotes them, and can come to quote someone else's reply.
     suggestions: suggestions.map((s) => ({
       kind: s.kind,
@@ -1332,7 +1332,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
           lastReadAt: iso(calendarFeed.last_read_at),
         }
       : null,
-    // What you set Caishy to keep, and what it kept or you saved (PRD §69).
+    // What you set Caime to keep, and what it kept or you saved (PRD §69).
     automations: automations.map((a) => {
       const view = automationView(a);
       return {

@@ -2,7 +2,7 @@
  * Person views for many people at once, in a fixed number of queries. Used by lists (inbox,
  * connections) where per-person lookups would be N×4 round trips.
  */
-import { type RelationshipPolicy, resolvePolicy, type Sphere } from '@caishy/core';
+import { type RelationshipPolicy, resolvePolicy, type Sphere } from '@caime/core';
 import type { AppContext } from '../context';
 import type { User } from '../db/schema';
 import { verifiedOrgNames } from './orgs';

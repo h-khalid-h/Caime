@@ -18,7 +18,7 @@ import {
   StartThreadBody,
   type StartThreadResult,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

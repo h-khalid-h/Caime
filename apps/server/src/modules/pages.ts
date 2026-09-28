@@ -1,10 +1,10 @@
 /**
- * Caishy's own pages (lib/pages.ts) at /privacy, /terms and /help, for anyone, signed in or not:
+ * Caime's own pages (lib/pages.ts) at /privacy, /terms and /help, for anyone, signed in or not:
  * About links to them, and so can the app stores. Each is made once, from the environment. One
  * published somewhere else (PRIVACY_URL, TERMS_URL, HELP_URL) sends people there instead, so
  * there's only ever one of each.
  */
-import { SITE_PAGES, type SitePage } from '@caishy/core/api';
+import { SITE_PAGES, type SitePage } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
 import { renderPage } from '../lib/pages';

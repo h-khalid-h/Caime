@@ -2,7 +2,7 @@
  * The call on this device (PRD §47), for the call screen to draw. The WebRTC work lives in
  * features/calls/engine; this is only what it tells the screen.
  */
-import type { CallView } from '@caishy/core/api';
+import type { CallView } from '@caime/core/api';
 import { create } from 'zustand';
 
 export type CallPhase =

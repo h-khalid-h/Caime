@@ -3,7 +3,7 @@
  * organization a person's "Verified at …" comes from.
  */
 import { randomBytes } from 'node:crypto';
-import { nextOwner } from '@caishy/core';
+import { nextOwner } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database, Organization, OrgMember } from '../db/schema';
 import { notFound } from './errors';

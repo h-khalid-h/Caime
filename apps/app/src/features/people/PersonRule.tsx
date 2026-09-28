@@ -1,10 +1,10 @@
 /**
- * How Caishy treats one person (PRD §68): what their relationship's rule says, and a rule just for
+ * How Caime treats one person (PRD §68): what their relationship's rule says, and a rule just for
  * them on top of it, changed from their page. Theirs is made with its first change, so "just for
  * them" always means something, and nothing is made or taken away by opening and closing it.
  */
-import type { RelationshipView } from '@caishy/core/api';
-import { resolvePolicy } from '@caishy/core/policy';
+import type { RelationshipView } from '@caime/core/api';
+import { resolvePolicy } from '@caime/core/policy';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { endpoints } from '@/api/endpoints';

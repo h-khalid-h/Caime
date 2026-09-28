@@ -1,4 +1,4 @@
-import { nextOwner, uuidv7 } from '@caishy/core';
+import { nextOwner, uuidv7 } from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { Database } from '../db/schema';
 import { pairKey } from './relations';

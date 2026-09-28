@@ -2,8 +2,8 @@
  * Private conversations open on the web for now (R18): the phone apps have no keys of their own
  * yet. The web build uses keystore.web.ts; these keep the same shape.
  */
-import type { PublicJwk } from '@caishy/core/e2ee';
-import type { DeviceKeys } from '@caishy/core/e2ee-crypto';
+import type { PublicJwk } from '@caime/core/e2ee';
+import type { DeviceKeys } from '@caime/core/e2ee-crypto';
 
 export interface StoredDevice {
   id: string;

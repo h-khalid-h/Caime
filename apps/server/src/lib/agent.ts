@@ -21,7 +21,7 @@ import {
   SendMessageBody,
   uuidv4,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { AiError, type AiUsage } from './ai';
@@ -399,7 +399,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
   if (answered.n >= AGENT_REPLIES_PER_CONVERSATION || thought.n >= AGENT_CALLS_PER_CONVERSATION) {
     if (!(await claim())) return;
     // Said without the model, so the customer isn't left wondering who answers now: in the
-    // language they write in (Arabic when they write in it, or read Caishy in it), else English.
+    // language they write in (Arabic when they write in it, or read Caime in it), else English.
     const latest = await ctx.db
       .selectFrom('messages')
       .select('body')

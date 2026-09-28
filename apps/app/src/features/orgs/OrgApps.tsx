@@ -1,4 +1,4 @@
-import type { OrgAppSecretsView, OrgAppView, OrgView } from '@caishy/core/api';
+import type { OrgAppSecretsView, OrgAppView, OrgView } from '@caime/core/api';
 import {
   API_SCOPE_LABELS,
   API_SCOPES,
@@ -6,9 +6,9 @@ import {
   WEBHOOK_EVENT_LABELS,
   WEBHOOK_EVENTS,
   type WebhookEvent,
-} from '@caishy/core/apps';
-import { formatWhen } from '@caishy/core/format';
-import { PLAN_NAMES } from '@caishy/core/plans';
+} from '@caime/core/apps';
+import { formatWhen } from '@caime/core/format';
+import { PLAN_NAMES } from '@caime/core/plans';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -64,7 +64,7 @@ function Secrets({ shown }: { shown: OrgAppSecretsView }) {
         <>
           <CopyRow label="Webhook secret" value={shown.webhookSecret} testID="org-app-secret" />
           <Text variant="caption" color="textSecondary">
-            Each delivery carries a Caishy-Signature header, t=time,v1=signature: the HMAC-SHA256 of
+            Each delivery carries a Caime-Signature header, t=time,v1=signature: the HMAC-SHA256 of
             “time.body” with this secret. Check it, and ignore old times.
           </Text>
         </>
@@ -284,8 +284,8 @@ export function OrgApps({ org }: { org: OrgView }) {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
-              placeholder="https://helpdesk.example/caishy"
-              hint="Caishy sends what happens here, signed."
+              placeholder="https://helpdesk.example/caime"
+              hint="Caime sends what happens here, signed."
               testID="org-app-webhook"
             />
             {webhookUrl.trim() ? (

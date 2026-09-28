@@ -2,9 +2,9 @@
  * The product's health for its operator (PRD §82–83, COMPETITIVE.md): activation, engagement,
  * the core rates and retention, computed from what the product already keeps. Aggregates only:
  * nothing here is about anyone in particular, and nothing reads what anyone wrote. "Active"
- * means opened Caishy or sent a message; people are humans, never an app's bot.
+ * means opened Caime or sent a message; people are humans, never an app's bot.
  */
-import type { ProductMetricsView, Rate } from '@caishy/core';
+import type { ProductMetricsView, Rate } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { replyTimes } from './insights';

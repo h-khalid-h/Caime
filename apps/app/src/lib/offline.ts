@@ -1,5 +1,5 @@
 /**
- * On the web, the service worker keeps the app itself (public/sw.js), so Caishy opens and moves
+ * On the web, the service worker keeps the app itself (public/sw.js), so Caime opens and moves
  * between screens offline (PRD §49). Not while developing: the dev server's files aren't a build.
  */
 export function keepAppForOffline(): void {

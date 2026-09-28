@@ -36,12 +36,12 @@ describe('organizations', () => {
   it('says where the TXT record goes and matches it however it was split', () => {
     const record = verificationRecord('datac.com', 'k7q2');
     expect(record).toEqual({
-      name: '_caishy-verify.datac.com',
+      name: '_caime-verify.datac.com',
       type: 'TXT',
-      value: 'caishy-verify=k7q2',
+      value: 'caime-verify=k7q2',
     });
-    expect(recordMatches([['v=spf1 -all'], ['caishy-', 'verify=k7q2']], 'k7q2')).toBe(true);
-    expect(recordMatches([['caishy-verify=k7q2x']], 'k7q2')).toBe(false);
+    expect(recordMatches([['v=spf1 -all'], ['caime-', 'verify=k7q2']], 'k7q2')).toBe(true);
+    expect(recordMatches([['caime-verify=k7q2x']], 'k7q2')).toBe(false);
     expect(recordMatches([], 'k7q2')).toBe(false);
   });
 

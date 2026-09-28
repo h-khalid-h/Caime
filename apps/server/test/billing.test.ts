@@ -14,7 +14,7 @@ let stub: StripeStub;
 let noor: Client;
 let sam: Client;
 let teen: Client;
-/** Paid for at Stripe while Caishy took none of what claimed to be its word. */
+/** Paid for at Stripe while Caime took none of what claimed to be its word. */
 let unreported: { subscription: StubSubscription; event: object };
 
 /** Send Stripe's event as Stripe would: signed, now, with the body exactly as signed. */
@@ -196,7 +196,7 @@ describe('billing (PRD §84, R25)', () => {
   });
 
   it('paid before Stripe’s word came: it isn’t sold again, and it’s on', async () => {
-    // Nothing Caishy has heard says so, but Stripe does: Checkout asks it first.
+    // Nothing Caime has heard says so, but Stripe does: Checkout asks it first.
     const twice = await checkout(noor, { plan: 'pro', interval: 'year' });
     expect(twice.statusCode).toBe(409);
     expect(twice.json().error.code).toBe('already_subscribed');
@@ -310,7 +310,7 @@ describe('billing (PRD §84, R25)', () => {
     expect(down.statusCode).toBe(409);
     expect(down.json().error.code).toBe('paying');
     expect(await planOf(omar)).toBe('pro');
-    // Something else sold to the same customer isn't Caishy's to act on.
+    // Something else sold to the same customer isn't Caime's to act on.
     expect((await deliver(stub.foreign(subscription.customer).event)).statusCode).toBe(200);
     expect(await planOf(lea)).toBe('personal');
     // The same for an organization.
@@ -556,7 +556,7 @@ describe('billing (PRD §84, R25)', () => {
     const kai = await signup(t, { displayName: 'Kai Longtime' });
     const { subscription } = await buy(kai);
     // Pro's price goes up: a new price takes the lookup key, and Kai's keeps none. Kai's is older
-    // than Checkout saying who it's for: what Caishy knew of it is what's left.
+    // than Checkout saying who it's for: what Caime knew of it is what's left.
     const moved = (s: StubSubscription) => {
       for (const item of s.items.data) item.price = { ...item.price, lookup_key: null };
     };
@@ -569,7 +569,7 @@ describe('billing (PRD §84, R25)', () => {
       stub.change(subscription.id, { status: 'canceled' }, 'customer.subscription.deleted'),
     );
     expect(await planOf(kai)).toBe('personal');
-    // One paid for then, before Caishy heard of it: known by what its Checkout put on it.
+    // One paid for then, before Caime heard of it: known by what its Checkout put on it.
     const url = (await checkout(kai, { plan: 'pro', interval: 'year' })).json().url;
     const later = stub.pay(sessionOf(url));
     moved(later.subscription);

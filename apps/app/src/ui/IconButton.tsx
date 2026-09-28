@@ -1,4 +1,4 @@
-import { minTouchTarget } from '@caishy/brand/tokens';
+import { minTouchTarget } from '@caime/brand/tokens';
 import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';

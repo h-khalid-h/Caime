@@ -16,7 +16,7 @@ export type BilledPlan = (typeof BILLED_PLANS)[number];
 export const priceLookupKey = (plan: BilledPlan, interval: BillingInterval) =>
   `caishy_${plan}_${interval}`;
 
-/** Which plan and interval a lookup key is for, or null for a price that isn't Caishy's. */
+/** Which plan and interval a lookup key is for, or null for a price that isn't Caime's. */
 export function fromLookupKey(
   key: string | null | undefined,
 ): { plan: BilledPlan; interval: BillingInterval } | null {

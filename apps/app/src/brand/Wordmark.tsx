@@ -1,13 +1,13 @@
-import { HEART_PATH, WORDMARK } from '@caishy/brand/generated/wordmark';
-import { palette } from '@caishy/brand/tokens';
+import { HEART_PATH, WORDMARK } from '@caime/brand/generated/wordmark';
+import { palette } from '@caime/brand/tokens';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '@/theme/theme';
 
-/** The Caishy wordmark: Nunito Black letters, the heart as the dot of the i. */
+/** The Caime wordmark: Nunito Black letters, the heart as the dot of the i. */
 export function Wordmark({
   height = 32,
   color,
-  heartColor = palette.caishyPink,
+  heartColor = palette.caimePink,
 }: {
   height?: number;
   color?: string;
@@ -21,7 +21,7 @@ export function Wordmark({
       height={height}
       viewBox={WORDMARK.viewBox}
       accessibilityRole="image"
-      accessibilityLabel="Caishy"
+      accessibilityLabel="Caime"
     >
       <Path d={WORDMARK.letters} fill={color ?? (t.scheme === 'dark' ? '#FFFFFF' : t.c.ink)} />
       <Path d={HEART_PATH} transform={WORDMARK.heartTransform} fill={heartColor} />
@@ -31,7 +31,7 @@ export function Wordmark({
 
 export function HeartMark({
   size = 20,
-  color = palette.caishyPink,
+  color = palette.caimePink,
 }: {
   size?: number;
   color?: string;

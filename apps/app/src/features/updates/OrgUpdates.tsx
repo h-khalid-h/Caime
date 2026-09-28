@@ -4,10 +4,10 @@
  * them back. Kept apart from conversations: a follower is never in one because of it, and nobody
  * sees who else follows.
  */
-import type { OrgUpdateView, OrgView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
-import { uuidv4 } from '@caishy/core/ids';
-import { UPDATE_MAX } from '@caishy/core/orgs';
+import type { OrgUpdateView, OrgView } from '@caime/core/api';
+import { formatListTime } from '@caime/core/format';
+import { uuidv4 } from '@caime/core/ids';
+import { UPDATE_MAX } from '@caime/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';

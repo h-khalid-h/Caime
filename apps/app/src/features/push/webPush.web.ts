@@ -1,6 +1,6 @@
 /**
  * Notifications in this browser (web push): the service worker (public/sw.js) shows what the
- * server pushes when Caishy isn't open in front, a call ringing above all. The browser asks the
+ * server pushes when Caime isn't open in front, a call ringing above all. The browser asks the
  * person once, from something they pressed; after that, each sign-in on this browser gets its
  * pushes, and a session that ends gets none (the server sends only to live sessions).
  */
@@ -13,7 +13,7 @@ export { type PushState, pushState, webPushSupported };
  * Turned off here, it stays off: the browser still allows them (a page can't take that back), so
  * this says not to subscribe again on the next load or sign-in, until they turn them on.
  */
-const OFF_KEY = 'caishy.push-off';
+const OFF_KEY = 'caime.push-off';
 function turnedOff(): boolean {
   try {
     return globalThis.localStorage?.getItem(OFF_KEY) === '1';
@@ -111,7 +111,7 @@ export async function disableWebPush(): Promise<void> {
 }
 
 /**
- * What this browser shows of Caishy's notifications, closed: those read (on any device), or all.
+ * What this browser shows of Caime's notifications, closed: those read (on any device), or all.
  * A notification read in the app has nothing more to say on the lock screen.
  */
 export async function closeShownNotifications(ids: string[] | null): Promise<void> {
@@ -148,7 +148,7 @@ export function onOpenFromNotification(go: (path: string) => void): () => void {
   if (!webPushSupported) return () => {};
   const heard = (e: MessageEvent) => {
     const m = e.data as { type?: string; path?: unknown } | null;
-    if (m?.type === 'caishy.open' && typeof m.path === 'string' && m.path.startsWith('/'))
+    if (m?.type === 'caime.open' && typeof m.path === 'string' && m.path.startsWith('/'))
       go(m.path);
   };
   navigator.serviceWorker.addEventListener('message', heard);

@@ -1,5 +1,5 @@
 /** Opening the conversation with someone: theirs if there is one, else a new one. */
-import type { ConnectionView } from '@caishy/core/api';
+import type { ConnectionView } from '@caime/core/api';
 import { router } from 'expo-router';
 import { endpoints } from '@/api/endpoints';
 import { toast } from '@/ui/Toast';

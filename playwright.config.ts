@@ -89,7 +89,7 @@ export default defineConfig({
             DATABASE_URL:
               process.env.E2E_DATABASE_URL ??
               'postgres://caishy:caishy-dev@127.0.0.1:5432/caishy_e2e',
-            DATA_DIR: join(tmpdir(), 'caishy-e2e'),
+            DATA_DIR: join(tmpdir(), 'caime-e2e'),
             WEB_DIR: 'apps/app/dist',
             LOG_LEVEL: 'warn',
             ANTHROPIC_API_KEY: 'e2e-stub',
@@ -99,7 +99,7 @@ export default defineConfig({
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
             // Calls between two browsers on this machine need no STUN server out there.
             STUN_URLS: '',
-            // Help is published somewhere else; the privacy policy and the terms are Caishy's own.
+            // Help is published somewhere else; the privacy policy and the terms are Caime's own.
             HELP_URL: 'https://policies.example/help',
             STRIPE_SECRET_KEY: STRIPE_KEY,
             STRIPE_WEBHOOK_SECRET,

@@ -4,7 +4,7 @@
  * Only where they may still read it: a conversation they're in and let in (no request pending
  * or declined), never a private one, never a card deleted, or deleted by them for themselves.
  */
-import type { UpcomingView } from '@caishy/core';
+import type { UpcomingView } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 

@@ -1,5 +1,5 @@
 /**
- * Whether this browser can show Caishy's notifications, and what it allows: all the Chats prompt
+ * Whether this browser can show Caime's notifications, and what it allows: all the Chats prompt
  * needs up front, so the rest (webPush) loads only when something is pressed or signed in.
  */
 export type PushState = 'unsupported' | 'default' | 'granted' | 'denied';

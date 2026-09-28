@@ -1,6 +1,6 @@
 /**
  * "Catch me up" results by conversation, for this session only: asked for with a tap, shown
- * with Caishy's label, never stored or sent anywhere (R17).
+ * with Caime's label, never stored or sent anywhere (R17).
  */
 import { create } from 'zustand';
 import { endpoints } from '@/api/endpoints';

@@ -1,5 +1,5 @@
-import type { ThemeColors, TypeStyleName } from '@caishy/brand/tokens';
-import { textDirection } from '@caishy/core/format';
+import type { ThemeColors, TypeStyleName } from '@caime/brand/tokens';
+import { textDirection } from '@caime/core/format';
 import { Text as RNText, type TextProps as RNTextProps, type TextStyle } from 'react-native';
 import { fontFamily } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';

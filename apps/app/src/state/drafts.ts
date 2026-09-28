@@ -70,7 +70,7 @@ export const useDrafts = create<DraftState>()(
       },
     }),
     {
-      name: 'caishy.drafts',
+      name: 'caime.drafts',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ drafts: s.drafts }),
     },

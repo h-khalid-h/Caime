@@ -13,7 +13,7 @@ import type {
   SpaceSummaryView,
   SpaceView,
   Sphere,
-} from '@caishy/core';
+} from '@caime/core';
 import {
   CreateSpaceBody,
   CreateSpaceConversationBody,
@@ -28,7 +28,7 @@ import {
   systemText,
   UpdateSpaceBody,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -597,7 +597,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('id', '=', id)
           .execute();
       const left = convos.map((c) => c.conversation_id);
-      // What Caishy offered them about those conversations goes with them.
+      // What Caime offered them about those conversations goes with them.
       if (left.length)
         await trx
           .updateTable('suggestions')
@@ -615,7 +615,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       return { left, handed };
     });
     await ctx.bus.publish([userId], { type: 'space.removed', data: { spaceId: id } });
-    // What they saved of its conversations is out of their Saved now, and what Caishy offered
+    // What they saved of its conversations is out of their Saved now, and what Caime offered
     // because they were both in it goes.
     if (left.length) await tellSaved(ctx, [userId]);
     await withdrawPlaceOffers(ctx, { kind: 'space', id }, userId);

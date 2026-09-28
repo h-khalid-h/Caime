@@ -1,6 +1,6 @@
-import type { ConversationView, CustomKitOfferView, MessageView } from '@caishy/core/api';
-import { listTitle } from '@caishy/core/format';
-import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caishy/core/mentions';
+import type { ConversationView, CustomKitOfferView, MessageView } from '@caime/core/api';
+import { listTitle } from '@caime/core/format';
+import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import {
@@ -589,7 +589,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         {canSend && aiReady ? (
           <IconButton
             icon={WandSparkles}
-            label="Rewrite with Caishy"
+            label="Rewrite with Caime"
             onPress={() => setRewrite(true)}
             testID="composer-rewrite"
           />

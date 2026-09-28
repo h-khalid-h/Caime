@@ -3,7 +3,7 @@
  * a sheet that lists them (press ? or open it from You). Native apps keep the platform's own
  * keyboard behaviour. Keys browsers reserve (Ctrl+N, Ctrl+T, Ctrl+W) are left alone.
  */
-import type { InboxAllResponse, InboxResponse } from '@caishy/core/api';
+import type { InboxAllResponse, InboxResponse } from '@caime/core/api';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';

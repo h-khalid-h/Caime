@@ -7,9 +7,9 @@
  * sealed for it) if their code was compared. A device of mine that doesn't hold up to mine is
  * never taken as mine.
  */
-import type { DeviceView } from '@caishy/core/api';
-import type { PublicJwk } from '@caishy/core/e2ee';
-import { chainRoot, securityCode } from '@caishy/core/e2ee-crypto';
+import type { DeviceView } from '@caime/core/api';
+import type { PublicJwk } from '@caime/core/e2ee';
+import { chainRoot, securityCode } from '@caime/core/e2ee-crypto';
 import { loadPin, loadSeen, type Pin, type SeenCode, savePin, saveSeen } from './keystore';
 
 const same = (a: PublicJwk, b: PublicJwk) => a.x === b.x && a.y === b.y;

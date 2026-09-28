@@ -1,6 +1,6 @@
-import type { SpaceSummaryView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
-import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
+import type { SpaceSummaryView } from '@caime/core/api';
+import { formatListTime } from '@caime/core/format';
+import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { router, usePathname } from 'expo-router';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { useSpaces } from '@/api/hooks';

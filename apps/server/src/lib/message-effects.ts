@@ -11,7 +11,7 @@ import {
   type NotificationKind,
   resolvePolicy,
   suggestFromAnalysis,
-} from '@caishy/core';
+} from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';

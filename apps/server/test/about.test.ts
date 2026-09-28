@@ -7,7 +7,7 @@ const BASE = 'http://localhost:8787';
 /** A page's words, however its lines wrap. */
 const read = (html: string) => html.replace(/\s+/g, ' ');
 
-describe('About, and Caishy’s own privacy, terms and help pages', () => {
+describe('About, and Caime’s own privacy, terms and help pages', () => {
   it('serves each page to anyone, as a page with nothing but itself in it', async () => {
     const t = await createTestApp();
     try {
@@ -20,7 +20,7 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
       const pages = {
         privacy: [
           '<h1>Privacy</h1>',
-          'Caishy is for people 13 and older, from the day they turn 13',
+          'Caime is for people 13 and older, from the day they turn 13',
         ],
         terms: ['<h1>Terms</h1>', 'You need to be 13 or older'],
         help: ['<h1>Help</h1>', `${BASE}/@<em>yourhandle</em>`],
@@ -34,7 +34,7 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
           "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         );
         expect(res.headers['x-content-type-options']).toBe('nosniff');
-        for (const s of [...says, 'DATA C OÜ', 'href="mailto:hello@caishy.com"'])
+        for (const s of [...says, 'DATA C OÜ', 'href="mailto:hello@cai.me"'])
           expect(read(res.body), `${name}: ${s}`).toContain(s);
         expect(res.body).toContain(`<a href="/${name}" aria-current="page">`);
         if (name === 'privacy')
@@ -58,11 +58,11 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
     try {
       const privacy = read((await t.app.inject({ method: 'GET', url: '/privacy' })).body);
       expect(privacy).toContain(
-        'Caishy is run by Nile &amp; Sons &lt;Ltd&gt;, which is responsible',
+        'Caime is run by Nile &amp; Sons &lt;Ltd&gt;, which is responsible',
       );
       expect(privacy).not.toContain('<Ltd>');
       expect(privacy).toContain('href="mailto:privacy@nile.example"');
-      expect(privacy).toContain('Caishy is for people 16 and older, from the day they turn 16');
+      expect(privacy).toContain('Caime is for people 16 and older, from the day they turn 16');
       expect(privacy).not.toContain('DATA C');
       const terms = read((await t.app.inject({ method: 'GET', url: '/terms' })).body);
       expect(terms).toContain('between you and Nile &amp; Sons &lt;Ltd&gt; (&ldquo;we&rdquo;)');
@@ -72,7 +72,7 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
     }
   });
 
-  it('says how calls connect and how long records are kept, as this Caishy does', async () => {
+  it('says how calls connect and how long records are kept, as this Caime does', async () => {
     const facts: PageFacts = {
       legalName: 'Nile',
       contactEmail: 'hi@nile.example',
@@ -87,9 +87,7 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
     expect(privacy({})).not.toContain('relay');
     expect(privacy({ stun: 'other' })).toContain('a public server that tells a device its own.');
     expect(privacy({ stun: 'none' })).not.toContain('public server');
-    expect(privacy({ relay: true })).toContain(
-      'the call goes through Caishy&rsquo;s relay instead',
-    );
+    expect(privacy({ relay: true })).toContain('the call goes through Caime&rsquo;s relay instead');
     expect(privacy({})).toContain(
       'Security records are kept for a year, and a device&rsquo;s sign-in for 30 days after it ended.',
     );
@@ -101,7 +99,7 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
     try {
       const page = read((await t.app.inject({ method: 'GET', url: '/privacy' })).body);
       expect(page).toContain('a public server that tells a device its own.');
-      expect(page).toContain('the call goes through Caishy&rsquo;s relay instead');
+      expect(page).toContain('the call goes through Caime&rsquo;s relay instead');
     } finally {
       await t.close();
     }
@@ -110,7 +108,7 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
   it('sends people to a page published somewhere else, and About links there too', async () => {
     const t = await createTestApp({
       PRIVACY_URL: 'https://policies.example/privacy',
-      HELP_URL: 'https://help.example/caishy',
+      HELP_URL: 'https://help.example/caime',
       // Set to its own page, it's still the page, never a loop.
       TERMS_URL: `${BASE}/terms`,
     });
@@ -118,13 +116,13 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
       expect((await t.app.inject({ method: 'GET', url: '/v1/about' })).json()).toEqual({
         privacyUrl: 'https://policies.example/privacy',
         termsUrl: `${BASE}/terms`,
-        helpUrl: 'https://help.example/caishy',
+        helpUrl: 'https://help.example/caime',
       });
       const privacy = await t.app.inject({ method: 'GET', url: '/privacy' });
       expect(privacy.statusCode).toBe(302);
       expect(privacy.headers.location).toBe('https://policies.example/privacy');
       expect((await t.app.inject({ method: 'GET', url: '/help' })).headers.location).toBe(
-        'https://help.example/caishy',
+        'https://help.example/caime',
       );
       const terms = await t.app.inject({ method: 'GET', url: '/terms' });
       expect(terms.statusCode).toBe(200);
@@ -204,13 +202,13 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
   });
 
   it('takes only an http(s) address for each, a name, and an email address', () => {
-    const env = { DATABASE_URL: 'postgres://caishy@localhost/caishy', PUBLIC_URL: `${BASE}/` };
+    const env = { DATABASE_URL: 'postgres://caime@localhost/caime', PUBLIC_URL: `${BASE}/` };
     expect(loadConfig(env).aboutLinks).toEqual({
       privacyUrl: `${BASE}/privacy`,
       termsUrl: `${BASE}/terms`,
       helpUrl: `${BASE}/help`,
     });
-    for (const TERMS_URL of ['javascript:alert(1)', '/terms', 'caishy.com/terms'])
+    for (const TERMS_URL of ['javascript:alert(1)', '/terms', 'cai.me/terms'])
       expect(() => loadConfig({ ...env, TERMS_URL }), TERMS_URL).toThrow(/TERMS_URL/);
     expect(() => loadConfig({ ...env, LEGAL_NAME: '  ' })).toThrow(/LEGAL_NAME/);
     expect(() => loadConfig({ ...env, CONTACT_EMAIL: 'hello' })).toThrow(/CONTACT_EMAIL/);

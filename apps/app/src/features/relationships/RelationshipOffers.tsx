@@ -1,10 +1,10 @@
 /**
- * How Caishy thinks someone may be known to you (PRD §12), from what both of you are part of: a
+ * How Caime thinks someone may be known to you (PRD §12), from what both of you are part of: a
  * team, a space, a company email, how they described it. Always an offer, never a fact: nothing
  * changes until it's accepted (or changed first), and "Not now" means it won't come back.
  */
-import type { ConnectionView, SuggestionView } from '@caishy/core/api';
-import { relationshipOfferText } from '@caishy/core/taxonomy';
+import type { ConnectionView, SuggestionView } from '@caime/core/api';
+import { relationshipOfferText } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, usePathname } from 'expo-router';
 import { useState } from 'react';
@@ -88,7 +88,7 @@ function OfferCard({
           <Sparkles size={18} color={t.c.accentStrong} />
           <View style={{ flex: 1, gap: 4 }}>
             <Text variant="bodyStrong" onPress={onOpen}>
-              {`Caishy thinks ${relationshipOfferText(first, offer)}.`}
+              {`Caime thinks ${relationshipOfferText(first, offer)}.`}
             </Text>
             <Text variant="caption" color="textSecondary">
               {s.rationale}
@@ -140,7 +140,7 @@ function OfferCard({
   );
 }
 
-/** On someone's page: what Caishy thinks they may be to you, while you haven't said. */
+/** On someone's page: what Caime thinks they may be to you, while you haven't said. */
 export function PersonOffer({ person }: { person: { id: string; displayName: string } }) {
   const q = useRelationshipOffers(person.id);
   const s = q.data?.suggestions[0];
@@ -148,7 +148,7 @@ export function PersonOffer({ person }: { person: { id: string; displayName: str
   return <OfferCard s={s} person={person} />;
 }
 
-/** At the top of People: the people Caishy has an idea about, a few at a time. */
+/** At the top of People: the people Caime has an idea about, a few at a time. */
 export function RelationshipOffers({ all }: { all: ConnectionView[] }) {
   const q = useRelationshipOffers();
   // On a desktop, the person open beside the list has theirs on their page: once is enough.

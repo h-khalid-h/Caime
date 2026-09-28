@@ -13,7 +13,7 @@ import {
   relationshipLabel,
   resolvePolicy,
   type Sphere,
-} from '@caishy/core';
+} from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database, Relationship, User } from '../db/schema';
 import { verifiedOrgNames } from './orgs';

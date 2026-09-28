@@ -1,12 +1,12 @@
 /*
- * Caishy's service worker (web). It shows what the server pushes when Caishy isn't open in front
+ * Caime's service worker (web). It shows what the server pushes when Caime isn't open in front
  * of the person, and opens the right place when one is tapped; of a push it reads only
  * {id, title, body, tag, level, data, quiet}. And it keeps the app itself (PRD §49): its page and
- * the files this build is made of, so Caishy opens and moves between screens with no network,
+ * the files this build is made of, so Caime opens and moves between screens with no network,
  * showing what's on the device. It never keeps what the API answers: the app keeps its own.
  */
 
-const FILES = 'caishy-files-v1';
+const FILES = 'caime-files-v1';
 /** The app is one page for every path, kept once, under "/". */
 const SHELL = '/';
 let keeping = null;
@@ -24,7 +24,7 @@ const deadline = () =>
     : {};
 /** What a build is made of: its scripts, and its fonts and images. */
 const BUILT = ['/_expo/static/', '/assets/'];
-/** Caishy's own pages, the server's alone (@caishy/core SITE_PAGES): never the app. */
+/** Caime's own pages, the server's alone (@caime/core SITE_PAGES): never the app. */
 const SITE_PAGES = ['/privacy', '/terms', '/help'];
 
 async function keep(page) {
@@ -35,7 +35,7 @@ async function keep(page) {
   const current = new Set(files);
   // A page and a list from two builds (a deploy half done): kept only when the list is the
   // page's own, so nothing is mixed and nothing the page needs is deleted. A page with none of a
-  // build's files isn't the app at all (Caishy's privacy page, a portal's sign-in): never kept.
+  // build's files isn't the app at all (Caime's privacy page, a portal's sign-in): never kept.
   const html = await page.clone().text();
   const own = [...html.matchAll(/(?:src|href)="(\/_expo\/static\/[^"]+)"/g)].map((m) => m[1]);
   if (!own.length || !own.every((f) => current.has(f))) return;
@@ -115,7 +115,7 @@ self.addEventListener('activate', (event) =>
     (async () => {
       await self.clients.claim();
       for (const name of await self.caches.keys())
-        if (name.startsWith('caishy-') && name !== FILES) await self.caches.delete(name);
+        if (name.startsWith('caime-') && name !== FILES) await self.caches.delete(name);
     })(),
   ),
 );
@@ -163,7 +163,7 @@ self.addEventListener('push', (event) => {
   try {
     n = event.data ? event.data.json() : {};
   } catch {
-    n = { title: 'Caishy', body: event.data ? event.data.text() : '' };
+    n = { title: 'Caime', body: event.data ? event.data.text() : '' };
   }
   event.waitUntil(
     (async () => {
@@ -176,7 +176,7 @@ self.addEventListener('push', (event) => {
       const quiet = n.quiet === true || inFront;
       const tag = n.tag || n.id || undefined;
       const id = n.id || null;
-      await self.registration.showNotification(n.title || 'Caishy', {
+      await self.registration.showNotification(n.title || 'Caime', {
         body: n.body || '',
         tag,
         // Something new alerts, even over an older one about the same thing.
@@ -204,7 +204,7 @@ self.addEventListener('notificationclick', (event) => {
       const tab = tabs.find((t) => new URL(t.url).origin === self.location.origin);
       if (tab) {
         // The app moves there itself, so a call or a draft in it isn't lost to a reload.
-        tab.postMessage({ type: 'caishy.open', path });
+        tab.postMessage({ type: 'caime.open', path });
         await tab.focus();
         return;
       }

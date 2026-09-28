@@ -4,8 +4,8 @@
  * website. Its handle stays: people and links know it by that.
  */
 
-import type { OrgView } from '@caishy/core/api';
-import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caishy/core/orgs';
+import type { OrgView } from '@caime/core/api';
+import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';

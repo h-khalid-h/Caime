@@ -8,7 +8,7 @@
  * after it is the decimal, whichever it is, and one with exactly three is as the language reads
  * it (1,200 is 1200 in English and 1.2 in German).
  */
-import { asciiDigits } from '@caishy/core/digits';
+import { asciiDigits } from '@caime/core/digits';
 
 /** The language's decimal separator, as "." or ",". */
 function decimalOf(locale: string): string {

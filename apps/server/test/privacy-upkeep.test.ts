@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { uuidv4, uuidv7 } from '@caishy/core';
+import { uuidv4, uuidv7 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
@@ -61,7 +61,7 @@ afterAll(async () => {
   await t.close();
 });
 
-describe('what Caishy keeps, and for how long', () => {
+describe('what Caime keeps, and for how long', () => {
   it('shows someone renamed by their new name to everyone who knows them', async () => {
     expect((await alex.get(`/v1/people/${noor.user.id}`)).person.displayName).toBe('Noor Haddad');
     await noor.patch('/v1/me', { displayName: 'Noor H.' });
@@ -242,7 +242,7 @@ describe('what Caishy keeps, and for how long', () => {
     expect(JSON.stringify(pushed.filter((p) => p.quiet))).not.toMatch(/5521|4417|9031/);
   });
 
-  it('keeps nothing of a message’s words in what Caishy offered from it, once it’s deleted', async () => {
+  it('keeps nothing of a message’s words in what Caime offered from it, once it’s deleted', async () => {
     const m = await send(alex, 'Can you send me the door code 4417 by Friday?');
     await t.ctx.flush();
     const offers = () =>
@@ -309,7 +309,7 @@ describe('what Caishy keeps, and for how long', () => {
       .execute();
     const of = (id: string) => state.find((x) => x.id === id);
     expect(of(m.id)).toMatchObject({ body: null, deleted_at: expect.any(Date) });
-    // What Caishy offered from one keeps none of its words.
+    // What Caime offered from one keeps none of its words.
     expect((await offered()).length).toBeGreaterThan(0);
     expect(JSON.stringify(await offered())).not.toContain('7788');
     expect(of(earlier.id)).toMatchObject({ body: 'Sent before it was on', deleted_at: null });
@@ -515,7 +515,7 @@ describe('what Caishy keeps, and for how long', () => {
     const ended = await t.app.inject({
       method: 'GET',
       url: '/v1/auth/session',
-      headers: { cookie, 'x-caishy-client': 'web' },
+      headers: { cookie, 'x-caime-client': 'web' },
     });
     expect(ended.statusCode).toBe(401);
     expect(ended.headers['clear-site-data']).toBe('"cache"');
@@ -526,7 +526,7 @@ describe('what Caishy keeps, and for how long', () => {
       method: 'DELETE',
       url: '/v1/me',
       payload: { password: 'correct horse battery' },
-      headers: { cookie: theirs, 'x-caishy-client': 'web' },
+      headers: { cookie: theirs, 'x-caime-client': 'web' },
     });
     expect(gone.statusCode, gone.body).toBe(200);
     expect(gone.headers['clear-site-data']).toBe('"cache"');

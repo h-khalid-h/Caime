@@ -1,4 +1,4 @@
-import { THREAD_STATE_LABELS, type ThreadState } from '@caishy/core/business';
+import { THREAD_STATE_LABELS, type ThreadState } from '@caime/core/business';
 import { View } from 'react-native';
 import { type Theme, useTheme } from '@/theme/theme';
 import { Text } from '@/ui/Text';

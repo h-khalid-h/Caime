@@ -2,8 +2,8 @@
  * The language, and region, dates, times and numbers are written in for someone: each named in
  * itself (as people look for their own), with how a date and a number look in it.
  */
-import { LANGUAGES } from '@caishy/core/languages';
-import { safeLocale } from '@caishy/core/locale';
+import { LANGUAGES } from '@caime/core/languages';
+import { safeLocale } from '@caime/core/locale';
 import { getLocales } from 'expo-localization';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';

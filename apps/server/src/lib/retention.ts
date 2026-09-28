@@ -1,5 +1,5 @@
 /**
- * How long Caishy keeps what it records about how it's used, as its privacy page says (the page
+ * How long Caime keeps what it records about how it's used, as its privacy page says (the page
  * reads these): security records (sign-ins and changes to how an account is secured, with the
  * network address and browser) a year; a sign-in that ended, 30 days after it ended; the log of
  * what happens (a message sent, a connection made, an AI feature used: by account, never the

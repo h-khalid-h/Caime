@@ -1,7 +1,7 @@
 /**
  * Block and report (PRD §55). Blocking is silent: the blocked person just stops reaching you.
  */
-import { ReportBody, uuidv7 } from '@caishy/core';
+import { ReportBody, uuidv7 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';

@@ -2,7 +2,7 @@
  * Connections and connection requests (PRD §5.2, §11, §52; PRODUCT-REVIEW R4, R14, R29).
  */
 
-import type { ConnectionRequestView, ConnectionView } from '@caishy/core';
+import type { ConnectionRequestView, ConnectionView } from '@caime/core';
 import {
   AcceptRequestBody,
   ConnectionRequestBody,
@@ -11,7 +11,7 @@ import {
   type Sphere,
   UpdateConnectionBody,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import type { Transaction } from 'kysely';
 import { z } from 'zod';

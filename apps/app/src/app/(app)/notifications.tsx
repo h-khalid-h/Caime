@@ -1,5 +1,5 @@
-import type { NotificationView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
+import type { NotificationView } from '@caime/core/api';
+import { formatListTime } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
@@ -120,7 +120,7 @@ export default function Notifications() {
               expression="happy"
               icon={Bell}
               title="All quiet"
-              body="Caishy only interrupts you for what matters, by the rules you set for each relationship."
+              body="Caime only interrupts you for what matters, by the rules you set for each relationship."
             />
           ) : null
         }

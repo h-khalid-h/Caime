@@ -1,4 +1,4 @@
-import { uuidv7 } from '@caishy/core';
+import { uuidv7 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';

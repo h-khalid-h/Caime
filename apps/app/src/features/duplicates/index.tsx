@@ -2,7 +2,7 @@
  * Possible duplicates (PRD §51). The card in People and the section on a person's page load only
  * when there's one to show: most people never have two accounts of anyone.
  */
-import type { ConnectionView } from '@caishy/core/api';
+import type { ConnectionView } from '@caime/core/api';
 import { useConnections, useDuplicates } from '@/api/hooks';
 import { lazyPart } from '@/ui/Lazy';
 

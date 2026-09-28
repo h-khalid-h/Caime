@@ -1,12 +1,12 @@
-import type { OrgMemberView, OrgView } from '@caishy/core/api';
+import type { OrgMemberView, OrgView } from '@caime/core/api';
 import {
   canChangeOrgRole,
   canManageOrg,
   canRemoveFromOrg,
   ORG_ROLE_LABELS,
   orgKindName,
-} from '@caishy/core/orgs';
-import { PLAN_NAMES } from '@caishy/core/plans';
+} from '@caime/core/orgs';
+import { PLAN_NAMES } from '@caime/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -271,7 +271,7 @@ export function OrgScreen({ handle }: { handle: string }) {
             <IconButton
               icon={Share}
               label={`Share ${org.name}’s link`}
-              onPress={() => void shareLink(`${org.name} on Caishy:`, handleLink(org.handle))}
+              onPress={() => void shareLink(`${org.name} on Caime:`, handleLink(org.handle))}
               testID="org-share"
             />
           </View>
@@ -498,7 +498,7 @@ export function OrgScreen({ handle }: { handle: string }) {
           >
             {org.verified
               ? `${org.name} proved it controls ${org.verifiedDomain}.`
-              : 'Caishy hasn’t verified who runs this organization. Be careful with links and payments.'}
+              : 'Caime hasn’t verified who runs this organization. Be careful with links and payments.'}
           </Text>
         )}
         {!org.members ? (
@@ -517,7 +517,7 @@ export function OrgScreen({ handle }: { handle: string }) {
               <ListRow
                 icon={Flag}
                 title={`Report ${org.name}`}
-                subtitle="Sends it to Caishy’s safety team, for a scam or someone posing as another"
+                subtitle="Sends it to Caime’s safety team, for a scam or someone posing as another"
                 destructive
                 onPress={() => report({ orgId: org.id }, org.name)}
                 testID="org-report"

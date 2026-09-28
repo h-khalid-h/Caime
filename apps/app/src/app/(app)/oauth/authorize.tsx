@@ -94,11 +94,7 @@ export default function Authorize() {
               <Text variant="body" color="textSecondary">
                 {(q.error as Error | null)?.message ?? 'Go back to the app and try again.'}
               </Text>
-              <Button
-                label="Go to Caishy"
-                variant="secondary"
-                onPress={() => router.replace('/')}
-              />
+              <Button label="Go to Caime" variant="secondary" onPress={() => router.replace('/')} />
             </View>
           ) : (
             <View style={{ gap: 16 }} testID="oauth-consent">

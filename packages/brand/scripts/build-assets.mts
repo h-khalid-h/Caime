@@ -2,7 +2,7 @@
  * Generates every brand asset from code (docs/BRAND.md): the wordmark from Nunito Black outlines,
  * the heart-with-a-face icon mark, the app icon set, splash, favicon and a review sheet.
  *
- *   pnpm --filter @caishy/brand assets
+ *   pnpm --filter @caime/brand assets
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -34,15 +34,18 @@ async function buildWordmark() {
   const font = opentype.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
   const size = 200;
   const tracking = -0.02 * size;
-  const text = 'Caıshy'; // dotless i: the heart is its dot
+  const text = 'Caıme'; // dotless i: the heart is its dot
   let x = 0;
   const baseline = 200;
   const parts: string[] = [];
   let iBox: { x1: number; x2: number; y1: number } | null = null;
+  // How far the letters reach below the baseline ("Caıme" has nothing that does).
+  let bottom = baseline;
   for (const ch of text) {
     const glyph = font.charToGlyph(ch);
     const path = glyph.getPath(x, baseline, size);
     parts.push(path.toPathData(1));
+    bottom = Math.max(bottom, path.getBoundingBox().y2);
     if (ch === 'ı') {
       const b = path.getBoundingBox();
       iBox = { x1: b.x1, x2: b.x2, y1: b.y1 };
@@ -62,8 +65,7 @@ async function buildWordmark() {
   const minX = -4;
   const maxX = x - tracking + 4;
   const minY = heartCy - heartSize * 0.55;
-  const descender = Math.abs((font.descender ?? -250) * (size / font.unitsPerEm));
-  const maxY = baseline + descender * 0.95;
+  const maxY = bottom + 4;
   const viewBox = `${round(minX)} ${round(minY)} ${round(maxX - minX)} ${round(maxY - minY)}`;
   return {
     letters,
@@ -143,7 +145,7 @@ async function main() {
   };
   for (const [name, raw] of Object.entries(svgs)) {
     // Standalone files carry an accessible name; inline uses set their own.
-    const svg = raw.replace(/^<svg([^>]*)>/, '<svg$1 role="img"><title>Caishy</title>');
+    const svg = raw.replace(/^<svg([^>]*)>/, '<svg$1 role="img"><title>Caime</title>');
     await writeFile(join(docsAssets, name), svg);
     await writeFile(join(appAssets, name), svg);
   }

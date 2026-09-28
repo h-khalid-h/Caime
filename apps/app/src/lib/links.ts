@@ -31,7 +31,7 @@ export function linkify(text: string): TextPart[] {
  * update): checked here first, the check loaded when a link is first opened.
  */
 export async function openCheckedLink(url: string): Promise<void> {
-  const { assessLink } = await import('@caishy/core/safety');
+  const { assessLink } = await import('@caime/core/safety');
   openLink(url, assessLink(url).suspicious);
 }
 
@@ -56,7 +56,7 @@ export function opensWithEnter(open: () => void): object {
 
 /** Open a link, asking first when the server flagged it as unusual (link safety, PRD §60). */
 export function openLink(url: string, suspicious = false): void {
-  // A link to Caishy itself (someone's @handle) opens here, not in another tab.
+  // A link to Caime itself (someone's @handle) opens here, not in another tab.
   const own = ownLinkPath(url, WEB_URL);
   if (own) {
     router.push(own);

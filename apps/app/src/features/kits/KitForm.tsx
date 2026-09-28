@@ -1,13 +1,13 @@
-import type { ConversationView, CustomKitOfferView } from '@caishy/core/api';
-import { prepareCustomFields } from '@caishy/core/custom-kits';
-import { formatAmount, roundAmount } from '@caishy/core/format';
-import { uuidv4 } from '@caishy/core/ids';
-import { extractAmounts } from '@caishy/core/intelligence';
-import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caishy/core/kit-cards';
-import { KITS, type KitDef, type KitField, kitsFor } from '@caishy/core/kits';
-import { SPACE_KIND_DEFS } from '@caishy/core/spaces';
-import { zonedParts } from '@caishy/core/time';
-import { firstFutureWhen, parseWhen } from '@caishy/core/when';
+import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
+import { prepareCustomFields } from '@caime/core/custom-kits';
+import { formatAmount, roundAmount } from '@caime/core/format';
+import { uuidv4 } from '@caime/core/ids';
+import { extractAmounts } from '@caime/core/intelligence';
+import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
+import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
+import { SPACE_KIND_DEFS } from '@caime/core/spaces';
+import { zonedParts } from '@caime/core/time';
+import { firstFutureWhen, parseWhen } from '@caime/core/when';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -66,7 +66,7 @@ type Clock = { now: Date; timeZone: string; locale: string; workweek: number[] }
 type Picked = { chosen: Chosen; shown: string };
 
 /**
- * What a typed value means, for the preview under the field and for sending. Caishy's own cards
+ * What a typed value means, for the preview under the field and for sending. Caime's own cards
  * look ahead (a meeting, a due date); an organization's own may say when something was, too.
  */
 function readField(
@@ -172,7 +172,7 @@ export function KitForm({
   // Location: where the device says this person is, once, when they ask.
   const [spot, setSpot] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [locating, setLocating] = useState(false);
-  // Or live, for a while: it follows them until then, while Caishy is open (R29).
+  // Or live, for a while: it follows them until then, while Caime is open (R29).
   const [liveFor, setLiveFor] = useState<'0' | '15' | '60' | '480'>('0');
 
   const close = () => {
@@ -197,7 +197,7 @@ export function KitForm({
       const Location = await import('expo-location');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setError('Caishy can’t see where you are. Allow it in your settings, or type a place.');
+        setError('Caime can’t see where you are. Allow it in your settings, or type a place.');
         return;
       }
       const { coords } = await Location.getCurrentPositionAsync({
@@ -318,7 +318,7 @@ export function KitForm({
           <Text variant="caption" color="textSecondary">
             {liveFor === '0' || !spot
               ? 'Only this moment is shared, never where you go after.'
-              : 'Where you are follows here until then, while Caishy is open. Stop it any time; only the latest point is kept.'}
+              : 'Where you are follows here until then, while Caime is open. Stop it any time; only the latest point is kept.'}
           </Text>
           {spot ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

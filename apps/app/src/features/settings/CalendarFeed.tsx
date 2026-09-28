@@ -1,9 +1,9 @@
 /**
  * Your calendar (PRD §72): Google Calendar, Outlook or Apple Calendar reads your actions with a
- * due date and the meetings you agreed in Caishy from a private address. Caishy stays where they
+ * due date and the meetings you agreed in Caime from a private address. Caime stays where they
  * change. The address is shown once, as it's made; a new one ends the old one.
  */
-import { formatWhen } from '@caishy/core/format';
+import { formatWhen } from '@caime/core/format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -56,7 +56,7 @@ export function CalendarFeed() {
       setUrl(null);
       setConfirming(null);
       void qc.invalidateQueries({ queryKey: qk.calendarFeed });
-      toast('Your calendar won’t read Caishy any more');
+      toast('Your calendar won’t read Caime any more');
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -75,7 +75,7 @@ export function CalendarFeed() {
     <View style={{ padding: 16, gap: 12 }} testID="calendar-feed">
       <Text variant="body" color="textSecondary">
         See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or
-        Apple Calendar. They read a private address; nothing changes in Caishy from there.
+        Apple Calendar. They read a private address; nothing changes in Caime from there.
       </Text>
       {url ? (
         <View style={{ gap: 8 }}>
@@ -104,7 +104,7 @@ export function CalendarFeed() {
           <Text variant="caption" color="textSecondary">
             {confirming === 'replace'
               ? 'The address your calendar has now stops working, and you add the new one.'
-              : 'Your calendar stops showing what’s in Caishy.'}
+              : 'Your calendar stops showing what’s in Caime.'}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Button

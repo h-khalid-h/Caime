@@ -1,6 +1,6 @@
-import { avatarColors } from '@caishy/brand/tokens';
-import type { PresenceState } from '@caishy/core/api';
-import { initials } from '@caishy/core/format';
+import { avatarColors } from '@caime/brand/tokens';
+import type { PresenceState } from '@caime/core/api';
+import { initials } from '@caime/core/format';
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { View } from 'react-native';

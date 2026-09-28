@@ -18,8 +18,8 @@ import type {
   GroupCallSignalView,
   GroupCallView,
   RealtimeEvent,
-} from '@caishy/core/api';
-import { CALL_RING_SECONDS, type CallKind } from '@caishy/core/calls';
+} from '@caime/core/api';
+import { CALL_RING_SECONDS, type CallKind } from '@caime/core/calls';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
@@ -666,7 +666,7 @@ export async function startGroupSharing(): Promise<void> {
   } catch (e) {
     // Choosing nothing is fine; anything else is said.
     if (!(e instanceof DOMException && e.name === 'NotAllowedError'))
-      toast('Caishy couldn’t share your screen.', { tone: 'danger' });
+      toast('Caime couldn’t share your screen.', { tone: 'danger' });
     return;
   }
   const track = shown.getVideoTracks()[0];
@@ -768,7 +768,7 @@ if (typeof window !== 'undefined')
       method: 'POST',
       keepalive: true,
       credentials: 'include',
-      headers: { 'content-type': 'application/json', 'x-caishy-client': 'web' },
+      headers: { 'content-type': 'application/json', 'x-caime-client': 'web' },
       // Only this device leaves: the person may be in the call on another one now.
       body: JSON.stringify({ deviceId: DEVICE_ID }),
     }).catch(() => {});

@@ -1,4 +1,4 @@
-import type { MessagesPage, MessageView } from '@caishy/core/api';
+import type { MessagesPage, MessageView } from '@caime/core/api';
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { qk } from '@/api/keys';

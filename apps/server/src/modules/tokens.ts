@@ -3,7 +3,7 @@
  * the permissions it needs and how long it lasts, shown once, and revoked at any time. Only a
  * signed-in person reaches these routes: no token can make or list tokens.
  */
-import { CreatePersonalTokenBody, type PersonalTokenView, uuidv7 } from '@caishy/core';
+import { CreatePersonalTokenBody, type PersonalTokenView, uuidv7 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';

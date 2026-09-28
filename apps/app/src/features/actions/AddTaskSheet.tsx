@@ -1,5 +1,5 @@
-import { formatDue } from '@caishy/core/format';
-import { firstFutureWhen } from '@caishy/core/when';
+import { formatDue } from '@caime/core/format';
+import { firstFutureWhen } from '@caime/core/when';
 import { onlineManager } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';

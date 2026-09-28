@@ -1,10 +1,10 @@
 /**
- * One rule (PRD §68–70): how Caishy treats a kind of relationship, a role in it, or one person.
+ * One rule (PRD §68–70): how Caime treats a kind of relationship, a role in it, or one person.
  * Whatever it doesn't set comes from the broader rule it sits under (a role's from its
  * relationship's, one person's from how you know them), and shows as it applies. A named rule is
  * a template ("My Customers"). The rules themselves are the server's (policy.ts in core).
  */
-import type { PolicyView } from '@caishy/core/api';
+import type { PolicyView } from '@caime/core/api';
 import type {
   AiTone,
   EffectivePolicy,
@@ -13,8 +13,8 @@ import type {
   PolicySettings,
   Priority,
   PrivacyPreset,
-} from '@caishy/core/policy';
-import { type Schedule, workHours } from '@caishy/core/time';
+} from '@caime/core/policy';
+import { type Schedule, workHours } from '@caime/core/time';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -307,7 +307,7 @@ export function RuleSheet({
         <Overline>Writing to them</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<AiTone>
-            label="The tone Caishy suggests"
+            label="The tone Caime suggests"
             value={pick('aiTone') as AiTone}
             onChange={(v) => void save({ aiTone: v })}
             options={[

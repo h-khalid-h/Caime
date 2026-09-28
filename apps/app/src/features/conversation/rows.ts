@@ -1,5 +1,5 @@
-import type { ConversationView, MessageView } from '@caishy/core/api';
-import { formatDayHeading } from '@caishy/core/format';
+import type { ConversationView, MessageView } from '@caime/core/api';
+import { formatDayHeading } from '@caime/core/format';
 import type { OutboxItem } from '@/state/outbox';
 import type { Delivery } from './MessageBubble';
 

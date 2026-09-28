@@ -123,30 +123,30 @@ export function createMetrics(pool: pg.Pool) {
   loop.enable();
   const started = Date.now();
   const m = {
-    http: new Counter('caishy_http_requests_total', 'HTTP requests, by route and status.'),
+    http: new Counter('caime_http_requests_total', 'HTTP requests, by route and status.'),
     httpSeconds: new Histogram(
-      'caishy_http_request_duration_seconds',
+      'caime_http_request_duration_seconds',
       'Time to answer an HTTP request, by route.',
       SECONDS,
     ),
-    realtime: new Gauge('caishy_realtime_connections', 'Open realtime connections.'),
-    messages: new Counter('caishy_messages_total', 'Messages sent, by kind.'),
-    jobs: new Counter('caishy_jobs_total', 'Background jobs run, by kind and outcome.'),
-    jobSeconds: new Histogram('caishy_job_duration_seconds', 'Time a job took, by kind.', SECONDS),
+    realtime: new Gauge('caime_realtime_connections', 'Open realtime connections.'),
+    messages: new Counter('caime_messages_total', 'Messages sent, by kind.'),
+    jobs: new Counter('caime_jobs_total', 'Background jobs run, by kind and outcome.'),
+    jobSeconds: new Histogram('caime_job_duration_seconds', 'Time a job took, by kind.', SECONDS),
     webhooks: new Counter(
-      'caishy_webhook_deliveries_total',
+      'caime_webhook_deliveries_total',
       'Webhook delivery attempts, by outcome (delivered, retrying, failed).',
     ),
-    ai: new Counter('caishy_ai_calls_total', 'AI assist calls, by feature and outcome.'),
+    ai: new Counter('caime_ai_calls_total', 'AI assist calls, by feature and outcome.'),
     aiSeconds: new Histogram(
-      'caishy_ai_call_duration_seconds',
+      'caime_ai_call_duration_seconds',
       'Time an AI assist call took, by feature.',
       [0.25, 0.5, 1, 2, 5, 10, 20, 40],
     ),
-    push: new Counter('caishy_push_total', 'Push notifications, by channel and outcome.'),
+    push: new Counter('caime_push_total', 'Push notifications, by channel and outcome.'),
   };
   const process_ = [
-    new Gauge('caishy_db_pool_connections', 'Database connections, by state.', () => [
+    new Gauge('caime_db_pool_connections', 'Database connections, by state.', () => [
       { labels: { state: 'total' }, value: pool.totalCount },
       { labels: { state: 'idle' }, value: pool.idleCount },
       { labels: { state: 'waiting' }, value: pool.waitingCount },

@@ -2,7 +2,7 @@
  * A day, and a time on it if there is one, where the person is (their time zone, not the
  * device's): what an action's due date, a card's date and a mute's end are chosen as.
  */
-import { addDays, weekStart, zonedParts, zonedTimeToUtc } from '@caishy/core/time';
+import { addDays, weekStart, zonedParts, zonedTimeToUtc } from '@caime/core/time';
 
 export interface Chosen {
   /** YYYY-MM-DD, where the person is. */

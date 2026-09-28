@@ -1,4 +1,4 @@
-/** Settings → Notifications: whether this browser shows calls and messages when Caishy isn't open. */
+/** Settings → Notifications: whether this browser shows calls and messages when Caime isn't open. */
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
@@ -51,10 +51,10 @@ export function BrowserNotifications() {
       <View style={{ padding: 16, gap: 10 }} testID="browser-notifications">
         <Text variant="body">
           {state === 'denied'
-            ? 'This browser blocks notifications from Caishy. Allow them in its site settings, then come back.'
+            ? 'This browser blocks notifications from Caime. Allow them in its site settings, then come back.'
             : on
-              ? 'On: calls and messages reach you here when Caishy isn’t open.'
-              : 'Hear calls and messages here when Caishy isn’t open.'}
+              ? 'On: calls and messages reach you here when Caime isn’t open.'
+              : 'Hear calls and messages here when Caime isn’t open.'}
         </Text>
         {state === 'denied' ? null : on ? (
           <Button

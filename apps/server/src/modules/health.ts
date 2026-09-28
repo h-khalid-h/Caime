@@ -1,4 +1,4 @@
-import type { AboutView, CountriesView, CurrenciesView, TimeZonesView } from '@caishy/core';
+import type { AboutView, CountriesView, CurrenciesView, TimeZonesView } from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -11,7 +11,7 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
   const lists = (req: FastifyRequest) =>
     ctx.limiter.hit(`lists:ip:${req.ip}`, ctx.config.isTest ? 10_000 : 120, 60_000);
   app.get('/healthz', async () => ({ ok: true }));
-  // Where this Caishy's policies and help live: its own pages (pages.ts), or where its operator
+  // Where this Caime's policies and help live: its own pages (pages.ts), or where its operator
   // published them. Never a domain of the code's own.
   app.get('/about', async (): Promise<AboutView> => ctx.config.aboutLinks);
   // Every country, named in the asker's language, and the one their device suggests (lib/geo.ts),

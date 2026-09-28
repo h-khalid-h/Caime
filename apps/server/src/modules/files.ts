@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { type Readable, Transform } from 'node:stream';
-import { canSee, uuidv7 } from '@caishy/core';
+import { canSee, uuidv7 } from '@caime/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 import { z } from 'zod';

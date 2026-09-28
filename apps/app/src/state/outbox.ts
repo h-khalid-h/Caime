@@ -4,8 +4,8 @@
  * a retry after a lost response can never send twice. A private conversation's (R18) is only
  * held while the app is open: its words are never written to the device's storage.
  */
-import type { MessageView } from '@caishy/core/api';
-import { uuidv4 } from '@caishy/core/ids';
+import type { MessageView } from '@caime/core/api';
+import { uuidv4 } from '@caime/core/ids';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -148,7 +148,7 @@ export const useOutbox = create<OutboxState>()(
       clear: () => set({ items: [] }),
     }),
     {
-      name: 'caishy.outbox',
+      name: 'caime.outbox',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ items: s.items.filter((i) => !i.private) }),
       // Anything mid-send when the app closed goes back in the queue.

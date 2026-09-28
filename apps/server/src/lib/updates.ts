@@ -4,8 +4,8 @@
  * neither a connection nor a conversation, nobody sees who else follows, and the team sees how
  * many do, never who. Everyone but the team reads an update as the organization's.
  */
-import type { FollowingView, OrgRef, OrgUpdateView } from '@caishy/core';
-import { previewText } from '@caishy/core';
+import type { FollowingView, OrgRef, OrgUpdateView } from '@caime/core';
+import { previewText } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OrgUpdate } from '../db/schema';

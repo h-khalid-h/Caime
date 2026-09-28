@@ -1,4 +1,4 @@
-import { SAVED_MAX, uuidv4 } from '@caishy/core';
+import { SAVED_MAX, uuidv4 } from '@caime/core';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runAutomations } from '../src/lib/automations';
@@ -25,7 +25,7 @@ async function connect(a: Client, b: Client, sphere: string, role?: string) {
 }
 
 async function upload(c: Client, name: string, mime = 'application/pdf', data?: Buffer) {
-  const boundary = `----caishy${uuidv4()}`;
+  const boundary = `----caime${uuidv4()}`;
   const payload = Buffer.concat([
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: ${mime}\r\n\r\n`,

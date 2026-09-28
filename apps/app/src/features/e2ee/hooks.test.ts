@@ -4,7 +4,7 @@
  * the server says otherwise, or from one waiting to be approved, and an opened message's links
  * are checked on the device.
  */
-import type { MessageView } from '@caishy/core/api';
+import type { MessageView } from '@caime/core/api';
 import { describe, expect, it } from 'vitest';
 import { readAs, suspiciousLink, whyNotWritten } from './hooks';
 
@@ -32,7 +32,7 @@ describe('private conversations on screen (R18)', () => {
 
   it('nothing is written from here once the server says a private one isn’t, nor while waiting', () => {
     expect(whyNotWritten({ private: true }, false, 'approved')).toMatch(
-      /^This conversation was private on this device, and Caishy now says it isn’t/,
+      /^This conversation was private on this device, and Caime now says it isn’t/,
     );
     expect(whyNotWritten({ private: true }, true, 'waiting')).toMatch(
       /once you approve it on another device/,
@@ -45,7 +45,7 @@ describe('private conversations on screen (R18)', () => {
   it('a private message’s links are checked here, from its words', async () => {
     const lookalike = 'https://paypa1.com/login';
     expect(await suspiciousLink({ sealed, entities: {} }, lookalike)).toBe(true);
-    expect(await suspiciousLink({ sealed, entities: {} }, 'https://caishy.example/about')).toBe(
+    expect(await suspiciousLink({ sealed, entities: {} }, 'https://caime.example/about')).toBe(
       false,
     );
     // Elsewhere, as the server found them.

@@ -1,4 +1,4 @@
-import type { AlbumView } from '@caishy/core';
+import type { AlbumView } from '@caime/core';
 /**
  * Sending and reading messages (PRD §21, §80; ADR-8, ADR-9). A message never appears sent and
  * then disappears: it is ordered by `seq` inside the insert transaction, and a retried send with
@@ -20,7 +20,7 @@ import {
   type SendMessageBodyT,
   messagePreview as sharedPreview,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -405,7 +405,7 @@ export async function sendMessage(
       .select('archived_at')
       .where('id', '=', conversation.org_id)
       .executeTakeFirst();
-    if (!org || org.archived_at) throw forbidden('This organization has closed on Caishy.');
+    if (!org || org.archived_at) throw forbidden('This organization has closed on Caime.');
     // Its customer blocked it: closed both ways until they unblock (PRD §55).
     await assertCanWrite(ctx, conversationId, senderId);
   }

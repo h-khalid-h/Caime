@@ -1,5 +1,5 @@
-import type { MessageView } from '@caishy/core/api';
-import { previewText } from '@caishy/core/format';
+import type { MessageView } from '@caime/core/api';
+import { previewText } from '@caime/core/format';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -131,7 +131,7 @@ export function MessageActions({
   };
   const mine = m.senderId === me;
   const deleted = m.deletedAt !== null;
-  // What Caishy may read (translate, find a task in): never a private message's words.
+  // What Caime may read (translate, find a task in): never a private message's words.
   const text = m.sealed ? '' : (m.body ?? '');
   // What's kept from it on the server (an action, a decision): only from a message the server
   // has (not one still waiting to go, which it doesn't know by this id), and never from a
@@ -276,7 +276,7 @@ export function MessageActions({
             testID="message-forward"
           />
         ) : null}
-        {/* Kept only where Caishy can read it: never a private message, nor a line about it. */}
+        {/* Kept only where Caime can read it: never a private message, nor a line about it. */}
         {canSave && keepable && !deleted && m.kind !== 'system' ? (
           <ListRow
             icon={Bookmark}
@@ -290,7 +290,7 @@ export function MessageActions({
           <ListRow
             icon={Languages}
             title="Translate"
-            subtitle="Into your language, suggested by Caishy"
+            subtitle="Into your language, suggested by Caime"
             onPress={close(() => translate(m.id))}
             testID="message-translate"
           />
@@ -384,7 +384,7 @@ export function MessageActions({
           <ListRow
             icon={Flag}
             title="Report"
-            subtitle="Sends this message to Caishy’s safety team"
+            subtitle="Sends this message to Caime’s safety team"
             destructive
             onPress={close(() =>
               report(

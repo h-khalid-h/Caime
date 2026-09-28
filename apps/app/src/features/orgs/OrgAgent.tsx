@@ -3,8 +3,8 @@ import {
   AGENT_KNOWLEDGE_MAX,
   AGENT_NAME_MAX,
   defaultAgentName,
-} from '@caishy/core/agents';
-import type { AgentTryView, OrgView } from '@caishy/core/api';
+} from '@caime/core/agents';
+import type { AgentTryView, OrgView } from '@caime/core/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

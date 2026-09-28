@@ -8,7 +8,7 @@ export const PRESENCE_OPTIONS: Array<{
   label: string;
   detail?: string;
 }> = [
-  { value: 'auto', label: 'Automatic', detail: 'Online while you use Caishy' },
+  { value: 'auto', label: 'Automatic', detail: 'Online while you use Caime' },
   { value: 'busy', label: 'Busy' },
   { value: 'away', label: 'Away' },
   { value: 'invisible', label: 'Invisible', detail: 'Hides when you’re online and last seen' },

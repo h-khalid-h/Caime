@@ -560,7 +560,7 @@ export const SendMessageBody = z
     fileIds: z.array(z.string().uuid()).max(10).optional(),
     urgent: z.boolean().optional(),
     mentions: z.array(z.string().uuid()).max(50).optional(),
-    /** The sender's own label for the message; otherwise Caishy detects it (PRD §18). */
+    /** The sender's own label for the message; otherwise Caime detects it (PRD §18). */
     mode: z
       .enum(['talk', 'ask', 'plan', 'decide', 'share', 'request', 'confirm', 'pay', 'track'])
       .optional(),

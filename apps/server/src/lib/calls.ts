@@ -17,7 +17,7 @@ import {
   type CallView,
   callResult,
   type IceConfigView,
-} from '@caishy/core';
+} from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';

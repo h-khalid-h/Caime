@@ -1,10 +1,10 @@
 /**
- * Relationship policies (PRODUCT-REVIEW R11): one screen answers "how should Caishy treat my
+ * Relationship policies (PRODUCT-REVIEW R11): one screen answers "how should Caime treat my
  * customers?" for notifications, inbox priority, privacy, tone and follow-up.
  */
 
-import type { PolicyView } from '@caishy/core';
-import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caishy/core';
+import type { PolicyView } from '@caime/core';
+import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql, type Transaction } from 'kysely';
 import { z } from 'zod';
@@ -191,7 +191,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  /** How Caishy treats one person right now, with the rules it came from (R7 explainability). */
+  /** How Caime treats one person right now, with the rules it came from (R7 explainability). */
   app.get('/policies/for/:userId', async (req) => {
     const auth = requireAuth(req);
     const { userId } = parse(z.object({ userId: z.string().uuid() }), req.params);

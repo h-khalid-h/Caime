@@ -5,7 +5,7 @@ import {
   handleFromName,
   normalizeHandle,
   passwordError,
-} from '@caishy/core/rules';
+} from '@caime/core/rules';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { type TextInput, View } from 'react-native';
@@ -304,7 +304,7 @@ export default function SignUp() {
       />
       <Text variant="caption" color="textSecondary" align="center">
         By creating an account, you agree to the <PageLink name="terms">terms</PageLink>. The{' '}
-        <PageLink name="privacy">privacy policy</PageLink> says what Caishy keeps, and why.
+        <PageLink name="privacy">privacy policy</PageLink> says what Caime keeps, and why.
       </Text>
       <Pressable
         accessibilityRole="link"
@@ -322,7 +322,7 @@ export default function SignUp() {
   );
 }
 
-/** One of Caishy's own pages (the server's), opened as a page, never a screen of the app. */
+/** One of Caime's own pages (the server's), opened as a page, never a screen of the app. */
 function PageLink({ name, children }: { name: 'terms' | 'privacy'; children: string }) {
   const open = () => openLink(`${WEB_URL}/${name}`);
   return (

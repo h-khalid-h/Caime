@@ -1,5 +1,5 @@
-import type { OrgView } from '@caishy/core/api';
-import { uuidv4 } from '@caishy/core/ids';
+import type { OrgView } from '@caime/core/api';
+import { uuidv4 } from '@caime/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';

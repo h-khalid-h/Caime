@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';

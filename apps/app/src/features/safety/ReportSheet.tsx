@@ -1,6 +1,6 @@
 /**
  * Reporting a person, a message, an organization or one of its updates: what's wrong, chosen
- * from what Caishy's safety team acts on, and anything else they should know. Opened from
+ * from what Caime's safety team acts on, and anything else they should know. Opened from
  * anywhere with `report(target, name)` (report.ts); one sheet, loaded the first time it's asked
  * for.
  */
@@ -48,7 +48,7 @@ export function ReportSheet() {
         ...(details.trim() ? { details: details.trim() } : {}),
       });
       close();
-      toast('Reported. Thank you for keeping Caishy safe.');
+      toast('Reported. Thank you for keeping Caime safe.');
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -60,7 +60,7 @@ export function ReportSheet() {
       open={target !== null}
       onClose={close}
       title={`Report ${name}`}
-      subtitle="Caishy’s safety team reads every report. Nobody is told who made it."
+      subtitle="Caime’s safety team reads every report. Nobody is told who made it."
       footer={
         <Button
           label="Send report"

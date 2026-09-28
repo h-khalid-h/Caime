@@ -1,5 +1,5 @@
-import type { OrgPlanView } from '@caishy/core/api';
-import { nextOrgPlan, ORG_ALLOWANCES, PLAN_NAMES } from '@caishy/core/plans';
+import type { OrgPlanView } from '@caime/core/api';
+import { nextOrgPlan, ORG_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
 import { View } from 'react-native';
 import { useOrgBilling } from '@/api/hooks';
 import { qk } from '@/api/keys';

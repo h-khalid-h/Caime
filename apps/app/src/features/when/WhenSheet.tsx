@@ -4,7 +4,7 @@
  * it needs one. Days and times are the person's, in their time zone.
  */
 
-import { zonedParts } from '@caishy/core/time';
+import { zonedParts } from '@caime/core/time';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useUserClock } from '@/lib/time';

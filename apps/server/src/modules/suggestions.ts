@@ -2,8 +2,8 @@
  * Suggestions (PRODUCT-REVIEW R12): inferences that become facts only when accepted.
  */
 
-import type { SuggestionView } from '@caishy/core';
-import { AcceptSuggestionBody, type RelationshipInputT, TopicBody } from '@caishy/core';
+import type { SuggestionView } from '@caime/core';
+import { AcceptSuggestionBody, type RelationshipInputT, TopicBody } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

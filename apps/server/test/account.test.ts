@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, clientFor, createTestApp, signup, type TestApp } from './helpers';
@@ -12,7 +12,7 @@ let convo: string;
 let photo: Buffer;
 
 async function upload(c: Client, name: string) {
-  const boundary = `----caishy${uuidv4()}`;
+  const boundary = `----caime${uuidv4()}`;
   const payload = Buffer.concat([
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: image/jpeg\r\n\r\n`,
@@ -88,7 +88,7 @@ describe('your data', () => {
       decision: 'allow',
     });
     const calendar = await hassan.post('/v1/calendar/feed');
-    // What he set Caishy to keep, and what he saved: where it is, never someone else's words.
+    // What he set Caime to keep, and what he saved: where it is, never someone else's words.
     await hassan.post('/v1/automations', {
       when: { sphere: 'work', kinds: ['link'] },
       collection: 'Work links',
@@ -121,10 +121,10 @@ describe('your data', () => {
     const res = await hassan.req('GET', '/v1/me/export');
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-disposition']).toMatch(
-      /^attachment; filename="caishy-export-\d{4}-\d{2}-\d{2}\.json"$/,
+      /^attachment; filename="caime-export-\d{4}-\d{2}-\d{2}\.json"$/,
     );
     const archive = res.json();
-    expect(archive.format).toBe('caishy-export/2');
+    expect(archive.format).toBe('caime-export/2');
     expect(archive.account.id).toBe(hassan.user.id);
     expect(archive.relationships[0]).toMatchObject({
       label: 'Manager · DATA C',
@@ -167,41 +167,46 @@ describe('your data', () => {
         runs: 2,
       }),
     ]);
-    expect(archive.saved).toEqual([
-      expect.objectContaining({
-        collection: 'Work links',
-        conversationId: convo,
-        messageId: brief.message.id,
-        stillVisible: true,
-        kept: { kind: 'link', file: null, link: 'https://brief.example/q3' },
-      }),
-      expect.objectContaining({
-        collection: 'Keep',
-        messageId: fromSarah.id,
-        stillVisible: true,
-        kept: null,
-      }),
-      // Saved in the group he's left: that he saved it, and where, never what.
-      expect.objectContaining({
-        collection: 'Keep',
-        conversationId: club,
-        messageId: gone.message.id,
-        stillVisible: false,
-        kept: null,
-      }),
-      expect.objectContaining({
-        collection: 'Work links',
-        conversationId: club,
-        messageId: gone.message.id,
-        stillVisible: false,
-        kept: null,
-      }),
-    ]);
+    // An automation keeps its copy as the message arrives, so what's saved at one moment comes
+    // in either order.
+    expect(archive.saved).toHaveLength(4);
+    expect(archive.saved).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          collection: 'Work links',
+          conversationId: convo,
+          messageId: brief.message.id,
+          stillVisible: true,
+          kept: { kind: 'link', file: null, link: 'https://brief.example/q3' },
+        }),
+        expect.objectContaining({
+          collection: 'Keep',
+          messageId: fromSarah.id,
+          stillVisible: true,
+          kept: null,
+        }),
+        // Saved in the group he's left: that he saved it, and where, never what.
+        expect.objectContaining({
+          collection: 'Keep',
+          conversationId: club,
+          messageId: gone.message.id,
+          stillVisible: false,
+          kept: null,
+        }),
+        expect.objectContaining({
+          collection: 'Work links',
+          conversationId: club,
+          messageId: gone.message.id,
+          stillVisible: false,
+          kept: null,
+        }),
+      ]),
+    );
     expect(JSON.stringify(archive)).not.toContain('The brief is at');
     expect(JSON.stringify(archive)).not.toContain('notes.example');
   });
 
-  it('has the rest of what Caishy keeps about you, and still none of anyone else’s words', async () => {
+  it('has the rest of what Caime keeps about you, and still none of anyone else’s words', async () => {
     const noor = await signup(t, { displayName: 'Noor Hadi' });
     const omar = await signup(t, { displayName: 'Omar Said' });
     const lina = await signup(t, { displayName: 'Lina Aziz' });
@@ -235,7 +240,7 @@ describe('your data', () => {
       details: 'Noor’s report',
     });
     expect(made).toBeDefined();
-    // One about her stays with the people who run Caishy: it would say who made it.
+    // One about her stays with the people who run Caime: it would say who made it.
     await omar.post('/v1/reports', {
       userId: noor.user.id,
       reason: 'harassment',
@@ -293,7 +298,7 @@ describe('your data', () => {
       .insertInto('custom_roles')
       .values({ id: uuidv4(), user_id: noor.user.id, sphere: 'friend', label: 'Climbing partner' })
       .execute();
-    // What Caishy suggested: why, only when it wasn't a message (a reason built from one quotes
+    // What Caime suggested: why, only when it wasn't a message (a reason built from one quotes
     // it, and can come to quote a reply to it: "I'll send it Thursday", actions.test.ts).
     await db
       .insertInto('suggestions')
@@ -807,7 +812,7 @@ describe('your data', () => {
       })
       .execute();
 
-    // Her plan changed by the people who run Caishy: recorded, without where they did it from.
+    // Her plan changed by the people who run Caime: recorded, without where they did it from.
     t.ctx.config.ADMIN_TOKEN = 'operator-token';
     const plan = await t.app.inject({
       method: 'PUT',

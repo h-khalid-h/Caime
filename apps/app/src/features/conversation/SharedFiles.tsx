@@ -5,8 +5,8 @@
  * shared, and each saved on its own to a collection (PRD §69). What someone deleted for
  * themselves isn't here for them (the server leaves it out).
  */
-import type { AssetView, ConversationView } from '@caishy/core/api';
-import { formatBytes, formatDuration, formatListTime } from '@caishy/core/format';
+import type { AssetView, ConversationView } from '@caime/core/api';
+import { formatBytes, formatDuration, formatListTime } from '@caime/core/format';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { View } from 'react-native';

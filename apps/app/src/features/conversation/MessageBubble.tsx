@@ -1,5 +1,5 @@
-import type { MessageView } from '@caishy/core/api';
-import { formatBytes, formatClock, systemText } from '@caishy/core/format';
+import type { MessageView } from '@caime/core/api';
+import { formatBytes, formatClock, systemText } from '@caime/core/format';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useEffect, useRef, useState } from 'react';
@@ -90,7 +90,7 @@ function DeliveryIcon({
   }
 }
 
-/** A translation the reader asked for, under the original and labelled as Caishy's (R17). */
+/** A translation the reader asked for, under the original and labelled as Caime's (R17). */
 function TranslationBlock({
   id,
   value,

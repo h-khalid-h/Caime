@@ -360,7 +360,7 @@ export interface MessageView {
   poll: { counts: Record<string, number>; mine: string[]; voters: number } | null;
   /** A shared album card: how many photos, and the latest few (PRD §41). */
   album: AlbumView | null;
-  /** Sent through a token or an app its sender let act for them, not typed in Caishy: its name. */
+  /** Sent through a token or an app its sender let act for them, not typed in Caime: its name. */
   sentVia: string | null;
   /**
    * In a private conversation (R18): the message as its sender's device sealed it, for this
@@ -705,14 +705,14 @@ export interface BusinessSummaryView {
 
 /** An organization's app (PRD §73–75): its token, its bot, its webhook. Managers only. */
 /**
- * Caishy's own pages about itself, outside the app, at PUBLIC_URL/privacy, /terms and /help: a
+ * Caime's own pages about itself, outside the app, at PUBLIC_URL/privacy, /terms and /help: a
  * link to one opens the page, never the app.
  */
 export const SITE_PAGES = ['privacy', 'terms', 'help'] as const;
 export type SitePage = (typeof SITE_PAGES)[number];
 
 /**
- * Where this Caishy keeps its policies and help, for About: its own pages, or where its operator
+ * Where this Caime keeps its policies and help, for About: its own pages, or where its operator
  * published them (the server's environment).
  */
 export interface AboutView {
@@ -1014,7 +1014,7 @@ export interface AiStatusView {
   eligible: boolean;
 }
 
-/** Everything a model wrote carries `label` ("Suggested by Caishy") and waits for a tap (R17). */
+/** Everything a model wrote carries `label` ("Suggested by Caime") and waits for a tap (R17). */
 export interface AiRewriteView {
   suggestion: string;
   label: string;

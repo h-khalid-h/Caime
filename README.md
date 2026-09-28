@@ -1,9 +1,9 @@
-# Caishy
+# Caime
 
 **Messaging that understands your relationships.**
 
-Caishy (formerly CONNIQT) is a relationship-aware communication platform for iOS, Android and the
-web. Messaging apps know who you're talking to; Caishy understands who that person is to you —
+Caime (formerly CONNIQT) is a relationship-aware communication platform for iOS, Android and the
+web. Messaging apps know who you're talking to; Caime understands who that person is to you —
 family, a manager, a customer, a vendor — and uses it to organize attention, notifications,
 follow-ups, search and privacy.
 

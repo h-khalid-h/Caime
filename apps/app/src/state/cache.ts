@@ -8,8 +8,8 @@ import type {
   InboxResponse,
   MessagesPage,
   MessageView,
-} from '@caishy/core/api';
-import { messagePreview } from '@caishy/core/format';
+} from '@caime/core/api';
+import { messagePreview } from '@caime/core/format';
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import { qk } from '@/api/keys';
 

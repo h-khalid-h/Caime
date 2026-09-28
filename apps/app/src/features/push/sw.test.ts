@@ -5,7 +5,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { SITE_PAGES } from '@caishy/core/api';
+import { SITE_PAGES } from '@caime/core/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Listener = (event: any) => void;
@@ -51,9 +51,9 @@ const asResponse = (r: Res, signal?: AbortSignal): any => {
 };
 /** The app's page for build v`n`, naming its files as Expo's export does. */
 const appPage = (n: number) =>
-  `<!doctype html><title>Caishy v${n}</title><script src="/_expo/static/js/web/entry-v${n}.js"></script>`;
+  `<!doctype html><title>Caime v${n}</title><script src="/_expo/static/js/web/entry-v${n}.js"></script>`;
 const pathOf = (x: string | { url: string }) =>
-  new URL(typeof x === 'string' ? x : x.url, 'https://caishy.example').pathname;
+  new URL(typeof x === 'string' ? x : x.url, 'https://caime.example').pathname;
 const caches = {
   open: async (name: string) => {
     const c = kept.get(name) ?? new Map<string, Res>();
@@ -70,7 +70,7 @@ const caches = {
           body: await r.text(),
           type: r.headers.get('content-type') ?? '',
         }),
-      keys: async () => [...c.keys()].map((path) => ({ url: `https://caishy.example${path}` })),
+      keys: async () => [...c.keys()].map((path) => ({ url: `https://caime.example${path}` })),
       delete: async (req: { url: string }) => c.delete(pathOf(req)),
     };
   },
@@ -100,7 +100,7 @@ function load(userAgent = CHROME) {
   shown = [];
   opened = [];
   const self = {
-    location: { origin: 'https://caishy.example' },
+    location: { origin: 'https://caime.example' },
     navigator: { userAgent },
     addEventListener: (type: string, f: Listener) => {
       listeners[type] = f;
@@ -142,7 +142,7 @@ async function fire(type: string, event: Record<string, unknown>) {
 const push = (payload: unknown) =>
   fire('push', { data: { json: () => payload, text: () => JSON.stringify(payload) } });
 const tab = (over: Partial<(typeof tabs)[number]> = {}) => ({
-  url: 'https://caishy.example/c/x',
+  url: 'https://caime.example/c/x',
   visibilityState: 'hidden',
   focused: false,
   postMessage: vi.fn(),
@@ -179,7 +179,7 @@ async function request(url: string, init: { method?: string; mode?: string } = {
   const waits: Promise<unknown>[] = [];
   listeners.fetch?.({
     request: {
-      url: `https://caishy.example${url}`,
+      url: `https://caime.example${url}`,
       method: init.method ?? 'GET',
       mode: init.mode ?? 'cors',
     },
@@ -192,12 +192,12 @@ async function request(url: string, init: { method?: string; mode?: string } = {
   await Promise.all(waits);
   return r;
 }
-const keptPaths = () => [...(kept.get('caishy-files-v1')?.keys() ?? [])].sort();
+const keptPaths = () => [...(kept.get('caime-files-v1')?.keys() ?? [])].sort();
 
 describe('the app kept for offline (PRD §49)', () => {
   it('a page is the network’s, and it’s kept with every file of its build', async () => {
     const page = (await request('/c/123', { mode: 'navigate' })) as any;
-    expect(page.body).toContain('Caishy v2');
+    expect(page.body).toContain('Caime v2');
     expect(keptPaths()).toEqual([
       '/',
       '/_expo/static/js/web/entry-v2.js',
@@ -206,7 +206,7 @@ describe('the app kept for offline (PRD §49)', () => {
     // Offline, any page opens as the kept one, and its files come from what's kept.
     online = false;
     fetched = [];
-    expect(((await request('/actions', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/actions', { mode: 'navigate' })) as any).body).toContain('Caime v2');
     expect(((await request('/_expo/static/js/web/search-v2.js')) as any).body).toBe('search v2');
     expect(fetched).toEqual(['/actions']);
   });
@@ -220,7 +220,7 @@ describe('the app kept for offline (PRD §49)', () => {
     server.set('/', res(appPage(2), 'text/html'));
     await request('/', { mode: 'navigate' });
     server.set('/', res('Bad gateway', 'text/html', 502));
-    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caime v2');
   });
 
   it('a new build replaces the last only once all of it is kept, and the last one’s files go', async () => {
@@ -233,13 +233,13 @@ describe('the app kept for offline (PRD §49)', () => {
     // One of the new build's files can't be fetched: the page kept is still the last one.
     await request('/', { mode: 'navigate' });
     online = false;
-    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caime v2');
     online = true;
     server.set('/_expo/static/js/web/entry-v3.js', res('entry v3'));
     await request('/', { mode: 'navigate' });
     expect(keptPaths()).toEqual(['/', '/_expo/static/js/web/entry-v3.js']);
     online = false;
-    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v3');
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caime v3');
   });
 
   it('keeps a file of a build as it’s first asked for, and never what the API answers', async () => {
@@ -261,14 +261,14 @@ describe('the app kept for offline (PRD §49)', () => {
   });
 
   it('as it installs, keeps the app already open; as it takes charge, drops what older ones kept', async () => {
-    kept.set('caishy-old', new Map([['/x', res('old')]]));
+    kept.set('caime-old', new Map([['/x', res('old')]]));
     await fire('install', {});
     expect(keptPaths()).toContain('/_expo/static/js/web/entry-v2.js');
     // Taking charge downloads nothing: every request from the open tabs waits on it.
     fetched = [];
     await fire('activate', {});
     expect(fetched).toEqual([]);
-    expect([...kept.keys()]).toEqual(['caishy-files-v1']);
+    expect([...kept.keys()]).toEqual(['caime-files-v1']);
   });
 
   it('keeps the page it installs with, however long its build takes to download', async () => {
@@ -289,7 +289,7 @@ describe('the app kept for offline (PRD §49)', () => {
       await fire('install', {});
       expect(keptPaths()).toContain('/');
       online = false;
-      expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy');
+      expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caime');
     } finally {
       AbortSignal.timeout = timeout;
       network.mockImplementation(base);
@@ -308,11 +308,11 @@ describe('the app kept for offline (PRD §49)', () => {
       '/_expo/static/js/web/search-v2.js',
     ]);
     online = false;
-    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caime v2');
   });
 
   it('never takes a page that isn’t the app for it: the server’s own, a portal’s sign-in', async () => {
-    const notice = '<!doctype html><title>Down for a moment · Caishy</title><h1>Back soon</h1>';
+    const notice = '<!doctype html><title>Down for a moment · Caime</title><h1>Back soon</h1>';
     server.set('/maintenance', res(notice, 'text/html; charset=utf-8'));
     // Opened first, before the app ever was: nothing is kept.
     expect(((await request('/maintenance', { mode: 'navigate' })) as any).body).toBe(notice);
@@ -323,10 +323,10 @@ describe('the app kept for offline (PRD §49)', () => {
     server.set('/', res('<!doctype html><title>Sign in to the Wi-Fi</title>', 'text/html'));
     await request('/', { mode: 'navigate' });
     online = false;
-    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/', { mode: 'navigate' })) as any).body).toContain('Caime v2');
   });
 
-  it('leaves Caishy’s own pages to the browser, online or not, never opening the app on one', async () => {
+  it('leaves Caime’s own pages to the browser, online or not, never opening the app on one', async () => {
     await request('/', { mode: 'navigate' });
     for (const page of SITE_PAGES)
       for (const path of [`/${page}`, `/${page}/`]) {
@@ -335,7 +335,7 @@ describe('the app kept for offline (PRD §49)', () => {
         expect(await request(path, { mode: 'navigate' }), path).toBeUndefined();
         online = true;
       }
-    expect(((await request('/helpers', { mode: 'navigate' })) as any).body).toContain('Caishy v2');
+    expect(((await request('/helpers', { mode: 'navigate' })) as any).body).toContain('Caime v2');
   });
 
   it('keeps a build’s fonts and images with it, and lets go of the last one’s', async () => {
@@ -416,7 +416,7 @@ describe('the service worker', () => {
     });
   });
 
-  it('shows nothing while Caishy is open in front: the app shows it itself', async () => {
+  it('shows nothing while Caime is open in front: the app shows it itself', async () => {
     tabs = [tab({ visibilityState: 'visible', focused: true })];
     await push({ id: 'n1', title: 'Hi', data: {} });
     expect(shown).toEqual([]);
@@ -449,7 +449,7 @@ describe('the service worker', () => {
       notification: { close, data: { conversationId: 'c 1' } },
     });
     expect(close).toHaveBeenCalled();
-    expect(open.postMessage).toHaveBeenCalledWith({ type: 'caishy.open', path: '/c/c%201' });
+    expect(open.postMessage).toHaveBeenCalledWith({ type: 'caime.open', path: '/c/c%201' });
     expect(open.focus).toHaveBeenCalled();
     expect(opened).toEqual([]);
 

@@ -5,8 +5,8 @@
  * what's live each time it connects, so they're loaded before a call rings. The same names as
  * calls.ts, which is what the typecheck reads (calls.check.ts).
  */
-import type { GroupCallView, RealtimeEvent } from '@caishy/core/api';
-import type { CallKind } from '@caishy/core/calls';
+import type { GroupCallView, RealtimeEvent } from '@caime/core/api';
+import type { CallKind } from '@caime/core/calls';
 import { toast } from '@/ui/Toast';
 import { callStackOr, loadCallStack } from './load.web';
 
@@ -27,7 +27,7 @@ async function asked(): Promise<Stack | null> {
   try {
     return await loadCallStack();
   } catch {
-    toast('Calls couldn’t load. Check your connection, or reload Caishy.', {
+    toast('Calls couldn’t load. Check your connection, or reload Caime.', {
       tone: 'danger',
       action: { label: 'Reload', onPress: () => window.location.reload() },
     });

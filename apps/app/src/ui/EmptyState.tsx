@@ -1,4 +1,4 @@
-import type { Character as CharacterName, Expression } from '@caishy/brand/characters';
+import type { Character as CharacterName, Expression } from '@caime/brand/characters';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { Character } from '@/brand/Character';

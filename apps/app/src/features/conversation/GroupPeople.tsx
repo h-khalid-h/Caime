@@ -4,7 +4,7 @@
  * (the owner makes admins; admins add people and remove members; anyone may leave, and an owner
  * who leaves hands it on); this only offers what they allow. Loaded with the details panel.
  */
-import type { ConversationView, ParticipantView } from '@caishy/core/api';
+import type { ConversationView, ParticipantView } from '@caime/core/api';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -12,7 +12,7 @@ import {
   nextOwner,
   SPACE_ROLE_LABELS,
   type SpaceRole,
-} from '@caishy/core/spaces';
+} from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';

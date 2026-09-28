@@ -1,5 +1,5 @@
-import type { BusinessThreadView, ConversationView } from '@caishy/core/api';
-import { waitedFor } from '@caishy/core/business';
+import type { BusinessThreadView, ConversationView } from '@caime/core/api';
+import { waitedFor } from '@caime/core/business';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';

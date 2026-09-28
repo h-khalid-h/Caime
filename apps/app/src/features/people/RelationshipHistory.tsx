@@ -1,5 +1,5 @@
-import { formatDayHeading } from '@caishy/core/format';
-import { describeRelationshipEvent } from '@caishy/core/history';
+import { formatDayHeading } from '@caime/core/format';
+import { describeRelationshipEvent } from '@caime/core/history';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRelationshipHistory } from '@/api/hooks';

@@ -13,7 +13,7 @@ import {
   UpdateOrgAppBody,
   uuidv7,
   type WebhookDeliveryView,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -91,7 +91,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
         .insertInto('users')
         .values({
           id: botId,
-          email: `bot+${botId}@bots.caishy.invalid`,
+          email: `bot+${botId}@bots.caime.invalid`,
           handle: `bot.${randomBytes(6).toString('hex')}`,
           password_hash: '!',
           display_name: body.name,

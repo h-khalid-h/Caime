@@ -15,7 +15,7 @@ import {
   trustFor,
   type UserPreferences,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, User } from '../db/schema';

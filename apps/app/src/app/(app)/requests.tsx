@@ -1,5 +1,5 @@
-import type { ConnectionRequestView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
+import type { ConnectionRequestView } from '@caime/core/api';
+import { formatListTime } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

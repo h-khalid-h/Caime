@@ -1,6 +1,6 @@
 /** The year an organization began, as its forms take it (core schemas.ts FoundedYear). */
 
-import { latestFoundedYear } from '@caishy/core/orgs';
+import { latestFoundedYear } from '@caime/core/orgs';
 
 /** A year it could have begun: four digits, from 1000 to this one. */
 export function foundedError(value: string): string | undefined {

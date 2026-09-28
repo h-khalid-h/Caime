@@ -1,5 +1,5 @@
-import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caishy/core/orgs';
-import { handleError, handleFromName, normalizeHandle } from '@caishy/core/rules';
+import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
+import { handleError, handleFromName, normalizeHandle } from '@caime/core/rules';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';

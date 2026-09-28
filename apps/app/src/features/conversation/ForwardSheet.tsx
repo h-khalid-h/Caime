@@ -5,9 +5,9 @@
  * too. Nor is a message request that has had its one message. It arrives marked as forwarded,
  * and goes to all of them or none.
  */
-import type { MessageView } from '@caishy/core/api';
-import { listTitle } from '@caishy/core/format';
-import { uuidv4 } from '@caishy/core/ids';
+import type { MessageView } from '@caime/core/api';
+import { listTitle } from '@caime/core/format';
+import { uuidv4 } from '@caime/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';

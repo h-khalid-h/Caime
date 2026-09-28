@@ -145,6 +145,7 @@ const BRANDS = [
   'whatsapp',
   'netflix',
   'bank',
+  'caime',
   'caishy',
   'dhl',
   'fedex',

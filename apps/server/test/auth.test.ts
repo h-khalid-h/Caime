@@ -1,4 +1,4 @@
-import { uuidv7 } from '@caishy/core';
+import { uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { hashRecoveryCode, hashToken, matchRecoveryCode, recoverySalt } from '../src/lib/crypto';
 import { tooMany } from '../src/lib/errors';
@@ -226,37 +226,37 @@ describe('sign-in and sessions', () => {
       payload: { identifier: 'sarah', password: base.password, client: 'web' },
     });
     expect(login.json().token).toBeNull();
-    const cookie = login.cookies.find((c) => c.name === 'caishy_session')!;
+    const cookie = login.cookies.find((c) => c.name === 'caime_session')!;
     expect(cookie.httpOnly).toBe(true);
     expect(cookie.sameSite).toBe('Lax');
     const session = await t.app.inject({
       method: 'GET',
       url: '/v1/auth/session',
-      cookies: { caishy_session: cookie.value },
+      cookies: { caime_session: cookie.value },
     });
     expect(session.statusCode).toBe(200);
     const noHeader = await t.app.inject({
       method: 'POST',
       url: '/v1/auth/logout',
-      cookies: { caishy_session: cookie.value },
+      cookies: { caime_session: cookie.value },
     });
     expect(noHeader.statusCode).toBe(403);
     expect(noHeader.json().error.code).toBe('csrf');
     const withHeader = await t.app.inject({
       method: 'POST',
       url: '/v1/auth/logout',
-      cookies: { caishy_session: cookie.value },
-      headers: { 'x-caishy-client': 'web' },
+      cookies: { caime_session: cookie.value },
+      headers: { 'x-caime-client': 'web' },
     });
     expect(withHeader.statusCode).toBe(200);
     const after = await t.app.inject({
       method: 'GET',
       url: '/v1/auth/session',
-      cookies: { caishy_session: cookie.value },
+      cookies: { caime_session: cookie.value },
     });
     expect(after.statusCode).toBe(401);
     // The stale cookie is cleared, and with no cookie at all the answer is "signed out", not an error.
-    expect(after.cookies.find((c) => c.name === 'caishy_session')?.value).toBe('');
+    expect(after.cookies.find((c) => c.name === 'caime_session')?.value).toBe('');
     const anonymous = await t.app.inject({ method: 'GET', url: '/v1/auth/session' });
     expect(anonymous.statusCode).toBe(200);
     expect(anonymous.json()).toEqual({ user: null, session: null });

@@ -129,7 +129,7 @@ export function NavRail() {
         gap: 6,
       }}
     >
-      <View style={{ height: 44, justifyContent: 'center' }} accessibilityLabel="Caishy">
+      <View style={{ height: 44, justifyContent: 'center' }} accessibilityLabel="Caime">
         <HeartMark size={30} />
       </View>
       {ITEMS.map((i) => (

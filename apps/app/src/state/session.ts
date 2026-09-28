@@ -3,7 +3,7 @@
  * at once from the device, and the server confirms it in the background (a revoked session
  * signs the device out). Signing out removes everything this device kept.
  */
-import type { AuthResponse, MeView } from '@caishy/core/api';
+import type { AuthResponse, MeView } from '@caime/core/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
@@ -27,7 +27,7 @@ import { useLiveShares } from './liveShares';
 import { useOutbox } from './outbox';
 import { setTaskOutboxUser, useTaskOutbox } from './taskOutbox';
 
-const USER_KEY = 'caishy.user';
+const USER_KEY = 'caime.user';
 
 type Status = 'booting' | 'signedOut' | 'signedIn';
 

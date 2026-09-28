@@ -17,7 +17,7 @@ import type {
   AiStatusView,
   AiTone,
   AiTranslationView,
-} from '@caishy/core';
+} from '@caime/core';
 import {
   AI_LABEL,
   AiRewriteBody,
@@ -28,7 +28,7 @@ import {
   resolvePolicy,
   systemText,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -181,7 +181,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       record(err.reason, err.usage);
       ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
       if (err.reason === 'declined')
-        throw new AppError(422, 'ai_declined', 'Caishy can’t help with this one.');
+        throw new AppError(422, 'ai_declined', 'Caime can’t help with this one.');
       if (err.reason === 'busy')
         throw new AppError(503, 'ai_busy', 'AI assist is busy. Try again in a moment.');
       throw new AppError(502, 'ai_failed', 'AI assist didn’t work this time. Try again.');
@@ -259,7 +259,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!text.trim()) continue;
       const speaker =
         m.kind === 'system'
-          ? 'Caishy'
+          ? 'Caime'
           : m.sender_id === viewerId
             ? 'You'
             : mask

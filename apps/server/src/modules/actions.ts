@@ -3,14 +3,8 @@
  * keeping the conversation, message and relationship it came from.
  */
 
-import type { DecisionView, TaskDirection, TasksResponse, TaskView } from '@caishy/core';
-import {
-  CreateDecisionBody,
-  CreateTaskBody,
-  formatDue,
-  UpdateTaskBody,
-  uuidv4,
-} from '@caishy/core';
+import type { DecisionView, TaskDirection, TasksResponse, TaskView } from '@caime/core';
+import { CreateDecisionBody, CreateTaskBody, formatDue, UpdateTaskBody, uuidv4 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

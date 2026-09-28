@@ -1,6 +1,6 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { AGENT_CALLS_PER_CONVERSATION, uuidv4, uuidv7 } from '@caishy/core';
+import { AGENT_CALLS_PER_CONVERSATION, uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { agentReply } from '../src/lib/agent';
 import { runDueJobs } from '../src/lib/jobs';

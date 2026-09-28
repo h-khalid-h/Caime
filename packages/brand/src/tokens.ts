@@ -1,16 +1,16 @@
 /**
- * Caishy design tokens. Source: docs/BRAND.md (board v2). Every text/background pair used by the
+ * Caime design tokens. Source: docs/BRAND.md (board v2). Every text/background pair used by the
  * UI is asserted to meet WCAG AA in tokens.test.ts — change a value here and the test tells you
  * whether it still reads.
  */
-import type { Sphere } from '@caishy/core';
+import type { Sphere } from '@caime/core';
 
 /**
  * The canonical palette, reconciled from the three brand boards (docs/BRAND.md, "Palette
  * reconciliation"). Use the roles below in UI code, not these directly.
  */
 export const palette = {
-  caishyPink: '#FF8FB1',
+  caimePink: '#FF8FB1',
   lightPink: '#FFD6E7',
   darkPurple: '#3B2E5B',
   lavender: '#E9D5FF',
@@ -151,7 +151,7 @@ export const bubbleThemes: Record<
     dark: { bg: '#6A57A8', fg: '#FFFFFF', meta: '#F0EBFB' },
   },
   pink: {
-    label: 'Caishy Pink',
+    label: 'Caime Pink',
     light: { bg: '#FF8FB1', fg: '#2B2340', meta: '#4A2340' },
     dark: { bg: '#FF8FB1', fg: '#2B2340', meta: '#4A2340' },
   },

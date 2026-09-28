@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -26,7 +26,7 @@ const asIf = (as: string | null, method: 'GET' | 'POST', url: string, body?: obj
     payload: body,
     headers: {
       authorization: `Bearer ${alex.token}`,
-      ...(as ? { 'x-caishy-user': as } : {}),
+      ...(as ? { 'x-caime-user': as } : {}),
     },
   });
 
@@ -64,7 +64,7 @@ describe('a call meant as one account never acts as another', () => {
       method: 'POST',
       url: '/v1/tasks',
       payload: { title: 'As Noor' },
-      headers: { cookie, 'x-caishy-client': 'web', 'x-caishy-user': noor.user.id },
+      headers: { cookie, 'x-caime-client': 'web', 'x-caime-user': noor.user.id },
     });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('wrong_account');

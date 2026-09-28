@@ -1,7 +1,7 @@
-# Caishy brand system
+# Caime brand system
 
 **The boards are inspiration; this document is the decision.** Every choice below is made for one
-test: does it help Caishy beat the alternatives (docs/COMPETITIVE.md) for people of every age,
+test: does it help Caime beat the alternatives (docs/COMPETITIVE.md) for people of every age,
 gender and use case, and does it feel modern in 2026? Where a board helps, it is adopted; where it
 works against the product, it is overruled and the reason is written down.
 
@@ -13,7 +13,7 @@ The owner supplied three brand boards on 2026-09-26:
 | v2 | Brand overview, revised: logo variations, palette with lavender and lilac, seven characters, icons, sticker style | `docs/brand/brand-board-v2.png` |
 | v3 | Caishy character sheet: expressions, turnaround, poses, character palette, brand icons | no (shared inline, no file) |
 
-The boards describe Caishy as a character world with stories, collectibles and a shop. This product
+The boards describe Caime as a character world with stories, collectibles and a shop. This product
 is a relationship-aware communication platform used with family and with managers, customers and
 lawyers, by people of every age and gender. The decisions below keep everything from the boards
 that makes that product better, reconcile where the boards disagree, and keep out what works
@@ -30,7 +30,7 @@ on, or the nearest to it; roles derived from the palette are listed further down
 
 | Colour | v1 | v2 | v3 | **Canonical** | Why |
 | --- | --- | --- | --- | --- | --- |
-| Caishy Pink | `#FF8FB1` | `#FF7EB9` | `#FF8EA8` | **`#FF8FB1`** | v1 and v3 agree within 4% |
+| Caime Pink | `#FF8FB1` | `#FF7EB9` | `#FF8EA8` | **`#FF8FB1`** | v1 and v3 agree within 4% |
 | Dark Purple | `#3B2E5B` | `#4B2E83` | `#3B2E5B` | **`#3B2E5B`** | v1 and v3 agree; matches the wordmark on all boards |
 | Sunshine Yellow | `#FFD166` | `#FFD166` | `#FFE08A` | **`#FFD166`** | v1 and v2 agree |
 | Cream | `#FFF7E9` | `#FFF7E9` | `#FFF9F5` | **`#FFF7E9`** | v1 and v2 agree |
@@ -45,14 +45,14 @@ on, or the nearest to it; roles derived from the palette are listed further down
 
 | Element | Definition |
 | --- | --- |
-| Wordmark | "Caishy" in heavy rounded lettering, Dark Purple; a Caishy Pink heart floats over the dotless *i* (™ on marketing surfaces) |
+| Wordmark | "Caime" in heavy rounded lettering, Dark Purple; a Caime Pink heart floats over the dotless *i* (™ on marketing surfaces) |
 | Logo variations | Dark (white wordmark on Dark Purple) · Light (pink wordmark on Light Pink) · Icon mark (a pink heart with a face) · App icon (Caishy's face on a pink tile) · "C" monogram tile |
 | Typography | Nunito (rounded) for headlines and UI · Inter for body text |
 | Characters | Caishy *The Dreamer* · Momo *The Cheerful* · Panda *The Loyal* · Lumi *The Creative* · Pico *The Curious* · Niko *The Brave* · Zuzu *The Wise* |
-| Caishy (v3) | White face and body, big dark-brown eyes with two highlights, pink blush, a tiny "ω" mouth, a Caishy Pink hood with cat ears (Light Pink inside) and a small face emblem on the forehead, a pink heart on the chest, pink paw pads, a small lavender backpack |
+| Caishy (v3) | White face and body, big dark-brown eyes with two highlights, pink blush, a tiny "ω" mouth, a Caime Pink hood with cat ears (Light Pink inside) and a small face emblem on the forehead, a pink heart on the chest, pink paw pads, a small lavender backpack |
 | Expressions (v3) | happy, wink, excited, curious, sad, surprised, sleepy, angry (cute), shy |
 | Poses (v3) | sitting, standing (waving), walking, jumping, holding a heart |
-| Brand icons (v3) | Caishy head icon (flat), heart, Dark Purple paw print, yellow sparkles |
+| Brand icons (v3) | Caime head icon (flat), heart, Dark Purple paw print, yellow sparkles |
 | Iconography (v2) | glossy, filled, rounded, colourful icons; small filled icons in pills |
 | Stickers (v2) | die-cut with a white outline and short hand-lettered words ("Be Kind", "Dream Big") |
 | Essence (v1) | Joy · Imagination · Belonging · Growth |
@@ -62,7 +62,7 @@ on, or the nearest to it; roles derived from the palette are listed further down
 ## Decisions
 
 - **B1 — Adopt the identity whole.** Wordmark, marks, palette, type, rounded geometry, essence and
-  voice are Caishy everywhere: app icon, splash, web, notifications, store listings.
+  voice are Caime everywhere: app icon, splash, web, notifications, store listings.
 - **B2 — Two intensities.** *Expressive* in brand moments (welcome, onboarding, empty states,
   celebrations, stickers, the marketing site). *Quiet* on working surfaces (inbox, conversation,
   business inbox, settings): type, colour, rounded shapes and the heart carry the brand there, not
@@ -78,11 +78,11 @@ on, or the nearest to it; roles derived from the palette are listed further down
   brand sign-off is **"Together is a happier place."** "A little cuteness goes a long way." is
   used for the sticker packs. The character-world lines ("Cute, made into a world.", "Explore.
   Collect. Belong.") are not used for the messenger.
-- **B6 — Colour carries meaning.** Dark Purple is the ink and the primary action. Caishy Pink is
+- **B6 — Colour carries meaning.** Dark Purple is the ink and the primary action. Caime Pink is
   the heart: the logo's heart, highlights, delight. The pastels become the relationship-sphere
   palette, so any other colour tells you what kind of relationship you're looking at (R22).
 - **B7 — For everyone** (R26–R31). Defaults are neutral and expression is a choice:
-  - your messages default to **Plum**, a mid-tone of Dark Purple; Caishy Pink, Lavender, Sky,
+  - your messages default to **Plum**, a mid-tone of Dark Purple; Caime Pink, Lavender, Sky,
     Mint and Sunshine are in Appearance, and the choice only changes your own view;
   - the character layer is **Playful** (default) or **Minimal** (simple icons instead);
     organization and business surfaces are always Minimal;
@@ -90,10 +90,10 @@ on, or the nearest to it; roles derived from the palette are listed further down
 
 ## Logo
 
-- **Wordmark:** "Caishy" from Nunito Black outlines with slightly tightened spacing; the *i* is
-  dotless and a Caishy Pink heart floats above it. Variants: Dark Purple on light, white on Dark
-  Purple, Caishy Pink Strong on Light Pink.
-- **App icon:** the flat Caishy head (v3 brand icon) on a Caishy Pink tile; generated squares use
+- **Wordmark:** "Caime" from Nunito Black outlines with slightly tightened spacing; the *i* is
+  dotless and a Caime Pink heart floats above it. Variants: Dark Purple on light, white on Dark
+  Purple, Caime Pink Strong on Light Pink.
+- **App icon:** the flat Caime head (v3 brand icon) on a Caime Pink tile; generated squares use
   a 22.5% corner radius and platforms apply their own masks.
 - **Icon mark:** the heart with a face — favicons, notification icons, the Android monochrome
   icon, loading states and anything under 32 px.
@@ -147,7 +147,7 @@ Values live in `packages/brand/src/tokens.ts`; the test suite asserts every pair
 | Option | Bubble / label | Label contrast |
 | --- | --- | --- |
 | **Plum** (default) | light `#5B40A0` / white · dark `#6A57A8` / white | 7.8 / 5.9 |
-| Caishy Pink | `#FF8FB1` / `#2B2340` | 6.9 |
+| Caime Pink | `#FF8FB1` / `#2B2340` | 6.9 |
 | Lavender | `#E9D5FF` / `#2B2340` | 10.9 |
 | Sky | `#7DD3FC` / `#0B2A3F` | 8.9 |
 | Mint | `#A7F3D0` / `#0B3B2A` | 9.8 |
@@ -160,7 +160,7 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 
 | Sphere | Fill | Strong | Solid | Icon |
 | --- | --- | --- | --- | --- |
-| Family | `#FFE3EC` | `#C2255C` | Caishy Pink | heart |
+| Family | `#FFE3EC` | `#C2255C` | Caime Pink | heart |
 | Friend | `#FFF3D1` | `#8A5A00` | Sunshine Yellow | smile |
 | Acquaintance | `#FBF1DE` | `#76613D` | cream-sand | hand |
 | Work | `#E0F4FE` | `#0B6BA8` | Sky Blue | briefcase |
@@ -199,10 +199,10 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 ## Phone layout
 
 What the phone shows around the conversations, decided from how people already hold and read
-the messengers they use, and only where it serves Caishy's promise (relationships first):
+the messengers they use, and only where it serves Caime's promise (relationships first):
 
 - **Four places and Search.** Chats, People, Spaces and Actions sit in a floating pill at the
-  bottom, the one you're in lit behind its name (Caishy Pink tint; the surface tone in dark).
+  bottom, the one you're in lit behind its name (Caime Pink tint; the surface tone in dark).
   Search is a circle of its own beside it, in a thumb's reach from each of the four. The bar
   floats over the page's own colour with the overlay shadow, and never covers what's on the page.
 - **You is your picture.** It's at the top left of each place, with the dot the people you know
@@ -222,7 +222,7 @@ the messengers they use, and only where it serves Caishy's promise (relationship
 ## Iconography
 
 - **Working surfaces:** Lucide line icons, 2 px stroke, round caps and joins. The active tab's
-  icon is drawn heavier, on its Caishy Pink tint (in the phone's bar in dark, the surface tone),
+  icon is drawn heavier, on its Caime Pink tint (in the phone's bar in dark, the surface tone),
   echoing the boards' filled icons.
 - **Expressive surfaces:** filled, colourful rounded icons on tinted tiles (heart, star, sprout,
   chat bubble, paw print, sparkles), for onboarding highlights and empty states.
@@ -231,7 +231,7 @@ the messengers they use, and only where it serves Caishy's promise (relationship
 
 | Character | Personality | Colours | Job in the product |
 | --- | --- | --- | --- |
-| **Caishy** | The Dreamer — always finds kindness | white, Caishy Pink hood | Welcome, app icon, brand moments, the default stickers |
+| **Caishy** | The Dreamer — always finds kindness | white, Caime Pink hood | Welcome, app icon, brand moments, the default stickers |
 | **Momo** | The Cheerful — spreads joy everywhere | Sunshine Yellow | "You're all caught up", success, celebrations |
 | **Panda** | The Loyal — always by your side | white and ink | Waiting and follow-ups; offline and pending states |
 | **Lumi** | The Creative — turns ideas into magic | Lavender, Lilac | Creating: groups, topics, spaces, the first message |
@@ -241,7 +241,7 @@ the messengers they use, and only where it serves Caishy's promise (relationship
 
 Rules: characters appear only in expressive moments (B2), never on organization, business,
 security or money surfaces, and never speak for a person. They are not AI: model output is
-labelled "Suggested by Caishy" with the sparkle icon (R16, R17).
+labelled "Suggested by Caime" with the sparkle icon (R16, R17).
 
 **Caishy Friends stickers** (free pack, "A little cuteness goes a long way."): built on the v3
 expressions and poses — hi (waving), thanks (holding a heart), love (shy), yay (excited), ok
@@ -261,7 +261,7 @@ working surfaces.
 | "Waiting for Sarah · Contract · since Tuesday" | "Follow-up item #12 overdue" |
 | "Only you see this." | "Relationship metadata visibility: private" |
 | "Saved. It'll send when you're back online." | "Error: network request failed" |
-| "Caishy suggests Sarah may be your colleague at DATA C." | "Sarah is your colleague." |
+| "Caime suggests Sarah may be your colleague at DATA C." | "Sarah is your colleague." |
 | "Sarah's role?" | "What's her role?" |
 | "Remind me" · "Add task" · "Mark as decision" | "Create reminder entity" |
 | "You're all caught up." | "Nothing to see here!!!" |

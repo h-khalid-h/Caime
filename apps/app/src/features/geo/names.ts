@@ -1,5 +1,5 @@
 /** Languages by name, for a tag the list has or one a device reports (pure, so tests share it). */
-import { LANGUAGES } from '@caishy/core/languages';
+import { LANGUAGES } from '@caime/core/languages';
 
 /**
  * A language's own name from the names of its varieties on the list: what they all say

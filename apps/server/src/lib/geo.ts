@@ -4,7 +4,7 @@
  * CLDR's (geo-data.ts, from scripts/geo.mjs), and names come from the server's own ICU in the
  * asker's language, so the app downloads none of it until someone opens the list.
  */
-import { safeLocale } from '@caishy/core';
+import { safeLocale } from '@caime/core';
 import { COUNTRIES, COUNTRY_CURRENCY, ZONE_COUNTRY, ZONE_LINKS, ZONES } from './geo-data';
 
 export function isCountry(code: unknown): code is string {

@@ -68,7 +68,7 @@ should Caime treat my Customers?"**
   or a single connection, and sets notifications (always, schedule, important only, mute), inbox
   priority (priority, normal, quiet), privacy audience, AI tone and follow-up time. Precedence
   runs from most specific to least: connection → role + org → role → sphere → default. Templates
-  (§70) are named policies. The engine is in `@caishy/core` so every client computes the same
+  (§70) are named policies. The engine is in `@caime/core` so every client computes the same
   answer as the server.
 
 ## 6. One suggestion model

@@ -71,7 +71,7 @@ function answer(body) {
   }
   if (system.includes('the AI agent that answers customers of')) {
     calls.push('agent');
-    const org = /customers of (.+?) in Caishy/.exec(system)?.[1] ?? 'the organization';
+    const org = /customers of (.+?) in Caime/.exec(system)?.[1] ?? 'the organization';
     const knowledge = between(content, '<knowledge>', '</knowledge>');
     const asked =
       between(content, '<conversation>', '</conversation>')

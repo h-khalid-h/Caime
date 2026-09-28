@@ -1,4 +1,4 @@
-import type { MeView, PresenceSetting, PresenceState } from '@caishy/core/api';
+import type { MeView, PresenceSetting, PresenceState } from '@caime/core/api';
 import { type Href, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';

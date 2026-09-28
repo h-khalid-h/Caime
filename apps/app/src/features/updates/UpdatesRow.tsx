@@ -18,7 +18,7 @@ export function UpdatesRow() {
   const unread = following.reduce((n, f) => n + f.unread, 0);
   const news = following.filter((f) => f.unread);
   const first = news[0];
-  // A name alone can be anyone's: one Caishy hasn't verified says so (R15).
+  // A name alone can be anyone's: one Caime hasn't verified says so (R15).
   const named = first ? `${first.org.name}${first.org.verified ? '' : ' (not verified)'}` : '';
   const line = first
     ? `New from ${named}${news.length > 1 ? ` and ${news.length - 1} more` : ''}`

@@ -80,10 +80,10 @@ export async function request<T>(
   opts: RequestOptions = {},
 ): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json', ...opts.headers };
-  if (isWeb) headers['x-caishy-client'] = 'web';
+  if (isWeb) headers['x-caime-client'] = 'web';
   if (token) headers.authorization = `Bearer ${token}`;
   if (expectedUser && !WHOEVER.has(path.split('?')[0] ?? ''))
-    headers['x-caishy-user'] = expectedUser;
+    headers['x-caime-user'] = expectedUser;
   let body: BodyInit | undefined = opts.raw;
   if (opts.body !== undefined && !opts.raw) {
     headers['content-type'] = 'application/json';

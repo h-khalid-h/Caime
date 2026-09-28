@@ -1,16 +1,16 @@
 {
-  "name": "caishy",
+  "name": "caime",
   "private": true,
   "version": "0.1.0",
-  "description": "Caishy — messaging that understands your relationships.",
+  "description": "Caime — messaging that understands your relationships.",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22.12"
   },
   "scripts": {
-    "dev:server": "pnpm --filter @caishy/server dev",
-    "dev:app": "pnpm --filter @caishy/app start",
-    "build": "pnpm --filter @caishy/app build:web && pnpm --filter @caishy/server build",
+    "dev:server": "pnpm --filter @caime/server dev",
+    "dev:app": "pnpm --filter @caime/app start",
+    "build": "pnpm --filter @caime/app build:web && pnpm --filter @caime/server build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

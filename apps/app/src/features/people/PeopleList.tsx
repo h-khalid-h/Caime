@@ -1,5 +1,5 @@
-import type { ConnectionView } from '@caishy/core/api';
-import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
+import type { ConnectionView } from '@caime/core/api';
+import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
@@ -284,7 +284,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           expression="happy"
           icon={UserPlus}
           title="Find your people"
-          body="Connect by @handle or email. When you add someone, tell Caishy how you know them: that’s what makes everything else work."
+          body="Connect by @handle or email. When you add someone, tell Caime how you know them: that’s what makes everything else work."
           action={
             <Button
               label="Connect with someone"

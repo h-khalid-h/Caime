@@ -162,16 +162,16 @@ describe('organizations (PRD §36, R15)', () => {
     expect(org.domain).toMatchObject({
       name: 'datac.com',
       verified: false,
-      record: { name: '_caishy-verify.datac.com', type: 'TXT' },
+      record: { name: '_caime-verify.datac.com', type: 'TXT' },
     });
     const value: string = org.domain.record.value;
-    expect(value).toMatch(/^caishy-verify=[\w-]{20,}$/);
+    expect(value).toMatch(/^caime-verify=[\w-]{20,}$/);
     // Not there yet: it says so, and nothing changes.
     const early = await sara.req('POST', `/v1/orgs/${orgId}/domain/check`);
     expect(early.statusCode).toBe(422);
     expect(early.json().error.code).toBe('record_not_found');
     // A record with the value split in two chunks, as DNS may return it.
-    txt.set('_caishy-verify.datac.com', [['v=spf1 -all'], [value.slice(0, 10), value.slice(10)]]);
+    txt.set('_caime-verify.datac.com', [['v=spf1 -all'], [value.slice(0, 10), value.slice(10)]]);
     const checked = (await sara.post(`/v1/orgs/${orgId}/domain/check`)).org;
     expect(checked).toMatchObject({ verified: true, verifiedDomain: 'datac.com' });
     expect(await trustOf(customer, sara)).toBe('Verified at DATA C');

@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import { type AddressInfo, createServer as createTcpServer } from 'node:net';
-import { parseSignature, uuidv4 } from '@caishy/core';
+import { parseSignature, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { checkWebhookUrl, isPrivateAddress, postWebhook } from '../src/lib/apps';
 import { runDueJobs } from '../src/lib/jobs';
@@ -41,7 +41,7 @@ beforeAll(async () => {
     res.writeHead(answers.shift() ?? 200).end('ok');
   });
   await new Promise<void>((done) => hook.listen(0, '127.0.0.1', done));
-  hookUrl = `http://127.0.0.1:${(hook.address() as AddressInfo).port}/caishy`;
+  hookUrl = `http://127.0.0.1:${(hook.address() as AddressInfo).port}/caime`;
   t = await createTestApp({ WEBHOOKS_ALLOW_PRIVATE: 'true' });
   noor = await signup(t, { displayName: 'Noor Haddad' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
@@ -114,7 +114,7 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     const login = await t.app.inject({
       method: 'POST',
       url: '/v1/auth/login',
-      headers: { 'x-caishy-client': 'web' },
+      headers: { 'x-caime-client': 'web' },
       payload: { identifier: handle, password: '!' },
     });
     expect(login.statusCode).toBe(401);
@@ -142,14 +142,14 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     expect(write.json().error.code).toBe('token_scope');
   });
 
-  it('hears a customer write, signed so the organization can check it came from Caishy', async () => {
+  it('hears a customer write, signed so the organization can check it came from Caime', async () => {
     await lina.post(`/v1/conversations/${convo}/messages`, {
       clientId: uuidv4(),
       body: 'Do you deliver to Maadi?',
     });
     const got = await deliver();
-    expect(got?.headers['caishy-event']).toBe('business.message');
-    const sig = parseSignature(String(got?.headers['caishy-signature']));
+    expect(got?.headers['caime-event']).toBe('business.message');
+    const sig = parseSignature(String(got?.headers['caime-signature']));
     expect(sig).not.toBeNull();
     const expected = createHmac('sha256', secret).update(`${sig!.t}.${got!.body}`).digest('hex');
     expect(sig!.v1).toBe(expected);
@@ -200,7 +200,7 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     answers.push(500);
     await noor.post(`/v1/business/${convo}/resolve`);
     const first = await deliver();
-    expect(first?.headers['caishy-event']).toBe('business.thread');
+    expect(first?.headers['caime-event']).toBe('business.thread');
     const appId = (await noor.get(`/v1/orgs/${orgId}/apps`)).apps[0].id;
     const failing = (await noor.get(`/v1/orgs/${orgId}/apps/${appId}/deliveries`)).deliveries[0];
     expect(failing).toMatchObject({ status: 'pending', attempts: 1, lastStatus: 500 });
@@ -271,8 +271,8 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
       'https://[ff02::1]/x',
     ])
       expect(() => checkWebhookUrl(bad, false), bad).toThrow(/private/);
-    expect(checkWebhookUrl('https://hooks.example/caishy', false)).toBe(
-      'https://hooks.example/caishy',
+    expect(checkWebhookUrl('https://hooks.example/caime', false)).toBe(
+      'https://hooks.example/caime',
     );
     for (const ip of [
       '169.254.169.254',

@@ -1,10 +1,10 @@
-import type { MessageView } from '@caishy/core/api';
+import type { MessageView } from '@caime/core/api';
 import {
   applyChecklistOp,
   type ChecklistOp,
   checklistItems,
   checklistState,
-} from '@caishy/core/kit-cards';
+} from '@caime/core/kit-cards';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

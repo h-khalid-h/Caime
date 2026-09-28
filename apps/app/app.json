@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "Caishy",
-    "slug": "caishy",
+    "name": "Caime",
+    "slug": "caime",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/brand/icon.png",
-    "scheme": "caishy",
+    "scheme": "caime",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#FAF8FC",
     "ios": {
-      "bundleIdentifier": "com.caishy.app",
+      "bundleIdentifier": "me.cai.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Caishy uses the camera when you take a photo to send.",
-        "NSPhotoLibraryUsageDescription": "Caishy opens your photos when you choose one to send.",
-        "NSMicrophoneUsageDescription": "Caishy uses the microphone when you record a voice message.",
-        "NSLocationWhenInUseUsageDescription": "Caishy uses your location only when you choose to share it."
+        "NSCameraUsageDescription": "Caime uses the camera when you take a photo to send.",
+        "NSPhotoLibraryUsageDescription": "Caime opens your photos when you choose one to send.",
+        "NSMicrophoneUsageDescription": "Caime uses the microphone when you record a voice message.",
+        "NSLocationWhenInUseUsageDescription": "Caime uses your location only when you choose to share it."
       }
     },
     "android": {
-      "package": "com.caishy.app",
+      "package": "me.cai.app",
       "adaptiveIcon": {
         "backgroundColor": "#FF8FB1",
         "foregroundImage": "./assets/brand/adaptive-foreground.png",
@@ -30,8 +30,8 @@
     "web": {
       "output": "single",
       "favicon": "./assets/brand/favicon.png",
-      "name": "Caishy",
-      "shortName": "Caishy",
+      "name": "Caime",
+      "shortName": "Caime",
       "description": "Messaging that understands your relationships.",
       "themeColor": "#3B2E5B",
       "backgroundColor": "#FAF8FC"
@@ -65,7 +65,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Caishy uses your location only when you choose to share it in a conversation, once, never in the background.",
+          "locationWhenInUsePermission": "Caime uses your location only when you choose to share it in a conversation, once, never in the background.",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
         }

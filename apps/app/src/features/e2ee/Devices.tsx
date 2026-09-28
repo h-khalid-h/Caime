@@ -1,4 +1,4 @@
-import { formatListTime } from '@caishy/core/format';
+import { formatListTime } from '@caime/core/format';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
@@ -13,7 +13,7 @@ import { privateSupported } from './support';
 
 /**
  * The devices that read my private conversations (R18), in Settings: which is this one, which
- * wait for me to say they're mine, and any Caishy lists that none of mine approved. Removing one
+ * wait for me to say they're mine, and any Caime lists that none of mine approved. Removing one
  * signs it out.
  */
 export function PrivateDevices() {

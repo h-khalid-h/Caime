@@ -1,5 +1,5 @@
-import type { InboxItemView } from '@caishy/core/api';
-import { listTitle } from '@caishy/core/format';
+import type { InboxItemView } from '@caime/core/api';
+import { listTitle } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { endpoints } from '@/api/endpoints';

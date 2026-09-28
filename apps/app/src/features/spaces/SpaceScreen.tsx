@@ -1,4 +1,4 @@
-import type { SpaceConversationView, SpaceMemberView, SpaceView } from '@caishy/core/api';
+import type { SpaceConversationView, SpaceMemberView, SpaceView } from '@caime/core/api';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -7,7 +7,7 @@ import {
   SPACE_KINDS,
   SPACE_ROLE_LABELS,
   type SpaceKind,
-} from '@caishy/core/spaces';
+} from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';

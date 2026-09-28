@@ -1,5 +1,5 @@
 /**
- * Every call the app makes, typed by the shared contract (@caishy/core/api). Screens call these
+ * Every call the app makes, typed by the shared contract (@caime/core/api). Screens call these
  * through TanStack Query; nothing else builds URLs.
  */
 
@@ -75,19 +75,19 @@ import type {
   TaxonomyResponse,
   TimeZonesView,
   WebhookDeliveryView,
-} from '@caishy/core/api';
-import type { ApiScope, WebhookEvent } from '@caishy/core/apps';
-import type { RewriteStyle } from '@caishy/core/assist';
-import type { AutomationWhen } from '@caishy/core/automations';
-import type { BilledPlan, BillingInterval, BillingView } from '@caishy/core/billing';
-import type { BusinessView } from '@caishy/core/business';
-import type { CallKind } from '@caishy/core/calls';
-import type { PublicJwk, SealedMessage } from '@caishy/core/e2ee';
-import type { ChecklistOp } from '@caishy/core/kit-cards';
-import type { OrgKind } from '@caishy/core/orgs';
-import type { EffectivePolicy } from '@caishy/core/policy';
-import type { SpaceKind } from '@caishy/core/spaces';
-import type { Sphere } from '@caishy/core/taxonomy';
+} from '@caime/core/api';
+import type { ApiScope, WebhookEvent } from '@caime/core/apps';
+import type { RewriteStyle } from '@caime/core/assist';
+import type { AutomationWhen } from '@caime/core/automations';
+import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
+import type { BusinessView } from '@caime/core/business';
+import type { CallKind } from '@caime/core/calls';
+import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
+import type { ChecklistOp } from '@caime/core/kit-cards';
+import type { OrgKind } from '@caime/core/orgs';
+import type { EffectivePolicy } from '@caime/core/policy';
+import type { SpaceKind } from '@caime/core/spaces';
+import type { Sphere } from '@caime/core/taxonomy';
 import { api, request } from './client';
 
 type Ok = { ok: true };
@@ -291,7 +291,7 @@ export const endpoints = {
   vote: (id: string, optionIds: string[]) =>
     api.post<{ message: MessageView }>(`/messages/${id}/vote`, { optionIds }),
   /** Move a kit card along: approve, accept, mark paid (core kit-cards.ts says who may). */
-  /** Where this Caishy keeps its policies and help, as its operator set them. */
+  /** Where this Caime keeps its policies and help, as its operator set them. */
   about: () => api.get<AboutView>('/about'),
   moveKit: (id: string, to: string) =>
     api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
@@ -577,13 +577,13 @@ export const endpoints = {
   updatePolicy: (id: string, body: Record<string, unknown>) =>
     api.patch<Ok>(`/policies/${id}`, body),
   deletePolicy: (id: string) => api.del<Ok>(`/policies/${id}`),
-  /** How Caishy treats one person now, in words, and what they'd get without a rule of their own. */
+  /** How Caime treats one person now, in words, and what they'd get without a rule of their own. */
   policyFor: (userId: string) =>
     api.get<{ policy: EffectivePolicy; description: string; inherited: EffectivePolicy }>(
       `/policies/for/${userId}`,
     ),
   resetPolicies: () => api.post<Ok>('/policies/reset'),
-  /** Automations (PRD §69): what Caishy keeps of what arrives, set up by the person it's for. */
+  /** Automations (PRD §69): what Caime keeps of what arrives, set up by the person it's for. */
   automations: () => api.get<{ automations: AutomationView[] }>('/automations'),
   createAutomation: (body: {
     name?: string | null;

@@ -1,7 +1,7 @@
 /**
  * Connect Kits an organization's app makes (PRD §74, §86 "Custom"): its own kinds of card, with
  * the fields they hold, the states they move through and who moves them. A kit is data, never
- * code or markup: its cards read like Caishy's own, and whatever an app writes in one is shown as
+ * code or markup: its cards read like Caime's own, and whatever an app writes in one is shown as
  * text. A card keeps the kit as it was when the card was sent, so changing or removing the kit,
  * or the app, never changes a card already in a conversation.
  */
@@ -17,7 +17,7 @@ export const CUSTOM_KIT_FIELD_TYPES = [
   'options',
 ] as const;
 
-/** A custom card's icon: one of those the apps already carry for Caishy's own kits. */
+/** A custom card's icon: one of those the apps already carry for Caime's own kits. */
 export const CUSTOM_KIT_ICONS = [
   'clipboard-list',
   'package',
@@ -306,7 +306,7 @@ export function customTitle(
   return f ? (fields[f.key] as string) : kit.name;
 }
 
-/** The card's other lines, labelled, as Caishy's own cards show theirs. */
+/** The card's other lines, labelled, as Caime's own cards show theirs. */
 export function customDetails(
   card: Pick<CustomKitCard, 'def' | 'fields'>,
   opts: { now: Date; timeZone: string; locale: string },

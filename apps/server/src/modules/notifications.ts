@@ -3,8 +3,8 @@
  * server generates and stores on first boot; Expo push needs an Expo access token for production.
  */
 
-import type { NotificationLevel, NotificationsResponse, NotificationView } from '@caishy/core';
-import { PushSubscriptionBody, uuidv7 } from '@caishy/core';
+import type { NotificationLevel, NotificationsResponse, NotificationView } from '@caime/core';
+import { PushSubscriptionBody, uuidv7 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import webpush from 'web-push';

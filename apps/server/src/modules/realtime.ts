@@ -3,7 +3,7 @@
  * authenticates with its session cookie during the upgrade; native sends {type:"auth", token}
  * as its first frame. Events arrive from the bus, which spans every server instance.
  */
-import { canSee, resolvePolicy, type Sphere } from '@caishy/core';
+import { canSee, resolvePolicy, type Sphere } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { AppContext } from '../context';

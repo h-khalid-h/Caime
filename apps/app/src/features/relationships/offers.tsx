@@ -1,8 +1,8 @@
 /**
- * How Caishy thinks someone may be known (PRD §12), on a person's page and at the top of People.
+ * How Caime thinks someone may be known (PRD §12), on a person's page and at the top of People.
  * The cards load only when there's one to show: most of the time there isn't.
  */
-import type { ConnectionView } from '@caishy/core/api';
+import type { ConnectionView } from '@caime/core/api';
 import { useRelationshipOffers } from '@/api/hooks';
 import { lazyPart } from '@/ui/Lazy';
 

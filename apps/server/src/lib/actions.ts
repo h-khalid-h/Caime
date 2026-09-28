@@ -2,7 +2,7 @@
  * Creating actions with provenance (PRD §28–§30; PRODUCT-REVIEW R13). Every task and decision
  * keeps the conversation and message it came from and a snapshot of the relationship at the time.
  */
-import { relationshipLabel, type Sphere, uuidv7 } from '@caishy/core';
+import { relationshipLabel, type Sphere, uuidv7 } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Task } from '../db/schema';

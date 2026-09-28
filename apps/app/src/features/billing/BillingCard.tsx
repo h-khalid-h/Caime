@@ -4,8 +4,8 @@ import {
   type BillingView,
   priceText,
   subscriptionLine,
-} from '@caishy/core/billing';
-import { PLAN_NAMES } from '@caishy/core/plans';
+} from '@caime/core/billing';
+import { PLAN_NAMES } from '@caime/core/plans';
 import { useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';

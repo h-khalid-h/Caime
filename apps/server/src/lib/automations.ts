@@ -13,7 +13,7 @@ import {
   type SaveKind,
   type Sphere,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { AutomationsTable, Conversation, Database, Message } from '../db/schema';

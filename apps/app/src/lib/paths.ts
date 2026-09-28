@@ -3,11 +3,11 @@
  * from other people, and a bad one must open nothing rather than somewhere unexpected.
  */
 
-import { SITE_PAGES } from '@caishy/core/api';
+import { SITE_PAGES } from '@caime/core/api';
 
 /** The way in, never a place to return someone to. */
 const ENTRY = /^\/(?:welcome|sign-in|sign-up|recover|onboarding)?(?:[/?#]|$)/;
-/** Caishy's own pages outside the app (the server's): never a screen of it. */
+/** Caime's own pages outside the app (the server's): never a screen of it. */
 const SITE_PAGE = new RegExp(`^/(?:${SITE_PAGES.join('|')})/?(?:[?#]|$)`, 'i');
 // A query may carry a colon (an app's scope=messages:read, as browsers leave it); a path never.
 const SAFE = /^\/(?!\/)[\w@.~%/=&+-]*(?:\?[\w@.~%/?=&+:-]*)?$/;
@@ -16,7 +16,7 @@ const MAX_PATH = 1000;
 
 /**
  * A path inside the app worth opening from a link, or null (the way in, junk, another site, or
- * one of Caishy's own pages, which open as the pages they are).
+ * one of Caime's own pages, which open as the pages they are).
  */
 export function appPath(path: string | null | undefined): string | null {
   if (!path || path.length > MAX_PATH || !SAFE.test(path) || ENTRY.test(path)) return null;
@@ -28,14 +28,14 @@ export function appPath(path: string | null | undefined): string | null {
 export const isAuthorizeLink = (path: string | null | undefined) =>
   Boolean(path && /^\/oauth\/authorize(?:\?|$)/.test(path));
 
-/** The in-app path of a link to Caishy itself (on `base`, its web origin), or null. */
+/** The in-app path of a link to Caime itself (on `base`, its web origin), or null. */
 export function ownLinkPath(url: string, base: string): string | null {
   if (!base || !url.startsWith(`${base}/`)) return null;
   return appPath(url.slice(base.length).split('#')[0]);
 }
 
 /**
- * The path a deep link opens: https://host/@noor → /@noor; caishy://o/datac → /o/datac (a
+ * The path a deep link opens: https://host/@noor → /@noor; caime://o/datac → /o/datac (a
  * custom scheme's first segment reads as a host, and belongs to the path).
  */
 export function deepLinkPath(url: string): string | null {

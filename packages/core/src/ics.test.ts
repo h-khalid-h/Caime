@@ -34,23 +34,23 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
 
   it('writes all-day and timed events that calendar apps read', () => {
     const ics = buildIcs({
-      name: 'Caishy',
+      name: 'Caime',
       timeZone: 'Africa/Cairo',
       now,
       events: [
         {
-          uid: 'task-1@caishy',
+          uid: 'task-1@caime',
           summary: 'Renew the passport',
           date: '2026-12-31',
           updated: new Date('2026-09-20T08:00:00Z'),
         },
         {
-          uid: 'meeting-2@caishy',
+          uid: 'meeting-2@caime',
           summary: 'Venue walkthrough',
           start: new Date('2026-10-02T11:00:00Z'),
           end: new Date('2026-10-02T11:45:00Z'),
           location: 'Hall B, 2nd floor',
-          url: 'https://caishy.example/c/abc',
+          url: 'https://caime.example/c/abc',
           busy: true,
           updated: new Date('2026-09-21T08:00:00.123Z'),
         },
@@ -69,7 +69,7 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
     expect(lines).toContain('DTSTART:20261002T110000Z');
     expect(lines).toContain('DTEND:20261002T114500Z');
     expect(lines).toContain('LOCATION:Hall B\\, 2nd floor');
-    expect(lines).toContain('URL:https://caishy.example/c/abc');
+    expect(lines).toContain('URL:https://caime.example/c/abc');
     expect(lines).toContain('LAST-MODIFIED:20260921T080000Z');
     expect(lines.filter((l) => l === 'TRANSP:OPAQUE')).toHaveLength(1);
     expect(lines.filter((l) => l === 'TRANSP:TRANSPARENT')).toHaveLength(1);
@@ -78,25 +78,25 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
 
   it('a title can never add a line of its own, and only an address is written as one', () => {
     const ics = buildIcs({
-      name: 'Caishy',
+      name: 'Caime',
       now,
       events: [
         {
-          uid: 'task-3@caishy',
+          uid: 'task-3@caime',
           summary: 'Pay\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Injected',
           date: '2026-10-01',
-          url: 'https://caishy.example/c/x\r\nATTACH:https://evil.example',
+          url: 'https://caime.example/c/x\r\nATTACH:https://evil.example',
           updated: now,
         },
         {
-          uid: 'task-4@caishy',
+          uid: 'task-4@caime',
           summary: 'Call',
           start: new Date('2026-10-01T09:00:00Z'),
           url: 'javascript:alert(1)',
           updated: now,
         },
         {
-          uid: 'meeting-5@caishy',
+          uid: 'meeting-5@caime',
           summary: 'Backwards',
           start: new Date('2026-10-02T10:00:00Z'),
           end: new Date('2026-10-02T09:00:00Z'),
@@ -117,11 +117,11 @@ describe('calendar feeds (RFC 5545, PRD §72)', () => {
 
   it('refuses an event with nowhere in time to be', () => {
     expect(() =>
-      buildIcs({ name: 'Caishy', now, events: [{ uid: 'x', summary: 'x', updated: now }] }),
+      buildIcs({ name: 'Caime', now, events: [{ uid: 'x', summary: 'x', updated: now }] }),
     ).toThrow(/needs a date/);
     expect(() =>
       buildIcs({
-        name: 'Caishy',
+        name: 'Caime',
         now,
         events: [{ uid: 'x', summary: 'x', date: 'soon', updated: now }],
       }),

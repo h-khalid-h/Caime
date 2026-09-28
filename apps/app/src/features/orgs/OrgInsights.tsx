@@ -1,4 +1,4 @@
-import { replyTimeText } from '@caishy/core/business';
+import { replyTimeText } from '@caime/core/business';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

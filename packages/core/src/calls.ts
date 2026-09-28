@@ -1,7 +1,7 @@
 /**
  * Calls (PRD §47): 1:1 voice and video in a direct conversation. The server rings, relays how
  * the two devices reach each other, and keeps the call's history; the media goes between them
- * directly, encrypted, and never through Caishy (unless a relay is set up, which can't read it).
+ * directly, encrypted, and never through Caime (unless a relay is set up, which can't read it).
  */
 
 export const CALL_KINDS = ['voice', 'video'] as const;

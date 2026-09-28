@@ -4,8 +4,8 @@
  * organization's updates on its page, as they can the page; following is a choice of their own
  * that nobody else sees, and ends when they block it.
  */
-import type { FollowingView, OrgUpdatesView, OrgUpdateView } from '@caishy/core';
-import { canManageOrg, EditUpdateBody, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caishy/core';
+import type { FollowingView, OrgUpdatesView, OrgUpdateView } from '@caime/core';
+import { canManageOrg, EditUpdateBody, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

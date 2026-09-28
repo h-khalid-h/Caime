@@ -2,7 +2,7 @@
  * Ephemeral, never persisted: who is typing, who is online, the realtime connection, and which
  * conversation is on screen (so arriving messages there are read, not counted as unread).
  */
-import type { PresenceState } from '@caishy/core/api';
+import type { PresenceState } from '@caime/core/api';
 import { create } from 'zustand';
 
 const TYPING_MS = 6000;

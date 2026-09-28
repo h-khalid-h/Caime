@@ -3,7 +3,7 @@
  * amount), the time zone their times are in, and how dates, times and numbers are written for
  * them. Each is saved as it's chosen.
  */
-import type { MeView } from '@caishy/core/api';
+import type { MeView } from '@caime/core/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -59,7 +59,7 @@ export default function Region() {
       </Group>
       <Group
         title="Dates, times and numbers"
-        footer="How Caishy writes them for you. Dates you type are read in English and Arabic."
+        footer="How Caime writes them for you. Dates you type are read in English and Arabic."
       >
         <View style={{ padding: 16 }}>
           <LanguageField

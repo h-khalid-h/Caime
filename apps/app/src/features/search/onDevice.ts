@@ -15,9 +15,9 @@ import type {
   SearchResults,
   TasksResponse,
   TaskView,
-} from '@caishy/core/api';
-import { MATCH_END, MATCH_START } from '@caishy/core/format';
-import { parseSearchQuery, type SearchScope } from '@caishy/core/search';
+} from '@caime/core/api';
+import { MATCH_END, MATCH_START } from '@caime/core/format';
+import { parseSearchQuery, type SearchScope } from '@caime/core/search';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 const MAX = 20;

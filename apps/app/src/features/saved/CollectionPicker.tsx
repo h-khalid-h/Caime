@@ -4,7 +4,7 @@
  * they have, in any case or spacing, is that one ("customer files" is their "Customer Files"), so
  * the same collection is never made twice.
  */
-import { COLLECTION_MAX, collectionName } from '@caishy/core/automations';
+import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { View } from 'react-native';

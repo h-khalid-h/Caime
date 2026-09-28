@@ -1,6 +1,6 @@
 /**
  * How a relationship's history reads on a person's profile (PRD §9: relationships change, and
- * Caishy keeps the story). The server stores a snapshot before and after each change; this turns
+ * Caime keeps the story). The server stores a snapshot before and after each change; this turns
  * one event into one line, using the person's name and never a pronoun (R27).
  */
 import { isSphere, relationshipLabel, type Sphere } from './taxonomy';

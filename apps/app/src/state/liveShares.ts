@@ -27,6 +27,6 @@ export const useLiveShares = create<LiveSharesState>()(
         }),
       clear: () => set({ shares: {} }),
     }),
-    { name: 'caishy.live-shares', storage: createJSONStorage(() => AsyncStorage) },
+    { name: 'caime.live-shares', storage: createJSONStorage(() => AsyncStorage) },
   ),
 );

@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/config', () => ({ API_URL: 'https://caishy.example', isWeb: false }));
+vi.mock('@/lib/config', () => ({ API_URL: 'https://caime.example', isWeb: false }));
 
 const answer = (status: number, body: string) =>
   vi.fn(async () => ({ ok: status >= 200 && status < 300, status, text: async () => body }));
@@ -45,17 +45,17 @@ describe('the API client', () => {
       (sent.mock.calls[i] as unknown as [string, { headers: Record<string, string> }])[1].headers;
     setExpectedUser('u-noor');
     await api.post('/conversations/c1/messages', { body: 'Hi' });
-    expect(headersOf(0)['x-caishy-user']).toBe('u-noor');
+    expect(headersOf(0)['x-caime-user']).toBe('u-noor');
     // What finds out who's signed in, or decides it, is asked as nobody in particular.
     await api.get('/auth/session');
     await api.post('/auth/login', {});
-    expect(headersOf(1)['x-caishy-user']).toBeUndefined();
-    expect(headersOf(2)['x-caishy-user']).toBeUndefined();
+    expect(headersOf(1)['x-caime-user']).toBeUndefined();
+    expect(headersOf(2)['x-caime-user']).toBeUndefined();
     await api.post('/auth/logout');
-    expect(headersOf(3)['x-caishy-user']).toBe('u-noor');
+    expect(headersOf(3)['x-caime-user']).toBe('u-noor');
     setExpectedUser(null);
     await api.get('/inbox');
-    expect(headersOf(4)['x-caishy-user']).toBeUndefined();
+    expect(headersOf(4)['x-caime-user']).toBeUndefined();
 
     const startAgain = vi.fn();
     setWrongAccountHandler(startAgain);

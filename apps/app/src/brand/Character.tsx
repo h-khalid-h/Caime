@@ -2,7 +2,7 @@ import {
   type Character as CharacterName,
   characterSvg,
   type Expression,
-} from '@caishy/brand/characters';
+} from '@caime/brand/characters';
 import { memo, useMemo } from 'react';
 import { View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -16,7 +16,7 @@ export interface CharacterProps {
   label?: string;
 }
 
-/** A Caishy Friend (BRAND.md B3), drawn from the brand package's vector builders. */
+/** A Caime Friend (BRAND.md B3), drawn from the brand package's vector builders. */
 export const Character = memo(function Character({
   name,
   expression = 'happy',

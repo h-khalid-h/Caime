@@ -1,5 +1,5 @@
-import type { InboxItemView, InboxSectionView } from '@caishy/core/api';
-import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
+import type { InboxItemView, InboxSectionView } from '@caime/core/api';
+import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
@@ -194,7 +194,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
           character="niko"
           expression="excited"
           title="Say hello to someone"
-          body="Connect with the people you talk to. Caishy keeps family, friends and work each in the right place."
+          body="Connect with the people you talk to. Caime keeps family, friends and work each in the right place."
           icon={UserPlus}
           action={
             <Button label="Find people" icon={UserPlus} onPress={() => router.push('/connect')} />

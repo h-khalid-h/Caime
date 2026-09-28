@@ -3,7 +3,7 @@
  */
 
 import { Resolver } from 'node:dns/promises';
-import { uuidv7 } from '@caishy/core';
+import { uuidv7 } from '@caime/core';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -202,7 +202,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   });
   let web: WebApp | null = null;
   app.setNotFoundHandler((req, reply) => {
-    // Caishy's own pages however they're spelled (/Privacy, /terms/): the page, never the app.
+    // Caime's own pages however they're spelled (/Privacy, /terms/): the page, never the app.
     const page = req.method === 'GET' || req.method === 'HEAD' ? sitePageAt(req.url) : null;
     if (page) return reply.redirect(`/${page}`, 301);
     if (web?.handles(req)) return web.serve(reply);

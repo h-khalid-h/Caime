@@ -1,4 +1,4 @@
-import type { OAuthAppView } from '@caishy/core/api';
+import type { OAuthAppView } from '@caime/core/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -172,7 +172,7 @@ export function OAuthApps() {
         <ListRow
           icon={Plus}
           title="Register an app"
-          subtitle={apps.length ? undefined : 'Sign in with Caishy, for people who use it'}
+          subtitle={apps.length ? undefined : 'Sign in with Caime, for people who use it'}
           onPress={() => setMaking(true)}
           testID="oauth-app-new"
         />

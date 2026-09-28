@@ -1,4 +1,4 @@
-import type { Sphere } from '@caishy/core/taxonomy';
+import type { Sphere } from '@caime/core/taxonomy';
 import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
 import { useTheme } from '@/theme/theme';

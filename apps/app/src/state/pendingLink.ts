@@ -1,5 +1,5 @@
 /**
- * A link that opened Caishy before its person was signed in (someone's @handle, an organization,
+ * A link that opened Caime before its person was signed in (someone's @handle, an organization,
  * a conversation), kept through sign-in, sign-up and onboarding so they land where it pointed.
  */
 import * as Linking from 'expo-linking';
@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { isWeb } from '@/lib/config';
 import { appPath, deepLinkPath } from '@/lib/paths';
 
-const KEY = 'caishy.pendingLink';
+const KEY = 'caime.pendingLink';
 
 function stored(): string | null {
   if (!isWeb) return null;

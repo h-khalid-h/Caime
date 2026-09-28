@@ -4,7 +4,7 @@
  * conversations stay, and either can be separated again. Loaded only when there's one to show
  * (./index.tsx).
  */
-import type { ConnectionView, SuggestionView } from '@caishy/core/api';
+import type { ConnectionView, SuggestionView } from '@caime/core/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

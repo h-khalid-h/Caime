@@ -1,6 +1,6 @@
-import type { PolicyView } from '@caishy/core/api';
-import { resolvePolicy } from '@caishy/core/policy';
-import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
+import type { PolicyView } from '@caime/core/api';
+import { resolvePolicy } from '@caime/core/policy';
+import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -172,7 +172,7 @@ export default function Notifications() {
   return (
     <SettingsPage title="Notifications and priorities">
       <Text variant="body" color="textSecondary">
-        Caishy decides who reaches you by how you know them. Family can always get through; work
+        Caime decides who reaches you by how you know them. Family can always get through; work
         waits for work hours; everyone else stays quiet unless it’s important. Change any of it, or
         make rules of your own.
       </Text>
@@ -211,7 +211,7 @@ export default function Notifications() {
         </View>
       </Group>
       <Button
-        label="Reset to Caishy’s defaults"
+        label="Reset to Caime’s defaults"
         variant="ghost"
         onPress={async () => {
           await endpoints

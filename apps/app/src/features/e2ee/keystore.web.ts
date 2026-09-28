@@ -6,8 +6,8 @@
  * which conversations it has seen as private; and the newest edit of each private message
  * opened. Nothing here is ever sent. Everything of an account's goes when it signs out here.
  */
-import type { PublicJwk } from '@caishy/core/e2ee';
-import type { DeviceKeys } from '@caishy/core/e2ee-crypto';
+import type { PublicJwk } from '@caime/core/e2ee';
+import type { DeviceKeys } from '@caime/core/e2ee-crypto';
 
 export interface StoredDevice {
   id: string;
@@ -32,7 +32,7 @@ export interface Opened {
   edit: number;
 }
 
-const NAME = 'caishy-e2ee';
+const NAME = 'caime-e2ee';
 const DEVICES = 'devices';
 const SEEN = 'seen';
 const PINS = 'pins';

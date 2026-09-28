@@ -1,4 +1,4 @@
-import { uuidv4, uuidv7 } from '@caishy/core';
+import { uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -176,7 +176,7 @@ const metrics = async () =>
   ).json().metrics;
 
 describe('product metrics (PRD §82–83)', () => {
-  it('reads activation, engagement, the core rates and retention from what Caishy keeps', async () => {
+  it('reads activation, engagement, the core rates and retention from what Caime keeps', async () => {
     const m = await metrics();
     // Sam and Noor wrote in the last week; Cara three weeks ago.
     expect(m.people).toEqual({ total: 4, active7d: 2, active28d: 3 });

@@ -1,4 +1,4 @@
-import { ORG_ROLE_LABELS, orgKindName } from '@caishy/core/orgs';
+import { ORG_ROLE_LABELS, orgKindName } from '@caime/core/orgs';
 import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 import { useOrgs } from '@/api/hooks';
@@ -45,7 +45,7 @@ export default function Organizations() {
         }}
       >
         <Text variant="body" color="textSecondary">
-          A business, a clinic, a school or a nonprofit on Caishy: a profile people can trust once
+          A business, a clinic, a school or a nonprofit on Caime: a profile people can trust once
           you verify your domain, and a team that answers together.
         </Text>
         {q.isPending && !q.data ? (

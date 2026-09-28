@@ -1,4 +1,4 @@
-import { SPACE_KIND_DEFS, SPACE_KINDS, type SpaceKind } from '@caishy/core/spaces';
+import { SPACE_KIND_DEFS, SPACE_KINDS, type SpaceKind } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

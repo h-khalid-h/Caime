@@ -2,7 +2,7 @@
  * Accounts and sessions (PRD §35, §55; PRODUCT-REVIEW R24, R29; ADR-7).
  */
 
-import type { AuthResponse, DeviceSessionView, SessionResponse } from '@caishy/core';
+import type { AuthResponse, DeviceSessionView, SessionResponse } from '@caime/core';
 import {
   ChangePasswordBody,
   defaultPrivacy,
@@ -15,7 +15,7 @@ import {
   SignupBody,
   safeLocale,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -132,7 +132,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         400,
         'too_young',
-        `You need to be at least ${ctx.config.MINIMUM_AGE} to use Caishy.`,
+        `You need to be at least ${ctx.config.MINIMUM_AGE} to use Caime.`,
       );
     }
     const existing = await ctx.db

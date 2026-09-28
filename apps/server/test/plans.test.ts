@@ -1,11 +1,11 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { uuidv4, uuidv7 } from '@caishy/core';
+import { uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const ADMIN = 'operator-token-for-the-plans-test-0123456789';
-const PLANS_URL = 'https://plans.caishy.example/';
+const PLANS_URL = 'https://plans.caime.example/';
 const GB = 1024 ** 3;
 
 let t: TestApp;
@@ -30,7 +30,7 @@ async function connect(a: Client, b: Client) {
 }
 
 function multipart(data: Buffer) {
-  const boundary = `----caishy${uuidv4()}`;
+  const boundary = `----caime${uuidv4()}`;
   const head = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="notes.txt"\r\nContent-Type: text/plain\r\n\r\n`,
   );

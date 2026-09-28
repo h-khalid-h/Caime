@@ -2,8 +2,8 @@
  * Calls on phones aren't built yet (PRD §47: WebRTC on the web first). The web build uses
  * group.web.ts; these keep the same shape so shared code needn't know.
  */
-import type { GroupCallView, RealtimeEvent } from '@caishy/core/api';
-import type { CallKind } from '@caishy/core/calls';
+import type { GroupCallView, RealtimeEvent } from '@caime/core/api';
+import type { CallKind } from '@caime/core/calls';
 
 export const groupCallsSupported: boolean = false;
 export async function startGroupCall(_conversationId: string, _kind: CallKind): Promise<void> {}

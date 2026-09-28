@@ -3,7 +3,7 @@
  * conversation in a fixed number of queries, then runs the same attention engine the clients run.
  */
 
-import type { InboxAllResponse, InboxItemView, InboxResponse, OrgRef, Sphere } from '@caishy/core';
+import type { InboxAllResponse, InboxItemView, InboxResponse, OrgRef, Sphere } from '@caime/core';
 import {
   type AttentionInput,
   attentionHeadline,
@@ -12,7 +12,7 @@ import {
   resolvePolicy,
   SECTION_LABELS,
   systemText,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

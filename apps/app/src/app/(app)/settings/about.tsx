@@ -14,7 +14,7 @@ import { Text } from '@/ui/Text';
 
 export default function About() {
   const t = useTheme();
-  // Where this Caishy keeps its policies and help: the server's to say (its environment), so a
+  // Where this Caime keeps its policies and help: the server's to say (its environment), so a
   // link goes where its operator put it, and there's none for what they haven't.
   const links = useQuery({
     queryKey: qk.about,
@@ -22,7 +22,7 @@ export default function About() {
     staleTime: 3_600_000,
   }).data;
   return (
-    <SettingsPage title="About Caishy">
+    <SettingsPage title="About Caime">
       <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
         {t.playful ? <Character name="caishy" size={120} /> : null}
         <Wordmark height={34} />

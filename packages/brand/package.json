@@ -1,8 +1,8 @@
 {
-  "name": "@caishy/brand",
+  "name": "@caime/brand",
   "version": "0.1.0",
   "private": true,
-  "description": "Caishy brand system: tokens, marks, characters and stickers as code.",
+  "description": "Caime brand system: tokens, marks, characters and stickers as code.",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -22,6 +22,6 @@
     "tsx": "^4.23.15"
   },
   "dependencies": {
-    "@caishy/core": "workspace:*"
+    "@caime/core": "workspace:*"
   }
 }

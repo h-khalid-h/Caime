@@ -1,4 +1,4 @@
-import type { RelationshipView } from '@caishy/core/api';
+import type { RelationshipView } from '@caime/core/api';
 import {
   fillName,
   primarySpheres,
@@ -6,7 +6,7 @@ import {
   SPHERE_DEFS,
   type Sphere,
   secondarySpheres,
-} from '@caishy/core/taxonomy';
+} from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Switch, View } from 'react-native';
@@ -145,7 +145,7 @@ export function RelationshipForm({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Lock size={12} color={t.c.textTertiary} />
         <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
-          Only you see this. It changes how Caishy treats {name}, never what {name} sees.
+          Only you see this. It changes how Caime treats {name}, never what {name} sees.
         </Text>
       </View>
       <View
@@ -259,7 +259,7 @@ export function RelationshipPicker({
   onClose: () => void;
   person: { id: string; displayName: string };
   current?: RelationshipView | null;
-  /** What it starts from when it's a new one: what Caishy offered, say. */
+  /** What it starts from when it's a new one: what Caime offered, say. */
   initial?: Partial<RelationshipDraft> | null;
   /** Instead of saving, hand the choice back (accepting a request). */
   onPick?: (draft: RelationshipDraft) => void;
@@ -304,7 +304,7 @@ export function RelationshipPicker({
         qk.inbox,
         qk.relationshipHistory(person.id),
         ['conversation'],
-        // Which rule applies to them follows how you know them; what Caishy offered is answered.
+        // Which rule applies to them follows how you know them; what Caime offered is answered.
         ['policy-for'],
         ['suggestions'],
         qk.taxonomy,

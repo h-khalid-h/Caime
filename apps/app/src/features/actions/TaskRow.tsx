@@ -1,5 +1,5 @@
-import type { TaskView } from '@caishy/core/api';
-import { formatDue, overdueAt } from '@caishy/core/format';
+import type { TaskView } from '@caime/core/api';
+import { formatDue, overdueAt } from '@caime/core/format';
 import { router } from 'expo-router';
 import { memo } from 'react';
 import { View } from 'react-native';

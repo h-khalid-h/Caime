@@ -1,6 +1,6 @@
 # Caime — Full Product Requirements Document
 
-> **Caime** (formerly **Caishy**, and before that **CONNIQT**). Every mention of Caishy or CONNIQT
+> **Caime** (formerly **Caime**, and before that **CONNIQT**). Every mention of Caime or CONNIQT
 > in earlier drafts refers to Caime. The name, and what of a later super-app brainstorm the
 > product takes and leaves, are refinements R34–R40 in `PRODUCT-REVIEW.md`.
 >

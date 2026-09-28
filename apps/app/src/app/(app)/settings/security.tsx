@@ -1,6 +1,6 @@
-import type { DeviceSessionView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
-import { passwordError } from '@caishy/core/rules';
+import type { DeviceSessionView } from '@caime/core/api';
+import { formatListTime } from '@caime/core/format';
+import { passwordError } from '@caime/core/rules';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -75,7 +75,7 @@ export default function Security() {
       await endpoints.deleteAccount(confirm);
       setDeleting(false);
       await useSession.getState().signOut({ remote: false });
-      toast('Your account is deleted. Thank you for trying Caishy.');
+      toast('Your account is deleted. Thank you for trying Caime.');
     } catch (e) {
       setDeleteError((e as Error).message);
     } finally {
@@ -163,7 +163,7 @@ export default function Security() {
       </Group>
       <Group
         title="Recovery codes"
-        footer="Caishy never asks for your phone number. These codes are how you get back in if you forget your password."
+        footer="Caime never asks for your phone number. These codes are how you get back in if you forget your password."
       >
         <View style={{ padding: 16, gap: 12 }}>
           {codes ? (
@@ -212,12 +212,12 @@ export default function Security() {
       </Group>
       <Group
         title="Your data"
-        footer="The download has what Caishy keeps about you, as the app shows it to you: your profile, how you label people, the messages you sent, your actions, files, calls, devices and more. Never other people’s words, reports others made about you, or secrets."
+        footer="The download has what Caime keeps about you, as the app shows it to you: your profile, how you label people, the messages you sent, your actions, files, calls, devices and more. Never other people’s words, reports others made about you, or secrets."
       >
         <ListRow
           icon={FileText}
           title="Download your data"
-          subtitle={isWeb ? 'A JSON file, ready at once' : 'Open Caishy on the web to download it'}
+          subtitle={isWeb ? 'A JSON file, ready at once' : 'Open Caime on the web to download it'}
           onPress={
             isWeb
               ? () => {

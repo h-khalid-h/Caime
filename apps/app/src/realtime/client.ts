@@ -3,7 +3,7 @@
  * cookie during the upgrade; native sends its token as the first frame. It reconnects with
  * backoff, and after every reconnect it catches up on whatever it missed while away.
  */
-import type { RealtimeFrame } from '@caishy/core/api';
+import type { RealtimeFrame } from '@caime/core/api';
 import type { Query } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
 import { getAuthToken, wrongAccount } from '@/api/client';

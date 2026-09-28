@@ -1,4 +1,4 @@
-import { SPHERES } from '@caishy/core';
+import { SPHERES } from '@caime/core';
 import { describe, expect, it } from 'vitest';
 import { contrastRatio } from './contrast';
 import { avatarPalette, bubbleThemes, sphereStyles, themes } from './tokens';

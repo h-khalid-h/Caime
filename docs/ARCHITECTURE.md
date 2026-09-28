@@ -1,6 +1,6 @@
 # Architecture
 
-How Caishy is built and why. Decisions are numbered (`ADR-n`) and are only ever superseded, never
+How Caime is built and why. Decisions are numbered (`ADR-n`) and are only ever superseded, never
 silently edited: when one changes, add a new entry that says what it replaces.
 
 ## Shape
@@ -19,7 +19,7 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
         ▼                          ▼
  ┌──────────────────── apps/server (Node 22) ─────────────────────┐
  │ Fastify routes → services → Kysely → PostgreSQL 16             │
- │ @caishy/core engines (attention, policy, intelligence, search) │
+ │ @caime/core engines (attention, policy, intelligence, search) │
  │ Realtime hub ← Postgres LISTEN/NOTIFY → other instances        │
  │ Job workers (reminders, digests, webhooks, retention, exports) │
  │ Static web app (SPA) · uploads on a volume or S3-compatible    │
@@ -35,7 +35,7 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
   Expo Router and react-native-web (the approach Bluesky ships at scale). Web is exported as a
   single-page app and served by the API server from the same origin, which keeps cookies
   first-party and avoids CORS.
-- **ADR-3 — Shared domain core.** `@caishy/core` is dependency-light TypeScript consumed as source
+- **ADR-3 — Shared domain core.** `@caime/core` is dependency-light TypeScript consumed as source
   by the server (bundled by esbuild) and the app (Metro). The attention engine, relationship
   policy engine, message intelligence, privacy evaluator and search parser run identically on
   client and server, so offline and optimistic behaviour always matches what the server will do.
@@ -50,7 +50,7 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
   backoff. Survives restarts; works with multiple instances.
 - **ADR-7 — Sessions, not JWTs.** Opaque random tokens stored as SHA-256 hashes, revocable per
   device. Web uses an `httpOnly`, `Secure`, `SameSite=Lax` cookie plus a required
-  `X-Caishy-Client` header on state-changing requests (a cross-site form cannot set it). Native
+  `X-Caime-Client` header on state-changing requests (a cross-site form cannot set it). Native
   uses a Bearer token kept in the platform keychain (SecureStore). Passwords use scrypt. Recovery
   codes allow account recovery without email.
 - **ADR-8 — IDs and idempotency.** Server IDs are UUIDv7 (time-ordered, index-friendly). Every
@@ -60,7 +60,7 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
   the insert transaction. Clients sync by asking for messages after the last `seq` they hold and
   track read position as a `seq`.
 - **ADR-10 — Privacy is enforced where data leaves the server.** Serializers for another person's
-  profile pass through the privacy evaluator in `@caishy/core` using *the owner's* relationship to
+  profile pass through the privacy evaluator in `@caime/core` using *the owner's* relationship to
   the viewer. A relationship record is never serialized to anyone but its owner unless shared.
 - **ADR-11 — Suggestions, not writes.** Everything inferred (by heuristics or a model) is stored
   as a suggestion with a rationale and becomes a fact only through an explicit accept
@@ -116,7 +116,7 @@ The primary object is the **connection**, not the chat (PRD §4).
 
 ## API conventions
 
-- REST under `/v1`, JSON bodies validated with zod schemas from `@caishy/core`.
+- REST under `/v1`, JSON bodies validated with zod schemas from `@caime/core`.
 - Errors are `{ "error": { "code", "message", "details"? } }` with a stable `code`.
 - Lists use opaque cursors; message history pages by `seq`.
 - Every retried write carries `clientId`.

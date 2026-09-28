@@ -10,7 +10,7 @@ import {
   safeLocale,
   UpdateMeBody,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';

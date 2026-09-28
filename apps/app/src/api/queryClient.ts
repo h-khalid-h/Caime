@@ -56,7 +56,7 @@ function trim(client: PersistedClient): PersistedClient {
   return { ...client, clientState: { ...client.clientState, queries: out, mutations: [] } };
 }
 
-const CACHE_KEY = 'caishy.cache.v1';
+const CACHE_KEY = 'caime.cache.v1';
 
 export const persister = createAsyncStoragePersister({
   storage: AsyncStorage,

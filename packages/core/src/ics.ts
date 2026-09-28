@@ -1,6 +1,6 @@
 /**
  * A calendar feed as calendar apps read it (RFC 5545, PRD §72): Google Calendar, Outlook and
- * Apple Calendar subscribe to its address and show what's in it, and Caishy stays the record of
+ * Apple Calendar subscribe to its address and show what's in it, and Caime stays the record of
  * it. Text is escaped so nothing in a title can start a line of its own, lines are folded at 75
  * octets without splitting a character, and every line ends in CRLF.
  */
@@ -11,7 +11,7 @@ export interface IcsEvent {
   summary: string;
   description?: string | null;
   location?: string | null;
-  /** Where it is in Caishy. Only an http(s) address is written. */
+  /** Where it is in Caime. Only an http(s) address is written. */
   url?: string | null;
   /** A timed event: from `start` to `end` (or `start`), in UTC. */
   start?: Date;
@@ -100,7 +100,7 @@ export function buildIcs(cal: IcsCalendar): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Caishy//Calendar feed//EN',
+    'PRODID:-//Caime//Calendar feed//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${icsText(cal.name)}`,

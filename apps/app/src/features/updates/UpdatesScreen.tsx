@@ -2,8 +2,8 @@
  * Updates (PRD §59): the organizations this person follows, the latest first, apart from their
  * conversations. Each opens the organization's page, where its updates are.
  */
-import type { FollowingView } from '@caishy/core/api';
-import { formatListTime } from '@caishy/core/format';
+import type { FollowingView } from '@caime/core/api';
+import { formatListTime } from '@caime/core/format';
 import { router } from 'expo-router';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { useFollowing } from '@/api/hooks';

@@ -1,4 +1,4 @@
-import type { Sphere } from '@caishy/core/taxonomy';
+import type { Sphere } from '@caime/core/taxonomy';
 import type { IconComponent } from './Button';
 import {
   BadgeCheck,

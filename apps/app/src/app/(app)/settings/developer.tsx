@@ -1,6 +1,6 @@
-import { PERSONAL_SCOPE_LABELS, PERSONAL_SCOPES, type PersonalScope } from '@caishy/core/access';
-import type { PersonalTokenView } from '@caishy/core/api';
-import { formatListTime, formatWhen } from '@caishy/core/format';
+import { PERSONAL_SCOPE_LABELS, PERSONAL_SCOPES, type PersonalScope } from '@caime/core/access';
+import type { PersonalTokenView } from '@caime/core/api';
+import { formatListTime, formatWhen } from '@caime/core/format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -213,7 +213,7 @@ export default function DeveloperSettings() {
         <>
           <Group
             title="Personal access tokens"
-            footer="A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caishy keeps only a fingerprint of each."
+            footer="A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caime keeps only a fingerprint of each."
           >
             {q.isPending ? (
               <SkeletonRows />

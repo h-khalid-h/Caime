@@ -1,5 +1,5 @@
-import type { ConversationView } from '@caishy/core/api';
-import { joinNames } from '@caishy/core/format';
+import type { ConversationView } from '@caime/core/api';
+import { joinNames } from '@caime/core/format';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { typingIn, useLive } from '@/state/live';

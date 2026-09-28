@@ -41,7 +41,7 @@ Object.assign(globalThis, {
 });
 
 const { queryClient, saveCacheNow, saveCacheWhenLeft } = await import('./queryClient');
-const saved = () => JSON.parse(h.store.get('caishy.cache.v1') ?? 'null');
+const saved = () => JSON.parse(h.store.get('caime.cache.v1') ?? 'null');
 const keys = () =>
   (saved()?.clientState.queries ?? []).map((q: { queryKey: unknown[] }) => q.queryKey[0]);
 

@@ -14,8 +14,8 @@ import {
   type ThemeColors,
   themes,
   typeScale,
-} from '@caishy/brand/tokens';
-import type { Sphere } from '@caishy/core/taxonomy';
+} from '@caime/brand/tokens';
+import type { Sphere } from '@caime/core/taxonomy';
 import { createContext, type ReactNode, useContext, useEffect, useMemo } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import { type Personality, usePrefs } from './prefs';

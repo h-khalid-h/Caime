@@ -76,7 +76,7 @@ export default function Welcome() {
           >
             <View style={{ maxWidth: 420, width: '100%', alignSelf: 'center', gap: 8 }}>
               <Text variant="display" accessibilityRole="header">
-                Welcome to Caishy
+                Welcome to Caime
               </Text>
               <Text variant="body" color="textSecondary">
                 One place for everyone you talk to, and it knows the difference between your mum,

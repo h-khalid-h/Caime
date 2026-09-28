@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
@@ -1804,11 +1804,11 @@ describe('realtime', () => {
       url: '/v1/auth/login',
       payload: { identifier: sarah.user.handle, password: 'correct horse battery', client: 'web' },
     });
-    const cookie = login.cookies.find((c) => c.name === 'caishy_session')!.value;
+    const cookie = login.cookies.find((c) => c.name === 'caime_session')!.value;
     const connect = (origin: string) =>
       new Promise<number | 'hello'>((resolve) => {
         const ws = new WebSocket(`ws://127.0.0.1:${address.port}/v1/realtime`, {
-          headers: { cookie: `caishy_session=${cookie}`, origin },
+          headers: { cookie: `caime_session=${cookie}`, origin },
         });
         ws.on('message', (raw) => {
           if (JSON.parse(String(raw)).type === 'hello') {

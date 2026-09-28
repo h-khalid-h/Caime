@@ -1,4 +1,4 @@
-import type { Character, Expression } from '@caishy/brand/characters';
+import type { Character, Expression } from '@caime/brand/characters';
 
 /** Caishy Friends, the first sticker pack (BRAND.md B3): the characters say what words can't. */
 export const STICKER_PACK = 'caishy-friends';

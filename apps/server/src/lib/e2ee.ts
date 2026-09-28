@@ -6,12 +6,12 @@
  * every introduction itself (packages/core/src/e2ee.ts), so this only has to be right for them to
  * work, never for them to be safe.
  */
-import type { DeviceView, PublicJwk, SealedMessage } from '@caishy/core';
+import type { DeviceView, PublicJwk, SealedMessage } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { AppError } from './errors';
 
-export { MAX_DEVICES } from '@caishy/core';
+export { MAX_DEVICES } from '@caime/core';
 
 interface Row {
   id: string;

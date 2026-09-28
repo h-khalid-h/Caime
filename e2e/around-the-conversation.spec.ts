@@ -200,8 +200,7 @@ test.describe
       await expect
         .poll(() =>
           page.evaluate(
-            () =>
-              localStorage.getItem('caishy.cache.v1')?.includes('Sent from the tunnel') ?? false,
+            () => localStorage.getItem('caime.cache.v1')?.includes('Sent from the tunnel') ?? false,
           ),
         )
         .toBe(true);
@@ -239,7 +238,7 @@ test.describe
       await expect
         .poll(() =>
           page.evaluate(
-            () => localStorage.getItem('caishy.cache.v1')?.includes('"queryKey":["inbox"') ?? false,
+            () => localStorage.getItem('caime.cache.v1')?.includes('"queryKey":["inbox"') ?? false,
           ),
         )
         .toBe(true);
@@ -248,7 +247,7 @@ test.describe
         .poll(
           () =>
             page.evaluate(async () => {
-              const kept = await (await caches.open('caishy-files-v1')).keys();
+              const kept = await (await caches.open('caime-files-v1')).keys();
               const paths = kept.map((r) => new URL(r.url).pathname);
               return paths.includes('/') && paths.some((p) => p.startsWith('/_expo/static/'));
             }),
@@ -663,8 +662,8 @@ test.describe
       const domain = `niledental-${stamp}.example`;
       await page.getByTestId('org-domain').fill(`https://www.NileDental-${stamp}.example/about`);
       await page.getByTestId('org-domain-set').click();
-      await expect(page.getByTestId('org-record-name')).toHaveText(`_caishy-verify.${domain}`);
-      await expect(page.getByTestId('org-record-value')).toHaveText(/^caishy-verify=[\w-]{20,}$/);
+      await expect(page.getByTestId('org-record-name')).toHaveText(`_caime-verify.${domain}`);
+      await expect(page.getByTestId('org-record-value')).toHaveText(/^caime-verify=[\w-]{20,}$/);
       // Nothing is published at that name: it says so, and stays unverified.
       const checked = page.waitForResponse((r) => r.url().endsWith('/domain/check'));
       await page.getByTestId('org-domain-check').click();
@@ -673,7 +672,7 @@ test.describe
       await expect(page.getByTestId('org-unverified')).toBeVisible();
       // Published among the domain's other records, it verifies.
       const value = (await page.getByTestId('org-record-value').textContent()) ?? '';
-      await publishTxt(`_caishy-verify.${domain}`, ['v=spf1 -all', value]);
+      await publishTxt(`_caime-verify.${domain}`, ['v=spf1 -all', value]);
       await page.getByTestId('org-domain-check').click();
       await expect(page.getByTestId('org-verified')).toHaveText(`Verified · ${domain}`);
 
@@ -717,7 +716,7 @@ test.describe
         `${origin}/@noor.${stamp}`,
       );
 
-      // A Caishy link in a message opens here, not in another tab.
+      // A Caime link in a message opens here, not in another tab.
       const sent = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
         headers: CLIENT,
         data: { clientId: randomUUID(), body: `Our clinic: ${origin}/@nile.dental.${stamp}` },
@@ -953,7 +952,7 @@ test.describe
       });
       expect(scraped.status()).toBe(200);
       expect(await scraped.text()).toContain(
-        'caishy_http_requests_total{method="GET",route="/v1/orgs/:id/insights",status="200"}',
+        'caime_http_requests_total{method="GET",route="/v1/orgs/:id/insights",status="200"}',
       );
       expect((await noorContext.request.get('/metrics')).status()).toBe(401);
       expect(errors).toEqual([]);
@@ -1225,7 +1224,7 @@ test.describe
         ['notifications', 'Notifications and priorities'],
         ['privacy', 'Privacy'],
         ['security', 'Security'],
-        ['about', 'About Caishy'],
+        ['about', 'About Caime'],
         ['plan', 'Plan'],
         ['developer', 'Developer'],
         ['connected', 'Connected apps'],
@@ -1238,7 +1237,7 @@ test.describe
           page.getByRole('heading', { name: title }).filter({ visible: true }),
         ).toBeVisible();
         if (path === 'about') {
-          // Caishy's own privacy policy and terms, and help where this Caishy's operator put it,
+          // Caime's own privacy policy and terms, and help where this Caime's operator put it,
           // each opened as the page it is, never as a screen of the app.
           await page
             .context()
@@ -1458,7 +1457,7 @@ test.describe
       expect(errors).toEqual([]);
     });
 
-    test('Caishy thinks someone may be family, and asks rather than decides', async ({
+    test('Caime thinks someone may be family, and asks rather than decides', async ({
       browser,
     }) => {
       const { page, errors } = noor;
@@ -1484,7 +1483,7 @@ test.describe
         expect(space.ok()).toBe(true);
         await page.goto(`/p/${samId}`);
         const offer = page.getByTestId('relationship-offer').filter({ visible: true });
-        await expect(offer).toContainText('Caishy thinks Sami may be family.');
+        await expect(offer).toContainText('Caime thinks Sami may be family.');
         await expect(offer).toContainText(
           'You and Sami Haddad are both in The Haddads, a family space.',
         );
@@ -1543,7 +1542,7 @@ test.describe
       expect(Number((await banner.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(11);
       await page.getByTestId('catch-up-banner').click();
       const summary = page.getByTestId('assist-summary').filter({ visible: true });
-      await expect(summary).toContainText('Suggested by Caishy');
+      await expect(summary).toContainText('Suggested by Caime');
       await expect(summary).toContainText(
         /Caught up on \d+ messages\. The latest is from Alex Chen\./,
       );
@@ -1552,7 +1551,7 @@ test.describe
       await page.getByTestId('assist-find').filter({ visible: true }).click();
       await expect(visible(page, '1 follow-up to review')).toBeVisible();
       const offer = page.getByLabel('Suggestion: Send the final logo files');
-      await expect(offer).toContainText('Suggested by Caishy');
+      await expect(offer).toContainText('Suggested by Caime');
       await expect(offer).toContainText('Alex wrote “The printer needs the final logo files');
 
       // The hover buttons beside a message open its actions (they used to vanish under the pointer).
@@ -1560,7 +1559,7 @@ test.describe
       await page.getByRole('button', { name: 'React', exact: true }).click();
       await page.getByTestId('message-translate').click();
       const translation = page.getByTestId('message-translation');
-      await expect(translation).toContainText('English · Suggested by Caishy');
+      await expect(translation).toContainText('English · Suggested by Caime');
       await expect(translation).toContainText('Did the contract arrive?');
       await translation.scrollIntoViewIfNeeded();
       await page.screenshot({ path: 'e2e/screenshots/desktop-ai-assist.png' });
@@ -1791,9 +1790,9 @@ test.describe
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2,
       });
-      // The app's own page, where Caishy sends him back.
+      // The app's own page, where Caime sends him back.
       await phone.route('https://digest.example/**', (r) =>
-        r.fulfill({ contentType: 'text/html', body: '<p>Connected to Caishy</p>' }),
+        r.fulfill({ contentType: 'text/html', body: '<p>Connected to Caime</p>' }),
       );
       const app = await newPerson(phone);
       await app.page.goto(authorize);
@@ -1817,7 +1816,7 @@ test.describe
       const back = new URL(app.page.url());
       expect(back.searchParams.get('state')).toBe('digest-7');
 
-      // The app trades the code from its own server: no cookies, no Caishy client header. Its
+      // The app trades the code from its own server: no cookies, no Caime client header. Its
       // OAuth library finds where on its own (RFC 8414).
       const digest = await request.newContext({ baseURL });
       const found = await (await digest.get('/.well-known/oauth-authorization-server')).json();
@@ -2661,7 +2660,7 @@ test.describe
       await expect(phone.getByTestId('org-follow').filter({ visible: true })).toBeVisible();
       expect([...errors, ...lina.errors]).toEqual([]);
     });
-    test('this browser can show calls and messages when Caishy isn’t open', async () => {
+    test('this browser can show calls and messages when Caime isn’t open', async () => {
       const { page, errors } = noor;
       // The service worker is served fresh on every check, as a script.
       const sw = await noorContext.request.get('/sw.js');

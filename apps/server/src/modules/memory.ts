@@ -3,8 +3,8 @@
  * people, decisions, open items, dates, documents, links, amounts — without scrolling.
  */
 
-import type { MemoryView } from '@caishy/core';
-import { CreateContextBody, formatDue, joinNames, UpdateContextBody, uuidv7 } from '@caishy/core';
+import type { MemoryView } from '@caime/core';
+import { CreateContextBody, formatDue, joinNames, UpdateContextBody, uuidv7 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

@@ -5,7 +5,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { isWeb } from './config';
 
-const KEY = 'caishy.session';
+const KEY = 'caime.session';
 
 export async function readToken(): Promise<string | null> {
   if (isWeb) return null;

@@ -1,5 +1,5 @@
-import type { InboxItemView } from '@caishy/core/api';
-import { formatListTime, joinNames, listTitle } from '@caishy/core/format';
+import type { InboxItemView } from '@caime/core/api';
+import { formatListTime, joinNames, listTitle } from '@caime/core/format';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { OrgMark } from '@/features/orgs/kinds';

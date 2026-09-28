@@ -3,15 +3,15 @@
  * words it'll be listed by ("When a customer sends a file with “invoice”, save it to Customer
  * Files"). Nothing is kept until it's saved here.
  */
-import type { AutomationView } from '@caishy/core/api';
+import type { AutomationView } from '@caime/core/api';
 import {
   describeAutomation,
   SAVE_KINDS,
   type SaveKind,
   withoutWord,
   wordsFrom,
-} from '@caishy/core/automations';
-import { ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
+} from '@caime/core/automations';
+import { ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

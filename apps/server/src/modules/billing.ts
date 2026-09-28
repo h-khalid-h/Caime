@@ -3,7 +3,7 @@
  * or Business (an organization, by its owner or an admin), Stripe's portal to manage it, and the
  * webhook Stripe tells how each subscription stands. The work is in lib/billing.ts.
  */
-import { BillingPortalBody, type BillingView, CheckoutBody, canManageOrg } from '@caishy/core';
+import { BillingPortalBody, type BillingView, CheckoutBody, canManageOrg } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';

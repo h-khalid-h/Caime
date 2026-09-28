@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -10,7 +10,7 @@ let outsider: Client;
 let convo: string;
 
 function multipart(name: string, mime: string, data: Buffer) {
-  const boundary = `----caishy${uuidv4()}`;
+  const boundary = `----caime${uuidv4()}`;
   const head = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: ${mime}\r\n\r\n`,
   );

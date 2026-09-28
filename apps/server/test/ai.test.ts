@@ -1,6 +1,6 @@
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -117,7 +117,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     // Quotes the model added are taken off; the label always travels with it.
     expect(r).toEqual({
       suggestion: 'Could you send me the signed contract by Friday?',
-      label: 'Suggested by Caishy',
+      label: 'Suggested by Caime',
     });
     const sent = last();
     expect(sent.path).toMatch(/^\/v1\/messages/);
@@ -146,7 +146,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       translation: 'Did the contract arrive?',
       to: 'en',
       language: 'English',
-      label: 'Suggested by Caishy',
+      label: 'Suggested by Caime',
     });
     expect(last().body.system).toContain('into English');
     expect(last().body.messages[0].content).toContain('هل وصل العقد؟');
@@ -176,7 +176,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(r).toEqual({
       summary:
         'Lina booked the venue visit for Thursday at 11am and asked you to bring the floor plan.',
-      label: 'Suggested by Caishy',
+      label: 'Suggested by Caime',
       newCount: 2,
     });
     const sent = last().body;
@@ -216,7 +216,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     const findActions = async () => {
       replies.push(message(JSON.stringify(found)));
       const r = await noor.post(`/v1/conversations/${c}/ai/actions`, {});
-      expect(r.label).toBe('Suggested by Caishy');
+      expect(r.label).toBe('Suggested by Caime');
       return Object.fromEntries(r.found.map((s: any) => [s.kind, s]));
     };
     const heuristic = (await noor.get(`/v1/suggestions?conversationId=${c}`)).suggestions;

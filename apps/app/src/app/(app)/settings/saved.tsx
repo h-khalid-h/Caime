@@ -3,9 +3,9 @@
  * automations kept, in collections of their own. Each opens where it is (a file, a link checked
  * first) and shows where it was said. What's deleted or disappears goes from here too.
  */
-import type { SavedItemView } from '@caishy/core/api';
-import { COLLECTION_MAX, collectionName } from '@caishy/core/automations';
-import { formatBytes, formatListTime, previewText } from '@caishy/core/format';
+import type { SavedItemView } from '@caime/core/api';
+import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
+import { formatBytes, formatListTime, previewText } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

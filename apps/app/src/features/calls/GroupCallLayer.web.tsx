@@ -1,4 +1,4 @@
-import type { CallPersonView } from '@caishy/core/api';
+import type { CallPersonView } from '@caime/core/api';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { type GroupPeer, useGroupCall } from '@/state/groupCall';

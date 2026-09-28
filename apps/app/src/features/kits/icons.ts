@@ -1,4 +1,4 @@
-import type { CardKitId } from '@caishy/core/kit-cards';
+import type { CardKitId } from '@caime/core/kit-cards';
 import type { IconComponent } from '@/ui/Button';
 import {
   BadgeCheck,

@@ -1,5 +1,5 @@
-import type { ConversationView, TaskView } from '@caishy/core/api';
-import { formatDue, retentionText } from '@caishy/core/format';
+import type { ConversationView, TaskView } from '@caime/core/api';
+import { formatDue, retentionText } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';

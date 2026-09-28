@@ -1,4 +1,4 @@
-# Caishy apps: the API for organizations
+# Caime apps: the API for organizations
 
 An organization's owner or admin adds an **app** on the organization's page (Apps → Add). An app
 is how a helpdesk, a CRM or your own bot works with the organization's Business inbox. Each app:
@@ -47,37 +47,37 @@ An app answers customers; it never writes to someone first. A person on the team
 Business inbox, and it reaches them as a message request (R14). An organization's updates go only
 to people who chose to follow it; neither its apps nor its team learn who they are, only how many.
 
-An organization can also turn on Caishy's own **AI agent** (the organization's page → AI agent),
+An organization can also turn on Caime's own **AI agent** (the organization's page → AI agent),
 which answers customers first from what the organization tells it. Its messages arrive like a
 bot's, with `"automated": true` and `"aiAgent": true`. It is never given a conversation and never
 counts as the team's answer, but it can hand one to the team (`handed_over`) or close one the
 customer is done with (`resolved`): `business.thread` says who moved the thread in `by`.
 
-Responses are the same JSON the Caishy apps read (`packages/core/src/api.ts`). Errors are
+Responses are the same JSON the Caime apps read (`packages/core/src/api.ts`). Errors are
 `{ "error": { "code": "…", "message": "…" } }`.
 
 ## Webhooks
 
-Caishy `POST`s JSON to the app's address (https only) for the events it listens to:
+Caime `POST`s JSON to the app's address (https only) for the events it listens to:
 
 | Event | When | `data` |
 | --- | --- | --- |
 | `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
 | `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee`, `by` (`person`, `app` or `ai_agent`) |
 | `kit.posted` | Someone on the team sends one of the app's kinds of card | `conversationId`, `message` (`id`, `seq`, `createdAt`), `kit` (`key`, `name`, `custom`), `fields`, `state`, `by` (`person`), `customer` |
-| `kit.moved` | Someone moves one of its cards on (or a card of Caishy's own its bot sent), never when the app did | as `kit.posted`, with `from` and `to`, and `by`: `person` (the team) or `customer` |
+| `kit.moved` | Someone moves one of its cards on (or a card of Caime's own its bot sent), never when the app did | as `kit.posted`, with `from` and `to`, and `by`: `person` (the team) or `customer` |
 | `ping` | You pressed "Send a test delivery" | `appId` |
 
 Every body is `{ "id", "event", "orgId", "createdAt", "data" }`, with the headers
-`Caishy-Event`, `Caishy-Delivery` (the delivery id, for de-duplicating) and
-`Caishy-Signature: t=<unix seconds>,v1=<hex>`. Answer with any 2xx within 10 seconds, connecting
+`Caime-Event`, `Caime-Delivery` (the delivery id, for de-duplicating) and
+`Caime-Signature: t=<unix seconds>,v1=<hex>`. Answer with any 2xx within 10 seconds, connecting
 included; the body of your answer is ignored and redirects aren't followed. Anything else is
 tried again, waiting longer each time, six times in all; the app's sheet shows the last
 deliveries and why they failed. Addresses on private networks are refused, when you save them
 and again each time one is looked up.
 
 Deliveries can arrive out of order, and now and then more than once: de-duplicate with
-`Caishy-Delivery`, and put messages in order by `message.seq`.
+`Caime-Delivery`, and put messages in order by `message.seq`.
 
 ### Checking the signature
 
@@ -131,10 +131,10 @@ Return addresses are exact: https, plain http only on `localhost`, or the app's 
 (`myapp://callback`). Everything below is also at `/.well-known/oauth-authorization-server`
 (RFC 8414), so most OAuth libraries need only that address and the client ID.
 
-### 1. Send them to Caishy
+### 1. Send them to Caime
 
 ```
-https://<caishy>/oauth/authorize?response_type=code&client_id=app_…
+https://<caime>/oauth/authorize?response_type=code&client_id=app_…
   &redirect_uri=https%3A%2F%2Fyour.app%2Fcallback&scope=messages%3Aread%20messages%3Awrite
   &state=<random>&code_challenge=<base64url SHA-256 of the verifier>&code_challenge_method=S256
 ```
@@ -187,7 +187,7 @@ stop, and the person has to let the app in again. A refresh token lasts 30 days.
 
 ### Errors
 
-The token and revocation endpoints answer as RFC 6749 says, never with Caishy's own error shape,
+The token and revocation endpoints answer as RFC 6749 says, never with Caime's own error shape,
 and with `cache-control: no-store`:
 
 | `error` | Status | When |
@@ -215,7 +215,7 @@ Each comes with an `error_description` a developer can read.
 
 An app can make its own kinds of card (PRD §74): a pharmacy's prescription that's being prepared,
 then ready to collect; a school's permission slip; a workshop's repair. A card of one reads
-like Caishy's own, in the organization's conversations with its customers: what it is, its
+like Caime's own, in the organization's conversations with its customers: what it is, its
 main line, its details, where it stands and the moves each side may make. A kind of card is
 data, never code or markup: whatever it and its cards say is shown as text.
 
@@ -257,7 +257,7 @@ from a customer's conversation (**Share → Cards**), which the app hears as `ki
 
 A card keeps the kind it was sent with: changing a kind or removing it (`DELETE /v1/kits/:key`),
 or removing the app, never changes a card already sent, and it still moves as it did. An app
-moves and changes only its own cards (and Caishy's own cards its bot sent), and only as their
+moves and changes only its own cards (and Caime's own cards its bot sent), and only as their
 moves say: `PATCH` takes the fields to change (`null` removes one that isn't required) and
 never where the card stands. Customers never send an organization's cards; they make the
 customer's moves.
@@ -265,13 +265,13 @@ customer's moves.
 ## Your calendar
 
 Anyone over 18 can have Google Calendar, Outlook or Apple Calendar show their actions with a
-due date and the meetings and appointments they agreed in Caishy: **You → Connected apps → Your
+due date and the meetings and appointments they agreed in Caime: **You → Connected apps → Your
 calendar → Get a calendar address**. The address is shown once, starts
 `https://…/v1/calendar/cal_` and is the only credential: a calendar app reads it with no
-sign-in. Caishy keeps only its hash (and never writes the address to its log), so it can't be
+sign-in. Caime keeps only its hash (and never writes the address to its log), so it can't be
 shown again; getting a new one ends the old one at once, **Stop** ends it, and so does
 recovering the account. It answers `text/calendar` (RFC 5545), read at most 120 times
-an hour, and nothing in a calendar changes anything in Caishy.
+an hour, and nothing in a calendar changes anything in Caime.
 
 | What | In the calendar |
 | --- | --- |

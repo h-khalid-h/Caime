@@ -13,7 +13,7 @@ import {
   isUuid,
   KITS,
   prepareCustomFields,
-} from '@caishy/core';
+} from '@caime/core';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { queueDelivery } from './apps';
@@ -98,7 +98,7 @@ export async function customCardFor(
 
 /**
  * The app a card is about, if any: the one whose kit it is, or the one whose bot sent one of
- * Caishy's own cards. Only while it's connected.
+ * Caime's own cards. Only while it's connected.
  */
 export async function cardApp(
   ctx: AppContext,

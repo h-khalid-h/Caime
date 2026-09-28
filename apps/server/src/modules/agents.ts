@@ -13,7 +13,7 @@ import {
   SetOrgAgentBody,
   TryOrgAgentBody,
   uuidv7,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -36,7 +36,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!canManageOrg(seat.role)) throw forbidden('Only the organization’s owner and admins can.');
     return org;
   }
-  const unavailable = () => badRequest('AI isn’t available on this Caishy server.');
+  const unavailable = () => badRequest('AI isn’t available on this Caime server.');
 
   async function viewOf(orgId: string): Promise<OrgAgentView | null> {
     const row = await ctx.db
@@ -119,7 +119,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
           .insertInto('users')
           .values({
             id: botId,
-            email: `agent+${botId}@bots.caishy.invalid`,
+            email: `agent+${botId}@bots.caime.invalid`,
             handle: `agent.${randomBytes(6).toString('hex')}`,
             password_hash: '!',
             display_name: body.name,

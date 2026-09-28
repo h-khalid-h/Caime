@@ -1,4 +1,4 @@
-import type { MessageView } from '@caishy/core/api';
+import type { MessageView } from '@caime/core/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';

@@ -88,7 +88,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       `messaging.test.ts`, `files.test.ts`, E2E)
 - [x] Search across people, relationships, orgs, messages, assets, actions, contexts
 - [~] Notifications: levels, burst consolidation, schedules, and Web Push: a service worker
-      (`apps/app/public/sw.js`) shows what the server pushes when Caishy isn't open in front (a
+      (`apps/app/public/sw.js`) shows what the server pushes when Caime isn't open in front (a
       call rings until it's answered, turned down or over, then says so quietly) and a tap opens
       it in the open tab without a reload; each new one alerts, even over an older one about the
       same thing; one read anywhere closes. Each browser is asked once, from Settings →
@@ -120,14 +120,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       read ticks (E2E, phone and desktop)
 - [x] Connect flow in ≤ 3 taps (sphere, role, done), accept with a label, People (E2E)
 - [x] Share links: `/@handle` opens that person or organization, found only as search would
-      find them; a Caishy link in a message opens in the app; a desktop browser without a
+      find them; a Caime link in a message opens in the app; a desktop browser without a
       share sheet copies the link. Someone signed out keeps the link through sign-in, sign-up
       and onboarding ("You came here for @noor") and lands on it (`handles.test.ts`,
       `paths.test.ts`, E2E)
 - [x] Person profile, relationship change and its history, one line per change (E2E). Who they
       are to you (PRD §67, §71): your conversation (how often you talk, in words, and when you
       last did), what it's about (its contexts), what's shared, actions open and waiting,
-      questions each way, and what they see of you. What Caishy thinks they may be to you
+      questions each way, and what they see of you. What Caime thinks they may be to you
       (PRD §12), from a team or a space you're both in, a company email or how they described
       it, is offered on their page and at the top of People: accept it, change it first, or
       not now, which it remembers (`relationship-profile.test.ts`, core `profile.test.ts`, E2E)
@@ -164,10 +164,10 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       `amounts.test.ts`, core `time.test.ts`, `digits.test.ts`, `emoji.test.ts`,
       `connections.test.ts`, `automations.test.ts`, E2E). [ ] A map to pick a location card's
       place ⛔ a map provider
-- [x] Rules (PRD §68–70): how Caishy treats a kind of relationship, a role in it, or one
+- [x] Rules (PRD §68–70): how Caime treats a kind of relationship, a role in it, or one
       person, all of it changed from Settings → Notifications and priorities: notifications
       (always, in set days and hours, only if important, never), urgent messages, priority (in
-      hours only, too), a reminder when they haven't answered, the tone Caishy suggests, and how
+      hours only, too), a reminder when they haven't answered, the tone Caime suggests, and how
       much of you they see. What a rule leaves alone shows as it comes from the broader one; a
       named rule is a template ("My Vendors"), and asking for one the same people have is that
       one. The work week is changed there. A person's page has a rule just for them over their
@@ -190,7 +190,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       (people, conversations, messages, actions; never a private conversation's words) and says
       so (`taskOutbox.test.ts`, `onDevice.test.ts`, `actions.test.ts`, E2E). On the web the
       service worker keeps the app itself, its page and every file of its build, replaced
-      together by the next build: Caishy opens and moves between screens with no network (or
+      together by the next build: Caime opens and moves between screens with no network (or
       while a deploy restarts the server), a page is always the network's while there is one,
       and nothing the API answers is kept (`sw.test.ts`, `web.test.ts`, E2E). Opened offline,
       it says Offline, not Connecting
@@ -206,7 +206,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 - [x] Organizations: a business, shop, clinic, school, nonprofit or public service with a
       profile anyone can find and a team. Its handle shares one namespace with people's, so
       nobody can pose as it. It verifies its domain with one DNS TXT record
-      (`_caishy-verify.<domain>`); only then is it "Verified · <domain>" and its team "Verified at
+      (`_caime-verify.<domain>`); only then is it "Verified · <domain>" and its team "Verified at
       <name>", and no other organization can claim that domain. Changing the domain unverifies it
       until the new one is proven. The team is made of adult connections; owners and admins
       manage it and the domain; an owner who leaves or deletes their account hands it on; the
@@ -215,7 +215,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       app, with `updates`) post to whoever follows it; anyone reads them on its page, as the
       organization's. People follow from the page (and choose whether each update notifies
       them); Updates is one row at the top of Chats and a screen of its own, never among their
-      conversations or what needs them, each organization with whether Caishy verified it.
+      conversations or what needs them, each organization with whether Caime verified it.
       Nobody sees who follows; the team sees how many. A review found that the notifications
       could stop halfway, reach someone who'd blocked it or say what was taken back, that
       blocking and the page could disagree, and that an app's posts weren't marked; all fixed:
@@ -264,7 +264,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       Albums everyone in the conversation adds photos to, newest first, seen only by the people
       in it; whoever added a photo, or made the album, takes it out, and its maker closes it
       (`albums.test.ts`, E2E). Where you are, live for 15 minutes, an hour or 8 hours: it follows
-      its sharer while Caishy is open, keeps only the latest point, and ends at its time or when
+      its sharer while Caime is open, keeps only the latest point, and ends at its time or when
       they stop it; the sharer always sees it's on. Never by anyone under 18, never with an
       organization (`live-location.test.ts`, E2E). An organization's own kinds of card (PRD §74,
       §86 "Custom"): its app makes them through its token (fields, states, and who makes each
@@ -276,7 +276,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       subscribes to a secret address (shown once, kept as a hash; a new one ends the old) and
       shows open actions with a due date, on their day or at their time, what you're waiting
       on, and the meetings and appointments agreed in your conversations, busy for their length
-      and with where; done, cancelled or left, they go. Caishy stays the record: nothing in a
+      and with where; done, cancelled or left, they go. Caime stays the record: nothing in a
       calendar changes anything in it (`calendar.test.ts`, `ics.test.ts`, E2E).
       [ ] Storage, CRM and helpdesk connectors: apps and webhooks cover the Business inbox
       (`docs/API.md`); two-way calendar sync needs each provider's OAuth app (⛔ credentials)
@@ -284,7 +284,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
       relationship's tone), translate a message, catch me up (offered when ten or more are
       unread), find follow-ups (filed as ordinary suggestions, never twice). Everything it writes
-      is labelled "Suggested by Caishy" and used only on a tap; the heuristics stay the default
+      is labelled "Suggested by Caime" and used only on a tap; the heuristics stay the default
       and the fallback (`ai.test.ts` against a Messages API stub, E2E)
 - [x] Export and account deletion (`account.test.ts`, E2E); others keep their conversations,
       shared files and the actions they were waiting on
@@ -326,7 +326,7 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       costs (`billing.test.ts` against a Stripe stand-in, 34 mutations, E2E through the stand-in's
       Checkout and portal pages). ⛔ The live account's products, prices,
       portal and webhook endpoint are set up once billing is deployed (`docs/DEPLOY.md`)
-- [x] Metrics: `/metrics` for the operator's scraper (PRD §81), product metrics from what Caishy
+- [x] Metrics: `/metrics` for the operator's scraper (PRD §81), product metrics from what Caime
       already keeps (PRD §82–83: activation, engagement, the core rates, retention), and insights
       for organizations on Business (PRD §71: customers who wrote, first answer, waiting,
       resolved), all counts and times, never content (`metrics.test.ts`,
@@ -382,13 +382,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       Playwright E2E against the production bundle
 - [x] Security review: `docs/SECURITY.md` lists each control with the test proving it, and the
       gaps. [ ] Third-party penetration test
-- [x] Caishy's own privacy policy, terms and help at `/privacy`, `/terms` and `/help`, for
+- [x] Caime's own privacy policy, terms and help at `/privacy`, `/terms` and `/help`, for
       anyone and linked from About and sign-up, each claim checked against the code; what's
       recorded of use kept only for set times (`lib/retention.ts`). [ ] A lawyer's review of the
       texts, and the operator's name and contact confirmed (`LEGAL_NAME`, `CONTACT_EMAIL`)
 - [ ] EAS config and store builds ⛔ Apple and Google developer accounts, `EXPO_ACCESS_TOKEN`
-- [x] Deployed to EasyPanel: https://caishy-caishy.0hqwb7.easypanel.host (project `caishy`,
-      services `caishy` and `db`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
+- [x] Deployed to EasyPanel: https://caishy-caishy.0hqwb7.easypanel.host (project `caime`,
+      services `caime` and `db`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
       readiness, the page and its headers, and a sign-up whose realtime socket connected
       through EasyPanel's proxy before the account deleted itself. Only what passed CI is
       deployed: a green run fast-forwards the `production` branch, which EasyPanel builds from;
@@ -399,14 +399,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 The product's name is Caime, for the domain cai.me; the brand and its characters stay. What of a
 super-app brainstorm the product takes, and what it leaves with the reason, is R34–R40.
 
-- [~] The name everywhere (R34): the product docs say Caime; the apps, server, pages, emails,
-      wordmark and technical docs follow in the rename (the characters, Caishy included, keep
-      their names)
-- [ ] ⛔ `cai.me`: on 2026-09-28 the domain is registered and parked for sale at Afternic (its
-      name servers are Afternic's), not free to register, and `caime.com` belongs to someone
-      else. The owner buys `cai.me` and points it at EasyPanel; until then production stays at
-      its current addresses. `caime.app` and `caime.me` didn't resolve that day, a fallback
-      if the price is wrong (a registrar has the last word)
+- [x] The name everywhere (R34): the apps and their store identity (`me.cai.app`), the server
+      and its headers, cookie, metrics and webhook signatures, the pages, the wordmark ("Caıme",
+      the heart its dot) and the docs. What keeps its name: the characters, Caishy included,
+      and the Caishy Friends; Stripe's price keys and metadata; the repository, image, database
+      and EasyPanel names; deployed migrations; and this log
+- [ ] ⛔ `cai.me`: parked for sale at Afternic on 2026-09-28, for about $400, which the owner has
+      agreed to. Once it's bought it's pointed at EasyPanel (docs/DEPLOY.md, "Domain to come");
+      until then production stays at its current addresses
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
@@ -875,3 +875,16 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   now the language's. The sheets that open on a tap (a new conversation, how you know someone,
   asking to connect) load the first time they're opened, so the app still starts in 448.4 KB of
   JavaScript. Tests: 219 core, 49 brand, 466 server, 155 app, 53 E2E.
+- 2026-09-28 — Session 2 (cont.): Caishy is Caime (R34), for the domain cai.me. The name changed
+  everywhere the product speaks: the apps (named Caime, `me.cai.app` on iOS and Android, the
+  `caime:` scheme), every page and message, the wordmark (made again from the same Nunito Black
+  lettering: "Caıme", the pink heart its dot, cut to the letters now that none drops below the
+  line) and the docs. The code followed: `@caime/*` packages, `X-Caime-*` headers, the
+  `caime_session` cookie, `Caime-Signature` on organizations' webhooks, `_caime-verify` DNS
+  records, `caime_*` metrics, and the stores on devices and in the service worker. What kept its
+  name, on purpose: Caishy *The Dreamer* and the Caishy Friends stickers; Stripe's price keys
+  and metadata, by which the live account's prices are found; the repository, image, database
+  and EasyPanel names; the migrations already deployed; and this log. A test caught the rename's
+  one slip, a price key built from a template. Found on the way: a test of the data download
+  that took two things saved in the same millisecond to come in one order. Tests: 219 core, 49
+  brand, 466 server, 155 app, 53 E2E.

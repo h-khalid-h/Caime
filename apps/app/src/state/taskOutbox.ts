@@ -3,8 +3,8 @@
  * kept when the app closes, and sent in order when the network allows. A new one carries this
  * device's id for it, so sending it again after a lost answer is the same action on the server.
  */
-import type { MemoryView, TasksResponse, TaskView } from '@caishy/core/api';
-import { uuidv4 } from '@caishy/core/ids';
+import type { MemoryView, TasksResponse, TaskView } from '@caime/core/api';
+import { uuidv4 } from '@caime/core/ids';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo } from 'react';
 import { create } from 'zustand';
@@ -78,7 +78,7 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
  */
 const landed = new Map<string, string>();
 
-const KEY = 'caishy.task-outbox';
+const KEY = 'caime.task-outbox';
 
 /** Of two copies of one op (two tabs'), whether `a` was changed after `b`. */
 const later = (a: PendingTaskOp, b: PendingTaskOp) =>

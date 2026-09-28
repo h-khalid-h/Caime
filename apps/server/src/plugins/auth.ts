@@ -1,9 +1,9 @@
 /**
  * Resolves the session on every request (ADR-7). Web sends an httpOnly cookie and must add
- * `X-Caishy-Client` on state-changing requests — a cross-site form cannot set custom headers, so
+ * `X-Caime-Client` on state-changing requests — a cross-site form cannot set custom headers, so
  * this stops CSRF. Native sends a Bearer token.
  */
-import { isApiToken, isPersonToken, OAUTH_ACCESS_PREFIX } from '@caishy/core';
+import { isApiToken, isPersonToken, OAUTH_ACCESS_PREFIX } from '@caime/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext, Auth } from '../context';
 import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/access';
@@ -12,7 +12,7 @@ import { hashToken } from '../lib/crypto';
 import { AppError, unauthorized } from '../lib/errors';
 import { resolveOAuthAccess } from '../lib/oauth';
 
-export const SESSION_COOKIE = 'caishy_session';
+export const SESSION_COOKIE = 'caime_session';
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const TOUCH_EVERY_MS = 5 * 60_000;
 
@@ -63,12 +63,12 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     }
     const session = await resolveSession(ctx, found.token);
     if (!session) return;
-    if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caishy-client']) {
-      throw new AppError(403, 'csrf', 'Missing X-Caishy-Client header.');
+    if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caime-client']) {
+      throw new AppError(403, 'csrf', 'Missing X-Caime-Client header.');
     }
     // The app says whose account it's showing: a call meant as one person never acts as another
     // (another tab of the browser signed in as them since, and the cookie is theirs now).
-    const expected = req.headers['x-caishy-user'];
+    const expected = req.headers['x-caime-user'];
     if (typeof expected === 'string' && expected !== session.userId)
       throw new AppError(409, 'wrong_account', 'Someone else is signed in here now.');
     req.auth = { ...session, via: found.via };
@@ -106,7 +106,7 @@ async function authenticatePerson(ctx: AppContext, req: FastifyRequest, token: s
     : await resolvePersonalToken(ctx, token);
   if (!found) return;
   const scope = PERSON_ROUTES[`${req.method} ${req.routeOptions.url ?? ''}`];
-  if (!scope) throw new AppError(403, 'token_route', 'A token can’t do this: sign in to Caishy.');
+  if (!scope) throw new AppError(403, 'token_route', 'A token can’t do this: sign in to Caime.');
   if (!found.grant.scopes.includes(scope))
     throw new AppError(403, 'token_scope', `This token needs the “${scope}” permission for that.`);
   ctx.limiter.hit(`person-token:${found.grant.id}`, ctx.config.isTest ? 10_000 : 300, 60_000);

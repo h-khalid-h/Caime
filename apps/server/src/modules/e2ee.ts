@@ -1,5 +1,5 @@
 /**
- * Devices for private conversations (R18, PRD §61): a device signed in to Caishy registers its
+ * Devices for private conversations (R18, PRD §61): a device signed in to Caime registers its
  * public keys (its private keys never leave it) with its own signature over them. The first of a
  * person's devices vouches for itself; each later one waits until one of theirs approves it. A
  * person sees and removes their devices (removing one signs it out), and gets the devices of
@@ -10,7 +10,7 @@ import {
   type ConversationDevicesView,
   type MyDeviceView,
   RegisterDeviceBody,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -28,7 +28,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     // A token or an app acts for someone; it never reads their private conversations.
     if (auth.kind !== 'web' && auth.kind !== 'native')
-      throw forbidden('Only a device signed in to Caishy reads private conversations.');
+      throw forbidden('Only a device signed in to Caime reads private conversations.');
     return auth;
   };
   const myView = (d: LiveDevice, sessionId: string): MyDeviceView => ({

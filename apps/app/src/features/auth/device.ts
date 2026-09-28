@@ -1,4 +1,4 @@
-import { safeLocale } from '@caishy/core/locale';
+import { safeLocale } from '@caime/core/locale';
 import { getCalendars, getLocales } from 'expo-localization';
 import { Platform } from 'react-native';
 import { clientKind } from '@/state/session';

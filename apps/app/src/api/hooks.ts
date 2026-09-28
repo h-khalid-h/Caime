@@ -1,6 +1,6 @@
 /** Query hooks shared by screens, the shell's badges and the desktop panes. */
-import type { AssetView } from '@caishy/core/api';
-import type { BusinessView } from '@caishy/core/business';
+import type { AssetView } from '@caime/core/api';
+import type { BusinessView } from '@caime/core/business';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { endpoints, type TaskViewFilter } from './endpoints';
 import { qk } from './keys';
@@ -90,7 +90,7 @@ export const useMemory = (conversationId: string, enabled = true) =>
 
 export const usePolicies = () => useQuery({ queryKey: qk.policies, queryFn: endpoints.policies });
 
-/** How Caishy thinks someone may be known (PRD §12), for one person or everyone. */
+/** How Caime thinks someone may be known (PRD §12), for one person or everyone. */
 export const useRelationshipOffers = (personId?: string) =>
   useQuery({
     queryKey: ['suggestions', 'relationship', personId ?? 'all'],

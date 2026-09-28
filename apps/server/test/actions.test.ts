@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runPeriodic } from '../src/lib/jobs';
 import { liveSubscriptions } from '../src/modules/notifications';

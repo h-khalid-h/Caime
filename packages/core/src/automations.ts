@@ -1,5 +1,5 @@
 /**
- * Automations (PRD §69): what Caishy does by itself with what arrives, only ever set up by the
+ * Automations (PRD §69): what Caime does by itself with what arrives, only ever set up by the
  * person it does it for. One kind so far: keep what someone sends in a collection of one's own
  * ("When a customer sends a file with “invoice”, save it to Customer Files"). The other two the
  * PRD names are rules (policy.ts): a reminder when someone hasn't answered is a rule's follow-up,
@@ -7,7 +7,7 @@
  *
  * What's saved stays only as long as the message does: deleted for everyone, disappeared, or
  * deleted for oneself, it's gone from what one saved as well. Nothing is saved from a private
- * conversation, whose words Caishy can't read, nor from a message request not yet accepted.
+ * conversation, whose words Caime can't read, nor from a message request not yet accepted.
  */
 import { findRole, SPHERE_DEFS, type Sphere } from './taxonomy';
 

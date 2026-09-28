@@ -19,7 +19,7 @@ import {
   type SavedItemsResponse,
   uuidv7,
   wordsFrom,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

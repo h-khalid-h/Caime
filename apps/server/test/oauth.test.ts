@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { tooMany } from '../src/lib/errors';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -137,7 +137,7 @@ describe('OAuth for third-party apps (PRD §74)', () => {
       '“account:delete” isn’t something an app can ask for.',
     );
     expect(await refused({ client_id: 'app_nobody' })).toBe(
-      'That app isn’t registered with Caishy.',
+      'That app isn’t registered with Caime.',
     );
     expect(
       (await consent(noor, request(challenge, { code_challenge_method: 'plain' }))).statusCode,
@@ -386,7 +386,7 @@ describe('OAuth, as the review left it', () => {
       (await form('/v1/oauth/authorize', { ...request(pkce().challenge), decision: 'allow' }))
         .statusCode,
     ).toBe(415);
-    // A body the token endpoint doesn't take is answered as RFC 6749 says, not in Caishy's shape.
+    // A body the token endpoint doesn't take is answered as RFC 6749 says, not in Caime's shape.
     const xml = await t.app.inject({
       method: 'POST',
       url: '/v1/oauth/token',

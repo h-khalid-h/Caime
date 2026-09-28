@@ -1,4 +1,4 @@
-import { AI_LABEL } from '@caishy/core/assist';
+import { AI_LABEL } from '@caime/core/assist';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

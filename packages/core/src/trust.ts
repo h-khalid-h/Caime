@@ -1,5 +1,5 @@
 /**
- * Trust (PRD §54): what Caishy actually knows about who someone is, said in words rather than a
+ * Trust (PRD §54): what Caime actually knows about who someone is, said in words rather than a
  * decorative badge.
  */
 
@@ -8,7 +8,7 @@ export type TrustLevel = 'org_verified' | 'verified' | 'known' | 'unknown';
 export interface TrustInput {
   /** The viewer is connected to them, or shares a conversation with them. */
   known: boolean;
-  /** Caishy verified a contact method (email) for this account. */
+  /** Caime verified a contact method (email) for this account. */
   emailVerified: boolean;
   /** Verified member of a verified organization, e.g. "DATA C". */
   verifiedOrgName: string | null;
@@ -43,7 +43,7 @@ export function trustFor(input: TrustInput): Trust {
     return {
       level: 'verified',
       label: 'Verified email',
-      detail: 'Caishy confirmed this account controls its email address.',
+      detail: 'Caime confirmed this account controls its email address.',
     };
   }
   if (input.known) {
@@ -57,6 +57,6 @@ export function trustFor(input: TrustInput): Trust {
     level: 'unknown',
     label: 'New to you',
     detail:
-      'You’re not connected, and Caishy hasn’t verified who this is. Be careful with links and payments.',
+      'You’re not connected, and Caime hasn’t verified who this is. Be careful with links and payments.',
   };
 }

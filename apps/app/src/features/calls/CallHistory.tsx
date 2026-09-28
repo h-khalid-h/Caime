@@ -1,6 +1,6 @@
-import type { CallHistoryItem } from '@caishy/core/api';
-import { callDuration } from '@caishy/core/calls';
-import { formatListTime } from '@caishy/core/format';
+import type { CallHistoryItem } from '@caime/core/api';
+import { callDuration } from '@caime/core/calls';
+import { formatListTime } from '@caime/core/format';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';

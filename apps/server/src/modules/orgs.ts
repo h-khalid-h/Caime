@@ -4,7 +4,7 @@
  * so, and nobody on its team shows as verified. Organizations and their teams are for adults.
  */
 
-import type { OrgInsightsView, OrgMemberView, OrgSummaryView, OrgView } from '@caishy/core';
+import type { OrgInsightsView, OrgMemberView, OrgSummaryView, OrgView } from '@caime/core';
 import {
   CreateOrgBody,
   canChangeOrgRole,
@@ -20,7 +20,7 @@ import {
   UpdateOrgBody,
   uuidv7,
   verificationRecord,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -430,7 +430,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
     });
     // What they saved of its customers' conversations is out of their Saved now, and what
-    // Caishy offered because they were on its team goes.
+    // Caime offered because they were on its team goes.
     await tellSaved(ctx, [userId]);
     await withdrawPlaceOffers(ctx, { kind: 'org', id }, userId);
     // Closed: what it paid for ends (a job keeps trying if Stripe can't be reached now).

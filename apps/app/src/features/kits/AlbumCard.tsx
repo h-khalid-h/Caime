@@ -1,5 +1,5 @@
-import type { AlbumPhotoView, AlbumView, FileView, MessageView } from '@caishy/core/api';
-import { kitMoves, kitStateLabel } from '@caishy/core/kit-cards';
+import type { AlbumPhotoView, AlbumView, FileView, MessageView } from '@caime/core/api';
+import { kitMoves, kitStateLabel } from '@caime/core/kit-cards';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useState } from 'react';

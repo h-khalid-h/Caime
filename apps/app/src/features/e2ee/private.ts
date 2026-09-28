@@ -5,8 +5,8 @@
  * code. A new device of mine waits until one of mine approves it; this device approves those.
  * The keys live only in this browser (keystore); the server sees envelopes.
  */
-import type { DeviceView, MessageView, MyDeviceView } from '@caishy/core/api';
-import type { PrivatePayload, SealedMessage } from '@caishy/core/e2ee';
+import type { DeviceView, MessageView, MyDeviceView } from '@caime/core/api';
+import type { PrivatePayload, SealedMessage } from '@caime/core/e2ee';
 import {
   type DeviceKeys,
   e2eeSupported,
@@ -16,8 +16,8 @@ import {
   open,
   publicKeys,
   seal,
-} from '@caishy/core/e2ee-crypto';
-import { uuidv7 } from '@caishy/core/ids';
+} from '@caime/core/e2ee-crypto';
+import { uuidv7 } from '@caime/core/ids';
 import { ApiError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
 import { useSession } from '@/state/session';
@@ -78,13 +78,13 @@ function deviceName(): string {
 /** One tab at a time registers this browser's device: two at once would retire each other's. */
 function oneTab<T>(userId: string, f: () => Promise<T>): Promise<T> {
   const locks = (globalThis.navigator as { locks?: LockManager } | undefined)?.locks;
-  return locks ? (locks.request(`caishy-e2ee:${userId}`, f) as Promise<T>) : f();
+  return locks ? (locks.request(`caime-e2ee:${userId}`, f) as Promise<T>) : f();
 }
 
 const signedInUser = () => {
   const userId = useSession.getState().user?.id;
   if (!userId || !keystoreSupported || !e2eeSupported())
-    throw new Error('Private conversations open in Caishy on the web.');
+    throw new Error('Private conversations open in Caime on the web.');
   return userId;
 };
 
@@ -183,7 +183,7 @@ export function devicesChanged(userId: string): void {
 const refused = (code: string, message: string, details?: Record<string, unknown>) =>
   new ApiError(409, code, message, details);
 const WAITING =
-  'This browser can’t write in private conversations until you approve it on another device where you’re signed in to Caishy.';
+  'This browser can’t write in private conversations until you approve it on another device where you’re signed in to Caime.';
 
 interface Recipients {
   people: string[];

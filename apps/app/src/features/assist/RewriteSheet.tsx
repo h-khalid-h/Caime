@@ -1,4 +1,4 @@
-import { AI_LABEL, REWRITE_LABELS, REWRITE_STYLES, type RewriteStyle } from '@caishy/core/assist';
+import { AI_LABEL, REWRITE_LABELS, REWRITE_STYLES, type RewriteStyle } from '@caime/core/assist';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -10,7 +10,7 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 
 /**
- * Rewrite a draft (PRD §45): pick a style, read what Caishy suggests, and use it or keep yours.
+ * Rewrite a draft (PRD §45): pick a style, read what Caime suggests, and use it or keep yours.
  * The draft changes only on "Use this" (R17).
  */
 export function RewriteSheet({
@@ -127,7 +127,7 @@ export function RewriteSheet({
         </View>
       ) : (
         <Text variant="caption" color="textSecondary" style={{ marginTop: 12 }}>
-          Caishy sends your draft to its AI provider to write this. It isn’t sent to anyone else.
+          Caime sends your draft to its AI provider to write this. It isn’t sent to anyone else.
         </Text>
       )}
     </Sheet>

@@ -13,7 +13,7 @@
  * Who's in a call changes one change at a time, under the call's own row lock (the one a join
  * takes): what's decided about a call is decided on the call as it is.
  */
-import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView } from '@caishy/core';
+import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView } from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';

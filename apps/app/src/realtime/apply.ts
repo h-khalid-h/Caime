@@ -2,7 +2,7 @@
  * Turn a realtime event into cache changes. Data events edit the cache directly (instant);
  * signal events invalidate the queries they affect (refetched once, debounced).
  */
-import type { RealtimeEvent } from '@caishy/core/api';
+import type { RealtimeEvent } from '@caime/core/api';
 import type { QueryClient } from '@tanstack/react-query';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -285,7 +285,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(['relationship-history'], 'relationship-history');
       invalidate(['conversation'], 'conversation');
       invalidate(qk.inbox, 'inbox');
-      // Which rule applies to them follows how you know them, and what Caishy offered is
+      // Which rule applies to them follows how you know them, and what Caime offered is
       // answered once you've said.
       invalidate(['policy-for'], 'policy-for');
       invalidate(['suggestions'], 'suggestions');

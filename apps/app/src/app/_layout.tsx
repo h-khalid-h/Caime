@@ -111,7 +111,7 @@ function Boot() {
         justifyContent: 'center',
         backgroundColor: t.c.canvas,
       }}
-      accessibilityLabel="Caishy is starting"
+      accessibilityLabel="Caime is starting"
     >
       <HeartMark size={44} />
     </View>

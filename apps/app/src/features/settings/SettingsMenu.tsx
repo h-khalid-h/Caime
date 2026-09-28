@@ -1,4 +1,4 @@
-import { PLAN_NAMES } from '@caishy/core/plans';
+import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
 import { useShortcutsSheet } from '@/features/shell/shortcuts';
@@ -112,7 +112,7 @@ const ITEMS: Array<{
     href: '/settings/about',
     path: '/settings/about',
     icon: Info,
-    title: 'About Caishy',
+    title: 'About Caime',
     subtitle: 'Version, terms, help',
   },
 ];

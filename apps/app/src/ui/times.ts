@@ -1,8 +1,8 @@
 /**
- * Times of day as Caishy keeps them (24-hour HH:MM, as a quiet hour's start or a schedule's end),
+ * Times of day as Caime keeps them (24-hour HH:MM, as a quiet hour's start or a schedule's end),
  * for the time fields (TimeField): shown as the person's language says times.
  */
-import { asciiDigits } from '@caishy/core/digits';
+import { asciiDigits } from '@caime/core/digits';
 
 export interface TimeFieldProps {
   label: string;

@@ -1,5 +1,5 @@
 /**
- * Apps (PRD §73–75, R16): what an organization connects to Caishy, its helpdesk, its CRM, its
+ * Apps (PRD §73–75, R16): what an organization connects to Caime, its helpdesk, its CRM, its
  * own bot. An app acts through a token with named scopes, hears about the organization's
  * conversations through a signed webhook, and can answer customers as a bot that always says
  * it's automated.

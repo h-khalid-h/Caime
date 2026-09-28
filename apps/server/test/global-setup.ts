@@ -39,7 +39,7 @@ export default async function setup() {
   await admin.connect();
   // Databases left behind by interrupted runs. "_" is a LIKE wildcard, so escape it.
   const stale = await admin.query<{ datname: string }>(
-    String.raw`select datname from pg_database where datname like 'caishy\_t\_%'`,
+    String.raw`select datname from pg_database where datname like 'caime\_t\_%'`,
   );
   for (const row of stale.rows)
     await admin.query(`drop database if exists ${row.datname} with (force)`).catch(() => {});

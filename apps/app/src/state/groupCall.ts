@@ -3,7 +3,7 @@
  * person's groups, for the banner that offers to join one. The WebRTC work lives in
  * features/calls/group; this is only what it tells the screens.
  */
-import type { CallPersonView, GroupCallView } from '@caishy/core/api';
+import type { CallPersonView, GroupCallView } from '@caime/core/api';
 import { create } from 'zustand';
 import type { TheirState } from './calls';
 

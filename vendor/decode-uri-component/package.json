@@ -1,6 +1,6 @@
 {
   "name": "decode-uri-component",
-  "version": "0.2.2-caishy.1",
+  "version": "0.2.2-caime.1",
   "description": "Linear-time, CommonJS drop-in for decode-uri-component 0.2 (GHSA-vcc3-ghjq-m6fr). See README.",
   "main": "index.js",
   "license": "MIT"

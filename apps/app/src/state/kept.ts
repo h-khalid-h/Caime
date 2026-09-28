@@ -3,7 +3,7 @@
  * it (api/queryClient.ts CACHE_VERSION): one kept in another shape is asked for again, never
  * misread.
  */
-import type { MeView } from '@caishy/core/api';
+import type { MeView } from '@caime/core/api';
 
 export function keepUser(user: MeView, version: string): string {
   return JSON.stringify({ v: version, user });

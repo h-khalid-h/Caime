@@ -4,7 +4,7 @@
  * Only non-sensitive signals: how the other person described it, a team or a space both are
  * in, and a company email domain both use.
  */
-import { SPACE_KIND_DEFS, SPHERE_DEFS, type SpaceKind, type Sphere, uuidv7 } from '@caishy/core';
+import { SPACE_KIND_DEFS, SPHERE_DEFS, type SpaceKind, type Sphere, uuidv7 } from '@caime/core';
 import { type Insertable, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { SuggestionsTable } from '../db/schema';
@@ -120,7 +120,7 @@ function offerOf(place: Place, other: string) {
       title: `Colleague · ${place.name}`,
       rationale: place.verified
         ? `You and ${other} are both on ${place.name}’s team, and ${place.name} is verified.`
-        : `You and ${other} are both on ${place.name}’s team in Caishy.`,
+        : `You and ${other} are both on ${place.name}’s team in Caime.`,
       confidence: place.verified ? 0.85 : 0.75,
     };
   const sphere = SPACE_KIND_DEFS[place.spaceKind]?.sphere;
@@ -160,7 +160,7 @@ async function offer(
 const placeRef = (place: Place) => ({ kind: place.kind, id: place.id });
 
 /**
- * Someone left a team or a space: what Caishy offered because of it, to them or about them, is
+ * Someone left a team or a space: what Caime offered because of it, to them or about them, is
  * taken back (and may be offered again if they're both there again).
  */
 export async function withdrawPlaceOffers(
@@ -230,7 +230,7 @@ async function sharedPlace(ctx: AppContext, a: string, b: string): Promise<Place
 
 /**
  * Someone joined a team or a space: to each side of each pair of them connected there who hasn't
- * said how they know the other, Caishy offers what the place suggests. Never decided for them,
+ * said how they know the other, Caime offers what the place suggests. Never decided for them,
  * never between two people either of whom has blocked the other. Read and written a whole place
  * at a time, however many join and however many they know there: one read (found from the
  * newcomers' own connections, each named in it), an insert for each 500 offers, one publish.

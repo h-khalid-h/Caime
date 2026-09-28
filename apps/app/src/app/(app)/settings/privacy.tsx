@@ -1,5 +1,5 @@
-import type { Audience, PrivacyField } from '@caishy/core/privacy';
-import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
+import type { Audience, PrivacyField } from '@caime/core/privacy';
+import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
@@ -162,7 +162,7 @@ export default function Privacy() {
       {ai.data?.available ? (
         <Group
           title="AI assist"
-          footer="Only when you tap an AI action, Caishy sends what that action needs (your draft, the message, or the conversation you asked about) to Anthropic, its AI provider, to write a suggestion. Anthropic doesn’t use it to train models. Private conversations are never sent. What it writes is labelled and changes nothing until you choose it."
+          footer="Only when you tap an AI action, Caime sends what that action needs (your draft, the message, or the conversation you asked about) to Anthropic, its AI provider, to write a suggestion. Anthropic doesn’t use it to train models. Private conversations are never sent. What it writes is labelled and changes nothing until you choose it."
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
             <View style={{ flex: 1 }}>

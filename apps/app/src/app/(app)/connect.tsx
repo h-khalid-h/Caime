@@ -1,4 +1,4 @@
-import type { PeopleSearchResult } from '@caishy/core/api';
+import type { PeopleSearchResult } from '@caime/core/api';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -127,7 +127,7 @@ export default function Connect() {
   };
 
   const shareHandle = () =>
-    void shareLink(`I’m on Caishy as @${me.handle}. Find me there:`, handleLink(me.handle));
+    void shareLink(`I’m on Caime as @${me.handle}. Find me there:`, handleLink(me.handle));
 
   return (
     <Screen edges={desktop ? [] : ['top']}>
@@ -207,7 +207,7 @@ export default function Connect() {
           orgs.length ? null : debounced.length >= 2 && results.isFetched ? (
             <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
               <Text variant="body" color="textSecondary" align="center">
-                No one found for “{debounced}”. They may not be on Caishy yet, or they keep their
+                No one found for “{debounced}”. They may not be on Caime yet, or they keep their
                 profile private.
               </Text>
               <Button label="Invite them" variant="secondary" onPress={shareHandle} />

@@ -18,11 +18,11 @@ describe('apps', () => {
       CreateOrgAppBody.safeParse({ name: 'Helpdesk', webhookUrl: 'ftp://x.example' }).success,
     ).toBe(false);
     expect(
-      CreateOrgAppBody.parse({ name: 'Helpdesk', webhookUrl: 'https://hooks.example/caishy' }),
+      CreateOrgAppBody.parse({ name: 'Helpdesk', webhookUrl: 'https://hooks.example/caime' }),
     ).toEqual({
       name: 'Helpdesk',
       scopes: [],
-      webhookUrl: 'https://hooks.example/caishy',
+      webhookUrl: 'https://hooks.example/caime',
       events: [],
     });
   });

@@ -10,7 +10,7 @@ import {
 } from './billing';
 
 describe('billing', () => {
-  it('prices are found by lookup keys, and only Caishy’s count', () => {
+  it('prices are found by lookup keys, and only Caime’s count', () => {
     expect(priceLookupKey('pro', 'month')).toBe('caishy_pro_month');
     expect(fromLookupKey('caishy_business_year')).toEqual({ plan: 'business', interval: 'year' });
     for (const other of [null, undefined, '', 'caishy_enterprise_month', 'x_caishy_pro_month'])

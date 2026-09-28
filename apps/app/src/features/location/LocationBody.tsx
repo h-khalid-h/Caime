@@ -1,6 +1,6 @@
-import type { MessageView } from '@caishy/core/api';
-import { formatClock } from '@caishy/core/format';
-import { type LiveLocation, liveNow } from '@caishy/core/location';
+import type { MessageView } from '@caime/core/api';
+import { formatClock } from '@caime/core/format';
+import { type LiveLocation, liveNow } from '@caime/core/location';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

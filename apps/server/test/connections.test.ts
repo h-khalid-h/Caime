@@ -1,4 +1,4 @@
-import { describeRelationshipEvent } from '@caishy/core';
+import { describeRelationshipEvent } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 

@@ -3,14 +3,14 @@
  * messages, meaning-shaped questions, assets, actions and contexts, from one box.
  */
 
-import type { SearchResponse, SearchResults } from '@caishy/core';
+import type { SearchResponse, SearchResults } from '@caime/core';
 import {
   MATCH_END,
   MATCH_START,
   type ParsedQuery,
   parseSearchQuery,
   SearchOutcomeBody,
-} from '@caishy/core';
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';

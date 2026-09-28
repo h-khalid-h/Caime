@@ -3,7 +3,7 @@
  * billing integration does it (R25). Without the token configured, none of this exists: every
  * route answers the same 404 as a route that was never there.
  */
-import { ORG_PLANS, PERSON_PLANS, type ProductMetricsView } from '@caishy/core';
+import { ORG_PLANS, PERSON_PLANS, type ProductMetricsView } from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';

@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caishy/core';
+import { uuidv4 } from '@caime/core';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -20,7 +20,7 @@ async function connect(a: Client, b: Client) {
 }
 
 async function upload(c: Client, name: string, mime: string, data: Buffer) {
-  const boundary = `----caishy${uuidv4()}`;
+  const boundary = `----caime${uuidv4()}`;
   const payload = Buffer.concat([
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: ${mime}\r\n\r\n`,

@@ -342,7 +342,7 @@ export function relationshipLabel(input: {
 
 // ---------------------------------------------------------------------------------------------
 // Complementary relationships (PRD §53). Two people may classify each other differently;
-// Caishy recognises when the two views fit together. Only ever evaluated between two *shared*
+// Caime recognises when the two views fit together. Only ever evaluated between two *shared*
 // classifications (PRODUCT-REVIEW R6).
 
 export type Fit = 'same' | 'complementary' | 'different';
@@ -421,7 +421,7 @@ function key(ref: RoleRef): string {
  * Compare A's classification of B with B's classification of A.
  * - `same`: the relationship is symmetric and both describe it the same way (colleague ↔ colleague).
  * - `complementary`: the two views are the two sides of one relationship (manager ↔ direct report).
- * - `different`: the views don't fit together; Caishy says nothing.
+ * - `different`: the views don't fit together; Caime says nothing.
  */
 export function relationshipFit(aViewOfB: RoleRef, bViewOfA: RoleRef): Fit {
   const ka = key(aViewOfB);
@@ -463,7 +463,7 @@ export function relationshipFromWord(word: string): { sphere: Sphere; role?: str
 }
 
 /**
- * A relationship Caishy thinks someone may be to you (PRD §12), as it's offered: "Sarah may be
+ * A relationship Caime thinks someone may be to you (PRD §12), as it's offered: "Sarah may be
  * your colleague at DATA C". An offer, never a fact.
  */
 export function relationshipOfferText(

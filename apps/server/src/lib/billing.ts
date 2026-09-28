@@ -8,7 +8,7 @@
  *
  * What's kept is always what Stripe says now, one subscription at a time: events can come late,
  * out of order, twice, or two at once. Someone deleted, or an organization that closes, stops
- * paying at once, whether or not Caishy has heard of every subscription yet.
+ * paying at once, whether or not Caime has heard of every subscription yet.
  */
 import {
   BILLED_PLANS,
@@ -22,7 +22,7 @@ import {
   type PriceView,
   priceLookupKey,
   type SubscriptionView,
-} from '@caishy/core';
+} from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
@@ -79,7 +79,7 @@ export interface StripeSubscription {
 const PRICES_FOR_MS = 10 * 60_000;
 const prices = new WeakMap<AppContext, { at: number; byKey: Map<string, StripePrice> }>();
 
-/** Caishy's prices in Stripe, by lookup key, asked again every ten minutes. */
+/** Caime's prices in Stripe, by lookup key, asked again every ten minutes. */
 async function stripePrices(ctx: AppContext): Promise<Map<string, StripePrice>> {
   const s = stripe(ctx);
   if (!s) return new Map();
@@ -227,7 +227,7 @@ async function customerFor(
         'userId' in payer ? { caishy_user_id: payer.userId } : { caishy_org_id: payer.orgId },
     },
     // Asked twice at once (two taps), Stripe makes one customer; a new one once it's gone.
-    `caishy-customer-${livemode(ctx) ? 'live' : 'test'}-${payerKey(payer)}${after ? `-after-${after}` : ''}`,
+    `caime-customer-${livemode(ctx) ? 'live' : 'test'}-${payerKey(payer)}${after ? `-after-${after}` : ''}`,
   );
   await ctx.db
     .insertInto('billing_customers')
@@ -353,9 +353,9 @@ export async function openPortal(
 }
 
 /**
- * Which of Caishy's plans a subscription is, and how often it's paid: from its price's lookup
+ * Which of Caime's plans a subscription is, and how often it's paid: from its price's lookup
  * key; or, once the key has moved to a new price (people already paying keep theirs), from what
- * Caishy already knew of it or put on it at Checkout. Anything else Stripe sells isn't Caishy's.
+ * Caime already knew of it or put on it at Checkout. Anything else Stripe sells isn't Caime's.
  */
 function planOfSubscription(
   sub: StripeSubscription,
@@ -379,7 +379,7 @@ const CLOSE = 'billing.close';
 
 /**
  * Where a subscription stands now, as Stripe says: kept, and the plan of whoever it's for set to
- * follow. One for a customer Caishy didn't make changes nothing; one for someone who's gone ends.
+ * follow. One for a customer Caime didn't make changes nothing; one for someone who's gone ends.
  * Returns who to tell their plan changed, once it's committed.
  */
 async function applySubscription(
@@ -608,7 +608,7 @@ export async function handleStripeEvent(ctx: AppContext, event: StripeEvent): Pr
 
 /**
  * A customer ends: deleted at Stripe, which ends every subscription it has at once and removes the
- * card, whether or not Caishy had heard of them.
+ * card, whether or not Caime had heard of them.
  */
 async function closeCustomer(ctx: AppContext, customerId: string): Promise<void> {
   const s = stripe(ctx);

@@ -1,5 +1,5 @@
-import type { PersonView } from '@caishy/core/api';
-import { relationshipLabel, SPHERE_DEFS } from '@caishy/core/taxonomy';
+import type { PersonView } from '@caime/core/api';
+import { relationshipLabel, SPHERE_DEFS } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';

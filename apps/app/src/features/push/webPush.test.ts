@@ -182,8 +182,8 @@ describe('notifications in this browser', () => {
     const push = await import('./webPush.web');
     const went: string[] = [];
     push.onOpenFromNotification((p) => went.push(p));
-    messages?.({ data: { type: 'caishy.open', path: '/c/1' } });
-    messages?.({ data: { type: 'caishy.open', path: 'https://evil.example/' } });
+    messages?.({ data: { type: 'caime.open', path: '/c/1' } });
+    messages?.({ data: { type: 'caime.open', path: 'https://evil.example/' } });
     messages?.({ data: { type: 'other', path: '/x' } });
     expect(went).toEqual(['/c/1']);
   });

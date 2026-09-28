@@ -2,8 +2,8 @@
  * Calls on phones aren't built yet (PRD §47: WebRTC 1:1 on the web first). The web build uses
  * engine.web.ts; these keep the same shape so shared code needn't know.
  */
-import type { RealtimeEvent } from '@caishy/core/api';
-import type { CallKind } from '@caishy/core/calls';
+import type { RealtimeEvent } from '@caime/core/api';
+import type { CallKind } from '@caime/core/calls';
 
 export const callsSupported: boolean = false;
 export const screenShareSupported = false;

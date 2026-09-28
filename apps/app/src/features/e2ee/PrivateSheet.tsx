@@ -1,4 +1,4 @@
-import type { ConversationView } from '@caishy/core/api';
+import type { ConversationView } from '@caime/core/api';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSession } from '@/state/session';
@@ -54,19 +54,19 @@ export function PrivateSheet({
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
           <Lock size={18} color={t.c.success} />
           <Text variant="body" style={{ flex: 1 }}>
-            Only the devices of the people in it can read what’s written here. Caishy can’t: it
-            keeps each message sealed, and never sees the words.
+            Only the devices of the people in it can read what’s written here. Caime can’t: it keeps
+            each message sealed, and never sees the words.
           </Text>
         </View>
         <Text variant="caption" color="textSecondary">
-          So there’s no search, no Caishy AI and no suggestions from what’s written here, and
-          notifications say only “New message”. Caishy still sees who’s in it, when messages are
+          So there’s no search, no Caime AI and no suggestions from what’s written here, and
+          notifications say only “New message”. Caime still sees who’s in it, when messages are
           sent, and reactions. A device you sign in on later reads what’s sent once you approve it
           from one of yours, never what was sent before. Photos, files and cards aren’t sealed yet,
           so for now it’s text.
         </Text>
         {!privateSupported ? (
-          <Text variant="captionStrong">Private conversations open in Caishy on the web.</Text>
+          <Text variant="captionStrong">Private conversations open in Caime on the web.</Text>
         ) : null}
         <WaitingDevices on={open && privateSupported} />
         {others.map((c) => (
@@ -96,7 +96,7 @@ export function PrivateSheet({
               </Text>
               {mine.unconfirmed ? (
                 <Text variant="caption" color="danger" testID="private-my-unconfirmed">
-                  Caishy lists a device as yours that none of yours approved. Nothing is sealed for
+                  Caime lists a device as yours that none of yours approved. Nothing is sealed for
                   it. If you didn’t sign in somewhere new, remove it in Settings, Security.
                 </Text>
               ) : null}
@@ -133,7 +133,7 @@ function CodeCard({ name, code }: { name: string; code: PersonCode }) {
         </Text>
         {code.unconfirmed ? (
           <Text variant="caption" color="warning" testID="private-code-unconfirmed">
-            {`Caishy lists a device for ${name} that none of theirs approved. Nothing is sealed for it.`}
+            {`Caime lists a device for ${name} that none of theirs approved. Nothing is sealed for it.`}
           </Text>
         ) : null}
         {code.code && (code.changed || !code.verified) ? (
@@ -280,7 +280,7 @@ export function CodeChangedBanner({
   );
 }
 
-/** A conversation seen as private here, that Caishy now says isn't: said, and nothing sent. */
+/** A conversation seen as private here, that Caime now says isn't: said, and nothing sent. */
 export function Downgraded() {
   const t = useTheme();
   return (
@@ -301,7 +301,7 @@ export function Downgraded() {
     >
       <Lock size={16} color={t.c.danger} />
       <Text variant="caption" style={{ flex: 1 }}>
-        This conversation was private on this device. Caishy now says it isn’t, so what’s written in
+        This conversation was private on this device. Caime now says it isn’t, so what’s written in
         it isn’t shown or sent as private here.
       </Text>
     </View>

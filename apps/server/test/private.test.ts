@@ -1,4 +1,4 @@
-import { type PublicDevice, type SealedMessage, uuidv4, uuidv7 } from '@caishy/core';
+import { type PublicDevice, type SealedMessage, uuidv4, uuidv7 } from '@caime/core';
 import {
   chainRoot,
   type DeviceKeys,
@@ -7,7 +7,7 @@ import {
   open,
   publicKeys,
   seal,
-} from '@caishy/core/e2ee-crypto';
+} from '@caime/core/e2ee-crypto';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';

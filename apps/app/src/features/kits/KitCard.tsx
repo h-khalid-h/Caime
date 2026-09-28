@@ -1,14 +1,14 @@
-import type { ConversationView, MessageView } from '@caishy/core/api';
-import { customDetails, customMoves, customState, isCustomCard } from '@caishy/core/custom-kits';
-import { formatDue } from '@caishy/core/format';
+import type { ConversationView, MessageView } from '@caime/core/api';
+import { customDetails, customMoves, customState, isCustomCard } from '@caime/core/custom-kits';
+import { formatDue } from '@caime/core/format';
 import {
   isCardKit,
   kitDetails,
   kitMoves,
   kitStateLabel,
   kitStateTone,
-} from '@caishy/core/kit-cards';
-import { KITS } from '@caishy/core/kits';
+} from '@caime/core/kit-cards';
+import { KITS } from '@caime/core/kits';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';

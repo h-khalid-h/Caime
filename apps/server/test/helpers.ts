@@ -14,7 +14,7 @@ export interface TestApp {
 }
 
 export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
-  const name = `caishy_t_${randomBytes(6).toString('hex')}`;
+  const name = `caime_t_${randomBytes(6).toString('hex')}`;
   const admin = new pg.Client({ connectionString: adminUrl() });
   await admin.connect();
   await admin.query(`create database ${name} template ${TEMPLATE}`);

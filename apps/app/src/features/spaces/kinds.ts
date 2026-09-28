@@ -1,4 +1,4 @@
-import type { SpaceKind } from '@caishy/core/spaces';
+import type { SpaceKind } from '@caime/core/spaces';
 import type { IconComponent } from '@/ui/Button';
 import { Briefcase, GraduationCap, Heart, House, Shapes, Target, Users } from '@/ui/icons';
 
