@@ -4,8 +4,8 @@ import { View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { uploadFile } from '@/api/upload';
-import { CountryField } from '@/features/geo/CountryField';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { PresenceChoice } from '@/features/settings/PresenceChoice';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { pickFromLibrary } from '@/lib/photos';
 import { useMe, useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
@@ -18,6 +18,15 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
 const PRONOUNS = ['she/her', 'he/him', 'they/them'];
+/** Statuses people set most, a tap each: the emoji and the words together. */
+const STATUSES: Array<{ emoji: string; text: string }> = [
+  { emoji: '📅', text: 'In a meeting' },
+  { emoji: '🚌', text: 'On my way' },
+  { emoji: '🎯', text: 'Focusing' },
+  { emoji: '🏠', text: 'Working from home' },
+  { emoji: '🤒', text: 'Off sick' },
+  { emoji: '🌴', text: 'On holiday' },
+];
 type Presence = 'auto' | 'available' | 'busy' | 'away' | 'invisible';
 
 export default function Profile() {
@@ -29,7 +38,6 @@ export default function Profile() {
   const [statusEmoji, setStatusEmoji] = useState(me.statusEmoji ?? '');
   const [statusText, setStatusText] = useState(me.statusText ?? '');
   const [presence, setPresence] = useState<Presence>(me.presence);
-  const [country, setCountry] = useState<string | null>(me.country);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -52,7 +60,6 @@ export default function Profile() {
         statusText: statusText.trim() || null,
         statusEmoji: statusEmoji.trim() || null,
         presence,
-        ...(country && country !== me.country ? { country } : {}),
       });
       useSession.getState().setUser(res.user);
       toast('Saved');
@@ -167,33 +174,18 @@ export default function Profile() {
           />
         </View>
       </Group>
-      <Group
-        title="Where you live"
-        footer="Your country sets your defaults: the days work notifications wait for, and the currency of amounts. Neither is shown to anyone."
-      >
-        <View style={{ padding: 16, gap: 14 }}>
-          <CountryField
-            label="Country"
-            value={country}
-            onChange={setCountry}
-            locale={me.locale}
-            testID="profile-country"
-          />
-          {me.birthDate ? (
-            <View style={{ gap: 4 }}>
-              <Text variant="captionStrong" color="textSecondary">
-                Date of birth
-              </Text>
-              <Text variant="body" testID="profile-birth-date">
-                {formatDay(me.birthDate, me.locale)}
-              </Text>
-              <Text variant="caption" color="textTertiary">
-                Only to keep younger people safer. If it’s wrong, Help says how to correct it.
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </Group>
+      {me.birthDate ? (
+        <Group
+          title="Date of birth"
+          footer="Only to keep younger people safer, and never shown to anyone. If it’s wrong, Help says how to correct it. Your country and time zone are in Language and region."
+        >
+          <View style={{ padding: 16 }}>
+            <Text variant="body" testID="profile-birth-date">
+              {formatDay(me.birthDate, me.locale)}
+            </Text>
+          </View>
+        </Group>
+      ) : null}
       <Group title="Status">
         <View style={{ padding: 16, gap: 14 }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -213,22 +205,43 @@ export default function Profile() {
               placeholder="On holiday until the 12th"
             />
           </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {STATUSES.map((st) => {
+              const on = statusEmoji === st.emoji && statusText === st.text;
+              return (
+                <Chip
+                  key={st.text}
+                  label={`${st.emoji} ${st.text}`}
+                  size="sm"
+                  selected={on}
+                  accessibilityLabel={st.text}
+                  onPress={() => {
+                    setStatusEmoji(on ? '' : st.emoji);
+                    setStatusText(on ? '' : st.text);
+                  }}
+                />
+              );
+            })}
+            {statusEmoji || statusText ? (
+              <Chip
+                label="Clear"
+                size="sm"
+                onPress={() => {
+                  setStatusEmoji('');
+                  setStatusText('');
+                }}
+              />
+            ) : null}
+          </View>
         </View>
       </Group>
       <Group
         title="Presence"
         footer="Invisible hides when you’re online and when you were last active, from everyone."
       >
-        <Choice<Presence>
-          label="Presence"
-          value={presence}
+        <PresenceChoice
+          value={presence === 'available' ? 'auto' : presence}
           onChange={setPresence}
-          options={[
-            { value: 'auto', label: 'Automatic', detail: 'Online while you use Caishy' },
-            { value: 'busy', label: 'Busy' },
-            { value: 'away', label: 'Away' },
-            { value: 'invisible', label: 'Invisible' },
-          ]}
         />
       </Group>
       <Button label="Save changes" size="lg" block onPress={save} loading={busy} />

@@ -1,9 +1,9 @@
-import type { AboutView, CountriesView } from '@caishy/core';
+import type { AboutView, CountriesView, CurrenciesView, TimeZonesView } from '@caishy/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { countriesIn, suggestCountry } from '../lib/geo';
+import { countriesIn, currenciesIn, currentZone, suggestCountry, timeZonesIn } from '../lib/geo';
 import { parse } from '../lib/validate';
 
 export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -20,6 +20,23 @@ export async function healthRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     reply.header('cache-control', 'public, max-age=86400');
     return { countries: countriesIn(locale), suggested: suggestCountry(timeZone, locale) };
+  });
+  // Every currency a country uses, named in the asker's language, for the one an amount is in.
+  app.get('/currencies', async (req, reply): Promise<CurrenciesView> => {
+    const { locale } = parse(z.object({ locale: z.string().max(35).optional() }), req.query);
+    reply.header('cache-control', 'public, max-age=86400');
+    return { currencies: currenciesIn(locale) };
+  });
+  // Every time zone, with its city, country and offset now, for choosing where someone's times
+  // are. Offsets move with summer time, so it's kept an hour.
+  app.get('/time-zones', async (req, reply): Promise<TimeZonesView> => {
+    const { locale, timeZone } = parse(
+      z.object({ locale: z.string().max(35).optional(), timeZone: z.string().max(64).optional() }),
+      req.query,
+    );
+    reply.header('cache-control', 'public, max-age=3600');
+    // The asker's device's, by the name the list has for it.
+    return { zones: timeZonesIn(locale, ctx.now()), suggested: currentZone(timeZone) };
   });
   app.get('/readyz', async (_req, reply) => {
     try {

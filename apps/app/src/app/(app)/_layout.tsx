@@ -5,6 +5,7 @@ import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
+import { ReportSheet } from '@/features/safety/ReportSheet';
 import { NavRail } from '@/features/shell/NavRail';
 import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
@@ -64,6 +65,8 @@ export default function AppLayout() {
         <KeyboardShortcuts />
         <LiveLocationSharer />
         <CallLayer />
+        <ReportSheet />
+        <ReportSheet />
       </>
     );
   return (
@@ -75,6 +78,7 @@ export default function AppLayout() {
       <KeyboardShortcuts />
       <LiveLocationSharer />
       <CallLayer />
+      <ReportSheet />
     </>
   );
 }

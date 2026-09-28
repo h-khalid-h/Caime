@@ -30,9 +30,9 @@ import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
+import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
 
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 /** The server's limit on a rule's name. */
 const NAME_MAX = 60;
 
@@ -49,61 +49,6 @@ function Overline({ children }: { children: string }) {
     <Text variant="overline" color="textTertiary" accessibilityRole="header">
       {children}
     </Text>
-  );
-}
-
-/** A 24-hour time, kept only once it is one. */
-function TimeInput({
-  label,
-  value,
-  onChange,
-  testID,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  testID?: string;
-}) {
-  const [text, setText] = useState(value);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => setText(value), [value]);
-  // Closed without leaving the field (a sheet's X or its backdrop on a phone), a time typed in
-  // full still counts.
-  const latest = useRef({ text, value, onChange });
-  latest.current = { text, value, onChange };
-  useEffect(
-    () => () => {
-      const { text: typed, value: was, onChange: commit } = latest.current;
-      const v = typed.trim();
-      if (TIME.test(v) && v !== was) commit(v);
-    },
-    [],
-  );
-  const settle = () => {
-    const v = text.trim();
-    if (!TIME.test(v)) {
-      setError('Use 24-hour time, like 08:30.');
-      return;
-    }
-    setError(null);
-    if (v !== value) onChange(v);
-  };
-  return (
-    <TextField
-      label={label}
-      value={text}
-      onChangeText={(v) => {
-        setText(v);
-        if (TIME.test(v.trim())) setError(null);
-      }}
-      onBlur={settle}
-      onSubmitEditing={settle}
-      error={error}
-      maxLength={5}
-      keyboardType="numbers-and-punctuation"
-      style={{ flex: 1 }}
-      testID={testID}
-    />
   );
 }
 
@@ -292,13 +237,13 @@ export function RuleSheet({
               onChange={(days) => void save({ schedule: { ...schedule, days } })}
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TimeInput
+              <TimeField
                 label="From"
                 value={schedule.start}
                 onChange={(start) => void save({ schedule: { ...schedule, start } })}
                 testID="rule-from"
               />
-              <TimeInput
+              <TimeField
                 label="Until"
                 value={schedule.end}
                 onChange={(end) => void save({ schedule: { ...schedule, end } })}

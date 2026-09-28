@@ -13,6 +13,7 @@ import { privateSupported } from '@/features/e2ee/support';
 import { openChatWith } from '@/features/inbox/NewChatSheet';
 import { PersonOffer } from '@/features/relationships/offers';
 import { RelationshipPicker } from '@/features/relationships/RelationshipPicker';
+import { report } from '@/features/safety/ReportSheet';
 import { useNow, useUserClock } from '@/lib/time';
 import { useLive } from '@/state/live';
 import { useMe } from '@/state/session';
@@ -452,13 +453,7 @@ export function PersonScreen({ id }: { id: string }) {
               icon={Flag}
               title="Report"
               destructive
-              onPress={() =>
-                act(
-                  'report',
-                  () => endpoints.report({ userId: person.id, reason: 'other' }),
-                  'Reported. Thank you.',
-                )
-              }
+              onPress={() => report({ userId: person.id }, name)}
             />
           </Card>
         ) : null}

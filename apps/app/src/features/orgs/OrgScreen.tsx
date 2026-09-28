@@ -16,6 +16,7 @@ import { useBusinessSummary, useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useCountries } from '@/features/geo/countries';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
+import { report } from '@/features/safety/ReportSheet';
 import { OrgUpdates } from '@/features/updates/OrgUpdates';
 import { handleLink } from '@/lib/config';
 import { openLink } from '@/lib/links';
@@ -518,12 +519,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                 title={`Report ${org.name}`}
                 subtitle="Sends it to Caishy’s safety team, for a scam or someone posing as another"
                 destructive
-                onPress={() =>
-                  void run(
-                    () => endpoints.report({ orgId: org.id, reason: 'other' }),
-                    'Reported. Thank you for keeping Caishy safe.',
-                  )
-                }
+                onPress={() => report({ orgId: org.id }, org.name)}
                 testID="org-report"
               />
             </Card>

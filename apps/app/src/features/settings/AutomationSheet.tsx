@@ -201,6 +201,26 @@ export function AutomationSheet({
           placeholder="invoice, receipt"
           testID="automation-words"
         />
+        {wordsFrom(words).length ? (
+          // How the words are read, one each: a tap takes one out.
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {wordsFrom(words).map((w) => (
+              <Chip
+                key={w}
+                label={`${w}  ×`}
+                size="sm"
+                accessibilityLabel={`Take out “${w}”`}
+                onPress={() =>
+                  setWords(
+                    wordsFrom(words)
+                      .filter((x) => x !== w)
+                      .join(', '),
+                  )
+                }
+              />
+            ))}
+          </View>
+        ) : null}
         <Overline>Save it to</Overline>
         <TextField
           label="A collection"

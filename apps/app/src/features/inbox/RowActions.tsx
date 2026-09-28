@@ -1,6 +1,7 @@
 import type { InboxItemView } from '@caishy/core/api';
 import { listTitle } from '@caishy/core/format';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { markInboxRead } from '@/state/cache';
@@ -8,10 +9,12 @@ import { ArchiveIcon, Bell, BellOff, CheckCheck, Pin, Star, Zap } from '@/ui/ico
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { toast } from '@/ui/Toast';
+import { MuteSheet } from './MuteSheet';
 
 /** Long-press (or right-click) actions for an inbox row. */
 export function RowActions({ item, onClose }: { item: InboxItemView | null; onClose: () => void }) {
   const qc = useQueryClient();
+  const [muting, setMuting] = useState(false);
   if (!item) return null;
   const run = async (patch: Record<string, unknown>, done: string) => {
     onClose();
@@ -25,7 +28,17 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       void qc.invalidateQueries({ queryKey: qk.inboxAll });
     }
   };
-  const hours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+  if (muting)
+    return (
+      <MuteSheet
+        open
+        onClose={() => {
+          setMuting(false);
+          onClose();
+        }}
+        onMute={(until, said) => void run({ mutedUntil: until }, said)}
+      />
+    );
   return (
     <Sheet
       open
@@ -74,18 +87,13 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       {item.muted ? (
         <ListRow icon={Bell} title="Unmute" onPress={() => run({ mutedUntil: null }, 'Unmuted')} />
       ) : (
-        <>
-          <ListRow
-            icon={BellOff}
-            title="Mute for 8 hours"
-            onPress={() => run({ mutedUntil: hours(8) }, 'Muted for 8 hours')}
-          />
-          <ListRow
-            icon={BellOff}
-            title="Mute for a week"
-            onPress={() => run({ mutedUntil: hours(24 * 7) }, 'Muted for a week')}
-          />
-        </>
+        <ListRow
+          icon={BellOff}
+          title="Mute notifications…"
+          onPress={() => setMuting(true)}
+          chevron
+          testID="row-mute"
+        />
       )}
       <ListRow
         icon={ArchiveIcon}

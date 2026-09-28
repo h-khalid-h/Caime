@@ -14,6 +14,7 @@ import {
   Bookmark,
   Building,
   Gauge,
+  Globe,
   Info,
   Keyboard,
   KeyRound,
@@ -43,6 +44,13 @@ const ITEMS: Array<{
     icon: UserRound,
     title: 'Profile',
     subtitle: 'Name, photo, status, pronouns',
+  },
+  {
+    href: '/settings/region',
+    path: '/settings/region',
+    icon: Globe,
+    title: 'Language and region',
+    subtitle: 'Country, time zone, how dates and numbers look',
   },
   {
     href: '/settings/appearance',

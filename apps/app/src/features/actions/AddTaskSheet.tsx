@@ -3,23 +3,32 @@ import { firstFutureWhen } from '@caishy/core/when';
 import { onlineManager } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { WhenSheet } from '@/features/when/WhenSheet';
+import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { Calendar } from '@/ui/icons';
+import { IconButton } from '@/ui/IconButton';
+import { Calendar, X } from '@/ui/icons';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
-/** "Call the bank tomorrow at 10" becomes a task due tomorrow at 10:00, in your time zone. */
+/**
+ * "Call the bank tomorrow at 10" becomes a task due tomorrow at 10:00, in your time zone; or its
+ * day and time are picked, from the days people most often mean or a calendar.
+ */
 export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const me = useMe();
   const { timeZone, locale } = useUserClock();
   const [title, setTitle] = useState('');
   const [useDate, setUseDate] = useState(true);
+  // A day picked by hand wins over one written in the title.
+  const [picked, setPicked] = useState<Chosen | null>(null);
+  const [choosing, setChoosing] = useState(false);
   const when = useMemo(
     () =>
       title.trim()
@@ -27,16 +36,23 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
         : undefined,
     [title, timeZone, locale, me.workweek],
   );
+  const due = picked
+    ? { at: instantOf(picked, timeZone).toISOString() }
+    : when && useDate
+      ? { at: when.at }
+      : null;
   // On the list at once, online or not; sent when it can be (PRD §49).
   const save = () => {
     if (!title.trim()) return;
-    const due = when && useDate ? when : undefined;
+    const written = when && useDate ? when : undefined;
     useTaskOutbox.getState().add({
       title: title.trim(),
-      dueAt: due?.at ?? null,
-      dueHasTime: Boolean(due?.time),
+      dueAt: picked ? instantOf(picked, timeZone).toISOString() : (written?.at ?? null),
+      dueHasTime: picked ? Boolean(picked.time) : Boolean(written?.time),
     });
     setTitle('');
+    setPicked(null);
+    setUseDate(true);
     onClose();
     toast(onlineManager.isOnline() ? 'Added' : 'Added. It’s saved when you’re back online.');
   };
@@ -56,18 +72,53 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
         returnKeyType="done"
         accessibilityLabel="What needs doing"
       />
-      {when ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {due ? (
+          <>
+            <Chip
+              icon={Calendar}
+              label={`Due ${formatDue(due.at, new Date(), timeZone, locale)}`}
+              selected
+              onPress={() => setChoosing(true)}
+              accessibilityLabel={`Due ${formatDue(due.at, new Date(), timeZone, locale)}. Change the day`}
+              testID="task-due"
+            />
+            <IconButton
+              icon={X}
+              label="No due date"
+              onPress={() => {
+                setPicked(null);
+                setUseDate(false);
+              }}
+              testID="task-due-clear"
+            />
+            {!picked && when ? (
+              <Text variant="caption" color="textTertiary">
+                From “{when.text}”
+              </Text>
+            ) : null}
+          </>
+        ) : (
           <Chip
             icon={Calendar}
-            label={`Due ${formatDue(when.at, new Date(), timeZone, locale)}`}
-            selected={useDate}
-            onPress={() => setUseDate((u) => !u)}
+            label="Add a due date"
+            onPress={() => setChoosing(true)}
+            testID="task-due-add"
           />
-          <Text variant="caption" color="textTertiary">
-            {useDate ? `From “${when.text}”` : 'No due date'}
-          </Text>
-        </View>
+        )}
+      </View>
+      {choosing ? (
+        <WhenSheet
+          open
+          onClose={() => setChoosing(false)}
+          title="Due"
+          value={picked ?? (when && useDate ? { date: when.date, time: when.time } : null)}
+          onChange={(c) => {
+            setPicked(c);
+            setUseDate(true);
+          }}
+          testID="task-when"
+        />
       ) : null}
     </Sheet>
   );

@@ -12,6 +12,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { CurrencyField } from '@/features/geo/CurrencyField';
+import { WhenSheet } from '@/features/when/WhenSheet';
+import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
 import { applyMessageToInbox, upsertMessage } from '@/state/cache';
 import { useLiveShares } from '@/state/liveShares';
@@ -19,11 +22,13 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { MapPin, Plus } from '@/ui/icons';
+import { IconButton } from '@/ui/IconButton';
+import { Calendar, MapPin, Plus } from '@/ui/icons';
 import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
+import { parseNumber } from './amounts';
 
 export type KitChoice = CardKitId | 'poll' | 'location';
 
@@ -54,6 +59,9 @@ export function kitsOffered(conversation: ConversationView, viewerIsMinor: boole
 
 type Clock = { now: Date; timeZone: string; locale: string; workweek: number[] };
 
+/** A day picked for a field, and how it reads there (typing over it drops the pick). */
+type Picked = { chosen: Chosen; shown: string };
+
 /**
  * What a typed value means, for the preview under the field and for sending. Caishy's own cards
  * look ahead (a meeting, a due date); an organization's own may say when something was, too.
@@ -63,12 +71,24 @@ function readField(
   text: string,
   clock: Clock,
   anyTense = false,
+  extra: { currency?: string | null; picked?: Picked } = {},
 ): { value?: unknown; shown?: string } {
   const raw = text.trim();
   if (!raw) return {};
   switch (field.type) {
     case 'datetime':
     case 'date': {
+      const pick = extra.picked && extra.picked.shown === raw ? extra.picked.chosen : null;
+      if (pick)
+        return field.type === 'date'
+          ? { value: pick.date, shown: raw }
+          : {
+              value: {
+                at: instantOf(pick, clock.timeZone).toISOString(),
+                hasTime: Boolean(pick.time),
+              },
+              shown: raw,
+            };
       const when = anyTense ? parseWhen(raw, clock)[0] : firstFutureWhen(raw, clock);
       if (!when) return { shown: 'Say a day, and a time if there is one: “Friday 3pm”' };
       const at = new Date(when.at);
@@ -88,10 +108,13 @@ function readField(
         : { value: { at: when.at, hasTime: Boolean(when.time) }, shown };
     }
     case 'amount': {
-      const found = extractAmounts(raw)[0];
-      const value = found?.value ?? Number(raw.replace(/[^\d.]/g, ''));
-      if (!value || !Number.isFinite(value)) return { shown: 'Write an amount: “EGP 1,200”' };
-      const currency = found?.currency ?? null;
+      // Typed on the number keypad in the person's own way, in the currency beside it; or
+      // written with its currency ("EGP 1,200"), which says which.
+      const typed = parseNumber(raw, clock.locale);
+      const found = typed === null ? extractAmounts(raw)[0] : undefined;
+      const value = typed ?? found?.value;
+      if (!value || !Number.isFinite(value)) return { shown: 'Write an amount: “1,200”' };
+      const currency = found?.currency ?? extra.currency ?? null;
       return { value: { value, currency }, shown: formatAmount(value, currency, clock.locale) };
     }
     default:
@@ -102,7 +125,7 @@ function readField(
 const PLACEHOLDERS: Partial<Record<KitField['type'], string>> = {
   datetime: 'Friday 3pm',
   date: 'October 15',
-  amount: 'EGP 1,200',
+  amount: '1,200',
 };
 
 export function KitForm({
@@ -128,6 +151,16 @@ export function KitForm({
   const [multiple, setMultiple] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // An amount's currency: the organization's for its team, else where the person lives.
+  const defaultCurrency =
+    (conversation.business?.thread ? conversation.business.org.currency : null) ?? me.currency;
+  const [currencies, setCurrencies] = useState<Record<string, string | null>>({});
+  const [pickedDays, setPickedDays] = useState<Record<string, Picked>>({});
+  const [choosing, setChoosing] = useState<KitField | null>(null);
+  const extraFor = (field: KitField) => ({
+    currency: currencies[field.key] ?? defaultCurrency,
+    picked: pickedDays[field.key],
+  });
   // Location: where the device says this person is, once, when they ask.
   const [spot, setSpot] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -212,7 +245,13 @@ export function KitForm({
           if (picked[field.key] !== undefined) fields[field.key] = picked[field.key];
           continue;
         }
-        const read = readField(field, texts[field.key] ?? '', clock, Boolean(custom));
+        const read = readField(
+          field,
+          texts[field.key] ?? '',
+          clock,
+          Boolean(custom),
+          extraFor(field),
+        );
         if ((texts[field.key] ?? '').trim() && read.value === undefined)
           return setError(`${field.label}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
@@ -395,7 +434,30 @@ export function KitForm({
                 onChangeText={(v) => setTexts((s) => ({ ...s, [field.key]: v }))}
                 multiline={field.type === 'longtext'}
                 autoFocus={i === 0}
-                hint={readField(field, texts[field.key] ?? '', clock, Boolean(custom)).shown}
+                {...(field.type === 'amount'
+                  ? { keyboardType: 'decimal-pad' as const, inputMode: 'decimal' as const }
+                  : {})}
+                trailing={
+                  field.type === 'amount' ? (
+                    <CurrencyField
+                      value={currencies[field.key] ?? defaultCurrency}
+                      onChange={(code) => setCurrencies((c) => ({ ...c, [field.key]: code }))}
+                      locale={locale}
+                      testID={`kit-currency-${field.key}`}
+                    />
+                  ) : field.type === 'date' || field.type === 'datetime' ? (
+                    <IconButton
+                      icon={Calendar}
+                      label={`Choose ${field.label.toLowerCase()}`}
+                      onPress={() => setChoosing(field)}
+                      testID={`kit-when-${field.key}`}
+                    />
+                  ) : undefined
+                }
+                hint={
+                  readField(field, texts[field.key] ?? '', clock, Boolean(custom), extraFor(field))
+                    .shown
+                }
               />
             ),
           )}
@@ -406,6 +468,36 @@ export function KitForm({
           {error}
         </Text>
       ) : null}
+      {choosing ? (
+        <WhenSheet
+          open
+          onClose={() => setChoosing(null)}
+          title={choosing.label}
+          value={pickedDays[choosing.key]?.chosen ?? null}
+          time={choosing.type === 'datetime' ? 'optional' : 'none'}
+          future={!custom}
+          onChange={(chosen) => {
+            const shown = dayText(chosen, clock);
+            setPickedDays((d) => ({ ...d, [choosing.key]: { chosen, shown } }));
+            setTexts((s) => ({ ...s, [choosing.key]: shown }));
+          }}
+          testID={`kit-when-${choosing.key}-sheet`}
+        />
+      ) : null}
     </Sheet>
   );
+}
+
+/** How a picked day (and time) reads in the field: "Thu 15 Oct, 15:00". */
+function dayText(c: Chosen, clock: Clock): string {
+  return new Intl.DateTimeFormat(clock.locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(c.date.slice(0, 4) !== String(zonedParts(clock.now, clock.timeZone).year)
+      ? { year: 'numeric' as const }
+      : {}),
+    ...(c.time ? { hour: 'numeric' as const, minute: '2-digit' as const } : {}),
+    timeZone: clock.timeZone,
+  }).format(instantOf(c, clock.timeZone));
 }

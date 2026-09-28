@@ -33,7 +33,6 @@ export type KitFieldType =
   | 'amount'
   | 'options'
   | 'location'
-  | 'people'
   /** A list of short lines, each its own item: a checklist's things to do. */
   | 'items';
 

@@ -2,6 +2,8 @@
 export const qk = {
   me: ['me'] as const,
   countries: (locale: string, timeZone: string) => ['countries', locale, timeZone] as const,
+  currencies: (locale: string) => ['currencies', locale] as const,
+  timeZones: (locale: string, device: string) => ['time-zones', locale, device] as const,
   ai: ['ai'] as const,
   plan: ['plan'] as const,
   billing: ['billing'] as const,

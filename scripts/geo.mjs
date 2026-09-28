@@ -28,14 +28,21 @@ for (const l of lines('zone.tab')) {
   if (!countries[code]) throw new Error(`zone.tab names ${code}, which iso3166.tab doesn't`);
   zones[zone] = code;
 }
+// The zones people choose from: zone.tab's, and UTC.
+const canonical = [...Object.keys(zones), 'UTC'].sort();
 let aliases = 0;
+const links = {};
 for (const l of readFileSync(join(dir, 'tzdata.zi'), 'utf8').split('\n')) {
   const m = /^L (\S+) (\S+)$/.exec(l);
   if (!m) continue;
   const [, target, alias] = m;
-  if (zones[alias] || !zones[target]) continue;
-  zones[alias] = zones[target];
-  aliases++;
+  if (zones[target] && !zones[alias]) {
+    zones[alias] = zones[target];
+    aliases++;
+  }
+  // An older name a device may still report (Asia/Calcutta), for the one it is now.
+  if ((zones[target] || target === 'Etc/UTC') && !canonical.includes(alias))
+    links[alias] = target === 'Etc/UTC' ? 'UTC' : target;
 }
 // A country's currency: the first it lists that's legal tender and hasn't ended (CLDR lists the
 // current one first). None for a territory without one (Antarctica).
@@ -58,6 +65,12 @@ export const COUNTRIES: Readonly<Record<string, string>> = ${JSON.stringify(sort
 
 /** The country a time zone is in (a zone used across borders names the first, as zone.tab does). */
 export const ZONE_COUNTRY: Readonly<Record<string, string>> = ${JSON.stringify(sorted(zones), null, 2)};
+
+/** The ${canonical.length} time zones to choose from: zone.tab's, and UTC. */
+export const ZONES: readonly string[] = ${JSON.stringify(canonical, null, 2)};
+
+/** Older names of them that devices may still report, and the name each has now. */
+export const ZONE_LINKS: Readonly<Record<string, string>> = ${JSON.stringify(sorted(links), null, 2)};
 
 /** Each country's currency (ISO 4217), for ${Object.keys(currencies).length} of them (CLDR). */
 export const COUNTRY_CURRENCY: Readonly<Record<string, string>> = ${JSON.stringify(sorted(currencies), null, 2)};

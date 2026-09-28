@@ -19,6 +19,7 @@ import type { AppContext } from '../context';
 import type { BusinessThread, Database, Organization } from '../db/schema';
 import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
+import { currencyOf } from './geo';
 import { messagePreview } from './messages';
 import { personViewsFor } from './people-batch';
 import { minorOf } from './users';
@@ -26,7 +27,7 @@ import { minorOf } from './users';
 type Q = Kysely<Database> | Transaction<Database>;
 
 export function orgRef(
-  o: Pick<Organization, 'id' | 'name' | 'handle' | 'kind' | 'domain' | 'verified_at'>,
+  o: Pick<Organization, 'id' | 'name' | 'handle' | 'kind' | 'domain' | 'verified_at' | 'country'>,
 ): OrgRef {
   const verified = o.verified_at !== null;
   return {
@@ -36,6 +37,8 @@ export function orgRef(
     kind: o.kind,
     verified,
     verifiedDomain: verified ? o.domain : null,
+    // Its country's: what an amount on one of its team's cards is in, unless they say.
+    currency: currencyOf(o.country),
   };
 }
 

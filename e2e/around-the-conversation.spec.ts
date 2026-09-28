@@ -367,6 +367,15 @@ test.describe
       await expect(visible(page, 'Nothing on your plate')).toBeVisible();
       await page.getByRole('button', { name: 'Undo', exact: true }).click();
       await expect(done).toBeVisible();
+      // Or its day picked: the days people most often mean, or a calendar.
+      await page.getByTestId('add-task').click();
+      await page.getByLabel('What needs doing').fill('Call the bank');
+      await page.getByTestId('task-due-add').click();
+      await page.getByRole('radio', { name: /^Tomorrow/ }).click();
+      await page.getByTestId('task-when-done').click();
+      await expect(page.getByTestId('task-due')).toContainText(/^Due /);
+      await page.getByRole('button', { name: 'Add', exact: true }).click();
+      await expect(page.getByRole('checkbox', { name: 'Complete Call the bank' })).toBeVisible();
 
       // Alex asks Noor for something in their conversation.
       const asked = await alexContext.request.post('/v1/tasks', {

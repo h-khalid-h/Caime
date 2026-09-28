@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { create } from 'zustand';
 import { endpoints } from '@/api/endpoints';
-import { Choice } from '@/features/settings/SettingsPage';
+import { PresenceChoice } from '@/features/settings/PresenceChoice';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -153,17 +153,7 @@ export function YouSheet() {
             Presence
           </Text>
           <Card padded={false}>
-            <Choice<Chosen>
-              label="Presence"
-              value={pending ?? presence}
-              onChange={choose}
-              options={[
-                { value: 'auto', label: 'Automatic', detail: 'Online while you use Caishy' },
-                { value: 'busy', label: 'Busy' },
-                { value: 'away', label: 'Away' },
-                { value: 'invisible', label: 'Invisible' },
-              ]}
-            />
+            <PresenceChoice value={pending ?? presence} onChange={choose} />
           </Card>
         </View>
         <Card padded={false}>

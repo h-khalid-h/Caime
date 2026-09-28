@@ -1,4 +1,5 @@
 import type { Audience, PrivacyField } from '@caishy/core/privacy';
+import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
@@ -8,6 +9,8 @@ import { qk } from '@/api/keys';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
+import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -24,7 +27,7 @@ const FIELDS: Array<{ field: PrivacyField; label: string }> = [
   { field: 'identityDetails', label: 'Work details' },
 ];
 
-type Simple = 'everyone' | 'connections' | 'nobody';
+type Kind = Audience['kind'];
 
 function describe(a: Audience | undefined): string {
   if (!a) return 'Your connections';
@@ -36,7 +39,9 @@ function describe(a: Audience | undefined): string {
     case 'nobody':
       return 'Nobody';
     case 'spheres':
-      return 'Some of your people';
+      return a.spheres.length
+        ? a.spheres.map((s) => SPHERE_DEFS[s].plural).join(', ')
+        : 'Some of your people';
   }
 }
 
@@ -174,27 +179,92 @@ export default function Privacy() {
           </View>
         </Group>
       ) : null}
-      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editingLabel}>
-        <View style={{ marginHorizontal: -20 }}>
-          <Choice<Simple>
-            label={editingLabel}
-            value={
-              (current?.kind === 'spheres'
-                ? 'connections'
-                : (current?.kind ?? 'connections')) as Simple
-            }
-            onChange={(kind) => {
-              if (editing) void save({ fields: { [editing]: { kind } } });
-              setEditing(null);
-            }}
-            options={[
-              { value: 'everyone', label: 'Everyone' },
-              { value: 'connections', label: 'Your connections' },
-              { value: 'nobody', label: 'Nobody' },
-            ]}
-          />
-        </View>
-      </Sheet>
+      {editing ? (
+        <AudienceSheet
+          key={editing}
+          title={editingLabel}
+          current={current}
+          onClose={() => setEditing(null)}
+          onSave={(audience) => {
+            void save({ fields: { [editing]: audience } });
+            setEditing(null);
+          }}
+        />
+      ) : null}
     </SettingsPage>
+  );
+}
+
+/** Who sees one thing: everyone, the people they're connected with, only some kinds of them, or nobody. */
+function AudienceSheet({
+  title,
+  current,
+  onClose,
+  onSave,
+}: {
+  title: string;
+  current: Audience | undefined;
+  onClose: () => void;
+  onSave: (a: Audience) => void;
+}) {
+  const [kind, setKind] = useState<Kind>(current?.kind ?? 'connections');
+  const [spheres, setSpheres] = useState<Sphere[]>(
+    current?.kind === 'spheres' ? current.spheres : [],
+  );
+  const some = kind === 'spheres';
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={title}
+      footer={
+        some ? (
+          <Button
+            label="Save"
+            size="lg"
+            block
+            disabled={!spheres.length}
+            onPress={() => onSave({ kind: 'spheres', spheres })}
+            testID="audience-save"
+          />
+        ) : undefined
+      }
+    >
+      <View style={{ marginHorizontal: -20 }}>
+        <Choice<Kind>
+          label={title}
+          value={kind}
+          onChange={(k) => {
+            setKind(k);
+            if (k !== 'spheres') onSave({ kind: k } as Audience);
+          }}
+          options={[
+            { value: 'everyone', label: 'Everyone' },
+            { value: 'connections', label: 'Your connections' },
+            { value: 'spheres', label: 'Only some of your people', detail: 'By how you know them' },
+            { value: 'nobody', label: 'Nobody' },
+          ]}
+        />
+      </View>
+      {some ? (
+        <View
+          accessibilityLabel="Who sees it"
+          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}
+        >
+          {SPHERES.map((s) => {
+            const on = spheres.includes(s);
+            return (
+              <Chip
+                key={s}
+                label={SPHERE_DEFS[s].plural}
+                selected={on}
+                onPress={() => setSpheres((all) => (on ? all.filter((x) => x !== s) : [...all, s]))}
+                testID={`audience-${s}`}
+              />
+            );
+          })}
+        </View>
+      ) : null}
+    </Sheet>
   );
 }

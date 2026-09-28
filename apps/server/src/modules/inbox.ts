@@ -206,6 +206,7 @@ export async function buildInbox(
         'g.kind',
         'g.domain',
         'g.verified_at',
+        'g.country',
       ])
       .where('t.conversation_id', 'in', businessIds)
       .execute())

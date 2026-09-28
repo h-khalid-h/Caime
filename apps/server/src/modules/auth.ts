@@ -35,7 +35,7 @@ import {
 } from '../lib/crypto';
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
 import { recordEvent } from '../lib/events';
-import { isCountry } from '../lib/geo';
+import { currentZone, isCountry } from '../lib/geo';
 import { handleTaken } from '../lib/handles';
 import { revokeGrantsOf } from '../lib/oauth';
 import { meView, seedDefaults, workweekFor } from '../lib/users';
@@ -114,7 +114,10 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`signup:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const body = parse(SignupBody, req.body);
     const now = ctx.now();
-    const timeZone = body.timeZone && isValidTimeZone(body.timeZone) ? body.timeZone : 'UTC';
+    const timeZone =
+      body.timeZone && isValidTimeZone(body.timeZone)
+        ? (currentZone(body.timeZone) ?? body.timeZone)
+        : 'UTC';
     if (!plausibleBirthDate(body.birthDate, now, timeZone))
       throw badRequest('Enter the day you were born.', {
         fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],

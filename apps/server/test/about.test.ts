@@ -18,7 +18,10 @@ describe('About, and Caishy’s own privacy, terms and help pages', () => {
         helpUrl: `${BASE}/help`,
       });
       const pages = {
-        privacy: ['<h1>Privacy</h1>', 'Caishy is for people 13 and older, from the day they turn 13'],
+        privacy: [
+          '<h1>Privacy</h1>',
+          'Caishy is for people 13 and older, from the day they turn 13',
+        ],
         terms: ['<h1>Terms</h1>', 'You need to be 13 or older'],
         help: ['<h1>Help</h1>', `${BASE}/@<em>yourhandle</em>`],
       };

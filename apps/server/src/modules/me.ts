@@ -17,7 +17,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { badRequest, conflict, notFound } from '../lib/errors';
-import { isCountry } from '../lib/geo';
+import { currentZone, isCountry } from '../lib/geo';
 import { handleTaken } from '../lib/handles';
 import { planUsage } from '../lib/plans';
 import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
@@ -70,7 +70,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.presence !== undefined) patch.presence = body.presence;
     if (body.timeZone !== undefined) {
       if (!isValidTimeZone(body.timeZone)) throw badRequest('Unknown time zone.');
-      patch.time_zone = body.timeZone;
+      // By the name it has now: a device may still report an older one (Asia/Calcutta).
+      patch.time_zone = currentZone(body.timeZone) ?? body.timeZone;
     }
     if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
     if (body.country !== undefined && body.country !== current.country) {

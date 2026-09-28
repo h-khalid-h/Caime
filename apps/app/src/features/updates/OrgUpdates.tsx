@@ -15,6 +15,7 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { useOrgUpdates } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { report } from '@/features/safety/ReportSheet';
 import { linkify, openCheckedLink, opensWithEnter } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
@@ -121,12 +122,7 @@ function Update({
             label="Report this update"
             size={18}
             disabled={busy}
-            onPress={() =>
-              void run(
-                () => endpoints.report({ orgId: u.org.id, updateId: u.id, reason: 'other' }),
-                'Reported. Thank you for keeping Caishy safe.',
-              )
-            }
+            onPress={() => report({ orgId: u.org.id, updateId: u.id }, `${u.org.name}’s update`)}
             testID="org-update-report"
           />
         ) : null}

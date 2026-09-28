@@ -7,6 +7,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { translate } from '@/features/assist/translations';
 import { useOpened } from '@/features/e2ee/hooks';
+import { report } from '@/features/safety/ReportSheet';
 import { SaveSheet } from '@/features/saved/SaveSheet';
 import { copyText } from '@/lib/clipboard';
 import { patchMessage, removeMessage } from '@/state/cache';
@@ -38,6 +39,57 @@ import { toast } from '@/ui/Toast';
 const DECISION_MAX = 300;
 
 export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+/** More to react with, a tap away: the ones people reach for after the quick six. */
+const MORE_REACTIONS = [
+  '🔥',
+  '🎉',
+  '👏',
+  '💯',
+  '✅',
+  '👀',
+  '🤔',
+  '😍',
+  '🥰',
+  '😊',
+  '😅',
+  '🤣',
+  '😎',
+  '🤩',
+  '🥳',
+  '😴',
+  '😡',
+  '😱',
+  '🤯',
+  '🥲',
+  '😭',
+  '🙌',
+  '💪',
+  '🤝',
+  '👌',
+  '✌️',
+  '🤞',
+  '👋',
+  '💔',
+  '💙',
+  '💚',
+  '💛',
+  '⭐',
+  '✨',
+  '🌹',
+  '☕',
+  '🍰',
+  '🎂',
+  '🎁',
+  '📌',
+  '⏰',
+  '🚀',
+  '💡',
+  '📷',
+  '🏆',
+  '⚽',
+  '🤗',
+  '🤲',
+];
 
 /**
  * What can be forwarded (the server's rule): not a private message, a line about the
@@ -118,6 +170,7 @@ export function MessageActions({
   // Saving it as a decision (PRD §30): its words to start from, for this message only.
   const [deciding, setDeciding] = useState<{ id: string; title: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [more, setMore] = useState(false);
   // Keeping it in a collection of theirs (PRD §69), for this message only.
   const [keeping, setKeeping] = useState<string | null>(null);
   if (!m) return null;
@@ -189,6 +242,31 @@ export function MessageActions({
         />
       </Sheet>
     );
+  const reaction = (emoji: string, size = 48) => {
+    const chosen = m.reactions.some((r) => r.emoji === emoji && r.mine);
+    return (
+      <Pressable
+        key={emoji}
+        accessibilityRole="button"
+        accessibilityLabel={`React ${emoji}`}
+        accessibilityState={{ selected: chosen }}
+        onPress={close(() => toggleReaction(qc, m, emoji, me))}
+        haptic
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: chosen ? t.c.accentSoft : t.c.surfaceMuted,
+        }}
+      >
+        <Text style={{ fontSize: size / 2, lineHeight: size * 0.62 }} maxFontSizeMultiplier={1}>
+          {emoji}
+        </Text>
+      </Pressable>
+    );
+  };
   return (
     <Sheet
       open
@@ -201,32 +279,30 @@ export function MessageActions({
           style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
           accessibilityRole="toolbar"
         >
-          {QUICK_REACTIONS.map((emoji) => {
-            const chosen = m.reactions.some((r) => r.emoji === emoji && r.mine);
-            return (
-              <Pressable
-                key={emoji}
-                accessibilityRole="button"
-                accessibilityLabel={`React ${emoji}`}
-                accessibilityState={{ selected: chosen }}
-                onPress={close(() => toggleReaction(qc, m, emoji, me))}
-                haptic
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: chosen ? t.c.accentSoft : t.c.surfaceMuted,
-                }}
-              >
-                <Text style={{ fontSize: 24, lineHeight: 30 }} maxFontSizeMultiplier={1}>
-                  {emoji}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {QUICK_REACTIONS.map((emoji) => reaction(emoji))}
         </View>
+      ) : null}
+      {!deleted ? (
+        more ? (
+          <View
+            accessibilityRole="toolbar"
+            accessibilityLabel="More reactions"
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 }}
+          >
+            {MORE_REACTIONS.map((emoji) => reaction(emoji, 44))}
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setMore(true)}
+            style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12 }}
+            testID="reactions-more"
+          >
+            <Text variant="captionStrong" color="link">
+              More reactions
+            </Text>
+          </Pressable>
+        )
       ) : null}
       <View style={{ marginHorizontal: -20 }}>
         {!deleted ? (
@@ -361,19 +437,16 @@ export function MessageActions({
             title="Report"
             subtitle="Sends this message to Caishy’s safety team"
             destructive
-            onPress={close(async () => {
-              try {
-                await endpoints.report({
+            onPress={close(() =>
+              report(
+                {
                   messageId: m.id,
                   conversationId: m.conversationId,
                   userId: m.senderId ?? undefined,
-                  reason: 'other',
-                });
-                toast('Reported. Thank you for keeping Caishy safe.');
-              } catch (e) {
-                toast((e as Error).message, { tone: 'danger' });
-              }
-            })}
+                },
+                'this message',
+              ),
+            )}
           />
         ) : null}
       </View>

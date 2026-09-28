@@ -47,6 +47,24 @@ export interface CountriesView {
   suggested: string | null;
 }
 
+/** Every time zone, with its city, its country named in the asker's language, and its offset now. */
+export interface TimeZonesView {
+  zones: Array<{
+    zone: string;
+    city: string;
+    country: string | null;
+    countryName: string | null;
+    offset: string;
+  }>;
+  /** The asker's device's time zone, by the name the list has for it. */
+  suggested: string | null;
+}
+
+/** Every currency a country uses (ISO 4217), named in the asker's language. */
+export interface CurrenciesView {
+  currencies: Array<{ code: string; name: string }>;
+}
+
 export interface MeView {
   id: string;
   email: string;
@@ -571,6 +589,8 @@ export interface OrgRef {
   kind: OrgKind;
   verified: boolean;
   verifiedDomain: string | null;
+  /** Its country's currency (ISO 4217): the default for an amount on its team's cards. */
+  currency: string | null;
 }
 
 /**

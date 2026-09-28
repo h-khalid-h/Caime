@@ -21,7 +21,7 @@ async function signUp(page: Page, name: string, handle: string) {
   await expect(page.getByTestId('signup-country')).toContainText('United States');
   await page.getByTestId('signup-country').click();
   await page.getByTestId('signup-country-search').fill('egy');
-  await page.getByTestId('country-EG').click();
+  await page.getByTestId('signup-country-EG').click();
   await expect(page.getByTestId('signup-country')).toContainText('Egypt');
   await expect(page.getByText('Available')).toBeVisible();
   await page.getByTestId('signup-submit').click();
@@ -210,6 +210,28 @@ test('a person can download their data and delete their account from settings', 
   const handle = `leaving.${stamp}`;
   await signUp(page, 'Leaving Soon', handle);
   await onboard(page, 'leaving', false);
+  // Where their times are, found by city: Language and region.
+  await page.goto('/settings/region');
+  await page.getByTestId('region-zone').click();
+  await page.getByTestId('region-zone-search').fill('toky');
+  await page.getByTestId('region-zone-Asia/Tokyo').click();
+  await expect(page.getByTestId('region-zone')).toContainText('Tokyo');
+  await expect(page.getByTestId('region-zone')).toContainText('GMT+9');
+  // Dates and numbers as another language writes them, each named in itself.
+  await page.getByTestId('region-language').click();
+  await page.getByTestId('region-language-search').fill('deutsch');
+  await page.getByTestId('region-language-de-DE').click();
+  await expect(page.getByTestId('region-language')).toContainText('1.234,5');
+  // A photo only some of their people see: by how they know them.
+  await page.goto('/settings/privacy');
+  await page.getByRole('button', { name: /^Profile photo/ }).click();
+  await page.getByRole('radio', { name: /^Only some of your people/ }).click();
+  await page.getByTestId('audience-family').click();
+  await page.getByTestId('audience-friend').click();
+  await page.getByTestId('audience-save').click();
+  await expect(page.getByRole('button', { name: /^Profile photo/ })).toContainText(
+    'Family, Friends',
+  );
   // You is your picture at the top of Chats: its sheet leads to everything else.
   await page.getByTestId('you-button').click();
   // The sheet slides up; the picture is of it in place.

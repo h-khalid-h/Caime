@@ -3,15 +3,12 @@
  * one chosen, opening a sheet that finds any of them as you type, in your language.
  */
 import { useMemo, useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
-import { Check, ChevronDown, Search } from '@/ui/icons';
-import { ListRow } from '@/ui/ListRow';
-import { useLayout } from '@/ui/layout';
+import { ChevronDown } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
-import { Sheet } from '@/ui/Sheet';
+import { type SearchItem, SearchSheet } from '@/ui/SearchSheet';
 import { Text } from '@/ui/Text';
-import { TextField } from '@/ui/TextField';
 import { useCountries } from './countries';
 import { countryMatches, flagOf } from './find';
 
@@ -27,6 +24,9 @@ export interface CountryFieldProps {
   testID?: string;
 }
 
+const matches = (i: SearchItem, term: string) =>
+  countryMatches({ code: i.key, name: i.title }, term);
+
 export function CountryField({
   label,
   value,
@@ -37,19 +37,18 @@ export function CountryField({
   testID,
 }: CountryFieldProps) {
   const t = useTheme();
-  const { height, desktop } = useLayout();
   const [open, setOpen] = useState(false);
-  const [term, setTerm] = useState('');
   const countries = useCountries(locale);
-  const all = countries.data?.countries ?? [];
-  const chosen = all.find((c) => c.code === value);
-  // The one chosen comes first while nothing's typed, so it's where the list opens.
-  const list = useMemo(() => {
-    const found = all.filter((c) => countryMatches(c, term));
-    if (term.trim() || !chosen) return found;
-    return [chosen, ...found.filter((c) => c.code !== chosen.code)];
-  }, [all, term, chosen]);
-  const name = chosen?.name ?? value;
+  const items = useMemo(
+    () =>
+      (countries.data?.countries ?? []).map((c) => ({
+        key: c.code,
+        title: c.name,
+        mark: flagOf(c.code),
+      })),
+    [countries.data],
+  );
+  const name = items.find((c) => c.key === value)?.title ?? value;
   const ring = Boolean(error);
   return (
     <View style={{ gap: 6 }}>
@@ -60,10 +59,7 @@ export function CountryField({
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${name ?? 'not chosen'}`}
         accessibilityHint="Opens the list of countries"
-        onPress={() => {
-          setTerm('');
-          setOpen(true);
-        }}
+        onPress={() => setOpen(true)}
         testID={testID}
         style={{
           flexDirection: 'row',
@@ -96,60 +92,20 @@ export function CountryField({
           {hint}
         </Text>
       ) : null}
-      <Sheet open={open} onClose={() => setOpen(false)} title={label} scroll={false}>
-        <TextField
-          icon={Search}
-          placeholder="Search countries"
-          accessibilityLabel="Search countries"
-          value={term}
-          onChangeText={setTerm}
-          autoCorrect={false}
-          autoFocus={desktop}
-          testID={testID ? `${testID}-search` : undefined}
-        />
-        <View accessibilityRole="radiogroup" accessibilityLabel={label}>
-          <FlatList
-            data={list}
-            keyExtractor={(c) => c.code}
-            keyboardShouldPersistTaps="handled"
-            initialNumToRender={16}
-            style={{ maxHeight: Math.max(240, height * 0.55), marginHorizontal: -20 }}
-            renderItem={({ item }) => (
-              <ListRow
-                left={
-                  <Text
-                    variant="title"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no"
-                    style={{ width: 32, textAlign: 'center' }}
-                  >
-                    {flagOf(item.code)}
-                  </Text>
-                }
-                title={item.name}
-                radio
-                checked={item.code === value}
-                selected={item.code === value}
-                right={item.code === value ? <Check size={18} color={t.c.accent} /> : null}
-                onPress={() => {
-                  onChange(item.code);
-                  setOpen(false);
-                }}
-                testID={`country-${item.code}`}
-              />
-            )}
-            ListEmptyComponent={
-              <Text variant="body" color="textSecondary" style={{ padding: 20 }}>
-                {countries.isError
-                  ? 'The list didn’t load. Check your connection and try again.'
-                  : countries.data
-                    ? 'No country by that name.'
-                    : 'Loading…'}
-              </Text>
-            }
-          />
-        </View>
-      </Sheet>
+      <SearchSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title={label}
+        items={items}
+        value={value}
+        onPick={onChange}
+        matches={matches}
+        searchLabel="Search countries"
+        loading={countries.isPending}
+        failed={countries.isError}
+        empty="No country by that name."
+        testID={testID}
+      />
     </View>
   );
 }
