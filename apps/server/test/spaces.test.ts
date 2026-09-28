@@ -237,8 +237,9 @@ describe('spaces (PRD §40)', () => {
     expect(kept.myRole).toBe('owner');
     expect(kept.memberCount).toBe(1);
     const archive = JSON.parse((await lina.req('GET', '/v1/me/export')).body);
-    expect(archive.spaces.map((s: any) => [s.name, s.role, s.leftAt === null])).toEqual([
-      ['The Haddads', 'member', false],
+    // One she's left keeps only her part: what it's called now is for those still in it.
+    expect(archive.spaces.map((s: any) => [s.name ?? null, s.role, s.leftAt === null])).toEqual([
+      [null, 'member', false],
       ['Book club', 'owner', true],
     ]);
   });

@@ -233,11 +233,22 @@ to privately can still check your messages.</li>
 <h2>Your choices, and your rights</h2>
 <ul>
 <li><strong>Download your data:</strong> on the web, You &rarr; Security &rarr; Download your data
-gives you a file with your account and profile, your privacy settings, how you describe people,
-your rules and connections, the conversations you&rsquo;re in, the messages you sent, your
-actions, a list of your files with a link to each, the devices you&rsquo;re signed in on, your
-spaces, organizations and automations, what you&rsquo;ve saved, the apps and tokens that can act
-for you, and when you used AI features. For anything else Caishy keeps about you, write to
+gives you a file with everything Caishy keeps about you, for as long as it keeps each, as the app
+shows it to you: your account and profile, your privacy settings, how you describe people, your
+rules, connections, requests to connect and who you&rsquo;ve blocked; the conversations you&rsquo;re
+in or were in, with your settings and drafts, the messages you sent, what you added to
+others&rsquo; checklists, your reactions and votes; your files, each with a link; your actions, and
+those people asked of you; what Caishy suggested, and the decisions you&rsquo;re part of; your
+notifications and calls; your devices, with where each signed in from and which service delivers
+its notifications; your spaces, organizations and automations, what you&rsquo;ve saved, the apps
+and tokens that can act for you, and your billing; what an organization&rsquo;s apps were sent of
+your conversation with it; the reports you made; your security records, the log of what you do,
+and when you used AI features. It leaves out other people&rsquo;s words (their messages, what they
+added to a checklist, their notes, and a notification&rsquo;s or a suggestion&rsquo;s quote of
+them); what the app doesn&rsquo;t show you either, such as who on an organization&rsquo;s team did
+what, whether a call or a request was turned down, and what a group you&rsquo;ve left is called
+now; reports about you, which would say who made them; secrets, which Caishy keeps only as hashes
+or never shows; and the server&rsquo;s own log. To ask about anything in it, or not in it, write to
 ${mail}.</li>
 <li><strong>Correct it:</strong> change your name, @handle, photo, pronouns, About you and status
 in You &rarr; Profile at any time. To correct your email address or the year you were born, write

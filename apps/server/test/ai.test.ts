@@ -347,8 +347,12 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(archive.aiAssist).toHaveLength(8);
     expect(archive.aiAssist[0]).toEqual({
       feature: 'rewrite',
+      provider: 'anthropic',
       model: 'claude-opus-5',
       outcome: 'ok',
+      inputTokens: 10,
+      outputTokens: 5,
+      latencyMs: runs[0]!.latency_ms,
       at: expect.any(String),
     });
     // Which conversation the AI agent answered in, as an id: never what was said.

@@ -786,3 +786,19 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   (none when your privacy shows it to nobody); a tab's name fits a 320-wide phone. Mutation-tested:
   11 changes to the calls' loading, each caught by a test but one that changes nothing observable.
   Tests: 209 core, 49 brand, 450 server, 132 app, 53 E2E.
+- 2026-09-28 — Session 2 (cont.): Download your data has everything Caishy keeps about someone,
+  as the app shows it to them (lib/export.ts). New in it: their items on others' checklists, how
+  far they've read, what Caishy noted in their messages, the actions asked of them and whom theirs
+  wait on, whom a suggestion is about, each device's notification service, the business
+  conversations they worked on, the copies an organization's apps were sent of their conversation
+  with it (found by an index of their own, 0034), an operator's change to their plan, and all of
+  their billing. Its review found 30 things, each now fixed and tested. The file said more than
+  the app does: a call turned down read "declined" to the caller, a sent request said it was
+  turned down, a customer's cards named who on the team moved them, a group, space or context
+  they'd left showed what it has become, an app they no longer run showed its address, and whose
+  link brought them named that person. It carried other people's words: items added to their
+  checklist, a suggestion's reason quoting a reply, notes someone else edited, an update another
+  admin rewrote, an action someone keeps to themselves about them. And it left things out.
+  Mutation-tested: 35 changes to its rules, each caught by a test but one that changes nothing
+  observable today; another showed a check that could never matter, now gone. Tests: 209 core,
+  49 brand, 452 server, 132 app, 53 E2E.

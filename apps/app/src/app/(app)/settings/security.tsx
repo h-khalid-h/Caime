@@ -195,7 +195,7 @@ export default function Security() {
       </Group>
       <Group
         title="Your data"
-        footer="The download has your profile, how you label people, your rules, connections, the messages you sent, your actions and files."
+        footer="The download has what Caishy keeps about you, as the app shows it to you: your profile, how you label people, the messages you sent, your actions, files, calls, devices and more. Never other people’s words, reports others made about you, or secrets."
       >
         <ListRow
           icon={FileText}
