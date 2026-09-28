@@ -101,7 +101,7 @@ export default function SignUp() {
     next.handle =
       handleError(handle) ??
       (availability && availability.handle === normalizeHandle(handle) && !availability.available
-        ? (availability.reason ?? 'That handle is taken.')
+        ? (availability.reason ?? 'That handle isn’t available.')
         : undefined);
     next.email = emailError(email) ?? undefined;
     next.password = passwordError(password) ?? undefined;

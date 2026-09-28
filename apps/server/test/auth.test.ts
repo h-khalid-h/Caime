@@ -68,6 +68,34 @@ describe('sign-up', () => {
     expect(dupHandle.json().error.code).toBe('handle_taken');
   });
 
+  it('refuses a reserved handle in the words it uses for a taken one (R35)', async () => {
+    const signUpAs = (handle: string) =>
+      t.app.inject({
+        method: 'POST',
+        url: '/v1/auth/signup',
+        payload: { ...base, email: `${handle.replace(/\W/g, '')}.r35@example.com`, handle },
+      });
+    const taken = await signUpAs(base.handle);
+    expect(taken.statusCode).toBe(409);
+    expect(taken.json()).toEqual({
+      error: { code: 'handle_taken', message: 'That handle isn’t available.' },
+    });
+    const reservedOnes = ['caime', 'Caime', 'cai.me', 'caime.support', 'support', 'momo', 'you'];
+    for (const handle of reservedOnes) {
+      const reserved = await signUpAs(handle);
+      expect(reserved.statusCode, handle).toBe(409);
+      expect(reserved.json(), handle).toEqual(taken.json());
+    }
+    const nobody = await t.ctx.db
+      .selectFrom('users')
+      .select('handle')
+      .where('email', 'like', '%.r35@example.com')
+      .execute();
+    expect(nobody).toEqual([]);
+    // A name that only looks like one is someone's own.
+    expect((await signUpAs('cai.mei')).statusCode).toBe(201);
+  });
+
   it('takes the minimum age on the birthday, where they are (R29)', async () => {
     const was = t.clock.now.toISOString();
     // 05:00 on 1 June in Tokyo, still 31 May in UTC and in New York: a 13th birthday.
@@ -189,10 +217,30 @@ describe('handle availability', () => {
       suggestion: null,
     });
     const taken = await check(base.handle);
-    expect(taken).toMatchObject({ available: false, reason: 'That handle is taken.' });
+    expect(taken).toMatchObject({ available: false, reason: 'That handle isn’t available.' });
     expect(taken.suggestion).toMatch(new RegExp(`^${base.handle.slice(0, 26)}\\d+$`));
     expect((await check(taken.suggestion)).available).toBe(true);
     expect(await check('a')).toMatchObject({ available: false, suggestion: null });
+  });
+
+  it('says a reserved handle isn’t available as it says of a taken one, and never offers one', async () => {
+    const check = async (handle: string) =>
+      (
+        await t.app.inject({
+          method: 'GET',
+          url: `/v1/me/handle-available?handle=${encodeURIComponent(handle)}`,
+        })
+      ).json();
+    const taken = await check(base.handle);
+    for (const handle of ['support', 'CAIME', 'cai.me', 'caime.help', 'zuzu', 'people']) {
+      const reserved = await check(handle);
+      expect(reserved, handle).toMatchObject({ available: false, reason: taken.reason });
+      // What it offers instead is free for anyone.
+      if (reserved.suggestion) expect((await check(reserved.suggestion)).available).toBe(true);
+    }
+    // Every "caime" with a number after it is the product's too, so there's nothing to offer.
+    expect(await check('caime')).toEqual({ ...taken, suggestion: null });
+    expect((await check('support')).suggestion).toMatch(/^support\d+$/);
   });
 });
 

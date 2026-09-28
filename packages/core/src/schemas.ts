@@ -5,6 +5,7 @@
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
+import { SITE_PAGES } from './api';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
@@ -15,16 +16,199 @@ import { isEmoji } from './emoji';
 import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
-import { HANDLE_PATTERN, HANDLE_REPEAT_RULE, HANDLE_RULE, PASSWORD_MIN } from './rules';
+import {
+  HANDLE_PATTERN,
+  HANDLE_REPEAT_RULE,
+  HANDLE_RULE,
+  normalizeHandle,
+  PASSWORD_MIN,
+} from './rules';
 import { SPACE_KINDS } from './spaces';
 import { SPHERES } from './taxonomy';
 
+/**
+ * A handle as it's kept (lowercase). A reserved one passes here: the server refuses it where it
+ * refuses a taken one (isReservedHandle, below), and the operator can give it out.
+ */
 export const Handle = z
   .string()
   .trim()
   .toLowerCase()
   .regex(HANDLE_PATTERN, HANDLE_RULE)
   .refine((h) => !/[._]{2}/.test(h), HANDLE_REPEAT_RULE);
+
+/**
+ * Handles nobody can take (R35). `cai.me/@handle` is everyone's link, so a handle that reads as
+ * Caime, one of its characters, the people who run it or one of its own pages would let an
+ * account pose as the product. The server refuses these in the words it uses for a taken handle,
+ * so the answers don't tell the two apart; only the operator gives one out (`/v1/admin`).
+ */
+export const RESERVED_HANDLES: readonly string[] = [
+  // The product, by every name it has had. Caishy is also the first of its characters.
+  'caime',
+  'caishy',
+  'conniqt',
+  'cai',
+  // Its other characters (BRAND.md): they speak in its welcome, empty states and stickers.
+  'momo',
+  'panda',
+  'lumi',
+  'pico',
+  'niko',
+  'zuzu',
+  // Whoever runs it, and whatever speaks for it.
+  'admin',
+  'administrator',
+  'root',
+  'system',
+  'sysadmin',
+  'superuser',
+  'operator',
+  'moderator',
+  'moderation',
+  'mod',
+  'staff',
+  'team',
+  'official',
+  'verified',
+  'verify',
+  'verification',
+  'support',
+  'help',
+  'helpdesk',
+  'contact',
+  'hello',
+  'info',
+  'feedback',
+  'security',
+  'safety',
+  'trust',
+  'abuse',
+  'legal',
+  'compliance',
+  'copyright',
+  'report',
+  'reports',
+  'noreply',
+  'no.reply',
+  'no_reply',
+  'donotreply',
+  'notification',
+  'notify',
+  'alert',
+  'alerts',
+  'news',
+  'newsletter',
+  'mail',
+  'email',
+  'mailer',
+  'postmaster',
+  'hostmaster',
+  'webmaster',
+  'bot',
+  'bots',
+  'agent',
+  'assistant',
+  'billing',
+  'payment',
+  'payments',
+  'pay',
+  'wallet',
+  'account',
+  'accounts',
+  'login',
+  'logout',
+  'signin',
+  'signup',
+  'register',
+  'password',
+  'recovery',
+  // Where it lives: the web, the API, the apps.
+  'api',
+  'www',
+  'app',
+  'apps',
+  'web',
+  'ios',
+  'android',
+  'status',
+  'blog',
+  'docs',
+  'developer',
+  'developers',
+  'auth',
+  'oauth',
+  'assets',
+  'static',
+  'files',
+  'metrics',
+  // Its own pages, the app's top-level screens and the files at the web's root, so a link to
+  // someone never reads as one (apps/app's paths.test.ts checks every route is here).
+  ...SITE_PAGES,
+  'about',
+  'settings',
+  'chats',
+  'people',
+  'spaces',
+  'actions',
+  'you',
+  'calls',
+  'connect',
+  'search',
+  'requests',
+  'notifications',
+  'updates',
+  'orgs',
+  'onboarding',
+  'welcome',
+  'recover',
+  'sw.js',
+  'index.html',
+  'favicon.ico',
+];
+
+/**
+ * The product's names, which no handle may carry even among other words (@caime.support,
+ * @the_caime, @caime2, @cai.me). Not "cai": it's people's name too (a Welsh given name, a common
+ * Chinese surname: R34), so only @cai itself is kept.
+ */
+const PRODUCT_NAMES = new Set(['caime', 'caishy', 'conniqt']);
+const RESERVED = new Set(RESERVED_HANDLES);
+/** What a product name can be run together with and still read as the product. */
+const ALONGSIDE = [
+  ...PRODUCT_NAMES,
+  ...RESERVED_HANDLES,
+  ...['the', 'real', 'get', 'try', 'join', 'use', 'my', 'hey', 'hi', 'hq', 'inc', 'ai', 'co', 'io'],
+];
+
+/**
+ * Whether nobody but the operator may take `handle`: it's one of RESERVED_HANDLES, or it carries
+ * one of the product's names as a word of its own (between dots, underscores or digits), or reads
+ * as one once those are dropped (@cai.me), alone or run together with reserved words only
+ * (@caimesupport, @officialcaime). A name inside some other word stays free: @caimei is Cai Mei.
+ */
+export function isReservedHandle(handle: string): boolean {
+  const h = normalizeHandle(handle);
+  if (RESERVED.has(h)) return true;
+  const words = h.split(/[._\d]+/).filter(Boolean);
+  return [...words, words.join('')].some(readsAsProduct);
+}
+
+/** Whether `text` is a product name, alone or run together with others of ALONGSIDE only. */
+function readsAsProduct(text: string): boolean {
+  // How the first i letters read: 0 not as known words, 1 as words without a product name, 2 with.
+  const read = new Array<number>(text.length + 1).fill(0);
+  read[0] = 1;
+  for (let i = 0; i < text.length; i++) {
+    if (!read[i]) continue;
+    for (const word of ALONGSIDE) {
+      if (!text.startsWith(word, i)) continue;
+      const end = i + word.length;
+      read[end] = Math.max(read[end]!, PRODUCT_NAMES.has(word) ? 2 : read[i]!);
+    }
+  }
+  return read[text.length] === 2;
+}
 
 export const Email = z.string().trim().toLowerCase().email('Enter a valid email address.').max(254);
 

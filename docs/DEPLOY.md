@@ -84,7 +84,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `SESSION_DAYS` | `90` | How long a signed-in device stays signed in without use. |
 | `METRICS_TOKEN` | — | Enables `GET /metrics` (below) behind this bearer token. |
 | `DNS_SERVERS` | the system's | Resolvers for checking organizations' domains, comma-separated (`1.1.1.1,8.8.8.8`). Set it if the host's resolver caches a new record too long. |
-| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
+| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans, giving out reserved handles and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
 | `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits when billing isn't set up; without either, it says upgrades can't be bought yet. |
 | `LEGAL_NAME` | `DATA C OÜ` | Who runs this Caime, as its privacy policy, terms and help say. |
 | `CONTACT_EMAIL` | `hello@cai.me` | Where those pages tell people to write (data requests, security reports, help). |
@@ -188,6 +188,29 @@ curl -X PUT https://caime.example.com/v1/admin/orgs/nile.dental/plan \
   -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"plan":"business"}'                # free, business, enterprise
 ```
+
+## Reserved handles
+
+Nobody can sign up as, change their handle to, or make an organization with @caime, @support
+and the other reserved handles (`RESERVED_HANDLES` in `packages/core/src/schemas.ts`; what and
+why in `docs/SECURITY.md`). They're told the handle isn't available, as for one that's taken.
+The operator gives one to the product's own account or organization, found by the handle it has
+now: make the organization (or the account) with any free handle, then move it. Only a reserved
+handle is given this way, only while nobody else has it (`409 handle_taken` says someone does),
+and each is written to the audit log:
+
+```sh
+curl -X PUT https://caime.example.com/v1/admin/orgs/our.company/handle \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"handle":"caime"}'                 # the organization made as @our.company is @caime
+curl -X PUT https://caime.example.com/v1/admin/people/noor/handle \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"handle":"support"}'
+```
+
+Anyone who took a handle before it was reserved keeps it; the operator can't give it out while
+they do. Move an organization before it posts updates: a notification already sent links to the
+handle it had then, as a link someone shared does.
 
 ## Metrics
 

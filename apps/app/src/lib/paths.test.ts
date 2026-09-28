@@ -1,3 +1,8 @@
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { SITE_PAGES } from '@caime/core/api';
+import { handleError } from '@caime/core/rules';
+import { isReservedHandle } from '@caime/core/schemas';
 import { describe, expect, it } from 'vitest';
 import { appPath, deepLinkPath, handleIn, isAuthorizeLink, ownLinkPath } from './paths';
 
@@ -81,5 +86,26 @@ describe('paths from links', () => {
     expect(handleIn('/@noor.haddad')).toBe('noor.haddad');
     expect(handleIn('/o/nile.dental')).toBe('nile.dental');
     expect(handleIn('/c/0192-ab')).toBeNull();
+  });
+
+  it('never gives anyone a handle that reads as one of the app’s own places (R35)', () => {
+    // Every name a path starts with, however deep in groups like (app) its file is: a route that
+    // could be a handle is reserved, so a link to someone never looks like a screen of Caime.
+    const firsts = new Set<string>();
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (/^\(.+\)$/.test(entry.name)) walk(join(dir, entry.name));
+        else firsts.add(entry.name.replace(/\.tsx?$/, ''));
+      }
+    };
+    walk(join(__dirname, '../app'));
+    firsts.delete('index'); // the group's own path, never a segment
+    const routes = [...firsts].filter((name) => handleError(name) === null);
+    expect(routes).toEqual(expect.arrayContaining(['people', 'settings', 'you', 'orgs']));
+    // And the files at the web's root, and Caime's own pages.
+    const files = readdirSync(join(__dirname, '../../public')).filter((f) => !handleError(f));
+    expect(files).toContain('sw.js');
+    for (const name of [...routes, ...files, ...SITE_PAGES])
+      expect(isReservedHandle(name), name).toBe(true);
   });
 });

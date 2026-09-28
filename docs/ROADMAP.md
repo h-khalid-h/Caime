@@ -412,6 +412,11 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
+- [x] Reserved handles (R35): nobody takes one that reads as Caime (its names, inside other
+      handles too), one of its characters, the people who run it, or its pages and screens.
+      Refused at sign-up, on a handle change and for a new organization as a taken handle is;
+      given out only by the operator (`/v1/admin/{people,orgs}/:handle/handle`), audited, one
+      claim of a handle at a time
 - [ ] Passkeys (R36): WebAuthn sign-in on web, iOS and Android, password optional once a passkey
       exists, recovery codes kept. After the domain, since a passkey is bound to it
 - [ ] Several steps, one approval (R37): the assistant's suggestions from one conversation offered
@@ -895,3 +900,24 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   lookup keys keep their names. CI builds and smoke-tests the image but no longer publishes it,
   and the `caishy` package it published to ghcr.io before the rename was deleted, by a one-off
   workflow removed once it had run.
+- 2026-09-28 — Session 3: handles nobody can take (R35). With `cai.me/@handle` as everyone's
+  link, @caime, @support or @admin were anyone's for the asking, and would read as Caime itself.
+  Now the product's names (caime, caishy, conniqt, cai), its characters, words that sound like
+  whoever runs it or its messages (admin, support, noreply, billing…) and the names of its pages,
+  screens and web-root files are reserved (`RESERVED_HANDLES`, beside `Handle` in core), and the
+  product's names stay out of every handle they read in: caime.support, caime2, cai.me,
+  caimesupport, officialcaime. Cai is people's name too (R34), so only @cai itself is kept and
+  cai.mei stays someone's. Sign-up, a handle change and a new organization refuse them through
+  one check, with a taken handle's status, code and words ("That handle isn’t available.", which
+  a taken one now says too), and the availability check never offers one; an account that had
+  one before keeps it. The operator gives one out (`/v1/admin/people/:handle/handle`,
+  `/v1/admin/orgs/:handle/handle`) only while nobody else has it, one claim of a handle at a time,
+  into the audit log and the person's data. A test fails if a screen, a page or a character comes
+  without its name reserved. Mutation-tested: 43 changes, 42 caught. The one left, a max in how
+  run-together words are read, changes nothing for today's words (checked for each word that ends
+  another, and over 356,250 handles). One that first got through showed a test proving less than
+  it said: deleting an account removes its row, so the test now marks one deleted, as the
+  operator's route checks for. Found on the way: the data download listed two updates posted in
+  the same instant in either order, which failed on Windows; and deleting an account frees its
+  handle for anyone at once, which printed links make worth holding (not done). Tests: 223 core,
+  50 brand, 474 server, 156 app; E2E not run this session.

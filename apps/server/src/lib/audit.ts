@@ -39,6 +39,7 @@ export type AuditAction =
   | 'agent.updated'
   | 'agent.removed'
   | 'plan.changed'
+  | 'handle.claimed'
   | 'e2ee.device_first'
   | 'e2ee.device_waiting'
   | 'e2ee.device_approved'

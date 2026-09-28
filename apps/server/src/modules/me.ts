@@ -5,6 +5,7 @@ import {
   defaultWorkweek,
   Handle,
   IdentityBody,
+  isReservedHandle,
   type PlanUsageView,
   PrivacyBody,
   safeLocale,
@@ -15,9 +16,9 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
-import { badRequest, conflict, notFound } from '../lib/errors';
+import { badRequest, notFound } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
-import { handleTaken } from '../lib/handles';
+import { assertHandleAvailable, HANDLE_UNAVAILABLE } from '../lib/handles';
 import { planUsage } from '../lib/plans';
 import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -57,9 +58,9 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const current = await load(auth.userId);
     const patch: UserUpdate = { updated_at: ctx.now() };
     if (body.displayName !== undefined) patch.display_name = body.displayName;
+    // Their own handle stays theirs, even one reserved since they took it.
     if (body.handle !== undefined && body.handle !== current.handle.toLowerCase()) {
-      if (await handleTaken(ctx.db, body.handle, { userId: auth.userId }))
-        throw conflict('handle_taken', 'That handle is taken. Try another.');
+      await assertHandleAvailable(ctx.db, body.handle, { userId: auth.userId });
       patch.handle = body.handle;
     }
     if (body.bio !== undefined) patch.bio = body.bio;
@@ -212,11 +213,13 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
         .execute(),
     ]);
     const taken = new Set([...people, ...orgs].map((r) => String(r.handle).toLowerCase()));
-    if (!taken.has(wanted)) return { available: true, reason: null, suggestion: null };
+    // A reserved handle reads as a taken one (lib/handles.ts), and is never suggested.
+    const free = (h: string) => !taken.has(h) && !isReservedHandle(h);
+    if (free(wanted)) return { available: true, reason: null, suggestion: null };
     return {
       available: false,
-      reason: 'That handle is taken.',
-      suggestion: candidates.slice(1).find((c) => !taken.has(c)) ?? null,
+      reason: HANDLE_UNAVAILABLE,
+      suggestion: candidates.slice(1).find(free) ?? null,
     };
   });
 

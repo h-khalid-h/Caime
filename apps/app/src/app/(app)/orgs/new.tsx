@@ -65,7 +65,7 @@ export default function NewOrganization() {
       name: name.trim() ? undefined : 'Give the organization a name.',
       handle:
         handleError(h) ??
-        (taken?.handle === h ? (taken.reason ?? 'That handle is taken.') : undefined),
+        (taken?.handle === h ? (taken.reason ?? 'That handle isn’t available.') : undefined),
       kind: kind ? undefined : 'Choose what kind of organization it is.',
       country: country ? undefined : 'Choose where it’s based.',
       foundedYear: foundedError(founded),
@@ -143,7 +143,7 @@ export default function NewOrganization() {
           error={
             errors.handle ??
             (taken?.handle === normalizeHandle(handle)
-              ? (taken.reason ?? 'That handle is taken.')
+              ? (taken.reason ?? 'That handle isn’t available.')
               : undefined)
           }
           testID="org-handle"

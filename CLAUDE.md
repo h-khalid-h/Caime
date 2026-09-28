@@ -106,6 +106,13 @@ These are rules, not preferences.
 - Handles have dots, so a page path can look like a file (`/o/nile.dental`). The server serves
   the app to anything that asks for HTML (`plugins/static.ts`); test new link shapes with a
   reload, not only by navigating inside the app.
+- Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
+  `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
+  characters, staff words, and the names of its pages, top-level screens and web-root files. A
+  new route, page or character needs its name there (`paths.test.ts` and brand's
+  `characters.test.ts` fail otherwise). Anything that lets someone take a handle checks it with
+  `assertHandleAvailable` (`lib/handles.ts`), which answers a reserved handle exactly as a taken
+  one; only the operator's `/v1/admin/{people,orgs}/:handle/handle` gives one out.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.

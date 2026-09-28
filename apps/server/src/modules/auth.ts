@@ -35,7 +35,7 @@ import {
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
-import { handleTaken } from '../lib/handles';
+import { assertHandleAvailable } from '../lib/handles';
 import { revokeGrantsOf } from '../lib/oauth';
 import { meView, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -137,18 +137,13 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const existing = await ctx.db
       .selectFrom('users')
-      .select(['email', 'handle'])
-      .where((eb) => eb.or([eb('email', '=', body.email), eb('handle', '=', body.handle)]))
-      .execute();
-    if (existing.some((u) => u.email.toLowerCase() === body.email)) {
+      .select('id')
+      .where('email', '=', body.email)
+      .executeTakeFirst();
+    if (existing) {
       throw conflict('email_taken', 'That email already has an account. Sign in instead?');
     }
-    if (
-      existing.some((u) => u.handle.toLowerCase() === body.handle) ||
-      (await handleTaken(ctx.db, body.handle))
-    ) {
-      throw conflict('handle_taken', 'That handle is taken. Try another.');
-    }
+    await assertHandleAvailable(ctx.db, body.handle);
     const id = uuidv7();
     const locale = safeLocale(body.locale);
     if (!isCountry(body.country))

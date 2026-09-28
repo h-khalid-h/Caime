@@ -34,7 +34,7 @@ import { orgBlocked } from '../lib/blocks';
 import { joinThreads, leaveThreads } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, isCountry } from '../lib/geo';
-import { handleTaken } from '../lib/handles';
+import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
 import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
@@ -176,8 +176,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`org:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     if (!(await adult(ctx, [auth.userId])))
       throw forbidden('Organizations are for people over 18.');
-    if (await handleTaken(ctx.db, body.handle))
-      throw conflict('handle_taken', 'That handle is taken. Try another.');
+    await assertHandleAvailable(ctx.db, body.handle);
     if (!isCountry(body.country)) throw badRequest('Choose where it’s based.');
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {

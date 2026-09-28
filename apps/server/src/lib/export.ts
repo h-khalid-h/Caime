@@ -556,15 +556,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('r.reporter_id', '=', me)
       .orderBy('r.created_at')
       .execute(),
-    // What they did, and what was done to their account by others (their plan changed): the
-    // network address and browser of someone else's are that person's.
+    // What they did, and what was done to their account by others (their plan or their handle
+    // changed by the operator): the network address and browser of someone else's are theirs.
     db
       .selectFrom('audit_log')
       .select(['actor_id', 'action', 'target', 'ip', 'user_agent', 'metadata', 'created_at'])
       .where((eb) =>
         eb.or([
           eb('actor_id', '=', me),
-          eb.and([eb('target', '=', me), eb('action', '=', 'plan.changed')]),
+          eb.and([eb('target', '=', me), eb('action', 'in', ['plan.changed', 'handle.claimed'])]),
         ]),
       )
       .orderBy('created_at')

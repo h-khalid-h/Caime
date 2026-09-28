@@ -1,15 +1,25 @@
 /**
- * The operator's routes, behind `ADMIN_TOKEN`: the product's metrics, and setting plans until a
- * billing integration does it (R25). Without the token configured, none of this exists: every
- * route answers the same 404 as a route that was never there.
+ * The operator's routes, behind `ADMIN_TOKEN`: the product's metrics, setting plans until a
+ * billing integration does it (R25), and giving out reserved handles (R35). Without the token
+ * configured, none of this exists: every route answers the same 404 as a route that was never
+ * there.
  */
-import { ORG_PLANS, PERSON_PLANS, type ProductMetricsView } from '@caime/core';
+import {
+  Handle,
+  type HandleView,
+  isReservedHandle,
+  ORG_PLANS,
+  PERSON_PLANS,
+  type ProductMetricsView,
+} from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { paysThroughBilling } from '../lib/billing';
-import { AppError, notFound } from '../lib/errors';
+import { AppError, badRequest, conflict, notFound } from '../lib/errors';
+import { handleTaken } from '../lib/handles';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -95,5 +105,77 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       metadata: { of: 'organization', from: org.plan, to: plan },
     });
     return { plan: await orgPlanView(ctx, org.id) };
+  });
+
+  // --- Reserved handles (R35) -------------------------------------------------------------------
+  // @caime, @support… for the product's own account or organization. This is the one way one is
+  // given out: sign-up, a handle change and a new organization all refuse them (lib/handles.ts).
+
+  /** The handle asked for, which must be a reserved one: any other, its owner takes themselves. */
+  const reservedIn = (body: unknown) => {
+    const { handle } = parse(z.object({ handle: Handle }), body);
+    if (!isReservedHandle(handle))
+      throw badRequest('That handle isn’t reserved: whoever wants it can take it themselves.');
+    return handle;
+  };
+
+  /** Gives `handle` to a person or an organization, if nobody else has it; in the audit log. */
+  async function giveHandle(
+    req: FastifyRequest,
+    to: { of: 'person' | 'organization'; id: string; handle: string },
+    handle: string,
+  ): Promise<void> {
+    if (to.handle.toLowerCase() === handle) return;
+    await ctx.db.transaction().execute(async (trx) => {
+      // People and organizations are two tables, so a claim for each at once would both find
+      // the handle free: one handle's claims go one at a time.
+      await sql`select pg_advisory_xact_lock(hashtext(${`handle:${handle}`}))`.execute(trx);
+      const theirs = to.of === 'person' ? { userId: to.id } : { orgId: to.id };
+      if (await handleTaken(trx, handle, theirs))
+        throw conflict('handle_taken', 'Someone else has that handle.');
+      const change = { handle, updated_at: ctx.now() };
+      if (to.of === 'person')
+        await trx.updateTable('users').set(change).where('id', '=', to.id).execute();
+      else await trx.updateTable('organizations').set(change).where('id', '=', to.id).execute();
+    });
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'handle.claimed',
+      target: to.id,
+      ip: req.ip,
+      metadata: { of: to.of, from: to.handle, to: handle },
+    });
+  }
+
+  app.put('/admin/people/:handle/handle', async (req): Promise<HandleView> => {
+    operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const wanted = reservedIn(req.body);
+    const person = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'handle'])
+      .where('handle', '=', handle.replace(/^@/, ''))
+      .where('kind', '=', 'human')
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!person) throw notFound('That person');
+    await giveHandle(req, { of: 'person', ...person }, wanted);
+    await ctx.bus.publish([person.id], { type: 'me.updated', data: { id: person.id } });
+    return { kind: 'person', id: person.id, handle: wanted };
+  });
+
+  app.put('/admin/orgs/:handle/handle', async (req): Promise<HandleView> => {
+    operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const wanted = reservedIn(req.body);
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select(['id', 'handle'])
+      .where('handle', '=', handle.replace(/^@/, ''))
+      .where('archived_at', 'is', null)
+      .executeTakeFirst();
+    if (!org) throw notFound('That organization');
+    await giveHandle(req, { of: 'organization', ...org }, wanted);
+    return { kind: 'org', id: org.id, handle: wanted };
   });
 }
