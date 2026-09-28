@@ -1,7 +1,7 @@
 import type { ConnectionView } from '@caishy/core/api';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
 import { router, usePathname } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useConnections, useRequests } from '@/api/hooks';
 import { DuplicateOffers } from '@/features/duplicates';
@@ -11,7 +11,7 @@ import { useLive } from '@/state/live';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
-import { Chip, RelationshipChip } from '@/ui/Chip';
+import { ChoiceChips, RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ChevronRight, Phone, Search, UserPlus } from '@/ui/icons';
@@ -140,14 +140,25 @@ export function PeopleList({ pane }: { pane?: boolean }) {
     }
     return out;
   }, [people, accountsOf]);
+  const chips: Filter[] = [
+    'all',
+    ...SPHERES.filter((s) => counts[s]),
+    ...(counts.unlabelled ? (['unlabelled'] as const) : []),
+  ];
+  // One whose last person went (labelled otherwise, say) lists everyone again, and stays so.
+  const gone = !chips.includes(filter);
+  useEffect(() => {
+    if (gone && q.data) setFilter('all');
+  }, [gone, q.data]);
+  const shown: Filter = gone ? 'all' : filter;
 
   const sections = useMemo(() => {
     const needle = term.trim().toLowerCase().replace(/^@/, '');
     const matches = people.filter((c) => {
       const accounts = accountsOf(c);
       const rels = accounts.flatMap((a) => a.relationships);
-      if (filter === 'unlabelled' && rels.length) return false;
-      if (filter !== 'all' && filter !== 'unlabelled' && !rels.some((r) => r.sphere === filter))
+      if (shown === 'unlabelled' && rels.length) return false;
+      if (shown !== 'all' && shown !== 'unlabelled' && !rels.some((r) => r.sphere === shown))
         return false;
       if (!needle) return true;
       return (
@@ -159,7 +170,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         ) || rels.some((r) => r.label.toLowerCase().includes(needle))
       );
     });
-    if (filter !== 'all' || needle) return matches.length ? [{ title: '', data: matches }] : [];
+    if (shown !== 'all' || needle) return matches.length ? [{ title: '', data: matches }] : [];
     // Grouped by how you know them, in the taxonomy's order.
     const bySphere = new Map<string, ConnectionView[]>();
     for (const c of matches) {
@@ -174,13 +185,8 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         title: s === 'unlabelled' ? 'Not labelled yet' : SPHERE_DEFS[s as Sphere].plural,
         data: bySphere.get(s) ?? [],
       }));
-  }, [people, accountsOf, filter, term]);
+  }, [people, accountsOf, shown, term]);
 
-  const chips: Filter[] = [
-    'all',
-    ...SPHERES.filter((s) => counts[s]),
-    ...(counts.unlabelled ? (['unlabelled'] as const) : []),
-  ];
   const incoming = requests.data?.requests.length ?? 0;
 
   const header = (
@@ -250,20 +256,16 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         </View>
       ) : null}
       {all.length ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}
-        >
-          {chips.map((f) => (
-            <Chip
-              key={f}
-              label={`${f === 'all' ? 'Everyone' : f === 'unlabelled' ? 'Not labelled' : SPHERE_DEFS[f].plural}${counts[f] ? ` ${counts[f]}` : ''}`}
-              selected={filter === f}
-              onPress={() => setFilter(f)}
-            />
-          ))}
-        </ScrollView>
+        <ChoiceChips<Filter>
+          label="Show people"
+          value={shown}
+          onChange={setFilter}
+          wrap={desktop}
+          options={chips.map((f) => ({
+            value: f,
+            label: `${f === 'all' ? 'Everyone' : f === 'unlabelled' ? 'Not labelled' : SPHERE_DEFS[f].plural}${counts[f] ? ` ${counts[f]}` : ''}`,
+          }))}
+        />
       ) : null}
     </View>
   );

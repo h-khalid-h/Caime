@@ -5,7 +5,7 @@
 import type { RealtimeEvent } from '@caishy/core/api';
 import type { CallKind } from '@caishy/core/calls';
 
-export const callsSupported = false;
+export const callsSupported: boolean = false;
 export const screenShareSupported = false;
 export async function startCall(_conversationId: string, _kind: CallKind): Promise<void> {}
 export async function answer(): Promise<void> {}

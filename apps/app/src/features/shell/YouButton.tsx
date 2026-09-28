@@ -1,8 +1,10 @@
-import type { PresenceSetting, PresenceState } from '@caishy/core/api';
+import type { MeView, PresenceSetting, PresenceState } from '@caishy/core/api';
 import { type Href, router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { create } from 'zustand';
 import { endpoints } from '@/api/endpoints';
+import { Choice } from '@/features/settings/SettingsPage';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -10,21 +12,37 @@ import { Card } from '@/ui/Card';
 import { Bell, Lock, Settings, Smile } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
-import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
-/** Your own dot, as the people you know see it; none when you're Invisible. */
-const SHOWN: Record<PresenceSetting, PresenceState | null> = {
+/** Your presence as a dot: none when you're Invisible. */
+const DOT: Record<PresenceSetting, PresenceState | null> = {
   auto: 'online',
   available: 'online',
   busy: 'busy',
   away: 'away',
   invisible: null,
 };
+const SAID: Record<PresenceState, string> = {
+  online: 'Online',
+  busy: 'Busy',
+  away: 'Away',
+  offline: 'Offline',
+};
 
-type Choice = 'auto' | 'busy' | 'away' | 'invisible';
+/** The dot the people you know see: none when your privacy shows your online status to nobody. */
+function shownDot(me: MeView): PresenceState | null {
+  return me.privacy.fields.onlineStatus.kind === 'nobody' ? null : DOT[me.presence];
+}
+
+type Chosen = 'auto' | 'busy' | 'away' | 'invisible';
+
+/** One sheet for the four places (the phone's tabs layout draws it), whichever opened it. */
+const useYouSheet = create<{ open: boolean; setOpen: (open: boolean) => void }>((set) => ({
+  open: false,
+  setOpen: (open) => set({ open }),
+}));
 
 /**
  * You, at the top of each place on a phone: your picture, with the dot the people you know see.
@@ -32,53 +50,64 @@ type Choice = 'auto' | 'busy' | 'away' | 'invisible';
  */
 export function YouButton() {
   const me = useSession((s) => s.user);
-  const [open, setOpen] = useState(false);
   if (!me) return null;
+  const dot = shownDot(me);
   return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`You, ${me.displayName}`}
-        testID="you-button"
-        haptic
-        focusRadius={22}
-        onPress={() => setOpen(true)}
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-      >
-        <Avatar
-          id={me.id}
-          name={me.displayName}
-          url={me.avatarUrl}
-          size={36}
-          presence={SHOWN[me.presence]}
-        />
-      </Pressable>
-      <YouSheet open={open} onClose={() => setOpen(false)} />
-    </>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={dot ? `You, ${me.displayName}, ${SAID[dot]}` : `You, ${me.displayName}`}
+      testID="you-button"
+      haptic
+      focusRadius={22}
+      onPress={() => useYouSheet.getState().setOpen(true)}
+      style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Avatar id={me.id} name={me.displayName} url={me.avatarUrl} size={36} presence={dot} />
+    </Pressable>
   );
 }
 
-function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function YouSheet() {
   const t = useTheme();
   const me = useSession((s) => s.user);
+  const open = useYouSheet((s) => s.open);
+  const setOpen = useYouSheet((s) => s.setOpen);
+  // The presence tapped, shown at once while it's saved; one saved at a time, the last tap last.
+  const [pending, setPending] = useState<Chosen | null>(null);
+  const saving = useRef(false);
+  const next = useRef<Chosen | null>(null);
+  // Gone with the phone's layout (a window made wide): closed, not open again on the way back.
+  useEffect(() => () => setOpen(false), [setOpen]);
   if (!me) return null;
+  const close = () => setOpen(false);
   const go = (href: Href) => {
-    onClose();
+    close();
     router.navigate(href);
   };
-  const presence: Choice = me.presence === 'available' ? 'auto' : me.presence;
-  const setPresence = async (next: Choice) => {
-    if (next === presence) return;
+  const presence: Chosen = me.presence === 'available' ? 'auto' : me.presence;
+  const save = async (choice: Chosen): Promise<void> => {
+    saving.current = true;
     try {
-      const res = await endpoints.updateMe({ presence: next });
+      const res = await endpoints.updateMe({ presence: choice });
       useSession.getState().setUser(res.user);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
+    saving.current = false;
+    const then = next.current;
+    next.current = null;
+    if (then && then !== choice) return save(then);
+    setPending(null);
+  };
+  const choose = (choice: Chosen) => {
+    if (choice === (pending ?? presence)) return;
+    setPending(choice);
+    if (saving.current) next.current = choice;
+    else void save(choice);
   };
   const status = [me.statusEmoji, me.statusText].filter(Boolean).join(' ');
   return (
-    <Sheet open={open} onClose={onClose} title="You">
+    <Sheet open={open} onClose={close} title="You">
       <View style={{ gap: 14 }}>
         <Pressable
           accessibilityRole="button"
@@ -98,7 +127,7 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
             name={me.displayName}
             url={me.avatarUrl}
             size={56}
-            presence={SHOWN[me.presence]}
+            presence={shownDot(me)}
           />
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="headline" numberOfLines={1}>
@@ -120,20 +149,22 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           />
         </Card>
         <View style={{ gap: 6 }}>
-          <Text variant="overline" color="textTertiary">
+          <Text variant="overline" color="textTertiary" accessibilityRole="header">
             Presence
           </Text>
-          <Segmented<Choice>
-            label="Presence"
-            value={presence}
-            onChange={(v) => void setPresence(v)}
-            options={[
-              { value: 'auto', label: 'Automatic' },
-              { value: 'busy', label: 'Busy' },
-              { value: 'away', label: 'Away' },
-              { value: 'invisible', label: 'Invisible' },
-            ]}
-          />
+          <Card padded={false}>
+            <Choice<Chosen>
+              label="Presence"
+              value={pending ?? presence}
+              onChange={choose}
+              options={[
+                { value: 'auto', label: 'Automatic', detail: 'Online while you use Caishy' },
+                { value: 'busy', label: 'Busy' },
+                { value: 'away', label: 'Away' },
+                { value: 'invisible', label: 'Invisible' },
+              ]}
+            />
+          </Card>
         </View>
         <Card padded={false}>
           <ListRow

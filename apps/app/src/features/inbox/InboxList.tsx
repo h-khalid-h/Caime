@@ -1,8 +1,8 @@
 import type { InboxItemView, InboxSectionView } from '@caishy/core/api';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caishy/core/taxonomy';
 import { router, usePathname } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, SectionList, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RefreshControl, SectionList, View } from 'react-native';
 import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
@@ -17,7 +17,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { Bell, ChevronDown, ChevronRight, SquarePen, UserPlus } from '@/ui/icons';
@@ -49,9 +49,13 @@ export function InboxList({ pane }: { pane?: boolean }) {
     const here = new Set((all.data?.conversations ?? []).map((c) => c.relationship?.sphere));
     return SPHERES.filter((s) => here.has(s));
   }, [all.data]);
-  // One whose last conversation went shows everything again.
-  const show: Show =
-    chosen === 'attention' || chosen === 'all' || spheres.includes(chosen) ? chosen : 'all';
+  // One whose last conversation went shows everything again, and stays so: a conversation of
+  // that kind coming back later doesn't take the list from under them.
+  const gone = chosen !== 'attention' && chosen !== 'all' && !spheres.includes(chosen);
+  useEffect(() => {
+    if (gone && all.data) setShow('all');
+  }, [gone, all.data]);
+  const show: Show = gone ? 'all' : chosen;
   const view = show === 'attention' ? 'attention' : 'all';
   const sphere = show === 'attention' || show === 'all' ? null : show;
   const q = view === 'attention' ? attention : all;
@@ -81,6 +85,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
   }, []);
 
   const headline = attention.data?.headline;
+  const needsYou = attention.data?.counts.needs_you ?? 0;
   const total = (attention.data?.sections ?? []).reduce((n, s) => n + s.items.length, 0);
   const empty = !q.isPending && total === 0;
   const caughtUp =
@@ -117,39 +122,29 @@ export function InboxList({ pane }: { pane?: boolean }) {
           </>
         }
       />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        accessibilityLabel="Show"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 6 }}
-      >
-        <Chip
-          label={
-            attention.data?.counts.needs_you
-              ? `Attention · ${attention.data.counts.needs_you}`
-              : 'Attention'
-          }
-          selected={show === 'attention'}
-          onPress={() => setShow('attention')}
-          testID="inbox-attention"
-        />
-        <Chip
-          label="All"
-          selected={show === 'all'}
-          onPress={() => setShow('all')}
-          testID="inbox-all"
-        />
-        {spheres.map((s) => (
-          <Chip
-            key={s}
-            label={SPHERE_DEFS[s].plural}
-            icon={sphereIcon(t.sphere(s).icon)}
-            selected={show === s}
-            onPress={() => setShow(s)}
-            testID={`inbox-${s}`}
-          />
-        ))}
-      </ScrollView>
+      <ChoiceChips<Show>
+        label="Show conversations"
+        value={show}
+        onChange={setShow}
+        wrap={desktop}
+        options={[
+          {
+            value: 'attention',
+            label: needsYou ? `Attention · ${needsYou}` : 'Attention',
+            accessibilityLabel: needsYou
+              ? `Attention, ${needsYou} ${needsYou === 1 ? 'needs' : 'need'} you`
+              : 'Attention',
+            testID: 'inbox-attention',
+          },
+          { value: 'all', label: 'All', testID: 'inbox-all' },
+          ...spheres.map((s) => ({
+            value: s,
+            label: SPHERE_DEFS[s].plural,
+            icon: sphereIcon(t.sphere(s).icon),
+            testID: `inbox-${s}`,
+          })),
+        ]}
+      />
       <ConnectionBanner />
       {privateSupported ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>

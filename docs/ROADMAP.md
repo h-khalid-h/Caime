@@ -771,3 +771,18 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
   someone took could be used to guess it; now ten tries in ten minutes. A code tried twice at the
   same moment works once (tested now). Mutation-tested: 15 changes, each caught by a test but one
   that changes nothing observable. Tests: 209 core, 49 brand, 450 server, 126 app, 53 E2E.
+- 2026-09-28 — Session 2 (cont.): the phone's layout, from how people hold the messengers they
+  already use, kept where it serves relationships first (BRAND.md, Phone layout): Chats, People,
+  Spaces and Actions in a floating pill at the bottom with Search in a circle beside it; you as
+  your picture at the top of each place, opening your status, presence and the way to everything
+  else; round header buttons; and Chats by relationship, a chip each for Attention, All and every
+  kind of relationship your conversations have. Calls load when there's one, so the app starts
+  without both call engines: 440.3 KB of initial JavaScript before the layout, 443.7 KB with it.
+  Its review found, and the code now does: a call that rings while the calls can't load is asked
+  for again once they do, and a call button that can't load them says so; All settings opens over
+  the place you were in, so Back comes back to it; the chips are one choice to a screen reader,
+  keep their 44-px targets and focus rings whole, and wrap on a desktop; presence is a list that
+  reads at any text size, shown as chosen while it's saved; your picture's dot is what people see
+  (none when your privacy shows it to nobody); a tab's name fits a 320-wide phone. Mutation-tested:
+  11 changes to the calls' loading, each caught by a test but one that changes nothing observable.
+  Tests: 209 core, 49 brand, 450 server, 132 app, 53 E2E.

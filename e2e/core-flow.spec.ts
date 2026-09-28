@@ -205,8 +205,9 @@ test('a person can download their data and delete their account from settings', 
   await onboard(page, 'leaving', false);
   // You is your picture at the top of Chats: its sheet leads to everything else.
   await page.getByTestId('you-button').click();
-  await expect(page.getByTestId('you-all')).toBeVisible();
-  await page.screenshot({ path: 'e2e/screenshots/phone-you.png' });
+  // The sheet slides up; the picture is of it in place.
+  await expect(page.getByTestId('you-all')).toBeInViewport({ ratio: 1 });
+  await page.screenshot({ path: 'e2e/screenshots/phone-you.png', animations: 'disabled' });
   await page.getByTestId('you-all').click();
   await page.getByTestId('settings-security').click();
   const download = page.waitForEvent('download');

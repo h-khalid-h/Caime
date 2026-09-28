@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { Platform, View, type ViewStyle } from 'react-native';
+import { Platform, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
@@ -44,6 +44,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const badges = useBadges();
+  // A narrow phone (320 wide) keeps each tab wide enough for its name at the largest text it takes.
+  const narrow = useWindowDimensions().width < 360;
   const dark = t.scheme === 'dark';
   const lit = dark ? t.c.surfaceMuted : t.c.accentSoft;
   const float: ViewStyle = {
@@ -59,8 +61,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        paddingHorizontal: 12,
+        gap: narrow ? 6 : 10,
+        paddingHorizontal: narrow ? 8 : 12,
         paddingTop: 6,
         paddingBottom: Math.max(insets.bottom, 10),
         backgroundColor: t.c.canvas,
@@ -85,7 +87,9 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               key={route.key}
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
-              accessibilityLabel={count ? `${tab.label}, ${count} need you` : tab.label}
+              accessibilityLabel={
+                count ? `${tab.label}, ${count} ${count === 1 ? 'needs' : 'need'} you` : tab.label
+              }
               testID={`tab-${route.name}`}
               haptic
               focusRadius={(HEIGHT - 12) / 2}
@@ -144,6 +148,9 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 weight={focused ? 700 : 500}
                 style={{ fontSize: 12, lineHeight: 15 }}
                 maxFontSizeMultiplier={1.2}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
               >
                 {tab.label}
               </Text>

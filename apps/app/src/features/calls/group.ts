@@ -5,7 +5,7 @@
 import type { GroupCallView, RealtimeEvent } from '@caishy/core/api';
 import type { CallKind } from '@caishy/core/calls';
 
-export const groupCallsSupported = false;
+export const groupCallsSupported: boolean = false;
 export async function startGroupCall(_conversationId: string, _kind: CallKind): Promise<void> {}
 export async function joinGroupCall(_target?: GroupCallView): Promise<void> {}
 export async function leaveGroupCall(): Promise<void> {}

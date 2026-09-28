@@ -203,12 +203,13 @@ class RealtimeClient {
 
   /** Fetch what each open conversation missed; after a gap, refresh the lists too. */
   private async catchUp(afterGap: boolean): Promise<void> {
+    // What rings for this person now, the first time too: a call that rang before this socket was
+    // listening (the page just opened), or while it was down, arrives through nothing else.
+    void checkLiveCall();
+    void checkLiveGroupCall();
     if (afterGap) {
       void queryClient.invalidateQueries({ queryKey: qk.inbox });
       void queryClient.invalidateQueries({ queryKey: qk.notifications });
-      // A call that rang while the socket was down still rings.
-      void checkLiveCall();
-      void checkLiveGroupCall();
     }
     const cached = queryClient.getQueryCache().findAll({ queryKey: ['messages'] });
     const active = cached.filter((q) => q.getObserversCount() > 0);

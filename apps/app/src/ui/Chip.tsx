@@ -1,5 +1,5 @@
 import type { Sphere } from '@caishy/core/taxonomy';
-import { View, type ViewStyle } from 'react-native';
+import { ScrollView, View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
 import { Pressable } from './Pressable';
@@ -15,6 +15,10 @@ export interface ChipProps {
   size?: 'sm' | 'md';
   style?: ViewStyle;
   testID?: string;
+  /** One choice among others (ChoiceChips): a radio, checked when it's selected. */
+  role?: 'button' | 'radio';
+  /** What it's called aloud, when that isn't its label ("Attention, 3 need you"). */
+  accessibilityLabel?: string;
 }
 
 export function Chip({
@@ -26,6 +30,8 @@ export function Chip({
   size = 'md',
   style,
   testID,
+  role = 'button',
+  accessibilityLabel,
 }: ChipProps) {
   const t = useTheme();
   const tones = {
@@ -65,9 +71,11 @@ export function Chip({
   return (
     <Pressable
       testID={testID}
-      accessibilityRole="button"
-      accessibilityState={{ selected: Boolean(selected) }}
-      accessibilityLabel={label}
+      accessibilityRole={role}
+      accessibilityState={
+        role === 'radio' ? { checked: Boolean(selected) } : { selected: Boolean(selected) }
+      }
+      accessibilityLabel={accessibilityLabel ?? label}
       onPress={onPress}
       haptic
       focusRadius={h / 2 + 5}
@@ -97,6 +105,70 @@ export function Chip({
         </View>
       )}
     </Pressable>
+  );
+}
+
+export interface ChoiceChip<T extends string> {
+  value: T;
+  label: string;
+  icon?: IconComponent;
+  accessibilityLabel?: string;
+  testID?: string;
+}
+
+/**
+ * One choice among a few, as chips (what Chats shows, whom People lists): announced as one
+ * choice, each chip a radio. On a phone the row scrolls sideways; `wrap` lays it out in lines
+ * instead, for a desktop, where a mouse's wheel doesn't scroll sideways. Each chip's 44-px target
+ * reaches 5 px past its pill and its focus ring 4 px past that, so the row leaves that much room
+ * inside itself, where nothing is cut off, and targets side by side never overlap.
+ */
+export function ChoiceChips<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  wrap,
+}: {
+  label: string;
+  value: T;
+  options: Array<ChoiceChip<T>>;
+  onChange: (value: T) => void;
+  wrap?: boolean;
+}) {
+  const chips = options.map((o) => (
+    <Chip
+      key={o.value}
+      role="radio"
+      label={o.label}
+      icon={o.icon}
+      accessibilityLabel={o.accessibilityLabel}
+      selected={o.value === value}
+      onPress={() => onChange(o.value)}
+      testID={o.testID}
+    />
+  ));
+  const room: ViewStyle = { paddingHorizontal: 16, paddingTop: 9, paddingBottom: 10 };
+  if (wrap)
+    return (
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={label}
+        style={[room, { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 10 }]}
+      >
+        {chips}
+      </View>
+    );
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      contentContainerStyle={[room, { gap: 8 }]}
+    >
+      {chips}
+    </ScrollView>
   );
 }
 
