@@ -1,8 +1,8 @@
 /**
  * The operator's routes, behind `ADMIN_TOKEN`: the product's metrics, setting plans until a
- * billing integration does it (R25), and giving out reserved handles (R35). Without the token
- * configured, none of this exists: every route answers the same 404 as a route that was never
- * there.
+ * billing integration does it (R25), and giving out the handles nobody takes on their own,
+ * reserved or held (R35). Without the token configured, none of this exists: every route answers
+ * the same 404 as a route that was never there.
  */
 import {
   Handle,
@@ -19,7 +19,7 @@ import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, notFound } from '../lib/errors';
-import { handleTaken } from '../lib/handles';
+import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -107,15 +107,19 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     return { plan: await orgPlanView(ctx, org.id) };
   });
 
-  // --- Reserved handles (R35) -------------------------------------------------------------------
-  // @caime, @support… for the product's own account or organization. This is the one way one is
-  // given out: sign-up, a handle change and a new organization all refuse them (lib/handles.ts).
+  // --- Handles nobody takes on their own (R35) --------------------------------------------------
+  // A reserved one (@caime, @support…) for the product's own account or organization, or a held
+  // one back to whoever had it, once they've shown it was theirs (Caime keeps no record of whose
+  // it was). This is the one way either is given out: sign-up, a handle change and a new
+  // organization all refuse them (lib/handles.ts).
 
-  /** The handle asked for, which must be a reserved one: any other, its owner takes themselves. */
-  const reservedIn = (body: unknown) => {
+  /** The handle asked for, which must be reserved or held: any other, its owner takes themselves. */
+  const givableIn = async (body: unknown) => {
     const { handle } = parse(z.object({ handle: Handle }), body);
-    if (!isReservedHandle(handle))
-      throw badRequest('That handle isn’t reserved: whoever wants it can take it themselves.');
+    if (!isReservedHandle(handle) && !(await handleHeld(ctx.db, handle, ctx.now())))
+      throw badRequest(
+        'That handle isn’t reserved or held: whoever wants it can take it themselves.',
+      );
     return handle;
   };
 
@@ -137,6 +141,9 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       if (to.of === 'person')
         await trx.updateTable('users').set(change).where('id', '=', to.id).execute();
       else await trx.updateTable('organizations').set(change).where('id', '=', to.id).execute();
+      // A held one is someone's again, so nothing's held; the one it had is let go of, as any is.
+      await trx.deleteFrom('released_handles').where('handle', '=', handle).execute();
+      await releaseHandle(trx, to.handle, ctx.now());
     });
     await audit(ctx.db, {
       actorId: null,
@@ -150,7 +157,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   app.put('/admin/people/:handle/handle', async (req): Promise<HandleView> => {
     operator(req);
     const { handle } = parse(handleParam, req.params);
-    const wanted = reservedIn(req.body);
+    const wanted = await givableIn(req.body);
     const person = await ctx.db
       .selectFrom('users')
       .select(['id', 'handle'])
@@ -167,7 +174,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   app.put('/admin/orgs/:handle/handle', async (req): Promise<HandleView> => {
     operator(req);
     const { handle } = parse(handleParam, req.params);
-    const wanted = reservedIn(req.body);
+    const wanted = await givableIn(req.body);
     const org = await ctx.db
       .selectFrom('organizations')
       .select(['id', 'handle'])

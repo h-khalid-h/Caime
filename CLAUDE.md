@@ -113,6 +113,12 @@ These are rules, not preferences.
   `characters.test.ts` fail otherwise). Anything that lets someone take a handle checks it with
   `assertHandleAvailable` (`lib/handles.ts`), which answers a reserved handle exactly as a taken
   one; only the operator's `/v1/admin/{people,orgs}/:handle/handle` gives one out.
+- A handle someone lets go of (a new one, a deleted account, the operator moving them) is held
+  from everyone for a year: anything new that frees a handle calls `releaseHandle` in the same
+  transaction, so there's no moment it's anyone's. `released_handles` keeps only the handle and
+  two days, never whose it was (the privacy page says so); `assertHandleAvailable` refuses a held
+  one as a taken one, looking for a holder before a hold (keep that order: a test commits a
+  change between the two), and the operator's route gives one back. Organizations keep theirs.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.

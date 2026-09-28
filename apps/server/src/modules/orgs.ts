@@ -176,7 +176,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`org:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     if (!(await adult(ctx, [auth.userId])))
       throw forbidden('Organizations are for people over 18.');
-    await assertHandleAvailable(ctx.db, body.handle);
+    await assertHandleAvailable(ctx.db, body.handle, ctx.now());
     if (!isCountry(body.country)) throw badRequest('Choose where it’s based.');
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {

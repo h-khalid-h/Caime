@@ -484,6 +484,27 @@ describe('what Caime keeps, and for how long', () => {
     expect(left.map((d) => (d.payload as any).message.body)).toEqual(['said 29 days ago']);
   });
 
+  it('holds a handle someone let go of for a year, then forgets it', async () => {
+    const day = (at: Date) => at.toISOString().slice(0, 10);
+    const hold = (handle: string, releasedAgo: number) => ({
+      handle,
+      released_on: day(ago(releasedAgo)),
+      held_until: day(ago(releasedAgo - KEPT_DAYS.heldHandles)),
+    });
+    await t.ctx.db
+      .insertInto('released_handles')
+      .values([hold('held.over', 400), hold('held.today', 365), hold('held.still', 364)])
+      .execute();
+    await runPeriodic(t.ctx);
+    const left = await t.ctx.db
+      .selectFrom('released_handles')
+      .select('handle')
+      .where('handle', 'like', 'held.%')
+      .execute();
+    expect(left).toEqual([{ handle: 'held.still' }]);
+    expect(KEPT_DAYS.heldHandles).toBe(365);
+  });
+
   it('asks the browser to let go of the photos it kept when someone signs out', async () => {
     const res = await t.app.inject({
       method: 'POST',

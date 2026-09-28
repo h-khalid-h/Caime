@@ -417,6 +417,10 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       Refused at sign-up, on a handle change and for a new organization as a taken handle is;
       given out only by the operator (`/v1/admin/{people,orgs}/:handle/handle`), audited, one
       claim of a handle at a time
+- [x] Handles let go of are held (R35): one someone changes from, a deleted account's, or one
+      the operator moves someone from is held from everyone for a year, whoever had it included,
+      keeping only the handle and the days (`released_handles`, forgotten once it's over); an
+      organization keeps its handle for good; the operator can give a held one back
 - [ ] Passkeys (R36): WebAuthn sign-in on web, iOS and Android, password optional once a passkey
       exists, recovery codes kept. After the domain, since a passkey is bound to it
 - [ ] Several steps, one approval (R37): the assistant's suggestions from one conversation offered
@@ -921,3 +925,21 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   the same instant in either order, which failed on Windows; and deleting an account frees its
   handle for anyone at once, which printed links make worth holding (not done). Tests: 223 core,
   50 brand, 474 server, 156 app; E2E not run this session.
+- 2026-09-28 — Session 3 (cont.): handles let go of are held. Deleting an account removed its
+  row, so its handle was anyone's a moment later, and every link its person had shared (R35: on
+  cards, in signatures, as QR codes) would open whoever took it; changing a handle let go of the
+  old one the same way. Now a handle someone lets go of (a new one, a deleted account, one the
+  operator moves them from) is held from everyone for a year, whoever had it included, in the
+  transaction that lets it go. Sign-up, a handle change and a new organization refuse it as a
+  taken one, and the availability check never offers it. Only the handle and two days are kept
+  (`released_handles`, 0037), never whose it was, and no time of day, so a hold can't be matched
+  to the deletion's security record; the daily sweep forgets it when it's over, and the privacy
+  page says so. An organization keeps its handle for good, even closed: its row does, and its
+  handle is on its shopfront and receipts. Nobody can tell whose a held handle was, so the
+  operator's route gives one back once they've been shown it was theirs; a reserved handle needs
+  no hold. Profile and the sheet that deletes an account say what each does to a handle.
+  Mutation-tested: 20 changes, all caught. The one that first got through (the availability
+  check counting a hold's last day) has a test on the day now, and writing them found a race: a
+  check that looked for a hold before a holder would miss a handle let go of between the two. It
+  looks for the holder first, and a test commits a change exactly there. Tests: 223 core, 50
+  brand, 479 server, 156 app; E2E not run this session.

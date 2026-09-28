@@ -395,6 +395,16 @@ export interface AutomationsTable {
   updated_at: Generated<Date>;
 }
 
+/**
+ * A handle someone let go of, held from everyone until `held_until` (lib/handles.ts): the handle
+ * and the days ('YYYY-MM-DD', UTC), never whose it was.
+ */
+export interface ReleasedHandlesTable {
+  handle: string;
+  released_on: string;
+  held_until: string;
+}
+
 /** A message, or one file or link of it, kept in one of someone's collections. */
 export interface SavedItemsTable {
   id: string;
@@ -940,6 +950,7 @@ export interface Database {
   assets: AssetsTable;
   automations: AutomationsTable;
   saved_items: SavedItemsTable;
+  released_handles: ReleasedHandlesTable;
   tasks: TasksTable;
   calendar_feeds: CalendarFeedsTable;
   decisions: DecisionsTable;

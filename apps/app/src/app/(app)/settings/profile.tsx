@@ -170,6 +170,7 @@ export default function Profile() {
             value={handle}
             onChangeText={(v) => setHandle(v.replace(/\s/g, ''))}
             error={errors.handle}
+            hint="Change it, and nobody can take your old one for a year, you included."
             autoCapitalize="none"
             autoCorrect={false}
           />

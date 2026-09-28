@@ -5,7 +5,6 @@ import {
   defaultWorkweek,
   Handle,
   IdentityBody,
-  isReservedHandle,
   type PlanUsageView,
   PrivacyBody,
   safeLocale,
@@ -18,7 +17,12 @@ import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
 import { badRequest, notFound } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
-import { assertHandleAvailable, HANDLE_UNAVAILABLE } from '../lib/handles';
+import {
+  assertHandleAvailable,
+  HANDLE_UNAVAILABLE,
+  releaseHandle,
+  unavailableAmong,
+} from '../lib/handles';
 import { planUsage } from '../lib/plans';
 import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -60,7 +64,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.displayName !== undefined) patch.display_name = body.displayName;
     // Their own handle stays theirs, even one reserved since they took it.
     if (body.handle !== undefined && body.handle !== current.handle.toLowerCase()) {
-      await assertHandleAvailable(ctx.db, body.handle, { userId: auth.userId });
+      await assertHandleAvailable(ctx.db, body.handle, ctx.now(), { userId: auth.userId });
       patch.handle = body.handle;
     }
     if (body.bio !== undefined) patch.bio = body.bio;
@@ -109,14 +113,17 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const oldWeek = week(current.workweek ?? []);
     const weekMoved = patch.workweek !== undefined && week(patch.workweek as number[]) !== oldWeek;
     await ctx.db.transaction().execute(async (trx) => {
-      // The name as it is now, with renames from other devices one at a time.
+      // The name and handle as they are now, with changes from other devices one at a time.
       const was = await trx
         .selectFrom('users')
-        .select('display_name')
+        .select(['display_name', 'handle'])
         .where('id', '=', auth.userId)
         .forUpdate()
         .executeTakeFirstOrThrow();
       await trx.updateTable('users').set(patch).where('id', '=', auth.userId).execute();
+      // The handle they had is held from everyone, so their links never open someone else.
+      if (patch.handle !== undefined && patch.handle !== was.handle.toLowerCase())
+        await releaseHandle(trx, was.handle, ctx.now());
       // People see someone by the identity they're shown (lib/users.ts identityShownTo): the
       // personal one is the profile's own name, so it's renamed with it. One given a name of its
       // own keeps it.
@@ -203,18 +210,10 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       wanted,
       ...Array.from({ length: 6 }, () => `${base}${Math.floor(10 + Math.random() * 990)}`),
     ];
-    // One namespace with organizations (lib/handles.ts).
-    const [people, orgs] = await Promise.all([
-      ctx.db.selectFrom('users').select('handle').where('handle', 'in', candidates).execute(),
-      ctx.db
-        .selectFrom('organizations')
-        .select('handle')
-        .where('handle', 'in', candidates)
-        .execute(),
-    ]);
-    const taken = new Set([...people, ...orgs].map((r) => String(r.handle).toLowerCase()));
-    // A reserved handle reads as a taken one (lib/handles.ts), and is never suggested.
-    const free = (h: string) => !taken.has(h) && !isReservedHandle(h);
+    // Taken (one namespace with organizations), held or reserved all read the same, and none of
+    // them is ever suggested (lib/handles.ts).
+    const unavailable = await unavailableAmong(ctx.db, candidates, ctx.now());
+    const free = (h: string) => !unavailable.has(h);
     if (free(wanted)) return { available: true, reason: null, suggestion: null };
     return {
       available: false,

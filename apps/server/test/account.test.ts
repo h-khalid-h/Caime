@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { uuidv4 } from '@caime/core';
+import { sql } from 'kysely';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, clientFor, createTestApp, signup, type TestApp } from './helpers';
@@ -1102,5 +1103,63 @@ describe('your data', () => {
     expect(list.counts.waiting).toBe(1);
     const closed = await sarah.patch(`/v1/tasks/${waiting.id}`, { status: 'cancelled' });
     expect(closed.task.status).toBe('cancelled');
+  });
+
+  it('holds a deleted account’s handle from everyone for a year, and keeps nothing else of it', async () => {
+    const leaving = await signup(t, { displayName: 'Leaving Soon', handle: 'leaving.soon' });
+    const signUpAs = (handle: string) =>
+      t.app.inject({
+        method: 'POST',
+        url: '/v1/auth/signup',
+        payload: {
+          email: `${handle}.next@example.com`,
+          password: 'correct horse battery',
+          displayName: 'Someone Else',
+          handle,
+          birthDate: '1990-12-31',
+          country: 'EG',
+          client: 'native',
+        },
+      });
+    const day = (at: Date) => at.toISOString().slice(0, 10);
+    const deletedOn = t.clock.now;
+    const gone = await leaving.req('DELETE', '/v1/me', { password: 'correct horse battery' });
+    expect(gone.statusCode).toBe(200);
+    // Held reads as taken, wherever someone tries for it.
+    const taken = await signUpAs(sarah.user.handle);
+    expect(taken.statusCode).toBe(409);
+    expect((await signUpAs('leaving.soon')).json()).toEqual(taken.json());
+    expect((await sarah.req('PATCH', '/v1/me', { handle: 'leaving.soon' })).json()).toEqual(
+      taken.json(),
+    );
+    // The handle and the days: no column says whose it was, and the deletion's record doesn't
+    // name it either.
+    const { rows } = await sql<{ column_name: string }>`select column_name
+      from information_schema.columns where table_name = 'released_handles'
+      order by ordinal_position`.execute(t.ctx.db);
+    expect(rows.map((c) => c.column_name)).toEqual(['handle', 'released_on', 'held_until']);
+    const heldUntil = day(new Date(deletedOn.getTime() + 365 * 86_400_000));
+    expect(
+      await t.ctx.db
+        .selectFrom('released_handles')
+        .selectAll()
+        .where('handle', '=', 'leaving.soon')
+        .execute(),
+    ).toEqual([{ handle: 'leaving.soon', released_on: day(deletedOn), held_until: heldUntil }]);
+    const records = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['action', 'metadata'])
+      .where('target', '=', leaving.user.id)
+      .execute();
+    expect(records.map((r) => r.action)).toContain('account.deleted');
+    expect(JSON.stringify(records)).not.toContain('leaving.soon');
+    // A year on, it's anyone's.
+    const was = t.clock.now.toISOString();
+    try {
+      t.clock.set(`${heldUntil}T00:00:00Z`);
+      expect((await signUpAs('leaving.soon')).statusCode).toBe(201);
+    } finally {
+      t.clock.set(was);
+    }
   });
 });

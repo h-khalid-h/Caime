@@ -294,9 +294,10 @@ describe('reserved handles (R35)', () => {
     const again = await give('people', omar.user.handle, 'caime');
     expect(again.statusCode).toBe(409);
     expect((await omar.get('/v1/me')).user.handle).toBe(omar.user.handle);
-    // Only a reserved handle, only for an organization that's open, never for an app's bot, and
-    // only by the operator.
-    expect((await give('orgs', 'caime', 'our.product')).statusCode).toBe(400);
+    // Only a reserved or held handle, only for an organization that's open, never for an app's
+    // bot, and only by the operator. The one it had is held now.
+    expect((await give('orgs', 'caime', 'nobody.has.this')).statusCode).toBe(400);
+    expect((await create(omar, 'our.product')).statusCode).toBe(409);
     expect((await give('orgs', 'nothing.here', 'support')).statusCode).toBe(404);
     expect((await give('orgs', 'clinicone', 'support')).statusCode).toBe(404);
     await noor.post(`/v1/orgs/${org.id}/apps`, { name: 'Support', scopes: ['inbox:read'] });
@@ -347,7 +348,7 @@ describe('reserved handles (R35)', () => {
       ]);
       expect(holders.flat(), handle).toHaveLength(1);
     }
-    // The same one given twice at once is given, both times.
+    // The same one given twice at once is given, both times (and what it had, held once).
     const twice = await signup(t, { displayName: 'Twice' });
     const both = await Promise.all([
       give('people', twice.user.handle, 'trust'),
@@ -355,5 +356,33 @@ describe('reserved handles (R35)', () => {
     ]);
     expect(both.map((r) => r.statusCode)).toEqual([200, 200]);
     expect((await twice.get('/v1/me')).user.handle).toBe('trust');
+    const had = await t.ctx.db
+      .selectFrom('released_handles')
+      .select('handle')
+      .where('handle', '=', twice.user.handle)
+      .execute();
+    expect(had).toEqual([{ handle: twice.user.handle }]);
+  });
+
+  it('a closed organization keeps its handle from everyone, however long it’s been', async () => {
+    // Its row keeps it, so it needs no hold, and has no end. (Someone new tries: years on, the
+    // others' sign-ins have ended.)
+    const was = t.clock.now.toISOString();
+    try {
+      t.clock.set('2031-01-01T00:00:00Z');
+      const later = await signup(t, { displayName: 'Much Later' });
+      expect((await create(later, 'clinicone')).statusCode).toBe(409);
+      expect((await later.req('PATCH', '/v1/me', { handle: 'clinicone' })).statusCode).toBe(409);
+      const check = await t.app.inject({ url: '/v1/me/handle-available?handle=clinicone' });
+      expect(check.json().available).toBe(false);
+    } finally {
+      t.clock.set(was);
+    }
+    const held = await t.ctx.db
+      .selectFrom('released_handles')
+      .select('handle')
+      .where('handle', '=', 'clinicone')
+      .execute();
+    expect(held).toEqual([]);
   });
 });

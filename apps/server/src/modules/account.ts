@@ -17,6 +17,7 @@ import { rerootMerged } from '../lib/duplicates';
 import { AppError, notFound } from '../lib/errors';
 import { buildExport } from '../lib/export';
 import { leaveAllGroupCalls } from '../lib/group-calls';
+import { releaseHandle } from '../lib/handles';
 import { participantsOf } from '../lib/messages';
 import { handOverOrgs } from '../lib/orgs';
 import { handOverSpaces } from '../lib/spaces';
@@ -60,7 +61,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     const me = auth.userId;
     const user = await ctx.db
       .selectFrom('users')
-      .select(['id', 'password_hash'])
+      .select(['id', 'handle', 'password_hash'])
       .where('id', '=', me)
       .executeTakeFirst();
     if (!user) throw notFound('Your account');
@@ -117,6 +118,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       await rerootMerged(trx, me);
       // The account first (its avatar points at a file), then the files only it could see.
       await trx.deleteFrom('users').where('id', '=', me).execute();
+      // Its handle is held from everyone, so links to it never open someone else: the handle and
+      // the days are all that's kept, never whose it was (lib/handles.ts).
+      await releaseHandle(trx, user.handle, ctx.now());
       if (orphanFiles.length)
         await trx
           .deleteFrom('files')

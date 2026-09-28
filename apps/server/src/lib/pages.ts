@@ -215,6 +215,10 @@ for ${span(KEPT_DAYS.endedSignIns)} after it ended. The log of what you do, with
 kept for ${span(KEPT_DAYS.activity)}, and copies of what you send an organization, made for its
 apps, for ${span(KEPT_DAYS.appDeliveries)}. Counts that name nobody are kept a little longer than
 a year.</li>
+<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
+${span(KEPT_DAYS.heldHandles)}, you included, so a link to it can&rsquo;t come to open someone
+else. Only the handle and the days are kept, never whose it was, and then it&rsquo;s
+forgotten. An organization keeps its handle, even once it has closed.</li>
 <li>Billing records (your plan, what it cost and Stripe&rsquo;s reference to you) are kept as
 accounting law requires, also after you delete your account. Reports are kept so the people who
 run Caime can look into them.</li>
@@ -224,9 +228,11 @@ your reactions and poll votes. Messages you sent stay in other people&rsquo;s co
 as from a deleted account. Lines in a conversation about what you did (&ldquo;Sam added
 Lina&rdquo;) still show your name, and so do notifications people already have. Files you uploaded
 that aren&rsquo;t in any message or album are removed. A group, space or organization you ran
-passes to someone in it; one nobody else is in is closed. What stays: security records and the log
-of what you did, until their time is up; copies of what you sent an organization, made for its
-apps, for ${span(KEPT_DAYS.appDeliveries)}; billing records; reports by or about you; your calls, in
+passes to someone in it; one nobody else is in is closed. What stays: your handle, kept from
+everyone for ${span(KEPT_DAYS.heldHandles)} (the handle and the days alone, never that it was
+yours); security records and the log of what you did, until their time is up; copies of what you
+sent an organization, made for its apps, for ${span(KEPT_DAYS.appDeliveries)}; billing records;
+reports by or about you; your calls, in
 the history of the people you called; and your devices&rsquo; public keys, so the people you wrote
 to privately can still check your messages.</li>
 </ul>

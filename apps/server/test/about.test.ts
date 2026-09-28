@@ -21,6 +21,9 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
         privacy: [
           '<h1>Privacy</h1>',
           'Caime is for people 13 and older, from the day they turn 13',
+          // A handle let go of is held (lib/handles.ts), and the page says for how long.
+          'A handle you stop using, by changing it or deleting your account, is kept from everyone for a year, you included',
+          'What stays: your handle, kept from everyone for a year (the handle and the days alone, never that it was yours)',
         ],
         terms: ['<h1>Terms</h1>', 'You need to be 13 or older'],
         help: ['<h1>Help</h1>', `${BASE}/@<em>yourhandle</em>`],

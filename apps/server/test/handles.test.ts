@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
+import { assertHandleAvailable, releaseHandle } from '../src/lib/handles';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const ADMIN = 'operator-token-for-the-handles-test-0123456789';
@@ -131,10 +132,10 @@ describe('reserved handles (R35)', () => {
       handle: 'caime',
     });
     expect(asHerself.statusCode).toBe(401);
-    // Only a reserved one: any other, whoever wants it takes it themselves.
+    // Only a reserved or held one: any other, whoever wants it takes it themselves.
     const ordinary = await give('noor.links', { handle: 'noor.haddad' });
     expect(ordinary.statusCode).toBe(400);
-    expect(ordinary.json().error.message).toMatch(/isn’t reserved/);
+    expect(ordinary.json().error.message).toMatch(/isn’t reserved or held/);
     expect((await give('noor.links', { handle: 'x' })).statusCode).toBe(400);
     expect((await give('nobody.here', { handle: 'caime' })).statusCode).toBe(404);
     // Nor an account marked deleted.
@@ -184,12 +185,146 @@ describe('reserved handles (R35)', () => {
         details: { of: 'person', from: 'noor.links', to: 'caime' },
       }),
     );
-    // Nobody else is given it, and the handle she had is anyone's again.
+    // Nobody else is given it, and the handle she had is held from everyone…
     const second = await give('sara.links', { handle: 'caime' });
     expect(second.statusCode).toBe(409);
     expect(second.json().error.code).toBe('handle_taken');
     expect((await sara.get('/v1/me')).user.handle).toBe('sara.links');
     const old = await t.app.inject({ url: '/v1/me/handle-available?handle=noor.links' });
-    expect(old.json().available).toBe(true);
+    expect(old.json()).toMatchObject({ available: false, reason: 'That handle isn’t available.' });
+    // …but the operator can give it back, once she's shown it was hers. It's held no more, and
+    // @caime, reserved, needs no hold to stay the operator's to give.
+    const back = await give('caime', { handle: 'noor.links' });
+    expect(back.json()).toEqual({ kind: 'person', id: noor.user.id, handle: 'noor.links' });
+    const held = await t.ctx.db
+      .selectFrom('released_handles')
+      .select('handle')
+      .where('handle', 'in', ['noor.links', 'caime'])
+      .execute();
+    expect(held).toEqual([]);
+    expect((await give('sara.links', { handle: 'caime' })).statusCode).toBe(200);
+  });
+});
+
+describe('handles let go of (R35)', () => {
+  it('is nobody’s even at the moment it’s let go of', async () => {
+    // A handle change commits between the two looks a check takes, whether someone has it and
+    // whether it's held: in that order, one of them always finds it.
+    const mona = await signup(t, { displayName: 'Mona Moves', handle: 'mona.moves' });
+    let changed!: () => void;
+    const ready = new Promise<void>((r) => (changed = r));
+    let letGo!: () => void;
+    const commit = new Promise<void>((r) => (letGo = r));
+    const change = t.ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('users')
+        .set({ handle: 'mona.moved' })
+        .where('id', '=', mona.user.id)
+        .execute();
+      await releaseHandle(trx, 'mona.moves', t.clock.now);
+      changed();
+      await commit;
+    });
+    await ready;
+    let first = true;
+    const racing = t.ctx.db.withPlugin({
+      transformQuery: ({ node }) => node,
+      async transformResult({ result }) {
+        if (first) {
+          first = false;
+          letGo();
+          await change;
+        }
+        return result;
+      },
+    });
+    await expect(assertHandleAvailable(racing, 'mona.moves', t.clock.now)).rejects.toMatchObject({
+      code: 'handle_taken',
+    });
+  });
+
+  const signUpAs = (handle: string) =>
+    t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: {
+        email: `${handle}.held@example.com`,
+        password: 'correct horse battery',
+        displayName: 'Someone Else',
+        handle,
+        birthDate: '1990-12-31',
+        country: 'EG',
+        client: 'native',
+      },
+    });
+
+  it('one changed from is held from everyone for a year, whoever had it included', async () => {
+    const rana = await signup(t, { displayName: 'Rana Changes', handle: 'rana.before' });
+    const omar = await signup(t, { displayName: 'Omar Other', handle: 'omar.other' });
+    // Changing the rest of a profile, or sending the handle as it is, lets go of nothing.
+    await omar.patch('/v1/me', { bio: 'Hello', handle: 'omar.other' });
+    const kept = await t.ctx.db
+      .selectFrom('released_handles')
+      .select('handle')
+      .where('handle', '=', 'omar.other')
+      .execute();
+    expect(kept).toEqual([]);
+    expect((await rana.patch('/v1/me', { handle: 'rana.after' })).user.handle).toBe('rana.after');
+    const taken = await omar.req('PATCH', '/v1/me', { handle: 'rana.after' });
+    expect(taken.statusCode).toBe(409);
+    // A handle change, hers or anyone's; a new organization; a sign-up: as for a taken one.
+    for (const held of [
+      await omar.req('PATCH', '/v1/me', { handle: 'rana.before' }),
+      await rana.req('PATCH', '/v1/me', { handle: 'rana.before' }),
+      await omar.req('POST', '/v1/orgs', {
+        country: 'EG',
+        name: 'Rana Before',
+        handle: 'rana.before',
+        kind: 'shop',
+      }),
+      await signUpAs('rana.before'),
+    ]) {
+      expect(held.statusCode).toBe(409);
+      expect(held.json()).toEqual(taken.json());
+    }
+    const check = (
+      await t.app.inject({ url: '/v1/me/handle-available?handle=rana.before' })
+    ).json();
+    expect(check).toMatchObject({ available: false, reason: 'That handle isn’t available.' });
+    expect(check.suggestion).toMatch(/^rana\.before\d+$/);
+    // The handle and the days: nothing says whose it was.
+    const rows = await t.ctx.db
+      .selectFrom('released_handles')
+      .selectAll()
+      .where('handle', '=', 'rana.before')
+      .execute();
+    expect(rows).toEqual([
+      { handle: 'rana.before', released_on: '2026-09-23', held_until: '2027-09-23' },
+    ]);
+    const was = t.clock.now.toISOString();
+    try {
+      // The day before a year is up it's still held; on the day, it's anyone's. (Someone new
+      // tries: a year on, the others' sign-ins have ended.)
+      t.clock.set('2027-09-22T23:59:00Z');
+      const later = await signup(t, { displayName: 'Later On', handle: 'later.on' });
+      expect((await later.req('PATCH', '/v1/me', { handle: 'rana.before' })).statusCode).toBe(409);
+      t.clock.set('2027-09-23T00:00:00Z');
+      const free = await t.app.inject({ url: '/v1/me/handle-available?handle=rana.before' });
+      expect(free.json()).toEqual({ available: true, reason: null, suggestion: null });
+      expect((await later.req('PATCH', '/v1/me', { handle: 'rana.before' })).statusCode).toBe(200);
+      // And the one they had is held from then.
+      expect((await signUpAs('later.on')).statusCode).toBe(409);
+      // Let go of again (its old hold not yet swept away), it's held a year from now.
+      await later.patch('/v1/me', { handle: 'later.again' });
+      expect((await signUpAs('rana.before')).statusCode).toBe(409);
+      const again = await t.ctx.db
+        .selectFrom('released_handles')
+        .select(['released_on', 'held_until'])
+        .where('handle', '=', 'rana.before')
+        .execute();
+      expect(again).toEqual([{ released_on: '2027-09-23', held_until: '2028-09-22' }]);
+    } finally {
+      t.clock.set(was);
+    }
   });
 });

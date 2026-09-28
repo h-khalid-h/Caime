@@ -4,7 +4,8 @@
  * network address and browser) a year; a sign-in that ended, 30 days after it ended; the log of
  * what happens (a message sent, a connection made, an AI feature used: by account, never the
  * words) 30 days, and what of it names nobody a little over a year, for the product's metrics
- * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days.
+ * (they look back up to 365 days); copies of what was sent to an organization's apps, 30 days;
+ * and a handle someone let go of is held from everyone a year, then forgotten (lib/handles.ts).
  */
 import { type RawBuilder, sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -15,7 +16,12 @@ export const KEPT_DAYS = {
   activity: 30,
   measures: 400,
   appDeliveries: 30,
+  /** The app's Profile says "a year" of this. */
+  heldHandles: 365,
 } as const;
+
+/** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
+export const dayOf = (at: Date) => at.toISOString().slice(0, 10);
 
 /**
  * What the product's metrics count, recorded without anyone's id (lib/product-metrics.ts). The
@@ -86,6 +92,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     ctx,
     sql`delete from webhook_deliveries where id in (select id from webhook_deliveries
       where created_at < ${before(KEPT_DAYS.appDeliveries)}
+      limit ${LOT} for update skip locked)`,
+  );
+  // A handle whose hold is over is anyone's already (lib/handles.ts): nothing more is kept of it.
+  await inLots(
+    ctx,
+    sql`delete from released_handles where handle in (select handle from released_handles
+      where held_until <= ${dayOf(ctx.now())}
       limit ${LOT} for update skip locked)`,
   );
 }

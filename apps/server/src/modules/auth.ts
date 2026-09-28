@@ -143,7 +143,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (existing) {
       throw conflict('email_taken', 'That email already has an account. Sign in instead?');
     }
-    await assertHandleAvailable(ctx.db, body.handle);
+    await assertHandleAvailable(ctx.db, body.handle, now);
     const id = uuidv7();
     const locale = safeLocale(body.locale);
     if (!isCountry(body.country))

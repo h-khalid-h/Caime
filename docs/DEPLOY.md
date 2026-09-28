@@ -84,7 +84,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `SESSION_DAYS` | `90` | How long a signed-in device stays signed in without use. |
 | `METRICS_TOKEN` | — | Enables `GET /metrics` (below) behind this bearer token. |
 | `DNS_SERVERS` | the system's | Resolvers for checking organizations' domains, comma-separated (`1.1.1.1,8.8.8.8`). Set it if the host's resolver caches a new record too long. |
-| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans, giving out reserved handles and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
+| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans, giving out reserved and held handles and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
 | `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits when billing isn't set up; without either, it says upgrades can't be bought yet. |
 | `LEGAL_NAME` | `DATA C OÜ` | Who runs this Caime, as its privacy policy, terms and help say. |
 | `CONTACT_EMAIL` | `hello@cai.me` | Where those pages tell people to write (data requests, security reports, help). |
@@ -211,6 +211,13 @@ curl -X PUT https://caime.example.com/v1/admin/people/noor/handle \
 Anyone who took a handle before it was reserved keeps it; the operator can't give it out while
 they do. Move an organization before it posts updates: a notification already sent links to the
 handle it had then, as a link someone shared does.
+
+A handle someone lets go of (a new one in Profile, a deleted account, or one the operator moved
+them from) is held from everyone for a year, whoever had it included, so an old link can't open
+someone else (`docs/SECURITY.md`, Handles let go of). The same route gives a held handle back,
+once the person asking has shown the operator it was theirs; Caime keeps no record of whose it
+was to check that against. Only a reserved or held handle is given this way, and it's held no
+more once someone has it. An organization keeps its handle for good, closed or not.
 
 ## Metrics
 
