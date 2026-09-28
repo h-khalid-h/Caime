@@ -372,14 +372,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       on the server and in the app, E2E with two browsers and a third device approved from the
       phone). [ ] Private conversations in the phone apps
       [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
-      ⛔ A TURN relay for calls on strict networks. Production has none, so a call between two
-      networks that won't connect directly (most mobile carriers, many offices) waits on
-      "Connecting…" and ends after 30 seconds. Caime takes either its own coturn (`TURN_URLS`,
-      `TURN_SECRET`) or Cloudflare's (`CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN`,
-      credentials for each person that expire, STUN only if Cloudflare doesn't answer;
-      `calls.test.ts`); needed: a TURN key from the Cloudflare dashboard (Realtime → TURN
-      Server) set on the `caime` service. Without one, a call that can't connect says a network
-      may be blocking it and to try another (`engine.web.test.ts`)
+      [x] A TURN relay for calls on strict networks: Cloudflare's, live since 2026-09-28
+      (`CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN` on the `caime` service; the live
+      privacy page names it). Each person gets credentials of their own that expire; STUN only
+      if Cloudflare doesn't answer (`calls.test.ts`). Verified by the owner with a call between
+      two networks on production. Caime's own coturn (`TURN_URLS`, `TURN_SECRET`) still works
+      instead. Without any relay, a call that can't connect says a network may be blocking it
+      (`engine.web.test.ts`)
 
 ## M7 — Ship
 
@@ -959,3 +958,6 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   strict networks can't connect; Cloudflare's relay is supported now and waits on a TURN key
   (⛔, M6), and a failed call without one says what to try. Web budget 448.6 KB (448.3 before).
   Tests: 223 core, 50 brand, 480 server, 159 app; E2E left to CI.
+- 2026-09-28 — Cloudflare's TURN key set on production; the privacy page says calls may go
+  through a relay Cloudflare runs, and the owner's call between two networks connected. The
+  relay is ticked (M6).

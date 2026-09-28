@@ -17,7 +17,7 @@ Deployed 2026-09-26 on EasyPanel.
 | Services | `caime` (app, port 8787, volume `data` at `/data`) and `db` (Postgres 16) |
 | Source | **GitHub** `h-khalid-h/Caime`, branch `production`, which CI advances only after every check passes; built by EasyPanel from the `Dockerfile` (image `easypanel/caime/caime:latest`) |
 | Auto deploy | On, from `production`: every move of `production` rebuilds and redeploys `caime`, and only a green CI run moves it (below). The old container serves until the new one passes its `/v1/readyz` health check. |
-| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (so AI assist is available), `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET` and `STRIPE_PORTAL_CONFIGURATION`, all set in EasyPanel only |
+| Environment | `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`, `ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY` (so AI assist is available), `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET` and `STRIPE_PORTAL_CONFIGURATION`, `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` (calls' relay, since 2026-09-28), all set in EasyPanel only |
 | Panel | https://host.datac.com |
 
 Verified after the deploy (first on the published image, then again on the GitHub build):

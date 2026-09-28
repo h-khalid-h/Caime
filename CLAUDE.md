@@ -317,8 +317,7 @@ billing with Stripe, possible duplicates in People, and organizations' updates.
 It's live on EasyPanel at https://caime.datac.com (also its default domain,
 https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
 Stripe account (tell its owner before changing anything there: it's live); sessions in this
-environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Remaining:
-a TURN relay for calls (⛔: supported, Cloudflare's or coturn, and needs its key set in EasyPanel;
-without it calls across strict networks never connect), calls and private conversations in the
+environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Calls go through Cloudflare's TURN relay when they can't connect directly
+(`CLOUDFLARE_TURN_*`, set in EasyPanel). Remaining: calls and private conversations in the
 phone apps, a third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).
