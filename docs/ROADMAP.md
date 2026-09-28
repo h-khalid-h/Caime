@@ -890,3 +890,8 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   one slip, a price key built from a template. Found on the way: a test of the data download
   that took two things saved in the same millisecond to come in one order. Tests: 219 core, 49
   brand, 466 server, 155 app, 53 E2E.
+- 2026-09-28 — The repository is `h-khalid-h/Caime`, and EasyPanel's service `caime` builds it
+  from source for https://caime.datac.com. Stripe's products, webhook and portal say Caime; their
+  lookup keys keep their names. CI builds and smoke-tests the image but no longer publishes it,
+  and the `caishy` package it published to ghcr.io before the rename was deleted, by a one-off
+  workflow removed once it had run.

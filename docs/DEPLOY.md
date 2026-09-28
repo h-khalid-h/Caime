@@ -34,6 +34,7 @@ Billing went live on 2026-09-27 on the live Stripe account, with the webhook at
 domains an unsigned delivery is refused as `bad_signature` (the secret is loaded), and a
 throwaway account's `GET /v1/billing` offered Pro at €6.00 a month and €60.00 a year before it
 deleted itself. Business is priced per organization and shows on an organization's plan page.
+Since 2026-09-28 the products, the webhook and the portal are named Caime.
 The first real delivery is the one that proves the signing secret matches the endpoint.
 
 Only what passed CI is deployed. A push to `main` runs every check (lint, typecheck, the tests on
@@ -109,7 +110,8 @@ Plans are bought in the app once Stripe is set up; until then, an operator sets 
 
 1. **Products and prices.** A product for Pro and one for Business, each with a monthly and a
    yearly recurring price whose **lookup keys** are `caishy_pro_month`, `caishy_pro_year`,
-   `caishy_business_month` and `caishy_business_year`. The app shows whatever those prices are,
+   `caishy_business_month` and `caishy_business_year` (named before the rename to Caime, and
+   kept: the live prices are found by them). The app shows whatever those prices are,
    found by their keys; to change a price, make a new one and move the key to it
    (`transfer_lookup_key`), and people already paying keep theirs.
 2. **Webhook.** An endpoint at `https://<PUBLIC_URL>/v1/billing/webhook` for
