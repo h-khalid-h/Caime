@@ -66,7 +66,10 @@ export function PrivateSheet({
           so for now it’s text.
         </Text>
         {!privateSupported ? (
-          <Text variant="captionStrong">Private conversations open in Caime on the web.</Text>
+          <Text variant="captionStrong">
+            Private conversations don’t open on this device. Open Caime on your phone or in a
+            current browser.
+          </Text>
         ) : null}
         <WaitingDevices on={open && privateSupported} />
         {others.map((c) => (

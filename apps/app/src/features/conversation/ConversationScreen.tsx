@@ -636,7 +636,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         : conversation && !conversation.participants.some((p) => p.userId === me.id)
           ? 'You’re no longer in this conversation.'
           : conversation?.privacyClass === 'private' && !privateSupported
-            ? 'Private conversations open in Caime on the web.'
+            ? 'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.'
             : null;
   const disabledAction =
     closed && !thread && org

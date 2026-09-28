@@ -7,6 +7,10 @@
  */
 import type { DeviceView, MessageView, MyDeviceView } from '@caime/core/api';
 import type { PrivatePayload, SealedMessage } from '@caime/core/e2ee';
+import { uuidv7 } from '@caime/core/ids';
+import { ApiError } from '@/api/client';
+import { endpoints, type SendBody } from '@/api/endpoints';
+import { useSession } from '@/state/session';
 import {
   type DeviceKeys,
   e2eeSupported,
@@ -16,11 +20,8 @@ import {
   open,
   publicKeys,
   seal,
-} from '@caime/core/e2ee-crypto';
-import { uuidv7 } from '@caime/core/ids';
-import { ApiError } from '@/api/client';
-import { endpoints, type SendBody } from '@/api/endpoints';
-import { useSession } from '@/state/session';
+} from './crypto';
+import { deviceName } from './device';
 import {
   forgetDevice,
   keystoreSupported,
@@ -48,33 +49,6 @@ let checkedAt = 0;
 let ensuring: Promise<Mine> | null = null;
 const RECHECK_MS = 30_000;
 
-/** A name for this device in Settings: the browser and the system it's on. */
-function deviceName(): string {
-  if (typeof navigator === 'undefined') return 'This device';
-  const ua = navigator.userAgent;
-  const browser = /Edg\//.test(ua)
-    ? 'Edge'
-    : /Firefox\//.test(ua)
-      ? 'Firefox'
-      : /Chrome\//.test(ua)
-        ? 'Chrome'
-        : /Safari\//.test(ua)
-          ? 'Safari'
-          : 'A browser';
-  const system = /Windows/.test(ua)
-    ? 'Windows'
-    : /Mac OS X/.test(ua)
-      ? /iPhone|iPad/.test(ua)
-        ? 'iOS'
-        : 'Mac'
-      : /Android/.test(ua)
-        ? 'Android'
-        : /Linux/.test(ua)
-          ? 'Linux'
-          : null;
-  return system ? `${browser} on ${system}` : browser;
-}
-
 /** One tab at a time registers this browser's device: two at once would retire each other's. */
 function oneTab<T>(userId: string, f: () => Promise<T>): Promise<T> {
   const locks = (globalThis.navigator as { locks?: LockManager } | undefined)?.locks;
@@ -84,7 +58,7 @@ function oneTab<T>(userId: string, f: () => Promise<T>): Promise<T> {
 const signedInUser = () => {
   const userId = useSession.getState().user?.id;
   if (!userId || !keystoreSupported || !e2eeSupported())
-    throw new Error('Private conversations open in Caime on the web.');
+    throw new Error('Private conversations don’t open on this device.');
   return userId;
 };
 

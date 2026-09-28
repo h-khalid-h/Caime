@@ -1,5 +1,6 @@
 /**
- * Whether private conversations open on this device (R18), without loading what opens them:
- * the web, for now. The phone apps have no keys of their own yet (support.web.ts is the web's).
+ * Whether private conversations open on this device (R18), without loading what opens them. The
+ * phone apps keep their keys in the Keychain or Keystore (keystore.ts) and encrypt in JavaScript
+ * (crypto.ts), with the secure randomness `lib/polyfills` gives them.
  */
-export const privateSupported: boolean = false;
+export const privateSupported: boolean = typeof globalThis.crypto?.getRandomValues === 'function';

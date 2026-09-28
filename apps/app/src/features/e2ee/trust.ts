@@ -9,7 +9,7 @@
  */
 import type { DeviceView } from '@caime/core/api';
 import type { PublicJwk } from '@caime/core/e2ee';
-import { chainRoot, securityCode } from '@caime/core/e2ee-crypto';
+import { chainRoot, securityCode } from './crypto';
 import { loadPin, loadSeen, type Pin, type SeenCode, savePin, saveSeen } from './keystore';
 
 const same = (a: PublicJwk, b: PublicJwk) => a.x === b.x && a.y === b.y;

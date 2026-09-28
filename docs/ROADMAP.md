@@ -370,7 +370,16 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       replies sealed with what they answer, a deleted account's messages still checkable).
       Text only for now; never forwarded, never read by AI (`e2ee.test.ts`, `private.test.ts`
       on the server and in the app, E2E with two browsers and a third device approved from the
-      phone). [ ] Private conversations in the phone apps
+      phone). [~] Private conversations in the phone apps: the phones encrypt in JavaScript
+      (`@caime/core/e2ee-noble`, audited @noble libraries), byte for byte what the browser's Web
+      Crypto makes and reads, so a message sealed on either opens on the other, and
+      introductions and security codes match (`e2ee-noble.test.ts`, every pairing, mutation-
+      checked; and on a standalone Hermes 0.12, a browser's message opened, a reply sealed back
+      that Web Crypto opened, and the introduction and code accepted). Keys in the Keychain or
+      Keystore (`keystore.ts`, this phone only); opening and sealing take turns so the screen
+      stays responsive (on Hermes 0.12 on the build machine: sealing about 45 ms a device,
+      opening about 50 ms a message). iOS and Android bundles export. Not yet tried on a phone
+      itself: that is what's left before it's ticked
       [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
       [x] A TURN relay for calls on strict networks: Cloudflare's, live since 2026-09-28
       (`CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN` on the `caime` service; the live
@@ -961,3 +970,8 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
 - 2026-09-28 — Cloudflare's TURN key set on production; the privacy page says calls may go
   through a relay Cloudflare runs, and the owner's call between two networks connected. The
   relay is ticked (M6).
+- 2026-09-28 — Private conversations in the phone apps (R18), all but trying them on a phone:
+  a pure-JavaScript backend in core (`e2ee-noble.ts`) that interoperates with Web Crypto in
+  every direction, the phone keystore in the Keychain or Keystore, a device name from the phone,
+  and the app's copy no longer sending people to the web. Web budget unchanged (448.6 KB; the
+  web build doesn't carry the phone backend). Tests: 235 core, 50 brand, 480 server, 159 app.

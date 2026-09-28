@@ -225,8 +225,12 @@ These are rules, not preferences.
   `modules/e2ee.ts`; a private conversation takes only sealed text, so any new path that reads,
   copies or derives from message bodies (search, memory, AI, previews, forwards, exports, kits)
   must leave `m.sealed` messages alone. The app's side is `features/e2ee/` (`private.ts` holds no
-  React; keys in IndexedDB, `keystore.web.ts`), loaded only when used (`support.web.ts`,
-  `hooks.ts`, and a dynamic import in the signed-in layout). Trust is the device's, never the
+  React). It imports its crypto from `./crypto`: the browser's Web Crypto on the web
+  (`crypto.web.ts`, keys unexportable in IndexedDB, `keystore.web.ts`) and, on phones, pure
+  JavaScript byte for byte the same (`@caime/core/e2ee-noble`, `crypto.ts`, which takes turns so
+  the screen stays responsive; keys in the Keychain or Keystore, `keystore.ts`). A change to the
+  envelope goes into both, with a case in `e2ee-noble.test.ts`, which checks every pairing. It's
+  loaded only when used (`support.ts`, `hooks.ts`, and a dynamic import in the signed-in layout). Trust is the device's, never the
   server's (`trust.ts`): a device counts only if pinned with the same keys, or its chain of
   introductions (`chainRoot`) holds up to a first device accepted for that person; anything
   sealed, sent or shown goes through `judge`. Open with the conversation on screen
@@ -312,12 +316,11 @@ organizations writing first as requests), apps for organizations (scoped tokens,
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
-groups of up to eight) with their history, private conversations (end to end encrypted, web),
+groups of up to eight) with their history, private conversations (end to end encrypted, web; phones built, not yet tried on one),
 billing with Stripe, possible duplicates in People, and organizations' updates.
 It's live on EasyPanel at https://caime.datac.com (also its default domain,
 https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
 Stripe account (tell its owner before changing anything there: it's live); sessions in this
 environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Calls go through Cloudflare's TURN relay when they can't connect directly
-(`CLOUDFLARE_TURN_*`, set in EasyPanel). Remaining: calls and private conversations in the
-phone apps, a third-party penetration test, and store builds. Production is only what passed CI: a green run
+(`CLOUDFLARE_TURN_*`, set in EasyPanel). Remaining: calls in the phone apps, trying private conversations on a phone, a third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).

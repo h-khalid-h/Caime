@@ -90,7 +90,7 @@ export function useOpened(
           ? { text: null, note: null, loading: true }
           : {
               text: null,
-              note: 'Open Caime on the web to read private messages.',
+              note: 'Private messages don’t open on this device. Open Caime on your phone or in a current browser.',
               loading: false,
             }
         : { text: m?.body ?? null, note: null, loading: false };

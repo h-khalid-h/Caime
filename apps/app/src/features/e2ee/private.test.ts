@@ -1,5 +1,6 @@
 /**
- * Private conversations on this device (R18) against the real Web Crypto, a stand-in server and
+ * Private conversations on this device (R18) with the phones' encryption (./crypto, as vitest
+ * resolves it) talking to everyone else's browsers (the real Web Crypto), a stand-in server and
  * an in-memory keystore: this device's keys made once and kept while the server has them, sealing
  * only for devices that hold up as their people's (and again when someone's devices changed),
  * opening only what a device confirmed as its sender's signed, in the conversation shown and at
@@ -17,6 +18,7 @@ import {
   seal,
 } from '@caime/core/e2ee-crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as thisDevice from './crypto';
 
 const h = vi.hoisted(() => {
   class ApiError extends Error {
@@ -565,7 +567,8 @@ describe('private conversations on this device (R18)', () => {
   it('a device another tab registered is taken up, never replaced', async () => {
     const one = await p.ensureDevice();
     // Another tab registered this browser again (its session was renewed there).
-    const other = await newDeviceKeys();
+    // Made as this device makes its keys; everyone else's are a browser's (Web Crypto).
+    const other = await thisDevice.newDeviceKeys();
     const otherId = 'dev-noor-other-tab';
     h.stores.devices.set('noor', { id: otherId, keys: other });
     h.endpoints.myDevices.mockResolvedValue({
@@ -573,7 +576,7 @@ describe('private conversations on this device (R18)', () => {
       chain: [],
     });
     const sam = await someone('sam');
-    const pub = await publicKeys(other);
+    const pub = await thisDevice.publicKeys(other);
     const sealed = await seal({
       conversationId,
       cid: 'client-000080',
