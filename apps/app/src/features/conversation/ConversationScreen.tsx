@@ -625,21 +625,23 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
 
   // Closed by a block (PRD §55): the customer blocked the organization.
   const closed = business?.closed ?? false;
-  const disabled = closed
-    ? thread
-      ? 'The customer closed this conversation.'
-      : `You blocked ${org?.name ?? 'this organization'}.`
-    : conversation?.request === 'incoming'
-      ? 'Accept the request to reply.'
-      : thread?.awaitingAcceptance
-        ? 'You can write again once they answer.'
-        : conversation && !conversation.participants.some((p) => p.userId === me.id)
-          ? 'You’re no longer in this conversation.'
-          : conversation?.privacyClass === 'private' && !privateSupported
-            ? 'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.'
-            : null;
+  const disabled = business?.orgClosed
+    ? `${org?.name ?? 'This organization'} closed on Caime. What was sent here stays to read; find it again to start a new conversation.`
+    : closed
+      ? thread
+        ? 'The customer closed this conversation.'
+        : `You blocked ${org?.name ?? 'this organization'}.`
+      : conversation?.request === 'incoming'
+        ? 'Accept the request to reply.'
+        : thread?.awaitingAcceptance
+          ? 'You can write again once they answer.'
+          : conversation && !conversation.participants.some((p) => p.userId === me.id)
+            ? 'You’re no longer in this conversation.'
+            : conversation?.privacyClass === 'private' && !privateSupported
+              ? 'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.'
+              : null;
   const disabledAction =
-    closed && !thread && org
+    closed && !thread && org && !business?.orgClosed
       ? {
           label: `Unblock ${org.name}`,
           testID: 'composer-unblock-org',

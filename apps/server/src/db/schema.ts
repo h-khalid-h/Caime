@@ -679,6 +679,11 @@ export interface OrganizationsTable {
   country: string | null;
   /** The year it began, shown on its page if it says. */
   founded_year: number | null;
+  /** Closed: who is proving its domain to take it back (R42), and the record they must add. */
+  reclaim_by: string | null;
+  reclaim_token: string | null;
+  /** Closed and taken back: the open organization that continues it. */
+  succeeded_by: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }

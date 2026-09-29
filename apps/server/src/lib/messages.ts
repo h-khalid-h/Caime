@@ -405,7 +405,13 @@ export async function sendMessage(
       .select('archived_at')
       .where('id', '=', conversation.org_id)
       .executeTakeFirst();
-    if (!org || org.archived_at) throw forbidden('This organization has closed on Caime.');
+    // A closed organization's conversation is read-only, for its customer and anyone else (R42).
+    if (!org || org.archived_at)
+      throw new AppError(
+        409,
+        'org_closed',
+        'This organization closed, so nothing more is written here. Find it again to start a new conversation.',
+      );
     // Its customer blocked it: closed both ways until they unblock (PRD §55).
     await assertCanWrite(ctx, conversationId, senderId);
   }

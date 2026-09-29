@@ -19,6 +19,8 @@ import { badRequest, notFound } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
 import {
   assertHandleAvailable,
+  closedOrgHolding,
+  closedOrgMessage,
   HANDLE_UNAVAILABLE,
   releaseHandle,
   unavailableAmong,
@@ -215,10 +217,14 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const unavailable = await unavailableAmong(ctx.db, candidates, ctx.now());
     const free = (h: string) => !unavailable.has(h);
     if (free(wanted)) return { available: true, reason: null, suggestion: null };
+    // A closed organization's, verified: named, so that the organization itself can take it
+    // back (R42).
+    const closedOrg = await closedOrgHolding(ctx.db, wanted);
     return {
       available: false,
-      reason: HANDLE_UNAVAILABLE,
+      reason: closedOrg ? closedOrgMessage(closedOrg) : HANDLE_UNAVAILABLE,
       suggestion: candidates.slice(1).find(free) ?? null,
+      ...(closedOrg ? { closedOrg } : {}),
     };
   });
 

@@ -22,6 +22,7 @@ import type {
   CalendarFeedView,
   CallHistoryResponse,
   CallView,
+  ClosedOrgView,
   ConnectedAppView,
   ConnectionRequestView,
   ConnectionView,
@@ -51,6 +52,7 @@ import type {
   OrgAppSecretsView,
   OrgAppView,
   OrgInsightsView,
+  OrgReclaimView,
   OrgSummaryView,
   OrgUpdatesView,
   OrgUpdateView,
@@ -183,9 +185,13 @@ export const endpoints = {
   /** Every currency a country uses, named in `locale`'s language. */
   currencies: (locale: string) => api.get<CurrenciesView>(`/currencies${q({ locale })}`),
   handleAvailable: (handle: string) =>
-    api.get<{ available: boolean; reason: string | null; suggestion: string | null }>(
-      `/me/handle-available${q({ handle })}`,
-    ),
+    api.get<{
+      available: boolean;
+      reason: string | null;
+      suggestion: string | null;
+      /** A closed organization's, verified: proving its domain again takes it back (R42). */
+      closedOrg?: ClosedOrgView;
+    }>(`/me/handle-available${q({ handle })}`),
 
   // People and relationships
   searchPeople: (term: string) =>
@@ -359,6 +365,11 @@ export const endpoints = {
     request<{ org: OrgView }>('PUT', `/orgs/${id}/domain`, { body: { domain } }),
   checkOrgDomain: (id: string) => api.post<{ org: OrgView }>(`/orgs/${id}/domain/check`),
   removeOrgDomain: (id: string) => api.del<{ org: OrgView }>(`/orgs/${id}/domain`),
+  /** Its owner closes it (R42). */
+  closeOrg: (id: string) => api.post<Ok>(`/orgs/${id}/close`),
+  /** Taking a closed organization back (R42): the record to add at its domain, then check. */
+  reclaimOrg: (id: string) => api.post<OrgReclaimView>(`/orgs/${id}/reclaim`),
+  checkReclaim: (id: string) => api.post<{ org: OrgView }>(`/orgs/${id}/reclaim/check`),
 
   // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
   messageOrg: (orgId: string) =>

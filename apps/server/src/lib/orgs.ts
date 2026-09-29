@@ -7,6 +7,7 @@ import { nextOwner } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database, Organization, OrgMember } from '../db/schema';
 import { notFound } from './errors';
+import { releaseHandle } from './handles';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -111,13 +112,78 @@ export async function handOverOrgs(trx: Q, userId: string, now: Date): Promise<s
         .where('user_id', '=', heir)
         .execute();
     else {
-      await trx
-        .updateTable('organizations')
-        .set({ archived_at: now })
-        .where('id', '=', org_id)
-        .execute();
+      await closeOrg(trx, org_id, now);
       closed.push(org_id);
     }
   }
   return closed;
+}
+
+/**
+ * An organization closes (R42): the last of its people gone, or its owner closing it. Its row
+ * stays with everything its customers were sent (read-only for them from now on), its team's
+ * seats end, its apps stop for good, and its handle stays in the namespace only if it was
+ * verified, for whoever proves its domain again; else it's held a year, like a person's. What
+ * it paid for and who followed it end after this, outside the transaction (billing, updates).
+ */
+export async function closeOrg(trx: Q, orgId: string, now: Date): Promise<void> {
+  const org = await trx
+    .selectFrom('organizations')
+    .select(['handle', 'verified_at', 'archived_at'])
+    .where('id', '=', orgId)
+    .executeTakeFirst();
+  if (!org || org.archived_at) return;
+  await trx
+    .updateTable('organizations')
+    .set({ archived_at: now, reclaim_by: null, reclaim_token: null, updated_at: now })
+    .where('id', '=', orgId)
+    .execute();
+  await trx
+    .updateTable('org_members')
+    .set({ left_at: now, role: 'agent' })
+    .where('org_id', '=', orgId)
+    .where('left_at', 'is', null)
+    .execute();
+  await trx
+    .updateTable('participants')
+    .set({ left_at: now })
+    .where('role', '=', 'agent')
+    .where('left_at', 'is', null)
+    .where('conversation_id', 'in', (eb) =>
+      eb.selectFrom('business_threads').select('conversation_id').where('org_id', '=', orgId),
+    )
+    .execute();
+  await trx
+    .updateTable('business_threads')
+    .set({ assignee_id: null, updated_at: now })
+    .where('org_id', '=', orgId)
+    .execute();
+  await trx
+    .updateTable('api_tokens')
+    .set({ revoked_at: now })
+    .where('revoked_at', 'is', null)
+    .where('app_id', 'in', (eb) =>
+      eb.selectFrom('org_apps').select('id').where('org_id', '=', orgId),
+    )
+    .execute();
+  await trx
+    .updateTable('org_apps')
+    .set({ revoked_at: now })
+    .where('org_id', '=', orgId)
+    .where('revoked_at', 'is', null)
+    .execute();
+  if (!org.verified_at) await releaseHandle(trx, org.handle, now);
+}
+
+/** A closed organization, by id: the one route in for whoever takes it back (R42). */
+export async function closedOrgById(db: Q, orgId: string): Promise<Organization> {
+  const org = await db
+    .selectFrom('organizations')
+    .selectAll()
+    .where('id', '=', orgId)
+    .where('archived_at', 'is not', null)
+    .where('succeeded_by', 'is', null)
+    .executeTakeFirst();
+  if (!org) throw notFound('That organization');
+  return org;
 }

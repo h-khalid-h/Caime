@@ -30,6 +30,7 @@ import { CopyRow } from '@/ui/CopyRow';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import {
+  ArchiveIcon,
   ArrowLeft,
   BadgeCheck,
   Ban,
@@ -177,6 +178,7 @@ export function OrgScreen({ handle }: { handle: string }) {
   if (managing) lastManaged.current = managing;
   const shown = managing ?? lastManaged.current;
   const [leaving, setLeaving] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -486,6 +488,16 @@ export function OrgScreen({ handle }: { handle: string }) {
                   onPress={() => setLeaving(true)}
                   testID="org-leave"
                 />
+                {org.myRole === 'owner' ? (
+                  <ListRow
+                    icon={ArchiveIcon}
+                    title={`Close ${org.name}`}
+                    subtitle="Its page goes, and the team’s seats end."
+                    destructive
+                    onPress={() => setClosing(true)}
+                    testID="org-close"
+                  />
+                ) : null}
               </Card>
             </View>
           </>
@@ -664,6 +676,37 @@ export function OrgScreen({ handle }: { handle: string }) {
             ) : null}
           </View>
         ) : null}
+      </Sheet>
+
+      <Sheet
+        open={closing}
+        onClose={() => setClosing(false)}
+        title={`Close ${org.name}?`}
+        subtitle={`Its page goes, its team’s seats end, and its apps stop. Customers keep what they were sent, to read. ${
+          org.verified && org.verifiedDomain
+            ? `Its handle waits for whoever verifies ${org.verifiedDomain} again, so ${org.name} can come back.`
+            : 'Its handle is held for a year, then free to anyone.'
+        }`}
+        footer={
+          <Button
+            label={`Close ${org.name}`}
+            variant="danger"
+            block
+            size="lg"
+            loading={busy}
+            testID="org-close-confirm"
+            onPress={() =>
+              void (async () => {
+                if (await run(() => endpoints.closeOrg(org.id), `${org.name} closed`)) {
+                  setClosing(false);
+                  router.replace('/orgs');
+                }
+              })()
+            }
+          />
+        }
+      >
+        <View />
       </Sheet>
 
       <Sheet

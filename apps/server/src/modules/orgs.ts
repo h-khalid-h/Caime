@@ -4,7 +4,13 @@
  * so, and nobody on its team shows as verified. Organizations and their teams are for adults.
  */
 
-import type { OrgInsightsView, OrgMemberView, OrgSummaryView, OrgView } from '@caime/core';
+import type {
+  OrgInsightsView,
+  OrgMemberView,
+  OrgReclaimView,
+  OrgSummaryView,
+  OrgView,
+} from '@caime/core';
 import {
   CreateOrgBody,
   canChangeOrgRole,
@@ -36,7 +42,7 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/erro
 import { currencyOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
-import { newVerifyToken, orgById, orgSeat } from '../lib/orgs';
+import { closedOrgById, closeOrg, newVerifyToken, orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
@@ -421,12 +427,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('user_id', '=', heir)
           .execute();
       // Nobody left to run it: it closes, and stops showing anyone as verified.
-      if (people.length === 1)
-        await trx
-          .updateTable('organizations')
-          .set({ archived_at: ctx.now() })
-          .where('id', '=', id)
-          .execute();
+      if (people.length === 1) await closeOrg(trx, id, ctx.now());
     });
     // What they saved of its customers' conversations is out of their Saved now, and what
     // Caime offered because they were on its team goes.
@@ -535,6 +536,144 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       });
     }
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
+  });
+
+  /**
+   * Its owner closes it (R42): its page goes, its team's seats end, its apps stop, and its
+   * customers keep their conversations read-only. Verified, its handle waits for whoever proves
+   * its domain again; else it's held a year, then free.
+   */
+  app.post('/orgs/:id/close', async (req): Promise<{ ok: true }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const org = await orgById(ctx.db, id);
+    const seat = await orgSeat(ctx.db, auth.userId, id);
+    if (seat?.role !== 'owner') throw forbidden('Only the organization’s owner closes it.');
+    const members = await team(ctx, id);
+    await ctx.db.transaction().execute((trx) => closeOrg(trx, id, ctx.now()));
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'org.closed',
+      target: id,
+      metadata: { handle: org.handle, verified: org.verified_at !== null },
+    });
+    const people = members.filter((m) => m.kind === 'human').map((m) => m.user_id);
+    await tellSaved(ctx, people);
+    for (const userId of people) await withdrawPlaceOffers(ctx, { kind: 'org', id }, userId);
+    await endBillingOf(ctx, { orgId: id });
+    await endFollowsOf(ctx, id);
+    await ctx.bus.publish(people, { type: 'business.updated', data: { orgId: id } });
+    return { ok: true };
+  });
+
+  /**
+   * Taking a closed organization back (R42): whoever it was, proving its domain again. The
+   * record to add, made for this person; then `check`. Anyone may start (it proves nothing yet).
+   */
+  app.post('/orgs/:id/reclaim', async (req): Promise<OrgReclaimView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    ctx.limiter.hit(`org-reclaim:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
+    if (!(await adult(ctx, [auth.userId])))
+      throw forbidden('Organizations are for people over 18.');
+    const org = await closedOrgById(ctx.db, id);
+    if (!org.domain || !org.verified_at)
+      throw conflict(
+        'not_reclaimable',
+        'This organization was never verified at a domain, so there’s no way to prove it’s yours.',
+      );
+    const token = newVerifyToken();
+    await ctx.db
+      .updateTable('organizations')
+      .set({ reclaim_by: auth.userId, reclaim_token: token, updated_at: ctx.now() })
+      .where('id', '=', id)
+      .execute();
+    await audit(ctx.db, { actorId: auth.userId, action: 'org.reclaim_started', target: id });
+    return {
+      org: { id: org.id, name: org.name, handle: org.handle },
+      domain: org.domain,
+      record: verificationRecord(org.domain, token),
+    };
+  });
+
+  /**
+   * The record is there: the organization continues, as a new one with the same handle, name
+   * and page, verified at its domain, owned by whoever proved it. The closed one stays as it
+   * was, with everything its customers were sent; their blocks of it carry over. Nothing of the
+   * old team, its apps or its followers comes back.
+   */
+  app.post('/orgs/:id/reclaim/check', async (req, reply): Promise<{ org: OrgView }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    ctx.limiter.hit(`org-verify:${id}`, ctx.config.isTest ? 1000 : 10, 60_000);
+    const org = await closedOrgById(ctx.db, id);
+    if (!org.domain || org.reclaim_by !== auth.userId || !org.reclaim_token)
+      throw badRequest('Start taking it back first.');
+    const record = verificationRecord(org.domain, org.reclaim_token);
+    const [named, apex] = await Promise.all([
+      ctx.dns.resolveTxt(record.name).catch(() => [] as string[][]),
+      ctx.dns.resolveTxt(org.domain).catch(() => [] as string[][]),
+    ]);
+    if (!recordMatches([...named, ...apex], org.reclaim_token))
+      throw new AppError(
+        422,
+        'record_not_found',
+        'We couldn’t find the record yet. DNS changes can take a few minutes, sometimes an hour.',
+      );
+    const newId = uuidv7();
+    await ctx.db.transaction().execute(async (trx) => {
+      // The closed one lets go of the domain (verified at it once at a time), the new one takes
+      // it and the handle, and the closed one then points at the new one.
+      await trx
+        .updateTable('organizations')
+        .set({ verified_at: null, reclaim_by: null, reclaim_token: null, updated_at: ctx.now() })
+        .where('id', '=', id)
+        .execute();
+      await trx
+        .insertInto('organizations')
+        .values({
+          id: newId,
+          name: org.name,
+          handle: org.handle,
+          kind: org.kind,
+          about: org.about,
+          website: org.website,
+          country: org.country,
+          founded_year: org.founded_year,
+          domain: org.domain,
+          verify_token: org.reclaim_token,
+          verified_at: ctx.now(),
+          created_by: auth.userId,
+        })
+        .execute();
+      await trx
+        .updateTable('organizations')
+        .set({ succeeded_by: newId })
+        .where('id', '=', id)
+        .execute();
+      await trx
+        .insertInto('org_members')
+        .values({ org_id: newId, user_id: auth.userId, role: 'owner', added_by: auth.userId })
+        .execute();
+      await trx
+        .insertInto('org_blocks')
+        .columns(['user_id', 'org_id'])
+        .expression((eb) =>
+          eb
+            .selectFrom('org_blocks')
+            .select(['user_id', sql<string>`${newId}::uuid`.as('org_id')])
+            .where('org_id', '=', id),
+        )
+        .execute();
+    });
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'org.reclaimed',
+      target: newId,
+      metadata: { from: id, domain: org.domain, handle: org.handle },
+    });
+    reply.status(201);
+    return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, newId)) };
   });
 
   app.delete('/orgs/:id/domain', async (req): Promise<{ org: OrgView }> => {

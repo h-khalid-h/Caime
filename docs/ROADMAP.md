@@ -211,6 +211,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       until the new one is proven. The team is made of adult connections; owners and admins
       manage it and the domain; an owner who leaves or deletes their account hands it on; the
       last one out closes it (`orgs.test.ts`, E2E)
+- [x] An organization's end (R42): its owner closes it, or its last person leaving does; its
+      page goes, seats, apps, agent, billing and followers end, and its customers keep their
+      conversations to read. Closed unverified, its handle is held a year; closed verified, it
+      waits for the organization, which takes it back by proving its domain again (the new-
+      organization screen says whose it was and offers the record), continuing under the same
+      handle and page with a new owner and team, customers' blocks kept and their old
+      conversation left as it was. The operator deletes a closed one for good
+      (`orgs.test.ts`, E2E)
 - [x] Organizations' updates (PRD §59, §15 broadcast): an organization's owner and admins (or its
       app, with `updates`) post to whoever follows it; anyone reads them on its page, as the
       organization's. People follow from the page (and choose whether each update notifies
@@ -1005,3 +1013,9 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   Caime ever holding a key. Decided with the owner over the alternative (Signal's: lost devices,
   lost history), since Caime is for relationships that run for years. And a phone keeps its
   keys when its account signs out (`resume`), which is what tripped the owner up on the iPhone.
+- 2026-09-29 — An organization's end (R42): the owner made DATA C on production, verified it,
+  deleted the account and couldn't make DATA C again (a closed organization kept its handle for
+  good, the rule since 48d8fd8). Now a closed unverified organization's handle is held a year,
+  and a closed verified one waits for whoever proves its domain again, who continues it under
+  the same handle and page; an owner can close one; the operator can delete a closed one.
+  Customers' conversations with a closed organization stay to read (`409 org_closed`).

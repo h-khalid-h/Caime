@@ -122,7 +122,14 @@ These are rules, not preferences.
   transaction, so there's no moment it's anyone's. `released_handles` keeps only the handle and
   two days, never whose it was (the privacy page says so); `assertHandleAvailable` refuses a held
   one as a taken one, looking for a holder before a hold (keep that order: a test commits a
-  change between the two), and the operator's route gives one back. Organizations keep theirs.
+  change between the two), and the operator's route gives one back. An organization that closes
+  unverified lets its go the same way (`closeOrg`, `lib/orgs.ts`); one that closes verified keeps
+  it for whoever proves its domain again (R42: `closedOrgHolding`, `409 handle_closed_org` with
+  the organization's name and domain, `POST /orgs/:id/reclaim` then `/reclaim/check`, which makes
+  a new organization with the same handle and points the old one at it with `succeeded_by`).
+  Anything that looks an organization up by id for its team uses `orgById` (open ones only);
+  `closedOrgById` is for taking one back. A closed organization's conversations refuse every
+  write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.

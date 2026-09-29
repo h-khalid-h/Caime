@@ -289,3 +289,19 @@ with its reason, so it isn't proposed again without new facts.
   losing every device loses the history, and the app says so where the key is made. Never a
   server-side escrow, never a password-derived key, never a device's private keys leaving it:
   the recovery device is one more device, vouched for by the person's own chain.
+
+- **R42 — An organization closes; a verified one can come back, only through its domain.** An
+  organization's handle is on its shopfront, menus and receipts, so a closed organization's
+  handle can't simply pass to whoever asks next; and yet the organization itself must be able to
+  return (a deleted account, a team that dissolved), or its handle is dead for good. So: an
+  organization closes when its owner closes it or its last person leaves; its page goes, its
+  team's seats end, its apps and agent stop, and its customers keep what it sent them, to read,
+  never to answer. Closed **unverified**, its handle is held a year like a person's, then free.
+  Closed **verified**, its handle waits for the organization: whoever asks for it is told whose it
+  was and that proving its domain again takes it back, and doing so continues it under the same
+  handle, name and page, with them as its owner, as a new organization: the old team, apps and
+  followers don't come back (they'd be someone else's to vouch for), customers' blocks of it do,
+  and their old conversation stays as it was beside a new one. Never a handle handed over by
+  hand (Caime can't tell who the organization is; its domain can), never a closed organization
+  reopened in place (its old team would find themselves on someone else's), and only the
+  operator deletes a closed one for good, on a lawful request.

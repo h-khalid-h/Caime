@@ -1,3 +1,4 @@
+import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -364,25 +365,248 @@ describe('reserved handles (R35)', () => {
     expect(had).toEqual([{ handle: twice.user.handle }]);
   });
 
-  it('a closed organization keeps its handle from everyone, however long it’s been', async () => {
-    // Its row keeps it, so it needs no hold, and has no end. (Someone new tries: years on, the
-    // others' sign-ins have ended.)
-    const was = t.clock.now.toISOString();
-    try {
-      t.clock.set('2031-01-01T00:00:00Z');
-      const later = await signup(t, { displayName: 'Much Later' });
-      expect((await create(later, 'clinicone')).statusCode).toBe(409);
-      expect((await later.req('PATCH', '/v1/me', { handle: 'clinicone' })).statusCode).toBe(409);
-      const check = await t.app.inject({ url: '/v1/me/handle-available?handle=clinicone' });
-      expect(check.json().available).toBe(false);
-    } finally {
-      t.clock.set(was);
-    }
+  it('a closed organization never verified lets its handle go, held a year like anyone’s', async () => {
+    // Clinic One closed when its last member left, and was never verified: the hold is the
+    // same as for a person's, so a year on it's anyone's.
+    expect((await create(omar, 'clinicone')).statusCode).toBe(409);
+    expect((await omar.req('PATCH', '/v1/me', { handle: 'clinicone' })).statusCode).toBe(409);
     const held = await t.ctx.db
       .selectFrom('released_handles')
       .select('handle')
       .where('handle', '=', 'clinicone')
       .execute();
-    expect(held).toEqual([]);
+    expect(held).toEqual([{ handle: 'clinicone' }]);
+    const was = t.clock.now.toISOString();
+    try {
+      t.clock.set('2031-01-01T00:00:00Z');
+      const later = await signup(t, { displayName: 'Much Later' });
+      const check = await t.app.inject({ url: '/v1/me/handle-available?handle=clinicone' });
+      expect(check.json()).toEqual({ available: true, reason: null, suggestion: null });
+      const made = await create(later, 'clinicone');
+      expect(made.statusCode).toBe(201);
+      expect((await later.get('/v1/orgs/by-handle/clinicone')).org.id).toBe(made.json().org.id);
+    } finally {
+      t.clock.set(was);
+    }
+  });
+});
+
+describe('closing and taking back an organization (R42)', () => {
+  let bakery: Client;
+  let closedId: string;
+  let convo: string;
+
+  it('its owner closes it: page gone, seats ended, customers keep what they were sent', async () => {
+    bakery = await signup(t, { displayName: 'Bassem Baker' });
+    const { org } = await bakery.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Bassem’s Bakery',
+      handle: 'bakery',
+      kind: 'shop',
+      about: 'Bread since 1990.',
+    });
+    closedId = org.id;
+    const { domain } = (
+      await bakery
+        .req('PUT', `/v1/orgs/${org.id}/domain`, {
+          domain: 'bakery.example',
+        })
+        .then((r) => r.json())
+    ).org;
+    txt.set('_caime-verify.bakery.example', [[domain.record.value]]);
+    expect((await bakery.post(`/v1/orgs/${org.id}/domain/check`)).org.verified).toBe(true);
+    // A customer writes, and is answered.
+    convo = (await customer.post(`/v1/orgs/${org.id}/conversations`)).conversationId;
+    await customer.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      body: 'Rye?',
+    });
+    const threads = (await bakery.get(`/v1/orgs/${org.id}/inbox`)).threads;
+    expect(threads.map((th: any) => th.conversationId)).toEqual([convo]);
+    await bakery.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      body: 'Every morning.',
+    });
+
+    // Only the owner closes it.
+    expect((await omar.req('POST', `/v1/orgs/${org.id}/close`)).statusCode).toBe(403);
+    expect((await bakery.req('POST', `/v1/orgs/${org.id}/close`)).statusCode).toBe(200);
+    expect((await customer.req('GET', `/v1/orgs/by-handle/bakery`)).statusCode).toBe(404);
+    expect((await bakery.req('GET', `/v1/orgs/${org.id}`)).statusCode).toBe(404);
+    expect((await bakery.get('/v1/orgs')).orgs.map((o: any) => o.handle)).not.toContain('bakery');
+    // The customer still reads it, and nobody writes there anymore.
+    const { messages } = await customer.get(`/v1/conversations/${convo}/messages`);
+    expect(messages.map((m: any) => m.body)).toEqual(['Rye?', 'Every morning.']);
+    const more = await customer.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      body: 'Still there?',
+    });
+    expect(more.statusCode).toBe(409);
+    expect(more.json().error.code).toBe('org_closed');
+    expect(
+      (
+        await bakery.req('POST', `/v1/conversations/${convo}/messages`, {
+          clientId: uuidv4(),
+          body: 'No.',
+        })
+      ).statusCode,
+    ).not.toBe(201);
+    const logged = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['target', 'metadata'])
+      .where('action', '=', 'org.closed')
+      .execute();
+    expect(logged).toEqual([{ target: org.id, metadata: { handle: 'bakery', verified: true } }]);
+  });
+
+  it('verified, its handle waits for whoever proves the domain again, and says so', async () => {
+    const taken = await omar.req('POST', '/v1/orgs', {
+      country: 'EG',
+      name: 'Bakery',
+      handle: 'bakery',
+      kind: 'shop',
+    });
+    expect(taken.statusCode).toBe(409);
+    expect(taken.json().error).toMatchObject({
+      code: 'handle_closed_org',
+      message:
+        'It belongs to Bassem’s Bakery, which closed. If you’re Bassem’s Bakery, verify bakery.example to take it back.',
+      details: { closedOrg: { id: closedId, name: 'Bassem’s Bakery', domain: 'bakery.example' } },
+    });
+    // A person can't have it either, and is told the same.
+    expect((await omar.req('PATCH', '/v1/me', { handle: 'bakery' })).json().error.code).toBe(
+      'handle_closed_org',
+    );
+    const check = await t.app.inject({ url: '/v1/me/handle-available?handle=bakery' });
+    expect(check.json()).toMatchObject({
+      available: false,
+      closedOrg: { id: closedId, name: 'Bassem’s Bakery', domain: 'bakery.example' },
+    });
+    expect(check.json().suggestion).toMatch(/^bakery\d+$/);
+    // It holds however long: years on, still.
+    const was = t.clock.now.toISOString();
+    try {
+      t.clock.set('2031-06-01T00:00:00Z');
+      const later = await signup(t, { displayName: 'Years Later' });
+      expect((await later.req('PATCH', '/v1/me', { handle: 'bakery' })).json().error.code).toBe(
+        'handle_closed_org',
+      );
+    } finally {
+      t.clock.set(was);
+    }
+    // Never verified: nothing to prove.
+    const clinic = await t.ctx.db
+      .selectFrom('organizations')
+      .select('id')
+      .where('handle', '=', 'clinicone')
+      .where('archived_at', 'is not', null)
+      .executeTakeFirstOrThrow();
+    const nothing = await omar.req('POST', `/v1/orgs/${clinic.id}/reclaim`);
+    expect(nothing.statusCode).toBe(409);
+    expect(nothing.json().error.code).toBe('not_reclaimable');
+  });
+
+  it('proving the domain again continues it: same handle and page, a new team', async () => {
+    const back = await signup(t, { displayName: 'Bassem Again' });
+    expect((await teen.req('POST', `/v1/orgs/${closedId}/reclaim`)).statusCode).toBe(403);
+    const started = await back.post(`/v1/orgs/${closedId}/reclaim`);
+    expect(started).toMatchObject({
+      org: { id: closedId, name: 'Bassem’s Bakery', handle: 'bakery' },
+      domain: 'bakery.example',
+      record: { name: '_caime-verify.bakery.example', type: 'TXT' },
+    });
+    expect(started.record.value).toMatch(/^caime-verify=[\w-]{20,}$/);
+    // The old record is still there: it doesn't count (it was made for someone else).
+    const stale = await back.req('POST', `/v1/orgs/${closedId}/reclaim/check`);
+    expect(stale.statusCode).toBe(422);
+    expect(stale.json().error.code).toBe('record_not_found');
+    // Someone else can't check with this person's record.
+    expect((await omar.req('POST', `/v1/orgs/${closedId}/reclaim/check`)).statusCode).toBe(400);
+    txt.set('_caime-verify.bakery.example', [[started.record.value]]);
+    const checked = await back.req('POST', `/v1/orgs/${closedId}/reclaim/check`);
+    expect(checked.statusCode).toBe(201);
+    const org = checked.json().org;
+    expect(org).toMatchObject({
+      handle: 'bakery',
+      name: 'Bassem’s Bakery',
+      about: 'Bread since 1990.',
+      verified: true,
+      verifiedDomain: 'bakery.example',
+      myRole: 'owner',
+      memberCount: 1,
+    });
+    expect(org.id).not.toBe(closedId);
+    expect((await customer.get('/v1/orgs/by-handle/bakery')).org.id).toBe(org.id);
+    // The old one is done with: not reclaimable twice, and its page is the new one's.
+    expect((await omar.req('POST', `/v1/orgs/${closedId}/reclaim`)).statusCode).toBe(404);
+    // The customer's old conversation stays read-only; a new one is with the new organization.
+    expect(
+      (
+        await customer.req('POST', `/v1/conversations/${convo}/messages`, {
+          clientId: uuidv4(),
+          body: 'Back?',
+        })
+      ).json().error.code,
+    ).toBe('org_closed');
+    const fresh = (await customer.post(`/v1/orgs/${org.id}/conversations`)).conversationId;
+    expect(fresh).not.toBe(convo);
+    await customer.post(`/v1/conversations/${fresh}/messages`, {
+      clientId: uuidv4(),
+      body: 'Back?',
+    });
+    const inbox = (await back.get(`/v1/orgs/${org.id}/inbox`)).threads;
+    expect(inbox.map((th: any) => th.conversationId)).toEqual([fresh]);
+    // The bakery's handle is nobody else's, and the domain is the new one's alone.
+    const again = await omar.req('POST', '/v1/orgs', {
+      country: 'EG',
+      name: 'Bakery',
+      handle: 'bakery',
+      kind: 'shop',
+    });
+    expect(again.json().error.code).toBe('handle_taken');
+    const logged = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['target', 'metadata'])
+      .where('action', '=', 'org.reclaimed')
+      .execute();
+    expect(logged).toEqual([
+      { target: org.id, metadata: { from: closedId, domain: 'bakery.example', handle: 'bakery' } },
+    ]);
+  });
+
+  it('the operator deletes a closed organization for good; never an open one', async () => {
+    const del = (id: string) =>
+      t.app.inject({
+        method: 'DELETE',
+        url: `/v1/admin/orgs/${id}`,
+        headers: { authorization: `Bearer ${ADMIN}` },
+      });
+    const open = (await customer.get('/v1/orgs/by-handle/bakery')).org.id;
+    const refused = await del(open);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe('org_open');
+    expect(
+      (await t.app.inject({ method: 'DELETE', url: `/v1/admin/orgs/${closedId}` })).statusCode,
+    ).toBe(401);
+    expect((await del(closedId)).statusCode).toBe(200);
+    // The customer's conversation with it went with it.
+    expect((await customer.req('GET', `/v1/conversations/${convo}/messages`)).statusCode).toBe(404);
+    expect((await customer.get('/v1/orgs/by-handle/bakery')).org.id).toBe(open);
+    // A closed one nobody continued: its handle is held a year, like a person's.
+    const clinic = await t.ctx.db
+      .selectFrom('organizations')
+      .select('id')
+      .where('handle', '=', 'clinicone')
+      .where('archived_at', 'is not', null)
+      .executeTakeFirstOrThrow();
+    expect((await del(clinic.id)).statusCode).toBe(200);
+    expect((await del(clinic.id)).statusCode).toBe(404);
+    expect(
+      await t.ctx.db
+        .selectFrom('released_handles')
+        .select('handle')
+        .where('handle', '=', 'clinicone')
+        .execute(),
+    ).toEqual([{ handle: 'clinicone' }]);
   });
 });

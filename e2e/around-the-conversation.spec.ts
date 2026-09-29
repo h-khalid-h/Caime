@@ -2759,4 +2759,84 @@ test.describe
       ).toBeVisible();
       await context.close();
     });
+
+    test('Noor closes Nile Dental; Lina keeps what it sent her; Alex takes it back by its domain', async () => {
+      if (!linaContext) throw new Error('The link test signs Lina up first.');
+      const handle = `nile.dental.${stamp}`;
+      const orgName = `Nile Dental ${stamp}`;
+      const domain = `niledental-${stamp}.example`;
+      // Lina's conversation with it, from its page (hers already: it opens again).
+      const customer = lina.page;
+      await customer.goto(`/o/${handle}`);
+      await customer.getByTestId('org-message').filter({ visible: true }).click();
+      await expect(customer).toHaveURL(/\/c\/[0-9a-f-]+$/);
+      const conversationId = customer.url().split('/c/')[1] ?? '';
+      expect(conversationId).toMatch(/^[0-9a-f-]{36}$/);
+
+      // Its owner closes it: the page is gone for everyone.
+      const { page, errors } = noor;
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-close').click();
+      await expect(visible(page, `Close ${orgName}?`)).toBeVisible();
+      await expect(
+        visible(page, new RegExp(`Its handle waits for whoever verifies ${domain} again`)),
+      ).toBeVisible();
+      await page.getByTestId('org-close-confirm').click();
+      await expect(visible(page, `${orgName} closed`)).toBeVisible();
+      await page.waitForURL('**/orgs');
+      await expect(page.getByTestId(`org-row-${handle}`)).toHaveCount(0);
+      await page.goto(`/o/${handle}`);
+      await expect(visible(page, 'This organization isn’t here')).toBeVisible();
+
+      // Lina reads what it sent her, and can write no more.
+      await customer.goto(`/c/${conversationId}`);
+      await expect(visible(customer, new RegExp(`${orgName} closed on Caime\\.`))).toBeVisible();
+      await expect(customer.getByTestId('composer-input').filter({ visible: true })).toHaveCount(0);
+      await customer.screenshot({ path: 'e2e/screenshots/phone-org-closed.png' });
+
+      // Alex asks for its handle: told whose it was, and how to take it back.
+      const phone = alex.page;
+      await phone.goto('/orgs');
+      await phone.getByTestId('org-create-start').filter({ visible: true }).click();
+      await phone.getByTestId('org-name').fill(orgName);
+      await expect(phone.getByTestId('org-handle')).toHaveValue(handle);
+      await expect(phone.getByTestId('org-reclaim')).toContainText(`${orgName} closed`);
+      await phone.getByTestId('org-reclaim-start').click();
+      await expect(phone.getByTestId('org-reclaim-name')).toHaveText(`_caime-verify.${domain}`);
+      const value = (await phone.getByTestId('org-reclaim-value').textContent()) ?? '';
+      expect(value).toMatch(/^caime-verify=[\w-]{20,}$/);
+      // The old record is still published: it was made for someone else, so it doesn't count.
+      const stale = phone.waitForResponse((r) => r.url().endsWith('/reclaim/check'));
+      await phone.getByTestId('org-reclaim-check').click();
+      expect((await stale).status()).toBe(422);
+      await expect(visible(phone, /couldn’t find the record yet/)).toBeVisible();
+      await publishTxt(`_caime-verify.${domain}`, [value]);
+      await phone.getByTestId('org-reclaim-check').click();
+      await expect(phone).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
+      await expect(phone.getByTestId('org-verified').filter({ visible: true })).toHaveText(
+        `Verified · ${domain}`,
+      );
+      await expect(visible(phone, 'Alex Chen (you)')).toBeVisible();
+      await expect(visible(phone, 'Team · 1')).toBeVisible();
+      await phone.screenshot({ path: 'e2e/screenshots/phone-org-reclaimed.png' });
+
+      // For Lina it's the same page, and a new conversation: the old one stays as it was.
+      await customer.goto(`/o/${handle}`);
+      await customer.getByTestId('org-message').filter({ visible: true }).click();
+      await expect(customer).toHaveURL(/\/c\/[0-9a-f-]+$/);
+      expect(customer.url()).not.toContain(conversationId);
+      await expect(customer.getByTestId('composer-input').filter({ visible: true })).toBeVisible();
+      // The one failed call of this test's is the check that found no record of Alex's; the
+      // 409s are his browser offering the device the private tests retired, on each page load.
+      expect(alex.errors.filter((e) => !/422|reclaim\/check|409|e2ee\/devices/.test(e))).toEqual(
+        [],
+      );
+      alex.errors.length = 0;
+      // Noor's are the closed page she looked for, and its updates: 404, as they should be.
+      expect(errors.filter((e) => !/404/.test(e))).toEqual([]);
+      errors.length = 0;
+      // Lina's is her browser's kept copy of the page, shown first and refreshed: it asked the
+      // closed organization for its updates once, and was told it's gone.
+      expect(lina.errors.filter((e) => !/404.*\/updates|404 \(Not Found\)/.test(e))).toEqual([]);
+    });
   });

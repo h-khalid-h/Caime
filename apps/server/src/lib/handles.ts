@@ -8,10 +8,10 @@
  * year, whoever had it included: only the handle and the days are kept, never whose it was. An
  * organization's handle stays with it, closed or not (its row stays).
  */
-import { isReservedHandle } from '@caime/core';
+import { type ClosedOrgView, isReservedHandle } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../db/schema';
-import { conflict } from './errors';
+import { AppError, conflict } from './errors';
 import { dayOf, KEPT_DAYS } from './retention';
 
 type Q = Kysely<Database> | Transaction<Database>;
@@ -19,7 +19,26 @@ type Q = Kysely<Database> | Transaction<Database>;
 /** How a handle that can't be had reads: someone has it, it's held, or it's reserved. */
 export const HANDLE_UNAVAILABLE = 'That handle isn’t available.';
 
-/** Whether someone has `handle`: a person (but whoever `except` names) or an organization. */
+/**
+ * A closed organization holding `handle` (R42): one that was verified at its domain keeps it
+ * from everyone but whoever proves that domain again, and is named so they can. Null when
+ * nobody such holds it (a closed organization never verified lets its handle go, held a year).
+ */
+export async function closedOrgHolding(db: Q, handle: string): Promise<ClosedOrgView | null> {
+  const org = await db
+    .selectFrom('organizations')
+    .select(['id', 'name', 'domain', 'archived_at'])
+    .where('handle', '=', handle)
+    .where('archived_at', 'is not', null)
+    .where('verified_at', 'is not', null)
+    .where('succeeded_by', 'is', null)
+    .executeTakeFirst();
+  return org?.domain && org.archived_at
+    ? { id: org.id, name: org.name, domain: org.domain, closedAt: org.archived_at.toISOString() }
+    : null;
+}
+
+/** Whether someone has `handle`: a person (but whoever `except` names) or an open organization. */
 export async function handleTaken(
   db: Q,
   handle: string,
@@ -36,6 +55,7 @@ export async function handleTaken(
       .selectFrom('organizations')
       .select('id')
       .where('handle', '=', handle)
+      .where('archived_at', 'is', null)
       .$if(Boolean(except.orgId), (qb) => qb.where('id', '<>', except.orgId!))
       .executeTakeFirst(),
   ]);
@@ -76,7 +96,18 @@ export async function unavailableAmong(db: Q, handles: string[], now: Date): Pro
   if (!handles.length) return new Set();
   const [people, orgs, held] = await Promise.all([
     db.selectFrom('users').select('handle').where('handle', 'in', handles).execute(),
-    db.selectFrom('organizations').select('handle').where('handle', 'in', handles).execute(),
+    db
+      .selectFrom('organizations')
+      .select('handle')
+      .where('handle', 'in', handles)
+      // Open, or closed and keeping it for whoever proves its domain (R42).
+      .where((eb) =>
+        eb.or([
+          eb('archived_at', 'is', null),
+          eb.and([eb('verified_at', 'is not', null), eb('succeeded_by', 'is', null)]),
+        ]),
+      )
+      .execute(),
     db
       .selectFrom('released_handles')
       .select('handle')
@@ -102,10 +133,16 @@ export async function assertHandleAvailable(
 ): Promise<void> {
   // Whether someone has it before whether it's held: a handle is held in the transaction that
   // lets it go, so once the first no longer finds its holder, the second finds the hold.
-  if (
-    isReservedHandle(handle) ||
-    (await handleTaken(db, handle, except)) ||
-    (await handleHeld(db, handle, now))
-  )
+  if (isReservedHandle(handle) || (await handleTaken(db, handle, except)))
     throw conflict('handle_taken', HANDLE_UNAVAILABLE);
+  // A closed organization's, verified: said, with its domain, so that the organization itself
+  // can take it back (R42). Anyone else gets what a taken handle gets.
+  const closed = await closedOrgHolding(db, handle);
+  if (closed)
+    throw new AppError(409, 'handle_closed_org', closedOrgMessage(closed), { closedOrg: closed });
+  if (await handleHeld(db, handle, now)) throw conflict('handle_taken', HANDLE_UNAVAILABLE);
 }
+
+/** What whoever asks for a closed organization's handle is told. */
+export const closedOrgMessage = (o: ClosedOrgView) =>
+  `It belongs to ${o.name}, which closed. If you’re ${o.name}, verify ${o.domain} to take it back.`;

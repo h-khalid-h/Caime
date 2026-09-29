@@ -17,7 +17,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
-import { paysThroughBilling } from '../lib/billing';
+import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
 import { requireOperator } from '../lib/operator';
@@ -169,6 +169,51 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     await giveHandle(req, { of: 'person', ...person }, wanted);
     await ctx.bus.publish([person.id], { type: 'me.updated', data: { id: person.id } });
     return { kind: 'person', id: person.id, handle: wanted };
+  });
+
+  /**
+   * A closed organization deleted for good (R42): a lawful request, or a test that shouldn't
+   * stay. Everything its customers were sent by it goes with it, and its handle is held a year
+   * from everyone (unless an open organization continues it). Only ever a closed one: an open
+   * organization is its owner's to close.
+   */
+  app.delete('/admin/orgs/:id', async (req): Promise<{ ok: true }> => {
+    operator(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select(['id', 'handle', 'archived_at', 'succeeded_by'])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!org) throw notFound('That organization');
+    if (!org.archived_at) throw conflict('org_open', 'Only a closed organization is deleted.');
+    await endBillingOf(ctx, { orgId: id });
+    const bots = await ctx.db
+      .selectFrom('org_apps')
+      .select('bot_user_id')
+      .where('org_id', '=', id)
+      .union(ctx.db.selectFrom('org_agents').select('bot_user_id').where('org_id', '=', id))
+      .execute();
+    await ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .deleteFrom('conversations')
+        .where('id', 'in', (eb) =>
+          eb.selectFrom('business_threads').select('conversation_id').where('org_id', '=', id),
+        )
+        .execute();
+      await trx.deleteFrom('organizations').where('id', '=', id).execute();
+      const botIds = bots.map((b) => b.bot_user_id).filter((x): x is string => Boolean(x));
+      if (botIds.length) await trx.deleteFrom('users').where('id', 'in', botIds).execute();
+      if (!org.succeeded_by) await releaseHandle(trx, org.handle, ctx.now());
+    });
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'org.deleted',
+      target: id,
+      ip: req.ip,
+      metadata: { handle: org.handle },
+    });
+    return { ok: true };
   });
 
   app.put('/admin/orgs/:handle/handle', async (req): Promise<HandleView> => {

@@ -1,3 +1,4 @@
+import type { ClosedOrgView } from '@caime/core/api';
 import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
 import { handleError, handleFromName, normalizeHandle } from '@caime/core/rules';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,6 +11,7 @@ import { qk } from '@/api/keys';
 import { CountryField } from '@/features/geo/CountryField';
 import { foundedError } from '@/features/orgs/founded';
 import { ORG_ICONS } from '@/features/orgs/kinds';
+import { ReclaimCard } from '@/features/orgs/Reclaim';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -35,7 +37,12 @@ export default function NewOrganization() {
   // Where it's based: where its maker lives, until they say otherwise.
   const [country, setCountry] = useState<string | null>(me.country);
   const [founded, setFounded] = useState('');
-  const [taken, setTaken] = useState<{ handle: string; reason: string | null } | null>(null);
+  const [taken, setTaken] = useState<{
+    handle: string;
+    reason: string | null;
+    /** A closed organization's, verified: it can be taken back (R42). */
+    closedOrg?: ClosedOrgView;
+  } | null>(null);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [busy, setBusy] = useState(false);
 
@@ -53,7 +60,9 @@ export default function NewOrganization() {
     const timer = setTimeout(() => {
       endpoints
         .handleAvailable(h)
-        .then((r) => setTaken(r.available ? null : { handle: h, reason: r.reason }))
+        .then((r) =>
+          setTaken(r.available ? null : { handle: h, reason: r.reason, closedOrg: r.closedOrg }),
+        )
         .catch(() => setTaken(null));
     }, 350);
     return () => clearTimeout(timer);
@@ -89,7 +98,10 @@ export default function NewOrganization() {
     } catch (e) {
       if (e instanceof ApiError) {
         const fields = e.fieldErrors();
-        if (Object.keys(fields).length) setErrors(fields);
+        const closedOrg = e.details?.closedOrg as ClosedOrgView | undefined;
+        if (e.code === 'handle_closed_org' && closedOrg)
+          setTaken({ handle: h, reason: e.message, closedOrg });
+        else if (Object.keys(fields).length) setErrors(fields);
         else toast(e.message, { tone: 'danger' });
       } else toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -148,6 +160,9 @@ export default function NewOrganization() {
           }
           testID="org-handle"
         />
+        {taken?.closedOrg && taken.handle === normalizeHandle(handle) ? (
+          <ReclaimCard closed={taken.closedOrg} />
+        ) : null}
         <View style={{ gap: 8 }}>
           <Text variant="captionStrong" color="textSecondary">
             What kind of organization

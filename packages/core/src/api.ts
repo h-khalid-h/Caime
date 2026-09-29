@@ -689,6 +689,8 @@ export interface ConversationBusinessView {
   thread: BusinessThreadView | null;
   /** The customer blocked the organization: nobody writes in it until they unblock it. */
   closed: boolean;
+  /** The organization closed (R42): what was sent stays to read, and nothing more is written. */
+  orgClosed: boolean;
 }
 
 export interface BusinessInboxView {
@@ -776,6 +778,25 @@ export interface HandleView {
   kind: 'person' | 'org';
   id: string;
   handle: string;
+}
+
+/**
+ * A closed organization that holds a handle (R42): what whoever asks for the handle is told,
+ * so that, if they are the organization, they can prove its domain and take it back.
+ */
+export interface ClosedOrgView {
+  id: string;
+  name: string;
+  /** The domain it was verified at: proving it again takes the organization back. */
+  domain: string;
+  closedAt: string;
+}
+
+/** Taking a closed organization back: the record to add at its domain, then check. */
+export interface OrgReclaimView {
+  org: { id: string; name: string; handle: string };
+  domain: string;
+  record: { name: string; type: 'TXT'; value: string };
 }
 
 /** An organization as anyone sees it (PRD §36, R15). */
