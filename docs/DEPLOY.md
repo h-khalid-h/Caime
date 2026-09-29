@@ -169,6 +169,28 @@ redeploy automatically after that:
 
 The CI job calls it only after the new image passed its smoke test.
 
+## Expo Go (the phone app, before store builds)
+
+Until the store builds exist (⛔), the phone app runs in Expo Go, from either of these:
+
+- **The `caime-go` service** (project `caishy`, EasyPanel): Expo's own server with the app's
+  production JavaScript, built from `Dockerfile.expo-go` on `production` like `caime`, so it
+  moves only with a green CI run. `EXPO_PACKAGER_PROXY_URL` on the service is its own https
+  address (`https://caishy-caime-go.0hqwb7.easypanel.host`), which the manifest hands the
+  phone; the app talks to `https://caime.datac.com`. On an iPhone, open
+  `exps://caishy-caime-go.0hqwb7.easypanel.host` (the Camera app reads it from a QR code, or
+  type it into Safari) and Expo Go opens it. The first open after a deploy bundles the app,
+  about 20 seconds. Its image holds the app and the packages it's built from, never the
+  server's code: Expo's server serves any source file it can see. Stop or delete the service
+  when the store builds replace it.
+- **Your own computer**: `pnpm dev:phone` (`scripts/dev-phone.mjs`) starts Expo's server
+  against the live Caime (`CAIME_API_URL` to change it); scan its QR code with the iPhone on
+  the same Wi-Fi.
+
+Calls aren't in Expo Go: they need react-native-webrtc's native code, so only a development
+build (`npx expo run:ios`, or an EAS build) or a store build has them. Expo Go doesn't offer
+them, and nothing of them loads. Everything else is there, private conversations included.
+
 ## Plans
 
 What each plan includes is in `packages/core/src/plans.ts` (PRD §84, R23). Personal is free

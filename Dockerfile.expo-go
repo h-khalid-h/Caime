@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.7
+# The phone app for Expo Go, served by Expo's own server (docs/DEPLOY.md, "Expo Go"): its
+# production JavaScript (no dev mode, minified) against the live Caime. A phone opens
+# exps://<this service's domain> in Expo Go. Calls aren't in it (Expo Go has no WebRTC).
+#
+# The image holds the app and the packages it's built from, never the server's code: Expo's
+# server hands out any source file it can see, so it sees only what the web app already ships.
+
+ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-bookworm-slim
+ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
+RUN corepack enable
+WORKDIR /repo
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# The server's manifest only, so the workspace installs as locked; none of its code.
+COPY apps/server/package.json apps/server/
+COPY apps/app/package.json apps/app/
+COPY packages/core/package.json packages/core/
+COPY packages/brand/package.json packages/brand/
+COPY vendor vendor
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
+COPY packages/core packages/core
+COPY packages/brand packages/brand
+COPY apps/app apps/app
+
+# Where the app talks to (inlined as it's bundled), and where the phone finds this server
+# (EXPO_PACKAGER_PROXY_URL, set on the service: its https address).
+ENV EXPO_PUBLIC_API_URL=https://caime.datac.com
+WORKDIR /repo/apps/app
+EXPOSE 8081
+CMD ["npx", "expo", "start", "--go", "--no-dev", "--minify", "--port", "8081"]

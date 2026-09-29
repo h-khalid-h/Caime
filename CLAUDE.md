@@ -36,6 +36,7 @@ pnpm test                    # all packages, app logic included (server tests ne
                              #   default postgres://caishy:caishy-dev@127.0.0.1:5432/postgres)
 pnpm dev:server              # API on :8787 (DATABASE_URL; see apps/server/.env.example)
 pnpm dev:app                 # Expo dev server; press w for web (talks to :8787)
+pnpm dev:phone               # Expo Go on a phone against the live Caime (docs/DEPLOY.md, Expo Go)
 pnpm build                   # web export (apps/app/dist) + server bundle (apps/server/dist)
 pnpm budget                  # initial web JS, gzip, must stay under 450 KB
 pnpm e2e                     # Playwright against the bundle; set E2E_DATABASE_URL

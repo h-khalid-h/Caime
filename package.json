@@ -10,6 +10,7 @@
   "scripts": {
     "dev:server": "pnpm --filter @caime/server dev",
     "dev:app": "pnpm --filter @caime/app start",
+    "dev:phone": "node scripts/dev-phone.mjs",
     "build": "pnpm --filter @caime/app build:web && pnpm --filter @caime/server build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "lint": "biome check .",
