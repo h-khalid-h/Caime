@@ -157,7 +157,7 @@ export function devicesChanged(userId: string): void {
 const refused = (code: string, message: string, details?: Record<string, unknown>) =>
   new ApiError(409, code, message, details);
 const WAITING =
-  'This browser can’t write in private conversations until you approve it on another device where you’re signed in to Caime.';
+  'This device can’t write in private conversations until you approve it on another device where you’re signed in to Caime.';
 
 interface Recipients {
   people: string[];
@@ -356,7 +356,7 @@ export function noteFor(result: Opened): string | null {
     case 'not_for_this_device':
       return 'Sent before this device could read private messages.';
     case 'waiting':
-      return 'This browser reads private messages once you approve it on another of your devices.';
+      return 'This device reads private messages once you approve it on another of your devices.';
     case 'held':
       return 'Their security code changed since you compared it: check it in this conversation’s details to read this.';
     case 'stale':

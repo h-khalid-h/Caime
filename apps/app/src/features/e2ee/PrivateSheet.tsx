@@ -214,7 +214,7 @@ export function StartOverSheet({ open, onClose }: { open: boolean; onClose: () =
     <Sheet open={open} onClose={onClose} title="Start over here?">
       <View style={{ gap: 12, paddingBottom: 8 }}>
         <Text variant="body">
-          This browser reads your private conversations from now on, and every other device of yours
+          This device reads your private conversations from now on, and every other device of yours
           stops reading them until you approve it from here.
         </Text>
         <Text variant="caption" color="textSecondary">

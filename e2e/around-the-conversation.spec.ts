@@ -2295,7 +2295,7 @@ test.describe
         'once you approve it on another device',
       );
       await expect(second.page.getByTestId('message-sealed-note').first()).toHaveText(
-        'This browser reads private messages once you approve it on another of your devices.',
+        'This device reads private messages once you approve it on another of your devices.',
       );
       await second.page.screenshot({ path: 'e2e/screenshots/desktop-private-waiting.png' });
       // Every browser Alex signed in on since his phone waits for him (the laptop, and others

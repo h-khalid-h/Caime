@@ -43,7 +43,7 @@ export function whyNotWritten(
   if (where.private && !saysPrivate)
     return 'This conversation was private on this device, and Caime now says it isn’t, so nothing is sent from here. Start a new private conversation instead.';
   if (where.private && thisDevice === 'waiting')
-    return 'This browser reads and writes private messages once you approve it on another device where you’re signed in to Caime.';
+    return 'This device reads and writes private messages once you approve it on another device where you’re signed in to Caime.';
   return null;
 }
 

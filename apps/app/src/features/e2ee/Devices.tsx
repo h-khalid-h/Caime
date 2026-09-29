@@ -40,7 +40,7 @@ export function PrivateDevices() {
         >
           <ListRow
             icon={Lock}
-            title={d.name ?? 'A browser'}
+            title={d.name ?? 'A device'}
             subtitle={
               d.current
                 ? d.approved

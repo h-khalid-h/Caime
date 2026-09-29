@@ -179,7 +179,9 @@ Until the store builds exist (⛔), the phone app runs in Expo Go, from either o
   address (`https://caishy-caime-go.0hqwb7.easypanel.host`), which the manifest hands the
   phone; the app talks to `https://caime.datac.com`. On an iPhone, open
   `exps://caishy-caime-go.0hqwb7.easypanel.host` (the Camera app reads it from a QR code, or
-  type it into Safari) and Expo Go opens it. The first open after a deploy bundles the app,
+  type it into Safari) and Expo Go opens it. Expo Go must be signed out: the service isn't
+  signed in to an Expo account, so its manifest is signed anonymously, and a signed-in Expo Go
+  refuses that ("You're signed in to Expo Go as … but not signed in to Expo CLI"). The first open after a deploy bundles the app,
   about 20 seconds. Its image holds the app and the packages it's built from, never the
   server's code: Expo's server serves any source file it can see. Stop or delete the service
   when the store builds replace it.
