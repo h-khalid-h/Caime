@@ -28,6 +28,9 @@ COPY apps/app apps/app
 # Where the app talks to (inlined as it's bundled), and where the phone finds this server
 # (EXPO_PACKAGER_PROXY_URL, set on the service: its https address).
 ENV EXPO_PUBLIC_API_URL=https://caime.datac.com
+# One bundle, with every part the app loads when it's needed inside it: without dev mode, a
+# phone can't fetch those parts later (Metro looks for them at the web page's location).
+ENV EXPO_NO_METRO_LAZY=1
 WORKDIR /repo/apps/app
 EXPOSE 8081
 CMD ["npx", "expo", "start", "--go", "--no-dev", "--minify", "--port", "8081"]
