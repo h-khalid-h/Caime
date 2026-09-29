@@ -184,6 +184,8 @@ export interface PeopleSearchResult {
 
 export interface PersonProfileView {
   person: PersonView;
+  /** The organizations they're on the team of (R43), shown as their professional details are. */
+  organizations: OrgRef[];
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];
@@ -1022,6 +1024,15 @@ export interface SpaceConversationView {
   lastMessageAt: string | null;
   /** Only for conversations you're in. */
   lastMessage: { preview: string; senderName: string | null; mine: boolean } | null;
+}
+
+/**
+ * One of an organization's spaces, on its page (R43): its team sees the ones they're in; its
+ * owner and admins see them all, and can join any.
+ */
+export interface OrgSpaceView extends Omit<SpaceSummaryView, 'myRole'> {
+  myRole: SpaceRole | null;
+  joined: boolean;
 }
 
 export interface SpaceView extends SpaceSummaryView {

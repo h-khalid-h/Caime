@@ -432,8 +432,34 @@ export function OrgScreen({ handle }: { handle: string }) {
                       key={s.id}
                       icon={LayoutGrid}
                       title={s.name}
-                      subtitle={`${s.memberCount} ${s.memberCount === 1 ? 'person' : 'people'}`}
-                      onPress={() => router.navigate({ pathname: '/s/[id]', params: { id: s.id } })}
+                      subtitle={`${s.memberCount} ${s.memberCount === 1 ? 'person' : 'people'}${
+                        s.joined ? '' : ' · You’re not in it'
+                      }`}
+                      right={
+                        s.joined ? undefined : (
+                          <Button
+                            label="Join"
+                            size="sm"
+                            variant="secondary"
+                            loading={busy}
+                            onPress={() =>
+                              void (async () => {
+                                if (await run(() => endpoints.joinOrgSpace(org.id, s.id))) {
+                                  void qc.invalidateQueries({ queryKey: qk.orgSpaces(org.id) });
+                                  void qc.invalidateQueries({ queryKey: qk.spaces });
+                                  router.navigate({ pathname: '/s/[id]', params: { id: s.id } });
+                                }
+                              })()
+                            }
+                            testID={`org-space-join-${s.name}`}
+                          />
+                        )
+                      }
+                      onPress={
+                        s.joined
+                          ? () => router.navigate({ pathname: '/s/[id]', params: { id: s.id } })
+                          : undefined
+                      }
                       testID={`org-space-${s.name}`}
                     />
                   ))}

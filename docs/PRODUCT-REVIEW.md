@@ -312,7 +312,11 @@ with its reason, so it isn't proposed again without new facts.
   project, the whole team): its team can be in it without being connections (colleagues share a
   space by working together, R19 stands for everyone else), it says whose it is, leaving the team
   leaves it, and when the organization closes the space stays with its people as an ordinary one
-  (R42: nothing anyone was in is taken away). The organization's page lists its spaces you're in.
+  (R42: nothing anyone was in is taken away). The organization's page lists its spaces you're
+  in; its owner and admins see them all and can join any, as its admin (they run the place).
+  A person's profile shows the organizations they're with, as their professional details are
+  shown (§35, privacy's "identityDetails"): the same rule as "Verified at", now with a way to
+  the organization's page.
   What it doesn't do: an organization never *owns a person's record*. A relationship is the
   definer's (§10), a person's professional identity is theirs to show or hide (§35, R27), and the
   organization's side of a person is its Business inbox thread and its team seat, nothing more;

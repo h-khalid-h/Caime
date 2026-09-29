@@ -299,12 +299,31 @@ describe('an organization’s spaces (R43)', () => {
     // Lina, a connection of Omar's, can still be added as to any space.
     await omar.post(`/v1/spaces/${spaceId}/members`, { userIds: [lina.user.id] });
     expect((await lina.get(`/v1/spaces/${spaceId}`)).space.org.handle).toBe('nooragency');
-    // Its team sees it among the organization's; whoever's not on the team doesn't.
-    expect((await dana.get(`/v1/orgs/${orgId}/spaces`)).spaces.map((x: any) => x.id)).toEqual([
-      spaceId,
+    // Its team sees the ones they're in; whoever's not on the team sees nothing of them.
+    expect((await dana.get(`/v1/orgs/${orgId}/spaces`)).spaces).toEqual([
+      expect.objectContaining({ id: spaceId, joined: true, myRole: 'member' }),
     ]);
-    expect((await noor.get(`/v1/orgs/${orgId}/spaces`)).spaces).toEqual([]);
     expect((await lina.req('GET', `/v1/orgs/${orgId}/spaces`)).statusCode).toBe(404);
+    // Running it, Noor sees every one of its spaces, and joins as an admin of it.
+    expect((await noor.get(`/v1/orgs/${orgId}/spaces`)).spaces).toEqual([
+      expect.objectContaining({ id: spaceId, joined: false, myRole: null, unreadCount: 0 }),
+    ]);
+    expect((await dana.req('POST', `/v1/orgs/${orgId}/spaces/${spaceId}/join`)).statusCode).toBe(
+      403,
+    );
+    await noor.post(`/v1/orgs/${orgId}/spaces/${spaceId}/join`);
+    expect((await noor.get(`/v1/spaces/${spaceId}`)).space).toMatchObject({
+      myRole: 'admin',
+      memberCount: 4,
+    });
+    expect((await noor.req('POST', `/v1/orgs/${orgId}/spaces/${spaceId}/join`)).statusCode).toBe(
+      409,
+    );
+    // Out again, as anyone leaves a space; the space is still there for her to join.
+    await noor.req('DELETE', `/v1/spaces/${spaceId}/members/${noor.user.id}`);
+    expect((await noor.get(`/v1/orgs/${orgId}/spaces`)).spaces).toEqual([
+      expect.objectContaining({ id: spaceId, joined: false }),
+    ]);
     // A space of one's own says it belongs to nobody.
     expect((await lina.get('/v1/spaces')).spaces.find((x: any) => x.name === 'Book club').org).toBe(
       null,

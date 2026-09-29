@@ -7,6 +7,7 @@
 
 import type {
   ConversationView,
+  OrgSpaceView,
   SpaceConversationView,
   SpaceKind,
   SpaceMemberView,
@@ -102,6 +103,129 @@ async function assertConnected(
         ? 'You can add people on the organization’s team, or people you’re connected with.'
         : 'You can add people you’re connected with.',
     );
+}
+
+/** Newcomers to a space are offered who they may know in it (PRD §12), after the request. */
+const offerWhoTheyKnowIn = (ctx: AppContext, spaceId: string, newcomers: string[]) =>
+  ctx.defer('suggest-space', async () => {
+    const space = await ctx.db
+      .selectFrom('spaces')
+      .select(['name', 'kind'])
+      .where('id', '=', spaceId)
+      .executeTakeFirst();
+    if (!space) return;
+    const members = (await activeMembers(ctx, spaceId)).map((m) => m.user_id);
+    await suggestFromPlace(
+      ctx,
+      { kind: 'space', id: spaceId, name: space.name, spaceKind: space.kind as SpaceKind },
+      newcomers,
+      members,
+    );
+  });
+
+/** People into a space, in a role: in its General conversation too, caught up, and told. */
+export async function addToSpace(
+  ctx: AppContext,
+  spaceId: string,
+  adding: string[],
+  addedBy: string,
+  role: 'member' | 'admin' = 'member',
+): Promise<void> {
+  if (adding.length === 0) return;
+  const general = await generalOf(ctx.db, spaceId);
+  await ctx.db.transaction().execute(async (trx) => {
+    for (const userId of adding) {
+      await trx
+        .insertInto('space_members')
+        .values({ space_id: spaceId, user_id: userId, role, added_by: addedBy })
+        .onConflict((oc) =>
+          oc.columns(['space_id', 'user_id']).doUpdateSet({
+            left_at: null,
+            role,
+            added_by: addedBy,
+            joined_at: ctx.now(),
+          }),
+        )
+        .execute();
+      await trx
+        .insertInto('participants')
+        .values({
+          conversation_id: general.id,
+          user_id: userId,
+          role: 'member',
+          last_read_seq: general.last_seq,
+        })
+        .onConflict((oc) =>
+          oc
+            .columns(['conversation_id', 'user_id'])
+            .doUpdateSet({ left_at: null, role: 'member', last_read_seq: general.last_seq }),
+        )
+        .execute();
+    }
+    await recordEvent(trx, 'space.member_added', addedBy, { spaceId, userIds: adding });
+  });
+  await sendSystem(ctx, general.id, addedBy, 'members_added', { userIds: adding });
+  await ctx.bus.publish(adding, {
+    type: 'conversation.created',
+    data: { conversationId: general.id },
+  });
+  await tellSpace(ctx, spaceId);
+  offerWhoTheyKnowIn(ctx, spaceId, adding);
+}
+
+/**
+ * An organization's spaces as one of its people sees them (R43): those they're in, and for its
+ * owner and admins the rest too, to join.
+ */
+export async function orgSpaceViews(
+  ctx: AppContext,
+  userId: string,
+  orgId: string,
+  all: boolean,
+): Promise<OrgSpaceView[]> {
+  const mine: OrgSpaceView[] = (await summaries(ctx, userId, undefined, orgId)).map((s) => ({
+    ...s,
+    joined: true,
+  }));
+  if (!all) return mine;
+  const seen = new Set(mine.map((s) => s.id));
+  const [org, rows] = await Promise.all([
+    ctx.db.selectFrom('organizations').selectAll().where('id', '=', orgId).executeTakeFirst(),
+    ctx.db
+      .selectFrom('spaces as s')
+      .select([
+        's.id',
+        's.name',
+        's.kind',
+        's.purpose',
+        's.created_at',
+        sql<number>`(select count(*)::int from space_members x
+          where x.space_id = s.id and x.left_at is null)`.as('member_count'),
+        sql<Date | null>`(select max(c.last_message_at) from conversations c
+          where c.space_id = s.id)`.as('last_activity'),
+      ])
+      .where('s.org_id', '=', orgId)
+      .where('s.archived_at', 'is', null)
+      .execute(),
+  ]);
+  const ref = org ? orgRef(org) : null;
+  const others: OrgSpaceView[] = rows
+    .filter((r) => !seen.has(r.id))
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      kind: r.kind,
+      purpose: r.purpose,
+      memberCount: r.member_count,
+      unreadCount: 0,
+      lastActivityAt: (r.last_activity ?? r.created_at).toISOString(),
+      myRole: null,
+      joined: false,
+      org: ref,
+    }));
+  return [...mine, ...others].sort(
+    (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
+  );
 }
 
 /**
@@ -487,21 +611,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
   const idParam = z.object({ id: z.string().uuid() });
   /** People in a space who know each other may know each other its way (PRD §12): offered. */
   const offerWhoTheyKnow = (spaceId: string, newcomers: string[]) =>
-    ctx.defer('suggest-space', async () => {
-      const space = await ctx.db
-        .selectFrom('spaces')
-        .select(['name', 'kind'])
-        .where('id', '=', spaceId)
-        .executeTakeFirst();
-      if (!space) return;
-      const members = (await activeMembers(ctx, spaceId)).map((m) => m.user_id);
-      await suggestFromPlace(
-        ctx,
-        { kind: 'space', id: spaceId, name: space.name, spaceKind: space.kind as SpaceKind },
-        newcomers,
-        members,
-      );
-    });
+    offerWhoTheyKnowIn(ctx, spaceId, newcomers);
   const memberParam = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
 
   app.get('/spaces', async (req): Promise<{ spaces: SpaceSummaryView[] }> => {
@@ -639,45 +749,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const adding = [...new Set(body.userIds)].filter((u) => !current.has(u));
     if (adding.length === 0) return { ok: true };
     await assertConnected(ctx, auth.userId, adding, space.org_id);
-    const general = await generalOf(ctx.db, id);
-    await ctx.db.transaction().execute(async (trx) => {
-      for (const userId of adding) {
-        await trx
-          .insertInto('space_members')
-          .values({ space_id: id, user_id: userId, role: 'member', added_by: auth.userId })
-          .onConflict((oc) =>
-            oc.columns(['space_id', 'user_id']).doUpdateSet({
-              left_at: null,
-              role: 'member',
-              added_by: auth.userId,
-              joined_at: ctx.now(),
-            }),
-          )
-          .execute();
-        await trx
-          .insertInto('participants')
-          .values({
-            conversation_id: general.id,
-            user_id: userId,
-            role: 'member',
-            last_read_seq: general.last_seq,
-          })
-          .onConflict((oc) =>
-            oc
-              .columns(['conversation_id', 'user_id'])
-              .doUpdateSet({ left_at: null, role: 'member', last_read_seq: general.last_seq }),
-          )
-          .execute();
-      }
-      await recordEvent(trx, 'space.member_added', auth.userId, { spaceId: id, userIds: adding });
-    });
-    await sendSystem(ctx, general.id, auth.userId, 'members_added', { userIds: adding });
-    await ctx.bus.publish(adding, {
-      type: 'conversation.created',
-      data: { conversationId: general.id },
-    });
-    await tellSpace(ctx, id);
-    offerWhoTheyKnow(id, adding);
+    await addToSpace(ctx, id, adding, auth.userId);
     return { ok: true };
   });
 

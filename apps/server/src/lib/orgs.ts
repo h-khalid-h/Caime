@@ -3,9 +3,11 @@
  * organization a person's "Verified at …" comes from.
  */
 import { randomBytes } from 'node:crypto';
+import type { OrgRef } from '@caime/core';
 import { nextOwner } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database, Organization, OrgMember } from '../db/schema';
+import { orgRef } from './business';
 import { notFound } from './errors';
 import { releaseHandle } from './handles';
 
@@ -55,6 +57,20 @@ export async function verifiedOrgNames(db: Q, userIds: string[]): Promise<Map<st
   const out = new Map<string, string>();
   for (const r of rows) if (!out.has(r.user_id)) out.set(r.user_id, r.name);
   return out;
+}
+
+/** The open organizations someone is on the team of (R43), as they joined them. */
+export async function orgsOf(db: Q, userId: string): Promise<OrgRef[]> {
+  const rows = await db
+    .selectFrom('org_members as m')
+    .innerJoin('organizations as o', 'o.id', 'm.org_id')
+    .selectAll('o')
+    .where('m.user_id', '=', userId)
+    .where('m.left_at', 'is', null)
+    .where('o.archived_at', 'is', null)
+    .orderBy('m.joined_at')
+    .execute();
+  return rows.map(orgRef);
 }
 
 /** The value a domain's TXT record must carry. */

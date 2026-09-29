@@ -11,6 +11,7 @@ import { PersonCalls } from '@/features/calls/PersonCalls';
 import { OtherAccounts } from '@/features/duplicates';
 import { privateSupported } from '@/features/e2ee/support';
 import { openChatWith } from '@/features/inbox/openChat';
+import { OrgMark } from '@/features/orgs/kinds';
 import { PersonOffer } from '@/features/relationships/offers';
 import { report } from '@/features/safety/report';
 import { useNow, useUserClock } from '@/lib/time';
@@ -38,6 +39,7 @@ import {
 import { lazyPart, useOpened } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
+import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -256,6 +258,40 @@ export function PersonScreen({ id }: { id: string }) {
               {person.trust.label}
             </Text>
           </View>
+          {p.organizations.length ? (
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}
+              testID="person-orgs"
+            >
+              {p.organizations.map((o) => (
+                <Pressable
+                  key={o.id}
+                  accessibilityRole="link"
+                  accessibilityLabel={`${o.name}, ${o.verified ? 'verified' : 'organization'}`}
+                  onPress={() =>
+                    router.navigate({ pathname: '/o/[handle]', params: { handle: o.handle } })
+                  }
+                  focusRadius={999}
+                  testID={`person-org-${o.handle}`}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingVertical: 4,
+                    paddingLeft: 4,
+                    paddingRight: 10,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: t.c.border,
+                    backgroundColor: t.c.surface,
+                  }}
+                >
+                  <OrgMark kind={o.kind} url={o.avatarUrl} size={22} />
+                  <Text variant="caption">{o.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           {person.bio ? (
             <Text
               variant="body"

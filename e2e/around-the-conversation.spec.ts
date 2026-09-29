@@ -717,6 +717,11 @@ test.describe
       await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-space-Front desk')).toBeVisible();
 
+      // On Alex's profile, the organization they're with, by its logo, opening its page.
+      await page.goto(`/p/${alexId}`);
+      await page.getByTestId(`person-org-${handle}`).click();
+      await expect(page).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
+
       // Alex finds it among theirs and sees the team, but not the verification controls.
       const phone = alex.page;
       await phone.goto('/orgs');

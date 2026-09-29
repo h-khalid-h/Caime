@@ -8,9 +8,9 @@ import type {
   OrgInsightsView,
   OrgMemberView,
   OrgReclaimView,
+  OrgSpaceView,
   OrgSummaryView,
   OrgView,
-  SpaceSummaryView,
 } from '@caime/core';
 import {
   CreateOrgBody,
@@ -59,7 +59,7 @@ import { endFollowsOf } from '../lib/updates';
 import { minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { removeFromSpace, summaries as spaceSummaries } from './spaces';
+import { addToSpace, orgSpaceViews, removeFromSpace } from './spaces';
 
 const ROLE_ORDER: Record<OrgRole, number> = { owner: 0, admin: 1, agent: 2 };
 
@@ -323,13 +323,45 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
   });
 
-  /** The organization's spaces you're in (R43), for its team. */
-  app.get('/orgs/:id/spaces', async (req): Promise<{ spaces: SpaceSummaryView[] }> => {
+  /**
+   * The organization's spaces (R43): the ones you're in, and, running it, all of them to join.
+   */
+  app.get('/orgs/:id/spaces', async (req): Promise<{ spaces: OrgSpaceView[] }> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);
-    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
-    return { spaces: await spaceSummaries(ctx, auth.userId, undefined, id) };
+    const seat = await orgSeat(ctx.db, auth.userId, id);
+    if (!seat) throw notFound('That organization');
+    return { spaces: await orgSpaceViews(ctx, auth.userId, id, canManageOrg(seat.role)) };
+  });
+
+  /** Its owner or an admin joins one of its spaces, as an admin of it: they run the place. */
+  app.post('/orgs/:id/spaces/:spaceId/join', async (req): Promise<{ ok: true }> => {
+    const auth = requireAuth(req);
+    const { id, spaceId } = parse(
+      z.object({ id: z.string().uuid(), spaceId: z.string().uuid() }),
+      req.params,
+    );
+    await orgById(ctx.db, id);
+    await managerSeat(ctx, auth.userId, id);
+    const space = await ctx.db
+      .selectFrom('spaces')
+      .select('id')
+      .where('id', '=', spaceId)
+      .where('org_id', '=', id)
+      .where('archived_at', 'is', null)
+      .executeTakeFirst();
+    if (!space) throw notFound('That space');
+    const inIt = await ctx.db
+      .selectFrom('space_members')
+      .select('user_id')
+      .where('space_id', '=', spaceId)
+      .where('user_id', '=', auth.userId)
+      .where('left_at', 'is', null)
+      .executeTakeFirst();
+    if (inIt) throw conflict('already_in', 'You’re in it already.');
+    await addToSpace(ctx, spaceId, [auth.userId], auth.userId, 'admin');
+    return { ok: true };
   });
 
   /** How its inbox is doing, for its owner and admins on a plan with insights (PRD §71). */

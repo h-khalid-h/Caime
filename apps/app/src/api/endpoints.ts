@@ -53,6 +53,7 @@ import type {
   OrgAppView,
   OrgInsightsView,
   OrgReclaimView,
+  OrgSpaceView,
   OrgSummaryView,
   OrgUpdatesView,
   OrgUpdateView,
@@ -346,8 +347,9 @@ export const endpoints = {
     api.get<{ orgs: OrgSummaryView[] }>(`/orgs/search${q({ q: term })}`),
   /** What an @handle link opens: a person or an organization (one namespace). */
   openHandle: (handle: string) => api.get<HandleView>(`/handles/${encodeURIComponent(handle)}`),
-  /** The organization's spaces you're in (R43). */
-  orgSpaces: (id: string) => api.get<{ spaces: SpaceSummaryView[] }>(`/orgs/${id}/spaces`),
+  /** The organization's spaces (R43): yours, and running it, all of them. */
+  orgSpaces: (id: string) => api.get<{ spaces: OrgSpaceView[] }>(`/orgs/${id}/spaces`),
+  joinOrgSpace: (id: string, spaceId: string) => api.post<Ok>(`/orgs/${id}/spaces/${spaceId}/join`),
   orgByHandle: (handle: string) =>
     api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),
   createOrg: (body: {

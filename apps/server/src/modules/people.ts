@@ -3,13 +3,14 @@
  */
 
 import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caime/core';
-import { ADULT_AGE, resolvePolicy, rhythmOf } from '@caime/core';
+import { ADULT_AGE, canSee, resolvePolicy, rhythmOf } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { notFound } from '../lib/errors';
 import { notHiddenFor } from '../lib/messages';
+import { orgsOf } from '../lib/orgs';
 import {
   activeRelationships,
   between,
@@ -20,7 +21,7 @@ import {
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
-import { identityShownTo, minorOf, personView } from '../lib/users';
+import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
 
@@ -312,8 +313,14 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       loadPolicies(ctx.db, auth.userId),
     ]);
     const privacy = resolvePolicy(policies, policyTargetFor(primary, b.connectionId)).privacy;
+    // Where they work is one of their professional details, shown as those are (R43).
+    const organizations =
+      user.kind !== 'human' || canSee(privacyOf(user, now), 'identityDetails', relation)
+        ? await orgsOf(ctx.db, id)
+        : [];
     return {
       person: personView(user, relation, now, identity),
+      organizations,
       connection: connectionState(b),
       blockedByMe: b.blockedByMe,
       relationships: mine.map(relationshipView),

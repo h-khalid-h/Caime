@@ -226,8 +226,14 @@ describe('organizations (PRD §36, R15)', () => {
     const claim = await omar.req('PUT', `/v1/orgs/${copycat.id}/domain`, { domain: 'datac.com' });
     expect(claim.json().error.code).toBe('domain_taken');
     expect(await trustOf(customer, omar)).toBe('Verified at DATA C');
+    // On a profile, the organizations someone is on the team of (R43), as they joined them.
+    const orgsOf = async (viewer: Client, person: Client) =>
+      (await viewer.get(`/v1/people/${person.user.id}`)).organizations.map((o: any) => o.handle);
+    expect(await orgsOf(customer, omar)).toEqual(['datac', 'datac.real']);
+    expect(await orgsOf(customer, sara)).toEqual(['datac']);
     // Where someone works is one of their professional details: hidden, so is this.
     await omar.req('PUT', '/v1/me/privacy', { fields: { identityDetails: { kind: 'nobody' } } });
+    expect(await orgsOf(customer, omar)).toEqual([]);
     expect(await trustOf(customer, omar)).not.toMatch(/Verified at/);
     await omar.req('PUT', '/v1/me/privacy', { fields: { identityDetails: { kind: 'everyone' } } });
     expect(await trustOf(customer, omar)).toBe('Verified at DATA C');

@@ -224,9 +224,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       requests), set from Edit details; the year it began picked from a list, never typed
       (`orgs.test.ts`, E2E)
 - [x] An organization's spaces (R43): its owner or admins start one from its page, its team
-      can be in it without a connection, the space says whose it is and the page lists them;
-      leaving the team leaves them, and the organization closing leaves them to their people
-      (`spaces.test.ts`, E2E). Next of R43: the organization's actions, held with the thread
+      can be in it without a connection, the space says whose it is and the page lists them
+      (the ones you're in; running it, all of them, with Join); leaving the team leaves them,
+      and the organization closing leaves them to their people (`spaces.test.ts`, E2E)
+- [x] A person's organizations on their profile (R43): the teams they're on, by logo, opening
+      the organization's page, shown as their professional details are (`orgs.test.ts`, E2E).
+      Next of R43: the organization's actions, held with the thread
 - [x] Organizations' updates (PRD §59, §15 broadcast): an organization's owner and admins (or its
       app, with `updates`) post to whoever follows it; anyone reads them on its page, as the
       organization's. People follow from the page (and choose whether each update notifies
@@ -1035,3 +1038,8 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   a list found as you type, the same on every platform); an organization has a logo; and an
   organization owns spaces (R43). The super-app brainstorm was reviewed again: R34–R40 stand,
   nothing new to adopt; `cai.me` is still parked.
+- 2026-09-29 — R43 continued, after "Are you sure? Proceed": the Stripe key on production was
+  checked (a full live key, and it reads Checkout sessions), so the "restricted key" guess was
+  wrong and withdrawn; the cause is in Stripe's answer to Checkout itself, which the deployed
+  fix now shows. Then: an organization's owner and admins see every space of its and join one
+  as its admin; a person's profile shows the organizations they're with.

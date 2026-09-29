@@ -133,8 +133,10 @@ These are rules, not preferences.
 - An organization's spaces (R43): `spaces.org_id`; only its owner or admins start one
   (`POST /spaces` with `orgId`), its team may be added without a connection (`assertConnected`
   in `modules/spaces.ts` takes the organization), a seat on the team ending calls
-  `removeFromSpace` for each of its spaces, and `closeOrg` sets `org_id` to null so they stay
-  with their people. `OrgRef` and `OrgSummaryView` carry `avatarUrl` (`orgAvatarUrl`,
+  `removeFromSpace` for each of its spaces, `closeOrg` sets `org_id` to null so they stay
+  with their people, and its owner or admins join any of them as an admin (`addToSpace`,
+  `POST /orgs/:id/spaces/:spaceId/join`). A profile's `organizations` (`orgsOf`) follows the
+  `identityDetails` privacy field, as "Verified at" does. `OrgRef` and `OrgSummaryView` carry `avatarUrl` (`orgAvatarUrl`,
   `lib/business.ts`); a query that builds an `orgRef` from chosen columns selects
   `avatar_file_id` too. The app draws an organization only through `OrgMark` (its logo, else
   its kind's icon), and picks the year it began with `YearField`, never a text field.
