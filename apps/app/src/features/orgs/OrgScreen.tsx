@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { useBusinessSummary, useOrg } from '@/api/hooks';
+import { useBusinessSummary, useOrg, useOrgSpaces } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useCountries } from '@/features/geo/countries';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
@@ -37,6 +37,7 @@ import {
   Flag,
   Globe,
   Inbox,
+  LayoutGrid,
   LogOut,
   MessageCircle,
   Pencil,
@@ -187,6 +188,7 @@ export function OrgScreen({ handle }: { handle: string }) {
   const countries = useCountries(locale).data?.countries;
   const minor = useSession((s) => s.user?.minor ?? false);
   const teams = useBusinessSummary(Boolean(org?.myRole)).data?.orgs;
+  const orgSpaces = useOrgSpaces(org?.myRole ? (org?.id ?? null) : null).data?.spaces;
   const waiting = teams?.find((x) => x.org.id === org?.id);
 
   /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
@@ -296,7 +298,7 @@ export function OrgScreen({ handle }: { handle: string }) {
             paddingBottom: 12,
           }}
         >
-          <OrgMark kind={org.kind} size={72} />
+          <OrgMark kind={org.kind} url={org.avatarUrl} size={72} testID="org-mark" />
           <Text variant="title" align="center" auto>
             {org.name}
           </Text>
@@ -401,6 +403,51 @@ export function OrgScreen({ handle }: { handle: string }) {
         ) : null}
 
         <OrgUpdates org={org} />
+
+        {org.myRole ? (
+          <>
+            <SectionTitle
+              action={
+                manager ? (
+                  <Button
+                    label="New space"
+                    icon={LayoutGrid}
+                    size="sm"
+                    variant="ghost"
+                    onPress={() =>
+                      router.push({ pathname: '/new-space', params: { org: org.handle } })
+                    }
+                    testID="org-spaces-new"
+                  />
+                ) : undefined
+              }
+            >
+              Spaces
+            </SectionTitle>
+            <View style={{ marginHorizontal: 16 }} testID="org-spaces">
+              {orgSpaces?.length ? (
+                <Card padded={false}>
+                  {orgSpaces.map((s) => (
+                    <ListRow
+                      key={s.id}
+                      icon={LayoutGrid}
+                      title={s.name}
+                      subtitle={`${s.memberCount} ${s.memberCount === 1 ? 'person' : 'people'}`}
+                      onPress={() => router.navigate({ pathname: '/s/[id]', params: { id: s.id } })}
+                      testID={`org-space-${s.name}`}
+                    />
+                  ))}
+                </Card>
+              ) : (
+                <Text variant="caption" color="textSecondary">
+                  {manager
+                    ? 'A space keeps the team together: its people, and conversations everyone can find. Start one for the team, a project or a branch.'
+                    : 'None yet that you’re in.'}
+                </Text>
+              )}
+            </View>
+          </>
+        ) : null}
 
         {manager ? (
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>

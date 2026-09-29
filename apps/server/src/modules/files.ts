@@ -431,6 +431,34 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     );
   });
 
+  /** An organization's logo: on its page, which anyone signed in sees, so no privacy applies. */
+  app.get('/orgs/:id/avatar', async (req, reply) => {
+    requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select('avatar_file_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!org?.avatar_file_id) throw notFound('That logo');
+    const f = await ctx.db
+      .selectFrom('files')
+      .selectAll()
+      .where('id', '=', org.avatar_file_id)
+      .executeTakeFirst();
+    if (!f) throw notFound('That logo');
+    const key = f.thumb_key ?? f.storage_key;
+    const size = (await storage.size(key)) ?? Number(f.size);
+    reply.header('cache-control', 'private, max-age=3600');
+    return streamFile(
+      req,
+      reply,
+      storage,
+      { name: 'logo.webp', mime: f.thumb_key ? 'image/webp' : f.mime, size, storage_key: key },
+      true,
+    );
+  });
+
   app.get('/users/:id/avatar', async (req, reply) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);

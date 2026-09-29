@@ -305,3 +305,21 @@ with its reason, so it isn't proposed again without new facts.
   hand (Caime can't tell who the organization is; its domain can), never a closed organization
   reopened in place (its old team would find themselves on someone else's), and only the
   operator deletes a closed one for good, on a lawful request.
+
+- **R43 — An organization owns spaces; its people are still people.** PRD §40 puts spaces
+  "around an organization" and §39 wants relationships at the organization's level, so an
+  organization's owner or admins can start a **space that is the organization's** (a branch, a
+  project, the whole team): its team can be in it without being connections (colleagues share a
+  space by working together, R19 stands for everyone else), it says whose it is, leaving the team
+  leaves it, and when the organization closes the space stays with its people as an ordinary one
+  (R42: nothing anyone was in is taken away). The organization's page lists its spaces you're in.
+  What it doesn't do: an organization never *owns a person's record*. A relationship is the
+  definer's (§10), a person's professional identity is theirs to show or hide (§35, R27), and the
+  organization's side of a person is its Business inbox thread and its team seat, nothing more;
+  someone on three teams is three seats, not three people. An **action of the organization's**
+  (a task in a customer's conversation the team must do, held by whoever holds the thread) is
+  the next step of this, designed but not built: the thread's assignee is its assignee, the
+  whole team sees it in the inbox, and reassigning the thread reassigns it. Reviewed against the
+  super-app brainstorm again on 2026-09-29: nothing new to adopt; its risk-scoring engine, ledger,
+  seed-phrase identity, biometric guardrails and fee table all belong to what R36, R38 and R39
+  leave out.

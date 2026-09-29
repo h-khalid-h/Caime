@@ -1,5 +1,5 @@
 import type { ClosedOrgView } from '@caime/core/api';
-import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
+import { latestFoundedYear, ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
 import { handleError, handleFromName, normalizeHandle } from '@caime/core/rules';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -9,7 +9,6 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { CountryField } from '@/features/geo/CountryField';
-import { foundedError } from '@/features/orgs/founded';
 import { ORG_ICONS } from '@/features/orgs/kinds';
 import { ReclaimCard } from '@/features/orgs/Reclaim';
 import { useMe } from '@/state/session';
@@ -17,11 +16,15 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft, AtSign } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** The year list, loaded with the form: two screens share it, and neither is the first thing loaded. */
+const YearField = lazyPart(() => import('@/ui/YearField').then((m) => m.YearField));
 
 /** Create an organization (PRD §36): who it is, and the handle people find it by. */
 export default function NewOrganization() {
@@ -36,7 +39,7 @@ export default function NewOrganization() {
   const [website, setWebsite] = useState('');
   // Where it's based: where its maker lives, until they say otherwise.
   const [country, setCountry] = useState<string | null>(me.country);
-  const [founded, setFounded] = useState('');
+  const [founded, setFounded] = useState<number | null>(null);
   const [taken, setTaken] = useState<{
     handle: string;
     reason: string | null;
@@ -77,7 +80,6 @@ export default function NewOrganization() {
         (taken?.handle === h ? (taken.reason ?? 'That handle isn’t available.') : undefined),
       kind: kind ? undefined : 'Choose what kind of organization it is.',
       country: country ? undefined : 'Choose where it’s based.',
-      foundedYear: foundedError(founded),
     };
     setErrors(next);
     if (Object.values(next).some(Boolean) || !kind || !country) return;
@@ -88,7 +90,7 @@ export default function NewOrganization() {
         handle: h,
         kind,
         country,
-        ...(founded ? { foundedYear: Number(founded) } : {}),
+        ...(founded ? { foundedYear: founded } : {}),
         ...(about.trim() ? { about: about.trim() } : {}),
         ...(website.trim() ? { website: website.trim() } : {}),
       });
@@ -194,17 +196,15 @@ export default function NewOrganization() {
           hint="Sets its defaults, like the currency of its cards."
           testID="org-country"
         />
-        <TextField
+        <YearField
           label="Year it began (optional)"
           value={founded}
-          onChangeText={(v) => setFounded(v.replace(/\D/g, '').slice(0, 4))}
-          keyboardType="number-pad"
-          inputMode="numeric"
-          maxLength={4}
-          placeholder={String(new Date().getFullYear())}
+          onChange={setFounded}
+          min={1000}
+          max={latestFoundedYear()}
+          optional
           error={errors.foundedYear}
           hint="Shown on its page."
-          style={{ maxWidth: 220 }}
           testID="org-founded"
         />
         <TextField

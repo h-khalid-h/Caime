@@ -687,7 +687,9 @@ identity** (their relationship with an organization). Example: *Hassan Khalid* (
 
 Organizations can have verified profiles. A business can create: organization profile;
 employees; departments; customer relationships; vendor relationships; communication channels;
-automated services.
+automated services. An organization's profile carries its logo, its kind, where it's based and
+the year it began; its spaces are its own (§40, PRODUCT-REVIEW R43), and it never owns a
+person's record: a person's relationships and identities stay theirs (§10, §35).
 
 ## 37. Caime Business
 
@@ -712,7 +714,9 @@ relationship intelligence to operate at both the personal level and the organiza
 
 Spaces are optional environments around an organization or community (DATA C, Family,
 University, Project Alpha, Customer community). Spaces contain people, conversations, files,
-events, workflows, policies.
+events, workflows, policies. A space can belong to an organization (PRODUCT-REVIEW R43): its
+owner or admins start it, its team can be in it without being connections, and it stays with
+its people if the organization closes.
 
 ## 41. Connect Kits
 

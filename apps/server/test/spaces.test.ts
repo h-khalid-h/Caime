@@ -244,3 +244,88 @@ describe('spaces (PRD §40)', () => {
     ]);
   });
 });
+
+describe('an organization’s spaces (R43)', () => {
+  let orgId: string;
+  let spaceId: string;
+  let dana: Client;
+
+  it('its owner or an admin starts one, and its team can be in it without a connection', async () => {
+    // Dana knows Noor only; Omar is an admin of the agency, Lina a connection off the team.
+    dana = await signup(t, { displayName: 'Dana Team' });
+    await connect(noor, dana);
+    const { org } = await noor.post('/v1/orgs', {
+      country: 'EG',
+      name: 'Noor Agency',
+      handle: 'nooragency',
+      kind: 'business',
+    });
+    orgId = org.id;
+    await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id, dana.user.id] });
+    await noor.req('PATCH', `/v1/orgs/${orgId}/members/${omar.user.id}`, { role: 'admin' });
+    // Dana, on the team, can't start one; Lina, off the team, is nobody to it.
+    for (const [who, code] of [
+      [dana, 403],
+      [lina, 403],
+    ] as const)
+      expect(
+        (await who.req('POST', '/v1/spaces', { name: 'Front desk', kind: 'team', orgId }))
+          .statusCode,
+      ).toBe(code);
+    // Omar and Dana aren't connected: on the same team, that's enough. A stranger is still out.
+    const refused = await omar.req('POST', '/v1/spaces', {
+      name: 'Front desk',
+      kind: 'team',
+      orgId,
+      memberIds: [dana.user.id, stranger.user.id],
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.message).toBe(
+      'You can add people on the organization’s team, or people you’re connected with.',
+    );
+    const { space } = await omar.post('/v1/spaces', {
+      name: 'Front desk',
+      kind: 'team',
+      orgId,
+      memberIds: [dana.user.id],
+    });
+    spaceId = space.id;
+    expect(space).toMatchObject({
+      name: 'Front desk',
+      myRole: 'owner',
+      memberCount: 2,
+      org: { id: orgId, name: 'Noor Agency', handle: 'nooragency', verified: false },
+    });
+    // Lina, a connection of Omar's, can still be added as to any space.
+    await omar.post(`/v1/spaces/${spaceId}/members`, { userIds: [lina.user.id] });
+    expect((await lina.get(`/v1/spaces/${spaceId}`)).space.org.handle).toBe('nooragency');
+    // Its team sees it among the organization's; whoever's not on the team doesn't.
+    expect((await dana.get(`/v1/orgs/${orgId}/spaces`)).spaces.map((x: any) => x.id)).toEqual([
+      spaceId,
+    ]);
+    expect((await noor.get(`/v1/orgs/${orgId}/spaces`)).spaces).toEqual([]);
+    expect((await lina.req('GET', `/v1/orgs/${orgId}/spaces`)).statusCode).toBe(404);
+    // A space of one's own says it belongs to nobody.
+    expect((await lina.get('/v1/spaces')).spaces.find((x: any) => x.name === 'Book club').org).toBe(
+      null,
+    );
+  });
+
+  it('leaving the team leaves its spaces; the organization closing leaves them to their people', async () => {
+    // Dana removed from the team: out of the space too, and told.
+    await noor.req('DELETE', `/v1/orgs/${orgId}/members/${dana.user.id}`);
+    expect((await dana.req('GET', `/v1/spaces/${spaceId}`)).statusCode).toBe(404);
+    const { space } = await omar.get(`/v1/spaces/${spaceId}`);
+    expect(space.members.map((m: any) => m.person.displayName)).toEqual([
+      'Omar Farouk',
+      'Lina Aziz',
+    ]);
+    // Its owner leaving the team hands the space on inside it, as leaving a space does.
+    await omar.req('DELETE', `/v1/orgs/${orgId}/members/${omar.user.id}`);
+    const handed = (await lina.get(`/v1/spaces/${spaceId}`)).space;
+    expect(handed).toMatchObject({ myRole: 'owner', memberCount: 1, org: { id: orgId } });
+    // Closed, the organization lets the space go: Lina keeps it as her own.
+    await noor.post(`/v1/orgs/${orgId}/close`);
+    expect((await lina.get(`/v1/spaces/${spaceId}`)).space.org).toBe(null);
+  });
+});

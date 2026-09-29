@@ -1,6 +1,8 @@
 import type { OrgSummaryView } from '@caime/core/api';
 import type { OrgKind } from '@caime/core/orgs';
+import { Image } from 'expo-image';
 import { View } from 'react-native';
+import { mediaHeaders, mediaUrl } from '@/api/client';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
 import {
@@ -25,12 +27,28 @@ export const ORG_ICONS: Record<OrgKind, IconComponent> = {
   other: Building,
 };
 
-/** An organization's mark: its kind's icon on a quiet tile (no characters on business, B2). */
-export function OrgMark({ kind, size = 46 }: { kind: OrgKind; size?: number }) {
+/**
+ * An organization's mark: its logo, else its kind's icon on a quiet tile (no characters on
+ * business, B2). A logo is on a rounded square, as an organization is not a person.
+ */
+export function OrgMark({
+  kind,
+  url,
+  size = 46,
+  testID,
+}: {
+  kind: OrgKind;
+  /** Its logo, from the organization's view. */
+  url?: string | null;
+  size?: number;
+  testID?: string;
+}) {
   const t = useTheme();
   const Icon = ORG_ICONS[kind];
+  const src = mediaUrl(url ?? null);
   return (
     <View
+      testID={testID}
       style={{
         width: size,
         height: size,
@@ -40,9 +58,22 @@ export function OrgMark({ kind, size = 46 }: { kind: OrgKind; size?: number }) {
         borderColor: t.c.border,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
       }}
     >
-      <Icon size={size * 0.48} color={t.c.text} />
+      {src ? (
+        <Image
+          source={{ uri: src, headers: mediaHeaders() }}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          transition={120}
+          cachePolicy="memory-disk"
+          recyclingKey={src}
+          accessible={false}
+        />
+      ) : (
+        <Icon size={size * 0.48} color={t.c.text} />
+      )}
     </View>
   );
 }

@@ -3,7 +3,13 @@
  * or Business (an organization, by its owner or an admin), Stripe's portal to manage it, and the
  * webhook Stripe tells how each subscription stands. The work is in lib/billing.ts.
  */
-import { BillingPortalBody, type BillingView, CheckoutBody, canManageOrg } from '@caime/core';
+import {
+  BillingPortalBody,
+  type BillingView,
+  CheckoutBody,
+  canManageOrg,
+  PLAN_NAMES,
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -12,6 +18,7 @@ import {
   handleStripeEvent,
   openPortal,
   type Payer,
+  refusedByStripe,
   startCheckout,
 } from '../lib/billing';
 import { AppError, forbidden, notFound } from '../lib/errors';
@@ -91,7 +98,17 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
     paced(auth.userId);
     const { payer, who, back, minor } = await payerFor(auth.userId, body.orgId);
     if (minor) throw forbidden(ADULTS_ONLY);
-    return { url: await startCheckout(ctx, payer, who, body.interval, back) };
+    try {
+      return { url: await startCheckout(ctx, payer, who, body.interval, back) };
+    } catch (e) {
+      // Stripe's refusal, said as it is: the one buying is the one to sort it out or tell the
+      // operator, never "something went wrong on our side".
+      throw refusedByStripe(
+        req.log,
+        e,
+        `${PLAN_NAMES['orgId' in payer ? 'business' : 'pro']} can’t be bought right now`,
+      );
+    }
   });
 
   /** Manage what's paid (card, invoices, cancelling) in Stripe's portal. */
@@ -100,7 +117,11 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(BillingPortalBody, req.body ?? {});
     paced(auth.userId);
     const { payer, who, back } = await payerFor(auth.userId, body.orgId);
-    return { url: await openPortal(ctx, payer, who, back) };
+    try {
+      return { url: await openPortal(ctx, payer, who, back) };
+    } catch (e) {
+      throw refusedByStripe(req.log, e, 'Billing can’t be opened right now');
+    }
   });
 
   // Stripe's webhook takes the body exactly as sent: its signature is over those bytes. It's the

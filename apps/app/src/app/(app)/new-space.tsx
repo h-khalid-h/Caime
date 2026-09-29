@@ -1,12 +1,15 @@
 import { SPACE_KIND_DEFS, SPACE_KINDS, type SpaceKind } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { OrgMark } from '@/features/orgs/kinds';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { SPACE_ICONS } from '@/features/spaces/kinds';
+import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
@@ -17,12 +20,18 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
-/** Start a space (PRD §40): what it's called, what kind, and who's in it to begin with. */
+/**
+ * Start a space (PRD §40): what it's called, what kind, and who's in it to begin with. For an
+ * organization (`?org=handle`, from its page, R43): its team to pick from, and the space is its.
+ */
 export default function NewSpace() {
   const { desktop } = useLayout();
   const qc = useQueryClient();
+  const { org: orgHandle } = useLocalSearchParams<{ org?: string }>();
+  const org = useOrg(orgHandle ?? '').data?.org ?? null;
+  const me = useSession((s) => s.user?.id ?? '');
   const [name, setName] = useState('');
-  const [kind, setKind] = useState<SpaceKind | null>(null);
+  const [kind, setKind] = useState<SpaceKind | null>(orgHandle ? 'team' : null);
   const [purpose, setPurpose] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -37,9 +46,11 @@ export default function NewSpace() {
         kind,
         ...(purpose.trim() ? { purpose: purpose.trim() } : {}),
         memberIds: [...picked],
+        ...(org ? { orgId: org.id } : {}),
       });
       qc.setQueryData(qk.space(space.id), { space });
       void qc.invalidateQueries({ queryKey: qk.spaces });
+      if (org) void qc.invalidateQueries({ queryKey: qk.orgSpaces(org.id) });
       router.replace({ pathname: '/s/[id]', params: { id: space.id } });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -58,7 +69,7 @@ export default function NewSpace() {
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/spaces'))}
           />
         }
-        title="New space"
+        title={org ? `New space for ${org.name}` : 'New space'}
       />
       <ScrollView
         contentContainerStyle={{
@@ -70,12 +81,26 @@ export default function NewSpace() {
         }}
         keyboardShouldPersistTaps="handled"
       >
+        {org ? (
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            testID="space-for-org"
+          >
+            <OrgMark kind={org.kind} url={org.avatarUrl} size={36} />
+            <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
+              {org.name}’s space: anyone on its team can be in it, and it stays with the
+              organization.
+            </Text>
+          </View>
+        ) : null}
         <TextField
           label="Name"
           value={name}
           onChangeText={setName}
           maxLength={80}
-          placeholder="The Haddads, Design team, Book club…"
+          placeholder={
+            org ? 'Front desk, Design team, Everyone…' : 'The Haddads, Design team, Book club…'
+          }
           testID="space-name"
         />
         <View style={{ gap: 8 }}>
@@ -107,9 +132,30 @@ export default function NewSpace() {
         <Text variant="overline" color="textTertiary">
           People · {picked.size} chosen
         </Text>
-        <PeoplePicker picked={picked} onToggle={(id) => setPicked((p) => toggled(p, id))} />
+        <PeoplePicker
+          picked={picked}
+          onToggle={(id) => setPicked((p) => toggled(p, id))}
+          among={
+            org
+              ? {
+                  people: org.members
+                    ?.filter((m) => m.userId !== me && m.person.kind === 'human')
+                    .map((m) => ({
+                      id: m.userId,
+                      displayName: m.person.displayName,
+                      handle: m.person.handle,
+                      avatarUrl: m.person.avatarUrl,
+                      relationship: null,
+                    })),
+                  empty: 'Nobody else is on the team yet. Add people to the team first.',
+                }
+              : undefined
+          }
+        />
         <Text variant="caption" color="textSecondary">
-          You can add people later too. Everyone in the space is in its General conversation.
+          {org
+            ? 'You can add people later too: the team, or people you’re connected with. Everyone in the space is in its General conversation.'
+            : 'You can add people later too. Everyone in the space is in its General conversation.'}
         </Text>
         <Button
           label="Start the space"

@@ -208,6 +208,7 @@ export async function buildInbox(
         'g.domain',
         'g.verified_at',
         'g.country',
+        'g.avatar_file_id',
       ])
       .where('t.conversation_id', 'in', businessIds)
       .execute())

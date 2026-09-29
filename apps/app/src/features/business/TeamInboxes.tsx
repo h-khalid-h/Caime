@@ -43,7 +43,7 @@ export function TeamInboxes() {
                 : 'transparent',
           })}
         >
-          <OrgMark kind={org.kind} size={46} />
+          <OrgMark kind={org.kind} url={org.avatarUrl} size={46} />
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Text variant="bodyStrong" numberOfLines={1} auto>
               {org.name} inbox

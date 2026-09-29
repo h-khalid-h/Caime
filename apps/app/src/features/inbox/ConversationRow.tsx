@@ -108,7 +108,7 @@ export const ConversationRow = memo(function ConversationRow({
           }}
         >
           {item.org ? (
-            <OrgMark kind={item.org.kind} size={52} />
+            <OrgMark kind={item.org.kind} url={item.org.avatarUrl} size={52} />
           ) : item.kind === 'direct' && item.other ? (
             <Avatar
               id={item.other.id}

@@ -596,6 +596,8 @@ export interface OrgRef {
   verifiedDomain: string | null;
   /** Its country's currency (ISO 4217): the default for an amount on its team's cards. */
   currency: string | null;
+  /** Its logo, if it has one. */
+  avatarUrl: string | null;
 }
 
 /**
@@ -818,6 +820,8 @@ export interface OrgSummaryView {
   currency: string | null;
   /** The year it began, if it says. */
   foundedYear: number | null;
+  /** Its logo, if it has one. */
+  avatarUrl: string | null;
 }
 
 export interface OrgMemberView {
@@ -993,6 +997,8 @@ export interface SpaceSummaryView {
   unreadCount: number;
   lastActivityAt: string;
   myRole: SpaceRole;
+  /** The organization it belongs to (R43), if one: its team can be in it. */
+  org: OrgRef | null;
 }
 
 export interface SpaceMemberView {

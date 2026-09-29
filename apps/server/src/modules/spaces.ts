@@ -18,6 +18,7 @@ import {
   CreateSpaceBody,
   CreateSpaceConversationBody,
   canChangeSpaceRole,
+  canManageOrg,
   canManageSpace,
   canRemoveFromSpace,
   MembersBody,
@@ -34,11 +35,13 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { tellSaved } from '../lib/automations';
+import { orgRef } from '../lib/business';
 import { handOverGroups } from '../lib/conversations';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
 import { participantsOf } from '../lib/messages';
+import { orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
 import { generalOf, spaceSeat } from '../lib/spaces';
@@ -61,8 +64,16 @@ async function activeMembers(ctx: AppContext, spaceId: string) {
     .execute();
 }
 
-/** Only people you're connected with (the same rule as groups). */
-async function assertConnected(ctx: AppContext, userId: string, ids: string[]) {
+/**
+ * Only people you're connected with (the same rule as groups); in an organization's space, its
+ * team too (R43): colleagues need no connection to share its space.
+ */
+async function assertConnected(
+  ctx: AppContext,
+  userId: string,
+  ids: string[],
+  orgId: string | null = null,
+) {
   if (ids.length === 0) return;
   const rows = await ctx.db
     .selectFrom('connection_sides as s')
@@ -72,8 +83,133 @@ async function assertConnected(ctx: AppContext, userId: string, ids: string[]) {
     .where('s.other_id', 'in', ids)
     .where('c.status', '=', 'active')
     .execute();
-  if (new Set(rows.map((r) => r.other_id)).size !== ids.length)
-    throw badRequest('You can add people you’re connected with.');
+  const allowed = new Set(rows.map((r) => r.other_id));
+  if (orgId) {
+    const team = await ctx.db
+      .selectFrom('org_members as m')
+      .innerJoin('users as u', 'u.id', 'm.user_id')
+      .select('m.user_id')
+      .where('m.org_id', '=', orgId)
+      .where('m.left_at', 'is', null)
+      .where('u.kind', '=', 'human')
+      .where('m.user_id', 'in', ids)
+      .execute();
+    for (const m of team) allowed.add(m.user_id);
+  }
+  if (ids.some((id) => !allowed.has(id)))
+    throw badRequest(
+      orgId
+        ? 'You can add people on the organization’s team, or people you’re connected with.'
+        : 'You can add people you’re connected with.',
+    );
+}
+
+/**
+ * Someone out of a space (leaving, removed, or their seat on its organization's team ending):
+ * its conversations they started pass on, the last one out closes it, and everyone sees who's
+ * in it now.
+ */
+export async function removeFromSpace(
+  ctx: AppContext,
+  spaceId: string,
+  userId: string,
+  actorId: string,
+): Promise<void> {
+  const members = await activeMembers(ctx, spaceId);
+  const target = members.find((m) => m.user_id === userId);
+  if (!target) return;
+  const leaving = userId === actorId;
+  const heir =
+    target.role === 'owner'
+      ? nextSpaceOwner(
+          members.map((m) => ({
+            userId: m.user_id,
+            role: m.role,
+            joinedAt: m.joined_at.toISOString(),
+          })),
+          userId,
+        )
+      : null;
+  const general = await generalOf(ctx.db, spaceId);
+  // The line is written while they're still in General, so they see it too.
+  await sendSystem(ctx, general.id, actorId, leaving ? 'member_left' : 'member_removed', {
+    userId,
+  });
+  const { left, handed } = await ctx.db.transaction().execute(async (trx) => {
+    await trx
+      .updateTable('space_members')
+      .set({ left_at: ctx.now(), role: 'member' })
+      .where('space_id', '=', spaceId)
+      .where('user_id', '=', userId)
+      .execute();
+    // The space's conversations they started pass on as they go, as a group's do (PRD §56).
+    const handed = await handOverGroups(trx, userId, { spaceId }, ctx.now());
+    const convos = await trx
+      .updateTable('participants')
+      .set({ left_at: ctx.now(), role: 'member' })
+      .where('user_id', '=', userId)
+      .where('left_at', 'is', null)
+      .where(
+        'conversation_id',
+        'in',
+        trx.selectFrom('conversations').select('id').where('space_id', '=', spaceId),
+      )
+      .returning('conversation_id')
+      .execute();
+    if (heir) {
+      await trx
+        .updateTable('space_members')
+        .set({ role: 'owner' })
+        .where('space_id', '=', spaceId)
+        .where('user_id', '=', heir)
+        .execute();
+      await trx
+        .updateTable('participants')
+        .set({ role: 'owner' })
+        .where('conversation_id', '=', general.id)
+        .where('user_id', '=', heir)
+        .execute();
+    }
+    // The last one out closes the space.
+    if (members.length === 1)
+      await trx
+        .updateTable('spaces')
+        .set({ archived_at: ctx.now() })
+        .where('id', '=', spaceId)
+        .execute();
+    const left = convos.map((c) => c.conversation_id);
+    // What Caime offered them about those conversations goes with them.
+    if (left.length)
+      await trx
+        .updateTable('suggestions')
+        .set({ status: 'expired', resolved_at: ctx.now() })
+        .where('user_id', '=', userId)
+        .where('conversation_id', 'in', left)
+        .where('status', '=', 'pending')
+        .execute();
+    await recordEvent(trx, 'space.member_left', actorId, {
+      spaceId,
+      userId,
+      removed: !leaving,
+      newOwner: heir,
+    });
+    return { left, handed };
+  });
+  await ctx.bus.publish([userId], { type: 'space.removed', data: { spaceId } });
+  // What they saved of its conversations is out of their Saved now, and what Caime offered
+  // because they were both in it goes.
+  if (left.length) await tellSaved(ctx, [userId]);
+  await withdrawPlaceOffers(ctx, { kind: 'space', id: spaceId }, userId);
+  await leaveGroupCallsIn(ctx, userId, left);
+  for (const { conversationId, heir: owner } of handed)
+    if (owner) await sendSystem(ctx, conversationId, actorId, 'owner_changed', { userId: owner });
+  // Them, and whoever's still in each, see who's in it now.
+  for (const conversationId of left)
+    await ctx.bus.publish(
+      [userId, ...(await participantsOf(ctx.db, conversationId)).map((p) => p.user_id)],
+      { type: 'conversation.updated', data: { conversationId } },
+    );
+  await tellSpace(ctx, spaceId);
 }
 
 /** A conversation in the space: everyone in it, or just its starter until others join. */
@@ -130,10 +266,12 @@ async function tellSpace(ctx: AppContext, spaceId: string, also: string[] = []) 
   });
 }
 
-async function summaries(
+/** Someone's spaces: all of them, one, or an organization's (R43). */
+export async function summaries(
   ctx: AppContext,
   userId: string,
   only?: string,
+  orgId?: string,
 ): Promise<SpaceSummaryView[]> {
   const rows = await ctx.db
     .selectFrom('space_members as m')
@@ -144,6 +282,7 @@ async function summaries(
       's.kind',
       's.purpose',
       's.created_at',
+      's.org_id',
       'm.role',
       sql<number>`(select count(*)::int from space_members x
         where x.space_id = s.id and x.left_at is null)`.as('member_count'),
@@ -161,7 +300,16 @@ async function summaries(
     .where('m.left_at', 'is', null)
     .where('s.archived_at', 'is', null)
     .$if(Boolean(only), (qb) => qb.where('s.id', '=', only!))
+    .$if(Boolean(orgId), (qb) => qb.where('s.org_id', '=', orgId!))
     .execute();
+  const orgIds = [...new Set(rows.map((r) => r.org_id).filter((x): x is string => Boolean(x)))];
+  const orgs = new Map(
+    orgIds.length
+      ? (
+          await ctx.db.selectFrom('organizations').selectAll().where('id', 'in', orgIds).execute()
+        ).map((o) => [o.id, orgRef(o)])
+      : [],
+  );
   return rows
     .map((r) => ({
       id: r.id,
@@ -172,6 +320,7 @@ async function summaries(
       unreadCount: r.unread,
       lastActivityAt: (r.last_activity ?? r.created_at).toISOString(),
       myRole: r.role,
+      org: (r.org_id && orgs.get(r.org_id)) || null,
     }))
     .sort((a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt));
 }
@@ -365,7 +514,14 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreateSpaceBody, req.body);
     ctx.limiter.hit(`space:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
     const memberIds = [...new Set(body.memberIds.filter((id) => id !== auth.userId))];
-    await assertConnected(ctx, auth.userId, memberIds);
+    // An organization's space (R43): its owner or an admin starts it, for its team.
+    if (body.orgId) {
+      await orgById(ctx.db, body.orgId);
+      const seat = await orgSeat(ctx.db, auth.userId, body.orgId);
+      if (!seat || !canManageOrg(seat.role))
+        throw forbidden('Only the organization’s owner and admins start its spaces.');
+    }
+    await assertConnected(ctx, auth.userId, memberIds, body.orgId ?? null);
     const spaceId = uuidv7();
     const generalId = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
@@ -377,6 +533,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
           kind: body.kind,
           purpose: body.purpose ?? null,
           created_by: auth.userId,
+          org_id: body.orgId ?? null,
         })
         .execute();
       await trx
@@ -474,14 +631,14 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(MembersBody, req.body);
-    const { seat } = await spaceSeat(ctx.db, auth.userId, id);
+    const { space, seat } = await spaceSeat(ctx.db, auth.userId, id);
     if (!canManageSpace(seat.role))
       throw forbidden('Only the space’s owner and admins add people.');
     ctx.limiter.hit(`space-add:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     const current = new Set((await activeMembers(ctx, id)).map((m) => m.user_id));
     const adding = [...new Set(body.userIds)].filter((u) => !current.has(u));
     if (adding.length === 0) return { ok: true };
-    await assertConnected(ctx, auth.userId, adding);
+    await assertConnected(ctx, auth.userId, adding, space.org_id);
     const general = await generalOf(ctx.db, id);
     await ctx.db.transaction().execute(async (trx) => {
       for (const userId of adding) {
@@ -538,98 +695,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
           ? 'Admins can remove members; the owner removes admins.'
           : 'Only the space’s owner and admins remove people.',
       );
-    const heir =
-      target.role === 'owner'
-        ? nextSpaceOwner(
-            members.map((m) => ({
-              userId: m.user_id,
-              role: m.role,
-              joinedAt: m.joined_at.toISOString(),
-            })),
-            userId,
-          )
-        : null;
-    const general = await generalOf(ctx.db, id);
-    // The line is written while they're still in General, so they see it too.
-    await sendSystem(ctx, general.id, auth.userId, leaving ? 'member_left' : 'member_removed', {
-      userId,
-    });
-    const { left, handed } = await ctx.db.transaction().execute(async (trx) => {
-      await trx
-        .updateTable('space_members')
-        .set({ left_at: ctx.now(), role: 'member' })
-        .where('space_id', '=', id)
-        .where('user_id', '=', userId)
-        .execute();
-      // The space's conversations they started pass on as they go, as a group's do (PRD §56).
-      const handed = await handOverGroups(trx, userId, { spaceId: id }, ctx.now());
-      const convos = await trx
-        .updateTable('participants')
-        .set({ left_at: ctx.now(), role: 'member' })
-        .where('user_id', '=', userId)
-        .where('left_at', 'is', null)
-        .where(
-          'conversation_id',
-          'in',
-          trx.selectFrom('conversations').select('id').where('space_id', '=', id),
-        )
-        .returning('conversation_id')
-        .execute();
-      if (heir) {
-        await trx
-          .updateTable('space_members')
-          .set({ role: 'owner' })
-          .where('space_id', '=', id)
-          .where('user_id', '=', heir)
-          .execute();
-        await trx
-          .updateTable('participants')
-          .set({ role: 'owner' })
-          .where('conversation_id', '=', general.id)
-          .where('user_id', '=', heir)
-          .execute();
-      }
-      // The last one out closes the space.
-      if (members.length === 1)
-        await trx
-          .updateTable('spaces')
-          .set({ archived_at: ctx.now() })
-          .where('id', '=', id)
-          .execute();
-      const left = convos.map((c) => c.conversation_id);
-      // What Caime offered them about those conversations goes with them.
-      if (left.length)
-        await trx
-          .updateTable('suggestions')
-          .set({ status: 'expired', resolved_at: ctx.now() })
-          .where('user_id', '=', userId)
-          .where('conversation_id', 'in', left)
-          .where('status', '=', 'pending')
-          .execute();
-      await recordEvent(trx, 'space.member_left', auth.userId, {
-        spaceId: id,
-        userId,
-        removed: !leaving,
-        newOwner: heir,
-      });
-      return { left, handed };
-    });
-    await ctx.bus.publish([userId], { type: 'space.removed', data: { spaceId: id } });
-    // What they saved of its conversations is out of their Saved now, and what Caime offered
-    // because they were both in it goes.
-    if (left.length) await tellSaved(ctx, [userId]);
-    await withdrawPlaceOffers(ctx, { kind: 'space', id }, userId);
-    await leaveGroupCallsIn(ctx, userId, left);
-    for (const { conversationId, heir: owner } of handed)
-      if (owner)
-        await sendSystem(ctx, conversationId, auth.userId, 'owner_changed', { userId: owner });
-    // Them, and whoever's still in each, see who's in it now.
-    for (const conversationId of left)
-      await ctx.bus.publish(
-        [userId, ...(await participantsOf(ctx.db, conversationId)).map((p) => p.user_id)],
-        { type: 'conversation.updated', data: { conversationId } },
-      );
-    await tellSpace(ctx, id);
+    await removeFromSpace(ctx, id, userId, auth.userId);
     return { ok: true };
   });
 

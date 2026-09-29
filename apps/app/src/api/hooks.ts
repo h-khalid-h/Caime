@@ -124,6 +124,13 @@ export const useSpace = (id: string) =>
   useQuery({ queryKey: qk.space(id), queryFn: () => endpoints.space(id), enabled: Boolean(id) });
 
 export const useOrgs = () => useQuery({ queryKey: qk.orgs, queryFn: endpoints.orgs });
+/** The organization's spaces you're in (R43); only asked for on its team. */
+export const useOrgSpaces = (orgId: string | null) =>
+  useQuery({
+    queryKey: qk.orgSpaces(orgId ?? ''),
+    queryFn: () => endpoints.orgSpaces(orgId ?? ''),
+    enabled: Boolean(orgId),
+  });
 export const useMyPlan = () => useQuery({ queryKey: qk.plan, queryFn: endpoints.myPlan });
 export const useBilling = () => useQuery({ queryKey: qk.billing, queryFn: endpoints.billing });
 export const useOrgBilling = (orgId: string | null) =>

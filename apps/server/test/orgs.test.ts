@@ -1,4 +1,5 @@
 import { uuidv4 } from '@caime/core';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -12,6 +13,34 @@ let teen: Client;
 let customer: Client;
 /** DNS as the tests say it is. */
 const txt = new Map<string, string[][]>();
+
+/** An image uploaded by `c`, as the app uploads one. */
+async function uploadImage(c: Client, name: string) {
+  const data = await sharp({
+    create: { width: 320, height: 320, channels: 3, background: '#7a3ff2' },
+  })
+    .jpeg()
+    .toBuffer();
+  const boundary = `----caime${uuidv4()}`;
+  const payload = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: image/jpeg\r\n\r\n`,
+    ),
+    data,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const res = await t.app.inject({
+    method: 'POST',
+    url: '/v1/files',
+    payload,
+    headers: {
+      'content-type': `multipart/form-data; boundary=${boundary}`,
+      authorization: `Bearer ${c.token}`,
+    },
+  });
+  if (res.statusCode !== 201) throw new Error(`${res.statusCode} ${res.body}`);
+  return res.json().file as { id: string };
+}
 
 async function connect(a: Client, b: Client) {
   const r = await a.post('/v1/connections/requests', { toUserId: b.user.id });
@@ -212,6 +241,48 @@ describe('organizations (PRD §36, R15)', () => {
     expect(await trustOf(customer, sara)).not.toMatch(/Verified at/);
     const bad = await noor.req('PUT', `/v1/orgs/${orgId}/domain`, { domain: 'localhost' });
     expect(bad.json().error.message).toBe('Enter a domain like datac.com.');
+  });
+
+  it('its logo: an image of the owner’s or an admin’s own upload, shown to everyone', async () => {
+    const before = (await customer.get('/v1/orgs/by-handle/datac')).org;
+    expect(before.avatarUrl).toBeNull();
+    // Not any file: an image the person uploaded themselves.
+    const theirs = await uploadImage(omar, 'omar.jpg');
+    const notMine = await sara.req('PATCH', `/v1/orgs/${orgId}`, {
+      avatarFileId: theirs.id,
+    });
+    expect(notMine.statusCode).toBe(400);
+    expect(notMine.json().error.message).toBe('Choose an image you uploaded.');
+    // The team's admin sets it, and it's on the page, in a customer's view, and in the
+    // conversation, for a customer as for the team.
+    const logo = await uploadImage(sara, 'logo.jpg');
+    const { org } = await sara
+      .req('PATCH', `/v1/orgs/${orgId}`, { avatarFileId: logo.id })
+      .then((r) => r.json());
+    expect(org.avatarUrl).toBe(`/v1/orgs/${orgId}/avatar?v=${logo.id.slice(-8)}`);
+    expect((await customer.get('/v1/orgs/by-handle/datac')).org.avatarUrl).toBe(org.avatarUrl);
+    const shown = await t.app.inject({
+      url: org.avatarUrl,
+      headers: { authorization: `Bearer ${customer.token}` },
+    });
+    expect(shown.statusCode).toBe(200);
+    expect(shown.headers['content-type']).toBe('image/webp');
+    expect((await t.app.inject({ url: org.avatarUrl })).statusCode).toBe(401);
+    const convo = (await customer.post(`/v1/orgs/${orgId}/conversations`)).conversationId;
+    const { conversation } = await customer.get(`/v1/conversations/${convo}`);
+    expect(conversation.business.org.avatarUrl).toBe(org.avatarUrl);
+    // Taken away: the page shows its kind again, and the picture is gone.
+    const cleared = (await sara.req('PATCH', `/v1/orgs/${orgId}`, { avatarFileId: null })).json()
+      .org;
+    expect(cleared.avatarUrl).toBeNull();
+    expect(
+      (
+        await t.app.inject({
+          url: org.avatarUrl,
+          headers: { authorization: `Bearer ${customer.token}` },
+        })
+      ).statusCode,
+    ).toBe(404);
   });
 
   it('when the owner goes, the organization stays with its team', async () => {

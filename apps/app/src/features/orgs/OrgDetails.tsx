@@ -1,24 +1,31 @@
 /**
- * An organization's details, as its owner and admins change them: its name, what it is, where
- * it's based (its defaults: the currency of its cards), the year it began, what it does and its
- * website. Its handle stays: people and links know it by that.
+ * An organization's details, as its owner and admins change them: its logo, its name, what it
+ * is, where it's based (its defaults: the currency of its cards), the year it began, what it does
+ * and its website. Its handle stays: people and links know it by that.
  */
 
 import type { OrgView } from '@caime/core/api';
-import { ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
+import { latestFoundedYear, ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
+import { uploadFile } from '@/api/upload';
 import { CountryField } from '@/features/geo/CountryField';
+import { pickFromLibrary } from '@/lib/photos';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
+import { Camera } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Sheet } from '@/ui/Sheet';
+import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
-import { foundedError } from './founded';
-import { ORG_ICONS } from './kinds';
+import { ORG_ICONS, OrgMark } from './kinds';
+
+/** The year list, loaded with the form: two screens share it, and neither is the first thing loaded. */
+const YearField = lazyPart(() => import('@/ui/YearField').then((m) => m.YearField));
 
 export function OrgDetailsSheet({
   org,
@@ -35,7 +42,9 @@ export function OrgDetailsSheet({
   const [name, setName] = useState(org.name);
   const [kind, setKind] = useState<OrgKind>(org.kind);
   const [country, setCountry] = useState<string | null>(org.country);
-  const [founded, setFounded] = useState(org.foundedYear ? String(org.foundedYear) : '');
+  const [founded, setFounded] = useState<number | null>(org.foundedYear);
+  const [logo, setLogo] = useState(org.avatarUrl);
+  const [logoBusy, setLogoBusy] = useState(false);
   const [about, setAbout] = useState(org.about ?? '');
   const [website, setWebsite] = useState(org.website ?? '');
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -45,7 +54,6 @@ export function OrgDetailsSheet({
     const next = {
       name: name.trim() ? undefined : 'Give the organization a name.',
       country: country ? undefined : 'Choose where it’s based.',
-      foundedYear: foundedError(founded),
     };
     setErrors(next);
     if (Object.values(next).some(Boolean) || !country) return;
@@ -55,7 +63,7 @@ export function OrgDetailsSheet({
         name: name.trim(),
         kind,
         country,
-        foundedYear: founded ? Number(founded) : null,
+        foundedYear: founded,
         about: about.trim() || null,
         website: website.trim() || null,
       });
@@ -67,6 +75,46 @@ export function OrgDetailsSheet({
       else toast((e as Error).message, { tone: 'danger' });
     } finally {
       setBusy(false);
+    }
+  };
+
+  /** The logo changes at once: it's the organization's face everywhere, not a draft. */
+  const changeLogo = async () => {
+    const res = await pickFromLibrary({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+    if (res.canceled || !res.assets[0]) return;
+    const a = res.assets[0];
+    setLogoBusy(true);
+    try {
+      const file = await uploadFile({
+        uri: a.uri,
+        name: a.fileName ?? 'logo.jpg',
+        mime: a.mimeType ?? 'image/jpeg',
+        file: (a as { file?: Blob }).file,
+      });
+      const { org: saved } = await endpoints.updateOrg(org.id, { avatarFileId: file.id });
+      setLogo(saved.avatarUrl);
+      onSaved(saved);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+  const removeLogo = async () => {
+    setLogoBusy(true);
+    try {
+      const { org: saved } = await endpoints.updateOrg(org.id, { avatarFileId: null });
+      setLogo(null);
+      onSaved(saved);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setLogoBusy(false);
     }
   };
 
@@ -88,6 +136,33 @@ export function OrgDetailsSheet({
       }
     >
       <View style={{ gap: 14 }}>
+        <View style={{ alignItems: 'center', gap: 10 }}>
+          <OrgMark kind={kind} url={logo} size={88} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Button
+              label={logo ? 'Change logo' : 'Add a logo'}
+              icon={Camera}
+              variant="secondary"
+              size="sm"
+              onPress={() => void changeLogo()}
+              loading={logoBusy}
+              testID="org-logo-change"
+            />
+            {logo ? (
+              <Button
+                label="Remove"
+                variant="ghost"
+                size="sm"
+                onPress={() => void removeLogo()}
+                disabled={logoBusy}
+                testID="org-logo-remove"
+              />
+            ) : null}
+          </View>
+          <Text variant="caption" color="textTertiary" align="center">
+            Shown wherever the organization is: its page, its conversations, its updates.
+          </Text>
+        </View>
         <TextField
           label="Name"
           value={name}
@@ -116,15 +191,14 @@ export function OrgDetailsSheet({
           hint="Sets its defaults, like the currency of its cards."
           testID="org-details-country"
         />
-        <TextField
+        <YearField
           label="Year it began (optional)"
           value={founded}
-          onChangeText={(v) => setFounded(v.replace(/\D/g, '').slice(0, 4))}
-          keyboardType="number-pad"
-          inputMode="numeric"
-          maxLength={4}
+          onChange={setFounded}
+          min={1000}
+          max={latestFoundedYear()}
+          optional
           error={errors.foundedYear}
-          style={{ maxWidth: 220 }}
           testID="org-details-founded"
         />
         <TextField

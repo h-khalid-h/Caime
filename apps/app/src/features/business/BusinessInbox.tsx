@@ -285,7 +285,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
         onPress={() => router.push({ pathname: '/o/[handle]', params: { handle } })}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
       >
-        {summary ? <OrgMark kind={summary.kind} size={34} /> : null}
+        {summary ? <OrgMark kind={summary.kind} url={summary.avatarUrl} size={34} /> : null}
         <View>
           <Text variant="label" numberOfLines={1}>
             Inbox

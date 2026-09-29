@@ -385,7 +385,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
       >
         {org && !thread ? (
-          <OrgMark kind={org.kind} size={38} />
+          <OrgMark kind={org.kind} url={org.avatarUrl} size={38} />
         ) : customer ? (
           <Avatar id={customer.id} name={customer.displayName} url={customer.avatarUrl} size={38} />
         ) : other ? (
@@ -431,7 +431,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       <View style={{ alignItems: 'center', gap: 8, paddingVertical: 28, paddingHorizontal: 24 }}>
         {org && !thread ? (
           <>
-            <OrgMark kind={org.kind} size={64} />
+            <OrgMark kind={org.kind} url={org.avatarUrl} size={64} />
             <Text variant="headline" align="center">
               {org.name}
             </Text>

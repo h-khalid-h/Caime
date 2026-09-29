@@ -58,7 +58,7 @@ function Row({ f }: { f: FollowingView }) {
                 : 'transparent',
           }}
         >
-          <OrgMark kind={f.org.kind} size={44} />
+          <OrgMark kind={f.org.kind} url={f.org.avatarUrl} size={44} />
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }} auto>

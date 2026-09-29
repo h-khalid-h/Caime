@@ -130,6 +130,14 @@ These are rules, not preferences.
   Anything that looks an organization up by id for its team uses `orgById` (open ones only);
   `closedOrgById` is for taking one back. A closed organization's conversations refuse every
   write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
+- An organization's spaces (R43): `spaces.org_id`; only its owner or admins start one
+  (`POST /spaces` with `orgId`), its team may be added without a connection (`assertConnected`
+  in `modules/spaces.ts` takes the organization), a seat on the team ending calls
+  `removeFromSpace` for each of its spaces, and `closeOrg` sets `org_id` to null so they stay
+  with their people. `OrgRef` and `OrgSummaryView` carry `avatarUrl` (`orgAvatarUrl`,
+  `lib/business.ts`); a query that builds an `orgRef` from chosen columns selects
+  `avatar_file_id` too. The app draws an organization only through `OrgMark` (its logo, else
+  its kind's icon), and picks the year it began with `YearField`, never a text field.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.

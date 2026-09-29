@@ -3,13 +3,9 @@
  * one chosen, opening a sheet that finds any of them as you type, in your language.
  */
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
-import { useTheme } from '@/theme/theme';
-import { ChevronDown } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
-import { Pressable } from '@/ui/Pressable';
+import { PickerField } from '@/ui/PickerField';
 import type { SearchItem } from '@/ui/SearchSheet';
-import { Text } from '@/ui/Text';
 import { useCountries } from './countries';
 import { countryMatches, flagOf } from './find';
 
@@ -46,7 +42,6 @@ export function CountryField({
   error,
   testID,
 }: CountryFieldProps) {
-  const t = useTheme();
   const [open, setOpen] = useState(false);
   // Mounted from the first time it's opened, so it can slide away as it closes.
   const [opened, setOpened] = useState(false);
@@ -61,54 +56,23 @@ export function CountryField({
     [countries.data],
   );
   const name = items.find((c) => c.key === value)?.title ?? value;
-  const ring = Boolean(error);
   return (
-    <View style={{ gap: 6 }}>
-      <Text variant="captionStrong" color="textSecondary">
-        {label}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label}, ${name ?? 'not chosen'}`}
-        accessibilityHint="Opens the list of countries"
-        onPress={() => {
-          setOpen(true);
-          setOpened(true);
-          // A list that didn't load is asked for again as it's opened.
-          if (countries.isError) void countries.refetch();
-        }}
-        testID={testID}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          minHeight: 48,
-          borderRadius: t.radii.md,
-          borderWidth: ring ? 2 : 1,
-          borderColor: error ? t.c.danger : t.c.border,
-          backgroundColor: t.c.surface,
-          paddingHorizontal: ring ? 13 : 14,
-        }}
-      >
-        {value ? (
-          <Text variant="body" accessibilityElementsHidden importantForAccessibility="no">
-            {flagOf(value)}
-          </Text>
-        ) : null}
-        <Text variant="body" color={name ? 'text' : 'textTertiary'} style={{ flex: 1 }}>
-          {name ?? 'Choose a country'}
-        </Text>
-        <ChevronDown size={18} color={t.c.textSecondary} />
-      </Pressable>
-      {error ? (
-        <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
-          {error}
-        </Text>
-      ) : hint ? (
-        <Text variant="caption" color="textTertiary">
-          {hint}
-        </Text>
-      ) : null}
+    <PickerField
+      label={label}
+      shown={name}
+      placeholder="Choose a country"
+      mark={value ? flagOf(value) : null}
+      accessibilityHint="Opens the list of countries"
+      onOpen={() => {
+        setOpen(true);
+        setOpened(true);
+        // A list that didn't load is asked for again as it's opened.
+        if (countries.isError) void countries.refetch();
+      }}
+      hint={hint}
+      error={error}
+      testID={testID}
+    >
       {opened ? (
         <SearchSheet
           open={open}
@@ -126,6 +90,6 @@ export function CountryField({
           testID={testID}
         />
       ) : null}
-    </View>
+    </PickerField>
   );
 }

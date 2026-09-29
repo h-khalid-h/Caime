@@ -26,8 +26,16 @@ import { minorOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
+/** Where an organization's logo is, if it has one: changes with the file, so caches follow. */
+export function orgAvatarUrl(org: Pick<Organization, 'id' | 'avatar_file_id'>): string | null {
+  return org.avatar_file_id ? `/v1/orgs/${org.id}/avatar?v=${org.avatar_file_id.slice(-8)}` : null;
+}
+
 export function orgRef(
-  o: Pick<Organization, 'id' | 'name' | 'handle' | 'kind' | 'domain' | 'verified_at' | 'country'>,
+  o: Pick<
+    Organization,
+    'id' | 'name' | 'handle' | 'kind' | 'domain' | 'verified_at' | 'country' | 'avatar_file_id'
+  >,
 ): OrgRef {
   const verified = o.verified_at !== null;
   return {
@@ -39,6 +47,7 @@ export function orgRef(
     verifiedDomain: verified ? o.domain : null,
     // Its country's: what an amount on one of its team's cards is in, unless they say.
     currency: currencyOf(o.country),
+    avatarUrl: orgAvatarUrl(o),
   };
 }
 

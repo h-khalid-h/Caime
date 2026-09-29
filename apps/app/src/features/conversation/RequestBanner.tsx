@@ -84,7 +84,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
         testID="request-incoming"
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <OrgMark kind={org.kind} size={32} />
+          <OrgMark kind={org.kind} url={org.avatarUrl} size={32} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="label">{`${org.name} wrote to you first`}</Text>
             <VerifiedLine org={org} />

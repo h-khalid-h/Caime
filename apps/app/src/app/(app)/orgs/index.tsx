@@ -71,7 +71,7 @@ export default function Organizations() {
                 backgroundColor: hovered ? t.c.surfaceHover : t.c.surface,
               })}
             >
-              <OrgMark kind={o.kind} />
+              <OrgMark kind={o.kind} url={o.avatarUrl} />
               <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                 <Text variant="bodyStrong" numberOfLines={1} auto>
                   {o.name}

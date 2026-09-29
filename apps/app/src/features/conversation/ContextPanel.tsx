@@ -124,7 +124,7 @@ function BusinessCard({
         onPress={() => go({ pathname: '/o/[handle]', params: { handle: org.handle } })}
         style={{ alignItems: 'center', gap: 8, padding: 20 }}
       >
-        <OrgMark kind={org.kind} size={72} />
+        <OrgMark kind={org.kind} url={org.avatarUrl} size={72} />
         <Text variant="headline" align="center">
           {org.name}
         </Text>

@@ -651,8 +651,14 @@ test.describe
       await page.getByTestId('org-name').fill(`Nile Dental ${stamp}`);
       await expect(page.getByTestId('org-handle')).toHaveValue(handle);
       await page.getByTestId('org-kind-clinic').click();
+      // The year it began is picked, never typed: a list found as you type.
+      await page.getByTestId('org-founded').click();
+      await page.getByTestId('org-founded-search').fill('199');
+      await page.getByTestId('org-founded-1998').click();
+      await expect(page.getByTestId('org-founded')).toContainText('1998');
       await page.getByTestId('org-create').click();
       await expect(page).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
+      await expect(page.getByTestId('org-place')).toContainText('Since 1998');
       // A handle's dots don't read as a file: reloading it still opens the app.
       await page.reload();
       await expect(visible(page, `Clinic or practice · @${handle}`)).toBeVisible();
@@ -676,6 +682,22 @@ test.describe
       await page.getByTestId('org-domain-check').click();
       await expect(page.getByTestId('org-verified')).toHaveText(`Verified · ${domain}`);
 
+      // Its logo, from Edit details: on its page at once.
+      await page.getByTestId('org-edit').click();
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByTestId('org-logo-change').click();
+      await (await chooser).setFiles([
+        {
+          name: 'logo.png',
+          mimeType: 'image/png',
+          buffer: photo(200, 200, [122, 63, 242], [255, 143, 177]),
+        },
+      ]);
+      await expect(page.getByTestId('org-logo-remove')).toBeVisible();
+      // The sheet's own X (its backdrop is a Close too).
+      await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+      await expect(page.getByTestId('org-mark').locator('img')).toBeVisible();
+
       // The team is made of connections.
       await page.getByTestId('org-add-people').click();
       await page.getByTestId(`pick-alex.${stamp}`).click();
@@ -684,13 +706,32 @@ test.describe
       await expect(page.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
       await page.screenshot({ path: 'e2e/screenshots/desktop-organization.png' });
 
+      // A space of the organization's (R43): started from its page, its team to pick from.
+      await page.getByTestId('org-spaces-new').click();
+      await expect(page.getByTestId('space-for-org')).toContainText(`Nile Dental ${stamp}`);
+      await page.getByTestId('space-name').fill('Front desk');
+      await page.getByTestId(`pick-alex.${stamp}`).click();
+      await page.getByTestId('space-create').click();
+      await expect(page).toHaveURL(/\/s\/[0-9a-f-]+$/);
+      await expect(page.getByTestId('space-org')).toHaveText(`Nile Dental ${stamp}`);
+      await page.goto(`/o/${handle}`);
+      await expect(page.getByTestId('org-space-Front desk')).toBeVisible();
+
       // Alex finds it among theirs and sees the team, but not the verification controls.
       const phone = alex.page;
       await phone.goto('/orgs');
       await phone.getByTestId(`org-row-${handle}`).click();
       await expect(visible(phone, 'Alex Chen (you)')).toBeVisible();
       await expect(phone.getByTestId('org-domain-check')).toHaveCount(0);
+      await expect(
+        phone.getByTestId('org-space-Front desk').filter({ visible: true }),
+      ).toBeVisible();
       await phone.screenshot({ path: 'e2e/screenshots/phone-organization.png' });
+      // In Spaces, the row says whose it is.
+      await phone.goto('/spaces');
+      await expect(
+        phone.getByTestId('space-row-Front desk').filter({ visible: true }),
+      ).toContainText(`Nile Dental ${stamp}`);
       // The one failed call is the check that found no record.
       expect(errors.filter((e) => !/422|domain\/check/.test(e))).toEqual([]);
       errors.length = 0; // The page lives on into the next tests; that expected 422 doesn't.
@@ -876,7 +917,8 @@ test.describe
       await page.getByTestId('settings-plan').click();
       await expect(page.getByTestId('plan-name')).toHaveText('Personal');
       await expect(page.getByTestId('plan-ai')).toContainText('0 of 10 in the last 24 hours');
-      await expect(page.getByTestId('plan-files')).toContainText('0 of 5 GB');
+      // Nile Dental's logo is hers: a few KB of her storage.
+      await expect(page.getByTestId('plan-files')).toContainText(/^Files[\d.]+ KB of 5 GB$/);
       // Pro can be bought here, at Stripe's price for it.
       await expect(page.getByTestId('billing-price')).toHaveText('€6 a month');
       await page.getByRole('tab', { name: 'Yearly' }).click();

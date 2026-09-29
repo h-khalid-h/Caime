@@ -172,7 +172,27 @@ export async function closeOrg(trx: Q, orgId: string, now: Date): Promise<void> 
     .where('org_id', '=', orgId)
     .where('revoked_at', 'is', null)
     .execute();
+  // Its spaces stay with their people, as ordinary ones (R43).
+  await trx
+    .updateTable('spaces')
+    .set({ org_id: null, updated_at: now })
+    .where('org_id', '=', orgId)
+    .execute();
   if (!org.verified_at) await releaseHandle(trx, org.handle, now);
+}
+
+/** The organization's spaces someone is in (R43): open ones, busiest first is the caller's. */
+export async function orgSpacesOf(db: Q, orgId: string, userId: string): Promise<string[]> {
+  const rows = await db
+    .selectFrom('spaces as s')
+    .innerJoin('space_members as m', 'm.space_id', 's.id')
+    .select('s.id')
+    .where('s.org_id', '=', orgId)
+    .where('s.archived_at', 'is', null)
+    .where('m.user_id', '=', userId)
+    .where('m.left_at', 'is', null)
+    .execute();
+  return rows.map((r) => r.id);
 }
 
 /** A closed organization, by id: the one route in for whoever takes it back (R42). */

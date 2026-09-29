@@ -29,7 +29,7 @@ import type { Database } from '../db/schema';
 import { audit } from './audit';
 import { AppError } from './errors';
 import { enqueue, registerJob, registerPeriodic } from './jobs';
-import { liveKey, missingAtStripe, stripe } from './stripe';
+import { liveKey, missingAtStripe, StripeError, stripe } from './stripe';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -263,6 +263,24 @@ async function currentCustomer(ctx: AppContext, payer: Payer, who: PayerContact)
 
 const unavailable = (plan: BilledPlan) =>
   new AppError(503, 'billing_unavailable', `${PLAN_NAMES[plan]} can’t be bought right now.`);
+
+/**
+ * What Stripe refused, said to whoever asked (the person buying, or the organization's owner or
+ * admin: theirs to sort out, or to tell the operator), and logged with Stripe's own words for
+ * the operator. Anything that isn't Stripe's refusal is what it was.
+ */
+export function refusedByStripe(
+  log: { error: (obj: object, msg: string) => void },
+  e: unknown,
+  lead: string,
+): unknown {
+  if (!(e instanceof StripeError)) return e;
+  log.error(
+    { stripe: { status: e.status, type: e.type, code: e.code, message: e.message } },
+    'stripe refused',
+  );
+  return new AppError(503, 'billing_unavailable', `${lead}: Stripe said “${e.message}”.`);
+}
 
 /** Checkout for the payer's plan: the page on Stripe to pay on, and back here after. */
 export async function startCheckout(

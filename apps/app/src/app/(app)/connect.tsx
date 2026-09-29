@@ -188,7 +188,7 @@ export default function Connect() {
                     backgroundColor: hovered ? t.c.surfaceHover : 'transparent',
                   })}
                 >
-                  <OrgMark kind={o.kind} size={46} />
+                  <OrgMark kind={o.kind} url={o.avatarUrl} size={46} />
                   <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                     <Text variant="bodyStrong" numberOfLines={1} auto>
                       {o.name}

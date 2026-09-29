@@ -60,6 +60,8 @@ export interface StripeStub {
   hold(id: string): () => void;
   /** Stripe can't be reached (or answers only errors) until this is turned off again. */
   outage(on: boolean): void;
+  /** The next `method path` request is refused with this message, as Stripe refuses a bad ask. */
+  refuse(request: `${'GET' | 'POST' | 'DELETE'} ${string}`, message: string): void;
   close(): Promise<void>;
 }
 
@@ -87,6 +89,7 @@ export async function stripeStub(): Promise<StripeStub> {
   const subscriptions: StripeStub['subscriptions'] = new Map();
   const held = new Map<string, Promise<void>>();
   let down = false;
+  const refusals = new Map<string, string>();
   const event = (type: string, object: object) => ({
     id: `evt_${(++events).toString().padStart(6, '0')}`,
     object: 'event',
@@ -106,6 +109,11 @@ export async function stripeStub(): Promise<StripeStub> {
       res.end(JSON.stringify(body));
     };
     if (down) return send(503, { error: { type: 'api_error', message: 'Stripe is away.' } });
+    const refusal = refusals.get(`${req.method} ${url.pathname}`);
+    if (refusal) {
+      refusals.delete(`${req.method} ${url.pathname}`);
+      return send(400, { error: { type: 'invalid_request_error', message: refusal } });
+    }
     if (req.headers.authorization !== 'Bearer sk_test_stub_0123456789abcdef')
       return send(401, { error: { type: 'invalid_request_error', message: 'Invalid API key.' } });
     const path = url.pathname;
@@ -301,6 +309,9 @@ export async function stripeStub(): Promise<StripeStub> {
     },
     outage(on) {
       down = on;
+    },
+    refuse(request, message) {
+      refusals.set(request, message);
     },
     close: () => new Promise((r) => server.close(() => r())),
   };

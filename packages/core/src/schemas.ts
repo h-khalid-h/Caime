@@ -940,6 +940,8 @@ export const CreateSpaceBody = z
     kind: z.enum(SPACE_KINDS),
     purpose: SpacePurpose.optional(),
     memberIds: z.array(z.string().uuid()).max(200).default([]),
+    /** An organization's space (R43): started by its owner or an admin, for its team. */
+    orgId: z.string().uuid().optional(),
   })
   .strict();
 
@@ -1001,6 +1003,8 @@ export const UpdateOrgBody = z
     website: OrgWebsite.optional(),
     country: Country.optional(),
     foundedYear: FoundedYear.nullable().optional(),
+    /** Its logo: an image file the person uploaded, or null to take it away. */
+    avatarFileId: z.string().uuid().nullable().optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');

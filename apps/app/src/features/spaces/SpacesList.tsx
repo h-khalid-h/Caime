@@ -31,6 +31,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
       accessibilityLabel={[
         s.name,
         SPACE_KIND_DEFS[s.kind].label,
+        s.org?.name ?? '',
         people,
         s.unreadCount ? `${s.unreadCount} unread` : '',
       ]
@@ -71,7 +72,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
               {s.name}
             </Text>
             <Text variant="caption" color="textSecondary" numberOfLines={1}>
-              {SPACE_KIND_DEFS[s.kind].label} · {people}
+              {[SPACE_KIND_DEFS[s.kind].label, s.org?.name, people].filter(Boolean).join(' · ')}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>

@@ -219,6 +219,14 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       handle and page with a new owner and team, customers' blocks kept and their old
       conversation left as it was. The operator deletes a closed one for good
       (`orgs.test.ts`, E2E)
+- [x] An organization's logo: an image its owner or an admin uploaded, on a rounded square
+      wherever the organization is (its page, the Chats row, the conversation, its updates,
+      requests), set from Edit details; the year it began picked from a list, never typed
+      (`orgs.test.ts`, E2E)
+- [x] An organization's spaces (R43): its owner or admins start one from its page, its team
+      can be in it without a connection, the space says whose it is and the page lists them;
+      leaving the team leaves them, and the organization closing leaves them to their people
+      (`spaces.test.ts`, E2E). Next of R43: the organization's actions, held with the thread
 - [x] Organizations' updates (PRD §59, §15 broadcast): an organization's owner and admins (or its
       app, with `updates`) post to whoever follows it; anyone reads them on its page, as the
       organization's. People follow from the page (and choose whether each update notifies
@@ -449,8 +457,9 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       and the Caishy Friends; Stripe's price keys and metadata; the repository, image, database
       and EasyPanel names; deployed migrations; and this log
 - [ ] ⛔ `cai.me`: parked for sale at Afternic on 2026-09-28, for about $400, which the owner has
-      agreed to. Once it's bought it's pointed at EasyPanel (docs/DEPLOY.md, "Domain to come");
-      until then production stays at its current addresses
+      agreed to (still on Afternic's nameservers on 2026-09-29). Once it's bought it's pointed at
+      EasyPanel (docs/DEPLOY.md, "Domain to come"); until then production stays at its current
+      addresses
 - [ ] `cai.me/@handle` for people and organizations (R35), opening the app where it's installed:
       `apple-app-site-association` and `assetlinks.json` served by the server, the app's
       associated domains. After the domain
@@ -1019,3 +1028,10 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   and a closed verified one waits for whoever proves its domain again, who continues it under
   the same handle and page; an owner can close one; the operator can delete a closed one.
   Customers' conversations with a closed organization stay to read (`409 org_closed`).
+- 2026-09-29 — Organizations, from the owner's own use of production: "Get Business" failed
+  with a bare 500 (Stripe's refusal was hidden; the live account can charge, its prices are there,
+  so the refusal is Checkout's own, most likely a restricted key: now said in Stripe's words and
+  logged, `billing.test.ts`); the year an organization began is picked, not typed (`YearField`,
+  a list found as you type, the same on every platform); an organization has a logo; and an
+  organization owns spaces (R43). The super-app brainstorm was reviewed again: R34–R40 stand,
+  nothing new to adopt; `cai.me` is still parked.

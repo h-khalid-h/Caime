@@ -319,8 +319,14 @@ export const endpoints = {
   // Spaces (PRD §40)
   spaces: () => api.get<{ spaces: SpaceSummaryView[] }>('/spaces'),
   space: (id: string) => api.get<{ space: SpaceView }>(`/spaces/${id}`),
-  createSpace: (body: { name: string; kind: SpaceKind; purpose?: string; memberIds: string[] }) =>
-    api.post<{ space: SpaceView }>('/spaces', body),
+  createSpace: (body: {
+    name: string;
+    kind: SpaceKind;
+    purpose?: string;
+    memberIds: string[];
+    /** An organization's space (R43), started by its owner or an admin. */
+    orgId?: string;
+  }) => api.post<{ space: SpaceView }>('/spaces', body),
   updateSpace: (id: string, body: { name?: string; kind?: SpaceKind; purpose?: string | null }) =>
     api.patch<{ space: SpaceView }>(`/spaces/${id}`, body),
   addToSpace: (id: string, userIds: string[]) => api.post<Ok>(`/spaces/${id}/members`, { userIds }),
@@ -340,6 +346,8 @@ export const endpoints = {
     api.get<{ orgs: OrgSummaryView[] }>(`/orgs/search${q({ q: term })}`),
   /** What an @handle link opens: a person or an organization (one namespace). */
   openHandle: (handle: string) => api.get<HandleView>(`/handles/${encodeURIComponent(handle)}`),
+  /** The organization's spaces you're in (R43). */
+  orgSpaces: (id: string) => api.get<{ spaces: SpaceSummaryView[] }>(`/orgs/${id}/spaces`),
   orgByHandle: (handle: string) =>
     api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),
   createOrg: (body: {

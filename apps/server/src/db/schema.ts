@@ -636,6 +636,8 @@ export interface SpacesTable {
   purpose: string | null;
   kind: SpaceKind;
   created_by: string | null;
+  /** The organization it belongs to (R43), if one. */
+  org_id: string | null;
   archived_at: NullableTimestamp;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
@@ -679,6 +681,8 @@ export interface OrganizationsTable {
   country: string | null;
   /** The year it began, shown on its page if it says. */
   founded_year: number | null;
+  /** Its logo: an image its owner or an admin uploaded. */
+  avatar_file_id: string | null;
   /** Closed: who is proving its domain to take it back (R42), and the record they must add. */
   reclaim_by: string | null;
   reclaim_token: string | null;

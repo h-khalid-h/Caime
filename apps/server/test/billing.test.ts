@@ -153,6 +153,20 @@ describe('billing (PRD §84, R25)', () => {
     expect(listed).toHaveLength(2);
   });
 
+  it('what Stripe refuses is said in its words, never as a fault of Caime’s', async () => {
+    const buyer = await signup(t, { displayName: 'Refused Buyer' });
+    stub.refuse('POST /v1/checkout/sessions', 'Your account cannot currently make live charges.');
+    const refused = await checkout(buyer, PRO);
+    expect(refused.statusCode).toBe(503);
+    expect(refused.json().error).toEqual({
+      code: 'billing_unavailable',
+      message:
+        'Pro can’t be bought right now: Stripe said “Your account cannot currently make live charges.”.',
+    });
+    // Nothing else has changed: the next try goes through.
+    expect((await checkout(buyer, PRO)).statusCode).toBe(200);
+  });
+
   it('two taps at once make one customer, and leave one Checkout to pay', async () => {
     const dee = await signup(t, { displayName: 'Dee Double' });
     const both = await Promise.all([checkout(dee, PRO), checkout(dee, PRO)]);

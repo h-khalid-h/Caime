@@ -10,6 +10,7 @@ import type {
   OrgReclaimView,
   OrgSummaryView,
   OrgView,
+  SpaceSummaryView,
 } from '@caime/core';
 import {
   CreateOrgBody,
@@ -37,12 +38,19 @@ import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
-import { joinThreads, leaveThreads } from '../lib/business';
+import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
-import { closedOrgById, closeOrg, newVerifyToken, orgById, orgSeat } from '../lib/orgs';
+import {
+  closedOrgById,
+  closeOrg,
+  newVerifyToken,
+  orgById,
+  orgSeat,
+  orgSpacesOf,
+} from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { viewerRelation } from '../lib/relations';
@@ -51,6 +59,7 @@ import { endFollowsOf } from '../lib/updates';
 import { minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
+import { removeFromSpace, summaries as spaceSummaries } from './spaces';
 
 const ROLE_ORDER: Record<OrgRole, number> = { owner: 0, admin: 1, agent: 2 };
 
@@ -93,6 +102,7 @@ async function summaryOf(
     country: org.country,
     currency: currencyOf(org.country),
     foundedYear: org.founded_year,
+    avatarUrl: orgAvatarUrl(org),
   };
 }
 
@@ -286,6 +296,16 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await managerSeat(ctx, auth.userId, id);
     if (body.country !== undefined && !isCountry(body.country))
       throw badRequest('Choose where it’s based.');
+    // Its logo is an image of the person's own upload, as a profile photo is (modules/me.ts).
+    if (body.avatarFileId) {
+      const file = await ctx.db
+        .selectFrom('files')
+        .select(['id', 'kind'])
+        .where('id', '=', body.avatarFileId)
+        .where('owner_id', '=', auth.userId)
+        .executeTakeFirst();
+      if (file?.kind !== 'image') throw badRequest('Choose an image you uploaded.');
+    }
     await ctx.db
       .updateTable('organizations')
       .set({
@@ -295,11 +315,21 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.website !== undefined ? { website: body.website } : {}),
         ...(body.country !== undefined ? { country: body.country } : {}),
         ...(body.foundedYear !== undefined ? { founded_year: body.foundedYear } : {}),
+        ...(body.avatarFileId !== undefined ? { avatar_file_id: body.avatarFileId } : {}),
         updated_at: ctx.now(),
       })
       .where('id', '=', id)
       .execute();
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
+  });
+
+  /** The organization's spaces you're in (R43), for its team. */
+  app.get('/orgs/:id/spaces', async (req): Promise<{ spaces: SpaceSummaryView[] }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    await orgById(ctx.db, id);
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    return { spaces: await spaceSummaries(ctx, auth.userId, undefined, id) };
   });
 
   /** How its inbox is doing, for its owner and admins on a plan with insights (PRD §71). */
@@ -429,6 +459,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       // Nobody left to run it: it closes, and stops showing anyone as verified.
       if (people.length === 1) await closeOrg(trx, id, ctx.now());
     });
+    // Their seat in the organization's spaces ends with the one on its team (R43).
+    for (const spaceId of await orgSpacesOf(ctx.db, id, userId))
+      await removeFromSpace(ctx, spaceId, userId, auth.userId);
     // What they saved of its customers' conversations is out of their Saved now, and what
     // Caime offered because they were on its team goes.
     await tellSaved(ctx, [userId]);

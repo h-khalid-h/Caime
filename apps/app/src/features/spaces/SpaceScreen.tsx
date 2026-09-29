@@ -254,6 +254,17 @@ export function SpaceScreen({ id }: { id: string }) {
             {SPACE_KIND_DEFS[space.kind].label} · {space.memberCount}{' '}
             {space.memberCount === 1 ? 'person' : 'people'}
           </Text>
+          {space.org ? (
+            <Button
+              label={space.org.name}
+              variant="ghost"
+              size="sm"
+              onPress={() =>
+                router.navigate({ pathname: '/o/[handle]', params: { handle: space.org?.handle } })
+              }
+              testID="space-org"
+            />
+          ) : null}
           {space.purpose ? (
             <Text variant="body" color="textSecondary" align="center" auto>
               {space.purpose}
