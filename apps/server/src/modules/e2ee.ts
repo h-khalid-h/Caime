@@ -9,7 +9,10 @@ import {
   ApproveDeviceBody,
   type ConversationDevicesView,
   type MyDeviceView,
+  type PublicJwk,
   RegisterDeviceBody,
+  RegisterRecoveryBody,
+  RestoreDeviceBody,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -37,6 +40,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     current: d.sessionId === sessionId,
     createdAt: d.createdAt,
     approved: d.approved,
+    recovery: d.recovery,
   });
   const mine = async (userId: string, sessionId: string) =>
     (await liveDevicesOf(ctx, [userId], { waiting: true })).map((d) => myView(d, sessionId));
@@ -50,6 +54,51 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = signedIn(req);
     const body = parse(RegisterDeviceBody, req.body);
     ctx.limiter.hit(`e2ee-device:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
+    if (body.resume) {
+      // A phone signing in again (R41): the device it kept, with these very keys, not removed
+      // meanwhile (nor retired by starting over elsewhere), is bound to this session. Its
+      // approval stands: its keys are the ones its chain vouches for.
+      const kept = await ctx.db
+        .selectFrom('e2ee_devices')
+        .select(['id', 'encryption_key', 'signing_key'])
+        .where('id', '=', body.id)
+        .where('user_id', '=', auth.userId)
+        .where('kind', '=', 'device')
+        .where('revoked_at', 'is', null)
+        .executeTakeFirst();
+      // The very keys: what's stored comes back with its fields in the database's order.
+      const same = (a: unknown, b: PublicJwk) =>
+        Boolean(a) && (a as PublicJwk).x === b.x && (a as PublicJwk).y === b.y;
+      if (
+        !kept ||
+        !same(kept.encryption_key, body.encryptionKey) ||
+        !same(kept.signing_key, body.signingKey)
+      )
+        throw new AppError(
+          409,
+          'not_resumable',
+          'This device can’t pick up where it left off: it registers afresh.',
+        );
+      await ctx.db.transaction().execute(async (trx) => {
+        await trx
+          .updateTable('e2ee_devices')
+          .set({ revoked_at: ctx.now() })
+          .where('user_id', '=', auth.userId)
+          .where('session_id', '=', auth.sessionId)
+          .where('revoked_at', 'is', null)
+          .execute();
+        await trx
+          .updateTable('e2ee_devices')
+          .set({ session_id: auth.sessionId })
+          .where('id', '=', kept.id)
+          .execute();
+      });
+      await audit(ctx.db, { actorId: auth.userId, action: 'e2ee.device_resumed', target: kept.id });
+      await tellDevicesChanged(auth.userId, true);
+      const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === kept.id);
+      if (!device) throw notFound('That device');
+      return { device };
+    }
     const live = await liveDevicesOf(ctx, [auth.userId], { waiting: true });
     const others = live.filter((d) => d.sessionId !== auth.sessionId);
     if (others.length >= MAX_DEVICES && !body.startOver)
@@ -162,8 +211,103 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /**
+   * The recovery device (R41): what the person's recovery key stands for, introduced by one of
+   * their devices that's approved, so their chain vouches for it, and sealed for from now on.
+   * Never signed in. One at a time: a new key replaces the last.
+   */
+  app.post('/e2ee/recovery', async (req, reply): Promise<{ device: MyDeviceView }> => {
+    const auth = signedIn(req);
+    const body = parse(RegisterRecoveryBody, req.body);
+    ctx.limiter.hit(`e2ee-recovery:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
+    const live = await liveDevicesOf(ctx, [auth.userId], { waiting: true });
+    const by = live.find((d) => d.sessionId === auth.sessionId && d.approved);
+    if (!by)
+      throw forbidden(
+        'Make a recovery key on a device that reads your private conversations already: this one doesn’t yet.',
+      );
+    const taken = await ctx.db
+      .selectFrom('e2ee_devices')
+      .select('id')
+      .where('id', '=', body.id)
+      .executeTakeFirst();
+    if (taken) throw new AppError(409, 'device_exists', 'That key was used already.');
+    await ctx.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('e2ee_devices')
+        .set({ revoked_at: ctx.now() })
+        .where('user_id', '=', auth.userId)
+        .where('kind', '=', 'recovery')
+        .where('revoked_at', 'is', null)
+        .execute();
+      await trx
+        .insertInto('e2ee_devices')
+        .values({
+          id: body.id,
+          user_id: auth.userId,
+          session_id: null,
+          name: null,
+          encryption_key: JSON.stringify(body.encryptionKey),
+          signing_key: JSON.stringify(body.signingKey),
+          introduced_by: by.id,
+          introduction: body.introduction,
+          approved_at: ctx.now(),
+          created_at: ctx.now(),
+          kind: 'recovery',
+        })
+        .execute();
+    });
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'e2ee.recovery_made',
+      target: body.id,
+      metadata: { by: by.id },
+    });
+    await tellDevicesChanged(auth.userId, true);
+    reply.status(201);
+    const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === body.id);
+    if (!device) throw notFound('That device');
+    return { device };
+  });
+
+  /**
+   * This session's device, waiting, restores from the recovery key (R41): the recovery device's
+   * signature over its introduction (made where the key was typed), so its chain holds up to the
+   * same first device as before.
+   */
+  app.post('/e2ee/devices/:id/restore', async (req): Promise<{ device: MyDeviceView }> => {
+    const auth = signedIn(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(RestoreDeviceBody, req.body);
+    const live = await liveDevicesOf(ctx, [auth.userId], { waiting: true });
+    const recovery = live.find((d) => d.recovery);
+    if (!recovery) throw notFound('A recovery key for your account');
+    const me = live.find((d) => d.id === id && d.sessionId === auth.sessionId && !d.approved);
+    if (!me) throw notFound('That device');
+    const done = await ctx.db
+      .updateTable('e2ee_devices')
+      .set({ introduced_by: recovery.id, introduction: body.introduction, approved_at: ctx.now() })
+      .where('id', '=', id)
+      .where('user_id', '=', auth.userId)
+      .where('approved_at', 'is', null)
+      .where('revoked_at', 'is', null)
+      .returning('id')
+      .executeTakeFirst();
+    if (!done) throw notFound('That device');
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'e2ee.device_restored',
+      target: id,
+      metadata: { by: recovery.id },
+    });
+    await tellDevicesChanged(auth.userId, true);
+    const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === id);
+    if (!device) throw notFound('That device');
+    return { device };
+  });
+
+  /**
    * Removed: nothing more is sealed for it, and it's signed out, so it can't simply register
-   * again (what it had stays on it until then).
+   * again (what it had stays on it until then). Removing the recovery device retires the key.
    */
   app.delete('/e2ee/devices/:id', async (req): Promise<{ ok: true; signedOut: boolean }> => {
     const auth = signedIn(req);

@@ -412,7 +412,16 @@ export const endpoints = {
     introduction: string;
     name?: string;
     startOver?: boolean;
+    resume?: boolean;
   }) => api.post<{ device: MyDeviceView }>('/e2ee/devices', body),
+  registerRecovery: (body: {
+    id: string;
+    encryptionKey: PublicJwk;
+    signingKey: PublicJwk;
+    introduction: string;
+  }) => api.post<{ device: MyDeviceView }>('/e2ee/recovery', body),
+  restoreDevice: (id: string, body: { introduction: string }) =>
+    api.post<{ device: MyDeviceView }>(`/e2ee/devices/${id}/restore`, body),
   myDevices: () => api.get<{ devices: MyDeviceView[]; chain: DeviceView[] }>('/e2ee/devices'),
   approveDevice: (id: string, body: { introduction: string }) =>
     api.post<{ device: MyDeviceView }>(`/e2ee/devices/${id}/approve`, body),

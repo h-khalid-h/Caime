@@ -243,7 +243,13 @@ These are rules, not preferences.
   sealed, sent or shown goes through `judge`. Open with the conversation on screen
   (`openMessage(m, conversationId)`), never `m.conversationId`. A new device registers with a
   client-chosen id and its own signature, and waits (`approved: false`) until another of the
-  person's approves it.
+  person's approves it, or restores with the recovery key (R41, `e2ee-recovery.ts`: the key
+  derives a recovery device, `kind = 'recovery'` on the server, no session, sealed for like any
+  device, introduced by an approved device and introducing the restoring one; `openMessage`
+  falls back to its keys, `keystore.loadRecovery`). A phone keeps its keys across sign-out and
+  registers with `resume: true` to take its device up again; a browser forgets them. Anything
+  that lists a person's devices to seal for includes the recovery device; anything that picks a
+  sender excludes it.
 - Possible duplicates (PRD §51): `lib/duplicates.ts` offers them, from what the viewer sees only;
   `connection_sides.merged_into` always names a group's root (accepting a `duplicate` suggestion
   unions two groups), and `GET /connections` folds each group into its root's `also`. The app's

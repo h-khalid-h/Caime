@@ -2,12 +2,14 @@ import { type PublicDevice, type SealedMessage, uuidv4, uuidv7 } from '@caime/co
 import {
   chainRoot,
   type DeviceKeys,
+  importDeviceKeys,
   introduce,
   newDeviceKeys,
   open,
   publicKeys,
   seal,
 } from '@caime/core/e2ee-crypto';
+import { newRecoveryKey, parseRecoveryKey, recoveryDevice } from '@caime/core/e2ee-recovery';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
@@ -619,5 +621,225 @@ describe('private conversations (R18, PRD §61)', () => {
         sender: theirs,
       }),
     ).toMatchObject({ ok: true, payload: { body: 'Keep this: the safe is 1234' } });
+  });
+
+  it('a recovery key stands for a device of theirs (R41): made from an approved device, sealed for, never sending', async () => {
+    const kim = await signup(t, { displayName: 'Kim Keeper' });
+    await connect(noor, kim);
+    const phone = await device(kim, 'Phone');
+    const tablet = await device(await signIn(kim), 'Tablet');
+    const key = parseRecoveryKey(newRecoveryKey()) as Uint8Array;
+    const rec = recoveryDevice(key);
+    const recKeys = await importDeviceKeys(rec.keys);
+    const body = {
+      id: rec.id,
+      encryptionKey: rec.keys.encryption.publicKey,
+      signingKey: rec.keys.signing.publicKey,
+    };
+    const recPub: PublicDevice = { ...body, userId: kim.user.id };
+    // Only a device that reads private conversations already makes one.
+    expect(
+      (
+        await tablet.client.req('POST', '/v1/e2ee/recovery', {
+          ...body,
+          introduction: await introduce(tablet, recPub),
+        })
+      ).statusCode,
+    ).toBe(403);
+    const made = await phone.client.req('POST', '/v1/e2ee/recovery', {
+      ...body,
+      introduction: await introduce(phone, recPub),
+    });
+    expect(made.statusCode, made.body).toBe(201);
+    expect(made.json().device).toMatchObject({
+      id: rec.id,
+      recovery: true,
+      approved: true,
+      current: false,
+      introducedBy: phone.id,
+    });
+    // Everyone writing to Kim seals for it, and its approval holds up to Kim's first device.
+    const direct = (
+      await noor.post('/v1/conversations', { kind: 'direct', userId: kim.user.id, private: true })
+    ).conversation.id;
+    const view = await noor.get(`/v1/conversations/${direct}/devices`);
+    expect(view.devices.map((d: any) => d.id)).toEqual(
+      expect.arrayContaining([phone.id, rec.id, noorLaptop.id]),
+    );
+    const listed = view.devices.find((d: any) => d.id === rec.id);
+    expect(
+      (await chainRoot(listed, (id: string) => view.chain.find((d: any) => d.id === id)))?.id,
+    ).toBe(phone.id);
+    const res = await send(noorLaptop, direct, await sealed(noorLaptop, direct, 'for later'));
+    expect(res.statusCode, res.body).toBe(201);
+    // It never sends: it isn't signed in anywhere.
+    const asRecovery: Device = {
+      id: rec.id,
+      client: kim,
+      keys: recKeys,
+      pub: recPub,
+      approved: true,
+    };
+    expect(
+      (await send(asRecovery, direct, await sealed(asRecovery, direct, 'from the key'))).json()
+        .error.code,
+    ).toBe('unknown_device');
+    // A new key replaces the last, and the same key can't be registered twice.
+    const again = recoveryDevice(parseRecoveryKey(newRecoveryKey()) as Uint8Array);
+    const againPub: PublicDevice = {
+      id: again.id,
+      userId: kim.user.id,
+      encryptionKey: again.keys.encryption.publicKey,
+      signingKey: again.keys.signing.publicKey,
+    };
+    const replaced = await phone.client.req('POST', '/v1/e2ee/recovery', {
+      ...againPub,
+      userId: undefined,
+      introduction: await introduce(phone, againPub),
+    });
+    expect(replaced.statusCode, replaced.body).toBe(201);
+    const { devices } = await kim.get('/v1/e2ee/devices');
+    expect(devices.filter((d: any) => d.recovery).map((d: any) => d.id)).toEqual([again.id]);
+    expect(
+      (
+        await phone.client.req('POST', '/v1/e2ee/recovery', {
+          ...againPub,
+          userId: undefined,
+          introduction: await introduce(phone, againPub),
+        })
+      ).json().error.code,
+    ).toBe('device_exists');
+    // Removed like any device: nothing is sealed for it after.
+    expect((await kim.req('DELETE', `/v1/e2ee/devices/${again.id}`)).json()).toEqual({
+      ok: true,
+      signedOut: false,
+    });
+    expect((await devicesOf(noor, direct)).map((d) => d.id)).not.toContain(again.id);
+  });
+
+  it('every device lost, a new one restores from the key: reads what was sealed since, with the same chain', async () => {
+    const lee = await signup(t, { displayName: 'Lee Lost' });
+    await connect(noor, lee);
+    const phone = await device(await signIn(lee), 'Phone');
+    const key = parseRecoveryKey(newRecoveryKey()) as Uint8Array;
+    const rec = recoveryDevice(key);
+    const recPub: PublicDevice = {
+      id: rec.id,
+      userId: lee.user.id,
+      encryptionKey: rec.keys.encryption.publicKey,
+      signingKey: rec.keys.signing.publicKey,
+    };
+    expect(
+      (
+        await phone.client.req('POST', '/v1/e2ee/recovery', {
+          ...recPub,
+          userId: undefined,
+          introduction: await introduce(phone, recPub),
+        })
+      ).statusCode,
+    ).toBe(201);
+    const direct = (
+      await noor.post('/v1/conversations', { kind: 'direct', userId: lee.user.id, private: true })
+    ).conversation.id;
+    const envelope = await sealed(noorLaptop, direct, 'The door code is 4471');
+    expect((await send(noorLaptop, direct, envelope)).statusCode).toBe(201);
+    // The phone is gone. A new one signs in: it waits (the recovery device keeps the chain
+    // alive, so it isn't a first device), and nobody else's restore does anything.
+    await phone.client.post('/v1/auth/logout', {});
+    const fresh = await device(await signIn(lee), 'New phone');
+    expect(fresh.approved).toBe(false);
+    expect((await devicesOf(noor, direct)).map((d) => d.id)).toEqual(
+      expect.arrayContaining([rec.id, noorLaptop.id]),
+    );
+    const omarPhone = await device(await signIn(omar), 'Phone');
+    expect(
+      (
+        await omarPhone.client.req('POST', `/v1/e2ee/devices/${omarPhone.id}/restore`, {
+          introduction: 'AAAA',
+        })
+      ).statusCode,
+    ).toBe(404);
+    // The key is typed on the new phone: it derives the recovery device's keys, reads the
+    // message, and is introduced by it.
+    const recKeys = await importDeviceKeys(recoveryDevice(key).keys);
+    const kept = (await lee.get(`/v1/conversations/${direct}/messages`)).messages.find(
+      (m: any) => m.sealed,
+    );
+    expect(
+      await open({
+        conversationId: direct,
+        sealed: kept.sealed,
+        me: { id: rec.id, keys: recKeys },
+        sender: noorLaptop.pub,
+      }),
+    ).toEqual({ ok: true, payload: { body: 'The door code is 4471' } });
+    const restored = await fresh.client.req('POST', `/v1/e2ee/devices/${fresh.id}/restore`, {
+      introduction: await introduce({ keys: recKeys }, fresh.pub),
+    });
+    expect(restored.statusCode, restored.body).toBe(200);
+    expect(restored.json().device).toMatchObject({ approved: true, introducedBy: rec.id });
+    expect((await devicesOf(noor, direct)).map((d) => d.id)).toContain(fresh.id);
+    // Its chain ends where Lee's always did, so Lee's code is unchanged.
+    const view = await noor.get(`/v1/conversations/${direct}/devices`);
+    const lookup = (id: string) => view.chain.find((d: any) => d.id === id);
+    expect(
+      (
+        await chainRoot(
+          view.devices.find((d: any) => d.id === fresh.id),
+          lookup,
+        )
+      )?.id,
+    ).toBe(phone.id);
+    // Once only; and starting over retires the recovery device with the rest.
+    expect(
+      (
+        await fresh.client.req('POST', `/v1/e2ee/devices/${fresh.id}/restore`, {
+          introduction: await introduce({ keys: recKeys }, fresh.pub),
+        })
+      ).statusCode,
+    ).toBe(404);
+    await device(await signIn(lee), 'Another', { startOver: true });
+    const { devices } = await lee.get('/v1/e2ee/devices');
+    expect(devices.some((d: any) => d.recovery)).toBe(false);
+  });
+
+  it('a phone signing in again picks its device up (R41), never once it was removed', async () => {
+    const mia = await signup(t, { displayName: 'Mia Mobile' });
+    await connect(noor, mia);
+    const phone = await device(mia, 'Phone');
+    await phone.client.post('/v1/auth/logout', {});
+    const direct = (
+      await noor.post('/v1/conversations', { kind: 'direct', userId: mia.user.id, private: true })
+    ).conversation.id;
+    expect((await devicesOf(noor, direct)).map((d) => d.id)).not.toContain(phone.id);
+    const resume = (c: Client, pub: PublicDevice, extra = {}) =>
+      c.req('POST', '/v1/e2ee/devices', {
+        ...pub,
+        userId: undefined,
+        introduction: 'AAAA',
+        name: 'Phone',
+        resume: true,
+        ...extra,
+      });
+    const back = await signIn(mia);
+    // Not with other keys, nor someone else's device.
+    expect(
+      (await resume(back, { ...phone.pub, signingKey: noorLaptop.pub.signingKey })).json().error
+        .code,
+    ).toBe('not_resumable');
+    expect((await resume(await signIn(noor), phone.pub)).json().error.code).toBe('not_resumable');
+    const resumed = await resume(back, phone.pub);
+    expect(resumed.statusCode, resumed.body).toBe(200);
+    expect(resumed.json().device).toMatchObject({ id: phone.id, approved: true, current: true });
+    expect((await devicesOf(noor, direct)).map((d) => d.id)).toContain(phone.id);
+    // Removed from another device, it registers afresh next time, waiting like any new one.
+    const laptop = await device(await signIn(mia), 'Laptop');
+    await back.req('POST', `/v1/e2ee/devices/${laptop.id}/approve`, {
+      introduction: await introduce(phone, laptop.pub),
+    });
+    expect((await laptop.client.req('DELETE', `/v1/e2ee/devices/${phone.id}`)).statusCode).toBe(
+      200,
+    );
+    expect((await resume(await signIn(mia), phone.pub)).json().error.code).toBe('not_resumable');
   });
 });

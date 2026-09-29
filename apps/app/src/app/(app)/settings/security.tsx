@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { PrivateDevices } from '@/features/e2ee/parts';
+import { PrivateDevices, RecoveryKey } from '@/features/e2ee/parts';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { copyText } from '@/lib/clipboard';
 import { API_URL, isWeb } from '@/lib/config';
@@ -140,6 +140,7 @@ export default function Security() {
         ))}
       </Group>
       <PrivateDevices />
+      <RecoveryKey />
       <Group title="Password">
         <View style={{ padding: 16, gap: 12 }}>
           <TextField

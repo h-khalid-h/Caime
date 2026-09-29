@@ -16,3 +16,5 @@ export const StartOverSheet = lazyPart(() =>
   import('./PrivateSheet').then((m) => m.StartOverSheet),
 );
 export const PrivateDevices = lazyPart(() => import('./Devices').then((m) => m.PrivateDevices));
+export const RecoveryKey = lazyPart(() => import('./Recovery').then((m) => m.RecoveryKey));
+export const RestoreFromKey = lazyPart(() => import('./Recovery').then((m) => m.RestoreFromKey));

@@ -26,6 +26,7 @@ import {
   type PublicJwk,
   type SealedMessage,
 } from './e2ee';
+import type { RawDeviceKeys } from './e2ee-recovery';
 
 /** A P-256 key pair: the public half as JSON, the private half as its 32 bytes. */
 export interface KeyPair {
@@ -154,6 +155,17 @@ const pair = (): KeyPair => {
 /** A new device's keys, made here. */
 export async function newDeviceKeys(): Promise<DeviceKeys> {
   return { encryption: pair(), signing: pair() };
+}
+
+/** Keys made elsewhere (the recovery device's), as this device holds keys: as they are. */
+export async function importDeviceKeys(raw: RawDeviceKeys): Promise<DeviceKeys> {
+  return {
+    encryption: {
+      publicKey: ecPublic(raw.encryption.publicKey),
+      privateKey: raw.encryption.privateKey,
+    },
+    signing: { publicKey: ecPublic(raw.signing.publicKey), privateKey: raw.signing.privateKey },
+  };
 }
 
 /** A device's public keys, to register with the server. */

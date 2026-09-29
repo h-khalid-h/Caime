@@ -728,8 +728,28 @@ export const RegisterDeviceBody = z
     introduction: Signature,
     name: z.string().trim().max(80).optional(),
     startOver: z.boolean().optional(),
+    /**
+     * A phone signing in again: the device it registered before, with these very keys, is bound
+     * to this session instead of a new one being made (R41).
+     */
+    resume: z.boolean().optional(),
   })
   .strict();
+
+/** The recovery device (R41): its id and keys, introduced by the device registering it. */
+export const RegisterRecoveryBody = z
+  .object({
+    id: z.string().uuid(),
+    encryptionKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
+      message: 'That key isn’t right.',
+    }),
+    signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), { message: 'That key isn’t right.' }),
+    introduction: Signature,
+  })
+  .strict();
+
+/** A device restores from the recovery key: the recovery device's signature over its introduction. */
+export const RestoreDeviceBody = z.object({ introduction: Signature }).strict();
 
 /** One of my devices approves another of mine: its signature over the new one's introduction. */
 export const ApproveDeviceBody = z.object({ introduction: Signature }).strict();

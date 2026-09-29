@@ -8,7 +8,7 @@
  * compared.
  */
 import type { DeviceView, MessageView } from '@caime/core/api';
-import { introductionText } from '@caime/core/e2ee';
+import { type IntroducedDevice, introductionText } from '@caime/core/e2ee';
 import {
   type DeviceKeys,
   introduce,
@@ -17,6 +17,7 @@ import {
   publicKeys,
   seal,
 } from '@caime/core/e2ee-crypto';
+import { parseRecoveryKey, recoveryDevice } from '@caime/core/e2ee-recovery';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as thisDevice from './crypto';
 
@@ -36,6 +37,8 @@ const h = vi.hoisted(() => {
     registerDevice: vi.fn(),
     approveDevice: vi.fn(),
     removeDevice: vi.fn(),
+    registerRecovery: vi.fn(),
+    restoreDevice: vi.fn(),
     conversationDevices: vi.fn(),
     send: vi.fn(),
     editMessage: vi.fn(),
@@ -46,6 +49,7 @@ const h = vi.hoisted(() => {
     pins: new Map<string, unknown>(),
     private: new Map<string, unknown>(),
     edits: new Map<string, unknown>(),
+    recovery: new Map<string, unknown>(),
   };
   const kv = (m: Map<string, unknown>) => ({
     load: vi.fn(async (k: string) => m.get(k) ?? null),
@@ -60,6 +64,14 @@ const h = vi.hoisted(() => {
   ];
   const keystore = {
     keystoreSupported: true,
+    keystoreKeepsKeys: false,
+    loadRecovery: vi.fn(async (u: string) => stores.recovery.get(u) ?? null),
+    saveRecovery: vi.fn(async (u: string, v: unknown) => void stores.recovery.set(u, v)),
+    forgetRecovery: vi.fn(async (u: string) => void stores.recovery.delete(u)),
+    dropDevice: vi.fn(async (u: string) => {
+      stores.devices.delete(u);
+      stores.recovery.delete(u);
+    }),
     loadDevice: devices.load,
     saveDevice: devices.save,
     loadSeen: seen.load,
@@ -72,6 +84,7 @@ const h = vi.hoisted(() => {
     saveOpened: edits.save,
     forgetDevice: vi.fn(async (userId: string) => {
       stores.devices.delete(userId);
+      stores.recovery.delete(userId);
       for (const m of [stores.seen, stores.pins, stores.private, stores.edits])
         for (const k of [...m.keys()]) if (k.startsWith(`${userId}|`)) m.delete(k);
     }),
@@ -170,17 +183,21 @@ beforeEach(async () => {
   h.signIn();
   approved = true;
   for (const f of Object.values(h.endpoints)) f.mockReset();
-  h.endpoints.registerDevice.mockImplementation(async (body: Record<string, unknown>) => ({
-    device: {
-      ...body,
-      userId: 'noor',
-      introducedBy: null,
-      createdAt: new Date().toISOString(),
-      current: true,
-      approved,
-      name: body.name ?? null,
-    },
-  }));
+  h.endpoints.registerDevice.mockImplementation(async (body: Record<string, unknown>) => {
+    // As the server answers: a device it doesn't have can't be picked up, only registered.
+    if (body.resume) throw new h.ApiError(409, 'not_resumable', 'Afresh.');
+    return {
+      device: {
+        ...body,
+        userId: 'noor',
+        introducedBy: null,
+        createdAt: new Date().toISOString(),
+        current: true,
+        approved,
+        name: body.name ?? null,
+      },
+    };
+  });
   h.endpoints.myDevices.mockImplementation(async () => ({
     devices: [...h.stores.devices.values()].map((d) => ({
       id: (d as { id: string }).id,
@@ -227,7 +244,7 @@ describe('private conversations on this device (R18)', () => {
     p = await import('./private');
     h.endpoints.myDevices.mockResolvedValueOnce({ devices: [], chain: [] });
     expect((await p.ensureDevice()).id).not.toBe(first.id);
-    expect(h.endpoints.registerDevice).toHaveBeenCalledTimes(2);
+    expect(h.endpoints.registerDevice).toHaveBeenCalledTimes(3); // once to take the device up (refused), once afresh
   });
 
   it('seals only for the devices of those in it that hold up as theirs, and again when they change', async () => {
@@ -301,7 +318,7 @@ describe('private conversations on this device (R18)', () => {
     sentOk();
     h.endpoints.myDevices.mockResolvedValueOnce({ devices: [], chain: [] });
     await p.sendPrivate(conversationId, { clientId: 'client-000003', body: 'hi' });
-    expect(h.endpoints.registerDevice).toHaveBeenCalledTimes(2);
+    expect(h.endpoints.registerDevice).toHaveBeenCalledTimes(3); // once to take the device up (refused), once afresh
     const [, second] = h.endpoints.send.mock.calls.map((c) => c[1] as Record<string, any>);
     expect(second?.sealed.from).toBe(registered().id);
     expect(second?.sealed.from).not.toBe(first.id);
@@ -607,5 +624,167 @@ describe('private conversations on this device (R18)', () => {
     h.signIn();
     await p.ensureDevice();
     expect(h.endpoints.registerDevice).toHaveBeenCalledTimes(2);
+  });
+
+  it('a recovery key made here stands for a device of mine (R41): introduced by this one, kept nowhere', async () => {
+    const me = await p.ensureDevice();
+    h.endpoints.registerRecovery.mockImplementation(async (body: Record<string, unknown>) => ({
+      device: { ...body, userId: 'noor', introducedBy: me.id, approved: true, recovery: true },
+    }));
+    const key = await p.makeRecoveryKey();
+    expect(key).toMatch(/^([0-9A-HJKMNP-TV-Z]{4}-){7}[0-9A-HJKMNP-TV-Z]{4}$/);
+    const [[body]] = h.endpoints.registerRecovery.mock.calls as [[Record<string, any>]];
+    const rec = recoveryDevice(parseRecoveryKey(key) as Uint8Array);
+    expect(body.id).toBe(rec.id);
+    expect(body.encryptionKey).toEqual(rec.keys.encryption.publicKey);
+    // Signed by this device, so my chain vouches for it.
+    const { chainRoot } = await import('@caime/core/e2ee-crypto');
+    const self = registered();
+    expect(
+      (
+        await chainRoot(
+          { ...(body as IntroducedDevice), userId: 'noor', introducedBy: me.id },
+          (x) => (x === self.id ? self : undefined),
+        )
+      )?.id,
+    ).toBe(self.id);
+    // The key itself is on this device nowhere, and a waiting device can't make one.
+    expect(h.stores.recovery.size).toBe(0);
+    expect(JSON.stringify([...h.stores.devices.values()])).not.toContain(key.slice(0, 9));
+    approved = false;
+    vi.resetModules();
+    p = await import('./private');
+    for (const m of Object.values(h.stores)) m.clear();
+    await expect(p.makeRecoveryKey()).rejects.toThrow('reads your private conversations already');
+  });
+
+  it('the key typed on a new device: it reads what was sealed for the recovery device before it, and is mine', async () => {
+    // Noor's first device made a key; Sam sealed a message for it; every device was lost since.
+    const first = await someone('noor');
+    const key = 'ABCD-EFGH-JKMN-PQRS-TVWX-YZ01-2345-6789';
+    const rec = recoveryDevice(parseRecoveryKey(key) as Uint8Array);
+    const recView: DeviceView = {
+      id: rec.id,
+      userId: 'noor',
+      encryptionKey: rec.keys.encryption.publicKey,
+      signingKey: rec.keys.signing.publicKey,
+      introducedBy: first.view.id,
+      introduction: await introduce(first, {
+        id: rec.id,
+        userId: 'noor',
+        encryptionKey: rec.keys.encryption.publicKey,
+        signingKey: rec.keys.signing.publicKey,
+      }),
+    };
+    const sam = await someone('sam');
+    const sealed = await seal({
+      conversationId,
+      cid: 'client-000090',
+      payload: { body: 'The door code is 4471' },
+      from: from(sam),
+      to: [first.view, recView, sam.view],
+    });
+    // This new device waits.
+    approved = false;
+    const me = await p.ensureDevice();
+    h.endpoints.myDevices.mockImplementation(async () => ({
+      devices: [
+        { ...registered(), current: true, approved, recovery: false },
+        { ...recView, current: false, approved: true, recovery: true },
+      ],
+      chain: [first.view],
+    }));
+    listed([sam.view, recView], ['noor', 'sam'], [first.view]);
+    expect(await p.openMessage(message(sealed, 'sam'), conversationId)).toEqual({
+      ok: false,
+      reason: 'waiting',
+    });
+    await expect(p.restoreFromRecoveryKey('not a key')).rejects.toThrow('isn’t a recovery key');
+    await expect(
+      p.restoreFromRecoveryKey('0000-0000-0000-0000-0000-0000-0000-0000'),
+    ).rejects.toThrow('isn’t the recovery key for this account');
+    expect(h.endpoints.restoreDevice).not.toHaveBeenCalled();
+    h.endpoints.restoreDevice.mockImplementation(async () => {
+      approved = true;
+      return { device: { ...registered(), introducedBy: rec.id, approved: true } };
+    });
+    await p.restoreFromRecoveryKey(key.toLowerCase().replaceAll('-', ' '));
+    const [[id, body]] = h.endpoints.restoreDevice.mock.calls as [
+      [string, { introduction: string }],
+    ];
+    expect(id).toBe(me.id);
+    // Its introduction is the recovery device's signature: the chain ends at Noor's first device.
+    const { chainRoot } = await import('@caime/core/e2ee-crypto');
+    const restored: DeviceView = {
+      ...registered(),
+      introducedBy: rec.id,
+      introduction: body.introduction,
+    };
+    const all = [first.view, recView, restored];
+    expect((await chainRoot(restored, (x) => all.find((d) => d.id === x)))?.id).toBe(first.view.id);
+    expect((await p.ensureDevice()).approved).toBe(true);
+    // The old message opens here now, with the recovery device's keys; new ones with its own.
+    expect(await p.openMessage(message(sealed, 'sam'), conversationId)).toEqual({
+      ok: true,
+      payload: { body: 'The door code is 4471' },
+    });
+    const later = await seal({
+      conversationId,
+      cid: 'client-000091',
+      payload: { body: 'and after' },
+      from: from(sam),
+      to: [registered(), recView, sam.view],
+    });
+    expect(await p.openMessage(message(later, 'sam'), conversationId)).toMatchObject({ ok: true });
+    expect(await p.hasRecoveryKeysHere()).toBe(true);
+    // Starting over here lets go of them: the recovery device is retired with the rest.
+    await p.startOver();
+    expect(h.stores.recovery.size).toBe(0);
+  });
+
+  it('a device the server still has after its session ended is taken up again, never once removed', async () => {
+    const me = await p.ensureDevice();
+    // Signed in again: the server lists nothing for this session, but the device stands.
+    vi.resetModules();
+    p = await import('./private');
+    h.endpoints.myDevices.mockResolvedValue({ devices: [], chain: [] });
+    h.endpoints.registerDevice.mockImplementation(async (body: Record<string, any>) => {
+      if (!body.resume) throw new Error('registered afresh');
+      return {
+        device: {
+          ...body,
+          userId: 'noor',
+          introducedBy: null,
+          current: true,
+          approved: true,
+          name: null,
+        },
+      };
+    });
+    const back = await p.ensureDevice();
+    expect(back.id).toBe(me.id);
+    expect(h.endpoints.registerDevice).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: me.id, resume: true }),
+    );
+    // Removed meanwhile: the server refuses, its keys here go, and a new device registers.
+    vi.resetModules();
+    p = await import('./private');
+    h.endpoints.registerDevice.mockImplementation(async (body: Record<string, any>) => {
+      if (body.resume) throw new h.ApiError(409, 'not_resumable', 'Afresh.');
+      return {
+        device: {
+          ...body,
+          userId: 'noor',
+          introducedBy: null,
+          current: true,
+          approved: false,
+          name: null,
+        },
+      };
+    });
+    const fresh = await p.ensureDevice();
+    expect(fresh.id).not.toBe(me.id);
+    expect(h.keystore.dropDevice).toHaveBeenCalledWith('noor');
+    expect(h.endpoints.registerDevice).toHaveBeenCalledTimes(4);
   });
 });

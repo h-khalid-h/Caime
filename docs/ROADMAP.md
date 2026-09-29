@@ -370,7 +370,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       replies sealed with what they answer, a deleted account's messages still checkable).
       Text only for now; never forwarded, never read by AI (`e2ee.test.ts`, `private.test.ts`
       on the server and in the app, E2E with two browsers and a third device approved from the
-      phone). [~] Private conversations in the phone apps: the phones encrypt in JavaScript
+      phone).
+      [x] A recovery key for private conversations (R41): made in Settings on a device that
+      reads them, shown once; a recovery device it stands for joins the person's chain and every
+      private message is sealed for it from then on; typed on a new device, that device reads
+      what was sealed since and is approved by it, with the code unchanged; a phone keeps its
+      keys across sign-out and takes its device up again (`e2ee-recovery.test.ts`,
+      `private.test.ts` server and app, E2E: made on the desktop, typed in a fresh browser, what
+      was sent since opens and Alex isn't told her code changed).
+      [~] Private conversations in the phone apps: the phones encrypt in JavaScript
       (`@caime/core/e2ee-noble`, audited @noble libraries), byte for byte what the browser's Web
       Crypto makes and reads, so a message sealed on either opens on the other, and
       introductions and security codes match (`e2ee-noble.test.ts`, every pairing, mutation-
@@ -993,3 +1001,7 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   browser without WebRTC) nothing of them loads. Web budget 448.9 KB (448.6 before: the
   Speaker icon). Tests: 235 core, 50 brand, 480 server, 159 app; the conversation E2E, 48,
   locally.
+- 2026-09-29 — The recovery key (R41): private history survives losing every device, without
+  Caime ever holding a key. Decided with the owner over the alternative (Signal's: lost devices,
+  lost history), since Caime is for relationships that run for years. And a phone keeps its
+  keys when its account signs out (`resume`), which is what tripped the owner up on the iPhone.

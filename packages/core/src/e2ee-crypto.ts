@@ -14,6 +14,7 @@ import {
   type PublicJwk,
   type SealedMessage,
 } from './e2ee';
+import type { RawDeviceKeys } from './e2ee-recovery';
 
 type Subtle = typeof globalThis.crypto.subtle;
 /** A Web Crypto key, in whichever runtime's types (the browser's, or Node's for tests). */
@@ -66,6 +67,42 @@ export async function newDeviceKeys(): Promise<DeviceKeys> {
     subtle().generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']),
   ]);
   return { encryption: encryption as KeyPair, signing: signing as KeyPair };
+}
+
+/**
+ * Keys made elsewhere (the recovery device's, derived from the recovery key), as this device
+ * holds keys: their private halves imported unexportable, so once in they never leave it either.
+ */
+export async function importDeviceKeys(raw: RawDeviceKeys): Promise<DeviceKeys> {
+  const s = subtle();
+  const jwk = (pair: RawDeviceKeys['encryption']) => ({
+    ...ecPublic(pair.publicKey),
+    d: toBase64Url(pair.privateKey),
+  });
+  const [ePriv, ePub, sPriv, sPub] = await Promise.all([
+    s.importKey('jwk', jwk(raw.encryption), { name: 'ECDH', namedCurve: 'P-256' }, false, [
+      'deriveBits',
+    ]),
+    s.importKey(
+      'jwk',
+      ecPublic(raw.encryption.publicKey),
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      [],
+    ),
+    s.importKey('jwk', jwk(raw.signing), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']),
+    s.importKey(
+      'jwk',
+      ecPublic(raw.signing.publicKey),
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      true,
+      ['verify'],
+    ),
+  ]);
+  return {
+    encryption: { publicKey: ePub, privateKey: ePriv },
+    signing: { publicKey: sPub, privateKey: sPriv },
+  };
 }
 
 /** A device's public keys, to register with the server. */

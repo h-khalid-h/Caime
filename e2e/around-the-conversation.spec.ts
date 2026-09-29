@@ -2322,7 +2322,64 @@ test.describe
       await expect(visible(second.page, later)).toBeVisible();
       await alex.page.goto(`/c/${privateId}`);
       await expect(visible(alex.page, later)).toBeVisible();
-      expect([...errors, ...alex.errors, ...second.errors]).toEqual([]);
+
+      // Noor makes a recovery key (R41), shown once. A browser she signs in on afterwards, with
+      // no device of hers at hand, types it: it reads what was sent before it existed, it's hers
+      // without another device approving it, and her code is unchanged, so Alex isn't told.
+      await page.goto('/settings/security');
+      await page.getByTestId('private-recovery-make').click();
+      const recoveryKey = (
+        (await page.getByTestId('private-recovery-key').textContent()) ?? ''
+      ).trim();
+      expect(recoveryKey).toMatch(/^([0-9A-HJKMNP-TV-Z]{4}-){7}[0-9A-HJKMNP-TV-Z]{4}$/);
+      await page.screenshot({ path: 'e2e/screenshots/desktop-recovery-key.png' });
+      await page.getByTestId('private-recovery-kept').click();
+      await expect(page.getByTestId('private-recovery')).toContainText('On, since');
+      // From now on, what's sent to Noor is sealed for the key's device too.
+      const afterKey = 'Sent after the key was made';
+      await alex.page.getByTestId('composer-input').fill(afterKey);
+      await alex.page.getByTestId('composer-send').click();
+      await expect(visible(alex.page, afterKey)).toBeVisible();
+      const lost = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const noorAgain = await lost.request.post('/v1/auth/login', {
+        headers: CLIENT,
+        data: { identifier: `noor.${stamp}`, password: PASSWORD },
+      });
+      expect(noorAgain.ok(), await noorAgain.text()).toBe(true);
+      const third = await newPerson(lost);
+      await third.page.goto(`/c/${privateId}`);
+      await expect(third.page.getByTestId('private-blocked')).toContainText(
+        'once you approve it on another device',
+      );
+      await third.page.getByTestId('private-info').click();
+      const offer = third.page.getByTestId('private-restore-offer');
+      await expect(offer).toContainText('Or use your recovery key');
+      await offer.getByTestId('private-recovery-use').click();
+      await offer
+        .getByTestId('private-recovery-input')
+        .fill('0000-0000-0000-0000-0000-0000-0000-0000');
+      await offer.getByTestId('private-recovery-restore').click();
+      await expect(offer).toContainText('isn’t the recovery key for this account');
+      await offer.getByTestId('private-recovery-input').fill(recoveryKey.toLowerCase());
+      await offer.getByTestId('private-recovery-restore').click();
+      await expect(visible(third.page, 'Your private conversations open here now.')).toBeVisible();
+      await third.page.keyboard.press('Escape');
+      await expect(visible(third.page, afterKey)).toBeVisible();
+      // What was sent before the key existed stays sealed for the devices of then.
+      await expect(third.page.getByTestId('message-sealed-note').first()).toHaveText(
+        'Sent before this device could read private messages.',
+      );
+      await expect(third.page.getByTestId('private-blocked')).toHaveCount(0);
+      await alex.page.reload();
+      await expect(visible(alex.page, later)).toBeVisible();
+      await expect(alex.page.getByTestId('private-code-changed')).toHaveCount(0);
+      const fromTheKey = 'Written from the browser the key opened';
+      await third.page.getByTestId('composer-input').fill(fromTheKey);
+      await third.page.getByTestId('composer-send').click();
+      await expect(visible(alex.page, fromTheKey)).toBeVisible();
+      await third.page.screenshot({ path: 'e2e/screenshots/desktop-private-restored.png' });
+      expect([...errors, ...alex.errors, ...second.errors, ...third.errors]).toEqual([]);
+      await lost.close();
       await laptop.close();
     });
     test('two of Noor’s people who may be one are offered to her, merged, and separated again', async () => {

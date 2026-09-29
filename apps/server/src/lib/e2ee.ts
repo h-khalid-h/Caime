@@ -43,16 +43,19 @@ export const publicView = (d: DeviceView): DeviceView => ({
 });
 
 export interface LiveDevice extends DeviceView {
-  sessionId: string;
+  /** The session it's signed in with; null for the recovery device, which has none. */
+  sessionId: string | null;
   name: string | null;
   createdAt: string;
   approved: boolean;
+  recovery: boolean;
 }
 
 /**
  * The devices that read private conversations now: approved (or the first of their person's
  * chain), not removed, and signed in with a session that's still live (signing out, or being
- * signed out, ends the device too). With `waiting`, also those still waiting to be approved: only
+ * signed out, ends the device too), or the person's recovery device (R41), which has no session
+ * and lives until it's removed. With `waiting`, also those still waiting to be approved: only
  * ever for their own person.
  */
 export async function liveDevicesOf(
@@ -63,10 +66,11 @@ export async function liveDevicesOf(
   if (!userIds.length) return [];
   const rows = await ctx.db
     .selectFrom('e2ee_devices as d')
-    .innerJoin('sessions as s', 's.id', 'd.session_id')
+    .leftJoin('sessions as s', 's.id', 'd.session_id')
     .select([
       'd.id',
       'd.user_id',
+      'd.kind',
       's.id as session_id',
       'd.name',
       'd.encryption_key',
@@ -78,8 +82,12 @@ export async function liveDevicesOf(
     ])
     .where('d.user_id', 'in', userIds)
     .where('d.revoked_at', 'is', null)
-    .where('s.revoked_at', 'is', null)
-    .where('s.expires_at', '>', ctx.now())
+    .where((eb) =>
+      eb.or([
+        eb('d.kind', '=', 'recovery'),
+        eb.and([eb('s.revoked_at', 'is', null), eb('s.expires_at', '>', ctx.now())]),
+      ]),
+    )
     .$if(!opts.waiting, (q) => q.where('d.approved_at', 'is not', null))
     .orderBy('d.created_at')
     .orderBy('d.id')
@@ -90,6 +98,7 @@ export async function liveDevicesOf(
     name: r.name,
     createdAt: r.created_at.toISOString(),
     approved: r.approved_at !== null,
+    recovery: r.kind === 'recovery',
   }));
 }
 
@@ -141,7 +150,11 @@ export async function assertSealedForEveryone(
       .execute()
   ).map((p) => p.user_id);
   const devices = await liveDevicesOf(ctx, people);
-  if (sealed.by !== senderId || !devices.some((d) => d.id === sealed.from && d.userId === senderId))
+  // From one of the sender's devices that's signed in: never their recovery device.
+  if (
+    sealed.by !== senderId ||
+    !devices.some((d) => d.id === sealed.from && d.userId === senderId && !d.recovery)
+  )
     throw new AppError(
       403,
       'unknown_device',

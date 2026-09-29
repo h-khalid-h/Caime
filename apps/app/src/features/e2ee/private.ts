@@ -7,6 +7,7 @@
  */
 import type { DeviceView, MessageView, MyDeviceView } from '@caime/core/api';
 import type { PrivatePayload, SealedMessage } from '@caime/core/e2ee';
+import { newRecoveryKey, parseRecoveryKey, recoveryDevice } from '@caime/core/e2ee-recovery';
 import { uuidv7 } from '@caime/core/ids';
 import { ApiError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
@@ -14,6 +15,7 @@ import { useSession } from '@/state/session';
 import {
   type DeviceKeys,
   e2eeSupported,
+  importDeviceKeys,
   introduce,
   newDeviceKeys,
   type OpenResult,
@@ -23,13 +25,17 @@ import {
 } from './crypto';
 import { deviceName } from './device';
 import {
+  dropDevice,
   forgetDevice,
+  forgetRecovery,
   keystoreSupported,
   loadDevice,
   loadOpened,
+  loadRecovery,
   loadSeen,
   saveDevice,
   saveOpened,
+  saveRecovery,
   saveSeen,
 } from './keystore';
 import { forgetKnown } from './known';
@@ -76,8 +82,40 @@ async function register(userId: string, startOver: boolean): Promise<Mine> {
     ...(startOver ? { startOver: true } : {}),
   });
   await saveDevice(userId, { id, keys });
+  // Starting over retires the recovery device with the rest: its keys here are no use now.
+  if (startOver) await forgetRecovery(userId).catch(() => {});
   await pinSelf(userId, device);
   return { userId, id, keys, approved: device.approved };
+}
+
+/**
+ * The device kept here, whose session ended (a phone signed out and in again, a browser's session
+ * expired), taken up again with these very keys (R41): the server binds it to this session, and
+ * its approval stands. Null where the server no longer has it (removed from another device, or
+ * the account started over there): then it registers afresh.
+ */
+async function resume(
+  userId: string,
+  stored: { id: string; keys: DeviceKeys },
+): Promise<Mine | null> {
+  const pub = { id: stored.id, userId, ...(await publicKeys(stored.keys)) };
+  try {
+    const { device } = await endpoints.registerDevice({
+      id: stored.id,
+      encryptionKey: pub.encryptionKey,
+      signingKey: pub.signingKey,
+      introduction: await introduce({ keys: stored.keys }, pub),
+      name: deviceName(),
+      resume: true,
+    });
+    return { userId, id: stored.id, keys: stored.keys, approved: device.approved };
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'not_resumable') {
+      await dropDevice(userId).catch(() => {});
+      return null;
+    }
+    throw e;
+  }
 }
 
 /**
@@ -97,7 +135,7 @@ export async function ensureDevice(opts: { recheck?: boolean } = {}): Promise<Mi
     mine =
       stored && current
         ? { userId, id: stored.id, keys: stored.keys, approved: current.approved }
-        : await register(userId, false);
+        : (stored && (await resume(userId, stored))) || (await register(userId, false));
     checkedAt = Date.now();
     if (was && (was.id !== mine.id || was.approved !== mine.approved)) {
       opened.clear();
@@ -120,6 +158,7 @@ export async function startOver(): Promise<Mine> {
   mine = await oneTab(userId, () => register(userId, true));
   checkedAt = Date.now();
   opened.clear();
+  recoveryHere.delete(userId);
   tell();
   return mine;
 }
@@ -142,8 +181,98 @@ export async function forgetThisDevice(userId: string): Promise<void> {
   mine = null;
   checkedAt = 0;
   opened.clear();
+  recoveryHere.delete(userId);
   forgetKnown();
   await forgetDevice(userId).catch(() => {});
+}
+
+/** The recovery device's keys, if the key was typed here (R41), by account: read once. */
+const recoveryHere = new Map<string, Promise<{ id: string; keys: DeviceKeys } | null>>();
+const recoveryKeysOf = (userId: string) => {
+  let got = recoveryHere.get(userId);
+  if (!got) {
+    got = loadRecovery(userId).catch(() => null);
+    recoveryHere.set(userId, got);
+  }
+  return got;
+};
+
+/** Whether this device has the recovery device's keys (R41), so it reads what was sealed for it. */
+export const hasRecoveryKeysHere = async () =>
+  Boolean(await recoveryKeysOf(useSession.getState().user?.id ?? ''));
+
+/**
+ * A recovery key (R41), made here and shown once: the recovery device it stands for is introduced
+ * into my chain by this device, and every private message is sealed for it from now on. This
+ * device keeps nothing of the key. A new key replaces the last.
+ */
+export async function makeRecoveryKey(): Promise<string> {
+  const me = await ensureDevice();
+  if (!me.approved)
+    throw new Error(
+      'Make a recovery key on a device that reads your private conversations already: this one doesn’t yet.',
+    );
+  const key = newRecoveryKey();
+  const rec = recoveryDevice(parseRecoveryKey(key) as Uint8Array);
+  const pub = {
+    id: rec.id,
+    userId: me.userId,
+    encryptionKey: rec.keys.encryption.publicKey,
+    signingKey: rec.keys.signing.publicKey,
+  };
+  const { device } = await endpoints.registerRecovery({
+    id: rec.id,
+    encryptionKey: pub.encryptionKey,
+    signingKey: pub.signingKey,
+    introduction: await introduce(me, pub),
+  });
+  await pinSelf(me.userId, device);
+  // A key typed here before stood for the recovery device this one replaces.
+  await forgetRecovery(me.userId).catch(() => {});
+  recoveryHere.delete(me.userId);
+  tell();
+  return key;
+}
+
+/**
+ * The recovery key typed here (R41): the recovery device's keys are derived from it and kept on
+ * this device, so everything sealed for that device opens here; and this device, if it was
+ * waiting, is introduced by the recovery device, so it's approved without another of mine, and
+ * my chain (and code) is as it was.
+ */
+export async function restoreFromRecoveryKey(typed: string): Promise<void> {
+  const bytes = parseRecoveryKey(typed);
+  if (!bytes)
+    throw new Error(
+      'That isn’t a recovery key: it’s 32 letters and digits, in eight groups of four.',
+    );
+  const me = await ensureDevice({ recheck: true });
+  const { devices } = await endpoints.myDevices();
+  const listed = devices.find((d) => d.recovery);
+  if (!listed) throw new Error('No recovery key is set up for this account.');
+  const rec = recoveryDevice(bytes);
+  const same = (a: { x: string; y: string }, b: { x: string; y: string }) =>
+    a.x === b.x && a.y === b.y;
+  if (
+    listed.id !== rec.id ||
+    !same(listed.encryptionKey, rec.keys.encryption.publicKey) ||
+    !same(listed.signingKey, rec.keys.signing.publicKey)
+  )
+    throw new Error('That isn’t the recovery key for this account.');
+  const keys = await importDeviceKeys(rec.keys);
+  if (!me.approved) {
+    const pub = { id: me.id, userId: me.userId, ...(await publicKeys(me.keys)) };
+    const { device } = await endpoints.restoreDevice(me.id, {
+      introduction: await introduce({ keys }, pub),
+    });
+    mine = { ...me, approved: device.approved };
+    checkedAt = Date.now();
+  }
+  await saveRecovery(me.userId, { id: rec.id, keys });
+  recoveryHere.set(me.userId, Promise.resolve({ id: rec.id, keys }));
+  await pinSelf(me.userId, listed);
+  opened.clear();
+  tell();
 }
 
 /** Someone's devices changed (mine too): what was opened is looked at again, codes too. */
@@ -319,6 +448,10 @@ export async function openMessage(m: MessageView, conversationId: string): Promi
   let me = await ensureDevice();
   // Not sealed for this device: perhaps another tab replaced it with the one this is for.
   if (!sealed.keys[me.id]) me = await ensureDevice({ recheck: true });
+  // Nor for this one, but for the recovery device, whose keys were typed here (R41): those read
+  // it, as the person's own.
+  const recovery = sealed.keys[me.id] ? null : await recoveryKeysOf(me.userId);
+  const reader = recovery && sealed.keys[recovery.id] ? { ...me, ...recovery } : me;
   const result = await (async (): Promise<Opened> => {
     if (!me.approved) return { ok: false, reason: 'waiting' };
     const sender = await senderOf(me.userId, conversationId, sealed.from);
@@ -334,7 +467,7 @@ export async function openMessage(m: MessageView, conversationId: string): Promi
     const r = await open({
       conversationId,
       sealed,
-      me,
+      me: reader,
       sender: { id: sealed.from, userId: sender.pin.userId, signingKey: sender.pin.signingKey },
     });
     if (!r.ok) return r;

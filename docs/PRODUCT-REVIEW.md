@@ -277,3 +277,15 @@ with its reason, so it isn't proposed again without new facts.
   rules out. Broadcasts (§59) stay chronological and apart from personal connections; paid
   subscriptions and tips on them are payments (R38). Watches show Caime's notifications from the
   phone, and the web app is the desktop app, so neither needs an app of its own.
+
+- **R41 — Private history survives a lost phone, never through Caime.** A private conversation
+  (R18) must not be lost with the device it was read on: Caime is for relationships that run for
+  years, and people expect their history to follow them. So a person may make a **recovery key**
+  (160 random bits, shown once, kept nowhere by Caime), which stands for a device of their own
+  that every private message is sealed for too; typed on a new device, it reads what was sealed
+  since the key was made and makes the device theirs, with their security code unchanged. And a
+  phone keeps its keys when its account signs out, since it's personal and behind its lock, so
+  signing in again picks up where it left off; a browser still lets them go. Without a key,
+  losing every device loses the history, and the app says so where the key is made. Never a
+  server-side escrow, never a password-derived key, never a device's private keys leaving it:
+  the recovery device is one more device, vouched for by the person's own chain.

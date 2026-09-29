@@ -6,7 +6,7 @@
  * restored from a backup is a new device, and asks to be approved like one. What isn't secret
  * (the devices confirmed here and their public keys, the security codes seen, which
  * conversations are private, the newest edit opened) is in AsyncStorage. Nothing here is ever
- * sent, and everything of an account's goes when it signs out here.
+ * sent. A phone keeps them when the account signs out (R41), unlike a browser.
  *
  * A failed read of the secure storage throws, never answers "no keys": the caller must not make
  * new ones and leave everything sealed for this phone unreadable.
@@ -40,12 +40,18 @@ export interface Opened {
 }
 
 export const keystoreSupported = true;
+/**
+ * A phone keeps its keys when the account signs out (R41): it's personal and behind its lock, so
+ * signing in again picks the same device up, approved as it was. A browser lets them go.
+ */
+export const keystoreKeepsKeys = true;
 
 const SECURE = {
   keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
 } as const;
 /** Secure storage takes letters, digits, dots, dashes and underscores in its keys. */
 const deviceKey = (userId: string) => `caime-e2ee.device.${userId.replace(/[^\w.-]/g, '_')}`;
+const recoveryKey = (userId: string) => `caime-e2ee.recovery.${userId.replace(/[^\w.-]/g, '_')}`;
 
 /** What the secure storage holds for a device: its id and its keys' halves. */
 interface Kept {
@@ -54,9 +60,8 @@ interface Kept {
   s: { pub: PublicJwk; key: string };
 }
 
-/** This account's device on this phone, if it has one. */
-export async function loadDevice(userId: string): Promise<StoredDevice | null> {
-  const raw = await SecureStore.getItemAsync(deviceKey(userId), SECURE);
+async function loadKept(at: string): Promise<StoredDevice | null> {
+  const raw = await SecureStore.getItemAsync(at, SECURE);
   if (raw == null) return null;
   const kept = JSON.parse(raw) as Kept;
   return {
@@ -67,16 +72,27 @@ export async function loadDevice(userId: string): Promise<StoredDevice | null> {
     },
   };
 }
-
-export async function saveDevice(userId: string, device: StoredDevice): Promise<void> {
+async function saveKept(at: string, device: StoredDevice): Promise<void> {
   const { encryption: e, signing: s } = device.keys;
   const kept: Kept = {
     id: device.id,
     e: { pub: e.publicKey, key: toBase64Url(e.privateKey) },
     s: { pub: s.publicKey, key: toBase64Url(s.privateKey) },
   };
-  await SecureStore.setItemAsync(deviceKey(userId), JSON.stringify(kept), SECURE);
+  await SecureStore.setItemAsync(at, JSON.stringify(kept), SECURE);
 }
+
+/** This account's device on this phone, if it has one. */
+export const loadDevice = (userId: string) => loadKept(deviceKey(userId));
+export const saveDevice = (userId: string, device: StoredDevice) =>
+  saveKept(deviceKey(userId), device);
+
+/** The recovery device's keys, derived here from the key the person typed (R41). */
+export const loadRecovery = (userId: string) => loadKept(recoveryKey(userId));
+export const saveRecovery = (userId: string, device: StoredDevice) =>
+  saveKept(recoveryKey(userId), device);
+export const forgetRecovery = (userId: string) =>
+  SecureStore.deleteItemAsync(recoveryKey(userId), SECURE);
 
 // The rest, by store and key (each key starts with the account's id and "|", as on the web).
 const PREFIX = 'caime-e2ee:';
@@ -101,15 +117,15 @@ export const loadOpened = (key: string) => get<Opened>('edits', key);
 export const saveOpened = (key: string, opened: Opened) => put('edits', key, opened);
 
 /**
- * Signed out: this phone's keys for the account go, so nothing sealed for them opens here, and
- * everything else it kept of the account's private conversations with them.
+ * Signed out: a phone keeps the account's keys and what it confirmed (R41), so signing in again
+ * picks its device up; nothing here opens without the account signed in and the device still
+ * the account's on the server. What's gone for good goes with the device: removed from another
+ * device, or the account starting over there, it registers afresh next time (`dropDevice`).
  */
-export async function forgetDevice(userId: string): Promise<void> {
+export async function forgetDevice(_userId: string): Promise<void> {}
+
+/** This phone's device is no longer the account's: its keys go (what it confirmed stays). */
+export async function dropDevice(userId: string): Promise<void> {
   await SecureStore.deleteItemAsync(deviceKey(userId), SECURE);
-  const mine = (await AsyncStorage.getAllKeys()).filter((k) => {
-    if (!k.startsWith(PREFIX)) return false;
-    const rest = k.slice(k.indexOf(':', PREFIX.length) + 1);
-    return rest.startsWith(`${userId}|`);
-  });
-  if (mine.length) await AsyncStorage.multiRemove(mine);
+  await SecureStore.deleteItemAsync(recoveryKey(userId), SECURE);
 }

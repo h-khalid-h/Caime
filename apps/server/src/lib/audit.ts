@@ -43,7 +43,10 @@ export type AuditAction =
   | 'e2ee.device_first'
   | 'e2ee.device_waiting'
   | 'e2ee.device_approved'
-  | 'e2ee.device_removed';
+  | 'e2ee.device_removed'
+  | 'e2ee.device_resumed'
+  | 'e2ee.device_restored'
+  | 'e2ee.recovery_made';
 
 export async function audit(
   db: Kysely<Database>,

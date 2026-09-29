@@ -494,7 +494,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .execute(),
     db
       .selectFrom('e2ee_devices')
-      .select(['name', 'encryption_key', 'signing_key', 'created_at', 'approved_at', 'revoked_at'])
+      .select([
+        'name',
+        'kind',
+        'encryption_key',
+        'signing_key',
+        'created_at',
+        'approved_at',
+        'revoked_at',
+      ])
       .where('user_id', '=', me)
       .orderBy('created_at')
       .execute(),
@@ -1124,6 +1132,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     })),
     privateConversationDevices: privateDevices.map((d) => ({
       name: d.name,
+      kind: d.kind,
       publicKeys: { encryption: d.encryption_key, signing: d.signing_key },
       addedAt: d.created_at.toISOString(),
       approvedAt: iso(d.approved_at),

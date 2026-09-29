@@ -11,6 +11,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { useCodes, useMyDevices } from './codes';
 import { loadPrivate } from './hooks';
+import { RestoreFromKey } from './parts';
 import type { PersonCode } from './private';
 import { privateSupported } from './support';
 
@@ -72,6 +73,7 @@ export function PrivateSheet({
           </Text>
         ) : null}
         <WaitingDevices on={open && privateSupported} />
+        <RestoreFromKey on={open && privateSupported} />
         {others.map((c) => (
           <CodeCard key={c.userId} name={nameIn(conversation, c.userId)} code={c} />
         ))}
@@ -219,8 +221,9 @@ export function StartOverSheet({ open, onClose }: { open: boolean; onClose: () =
         </Text>
         <Text variant="caption" color="textSecondary">
           Your security code changes, so the people you write to privately see it did. Nothing sent
-          before now opens here. If another device of yours is at hand, approve this one from it
-          instead.
+          before now opens here, and your recovery key, if you made one, stops working: make a new
+          one after. If another device of yours is at hand, approve this one from it instead; if you
+          have your recovery key, use that.
         </Text>
         <Button
           label="Start over here"

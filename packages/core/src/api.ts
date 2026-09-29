@@ -1519,6 +1519,11 @@ export interface MyDeviceView extends DeviceView {
   createdAt: string;
   /** Approved by one of my devices (or the first): until then nothing is sealed for it. */
   approved: boolean;
+  /**
+   * The device my recovery key stands for (R41): never signed in, sealed for like the others, and
+   * what a new device restores from when every other is lost.
+   */
+  recovery: boolean;
 }
 
 /** How two devices reach each other (WebRTC), passed from one to the other. */

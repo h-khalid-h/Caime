@@ -760,6 +760,8 @@ export interface E2eeDevicesTable {
   approved_at: NullableTimestamp;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
+  /** A device signed in somewhere, or the person's recovery device (R41). */
+  kind: Generated<'device' | 'recovery'>;
 }
 
 /** Where each person in a group call is (PRD §47). */
