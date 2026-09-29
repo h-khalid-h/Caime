@@ -1,11 +1,11 @@
 /**
- * Both call engines and their screens (stack.web.ts), fetched the first time something needs
+ * Both call engines and their screens (stack.ts), fetched the first time something needs
  * them, and kept. A fetch that fails (no network, a server restarting mid-deploy) is tried
  * again: by the next thing that needs them, on its own a few times, and when the browser is back
  * online. What couldn't be done meanwhile is owed, and done once they're in: a call that rang,
  * or a group's call that began, while they couldn't load is asked for again then.
  */
-type Stack = typeof import('./stack.web');
+type Stack = typeof import('./stack');
 
 /** How many times a failed fetch is tried again on its own, 2 s, 4 s, … apart. */
 const RETRIES = 5;
@@ -61,8 +61,9 @@ export function loaderOf<T>(fetch: () => Promise<T>) {
   return { load, loadedOr, online };
 }
 
-const calls = loaderOf<Stack>(() => import('./stack.web'));
+const calls = loaderOf<Stack>(() => import('./stack'));
 export const loadCallStack = calls.load;
 export const callStackOr = calls.loadedOr;
 
-if (typeof window !== 'undefined') window.addEventListener('online', calls.online);
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function')
+  window.addEventListener('online', calls.online);

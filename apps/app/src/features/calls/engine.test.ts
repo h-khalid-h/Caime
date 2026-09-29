@@ -192,7 +192,7 @@ let media: (constraints: { video: unknown }) => Promise<FakeStream>;
 let display: () => Promise<FakeStream>;
 let n = 0;
 
-type Engine = typeof import('./engine.web');
+type Engine = typeof import('./engine');
 let engine: Engine;
 let useCall: typeof import('@/state/calls').useCall;
 let DEVICE_ID: string;
@@ -258,7 +258,7 @@ beforeAll(async () => {
       return { ok: true };
     }),
   );
-  engine = await import('./engine.web');
+  engine = await import('./engine');
   ({ useCall, DEVICE_ID } = await import('@/state/calls'));
 });
 beforeEach(() => {

@@ -12,10 +12,11 @@
       "bundleIdentifier": "me.cai.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Caime uses the camera when you take a photo to send.",
+        "NSCameraUsageDescription": "Caime uses the camera for video calls, and when you take a photo to send.",
         "NSPhotoLibraryUsageDescription": "Caime opens your photos when you choose one to send.",
-        "NSMicrophoneUsageDescription": "Caime uses the microphone when you record a voice message.",
-        "NSLocationWhenInUseUsageDescription": "Caime uses your location only when you choose to share it."
+        "NSMicrophoneUsageDescription": "Caime uses the microphone for calls, and when you record a voice message.",
+        "NSLocationWhenInUseUsageDescription": "Caime uses your location only when you choose to share it.",
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
@@ -67,6 +68,13 @@
           "locationWhenInUsePermission": "Caime uses your location only when you choose to share it in a conversation, once, never in the background.",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Caime uses the camera for video calls, and when you take a photo to send.",
+          "microphonePermission": "Caime uses the microphone for calls, and when you record a voice message."
         }
       ]
     ],

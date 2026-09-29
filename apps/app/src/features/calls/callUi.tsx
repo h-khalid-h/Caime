@@ -1,14 +1,24 @@
 /**
- * What the 1:1 and the group call screens share: the video and audio elements, the round
- * buttons, the ringtone, keeping the keyboard in the screen, and the running clock.
+ * What the 1:1 and the group call screens share, on the web and the phones: the video and audio
+ * (Media.tsx, Media.native.tsx), the round buttons, the ringtone, keeping the keyboard in the
+ * screen, and the running clock.
  */
-import { createElement, type Ref, useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { type Ref, useEffect, useRef, useState } from 'react';
+import { Platform, Vibration, View } from 'react-native';
 import type { IconComponent } from '@/ui/Button';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
 export const INK = '#0B0B12';
+/** Over everything: fixed to the window on the web, over the whole app on a phone. */
+export const OVER_APP = {
+  position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 1000,
+};
 /** Readable over whatever the other camera shows. */
 export const OVER_VIDEO = {
   textShadowColor: '#00000099',
@@ -16,45 +26,7 @@ export const OVER_VIDEO = {
   textShadowOffset: { width: 0, height: 1 },
 };
 
-/** A camera or a voice, played: the remote one with sound, this device's own muted. */
-export function Media({
-  stream,
-  video,
-  mine,
-  fit = 'cover',
-  testID,
-}: {
-  stream: MediaStream;
-  video: boolean;
-  mine?: boolean;
-  /** A camera fills the screen; a shared screen is shown whole. */
-  fit?: 'cover' | 'contain';
-  testID: string;
-}) {
-  // A callback ref: when the voice becomes a picture, the new element gets the stream too.
-  const attach = useCallback(
-    (el: HTMLMediaElement | null) => {
-      if (el && el.srcObject !== stream) el.srcObject = stream;
-    },
-    [stream],
-  );
-  return createElement(video ? 'video' : 'audio', {
-    ref: attach,
-    autoPlay: true,
-    playsInline: true,
-    muted: mine,
-    'data-testid': testID,
-    style: video
-      ? {
-          width: '100%',
-          height: '100%',
-          objectFit: fit,
-          transform: mine ? 'scaleX(-1)' : undefined,
-          display: 'block',
-        }
-      : { display: 'none' },
-  });
-}
+export { Media } from './Media';
 
 export function Round({
   icon: Icon,
@@ -105,8 +77,14 @@ export function Round({
 /**
  * A soft two-note ring while a call rings for this person, so a tab in the background is heard.
  * Where the browser won't let a page play sound yet, it stays quiet: the screen still shows it.
+ * A phone vibrates instead, a beat every three seconds, as the web's rings.
  */
 export function useRingtone(ringing: boolean) {
+  useEffect(() => {
+    if (!ringing || Platform.OS === 'web') return;
+    Vibration.vibrate([0, 900, 2100], true);
+    return () => Vibration.cancel();
+  }, [ringing]);
   useEffect(() => {
     if (!ringing || typeof window === 'undefined' || !('AudioContext' in window)) return;
     let audio: AudioContext;

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCall } from '@/state/calls';
 import { useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
@@ -12,17 +13,20 @@ import {
   ScreenShareOff,
   Video,
   VideoOff,
+  Volume2,
 } from '@/ui/icons';
 import { Text } from '@/ui/Text';
+import { useCallAudio } from './callAudio';
 import {
   INK,
   Media,
+  OVER_APP,
   OVER_VIDEO,
   Round,
   useElapsed,
   useFocusInside,
   useRingtone,
-} from './callUi.web';
+} from './callUi';
 import {
   answer,
   hangUp,
@@ -32,7 +36,7 @@ import {
   toggleCamera,
   toggleMute,
 } from './engine';
-import { GroupCallLayer } from './GroupCallLayer.web';
+import { GroupCallLayer } from './GroupCallLayer';
 
 /**
  * The call screen (PRD §47), over everything while a call rings or runs: who it's with, how
@@ -43,6 +47,13 @@ function OneToOneCallLayer() {
   const { call, phase, local, remote, muted, cameraOff, sharing, theirs, note } = useCall();
   const elapsed = useElapsed(call?.answeredAt ?? null, phase === 'active');
   useRingtone(phase === 'incoming');
+  // Clear of a phone's notch and home indicator (nothing on the web).
+  const insets = useSafeAreaInsets();
+  // A phone's sound, from when the two are connecting until the call is over.
+  const audio = useCallAudio(
+    phase === 'connecting' || phase === 'active' || phase === 'reconnecting',
+    call?.kind === 'video',
+  );
   // Keyboard and screen reader users land on what to do now: answer, or hang up.
   const primary = useRef<View>(null);
   useEffect(() => {
@@ -86,12 +97,7 @@ function OneToOneCallLayer() {
       aria-label={`${video ? 'Video' : 'Voice'} call with ${other.displayName}`}
       testID="call-screen"
       style={{
-        position: 'fixed' as 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
+        ...OVER_APP,
         backgroundColor: INK,
       }}
     >
@@ -110,7 +116,7 @@ function OneToOneCallLayer() {
           flex: 1,
           alignItems: 'center',
           justifyContent: seeThem ? 'flex-start' : 'center',
-          paddingTop: seeThem ? 24 : 0,
+          paddingTop: (seeThem ? 24 : 0) + insets.top,
           gap: 10,
         }}
       >
@@ -149,7 +155,7 @@ function OneToOneCallLayer() {
         <View
           style={{
             position: 'absolute',
-            bottom: 140,
+            bottom: 140 + insets.bottom,
             right: 16,
             paddingHorizontal: 12,
             paddingVertical: 8,
@@ -167,7 +173,7 @@ function OneToOneCallLayer() {
           style={{
             position: 'absolute',
             // Above the controls, clear of the name at the top on a narrow screen.
-            bottom: 140,
+            bottom: 140 + insets.bottom,
             right: 16,
             width: 112,
             height: 156,
@@ -186,7 +192,7 @@ function OneToOneCallLayer() {
             flexDirection: 'row',
             justifyContent: 'center',
             gap: 28,
-            paddingBottom: 40,
+            paddingBottom: 40 + insets.bottom,
             paddingTop: 16,
           }}
           testID={phase === 'incoming' ? 'call-incoming' : 'call-controls'}
@@ -218,6 +224,15 @@ function OneToOneCallLayer() {
                 onPress={toggleMute}
                 testID="call-mute"
               />
+              {audio.speaker !== null ? (
+                <Round
+                  icon={Volume2}
+                  label={audio.speaker ? 'Speaker off' : 'Speaker'}
+                  on={audio.speaker}
+                  onPress={audio.toggleSpeaker}
+                  testID="call-speaker"
+                />
+              ) : null}
               {screenShareSupported && phase === 'active' ? (
                 <Round
                   icon={sharing ? ScreenShareOff : ScreenShare}
@@ -254,7 +269,7 @@ function OneToOneCallLayer() {
 
 /**
  * The call screens: a 1:1 call's, and a group call's. One call at a time is ever on a device.
- * Loaded with the calls themselves when there's one to show (CallLayer.web.tsx).
+ * Loaded with the calls themselves when there's one to show (CallLayer.tsx).
  */
 export function CallScreens() {
   return (

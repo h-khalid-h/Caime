@@ -119,6 +119,7 @@ export { default as UserRound } from 'lucide-react-native/icons/user-round';
 export { default as Users } from 'lucide-react-native/icons/users';
 export { default as Video } from 'lucide-react-native/icons/video';
 export { default as VideoOff } from 'lucide-react-native/icons/video-off';
+export { default as Volume2 } from 'lucide-react-native/icons/volume-2';
 export { default as WandSparkles } from 'lucide-react-native/icons/wand-sparkles';
 export { default as Webhook } from 'lucide-react-native/icons/webhook';
 export { default as WifiOff } from 'lucide-react-native/icons/wifi-off';

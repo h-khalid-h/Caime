@@ -194,7 +194,7 @@ let media: (constraints: { video: unknown }) => Promise<FakeStream>;
 let display: () => Promise<FakeStream>;
 let n = 0;
 
-type Engine = typeof import('./group.web');
+type Engine = typeof import('./group');
 let engine: Engine;
 let useGroupCall: typeof import('@/state/groupCall').useGroupCall;
 let useCall: typeof import('@/state/calls').useCall;
@@ -272,7 +272,7 @@ beforeAll(async () => {
       return { ok: true };
     }),
   );
-  engine = await import('./group.web');
+  engine = await import('./group');
   ({ useGroupCall } = await import('@/state/groupCall'));
   ({ useCall, DEVICE_ID } = await import('@/state/calls'));
 });

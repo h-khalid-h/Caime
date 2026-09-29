@@ -345,12 +345,12 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       Screen sharing on desktop browsers, in a video call or a voice one, with no renegotiation
       (video goes both ways from the start); the two devices tell each other what they show, so
       the other side sees the screen whole, the avatar rather than black when a camera is off,
-      and a muted mark (`engine.web.test.ts`, E2E with Chromium's fake screen).
+      and a muted mark (`engine.test.ts`, E2E with Chromium's fake screen).
       Group calls in groups of up to eight: every device in one connects to every other (whoever
       joined later makes the offer, so two never offer each other), everyone who can take part is
       rung, a call that's on shows a banner to join it, and it goes on while two are in it, then
       leaves its line ("Group video call · 12 min"). Blocks and R29 keep people apart in a call,
-      and leaving the group leaves its call (`group-calls.test.ts`, `group.web.test.ts`, E2E with
+      and leaving the group leaves its call (`group-calls.test.ts`, `group.test.ts`, E2E with
       three browsers). Call history: every call a person was in or was rung for, newest first,
       the missed ones, and those with one person (People → Calls, and on a person's page), each
       with how it ended and how long it lasted; a group call shows only who was in it while the
@@ -380,14 +380,25 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       stays responsive (on Hermes 0.12 on the build machine: sealing about 45 ms a device,
       opening about 50 ms a message). iOS and Android bundles export. Not yet tried on a phone
       itself: that is what's left before it's ticked
-      [ ] Calls in the phone apps. ⛔ Call summaries need a speech-to-text provider
+      [~] Calls in the phone apps, 1:1 and in groups: the web's engines, shared as they are
+      (`engine.ts`, `group.ts`), over react-native-webrtc's WebRTC (`rtc.native.ts`), with its
+      view for the cameras (`Media.native.tsx`), the phone's audio set up for a call (speaker for
+      video, the ear for voice, a Speaker button; `callAudio.native.ts`), a vibration while it
+      rings, and the screens clear of the notch. The permission prompts say calls, and a call
+      goes on with the app in the background (iOS audio mode). iOS and Android bundles export,
+      the plugins apply (camera, microphone, audio and Bluetooth permissions), and the web's
+      calls are unchanged (the whole conversation E2E, 48 tests, locally). It's native code, so
+      it's in a development or store build only: in Expo Go calls aren't offered and nothing of
+      them loads. Not yet tried on a phone; a call rings only while the app is open (ringing a
+      closed app needs VoIP push with CallKit and ConnectionService), and a phone can't share
+      its screen yet. ⛔ Call summaries need a speech-to-text provider
       [x] A TURN relay for calls on strict networks: Cloudflare's, live since 2026-09-28
       (`CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN` on the `caime` service; the live
       privacy page names it). Each person gets credentials of their own that expire; STUN only
       if Cloudflare doesn't answer (`calls.test.ts`). Verified by the owner with a call between
       two networks on production. Caime's own coturn (`TURN_URLS`, `TURN_SECRET`) still works
       instead. Without any relay, a call that can't connect says a network may be blocking it
-      (`engine.web.test.ts`)
+      (`engine.test.ts`)
 
 ## M7 — Ship
 
@@ -975,3 +986,10 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   every direction, the phone keystore in the Keychain or Keystore, a device name from the phone,
   and the app's copy no longer sending people to the web. Web budget unchanged (448.6 KB; the
   web build doesn't carry the phone backend). Tests: 235 core, 50 brand, 480 server, 159 app.
+- 2026-09-29 — Calls in the phone apps (PRD §47), all but trying them on a phone: the call
+  engines and screens are one for the web and the phones now (the `.web` files renamed, with
+  `.native` files only where a phone differs: WebRTC, the camera's view, the call's audio), on
+  react-native-webrtc and react-native-incall-manager. Where calls can't be made (Expo Go, a
+  browser without WebRTC) nothing of them loads. Web budget 448.9 KB (448.6 before: the
+  Speaker icon). Tests: 235 core, 50 brand, 480 server, 159 app; the conversation E2E, 48,
+  locally.

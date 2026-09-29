@@ -176,16 +176,22 @@ These are rules, not preferences.
   it answers once. Its user is kind `agent`: `automated` and `aiAgent` on its messages. The E2E
   Messages stand-in answers as it from the sentence of its knowledge nearest the question.
 - Calls: `apps/server/src/lib/calls.ts` and `modules/calls.ts` ring, relay and record;
-  `apps/app/src/features/calls/engine.web.ts` holds the RTCPeerConnection, and
-  `CallLayer.web.tsx` draws the call over everything (both have native stubs, `engine.ts` and
-  `CallLayer.tsx`, so phones build). Each tab's `DEVICE_ID` (`state/calls.ts`) is how a call
+  `apps/app/src/features/calls/engine.ts` holds the RTCPeerConnection and `CallScreens.tsx`
+  draws the call over everything, on the web and the phones alike. What a phone does differently
+  is in `.native` files only: WebRTC from react-native-webrtc (`rtc.native.ts`, which puts it
+  where the browser keeps its own; `rtc.ts` is the web's and the tests'), the camera's view
+  (`Media.native.tsx`, `RTCView`) and the call's audio (`callAudio.native.ts`, incall-manager).
+  Those are native code, in a development or store build only: `calls.ts` loads nothing of calls
+  where `callsAvailable` is false (Expo Go, a browser without WebRTC), since the screens import
+  them. The engines use nothing a phone lacks (no `DOMException`: `errorName` in `media.ts`;
+  window listeners behind a check). Each tab's `DEVICE_ID` (`state/calls.ts`) is how a call
   runs on the one device that answered. E2E runs Chromium with a fake camera and microphone and
   the server with `STUN_URLS=''`.
 - Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
   person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
-  ignores a view older than the one it holds. `features/calls/group.web.ts` holds a connection
+  ignores a view older than the one it holds. `features/calls/group.ts` holds a connection
   per other joined device (the later joiner offers; a tie goes by device id),
-  `GroupCallLayer.web.tsx` draws the grid, and `GroupCallBanner.tsx` offers to join a call that's
+  `GroupCallLayer.tsx` draws the grid, and `GroupCallBanner.tsx` offers to join a call that's
   on. Every 1:1 query in `lib/calls.ts` says `is_group = false`; keep it that way. Change who's
   in a group call only through `settleGroupCall(ctx, id, change)`, which runs `change` under the
   call's row lock (the one a join takes) and tells nobody when it changed nothing; and put
@@ -316,11 +322,12 @@ organizations writing first as requests), apps for organizations (scoped tokens,
 webhooks), personal access tokens, OAuth for third-party apps, plan entitlements, metrics
 (operations, product, organizations' insights), share links, your-data controls, the image and
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
-groups of up to eight) with their history, private conversations (end to end encrypted, web; phones built, not yet tried on one),
+groups of up to eight; phones built, not yet tried on one) with their history, private conversations (end to end encrypted, web; phones built, not yet tried on one),
 billing with Stripe, possible duplicates in People, and organizations' updates.
 It's live on EasyPanel at https://caime.datac.com (also its default domain,
 https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
 Stripe account (tell its owner before changing anything there: it's live); sessions in this
 environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Calls go through Cloudflare's TURN relay when they can't connect directly
-(`CLOUDFLARE_TURN_*`, set in EasyPanel). Remaining: calls in the phone apps, trying private conversations on a phone, a third-party penetration test, and store builds. Production is only what passed CI: a green run
+(`CLOUDFLARE_TURN_*`, set in EasyPanel). Remaining: trying calls and private conversations on a phone (a development build: Expo Go
+has no WebRTC), ringing a closed app (VoIP push), a third-party penetration test, and store builds. Production is only what passed CI: a green run
 on `main` fast-forwards `production`, which EasyPanel builds from (`docs/DEPLOY.md`).

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loaderOf } from './load.web';
+import { loaderOf } from './load';
 
 /** A fetch that fails until `up`, as the calls' file does with no network. */
 function flaky() {

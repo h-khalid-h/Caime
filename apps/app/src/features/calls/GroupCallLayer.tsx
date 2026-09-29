@@ -1,6 +1,7 @@
 import type { CallPersonView } from '@caime/core/api';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type GroupPeer, useGroupCall } from '@/state/groupCall';
 import { useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
@@ -13,17 +14,20 @@ import {
   ScreenShareOff,
   Video,
   VideoOff,
+  Volume2,
 } from '@/ui/icons';
 import { Text } from '@/ui/Text';
+import { useCallAudio } from './callAudio';
 import {
   INK,
   Media,
+  OVER_APP,
   OVER_VIDEO,
   Round,
   useElapsed,
   useFocusInside,
   useRingtone,
-} from './callUi.web';
+} from './callUi';
 import { screenShareSupported } from './engine';
 import {
   joinGroupCall,
@@ -147,6 +151,10 @@ export function GroupCallLayer() {
   const { call, phase, local, peers, muted, cameraOff, sharing, note } = useGroupCall();
   const elapsed = useElapsed(call?.answeredAt ?? null, phase === 'in');
   useRingtone(phase === 'incoming');
+  // Clear of a phone's notch and home indicator (nothing on the web).
+  const insets = useSafeAreaInsets();
+  // A phone's sound, while it's in the call.
+  const audio = useCallAudio(phase === 'in', call?.kind === 'video');
   const primary = useRef<View>(null);
   useEffect(() => {
     if (phase === 'incoming' || phase === 'in')
@@ -219,16 +227,13 @@ export function GroupCallLayer() {
       aria-label={`${kindName} in ${where}`}
       testID="group-call-screen"
       style={{
-        position: 'fixed' as 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
+        ...OVER_APP,
         backgroundColor: INK,
       }}
     >
-      <View style={{ alignItems: 'center', paddingTop: 20, paddingHorizontal: 16, gap: 4 }}>
+      <View
+        style={{ alignItems: 'center', paddingTop: 20 + insets.top, paddingHorizontal: 16, gap: 4 }}
+      >
         <Text variant="title" style={{ color: '#FFFFFF' }} numberOfLines={1}>
           {where}
         </Text>
@@ -314,7 +319,7 @@ export function GroupCallLayer() {
             flexDirection: 'row',
             justifyContent: 'center',
             gap: 28,
-            paddingBottom: 32,
+            paddingBottom: 32 + insets.bottom,
             paddingTop: 12,
           }}
           testID={phase === 'incoming' ? 'group-call-incoming' : 'group-call-controls'}
@@ -346,6 +351,15 @@ export function GroupCallLayer() {
                 onPress={toggleGroupMute}
                 testID="group-call-mute"
               />
+              {audio.speaker !== null ? (
+                <Round
+                  icon={Volume2}
+                  label={audio.speaker ? 'Speaker off' : 'Speaker'}
+                  on={audio.speaker}
+                  onPress={audio.toggleSpeaker}
+                  testID="group-call-speaker"
+                />
+              ) : null}
               {screenShareSupported && phase === 'in' ? (
                 <Round
                   icon={sharing ? ScreenShareOff : ScreenShare}
