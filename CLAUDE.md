@@ -168,6 +168,10 @@ These are rules, not preferences.
 - Outbound requests to addresses someone else chose (webhooks) go through `postWebhook`: https,
   no private addresses (checked on the URL and on every DNS answer), one deadline for the whole
   exchange. Test them with `WEBHOOKS_ALLOW_PRIVATE=true` and a local server.
+- Taking a message down for everyone or an update back goes through `lib/moderation.ts`
+  (`removeForEveryone`, `takeBackUpdate`): the sender's delete, the poster's take-back and the
+  operator's review (R49, `/admin/reports`, `modules/admin.ts`) all run the same code, so a
+  new consequence of a removal (something else that keeps a message's words) goes there once.
 - Anything that writes into a conversation (send, edit, react, vote, move a card, type) calls
   `assertCanWrite` (`apps/server/src/lib/blocks.ts`) first: blocks between people and a
   customer's block of an organization both stop at it. New write routes do the same, with a

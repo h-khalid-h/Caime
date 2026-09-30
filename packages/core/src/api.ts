@@ -963,6 +963,30 @@ export interface PersonInsightsView {
   started: { byYou: number; byThem: number };
 }
 
+/** A report for the operator to review (R49): what was reported, by whom, and what of it. */
+export interface ReportView {
+  id: string;
+  status: 'open' | 'reviewing' | 'actioned' | 'dismissed';
+  reason: string;
+  details: string | null;
+  createdAt: string;
+  reporter: { id: string; handle: string; displayName: string } | null;
+  person: { id: string; handle: string; displayName: string } | null;
+  org: { id: string; handle: string; name: string } | null;
+  /** The message, as it is now: no words once removed, and none of a sealed one. */
+  message: {
+    id: string;
+    conversationId: string;
+    kind: string;
+    body: string | null;
+    sealed: boolean;
+    removed: boolean;
+    senderId: string | null;
+    createdAt: string;
+  } | null;
+  update: { id: string; body: string | null; removed: boolean } | null;
+}
+
 /** A share: how many of how many, and the rate when there are any. */
 export interface Rate {
   count: number;

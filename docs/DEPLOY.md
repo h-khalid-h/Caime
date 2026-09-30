@@ -371,6 +371,15 @@ app sells plans itself), `PRIVACY_URL`, `TERMS_URL` and `HELP_URL` (Caime's own 
 `PUBLIC_URL`, so leaving them unset survives a change of domain), and the VAPID keys (generated
 and kept in the database on first boot). A redeploy applies a change to the environment.
 
+## Moderation
+
+What people report lands in `reports`; the operator reviews them at `/admin/reports` (R49):
+open the page, paste `ADMIN_TOKEN` (it stays in that tab), and load a status. A report can be
+marked reviewing, dismissed or actioned; a reported message can be removed for everyone and a
+reported update taken back, each exactly as its owner would do it, and each written to the audit
+log. The same is available as JSON (`GET /v1/admin/reports?status=open`, `PATCH
+/v1/admin/reports/:id`, `POST /v1/admin/reports/:id/remove-message`, `…/remove-update`).
+
 ## Backups
 
 A worker instance dumps the database once a day (`pg_dump`, custom format, compressed, no owners

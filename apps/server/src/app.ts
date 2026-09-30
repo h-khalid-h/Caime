@@ -55,6 +55,7 @@ import { kitRoutes } from './modules/kits';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
 import { metricsRoutes } from './modules/metrics';
+import { moderationPageRoutes } from './modules/moderation-page';
 import { notificationRoutes } from './modules/notifications';
 import { oauthDiscovery, oauthRoutes } from './modules/oauth';
 import { orgRoutes } from './modules/orgs';
@@ -230,6 +231,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await metricsRoutes(app, ctx);
   await oauthDiscovery(app, ctx);
   await pageRoutes(app, ctx);
+  await moderationPageRoutes(app, ctx);
 
   await app.register(
     async (v1) => {

@@ -960,6 +960,14 @@ export const ReportBody = z.object({
   details: z.string().trim().max(2000).optional(),
 });
 
+export const REPORT_STATUSES = ['open', 'reviewing', 'actioned', 'dismissed'] as const;
+/** The operator moving a report along (R49). */
+export const ReportStatusBody = z.object({ status: z.enum(REPORT_STATUSES) });
+export const ReportsQuery = z.object({
+  status: z.enum([...REPORT_STATUSES, 'all']).default('open'),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 export const AiRewriteBody = z
   .object({
     text: z.string().trim().min(1).max(4000),

@@ -87,7 +87,8 @@ import {
   participantsOf,
   sendMessage,
 } from '../lib/messages';
-import { forgetNotificationsOf, notify, tellForgotten } from '../lib/notify';
+import { removeForEveryone } from '../lib/moderation';
+import { notify } from '../lib/notify';
 import {
   activeRelationships,
   between,
@@ -1837,53 +1838,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const moderator = ['owner', 'admin'].includes(me.role);
     if (m.sender_id !== auth.userId && !moderator)
       throw forbidden('You can delete your own messages.');
-    const { savers, forgotten } = await ctx.db.transaction().execute(async (trx) => {
-      await trx
-        .updateTable('messages')
-        .set({
-          deleted_at: ctx.now(),
-          body: null,
-          payload: '{}',
-          entities: '{}',
-          sealed: null,
-          // Gone for everyone, it's pinned for nobody.
-          pinned_at: null,
-          pinned_by: null,
-        })
-        .where('id', '=', id)
-        .execute();
-      // Whoever saved it no longer has it (PRD §69).
-      const savers = await dropSaved(trx, [id]);
-      await trx.deleteFrom('assets').where('message_id', '=', id).execute();
-      await trx.deleteFrom('message_files').where('message_id', '=', id).execute();
-      await trx.deleteFrom('album_photos').where('message_id', '=', id).execute();
-      // What Caime offered from it: an offer still open closes, and none keeps its words.
-      await trx
-        .updateTable('suggestions')
-        .set({ status: 'expired', resolved_at: ctx.now() })
-        .where('message_id', '=', id)
-        .where('status', '=', 'pending')
-        .execute();
-      await trx
-        .updateTable('suggestions')
-        .set({ title: '', rationale: '', payload: '{}', due_text: null })
-        .where('message_id', '=', id)
-        .execute();
-      await recordEvent(trx, 'message.deleted', auth.userId, { messageId: id });
-      // Nobody keeps its words in a notification either.
-      return { savers, forgotten: await forgetNotificationsOf(trx, [id]) };
-    });
-    await ctx.bus.publish(
-      (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
-      { type: 'message.deleted', data: { id, conversationId: m.conversation_id } },
-    );
-    await tellForgotten(ctx, forgotten);
-    await tellSaved(ctx, savers);
-    if (m.pinned_at)
-      await ctx.bus.publish(
-        (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
-        { type: 'pins.changed', data: { conversationId: m.conversation_id } },
-      );
+    await removeForEveryone(ctx, m, auth.userId);
     return { ok: true };
   });
 

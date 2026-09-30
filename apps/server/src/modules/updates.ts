@@ -15,6 +15,7 @@ import { audit } from '../lib/audit';
 import { orgBlocked } from '../lib/blocks';
 import { orgRef } from '../lib/business';
 import { AppError, forbidden, notFound } from '../lib/errors';
+import { takeBackUpdate } from '../lib/moderation';
 import { orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import {
@@ -226,24 +227,8 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     await poster(req, id);
     limitChanges(id);
     // Taken back: its words go, from its page and from every follower's notifications; that
-    // there was one stays, for the audit log.
-    const row = await ctx.db
-      .updateTable('org_updates')
-      .set({ body: '', deleted_at: ctx.now() })
-      .where('id', '=', updateId)
-      .where('org_id', '=', id)
-      .where('deleted_at', 'is', null)
-      .returningAll()
-      .executeTakeFirst();
-    if (!row) throw notFound('That update');
-    await audit(ctx.db, {
-      actorId: auth.userId,
-      action: 'org.update_removed',
-      target: id,
-      metadata: { updateId },
-    });
-    await retellUpdate(ctx, updateId, null);
-    ctx.defer('updates', () => tellUpdatesChanged(ctx, id));
+    // there was one stays, for the audit log (lib/moderation.ts, as the operator does it).
+    if (!(await takeBackUpdate(ctx, id, updateId, auth.userId))) throw notFound('That update');
     return { ok: true };
   });
 

@@ -11,6 +11,9 @@ import {
   ORG_PLANS,
   PERSON_PLANS,
   type ProductMetricsView,
+  ReportStatusBody,
+  ReportsQuery,
+  type ReportView,
 } from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
@@ -21,6 +24,7 @@ import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
+import { removeForEveryone, reportViews, takeBackUpdate } from '../lib/moderation';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -35,6 +39,72 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   const handleParam = z.object({ handle: z.string().trim().min(1).max(64) });
 
   /** The database's backups (docs/DEPLOY.md): the last that succeeded, and the ones on disk. */
+  // --- Reports (R49): what people reported, reviewed and acted on by the operator --------------
+
+  app.get('/admin/reports', async (req): Promise<{ reports: ReportView[] }> => {
+    operator(req);
+    const { status, limit } = parse(ReportsQuery, req.query);
+    return { reports: await reportViews(ctx, { status, limit }) };
+  });
+
+  const reportParam = z.object({ id: z.string().uuid() });
+  const oneReport = async (id: string): Promise<ReportView> => {
+    const [report] = await reportViews(ctx, { status: 'all', limit: 1, id });
+    if (!report) throw notFound('That report');
+    return report;
+  };
+
+  /** Moving a report along: reviewing, actioned, dismissed (or back to open). */
+  app.patch('/admin/reports/:id', async (req): Promise<{ report: ReportView }> => {
+    operator(req);
+    const { id } = parse(reportParam, req.params);
+    const { status } = parse(ReportStatusBody, req.body);
+    await oneReport(id);
+    await ctx.db.updateTable('reports').set({ status }).where('id', '=', id).execute();
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'moderation.report_status',
+      target: id,
+      metadata: { status },
+    });
+    return { report: await oneReport(id) };
+  });
+
+  /** The reported message, gone for everyone, exactly as its sender's own delete would do. */
+  app.post('/admin/reports/:id/remove-message', async (req): Promise<{ report: ReportView }> => {
+    operator(req);
+    const { id } = parse(reportParam, req.params);
+    const report = await oneReport(id);
+    if (!report.message) throw badRequest('This report isn’t about a message.');
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(['id', 'conversation_id', 'pinned_at', 'deleted_at', 'kind'])
+      .where('id', '=', report.message.id)
+      .executeTakeFirst();
+    if (!m) throw notFound('That message');
+    if (m.kind === 'system') throw badRequest('Lines about the conversation stay.');
+    if (!m.deleted_at) await removeForEveryone(ctx, m, null);
+    await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'moderation.message_removed',
+      target: id,
+      metadata: { messageId: m.id },
+    });
+    return { report: await oneReport(id) };
+  });
+
+  /** The reported update, taken back, exactly as its organization would do. */
+  app.post('/admin/reports/:id/remove-update', async (req): Promise<{ report: ReportView }> => {
+    operator(req);
+    const { id } = parse(reportParam, req.params);
+    const report = await oneReport(id);
+    if (!report.update || !report.org) throw badRequest('This report isn’t about an update.');
+    await takeBackUpdate(ctx, report.org.id, report.update.id, null);
+    await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
+    return { report: await oneReport(id) };
+  });
+
   app.get('/admin/backups', async (req) => {
     operator(req);
     return {

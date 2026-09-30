@@ -543,8 +543,11 @@ outperforming the alternatives is reach and operations. In the order the review 
 - [x] Email (R48): the address confirmed with six digits, a forgotten password reset by a link,
       through `SMTP_URL` (`email.test.ts`, E2E with `e2e/smtp-stub.mjs`) ⛔ an SMTP account on
       production: until then nothing is sent and recovery codes are the way back
-- [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; moderation
-      reviewer UI; per-operator admin tokens; pentest
+- [x] Moderation (R49): the operator's `/admin/reports` over `GET`/`PATCH /v1/admin/reports`,
+      the reported message removed for everyone or the update taken back through the same code
+      as their owners' (`moderation.test.ts`). Not yet: suspending an account
+- [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter;
+      per-operator admin tokens; pentest
 - Measurements: Lighthouse 12 on the production bundle served locally, mobile preset
       (2026-09-30): landing page and a public organization page both 100 accessibility, 100
       best practices, 100 SEO, 74 performance (FCP 0.6 s, LCP 0.8 s, TBT 750 ms, Speed Index
@@ -1164,3 +1167,6 @@ outperforming the alternatives is reach and operations. In the order the review 
   Welcome within half a second.
 - 2026-09-30 · Load test taken (numbers above): one instance answers an inbox read for fifty
   people at once under 100 ms at the 99th percentile.
+- 2026-09-30 · R49, reports reviewed: `lib/moderation.ts` (`removeForEveryone`, `takeBackUpdate`,
+  shared with the person's delete and the poster's take-back), the operator's report routes and
+  the `/admin/reports` page.

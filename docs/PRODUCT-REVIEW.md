@@ -416,3 +416,15 @@ with its reason, so it isn't proposed again without new facts.
   Without an SMTP server nothing is sent, and the routes say so (`503 email_unavailable`), so
   recovery codes stay the way back until the operator sets one (R25). Nothing else is mailed:
   no digests, no notifications, no marketing.
+
+- **R49 — Reports are reviewed.** Reports were stored and read by nobody. Now the operator has
+  a page of their own, `/admin/reports` (plain HTML, a script of its own under the web's CSP,
+  the token kept in the tab), over `GET /v1/admin/reports`: each report with who reported, whom
+  or which organization, the reason and details, and what's left of the thing now (a message's
+  words unless sealed or already removed, an update's unless taken back). The operator moves a
+  report along (reviewing, dismissed, actioned) or acts: the message removed for everyone,
+  through exactly the code its sender's own delete runs (`lib/moderation.ts`), or the update
+  taken back as its organization would. Every action is in the audit log with no actor (the
+  operator isn't a user). What it doesn't do yet: suspend or delete an account, or write to the
+  reporter; a sealed message is never readable, so a report of one is judged by its reporter's
+  words alone.
