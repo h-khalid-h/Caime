@@ -143,7 +143,9 @@ test('a signed-out visitor lands on the welcome page with no errors', async ({ b
   const { page, errors } = await newPerson(context);
   await page.goto('/c/00000000-0000-4000-8000-000000000000');
   await page.waitForURL('**/welcome');
-  await expect(page.getByText('Messaging that understands your relationships.')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Messaging that understands your relationships.' }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
   await context.close();
 });
@@ -182,7 +184,10 @@ test('before signing up, the terms and privacy policy open as pages, each leadin
   // And back to Caime itself, signed out: its welcome.
   await terms.getByRole('link', { name: 'Open Caime' }).click();
   await terms.waitForURL('**/welcome');
-  await expect(terms.getByText('Messaging that understands your relationships.')).toBeVisible();
+  // The landing page (R44) says it too, hidden under the app: the app's heading is what's looked for.
+  await expect(
+    terms.getByRole('heading', { name: 'Messaging that understands your relationships.' }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
   await context.close();
 });
