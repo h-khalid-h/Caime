@@ -211,6 +211,8 @@ export function createAiAssist(config: Config): AiAssist | null {
     maxRetries: 2,
   });
   const model = config.ANTHROPIC_MODEL;
+  // The light features (short, frequent, forgiving) may run on a smaller model (docs/RESOURCES.md).
+  const light = config.ANTHROPIC_MODEL_LIGHT || model;
   // A declined request is re-run server-side on Anthropic's recommended fallback model.
   const shared = {
     model,
@@ -236,6 +238,7 @@ export function createAiAssist(config: Config): AiAssist | null {
     const reply = await client.beta.messages
       .create({
         ...shared,
+        model: light,
         max_tokens: maxTokens,
         output_config: { effort },
         system,
@@ -311,11 +314,21 @@ export function createAiAssist(config: Config): AiAssist | null {
           ...shared,
           max_tokens: 2048,
           output_config: { effort: 'low', format: betaZodOutputFormat(AgentOutput) },
-          system: AGENT_SYSTEM(orgName, agentName, today),
+          // The rules and the organization's knowledge are the same for every question its
+          // customers ask, so they're one cached prefix (docs/RESOURCES.md); only the
+          // conversation is new each time.
+          system: [
+            { type: 'text', text: AGENT_SYSTEM(orgName, agentName, today) },
+            {
+              type: 'text',
+              text: `<knowledge>\n${knowledge}\n</knowledge>`,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
           messages: [
             {
               role: 'user',
-              content: `<knowledge>\n${knowledge}\n</knowledge>\n\n<conversation>\n${conversation}\n</conversation>\n\n${
+              content: `<conversation>\n${conversation}\n</conversation>\n\n${
                 introduced
                   ? 'You have written in this conversation before.'
                   : `This is the first time you write in this conversation: begin by saying, in a few words, that you're ${orgName}'s AI agent.`

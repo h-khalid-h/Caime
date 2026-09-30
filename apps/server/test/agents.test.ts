@@ -6,6 +6,10 @@ import { agentReply } from '../src/lib/agent';
 import { runDueJobs } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
+/** The system prompt as text, whether a string or blocks (the agent's is blocks). */
+const systemText = (system: unknown): string =>
+  Array.isArray(system) ? system.map((b) => b.text ?? '').join('\n') : String(system ?? '');
+
 /** A stand-in for the Messages API: records each request and answers from a queue. */
 const requests: any[] = [];
 const replies: Array<{ status: number; json: unknown }> = [];
@@ -158,11 +162,14 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await agentTurn();
     expect(requests).toHaveLength(1);
     const asked = requests[0];
-    expect(asked.system).toContain(
+    expect(systemText(asked.system)).toContain(
       'You are Nile Dental Assistant, the AI agent that answers customers of Nile Dental',
     );
+    // The knowledge is the cached prefix, the same for every question (docs/RESOURCES.md).
+    expect(asked.system[1]).toMatchObject({ cache_control: { type: 'ephemeral' } });
+    expect(asked.system[1].text).toContain(KNOWLEDGE);
     const content = asked.messages[0].content as string;
-    expect(content).toContain(KNOWLEDGE);
+    expect(content).not.toContain(KNOWLEDGE);
     expect(content).toContain('[1] Customer: Hi! Are you open on Saturday?');
     expect(content).toContain('begin by saying');
     // Nobody's name or address reaches the model.
@@ -373,7 +380,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
     await send(far, 'Are you open tomorrow?', conversationId);
     replies.push(agentSays('answer', 'Yes, from 9am to 6pm.'));
     await agentTurn();
-    expect(requests[0].system).toContain('Today is Thursday 24 September 2026.');
+    expect(systemText(requests[0].system)).toContain('Today is Thursday 24 September 2026.');
   });
 
   it('never answers anyone under 18, a private conversation, or while it’s paused', async () => {
@@ -565,7 +572,7 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       message: 'I’ve passed this to the team at Nile Dental. Someone will answer here.',
     });
     expect(requests[0].messages[0].content).toContain('[1] Customer: Do you take walk-ins?');
-    expect(requests[0].system).toContain('Today is Thursday 24 September 2026.');
+    expect(systemText(requests[0].system)).toContain('Today is Thursday 24 September 2026.');
     await zoneOf('America/New_York');
     // A try isn't an answer to anyone, and doesn't count as one.
     expect((await noor.get(`/v1/orgs/${orgId}/agent`)).agent.repliesToday).toBe(10);

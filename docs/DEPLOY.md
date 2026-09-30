@@ -98,7 +98,8 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `SMTP_URL` | — | Where mail goes out (`smtps://user:pass@host:465`, or `smtp://` with STARTTLS): the code that confirms an address and the link that resets a password (R48). Without it nothing is sent, and the app says to use a recovery code. |
 | `EMAIL_FROM` | `Caime <hello@cai.me>` | The sender. |
 | `ANTHROPIC_API_KEY` | — | AI assist (rewrite, translate, catch me up, find follow-ups). Without it the AI settings don't appear and Caime uses its heuristics (R17). Each person still turns it on for themselves. |
-| `ANTHROPIC_MODEL` | `claude-opus-5` | The Claude model AI assist uses. |
+| `ANTHROPIC_MODEL` | `claude-opus-5` | The Claude model AI assist uses: finding follow-ups and organizations' agents always, and the light features unless the next is set. |
+| `ANTHROPIC_MODEL_LIGHT` | — | A smaller model for rewrite, translate and catch me up (short, frequent, forgiving; `docs/RESOURCES.md`). Unset, they use `ANTHROPIC_MODEL`. |
 | `ANTHROPIC_BASE_URL` | — | Another Messages API endpoint, such as a gateway. |
 | `STUN_URLS` | `stun:stun.l.google.com:19302` | Calls: STUN servers that tell each device its public address, comma-separated. Set it empty for none (calls then connect only on the same network). |
 | `TURN_URLS`, `TURN_SECRET` | — | Calls: a TURN relay (such as coturn, with `use-auth-secret` and `static-auth-secret` set to `TURN_SECRET`), comma-separated `turn:` and `turns:` addresses. Each person gets credentials that expire after 12 hours. Without a relay, calls between people on strict networks (some offices, some mobile carriers) won't connect. |
@@ -354,6 +355,7 @@ LEGAL_NAME=DATA C OÜ
 CONTACT_EMAIL=hello@cai.me
 VAPID_SUBJECT=mailto:hello@cai.me
 ANTHROPIC_MODEL=claude-opus-5
+# ANTHROPIC_MODEL_LIGHT=            # a smaller model for rewrite, translate and catch me up
 ANTHROPIC_BASE_URL=https://api.anthropic.com
 STRIPE_API_BASE=https://api.stripe.com
 CLOUDFLARE_TURN_API_BASE=https://rtc.live.cloudflare.com

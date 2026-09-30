@@ -53,6 +53,12 @@ const Env = z.object({
   /** AI assist (Anthropic). Off without a key; each person still turns it on for themselves. */
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
+  /**
+   * A smaller model for the light features (rewrite, translate, catch me up), which are short,
+   * frequent and forgiving; unset, they use ANTHROPIC_MODEL. Finding follow-ups and the
+   * organizations' agents always use ANTHROPIC_MODEL.
+   */
+  ANTHROPIC_MODEL_LIGHT: z.string().optional(),
   /** Another Messages API endpoint (a gateway, or the local stub the tests run). */
   ANTHROPIC_BASE_URL: z.string().url().optional(),
   /** Run background workers in this process. */

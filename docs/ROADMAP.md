@@ -551,8 +551,15 @@ outperforming the alternatives is reach and operations. In the order the review 
       the reported message removed for everyone or the update taken back through the same code
       as their owners', the person suspended and the suspension lifted (`moderation.test.ts`), the
       reporter told once it was looked at and whether Caime acted
-- [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter;
-      per-operator admin tokens; pentest
+- [x] Operators by name and a contribution process: `OPERATOR_TOKENS` (each person on the
+      operator's side named in the audit log); `CONTRIBUTING.md`, the pull request template and
+      `.claude/skills/steward/SKILL.md` (a pull request against `main`, CI, review by the
+      reviewer against the conventions and `docs/RESOURCES.md`) ⛔ branch protection on `main`
+      and the repository secret for an automatic first review are the owner's to set
+- [x] Resource budgets (`docs/RESOURCES.md`): what the server, AI and devices may cost, with
+      the numbers measured so far; the agent's knowledge sent as a cached prefix and
+      `ANTHROPIC_MODEL_LIGHT` for the light features (`ai.test.ts`, `agents.test.ts`)
+- [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; pentest
 - Measurements: Lighthouse 12 on the production bundle served locally, mobile preset
       (2026-09-30): landing page and a public organization page both 100 accessibility, 100
       best practices, 100 SEO, 74 performance (FCP 0.6 s, LCP 0.8 s, TBT 750 ms, Speed Index
@@ -1181,6 +1188,10 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · Budgets and contributions: `docs/RESOURCES.md` (server, AI and device budgets,
+  CLAUDE.md convention 14), `CONTRIBUTING.md` with the pull request template and the steward
+  skill (convention 15); the agent's knowledge is a cached system block and the light features
+  may run on `ANTHROPIC_MODEL_LIGHT`.
 - 2026-09-30 · Invite links (R1): `invites` (0044), `lib/invites.ts` and `modules/invites.ts`, the
   visitor's `/i/<token>` page, the app's `InviteSheet` in Connect, the `i/[token]` route that
   accepts and opens the conversation, onboarding and Welcome naming the inviter. E2E times

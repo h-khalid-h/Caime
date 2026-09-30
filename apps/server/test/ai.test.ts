@@ -66,6 +66,9 @@ beforeAll(async () => {
   t = await createTestApp({
     ANTHROPIC_API_KEY: 'test-key',
     ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
+    ANTHROPIC_MODEL: 'claude-test-main',
+    // The light features run on a smaller model when one is set (docs/RESOURCES.md).
+    ANTHROPIC_MODEL_LIGHT: 'claude-test-light',
   });
   noor = await signup(t, { displayName: 'Noor Haddad', email: 'noor.haddad@example.com' });
   sam = await signup(t, { displayName: 'Sam Rivera' });
@@ -123,7 +126,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(sent.path).toMatch(/^\/v1\/messages/);
     expect(sent.headers['anthropic-beta']).toContain('server-side-fallback-2026-07-01');
     expect(sent.body).toMatchObject({
-      model: 'claude-opus-5',
+      model: 'claude-test-light',
       fallbacks: 'default',
       output_config: { effort: 'low' },
       messages: [
@@ -224,6 +227,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
 
     // What the heuristics already offered for a message isn't offered twice.
     const first = await findActions();
+    // Follow-ups are found by the main model, whatever the light one is.
+    expect(last().body.model).toBe('claude-test-main');
     expect(last().body.output_config).toMatchObject({
       effort: 'medium',
       format: { type: 'json_schema' },

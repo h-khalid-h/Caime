@@ -14,6 +14,8 @@ follow-ups, search and privacy.
 - Status: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 - Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md)
+- Budgets: [`docs/RESOURCES.md`](docs/RESOURCES.md)
+- Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## What's here
 

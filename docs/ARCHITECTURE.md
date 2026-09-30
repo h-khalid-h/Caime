@@ -141,4 +141,5 @@ SSRF-safe outbound fetches, audit log for sign-in, sessions, tokens, exports and
 Structured JSON logs with request ids, `GET /healthz` and `/readyz`, and Prometheus metrics at
 `/metrics` (token-protected): HTTP latency, message send latency, realtime connections, delivery
 failures, job failures, notification delivery, AI failures, search latency. No message content in
-logs or metrics.
+logs or metrics. What each part may cost, on the server, in AI tokens and on people's devices,
+is `docs/RESOURCES.md`.

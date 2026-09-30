@@ -33,8 +33,12 @@ const linesOf = (content) =>
     .filter(Boolean)
     .map((m) => ({ n: Number(m[1]), speaker: m[2], text: m[3] }));
 
+/** The system prompt as text: a string, or blocks (a cached prefix is one). */
+const systemText = (system) =>
+  Array.isArray(system) ? system.map((b) => b.text ?? '').join('\n') : String(system ?? '');
+
 function answer(body) {
-  const system = String(body.system ?? '');
+  const system = systemText(body.system);
   const content = String(body.messages?.[0]?.content ?? '');
   if (system.includes('Rewrite the message')) {
     calls.push('rewrite');
@@ -72,7 +76,13 @@ function answer(body) {
   if (system.includes('the AI agent that answers customers of')) {
     calls.push('agent');
     const org = /customers of (.+?) in Caime/.exec(system)?.[1] ?? 'the organization';
-    const knowledge = between(content, '<knowledge>', '</knowledge>');
+    // The knowledge is the last system block (a cached prefix); the rules before it mention the
+    // tag by name, so it's read from that block alone.
+    const knowledge = between(
+      Array.isArray(body.system) ? String(body.system.at(-1)?.text ?? '') : system,
+      '<knowledge>',
+      '</knowledge>',
+    );
     const asked =
       between(content, '<conversation>', '</conversation>')
         .split('\n')

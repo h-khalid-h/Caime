@@ -77,6 +77,14 @@ These are rules, not preferences.
     credentials is marked ⛔ with what is needed, never claimed done (R25).
 13. **Run the claim.** A number in a doc or commit (contrast, latency, bundle size) is produced by
     running something, not estimated.
+14. **Resources are budgets.** The server, every AI token and people's devices are paid for
+    (`docs/RESOURCES.md`): a change says what it costs on each, adds no timer, poll or per-row
+    query where an event or one query would do, sends an AI only what's bounded and caches what
+    repeats, and never widens a budget to fit.
+15. **Changes come as pull requests.** Anyone else, person or AI agent, contributes through
+    `CONTRIBUTING.md`: a pull request against `main`, CI green, reviewed against these
+    conventions by the reviewer (this session, or the owner), who alone merges. Only the reviewer
+    and the owner push to `main`.
 
 ## Working notes
 
@@ -375,6 +383,15 @@ These are rules, not preferences.
   was saved of it (`dropSaved`, then `tellSaved`; the retention job does it in its own SQL),
   as it drops the message's assets and pin. A group's topic changes its disappearing messages
   only through its group, which passes them on.
+
+## Reviewing a contribution
+
+Read the whole diff before running anything. Check the refusals in `CONTRIBUTING.md` first (they
+end a review), then run `pnpm check`, the budget and the E2E on the branch, then read it against
+conventions 1–14 and the product review. Verify every number and every "verified" claim against
+output, not the description. Accept with small fixes named, request changes naming file and rule,
+or refuse with one reason and a roadmap line if the idea is worth keeping. Never merge on a red
+check, a contributor's own approval or a bot's.
 
 ## Credentials and environment
 
