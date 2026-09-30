@@ -1310,3 +1310,8 @@ outperforming the alternatives is reach and operations. In the order the review 
   (`desktop-business-teams.png`). Budget unchanged at 437.6 KB gzip. The Arabic-alignment E2E
   now waits for the bubble itself (its label is the words, then the time): the list's row can
   preview the words before the bubble is drawn, which once read as `start`.
+- 2026-09-30 · The rest of the web in the same identity: the invite page and the 404 take the
+  sheet (masthead, mono labels, `from` / `about` / `to join` rows; `invites.test.ts`), and the
+  privacy, terms and help pages the masthead, a mono nav and a mono "last updated", with no
+  new download (their CSP still loads nothing but their own images). In the app, the
+  Organizations row in settings names the teams you're on.

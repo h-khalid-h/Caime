@@ -458,12 +458,17 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
           canonical: false,
         }),
         body: `
-<main class="pub">
+<main class="pub pub-sheet">
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">an invitation</span></header>
   ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
   <h1>${esc(page.displayName)} invited you</h1>
-  ${page.context ? `<p class="lead">${esc(page.context)}</p>` : ''}
-  ${page.note ? `<p>“${esc(page.note)}”</p>` : ''}
-  <p>${SITE_NAME}: ${esc(PROMISE)} Sign up in half a minute and you’re connected with ${esc(page.displayName)}, no app to install.</p>
+  ${page.note ? `<p class="lead">“${esc(page.note)}”</p>` : ''}
+  <dl class="spec">
+    <div><dt class="mono">from</dt><dd>${esc(page.displayName)}</dd></div>
+    ${page.context ? `<div><dt class="mono">about</dt><dd>${esc(page.context)}</dd></div>` : ''}
+    <div><dt class="mono">to join</dt><dd>Sign up in half a minute and you’re connected with ${esc(page.displayName)}, no app to install.</dd></div>
+    <div><dt class="mono">${SITE_NAME.toLowerCase()}</dt><dd>${esc(PROMISE)}</dd></div>
+  </dl>
   <p class="cta"><a href="${wayIn('sign-up', path)}">Join ${esc(page.displayName)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
 </main>`,
       };
@@ -478,9 +483,11 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
           canonical: false,
         }),
         body: `
-<main class="pub">
+<main class="pub pub-sheet">
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">not here</span></header>
   <h1>Nobody by that handle</h1>
-  <p>It may have changed, or been let go of. <a href="/">${SITE_NAME}</a></p>
+  <p class="lead">It may have changed, or been let go of.</p>
+  <p class="cta"><a href="/">Open ${SITE_NAME}</a></p>
 </main>`,
       };
     default:

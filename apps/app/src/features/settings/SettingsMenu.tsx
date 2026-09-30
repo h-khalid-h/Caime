@@ -1,6 +1,7 @@
 import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
+import { useOrgs } from '@/api/hooks';
 import { useShortcutsSheet } from '@/features/shell/shortcuts';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -129,6 +130,8 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
   const t = useTheme();
   const user = useSession((s) => s.user);
   const pathname = usePathname();
+  // The teams you're on, by name: the row says where it goes before it's opened.
+  const teams = (useOrgs().data?.orgs ?? []).map((o) => o.name);
   if (!user) return null;
   const content = (
     <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -209,7 +212,12 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
           <ListRow
             icon={Building}
             title="Organizations"
-            subtitle="Your business, clinic or school, verified"
+            subtitle={
+              teams.length
+                ? teams.slice(0, 3).join(', ') +
+                  (teams.length > 3 ? ` and ${teams.length - 3} more` : '')
+                : 'Your business, clinic or school, verified'
+            }
             chevron={!pane}
             selected={pane && (pathname.startsWith('/orgs') || pathname.startsWith('/o/'))}
             onPress={() => router.navigate('/orgs')}

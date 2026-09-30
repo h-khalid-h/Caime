@@ -54,7 +54,7 @@ with the help of a public server that tells a device its own${f.stun === 'google
 ${f.relay === 'cloudflare' ? 'a relay Cloudflare runs for Caime' : 'Caime&rsquo;s relay'} instead, still encrypted: the relay sees both network addresses.`;
   return `
 <h1>Privacy</h1>
-<p class="updated">Last updated ${UPDATED}</p>
+<p class="updated mono">last updated ${UPDATED}</p>
 <p>Caime is messaging that understands the difference between the people in your life. This page
 says what Caime keeps about you, why, who else sees it, how long it&rsquo;s kept, and what you
 can do about it. Caime is run by ${f.legalName}, which is responsible for your data. Questions
@@ -334,7 +334,7 @@ before it applies.</p>
 function terms(f: PageFacts, mail: string): string {
   return `
 <h1>Terms</h1>
-<p class="updated">Last updated ${UPDATED}</p>
+<p class="updated mono">last updated ${UPDATED}</p>
 <p>These terms are the agreement between you and ${f.legalName} (&ldquo;we&rdquo;) about using
 Caime. By creating an account, you agree to them. How Caime handles your data is on the
 <a href="/privacy">privacy</a> page.</p>
@@ -601,15 +601,17 @@ export function renderPage(name: PageName, facts: PageFacts): string {
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header,main,footer{max-width:720px;margin:0 auto;padding:0 20px}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-top:24px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.brand{font-weight:700;font-size:22px;color:var(--brand);text-decoration:none;margin-right:auto}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;padding-top:24px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:22px;color:var(--brand);text-decoration:none}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:13px;letter-spacing:.03em;color:var(--soft);font-weight:500}
+header .mono{margin-right:auto}
 nav{display:flex;gap:16px}
 nav a{color:var(--soft);text-decoration:none}
 nav a[aria-current]{color:var(--ink);font-weight:600}
 a{color:var(--link)}
 h1{font-size:32px;line-height:1.2;margin:32px 0 4px}
 h2{font-size:21px;margin:32px 0 8px}
-.updated{color:var(--soft);margin-top:0}
+.updated{margin-top:0}
 .short{border:1px solid var(--line);border-radius:12px;padding:4px 20px;margin:24px 0}
 ul{padding-left:22px}
 li{margin:6px 0}
@@ -617,7 +619,7 @@ footer{color:var(--soft);font-size:15px;padding-top:32px;padding-bottom:40px}
 </style>
 </head>
 <body>
-<header><a class="brand" href="/">Caime</a><nav aria-label="About Caime">${nav}</nav></header>
+<header><a class="brand" href="/">Caime</a><span class="mono">about Caime</span><nav class="mono" aria-label="About Caime">${nav}</nav></header>
 <main>${body}
 </main>
 <footer>${f.legalName} &middot; ${mail} &middot; <a href="/">Open Caime</a></footer>

@@ -185,7 +185,7 @@ These are rules, not preferences.
   screen that lists facts uses it rather than a card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
-- The public pages (`lib/public-pages.ts`) are Caime's own: sentence case, mono labels
+- The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, mono labels
   (`.mono`, the system monospace, no font file), spec-sheet rows (`.spec`) and the landing
   page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a
   page). New public copy follows BRAND.md's voice; a new layer adds its id to the explorer's
