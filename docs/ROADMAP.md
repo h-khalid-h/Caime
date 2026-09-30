@@ -554,8 +554,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       off a visitor's public page, the organization page is visually complete at 0.7 s (Speed
       Index) and is now served without scripts at all. The landing page still boots the app
       (performance 61, LCP 4.5 s under Lighthouse's throttling, uncompressed: production's Brotli
-      takes the 2.8 MB of scripts to about 450 KB). Still to take: a load test, a screen reader on a
-      device
+      takes the 2.8 MB of scripts to about 450 KB). Load test (autocannon, 50 connections, 15 s,
+      one instance on a 4-core container with Postgres beside it, no errors): `/v1/healthz`
+      7,920 req/s at p99 15 ms; a signed-in `GET /v1/inbox` 871 req/s at p50 54 ms and p99
+      98 ms; a visitor's organization page 1,356 req/s at p99 61 ms. Still to take: a screen
+      reader on a device
 
 ## Log
 
@@ -1159,3 +1162,5 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · A signed-out visitor stays on a public page (R44): the root layout mounts nothing
   on `/@handle` and `/o/handle` until they're signed in. Before, the app booted and sent them to
   Welcome within half a second.
+- 2026-09-30 · Load test taken (numbers above): one instance answers an inbox read for fifty
+  people at once under 100 ms at the 99th percentile.
