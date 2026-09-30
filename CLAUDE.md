@@ -356,6 +356,10 @@ These are rules, not preferences.
   puts each checked dump in the bucket through `lib/s3.ts` (Signature Version 4 by hand over
   fetch: put and delete, nothing else; a new use of S3 extends it rather than adding an SDK),
   and `backup-copy.test.ts` runs a signing stand-in. Caime never deletes in the bucket.
+- Files live where `storageFor(config)` says (`lib/storage.ts`): `DATA_DIR`, or with `FILES_S3_*`
+  a bucket (`s3Storage`) for every durable key, with `tmp/` keys on the instance's disk. Anything
+  that reads a file by path (sniffing, sharp) works on a `tmp/` key and moves the result with
+  `moveFrom`; nothing calls `path()` on a durable key. `files-s3.test.ts` runs the stand-in.
 - The operator's routes take `ADMIN_TOKEN` or a named token from `OPERATOR_TOKENS`
   (`requireOperator` in `lib/operator.ts` answers who: `operator`, or the name). A new admin
   route that writes puts that name in its audit entry's `metadata.operator` (a lib function it

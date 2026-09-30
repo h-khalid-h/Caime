@@ -5,8 +5,6 @@
  * Photos are re-encoded without metadata, so a picture never reveals where it was taken.
  */
 import { createHash } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
 import { type Readable, Transform } from 'node:stream';
 import { canSee, uuidv7 } from '@caime/core';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -19,7 +17,7 @@ import { assertStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { sniffFile } from '../lib/sniff';
-import { diskStorage, type Storage } from '../lib/storage';
+import { type Storage, storageFor } from '../lib/storage';
 import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -70,12 +68,14 @@ async function finalize(
       const meta = await sharp(storage.path(tempKey)).metadata();
       width = meta.width ?? null;
       height = meta.height ?? null;
-      thumbKey = `thumbs/${id}.webp`;
-      await mkdir(dirname(storage.path(thumbKey)), { recursive: true });
+      // Made beside the upload, then kept where files are kept.
+      const thumbTemp = `${tempKey}.thumb`;
       await sharp(storage.path(tempKey))
         .resize({ width: 480, height: 480, fit: 'inside', withoutEnlargement: true })
         .webp({ quality: 72 })
-        .toFile(storage.path(thumbKey));
+        .toFile(storage.path(thumbTemp));
+      thumbKey = `thumbs/${id}.webp`;
+      await storage.moveFrom(thumbTemp, thumbKey);
     } catch (err) {
       ctx.log.warn({ err }, 'image processing failed');
       thumbKey = null;
@@ -175,7 +175,7 @@ export async function canReadFile(
 }
 
 export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
-  const storage = diskStorage(ctx.config.DATA_DIR);
+  const storage = storageFor(ctx.config);
 
   app.addContentTypeParser('application/offset+octet-stream', (_req, payload, done) =>
     done(null, payload),

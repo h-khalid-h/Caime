@@ -21,14 +21,14 @@ import { releaseHandle } from '../lib/handles';
 import { participantsOf } from '../lib/messages';
 import { handOverOrgs } from '../lib/orgs';
 import { handOverSpaces } from '../lib/spaces';
-import { diskStorage } from '../lib/storage';
+import { storageFor } from '../lib/storage';
 import { endFollowsOf } from '../lib/updates';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth } from '../plugins/auth';
 import { sendSystem } from './conversations';
 
 export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
-  const storage = diskStorage(ctx.config.DATA_DIR);
+  const storage = storageFor(ctx.config);
 
   app.get('/me/export', async (req, reply) => {
     const auth = requireAuth(req);

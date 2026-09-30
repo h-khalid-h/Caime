@@ -108,6 +108,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `BACKUP_ENABLED`, `BACKUP_DIR`, `BACKUP_EVERY_HOURS`, `BACKUP_KEEP_DAYS` | `true`, `DATA_DIR/backups`, `24`, `30` | Database backups (below). |
 | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | — | A copy of each backup off the host, to an S3-compatible bucket (Backups, below); all four, or none. `BACKUP_S3_REGION` (`auto`), `BACKUP_S3_PREFIX` (`caime/backups/`) and `BACKUP_S3_PATH_STYLE` (`true`) beside them. |
+| `FILES_S3_ENDPOINT`, `FILES_S3_BUCKET`, `FILES_S3_ACCESS_KEY_ID`, `FILES_S3_SECRET_ACCESS_KEY` | — | Files in an S3-compatible bucket rather than on `DATA_DIR` (Scaling, below); all four, or none. `FILES_S3_REGION` (`auto`), `FILES_S3_PREFIX` (`caime/files/`) and `FILES_S3_PATH_STYLE` (`true`) beside them. The bucket stays private: Caime reads it, nobody else. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |
 
 ### Billing (Stripe)
@@ -363,6 +364,10 @@ BACKUP_KEEP_DAYS=30
 # BACKUP_S3_BUCKET=
 # BACKUP_S3_ACCESS_KEY_ID=
 # BACKUP_S3_SECRET_ACCESS_KEY=
+# FILES_S3_ENDPOINT=               # files in a bucket rather than on /data: all four, or none
+# FILES_S3_BUCKET=
+# FILES_S3_ACCESS_KEY_ID=
+# FILES_S3_SECRET_ACCESS_KEY=
 LEGAL_NAME=DATA C OÜ
 CONTACT_EMAIL=hello@cai.me
 VAPID_SUBJECT=mailto:hello@cai.me
@@ -459,9 +464,21 @@ nothing needs turning off. TLS, the certificate and the redirect from http are t
 
 Instances are stateless apart from `/data`: realtime fans out across instances through Postgres
 `LISTEN/NOTIFY`, jobs are claimed with `FOR UPDATE SKIP LOCKED`, and migrations run under an
-advisory lock, so several instances can boot together. With more than one instance, put uploads
-on shared storage (the same volume, or S3 when that adapter lands) and set `WORKERS=false` on all
-but the instances that should run background jobs.
+advisory lock, so several instances can boot together. With more than one instance:
+
+- Put files in a bucket: with `FILES_S3_*` set (any S3-compatible store, as for backups) every
+  file and thumbnail is kept there and read from there, signed request by signed request
+  (`files-s3.test.ts`), and `/data` holds only uploads in progress. Set it before the second
+  instance, on an empty store: files already on the volume aren't moved (copy `DATA_DIR/files`
+  and `DATA_DIR/thumbs` under the prefix first, keys as they are).
+- Uploads in progress stay on the instance that took them until they're done (they're sniffed,
+  cleaned and thumbnailed there). A single-request upload (`POST /v1/files`, what the apps use)
+  needs nothing; a resumable one (`POST /v1/uploads`, then `PATCH /v1/uploads/:id` part by part)
+  must reach the same instance each time, so pin `/v1/uploads/` to one instance at the proxy.
+- Set `WORKERS=false` on all but the instances that should run background jobs.
+- Rate limits count per instance (`lib/rate-limit.ts`), so each bounds its own share: with N
+  instances a key may make up to N times the limit in all, which still bounds abuse. What's
+  cached in memory is short-lived (a business conversation's mask for a minute) or fixed.
 
 ## Running the image anywhere else
 

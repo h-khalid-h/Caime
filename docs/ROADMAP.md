@@ -577,7 +577,13 @@ outperforming the alternatives is reach and operations. In the order the review 
 - [x] Resource budgets (`docs/RESOURCES.md`): what the server, AI and devices may cost, with
       the numbers measured so far; the agent's knowledge sent as a cached prefix and
       `ANTHROPIC_MODEL_LIGHT` for the light features (`ai.test.ts`, `agents.test.ts`)
-- [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; pentest
+- [~] The second instance (P2): files in an S3-compatible bucket (`FILES_S3_*`, `s3Storage`:
+      durable files and thumbnails streamed in and read back signed, uploads in progress on the
+      instance's scratch; `files-s3.test.ts` against a signing stand-in) and `docs/DEPLOY.md`
+      "Scaling" (what to pin, what to set). Rate limits stay per instance by design (each bounds
+      its own share; a shared counter would cost a query a request), caches are a minute or
+      fixed. ⛔ A bucket and its keys on production are the owner's to add; the pentest is a
+      third party's
 - Measurements: Lighthouse 12 on the production bundle served locally, mobile preset
       (2026-09-30): landing page and a public organization page both 100 accessibility, 100
       best practices, 100 SEO, 74 performance (FCP 0.6 s, LCP 0.8 s, TBT 750 ms, Speed Index
@@ -1252,3 +1258,6 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Fan-out measured and batched (R40): `updates.fanout` tells a batch of 1,000 with
   one insert, one `notification.created` to them all (its `id` null: the list refreshes) and one
   `withLivePush` lookup; 500,000 followers in 108.2 s, from 954.6 s.
+- 2026-09-30 · Files in a bucket (P2): `s3Storage` in `lib/storage.ts` over `s3PutStream`,
+  `s3Get` (ranges) and `s3Head` in `lib/s3.ts`; `storageFor(config)` picks it with `FILES_S3_*`;
+  thumbnails go through a `tmp/` key so both storages take them.

@@ -86,6 +86,19 @@ const Env = z.object({
   BACKUP_S3_PREFIX: z.string().default('caime/backups/'),
   BACKUP_S3_PATH_STYLE: bool.default(true),
   /**
+   * Files in an S3-compatible bucket (docs/DEPLOY.md, "Scaling") rather than on DATA_DIR: all
+   * four set, what's uploaded is kept there (uploads in progress stay on the instance's disk
+   * until they're done); none set, files stay on the volume. The bucket is never public.
+   */
+  FILES_S3_ENDPOINT: z.string().url().optional(),
+  FILES_S3_BUCKET: z.string().min(1).optional(),
+  FILES_S3_REGION: z.string().min(1).default('auto'),
+  FILES_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  FILES_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  /** Where in the bucket (`caime/files/`), so one bucket may hold more than Caime's. */
+  FILES_S3_PREFIX: z.string().default('caime/files/'),
+  FILES_S3_PATH_STYLE: bool.default(true),
+  /**
    * Let webhooks reach private and loopback addresses, and plain http. For tests and local
    * development only: in production it would let an app probe the server's own network.
    */
