@@ -64,8 +64,7 @@ vi.mock('@/api/queryClient', () => ({
   },
 }));
 vi.mock('@/features/calls/calls', () => ({
-  checkLiveCall: async () => {},
-  checkLiveGroupCall: async () => {},
+  checkLiveCalls: async () => {},
 }));
 vi.mock('@/lib/config', () => ({ WS_URL: 'ws://caime.example' }));
 vi.mock('@/lib/network', () => ({ onNetworkChange: () => () => {} }));
