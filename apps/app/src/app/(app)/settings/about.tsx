@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
@@ -10,6 +10,7 @@ import { openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
 import { Globe, Info, Lock } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
+import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 
 export default function About() {
@@ -26,13 +27,23 @@ export default function About() {
       <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
         {t.playful ? <Character name="caishy" size={120} /> : null}
         <Wordmark height={34} />
-        <Text variant="body" color="textSecondary" align="center">
-          Messaging that understands your relationships.
-        </Text>
-        <Text variant="caption" color="textTertiary">
-          Version {Constants.expoConfig?.version ?? '1.0.0'}
+        <Text variant="mono" color="textTertiary" align="center">
+          messaging that understands your relationships
         </Text>
       </View>
+      <Spec
+        style={{ marginHorizontal: 16, marginBottom: 8 }}
+        testID="about-spec"
+        rows={[
+          { label: 'version', value: Constants.expoConfig?.version ?? '1.0.0' },
+          {
+            label: 'running on',
+            value: Platform.OS === 'web' ? 'the web' : Platform.OS === 'ios' ? 'iOS' : 'Android',
+          },
+          { label: 'for', value: 'people, and the organizations they deal with' },
+          { label: 'price', value: 'Free for people. Organizations pay for their team.' },
+        ]}
+      />
       {links?.privacyUrl || links?.termsUrl || links?.helpUrl ? (
         <Group>
           {links.privacyUrl ? (

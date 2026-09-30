@@ -1318,3 +1318,6 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Spaces by owner: once someone's spaces span owners, the Spaces tab offers All ·
   Mine · each organization, from the list it already has (no request); E2E on the phone
   (`phone-spaces-mine.png`). Budget unchanged at 437.6 KB gzip.
+- 2026-09-30 · Two more spec sheets: a space's head (kind, people, organization as a link) and
+  About (version, running on, for, price, under the tagline in mono). E2E 53 pass; budget
+  437.6 KB gzip.

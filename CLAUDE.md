@@ -184,8 +184,9 @@ These are rules, not preferences.
   `theme/fonts.ts`, weight as a style) is for spec-sheet labels only: never running text, never
   uppercase. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
   null row is left out): an organization's page (`org-spec`), a person's "and you" block
-  (`person-profile`), Welcome's three lines, and the auth screens' `kicker` (`AuthLayout`): a new
-  screen that lists facts uses it rather than a card of captions. Anything that starts a
+  (`person-profile`), Welcome's three lines, a space's head (`space-spec`), About
+  (`about-spec`), and the auth screens' `kicker` (`AuthLayout`): a new screen that lists facts
+  uses it rather than a card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
 - The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, mono labels

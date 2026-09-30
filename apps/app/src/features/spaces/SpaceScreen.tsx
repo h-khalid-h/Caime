@@ -37,9 +37,11 @@ import {
 } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
+import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
+import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -250,26 +252,43 @@ export function SpaceScreen({ id }: { id: string }) {
           <Text variant="title" align="center" auto>
             {space.name}
           </Text>
-          <Text variant="caption" color="textSecondary">
-            {SPACE_KIND_DEFS[space.kind].label} · {space.memberCount}{' '}
-            {space.memberCount === 1 ? 'person' : 'people'}
-          </Text>
-          {space.org ? (
-            <Button
-              label={space.org.name}
-              variant="ghost"
-              size="sm"
-              onPress={() =>
-                router.navigate({ pathname: '/o/[handle]', params: { handle: space.org?.handle } })
-              }
-              testID="space-org"
-            />
-          ) : null}
           {space.purpose ? (
             <Text variant="body" color="textSecondary" align="center" auto>
               {space.purpose}
             </Text>
           ) : null}
+          <Spec
+            style={{ alignSelf: 'stretch', marginTop: 6 }}
+            testID="space-spec"
+            rows={[
+              { label: 'kind', value: SPACE_KIND_DEFS[space.kind].label },
+              {
+                label: 'people',
+                value: `${space.memberCount} ${space.memberCount === 1 ? 'person' : 'people'}`,
+              },
+              space.org
+                ? {
+                    label: 'organization',
+                    value: (
+                      <Pressable
+                        accessibilityRole="link"
+                        onPress={() =>
+                          router.navigate({
+                            pathname: '/o/[handle]',
+                            params: { handle: space.org?.handle },
+                          })
+                        }
+                        testID="space-org"
+                      >
+                        <Text variant="bodyStrong" color="link">
+                          {space.org.name}
+                        </Text>
+                      </Pressable>
+                    ),
+                  }
+                : null,
+            ]}
+          />
         </View>
 
         {space.upcoming.length ? (
