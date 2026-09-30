@@ -54,10 +54,16 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('"@type":"SoftwareApplication"');
     expect(r.body).toContain('<div id="static">');
     expect(r.body).toContain('Connect in three taps.');
+    // A spec sheet and a layer explorer, with no script of their own: radio buttons and CSS.
+    expect(r.body).toContain('<dl class="spec">');
+    expect(r.body.match(/<input type="radio" name="layer"/g)).toHaveLength(6);
+    expect(r.body).toContain('<label for="layer-attention"');
+    expect(r.body).toContain('id="panel-privacy"');
+    expect(r.body.split('<div id="static">')[1]!.split('</main>')[0]).not.toContain('<script');
     expect(r.body).toContain('href="/sign-up"');
-    // The app's shell is intact around it.
+    // The shell is intact around it, without the app's scripts: a visitor's page is a page.
     expect(r.body).toContain('<div id="root"></div>');
-    expect(r.body).toContain('entry-abc.js');
+    expect(r.body).not.toContain('entry-abc.js');
     // A session cookie: the app, with nothing to index or read.
     const signedIn = await visit('/', { cookie: `caime_session=${noor.token}` });
     expect(signedIn.body).toContain('<meta name="robots" content="noindex">');
@@ -72,7 +78,11 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('<meta property="og:type" content="profile">');
     expect(r.body).toContain('"@type":"Person"');
     expect(r.body).toContain('"memberOf":[{"@type":"Organization","name":"Nile Dental"');
-    expect(r.body).toContain('With <a href="/o/nile.dental">Nile Dental</a>.');
+    // Facts as a spec sheet: mono labels, one row each.
+    expect(r.body).toContain('<dt class="mono">handle</dt><dd>@noor</dd>');
+    expect(r.body).toContain(
+      '<dt class="mono">with</dt><dd><a href="/o/nile.dental">Nile Dental</a></dd>',
+    );
     // A visitor gets the page alone: no scripts to boot an app that would stand aside anyway;
     // the JSON-LD stays. Signed in, the app comes with it.
     expect(r.body).not.toContain('entry-abc.js');

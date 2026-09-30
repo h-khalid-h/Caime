@@ -102,10 +102,14 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         : await publicPageFor(ctx.db, path, ctx.now());
     const rendered = renderPublic(page, ctx.config.PUBLIC_URL, path);
     let html = injectPublic(template, rendered);
-    // A visitor on someone's page (no session here): the page as it is, without the app's
-    // scripts, which would only boot to keep out of its way (R44). Its ways in are links.
+    // A visitor on someone's page, or on the landing page (no session here): the page as it is,
+    // without the app's scripts, which would only boot to keep out of its way (R44). Its ways in
+    // are links: sign-up and sign-in open the app.
     const visitor =
-      (page.kind === 'person' || page.kind === 'org' || page.kind === 'invite') &&
+      (page.kind === 'person' ||
+        page.kind === 'org' ||
+        page.kind === 'invite' ||
+        page.kind === 'landing') &&
       !req.cookies?.[SESSION_COOKIE];
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
     return reply

@@ -189,13 +189,17 @@ test('before signing up, the terms and privacy policy open as pages, each leadin
   const help = await context.request.get('/help', { maxRedirects: 0 });
   expect(help.status()).toBe(302);
   expect(help.headers().location).toBe('https://policies.example/help');
-  // And back to Caime itself, signed out: its welcome.
+  // And back to Caime itself, signed out: the landing page (R44), a page without the app's
+  // scripts, whose ways in open the app.
   await terms.getByRole('link', { name: 'Open Caime' }).click();
-  await terms.waitForURL('**/welcome');
-  // The landing page (R44) says it too, hidden under the app: the app's heading is what's looked for.
+  await terms.waitForURL(/\/$/);
   await expect(
     terms.getByRole('heading', { name: 'Messaging that understands your relationships.' }),
   ).toBeVisible();
+  await expect(terms.locator('script[src]')).toHaveCount(0);
+  await terms.getByRole('link', { name: 'Start free' }).click();
+  await terms.waitForURL('**/sign-up');
+  await expect(terms.getByTestId('signup-terms')).toBeVisible();
   expect(errors).toEqual([]);
   await context.close();
 });

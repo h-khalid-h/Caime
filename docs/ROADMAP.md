@@ -1279,3 +1279,11 @@ outperforming the alternatives is reach and operations. In the order the review 
   socket asks once per connect (`checkLiveCalls`), a request fewer on every launch and reconnect.
 - 2026-09-30 · Boot measured: the bundled server is healthy 1.2 s after `node` starts and idles at
   157 MB resident (docs/RESOURCES.md).
+- 2026-09-30 · One place to start a space: `/new-space` asks whose it is (mine, or an
+  organization I run) once I'm on a team, offers only the organizations I can start spaces for
+  and says why the others aren't offered, and comes preset from an organization's page; nothing
+  is asked of someone on no team (E2E). The landing page rebuilt as Caime's own: a spec sheet
+  with mono labels, sentence case, and a layer explorer (connection, conversation, attention,
+  memory, organizations, privacy) drawn from the app's own shapes, with no script
+  (`public-pages.test.ts`); a visitor at `/` now gets that page without the app's scripts, as
+  on a person's or an organization's page, and the app opens from its links (`core-flow.spec.ts`).

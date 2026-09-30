@@ -168,6 +168,15 @@ These are rules, not preferences.
   Anything that looks an organization up by id for its team uses `orgById` (open ones only);
   `closedOrgById` is for taking one back. A closed organization's conversations refuse every
   write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
+- Starting a space is one screen, `/new-space`: it asks whose the space is only when the person
+  is on an organization's team (`useOrgs`, `canManageOrg` decides which are offered; the rest
+  are named, not offered), and an organization's page opens it with `?org=handle` chosen. A new
+  way to start a space goes there, never to a screen of its own.
+- The public pages (`lib/public-pages.ts`) are Caime's own: sentence case, mono labels
+  (`.mono`, the system monospace, no font file), spec-sheet rows (`.spec`) and the landing
+  page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a
+  page). New public copy follows BRAND.md's voice; a new layer adds its id to the explorer's
+  CSS list too.
 - An organization's spaces (R43): `spaces.org_id`; only its owner or admins start one
   (`POST /spaces` with `orgId`), its team may be added without a connection (`assertConnected`
   in `modules/spaces.ts` takes the organization), a seat on the team ending calls

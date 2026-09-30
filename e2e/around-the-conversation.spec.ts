@@ -548,8 +548,10 @@ test.describe
       }
       // The browser finds the direction itself (dir="auto"); the alignment is ours, and it is
       // what iOS needs, where text otherwise aligns to the device's language.
+      // The message itself, not the conversation's row in the list, which previews the same
+      // words in the list's own alignment: the bubble comes last in the page.
       const align = async (text: string) => {
-        const el = visible(noor.page, text);
+        const el = noor.page.getByText(text).filter({ visible: true }).last();
         await expect(el).toBeVisible();
         return el.evaluate((node) => getComputedStyle(node).textAlign);
       };
@@ -563,6 +565,8 @@ test.describe
       await page.goto('/spaces');
       await expect(visible(page, 'Keep a group together')).toBeVisible();
       await page.getByTestId('spaces-new').click();
+      // On no organization's team yet: the space is Noor's, and nothing asks whose.
+      await expect(page.getByTestId('space-owner')).toHaveCount(0);
       await page.getByTestId('space-name').fill('Venue team');
       await page.getByTestId('space-kind-team').click();
       await page.getByTestId(`pick-alex.${stamp}`).click();
@@ -720,6 +724,14 @@ test.describe
       await expect(page.getByTestId('space-org')).toHaveText(`Nile Dental ${stamp}`);
       await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-space-Front desk')).toBeVisible();
+      // From anywhere else, the same screen asks whose space it is, since Noor runs one now.
+      await page.goto('/new-space');
+      await expect(page.getByTestId('space-owner')).toBeVisible();
+      await expect(page.getByTestId('space-for-org')).toHaveCount(0);
+      await page.getByTestId(`space-owner-${handle}`).click();
+      await expect(page.getByTestId('space-for-org')).toContainText(`Nile Dental ${stamp}`);
+      await page.getByTestId('space-owner-me').click();
+      await expect(page.getByTestId('space-for-org')).toHaveCount(0);
 
       // The organization's page reads before the app runs: a card for links, a page for search.
       const html = await (await page.request.get(`/o/${handle}`)).text();
@@ -2965,7 +2977,12 @@ test.describe
             .map((n) => n.body),
         )
         .toEqual(['Closed Monday for the holiday.']);
-      await page.getByTestId('org-update-remove').first().click();
+      // The one just posted, by its words: the list may not have it first yet.
+      await page
+        .getByTestId('org-update')
+        .filter({ hasText: 'Closed Monday for the holiday.' })
+        .getByTestId('org-update-remove')
+        .click();
       await page.getByTestId('org-update-remove-confirm').click();
       await expect(visible(page, 'Update taken back')).toBeVisible();
       // Its words go from her notifications too.
