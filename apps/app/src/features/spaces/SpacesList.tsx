@@ -2,6 +2,7 @@ import type { SpaceSummaryView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { router, usePathname } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { useSpaces } from '@/api/hooks';
 import { YouButton } from '@/features/shell/YouButton';
@@ -9,6 +10,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { LayoutGrid, Plus } from '@/ui/icons';
@@ -94,6 +96,55 @@ export function SpacesList({ pane }: { pane?: boolean }) {
   const selectedId = pathname.startsWith('/s/') ? pathname.slice(3) : null;
   const q = useSpaces();
   const spaces = q.data?.spaces ?? [];
+  // Whose they are: yours, and each organization's (R43). Offered only once they span owners,
+  // from the list itself, so someone on several teams sees one team's at a time.
+  const [owner, setOwner] = useState<'all' | 'me' | string>('all');
+  const orgs = [...new Map(spaces.flatMap((s) => (s.org ? [[s.org.id, s.org]] : []))).values()];
+  const mine = spaces.some((s) => !s.org);
+  const owners = orgs.length ? [...(mine ? (['me'] as const) : []), ...orgs.map((o) => o.id)] : [];
+  const chosen = owner === 'all' || owners.includes(owner) ? owner : 'all';
+  const shown =
+    chosen === 'all'
+      ? spaces
+      : spaces.filter((s) => (chosen === 'me' ? !s.org : s.org?.id === chosen));
+  const ownerRow = owners.length ? (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ flexGrow: 0 }}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}
+      accessibilityRole="tablist"
+      accessibilityLabel="Whose spaces"
+      testID="spaces-owner"
+    >
+      <Chip
+        label="All"
+        selected={chosen === 'all'}
+        role="radio"
+        onPress={() => setOwner('all')}
+        testID="spaces-owner-all"
+      />
+      {mine ? (
+        <Chip
+          label="Mine"
+          selected={chosen === 'me'}
+          role="radio"
+          onPress={() => setOwner('me')}
+          testID="spaces-owner-me"
+        />
+      ) : null}
+      {orgs.map((o) => (
+        <Chip
+          key={o.id}
+          label={o.name}
+          selected={chosen === o.id}
+          role="radio"
+          onPress={() => setOwner(o.id)}
+          testID={`spaces-owner-${o.handle}`}
+        />
+      ))}
+    </ScrollView>
+  ) : null;
   const header = (
     <PageHeader
       title="Spaces"
@@ -133,9 +184,14 @@ export function SpacesList({ pane }: { pane?: boolean }) {
       </ScrollView>
     ) : (
       <FlatList
-        data={spaces}
+        data={shown}
         keyExtractor={(s) => s.id}
-        ListHeaderComponent={header}
+        ListHeaderComponent={
+          <>
+            {header}
+            {ownerRow}
+          </>
+        }
         renderItem={({ item }) => (
           <SpaceRow s={item} selected={Boolean(pane && selectedId === item.id)} />
         )}

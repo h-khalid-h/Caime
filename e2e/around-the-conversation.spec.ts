@@ -777,11 +777,28 @@ test.describe
         phone.getByTestId('org-space-Front desk').filter({ visible: true }),
       ).toBeVisible();
       await phone.screenshot({ path: 'e2e/screenshots/phone-organization.png' });
-      // In Spaces, the row says whose it is.
+      // In Spaces, the row says whose it is, and once they span owners, each is a filter away.
       await phone.goto('/spaces');
       await expect(
         phone.getByTestId('space-row-Front desk').filter({ visible: true }),
       ).toContainText(`Nile Dental ${stamp}`);
+      const whose = phone.getByTestId('spaces-owner').filter({ visible: true });
+      await expect(whose.getByTestId('spaces-owner-all')).toBeChecked();
+      await whose.getByTestId(`spaces-owner-${handle}`).click();
+      await expect(
+        phone.getByTestId('space-row-Front desk').filter({ visible: true }),
+      ).toBeVisible();
+      await expect(phone.getByTestId('space-row-Venue team')).toHaveCount(0);
+      await whose.getByTestId('spaces-owner-me').click();
+      await expect(
+        phone.getByTestId('space-row-Venue team').filter({ visible: true }),
+      ).toBeVisible();
+      await expect(phone.getByTestId('space-row-Front desk')).toHaveCount(0);
+      await phone.screenshot({ path: 'e2e/screenshots/phone-spaces-mine.png' });
+      await whose.getByTestId('spaces-owner-all').click();
+      await expect(
+        phone.getByTestId('space-row-Front desk').filter({ visible: true }),
+      ).toBeVisible();
       // The one failed call is the check that found no record.
       expect(errors.filter((e) => !/422|domain\/check/.test(e))).toEqual([]);
       errors.length = 0; // The page lives on into the next tests; that expected 422 doesn't.

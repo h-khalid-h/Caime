@@ -1315,3 +1315,6 @@ outperforming the alternatives is reach and operations. In the order the review 
   privacy, terms and help pages the masthead, a mono nav and a mono "last updated", with no
   new download (their CSP still loads nothing but their own images). In the app, the
   Organizations row in settings names the teams you're on.
+- 2026-09-30 · Spaces by owner: once someone's spaces span owners, the Spaces tab offers All ·
+  Mine · each organization, from the list it already has (no request); E2E on the phone
+  (`phone-spaces-mine.png`). Budget unchanged at 437.6 KB gzip.

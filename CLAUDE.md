@@ -172,6 +172,9 @@ These are rules, not preferences.
   is on an organization's team (`useOrgs`, `canManageOrg` decides which are offered; the rest
   are named, not offered), and an organization's page opens it with `?org=handle` chosen. A new
   way to start a space goes there, never to a screen of its own.
+- Spaces list whose they are: the Spaces tab offers "All · Mine · <each organization>"
+  (`spaces-owner`, radio chips derived from the one spaces query, shown only once the spaces
+  span owners), so a new kind of owner joins that row, never a list of its own.
 - Someone on several teams: the Business inbox carries a row of its teams (`inbox-teams`, a
   radio chip each, in `BusinessInbox`) when there's more than one, and the rail's Business goes
   to the inbox opened last (`state/business.ts`, in memory), else the first. On a phone the
