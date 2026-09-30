@@ -40,6 +40,13 @@ export default function Onboarding() {
   const codes = useSession((s) => s.freshRecoveryCodes);
   const policies = usePolicies();
   const [step, setStep] = useState<'codes' | 'rules' | 'people'>(codes?.length ? 'codes' : 'rules');
+  // Where they are, as a spec sheet labels it: "step 2 of 3 · how Caime works".
+  const steps = (['codes', 'rules', 'people'] as const).filter(
+    (x) => x !== 'codes' || codes?.length,
+  );
+  const stepLine = `step ${steps.indexOf(step) + 1} of ${steps.length} · ${
+    { codes: 'recovery codes', rules: 'how Caime works', people: 'your people' }[step]
+  }`;
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const name = me.displayName.split(' ')[0] ?? me.displayName;
@@ -113,6 +120,9 @@ export default function Onboarding() {
           <>
             <View style={{ alignItems: 'center', gap: 10 }}>
               <Character name="panda" expression="happy" size={112} />
+              <Text variant="mono" color="textTertiary" testID="onboarding-step">
+                {stepLine}
+              </Text>
               <Text variant="display" align="center" accessibilityRole="header">
                 Welcome, {name}
               </Text>
@@ -189,6 +199,9 @@ export default function Onboarding() {
           <>
             <View style={{ alignItems: 'center', gap: 10 }}>
               <Character name="lumi" expression="curious" size={112} />
+              <Text variant="mono" color="textTertiary" testID="onboarding-step">
+                {stepLine}
+              </Text>
               <Text variant="title" align="center" accessibilityRole="header">
                 People aren’t all the same. Neither are their messages.
               </Text>
@@ -233,6 +246,9 @@ export default function Onboarding() {
           <>
             <View style={{ alignItems: 'center', gap: 10 }}>
               <Character name="niko" expression="excited" size={120} />
+              <Text variant="mono" color="textTertiary" testID="onboarding-step">
+                {stepLine}
+              </Text>
               <Text variant="title" align="center" accessibilityRole="header">
                 Now, your people
               </Text>

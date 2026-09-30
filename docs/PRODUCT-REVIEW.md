@@ -431,3 +431,22 @@ with its reason, so it isn't proposed again without new facts.
   theirs is removed, and the operator lifts it (`PUT /v1/admin/people/:handle/suspension`).
   What it doesn't do yet: delete an account for someone, or write to the reporter; a sealed
   message is never readable, so a report of one is judged by its reporter's words alone.
+- **R50 — One identity, one place to start.** The goal of 2026-09-30 found two kinds of
+  fragmentation: an organization's things reached only through that organization (a space
+  started only from Spaces, an inbox only from the rail's first team), and a look that was
+  anyone's (cards of captions, uppercase overlines, a generic landing page). Now, starting
+  anything begins in one place: `/new-space` asks whose space it is ("Mine", or each
+  organization you run; hidden with nothing to choose, required otherwise, chosen already from
+  an organization's page), and the Chats "+" sheet offers a conversation, a group and a space
+  alike. Someone on several teams is a step from each: a team row in the Business inbox, the
+  rail's Business returning to the inbox opened last, Spaces filtered by owner (All · Mine ·
+  each organization), settings naming the teams. And the look is Caime's own, on the web and in
+  the app alike: facts are stated as a spec sheet (`Spec`: a mono label, the value, hairlines;
+  a person's "and you", an organization's handle/kind/verified/since, a space's kind/people/
+  organization, About), every section label is the same mono in sentence case (nothing in the
+  app is uppercase), every auth screen carries a mono kicker under the brand panel's mono
+  tagline, and the public site is a spec sheet with a layer explorer (radio inputs and CSS, no
+  script) rather than cards; the invite, the 404 and the policy pages take the same masthead.
+  Rules from it: a new fact list uses `Spec`; a new way to start something joins the sheet and
+  the owner picker, never a screen of its own; a new kind of owner joins the Spaces row and the
+  Business row; mono is for labels, never running text, and nothing is uppercase.

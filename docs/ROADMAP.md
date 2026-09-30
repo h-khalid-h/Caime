@@ -1327,3 +1327,6 @@ outperforming the alternatives is reach and operations. In the order the review 
   copy changed; `around-the-conversation` and `core-flow` pass (58). Budget 437.6 KB gzip.
 - 2026-09-30 · The phone's Welcome carries the same three spec lines as the desktop's
   (`core-flow` passes, 5).
+- 2026-09-30 · R50 written (one identity, one place to start: the rules from today's work, in
+  `docs/PRODUCT-REVIEW.md`), and onboarding's steps say where they are in mono ("step 2 of 3 ·
+  how Caime works"; `core-flow` checks two of them).

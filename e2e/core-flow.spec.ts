@@ -30,8 +30,11 @@ async function signUp(page: Page, name: string, handle: string) {
 
 async function onboard(page: Page, shot: string, findPeople: boolean) {
   await page.getByText('Copy the codes').click();
+  // Each step says where it is, as a spec sheet labels it.
+  await expect(page.getByTestId('onboarding-step')).toHaveText('step 1 of 3 · recovery codes');
   await page.getByTestId('onboarding-codes-next').click();
   await expect(page.getByTestId('onboarding-rules-next')).toBeVisible();
+  await expect(page.getByTestId('onboarding-step')).toHaveText('step 2 of 3 · how Caime works');
   await page.screenshot({ path: `${SHOTS}/${shot}-rules.png` });
   await page.getByTestId('onboarding-rules-next').click();
   await page.getByTestId(findPeople ? 'onboarding-find' : 'onboarding-skip').click();
