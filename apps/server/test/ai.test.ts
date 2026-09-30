@@ -67,6 +67,7 @@ beforeAll(async () => {
     ANTHROPIC_API_KEY: 'test-key',
     ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
     ANTHROPIC_MODEL: 'claude-test-main',
+    METRICS_TOKEN: 'metrics-token-for-the-ai-test-0123456789',
     // The light features run on a smaller model when one is set (docs/RESOURCES.md).
     ANTHROPIC_MODEL_LIGHT: 'claude-test-light',
   });
@@ -347,6 +348,20 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       output_tokens: 5,
     });
     expect(runs.at(-1)).toMatchObject({ input_tokens: null, output_tokens: null });
+    // What AI cost, by feature, on /metrics (docs/RESOURCES.md): the tokens of every answered call.
+    const scraped = await t.app.inject({
+      url: '/metrics',
+      headers: { authorization: 'Bearer metrics-token-for-the-ai-test-0123456789' },
+    });
+    const tokens = (direction: string) =>
+      Number(
+        new RegExp(
+          `^caime_ai_tokens_total\\{direction="${direction}",feature="rewrite"\\} (\\d+)$`,
+          'm',
+        ).exec(scraped.body)?.[1],
+      );
+    expect(tokens('input')).toBeGreaterThanOrEqual(10);
+    expect(tokens('output')).toBeGreaterThanOrEqual(5);
     // They are the person's own data: in their export, as what and when.
     const archive = JSON.parse((await noor.req('GET', '/v1/me/export')).body);
     expect(archive.aiAssist).toHaveLength(8);

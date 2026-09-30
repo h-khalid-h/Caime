@@ -147,6 +147,10 @@ export function createMetrics(pool: pg.Pool) {
       'Webhook delivery attempts, by outcome (delivered, retrying, failed).',
     ),
     ai: new Counter('caime_ai_calls_total', 'AI assist calls, by feature and outcome.'),
+    aiTokens: new Counter(
+      'caime_ai_tokens_total',
+      'Tokens sent to the model and received from it, by feature and direction: what AI costs.',
+    ),
     aiSeconds: new Histogram(
       'caime_ai_call_duration_seconds',
       'Time an AI assist call took, by feature.',

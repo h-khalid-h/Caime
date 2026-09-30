@@ -152,6 +152,10 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     const record = (outcome: string, usage: AiUsage | null) => {
       ctx.metrics.ai.inc({ feature, outcome });
       ctx.metrics.aiSeconds.observe({ feature }, (Date.now() - started) / 1000);
+      if (usage) {
+        ctx.metrics.aiTokens.inc({ feature, direction: 'input' }, usage.inputTokens);
+        ctx.metrics.aiTokens.inc({ feature, direction: 'output' }, usage.outputTokens);
+      }
       ctx.defer('ai run', () =>
         ctx.db
           .insertInto('ai_runs')

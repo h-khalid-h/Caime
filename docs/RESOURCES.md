@@ -42,7 +42,8 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
   on transport errors, a 45 s deadline.
 - **What is recorded**: model, input and output tokens and latency per call (`ai_runs`), in the
   person's export; `caime_ai_calls_total` and `caime_ai_call_duration_seconds` by feature and
-  outcome. Never the prompt or the answer.
+  outcome, and `caime_ai_tokens_total` by feature and direction, so the operator sees what AI
+  costs as it's spent (a rate over it is the bill). Never the prompt or the answer.
 - **Heuristics first** (R17): dates, amounts, questions and follow-ups are found in core without
   a model; AI is asked only when a person asks, or an organization turned its agent on.
 

@@ -313,6 +313,11 @@ groups:
         for: 10m
       - alert: CaimeBackupOld
         expr: time() - caime_backup_last_success_timestamp_seconds > 129600
+      # AI spend (docs/RESOURCES.md): tokens an hour across every feature; set the line where
+      # the bill would surprise you (input and output priced apart, so watch both directions).
+      - alert: CaimeAiSpend
+        expr: sum(rate(caime_ai_tokens_total[1h])) * 3600 > 2000000
+        for: 30m
 ```
 
 **The product** (PRD §82–83). With `ADMIN_TOKEN`, `GET /v1/admin/metrics?days=28` answers with

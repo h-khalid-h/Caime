@@ -83,6 +83,10 @@ async function recordRun(
 ): Promise<string> {
   ctx.metrics.ai.inc({ feature, outcome });
   ctx.metrics.aiSeconds.observe({ feature }, (Date.now() - started) / 1000);
+  if (usage) {
+    ctx.metrics.aiTokens.inc({ feature, direction: 'input' }, usage.inputTokens);
+    ctx.metrics.aiTokens.inc({ feature, direction: 'output' }, usage.outputTokens);
+  }
   const id = uuidv7();
   await ctx.db
     .insertInto('ai_runs')

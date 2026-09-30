@@ -1190,6 +1190,8 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · AI spend on `/metrics`: `caime_ai_tokens_total` by feature and direction, and a
+  `CaimeAiSpend` alert rule in the deploy guide (`ai.test.ts`).
 - 2026-09-30 · Leaving a group from two devices at once: the second answers done, not
   "not found" (the membership read ran before the group's lock; `messaging.test.ts` caught it
   once under a loaded run).
