@@ -389,7 +389,11 @@ These are rules, not preferences.
   check there, or arrives by push instead.
 - The build compresses every hashed file under `_expo/static` once (`scripts/precompress.mjs`,
   Brotli 11 and gzip 9 siblings) and `@fastify/static` serves the variant the browser accepts
-  (`preCompressed`); `pnpm budget` reports gzip (the budget) and the Brotli wire size. A new
+  (`preCompressed`); `pnpm budget` reports gzip (the budget) and the Brotli wire size. The web
+  export runs with Metro's tree shaking (`EXPO_UNSTABLE_TREE_SHAKING` and
+  `EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH` in `build:web`), which drops what Expo Router re-exports
+  but nothing imports (11.6 KB gzip); a module whose exports vanish in the export is one those
+  flags shook out, so check the E2E before blaming the code. A new
   kind of built file that browsers download belongs under `_expo/static`, or it isn't
   precompressed.
 - Watch the web budget when a screen is used by a second route: shared modules move into the

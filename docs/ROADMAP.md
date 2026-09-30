@@ -1261,3 +1261,6 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Files in a bucket (P2): `s3Storage` in `lib/storage.ts` over `s3PutStream`,
   `s3Get` (ranges) and `s3Head` in `lib/s3.ts`; `storageFor(config)` picks it with `FILES_S3_*`;
   thumbnails go through a `tmp/` key so both storages take them.
+- 2026-09-30 · The web export runs with Metro's tree shaking (`build:web`): 436.3 KB gzip and
+  347.5 KB Brotli on the wire, from 447.9 KB and 355.7 KB, nothing in the app changed; every
+  E2E spec run against the shaken bundle.
