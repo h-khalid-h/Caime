@@ -173,8 +173,11 @@ These are rules, not preferences.
   are named, not offered), and an organization's page opens it with `?org=handle` chosen. A new
   way to start a space goes there, never to a screen of its own.
 - The app's `mono` text variant (`typeScale.mono`, the system monospace by platform in
-  `theme/fonts.ts`, weight as a style) is for spec-sheet labels only (Welcome's tagline and spec
-  lines, an organization's facts): never running text, never uppercase. Anything that starts a
+  `theme/fonts.ts`, weight as a style) is for spec-sheet labels only: never running text, never
+  uppercase. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
+  null row is left out): an organization's page (`org-spec`), a person's "and you" block
+  (`person-profile`), Welcome's three lines, and the auth screens' `kicker` (`AuthLayout`): a new
+  screen that lists facts uses it rather than a card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
 - The public pages (`lib/public-pages.ts`) are Caime's own: sentence case, mono labels

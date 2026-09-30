@@ -33,6 +33,7 @@ export default function Forgot() {
   };
   return (
     <AuthLayout
+      kicker="password"
       title="Forgot your password?"
       subtitle="Caime sends a link to your email. Open it within the hour to set a new one."
       back

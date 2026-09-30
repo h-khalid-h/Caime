@@ -47,9 +47,11 @@ import {
 } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
+import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
+import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -302,37 +304,47 @@ export function OrgScreen({ handle }: { handle: string }) {
           <Text variant="title" align="center" auto>
             {org.name}
           </Text>
-          <Text variant="caption" color="textSecondary">
-            {orgKindName(org.kind)} · @{org.handle}
-          </Text>
-          <VerifiedLine org={org} />
-          {org.country || org.foundedYear ? (
-            <Text variant="caption" color="textSecondary" align="center" testID="org-place">
-              {[
-                org.country
-                  ? `Based in ${countries?.find((c) => c.code === org.country)?.name ?? org.country}`
-                  : null,
-                org.foundedYear ? `Since ${org.foundedYear}` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-          ) : null}
           {org.about ? (
             <Text variant="body" color="textSecondary" align="center" auto>
               {org.about}
             </Text>
           ) : null}
-          {org.website ? (
-            <Button
-              label={org.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-              icon={Globe}
-              size="sm"
-              variant="ghost"
-              style={{ alignSelf: 'center' }}
-              onPress={() => openLink(org.website ?? '')}
-            />
-          ) : null}
+          <Spec
+            style={{ alignSelf: 'stretch', marginTop: 8 }}
+            testID="org-spec"
+            rows={[
+              { label: 'handle', value: `@${org.handle}` },
+              { label: 'kind', value: orgKindName(org.kind) },
+              { label: 'verified', value: <VerifiedLine org={org} /> },
+              org.country
+                ? {
+                    label: 'based in',
+                    value: countries?.find((c) => c.code === org.country)?.name ?? org.country,
+                  }
+                : null,
+              org.foundedYear
+                ? { label: 'since', value: String(org.foundedYear), testID: 'org-place' }
+                : null,
+              org.website
+                ? {
+                    label: 'website',
+                    value: (
+                      <Pressable
+                        accessibilityRole="link"
+                        onPress={() => openLink(org.website ?? '')}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                        testID="org-website"
+                      >
+                        <Globe size={14} color={t.c.link} />
+                        <Text variant="bodyStrong" color="link">
+                          {org.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                        </Text>
+                      </Pressable>
+                    ),
+                  }
+                : null,
+            ]}
+          />
           {org.myRole ? null : org.blockedByMe ? (
             <View style={{ alignItems: 'center', gap: 8, marginTop: 6 }} testID="org-blocked">
               <Text variant="caption" color="textSecondary" align="center">

@@ -666,10 +666,13 @@ test.describe
       await expect(page.getByTestId('org-founded')).toContainText('1998');
       await page.getByTestId('org-create').click();
       await expect(page).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
-      await expect(page.getByTestId('org-place')).toContainText('Since 1998');
+      await expect(page.getByTestId('org-place')).toContainText('1998');
       // A handle's dots don't read as a file: reloading it still opens the app.
       await page.reload();
-      await expect(visible(page, `Clinic or practice · @${handle}`)).toBeVisible();
+      // Its facts read as a spec sheet: handle, kind, verified, since.
+      const facts = page.getByTestId('org-spec').filter({ visible: true });
+      await expect(facts).toContainText(`@${handle}`);
+      await expect(facts).toContainText('Clinic or practice');
       await expect(page.getByTestId('org-unverified')).toBeVisible();
 
       // A domain of its own each run: a verified domain belongs to one organization.

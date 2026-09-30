@@ -175,6 +175,7 @@ export default function SignUp() {
 
   return (
     <AuthLayout
+      kicker="new account"
       title="Create your account"
       subtitle="It takes a minute. You can change all of it later."
     >

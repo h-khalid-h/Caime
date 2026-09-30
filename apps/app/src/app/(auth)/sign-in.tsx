@@ -46,7 +46,11 @@ export default function SignIn() {
   };
 
   return (
-    <AuthLayout title="Welcome back" subtitle="Sign in with your email or @handle.">
+    <AuthLayout
+      kicker="sign in"
+      title="Welcome back"
+      subtitle="Sign in with your email or @handle."
+    >
       <View style={{ gap: 14 }}>
         <TextField
           label="Email or handle"

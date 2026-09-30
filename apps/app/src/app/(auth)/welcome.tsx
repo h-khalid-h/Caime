@@ -9,6 +9,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
+import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 
 export default function Welcome() {
@@ -78,7 +79,7 @@ export default function Welcome() {
           >
             <View style={{ maxWidth: 420, width: '100%', alignSelf: 'center', gap: 8 }}>
               <Text variant="mono" color="textTertiary">
-                messaging that understands your relationships
+                welcome
               </Text>
               <Text variant="display" accessibilityRole="header">
                 Welcome to Caime
@@ -118,36 +119,22 @@ export default function Welcome() {
 
 /** Caime in three lines, as a spec sheet reads: a mono label, then what it means. */
 function SpecLines() {
-  const t = useTheme();
-  const lines: Array<[string, string]> = [
-    ['connection', 'Say who someone is to you, once. Everything fits from then on.'],
-    ['attention', '“3 need you”, never “47 unread”. It says why.'],
-    ['privacy', 'Each side of your life sees what you chose. Only you see your labels.'],
-  ];
   return (
-    <View
-      style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: t.c.border }}
+    <Spec
+      dense
+      style={{ marginTop: 10 }}
       testID="welcome-spec"
-    >
-      {lines.map(([label, value]) => (
-        <View
-          key={label}
-          style={{
-            flexDirection: 'row',
-            gap: 12,
-            paddingVertical: 8,
-            borderBottomWidth: 1,
-            borderBottomColor: t.c.border,
-          }}
-        >
-          <Text variant="mono" color="textTertiary" style={{ width: 96, paddingTop: 2 }}>
-            {label}
-          </Text>
-          <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
-            {value}
-          </Text>
-        </View>
-      ))}
-    </View>
+      rows={[
+        {
+          label: 'connection',
+          value: 'Say who someone is to you, once. Everything fits from then on.',
+        },
+        { label: 'attention', value: '“3 need you”, never “47 unread”. It says why.' },
+        {
+          label: 'privacy',
+          value: 'Each side of your life sees what you chose. Only you see your labels.',
+        },
+      ]}
+    />
   );
 }

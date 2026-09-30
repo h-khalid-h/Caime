@@ -1298,3 +1298,9 @@ outperforming the alternatives is reach and operations. In the order the review 
   sender's person's devices together, so a pinned one (the recovery device, this device once
   approved) says which first device is theirs; a unit case reproduces it (`private.test.ts`),
   and the E2E that failed twice on it passes.
+- 2026-09-30 · Spec sheets in the app: `Spec` (`src/ui/Spec.tsx`) states facts as the public
+  pages do (mono label, value, hairlines); an organization's page lists handle, kind, verified,
+  based in, since and website that way (`org-spec`), a person's "and you" block its lines, and
+  every auth screen carries a mono kicker (sign in, new account, password, new password,
+  recovery) above its title, with the brand panel's tagline in mono. Budget 437.6 KB gzip
+  (+0.6 KB); `around-the-conversation` and `core-flow` E2E pass (57).

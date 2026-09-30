@@ -31,12 +31,15 @@ export function BrandPanel() {
       </View>
       <View style={{ alignItems: 'center', gap: 12, maxWidth: 440 }}>
         <Wordmark height={46} />
+        <Text variant="mono" color="textTertiary" align="center">
+          messaging that understands your relationships
+        </Text>
         <Text variant="title" align="center">
-          Messaging that understands your relationships.
+          Family, friends and work, each in its place.
         </Text>
         <Text variant="body" color="textSecondary" align="center">
-          Family, friends and work, each in its place. The right conversations find you, and the
-          rest wait politely.
+          The right conversations find you, and the rest wait politely. How you label someone is
+          only ever yours.
         </Text>
       </View>
     </View>
@@ -44,11 +47,14 @@ export function BrandPanel() {
 }
 
 export function AuthLayout({
+  kicker,
   title,
   subtitle,
   children,
   back = true,
 }: {
+  /** What this screen is, in a word or two, as a spec sheet labels it (mono, above the title). */
+  kicker?: string;
   title: string;
   subtitle?: string;
   children: ReactNode;
@@ -88,6 +94,11 @@ export function AuthLayout({
             ) : null}
           </View>
           <View style={{ gap: 6 }}>
+            {kicker ? (
+              <Text variant="mono" color="textTertiary" testID="auth-kicker">
+                {kicker}
+              </Text>
+            ) : null}
             <Text variant="display" accessibilityRole="header">
               {title}
             </Text>

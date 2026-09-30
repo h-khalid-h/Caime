@@ -41,6 +41,7 @@ import { ListRow } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
+import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { PersonRule } from './PersonRule';
@@ -52,24 +53,6 @@ const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
 );
 const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.ConnectSheet));
-
-function Fact({ label, value, testID }: { label: string; value: string; testID?: string }) {
-  return (
-    <View
-      style={{ flexDirection: 'row', gap: 12, paddingVertical: 4 }}
-      accessible
-      accessibilityLabel={`${label}: ${value}`}
-      testID={testID}
-    >
-      <Text variant="caption" color="textSecondary" style={{ width: 96 }}>
-        {label}
-      </Text>
-      <Text variant="body" style={{ flex: 1 }}>
-        {value}
-      </Text>
-    </View>
-  );
-}
 
 const count = (n: number, one: string, many: string) =>
   `${n.toLocaleString()} ${n === 1 ? one : many}`;
@@ -404,54 +387,59 @@ export function PersonScreen({ id }: { id: string }) {
               <Text variant="label" style={{ marginBottom: 4 }}>
                 {`${name} and you`}
               </Text>
-              <Fact
-                label="Conversation"
-                value={[
-                  count(p.summary.messages, 'message', 'messages'),
-                  p.summary.rhythm ? RHYTHM_TEXT[p.summary.rhythm].toLowerCase() : null,
-                  p.summary.lastTalkedAt
-                    ? `last ${formatListTime(p.summary.lastTalkedAt, now, timeZone, locale)}`
+              <Spec
+                rows={[
+                  {
+                    label: 'conversation',
+                    value: [
+                      count(p.summary.messages, 'message', 'messages'),
+                      p.summary.rhythm ? RHYTHM_TEXT[p.summary.rhythm].toLowerCase() : null,
+                      p.summary.lastTalkedAt
+                        ? `last ${formatListTime(p.summary.lastTalkedAt, now, timeZone, locale)}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · '),
+                  },
+                  p.summary.contexts.length
+                    ? { label: 'context', value: p.summary.contexts.map((c) => c.title).join(', ') }
                     : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              />
-              {p.summary.contexts.length ? (
-                <Fact label="Context" value={p.summary.contexts.map((c) => c.title).join(', ')} />
-              ) : null}
-              <Fact
-                label="Shared"
-                value={`${count(p.summary.files, 'file', 'files')} · ${count(p.summary.links, 'link', 'links')}${
-                  p.summary.decisions
-                    ? ` · ${count(p.summary.decisions, 'decision', 'decisions')}`
-                    : ''
-                }`}
-              />
-              <Fact
-                label="Actions"
-                value={`${p.summary.openActions} open · ${p.summary.waiting} waiting`}
-              />
-              {p.summary.theirAsks || p.summary.myAsks ? (
-                <Fact
-                  label="Answers"
-                  value={[
-                    p.summary.theirAsks
-                      ? `${count(p.summary.theirAsks, 'question', 'questions')} of ${name}’s for you`
-                      : null,
-                    p.summary.myAsks ? `${p.summary.myAsks} of yours waiting on ${name}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  testID="person-asks"
-                />
-              ) : null}
-              <Fact
-                label="Privacy"
-                value={
-                  p.summary.privacy === 'limited'
-                    ? `${name} sees a limited view of you`
-                    : 'Your privacy settings'
-                }
+                  {
+                    label: 'shared',
+                    value: `${count(p.summary.files, 'file', 'files')} · ${count(p.summary.links, 'link', 'links')}${
+                      p.summary.decisions
+                        ? ` · ${count(p.summary.decisions, 'decision', 'decisions')}`
+                        : ''
+                    }`,
+                  },
+                  {
+                    label: 'actions',
+                    value: `${p.summary.openActions} open · ${p.summary.waiting} waiting`,
+                  },
+                  p.summary.theirAsks || p.summary.myAsks
+                    ? {
+                        label: 'answers',
+                        value: [
+                          p.summary.theirAsks
+                            ? `${count(p.summary.theirAsks, 'question', 'questions')} of ${name}’s for you`
+                            : null,
+                          p.summary.myAsks
+                            ? `${p.summary.myAsks} of yours waiting on ${name}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · '),
+                        testID: 'person-asks',
+                      }
+                    : null,
+                  {
+                    label: 'privacy',
+                    value:
+                      p.summary.privacy === 'limited'
+                        ? `${name} sees a limited view of you`
+                        : 'Your privacy settings',
+                  },
+                ]}
               />
             </View>
           </Card>

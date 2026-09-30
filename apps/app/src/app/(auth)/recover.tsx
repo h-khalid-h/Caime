@@ -45,6 +45,7 @@ export default function Recover() {
 
   return (
     <AuthLayout
+      kicker="recovery"
       title="Use a recovery code"
       subtitle="You saved ten codes when you created your account. Each one works once."
     >

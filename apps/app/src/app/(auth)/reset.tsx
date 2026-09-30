@@ -52,6 +52,7 @@ export default function Reset() {
     );
   return (
     <AuthLayout
+      kicker="new password"
       title="Set a new password"
       subtitle="You\u2019ll be signed in here, and out everywhere else."
     >
