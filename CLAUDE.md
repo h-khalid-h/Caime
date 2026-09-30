@@ -300,7 +300,10 @@ These are rules, not preferences.
   pushed with a `data` field it can open belongs in `pathOf` there. Turn off is remembered in the
   browser (`caime.push-off`); sign-out drops the subscription and closes what's shown.
 - Plans: what each includes is in `packages/core/src/plans.ts`, and it's checked only in
-  `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
+  `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). Pro
+  sells its depth (R47): relationship insights (`lib/insights.ts` `personInsights`, the
+  viewer's own one-to-ones only, names through `personViewsFor`) and automations by plan
+  (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
   `plans.test.ts` is where limits are tested.
 - Backups (`lib/backup.ts`): a periodic task dumps the database with `pg_dump` (the image has

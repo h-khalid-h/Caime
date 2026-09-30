@@ -13,6 +13,7 @@ import {
   Bell,
   Bookmark,
   Building,
+  ChartBar,
   Gauge,
   Globe,
   Info,
@@ -79,6 +80,13 @@ const ITEMS: Array<{
     icon: Zap,
     title: 'Automations',
     subtitle: 'Keep what arrives, reminders, quiet hours',
+  },
+  {
+    href: '/settings/insights',
+    path: '/settings/insights',
+    icon: ChartBar,
+    title: 'Relationship insights',
+    subtitle: 'How your relationships are going, for you only',
   },
   {
     href: '/settings/privacy',

@@ -224,7 +224,13 @@ describe('automations (PRD §69)', () => {
     expect(await kept()).toBe(1);
   });
 
-  it('are at most fifty each', async () => {
+  it('are at most fifty each, on Pro (Personal keeps five, R47)', async () => {
+    // Pro keeps the most any plan does.
+    await t.ctx.db
+      .updateTable('users')
+      .set({ plan: 'pro' })
+      .where('id', '=', noor.user.id)
+      .execute();
     const { automations } = await noor.get('/v1/automations');
     await t.ctx.db
       .insertInto('automations')
@@ -243,14 +249,17 @@ describe('automations (PRD §69)', () => {
         noor.req('POST', '/v1/automations', { when: { kinds: ['photo'] }, collection: 'More' }),
       ),
     );
-    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 409]);
+    expect(both.map((r) => r.statusCode).sort()).toEqual([201, 403]);
     expect((await noor.get('/v1/automations')).automations).toHaveLength(50);
     const res = await noor.req('POST', '/v1/automations', {
       when: { kinds: ['photo'] },
       collection: 'More',
     });
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.code).toBe('too_many_automations');
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error).toMatchObject({
+      code: 'plan_limit',
+      message: 'Pro keeps 50 automations. Remove one to add another.',
+    });
     await t.ctx.db
       .deleteFrom('automations')
       .where('user_id', '=', noor.user.id)

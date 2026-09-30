@@ -5,6 +5,7 @@ import {
   defaultWorkweek,
   Handle,
   IdentityBody,
+  type PersonInsightsView,
   type PlanUsageView,
   PrivacyBody,
   safeLocale,
@@ -25,10 +26,31 @@ import {
   releaseHandle,
   unavailableAmong,
 } from '../lib/handles';
-import { planUsage } from '../lib/plans';
+import { personInsights } from '../lib/insights';
+import { assertPersonInsights, planUsage } from '../lib/plans';
 import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
+
+/** Insights look back 30, 90 or 365 days (a quarter by default). */
+const InsightsQuery = z.object({
+  days: z.coerce
+    .number()
+    .int()
+    .refine((d) => d === 30 || d === 90 || d === 365, 'Choose 30, 90 or 365 days.')
+    .default(90),
+});
+
+/** A zone Postgres and Intl both know, or UTC: a bad value from one device breaks nothing. */
+function zoneOrUtc(zone: string | null): string {
+  if (!zone) return 'UTC';
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone });
+    return zone;
+  } catch {
+    return 'UTC';
+  }
+}
 
 export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
   const load = (id: string) =>
@@ -53,6 +75,19 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Your plan, and what you've used of it today. */
+  /** How your relationships are going (R47), for you only; Pro. */
+  app.get('/me/insights', async (req): Promise<{ insights: PersonInsightsView }> => {
+    const auth = requireAuth(req);
+    await assertPersonInsights(ctx, auth.userId);
+    const { days } = parse(InsightsQuery, req.query);
+    const me = await ctx.db
+      .selectFrom('users')
+      .select('time_zone')
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    return { insights: await personInsights(ctx, auth.userId, days, zoneOrUtc(me.time_zone)) };
+  });
+
   app.get('/me/plan', async (req): Promise<PlanUsageView> => {
     const auth = requireAuth(req);
     return planUsage(ctx, auth.userId);

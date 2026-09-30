@@ -518,9 +518,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       `docs/DEPLOY.md`); the development build on the owner's iPhone (calls, private
       conversations, push), then TestFlight and Play internal testing ⛔ Apple and Google
       developer accounts, `EXPO_TOKEN`: `pnpm build:dev` in `apps/app` once they exist
-- [ ] Pro that sells the wedge (P1): what §84 promised (rules without limit, several identities,
-      history beyond a year, a person's relationship analytics), the core free as R23 says.
-      Decided with the owner first
+- [x] Pro that sells the wedge (P1, R47): relationship insights for a person (their own
+      one-to-ones, for them only: connections by sphere, active against the time before, closest,
+      gone quiet, reply times both ways, who writes first, when they write), automations counted
+      by plan (5, then 50), the plan screen saying so, insights locked with the reason on Personal
+      (`insights.test.ts`, E2E). Not sold: identities (not built), history (the wedge), search
 - [~] Network bootstrap (P1): a WhatsApp export brought over as a topic of the one-to-one (R45:
       read on the device, who's who chosen, dated as written, every message marked imported,
       both have read it, nothing notified or inferred; `whatsapp.test.ts`, `import.test.ts`,
@@ -1128,3 +1130,7 @@ outperforming the alternatives is reach and operations. In the order the review 
   live (Open Graph title, sitemap, robots). Production's environment holds 12 of the server's
   44 variables; the rest run on code defaults, and the explicit lines to add are in the session
   notes to the owner (the panel refused writes from here).
+- 2026-09-30 · R47, Pro that sells the wedge's depth: `lib/insights.ts` `personInsights`,
+  `GET /v1/me/insights` (Pro; 403 `plan_limit` with `nextPlan` otherwise), automations by plan
+  (`assertAutomationRoom`), `PlanUsageView.used.automations`, the plan screen's "what Pro
+  includes" and the Settings › Relationship insights screen.

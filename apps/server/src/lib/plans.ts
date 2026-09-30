@@ -203,14 +203,59 @@ export async function assertInsights(ctx: AppContext, orgId: string) {
   );
 }
 
+/** Relationship insights are Pro's (R47): the relationships themselves are free. */
+export async function assertPersonInsights(ctx: AppContext, userId: string) {
+  const plan = await planOf(ctx, userId);
+  if (PERSON_ALLOWANCES[plan].insights) return;
+  throw limit(
+    ctx,
+    `Relationship insights come with ${PLAN_NAMES.pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.`,
+    { nextPlan: nextPersonPlan(plan) },
+  );
+}
+
+/**
+ * Room for one more automation on this plan. `count` is what's kept now, read under the
+ * person's lock by the caller. A lower plan never removes one: it only stops new ones.
+ */
+export async function assertAutomationRoom(ctx: AppContext, userId: string, count: number) {
+  const plan = await planOf(ctx, userId);
+  const most = PERSON_ALLOWANCES[plan].automations;
+  if (count < most) return;
+  const next = nextPersonPlan(plan);
+  // Named only when it keeps more: Enterprise keeps what Pro does.
+  const more =
+    next && PERSON_ALLOWANCES[next].automations > most
+      ? ` ${PLAN_NAMES[next]} keeps ${PERSON_ALLOWANCES[next].automations}.`
+      : '';
+  throw limit(
+    ctx,
+    `${PLAN_NAMES[plan]} keeps ${most} automations. Remove one to add another.${more}`,
+    { nextPlan: next },
+  );
+}
+
+async function automationsCount(ctx: AppContext, userId: string): Promise<number> {
+  const row = await ctx.db
+    .selectFrom('automations')
+    .select(sql<number>`count(*)::int`.as('n'))
+    .where('user_id', '=', userId)
+    .executeTakeFirstOrThrow();
+  return row.n;
+}
+
 export async function planUsage(ctx: AppContext, userId: string): Promise<PlanUsageView> {
   const plan = await planOf(ctx, userId);
   const allowance = PERSON_ALLOWANCES[plan];
-  const [ai, storageBytes] = await Promise.all([aiUsage(ctx, userId), storageUsed(ctx, userId)]);
+  const [ai, storageBytes, automations] = await Promise.all([
+    aiUsage(ctx, userId),
+    storageUsed(ctx, userId),
+    automationsCount(ctx, userId),
+  ]);
   return {
     plan,
     allowance,
-    used: { aiToday: ai.used, storageBytes },
+    used: { aiToday: ai.used, storageBytes, automations },
     aiNextAt:
       ai.used >= allowance.aiPerDay && ai.oldest
         ? new Date(ai.oldest.getTime() + DAY_MS).toISOString()

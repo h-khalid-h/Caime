@@ -380,3 +380,20 @@ with its reason, so it isn't proposed again without new facts.
   who are already here by hashed phone numbers, with consent on both sides (PRD §46 rules).
   The rule this leaves: nothing Caime ships reads another app's messages or sends as a person
   without their tap.
+
+- **R47 — Pro sells the depth of the wedge, never the wedge.** The review found paid tiers
+  selling capacity (AI assists, gigabytes) and nothing of what Caime is for. Decided on
+  2026-09-30 (the owner handed the decision over): the wedge stays free (R23), and Pro adds what
+  goes deeper into it. **Relationship insights** (`GET /v1/me/insights`, Settings › Relationship
+  insights): from your own one-to-ones only, for you only, how many connections you have and
+  how you labelled them, who you wrote with in the last 30, 90 or 365 days against the time
+  before, who you write with most and your share of it, who's gone quiet (written with before,
+  not since), how fast you answer and are answered (a wait runs from the asker's last message),
+  who writes first after a quiet day, and when in your day you write. Never a word of anything
+  said, never a business conversation or a group, never anyone else's labels, and shown to
+  nobody else. On Personal the screen says what it would show and where Pro is (a `403
+  plan_limit` with `nextPlan`). **Automations** are counted by plan (Personal keeps 5, Pro 50,
+  `AUTOMATIONS_MAX` the most any plan allows); a lower plan removes none. AI assists and files
+  stay as they were. What Pro doesn't sell, and why: several identities (not built; the wedge's
+  privacy model already gives each relationship its own face, R2), history beyond a year (taking
+  history away is taking the wedge away), search (free, R23).

@@ -61,6 +61,7 @@ import type {
   OrgView,
   PeopleSearchResult,
   PersonalTokenView,
+  PersonInsightsView,
   PersonProfileView,
   PlanUsageView,
   PolicyView,
@@ -168,6 +169,9 @@ export const endpoints = {
 
   me: () => api.get<{ user: MeView }>('/me'),
   myPlan: () => api.get<PlanUsageView>('/me/plan'),
+  /** How your relationships are going (R47, Pro), for you only. */
+  myInsights: (days: 30 | 90 | 365) =>
+    api.get<{ insights: PersonInsightsView }>(`/me/insights?days=${days}`),
   billing: () => api.get<BillingView>('/billing'),
   orgBilling: (orgId: string) => api.get<BillingView>(`/orgs/${orgId}/billing`),
   checkout: (body: { plan: BilledPlan; interval: BillingInterval; orgId?: string }) =>

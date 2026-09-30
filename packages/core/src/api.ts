@@ -924,6 +924,45 @@ export interface OrgInsightsView {
   };
 }
 
+/** Someone in your insights: a connection of yours, as you see them. */
+export interface InsightPersonRef {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  /** Your one-to-one with them, to open. */
+  conversationId: string | null;
+}
+
+/**
+ * How your relationships are going (R47, Pro): worked out from your own one-to-ones and your
+ * own labels, for you only. Nothing here is shown to anyone else, and nothing anyone else
+ * labelled is in it. Business conversations and groups are left out: this is about people.
+ */
+export interface PersonInsightsView {
+  days: number;
+  from: string;
+  to: string;
+  /** Your connections now, and how you labelled them. */
+  connections: { total: number; bySphere: Array<{ sphere: string; count: number }> };
+  /** Connections you exchanged messages with in the window, and in the window before. */
+  active: { count: number; previous: number };
+  messages: {
+    sent: number;
+    received: number;
+    previous: { sent: number; received: number };
+  };
+  /** How fast you answer in one-to-ones, and how fast you're answered. */
+  reply: { yours: ReplyTimesView; theirs: ReplyTimesView };
+  /** Who you wrote with most in the window, and your share of what was said. */
+  closest: Array<InsightPersonRef & { messages: number; yourShare: number }>;
+  /** Connections you'd written with before the window, and not since: drifting. */
+  quiet: Array<InsightPersonRef & { lastAt: string }>;
+  /** Your own messages by hour of your day (24 counts, from midnight). */
+  hours: number[];
+  /** Exchanges that began after a day or more of silence: who wrote first. */
+  started: { byYou: number; byThem: number };
+}
+
 /** A share: how many of how many, and the rate when there are any. */
 export interface Rate {
   count: number;
@@ -988,7 +1027,7 @@ export interface ProductMetricsView {
 export interface PlanUsageView {
   plan: Plan;
   allowance: PersonAllowance;
-  used: { aiToday: number; storageBytes: number };
+  used: { aiToday: number; storageBytes: number; automations: number };
   /** When the next AI assist is available again, once today's are used up. */
   aiNextAt: string | null;
   upgradeUrl: string | null;

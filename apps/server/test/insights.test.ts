@@ -2,142 +2,165 @@ import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
-let t: TestApp;
-let noor: Client; // owner
-let omar: Client; // on the team
-let orgId: string;
-let freeOrgId: string;
-let botToken: string;
-const MIN = 60_000;
+const ADMIN = 'operator-token-for-the-insights-test-0123456789';
+const DAY = 86_400_000;
+const HOUR = 3_600_000;
+const T0 = new Date('2026-06-01T09:00:00.000Z');
 
-async function connect(a: Client, b: Client) {
-  const r = await a.post('/v1/connections/requests', { toUserId: b.user.id });
-  await b.post(`/v1/connections/requests/${r.requestId}/accept`, {});
+let t: TestApp;
+let noor: Client;
+let alex: Client;
+let sam: Client;
+let withAlex: string;
+let withSam: string;
+
+async function connect(a: Client, b: Client, sphere: 'work' | 'friend') {
+  const r = await a.post('/v1/connections/requests', {
+    toUserId: b.user.id,
+    relationship: sphere === 'work' ? { sphere, role: 'colleague' } : { sphere },
+  });
+  return (await b.post(`/v1/connections/requests/${r.requestId}/accept`, {}))
+    .conversationId as string;
 }
 const say = (c: Client, conversationId: string, body: string) =>
-  c.post(`/v1/conversations/${conversationId}/messages`, { clientId: uuidv4(), body });
+  c.post(`/v1/conversations/${conversationId}/messages`, {
+    clientId: uuidv4(),
+    kind: 'text',
+    body,
+  });
 
 beforeAll(async () => {
-  t = await createTestApp();
-  noor = await signup(t, { displayName: 'Noor Haddad' });
-  omar = await signup(t, { displayName: 'Omar Farouk' });
-  await connect(noor, omar);
-  orgId = (
-    await noor.post('/v1/orgs', {
-      country: 'EG',
-      name: 'Tiles Co',
-      handle: 'tiles.co',
-      kind: 'shop',
-    })
-  ).org.id;
-  freeOrgId = (
-    await omar.post('/v1/orgs', {
-      country: 'EG',
-      name: 'Omar Shop',
-      handle: 'omar.shop',
-      kind: 'shop',
-    })
-  ).org.id;
-  await t.ctx.db
-    .updateTable('organizations')
-    .set({ plan: 'business' })
-    .where('id', '=', orgId)
-    .execute();
-  await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
-  botToken = (
-    await noor.post(`/v1/orgs/${orgId}/apps`, { name: 'Tiles Bot', scopes: ['messages:write'] })
-  ).token;
+  t = await createTestApp({ ADMIN_TOKEN: ADMIN });
+  t.clock.set(T0.toISOString());
+  noor = await signup(t, { displayName: 'Noor Haddad', timeZone: 'Africa/Cairo' });
+  alex = await signup(t, { displayName: 'Alex Chen' });
+  sam = await signup(t, { displayName: 'Sam Rivera' });
+  withAlex = await connect(noor, alex, 'work');
+  withSam = await connect(noor, sam, 'friend');
+  // Long ago: a short exchange with Sam, then nothing.
+  t.clock.advance(HOUR);
+  await say(noor, withSam, 'Hey Sam');
+  await say(sam, withSam, 'Hey!');
+  // Recently: Alex writes first, Noor answers in 30 minutes; Noor writes first two days
+  // later, Alex answers in an hour; Noor answers a question of his two hours later.
+  t.clock.set(new Date(T0.getTime() + 55 * DAY).toISOString());
+  await say(alex, withAlex, 'Are we on for Thursday?');
+  t.clock.advance(30 * 60_000);
+  await say(noor, withAlex, 'Yes, 10:30');
+  t.clock.advance(2 * DAY);
+  await say(noor, withAlex, 'Bringing the forms');
+  t.clock.advance(HOUR);
+  await say(alex, withAlex, 'Great. Parking?');
+  t.clock.advance(2 * HOUR);
+  await say(noor, withAlex, 'Behind the clinic');
+  // Now: two months on (sessions last 90 days).
+  t.clock.set(new Date(T0.getTime() + 60 * DAY).toISOString());
 });
-
 afterAll(async () => {
   await t.close();
 });
 
-describe('insights for an organization (PRD §71)', () => {
-  it('say how fast the team answers, counting people, not its bot', async () => {
-    const customer = async (name: string) => {
-      const c = await signup(t, { displayName: name });
-      const { conversationId } = await c.post(`/v1/orgs/${orgId}/conversations`);
-      return { c, id: conversationId as string };
-    };
-    const lina = await customer('Lina Customer');
-    const dina = await customer('Dina Customer');
-    const eli = await customer('Eli Customer');
-    const fay = await customer('Fay Customer');
-
-    await say(lina.c, lina.id, 'Do you have blue tiles?');
-    t.clock.advance(10 * MIN);
-    await say(omar, lina.id, 'We do.'); // 10 min
-
-    t.clock.advance(50 * MIN);
-    await say(dina.c, dina.id, 'Can you deliver Tuesday?');
-    t.clock.advance(30 * MIN);
-    await say(noor, dina.id, 'Yes, in the morning.'); // 30 min
-
-    t.clock.advance(30 * MIN);
-    await say(eli.c, eli.id, 'Are you open Friday?');
-    t.clock.advance(1 * MIN);
-    const bot = await t.app.inject({
-      method: 'POST',
-      url: `/v1/conversations/${eli.id}/messages`,
-      headers: { authorization: `Bearer ${botToken}` },
-      payload: { clientId: uuidv4(), body: 'We open at 9. Someone will confirm.' },
-    });
-    expect(bot.statusCode).toBe(201);
-    t.clock.advance(19 * MIN);
-    await say(omar, eli.id, 'Yes, 9 to 6.'); // 20 min: the bot's answer doesn't count
-
-    t.clock.advance(40 * MIN);
-    await say(fay.c, fay.id, 'Hello?'); // nobody answers
-    t.clock.advance(5 * MIN);
-    await say(fay.c, fay.id, 'Anyone there?'); // still the same wait
-    t.clock.advance(-5 * MIN);
-
-    t.clock.advance(60 * MIN);
-    await say(lina.c, lina.id, 'And grout?'); // a new wait on the same conversation
-    t.clock.advance(90 * MIN);
-    await say(omar, lina.id, 'Grey or white.'); // 90 min
-    await noor.post(`/v1/business/${lina.id}/resolve`);
-    await noor.post(`/v1/business/${dina.id}/escalate`, { note: 'Big order' });
-
-    const { insights } = await noor.get(`/v1/orgs/${orgId}/insights`);
-    expect(insights).toMatchObject({
-      days: 7,
-      conversations: 4,
-      newConversations: 4,
-      // Waits of 10, 30, 20 and 90 minutes; Fay's is still open.
-      reply: { medianMinutes: 25, answered: 4, withinHour: 3, unanswered: 1 },
-      waitingNow: 1,
-      resolved: 1,
-      escalated: 1,
-      previous: { conversations: 0, newConversations: 0, medianReplyMinutes: null, resolved: 0 },
-    });
-    // Counts and times only: nothing anyone wrote, and nobody singled out.
-    const text = JSON.stringify(insights);
-    for (const secret of ['tiles', 'Omar', 'Noor', 'Lina', omar.user.id])
-      expect(text).not.toContain(secret);
-
-    // A week later, those are last week's.
-    t.clock.advance(7 * 24 * 60 * MIN);
-    const later = (await noor.get(`/v1/orgs/${orgId}/insights`)).insights;
-    expect(later).toMatchObject({
-      conversations: 0,
-      previous: { conversations: 4, medianReplyMinutes: 25 },
-    });
-    expect((await noor.get(`/v1/orgs/${orgId}/insights?days=30`)).insights.conversations).toBe(4);
+describe('relationship insights (R47)', () => {
+  it('come with Pro: Personal is told what they are and what to get', async () => {
+    const r = await noor.req('GET', '/v1/me/insights');
+    expect(r.statusCode).toBe(403);
+    expect(r.json().error).toMatchObject({ code: 'plan_limit', details: { nextPlan: 'pro' } });
+    expect(r.json().error.message).toContain('Relationship insights come with Pro');
   });
 
-  it('are for owners and admins, on a plan that includes them', async () => {
-    expect((await omar.req('GET', `/v1/orgs/${orgId}/insights`)).statusCode).toBe(403);
-    const outsider = await signup(t, { displayName: 'Sam Outsider' });
-    expect((await outsider.req('GET', `/v1/orgs/${orgId}/insights`)).statusCode).toBe(404);
-    expect((await noor.req('GET', `/v1/orgs/${orgId}/insights?days=3`)).statusCode).toBe(400);
-    const free = await omar.req('GET', `/v1/orgs/${freeOrgId}/insights`);
-    expect(free.statusCode).toBe(403);
-    expect(free.json().error).toMatchObject({
-      code: 'plan_limit',
-      message:
-        'Insights come with Business: how fast Omar Shop’s team answers, how many customers write, and what’s still open.',
+  it('are worked out from your own one-to-ones, for you only', async () => {
+    const set = await t.app.inject({
+      method: 'PUT',
+      url: `/v1/admin/people/${noor.user.handle}/plan`,
+      headers: { authorization: `Bearer ${ADMIN}` },
+      payload: { plan: 'pro' },
     });
+    expect(set.statusCode).toBe(200);
+    const bad = await noor.req('GET', '/v1/me/insights?days=7');
+    expect(bad.statusCode).toBe(400);
+    const { insights: i } = await noor.get('/v1/me/insights?days=30');
+    expect(i.days).toBe(30);
+    expect(i.connections).toEqual({
+      total: 2,
+      bySphere: expect.arrayContaining([
+        { sphere: 'work', count: 1 },
+        { sphere: 'friend', count: 1 },
+      ]),
+    });
+    // Alex in the window, Sam in the one before it.
+    expect(i.active).toEqual({ count: 1, previous: 1 });
+    expect(i.messages).toEqual({ sent: 3, received: 2, previous: { sent: 1, received: 1 } });
+    expect(i.closest).toEqual([
+      {
+        userId: alex.user.id,
+        displayName: 'Alex Chen',
+        avatarUrl: null,
+        conversationId: withAlex,
+        messages: 5,
+        yourShare: 0.6,
+      },
+    ]);
+    expect(i.quiet).toEqual([
+      {
+        userId: sam.user.id,
+        displayName: 'Sam Rivera',
+        avatarUrl: null,
+        conversationId: withSam,
+        lastAt: new Date(T0.getTime() + HOUR).toISOString(),
+      },
+    ]);
+    // Noor answered Alex in 30 minutes and in 2 hours: a median of 75, one within the hour.
+    expect(i.reply.yours).toEqual({ medianMinutes: 75, answered: 2, withinHour: 1, unanswered: 0 });
+    // Alex answered her once, in an hour; her last line waits.
+    expect(i.reply.theirs).toEqual({
+      medianMinutes: 60,
+      answered: 1,
+      withinHour: 1,
+      unanswered: 1,
+    });
+    // Two exchanges began after a day's silence: Alex started one, Noor the other.
+    expect(i.started).toEqual({ byYou: 1, byThem: 1 });
+    // Her three messages, by the hour of her day (Cairo is UTC+3 in June).
+    expect(i.hours).toHaveLength(24);
+    expect(i.hours.reduce((a: number, b: number) => a + b, 0)).toBe(3);
+    expect(i.hours[12]).toBe(2); // 09:30Z, twice
+    expect(i.hours[15]).toBe(1); // 12:30Z
+  });
+
+  it('never include a business conversation or a group', async () => {
+    const group = await noor.post('/v1/conversations', {
+      kind: 'group',
+      title: 'Book club',
+      memberIds: [alex.user.id, sam.user.id],
+    });
+    await say(noor, group.conversation.id, 'Welcome all');
+    await say(sam, group.conversation.id, 'Hi');
+    const { insights: i } = await noor.get('/v1/me/insights?days=30');
+    expect(i.messages.sent).toBe(3);
+    expect(i.quiet.map((q: { userId: string }) => q.userId)).toEqual([sam.user.id]);
+  });
+});
+
+describe('automations by plan (R47)', () => {
+  it('Personal keeps five; Pro keeps fifty', async () => {
+    const make = (c: Client, n: number) =>
+      c.req('POST', '/v1/automations', { when: { kinds: ['document'] }, collection: `Kept ${n}` });
+    for (let n = 1; n <= 5; n++) expect((await make(alex, n)).statusCode).toBe(201);
+    const sixth = await make(alex, 6);
+    expect(sixth.statusCode).toBe(403);
+    expect(sixth.json().error).toMatchObject({ code: 'plan_limit', details: { nextPlan: 'pro' } });
+    expect(sixth.json().error.message).toBe(
+      'Personal keeps 5 automations. Remove one to add another. Pro keeps 50.',
+    );
+    const plan = await alex.get('/v1/me/plan');
+    expect(plan.used.automations).toBe(5);
+    expect(plan.allowance.automations).toBe(5);
+    await t.app.inject({
+      method: 'PUT',
+      url: `/v1/admin/people/${alex.user.handle}/plan`,
+      headers: { authorization: `Bearer ${ADMIN}` },
+      payload: { plan: 'pro' },
+    });
+    expect((await make(alex, 6)).statusCode).toBe(201);
   });
 });

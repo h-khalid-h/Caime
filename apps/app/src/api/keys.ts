@@ -6,6 +6,7 @@ export const qk = {
   timeZones: (locale: string, device: string) => ['time-zones', locale, device] as const,
   ai: ['ai'] as const,
   plan: ['plan'] as const,
+  insights: (days: number) => ['insights', days] as const,
   billing: ['billing'] as const,
   orgBilling: (orgId: string) => ['org-billing', orgId] as const,
   spaces: ['spaces'] as const,

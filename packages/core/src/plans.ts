@@ -25,6 +25,13 @@ export interface PersonAllowance {
   aiPerDay: number;
   /** Files you've uploaded, in all, in bytes. */
   storageBytes: number;
+  /** Automations kept at once (PRD §84: automation is Pro's). Never more than AUTOMATIONS_MAX. */
+  automations: number;
+  /**
+   * Relationship insights (R47): how your relationships are going, from your own messages and
+   * labels only. The relationships themselves, and what needs you, are free (R23).
+   */
+  insights: boolean;
 }
 
 export interface OrgAllowance {
@@ -49,11 +56,11 @@ export interface OrgAllowance {
 const GB = 1024 ** 3;
 
 export const PERSON_ALLOWANCES: Readonly<Record<Plan, PersonAllowance>> = {
-  personal: { aiPerDay: 10, storageBytes: 5 * GB },
-  pro: { aiPerDay: 200, storageBytes: 100 * GB },
+  personal: { aiPerDay: 10, storageBytes: 5 * GB, automations: 5, insights: false },
+  pro: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true },
   // A business or enterprise seat includes everything Pro does.
-  business: { aiPerDay: 200, storageBytes: 100 * GB },
-  enterprise: { aiPerDay: 1000, storageBytes: 1024 * GB },
+  business: { aiPerDay: 200, storageBytes: 100 * GB, automations: 50, insights: true },
+  enterprise: { aiPerDay: 1000, storageBytes: 1024 * GB, automations: 50, insights: true },
 };
 
 export const ORG_ALLOWANCES: Readonly<Record<OrgPlan, OrgAllowance>> = {

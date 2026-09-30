@@ -132,6 +132,13 @@ export const useOrgSpaces = (orgId: string | null) =>
     enabled: Boolean(orgId),
   });
 export const useMyPlan = () => useQuery({ queryKey: qk.plan, queryFn: endpoints.myPlan });
+export const useMyInsights = (days: 30 | 90 | 365) =>
+  useQuery({
+    queryKey: qk.insights(days),
+    queryFn: () => endpoints.myInsights(days),
+    // Told once that it's Pro's: no use asking again until the plan changes.
+    retry: false,
+  });
 export const useBilling = () => useQuery({ queryKey: qk.billing, queryFn: endpoints.billing });
 export const useOrgBilling = (orgId: string | null) =>
   useQuery({

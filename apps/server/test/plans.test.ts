@@ -108,8 +108,8 @@ describe('plans (PRD §84, R23)', () => {
   it('says what yours includes and what you’ve used', async () => {
     expect(await lina.get('/v1/me/plan')).toEqual({
       plan: 'personal',
-      allowance: { aiPerDay: 10, storageBytes: 5 * GB },
-      used: { aiToday: 0, storageBytes: 0 },
+      allowance: { aiPerDay: 10, storageBytes: 5 * GB, automations: 5, insights: false },
+      used: { aiToday: 0, storageBytes: 0, automations: 0 },
       aiNextAt: null,
       upgradeUrl: PLANS_URL,
     });

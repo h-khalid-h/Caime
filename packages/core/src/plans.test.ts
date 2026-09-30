@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { AUTOMATIONS_MAX } from './automations';
 import { formatBytes, formatSoon } from './format';
 import {
   nextOrgPlan,
@@ -17,9 +18,13 @@ describe('plans', () => {
       expect(a.aiPerDay).toBeGreaterThan(0);
       expect(a.storageBytes).toBeGreaterThan(0);
       const below = PERSON_PLANS[i - 1];
+      expect(a.automations).toBeGreaterThan(0);
+      expect(a.automations).toBeLessThanOrEqual(AUTOMATIONS_MAX);
       if (below) {
         expect(a.aiPerDay).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].aiPerDay);
         expect(a.storageBytes).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].storageBytes);
+        expect(a.automations).toBeGreaterThanOrEqual(PERSON_ALLOWANCES[below].automations);
+        expect(a.insights || !PERSON_ALLOWANCES[below].insights).toBe(true);
       }
     }
     for (const [i, plan] of ORG_PLANS.entries()) {

@@ -4,7 +4,6 @@
  * actions. What's saved is listed only while its owner can still see it where it was said.
  */
 import {
-  AUTOMATIONS_MAX,
   AutomationBody,
   AutomationPatch,
   type AutomationView,
@@ -28,6 +27,7 @@ import { automationView, lockSaved, savedCount, visibleSaved } from '../lib/auto
 import { maskId, masksFor } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
+import { assertAutomationRoom } from '../lib/plans';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -106,11 +106,8 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
         .select(sql<number>`count(*)::int`.as('n'))
         .where('user_id', '=', auth.userId)
         .executeTakeFirstOrThrow();
-      if (n >= AUTOMATIONS_MAX)
-        throw conflict(
-          'too_many_automations',
-          `You have ${AUTOMATIONS_MAX} automations. Remove one to add another.`,
-        );
+      // The plan says how many are kept (R47); AUTOMATIONS_MAX is the most any plan allows.
+      await assertAutomationRoom(ctx, auth.userId, n);
       await trx
         .insertInto('automations')
         .values({

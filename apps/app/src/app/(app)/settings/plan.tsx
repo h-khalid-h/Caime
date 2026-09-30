@@ -1,6 +1,7 @@
-import type { PlanUsageView } from '@caime/core/api';
+import type { Plan, PlanUsageView } from '@caime/core/api';
 import { formatBytes, formatSoon } from '@caime/core/format';
 import { nextPersonPlan, PERSON_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
+import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useBilling, useMyPlan } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -11,8 +12,9 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
-import { HardDrive, Sparkles } from '@/ui/icons';
+import { ChartBar, ChevronRight, HardDrive, Sparkles, Zap } from '@/ui/icons';
 import { Meter } from '@/ui/Meter';
+import { Pressable } from '@/ui/Pressable';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 
@@ -48,6 +50,12 @@ function Usage({
   );
 }
 
+/** What a paid plan adds (R47): the depth of the wedge, never the wedge. */
+function proIncludes(plan: Plan = 'pro'): string {
+  const a = PERSON_ALLOWANCES[plan];
+  return `Relationship insights, ${a.automations} automations, ${a.aiPerDay} AI assists a day and ${formatBytes(a.storageBytes)} for files.`;
+}
+
 function aiDetail(p: PlanUsageView, timeZone: string, locale: string): string {
   const base = `${p.used.aiToday} of ${p.allowance.aiPerDay} in the last 24 hours`;
   if (!p.aiNextAt) return base;
@@ -55,6 +63,7 @@ function aiDetail(p: PlanUsageView, timeZone: string, locale: string): string {
 }
 
 export default function PlanSettings() {
+  const t = useTheme();
   const q = useMyPlan();
   const billing = useBilling().data;
   const back = useBackFromCheckout([qk.plan, qk.billing]);
@@ -83,7 +92,7 @@ export default function PlanSettings() {
         <Text variant="body" color="textSecondary">
           {free
             ? 'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.'
-            : 'Everything in Personal, with more AI assist and more room for files.'}
+            : 'Everything in Personal, with relationship insights, more automations, more AI assist and more room for files.'}
         </Text>
       </View>
 
@@ -105,15 +114,43 @@ export default function PlanSettings() {
           of={p.allowance.storageBytes}
           testID="plan-files"
         />
+        <Divider />
+        <Usage
+          icon={Zap}
+          title="Automations"
+          detail={`${p.used.automations} of ${p.allowance.automations}`}
+          used={p.used.automations}
+          of={p.allowance.automations}
+          testID="plan-automations"
+        />
+      </Group>
+      <Group title="Relationship insights">
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.navigate('/settings/insights')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}
+          testID="plan-insights"
+        >
+          <ChartBar size={20} color={p.allowance.insights ? t.c.accentStrong : t.c.textTertiary} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text variant="label">
+              {p.allowance.insights ? 'Included in your plan' : `Comes with ${PLAN_NAMES.pro}`}
+            </Text>
+            <Text variant="caption" color="textSecondary">
+              Who you write with most, who’s gone quiet, how fast you answer and are answered, and
+              when you write. Yours alone.
+            </Text>
+          </View>
+          <ChevronRight size={18} color={t.c.textTertiary} />
+        </Pressable>
       </Group>
 
       {billed && billing ? (
         <Group title={PLAN_NAMES.pro}>
           <View style={{ padding: 16, gap: 12 }}>
             {free && !billing.subscription ? (
-              <Text variant="body">
-                {PERSON_ALLOWANCES.pro.aiPerDay} AI assists a day and{' '}
-                {formatBytes(PERSON_ALLOWANCES.pro.storageBytes)} for files.
+              <Text variant="body" testID="plan-pro-includes">
+                {proIncludes()}
               </Text>
             ) : null}
             <BillingCard billing={billing} plan="pro" back={back} />
@@ -129,10 +166,7 @@ export default function PlanSettings() {
           }
         >
           <View style={{ padding: 16, gap: 12 }}>
-            <Text variant="body">
-              {PERSON_ALLOWANCES[next].aiPerDay} AI assists a day and{' '}
-              {formatBytes(PERSON_ALLOWANCES[next].storageBytes)} for files.
-            </Text>
+            <Text variant="body">{proIncludes(next)}</Text>
             {p.upgradeUrl ? (
               <Button
                 label={`See ${PLAN_NAMES[next]}`}

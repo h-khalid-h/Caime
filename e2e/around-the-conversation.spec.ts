@@ -932,6 +932,12 @@ test.describe
       await expect(page.getByTestId('plan-ai')).toContainText('0 of 10 in the last 24 hours');
       // Nile Dental's logo is hers: a few KB of her storage.
       await expect(page.getByTestId('plan-files')).toContainText(/^Files[\d.]+ KB of 5 GB$/);
+      await expect(page.getByTestId('plan-automations')).toContainText('of 5');
+      // Pro sells the depth of the wedge (R47): insights are named, and locked until then.
+      await expect(page.getByTestId('plan-insights')).toContainText('Comes with Pro');
+      await expect(page.getByTestId('plan-pro-includes')).toHaveText(
+        'Relationship insights, 50 automations, 200 AI assists a day and 100 GB for files.',
+      );
       // Pro can be bought here, at Stripe's price for it.
       await expect(page.getByTestId('billing-price')).toHaveText('€6 a month');
       await page.getByRole('tab', { name: 'Yearly' }).click();
@@ -954,7 +960,15 @@ test.describe
       await page.waitForTimeout(400); // the sheet's fade-in, for the screenshot only
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-plan.png' });
       await page.keyboard.press('Escape');
-      expect(errors).toEqual([]);
+      // Insights on Personal: what they are, and where Pro is. The 403 is that answer.
+      await page.goto('/settings/insights');
+      await expect(page.getByTestId('insights-locked')).toContainText(
+        'Relationship insights come with Pro',
+      );
+      await page.getByTestId('insights-see-pro').click();
+      await page.waitForURL('**/settings/plan');
+      expect(errors.filter((e) => !/403/.test(e))).toEqual([]);
+      errors.length = 0;
     });
 
     test('Pro, bought through Stripe and managed there', async () => {
@@ -970,7 +984,18 @@ test.describe
       await expect(paid).toContainText('Pro · €6 a month');
       await expect(paid).toContainText('Renews on');
       await expect(page.getByTestId('plan-ai')).toContainText('of 200 in the last 24 hours');
+      await expect(page.getByTestId('plan-automations')).toContainText('of 50');
+      await expect(page.getByTestId('plan-insights')).toContainText('Included in your plan');
       await page.screenshot({ path: 'e2e/screenshots/desktop-plan-pro.png' });
+      // Her insights, from her own one-to-ones: Alex is who she wrote with most.
+      await page.getByTestId('plan-insights').click();
+      await page.waitForURL('**/settings/insights');
+      await expect(page.getByTestId('insights-connections')).toContainText(/\d+ connections?$/);
+      await expect(page.getByTestId('insights-closest-Alex Chen')).toBeVisible();
+      await expect(page.getByTestId('insights-reply-yours')).toContainText('You answer in about');
+      await expect(page.getByTestId('insights-hours')).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-insights.png' });
+      await page.goto('/settings/plan');
       // Cancelled in Stripe's portal, it stays on until what's paid for ends.
       await page.getByTestId('billing-manage').click();
       await page.waitForURL(/\/portal\//);
