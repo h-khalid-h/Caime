@@ -1325,3 +1325,5 @@ outperforming the alternatives is reach and operations. In the order the review 
   app: the inbox's "Needs you", a settings group, "Team · 2") is now the spec sheet's mono in
   sentence case, no longer uppercase Inter; badge digits keep the body face. One token, no
   copy changed; `around-the-conversation` and `core-flow` pass (58). Budget 437.6 KB gzip.
+- 2026-09-30 · The phone's Welcome carries the same three spec lines as the desktop's
+  (`core-flow` passes, 5).

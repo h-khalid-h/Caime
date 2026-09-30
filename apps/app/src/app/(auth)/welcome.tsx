@@ -102,13 +102,14 @@ export default function Welcome() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 }}>
           <Character name="caishy" size={176} expression="happy" />
           <Wordmark height={44} />
-          <View style={{ gap: 8, maxWidth: 360 }}>
+          <View style={{ gap: 8, maxWidth: 360, width: '100%' }}>
             <Text variant="title" align="center" accessibilityRole="header">
               Messaging that understands your relationships.
             </Text>
             <Text variant="body" color="textSecondary" align="center">
               Family, friends and work, each in its place. The right conversations find you.
             </Text>
+            <SpecLines />
           </View>
         </View>
         {actions}
