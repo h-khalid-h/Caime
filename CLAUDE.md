@@ -172,6 +172,11 @@ These are rules, not preferences.
   is on an organization's team (`useOrgs`, `canManageOrg` decides which are offered; the rest
   are named, not offered), and an organization's page opens it with `?org=handle` chosen. A new
   way to start a space goes there, never to a screen of its own.
+- Someone on several teams: the Business inbox carries a row of its teams (`inbox-teams`, a
+  radio chip each, in `BusinessInbox`) when there's more than one, and the rail's Business goes
+  to the inbox opened last (`state/business.ts`, in memory), else the first. On a phone the
+  Chats list's `TeamInboxes` rows are the same step. Nothing about an organization's inbox is
+  ever reached only through one organization's page.
 - The app's `mono` text variant (`typeScale.mono`, the system monospace by platform in
   `theme/fonts.ts`, weight as a style) is for spec-sheet labels only: never running text, never
   uppercase. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a

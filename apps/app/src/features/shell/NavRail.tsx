@@ -2,6 +2,7 @@ import { type Href, router } from 'expo-router';
 import { View } from 'react-native';
 import { useBusinessSummary } from '@/api/hooks';
 import { IconMark } from '@/brand/Wordmark';
+import { useBusiness } from '@/state/business';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -113,9 +114,11 @@ export function NavRail() {
   const section = useSection();
   const badges = useBadges();
   const user = useSession((s) => s.user);
-  // On a team: its inbox, first of yours, and how many customers wait on someone like you.
+  // On a team: its inbox (the one opened last, else the first of yours), and how many customers
+  // wait on someone like you across them.
   const teams = useBusinessSummary().data?.orgs ?? [];
-  const first = teams[0]?.org.handle;
+  const last = useBusiness((s) => s.lastTeam);
+  const first = teams.find((o) => o.org.handle === last)?.org.handle ?? teams[0]?.org.handle;
   return (
     <View
       role="navigation"

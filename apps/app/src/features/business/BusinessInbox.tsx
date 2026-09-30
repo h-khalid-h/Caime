@@ -7,12 +7,13 @@ import {
 } from '@caime/core/business';
 import { formatListTime } from '@caime/core/format';
 import { router, usePathname } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
-import { useOrg, useOrgInbox } from '@/api/hooks';
+import { useBusinessSummary, useOrg, useOrgInbox } from '@/api/hooks';
 import { OrgMark } from '@/features/orgs/kinds';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
 import { useNow, useUserClock } from '@/lib/time';
+import { useBusiness } from '@/state/business';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
@@ -160,6 +161,12 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
   const inbox = useOrgInbox(summary?.myRole ? summary.id : undefined, view);
   const threads = inbox.data?.threads ?? [];
   const counts = inbox.data?.counts;
+  // On several teams: each is a step away, and the rail comes back to this one.
+  const teams = useBusinessSummary().data?.orgs ?? [];
+  const opened = useBusiness((s) => s.opened);
+  useEffect(() => {
+    if (summary?.myRole) opened(handle);
+  }, [handle, summary?.myRole, opened]);
 
   // On desktop the list is the shell's pane; the route itself is the empty detail beside it.
   if (desktop && !pane)
@@ -185,6 +192,39 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
 
   const list = (
     <View style={{ flex: 1 }}>
+      {teams.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, gap: 8 }}
+          accessibilityRole="tablist"
+          accessibilityLabel="Teams"
+          testID="inbox-teams"
+        >
+          {teams.map(({ org: team, waiting }) => (
+            <Chip
+              key={team.id}
+              label={waiting && team.handle !== handle ? `${team.name} · ${waiting}` : team.name}
+              selected={team.handle === handle}
+              role="radio"
+              tone={waiting && team.handle !== handle ? 'warning' : 'neutral'}
+              accessibilityLabel={
+                waiting ? `${team.name}, ${waiting} waiting` : `${team.name}, nobody waiting`
+              }
+              onPress={() =>
+                team.handle === handle
+                  ? undefined
+                  : router.replace({
+                      pathname: '/o/[handle]/inbox',
+                      params: { handle: team.handle },
+                    })
+              }
+              testID={`inbox-team-${team.handle}`}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
       <View style={{ paddingVertical: 8 }}>
         <ScrollView
           horizontal

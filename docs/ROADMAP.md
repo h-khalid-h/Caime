@@ -1304,3 +1304,9 @@ outperforming the alternatives is reach and operations. In the order the review 
   every auth screen carries a mono kicker (sign in, new account, password, new password,
   recovery) above its title, with the brand panel's tagline in mono. Budget 437.6 KB gzip
   (+0.6 KB); `around-the-conversation` and `core-flow` E2E pass (57).
+- 2026-09-30 · Several teams, one step apart: the Business inbox shows a chip per team (with
+  how many wait) when someone is on more than one, and the rail's Business comes back to the
+  inbox opened last, not always the first (`state/business.ts`). E2E: Noor on two teams
+  (`desktop-business-teams.png`). Budget unchanged at 437.6 KB gzip. The Arabic-alignment E2E
+  now waits for the bubble itself (its label is the words, then the time): the list's row can
+  preview the words before the bubble is drawn, which once read as `start`.

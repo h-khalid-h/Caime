@@ -548,10 +548,14 @@ test.describe
       }
       // The browser finds the direction itself (dir="auto"); the alignment is ours, and it is
       // what iOS needs, where text otherwise aligns to the device's language.
-      // The message itself, not the conversation's row in the list, which previews the same
-      // words in the list's own alignment: the bubble comes last in the page.
+      // The message itself (its label is the words, then the time), never the conversation's
+      // row in the list, which previews the same words in the list's own alignment and may
+      // show them before the bubble does.
       const align = async (text: string) => {
-        const el = noor.page.getByText(text).filter({ visible: true }).last();
+        const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const bubble = noor.page.getByLabel(new RegExp(`^${escaped}, `)).filter({ visible: true });
+        await expect(bubble).toBeVisible();
+        const el = bubble.getByText(text);
         await expect(el).toBeVisible();
         return el.evaluate((node) => getComputedStyle(node).textAlign);
       };
@@ -1137,6 +1141,40 @@ test.describe
       await expect(page.getByTestId('billing-subscription')).toContainText('Ends on');
       await expect(page.getByTestId('plan-name')).toHaveText('Pro');
       expect(errors).toEqual([]);
+    });
+
+    test('on two teams, each inbox is a step from the other, and Business comes back to the last', async () => {
+      const { page, errors } = noor;
+      const handle = `nile.dental.${stamp}`;
+      // Noor is on a second team too: she starts a shop.
+      const second = `river.books.${stamp}`;
+      const made = await noorContext.request.post('/v1/orgs', {
+        headers: CLIENT,
+        data: { name: `River Books ${stamp}`, handle: second, kind: 'shop', country: 'AE' },
+      });
+      expect(made.ok(), await made.text()).toBe(true);
+      const secondId = (await made.json()).org.id as string;
+      try {
+        await page.goto(`/o/${handle}/inbox`);
+        const teams = () => page.getByTestId('inbox-teams').filter({ visible: true });
+        await expect(teams().getByTestId(`inbox-team-${handle}`)).toBeChecked();
+        await teams().getByTestId(`inbox-team-${second}`).click();
+        const secondInbox = new RegExp(`/o/${second.replaceAll('.', '\\.')}/inbox$`);
+        await expect(page).toHaveURL(secondInbox);
+        await expect(teams().getByTestId(`inbox-team-${second}`)).toBeChecked();
+        await page.screenshot({ path: 'e2e/screenshots/desktop-business-teams.png' });
+        // Away and back: the rail's Business is the inbox she was in, not always the first.
+        await page.getByRole('link', { name: /^Chats/ }).click();
+        await page.waitForURL(/\/$/);
+        await page.getByRole('link', { name: /^Business/ }).click();
+        await expect(page).toHaveURL(secondInbox);
+        expect(errors).toEqual([]);
+      } finally {
+        const closed = await noorContext.request.post(`/v1/orgs/${secondId}/close`, {
+          headers: CLIENT,
+        });
+        expect(closed.ok(), await closed.text()).toBe(true);
+      }
     });
 
     test('on Business, an organization sees how its inbox is doing', async () => {
