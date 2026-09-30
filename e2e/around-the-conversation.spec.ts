@@ -1358,6 +1358,12 @@ test.describe
         await page.getByTestId('composer-send').filter({ visible: true }).click();
 
         // What the clinic asks of Sam is theirs to do, said in the clinic's name, not Noor's.
+        // Two things were found here (this, and Sam's own promise for tonight), so they come as
+        // one card first (R37); taken one at a time, the newest is first.
+        const card = phone.getByTestId('suggestions-card').filter({ visible: true });
+        await expect(card).toContainText('Bring insurance card');
+        await expect(card).not.toContainText('Noor');
+        await card.getByTestId('suggestions-one').click();
         const offer = phone.getByLabel('Suggestion: Bring insurance card');
         await expect(offer).toContainText(
           `${orgName} asked “Please bring your insurance card on Thursday.”`,
@@ -1735,6 +1741,13 @@ test.describe
         });
         expect(res.ok()).toBe(true);
       }
+      // Whatever earlier tests left suggested here is put away, so what this one finds stands
+      // alone (with more than one, they'd come as one card: R37, checked further down).
+      const standing = await noorContext.request.get(`/v1/suggestions?conversationId=${convo}`, {
+        headers: CLIENT,
+      });
+      for (const s of (await standing.json()).suggestions as Array<{ id: string }>)
+        await noorContext.request.post(`/v1/suggestions/${s.id}/dismiss`, { headers: CLIENT });
       await page.goto(`/c/${convo}`);
       // Eleven just now, and whatever arrived unread before.
       const banner = visible(page, /^\d+ new messages$/);
@@ -1841,6 +1854,23 @@ test.describe
       await mine.getByRole('checkbox', { name: 'Flowers' }).click();
       await expect(theirs).toContainText('Done');
       await page.screenshot({ path: 'e2e/screenshots/desktop-kit-checklist.png' });
+
+      // Noor paid for lunch: a split says what Alex owes, and Alex settles it; nothing moves.
+      await page.getByRole('button', { name: 'Share a photo, a file or a card' }).click();
+      await page.getByTestId('kit-option-split').click();
+      await page.getByLabel('What it was for').fill('Lunch');
+      await page.getByLabel('Paid in all').fill('90');
+      await page.getByTestId('kit-send').click();
+      const split = page.getByTestId('kit-split').filter({ hasText: 'Lunch' });
+      await expect(split).toContainText('0 of 1 settled');
+      await expect(split).toContainText('45');
+      const theirSplit = alex.page
+        .getByTestId('kit-split')
+        .filter({ hasText: 'Lunch', visible: true });
+      await expect(theirSplit).toContainText('paid by Noor');
+      await theirSplit.getByRole('checkbox', { name: /^You · / }).click();
+      await expect(split).toContainText('Settled');
+      await expect(split.getByRole('checkbox', { name: /^Alex Chen · / })).toBeChecked();
 
       // They're friends too, now: Noor shares where she is, once.
       const friend = await noorContext.request.post('/v1/relationships', {

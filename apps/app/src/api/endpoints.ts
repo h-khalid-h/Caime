@@ -92,7 +92,7 @@ import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billi
 import type { BusinessView } from '@caime/core/business';
 import type { CallKind } from '@caime/core/calls';
 import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
-import type { ChecklistOp } from '@caime/core/kit-cards';
+import type { ChecklistOp, SplitOp } from '@caime/core/kit-cards';
 import type { OrgKind } from '@caime/core/orgs';
 import type { EffectivePolicy } from '@caime/core/policy';
 import type { SpaceKind } from '@caime/core/spaces';
@@ -342,6 +342,8 @@ export const endpoints = {
     api.get<{ kits: CustomKitOfferView[] }>(`/conversations/${conversationId}/kits`),
   checklist: (id: string, op: ChecklistOp) =>
     api.post<{ message: MessageView }>(`/messages/${id}/checklist`, op),
+  split: (id: string, op: SplitOp) =>
+    api.post<{ message: MessageView }>(`/messages/${id}/split`, op),
   album: (id: string) => api.get<{ photos: AlbumPhotoView[] }>(`/messages/${id}/album`),
   addToAlbum: (id: string, fileIds: string[]) =>
     api.post<{ message: MessageView }>(`/messages/${id}/album`, { fileIds }),

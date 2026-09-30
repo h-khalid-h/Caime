@@ -12,6 +12,7 @@ import type {
 } from '@caime/core';
 import {
   applyChecklistOp,
+  applySplitOp,
   type CardKitId,
   ChecklistOpBody,
   CreateConversationBody,
@@ -24,6 +25,7 @@ import {
   customState,
   EditMessageBody,
   ForwardBody,
+  formatAmount,
   isCardKit,
   isCustomCard,
   KITS,
@@ -42,6 +44,9 @@ import {
   SendMessageBody,
   type SpaceRole,
   SpaceRoleBody,
+  SplitOpBody,
+  splitShares,
+  splitState,
   TopicBody,
   UpdateConversationBody,
   uuidv7,
@@ -1614,6 +1619,107 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         level: 'activity',
         title: `${who.display_name} finished ${card.title ?? 'the list'}`,
         body: 'Everything on it is ticked.',
+        data: { conversationId: found.conversation_id, messageId: id },
+      });
+    }
+    return { message: view };
+  });
+
+  /**
+   * A split card (R38): who owes whom for something one person paid, an equal share each. The
+   * person who owes a share, or whoever paid, marks it settled between them; Caime moves nothing.
+   * Changes are applied one at a time (the card's row is locked), as a checklist's are.
+   */
+  app.post('/messages/:id/split', async (req) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const op = parse(SplitOpBody, req.body);
+    const found = await ctx.db
+      .selectFrom('messages')
+      .select('conversation_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!found) throw notFound('That message');
+    await membership(ctx, auth.userId, found.conversation_id);
+    await assertCanWrite(ctx, found.conversation_id, auth.userId);
+    const at = ctx.now().toISOString();
+    const { updated, changed, payer, title, amount } = await ctx.db
+      .transaction()
+      .execute(async (trx) => {
+        const m = await trx
+          .selectFrom('messages')
+          .selectAll()
+          .where('id', '=', id)
+          .forUpdate()
+          .executeTakeFirstOrThrow();
+        const card = (m.payload ?? {}) as {
+          kit?: unknown;
+          state?: string;
+          title?: string;
+          fields?: Record<string, unknown>;
+        };
+        if (m.kind !== 'kit' || m.deleted_at || card.kit !== 'split')
+          throw badRequest('That isn’t a split.');
+        const before = splitShares(card.fields ?? {});
+        const applied = applySplitOp(before, op, {
+          userId: auth.userId,
+          isCreator: m.sender_id === auth.userId,
+          at,
+        });
+        if (!applied.ok)
+          throw applied.forbidden ? forbidden(applied.error) : badRequest(applied.error);
+        if (applied.shares === before)
+          return {
+            updated: m,
+            changed: false,
+            payer: m.sender_id,
+            title: card.title,
+            amount: null,
+          };
+        const updated = await trx
+          .updateTable('messages')
+          .set({
+            payload: JSON.stringify({
+              ...card,
+              fields: { ...card.fields, shares: applied.shares },
+              state: splitState(applied.shares),
+            }),
+          })
+          .where('id', '=', id)
+          .returningAll()
+          .executeTakeFirstOrThrow();
+        return {
+          updated,
+          changed: true,
+          payer: m.sender_id,
+          title: card.title,
+          amount: before.find((s) => s.userId === op.userId)?.amount ?? null,
+        };
+      });
+    const [view] = await messageViews(ctx.db, [updated], auth.userId);
+    if (!changed) return { message: view };
+    const members = (await participantsOf(ctx.db, found.conversation_id)).map((p) => p.user_id);
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    // Someone saying they've settled up is news for whoever paid; the payer's own marks aren't.
+    if (op.op === 'settle' && payer && payer !== auth.userId) {
+      const people = await ctx.db
+        .selectFrom('users')
+        .select(['id', 'display_name', 'locale'])
+        .where('id', 'in', [auth.userId, payer])
+        .execute();
+      const who = people.find((u) => u.id === auth.userId);
+      const locale = people.find((u) => u.id === payer)?.locale ?? 'en';
+      const currency = ((updated.payload as { fields?: { amount?: { currency?: string | null } } })
+        .fields?.amount?.currency ?? null) as string | null;
+      await notify(ctx, {
+        userId: payer,
+        kind: 'kit',
+        level: 'activity',
+        title: `${who?.display_name ?? 'Someone'} settled up`,
+        body:
+          amount !== null
+            ? `${formatAmount(amount, currency, locale)} of ${title ?? 'the split'}.`
+            : `Their share of ${title ?? 'the split'}.`,
         data: { conversationId: found.conversation_id, messageId: id },
       });
     }

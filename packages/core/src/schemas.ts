@@ -1158,6 +1158,12 @@ export const ChecklistOpBody = z.discriminatedUnion('op', [
   z.object({ op: z.literal('remove'), itemId: z.string().max(10) }),
 ]);
 
+/** A share of a split marked settled, or not after all (R38: a record, never a transfer). */
+export const SplitOpBody = z.object({
+  op: z.enum(['settle', 'unsettle']),
+  userId: z.string().uuid(),
+});
+
 // --- Billing ---------------------------------------------------------------------------------
 
 /** Buy a plan (R25): Pro for yourself, or Business for an organization you run. */

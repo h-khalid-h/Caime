@@ -486,10 +486,15 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       taken back from the toast (`POST /suggestions/:id/undo`, only while it's still exactly as
       made; a decision stays, as one recorded by hand does), or taken one at a time
       (`suggestions-many.test.ts`, E2E)
+- [x] A Split card (R38) that records who owes whom for what one person paid and moves nothing:
+      an equal share each for everyone else in the conversation (people, not bots), worked out
+      once on the server (rounding stays with the payer), each share marked settled or taken back
+      by the person who owes it or by whoever paid, the payer told when someone settles up, the
+      split settled when every share is; family, friends, work and community, never with a minor
+      or an organization (`splits.test.ts`, `kits.test.ts`, E2E)
 - [ ] Pay on an organization's card (R38), through its own checkout (Stripe Connect or its link),
       the card saying it's paid from the provider's webhook. ⛔ The owner's decision on Stripe
-      Connect for the live account, and on a fee. And a Split card that records who owes whom and
-      moves nothing
+      Connect for the live account, and on a fee
 - [ ] `@caime/sdk` (R39): a typed client for the API and webhook signatures, for organizations'
       apps
 - [ ] Broadcasts (§59, R40): fan-out measured at 500,000 followers before any is that big
@@ -1230,3 +1235,7 @@ outperforming the alternatives is reach and operations. In the order the review 
   visitor's `/i/<token>` page, the app's `InviteSheet` in Connect, the `i/[token]` route that
   accepts and opens the conversation, onboarding and Welcome naming the inviter. E2E times
   link-open to first message at 4.8 s.
+- 2026-09-30 · Split card (R38): `split` in `kits.ts`, `shareOut`/`applySplitOp`/`splitState` in
+  `kit-cards.ts`, shares set in `sendMessage`, `POST /messages/:id/split`, the app's
+  `SplitCard`; a person's export lists their shares of others' splits. Budget unchanged at
+  447.9 KB gzip.

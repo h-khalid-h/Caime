@@ -156,6 +156,16 @@ export function maskPayload(
         ...(other(i.doneBy) ? { doneBy: mask.orgId } : {}),
       })),
     };
+  // A split's shares (who owes, who settled): not offered with an organization, masked all the same.
+  if (fields && Array.isArray(fields.shares))
+    out.fields = {
+      ...(out.fields as Record<string, unknown>),
+      shares: (fields.shares as Array<Record<string, unknown>>).map((sh) => ({
+        ...sh,
+        ...(other(sh.userId) ? { userId: mask.orgId } : {}),
+        ...(other(sh.settledBy) ? { settledBy: mask.orgId } : {}),
+      })),
+    };
   return out;
 }
 

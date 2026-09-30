@@ -25,6 +25,7 @@ import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
 import { ChecklistCard } from './ChecklistCard';
 import { iconNamed, KIT_ICONS } from './icons';
+import { SplitCard } from './SplitCard';
 
 interface CardPayload {
   kit?: unknown;
@@ -105,6 +106,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   const kit = p.kit;
   if (kit === 'checklist') return <ChecklistCard m={m} mine={mine} />;
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
+  if (kit === 'split') return <SplitCard m={m} mine={mine} />;
   return (
     <CardBody
       m={m}

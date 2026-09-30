@@ -3,7 +3,7 @@
  * and how it reads. The server validates and moves cards with these functions and the app
  * renders them with the same ones, so a card reads the same on every device.
  */
-import { formatAmount, formatWhenAt, roundAmount } from './format';
+import { formatAmount, formatWhenAt, minorUnits, roundAmount } from './format';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
@@ -23,6 +23,7 @@ export const CARD_KITS = [
   'appointment',
   'checklist',
   'shared_album',
+  'split',
 ] as const satisfies readonly KitId[];
 export type CardKitId = (typeof CARD_KITS)[number];
 
@@ -44,6 +45,7 @@ export const KIT_MODES: Record<CardKitId, Mode> = {
   appointment: 'plan',
   checklist: 'plan',
   shared_album: 'share',
+  split: 'pay',
 };
 
 /** Who may move a card: whoever posted it, the others in the conversation, or anyone there. */
@@ -133,6 +135,8 @@ export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
     open: [m('closed', 'Close the album', 'creator')],
     closed: [m('open', 'Reopen', 'creator')],
   },
+  // A split has no buttons either: it's settled when every share is.
+  split: {},
 };
 
 /** The moves this person may make on a card in this state. */
@@ -268,6 +272,80 @@ export function applyChecklistOp(
   if (op.op === 'edit')
     return { ok: true, items: items.map((i) => (i.id === item.id ? { ...i, text } : i)) };
   return { ok: true, items: items.filter((i) => i.id !== item.id) };
+}
+
+// --- Splits (R38) -------------------------------------------------------------------------------
+
+/**
+ * One person's part of what someone else paid. A split is a record of who owes whom and whether
+ * it's been settled between them; Caime holds and moves nothing (R38).
+ */
+export interface SplitShare {
+  userId: string;
+  amount: number;
+  /** When it was marked settled, by the person who owes it or by whoever paid. */
+  settledAt: string | null;
+  settledBy: string | null;
+}
+
+export function splitShares(fields: Record<string, unknown>): SplitShare[] {
+  return Array.isArray(fields.shares) ? (fields.shares as SplitShare[]) : [];
+}
+
+/**
+ * Everyone's equal part of what was paid, one share per person other than the payer, each
+ * rounded as the currency keeps it; whatever rounding leaves over stays with the payer, so the
+ * shares never add up to more than was paid.
+ */
+export function shareOut(
+  total: KitAmount,
+  payerId: string,
+  memberIds: readonly string[],
+): SplitShare[] {
+  const others = memberIds.filter((id) => id !== payerId);
+  const heads = others.length + 1;
+  const scale = 10 ** minorUnits(total.currency);
+  const part = Math.floor(Math.round(total.value * scale) / heads) / scale;
+  return others.map((userId) => ({ userId, amount: part, settledAt: null, settledBy: null }));
+}
+
+/** Settled once there's someone to settle and everyone has. */
+export function splitState(shares: SplitShare[]): 'open' | 'settled' {
+  return shares.length > 0 && shares.every((s) => s.settledAt) ? 'settled' : 'open';
+}
+
+export interface SplitOp {
+  op: 'settle' | 'unsettle';
+  userId: string;
+}
+
+/**
+ * One change to a split: a share is marked settled, or not after all, by the person who owes it
+ * or by whoever paid. Nobody else's share is anyone's to touch.
+ */
+export function applySplitOp(
+  shares: SplitShare[],
+  op: SplitOp,
+  actor: { userId: string; isCreator: boolean; at: string },
+): { ok: true; shares: SplitShare[] } | { ok: false; error: string; forbidden?: true } {
+  const share = shares.find((s) => s.userId === op.userId);
+  if (!share) return { ok: false, error: 'That share isn’t on this split.' };
+  if (!actor.isCreator && share.userId !== actor.userId)
+    return {
+      ok: false,
+      error: 'Only who owes it, or who paid, can settle a share.',
+      forbidden: true,
+    };
+  const settled = op.op === 'settle';
+  if (settled === Boolean(share.settledAt)) return { ok: true, shares };
+  return {
+    ok: true,
+    shares: shares.map((s) =>
+      s.userId === share.userId
+        ? { ...s, settledAt: settled ? actor.at : null, settledBy: settled ? actor.userId : null }
+        : s,
+    ),
+  };
 }
 
 type Cleaned = { value: unknown } | { error: string } | null;

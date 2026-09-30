@@ -195,6 +195,11 @@ These are rules, not preferences.
   `toBeChecked()` and friends rather than by styling.
 - A kit's field checks (`prepareKitFields`) run in the app before sending and again on the
   server over what was sent, so they must be idempotent: a checked value checks the same.
+- A Split card (R38) is a record, never a transfer: `shareOut` (core `kit-cards.ts`) gives
+  everyone else in the conversation an equal share of what the sender paid, worked out once in
+  `sendMessage` from the human participants (rounding stays with the payer), and
+  `POST /messages/:id/split` marks a share settled or not by `applySplitOp` under the card's
+  row lock. Nothing in Caime holds a balance, and any new card about money is `adultsOnly`.
 - Message requests live on the recipient's `participants.request_state` (pending, accepted,
   declined), for a stranger's direct message and an organization's first message alike.
   `sendMessage` (`apps/server/src/lib/messages.ts`) owns the rules: one message until answered,

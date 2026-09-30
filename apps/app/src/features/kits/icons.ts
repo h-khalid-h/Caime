@@ -31,6 +31,7 @@ export const KIT_ICONS: Record<CardKitId | 'poll' | 'location', IconComponent> =
   appointment: CalendarCheck,
   checklist: ListChecks,
   shared_album: Images,
+  split: HandCoins,
   poll: ChartBar,
   location: MapPin,
 };

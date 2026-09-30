@@ -22,6 +22,7 @@ export const KIT_IDS = [
   'shared_album',
   'poll',
   'checklist',
+  'split',
 ] as const;
 export type KitId = (typeof KIT_IDS)[number];
 
@@ -266,6 +267,21 @@ export const KITS: Record<KitId, KitDef> = {
       { key: 'items', label: 'Items', type: 'items' },
     ],
     states: ['open', 'done'],
+  },
+  split: {
+    id: 'split',
+    name: 'Split',
+    description: 'Who owes what for something one of you paid, settled here, moved nowhere',
+    icon: 'hand-coins',
+    spheres: ['family', 'friend', 'work', 'community'],
+    groups: true,
+    // It's about money (R38: a record of who owes whom, never a transfer), so never with a minor.
+    adultsOnly: true,
+    fields: [
+      { key: 'title', label: 'What it was for', type: 'text', required: true },
+      { key: 'amount', label: 'Paid in all', type: 'amount', required: true },
+    ],
+    states: ['open', 'settled'],
   },
 };
 

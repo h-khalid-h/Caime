@@ -74,6 +74,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     conversations,
     messages,
     theirChecklists,
+    theirSplits,
     reactions,
     votes,
     hidden,
@@ -298,6 +299,21 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where('m.deleted_at', 'is', null)
       .where(
         sql<boolean>`m.payload->'fields'->'items' @> ${JSON.stringify([{ addedBy: me }])}::jsonb`,
+      )
+      .orderBy('m.created_at')
+      .execute(),
+    // What they owe, or owed, on splits other people paid (R38: a record, never money moved).
+    db
+      .selectFrom('messages as m')
+      .innerJoin('participants as p', (j) =>
+        j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', me),
+      )
+      .select(['m.id', 'm.conversation_id', 'm.payload'])
+      .where('m.kind', '=', 'kit')
+      .where('m.sender_id', '<>', me)
+      .where('m.deleted_at', 'is', null)
+      .where(
+        sql<boolean>`m.payload->'fields'->'shares' @> ${JSON.stringify([{ userId: me }])}::jsonb`,
       )
       .orderBy('m.created_at')
       .execute(),
@@ -1009,6 +1025,21 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
           text: i.text,
           done: Boolean(i.done),
           doneByYou: i.doneBy === me,
+        }));
+    }),
+    yourSharesOfOthersSplits: theirSplits.flatMap((m) => {
+      const fields = m.payload.fields as Payload | undefined;
+      const shares = (fields?.shares ?? []) as Array<Payload>;
+      return shares
+        .filter((sh) => sh.userId === me)
+        .map((sh) => ({
+          splitMessageId: m.id,
+          conversationId: m.conversation_id,
+          title: m.payload.title ?? null,
+          amount: sh.amount,
+          currency: (fields?.amount as Payload | undefined)?.currency ?? null,
+          settledAt: sh.settledAt ?? null,
+          settledByYou: sh.settledBy === me,
         }));
     }),
     reactions: reactions.map((r) => ({

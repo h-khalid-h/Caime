@@ -173,6 +173,76 @@ describe('kit cards (PRD §41)', () => {
   });
 });
 
+describe('splits (R38)', () => {
+  const settle = (c: Client, messageId: string, body: Record<string, unknown>) =>
+    c.req('POST', `/v1/messages/${messageId}/split`, body);
+
+  it('record who owes whom for what one person paid, and are settled share by share', async () => {
+    const lina = await signup(t, { displayName: 'Lina' });
+    await connect(noor, lina);
+    const group = (
+      await noor.post('/v1/conversations', {
+        kind: 'group',
+        title: 'Dinner club',
+        memberIds: [sam.user.id, lina.user.id],
+      })
+    ).conversation;
+    const res = await card(noor, group.id, 'split', {
+      title: 'Dinner',
+      amount: { value: 100, currency: 'EGP' },
+      // Nobody chooses the shares: the server works them out from who's here.
+      shares: [{ userId: sam.user.id, amount: 1 }],
+    });
+    expect(res.statusCode).toBe(201);
+    const split = res.json().message;
+    expect(split.payload).toMatchObject({ kit: 'split', state: 'open', title: 'Dinner' });
+    expect(split.payload.fields.shares).toEqual(
+      expect.arrayContaining([
+        { userId: sam.user.id, amount: 33.33, settledAt: null, settledBy: null },
+        { userId: lina.user.id, amount: 33.33, settledAt: null, settledBy: null },
+      ]),
+    );
+    expect(split.payload.fields.shares).toHaveLength(2);
+
+    // Sam settles Sam's share; Noor hears of it. Sam can't settle Lina's.
+    const bySam = await settle(sam, split.id, { op: 'settle', userId: sam.user.id });
+    expect(bySam.statusCode).toBe(200);
+    expect(
+      bySam.json().message.payload.fields.shares.find((s: any) => s.userId === sam.user.id),
+    ).toMatchObject({ settledAt: expect.any(String), settledBy: sam.user.id });
+    expect(bySam.json().message.payload.state).toBe('open');
+    expect((await settle(sam, split.id, { op: 'settle', userId: lina.user.id })).statusCode).toBe(
+      403,
+    );
+    // Someone outside the conversation doesn't learn the card is there.
+    expect(
+      (await settle(outsider, split.id, { op: 'settle', userId: sam.user.id })).statusCode,
+    ).toBe(404);
+    const heard = (await noor.get('/v1/notifications')).notifications;
+    expect(heard.find((n: any) => n.title === 'Sam Rivera settled up')).toMatchObject({
+      body: expect.stringMatching(/^EGP\s33\.33 of Dinner\.$/),
+    });
+
+    // Noor, who paid, marks Lina's settled: everything is, and the split is settled.
+    const byNoor = await settle(noor, split.id, { op: 'settle', userId: lina.user.id });
+    expect(byNoor.json().message.payload.state).toBe('settled');
+    // Noor's own marks tell Noor nothing.
+    expect(
+      (await noor.get('/v1/notifications')).notifications.filter((n: any) =>
+        String(n.title).endsWith('settled up'),
+      ),
+    ).toHaveLength(1);
+    // Taken back, it's open again.
+    const back = await settle(lina, split.id, { op: 'unsettle', userId: lina.user.id });
+    expect(back.json().message.payload.state).toBe('open');
+    // A split needs someone to split with, and never says a share for someone not here.
+    expect(
+      (await settle(noor, split.id, { op: 'settle', userId: outsider.user.id })).statusCode,
+    ).toBe(400);
+    expect((await settle(noor, split.id, { op: 'settle', userId: 'x' })).statusCode).toBe(400);
+  });
+});
+
 describe('checklists (PRD §41)', () => {
   const op = (c: Client, messageId: string, body: Record<string, unknown>) =>
     c.req('POST', `/v1/messages/${messageId}/checklist`, body);

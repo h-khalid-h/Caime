@@ -19,6 +19,7 @@ import {
   type SealedMessage,
   type SendMessageBodyT,
   messagePreview as sharedPreview,
+  shareOut,
   uuidv7,
 } from '@caime/core';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
@@ -585,6 +586,28 @@ export async function sendMessage(
         .execute();
       if (people.some((u) => minorOf(u, ctx.now())))
         throw forbidden(`${card.def.name} cards aren’t available in this conversation.`);
+    }
+    if (card.kit === 'split') {
+      // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
+      // out once and kept on the card (R38: a record, never a transfer).
+      const people = await ctx.db
+        .selectFrom('users')
+        .select('id')
+        .where(
+          'id',
+          'in',
+          members.map((p) => p.user_id),
+        )
+        .where('kind', '=', 'human')
+        .where('deleted_at', 'is', null)
+        .execute();
+      const shares = shareOut(
+        card.fields.amount as { value: number; currency: string | null },
+        senderId,
+        people.map((u) => u.id),
+      );
+      if (!shares.length) throw badRequest('There’s nobody here to split it with.');
+      card.fields.shares = shares;
     }
     payload = {
       kit: card.kit,

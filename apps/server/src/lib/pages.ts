@@ -251,7 +251,7 @@ gives you a file with everything Caime keeps about you, for as long as it keeps 
 shows it to you: your account and profile, your privacy settings, how you describe people, your
 rules, connections, requests to connect and who you&rsquo;ve blocked; the conversations you&rsquo;re
 in or were in, with your settings and drafts, the messages you sent, what you added to
-others&rsquo; checklists, your reactions and votes; your files, each with a link; your actions, and
+others&rsquo; checklists, your shares of others&rsquo; splits, your reactions and votes; your files, each with a link; your actions, and
 those people asked of you; what Caime suggested, and the decisions you&rsquo;re part of; your
 notifications and calls; your devices, with where each signed in from and which service delivers
 its notifications; your spaces, organizations and automations, what you&rsquo;ve saved, the apps
