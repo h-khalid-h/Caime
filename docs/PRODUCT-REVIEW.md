@@ -357,3 +357,26 @@ with its reason, so it isn't proposed again without new facts.
   Only into a connection, past blocks, five imports an hour, up to 20,000 messages. A group
   export is refused: it has more than two names. What it doesn't do: Telegram, iMessage and
   media (each is another reader and an upload; the words are what the wedge needs first).
+
+- **R46 — Caime never reads other apps' messages, and never speaks for you.** A brainstorm on
+  2026-09-30 proposed a "unified inbox and edge-automation engine": an Android service reading
+  WhatsApp, Telegram, Signal, LINE, WeChat and Messenger notifications, mirroring them into
+  Caime, auto-replying to every sender with "join me at cai.me/…", and relaying it all to iOS
+  and the web through an Android "hub". Reviewed and declined, whole. Why: (1) it breaks the
+  other platforms' terms (Meta bans automated and bulk messaging and unofficial clients; the
+  person's own WhatsApp account would be the one banned), and Google Play allows the
+  notification-listener permission for narrow purposes, never for copying another messenger's
+  messages into a competitor; (2) the people whose messages would be copied never agreed to it,
+  which is the opposite of how Caime treats what someone else wrote (R2, ADR-10); (3) a reply
+  sent in someone's name to everyone who texts them is spam under their name, and the brand
+  would be the spam; (4) an Android-only hub with a relay for other apps' plaintext is a second
+  product and exactly the surface Caime refuses to hold (R18, SECURITY); (5) iOS can't do it at
+  all. What of it makes sense, Caime already does or does on purpose: the empty first days are
+  answered by bringing a chat over with the person's own export (R45), the "I'm on Caime as
+  @handle" line is a share the person sends themselves (connect, onboarding), and finding people
+  is by handle and link (R35). Two compliant paths stay open for later, each the owner's call:
+  organizations taking WhatsApp Business messages into the Business inbox through Meta's
+  official Cloud API (a real B2B feature: verification, per-message fees), and finding contacts
+  who are already here by hashed phone numbers, with consent on both sides (PRD §46 rules).
+  The rule this leaves: nothing Caime ships reads another app's messages or sends as a person
+  without their tap.
