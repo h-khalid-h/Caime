@@ -9,6 +9,7 @@ import {
   attentionHeadline,
   classifyAttention,
   currentPriority,
+  inboxSections,
   resolvePolicy,
   SECTION_LABELS,
   systemText,
@@ -361,23 +362,7 @@ export async function buildInbox(
     };
   });
 
-  const order = [
-    'needs_you',
-    'important',
-    'waiting',
-    'recent',
-    'quiet',
-    'requests',
-    'archived',
-  ] as const;
-  const sections = order
-    .map((section) => ({
-      section,
-      label: SECTION_LABELS[section],
-      items: conversations.filter((c) => c.section === section).sort((a, b) => b.rank - a.rank),
-    }))
-    .filter((s) => s.items.length > 0);
-  const counts = Object.fromEntries(sections.map((s) => [s.section, s.items.length]));
+  const { sections, counts } = inboxSections(conversations);
   return { sections, counts, headline: attentionHeadline(counts), conversations };
 }
 
@@ -389,19 +374,10 @@ export async function inboxRoutes(app: FastifyInstance, ctx: AppContext) {
       req.query,
     );
     const inbox = await buildInbox(ctx, auth.userId);
-    if (view === 'all') {
-      return {
-        conversations: inbox.conversations
-          .filter((c) => c.section !== 'archived' && c.section !== 'requests')
-          .sort(
-            (a, b) =>
-              (Number(b.pinned) - Number(a.pinned)) * 1e15 +
-              (Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt)),
-          ),
-        counts: inbox.counts,
-        headline: inbox.headline,
-      };
-    }
+    // `all` is every conversation, each with its section and rank: the app sections them and
+    // makes its All list itself (core `inboxSections`, `inboxAllList`), so one request serves both.
+    if (view === 'all')
+      return { conversations: inbox.conversations, counts: inbox.counts, headline: inbox.headline };
     return { sections: inbox.sections, counts: inbox.counts, headline: inbox.headline };
   });
 }

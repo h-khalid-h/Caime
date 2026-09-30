@@ -72,31 +72,36 @@ export async function personViewsFor(
       verifiedOrgNames(ctx.db, ids),
     ]);
   const byId = new Map<string, User>(users.map((u) => [u.id, u]));
+  // Each list read once into a map: a person's row is found, never searched for.
+  const connectionOf = new Map(connections.map((c) => [pairKey(c.user_a, c.user_b).key, c]));
+  const relsOf = new Map<string, typeof theirRels>();
+  for (const r of theirRels) relsOf.set(r.owner_id, [...(relsOf.get(r.owner_id) ?? []), r]);
+  const policiesOf = new Map<string, typeof policies>();
+  for (const p of policies) policiesOf.set(p.user_id, [...(policiesOf.get(p.user_id) ?? []), p]);
+  const blockedIds = new Set(blocks.flatMap((b) => [b.blocker_id, b.blocked_id]));
+  const sideOf = new Map(sides.map((s) => [s.owner_id, s]));
+  const defaultOf = new Map(defaults.map((d) => [d.user_id, d]));
   for (const id of ids) {
     const u = byId.get(id);
     if (!u) continue;
-    const conn = connections.find(
-      (c) => pairKey(c.user_a, c.user_b).key === pairKey(id, viewerId).key,
-    );
-    const rels = theirRels.filter((r) => r.owner_id === id);
-    const theirPolicies: RelationshipPolicy[] = policies
-      .filter((p) => p.user_id === id)
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        scope: {
-          sphere: (p.scope_sphere as Sphere | null) ?? null,
-          role: p.scope_role,
-          orgId: p.scope_org_id,
-          connectionId: p.scope_connection_id,
-        },
-        settings: p.settings as RelationshipPolicy['settings'],
-      }));
+    const conn = connectionOf.get(pairKey(id, viewerId).key);
+    const rels = relsOf.get(id) ?? [];
+    const theirPolicies: RelationshipPolicy[] = (policiesOf.get(id) ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      scope: {
+        sphere: (p.scope_sphere as Sphere | null) ?? null,
+        role: p.scope_role,
+        orgId: p.scope_org_id,
+        connectionId: p.scope_connection_id,
+      },
+      settings: p.settings as RelationshipPolicy['settings'],
+    }));
     const primary = rels[0];
     const relation: ViewerRelation = {
       isSelf: false,
       isConnected: Boolean(conn),
-      blocked: blocks.some((b) => b.blocker_id === id || b.blocked_id === id),
+      blocked: blockedIds.has(id),
       ownerSpheresForViewer: rels.map((r) => r.sphere as Sphere),
       preset: resolvePolicy(theirPolicies, {
         sphere: (primary?.sphere as Sphere | undefined) ?? null,
@@ -107,8 +112,8 @@ export async function personViewsFor(
       sharesConversation: true,
       verifiedOrgName: verified.get(id) ?? null,
     };
-    const side = sides.find((s) => s.owner_id === id);
-    const def = defaults.find((d) => d.user_id === id);
+    const side = sideOf.get(id);
+    const def = defaultOf.get(id);
     const identity = side
       ? { displayName: side.display_name, headline: side.headline, orgName: side.org_name }
       : def

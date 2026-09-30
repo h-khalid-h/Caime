@@ -41,11 +41,22 @@ function formatter(timeZone: string): Intl.DateTimeFormat {
 
 const WEEKDAYS: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
+/**
+ * The last instants read, by zone: a list works out the same moment for hundreds of people at
+ * once (each person's day, for their age), and formatting it once per zone is enough.
+ */
+const partsCache = new Map<string, ZonedParts>();
+const PARTS_CACHE_MAX = 512;
+
 /** Wall-clock parts of `date` in `timeZone`. */
 export function zonedParts(date: Date, timeZone: string): ZonedParts {
+  const key = `${timeZone}|${date.getTime()}`;
+  const hit = partsCache.get(key);
+  if (hit) return hit;
   const parts: Record<string, string> = {};
   for (const p of formatter(timeZone).formatToParts(date)) parts[p.type] = p.value;
-  return {
+  if (partsCache.size >= PARTS_CACHE_MAX) partsCache.clear();
+  const out = {
     year: Number(parts.year),
     month: Number(parts.month),
     day: Number(parts.day),
@@ -54,6 +65,8 @@ export function zonedParts(date: Date, timeZone: string): ZonedParts {
     second: Number(parts.second),
     weekday: WEEKDAYS[parts.weekday ?? 'Sun'] ?? 0,
   };
+  partsCache.set(key, out);
+  return out;
 }
 
 /** Offset of `timeZone` from UTC at `date`, in minutes (Cairo in winter: +120). */

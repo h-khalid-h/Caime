@@ -93,6 +93,13 @@ These are rules, not preferences.
   pattern: it matches the shell running the command.
 - Biome reformats files: after `biome check --write`, re-read before scripted edits, and run it
   twice (its formatter is not always idempotent in one pass).
+- The inbox is one list: `GET /v1/inbox?view=all` carries every conversation with its `section`
+  and `rank`, the app's `useInbox` and `useInboxAll` are `select`s over that one query (core
+  `inboxSections` and `inboxAllList`, which the server uses too), and `patchItems` patches the
+  raw list. `GET /v1/inbox` (sections) stays for tokens and the SDK. `inbox-scale.test.ts`
+  measures a big inbox; anything per person listed must be a batched query or a map, and any
+  date-in-a-zone goes through `zonedParts` (a cached formatter per zone), never a new
+  `Intl.DateTimeFormat`.
 - The persisted query cache is restored as-is; `invalidateQueries()` runs right after restore so
   a relaunch shows the cache instantly and then refreshes it.
 - Playwright: text also appears in off-screen screens on phones (tabs stay mounted), so assert

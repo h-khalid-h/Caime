@@ -1268,3 +1268,9 @@ outperforming the alternatives is reach and operations. In the order the review 
   launch of Chats makes 11 API requests, from 12, and no longer fetches the private sheet's code
   (the waiting-devices card loads only when a device is waiting; the launch's device listing is
   shared for a moment). The numbers are in `docs/RESOURCES.md`.
+- 2026-09-30 · The inbox measured and trimmed (`inbox-scale.test.ts`): 300 conversations answer
+  in 61 ms from 127, 2,000 in 637 ms from 1,010; the age check made a new Intl formatter for
+  every person listed (`todayIn` now reads `zonedParts`, cached per zone and instant), the
+  batched person views searched lists per row (maps now), and the app reads Attention and All
+  from one `view=all` request (core `inboxSections`, `inboxAllList`), so a launch builds the
+  inbox once and makes 10 API requests, from 11.

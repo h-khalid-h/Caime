@@ -2,13 +2,7 @@
  * Direct edits to cached server state, so a message shows the moment it arrives rather than
  * after a refetch. Every edit is by id and idempotent: the same event applied twice is harmless.
  */
-import type {
-  InboxAllResponse,
-  InboxItemView,
-  InboxResponse,
-  MessagesPage,
-  MessageView,
-} from '@caime/core/api';
+import type { InboxAllResponse, InboxItemView, MessagesPage, MessageView } from '@caime/core/api';
 import { messagePreview } from '@caime/core/format';
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import { qk } from '@/api/keys';
@@ -185,20 +179,6 @@ function patchItems(
   fn: (item: InboxItemView) => InboxItemView,
 ): boolean {
   let found = false;
-  patchCache<InboxResponse>(qc, qk.inbox, (data) => {
-    if (!data) return data;
-    return {
-      ...data,
-      sections: data.sections.map((s) => ({
-        ...s,
-        items: s.items.map((i) => {
-          if (i.id !== conversationId) return i;
-          found = true;
-          return fn(i);
-        }),
-      })),
-    };
-  });
   patchCache<InboxAllResponse>(qc, qk.inboxAll, (data) => {
     if (!data) return data;
     return {

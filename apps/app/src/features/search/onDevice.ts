@@ -9,7 +9,6 @@ import type {
   ConversationView,
   InboxAllResponse,
   InboxItemView,
-  InboxResponse,
   MessagesPage,
   SearchMessageHit,
   SearchResults,
@@ -90,13 +89,8 @@ export function snippetOf(text: string, words: string[]): string {
 }
 
 function conversations(qc: QueryClient): InboxItemView[] {
-  const byId = new Map<string, InboxItemView>();
-  const all = qc.getQueryData<InboxAllResponse>(['inbox', 'all']);
-  for (const c of all?.conversations ?? []) byId.set(c.id, c);
-  const inbox = qc.getQueryData<InboxResponse>(['inbox']);
-  for (const s of inbox?.sections ?? [])
-    for (const c of s.items) if (!byId.has(c.id)) byId.set(c.id, c);
-  return [...byId.values()];
+  // Every conversation the inbox knows, whatever section it's in.
+  return qc.getQueryData<InboxAllResponse>(['inbox', 'all'])?.conversations ?? [];
 }
 
 /**

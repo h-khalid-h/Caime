@@ -3,7 +3,8 @@
  * a sheet that lists them (press ? or open it from You). Native apps keep the platform's own
  * keyboard behaviour. Keys browsers reserve (Ctrl+N, Ctrl+T, Ctrl+W) are left alone.
  */
-import type { InboxAllResponse, InboxResponse } from '@caime/core/api';
+import type { InboxAllResponse } from '@caime/core/api';
+import { inboxAllList, inboxSections } from '@caime/core/attention';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
@@ -41,12 +42,10 @@ function isTyping(target: EventTarget | null): boolean {
 
 /** Conversation ids in the order the inbox shows them (attention sections, else recent). */
 function inboxOrder(): string[] {
-  const attention = queryClient.getQueryData<InboxResponse>(qk.inbox);
-  if (attention?.sections.length)
-    return attention.sections.flatMap((s) => s.items.map((i) => i.id));
-  return (
-    queryClient.getQueryData<InboxAllResponse>(qk.inboxAll)?.conversations.map((c) => c.id) ?? []
-  );
+  const all = queryClient.getQueryData<InboxAllResponse>(qk.inboxAll)?.conversations ?? [];
+  const { sections } = inboxSections(all);
+  if (sections.length) return sections.flatMap((s) => s.items.map((i) => i.id));
+  return inboxAllList(all).map((c) => c.id);
 }
 
 function step(delta: 1 | -1): void {

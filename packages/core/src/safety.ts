@@ -1,3 +1,4 @@
+import { zonedParts } from './time';
 /**
  * Safety rules shared by clients and the server (PRD §55, PRODUCT-REVIEW R14, R29).
  */
@@ -29,20 +30,12 @@ export function parseDay(value: string | null | undefined): CalendarDay | null {
 }
 
 /** The day it is where someone is: in UTC when their time zone isn't one. */
+/** The day it is where they are (an unknown zone reads as UTC, as `zonedParts` does). */
 export function todayIn(now: Date, timeZone?: string | null): CalendarDay {
-  if (timeZone)
-    try {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-      }).formatToParts(now);
-      const part = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-      return { year: part('year'), month: part('month'), day: part('day') };
-    } catch {
-      // Not a time zone: UTC's day.
-    }
+  if (timeZone) {
+    const { year, month, day } = zonedParts(now, timeZone);
+    return { year, month, day };
+  }
   return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1, day: now.getUTCDate() };
 }
 

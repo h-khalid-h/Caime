@@ -1,12 +1,24 @@
 /** Query hooks shared by screens, the shell's badges and the desktop panes. */
-import type { AssetView } from '@caime/core/api';
+import type { AssetView, InboxAllResponse, InboxResponse } from '@caime/core/api';
+import { inboxAllList, inboxSections } from '@caime/core/attention';
 import type { BusinessView } from '@caime/core/business';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { endpoints, type TaskViewFilter } from './endpoints';
 import { qk } from './keys';
 
-export const useInbox = () => useQuery({ queryKey: qk.inbox, queryFn: endpoints.inbox });
-export const useInboxAll = () => useQuery({ queryKey: qk.inboxAll, queryFn: endpoints.inboxAll });
+// One request carries every conversation with its section; Attention and All are read from it.
+const toAttention = (d: InboxAllResponse): InboxResponse => ({
+  ...inboxSections(d.conversations),
+  headline: d.headline,
+});
+const toAll = (d: InboxAllResponse): InboxAllResponse => ({
+  ...d,
+  conversations: inboxAllList(d.conversations),
+});
+export const useInbox = () =>
+  useQuery({ queryKey: qk.inboxAll, queryFn: endpoints.inboxAll, select: toAttention });
+export const useInboxAll = () =>
+  useQuery({ queryKey: qk.inboxAll, queryFn: endpoints.inboxAll, select: toAll });
 
 export const useRequests = (direction: 'incoming' | 'outgoing' = 'incoming') =>
   useQuery({ queryKey: qk.requests(direction), queryFn: () => endpoints.requests(direction) });

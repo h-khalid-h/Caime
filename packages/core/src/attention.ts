@@ -249,3 +249,42 @@ export function attentionHeadline(counts: Partial<Record<AttentionSection, numbe
   if (important > 0) return important === 1 ? '1 important' : `${important} important`;
   return 'You’re all caught up';
 }
+
+/** What placing a list of inbox items needs of each: where it went, and how strongly. */
+export interface Placed {
+  section: AttentionSection;
+  rank: number;
+}
+
+/**
+ * A list of placed conversations as the inbox shows it: the sections in their order, each by
+ * rank, with how many are in each. The server and the app section the same list with this, so
+ * one request carries every conversation and the app draws both Attention and All from it.
+ */
+export function inboxSections<T extends Placed>(
+  items: readonly T[],
+): {
+  sections: Array<{ section: AttentionSection; label: string; items: T[] }>;
+  counts: Partial<Record<AttentionSection, number>>;
+} {
+  const sections = ATTENTION_SECTIONS.map((section) => ({
+    section,
+    label: SECTION_LABELS[section],
+    items: items.filter((c) => c.section === section).sort((a, b) => b.rank - a.rank),
+  })).filter((s) => s.items.length > 0);
+  const counts = Object.fromEntries(sections.map((s) => [s.section, s.items.length]));
+  return { sections, counts };
+}
+
+/** The All list: everything but requests and what's archived, pinned first, then the latest. */
+export function inboxAllList<T extends Placed & { pinned: boolean; lastActivityAt: string }>(
+  items: readonly T[],
+): T[] {
+  return items
+    .filter((c) => c.section !== 'archived' && c.section !== 'requests')
+    .sort(
+      (a, b) =>
+        Number(b.pinned) - Number(a.pinned) ||
+        Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
+    );
+}

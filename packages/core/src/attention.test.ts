@@ -140,3 +140,33 @@ describe('grouping and headline', () => {
     expect(attentionHeadline({ recent: 40 })).toBe('You’re all caught up');
   });
 });
+
+describe('the inbox from one list', () => {
+  const item = (
+    id: string,
+    section: 'needs_you' | 'recent' | 'archived' | 'requests',
+    rank: number,
+    pinned = false,
+    at = '2026-09-30T10:00:00Z',
+  ) => ({ id, section, rank, pinned, lastActivityAt: at });
+  it('sections by rank in the inbox’s order, and lists All without requests and archived, pinned first', async () => {
+    const { inboxAllList, inboxSections } = await import('./attention');
+    const items = [
+      item('a', 'recent', 1, false, '2026-09-30T09:00:00Z'),
+      item('b', 'needs_you', 5),
+      item('c', 'needs_you', 9),
+      item('d', 'archived', 0),
+      item('e', 'requests', 0),
+      item('f', 'recent', 2, true, '2026-09-30T08:00:00Z'),
+    ];
+    const { sections, counts } = inboxSections(items);
+    expect(sections.map((s) => [s.section, s.items.map((i) => i.id)])).toEqual([
+      ['needs_you', ['c', 'b']],
+      ['recent', ['f', 'a']],
+      ['requests', ['e']],
+      ['archived', ['d']],
+    ]);
+    expect(counts).toEqual({ needs_you: 2, recent: 2, requests: 1, archived: 1 });
+    expect(inboxAllList(items).map((i) => i.id)).toEqual(['f', 'b', 'c', 'a']);
+  });
+});
