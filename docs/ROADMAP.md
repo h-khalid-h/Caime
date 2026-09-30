@@ -1277,3 +1277,5 @@ outperforming the alternatives is reach and operations. In the order the review 
   lateral pass: 2,000 conversations in 377 ms.
 - 2026-09-30 · One answer for what's live: `GET /calls/live` carries the group call too, and the
   socket asks once per connect (`checkLiveCalls`), a request fewer on every launch and reconnect.
+- 2026-09-30 · Boot measured: the bundled server is healthy 1.2 s after `node` starts and idles at
+  157 MB resident (docs/RESOURCES.md).
