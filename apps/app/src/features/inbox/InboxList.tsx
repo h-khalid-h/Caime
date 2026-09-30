@@ -7,6 +7,7 @@ import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
+import { useMyDevices } from '@/features/e2ee/codes';
 import { WaitingDevices } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
 import { PushPrompt } from '@/features/push/PushPrompt';
@@ -47,6 +48,10 @@ export function InboxList({ pane }: { pane?: boolean }) {
   const [chosen, setShow] = useState<Show>('attention');
   const attention = useInbox();
   const all = useInboxAll();
+  // A device of mine waiting to be approved is rare: its card (and the code it's in) loads only
+  // when there is one, from the listing the launch's device check already made.
+  const devices = useMyDevices(privateSupported);
+  const waiting = Boolean(devices?.some((d) => !d.approved && !d.current));
   // A chip for each kind of relationship these conversations have, in the usual order.
   const spheres = useMemo(() => {
     const here = new Set((all.data?.conversations ?? []).map((c) => c.relationship?.sphere));
@@ -150,7 +155,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
         ]}
       />
       <ConnectionBanner />
-      {privateSupported ? (
+      {waiting ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <WaitingDevices on />
         </View>

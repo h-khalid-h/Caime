@@ -123,13 +123,30 @@ async function resume(
  * device another tab registered is taken up, never replaced), or new ones, registered now (a new
  * browser, or its session ended). Checked with the server now and then, and when asked to.
  */
+/** The last listing of my devices, good for a moment: a launch asks the server once, not twice. */
+let listing: {
+  at: number;
+  value: Promise<{ devices: MyDeviceView[]; chain: DeviceView[] }>;
+} | null = null;
+const LISTING_MS = 5_000;
+
+async function listDevices(fresh = false) {
+  if (!fresh && listing && Date.now() - listing.at < LISTING_MS) return listing.value;
+  const value = endpoints.myDevices();
+  listing = { at: Date.now(), value };
+  value.catch(() => {
+    listing = null;
+  });
+  return value;
+}
+
 export async function ensureDevice(opts: { recheck?: boolean } = {}): Promise<Mine> {
   const userId = signedInUser();
   watchSignOut();
   if (!opts.recheck && mine?.userId === userId && Date.now() - checkedAt < RECHECK_MS) return mine;
   ensuring ??= oneTab(userId, async () => {
     const stored = await loadDevice(userId);
-    const { devices } = await endpoints.myDevices();
+    const { devices } = await listDevices(opts.recheck);
     const current = stored ? devices.find((d) => d.id === stored.id && d.current) : undefined;
     const was = mine;
     mine =
@@ -503,6 +520,8 @@ export function noteFor(result: Opened): string | null {
 
 const listeners = new Set<() => void>();
 const tell = () => {
+  // Devices changed: the next listing asks the server.
+  listing = null;
   for (const f of listeners) f();
 };
 
@@ -572,7 +591,7 @@ export interface MyDevice extends MyDeviceView {
 }
 export async function myDevices(): Promise<MyDevice[]> {
   const me = await ensureDevice();
-  const { devices, chain } = await endpoints.myDevices();
+  const { devices, chain } = await listDevices();
   const approved = devices.filter((d) => d.approved && d.id !== me.id);
   const j = me.approved ? await judge(me.userId, approved, chain) : null;
   return devices.map((d) => ({

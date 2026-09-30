@@ -1264,3 +1264,7 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · The web export runs with Metro's tree shaking (`build:web`): 436.3 KB gzip and
   347.5 KB Brotli on the wire, from 447.9 KB and 355.7 KB, nothing in the app changed; every
   E2E spec run against the shaken bundle.
+- 2026-09-30 · What a launch costs, measured (`e2e/launch-cost.spec.ts`, `LAUNCH_COST=1`): a warm
+  launch of Chats makes 11 API requests, from 12, and no longer fetches the private sheet's code
+  (the waiting-devices card loads only when a device is waiting; the launch's device listing is
+  shared for a moment). The numbers are in `docs/RESOURCES.md`.

@@ -396,6 +396,10 @@ These are rules, not preferences.
   flags shook out, so check the E2E before blaming the code. A new
   kind of built file that browsers download belongs under `_expo/static`, or it isn't
   precompressed.
+- What a launch costs a device is measured by `e2e/launch-cost.spec.ts` (`LAUNCH_COST=1 pnpm exec
+  playwright test e2e/launch-cost.spec.ts`; skipped otherwise): every API request with its time,
+  the chunks fetched, bytes received, cold and warm. Run it after a change to the signed-in layout
+  or the first screen, and put the numbers in `docs/RESOURCES.md`.
 - Watch the web budget when a screen is used by a second route: shared modules move into the
   startup chunk. Open it through its own route instead (the desktop Business inbox is a list
   pane beside `/c/[id]`, not a screen that embeds the conversation).
