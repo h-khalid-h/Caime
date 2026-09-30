@@ -96,7 +96,10 @@ These are rules, not preferences.
 - The persisted query cache is restored as-is; `invalidateQueries()` runs right after restore so
   a relaunch shows the cache instantly and then refreshes it.
 - Playwright: text also appears in off-screen screens on phones (tabs stay mounted), so assert
-  with `.filter({ visible: true })`.
+  with `.filter({ visible: true })`. A failure that isn't an assertion (a `TypeError` reading
+  `traceName`, `browserContext.close: Target page, context or browser has been closed` after
+  every expectation passed) is the runner's tracing, not the app: traces are taken only on CI's
+  retry (`trace: 'on-first-retry'`), and a local run passes `--trace off` if it ever shows up.
 - E2E people: `apiSignUp` (`e2e/helpers.ts`) creates and onboards someone through the API.
   Production mode allows 10 sign-ups per address per hour, so a spec shares one pair of people
   across `test.describe.serial` tests rather than signing up per test.

@@ -36,7 +36,11 @@ export default defineConfig({
     // suggests (from the time zone, else the language) and every date and time shown depend on it.
     locale: 'en-US',
     timezoneId: 'UTC',
-    trace: 'retain-on-failure',
+    // A trace only on CI's retry: with tracing on for every test, Playwright 1.56's runner
+    // itself fell over now and then in a long serial spec (a TypeError reading `traceName`, or a
+    // context "already closed" at the end of a test whose assertions all passed), and a
+    // screenshot is kept on any failure either way.
+    trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     permissions: ['clipboard-read', 'clipboard-write', 'camera', 'microphone'],
   },
