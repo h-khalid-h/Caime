@@ -3,11 +3,20 @@
  * cookie stays first-party). Hashed bundles are cached forever; the HTML never is, so a deploy
  * reaches everyone on their next load. Any unknown non-API GET gets the app (client routing).
  */
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
+import {
+  injectPublic,
+  PERMISSIONS_POLICY,
+  publicPageFor,
+  renderPublic,
+  robotsTxt,
+  sitemapXml,
+} from '../lib/public-pages';
+import { SESSION_COOKIE } from './auth';
 
 export function webCsp(publicUrl: string): string {
   const ws = publicUrl.replace(/^http/, 'ws');
@@ -47,7 +56,7 @@ export function builtFiles(dir: string): string[] {
 export interface WebApp {
   /** Answer a request with the app shell when it's a page navigation outside the API. */
   handles: (req: FastifyRequest) => boolean;
-  serve: (reply: FastifyReply) => FastifyReply;
+  serve: (req: FastifyRequest, reply: FastifyReply) => Promise<FastifyReply>;
 }
 
 export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promise<WebApp | null> {
@@ -74,14 +83,46 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
       }
     },
   });
-  const serve = (reply: FastifyReply) =>
-    reply
+  const template = readFileSync(join(dir, 'index.html'), 'utf8');
+  /**
+   * The shell, with the page's own head and plain body in it (R44): the landing page for a
+   * visitor who isn't signed in, a person's or an organization's public face, a 404 for a
+   * handle nobody has, and for the app's own screens a shell that asks not to be indexed.
+   */
+  const serve = async (req: FastifyRequest, reply: FastifyReply) => {
+    const path = req.url.split(/[?#]/)[0] ?? '/';
+    // Signed in (a session cookie, whatever it's worth): the app, not a page about Caime.
+    const page =
+      path === '/' && req.cookies?.[SESSION_COOKIE]
+        ? { kind: 'app' as const }
+        : await publicPageFor(ctx.db, path, ctx.now());
+    const rendered = renderPublic(page, ctx.config.PUBLIC_URL, path);
+    return reply
+      .status(rendered.status)
       .header('cache-control', 'no-cache')
       .header('content-security-policy', csp)
+      .header('permissions-policy', PERMISSIONS_POLICY)
       .type('text/html; charset=utf-8')
-      .sendFile('index.html');
+      .send(injectPublic(template, rendered));
+  };
   // The root is a directory to the static handler; it must be the app, not a listing.
-  app.get('/', (_req, reply) => serve(reply));
+  app.get('/', (req, reply) => serve(req, reply));
+  // For search engines: Caime's own rules, and the pages worth indexing.
+  app.get('/robots.txt', (_req, reply) =>
+    reply
+      .header('cache-control', 'public, max-age=3600')
+      .type('text/plain; charset=utf-8')
+      .send(robotsTxt(ctx.config.PUBLIC_URL)),
+  );
+  app.get('/sitemap.xml', async (_req, reply) => {
+    const here = (['privacy', 'terms', 'help'] as const).filter(
+      (p) => !ctx.config[`${p.toUpperCase() as 'PRIVACY' | 'TERMS' | 'HELP'}_URL`],
+    );
+    return reply
+      .header('cache-control', 'public, max-age=3600')
+      .type('application/xml; charset=utf-8')
+      .send(await sitemapXml(ctx.db, ctx.config.PUBLIC_URL, here));
+  });
   // What this build is made of, for the service worker to keep so the app opens offline (PRD
   // §49): every hashed file under _expo/static, the same for everyone.
   const files = builtFiles(dir);

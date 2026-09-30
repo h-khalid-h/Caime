@@ -167,6 +167,8 @@ export const RESERVED_HANDLES: readonly string[] = [
   'favicon.ico',
   'favicon.svg',
   'manifest.webmanifest',
+  'robots.txt',
+  'sitemap.xml',
 ];
 
 /**

@@ -109,7 +109,12 @@ These are rules, not preferences.
   file at the web root is also a reserved handle (`paths.test.ts` checks).
 - Handles have dots, so a page path can look like a file (`/o/nile.dental`). The server serves
   the app to anything that asks for HTML (`plugins/static.ts`); test new link shapes with a
-  reload, not only by navigating inside the app.
+  reload, not only by navigating inside the app. The shell it serves carries the page's head and
+  a plain body (R44, `lib/public-pages.ts`: `publicPageFor` decides, `renderPublic` writes,
+  `injectPublic` puts it in the template; `#root:empty` shows it, the app hides it). A new public
+  page renders only what the privacy evaluator shows `NOBODY`; a new app route that must not be
+  indexed needs nothing (the default is `noindex`), and a new web-root file (`robots.txt`,
+  `sitemap.xml`) is a reserved handle.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
   `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
   characters, staff words, and the names of its pages, top-level screens and web-root files. A

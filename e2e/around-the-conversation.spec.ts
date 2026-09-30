@@ -717,6 +717,14 @@ test.describe
       await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-space-Front desk')).toBeVisible();
 
+      // The organization's page reads before the app runs: a card for links, a page for search.
+      const html = await (await page.request.get(`/o/${handle}`)).text();
+      expect(html).toContain(`<title>Nile Dental ${stamp} (@${handle}) · Caime</title>`);
+      expect(html).toContain('"@type":"Organization"');
+      expect(html).toContain('<div id="static">');
+      expect((await page.request.get('/@nobody.is.here.really')).status()).toBe(404);
+      expect(await (await page.request.get('/sitemap.xml')).text()).toContain(`/o/${handle}<`);
+
       // On Alex's profile, the organization they're with, by its logo, opening its page.
       await page.goto(`/p/${alexId}`);
       await page.getByTestId(`person-org-${handle}`).click();

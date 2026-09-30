@@ -206,7 +206,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     // Caime's own pages however they're spelled (/Privacy, /terms/): the page, never the app.
     const page = req.method === 'GET' || req.method === 'HEAD' ? sitePageAt(req.url) : null;
     if (page) return reply.redirect(`/${page}`, 301);
-    if (web?.handles(req)) return web.serve(reply);
+    if (web?.handles(req)) return web.serve(req, reply);
     reply.status(404).send({
       error: {
         code: 'not_found',

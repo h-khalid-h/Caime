@@ -336,6 +336,18 @@ docker run -d --name caime --network caime -p 8787:8787 -v caime-data:/data \
   caime   # built with: docker build -t caime .
 ```
 
+## Search engines and link cards
+
+The server answers every page with head tags and a plain body for whoever isn't running the app
+(R44): the landing page at `/`, public pages at `/@handle` and `/o/handle`, `/robots.txt` and
+`/sitemap.xml` (organizations only). Behind Cloudflare, its managed `robots.txt` content signals
+are prepended to Caime's. Check after a deploy:
+
+```sh
+curl -s https://caime.example.com/ | grep -o '<meta property="og:title"[^>]*>'
+curl -s https://caime.example.com/sitemap.xml | head -5
+```
+
 ## Checks after a deploy
 
 ```sh

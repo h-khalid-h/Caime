@@ -16,10 +16,11 @@ import type { AppContext } from '../context';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
 import { assertStorage } from '../lib/plans';
+import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { sniffFile } from '../lib/sniff';
 import { diskStorage, type Storage } from '../lib/storage';
-import { privacyOf } from '../lib/users';
+import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -431,9 +432,8 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     );
   });
 
-  /** An organization's logo: on its page, which anyone signed in sees, so no privacy applies. */
+  /** An organization's logo: on its public page (R44), so anyone may see it. */
   app.get('/orgs/:id/avatar', async (req, reply) => {
-    requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const org = await ctx.db
       .selectFrom('organizations')
@@ -459,8 +459,11 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     );
   });
 
+  /**
+   * A person's photo, as their privacy shows it to the viewer; to nobody signed in, only a
+   * photo shown to everyone by someone who can be found by handle (their public page, R44).
+   */
   app.get('/users/:id/avatar', async (req, reply) => {
-    const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const user = await ctx.db
       .selectFrom('users')
@@ -469,9 +472,13 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     if (!user?.avatar_file_id) throw notFound('That avatar');
-    const relation = await viewerRelation(ctx.db, id, auth.userId);
-    if (!canSee(privacyOf(user, ctx.now()), 'profilePhoto', relation))
-      throw notFound('That avatar');
+    const privacy = privacyOf(user, ctx.now());
+    const relation = req.auth
+      ? await viewerRelation(ctx.db, id, req.auth.userId)
+      : privacy.discoverByHandle && !minorOf(user, ctx.now())
+        ? NOBODY
+        : null;
+    if (!relation || !canSee(privacy, 'profilePhoto', relation)) throw notFound('That avatar');
     const f = await ctx.db
       .selectFrom('files')
       .selectAll()

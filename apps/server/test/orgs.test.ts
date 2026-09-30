@@ -273,7 +273,8 @@ describe('organizations (PRD §36, R15)', () => {
     });
     expect(shown.statusCode).toBe(200);
     expect(shown.headers['content-type']).toBe('image/webp');
-    expect((await t.app.inject({ url: org.avatarUrl })).statusCode).toBe(401);
+    // Its logo is on its public page (R44): no sign-in needed for a link card to show it.
+    expect((await t.app.inject({ url: org.avatarUrl })).statusCode).toBe(200);
     const convo = (await customer.post(`/v1/orgs/${orgId}/conversations`)).conversationId;
     const { conversation } = await customer.get(`/v1/conversations/${convo}`);
     expect(conversation.business.org.avatarUrl).toBe(org.avatarUrl);

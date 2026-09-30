@@ -81,6 +81,14 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
   follow-ups in a standard conversation; they aren't asked first. A private conversation is the
   answer: AI never reads one. A message can also try to steer what the model writes; what it
   writes only ever reaches the person who asked, as a suggestion.
+- **Public pages show only what's public.** A visitor who isn't signed in reads the landing
+  page, an organization's profile, and a person's page only while that person can be found by
+  handle (their switch) and is 18 or over, with only the fields whose audience is everyone
+  (R44, `lib/public-pages.ts`, the privacy evaluator with nobody as the viewer). An
+  organization's logo, and a photo its person shows to everyone, are served without sign-in for
+  link cards; a person's photo otherwise still needs the viewer's relation. Everything a person
+  wrote is escaped, and JSON-LD escapes `<`, so nothing on a page can close its script. The
+  app's own screens are marked `noindex`; people are never listed in the sitemap.
 - **Backups stay on the box.** A daily `pg_dump`, checked and kept 30 days (`docs/DEPLOY.md`,
   "Backups"), sits on the data volume beside uploads; uploads themselves aren't dumped. A copy off
   the host (the volume's own backup, or S3) is what a lost host needs, and isn't automated yet.

@@ -500,10 +500,13 @@ outperforming the alternatives is reach and operations. In the order the review 
       the restore drill in `docs/DEPLOY.md` (`backup.test.ts`). ⛔ A copy off the host (the
       volume's backup to S3) is the operator's to switch on; the drill itself is to be run once
       on production
-- [ ] A readable web (P1): a server-rendered landing page for visitors, public profiles at
-      `/@handle` and `/o/handle` with Open Graph, canonical and JSON-LD (only what's already
-      shown to everyone; a person can turn theirs off), a real 404, `sitemap.xml` and
-      `robots.txt` of Caime's own, `Permissions-Policy`
+- [x] A readable web (R44, P1): the landing page in the shell for a visitor who isn't signed in,
+      public pages at `/@handle` and `/o/handle` (Open Graph, Twitter cards, canonical, JSON-LD
+      `Person`/`Organization`, a plain body the app replaces), only what's shown to everyone and
+      only while findable by handle, never under 18; a real 404 for a handle nobody has; the
+      app's screens marked noindex; `robots.txt` and `sitemap.xml` (organizations, never
+      people); `Permissions-Policy`; a logo and a photo shown to everyone served without sign-in
+      for the cards (`public-pages.test.ts`, E2E)
 - [ ] Operations (P1): an uptime check and alerts on readiness, 5xx rate, job-queue depth and
       oldest-job age (new gauges), backup age; `pnpm audit` in CI
 - [ ] The phone (P1): EAS configuration and a development build on the owner's iPhone (calls,
@@ -1087,3 +1090,8 @@ outperforming the alternatives is reach and operations. In the order the review 
   `/metrics`, the operator's routes to see and make one, the restore drill written down. The
   image now installs PostgreSQL's own client 16; the image build itself couldn't be run here
   (Docker has no network in this container), so CI's build is the check.
+- 2026-09-30 — The readable web (M9, P1, R44): the shell carries each page's head and a plain
+  body until the app renders; the landing page, public pages for people (by their own switch,
+  adults only, everyone-fields only) and organizations, 404s, noindex on the app's screens,
+  robots and sitemap, Permissions-Policy. Cloudflare's managed robots.txt now sits in front of
+  Caime's own.

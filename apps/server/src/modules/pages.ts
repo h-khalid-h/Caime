@@ -8,6 +8,7 @@ import { SITE_PAGES, type SitePage } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
 import { renderPage } from '../lib/pages';
+import { PERMISSIONS_POLICY } from '../lib/public-pages';
 
 /** A page is its own text and styles: no script, nothing loaded from anywhere, never framed. */
 export const PAGE_CSP = [
@@ -87,6 +88,7 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
       return reply
         .header('cache-control', 'public, max-age=600')
         .header('content-security-policy', PAGE_CSP)
+        .header('permissions-policy', PERMISSIONS_POLICY)
         .type('text/html; charset=utf-8')
         .send(html);
     });

@@ -28,9 +28,16 @@ const get = (url: string, accept = PAGE) =>
 
 describe('the web app on the API origin', () => {
   it('serves the app for any page, including handles with dots', async () => {
-    for (const url of ['/', '/spaces', '/o/nile.dental', '/o/datac.io', '/connect?h=sara.ali']) {
+    // A handle nobody has is a 404 that still boots the app (R44); the rest is the app, 200.
+    for (const [url, status] of [
+      ['/', 200],
+      ['/spaces', 200],
+      ['/o/nile.dental', 404],
+      ['/o/datac.io', 404],
+      ['/connect?h=sara.ali', 200],
+    ] as const) {
       const r = await get(url);
-      expect(r.statusCode, url).toBe(200);
+      expect(r.statusCode, url).toBe(status);
       expect(r.headers['content-type'], url).toMatch(/^text\/html/);
       expect(r.headers['cache-control'], url).toBe('no-cache');
       expect(r.headers['content-security-policy'], url).toContain("default-src 'self'");

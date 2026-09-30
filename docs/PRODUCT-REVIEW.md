@@ -327,3 +327,18 @@ with its reason, so it isn't proposed again without new facts.
   super-app brainstorm again on 2026-09-29: nothing new to adopt; its risk-scoring engine, ledger,
   seed-phrase identity, biometric guardrails and fee table all belong to what R36, R38 and R39
   leave out.
+
+- **R44 — The web reads without signing in.** A link people say (`cai.me/@handle`, R35) has to
+  unfurl where it's pasted, and what Caime is has to be readable by a search engine or an answer
+  engine, or the wedge stays a secret. So the shell the web app boots from is a page first: the
+  landing page for a visitor who isn't signed in (what Caime is and for whom, sign in, start), a
+  person's or an organization's public face at `/@handle` and `/o/handle` (title, description,
+  Open Graph and Twitter cards, canonical, JSON-LD, a plain body), a real 404 for a handle nobody
+  has, `robots.txt` and `sitemap.xml` of Caime's own, and `Permissions-Policy`. The app takes
+  over the moment it renders, so nothing changes for anyone signed in. What's rendered is only
+  what's already shown to everyone (ADR-10, with nobody as the viewer): a person's page exists
+  only while they can be found by handle (the same switch, which now says so), never under 18,
+  and shows only fields whose audience is everyone; an organization's page is its profile, which
+  was public already. People are never listed in the sitemap: a page is found by its handle,
+  not in a directory. Its logo and a photo shown to everyone are served without sign-in for the
+  cards; nothing else is.

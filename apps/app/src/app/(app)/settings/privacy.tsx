@@ -104,7 +104,8 @@ export default function Privacy() {
           <View style={{ flex: 1 }}>
             <Text variant="bodyStrong">By your name or @handle</Text>
             <Text variant="caption" color="textSecondary">
-              People can search for {me.displayName} or @{me.handle}
+              People can search for {me.displayName} or @{me.handle}, and your public page (what you
+              show to everyone) is on the web
             </Text>
           </View>
           <Switch
