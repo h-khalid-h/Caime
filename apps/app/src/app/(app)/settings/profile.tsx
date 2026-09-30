@@ -6,7 +6,8 @@ import { endpoints } from '@/api/endpoints';
 import { uploadFile } from '@/api/upload';
 import { PresenceChoice } from '@/features/settings/PresenceChoice';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
-import { pickFromLibrary } from '@/lib/photos';
+import { AVATAR_MAX_EDGE } from '@/lib/photoSize';
+import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -111,12 +112,7 @@ export default function Profile() {
     const a = res.assets[0];
     setPhotoBusy(true);
     try {
-      const file = await uploadFile({
-        uri: a.uri,
-        name: a.fileName ?? 'avatar.jpg',
-        mime: a.mimeType ?? 'image/jpeg',
-        file: (a as { file?: Blob }).file,
-      });
+      const file = await uploadFile(await photoToUpload(a, 'avatar.jpg', AVATAR_MAX_EDGE));
       const updated = await endpoints.updateMe({ avatarFileId: file.id });
       useSession.getState().setUser(updated.user);
     } catch (e) {

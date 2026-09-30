@@ -1188,6 +1188,9 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · Photos shrunk on the device before upload (`lib/photoSize.ts`, expo-image-manipulator
+  on phones, a canvas on the web): 2,048 px on the long edge, 1,024 for faces and logos; the
+  E2E sends a 3,000 px photo and the server receives 2,048 (`photoSize.test.ts`, E2E).
 - 2026-09-30 · The characters' SVG builders leave the startup chunk (loaded on the first
   character drawn): budget 447.3 KB gzip, 356.5 KB over the wire.
 - 2026-09-30 · A phone put away rests its socket after 30 s (`realtime/client.ts` `rest`), unless a

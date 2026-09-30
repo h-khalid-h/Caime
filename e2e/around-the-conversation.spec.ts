@@ -1902,6 +1902,25 @@ test.describe
       await sheet.getByRole('button', { name: 'Take photo 1 out of the album' }).click();
       await expect(mine).toContainText('2 photos');
 
+      // A big photo is shrunk on the device before it goes (docs/RESOURCES.md): the server
+      // receives 2,048 pixels on the long edge, never the 3,000 that were picked.
+      const big = photo(3000, 1000, [40, 40, 90], [220, 220, 255]);
+      await addFrom(page, mine, [['panorama.png', big]]);
+      await expect(theirs).toContainText('3 photos');
+      const { messages } = await (
+        await noorContext.request.get(`/v1/conversations/${convo}/messages`, { headers: CLIENT })
+      ).json();
+      const albumId = messages
+        .filter((m: { kind: string }) => m.kind === 'kit')
+        .find((m: unknown) => JSON.stringify(m).includes('Venue day')).id;
+      const album = await (
+        await noorContext.request.get(`/v1/messages/${albumId}/album`, { headers: CLIENT })
+      ).json();
+      const panorama = album.photos.find((p: { file: { name: string } }) =>
+        p.file.name.startsWith('panorama'),
+      ).file;
+      expect([panorama.width, panorama.height]).toEqual([2048, 683]);
+
       // Noor closes it: nobody adds more, and what's in it stays.
       await mine.getByRole('button', { name: 'Close the album' }).click();
       await expect(mine).toContainText('Closed');

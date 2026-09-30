@@ -25,7 +25,7 @@ import { iconNamed, KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
-import { pickFromLibrary } from '@/lib/photos';
+import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
@@ -330,13 +330,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       quality: 0.9,
     });
     if (res.canceled) return;
+    // Shrunk on the device first (lib/photoSize.ts): a phone's photo is far bigger than shown.
     await sendFiles(
-      res.assets.map((a, i) => ({
-        uri: a.uri,
-        name: a.fileName ?? `photo-${i + 1}.jpg`,
-        mime: a.mimeType ?? 'image/jpeg',
-        file: (a as { file?: Blob }).file,
-      })),
+      await Promise.all(res.assets.map((a, i) => photoToUpload(a, `photo-${i + 1}.jpg`))),
       'media',
     );
   };

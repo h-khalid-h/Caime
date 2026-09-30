@@ -352,6 +352,10 @@ These are rules, not preferences.
 - Many inserts take the database's clock (`created_at default now()`), not `ctx.now()`. A test
   that depends on those timestamps sets its clock to real time and stamps what it needs (see
   `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.
+- A picked photo goes through `photoToUpload` (`lib/photos.ts`, `photos.web.ts`) before
+  `uploadFile`: shrunk on the device to `PHOTO_MAX_EDGE` (`lib/photoSize.ts`, pure and
+  tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos, GIFs and HEIC go as they are, and
+  a shrink that fails sends the original. The server's own cap and metadata strip stay.
 - The characters' vector builders (`@caime/brand/characters`) load the first time a `Character`
   draws (a dynamic import in `src/brand/Character.tsx`); nothing else imports them as values,
   only their types. Before lazy-loading a module to take it out of the startup chunk, check the

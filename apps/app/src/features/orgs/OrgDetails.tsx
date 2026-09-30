@@ -12,7 +12,8 @@ import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { uploadFile } from '@/api/upload';
 import { CountryField } from '@/features/geo/CountryField';
-import { pickFromLibrary } from '@/lib/photos';
+import { AVATAR_MAX_EDGE } from '@/lib/photoSize';
+import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
@@ -90,12 +91,7 @@ export function OrgDetailsSheet({
     const a = res.assets[0];
     setLogoBusy(true);
     try {
-      const file = await uploadFile({
-        uri: a.uri,
-        name: a.fileName ?? 'logo.jpg',
-        mime: a.mimeType ?? 'image/jpeg',
-        file: (a as { file?: Blob }).file,
-      });
+      const file = await uploadFile(await photoToUpload(a, 'logo.jpg', AVATAR_MAX_EDGE));
       const { org: saved } = await endpoints.updateOrg(org.id, { avatarFileId: file.id });
       setLogo(saved.avatarUrl);
       onSaved(saved);

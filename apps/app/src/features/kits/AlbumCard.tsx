@@ -9,7 +9,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { uploadFile } from '@/api/upload';
 import { openLink } from '@/lib/links';
-import { pickFromLibrary } from '@/lib/photos';
+import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { upsertMessage } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -158,12 +158,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
     try {
       const ids: string[] = [];
       for (const [i, a] of res.assets.entries()) {
-        const f = await uploadFile({
-          uri: a.uri,
-          name: a.fileName ?? `photo-${i + 1}.jpg`,
-          mime: a.mimeType ?? 'image/jpeg',
-          file: (a as { file?: Blob }).file,
-        });
+        const f = await uploadFile(await photoToUpload(a, `photo-${i + 1}.jpg`));
         ids.push(f.id);
       }
       upsertMessage(qc, (await endpoints.addToAlbum(m.id, ids)).message);
