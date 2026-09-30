@@ -196,6 +196,31 @@ Calls aren't in Expo Go: they need react-native-webrtc's native code, so only a 
 build (`npx expo run:ios`, or an EAS build) or a store build has them. Expo Go doesn't offer
 them, and nothing of them loads. Everything else is there, private conversations included.
 
+## Development and store builds (EAS)
+
+`apps/app/eas.json` has three profiles, each pointing the app at `https://caime.datac.com`
+(`EXPO_PUBLIC_API_URL`): **development** (a development client for the owner's own phone, with
+calls and private conversations, which Expo Go can't run), **preview** (TestFlight and an
+Android APK for testers) and **production** (the stores, build numbers counted by EAS). What
+they need, once, and none of it in the repository:
+
+1. An Expo account with a project named `caime`: `EXPO_PROJECT_ID` (the same one `caime-go`
+   uses) and an access token, `EXPO_TOKEN`, in the shell that runs the builds.
+2. An Apple Developer account (the team's, for `me.cai.app`) and a Google Play Console account;
+   EAS asks for their credentials the first time and keeps the signing keys.
+3. On the phone: for a development build, open the link EAS prints when it's done (an internal
+   distribution); for preview, TestFlight (iOS) or the APK (Android).
+
+```sh
+cd apps/app
+pnpm build:dev        # eas build --profile development --platform ios
+pnpm build:preview    # TestFlight and an APK
+pnpm build:store      # the stores; then: eas submit --profile production --platform all
+```
+
+The first development build is where calls, private conversations and push are tried on a
+phone (ROADMAP M9); Expo Go stays for everything else until then.
+
 ## Plans
 
 What each plan includes is in `packages/core/src/plans.ts` (PRD §84, R23). Personal is free

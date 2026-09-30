@@ -441,7 +441,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       anyone and linked from About and sign-up, each claim checked against the code; what's
       recorded of use kept only for set times (`lib/retention.ts`). [ ] A lawyer's review of the
       texts, and the operator's name and contact confirmed (`LEGAL_NAME`, `CONTACT_EMAIL`)
-- [ ] EAS config and store builds ⛔ Apple and Google developer accounts, `EXPO_ACCESS_TOKEN`
+- [~] EAS config written (`apps/app/eas.json`: development, preview, production; `expo-dev-client`;
+      `docs/DEPLOY.md`, "Development and store builds"); the builds ⛔ Apple and Google developer
+      accounts, `EXPO_TOKEN` and the project
 - [x] Deployed to EasyPanel: https://caime.datac.com, also at
       https://caishy-caishy.0hqwb7.easypanel.host (project `caishy`, services `caime` and `db`,
       built from `h-khalid-h/Caime`; `docs/DEPLOY.md`, "Live deployment"). Checked from outside:
@@ -512,9 +514,10 @@ outperforming the alternatives is reach and operations. In the order the review 
       `docs/DEPLOY.md` (readiness, 5xx, queue age, backup age). ⛔ The uptime check and the
       alert receiver are the operator's to point at it (Grafana Cloud, Better Stack, or
       Prometheus's Alertmanager)
-- [ ] The phone (P1): EAS configuration and a development build on the owner's iPhone (calls,
-      private conversations, push), then TestFlight and Play internal testing ⛔ Apple and Google
-      developer accounts, `EXPO_ACCESS_TOKEN`
+- [~] The phone (P1): EAS configuration written (`eas.json`, the development client, the steps in
+      `docs/DEPLOY.md`); the development build on the owner's iPhone (calls, private
+      conversations, push), then TestFlight and Play internal testing ⛔ Apple and Google
+      developer accounts, `EXPO_TOKEN`: `pnpm build:dev` in `apps/app` once they exist
 - [ ] Pro that sells the wedge (P1): what §84 promised (rules without limit, several identities,
       history beyond a year, a person's relationship analytics), the core free as R23 says.
       Decided with the owner first

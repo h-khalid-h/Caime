@@ -19,6 +19,7 @@
     "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.19",
     "expo-crypto": "~57.0.3",
+    "expo-dev-client": "~57.0.19",
     "expo-document-picker": "~57.0.2",
     "expo-font": "~57.0.4",
     "expo-haptics": "~57.0.3",
@@ -59,6 +60,9 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web --output-dir dist",
     "export:native": "expo export --platform ios --platform android --output-dir dist-native",
+    "build:dev": "eas build --profile development --platform ios",
+    "build:preview": "eas build --profile preview --platform all",
+    "build:store": "eas build --profile production --platform all",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
