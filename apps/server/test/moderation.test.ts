@@ -90,6 +90,16 @@ describe('the operator reviews reports (R49)', () => {
     expect(m.body).toBeNull();
     // Twice is fine: nothing more to remove.
     expect((await op('POST', `/v1/admin/reports/${id}/remove-message`)).statusCode).toBe(200);
+    // Noor is told once that it was looked at and acted on, and nothing of what was done.
+    const told = (await noor.get('/v1/notifications')).notifications.filter(
+      (n: { kind: string }) => n.kind === 'report',
+    );
+    expect(told).toHaveLength(1);
+    expect(told[0]).toMatchObject({
+      title: 'Your report was reviewed',
+      body: 'Thanks for reporting it: Caime looked and acted.',
+    });
+    expect(JSON.stringify(told[0])).not.toContain(sam.user.id);
     // The audit log says the operator did it, in its own words.
     const audits = await t.ctx.db
       .selectFrom('audit_log')

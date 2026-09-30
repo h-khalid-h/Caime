@@ -25,7 +25,13 @@ import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
-import { removeForEveryone, reportViews, setSuspended, takeBackUpdate } from '../lib/moderation';
+import {
+  removeForEveryone,
+  reportViews,
+  setSuspended,
+  settleReport,
+  takeBackUpdate,
+} from '../lib/moderation';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -61,7 +67,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(reportParam, req.params);
     const { status } = parse(ReportStatusBody, req.body);
     await oneReport(id);
-    await ctx.db.updateTable('reports').set({ status }).where('id', '=', id).execute();
+    await settleReport(ctx, id, status);
     await audit(ctx.db, {
       actorId: null,
       action: 'moderation.report_status',
@@ -85,7 +91,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!m) throw notFound('That message');
     if (m.kind === 'system') throw badRequest('Lines about the conversation stay.');
     if (!m.deleted_at) await removeForEveryone(ctx, m, null);
-    await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
+    await settleReport(ctx, id, 'actioned');
     await audit(ctx.db, {
       actorId: null,
       action: 'moderation.message_removed',
@@ -102,7 +108,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const report = await oneReport(id);
     if (!report.update || !report.org) throw badRequest('This report isn’t about an update.');
     await takeBackUpdate(ctx, report.org.id, report.update.id, null);
-    await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
+    await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
   });
 
@@ -129,7 +135,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const report = await oneReport(id);
     if (!report.person) throw badRequest('This report isn’t about a person.');
     await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`);
-    await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
+    await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
   });
 

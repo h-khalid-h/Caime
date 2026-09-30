@@ -5,7 +5,7 @@ import { audit } from './audit';
 import { dropSaved, tellSaved } from './automations';
 import { recordEvent } from './events';
 import { participantsOf } from './messages';
-import { forgetNotificationsOf, tellForgotten } from './notify';
+import { forgetNotificationsOf, notify, tellForgotten } from './notify';
 import { revokeGrantsOf } from './oauth';
 import { retellUpdate, tellUpdatesChanged } from './updates';
 
@@ -253,5 +253,39 @@ export async function setSuspended(
     action: suspended ? 'moderation.suspended' : 'moderation.unsuspended',
     target: userId,
     metadata: reason ? { reason } : {},
+  });
+}
+
+/**
+ * A report settled (R49): its reporter is told once that it was looked at, and whether Caime
+ * acted, never what was done or to whom. Nothing is said while it's open or being reviewed,
+ * and nothing twice.
+ */
+export async function settleReport(
+  ctx: AppContext,
+  reportId: string,
+  status: 'open' | 'reviewing' | 'actioned' | 'dismissed',
+): Promise<void> {
+  const before = await ctx.db
+    .selectFrom('reports')
+    .select(['status', 'reporter_id'])
+    .where('id', '=', reportId)
+    .executeTakeFirst();
+  if (!before) return;
+  await ctx.db.updateTable('reports').set({ status }).where('id', '=', reportId).execute();
+  const settled = status === 'actioned' || status === 'dismissed';
+  const wasSettled = before.status === 'actioned' || before.status === 'dismissed';
+  if (!settled || wasSettled || !before.reporter_id) return;
+  await notify(ctx, {
+    userId: before.reporter_id,
+    kind: 'report',
+    level: 'activity',
+    title: 'Your report was reviewed',
+    body:
+      status === 'actioned'
+        ? 'Thanks for reporting it: Caime looked and acted.'
+        : 'Thanks for reporting it: Caime looked, and didn’t act on it this time.',
+    data: { reportId },
+    delivery: 'silent',
   });
 }

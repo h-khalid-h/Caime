@@ -97,7 +97,7 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
   the host (the volume's own backup, or S3) is what a lost host needs, and isn't automated yet.
 - **Moderation tooling.** Reports are reviewed at `/admin/reports` (R49): status, the message
   removed for everyone, an update taken back, the person suspended and the suspension lifted.
-  There is no reply to the reporter yet.
+  The reporter is told once that it was looked at, and whether Caime acted, nothing more.
 - **Rate limits are per instance** (in memory). With several instances behind a load balancer,
   limits multiply by the instance count until a shared store is added.
 - **Email verification and password reset by email** need an email provider; recovery codes are
