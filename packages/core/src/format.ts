@@ -367,6 +367,7 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
     userId?: string;
     days?: number | null;
     purpose?: string | null;
+    source?: string;
   };
   const by = p.byId && p.byId === viewerId ? 'You' : (p.by ?? 'Someone');
   const them = p.userId && p.userId === viewerId ? 'you' : (p.name ?? 'someone');
@@ -407,6 +408,10 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       return them === 'you'
         ? 'You’re no longer an admin'
         : `${p.name ?? 'Someone'} is no longer an admin`;
+    case 'imported': {
+      const from = p.source === 'whatsapp' ? 'WhatsApp' : 'another app';
+      return `${by} brought this chat over from ${from}. What’s above was written there.`;
+    }
     case 'decision_recorded':
       return p.title ? `${by} recorded a decision: ${p.title}` : `${by} recorded a decision`;
     case 'retention_changed':

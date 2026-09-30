@@ -12,6 +12,7 @@ import { taskWho } from '@/features/actions/TaskRow';
 import { AssistTools } from '@/features/assist/AssistTools';
 import { useAiReady } from '@/features/assist/ready';
 import { ComingUpList } from '@/features/common/comingUpLazy';
+import { WhatsAppImport } from '@/features/import/WhatsAppImport';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { Choice } from '@/features/settings/SettingsPage';
 import { openCheckedLink, openLink } from '@/lib/links';
@@ -481,8 +482,10 @@ function Topics({
   const [starting, setStarting] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState(false);
   const where = topicsFor(conversation);
   if (!where) return null;
+  const other = conversation.other;
   // A view kept from before topics were listed has none.
   const topics = conversation.topics ?? [];
   const start = async () => {
@@ -529,6 +532,32 @@ function Topics({
           Start a topic
         </Text>
       </Pressable>
+      {where === 'direct' && other ? (
+        // A chat from before Caime (R45), brought over from WhatsApp as a topic with this person;
+        // the file is read on this device. Its sheet stays in this route's chunk: split out, what
+        // they share (the picker, Choice) would move into __common, which loads first.
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setImporting(true)}
+          style={{ flexDirection: 'row', gap: 8, alignItems: 'center', paddingVertical: 4 }}
+          testID="import-whatsapp"
+        >
+          <FileText size={14} color={t.c.accentStrong} />
+          <Text variant="captionStrong" color="link">
+            Bring over a WhatsApp chat
+          </Text>
+        </Pressable>
+      ) : null}
+      {importing && other ? (
+        <WhatsAppImport
+          other={{ userId: other.userId, name: other.person.displayName }}
+          onClose={() => setImporting(false)}
+          onDone={(id) => {
+            setImporting(false);
+            go({ pathname: '/c/[id]', params: { id } });
+          }}
+        />
+      ) : null}
       <Sheet
         open={starting}
         onClose={() => setStarting(false)}

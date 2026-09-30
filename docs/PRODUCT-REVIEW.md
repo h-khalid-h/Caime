@@ -342,3 +342,18 @@ with its reason, so it isn't proposed again without new facts.
   was public already. People are never listed in the sitemap: a page is found by its handle,
   not in a directory. Its logo and a photo shown to everyone are served without sign-in for the
   cards; nothing else is.
+
+- **R45 — A chat from before Caime comes along.** The first days with someone on Caime are empty
+  where WhatsApp had years, and that emptiness is what sends people back. So a one-to-one with
+  someone you're connected with offers to bring over your WhatsApp chat with them: the person
+  exports it on their phone (without media), picks the file, and it's read on the device
+  (`@caime/core/whatsapp`: Android's and iOS's lines, 12- and 24-hour clocks, day- or month-first
+  dates decided from the file or asked, continuations, WhatsApp's own lines and media notes
+  counted and left out). It says which name is theirs (guessed from their display name), and the
+  lines land as a topic of the one-to-one (PRD §16), dated as they were written, each marked
+  **Imported** with who brought it, and a line at the end saying so; both have read them, since
+  both wrote them. Nothing is notified, suggested, inferred or moved from the past (R12): it
+  goes beside what's said here, never into it, and search finds it as it finds anything said.
+  Only into a connection, past blocks, five imports an hour, up to 20,000 messages. A group
+  export is refused: it has more than two names. What it doesn't do: Telegram, iMessage and
+  media (each is another reader and an upload; the words are what the wedge needs first).

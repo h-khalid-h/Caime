@@ -329,6 +329,12 @@ export interface AlbumPhotoView {
   addedAt: string;
 }
 
+/** What an import made (R45): the topic it landed in, and how much. */
+export interface ImportChatView {
+  conversationId: string;
+  imported: number;
+}
+
 export interface MessageView {
   id: string;
   conversationId: string;

@@ -13,6 +13,7 @@ import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
+import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
 import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
@@ -637,6 +638,29 @@ export const CreateConversationBody = z.discriminatedUnion('kind', [
 
 /** A topic started from a conversation (PRD §58): its subject, as its name. */
 export const TopicBody = z.object({ title: z.string().trim().min(1, 'Name the topic.').max(80) });
+
+/**
+ * A chat brought over from WhatsApp (R45): read on the device (`@caime/core/whatsapp`), sent as
+ * lines already told apart by who wrote them. It lands as a topic of the one-to-one with a
+ * person you're connected with; every message says it was imported.
+ */
+export const ImportChatBody = z.object({
+  userId: z.string().uuid(),
+  source: z.literal('whatsapp'),
+  /** The topic's name; "WhatsApp" if left out. */
+  title: z.string().trim().min(1).max(80).optional(),
+  messages: z
+    .array(
+      z.object({
+        at: z.string().datetime({ offset: true }),
+        /** Written by the person importing (true), or by the other one (false). */
+        mine: z.boolean(),
+        text: z.string().min(1).max(IMPORT_MAX_TEXT),
+      }),
+    )
+    .min(1, 'Nothing to import.')
+    .max(IMPORT_MAX_MESSAGES),
+});
 
 export const UpdateConversationBody = z
   .object({

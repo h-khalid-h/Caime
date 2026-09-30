@@ -38,6 +38,7 @@ import type {
   GroupCallView,
   HandleView,
   IceConfigView,
+  ImportChatView,
   InboxAllResponse,
   InboxResponse,
   MemoryView,
@@ -280,6 +281,13 @@ export const endpoints = {
   send: (conversationId: string, body: SendBody) =>
     api.post<{ message: MessageView }>(`/conversations/${conversationId}/messages`, body),
   /** A topic of a one-to-one or a group (PRD §58): the conversation it is. */
+  /** A chat brought over from WhatsApp (R45): lands as a topic with that person. */
+  importChat: (body: {
+    userId: string;
+    source: 'whatsapp';
+    title?: string;
+    messages: Array<{ at: string; mine: boolean; text: string }>;
+  }) => api.post<ImportChatView>('/conversations/import', body),
   startTopic: (conversationId: string, title: string) =>
     api.post<{ conversationId: string }>(`/conversations/${conversationId}/topics`, { title }),
   /** A new text, and who it mentions (in a group), or a private message sealed again. */

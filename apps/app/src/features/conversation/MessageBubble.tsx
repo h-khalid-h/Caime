@@ -456,6 +456,12 @@ export const MessageBubble = memo(function MessageBubble({
           {m.aiAgent ? 'AI agent ·' : 'Automated ·'}
         </Text>
       ) : null}
+      {(m.payload as { imported?: unknown }).imported ? (
+        // Brought over from another app (R45): written there, by whoever it says, before Caime.
+        <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-imported">
+          Imported ·
+        </Text>
+      ) : null}
       {m.sentVia ? (
         // Sent through a token or an app its sender let in, not typed here (PRD §74).
         <Text

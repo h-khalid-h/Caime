@@ -521,8 +521,10 @@ outperforming the alternatives is reach and operations. In the order the review 
 - [ ] Pro that sells the wedge (P1): what §84 promised (rules without limit, several identities,
       history beyond a year, a person's relationship analytics), the core free as R23 says.
       Decided with the owner first
-- [ ] Network bootstrap (P1): import of an exported WhatsApp chat into the right conversation;
-      the contextual invite measured at ≤ 60 s invite-to-reply in E2E
+- [~] Network bootstrap (P1): a WhatsApp export brought over as a topic of the one-to-one (R45:
+      read on the device, who's who chosen, dated as written, every message marked imported,
+      both have read it, nothing notified or inferred; `whatsapp.test.ts`, `import.test.ts`,
+      E2E). Still to do: the contextual invite measured at ≤ 60 s invite-to-reply in E2E
 - [ ] Polish that shows (P2): the review's UX list (empty states that end in an action,
       confirmations on one-tap destructive actions, skeletons and retry, no pronoun fallback,
       colours through the theme, missing labels, start/end for RTL, onboarding to a first message)
@@ -1101,3 +1103,8 @@ outperforming the alternatives is reach and operations. In the order the review 
   adults only, everyone-fields only) and organizations, 404s, noindex on the app's screens,
   robots and sitemap, Permissions-Policy. Cloudflare's managed robots.txt now sits in front of
   Caime's own.
+- 2026-09-30 · R45, a WhatsApp chat brought over: `packages/core/src/whatsapp.ts` reads the
+  export on the device (Android and iOS shapes, clocks, date order decided or asked, media
+  counted), `POST /v1/conversations/import` lands it as a topic with a connected person, dated
+  as written, each message `payload.imported`, a system line at the end; offered under "Before
+  Caime" in a one-to-one's details, the sheet loaded only when opened.

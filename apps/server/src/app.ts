@@ -48,6 +48,7 @@ import { fileRoutes } from './modules/files';
 import { groupCallRoutes } from './modules/group-calls';
 import { handleRoutes } from './modules/handles';
 import { healthRoutes } from './modules/health';
+import { importRoutes } from './modules/imports';
 import { inboxRoutes } from './modules/inbox';
 import { kitRoutes } from './modules/kits';
 import { meRoutes } from './modules/me';
@@ -239,6 +240,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await automationRoutes(v1, ctx);
       await suggestionRoutes(v1, ctx);
       await conversationRoutes(v1, ctx);
+      await importRoutes(v1, ctx);
       await callRoutes(v1, ctx);
       await groupCallRoutes(v1, ctx);
       await e2eeRoutes(v1, ctx);

@@ -2894,4 +2894,58 @@ test.describe
       // closed organization for its updates once, and was told it's gone.
       expect(lina.errors.filter((e) => !/404.*\/updates|404 \(Not Found\)/.test(e))).toEqual([]);
     });
+
+    test('a WhatsApp chat is brought over as a topic, dated as written and marked as imported', async () => {
+      const { page, errors } = noor;
+      await page.goto(`/c/${convo}`);
+      // Offered where topics are, in a one-to-one with someone connected.
+      await page.getByTestId('import-whatsapp').filter({ visible: true }).click();
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByTestId('import-pick').click();
+      await (await chooser).setFiles({
+        name: 'WhatsApp Chat with Alex Chen.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from(
+          [
+            '13/03/2024, 09:01 - Messages and calls are end-to-end encrypted. No one outside of this chat can read them.',
+            '13/03/2024, 09:02 - Noor Haddad: Morning! Still on for the clinic tomorrow?',
+            '13/03/2024, 09:05 - Alex Chen: Yes, 10:30.',
+            'I’ll bring the forms.',
+            '13/03/2024, 09:06 - Alex Chen: <Media omitted>',
+            `14/03/2024, 10:31 - Noor Haddad: Here now ${stamp}`,
+          ].join('\n'),
+        ),
+      });
+      // Read on this device: what's in it, and who's who, before anything is sent.
+      await expect(page.getByTestId('import-summary')).toContainText(
+        /3 messages, Mar 13, 2024 to Mar 14, 2024, and a photo or file the export left out/,
+      );
+      await expect(page.getByRole('radio', { name: /Noor Haddad/ })).toBeChecked();
+      await expect(page.getByRole('radio', { name: /Alex Chen/ })).not.toBeChecked();
+      await page.getByTestId('import-confirm').click();
+      await page.waitForURL((url) => !url.pathname.endsWith(convo));
+      await expect(visible(page, '3 messages brought over')).toBeVisible();
+      await expect(
+        visible(page, 'You brought this chat over from WhatsApp. What’s above was written there.'),
+      ).toBeVisible();
+      await expect(visible(page, 'Morning! Still on for the clinic tomorrow?')).toBeVisible();
+      await expect(visible(page, 'Yes, 10:30.\nI’ll bring the forms.')).toBeVisible();
+      await expect(page.getByTestId('message-imported').filter({ visible: true })).toHaveCount(3);
+      await expect(visible(page, 'March 13, 2024')).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-whatsapp-import.png' });
+
+      // Alex has it too, as a topic with Noor, and nothing unread in it but the line saying so.
+      const phone = alex.page;
+      await phone.goto('/');
+      await expect(visible(phone, 'Noor Haddad · WhatsApp')).toBeVisible();
+      await visible(phone, 'Noor Haddad · WhatsApp').click();
+      await expect(
+        visible(
+          phone,
+          'Noor Haddad brought this chat over from WhatsApp. What’s above was written there.',
+        ),
+      ).toBeVisible();
+      await expect(phone.getByTestId('message-imported').filter({ visible: true })).toHaveCount(3);
+      expect([...errors, ...alex.errors]).toEqual([]);
+    });
   });

@@ -331,6 +331,14 @@ These are rules, not preferences.
   their reactions). The app applies it with `updateMessage` (`state/cache.ts`): only to a
   message it already shows, never adding one, and with the viewer's own parts worked out again.
   `upsertMessage` is for `message.created` and the app's own answers.
+- A chat brought over from WhatsApp (R45) is read on the device by `@caime/core/whatsapp`
+  (pure: no zod, so the app takes it by subpath; every export shape gets a case in
+  `whatsapp.test.ts`) and lands through `POST /conversations/import` (`modules/imports.ts`),
+  which inserts rows itself, past `sendMessage`, so nothing is notified, suggested or moved by
+  the past: every imported message carries `payload.imported = {source, by}`, and anything that
+  reads message bodies for meaning (effects, AI, attention) may leave those alone. The app shows
+  "Imported ·" from that field and offers the sheet (`features/import/`, imported statically by
+  the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are.
 - What's saved (`saved_items`, PRD §69) points at messages and copies nothing. Any new path
   that deletes a message for everyone, hides it for someone or lets it disappear drops what
   was saved of it (`dropSaved`, then `tellSaved`; the retention job does it in its own SQL),
