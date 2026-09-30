@@ -328,6 +328,10 @@ These are rules, not preferences.
   client 16; tests need `pg_dump`/`pg_restore` on the PATH), checks it with `pg_restore --list`,
   and keeps the last in `server_settings` (`backup.last`) for the `caime_backup_*` gauges; tests
   run with `BACKUP_ENABLED=false` unless they're about it.
+- The operator's routes take `ADMIN_TOKEN` or a named token from `OPERATOR_TOKENS`
+  (`requireOperator` in `lib/operator.ts` answers who: `operator`, or the name). A new admin
+  route that writes puts that name in its audit entry's `metadata.operator` (a lib function it
+  calls takes it as its last argument), and `lib/export.ts` keeps the name out of people's data.
 - Count what the server does with `ctx.metrics` (`apps/server/src/lib/metrics.ts`). Label values
   come from fixed sets only (a route as declared, a kind, an outcome), never ids, handles or
   text; `metrics.test.ts` scrapes after real traffic and checks for them.

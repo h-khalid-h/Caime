@@ -1180,13 +1180,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     })),
     securityRecords: security.map((a) => {
       const theirs = a.actor_id === me;
+      // Which of the operator's people acted is the operator's record, not theirs.
+      const { operator: _operator, ...details } = (a.metadata ?? {}) as Record<string, unknown>;
       return {
         action: a.action,
         byYou: theirs,
         target: a.target,
         networkAddress: theirs ? a.ip : null,
         browser: theirs ? a.user_agent : null,
-        details: a.metadata,
+        details,
         at: a.created_at.toISOString(),
       };
     }),

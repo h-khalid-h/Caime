@@ -1174,3 +1174,6 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Suspension (R49): `setSuspended` and `endAllAccess` in `lib/moderation.ts` (the
   latter what a recovery code and a reset link run too), refused at the session, at sign-in, at
   tokens and grants, at the handle and the public page; the report page's Suspend button.
+- 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
+  operator's side a token of their own; `requireOperator` says who it was, and every admin audit
+  entry carries `metadata.operator` (left out of a person's export).

@@ -41,7 +41,8 @@ const PAYING = (plan: string) =>
   `${plan} is paid for through Stripe: cancel it there (at once, or at the end of what’s paid), and the plan follows.`;
 
 export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
-  const operator = (req: FastifyRequest) => requireOperator(ctx, req, ctx.config.ADMIN_TOKEN);
+  const operator = (req: FastifyRequest) =>
+    requireOperator(ctx, req, ctx.config.ADMIN_TOKEN, ctx.config.OPERATOR_TOKENS);
 
   const handleParam = z.object({ handle: z.string().trim().min(1).max(64) });
 
@@ -63,7 +64,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
 
   /** Moving a report along: reviewing, actioned, dismissed (or back to open). */
   app.patch('/admin/reports/:id', async (req): Promise<{ report: ReportView }> => {
-    operator(req);
+    const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const { status } = parse(ReportStatusBody, req.body);
     await oneReport(id);
@@ -72,14 +73,14 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       actorId: null,
       action: 'moderation.report_status',
       target: id,
-      metadata: { status },
+      metadata: { status, operator: by },
     });
     return { report: await oneReport(id) };
   });
 
   /** The reported message, gone for everyone, exactly as its sender's own delete would do. */
   app.post('/admin/reports/:id/remove-message', async (req): Promise<{ report: ReportView }> => {
-    operator(req);
+    const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
     if (!report.message) throw badRequest('This report isn’t about a message.');
@@ -96,25 +97,25 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       actorId: null,
       action: 'moderation.message_removed',
       target: id,
-      metadata: { messageId: m.id },
+      metadata: { messageId: m.id, operator: by },
     });
     return { report: await oneReport(id) };
   });
 
   /** The reported update, taken back, exactly as its organization would do. */
   app.post('/admin/reports/:id/remove-update', async (req): Promise<{ report: ReportView }> => {
-    operator(req);
+    const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
     if (!report.update || !report.org) throw badRequest('This report isn’t about an update.');
-    await takeBackUpdate(ctx, report.org.id, report.update.id, null);
+    await takeBackUpdate(ctx, report.org.id, report.update.id, null, by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
   });
 
   /** An account suspended, or the suspension lifted (R49): every way in closes; nothing goes. */
   app.put('/admin/people/:handle/suspension', async (req): Promise<{ ok: true }> => {
-    operator(req);
+    const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const body = parse(SuspensionBody, req.body);
     const person = await ctx.db
@@ -124,17 +125,17 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     if (!person || person.kind !== 'human') throw notFound('That person');
-    await setSuspended(ctx, person.id, body.suspended, body.reason ?? null);
+    await setSuspended(ctx, person.id, body.suspended, body.reason ?? null, by);
     return { ok: true };
   });
 
   /** The reported person suspended, from the report: it's actioned. */
   app.post('/admin/reports/:id/suspend', async (req): Promise<{ report: ReportView }> => {
-    operator(req);
+    const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
     if (!report.person) throw badRequest('This report isn’t about a person.');
-    await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`);
+    await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`, by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
   });
@@ -169,7 +170,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.put('/admin/people/:handle/plan', async (req) => {
-    operator(req);
+    const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const { plan } = parse(z.object({ plan: z.enum(PERSON_PLANS) }), req.body);
     const person = await ctx.db
@@ -199,13 +200,13 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       action: 'plan.changed',
       target: person.id,
       ip: req.ip,
-      metadata: { of: 'person', from: person.plan, to: plan },
+      metadata: { of: 'person', from: person.plan, to: plan, operator: by },
     });
     return { plan: await planUsage(ctx, person.id) };
   });
 
   app.put('/admin/orgs/:handle/plan', async (req) => {
-    operator(req);
+    const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const { plan } = parse(z.object({ plan: z.enum(ORG_PLANS) }), req.body);
     const org = await ctx.db
@@ -227,7 +228,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       action: 'plan.changed',
       target: org.id,
       ip: req.ip,
-      metadata: { of: 'organization', from: org.plan, to: plan },
+      metadata: { of: 'organization', from: org.plan, to: plan, operator: by },
     });
     return { plan: await orgPlanView(ctx, org.id) };
   });
@@ -251,6 +252,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   /** Gives `handle` to a person or an organization, if nobody else has it; in the audit log. */
   async function giveHandle(
     req: FastifyRequest,
+    by: string,
     to: { of: 'person' | 'organization'; id: string; handle: string },
     handle: string,
   ): Promise<void> {
@@ -275,12 +277,12 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       action: 'handle.claimed',
       target: to.id,
       ip: req.ip,
-      metadata: { of: to.of, from: to.handle, to: handle },
+      metadata: { of: to.of, from: to.handle, to: handle, operator: by },
     });
   }
 
   app.put('/admin/people/:handle/handle', async (req): Promise<HandleView> => {
-    operator(req);
+    const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const wanted = await givableIn(req.body);
     const person = await ctx.db
@@ -291,7 +293,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     if (!person) throw notFound('That person');
-    await giveHandle(req, { of: 'person', ...person }, wanted);
+    await giveHandle(req, by, { of: 'person', ...person }, wanted);
     await ctx.bus.publish([person.id], { type: 'me.updated', data: { id: person.id } });
     return { kind: 'person', id: person.id, handle: wanted };
   });
@@ -303,7 +305,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
    * organization is its owner's to close.
    */
   app.delete('/admin/orgs/:id', async (req): Promise<{ ok: true }> => {
-    operator(req);
+    const by = operator(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const org = await ctx.db
       .selectFrom('organizations')
@@ -336,13 +338,13 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       action: 'org.deleted',
       target: id,
       ip: req.ip,
-      metadata: { handle: org.handle },
+      metadata: { handle: org.handle, operator: by },
     });
     return { ok: true };
   });
 
   app.put('/admin/orgs/:handle/handle', async (req): Promise<HandleView> => {
-    operator(req);
+    const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const wanted = await givableIn(req.body);
     const org = await ctx.db
@@ -352,7 +354,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('archived_at', 'is', null)
       .executeTakeFirst();
     if (!org) throw notFound('That organization');
-    await giveHandle(req, { of: 'organization', ...org }, wanted);
+    await giveHandle(req, by, { of: 'organization', ...org }, wanted);
     return { kind: 'org', id: org.id, handle: wanted };
   });
 }

@@ -3,6 +3,7 @@
  * Optional integrations switch on when their variables are present (CLAUDE.md, "Credentials").
  */
 import { z } from 'zod';
+import { parseOperatorTokens } from './lib/operator';
 
 const bool = z
   .enum(['true', 'false', '1', '0', 'yes', 'no'])
@@ -75,6 +76,22 @@ const Env = z.object({
    * don't exist. Long and random: it can change anyone's plan.
    */
   ADMIN_TOKEN: z.string().min(24).optional(),
+  /**
+   * A token for each person on the operator's side (`mona:token,ali:token`, each 24 characters
+   * or more), so the audit log says who acted; the routes ADMIN_TOKEN opens, and one can be
+   * taken back without touching the others'.
+   */
+  OPERATOR_TOKENS: z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      const parsed = parseOperatorTokens(v);
+      if ('problem' in parsed)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `name:token pairs; ${parsed.problem}`,
+        });
+    }),
   /** Where people see plans and upgrade (a pricing page or a payment link), shown in the app. */
   PLANS_URL: z.string().url().optional(),
   /**

@@ -84,7 +84,8 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `SESSION_DAYS` | `90` | How long a signed-in device stays signed in without use. |
 | `METRICS_TOKEN` | — | Enables `GET /metrics` (below) behind this bearer token. |
 | `DNS_SERVERS` | the system's | Resolvers for checking organizations' domains, comma-separated (`1.1.1.1,8.8.8.8`). Set it if the host's resolver caches a new record too long. |
-| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans, giving out reserved and held handles and reading product metrics (below). At least 24 characters; without it those routes don't exist. |
+| `ADMIN_TOKEN` | — | The operator's token for `/v1/admin`: setting plans, giving out reserved and held handles, reviewing reports and reading product metrics (below). At least 24 characters; without it (and without `OPERATOR_TOKENS`) those routes don't exist. Its holder is `operator` in the audit log. |
+| `OPERATOR_TOKENS` | — | A token for each person on the operator's side, `mona:<token>,ali:<token>` (names of lowercase letters, digits, dots, dashes or underscores; tokens of 24 characters or more, each different). They open the same routes, and every plan change, handle given, report settled, removal and suspension names who did it (`metadata.operator` in the audit log; never in anyone's data export). Take one back by removing it, without touching the others. |
 | `PLANS_URL` | — | Where people see plans and upgrade (a pricing page or a payment link). The app links to it from a plan's limits when billing isn't set up; without either, it says upgrades can't be bought yet. |
 | `LEGAL_NAME` | `DATA C OÜ` | Who runs this Caime, as its privacy policy, terms and help say. |
 | `CONTACT_EMAIL` | `hello@cai.me` | Where those pages tell people to write (data requests, security reports, help). |
@@ -374,7 +375,8 @@ and kept in the database on first boot). A redeploy applies a change to the envi
 ## Moderation
 
 What people report lands in `reports`; the operator reviews them at `/admin/reports` (R49):
-open the page, paste `ADMIN_TOKEN` (it stays in that tab), and load a status. A report can be
+open the page, paste your operator token (`ADMIN_TOKEN` or your own from `OPERATOR_TOKENS`; it
+stays in that tab), and load a status. A report can be
 marked reviewing, dismissed or actioned; a reported message can be removed for everyone and a
 reported update taken back, each exactly as its owner would do it, and the reported person
 suspended (every way in closes; `PUT /v1/admin/people/:handle/suspension` with

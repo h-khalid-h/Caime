@@ -83,6 +83,7 @@ export async function takeBackUpdate(
   orgId: string,
   updateId: string,
   actorId: string | null,
+  operator?: string,
 ): Promise<boolean> {
   const row = await ctx.db
     .updateTable('org_updates')
@@ -97,7 +98,7 @@ export async function takeBackUpdate(
     actorId,
     action: actorId ? 'org.update_removed' : 'moderation.update_removed',
     target: orgId,
-    metadata: { updateId },
+    metadata: operator ? { updateId, operator } : { updateId },
   });
   await retellUpdate(ctx, updateId, null);
   ctx.defer('updates', () => tellUpdatesChanged(ctx, orgId));
@@ -237,6 +238,7 @@ export async function setSuspended(
   userId: string,
   suspended: boolean,
   reason: string | null,
+  operator?: string,
 ): Promise<void> {
   await ctx.db
     .updateTable('users')
@@ -252,7 +254,7 @@ export async function setSuspended(
     actorId: null,
     action: suspended ? 'moderation.suspended' : 'moderation.unsuspended',
     target: userId,
-    metadata: reason ? { reason } : {},
+    metadata: { ...(reason ? { reason } : {}), ...(operator ? { operator } : {}) },
   });
 }
 

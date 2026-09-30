@@ -365,7 +365,10 @@ describe('reserved handles (R35)', () => {
       .where('action', '=', 'handle.claimed')
       .execute();
     expect(logged).toEqual([
-      { target: org.id, metadata: { of: 'organization', from: 'our.product', to: 'caime' } },
+      {
+        target: org.id,
+        metadata: { of: 'organization', from: 'our.product', to: 'caime', operator: 'operator' },
+      },
     ]);
     // Nobody takes it from it: not a person, not another organization, not the operator.
     expect((await omar.req('PATCH', '/v1/me', { handle: 'caime' })).statusCode).toBe(409);

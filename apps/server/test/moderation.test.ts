@@ -1,8 +1,10 @@
 import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { loadConfig } from '../src/config';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const ADMIN = 'operator-token-for-the-moderation-test-0123456789';
+const MONA = 'mona-token-for-the-moderation-test-0123456789';
 let t: TestApp;
 let noor: Client;
 let sam: Client;
@@ -18,7 +20,7 @@ const op = (method: 'GET' | 'PATCH' | 'POST', url: string, body?: unknown, token
   });
 
 beforeAll(async () => {
-  t = await createTestApp({ ADMIN_TOKEN: ADMIN });
+  t = await createTestApp({ ADMIN_TOKEN: ADMIN, OPERATOR_TOKENS: `mona:${MONA}` });
   noor = await signup(t, { displayName: 'Noor Haddad' });
   sam = await signup(t, { displayName: 'Sam Rivera' });
   const r = await noor.post('/v1/connections/requests', {
@@ -103,12 +105,51 @@ describe('the operator reviews reports (R49)', () => {
     // The audit log says the operator did it, in its own words.
     const audits = await t.ctx.db
       .selectFrom('audit_log')
-      .select('action')
+      .select(['action', 'metadata'])
       .where('action', 'like', 'moderation.%')
       .execute();
     expect(audits.map((a) => a.action)).toEqual(
       expect.arrayContaining(['moderation.report_status', 'moderation.message_removed']),
     );
+    // The shared token's holder is "operator"; a named token's holder is named (below).
+    for (const a of audits) expect(a.metadata).toMatchObject({ operator: 'operator' });
+  });
+
+  it('names which operator acted when each has a token of their own', async () => {
+    await noor.post('/v1/reports', { userId: sam.user.id, reason: 'spam' });
+    const { reports } = (await op('GET', '/v1/admin/reports?status=open', undefined, MONA)).json();
+    expect(reports.length).toBeGreaterThan(0);
+    const id = reports[0].id;
+    const moved = await op('PATCH', `/v1/admin/reports/${id}`, { status: 'dismissed' }, MONA);
+    expect(moved.statusCode).toBe(200);
+    const [entry] = await t.ctx.db
+      .selectFrom('audit_log')
+      .select('metadata')
+      .where('action', '=', 'moderation.report_status')
+      .where('target', '=', id)
+      .execute();
+    expect(entry?.metadata).toEqual({ status: 'dismissed', operator: 'mona' });
+    // Someone else's name with Mona's token is still Mona: the token says who, not the request.
+    expect((await op('GET', '/v1/admin/reports', undefined, 'not-a-token')).statusCode).toBe(401);
+    // Mona's token alone keeps the routes there when the shared one goes.
+    t.ctx.config.ADMIN_TOKEN = undefined;
+    expect((await op('GET', '/v1/admin/reports', undefined, MONA)).statusCode).toBe(200);
+    expect((await op('GET', '/v1/admin/reports')).statusCode).toBe(401);
+    t.ctx.config.ADMIN_TOKEN = ADMIN;
+  });
+
+  it('refuses OPERATOR_TOKENS that could not name anyone', () => {
+    const env = { DATABASE_URL: 'postgres://x/y', OPERATOR_TOKENS: `mona:${MONA}` };
+    expect(() => loadConfig(env)).not.toThrow();
+    for (const bad of [
+      'mona', // no token
+      'mona:short', // under 24 characters
+      'Mona:mona-token-for-the-moderation-test-0123456789', // not a name
+      `operator:${MONA}`, // ADMIN_TOKEN's name
+      `mona:${MONA},mona:${ADMIN}`, // twice
+      `mona:${MONA},ali:${MONA}`, // one token for two
+    ])
+      expect(() => loadConfig({ ...env, OPERATOR_TOKENS: bad }), bad).toThrow(/OPERATOR_TOKENS/);
   });
 
   it('suspends a person from a report: every way in closes, nobody new finds them, and it lifts', async () => {
@@ -163,6 +204,7 @@ describe('the operator reviews reports (R49)', () => {
     expect(js.statusCode).toBe(200);
     expect(js.body).toContain("'/admin/reports?status='");
     t.ctx.config.ADMIN_TOKEN = undefined;
+    t.ctx.config.OPERATOR_TOKENS = undefined;
     expect((await op('GET', '/v1/admin/reports')).statusCode).toBe(404);
   });
 });

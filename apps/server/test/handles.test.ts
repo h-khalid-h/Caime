@@ -172,7 +172,7 @@ describe('reserved handles (R35)', () => {
       {
         actor_id: null,
         target: noor.user.id,
-        metadata: { of: 'person', from: 'noor.links', to: 'caime' },
+        metadata: { of: 'person', from: 'noor.links', to: 'caime', operator: 'operator' },
       },
     ]);
     // It's in her data, without where the operator did it from.

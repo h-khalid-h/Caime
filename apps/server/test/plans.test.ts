@@ -100,7 +100,10 @@ describe('plans (PRD §84, R23)', () => {
       .where('action', '=', 'plan.changed')
       .execute();
     expect(logged).toEqual([
-      { target: lina.user.id, metadata: { of: 'person', from: 'personal', to: 'pro' } },
+      {
+        target: lina.user.id,
+        metadata: { of: 'person', from: 'personal', to: 'pro', operator: 'operator' },
+      },
     ]);
     await operator(`/v1/admin/people/${lina.user.handle}/plan`, { plan: 'personal' });
   });
