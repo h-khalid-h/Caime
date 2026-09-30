@@ -122,8 +122,8 @@ export function LiveLocationSharer() {
       pointerEvents="box-none"
       style={{
         position: 'absolute',
-        left: desktop ? 96 : 16,
-        right: desktop ? undefined : 16,
+        start: desktop ? 96 : 16,
+        end: desktop ? undefined : 16,
         ...(desktop ? { bottom: 20 } : { top: insets.top + 64 }),
         alignItems: desktop ? 'flex-start' : 'center',
       }}
@@ -134,8 +134,8 @@ export function LiveLocationSharer() {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
-          paddingLeft: 14,
-          paddingRight: 6,
+          paddingStart: 14,
+          paddingEnd: 6,
           paddingVertical: 6,
           borderRadius: 999,
           // As a toast is: dark on a light theme, raised on a dark one.

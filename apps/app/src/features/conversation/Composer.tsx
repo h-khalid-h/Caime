@@ -717,13 +717,13 @@ function Banner({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        paddingLeft: 16,
-        paddingRight: 6,
+        paddingStart: 16,
+        paddingEnd: 6,
         paddingTop: 8,
       }}
     >
       <Icon size={16} color={t.c.accentStrong} />
-      <View style={{ flex: 1, borderLeftWidth: 3, borderLeftColor: t.c.accent, paddingLeft: 8 }}>
+      <View style={{ flex: 1, borderStartWidth: 3, borderStartColor: t.c.accent, paddingStart: 8 }}>
         <Text variant="captionStrong" color="accentStrong">
           {title}
         </Text>

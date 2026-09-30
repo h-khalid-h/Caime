@@ -177,7 +177,9 @@ export function CallHistoryBody({ withId, withName }: { withId?: string; withNam
               title={view === 'missed' && !withId ? 'No missed calls' : 'No calls yet'}
               body={
                 withId
-                  ? `Your calls with ${withName ?? 'them'} will be here.`
+                  ? withName
+                    ? `Your calls with ${withName} will be here.`
+                    : 'Your calls together will be here.'
                   : 'Calls you make and get, and the ones you miss, will be here.'
               }
             />

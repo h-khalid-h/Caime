@@ -69,7 +69,7 @@ export function PollBody({
             <View
               style={{
                 position: 'absolute',
-                left: 0,
+                start: 0,
                 top: 0,
                 bottom: 0,
                 width: `${Math.round(share * 100)}%`,

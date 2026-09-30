@@ -134,6 +134,14 @@ export function UpdatesScreen() {
               icon={Building}
               title="Updates from organizations you follow"
               body="Follow an organization from its page, and what it posts shows here, apart from your conversations. Nobody sees who follows."
+              action={
+                <Button
+                  label="Find an organization"
+                  variant="secondary"
+                  onPress={() => router.navigate('/search')}
+                  testID="updates-find"
+                />
+              }
             />
           }
         />

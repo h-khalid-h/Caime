@@ -84,10 +84,10 @@ export function Sheet({
             // and whatever's being typed in stay on screen, and what's inside scrolls.
             flexShrink: 1,
             backgroundColor: t.c.surface,
-            borderTopLeftRadius: t.radii.xxl,
-            borderTopRightRadius: t.radii.xxl,
-            borderBottomLeftRadius: phone ? 0 : t.radii.xxl,
-            borderBottomRightRadius: phone ? 0 : t.radii.xxl,
+            borderTopStartRadius: t.radii.xxl,
+            borderTopEndRadius: t.radii.xxl,
+            borderBottomStartRadius: phone ? 0 : t.radii.xxl,
+            borderBottomEndRadius: phone ? 0 : t.radii.xxl,
             paddingBottom: phone ? Math.max(insets.bottom, 12) : 12,
             overflow: 'hidden',
           }}
@@ -104,8 +104,8 @@ export function Sheet({
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingLeft: 20,
-                paddingRight: 8,
+                paddingStart: 20,
+                paddingEnd: 8,
                 paddingTop: 10,
                 paddingBottom: 4,
               }}

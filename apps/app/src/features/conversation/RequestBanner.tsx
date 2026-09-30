@@ -9,6 +9,7 @@ import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { ShieldCheck } from '@/ui/icons';
+import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -20,6 +21,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
   const t = useTheme();
   const qc = useQueryClient();
   const [busy, setBusy] = useState<'accept' | 'decline' | 'block' | null>(null);
+  const [blocking, setBlocking] = useState(false);
   const other = conversation.other?.person;
   const org = conversation.business?.org ?? null;
   if (conversation.request !== 'incoming') {
@@ -59,6 +61,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
   };
   const block = async () => {
     if (!org) return;
+    setBlocking(false);
     setBusy('block');
     try {
       await endpoints.blockOrg(org.id);
@@ -104,9 +107,30 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
           <Button
             label={`Block ${org.name}`}
             variant="ghost"
-            onPress={() => void block()}
+            onPress={() => setBlocking(true)}
             loading={busy === 'block'}
+            testID="request-block-org"
           />
+          <Sheet
+            open={blocking}
+            onClose={() => setBlocking(false)}
+            title={`Block ${org.name}?`}
+            subtitle="It can’t write to you, and this conversation closes. You can unblock it from its page any time."
+            footer={
+              <Button
+                label="Block"
+                variant="danger"
+                block
+                size="lg"
+                onPress={() => void block()}
+                testID="request-block-org-confirm"
+              />
+            }
+          >
+            <Text variant="body" color="textSecondary">
+              Nobody on its team is told you blocked it.
+            </Text>
+          </Sheet>
         </View>
       </View>
     );

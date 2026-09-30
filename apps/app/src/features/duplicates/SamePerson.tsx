@@ -65,7 +65,12 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
             size={36}
           />
           <View
-            style={{ marginLeft: -12, borderRadius: 999, borderWidth: 2, borderColor: t.c.surface }}
+            style={{
+              marginStart: -12,
+              borderRadius: 999,
+              borderWidth: 2,
+              borderColor: t.c.surface,
+            }}
           >
             <Avatar
               id={merge.person.id}

@@ -26,6 +26,7 @@ import { IconButton } from '@/ui/IconButton';
 import { Bookmark, FileText, ImageIcon, Link, MessageCircle, Mic, Trash, Zap } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -198,9 +199,7 @@ export default function Saved() {
           {(items.error as Error).message}
         </Text>
       ) : items.isPending ? (
-        <Text variant="body" color="textSecondary">
-          Loading what you saved…
-        </Text>
+        <SkeletonRows count={5} />
       ) : !shown.length ? (
         <EmptyState
           icon={Bookmark}

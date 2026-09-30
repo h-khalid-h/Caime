@@ -156,7 +156,7 @@ function OneToOneCallLayer() {
           style={{
             position: 'absolute',
             bottom: 140 + insets.bottom,
-            right: 16,
+            end: 16,
             paddingHorizontal: 12,
             paddingVertical: 8,
             borderRadius: 999,
@@ -174,7 +174,7 @@ function OneToOneCallLayer() {
             position: 'absolute',
             // Above the controls, clear of the name at the top on a narrow screen.
             bottom: 140 + insets.bottom,
-            right: 16,
+            end: 16,
             width: 112,
             height: 156,
             borderRadius: 16,

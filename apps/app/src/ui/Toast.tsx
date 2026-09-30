@@ -109,8 +109,8 @@ export function ToastHost({ layer }: { layer?: string }) {
       pointerEvents="box-none"
       style={{
         position: 'absolute',
-        left: 16,
-        right: 16,
+        start: 16,
+        end: 16,
         top: insets.top + 12,
         gap: 8,
       }}

@@ -140,8 +140,10 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const when = (iso: string) => formatListTime(iso, now, timeZone, locale);
   const revoke = async () => {
+    setAsking(false);
     setBusy(true);
     try {
       await endpoints.revokeToken(token.id);
@@ -180,10 +182,30 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
           size="sm"
           variant="secondary"
           loading={busy}
-          onPress={() => void revoke()}
+          onPress={() => setAsking(true)}
           testID={`token-revoke-${token.name}`}
         />
       </View>
+      <Sheet
+        open={asking}
+        onClose={() => setAsking(false)}
+        title={`Revoke ${token.name}?`}
+        subtitle="Anything using it stops at once, and it can’t be brought back: make a new one instead."
+        footer={
+          <Button
+            label="Revoke"
+            variant="danger"
+            block
+            size="lg"
+            onPress={() => void revoke()}
+            testID="token-revoke-confirm"
+          />
+        }
+      >
+        <Text variant="body" color="textSecondary">
+          What was sent through it stays, marked as sent that way.
+        </Text>
+      </Sheet>
       <Text variant="caption" color="textTertiary">
         {token.scopes.map((s) => PERSONAL_SCOPE_LABELS[s as PersonalScope] ?? s).join(' · ')}
       </Text>

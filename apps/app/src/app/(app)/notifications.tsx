@@ -9,6 +9,7 @@ import { useNotifications } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
+import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
@@ -16,6 +17,7 @@ import { ArrowLeft, Bell, Zap } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
+import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 
 export default function Notifications() {
@@ -114,13 +116,37 @@ export default function Notifications() {
           </Pressable>
         )}
         ListEmptyComponent={
-          q.isFetched ? (
+          q.isPending && !q.data ? (
+            <SkeletonRows count={6} />
+          ) : q.isError && !q.data ? (
+            <EmptyState
+              icon={Bell}
+              title="Notifications couldn’t load"
+              body={(q.error as Error).message}
+              action={
+                <Button
+                  label="Try again"
+                  variant="secondary"
+                  onPress={() => void q.refetch()}
+                  testID="notifications-retry"
+                />
+              }
+            />
+          ) : q.isFetched ? (
             <EmptyState
               character="momo"
               expression="happy"
               icon={Bell}
               title="All quiet"
               body="Caime only interrupts you for what matters, by the rules you set for each relationship."
+              action={
+                <Button
+                  label="How you’re told"
+                  variant="secondary"
+                  onPress={() => router.navigate('/settings/notifications')}
+                  testID="notifications-settings"
+                />
+              }
             />
           ) : null
         }

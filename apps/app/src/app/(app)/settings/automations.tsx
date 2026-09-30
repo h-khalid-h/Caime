@@ -151,7 +151,7 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
   const status = !a.enabled ? 'Off' : a.runs ? `${a.runs} kept so far` : 'Nothing kept yet';
   // What it does opens it; the switch beside it turns it on or off, and is never inside it.
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 16 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: 16 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${a.description}. ${status}`}
@@ -162,8 +162,8 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
           alignItems: 'center',
           gap: 12,
           minHeight: 52,
-          paddingLeft: 16,
-          paddingRight: 12,
+          paddingStart: 16,
+          paddingEnd: 12,
           paddingVertical: 10,
           backgroundColor: pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : undefined,
         })}

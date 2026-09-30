@@ -13,6 +13,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
 import { pendingTaskView, usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
+import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
@@ -159,6 +160,16 @@ export default function Actions() {
                 icon={CircleCheck}
                 title={empty.title}
                 body={empty.body}
+                action={
+                  view === 'todo' ? (
+                    <Button
+                      label="Add an action"
+                      variant="secondary"
+                      onPress={() => setAdding(true)}
+                      testID="add-task-empty"
+                    />
+                  ) : undefined
+                }
               />
             }
             contentContainerStyle={{

@@ -119,7 +119,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                     style={{
                       position: 'absolute',
                       top: -5,
-                      right: -11,
+                      end: -11,
                       minWidth: 18,
                       height: 18,
                       borderRadius: 9,

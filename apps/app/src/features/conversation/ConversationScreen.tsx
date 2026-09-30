@@ -595,7 +595,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           onPress={() => list.current?.scrollToOffset({ offset: 0, animated: true })}
           style={{
             position: 'absolute',
-            right: 16,
+            end: 16,
             bottom: 12,
             width: 40,
             height: 40,
@@ -699,7 +699,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <View style={{ flex: 1, minWidth: 0 }}>{main}</View>
         {desktop && panel && conversation ? (
-          <View style={{ width: 340, borderLeftWidth: 1, borderLeftColor: t.c.border }}>
+          <View style={{ width: 340, borderStartWidth: 1, borderStartColor: t.c.border }}>
             <ContextPanel
               conversation={conversation}
               onClose={() => setPanel(false)}

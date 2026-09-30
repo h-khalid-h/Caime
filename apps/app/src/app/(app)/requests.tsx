@@ -20,6 +20,7 @@ import { lazyPart } from '@/ui/Lazy';
 import { SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
+import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -138,13 +139,37 @@ export default function Requests() {
           alignSelf: 'center',
         }}
       >
-        {inList.length === 0 && outList.length === 0 && incoming.isFetched ? (
+        {incoming.isPending && !incoming.data ? (
+          <SkeletonRows count={4} />
+        ) : incoming.isError && !incoming.data ? (
+          <EmptyState
+            icon={UserPlus}
+            title="Requests couldn’t load"
+            body={(incoming.error as Error).message}
+            action={
+              <Button
+                label="Try again"
+                variant="secondary"
+                onPress={() => void incoming.refetch()}
+                testID="requests-retry"
+              />
+            }
+          />
+        ) : inList.length === 0 && outList.length === 0 && incoming.isFetched ? (
           <EmptyState
             character="momo"
             expression="happy"
             icon={UserPlus}
             title="No requests"
-            body="When someone wants to connect, you’ll see who they are and how they know you here."
+            body="When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer."
+            action={
+              <Button
+                label="Find people or share your link"
+                variant="secondary"
+                onPress={() => router.navigate('/connect')}
+                testID="requests-connect"
+              />
+            }
           />
         ) : null}
         {inList.length ? <SectionTitle>Want to connect</SectionTitle> : null}

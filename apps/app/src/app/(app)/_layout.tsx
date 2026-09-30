@@ -106,8 +106,8 @@ function DesktopShell() {
         <View
           style={{
             width: 380,
-            borderRightWidth: 1,
-            borderRightColor: t.c.border,
+            borderEndWidth: 1,
+            borderEndColor: t.c.border,
             backgroundColor: t.c.surface,
           }}
         >

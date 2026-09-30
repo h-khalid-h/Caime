@@ -24,6 +24,7 @@ import { Card, Divider } from '@/ui/Card';
 import { IconButton } from '@/ui/IconButton';
 import { Bell, BellOff, Flag, Pencil, Trash } from '@/ui/icons';
 import { SectionTitle } from '@/ui/ListRow';
+import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
@@ -70,7 +71,9 @@ function Update({
   const { timeZone, locale } = useUserClock();
   const [editing, setEditing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const run = async (work: () => Promise<unknown>, done: string) => {
+    setRemoving(false);
     setBusy(true);
     try {
       await work();
@@ -109,11 +112,31 @@ function Update({
               label="Take this update back"
               size={18}
               disabled={busy}
-              onPress={() =>
-                void run(() => endpoints.removeUpdate(u.org.id, u.id), 'Update taken back')
-              }
+              onPress={() => setRemoving(true)}
               testID="org-update-remove"
             />
+            <Sheet
+              open={removing}
+              onClose={() => setRemoving(false)}
+              title="Take this update back?"
+              subtitle="It leaves everyone’s Updates at once. Followers already told of it aren’t told again."
+              footer={
+                <Button
+                  label="Take it back"
+                  variant="danger"
+                  block
+                  size="lg"
+                  onPress={() =>
+                    void run(() => endpoints.removeUpdate(u.org.id, u.id), 'Update taken back')
+                  }
+                  testID="org-update-remove-confirm"
+                />
+              }
+            >
+              <Text variant="body" color="textSecondary" numberOfLines={4}>
+                {u.body}
+              </Text>
+            </Sheet>
           </>
         ) : null}
         {canReport ? (

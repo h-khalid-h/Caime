@@ -1,3 +1,4 @@
+import { palette } from '@caime/brand/tokens';
 import type { MessageView } from '@caime/core/api';
 import { formatBytes, formatClock, systemText } from '@caime/core/format';
 import { Image } from 'expo-image';
@@ -251,18 +252,18 @@ export const MessageBubble = memo(function MessageBubble({
   }
 
   const radius = {
-    borderTopLeftRadius: !mine && !first ? tail : r,
-    borderBottomLeftRadius: !mine && !last ? tail : r,
-    borderTopRightRadius: mine && !first ? tail : r,
-    borderBottomRightRadius: mine && !last ? tail : r,
+    borderTopStartRadius: !mine && !first ? tail : r,
+    borderBottomStartRadius: !mine && !last ? tail : r,
+    borderTopEndRadius: mine && !first ? tail : r,
+    borderBottomEndRadius: mine && !last ? tail : r,
   };
 
   const reply = m.replyTo ? (
     <View
       style={{
-        borderLeftWidth: 3,
-        borderLeftColor: mine ? t.bubble.meta : t.c.accent,
-        paddingLeft: 8,
+        borderStartWidth: 3,
+        borderStartColor: mine ? t.bubble.meta : t.c.accent,
+        paddingStart: 8,
         marginBottom: 6,
         opacity: 0.9,
       }}
@@ -486,7 +487,9 @@ export const MessageBubble = memo(function MessageBubble({
         <DeliveryIcon
           delivery={delivery}
           color={meta}
-          readColor={mine && !card && t.bubble.fg === '#FFFFFF' ? '#FFD6E7' : t.c.accentStrong}
+          readColor={
+            mine && !card && t.bubble.fg === '#FFFFFF' ? palette.lightPink : t.c.accentStrong
+          }
         />
       ) : null}
     </View>
@@ -521,7 +524,7 @@ export const MessageBubble = memo(function MessageBubble({
         <Text
           variant="captionStrong"
           color="textSecondary"
-          style={{ marginLeft: 12, marginBottom: 3 }}
+          style={{ marginStart: 12, marginBottom: 3 }}
         >
           {senderName}
         </Text>

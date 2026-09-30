@@ -525,9 +525,14 @@ outperforming the alternatives is reach and operations. In the order the review 
       read on the device, who's who chosen, dated as written, every message marked imported,
       both have read it, nothing notified or inferred; `whatsapp.test.ts`, `import.test.ts`,
       E2E). Still to do: the contextual invite measured at ≤ 60 s invite-to-reply in E2E
-- [ ] Polish that shows (P2): the review's UX list (empty states that end in an action,
-      confirmations on one-tap destructive actions, skeletons and retry, no pronoun fallback,
-      colours through the theme, missing labels, start/end for RTL, onboarding to a first message)
+- [~] Polish that shows (P2): empty states that end in an action (Requests, Notifications,
+      Updates, Actions), confirmations on one-tap destructive actions (a connected app removed,
+      a token revoked, an organization blocked from a request, an update taken back), skeletons
+      and retry on Requests and Notifications and the skeleton in Saved, no pronoun fallback in
+      call history, colours through the theme (the auth backdrop, read ticks, the call surface
+      and its end/go buttons), start/end for RTL in place of every one-sided left/right. Still
+      to do: onboarding that walks the first connection to a first message (accepting a request
+      already opens the conversation), a screen reader pass on a device
 - [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; moderation
       reviewer UI; email verification and reset; per-operator admin tokens; pentest
 - Measurements still to take: a load test, Lighthouse, a screen reader on a device
@@ -1108,3 +1113,8 @@ outperforming the alternatives is reach and operations. In the order the review 
   counted), `POST /v1/conversations/import` lands it as a topic with a connected person, dated
   as written, each message `payload.imported`, a system line at the end; offered under "Before
   Caime" in a one-to-one's details, the sheet loaded only when opened.
+- 2026-09-30 · Polish (P2, from the review): empty states with a next step, confirmation sheets
+  before the four one-tap destructive actions, skeletons and retry where screens rendered
+  nothing, names not pronouns in call history, the last raw colours onto brand tokens, and
+  physical left/right styles turned to start/end so Arabic reads mirrored. CI's red on main
+  (the landing page's tagline matching the welcome test's text locator) fixed first.

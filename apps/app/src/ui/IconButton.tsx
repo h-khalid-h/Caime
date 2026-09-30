@@ -78,7 +78,7 @@ export function IconButton({
           style={{
             position: 'absolute',
             top: 9,
-            right: 9,
+            end: 9,
             width: 9,
             height: 9,
             borderRadius: 5,

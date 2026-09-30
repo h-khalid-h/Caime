@@ -79,7 +79,7 @@ export const Avatar = memo(function Avatar({
           accessibilityLabel={presence ?? undefined}
           style={{
             position: 'absolute',
-            right: 0,
+            end: 0,
             bottom: 0,
             width: dot,
             height: dot,

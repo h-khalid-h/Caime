@@ -57,7 +57,7 @@ function RailItem({
                 style={{
                   position: 'absolute',
                   top: 2,
-                  right: 6,
+                  end: 6,
                   minWidth: 16,
                   height: 16,
                   borderRadius: 8,
@@ -122,8 +122,8 @@ export function NavRail() {
       style={{
         width: 76,
         backgroundColor: t.c.surface,
-        borderRightWidth: 1,
-        borderRightColor: t.c.border,
+        borderEndWidth: 1,
+        borderEndColor: t.c.border,
         alignItems: 'center',
         paddingVertical: 14,
         gap: 6,

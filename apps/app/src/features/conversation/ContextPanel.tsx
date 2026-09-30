@@ -208,8 +208,8 @@ export function ContextPanel({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingLeft: 16,
-          paddingRight: 6,
+          paddingStart: 16,
+          paddingEnd: 6,
           minHeight: 56,
           borderBottomWidth: 1,
           borderBottomColor: t.c.border,

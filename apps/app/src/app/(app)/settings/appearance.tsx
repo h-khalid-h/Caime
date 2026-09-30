@@ -19,7 +19,7 @@ function Preview() {
           maxWidth: '75%',
           backgroundColor: t.c.bubbleOther,
           borderRadius: t.radii.bubble,
-          borderBottomLeftRadius: t.radii.bubbleTail,
+          borderBottomStartRadius: t.radii.bubbleTail,
           paddingHorizontal: 12,
           paddingVertical: 8,
         }}
@@ -34,7 +34,7 @@ function Preview() {
           maxWidth: '75%',
           backgroundColor: t.bubble.bg,
           borderRadius: t.radii.bubble,
-          borderBottomRightRadius: t.radii.bubbleTail,
+          borderBottomEndRadius: t.radii.bubbleTail,
           paddingHorizontal: 12,
           paddingVertical: 8,
         }}

@@ -24,8 +24,8 @@ export function CatchUpBanner({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        paddingLeft: 16,
-        paddingRight: 6,
+        paddingStart: 16,
+        paddingEnd: 6,
         paddingVertical: 6,
         backgroundColor: t.c.accentSoft,
       }}

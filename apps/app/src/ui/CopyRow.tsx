@@ -27,7 +27,7 @@ export function CopyRow({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
-          paddingLeft: 12,
+          paddingStart: 12,
           borderRadius: 12,
           backgroundColor: t.c.surfaceMuted,
         }}

@@ -17,7 +17,7 @@ export function BrandPanel() {
     <View
       style={{
         flex: 1,
-        backgroundColor: t.scheme === 'dark' ? t.c.surfaceRaised : '#FFE3EC',
+        backgroundColor: t.scheme === 'dark' ? t.c.surfaceRaised : t.c.accentSoft,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 48,
@@ -72,7 +72,7 @@ export function AuthLayout({
       >
         <View style={{ width: '100%', maxWidth: 420, alignSelf: 'center', gap: 20 }}>
           <View
-            style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48, marginLeft: -8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48, marginStart: -8 }}
           >
             {back ? (
               <IconButton
@@ -82,7 +82,7 @@ export function AuthLayout({
               />
             ) : null}
             {!desktop ? (
-              <View style={{ flex: 1, alignItems: 'center', marginRight: back ? 44 : 0 }}>
+              <View style={{ flex: 1, alignItems: 'center', marginEnd: back ? 44 : 0 }}>
                 <Wordmark height={24} />
               </View>
             ) : null}

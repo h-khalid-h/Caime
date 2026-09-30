@@ -113,9 +113,9 @@ function Tile({
       <View
         style={{
           position: 'absolute',
-          left: 10,
+          start: 10,
           bottom: 8,
-          right: 10,
+          end: 10,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,

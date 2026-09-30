@@ -1802,6 +1802,8 @@ test.describe
       });
       expect(settings.status()).toBe(403);
       await page.getByTestId('token-revoke-Reminders script').click();
+      // Revoking asks first: there's no way back.
+      await page.getByTestId('token-revoke-confirm').click();
       await expect(page.getByTestId('token-Reminders script')).toHaveCount(0);
       const after = await alexContext.request.post(`/v1/conversations/${convo}/messages`, {
         headers: { authorization: `Bearer ${token}` },
@@ -1906,6 +1908,7 @@ test.describe
       );
       await app.page.screenshot({ path: 'e2e/screenshots/phone-connected-apps.png' });
       await app.page.getByTestId('connected-remove-Weekly digest').click();
+      await app.page.getByTestId('connected-remove-confirm').click();
       await expect(app.page.getByTestId('connected-none')).toBeVisible();
       const after = await digest.get(`/v1/conversations/${convo}`, {
         headers: { authorization: `Bearer ${token}` },
@@ -2747,6 +2750,7 @@ test.describe
         )
         .toEqual(['Closed Monday for the holiday.']);
       await page.getByTestId('org-update-remove').first().click();
+      await page.getByTestId('org-update-remove-confirm').click();
       await expect(visible(page, 'Update taken back')).toBeVisible();
       // Its words go from her notifications too.
       await expect

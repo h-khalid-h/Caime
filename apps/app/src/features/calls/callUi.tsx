@@ -3,13 +3,15 @@
  * (Media.tsx, Media.native.tsx), the round buttons, the ringtone, keeping the keyboard in the
  * screen, and the running clock.
  */
+import { themes } from '@caime/brand/tokens';
 import { type Ref, useEffect, useRef, useState } from 'react';
 import { Platform, Vibration, View } from 'react-native';
 import type { IconComponent } from '@/ui/Button';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
-export const INK = '#0B0B12';
+/** The call's own surface: dark whatever the scheme, so faces and video read the same. */
+export const INK = themes.dark.canvas;
 /** Over everything: fixed to the window on the web, over the whole app on a phone. */
 export const OVER_APP = {
   position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as 'absolute',
@@ -46,7 +48,15 @@ export function Round({
   focusRef?: Ref<View>;
   testID: string;
 }) {
-  const bg = tone === 'end' ? '#E5484D' : tone === 'go' ? '#30A46C' : on ? '#FFFFFF' : '#FFFFFF29';
+  // End and go are the theme's, as on a light surface: white on them is what the light theme proves.
+  const bg =
+    tone === 'end'
+      ? themes.light.danger
+      : tone === 'go'
+        ? themes.light.success
+        : on
+          ? '#FFFFFF'
+          : '#FFFFFF29';
   return (
     <View style={{ alignItems: 'center', gap: 6 }}>
       <Pressable

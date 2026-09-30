@@ -12,6 +12,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
+import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -21,8 +22,10 @@ function AppRow({ app }: { app: ConnectedAppView }) {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const when = (iso: string) => formatWhen(iso, now, timeZone, locale);
   const remove = async () => {
+    setAsking(false);
     setBusy(true);
     try {
       await endpoints.removeConnectedApp(app.grantId);
@@ -52,10 +55,30 @@ function AppRow({ app }: { app: ConnectedAppView }) {
           size="sm"
           variant="secondary"
           loading={busy}
-          onPress={() => void remove()}
+          onPress={() => setAsking(true)}
           testID={`connected-remove-${app.name}`}
         />
       </View>
+      <Sheet
+        open={asking}
+        onClose={() => setAsking(false)}
+        title={`Remove ${app.name}?`}
+        subtitle="It stops acting for you at once. To use it again, you’d let it in again from the app itself."
+        footer={
+          <Button
+            label="Remove"
+            variant="danger"
+            block
+            size="lg"
+            onPress={() => void remove()}
+            testID="connected-remove-confirm"
+          />
+        }
+      >
+        <Text variant="body" color="textSecondary">
+          What it already did stays as it is, marked as sent through it.
+        </Text>
+      </Sheet>
       <Text variant="caption" color="textTertiary">
         {app.scopes.map((s) => PERSONAL_SCOPE_LABELS[s as PersonalScope] ?? s).join(' · ')}
       </Text>

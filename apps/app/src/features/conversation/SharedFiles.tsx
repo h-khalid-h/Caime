@@ -196,7 +196,7 @@ export function SharedFiles({
                       <View
                         style={{
                           position: 'absolute',
-                          left: 6,
+                          start: 6,
                           bottom: 6,
                           flexDirection: 'row',
                           alignItems: 'center',
@@ -226,7 +226,7 @@ export function SharedFiles({
                       style={{
                         position: 'absolute',
                         top: 8,
-                        right: 8,
+                        end: 8,
                         width: 28,
                         height: 28,
                         borderRadius: 14,
@@ -249,7 +249,7 @@ export function SharedFiles({
                       style={{
                         position: 'absolute',
                         top: 8,
-                        left: 8,
+                        start: 8,
                         width: 28,
                         height: 28,
                         borderRadius: 14,
@@ -273,7 +273,7 @@ export function SharedFiles({
               // other, so each is its own control.
               <View
                 key={a.id}
-                style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 8 }}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: 8 }}
                 testID={tab === 'files' ? 'shared-file' : 'shared-link'}
               >
                 <View style={{ flex: 1, minWidth: 0 }}>

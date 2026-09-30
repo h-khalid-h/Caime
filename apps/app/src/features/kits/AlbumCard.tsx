@@ -106,7 +106,7 @@ function AlbumSheet({
           <View key={ph.file.id}>
             <Photo f={ph.file} size={104} label={`Photo ${i + 1} of ${photos.length}`} />
             {mine || ph.addedBy === me.id ? (
-              <View style={{ position: 'absolute', top: 6, right: 6 }}>
+              <View style={{ position: 'absolute', top: 6, end: 6 }}>
                 <IconButton
                   icon={X}
                   size={16}
