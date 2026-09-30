@@ -325,14 +325,12 @@ export const typeScale: Record<TypeStyleName, TypeStyle> = {
   message: { family: 'body', weight: 400, size: 16, lineHeight: 22 },
   caption: { family: 'body', weight: 500, size: 13, lineHeight: 17 },
   captionStrong: { family: 'body', weight: 600, size: 13, lineHeight: 17 },
-  overline: {
-    family: 'body',
-    weight: 600,
-    size: 11,
-    lineHeight: 14,
-    letterSpacing: 0.44,
-    uppercase: true,
-  },
+  /**
+   * A section's label ("Needs you", "Coming up", a settings group): the spec sheet's mono, in
+   * sentence case, never uppercase (BRAND.md). The same style as `mono`, named for what it
+   * heads.
+   */
+  overline: { family: 'mono', weight: 500, size: 12, lineHeight: 16, letterSpacing: 0.3 },
   /** A spec sheet's label: mono, sentence case, quiet. Never for running text. */
   mono: { family: 'mono', weight: 500, size: 12, lineHeight: 16, letterSpacing: 0.3 },
 };

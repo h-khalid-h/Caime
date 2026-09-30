@@ -1321,3 +1321,7 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Two more spec sheets: a space's head (kind, people, organization as a link) and
   About (version, running on, for, price, under the tagline in mono). E2E 53 pass; budget
   437.6 KB gzip.
+- 2026-09-30 · Sentence case everywhere: the `overline` type style (every section label in the
+  app: the inbox's "Needs you", a settings group, "Team · 2") is now the spec sheet's mono in
+  sentence case, no longer uppercase Inter; badge digits keep the body face. One token, no
+  copy changed; `around-the-conversation` and `core-flow` pass (58). Budget 437.6 KB gzip.

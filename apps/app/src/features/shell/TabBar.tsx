@@ -132,9 +132,9 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                     }}
                   >
                     <Text
-                      variant="overline"
+                      variant="captionStrong"
                       color={t.c.onAccentStrong}
-                      style={{ textTransform: 'none' }}
+                      style={{ fontSize: 11, lineHeight: 14 }}
                       maxFontSizeMultiplier={1}
                     >
                       {count > 9 ? '9+' : count}

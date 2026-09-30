@@ -69,9 +69,9 @@ function RailItem({
                 }}
               >
                 <Text
-                  variant="overline"
+                  variant="captionStrong"
                   color={t.c.onAccentStrong}
-                  style={{ textTransform: 'none', fontSize: 10 }}
+                  style={{ fontSize: 10, lineHeight: 14 }}
                   maxFontSizeMultiplier={1}
                 >
                   {count > 9 ? '9+' : count}

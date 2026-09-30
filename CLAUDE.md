@@ -182,7 +182,9 @@ These are rules, not preferences.
   ever reached only through one organization's page.
 - The app's `mono` text variant (`typeScale.mono`, the system monospace by platform in
   `theme/fonts.ts`, weight as a style) is for spec-sheet labels only: never running text, never
-  uppercase. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
+  uppercase. `overline` is the same style under the name of what it heads (a section's label:
+  "Needs you", "Coming up", a settings group), so nothing in the app is uppercase any more; a
+  badge's digits use `captionStrong`, never `overline`. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
   null row is left out): an organization's page (`org-spec`), a person's "and you" block
   (`person-profile`), Welcome's three lines, a space's head (`space-spec`), About
   (`about-spec`), and the auth screens' `kicker` (`AuthLayout`): a new screen that lists facts

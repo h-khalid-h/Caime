@@ -185,7 +185,7 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 | Body | Inter | 15 / 21 | 400 |
 | Message | Inter | 16 / 22 | 400 |
 | Caption | Inter | 13 / 17 | 500 |
-| Overline | Inter | 11 / 14 | 600, +4% tracking, uppercase |
+| Overline | the system monospace | 12 / 16 | 500, sentence case, never uppercase: a section's label ("Needs you", "Coming up", a settings group), the same style as Mono |
 | Mono | the system monospace | 12 / 16 | 500, sentence case: labels on spec-sheet surfaces (the public pages; in the app, `Spec` rows on a person's and an organization's page, Welcome's lines, the auth screens' kicker), never running text |
 
 ## Shape, space, motion
