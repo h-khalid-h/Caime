@@ -1706,6 +1706,8 @@ test.describe
       const { page, errors } = noor;
       const stub = async () =>
         ((await (await page.request.get(AI_STUB_REQUESTS)).json()) as { calls: string[] }).calls;
+      // From nothing: a retry of this serial group would otherwise find the first run's calls.
+      await page.request.delete(AI_STUB_REQUESTS);
       // Off by default: nothing has reached the model, and the composer offers nothing.
       expect(await stub()).toEqual([]);
       await page.goto(`/c/${convo}`);

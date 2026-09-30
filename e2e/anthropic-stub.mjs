@@ -1,7 +1,8 @@
 /**
  * A stand-in for the Anthropic Messages API, for end-to-end runs: the server under test talks to
  * it through ANTHROPIC_BASE_URL. Answers are deterministic, worked out from the prompt, so the
- * tests can assert what a person sees. `GET /requests` says which features called it.
+ * tests can assert what a person sees. `GET /requests` says which features called it, and
+ * `DELETE /requests` forgets them (a serial group retried starts from nothing).
  */
 import { createServer } from 'node:http';
 
@@ -117,6 +118,11 @@ createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/requests') {
     res.writeHead(200, { 'content-type': 'application/json' });
     return res.end(JSON.stringify({ calls }));
+  }
+  if (req.method === 'DELETE' && req.url === '/requests') {
+    calls.length = 0;
+    res.writeHead(204);
+    return res.end();
   }
   let raw = '';
   for await (const chunk of req) raw += chunk;
