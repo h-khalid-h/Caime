@@ -78,6 +78,11 @@ test('two people connect with private labels and talk in real time', async ({ br
   await a.page.getByTestId('relationship-save').click();
   await a.page.waitForURL('**/c/**');
   const conversation = new URL(a.page.url()).pathname;
+  // Nothing said yet: first words are offered, fitted to a work relationship, and a tap puts one
+  // in the box. Nothing is sent by itself.
+  await expect(a.page.getByTestId('first-words')).toContainText('Your first words with Sarah');
+  await a.page.getByTestId('first-words-0').click();
+  await expect(a.page.getByTestId('composer-input')).toHaveValue('Good to have you here, Sarah.');
 
   // A new conversation with someone he knows is the one they already have.
   await a.page.goto('/');

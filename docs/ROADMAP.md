@@ -532,9 +532,9 @@ outperforming the alternatives is reach and operations. In the order the review 
       a token revoked, an organization blocked from a request, an update taken back), skeletons
       and retry on Requests and Notifications and the skeleton in Saved, no pronoun fallback in
       call history, colours through the theme (the auth backdrop, read ticks, the call surface
-      and its end/go buttons), start/end for RTL in place of every one-sided left/right. Still
-      to do: onboarding that walks the first connection to a first message (accepting a request
-      already opens the conversation), a screen reader pass on a device
+      and its end/go buttons), start/end for RTL in place of every one-sided left/right. A new
+      connection with nothing said yet offers three first lines fitted to the relationship, a tap
+      from the box (PRD §87, `FirstWords`, E2E). Still to do: a screen reader pass on a device
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -1141,3 +1141,6 @@ outperforming the alternatives is reach and operations. In the order the review 
   tests), `email_codes` and `password_resets` (0042), `POST /auth/email/{send,verify}`,
   `POST /auth/reset` and `/reset/confirm`, the `/forgot` and `/reset` screens, the Email group in
   Security. Production needs `SMTP_URL` and `EMAIL_FROM` set by the operator.
+- 2026-09-30 · First words (PRD §87): an empty one-to-one with a new connection offers three
+  openers by sphere, put in the composer with `ComposerHandle.insert`; the deploy guide gains the
+  production environment checklist.

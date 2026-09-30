@@ -62,6 +62,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { Composer, type ComposerHandle } from './Composer';
 import { ContextPanel } from './ContextPanel';
+import { FirstWords } from './FirstWords';
 import { ForwardSheet } from './ForwardSheet';
 import { MessageActions, toggleReaction } from './MessageActions';
 import { MessageBubble } from './MessageBubble';
@@ -559,6 +560,25 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         renderItem={renderItem}
         ListHeaderComponent={<TypingIndicator names={typingNames} />}
         ListFooterComponent={start}
+        ListEmptyComponent={
+          // A new connection with nothing said yet (PRD §87). The list is inverted, so what it
+          // shows when empty is turned back the right way up.
+          conversation &&
+          !msgs.isPending &&
+          conversation.kind === 'direct' &&
+          conversation.isGeneral &&
+          conversation.other &&
+          conversation.connected === true &&
+          !conversation.request &&
+          !privately ? (
+            <View style={{ transform: [{ scaleY: -1 }] }}>
+              <FirstWords
+                conversation={conversation}
+                onPick={(line) => composer.current?.insert(line)}
+              />
+            </View>
+          ) : null
+        }
         onEndReached={() => {
           if (msgs.hasNextPage && !msgs.isFetchingNextPage) void msgs.fetchNextPage();
         }}

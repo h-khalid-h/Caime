@@ -57,6 +57,8 @@ import { toast } from '@/ui/Toast';
 
 export interface ComposerHandle {
   focus: () => void;
+  /** Put words in the box, as if typed (a first line offered, PRD §87), and focus it. */
+  insert: (text: string) => void;
 }
 
 export interface ComposerProps {
@@ -136,7 +138,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const enterPref = usePrefs((p) => p.enterToSend);
   const enterSends = enterPref ?? Platform.OS === 'web';
 
-  useImperativeHandle(ref, () => ({ focus: () => input.current?.focus() }), []);
+  useImperativeHandle(ref, () => ({
+    focus: () => input.current?.focus(),
+    insert: (v: string) => {
+      onChange(v);
+      input.current?.focus();
+    },
+  }));
 
   // Entering edit mode loads the message's text; leaving restores the draft.
   const value = editing ? (editText ?? editingText ?? '') : text;

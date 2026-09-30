@@ -325,6 +325,52 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" 'https://caime.example.com/v1/admin
 **Organizations** on Business see their own inbox's insights on their page: customers who
 wrote, how fast the team first answered, who's waiting and what's resolved, for the whole team.
 
+## Production checklist: what the app service sets
+
+Everything the server reads is in the table above; on EasyPanel the `caime` service sets only
+what it must (2026-09-30: `DATABASE_URL`, `PUBLIC_URL`, `TRUST_PROXY`, `LOG_LEVEL`,
+`ADMIN_TOKEN`, `METRICS_TOKEN`, `ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `STRIPE_PORTAL_CONFIGURATION`, `CLOUDFLARE_TURN_KEY_ID`,
+`CLOUDFLARE_TURN_API_TOKEN`) and leaves the rest to the image (`NODE_ENV`, `PORT`, `HOST`,
+`DATA_DIR`, `WEB_DIR`) and to the code's defaults. Setting the defaults explicitly makes the
+panel say what production runs on; these lines are safe to paste as they are:
+
+```
+NODE_ENV=production
+PORT=8787
+HOST=0.0.0.0
+DATA_DIR=/data
+WEB_DIR=/app/web
+WORKERS=true
+DATABASE_POOL_MAX=20
+SESSION_DAYS=90
+MINIMUM_AGE=13
+BACKUP_ENABLED=true
+BACKUP_DIR=/data/backups
+BACKUP_EVERY_HOURS=24
+BACKUP_KEEP_DAYS=30
+LEGAL_NAME=DATA C OÜ
+CONTACT_EMAIL=hello@cai.me
+VAPID_SUBJECT=mailto:hello@cai.me
+ANTHROPIC_MODEL=claude-opus-5
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+STRIPE_API_BASE=https://api.stripe.com
+CLOUDFLARE_TURN_API_BASE=https://rtc.live.cloudflare.com
+STUN_URLS=stun:stun.l.google.com:19302
+TURN_URLS=
+CORS_ORIGINS=
+WEBHOOKS_ALLOW_PRIVATE=false
+DNS_SERVERS=1.1.1.1,8.8.8.8
+```
+
+Still unset on purpose, each waiting on something only the operator has: `SMTP_URL` and
+`EMAIL_FROM` (an SMTP account: until then no address is confirmed and passwords are reset with
+recovery codes, R48), `EXPO_ACCESS_TOKEN` (the store builds), `TURN_SECRET` and `TURN_URLS` (a
+TURN server of Caime's own; Cloudflare's relay is in use), `PLANS_URL` (billing is live, so the
+app sells plans itself), `PRIVACY_URL`, `TERMS_URL` and `HELP_URL` (Caime's own pages follow
+`PUBLIC_URL`, so leaving them unset survives a change of domain), and the VAPID keys (generated
+and kept in the database on first boot). A redeploy applies a change to the environment.
+
 ## Backups
 
 A worker instance dumps the database once a day (`pg_dump`, custom format, compressed, no owners
