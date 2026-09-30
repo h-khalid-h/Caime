@@ -17,6 +17,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
+import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
@@ -32,6 +33,26 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   const operator = (req: FastifyRequest) => requireOperator(ctx, req, ctx.config.ADMIN_TOKEN);
 
   const handleParam = z.object({ handle: z.string().trim().min(1).max(64) });
+
+  /** The database's backups (docs/DEPLOY.md): the last that succeeded, and the ones on disk. */
+  app.get('/admin/backups', async (req) => {
+    operator(req);
+    return {
+      enabled: ctx.config.BACKUP_ENABLED,
+      dir: backupDir(ctx),
+      keepDays: ctx.config.BACKUP_KEEP_DAYS,
+      last: await lastBackup(ctx),
+      files: await listBackups(ctx),
+    };
+  });
+
+  /** A backup now, before a risky change or to try the restore drill. */
+  app.post('/admin/backups', async (req) => {
+    operator(req);
+    const made = await runBackup(ctx);
+    if (!made) throw conflict('backup_running', 'Another instance is backing up right now.');
+    return { backup: made };
+  });
 
   /** The product's health (PRD §82–83): aggregates only, over the last `days`. */
   app.get('/admin/metrics', async (req): Promise<{ metrics: ProductMetricsView }> => {

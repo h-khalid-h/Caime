@@ -493,8 +493,13 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
 The product reviewed whole on 2026-09-30: the wedge works end to end on the web; what stops it
 outperforming the alternatives is reach and operations. In the order the review gives:
 
-- [ ] Backups (P0): nightly `pg_dump` kept 30 days, a restore drill written down, a
-      `caime_backup_age_seconds` gauge. Nothing else is safe without it
+- [x] Backups (P0): a daily `pg_dump` by a worker instance, each checked with `pg_restore
+      --list`, kept 30 days on the data volume, the last remembered in the database and on
+      `/metrics` (`caime_backup_last_success_timestamp_seconds`, `caime_backup_bytes`), the
+      operator's `GET`/`POST /v1/admin/backups`, the image carrying `postgresql-client-16`, and
+      the restore drill in `docs/DEPLOY.md` (`backup.test.ts`). ⛔ A copy off the host (the
+      volume's backup to S3) is the operator's to switch on; the drill itself is to be run once
+      on production
 - [ ] A readable web (P1): a server-rendered landing page for visitors, public profiles at
       `/@handle` and `/o/handle` with Open Graph, canonical and JSON-LD (only what's already
       shown to everyone; a person can turn theirs off), a real 404, `sitemap.xml` and
@@ -1078,3 +1083,7 @@ outperforming the alternatives is reach and operations. In the order the review 
   sitemap (P1); no phone in anyone's hands (P1); paid tiers sell capacity, not the wedge (P1);
   no alerting (P1); a UX polish list (P2). The plan is M9. The stale line about Stripe's live
   prices corrected: they exist.
+- 2026-09-30 — Backups (M9, P0): a daily checked `pg_dump` kept 30 days, its age on
+  `/metrics`, the operator's routes to see and make one, the restore drill written down. The
+  image now installs PostgreSQL's own client 16; the image build itself couldn't be run here
+  (Docker has no network in this container), so CI's build is the check.

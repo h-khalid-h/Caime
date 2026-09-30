@@ -27,6 +27,14 @@ RUN pnpm --filter @caime/app build:web \
  && pnpm --filter @caime/server deploy --prod --legacy /out
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
+# pg_dump and pg_restore for the database backups (docs/DEPLOY.md, "Backups"), at the database's
+# major version (16), from PostgreSQL's own apt repository: Debian's client is 15.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg postgresql-common \
+ && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+ && apt-get install -y --no-install-recommends postgresql-client-16 \
+ && apt-get purge -y --auto-remove curl gnupg \
+ && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production \
     PORT=8787 \
     HOST=0.0.0.0 \

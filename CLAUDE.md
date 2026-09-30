@@ -298,6 +298,10 @@ These are rules, not preferences.
   `apps/server/src/lib/plans.ts`, where something is added. Never count the wedge (R23). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
   `plans.test.ts` is where limits are tested.
+- Backups (`lib/backup.ts`): a periodic task dumps the database with `pg_dump` (the image has
+  client 16; tests need `pg_dump`/`pg_restore` on the PATH), checks it with `pg_restore --list`,
+  and keeps the last in `server_settings` (`backup.last`) for the `caime_backup_*` gauges; tests
+  run with `BACKUP_ENABLED=false` unless they're about it.
 - Count what the server does with `ctx.metrics` (`apps/server/src/lib/metrics.ts`). Label values
   come from fixed sets only (a route as declared, a kind, an outcome), never ids, handles or
   text; `metrics.test.ts` scrapes after real traffic and checks for them.

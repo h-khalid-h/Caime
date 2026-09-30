@@ -278,6 +278,45 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" 'https://caime.example.com/v1/admin
 **Organizations** on Business see their own inbox's insights on their page: customers who
 wrote, how fast the team first answered, who's waiting and what's resolved, for the whole team.
 
+## Backups
+
+A worker instance dumps the database once a day (`pg_dump`, custom format, compressed, no owners
+or grants) into `BACKUP_DIR` (`/data/backups` on the volume unless set), checks each dump reads
+back (`pg_restore --list`), keeps `BACKUP_KEEP_DAYS` (30) of them, and remembers the last one in
+the database, so every instance's `/metrics` says when it was
+(`caime_backup_last_success_timestamp_seconds`, `caime_backup_bytes`). The image carries
+`postgresql-client-16`, the database's major version. Two instances never dump at once (an
+advisory lock). Turn it off with `BACKUP_ENABLED=false` only where something else backs up.
+
+The operator sees and makes them with the admin token:
+
+```sh
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/backups
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/backups
+```
+
+**Alert** when the last success is older than a day and a half:
+`time() - caime_backup_last_success_timestamp_seconds > 129600`.
+
+**Restore drill** (do it once now, and after any change to the database's version): from the
+`caime` service's console in EasyPanel, or any host with the dump and `pg_restore` 16,
+
+```sh
+pg_restore --list /data/backups/caime-<date>.dump | head          # it reads
+createdb -h db -U postgres caime_restore                          # a scratch database
+pg_restore --no-owner --no-privileges -d postgres://postgres:<pw>@db:5432/caime_restore \
+  /data/backups/caime-<date>.dump
+psql postgres://postgres:<pw>@db:5432/caime_restore -c 'select count(*) from users'
+dropdb -h db -U postgres caime_restore
+```
+
+To restore for real: stop the `caime` service, restore into a fresh database the same way, point
+`DATABASE_URL` at it, start the service (its migrations run forward as needed).
+
+**What this doesn't cover:** the dumps sit on the same volume as uploads. A copy off the box
+(EasyPanel's volume backup to S3, or the S3 storage adapter when it lands) is what survives the
+host; until then, take one by hand after anything you'd hate to lose.
+
 ## Scaling
 
 Instances are stateless apart from `/data`: realtime fans out across instances through Postgres

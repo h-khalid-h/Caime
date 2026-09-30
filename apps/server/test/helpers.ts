@@ -35,6 +35,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
     PUBLIC_URL: 'http://localhost:8787',
     DATA_DIR: `/tmp/${name}`,
     WORKERS: 'false',
+    BACKUP_ENABLED: 'false',
     ...env,
   });
   const { app, ctx } = await buildApp(config, { now: () => clock.now, skipMigrations: true });

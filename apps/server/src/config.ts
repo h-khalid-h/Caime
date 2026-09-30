@@ -54,6 +54,15 @@ const Env = z.object({
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
   /**
+   * Database backups (docs/DEPLOY.md, "Backups"): a `pg_dump` by a worker instance every
+   * BACKUP_EVERY_HOURS, kept BACKUP_KEEP_DAYS in BACKUP_DIR (DATA_DIR/backups unless set), each
+   * checked with `pg_restore --list` as it's made. Off only where something else backs up.
+   */
+  BACKUP_ENABLED: bool.default(true),
+  BACKUP_DIR: z.string().optional(),
+  BACKUP_EVERY_HOURS: z.coerce.number().int().positive().default(24),
+  BACKUP_KEEP_DAYS: z.coerce.number().int().positive().default(30),
+  /**
    * Let webhooks reach private and loopback addresses, and plain http. For tests and local
    * development only: in production it would let an app probe the server's own network.
    */

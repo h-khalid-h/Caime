@@ -17,6 +17,7 @@ import { createDb } from './db/pool';
 import { registerAgentJob } from './lib/agent';
 import { createAiAssist } from './lib/ai';
 import { registerWebhookJob } from './lib/apps';
+import { registerBackupJob } from './lib/backup';
 import { registerBillingJobs } from './lib/billing';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
@@ -271,6 +272,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerWorkers();
   registerWebhookJob();
   registerBillingJobs();
+  registerBackupJob();
   registerUpdateJobs();
   registerAgentJob();
   registerCallSweep();

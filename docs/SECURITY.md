@@ -81,6 +81,9 @@ These are known and tracked in `docs/ROADMAP.md`. None is hidden behind a featur
   follow-ups in a standard conversation; they aren't asked first. A private conversation is the
   answer: AI never reads one. A message can also try to steer what the model writes; what it
   writes only ever reaches the person who asked, as a suggestion.
+- **Backups stay on the box.** A daily `pg_dump`, checked and kept 30 days (`docs/DEPLOY.md`,
+  "Backups"), sits on the data volume beside uploads; uploads themselves aren't dumped. A copy off
+  the host (the volume's own backup, or S3) is what a lost host needs, and isn't automated yet.
 - **Moderation tooling.** Reports are stored; there is no reviewer interface yet.
 - **Rate limits are per instance** (in memory). With several instances behind a load balancer,
   limits multiply by the instance count until a shared store is added.
