@@ -191,6 +191,16 @@ These are rules, not preferences.
   uses it rather than a card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
+- The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
+  `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
+  rendered in the app's shell like the landing page, for everyone, signed in or not, and never
+  boot the app (`plugins/static.ts` strips the scripts; `public, max-age=600`). Every page shares
+  `masthead(path)` (wordmark, kicker, nav with `aria-current`), `spec(rows)` and `footer(facts)`;
+  an explorer is `explorer(group, title, items)` with its group in `EXPLORERS`, which writes the
+  CSS that picks a panel. Every number on a page is read from the code (plans, `e2ee.ts`,
+  `KEPT_DAYS`, `BUSINESS_VIEWS`), never typed; prices come from Stripe through `publicPrices`
+  (billing's ten-minute cache) and read "price shown in the app" without it. A new page joins
+  `MARKETING_PAGES`, `SITE_NAV`, `renderSite` and `public-pages.test.ts`.
 - The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, mono labels
   (`.mono`, the system monospace, no font file), spec-sheet rows (`.spec`) and the landing
   page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a

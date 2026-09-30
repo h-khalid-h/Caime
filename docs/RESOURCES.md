@@ -68,3 +68,12 @@ A pull request states, under **Resources**, what the change costs on each of the
 or jobs added, AI tokens per use and how often, bytes on the device or timers running. "Nothing
 new" is a fine answer when it is true. A number claimed is a number measured: `pnpm budget`,
 `autocannon`, Lighthouse, or a test that counts queries or requests.
+
+## The public site
+
+Each page of the site (`/business`, `/pricing`, `/security`, `/developers`, `/about`) is written
+into the app's shell on request from constants and the plans, with no query (a person's or an
+organization's page queries once), and is sent with `public, max-age=600`. The pricing page asks
+Stripe for its prices through billing's ten-minute cache, so at most one request to Stripe every
+ten minutes for every visitor together, and none when billing isn't connected. A visitor
+downloads the shell's HTML and CSS only: no script, no font beyond the app's own.

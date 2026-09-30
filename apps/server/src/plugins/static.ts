@@ -8,6 +8,7 @@ import { join, relative, resolve, sep } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
+import { publicPrices } from '../lib/billing';
 import {
   injectPublic,
   PERMISSIONS_POLICY,
@@ -100,21 +101,32 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
       path === '/' && req.cookies?.[SESSION_COOKIE]
         ? { kind: 'app' as const }
         : await publicPageFor(ctx.db, path, ctx.now());
-    const rendered = renderPublic(page, ctx.config.PUBLIC_URL, path);
+    const facts =
+      page.kind === 'landing' || page.kind === 'site'
+        ? {
+            legalName: ctx.config.LEGAL_NAME,
+            contactEmail: ctx.config.CONTACT_EMAIL,
+            prices:
+              page.kind === 'site' && page.page === 'pricing' ? await publicPrices(ctx) : null,
+          }
+        : null;
+    const rendered = renderPublic(page, ctx.config.PUBLIC_URL, path, facts);
     let html = injectPublic(template, rendered);
     // A visitor on someone's page, or on the landing page (no session here): the page as it is,
     // without the app's scripts, which would only boot to keep out of its way (R44). Its ways in
-    // are links: sign-up and sign-in open the app.
+    // are links: sign-up and sign-in open the app. A page of the site about Caime is everyone's,
+    // signed in or not: the app has no screen for it, so it never boots there.
     const visitor =
-      (page.kind === 'person' ||
+      page.kind === 'site' ||
+      ((page.kind === 'person' ||
         page.kind === 'org' ||
         page.kind === 'invite' ||
         page.kind === 'landing') &&
-      !req.cookies?.[SESSION_COOKIE];
+        !req.cookies?.[SESSION_COOKIE]);
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
     return reply
       .status(rendered.status)
-      .header('cache-control', 'no-cache')
+      .header('cache-control', page.kind === 'site' ? 'public, max-age=600' : 'no-cache')
       .header('content-security-policy', csp)
       .header('permissions-policy', PERMISSIONS_POLICY)
       .type('text/html; charset=utf-8')

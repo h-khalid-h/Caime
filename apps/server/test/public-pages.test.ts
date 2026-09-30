@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { BUSINESS_VIEW_LABELS, BUSINESS_VIEWS } from '@caime/core/business';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -58,7 +59,7 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('<dl class="spec">');
     expect(r.body.match(/<input type="radio" name="layer"/g)).toHaveLength(6);
     expect(r.body).toContain('<label for="layer-attention"');
-    expect(r.body).toContain('id="panel-privacy"');
+    expect(r.body).toContain('id="panel-layer-privacy"');
     expect(r.body.split('<div id="static">')[1]!.split('</main>')[0]).not.toContain('<script');
     expect(r.body).toContain('href="/sign-up"');
     // The shell is intact around it, without the app's scripts: a visitor's page is a page.
@@ -130,6 +131,63 @@ describe('the readable web (R44)', () => {
     expect((await t.app.inject({ url: `/v1/orgs/${orgId}/avatar` })).statusCode).toBe(404);
     expect((await t.app.inject({ url: `/v1/users/${noor.user.id}/avatar` })).statusCode).toBe(404);
     expect((await t.app.inject({ url: `/v1/users/${teen.user.id}/avatar` })).statusCode).toBe(404);
+  });
+
+  it('the site about Caime: five pages, everyone’s, script-free, each a spec sheet', async () => {
+    const pages: Record<string, string> = {
+      business: 'Answer as the organization, and prove it’s you.',
+      pricing: 'Free for people. Organizations pay for their team.',
+      security: 'Each side of your life sees what you chose.',
+      developers: 'An API that reaches only what it was given.',
+      about: 'Made for the people in your life, not for a feed.',
+    };
+    for (const [name, h1] of Object.entries(pages)) {
+      for (const headers of [{}, { cookie: `caime_session=${noor.token}` }] as Array<
+        Record<string, string>
+      >) {
+        const r = await visit(`/${name}`, headers);
+        expect(r.statusCode, name).toBe(200);
+        expect(r.headers['cache-control']).toBe('public, max-age=600');
+        expect(r.body, name).toContain(`<h1>${h1}</h1>`);
+        expect(r.body).toContain('<meta name="robots" content="index,follow">');
+        expect(r.body).toContain(`<link rel="canonical" href="https://caime.example/${name}">`);
+        // The masthead's nav names where you are; the page never boots the app, signed in or not.
+        expect(r.body).toContain(`<a href="/${name}" aria-current="page">`);
+        expect(r.body).toContain('<a href="/sign-in">Sign in</a>');
+        expect(r.body).toContain('<dl class="spec">');
+        expect(r.body).not.toContain('entry-abc.js');
+        expect(r.body).toContain('href="mailto:hello@cai.me"');
+      }
+    }
+    // What the pages say is what the code does: the plans' numbers, the encryption's, the API's.
+    const pricing = (await visit('/pricing')).body;
+    expect(pricing).toContain('<dt class="mono">team</dt><dd>3 people</dd>');
+    expect(pricing).toContain('<dt class="mono">team</dt><dd>100 people</dd>');
+    expect(pricing).toContain('<dt class="mono">ai assist</dt><dd>200 actions a day</dd>');
+    expect(pricing).toContain('<dt class="mono">files</dt><dd>100 GB</dd>');
+    // Billing isn't connected here: the price is in the app, never made up.
+    expect(pricing).toContain('price shown in the app');
+    expect(pricing).not.toMatch(/€\d/);
+    const business = (await visit('/business')).body;
+    expect(business).toContain(
+      BUSINESS_VIEWS.map((v) => BUSINESS_VIEW_LABELS[v].toLowerCase()).join(', '),
+    );
+    expect(business.match(/<input type="radio" name="step"/g)).toHaveLength(4);
+    const security = (await visit('/security')).body;
+    expect(security).toContain('Up to 64 people, 20 devices each.');
+    expect(security).toContain('Ended sign-ins are kept 30 days, security records a year');
+    expect(security.match(/<input type="radio" name="sees"/g)).toHaveLength(4);
+    expect((await visit('/developers')).body).toContain('600 requests a minute per token.');
+    expect((await visit('/about')).body).toContain('made by DATA C OÜ');
+    // The landing page carries the same nav, and links on to the site.
+    const home = (await visit('/')).body;
+    expect(home).toContain('<a href="/" aria-current="page">Home</a>');
+    expect(home).toContain('<a href="/business">For organizations</a>');
+    // Not a page of the site: the app, as before.
+    expect((await visit('/pricing2')).body).toContain('entry-abc.js');
+    expect((await visit('/sitemap.xml')).body).toContain(
+      '<loc>https://caime.example/pricing</loc>',
+    );
   });
 
   it('the app’s own screens ask not to be indexed; robots and the sitemap say what is', async () => {

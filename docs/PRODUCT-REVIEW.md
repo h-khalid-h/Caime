@@ -447,6 +447,8 @@ with its reason, so it isn't proposed again without new facts.
   app is uppercase), every auth screen carries a mono kicker under the brand panel's mono
   tagline, and the public site is a spec sheet with a layer explorer (radio inputs and CSS, no
   script) rather than cards; the invite, the 404 and the policy pages take the same masthead.
-  Rules from it: a new fact list uses `Spec`; a new way to start something joins the sheet and
+  The site about Caime is five such pages beside the landing page (for organizations, pricing,
+  security, developers, about), read by everyone without the app, every number on them read
+  from the code. Rules from it: a new fact list uses `Spec`; a new way to start something joins the sheet and
   the owner picker, never a screen of its own; a new kind of owner joins the Spaces row and the
   Business row; mono is for labels, never running text, and nothing is uppercase.

@@ -200,6 +200,29 @@ test('before signing up, the terms and privacy policy open as pages, each leadin
     terms.getByRole('heading', { name: 'Messaging that understands your relationships.' }),
   ).toBeVisible();
   await expect(terms.locator('script[src]')).toHaveCount(0);
+  // The site about Caime: its pages are a nav away, each a page too, and its way in is the app.
+  await terms
+    .getByRole('navigation', { name: 'Caime' })
+    .getByRole('link', { name: 'Pricing' })
+    .click();
+  await terms.waitForURL(/\/pricing$/);
+  await expect(
+    terms.getByRole('heading', { name: 'Free for people. Organizations pay for their team.' }),
+  ).toBeVisible();
+  await expect(terms.locator('script[src]')).toHaveCount(0);
+  await expect(terms.getByRole('heading', { name: 'Business', level: 3 })).toBeVisible();
+  await terms
+    .getByRole('navigation', { name: 'Caime' })
+    .getByRole('link', { name: 'For organizations' })
+    .click();
+  await terms.waitForURL(/\/business$/);
+  await expect(terms.locator('input[name="step"]')).toHaveCount(4);
+  // Picking a step is CSS: the panel shows, no script ran.
+  await terms.locator('label[for="step-answers"]').click();
+  await expect(terms.locator('#panel-step-answers')).toBeVisible();
+  await expect(terms.locator('#panel-step-writes')).toBeHidden();
+  await terms.getByRole('link', { name: 'Caime', exact: true }).click();
+  await terms.waitForURL(/\/$/);
   await terms.getByRole('link', { name: 'Start free' }).click();
   await terms.waitForURL('**/sign-up');
   await expect(terms.getByTestId('signup-terms')).toBeVisible();

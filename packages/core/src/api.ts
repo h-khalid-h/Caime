@@ -769,6 +769,14 @@ export const SITE_PAGES = ['privacy', 'terms', 'help'] as const;
 export type SitePage = (typeof SITE_PAGES)[number];
 
 /**
+ * The pages about Caime a visitor reads before signing in (R50: the public site, in the app's
+ * shell but without its scripts, `lib/site-pages.ts`), at PUBLIC_URL/<page>. Each is a reserved
+ * handle.
+ */
+export const MARKETING_PAGES = ['business', 'pricing', 'security', 'developers', 'about'] as const;
+export type MarketingPage = (typeof MARKETING_PAGES)[number];
+
+/**
  * Where this Caime keeps its policies and help, for About: its own pages, or where its operator
  * published them (the server's environment).
  */

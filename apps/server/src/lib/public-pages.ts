@@ -9,10 +9,23 @@
  */
 import type { OrgRef } from '@caime/core';
 import { canSee, handleError, normalizeHandle, SPHERE_DEFS, type Sphere } from '@caime/core';
+import { MARKETING_PAGES, type MarketingPage } from '@caime/core/api';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
-import { orgAvatarUrl, orgRef } from './business';
+import { orgRef } from './business';
 import { orgsOf } from './orgs';
+import {
+  esc,
+  explorer,
+  explorerStyle,
+  footer,
+  LANDING_LAYERS,
+  masthead,
+  PROMISE,
+  renderSite,
+  SITE_NAME,
+  type SiteFacts,
+} from './site-pages';
 import { avatarUrl, minorOf, privacyOf } from './users';
 
 type Q = Kysely<Database>;
@@ -54,6 +67,8 @@ export interface PublicInvite {
 }
 export type PublicPage =
   | { kind: 'landing' }
+  /** A page of the site about Caime (site-pages.ts): everyone's, signed in or not. */
+  | { kind: 'site'; page: MarketingPage }
   | PublicPerson
   | PublicOrg
   | PublicInvite
@@ -154,6 +169,9 @@ export async function publicInvite(db: Q, token: string, now: Date): Promise<Pub
 /** The page a path is, for whoever isn't signed in. */
 export async function publicPageFor(db: Q, path: string, now: Date): Promise<PublicPage> {
   if (path === '/') return { kind: 'landing' };
+  const site = /^\/([a-z]+)$/.exec(path)?.[1];
+  if (site && (MARKETING_PAGES as readonly string[]).includes(site))
+    return { kind: 'site', page: site as MarketingPage };
   const invite = /^\/i\/([^/?#]+)$/.exec(path);
   if (invite) return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing' };
   const at = /^\/@([^/?#]+)$/.exec(path);
@@ -169,75 +187,10 @@ export async function publicPageFor(db: Q, path: string, now: Date): Promise<Pub
   return (await publicPerson(db, handle, now)) ?? { kind: 'missing' };
 }
 
-const esc = (s: string) =>
-  s.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
-  );
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
-export const SITE_NAME = 'Caime';
-export const PROMISE = 'Messaging that understands your relationships.';
+export { PROMISE, SITE_NAME };
 
-/**
- * The landing page's layer explorer: Caime as it's built, one layer at a time, each with an
- * example drawn as the app draws it. No script: radio buttons and CSS pick the layer, so a
- * visitor's page stays a page (R44).
- */
-const LAYERS: Array<{ id: string; name: string; title: string; body: string; sample: string }> = [
-  {
-    id: 'connection',
-    name: 'Connection',
-    title: 'Who someone is to you comes first.',
-    body: 'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.',
-    sample: `<div class="row"><span class="dot"></span><span><strong>Sarah Ahmed</strong><br><span class="mono">colleague · DATA C · work</span></span></div>
-<div class="row"><span class="dot dot-2"></span><span><strong>Omar Haddad</strong><br><span class="mono">brother · family</span></span></div>`,
-  },
-  {
-    id: 'conversation',
-    name: 'Conversation',
-    title: 'Messages that know their context.',
-    body: 'One-to-one, groups, topics under a connection, spaces for a family, a team or a club. Ordered, delivered once, and yours offline.',
-    sample: `<div class="bubble them">هل وصل العقد؟</div>
-<div class="bubble me">Yes, signing it Friday.</div>
-<div class="mono">read · 2 min</div>`,
-  },
-  {
-    id: 'attention',
-    name: 'Attention',
-    title: 'What needs you, not everything.',
-    body: 'The inbox sorts by what needs you, what’s important, what’s waiting on someone else and what’s quiet, and says why. Your rules by relationship win.',
-    sample: `<div class="row"><span class="tag">Needs you</span><span>Sarah asked about the contract</span></div>
-<div class="row"><span class="tag tag-2">Waiting</span><span>Omar · the deck · since Tuesday</span></div>
-<div class="mono">3 need you</div>`,
-  },
-  {
-    id: 'memory',
-    name: 'Memory',
-    title: 'Nothing said is lost.',
-    body: 'Commitments, dates, amounts, questions and decisions are found in the conversation and offered back as actions. They become facts only when you say so.',
-    sample: `<div class="row"><span class="tag tag-3">Suggested</span><span>Remind me: send the deck · Monday</span></div>
-<div class="row"><span class="tag tag-3">Suggested</span><span>Waiting on Sarah: contract</span></div>
-<div class="mono">based on “I’ll send the deck on Monday.”</div>`,
-  },
-  {
-    id: 'organizations',
-    name: 'Organizations',
-    title: 'A business that proves it’s the business.',
-    body: 'An organization verifies its domain with one DNS record. Its team answers customers as the organization, in one inbox, with apps and an AI agent that always say what they are.',
-    sample: `<div class="row"><span class="dot dot-3"></span><span><strong>Nile Dental</strong><br><span class="mono">verified · niledental.example</span></span></div>
-<div class="row"><span class="tag">Customer waiting</span><span>Lina · new patient forms</span></div>`,
-  },
-  {
-    id: 'privacy',
-    name: 'Privacy',
-    title: 'Each side of your life sees what you chose.',
-    body: 'Profile fields by sphere, read receipts only both ways, requests before strangers reach you, and end-to-end encryption when a conversation should be private.',
-    sample: `<div class="row"><span class="mono">work sees</span><span>name · headline · organization</span></div>
-<div class="row"><span class="mono">family sees</span><span>everything, and where you are when you share it</span></div>
-<div class="row"><span class="mono">a stranger sees</span><span>your name and handle, and may ask</span></div>`,
-  },
-];
 const LANDING_DESCRIPTION =
   'Caime is messaging that knows who each person is to you: your family, your work, your customers, each in its place, with what needs you first. Free for people; organizations verify who they are.';
 
@@ -248,7 +201,12 @@ interface Rendered {
 }
 
 /** The head tags and the plain body for a page, and the status it deserves. */
-export function renderPublic(page: PublicPage, publicUrl: string, path: string): Rendered {
+export function renderPublic(
+  page: PublicPage,
+  publicUrl: string,
+  path: string,
+  facts: SiteFacts | null = null,
+): Rendered {
   const url = `${publicUrl}${path === '/' ? '/' : path}`;
   const meta = (o: {
     title: string;
@@ -274,7 +232,7 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
       `<meta property="og:description" content="${esc(o.description)}">`,
       `<meta property="og:url" content="${esc(url)}">`,
       `<meta property="og:image" content="${esc(o.image ?? `${publicUrl}/apple-touch-icon.png`)}">`,
-      `<meta name="twitter:card" content="${o.image && page.kind !== 'landing' ? 'summary' : 'summary_large_image'}">`,
+      `<meta name="twitter:card" content="${o.image && page.kind !== 'landing' && page.kind !== 'site' ? 'summary' : 'summary_large_image'}">`,
       `<meta name="twitter:title" content="${esc(o.title)}">`,
       `<meta name="twitter:description" content="${esc(o.description)}">`,
       o.ld
@@ -305,10 +263,7 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
         }),
         body: `
 <main class="pub pub-home">
-  <header class="masthead">
-    <span class="wordmark">${SITE_NAME}</span>
-    <span class="mono">messaging that understands your relationships</span>
-  </header>
+  ${masthead('/')}
   <section class="hero">
     <h1>${esc(PROMISE)}</h1>
     <p class="lead">Your family, your work and your customers don’t belong in one list. Say who
@@ -330,33 +285,28 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
       <div><dt class="mono">runs on</dt><dd>Web, iOS and Android, from one account.</dd></div>
     </dl>
   </section>
-  <section class="layers" aria-labelledby="layers-title">
-    <h2 id="layers-title" class="mono">Layers · pick one</h2>
-    ${LAYERS.map(
-      (l, i) => `<input type="radio" name="layer" id="layer-${l.id}"${i === 0 ? ' checked' : ''}>`,
-    ).join('\n    ')}
-    <div class="tabs" role="list">
-      ${LAYERS.map(
-        (l, i) =>
-          `<label for="layer-${l.id}" role="listitem"><span class="mono">0${i + 1}</span> ${esc(l.name)}</label>`,
-      ).join('\n      ')}
-    </div>
-    <div class="panels">
-      ${LAYERS.map(
-        (l, i) => `<article class="panel" id="panel-${l.id}">
-        <p class="mono">0${i + 1} · ${esc(l.name)}</p>
-        <h3>${esc(l.title)}</h3>
-        <p>${esc(l.body)}</p>
-        <div class="sample" aria-label="Example">${l.sample}</div>
-      </article>`,
-      ).join('\n      ')}
-    </div>
+  ${explorer('layer', 'Layers · pick one', LANDING_LAYERS)}
+  <section class="hero">
+    <p class="cta"><a href="/business">For organizations</a> <a href="/pricing" class="quiet">Pricing</a> <a href="/security" class="quiet">Security</a></p>
   </section>
-  <footer class="foot">
-    <p class="small"><a href="/help">Help</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
-  </footer>
+  ${footer(facts)}
 </main>`,
       };
+    case 'site': {
+      const site = renderSite(
+        page.page,
+        facts ?? {
+          legalName: SITE_NAME,
+          contactEmail: `hello@${new URL(publicUrl).hostname}`,
+          prices: null,
+        },
+      );
+      return {
+        status: 200,
+        head: meta({ title: site.title, description: site.description, image: null, index: true }),
+        body: site.body,
+      };
+    }
     case 'person': {
       const line = [page.headline, page.organizations[0]?.name].filter(Boolean).join(' · ');
       const description = clip(page.bio ?? line ?? `${page.displayName} is on ${SITE_NAME}.`, 200);
@@ -535,7 +485,7 @@ body:has(#root:empty){overflow:auto}
 .pub .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.78rem;letter-spacing:.03em;color:var(--text3);font-weight:500}
 .pub-home h1,.pub-home h3,.pub-home .wordmark,.pub-sheet .wordmark{font-family:Nunito,Inter,system-ui,sans-serif}
 .pub-home .masthead,.pub-sheet .masthead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
-.pub-home .wordmark,.pub-sheet .wordmark{font-weight:800;font-size:1.35rem;color:var(--ink)}
+.pub-home .wordmark,.pub-sheet .wordmark{font-weight:800;font-size:1.35rem;color:var(--ink);text-decoration:none}
 .pub-home .hero{padding:36px 0 28px}
 .pub-home h1{font-size:2.4rem;line-height:1.1;font-weight:800;letter-spacing:-.01em;margin:0 0 14px;max-width:16ch}
 .pub-home .lead{font-size:1.05rem;max-width:58ch}
@@ -557,16 +507,17 @@ body:has(#root:empty){overflow:auto}
 .pub-home .sample .tag{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem;letter-spacing:.03em;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--text);flex:none}
 .pub-home .sample .tag-2{background:var(--surface);border:1px solid var(--line)}.pub-home .sample .tag-3{background:var(--surface);border:1px dashed var(--line)}
 .pub-home .sample .bubble{max-width:80%;padding:8px 12px;border-radius:16px;background:var(--surface)}.pub-home .sample .bubble.me{background:var(--plum);color:#fff;margin-left:auto;border-bottom-right-radius:6px}.pub-home .sample .bubble.them{border-bottom-left-radius:6px}
-${['connection', 'conversation', 'attention', 'memory', 'organizations', 'privacy']
-  .map(
-    (id) =>
-      `#layer-${id}:checked~.tabs label[for="layer-${id}"]{border-color:var(--ink);color:var(--ink);background:var(--muted)}#layer-${id}:checked~.panels #panel-${id}{display:block}#layer-${id}:focus-visible~.tabs label[for="layer-${id}"]{outline:2px solid var(--plum);outline-offset:2px}`,
-  )
-  .join('\n')}
+${explorerStyle()}
 @media (min-width:720px){.pub-home .layers{display:grid;grid-template-columns:200px 1fr;column-gap:20px;align-items:start}.pub-home .layers h2{grid-column:1/-1}.pub-home .tabs{flex-direction:column;align-items:stretch;margin:6px 0 0}.pub-home .tabs label{border-radius:10px}}
 .pub-home .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line)}
 @media (max-width:560px){.pub-home h1{font-size:1.9rem}.pub-home .spec>div,.pub-sheet .spec>div{grid-template-columns:1fr;gap:2px}.pub-home .spec dt,.pub-sheet .spec dt{padding-top:0}}
 @media (prefers-reduced-motion:no-preference){.pub-home .tabs label{transition:border-color .15s ease-out,background .15s ease-out}}
+.pub-home .masthead{align-items:baseline}.pub-home .sitenav{display:flex;gap:4px 14px;flex-wrap:wrap;margin-left:auto}.pub-home .sitenav a{color:var(--text3);text-decoration:none;padding:2px 0}.pub-home .sitenav a[aria-current]{color:var(--ink);border-bottom:1px solid var(--ink)}.pub-home .sitenav a:hover{color:var(--ink)}
+.pub-site .layers{margin-top:26px}.pub-site .hero+.layers{margin-top:0}.pub-home .sheet+.hero,.pub-home .layers+.hero{padding-top:20px}
+.pub-home code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.85em;background:var(--muted);padding:1px 5px;border-radius:5px}
+.pub-home .plans{display:grid;grid-template-columns:1fr;gap:14px}.pub-home .plan{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface)}.pub-home .plan h3{margin:0;font-size:1.2rem;font-weight:800;color:var(--ink);font-family:Nunito,Inter,system-ui,sans-serif}.pub-home .plan .price{margin:2px 0 8px;color:var(--text2)}.pub-home .plan .price strong{color:var(--ink);font-size:1.15rem}.pub-home .plan .spec>div{grid-template-columns:110px 1fr;gap:10px;padding:8px 0}.pub-home .plan .spec>div:last-child{border-bottom:0}.pub-home .plan .small{margin:8px 0 0}
+@media (min-width:720px){.pub-home .plans{grid-template-columns:1fr 1fr}.pub-home .plans-3{grid-template-columns:1fr 1fr 1fr}.pub-home .plan .spec>div{grid-template-columns:1fr;gap:2px}}
+@media (max-width:560px){.pub-home .sitenav{margin-left:0;width:100%}}
 </style>`;
 
 /** The shell with a page's head and body in it. Tolerant of a template without the markers. */
@@ -618,6 +569,7 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     entry(`${publicUrl}/`),
+    ...MARKETING_PAGES.map((p) => entry(`${publicUrl}/${p}`)),
     ...pagesHere.map((p) => entry(`${publicUrl}/${p}`)),
     ...orgs.map((o) => entry(`${publicUrl}/o/${o.handle}`, o.updated_at)),
     '</urlset>',

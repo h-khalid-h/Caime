@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SITE_PAGES } from './api';
+import { MARKETING_PAGES, SITE_PAGES } from './api';
 import { emailError, handleError, handleFromName, passwordError } from './rules';
 import { Handle, isReservedHandle, Password, RESERVED_HANDLES } from './schemas';
 
@@ -37,6 +37,7 @@ describe('reserved handles (R35)', () => {
       ...['noreply', 'no.reply', 'billing', 'verified'],
       ...['api', 'www', 'app', 'about', 'privacy', 'terms', 'settings', 'people', 'you', 'sw.js'],
       ...SITE_PAGES,
+      ...MARKETING_PAGES,
     ])
       expect(isReservedHandle(h), h).toBe(true);
     // However it's typed.

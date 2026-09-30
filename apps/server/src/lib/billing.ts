@@ -109,6 +109,19 @@ async function priceViews(ctx: AppContext, plan: BilledPlan): Promise<PriceView[
   });
 }
 
+/**
+ * The prices the public site shows (Pro's and Business's, by month and by year), or null where
+ * billing isn't connected or Stripe is away: the page then sends people to the app for them.
+ */
+export async function publicPrices(ctx: AppContext): Promise<PriceView[] | null> {
+  try {
+    const views = (await Promise.all(BILLED_PLANS.map((p) => priceViews(ctx, p)))).flat();
+    return views.length ? views : null;
+  } catch {
+    return null;
+  }
+}
+
 function customerOf(ctx: AppContext, payer: Payer, db: Q = ctx.db) {
   return db
     .selectFrom('billing_customers')

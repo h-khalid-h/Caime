@@ -520,6 +520,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       when the store was away, `caime_backup_last_copy_timestamp_seconds`; `backup-copy.test.ts`)
       ⛔ the bucket and its keys (`BACKUP_S3_*`) are the owner's to set; the drill itself is to
       be run once on production
+- [x] The public site (R50): `/business`, `/pricing`, `/security`, `/developers` and `/about`
+      beside the landing page, in the app's shell without its scripts, for everyone; a shared
+      masthead and nav, spec sheets with every number read from the code, an explorer on the
+      organizations and security pages, prices from Stripe when billing is connected
+      (`lib/site-pages.ts`, `public-pages.test.ts`, `core-flow.spec.ts`)
 - [x] A readable web (R44, P1): the landing page in the shell for a visitor who isn't signed in,
       public pages at `/@handle` and `/o/handle` (Open Graph, Twitter cards, canonical, JSON-LD
       `Person`/`Organization`, a plain body the app replaces), only what's shown to everyone and
@@ -1330,3 +1335,10 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · R50 written (one identity, one place to start: the rules from today's work, in
   `docs/PRODUCT-REVIEW.md`), and onboarding's steps say where they are in mono ("step 2 of 3 ·
   how Caime works"; `core-flow` checks two of them).
+- 2026-09-30 · The public site: five pages beside the landing page (for organizations, pricing,
+  security, developers, about), each a spec sheet in the shared masthead and nav, script-free
+  for everyone and cached ten minutes; the organizations page walks a customer's day and the
+  security page who sees what, as explorers (radio inputs and CSS). Every number is read from
+  the plans, the encryption design, the retention spans and the API's guide; prices from Stripe
+  when billing is connected, "price shown in the app" otherwise (production has billing, so it
+  shows them). The sitemap lists them. Budget unchanged at 437.6 KB gzip.

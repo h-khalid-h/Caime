@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
-import { SITE_PAGES } from './api';
+import { MARKETING_PAGES, SITE_PAGES } from './api';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
@@ -146,6 +146,7 @@ export const RESERVED_HANDLES: readonly string[] = [
   // Its own pages, the app's top-level screens and the files at the web's root, so a link to
   // someone never reads as one (apps/app's paths.test.ts checks every route is here).
   ...SITE_PAGES,
+  ...MARKETING_PAGES,
   'about',
   'settings',
   'chats',
