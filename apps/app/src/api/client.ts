@@ -117,6 +117,8 @@ export async function request<T>(
     if (res.status === 401 && path !== '/auth/login') onUnauthorized?.();
     const e = data?.error ?? {};
     if (res.status === 409 && e.code === 'wrong_account') onWrongAccount?.();
+    // Suspended by the operator (R49): out, and told why by the message that came with it.
+    if (res.status === 403 && e.code === 'suspended' && path !== '/auth/login') onUnauthorized?.();
     throw new ApiError(
       res.status,
       e.code ?? 'error',

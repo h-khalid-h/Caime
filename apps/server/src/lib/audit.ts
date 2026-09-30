@@ -14,6 +14,8 @@ export type AuditAction =
   | 'moderation.report_status'
   | 'moderation.message_removed'
   | 'moderation.update_removed'
+  | 'moderation.suspended'
+  | 'moderation.unsuspended'
   | 'auth.recovery_codes_regenerated'
   | 'session.revoked'
   | 'account.exported'

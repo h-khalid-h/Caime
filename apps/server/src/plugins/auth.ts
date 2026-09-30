@@ -23,6 +23,14 @@ export function tokenFrom(req: FastifyRequest): { token: string; via: 'cookie' |
   return cookie ? { token: cookie, via: 'cookie' } : null;
 }
 
+/** An account the operator suspended (R49): every way in answers this. */
+export const suspended = () =>
+  new AppError(
+    403,
+    'suspended',
+    'This account is suspended. If you think that’s wrong, write to whoever runs Caime.',
+  );
+
 export async function resolveSession(
   ctx: AppContext,
   token: string,
@@ -30,13 +38,21 @@ export async function resolveSession(
   const row = await ctx.db
     .selectFrom('sessions')
     .innerJoin('users', 'users.id', 'sessions.user_id')
-    .select(['sessions.id', 'sessions.user_id', 'sessions.kind', 'sessions.last_seen_at'])
+    .select([
+      'sessions.id',
+      'sessions.user_id',
+      'sessions.kind',
+      'sessions.last_seen_at',
+      'users.suspended_at',
+    ])
     .where('sessions.token_hash', '=', hashToken(token))
     .where('sessions.revoked_at', 'is', null)
     .where('sessions.expires_at', '>', ctx.now())
     .where('users.deleted_at', 'is', null)
     .executeTakeFirst();
   if (!row) return null;
+  // Suspended by the operator (R49): told so, not signed out quietly.
+  if (row.suspended_at) throw suspended();
   if (ctx.now().getTime() - row.last_seen_at.getTime() > TOUCH_EVERY_MS) {
     await ctx.db
       .updateTable('sessions')

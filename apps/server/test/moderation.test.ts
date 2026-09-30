@@ -101,6 +101,47 @@ describe('the operator reviews reports (R49)', () => {
     );
   });
 
+  it('suspends a person from a report: every way in closes, nobody new finds them, and it lifts', async () => {
+    await noor.post('/v1/reports', { userId: sam.user.id, reason: 'harassment' });
+    const { reports } = (await op('GET', '/v1/admin/reports?status=open')).json();
+    const id = reports[0].id;
+    const done = await op('POST', `/v1/admin/reports/${id}/suspend`);
+    expect(done.statusCode).toBe(200);
+    expect(done.json().report).toMatchObject({ status: 'actioned', person: { suspended: true } });
+    // Sam's session is gone, and signing in again says why.
+    const me = await sam.req('GET', '/v1/auth/session');
+    expect(me.statusCode).toBe(401);
+    const login = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { identifier: sam.user.handle, password: 'correct horse battery', client: 'native' },
+    });
+    expect([login.statusCode, login.json().error.code]).toEqual([403, 'suspended']);
+    // Nobody new finds them by handle; Noor, in touch already, still has the conversation.
+    expect((await noor.req('GET', `/v1/handles/${sam.user.handle}`)).statusCode).toBe(404);
+    expect((await noor.req('GET', `/v1/conversations/${conversationId}`)).statusCode).toBe(200);
+    // Lifted: back in with the same password.
+    const lift = await t.app.inject({
+      method: 'PUT',
+      url: `/v1/admin/people/${sam.user.handle}/suspension`,
+      headers: { authorization: `Bearer ${ADMIN}` },
+      payload: { suspended: false },
+    });
+    expect(lift.statusCode).toBe(200);
+    const back = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: { identifier: sam.user.handle, password: 'correct horse battery', client: 'native' },
+    });
+    expect(back.statusCode).toBe(200);
+    const audits = await t.ctx.db
+      .selectFrom('audit_log')
+      .select('action')
+      .where('action', 'in', ['moderation.suspended', 'moderation.unsuspended'])
+      .execute();
+    expect(audits).toHaveLength(2);
+  });
+
   it('serves the reviewer page with no inline script, and the routes are gone without a token', async () => {
     const page = await t.app.inject({ method: 'GET', url: '/admin/reports' });
     expect(page.statusCode).toBe(200);

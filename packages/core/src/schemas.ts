@@ -963,6 +963,11 @@ export const ReportBody = z.object({
 export const REPORT_STATUSES = ['open', 'reviewing', 'actioned', 'dismissed'] as const;
 /** The operator moving a report along (R49). */
 export const ReportStatusBody = z.object({ status: z.enum(REPORT_STATUSES) });
+/** The operator suspending an account, or lifting it (R49). */
+export const SuspensionBody = z.object({
+  suspended: z.boolean(),
+  reason: z.string().trim().max(500).optional(),
+});
 export const ReportsQuery = z.object({
   status: z.enum([...REPORT_STATUSES, 'all']).default('open'),
   limit: z.coerce.number().int().min(1).max(200).default(50),

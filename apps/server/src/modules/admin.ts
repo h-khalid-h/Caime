@@ -14,6 +14,7 @@ import {
   ReportStatusBody,
   ReportsQuery,
   type ReportView,
+  SuspensionBody,
 } from '@caime/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
@@ -24,7 +25,7 @@ import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
-import { removeForEveryone, reportViews, takeBackUpdate } from '../lib/moderation';
+import { removeForEveryone, reportViews, setSuspended, takeBackUpdate } from '../lib/moderation';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -101,6 +102,33 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const report = await oneReport(id);
     if (!report.update || !report.org) throw badRequest('This report isn’t about an update.');
     await takeBackUpdate(ctx, report.org.id, report.update.id, null);
+    await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
+    return { report: await oneReport(id) };
+  });
+
+  /** An account suspended, or the suspension lifted (R49): every way in closes; nothing goes. */
+  app.put('/admin/people/:handle/suspension', async (req): Promise<{ ok: true }> => {
+    operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const body = parse(SuspensionBody, req.body);
+    const person = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'kind'])
+      .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!person || person.kind !== 'human') throw notFound('That person');
+    await setSuspended(ctx, person.id, body.suspended, body.reason ?? null);
+    return { ok: true };
+  });
+
+  /** The reported person suspended, from the report: it's actioned. */
+  app.post('/admin/reports/:id/suspend', async (req): Promise<{ report: ReportView }> => {
+    operator(req);
+    const { id } = parse(reportParam, req.params);
+    const report = await oneReport(id);
+    if (!report.person) throw badRequest('This report isn’t about a person.');
+    await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`);
     await ctx.db.updateTable('reports').set({ status: 'actioned' }).where('id', '=', id).execute();
     return { report: await oneReport(id) };
   });

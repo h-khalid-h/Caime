@@ -139,6 +139,7 @@ export async function resolveOAuthAccess(
     .where('g.revoked_at', 'is', null)
     .where('c.revoked_at', 'is', null)
     .where('u.deleted_at', 'is', null)
+    .where('u.suspended_at', 'is', null)
     .executeTakeFirst();
   if (!row) return null;
   if (!row.last_used_at || now.getTime() - row.last_used_at.getTime() > TOUCH_EVERY_MS)

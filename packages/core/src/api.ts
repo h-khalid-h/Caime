@@ -971,7 +971,7 @@ export interface ReportView {
   details: string | null;
   createdAt: string;
   reporter: { id: string; handle: string; displayName: string } | null;
-  person: { id: string; handle: string; displayName: string } | null;
+  person: { id: string; handle: string; displayName: string; suspended: boolean } | null;
   org: { id: string; handle: string; name: string } | null;
   /** The message, as it is now: no words once removed, and none of a sealed one. */
   message: {

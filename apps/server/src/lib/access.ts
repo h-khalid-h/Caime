@@ -51,6 +51,7 @@ export async function resolvePersonalToken(
     .where('k.token_hash', '=', hashToken(token))
     .where('k.revoked_at', 'is', null)
     .where('u.deleted_at', 'is', null)
+    .where('u.suspended_at', 'is', null)
     .executeTakeFirst();
   const now = ctx.now();
   if (!row || (row.expires_at && row.expires_at <= now)) return null;

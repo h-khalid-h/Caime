@@ -41,10 +41,17 @@ import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/e
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
+import { endAllAccess } from '../lib/moderation';
 import { revokeGrantsOf } from '../lib/oauth';
 import { meView, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
-import { clearSessionCookie, requireAuth, setSessionCookie, tokenFrom } from '../plugins/auth';
+import {
+  clearSessionCookie,
+  requireAuth,
+  setSessionCookie,
+  suspended,
+  tokenFrom,
+} from '../plugins/auth';
 
 function clientInfo(req: FastifyRequest) {
   return {
@@ -59,32 +66,6 @@ function platformFrom(userAgent: string | null): string | null {
   if (/Android/i.test(userAgent)) return 'android';
   if (/Macintosh|Windows|Linux|CrOS/i.test(userAgent)) return 'web';
   return null;
-}
-
-/**
- * An account taken back (a recovery code, a reset link): every session, token, app grant and
- * calendar address goes. Someone who lost their account may not be the one who made them.
- */
-async function lockOutOthers(ctx: AppContext, req: FastifyRequest, userId: string) {
-  await ctx.db
-    .updateTable('sessions')
-    .set({ revoked_at: ctx.now() })
-    .where('user_id', '=', userId)
-    .where('revoked_at', 'is', null)
-    .execute();
-  await ctx.db
-    .updateTable('personal_tokens')
-    .set({ revoked_at: ctx.now() })
-    .where('user_id', '=', userId)
-    .where('revoked_at', 'is', null)
-    .execute();
-  await revokeGrantsOf(ctx, userId);
-  const feed = await ctx.db
-    .deleteFrom('calendar_feeds')
-    .where('user_id', '=', userId)
-    .executeTakeFirst();
-  if (Number(feed.numDeletedRows) > 0)
-    await audit(ctx.db, { actorId: userId, action: 'calendar.feed_stopped', ...clientInfo(req) });
 }
 
 const CODE_LIFE_MS = 24 * 3_600_000;
@@ -300,6 +281,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     const ok = await verifyPassword(body.password, user?.password_hash ?? (await decoyHash()));
+    if (ok && user?.suspended_at) throw suspended();
     // Bots act only through their app's token, never a session (R16).
     if (!user || !ok || user.kind !== 'human') {
       await audit(ctx.db, {
@@ -578,7 +560,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .returningAll()
       .executeTakeFirst();
     if (!user) throw failure;
-    await lockOutOthers(ctx, req, user.id);
+    await endAllAccess(ctx, user.id, clientInfo(req));
     await ctx.db.deleteFrom('password_resets').where('user_id', '=', user.id).execute();
     const token = await createSession(ctx, req, reply, user.id, body.client);
     await audit(ctx.db, { actorId: user.id, action: 'auth.reset', ...clientInfo(req) });
@@ -625,7 +607,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .set({ password_hash: await hashPassword(body.newPassword), updated_at: ctx.now() })
       .where('id', '=', user.id)
       .execute();
-    await lockOutOthers(ctx, req, user.id);
+    await endAllAccess(ctx, user.id, clientInfo(req));
     const remaining = await ctx.db
       .selectFrom('recovery_codes')
       .select(sql<number>`count(*)::int`.as('n'))

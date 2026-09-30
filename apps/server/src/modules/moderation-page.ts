@@ -111,6 +111,7 @@ const SCRIPT = `(() => {
       '<button class="quiet" data-act="actioned">Actioned</button>' +
       (r.message && !r.message.removed ? '<button class="danger" data-act="remove-message">Remove the message for everyone</button>' : '') +
       (r.update && !r.update.removed ? '<button class="danger" data-act="remove-update">Take the update back</button>' : '') +
+      (r.person && !r.person.suspended ? '<button class="danger" data-act="suspend">Suspend @' + esc(r.person.handle) + '</button>' : r.person ? '<span class="meta">Suspended.</span>' : '') +
       '</div>';
     return el;
   }
@@ -133,10 +134,11 @@ const SCRIPT = `(() => {
     if (!b) return;
     const id = b.closest('.card').dataset.id;
     const act = b.dataset.act;
+    if (act === 'suspend' && !confirm('Every session, token and app of theirs ends now, and they can’t sign in until you lift it. Go ahead?')) return;
     if ((act === 'remove-message' || act === 'remove-update') && !confirm('For everyone, at once, and for good. Go ahead?')) return;
     b.disabled = true;
     try {
-      const { report } = act === 'remove-message' || act === 'remove-update'
+      const { report } = act === 'remove-message' || act === 'remove-update' || act === 'suspend'
         ? await call('POST', '/admin/reports/' + id + '/' + act)
         : await call('PATCH', '/admin/reports/' + id, { status: act });
       b.closest('.card').replaceWith(card(report));

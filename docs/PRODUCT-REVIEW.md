@@ -425,6 +425,9 @@ with its reason, so it isn't proposed again without new facts.
   report along (reviewing, dismissed, actioned) or acts: the message removed for everyone,
   through exactly the code its sender's own delete runs (`lib/moderation.ts`), or the update
   taken back as its organization would. Every action is in the audit log with no actor (the
-  operator isn't a user). What it doesn't do yet: suspend or delete an account, or write to the
-  reporter; a sealed message is never readable, so a report of one is judged by its reporter's
-  words alone.
+  operator isn't a user), and a reported person can be suspended: every session, token and app
+  grant ends, sign-in answers `403 suspended` with the reason to write in, nobody new finds them
+  by handle or on a public page, and those already in touch keep what they have; nothing of
+  theirs is removed, and the operator lifts it (`PUT /v1/admin/people/:handle/suspension`).
+  What it doesn't do yet: delete an account for someone, or write to the reporter; a sealed
+  message is never readable, so a report of one is judged by its reporter's words alone.

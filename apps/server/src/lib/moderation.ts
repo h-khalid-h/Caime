@@ -6,6 +6,7 @@ import { dropSaved, tellSaved } from './automations';
 import { recordEvent } from './events';
 import { participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
+import { revokeGrantsOf } from './oauth';
 import { retellUpdate, tellUpdatesChanged } from './updates';
 
 /**
@@ -127,6 +128,7 @@ export async function reportViews(
       'person.id as person_id',
       'person.handle as person_handle',
       'person.display_name as person_name',
+      'person.suspended_at as person_suspended_at',
       'o.id as org_id',
       'o.handle as org_handle',
       'o.name as org_name',
@@ -159,7 +161,12 @@ export async function reportViews(
         : null,
     person:
       r.person_id && r.person_handle && r.person_name
-        ? { id: r.person_id, handle: r.person_handle, displayName: r.person_name }
+        ? {
+            id: r.person_id,
+            handle: r.person_handle,
+            displayName: r.person_name,
+            suspended: r.person_suspended_at !== null,
+          }
         : null,
     org:
       r.org_id && r.org_handle && r.org_name
@@ -186,4 +193,65 @@ export async function reportViews(
         }
       : null,
   }));
+}
+
+/**
+ * Every way into an account closed: sessions, personal tokens, app grants, a calendar's
+ * address. What a recovery code or a reset link does before signing the person in afresh, and
+ * what a suspension does for good (R49). `who` is the request behind it, or null for the operator.
+ */
+export async function endAllAccess(
+  ctx: AppContext,
+  userId: string,
+  who: { ip: string | null; userAgent: string | null } | null,
+): Promise<void> {
+  await ctx.db
+    .updateTable('sessions')
+    .set({ revoked_at: ctx.now() })
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .execute();
+  await ctx.db
+    .updateTable('personal_tokens')
+    .set({ revoked_at: ctx.now() })
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .execute();
+  await revokeGrantsOf(ctx, userId);
+  const feed = await ctx.db
+    .deleteFrom('calendar_feeds')
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+  if (Number(feed.numDeletedRows) > 0)
+    await audit(ctx.db, {
+      actorId: who ? userId : null,
+      action: 'calendar.feed_stopped',
+      target: userId,
+      ...(who ?? {}),
+    });
+}
+
+/** The operator suspends an account, or lifts it (R49). Nothing of theirs is removed. */
+export async function setSuspended(
+  ctx: AppContext,
+  userId: string,
+  suspended: boolean,
+  reason: string | null,
+): Promise<void> {
+  await ctx.db
+    .updateTable('users')
+    .set(
+      suspended
+        ? { suspended_at: ctx.now(), suspended_reason: reason, updated_at: ctx.now() }
+        : { suspended_at: null, suspended_reason: null, updated_at: ctx.now() },
+    )
+    .where('id', '=', userId)
+    .execute();
+  if (suspended) await endAllAccess(ctx, userId, null);
+  await audit(ctx.db, {
+    actorId: null,
+    action: suspended ? 'moderation.suspended' : 'moderation.unsuspended',
+    target: userId,
+    metadata: reason ? { reason } : {},
+  });
 }

@@ -80,6 +80,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     .selectAll()
     .where('handle', '=', handle)
     .where('deleted_at', 'is', null)
+    .where('suspended_at', 'is', null)
     .where('kind', '=', 'human')
     .executeTakeFirst();
   if (!u || minorOf(u, now)) return null;

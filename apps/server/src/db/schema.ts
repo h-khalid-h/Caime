@@ -51,6 +51,9 @@ export interface UsersTable {
   /** The @handle link that brought them: a person's, or an organization's. */
   invited_by: string | null;
   invited_by_org: string | null;
+  /** Suspended by the operator (R49): every way in closed until lifted; nothing removed. */
+  suspended_at: NullableTimestamp;
+  suspended_reason: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
   deleted_at: NullableTimestamp;

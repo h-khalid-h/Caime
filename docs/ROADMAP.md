@@ -545,7 +545,8 @@ outperforming the alternatives is reach and operations. In the order the review 
       production: until then nothing is sent and recovery codes are the way back
 - [x] Moderation (R49): the operator's `/admin/reports` over `GET`/`PATCH /v1/admin/reports`,
       the reported message removed for everyone or the update taken back through the same code
-      as their owners' (`moderation.test.ts`). Not yet: suspending an account
+      as their owners', the person suspended and the suspension lifted (`moderation.test.ts`).
+      Not yet: a word to the reporter
 - [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter;
       per-operator admin tokens; pentest
 - Measurements: Lighthouse 12 on the production bundle served locally, mobile preset
@@ -1170,3 +1171,6 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · R49, reports reviewed: `lib/moderation.ts` (`removeForEveryone`, `takeBackUpdate`,
   shared with the person's delete and the poster's take-back), the operator's report routes and
   the `/admin/reports` page.
+- 2026-09-30 · Suspension (R49): `setSuspended` and `endAllAccess` in `lib/moderation.ts` (the
+  latter what a recovery code and a reset link run too), refused at the session, at sign-in, at
+  tokens and grants, at the handle and the public page; the report page's Suspend button.

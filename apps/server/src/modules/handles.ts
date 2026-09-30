@@ -35,6 +35,8 @@ export async function handleRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['id', 'handle', 'birth_date', 'time_zone', 'privacy'])
       .where('handle', '=', wanted)
       .where('deleted_at', 'is', null)
+      // Suspended (R49): not to be found by anyone new; those in touch still see them.
+      .where('suspended_at', 'is', null)
       .executeTakeFirst();
     if (!user) throw nobody();
     const found: HandleView = { kind: 'person', id: user.id, handle: user.handle };
