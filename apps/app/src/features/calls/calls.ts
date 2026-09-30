@@ -25,8 +25,7 @@ const callStackOr: typeof loadedOr = (key, later) =>
 
 /** What rang, or ended, while the calls couldn't load: the server says what's live now. */
 const live = (stack: Stack) => {
-  void stack.checkLiveCall();
-  void stack.checkLiveGroupCall();
+  void stack.checkLiveCalls();
 };
 
 /** For what someone asked for: when the calls can't load, they're told, and can load afresh. */
@@ -64,11 +63,9 @@ export async function checkGroupCallIn(conversationId: string): Promise<void> {
   const stack = await callStackOr(`in:${conversationId}`, check);
   if (stack) await check(stack);
 }
-export async function checkLiveCall(me?: string): Promise<void> {
-  await (await callStackOr('live', live))?.checkLiveCall(me);
-}
-export async function checkLiveGroupCall(me?: string): Promise<void> {
-  await (await callStackOr('live', live))?.checkLiveGroupCall(me);
+/** What's live now, both kinds, from one answer: asked each time the socket connects. */
+export async function checkLiveCalls(me?: string): Promise<void> {
+  await (await callStackOr('live', live))?.checkLiveCalls(me);
 }
 /**
  * Each in the order it came: every one waits on the same load, then on the one before it. One

@@ -519,11 +519,14 @@ function ring(call: CallView): void {
  * What rings for this person now, from the server: a page opened (or a tab that was busy) shows
  * a call still ringing, and a ring shown here whose end it never heard of stops.
  */
-export async function checkLiveCall(person: string = me()): Promise<void> {
+export async function checkLiveCall(
+  person: string = me(),
+  known?: { call: CallView | null },
+): Promise<void> {
   const phase = store().phase;
   if (!person || (phase && phase !== 'incoming')) return;
   const shown = phase === 'incoming' ? current() : null;
-  const got = await endpoints.liveCall().catch(() => undefined);
+  const got = known ?? (await endpoints.liveCall().catch(() => undefined));
   if (!got) return;
   const { call } = got;
   const ringing = call?.state === 'ringing' && call.callee.id === person ? call : null;
@@ -534,6 +537,15 @@ export async function checkLiveCall(person: string = me()): Promise<void> {
     return;
   }
   if (ringing && !store().phase && !inGroupCall()) ring(ringing);
+}
+
+/** Both kinds of call, from one answer: what the socket asks each time it connects. */
+export async function checkLiveCalls(person: string = me()): Promise<void> {
+  if (!person) return;
+  const got = await endpoints.liveCall().catch(() => undefined);
+  if (!got) return;
+  await checkLiveCall(person, got);
+  await checkLiveGroupCall(person, got.groupCall ?? null);
 }
 
 // Closing the tab mid-call hangs up, so nobody is left waiting on it. A tab only ringing (or

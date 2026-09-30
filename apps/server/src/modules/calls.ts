@@ -3,6 +3,7 @@
  * pass the WebRTC offer, answer and candidates between the two devices in the call, and hang
  * up. The work is in lib/calls.ts; the media never reaches the server.
  */
+import type { GroupCallView } from '@caime/core';
 import {
   CALL_RING_SECONDS,
   CallDeviceBody,
@@ -32,7 +33,7 @@ import {
   stillThere,
 } from '../lib/calls';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
-import { joinedGroupCallOf } from '../lib/group-calls';
+import { groupCallView, joinedGroupCallOf, ringingGroupCallFor } from '../lib/group-calls';
 import { participantsOf } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { personViewsFor } from '../lib/people-batch';
@@ -93,12 +94,26 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     });
   });
 
-  /** The call ringing or running for me now: a page opened mid-call finds it. */
-  app.get('/calls/live', async (req): Promise<{ call: CallView | null }> => {
-    const auth = requireAuth(req);
-    const call = await liveCallOf(ctx, auth.userId);
-    return { call: call ? await callView(ctx, call, auth.userId) : null };
-  });
+  /**
+   * What's live for me now, both kinds in one answer: the one-to-one call ringing or running,
+   * and the group call I'm in or that rings for me. A page opened mid-call finds it, and a
+   * socket that connects asks once (`/group-calls/live` still answers the group call alone).
+   */
+  app.get(
+    '/calls/live',
+    async (req): Promise<{ call: CallView | null; groupCall: GroupCallView | null }> => {
+      const auth = requireAuth(req);
+      const [call, group] = await Promise.all([
+        liveCallOf(ctx, auth.userId),
+        joinedGroupCallOf(ctx, auth.userId).then((g) => g ?? ringingGroupCallFor(ctx, auth.userId)),
+      ]);
+      const [view, groupView] = await Promise.all([
+        call ? callView(ctx, call, auth.userId) : null,
+        group ? groupCallView(ctx, group, auth.userId) : null,
+      ]);
+      return { call: view, groupCall: groupView };
+    },
+  );
 
   app.post('/conversations/:id/calls', async (req, reply): Promise<{ call: CallView }> => {
     const auth = requireAuth(req);

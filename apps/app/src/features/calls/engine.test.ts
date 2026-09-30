@@ -379,6 +379,15 @@ describe('the web call engine, when the network misbehaves', () => {
     expect(phase()).toBeNull();
   });
 
+  it('asks once for both kinds of call, and hands the group call on', async () => {
+    h.endpoints.liveCall.mockResolvedValue({ call: view(), groupCall: null } as never);
+    h.checkLiveGroupCall.mockClear();
+    await engine.checkLiveCalls();
+    expect(phase()).toBe('incoming');
+    expect(h.endpoints.liveCall).toHaveBeenCalledTimes(1);
+    expect(h.checkLiveGroupCall).toHaveBeenCalledWith('me', null);
+  });
+
   it('after a gap, a ring answered or called off elsewhere stops; one still ringing goes on', async () => {
     engine.onCallEvent({ type: 'call.ringing', data: view() });
     h.endpoints.liveCall.mockResolvedValue({ call: view() });

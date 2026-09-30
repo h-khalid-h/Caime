@@ -723,11 +723,15 @@ export function onGroupCallEvent(event: RealtimeEvent): void {
  * What rings for this person now, from the server: a page opened (or a tab that was busy) shows
  * a call still ringing, and a ring shown here whose end it never heard of stops.
  */
-export async function checkLiveGroupCall(person: string = me()): Promise<void> {
+export async function checkLiveGroupCall(
+  person: string = me(),
+  known?: GroupCallView | null,
+): Promise<void> {
   const phase = store().phase;
   if (!person || (phase && phase !== 'incoming')) return;
   const shown = phase === 'incoming' ? current() : null;
-  const got = await endpoints.liveGroupCall().catch(() => undefined);
+  const got =
+    known !== undefined ? { call: known } : await endpoints.liveGroupCall().catch(() => undefined);
   if (!got) return;
   const { call } = got;
   const ringing = call && heard(call) && ringsForMe(call) ? call : null;

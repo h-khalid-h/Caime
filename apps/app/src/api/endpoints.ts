@@ -443,7 +443,8 @@ export const endpoints = {
   removeConnectedApp: (grantId: string) => api.del<Ok>(`/me/connected-apps/${grantId}`),
   // Calls (PRD §47): the server rings and relays; the media goes device to device
   callIce: () => api.get<IceConfigView>('/calls/ice'),
-  liveCall: () => api.get<{ call: CallView | null }>('/calls/live'),
+  liveCall: () =>
+    api.get<{ call: CallView | null; groupCall?: GroupCallView | null }>('/calls/live'),
   startCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
     api.post<{ call: CallView }>(`/conversations/${conversationId}/calls`, body),
   acceptCall: (id: string, deviceId: string) =>

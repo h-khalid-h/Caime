@@ -253,7 +253,10 @@ These are rules, not preferences.
   them. The engines use nothing a phone lacks (no `DOMException`: `errorName` in `media.ts`;
   window listeners behind a check). Each tab's `DEVICE_ID` (`state/calls.ts`) is how a call
   runs on the one device that answered. E2E runs Chromium with a fake camera and microphone and
-  the server with `STUN_URLS=''`.
+  the server with `STUN_URLS=''`. What's live is asked once: `GET /calls/live` answers both the
+  one-to-one call and the group call, `checkLiveCalls` (engine.ts) hands each engine its part,
+  and the socket calls that on every connect; `/group-calls/live` still answers the group call
+  alone for an engine looking on its own.
 - Group calls: `lib/group-calls.ts` and `modules/group-calls.ts` keep `call_members` (one row per
   person rung or in it) and bump `calls.rev` with every change to who's in it, so a device
   ignores a view older than the one it holds. `features/calls/group.ts` holds a connection

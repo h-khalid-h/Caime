@@ -10,7 +10,7 @@ import { getAuthToken, wrongAccount } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
-import { checkLiveCall, checkLiveGroupCall } from '@/features/calls/calls';
+import { checkLiveCalls } from '@/features/calls/calls';
 import { WS_URL } from '@/lib/config';
 import { onNetworkChange } from '@/lib/network';
 import { type MessagePages, maxSeq, upsertMessage } from '@/state/cache';
@@ -239,8 +239,7 @@ class RealtimeClient {
   private async catchUp(afterGap: boolean): Promise<void> {
     // What rings for this person now, the first time too: a call that rang before this socket was
     // listening (the page just opened), or while it was down, arrives through nothing else.
-    void checkLiveCall();
-    void checkLiveGroupCall();
+    void checkLiveCalls();
     if (afterGap) {
       void queryClient.invalidateQueries({ queryKey: qk.inbox });
       void queryClient.invalidateQueries({ queryKey: qk.notifications });
