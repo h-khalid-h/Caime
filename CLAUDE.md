@@ -21,6 +21,7 @@ without re-deriving decisions.
 | --- | --- |
 | `packages/core` | Pure TypeScript shared by server and app: the API contract (`api.ts`), taxonomy, field rules, zod schemas, attention and policy engines, message intelligence, privacy, search parser, Connect Kits, formatting, safe locales. No platform APIs. |
 | `packages/brand` | Tokens (contrast-tested), the wordmark, the seven characters as SVG builders, and `pnpm --filter @caime/brand assets` to regenerate every icon, splash and favicon. |
+| `packages/sdk` | `@caime/sdk` (R39): the typed client and webhook checks organizations' apps use. Types come from core by `import type` only; it must run without core. Tested in `apps/server/test/sdk.test.ts` against the real routes. |
 | `apps/server` | Fastify 5 API (`/v1`), WebSocket realtime, Postgres (Kysely + SQL migrations), jobs, push, files; serves the exported web app from `WEB_DIR`. |
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
@@ -178,7 +179,9 @@ These are rules, not preferences.
   counts people (assignees, heirs, who is notified, the team's size, search, connections)
   takes `kind = 'human'` only; a bot's messages are `automated` and never move a thread. An
   app's token reaches only the routes in `API_ROUTES` (`apps/server/src/lib/apps.ts`): add a
-  route there, with its scope, before an app can use it, and document it in `docs/API.md`.
+  route there, with its scope, before an app can use it, document it in `docs/API.md`, and give
+  it a method in `packages/sdk/src/client.ts` with a case in `sdk.test.ts`. A new webhook event
+  gets its type in `packages/sdk/src/webhooks.ts`.
 - Outbound requests to addresses someone else chose (webhooks) go through `postWebhook`: https,
   no private addresses (checked on the URL and on every DNS answer), one deadline for the whole
   exchange. Test them with `WEBHOOKS_ALLOW_PRIVATE=true` and a local server.

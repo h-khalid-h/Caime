@@ -56,6 +56,50 @@ customer is done with (`resolved`): `business.thread` says who moved the thread 
 Responses are the same JSON the Caime apps read (`packages/core/src/api.ts`). Errors are
 `{ "error": { "code": "…", "message": "…" } }`.
 
+## From Node: `@caime/sdk`
+
+The routes above and the webhook checks below, typed, in `packages/sdk` (Node 22 or later; the
+client runs wherever `fetch` is). It's built from the repository for now (⛔ not on npm yet).
+
+```ts
+import { Caime, CaimeError, parseWebhook } from '@caime/sdk';
+
+const caime = new Caime({ token: process.env.CAIME_TOKEN!, baseUrl: 'https://caime.datac.com' });
+
+const inbox = await caime.inbox(orgId, 'customer_waiting');
+for (const thread of inbox.threads) {
+  const { messages } = await caime.messages(thread.conversationId, { limit: 20 });
+  await caime.send(thread.conversationId, 'Thanks, someone will be with you shortly.');
+  await caime.assign(thread.conversationId, null);
+}
+
+// In your webhook handler: the raw body as received, and the request's headers.
+try {
+  const event = parseWebhook(process.env.CAIME_WEBHOOK_SECRET!, req.headers, rawBody);
+  if (event.event === 'business.message' && !event.data.customer.under18) {
+    // event.data.message.body, event.data.conversationId; de-duplicate on event.id
+  }
+} catch (e) {
+  // A WebhookError: its `reason` is 'signature', 'timestamp' or 'body'. Answer 400.
+}
+```
+
+| Method | Route | Permission |
+| --- | --- | --- |
+| `inbox(orgId, view)` | `GET /v1/orgs/:orgId/inbox` | `inbox:read` |
+| `conversation(id)`, `messages(id, { before, after, limit })` | `GET /v1/conversations/:id`, `…/messages` | `messages:read` |
+| `send(id, body, { clientId })`, `sendCard(id, key, fields, { clientId })` | `POST /v1/conversations/:id/messages` | `messages:write` (+ `kits`) |
+| `assign(id, userId \| null)`, `resolve(id)`, `reopen(id)`, `escalate(id, note)`, `stopEscalating(id)` | `POST /v1/business/:id/…`, `DELETE …/escalation` | `threads:write` |
+| `updates(orgId, { before, limit })`, `postUpdate(orgId, body)`, `editUpdate(orgId, id, body)`, `removeUpdate(orgId, id)` | `/v1/orgs/:orgId/updates` | `updates` |
+| `kits()`, `putKit(key, definition)`, `removeKit(key)`, `moveCard(messageId, to)`, `changeCard(messageId, fields)` | `/v1/kits`, `/v1/messages/:id/kit` | `kits` |
+
+A refusal throws a `CaimeError` with the server's `status`, `code` and `message` (and
+`retryAfter`, in seconds, on a 429). `send` and `postUpdate` make up a `clientId` when none is
+given; pass your own to retry safely. `verifyWebhookSignature(secret, header, rawBody)` answers
+yes or no where `parseWebhook` throws; both refuse deliveries older than five minutes
+(`toleranceSeconds`). Personal (`cap_`) and OAuth (`cao_`) tokens work with the same client, on
+the routes they reach.
+
 ## Webhooks
 
 Caime `POST`s JSON to the app's address (https only) for the events it listens to:

@@ -15,6 +15,7 @@ COPY apps/server/package.json apps/server/
 COPY apps/app/package.json apps/app/
 COPY packages/core/package.json packages/core/
 COPY packages/brand/package.json packages/brand/
+COPY packages/sdk/package.json packages/sdk/
 # Security overrides in pnpm-workspace.yaml point into vendor/ (docs/SECURITY.md).
 COPY vendor vendor
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile

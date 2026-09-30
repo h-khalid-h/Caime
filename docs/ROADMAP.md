@@ -495,8 +495,12 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
 - [ ] Pay on an organization's card (R38), through its own checkout (Stripe Connect or its link),
       the card saying it's paid from the provider's webhook. ⛔ The owner's decision on Stripe
       Connect for the live account, and on a fee
-- [ ] `@caime/sdk` (R39): a typed client for the API and webhook signatures, for organizations'
-      apps
+- [x] `@caime/sdk` (R39): a typed client for every route an app's token reaches (inbox,
+      conversations, replies and cards, threads, updates, its own kinds of card) and the webhook
+      checks (`verifyWebhookSignature`, `parseWebhook` to typed events), `CaimeError` carrying
+      the server's code; unit tests, and `sdk.test.ts` running every method against the real
+      server and a real delivery (`packages/sdk`, `docs/API.md`). ⛔ Not published to npm: needs
+      the owner's npm account; built from the repository until then
 - [ ] Broadcasts (§59, R40): fan-out measured at 500,000 followers before any is that big
 
 ## M9 — Reach, and what the review found (docs/REVIEW-2026-09.md)
@@ -1239,3 +1243,6 @@ outperforming the alternatives is reach and operations. In the order the review 
   `kit-cards.ts`, shares set in `sendMessage`, `POST /messages/:id/split`, the app's
   `SplitCard`; a person's export lists their shares of others' splits. Budget unchanged at
   447.9 KB gzip.
+- 2026-09-30 · `@caime/sdk` (R39): `packages/sdk` (client over `fetch`, webhook checks over
+  Node's crypto, types from core by `import type` only, so nothing of core runs in an app);
+  `apps/server/test/sdk.test.ts` drives it through the real routes with an inject-backed fetch.

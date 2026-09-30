@@ -31,6 +31,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@caime/sdk": "workspace:*",
     "@types/node": "^22.19.0",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
