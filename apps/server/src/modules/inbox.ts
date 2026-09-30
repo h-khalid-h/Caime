@@ -11,7 +11,6 @@ import {
   currentPriority,
   inboxSections,
   resolvePolicy,
-  SECTION_LABELS,
   systemText,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
@@ -46,6 +45,25 @@ export async function buildInbox(
   const rows = await ctx.db
     .selectFrom('participants as p')
     .innerJoin('conversations as c', 'c.id', 'p.conversation_id')
+    // What's unread, and what mentions me in it, from one pass over the messages past my mark.
+    .leftJoinLateral(
+      (eb) =>
+        eb
+          .selectFrom('messages as m')
+          .select([
+            sql<number>`count(*) filter (where m.sender_id is distinct from ${userId} and m.kind <> 'system')::int`.as(
+              'unread',
+            ),
+            sql<number>`count(*) filter (where ${userId}::uuid = any(m.mentions))::int`.as(
+              'unread_mentions',
+            ),
+          ])
+          .whereRef('m.conversation_id', '=', 'c.id')
+          .whereRef('m.seq', '>', 'p.last_read_seq')
+          .where('m.deleted_at', 'is', null)
+          .as('u'),
+      (join) => join.onTrue(),
+    )
     .select([
       'c.id',
       'c.kind',
@@ -73,12 +91,8 @@ export async function buildInbox(
       'p.request_state',
       'p.dismissed_seq',
       'p.draft',
-      sql<number>`(select count(*)::int from messages m where m.conversation_id = c.id and m.seq > p.last_read_seq
-        and m.sender_id is distinct from ${userId} and m.deleted_at is null and m.kind <> 'system')`.as(
-        'unread',
-      ),
-      sql<number>`(select count(*)::int from messages m where m.conversation_id = c.id and m.seq > p.last_read_seq
-        and ${userId}::uuid = any(m.mentions) and m.deleted_at is null)`.as('unread_mentions'),
+      sql<number>`coalesce(u.unread, 0)`.as('unread'),
+      sql<number>`coalesce(u.unread_mentions, 0)`.as('unread_mentions'),
       sql<
         string | null
       >`(select max(m.seq)::text from messages m where m.conversation_id = c.id and m.sender_id = ${userId})`.as(

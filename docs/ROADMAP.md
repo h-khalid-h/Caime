@@ -1273,4 +1273,5 @@ outperforming the alternatives is reach and operations. In the order the review 
   every person listed (`todayIn` now reads `zonedParts`, cached per zone and instant), the
   batched person views searched lists per row (maps now), and the app reads Attention and All
   from one `view=all` request (core `inboxSections`, `inboxAllList`), so a launch builds the
-  inbox once and makes 10 API requests, from 11.
+  inbox once and makes 10 API requests, from 11. Then unread and mentions counted in one
+  lateral pass: 2,000 conversations in 377 ms.
