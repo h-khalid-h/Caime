@@ -172,6 +172,7 @@ export const RESERVED_HANDLES: readonly string[] = [
   'manifest.webmanifest',
   'robots.txt',
   'sitemap.xml',
+  'fonts',
 ];
 
 /**

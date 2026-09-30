@@ -22,8 +22,8 @@ const deadline = () =>
   typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
     ? { signal: AbortSignal.timeout(DEADLINE_MS) }
     : {};
-/** What a build is made of: its scripts, and its fonts and images. */
-const BUILT = ['/_expo/static/', '/assets/'];
+/** What a build is made of: its scripts, its fonts (the web's WOFF2 too) and images. */
+const BUILT = ['/_expo/static/', '/assets/', '/fonts/'];
 /** Caime's own pages, the server's alone (@caime/core SITE_PAGES): never the app. */
 const SITE_PAGES = ['/privacy', '/terms', '/help'];
 
@@ -134,8 +134,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(page(event));
     return;
   }
-  if (url.pathname.startsWith('/_expo/static/') || url.pathname.startsWith('/assets/'))
-    event.respondWith(file(request));
+  if (BUILT.some((dir) => url.pathname.startsWith(dir))) event.respondWith(file(request));
 });
 
 /** Where a notification leads, from what it's about. */

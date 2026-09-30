@@ -48,11 +48,19 @@ export function takeLink(): string | null {
   return link;
 }
 
-/** The page the web app opened on, read before the router moves a signed-out visitor away. */
-let opened: string | null =
-  isWeb && typeof window !== 'undefined'
-    ? `${window.location.pathname}${window.location.search}`
-    : null;
+/**
+ * The page the web app opened on, read before the router moves a signed-out visitor away. A
+ * public page served without the app (R44) carries itself into the way in as `?link=`, so
+ * whoever it was about is still where sign-up leads, and still who the invite is counted for.
+ */
+function openedLink(): string | null {
+  if (!isWeb || typeof window === 'undefined') return null;
+  const { pathname, search } = window.location;
+  const carried = new URLSearchParams(search).get('link');
+  if (carried && /^\/(sign-up|sign-in|welcome)\/?$/.test(pathname)) return carried;
+  return `${pathname}${search}`;
+}
+let opened: string | null = openedLink();
 let openedSeen = false;
 
 /** From the root layout: when the session turns out to be signed out, keep the link that opened it. */

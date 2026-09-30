@@ -73,6 +73,14 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('"@type":"Person"');
     expect(r.body).toContain('"memberOf":[{"@type":"Organization","name":"Nile Dental"');
     expect(r.body).toContain('With <a href="/o/nile.dental">Nile Dental</a>.');
+    // A visitor gets the page alone: no scripts to boot an app that would stand aside anyway;
+    // the JSON-LD stays. Signed in, the app comes with it.
+    expect(r.body).not.toContain('entry-abc.js');
+    expect(r.body).toContain('href="/sign-up?link=%2F%40noor"');
+    expect(r.body).toContain('<script type="application/ld+json">');
+    expect(r.body).toContain('<meta name="caime-page" content="person">');
+    const mine = await visit('/@noor', { cookie: `caime_session=${noor.token}` });
+    expect(mine.body).toContain('entry-abc.js');
     // Their bio kept for connections: not on the page; a JSON-LD script is still a script, so
     // nothing of theirs can close it.
     await noor.req('PUT', '/v1/me/privacy', { fields: { bio: { kind: 'connections' } } });

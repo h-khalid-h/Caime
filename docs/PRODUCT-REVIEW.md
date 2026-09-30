@@ -341,7 +341,13 @@ with its reason, so it isn't proposed again without new facts.
   and shows only fields whose audience is everyone; an organization's page is its profile, which
   was public already. People are never listed in the sitemap: a page is found by its handle,
   not in a directory. Its logo and a photo shown to everyone are served without sign-in for the
-  cards; nothing else is.
+  cards; nothing else is. A visitor who isn't signed in stays on the page they were sent (the
+  app mounts only for someone signed in, since mounting would hide the page and send them to
+  Welcome; measured on 2026-09-30, the page was gone within half a second before this): the
+  server sends a visitor the page without the app's scripts, and a shell that reaches the app
+  anyway (a kept copy) mounts nothing on it (`caime-page` in the head says which page it is);
+  the
+  next step of R44 is the page drawn by the app itself for a visitor, with a way to write.
 
 - **R45 — A chat from before Caime comes along.** The first days with someone on Caime are empty
   where WhatsApp had years, and that emptiness is what sends people back. So a one-to-one with

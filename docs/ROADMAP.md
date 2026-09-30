@@ -545,7 +545,17 @@ outperforming the alternatives is reach and operations. In the order the review 
       production: until then nothing is sent and recovery codes are the way back
 - [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; moderation
       reviewer UI; per-operator admin tokens; pentest
-- Measurements still to take: a load test, Lighthouse, a screen reader on a device
+- Measurements: Lighthouse 12 on the production bundle served locally, mobile preset
+      (2026-09-30): landing page and a public organization page both 100 accessibility, 100
+      best practices, 100 SEO, 74 performance (FCP 0.6 s, LCP 0.8 s, TBT 750 ms, Speed Index
+      7.4 s); 4.6 MB over the wire uncompressed, of which 1.5 MB were five TTF fonts. Fonts now
+      go as Latin WOFF2 (362 KB for all sixteen cuts; the landing page fetched 82 KB of them),
+      and the same run then read 100/100/100 with Speed Index 3.8 s and 3.4 s. With the app kept
+      off a visitor's public page, the organization page is visually complete at 0.7 s (Speed
+      Index) and is now served without scripts at all. The landing page still boots the app
+      (performance 61, LCP 4.5 s under Lighthouse's throttling, uncompressed: production's Brotli
+      takes the 2.8 MB of scripts to about 450 KB). Still to take: a load test, a screen reader on a
+      device
 
 ## Log
 
@@ -1144,3 +1154,8 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · First words (PRD §87): an empty one-to-one with a new connection offers three
   openers by sphere, put in the composer with `ComposerHandle.insert`; the deploy guide gains the
   production environment checklist.
+- 2026-09-30 · Lighthouse taken (numbers above) and the web's fonts moved to subsetted WOFF2 in
+  `public/fonts`, served for a year and kept offline, expo-font idle on the web.
+- 2026-09-30 · A signed-out visitor stays on a public page (R44): the root layout mounts nothing
+  on `/@handle` and `/o/handle` until they're signed in. Before, the app booted and sent them to
+  Welcome within half a second.

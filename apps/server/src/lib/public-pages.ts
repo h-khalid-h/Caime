@@ -158,6 +158,9 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
         ? '<meta name="robots" content="index,follow">'
         : '<meta name="robots" content="noindex">',
       o.canonical === false ? '' : `<link rel="canonical" href="${esc(url)}">`,
+      // Which page this is, for the app: it stays out of a visitor's way on a person's or an
+      // organization's page only (R44).
+      `<meta name="caime-page" content="${page.kind}">`,
       `<meta property="og:site_name" content="${SITE_NAME}">`,
       `<meta property="og:type" content="${page.kind === 'person' ? 'profile' : 'website'}">`,
       `<meta property="og:title" content="${esc(o.title)}">`,
@@ -254,7 +257,7 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
   <p class="lead">@${esc(page.handle)}${line ? ` · ${esc(line)}` : ''}</p>
   ${page.bio ? `<p>${esc(page.bio)}</p>` : ''}
   ${page.organizations.length ? `<p>With ${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}.</p>` : ''}
-  <p class="cta"><a href="${esc(path)}">Message ${esc(page.displayName)} on ${SITE_NAME}</a></p>
+  <p class="cta"><a href="${wayIn('sign-up', path)}">Message ${esc(page.displayName)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
 </main>`,
       };
     }
@@ -294,7 +297,7 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
   <p class="lead">@${esc(o.handle)}${facts.length ? ` · ${esc(facts.join(' · '))}` : ''}</p>
   ${page.about ? `<p>${esc(page.about)}</p>` : ''}
   ${page.website ? `<p><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></p>` : ''}
-  <p class="cta"><a href="${esc(path)}">Message ${esc(o.name)} on ${SITE_NAME}</a></p>
+  <p class="cta"><a href="${wayIn('sign-up', path)}">Message ${esc(o.name)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
 </main>`,
       };
     }
@@ -330,10 +333,17 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
 }
 
 /** The plain pages' look, in the brand's ink and pink; gone the moment the app renders. */
-export const PUBLIC_STYLE = `
+export /**
+ * A visitor's way in from someone's page: sign-up or sign-in, carrying the page as `?link=` so
+ * the app brings them back to it, and counts the invite for whoever it was (state/pendingLink.ts).
+ */
+const wayIn = (to: 'sign-up' | 'sign-in', path: string) =>
+  `/${to}?link=${encodeURIComponent(path)}`;
+
+const PUBLIC_STYLE = `
 <style id="pub-style">
 #root:empty{display:none}
-#root:not(:empty)~#static{display:none}
+#root:not(:empty)~#static{display:none}html[data-visitor] #root{display:none!important}html[data-visitor] #static{display:block!important}html[data-visitor] body{overflow:auto!important}
 body:has(#root:empty){overflow:auto}
 #static{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#23193a;background:#faf8fc;min-height:100%}
 .pub{max-width:640px;margin:0 auto;padding:48px 20px 64px;line-height:1.5}

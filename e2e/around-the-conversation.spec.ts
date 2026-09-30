@@ -724,6 +724,20 @@ test.describe
       expect(html).toContain('"@type":"Organization"');
       expect(html).toContain('<div id="static">');
       expect((await page.request.get('/@nobody.is.here.really')).status()).toBe(404);
+      // A visitor who isn't signed in stays on the page: the app keeps out of its way.
+      const visiting = await page.context().browser()?.newContext();
+      if (!visiting) throw new Error('no browser');
+      const visitor = await visiting.newPage();
+      await visitor.goto(`/o/${handle}`);
+      await visitor.waitForTimeout(1500);
+      await expect(visitor).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}$`));
+      await expect(visitor.locator('#static')).toBeVisible();
+      // Its way in leads to sign-up; the app remembers this page and comes back to it after.
+      await expect(
+        visitor.getByRole('link', { name: `Message Nile Dental ${stamp} on Caime` }),
+      ).toHaveAttribute('href', `/sign-up?link=${encodeURIComponent(`/o/${handle}`)}`);
+      await expect(visitor.locator('#root')).toBeHidden();
+      await visiting.close();
       expect(await (await page.request.get('/sitemap.xml')).text()).toContain(`/o/${handle}<`);
 
       // On Alex's profile, the organization they're with, by its logo, opening its page.
@@ -799,11 +813,13 @@ test.describe
       lina = await newPerson(linaContext);
       const linaHandle = `lina.${stamp}`;
       await lina.page.goto(`/@noor.${stamp}`);
-      await expect(lina.page.getByTestId('welcome-link')).toHaveText(
-        `Create an account or sign in to see @noor.${stamp}`,
-      );
-      await lina.page.screenshot({ path: 'e2e/screenshots/phone-link-welcome.png' });
-      await lina.page.getByTestId('welcome-sign-up').click();
+      // Noor's page reads as it is (R44): the app keeps out of a visitor's way, and the page's
+      // way in leads to sign-up, which comes back here after.
+      await expect(lina.page.locator('#static')).toBeVisible();
+      await expect(visible(lina.page, 'Noor Haddad')).toBeVisible();
+      await lina.page.screenshot({ path: 'e2e/screenshots/phone-link-page.png' });
+      await lina.page.getByRole('link', { name: 'Message Noor Haddad on Caime' }).click();
+      await lina.page.waitForURL(/\/sign-up/);
       await lina.page.getByTestId('signup-name').fill('Lina Farah');
       await lina.page.getByTestId('signup-handle').fill(linaHandle);
       await lina.page.getByTestId('signup-email').fill(`${linaHandle}@example.com`);

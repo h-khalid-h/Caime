@@ -104,6 +104,11 @@ These are rules, not preferences.
   `setQueryData`: a bare write marks the data fresh, and a restored copy then never refetches.
 - A sheet whose content depends on the state that closes it should keep the last content while
   it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
+- Web fonts: on the web the faces are WOFF2 in `apps/app/public/fonts` (Fontsource's Latin
+  cuts, copied from `@fontsource/inter` and `@fontsource/nunito`; OFL beside them), declared in
+  `index.html` under the very names `theme/fonts.ts` uses, so `fontFiles.web.ts` gives expo-font
+  nothing to load; phones load the TTFs from `fontFiles.ts`. A new weight needs both, and
+  `fonts` is a reserved handle.
 - The web page's head is `apps/app/public/index.html` (Expo's template, with Caime's icon links);
   the icons beside it are made by `pnpm --filter @caime/brand assets`, never by hand, and any new
   file at the web root is also a reserved handle (`paths.test.ts` checks).
@@ -112,7 +117,10 @@ These are rules, not preferences.
   reload, not only by navigating inside the app. The shell it serves carries the page's head and
   a plain body (R44, `lib/public-pages.ts`: `publicPageFor` decides, `renderPublic` writes,
   `injectPublic` puts it in the template; `#root:empty` shows it, the app hides it). A new public
-  page renders only what the privacy evaluator shows `NOBODY`; a new app route that must not be
+  page renders only what the privacy evaluator shows `NOBODY`; a visitor (no session cookie)
+  gets a person's or an organization's page without the app's scripts, and on the web the root
+  layout mounts nothing on such a page (`handleIn`, the head's `caime-page`) until they're
+  signed in, so the page stays; a new app route that must not be
   indexed needs nothing (the default is `noindex`), and a new web-root file (`robots.txt`,
   `sitemap.xml`) is a reserved handle.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in

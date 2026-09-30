@@ -42,7 +42,7 @@ export function webCsp(publicUrl: string): string {
 export function builtFiles(dir: string): string[] {
   // Its scripts, and the fonts and images they use (without which it opens offline in the
   // wrong font).
-  return [join(dir, '_expo', 'static'), join(dir, 'assets')]
+  return [join(dir, '_expo', 'static'), join(dir, 'assets'), join(dir, 'fonts')]
     .filter((root) => existsSync(root))
     .flatMap((root) =>
       (readdirSync(root, { recursive: true }) as string[])
@@ -70,7 +70,8 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     wildcard: true,
     decorateReply: true,
     setHeaders(res, path) {
-      if (path.includes(`${join('_expo', 'static')}`)) {
+      if (path.includes(`${join('_expo', 'static')}`) || path.includes(`${sep}fonts${sep}`)) {
+        // Hashed scripts, and the web fonts (named by face and subset; a new cut gets a new name).
         res.header('cache-control', 'public, max-age=31536000, immutable');
       } else if (path.endsWith('sw.js')) {
         // The service worker: a new one reaches every browser on its next check.
@@ -97,13 +98,19 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         ? { kind: 'app' as const }
         : await publicPageFor(ctx.db, path, ctx.now());
     const rendered = renderPublic(page, ctx.config.PUBLIC_URL, path);
+    let html = injectPublic(template, rendered);
+    // A visitor on someone's page (no session here): the page as it is, without the app's
+    // scripts, which would only boot to keep out of its way (R44). Its ways in are links.
+    const visitor =
+      (page.kind === 'person' || page.kind === 'org') && !req.cookies?.[SESSION_COOKIE];
+    if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
     return reply
       .status(rendered.status)
       .header('cache-control', 'no-cache')
       .header('content-security-policy', csp)
       .header('permissions-policy', PERMISSIONS_POLICY)
       .type('text/html; charset=utf-8')
-      .send(injectPublic(template, rendered));
+      .send(html);
   };
   // The root is a directory to the static handler; it must be the app, not a listing.
   app.get('/', (req, reply) => serve(req, reply));

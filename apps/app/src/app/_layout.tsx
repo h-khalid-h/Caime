@@ -1,12 +1,4 @@
 import '@/lib/polyfills';
-import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
-import { Nunito_600SemiBold } from '@expo-google-fonts/nunito/600SemiBold';
-import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold';
-import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold';
-import { Nunito_900Black } from '@expo-google-fonts/nunito/900Black';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
@@ -24,11 +16,14 @@ import {
 } from '@/api/queryClient';
 import { IconMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
+import { isWeb } from '@/lib/config';
 import { keepAppForOffline } from '@/lib/offline';
+import { handleIn } from '@/lib/paths';
 import { useOutbox } from '@/state/outbox';
 import { useRememberLinks } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
+import { FONT_FILES } from '@/theme/fontFiles';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 import { ToastHost } from '@/ui/Toast';
 
@@ -36,17 +31,20 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export const ErrorBoundary = ScreenError;
 
+/**
+ * Whether this document is someone's public page (R44): the server says which page it wrote
+ * (`caime-page`), so a link to a person who can't be found by handle still opens the app and
+ * its way in, and only a page that reads stays as it is.
+ */
+function onPublicPage(): boolean {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return false;
+  if (handleIn(window.location.pathname) === null) return false;
+  const kind = document.querySelector('meta[name="caime-page"]')?.getAttribute('content');
+  return kind === 'person' || kind === 'org';
+}
+
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Nunito_600SemiBold,
-    Nunito_700Bold,
-    Nunito_800ExtraBold,
-    Nunito_900Black,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  const [fontsLoaded, fontError] = useFonts(FONT_FILES);
   const status = useSession((s) => s.status);
   useRememberLinks(status);
   // A slow font never holds the app hostage: after 2.5 s we render with the system font.
@@ -58,10 +56,21 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, []);
   const ready = (fontsLoaded || Boolean(fontError) || fontTimeout) && status !== 'booting';
+  // A visitor on someone's public page (R44): the page they were sent stays, readable, with its
+  // own ways in; the app mounts only once they're signed in. Mounting anything here would hide
+  // the page (`#root:empty` shows it) and send them to Welcome.
+  const visitor = isWeb && status !== 'signedIn' && onPublicPage();
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
+  // The router's own wrapper is in the root whatever this returns, so the page is shown by a
+  // mark on the document, not by the root being empty.
+  useEffect(() => {
+    if (!isWeb || typeof document === 'undefined') return;
+    document.documentElement.toggleAttribute('data-visitor', visitor);
+  }, [visitor]);
+  if (visitor) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

@@ -16,6 +16,8 @@ beforeAll(async () => {
   writeFileSync(join(dir, '_expo', 'static', 'js', 'web', 'search-def.js'), 'console.log(2)');
   mkdirSync(join(dir, 'assets'), { recursive: true });
   writeFileSync(join(dir, 'assets', 'font-123.ttf'), 'font');
+  mkdirSync(join(dir, 'fonts'), { recursive: true });
+  writeFileSync(join(dir, 'fonts', 'inter-latin-400-normal.woff2'), 'woff2');
   t = await createTestApp({ WEB_DIR: dir });
 });
 afterAll(async () => {
@@ -48,6 +50,10 @@ describe('the web app on the API origin', () => {
     const js = await get('/_expo/static/js/entry-abc.js', '*/*');
     expect(js.statusCode).toBe(200);
     expect(js.headers['cache-control']).toContain('immutable');
+    // The web fonts, named by face and subset, for a year too.
+    const font = await get('/fonts/inter-latin-400-normal.woff2', '*/*');
+    expect(font.statusCode).toBe(200);
+    expect(font.headers['cache-control']).toContain('immutable');
     const missing = await get('/_expo/static/js/gone-123.js', '*/*');
     expect(missing.statusCode).toBe(404);
     expect(missing.json().error.code).toBe('not_found');
@@ -64,6 +70,7 @@ describe('the web app on the API origin', () => {
         '/_expo/static/js/entry-abc.js',
         '/_expo/static/js/web/search-def.js',
         '/assets/font-123.ttf',
+        '/fonts/inter-latin-400-normal.woff2',
       ],
     });
   });
