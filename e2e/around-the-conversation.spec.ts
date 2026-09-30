@@ -1787,6 +1787,28 @@ test.describe
 
       await offer.getByRole('button', { name: 'Add to actions' }).click();
       await expect(visible(page, 'Added to your actions')).toBeVisible();
+
+      // Several steps, one approval (R37): two of Noor's own commitments, with the contract she
+      // just asked for, are offered as one card, done on one tap, taken back on one more, and
+      // put away together.
+      for (const line of ['I’ll send the deck on Monday.', 'I’ll book the room on Tuesday.']) {
+        await page.getByTestId('composer-input').fill(line);
+        await page.getByTestId('composer-send').click();
+        await expect(visible(page, line)).toBeVisible();
+      }
+      const card = page.getByTestId('suggestions-card').filter({ visible: true });
+      await expect(card).toContainText('3 things here');
+      await expect(card.getByTestId('suggestion-step-reminder')).toHaveCount(2);
+      await expect(card).toContainText('Send deck');
+      await expect(card).toContainText('Book room');
+      await expect(card.getByTestId('suggestion-step-waiting')).toContainText('Contract');
+      await card.getByTestId('suggestions-all').click();
+      await expect(visible(page, '3 done')).toBeVisible();
+      await page.getByRole('button', { name: 'Undo' }).click();
+      await expect(visible(page, 'Undone')).toBeVisible();
+      await expect(card).toContainText('3 things here');
+      await card.getByTestId('suggestions-dismiss-all').click();
+      await expect(page.getByTestId('suggestions-card')).toHaveCount(0);
       expect(await stub()).toEqual(['catch-up', 'actions', 'translate', 'rewrite']);
       expect(errors).toEqual([]);
     });

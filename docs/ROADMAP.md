@@ -480,8 +480,12 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
       organization keeps its handle for good; the operator can give a held one back
 - [ ] Passkeys (R36): WebAuthn sign-in on web, iOS and Android, password optional once a passkey
       exists, recovery codes kept. After the domain, since a passkey is bound to it
-- [ ] Several steps, one approval (R37): the assistant's suggestions from one conversation offered
-      as one card, each step undoable
+- [x] Several steps, one approval (R37): more than one suggestion in a conversation is offered
+      as one card listing each step, done in order on one tap (`POST /suggestions/accept`, each
+      step on its own, one that fails not stopping the rest), each task, reminder or waiting item
+      taken back from the toast (`POST /suggestions/:id/undo`, only while it's still exactly as
+      made; a decision stays, as one recorded by hand does), or taken one at a time
+      (`suggestions-many.test.ts`, E2E)
 - [ ] Pay on an organization's card (R38), through its own checkout (Stripe Connect or its link),
       the card saying it's paid from the provider's webhook. ⛔ The owner's decision on Stripe
       Connect for the live account, and on a fee. And a Split card that records who owes whom and
@@ -1190,6 +1194,10 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · R37, several steps, one approval: `acceptSuggestion` lifted out of its route,
+  `POST /suggestions/accept` (ids, each on its own) and `POST /suggestions/:id/undo` (a task
+  still as made goes, the suggestion is offered again); the `SuggestionBar` shows one card for
+  several, with Do all, One at a time and Not now, and Undo on the toast.
 - 2026-09-30 · AI spend on `/metrics`: `caime_ai_tokens_total` by feature and direction, and a
   `CaimeAiSpend` alert rule in the deploy guide (`ai.test.ts`).
 - 2026-09-30 · Leaving a group from two devices at once: the second answers done, not

@@ -403,6 +403,11 @@ These are rules, not preferences.
   reads message bodies for meaning (effects, AI, attention) may leave those alone. The app shows
   "Imported ·" from that field and offers the sheet (`features/import/`, imported statically by
   the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are.
+- Suggestions are accepted through `acceptSuggestion` (`modules/suggestions.ts`), the one path
+  the single route, "Do all" (`POST /suggestions/accept`, each id on its own) and tests use. A
+  task-like step is undone by `POST /suggestions/:id/undo` only while the task is still exactly
+  as made (`result_ref.title`, status open); a new kind that should be undoable records what it
+  made in `result_ref` and adds its case there. Decisions stay, as ones recorded by hand do.
 - What's saved (`saved_items`, PRD §69) points at messages and copies nothing. Any new path
   that deletes a message for everyone, hides it for someone or lets it disappear drops what
   was saved of it (`dropSaved`, then `tellSaved`; the retention job does it in its own SQL),

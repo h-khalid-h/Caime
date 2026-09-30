@@ -77,6 +77,7 @@ import type {
   SpaceSummaryView,
   SpaceView,
   StartThreadResult,
+  SuggestionsAcceptedView,
   SuggestionView,
   TasksResponse,
   TaskView,
@@ -622,6 +623,10 @@ export const endpoints = {
   acceptSuggestion: (id: string, body: Record<string, unknown> = {}) =>
     api.post<{ accepted: { type: string; id: string } }>(`/suggestions/${id}/accept`, body),
   dismissSuggestion: (id: string) => api.post<Ok>(`/suggestions/${id}/dismiss`),
+  /** Several steps, one approval (R37), and a step taken back. */
+  acceptSuggestions: (ids: string[]) =>
+    api.post<SuggestionsAcceptedView>('/suggestions/accept', { ids }),
+  undoSuggestion: (id: string) => api.post<Ok>(`/suggestions/${id}/undo`),
 
   // Search, notifications, policies, safety
   search: (term: string) => api.get<SearchResponse>(`/search${q({ q: term })}`),

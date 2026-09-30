@@ -630,6 +630,12 @@ export const AcceptSuggestionBody = z.object({
   /** A possible duplicate (PRD §51): which of the two to keep them under. */
   keep: z.string().uuid().optional(),
 });
+export type AcceptSuggestionEdits = z.infer<typeof AcceptSuggestionBody>;
+
+/** Several steps, one approval (R37): the suggestions of one card, done in this order. */
+export const AcceptSuggestionsBody = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(8),
+});
 
 // --- Organizations' updates (PRD §59) ----------------------------------------------------------
 

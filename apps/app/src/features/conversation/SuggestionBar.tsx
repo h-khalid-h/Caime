@@ -44,6 +44,9 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   const [busy, setBusy] = useState(false);
   const { timeZone, locale } = useUserClock();
   const list = (q.data?.suggestions ?? []).filter((s) => s.conversationId === conversationId);
+  // Several found here (R37): offered as one card, done on one approval, until they choose to
+  // take them one at a time.
+  const [oneAtATime, setOneAtATime] = useState(false);
   const s: SuggestionView | undefined = list[0];
   if (!s) return null;
   const refresh = () => {
@@ -69,6 +72,128 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       refresh();
     }
   };
+  /** Every step of the card, in order; what was done can be taken back from the toast. */
+  const doAll = async () => {
+    setBusy(true);
+    const ids = list.map((x) => x.id);
+    try {
+      const { results } = await endpoints.acceptSuggestions(ids);
+      const done = results.filter((r) => r.accepted);
+      const failed = results.find((r) => r.error);
+      const undoable = done.filter((r) => r.accepted?.type === 'task').map((r) => r.id);
+      const kept = done.length - undoable.length;
+      if (done.length)
+        toast(`${done.length} done`, {
+          action: {
+            label: 'Undo',
+            onPress: () => {
+              void Promise.all(undoable.map((id) => endpoints.undoSuggestion(id).catch(() => {})))
+                .then(() => {
+                  toast(
+                    kept
+                      ? `${undoable.length} undone; ${kept === 1 ? 'a decision stays' : `${kept} decisions stay`}`
+                      : 'Undone',
+                  );
+                })
+                .finally(refresh);
+            },
+          },
+        });
+      if (failed) toast(failed.error ?? 'One step couldn’t be done.', { tone: 'danger' });
+      const opened = done.find((r) => r.accepted?.type === 'conversation');
+      if (opened?.accepted)
+        router.navigate({ pathname: '/c/[id]', params: { id: opened.accepted.id } });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  };
+  const dismissAll = async () => {
+    const ids = new Set(list.map((x) => x.id));
+    qc.setQueryData(
+      qk.suggestions(conversationId),
+      (d: { suggestions: SuggestionView[] } | undefined) =>
+        d ? { suggestions: d.suggestions.filter((x) => !ids.has(x.id)) } : d,
+    );
+    await Promise.all(list.map((x) => endpoints.dismissSuggestion(x.id).catch(() => {})));
+    refresh();
+  };
+  if (list.length > 1 && !oneAtATime)
+    return (
+      <View
+        accessibilityLabel={`Suggestions: ${list.length} things here`}
+        testID="suggestions-card"
+        style={{
+          marginHorizontal: 12,
+          marginBottom: 8,
+          padding: 12,
+          borderRadius: 16,
+          backgroundColor: t.c.surface,
+          borderWidth: 1,
+          borderColor: t.c.border,
+          gap: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 3 },
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Sparkles size={14} color={t.c.accentStrong} />
+          <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
+            {list.some((x) => x.payload.source === 'ai') ? AI_LABEL : 'Suggestions'} · {list.length}{' '}
+            things here
+          </Text>
+        </View>
+        {list.map((x) => (
+          <View
+            key={x.id}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+            testID={`suggestion-step-${x.kind}`}
+          >
+            <Text variant="captionStrong" color="textSecondary">
+              {ACCEPT_LABEL[x.kind] ?? 'Yes'}:
+            </Text>
+            <Text variant="bodyStrong" style={{ flexShrink: 1 }}>
+              {x.title}
+            </Text>
+            {x.dueAt ? (
+              <Text variant="captionStrong" color="textSecondary">
+                {formatDue(x.dueAt, new Date(), timeZone, locale, Boolean(x.payload.dueHasTime))}
+              </Text>
+            ) : null}
+          </View>
+        ))}
+        <Text variant="caption" color="textSecondary">
+          Nothing happens until you say so; each step can be taken back after.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          <Button
+            label={`Do all ${list.length}`}
+            size="sm"
+            onPress={doAll}
+            loading={busy}
+            testID="suggestions-all"
+          />
+          <Button
+            label="One at a time"
+            size="sm"
+            variant="secondary"
+            onPress={() => setOneAtATime(true)}
+            testID="suggestions-one"
+          />
+          <Button
+            label="Not now"
+            size="sm"
+            variant="ghost"
+            onPress={dismissAll}
+            testID="suggestions-dismiss-all"
+          />
+        </View>
+      </View>
+    );
   const dismiss = async () => {
     qc.setQueryData(
       qk.suggestions(conversationId),

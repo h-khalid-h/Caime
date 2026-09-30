@@ -634,6 +634,11 @@ export interface SuggestionView {
   createdAt: string;
 }
 
+/** What "Do all" did (R37): each step done, with what it made, or why it couldn't be. */
+export interface SuggestionsAcceptedView {
+  results: Array<{ id: string; accepted?: { type: string; id: string }; error?: string }>;
+}
+
 /** An organization where a conversation shows it (R15): who it is, and whether that's proven. */
 export interface OrgRef {
   id: string;
