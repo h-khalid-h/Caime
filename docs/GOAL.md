@@ -44,7 +44,10 @@ Done means each layer works end to end against the real server and is tested:
    observability; plan entitlements.
 8. UX: attention-first mobile tabs (Chats, People, Spaces, Actions, You); three-column desktop
    web with a collapsible context panel; minimal composer; light and dark; accessible; RTL-safe;
-   polished.
+   polished. One identity and one place to start (R50): facts as spec sheets with mono labels,
+   sentence case everywhere, the public site a spec sheet with a layer explorer; anything is
+   started from one place and asks whose it is (Mine, or an organization you run); someone on
+   several teams is one step from each (a team row in the Business inbox, Spaces by owner).
 
 Quality bar: typecheck, lint, unit and API integration tests on real Postgres, Playwright E2E with
 screenshots of key flows, native bundles export, Docker image builds, security review before
