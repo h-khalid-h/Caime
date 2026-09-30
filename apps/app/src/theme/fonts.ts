@@ -1,4 +1,12 @@
 import type { TypeStyle } from '@caime/brand/tokens';
+import { Platform } from 'react-native';
+
+/** The system's monospace, one name on each platform; its weight is a style, not a file. */
+const MONO = Platform.select({
+  ios: 'Menlo',
+  android: 'monospace',
+  default: 'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+});
 
 /** Each weight is its own font file, so the family name carries the weight. */
 const FAMILIES = {
@@ -21,5 +29,6 @@ const FAMILIES = {
 } as const;
 
 export function fontFamily(family: TypeStyle['family'], weight: TypeStyle['weight']): string {
+  if (family === 'mono') return MONO;
   return FAMILIES[family][weight];
 }

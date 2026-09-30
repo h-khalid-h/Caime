@@ -289,6 +289,8 @@ export function avatarColors(seed: string): { bg: string; fg: string } {
 export const fonts = {
   heading: 'Nunito',
   body: 'Inter',
+  /** The system's monospace (no file of its own): labels on spec-sheet surfaces. */
+  mono: 'monospace',
 } as const;
 
 export type TypeStyleName =
@@ -301,7 +303,8 @@ export type TypeStyleName =
   | 'message'
   | 'caption'
   | 'captionStrong'
-  | 'overline';
+  | 'overline'
+  | 'mono';
 
 export interface TypeStyle {
   family: keyof typeof fonts;
@@ -330,6 +333,8 @@ export const typeScale: Record<TypeStyleName, TypeStyle> = {
     letterSpacing: 0.44,
     uppercase: true,
   },
+  /** A spec sheet's label: mono, sentence case, quiet. Never for running text. */
+  mono: { family: 'mono', weight: 500, size: 12, lineHeight: 16, letterSpacing: 0.3 },
 };
 
 export const radii = {

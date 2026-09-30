@@ -172,6 +172,11 @@ These are rules, not preferences.
   is on an organization's team (`useOrgs`, `canManageOrg` decides which are offered; the rest
   are named, not offered), and an organization's page opens it with `?org=handle` chosen. A new
   way to start a space goes there, never to a screen of its own.
+- The app's `mono` text variant (`typeScale.mono`, the system monospace by platform in
+  `theme/fonts.ts`, weight as a style) is for spec-sheet labels only (Welcome's tagline and spec
+  lines, an organization's facts): never running text, never uppercase. Anything that starts a
+  conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
+  as its own tab: one place to start, and the screens it opens stay the only ones.
 - The public pages (`lib/public-pages.ts`) are Caime's own: sentence case, mono labels
   (`.mono`, the system monospace, no font file), spec-sheet rows (`.spec`) and the landing
   page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a
@@ -318,7 +323,8 @@ These are rules, not preferences.
   loaded only when used (`support.ts`, `hooks.ts`, and a dynamic import in the signed-in layout). Trust is the device's, never the
   server's (`trust.ts`): a device counts only if pinned with the same keys, or its chain of
   introductions (`chainRoot`) holds up to a first device accepted for that person; anything
-  sealed, sent or shown goes through `judge`. Open with the conversation on screen
+  sealed, sent or shown goes through `judge`, and a sender's device is judged with the rest of
+  its person's devices (`senderOf`), never alone. Open with the conversation on screen
   (`openMessage(m, conversationId)`), never `m.conversationId`. A new device registers with a
   client-chosen id and its own signature, and waits (`approved: false`) until another of the
   person's approves it, or restores with the recovery key (R41, `e2ee-recovery.ts`: the key

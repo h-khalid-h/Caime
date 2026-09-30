@@ -1287,3 +1287,14 @@ outperforming the alternatives is reach and operations. In the order the review 
   memory, organizations, privacy) drawn from the app's own shapes, with no script
   (`public-pages.test.ts`); a visitor at `/` now gets that page without the app's scripts, as
   on a person's or an organization's page, and the app opens from its links (`core-flow.spec.ts`).
+- 2026-09-30 · The app takes the same identity: a `mono` text style (the system monospace, no
+  file, `fontFamily` in `theme/fonts.ts`) for spec-sheet labels; Welcome carries the tagline in
+  it and three spec lines (connection, attention, privacy) beside the characters; the Chats "+"
+  sheet offers "Start a space" beside "New group" and "Connect", so starting anything begins in
+  one place.
+- 2026-09-30 · Private conversations: a device approved or restored since read its own person's
+  earlier messages as unverified unless the codes or a send had judged that person's devices
+  together first (the wrong answer then kept until the next change). `senderOf` now judges the
+  sender's person's devices together, so a pinned one (the recovery device, this device once
+  approved) says which first device is theirs; a unit case reproduces it (`private.test.ts`),
+  and the E2E that failed twice on it passes.

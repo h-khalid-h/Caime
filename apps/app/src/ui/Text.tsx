@@ -48,6 +48,11 @@ export function Text({
       style={[
         {
           fontFamily: fontFamily(spec.family, weight ?? spec.weight),
+          // A system face carries its weight as a style; ours carry it in the file's name.
+          fontWeight:
+            spec.family === 'mono'
+              ? (String(weight ?? spec.weight) as TextStyle['fontWeight'])
+              : undefined,
           fontSize: spec.size,
           lineHeight: spec.lineHeight,
           letterSpacing: spec.letterSpacing,

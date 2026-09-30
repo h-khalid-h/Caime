@@ -186,6 +186,7 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 | Message | Inter | 16 / 22 | 400 |
 | Caption | Inter | 13 / 17 | 500 |
 | Overline | Inter | 11 / 14 | 600, +4% tracking, uppercase |
+| Mono | the system monospace | 12 / 16 | 500, sentence case: labels on spec-sheet surfaces (the public pages, Welcome, facts about an organization), never running text |
 
 ## Shape, space, motion
 

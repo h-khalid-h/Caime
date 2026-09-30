@@ -436,7 +436,13 @@ export type Opened =
   /** An older version of a message edited since. */
   | { ok: false; reason: 'stale' };
 
-/** The sender's device, as this device confirmed it: never as the server says now. */
+/**
+ * The sender's device, as this device confirmed it: never as the server says now. Judged with
+ * the rest of that person's devices, so one confirmed before (my own recovery device on a
+ * restored device, this device itself once approved) says which first device is theirs: judged
+ * alone, a device of mine sent before this one was approved wouldn't hold up until something
+ * else (the codes, sealing) had judged them together, and what it answered would be kept.
+ */
 async function senderOf(me: string, conversationId: string, deviceId: string) {
   const pin = await pinned(me, deviceId);
   if (pin) return { pin, held: false };
@@ -444,7 +450,8 @@ async function senderOf(me: string, conversationId: string, deviceId: string) {
   const all = [...view.devices, ...view.chain];
   const d = all.find((x) => x.id === deviceId);
   if (!d) return { pin: null, held: false };
-  const j = await judge(me, [d], all);
+  const theirs = all.filter((x) => x.userId === d.userId);
+  const j = await judge(me, theirs, all);
   return {
     pin: j.trusted.length ? await pinned(me, deviceId) : null,
     held: j.held.has(d.userId),

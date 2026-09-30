@@ -77,6 +77,9 @@ export default function Welcome() {
             }}
           >
             <View style={{ maxWidth: 420, width: '100%', alignSelf: 'center', gap: 8 }}>
+              <Text variant="mono" color="textTertiary">
+                messaging that understands your relationships
+              </Text>
               <Text variant="display" accessibilityRole="header">
                 Welcome to Caime
               </Text>
@@ -84,6 +87,7 @@ export default function Welcome() {
                 One place for everyone you talk to, and it knows the difference between your mum,
                 your manager and your plumber.
               </Text>
+              <SpecLines />
             </View>
             {actions}
           </View>
@@ -109,5 +113,41 @@ export default function Welcome() {
         {actions}
       </View>
     </Screen>
+  );
+}
+
+/** Caime in three lines, as a spec sheet reads: a mono label, then what it means. */
+function SpecLines() {
+  const t = useTheme();
+  const lines: Array<[string, string]> = [
+    ['connection', 'Say who someone is to you, once. Everything fits from then on.'],
+    ['attention', '“3 need you”, never “47 unread”. It says why.'],
+    ['privacy', 'Each side of your life sees what you chose. Only you see your labels.'],
+  ];
+  return (
+    <View
+      style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: t.c.border }}
+      testID="welcome-spec"
+    >
+      {lines.map(([label, value]) => (
+        <View
+          key={label}
+          style={{
+            flexDirection: 'row',
+            gap: 12,
+            paddingVertical: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: t.c.border,
+          }}
+        >
+          <Text variant="mono" color="textTertiary" style={{ width: 96, paddingTop: 2 }}>
+            {label}
+          </Text>
+          <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
+            {value}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }

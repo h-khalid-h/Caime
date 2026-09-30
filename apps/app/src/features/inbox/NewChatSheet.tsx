@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
-import { Search, UserPlus, Users } from '@/ui/icons';
+import { LayoutGrid, Search, UserPlus, Users } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -53,6 +53,17 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
             router.push('/new-group');
           }}
           chevron
+        />
+        <ListRow
+          icon={LayoutGrid}
+          title="Start a space"
+          subtitle="For a family, a team, a project or a club"
+          onPress={() => {
+            onClose();
+            router.push('/new-space');
+          }}
+          chevron
+          testID="new-space-from-chats"
         />
         {list.map((c) => (
           <ListRow

@@ -736,6 +736,20 @@ describe('private conversations on this device (R18)', () => {
       to: [registered(), recView, sam.view],
     });
     expect(await p.openMessage(message(later, 'sam'), conversationId)).toMatchObject({ ok: true });
+    // One her first device sent before the key existed, sealed for the devices of then, is said
+    // so, never doubted: the recovery device, confirmed here, says that first device is hers,
+    // before anything else (the codes, sealing) has judged her devices together.
+    const earlier = await seal({
+      conversationId,
+      cid: 'client-000092',
+      payload: { body: 'Before the key' },
+      from: from(first),
+      to: [first.view, sam.view],
+    });
+    expect(await p.openMessage(message(earlier, 'noor'), conversationId)).toEqual({
+      ok: false,
+      reason: 'not_for_this_device',
+    });
     expect(await p.hasRecoveryKeysHere()).toBe(true);
     // Starting over here lets go of them: the recovery device is retired with the rest.
     await p.startOver();
