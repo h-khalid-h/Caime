@@ -1,9 +1,5 @@
-import {
-  type Character as CharacterName,
-  characterSvg,
-  type Expression,
-} from '@caime/brand/characters';
-import { memo, useMemo } from 'react';
+import type { Character as CharacterName, Expression } from '@caime/brand/characters';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
@@ -16,6 +12,23 @@ export interface CharacterProps {
   label?: string;
 }
 
+type Builders = typeof import('@caime/brand/characters');
+
+/**
+ * The vector builders, loaded the first time a character is drawn: they're for expressive
+ * moments (a welcome, an empty state), not the first screen's shell, so they stay out of the
+ * startup chunk (docs/RESOURCES.md). Once here, every character draws at once.
+ */
+let builders: Builders | null = null;
+let loading: Promise<Builders> | null = null;
+function loadBuilders(): Promise<Builders> {
+  loading ??= import('@caime/brand/characters').then((m) => {
+    builders = m;
+    return m;
+  });
+  return loading;
+}
+
 /** A Caime Friend (BRAND.md B3), drawn from the brand package's vector builders. */
 export const Character = memo(function Character({
   name,
@@ -24,9 +37,20 @@ export const Character = memo(function Character({
   accents = true,
   label,
 }: CharacterProps) {
+  const [ready, setReady] = useState(builders);
+  useEffect(() => {
+    if (ready) return;
+    let on = true;
+    void loadBuilders().then((m) => {
+      if (on) setReady(m);
+    });
+    return () => {
+      on = false;
+    };
+  }, [ready]);
   const xml = useMemo(
-    () => characterSvg(name, { expression, accents, detail: size >= 48 }),
-    [name, expression, accents, size],
+    () => ready?.characterSvg(name, { expression, accents, detail: size >= 48 }) ?? null,
+    [ready, name, expression, accents, size],
   );
   return (
     <View
@@ -36,7 +60,7 @@ export const Character = memo(function Character({
       importantForAccessibility={label ? 'yes' : 'no-hide-descendants'}
       style={{ width: size, height: size }}
     >
-      <SvgXml xml={xml} width={size} height={size} />
+      {xml ? <SvgXml xml={xml} width={size} height={size} /> : null}
     </View>
   );
 });

@@ -9,6 +9,10 @@ const h = vi.hoisted(() => ({
   wrongAccount: vi.fn(),
   applyEvent: vi.fn(),
   sockets: [] as FakeSocket[],
+  appState: [] as Array<(s: string) => void>,
+  callPhase: null as string | null,
+  shares: {} as Record<string, unknown>,
+  invalidated: [] as unknown[],
 }));
 
 class FakeSocket {
@@ -33,7 +37,20 @@ class FakeSocket {
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'native' },
-  AppState: { addEventListener: () => ({ remove() {} }) },
+  AppState: {
+    addEventListener: (_: string, fn: (s: string) => void) => {
+      h.appState.push(fn);
+      return {
+        remove() {
+          h.appState.splice(h.appState.indexOf(fn), 1);
+        },
+      };
+    },
+  },
+}));
+vi.mock('@/state/calls', () => ({ useCall: { getState: () => ({ phase: h.callPhase }) } }));
+vi.mock('@/state/liveShares', () => ({
+  useLiveShares: { getState: () => ({ shares: h.shares }) },
 }));
 vi.mock('@/api/client', () => ({ getAuthToken: () => null, wrongAccount: h.wrongAccount }));
 vi.mock('@/api/endpoints', () => ({ endpoints: {} }));
@@ -41,7 +58,9 @@ vi.mock('@/api/keys', () => ({ qk: { inbox: ['inbox'], notifications: ['notifica
 vi.mock('@/api/queryClient', () => ({
   queryClient: {
     getQueryCache: () => ({ findAll: () => [], subscribe: () => () => {} }),
-    invalidateQueries: async () => {},
+    invalidateQueries: async (q: unknown) => {
+      h.invalidated.push(q);
+    },
   },
 }));
 vi.mock('@/features/calls/calls', () => ({
@@ -63,10 +82,20 @@ vi.mock('./apply', () => ({ applyEvent: h.applyEvent }));
 beforeEach(() => {
   vi.stubGlobal('WebSocket', FakeSocket);
   h.sockets.length = 0;
+  h.appState.length = 0;
+  h.invalidated.length = 0;
+  h.callPhase = null;
+  h.shares = {};
   h.wrongAccount.mockClear();
   h.applyEvent.mockClear();
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
+const appState = (s: string) => {
+  for (const fn of [...h.appState]) fn(s);
+};
 
 const { realtime } = await import('./client');
 const event = { type: 'event', event: { type: 'message.created', data: {} } };
@@ -90,5 +119,58 @@ describe('the realtime socket', () => {
     expect(h.wrongAccount).toHaveBeenCalledTimes(1);
     expect(ws?.closed).toBe(true);
     expect(h.applyEvent).not.toHaveBeenCalled();
+  });
+
+  it('rests the socket half a minute after the phone is put away, and comes back caught up', () => {
+    vi.useFakeTimers();
+    realtime.start('u1');
+    const first = h.sockets[0]!;
+    first.onopen?.();
+    first.say({ type: 'hello', userId: 'u1', serverTime: 'now' });
+    appState('background');
+    vi.advanceTimersByTime(29_000);
+    expect(first.closed).toBe(false);
+    vi.advanceTimersByTime(1_500);
+    expect(first.closed).toBe(true);
+    first.onclose?.();
+    // Nothing reconnects on its own while it rests.
+    vi.advanceTimersByTime(120_000);
+    expect(h.sockets).toHaveLength(1);
+    // Back in front: a new socket, and after its hello the lists are refreshed as after a gap.
+    h.invalidated.length = 0;
+    appState('active');
+    expect(h.sockets).toHaveLength(2);
+    const second = h.sockets[1]!;
+    second.onopen?.();
+    second.say({ type: 'hello', userId: 'u1', serverTime: 'now' });
+    expect(h.invalidated).toEqual([{ queryKey: ['inbox'] }, { queryKey: ['notifications'] }]);
+    realtime.stop();
+  });
+
+  it('keeps the socket while a call is on or a location is shared live, and when it comes back first', () => {
+    vi.useFakeTimers();
+    realtime.start('u1');
+    const ws = h.sockets[0]!;
+    ws.onopen?.();
+    ws.say({ type: 'hello', userId: 'u1', serverTime: 'now' });
+    h.callPhase = 'active';
+    appState('background');
+    vi.advanceTimersByTime(31_000);
+    expect(ws.closed).toBe(false);
+    h.callPhase = null;
+    h.shares = { m1: {} };
+    appState('background');
+    vi.advanceTimersByTime(31_000);
+    expect(ws.closed).toBe(false);
+    h.shares = {};
+    appState('background');
+    vi.advanceTimersByTime(10_000);
+    // The server was heard from meanwhile: coming back within the half minute keeps the socket.
+    ws.say({ type: 'pong' });
+    appState('active');
+    vi.advanceTimersByTime(60_000);
+    expect(ws.closed).toBe(false);
+    expect(h.sockets).toHaveLength(1);
+    realtime.stop();
   });
 });

@@ -1188,6 +1188,11 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · The characters' SVG builders leave the startup chunk (loaded on the first
+  character drawn): budget 447.3 KB gzip, 356.5 KB over the wire.
+- 2026-09-30 · A phone put away rests its socket after 30 s (`realtime/client.ts` `rest`), unless a
+  call or a live share is on; back in front, it reconnects and refreshes as after a gap
+  (`client.test.ts`).
 - 2026-09-30 · Precompressed web (`scripts/precompress.mjs`, `preCompressed` in `plugins/static.ts`):
   the first visit downloads 358.8 KB of scripts instead of 450 KB (Brotli 11 at build time, where
   the proxy's on-the-fly Brotli had saved 3.6% over gzip); the whole export is 788 KB instead

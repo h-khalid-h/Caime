@@ -352,6 +352,15 @@ These are rules, not preferences.
 - Many inserts take the database's clock (`created_at default now()`), not `ctx.now()`. A test
   that depends on those timestamps sets its clock to real time and stamps what it needs (see
   `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.
+- The characters' vector builders (`@caime/brand/characters`) load the first time a `Character`
+  draws (a dynamic import in `src/brand/Character.tsx`); nothing else imports them as values,
+  only their types. Before lazy-loading a module to take it out of the startup chunk, check the
+  source map for what else in `__common` imports it statically: `@caime/core/when` looked like
+  two sheets' alone, but `intelligence.ts` needs it, so it stays.
+- On a phone, the realtime socket rests 30 s after the app goes to the background (`rest()` in
+  `realtime/client.ts`) and comes back with a catch-up on `active`; a call or a live location
+  share keeps it. Anything new that must hear the socket while the app is put away adds its
+  check there, or arrives by push instead.
 - The build compresses every hashed file under `_expo/static` once (`scripts/precompress.mjs`,
   Brotli 11 and gzip 9 siblings) and `@fastify/static` serves the variant the browser accepts
   (`preCompressed`); `pnpm budget` reports gzip (the budget) and the Brotli wire size. A new

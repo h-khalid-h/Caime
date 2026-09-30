@@ -14,13 +14,21 @@ import { checkLiveCall, checkLiveGroupCall } from '@/features/calls/calls';
 import { WS_URL } from '@/lib/config';
 import { onNetworkChange } from '@/lib/network';
 import { type MessagePages, maxSeq, upsertMessage } from '@/state/cache';
+import { useCall } from '@/state/calls';
 import { useLive } from '@/state/live';
+import { useLiveShares } from '@/state/liveShares';
 import { useOutbox } from '@/state/outbox';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { applyEvent } from './apply';
 
 const PING_MS = 25_000;
 const STALE_MS = 60_000;
+/**
+ * A phone put away rests its socket after this long (docs/RESOURCES.md): pushes cover what
+ * arrives, and coming back reconnects and catches up. Not during a call or a live location
+ * share, which arrive and go through it.
+ */
+const REST_AFTER_MS = 30_000;
 
 class RealtimeClient {
   private ws: WebSocket | null = null;
@@ -29,6 +37,9 @@ class RealtimeClient {
   private attempt = 0;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private restTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The phone is in the background and the socket was let go on purpose: no retries. */
+  private resting = false;
   private lastFrameAt = 0;
   private everConnected = false;
   /** The server said hello on the current socket. */
@@ -52,6 +63,7 @@ class RealtimeClient {
     this.me = null;
     this.everConnected = false;
     this.ready = false;
+    this.resting = false;
     for (const u of this.unsubscribers) u();
     this.unsubscribers = [];
     this.clearTimers();
@@ -72,6 +84,7 @@ class RealtimeClient {
   /** Reconnect immediately (the app came back to the foreground, or the network returned). */
   nudge(): void {
     if (!this.wanted) return;
+    this.resting = false;
     if (this.ws && Date.now() - this.lastFrameAt < STALE_MS) {
       // The socket outlived a short network blip. Say it's back, fetch anything the blip may
       // have dropped, and send what queued meanwhile instead of waiting out the outbox's backoff.
@@ -105,7 +118,11 @@ class RealtimeClient {
       }),
     );
     const sub = AppState.addEventListener('change', (s) => {
+      if (this.restTimer) clearTimeout(this.restTimer);
+      this.restTimer = null;
       if (s === 'active') this.nudge();
+      else if (s === 'background' && Platform.OS !== 'web')
+        this.restTimer = setTimeout(() => this.rest(), REST_AFTER_MS);
     });
     this.unsubscribers.push(() => sub.remove());
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -120,8 +137,25 @@ class RealtimeClient {
   private clearTimers(): void {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.pingTimer) clearInterval(this.pingTimer);
+    if (this.restTimer) clearTimeout(this.restTimer);
     this.retryTimer = null;
     this.pingTimer = null;
+    this.restTimer = null;
+  }
+
+  /** Let the socket go while the phone is put away, unless a call or a live share needs it. */
+  private rest(): void {
+    this.restTimer = null;
+    if (!this.wanted || this.resting) return;
+    const phase = useCall.getState().phase;
+    if (phase && phase !== 'ended') return;
+    if (Object.keys(useLiveShares.getState().shares).length) return;
+    this.resting = true;
+    this.clearTimers();
+    const ws = this.ws;
+    this.ws = null;
+    this.ready = false;
+    ws?.close(1000, 'resting');
   }
 
   private connect(): void {
@@ -165,7 +199,7 @@ class RealtimeClient {
       this.ws = null;
       this.ready = false;
       this.clearTimers();
-      if (this.wanted) {
+      if (this.wanted && !this.resting) {
         useLive.getState().setConnection(this.online ? 'connecting' : 'offline');
         this.scheduleRetry();
       }
