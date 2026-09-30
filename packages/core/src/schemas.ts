@@ -163,6 +163,8 @@ export const RESERVED_HANDLES: readonly string[] = [
   'onboarding',
   'welcome',
   'recover',
+  'forgot',
+  'reset',
   'sw.js',
   'index.html',
   'favicon.ico',
@@ -393,6 +395,23 @@ export const LoginBody = z.object({
 export const ChangePasswordBody = z.object({
   currentPassword: z.string().min(1),
   newPassword: Password,
+});
+
+/** The six digits sent to an address (R48). */
+export const EmailCodeBody = z.object({
+  code: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, ''))
+    .pipe(z.string().regex(/^\d{6}$/, 'Enter the six digits from the email.')),
+});
+
+export const ResetRequestBody = z.object({ email: Email });
+
+export const ResetConfirmBody = z.object({
+  token: z.string().min(20).max(200),
+  newPassword: Password,
+  client: z.enum(['web', 'native']).default('web'),
 });
 
 export const RecoverBody = z.object({

@@ -83,6 +83,25 @@ export interface SessionsTable {
   revoked_at: NullableTimestamp;
 }
 
+/** The code sent to confirm an email address (R48): one per person at a time, hashed. */
+export interface EmailCodesTable {
+  user_id: string;
+  code_hash: Buffer;
+  attempts: Defaulted<number>;
+  expires_at: Date;
+  created_at: Generated<Date>;
+}
+
+/** A link to reset a forgotten password (R48): hashed, an hour, once. */
+export interface PasswordResetsTable {
+  id: string;
+  user_id: string;
+  token_hash: Buffer;
+  expires_at: Date;
+  used_at: NullableTimestamp;
+  created_at: Generated<Date>;
+}
+
 export interface RecoveryCodesTable {
   id: string;
   user_id: string;
@@ -943,6 +962,8 @@ export interface Database {
   identities: IdentitiesTable;
   sessions: SessionsTable;
   recovery_codes: RecoveryCodesTable;
+  email_codes: EmailCodesTable;
+  password_resets: PasswordResetsTable;
   connections: ConnectionsTable;
   connection_sides: ConnectionSidesTable;
   connection_requests: ConnectionRequestsTable;

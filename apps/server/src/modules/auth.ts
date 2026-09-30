@@ -1,3 +1,4 @@
+import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 /**
  * Accounts and sessions (PRD §35, §55; PRODUCT-REVIEW R24, R29; ADR-7).
  */
@@ -6,12 +7,15 @@ import type { AuthResponse, DeviceSessionView, SessionResponse } from '@caime/co
 import {
   ChangePasswordBody,
   defaultPrivacy,
+  EmailCodeBody,
   isMinor,
   LoginBody,
   meetsMinimumAge,
   normalizeHandle,
   plausibleBirthDate,
   RecoverBody,
+  ResetConfirmBody,
+  ResetRequestBody,
   SignupBody,
   safeLocale,
   uuidv7,
@@ -32,6 +36,7 @@ import {
   recoverySalt,
   verifyPassword,
 } from '../lib/crypto';
+import { resetMail, verificationMail } from '../lib/email';
 import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
@@ -55,6 +60,67 @@ function platformFrom(userAgent: string | null): string | null {
   if (/Macintosh|Windows|Linux|CrOS/i.test(userAgent)) return 'web';
   return null;
 }
+
+/**
+ * An account taken back (a recovery code, a reset link): every session, token, app grant and
+ * calendar address goes. Someone who lost their account may not be the one who made them.
+ */
+async function lockOutOthers(ctx: AppContext, req: FastifyRequest, userId: string) {
+  await ctx.db
+    .updateTable('sessions')
+    .set({ revoked_at: ctx.now() })
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .execute();
+  await ctx.db
+    .updateTable('personal_tokens')
+    .set({ revoked_at: ctx.now() })
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .execute();
+  await revokeGrantsOf(ctx, userId);
+  const feed = await ctx.db
+    .deleteFrom('calendar_feeds')
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+  if (Number(feed.numDeletedRows) > 0)
+    await audit(ctx.db, { actorId: userId, action: 'calendar.feed_stopped', ...clientInfo(req) });
+}
+
+const CODE_LIFE_MS = 24 * 3_600_000;
+const CODE_TRIES = 10;
+const RESET_LIFE_MS = 3_600_000;
+
+/** Six digits to the address, kept hashed, a day, ten tries; a new one replaces the last. */
+async function sendEmailCode(ctx: AppContext, userId: string, email: string, name: string) {
+  if (!ctx.mail) return;
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  await ctx.db
+    .insertInto('email_codes')
+    .values({
+      user_id: userId,
+      code_hash: hashToken(code),
+      attempts: 0,
+      expires_at: new Date(ctx.now().getTime() + CODE_LIFE_MS),
+    })
+    .onConflict((oc) =>
+      oc.column('user_id').doUpdateSet({
+        code_hash: hashToken(code),
+        attempts: 0,
+        expires_at: new Date(ctx.now().getTime() + CODE_LIFE_MS),
+      }),
+    )
+    .execute();
+  const mail = ctx.mail;
+  ctx.defer('email.code', () => mail.send(verificationMail(email, name, code)));
+}
+
+const mailUnavailable = () =>
+  new AppError(
+    503,
+    'email_unavailable',
+    'Caime can’t send email here yet. Use a recovery code instead, or ask whoever runs it.',
+  );
 
 export async function createSession(
   ctx: AppContext,
@@ -209,6 +275,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const codes = await storeRecoveryCodes(ctx, id);
     const token = await createSession(ctx, req, reply, id, body.client, body.deviceName);
     await audit(ctx.db, { actorId: id, action: 'auth.signup', ...clientInfo(req) });
+    // A code to confirm the address, when mail can go out (R48); nothing waits on it.
+    if (ctx.mail) await sendEmailCode(ctx, id, body.email, body.displayName);
     const user = await ctx.db
       .selectFrom('users')
       .selectAll()
@@ -382,6 +450,141 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { recoveryCodes: codes };
   });
 
+  // --- Email (R48) ------------------------------------------------------------------------------
+
+  /** Another code to the address, for someone who didn't get the first. */
+  app.post('/auth/email/send', async (req) => {
+    const auth = requireAuth(req);
+    if (!ctx.mail) throw mailUnavailable();
+    ctx.limiter.hit(`email-code:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
+    const user = await ctx.db
+      .selectFrom('users')
+      .select(['email', 'display_name', 'email_verified_at'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    if (user.email_verified_at) throw conflict('already_verified', 'This address is confirmed.');
+    await sendEmailCode(ctx, auth.userId, user.email, user.display_name);
+    return { ok: true };
+  });
+
+  /** The six digits, back: the address is theirs. */
+  app.post('/auth/email/verify', async (req) => {
+    const auth = requireAuth(req);
+    const body = parse(EmailCodeBody, req.body);
+    const wrong = new AppError(400, 'wrong_code', 'That code isn’t right. Check the email again.');
+    const row = await ctx.db
+      .selectFrom('email_codes')
+      .selectAll()
+      .where('user_id', '=', auth.userId)
+      .executeTakeFirst();
+    if (!row || row.expires_at <= ctx.now())
+      throw new AppError(400, 'code_expired', 'That code has run out. Send a new one.');
+    if (row.attempts >= CODE_TRIES)
+      throw new AppError(400, 'code_expired', 'Too many tries with that code. Send a new one.');
+    if (!timingSafeEqual(row.code_hash, hashToken(body.code))) {
+      await ctx.db
+        .updateTable('email_codes')
+        .set({ attempts: row.attempts + 1 })
+        .where('user_id', '=', auth.userId)
+        .execute();
+      throw wrong;
+    }
+    const user = await ctx.db
+      .updateTable('users')
+      .set({ email_verified_at: ctx.now(), updated_at: ctx.now() })
+      .where('id', '=', auth.userId)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    await ctx.db.deleteFrom('email_codes').where('user_id', '=', auth.userId).execute();
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'auth.email_verified',
+      ...clientInfo(req),
+    });
+    return { user: meView(user, ctx.now()) };
+  });
+
+  /**
+   * A forgotten password: a link to the address, if it's an account's. The answer is the same
+   * either way, so nobody learns which addresses are here.
+   */
+  app.post('/auth/reset', async (req) => {
+    const { ip } = clientInfo(req);
+    ctx.limiter.hit(`reset:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
+    if (!ctx.mail) throw mailUnavailable();
+    const body = parse(ResetRequestBody, req.body);
+    ctx.limiter.hit(`reset:email:${body.email}`, ctx.config.isTest ? 1000 : 3, 3_600_000);
+    const user = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'email', 'display_name'])
+      .where('email', '=', body.email)
+      .where('deleted_at', 'is', null)
+      .where('kind', '=', 'human')
+      .executeTakeFirst();
+    if (user) {
+      const token = randomBytes(32).toString('base64url');
+      await ctx.db
+        .insertInto('password_resets')
+        .values({
+          id: uuidv7(),
+          user_id: user.id,
+          token_hash: hashToken(token),
+          expires_at: new Date(ctx.now().getTime() + RESET_LIFE_MS),
+        })
+        .execute();
+      const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/reset?token=${token}`;
+      const mail = ctx.mail;
+      ctx.defer('email.reset', () => mail.send(resetMail(user.email, user.display_name, link)));
+      await audit(ctx.db, { actorId: user.id, action: 'auth.reset_requested', ...clientInfo(req) });
+    }
+    return { ok: true };
+  });
+
+  /** The link, back, with a new password: signed in here, signed out everywhere else. */
+  app.post('/auth/reset/confirm', async (req, reply) => {
+    const { ip } = clientInfo(req);
+    ctx.limiter.hit(`reset-confirm:ip:${ip}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
+    const body = parse(ResetConfirmBody, req.body);
+    const failure = new AppError(
+      400,
+      'invalid_reset',
+      'That link has been used or has run out. Ask for a new one.',
+    );
+    const row = await ctx.db
+      .selectFrom('password_resets')
+      .selectAll()
+      .where('token_hash', '=', hashToken(body.token))
+      .executeTakeFirst();
+    if (!row || row.used_at || row.expires_at <= ctx.now()) throw failure;
+    // Once: a second try with the same link at the same moment finds it used.
+    const used = await ctx.db
+      .updateTable('password_resets')
+      .set({ used_at: ctx.now() })
+      .where('id', '=', row.id)
+      .where('used_at', 'is', null)
+      .returning('id')
+      .executeTakeFirst();
+    if (!used) throw failure;
+    // Opening the link proves the mailbox: the address is confirmed too.
+    const user = await ctx.db
+      .updateTable('users')
+      .set({
+        password_hash: await hashPassword(body.newPassword),
+        email_verified_at: sql`coalesce(email_verified_at, ${ctx.now()})`,
+        updated_at: ctx.now(),
+      })
+      .where('id', '=', row.user_id)
+      .where('deleted_at', 'is', null)
+      .returningAll()
+      .executeTakeFirst();
+    if (!user) throw failure;
+    await lockOutOthers(ctx, req, user.id);
+    await ctx.db.deleteFrom('password_resets').where('user_id', '=', user.id).execute();
+    const token = await createSession(ctx, req, reply, user.id, body.client);
+    await audit(ctx.db, { actorId: user.id, action: 'auth.reset', ...clientInfo(req) });
+    return { user: meView(user, ctx.now()), token };
+  });
+
   app.post('/auth/recover', async (req, reply) => {
     const { ip } = clientInfo(req);
     ctx.limiter.hit(`recover:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
@@ -422,32 +625,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .set({ password_hash: await hashPassword(body.newPassword), updated_at: ctx.now() })
       .where('id', '=', user.id)
       .execute();
-    await ctx.db
-      .updateTable('sessions')
-      .set({ revoked_at: ctx.now() })
-      .where('user_id', '=', user.id)
-      .where('revoked_at', 'is', null)
-      .execute();
-    // Someone who lost their account may not be the one who made its tokens, or let its apps
-    // in: they go too.
-    await ctx.db
-      .updateTable('personal_tokens')
-      .set({ revoked_at: ctx.now() })
-      .where('user_id', '=', user.id)
-      .where('revoked_at', 'is', null)
-      .execute();
-    await revokeGrantsOf(ctx, user.id);
-    // And so does a calendar's address: whoever had the account may have made it.
-    const feed = await ctx.db
-      .deleteFrom('calendar_feeds')
-      .where('user_id', '=', user.id)
-      .executeTakeFirst();
-    if (Number(feed.numDeletedRows) > 0)
-      await audit(ctx.db, {
-        actorId: user.id,
-        action: 'calendar.feed_stopped',
-        ...clientInfo(req),
-      });
+    await lockOutOthers(ctx, req, user.id);
     const remaining = await ctx.db
       .selectFrom('recovery_codes')
       .select(sql<number>`count(*)::int`.as('n'))

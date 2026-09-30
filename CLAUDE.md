@@ -306,6 +306,12 @@ These are rules, not preferences.
   (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
   `plans.test.ts` is where limits are tested.
+- Mail (R48) goes out only through `ctx.mail` (`lib/email.ts`, null without `SMTP_URL`, so a
+  route that needs it throws `mailUnavailable()`), after the response with `ctx.defer`, never
+  through the job queue (a reset link is a secret). Texts stay ASCII so they travel as plain
+  7-bit text and `e2e/smtp-stub.mjs` can read them; tests pass `memoryMailer()` to
+  `createTestApp({}, { mail })` and read its outbox after `t.ctx.flush()`. A new auth screen is
+  a reserved handle (`forgot`, `reset`).
 - Backups (`lib/backup.ts`): a periodic task dumps the database with `pg_dump` (the image has
   client 16; tests need `pg_dump`/`pg_restore` on the PATH), checks it with `pg_restore --list`,
   and keeps the last in `server_settings` (`backup.last`) for the `caime_backup_*` gauges; tests

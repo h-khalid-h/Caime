@@ -160,6 +160,13 @@ export const endpoints = {
   /** New recovery codes in place of the old, once the password says it's them. */
   newRecoveryCodes: (password: string) =>
     api.post<{ recoveryCodes: string[] }>('/auth/recovery-codes', { password }),
+  /** A forgotten password (R48): a link to the address, the same answer either way. */
+  requestReset: (email: string) => api.post<{ ok: true }>('/auth/reset', { email }),
+  confirmReset: (body: { token: string; newPassword: string; client: 'web' | 'native' }) =>
+    api.post<{ user: MeView; token: string | null }>('/auth/reset/confirm', body),
+  /** The code that confirms an address, and another one when the first didn't come. */
+  verifyEmail: (code: string) => api.post<{ user: MeView }>('/auth/email/verify', { code }),
+  resendEmailCode: () => api.post<{ ok: true }>('/auth/email/send'),
   recover: (body: {
     identifier: string;
     code: string;

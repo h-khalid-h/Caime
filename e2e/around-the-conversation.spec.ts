@@ -12,6 +12,7 @@ import {
   apiSignUp,
   CLIENT,
   METRICS_TOKEN,
+  mailsTo,
   newPerson,
   PASSWORD,
   photo,
@@ -2976,5 +2977,80 @@ test.describe
       ).toBeVisible();
       await expect(phone.getByTestId('message-imported').filter({ visible: true })).toHaveCount(3);
       expect([...errors, ...alex.errors]).toEqual([]);
+    });
+
+    test('email, at last: Lina confirms her address from the code, and Noor resets a forgotten password from the link', async () => {
+      if (!linaContext) throw new Error('The link test signs Lina up first.');
+      // Sign-up sent Lina six digits; Security takes them.
+      const linas = await mailsTo(`lina.${stamp}@example.com`);
+      expect(linas.length).toBeGreaterThanOrEqual(1);
+      const code = /is (\d{6})\./.exec(linas[0]?.text ?? '')?.[1] ?? '';
+      expect(code).toHaveLength(6);
+      const customer = lina.page;
+      await customer.goto('/settings/security');
+      await expect(customer.getByTestId('email-status')).toContainText('not confirmed yet');
+      await customer.getByTestId('email-code').fill('000000');
+      await customer.getByTestId('email-confirm').click();
+      await expect(
+        visible(customer, 'That code isn’t right. Check the email again.'),
+      ).toBeVisible();
+      await customer.getByTestId('email-code').fill(code);
+      await customer.getByTestId('email-confirm').click();
+      await expect(customer.getByTestId('email-status')).toContainText('confirmed');
+      await expect(customer.getByTestId('email-code')).toHaveCount(0);
+
+      // Noor forgot hers: from a fresh browser, the link, a new password, signed in here.
+      const fresh = await customer
+        .context()
+        .browser()
+        ?.newContext({ viewport: { width: 1440, height: 900 } });
+      if (!fresh) throw new Error('no browser');
+      const page = await fresh.newPage();
+      await page.goto('/sign-in');
+      await page.getByTestId('signin-forgot').click();
+      await page.waitForURL('**/forgot');
+      await page.getByTestId('forgot-email').fill(`noor.${stamp}@example.com`);
+      await page.getByTestId('forgot-send').click();
+      await expect(page.getByTestId('forgot-sent')).toContainText('a link is on its way');
+      await expect
+        .poll(async () =>
+          (await mailsTo(`noor.${stamp}@example.com`)).some(
+            (m) => m.subject === 'Reset your Caime password',
+          ),
+        )
+        .toBe(true);
+      const reset = (await mailsTo(`noor.${stamp}@example.com`)).find(
+        (m) => m.subject === 'Reset your Caime password',
+      );
+      const link = /https?:\/\/\S+/.exec(reset?.text ?? '')?.[0] ?? '';
+      expect(link).toContain('/reset?token=');
+      await page.goto(new URL(link).pathname + new URL(link).search);
+      await page.getByTestId('reset-password').fill('a brand new passphrase');
+      await page.getByTestId('reset-submit').click();
+      await expect(
+        visible(page, 'Password changed. Every other device was signed out.'),
+      ).toBeVisible();
+      await page.waitForURL((url) => !/\/(reset|sign-in|welcome)/.test(url.pathname));
+      // The link is spent (signed in now, the screen would send her into the app: the API says
+      // so directly), and her desktop of before is signed out.
+      const spent = await fresh.request.post('/v1/auth/reset/confirm', {
+        headers: CLIENT,
+        data: {
+          token: new URL(link).searchParams.get('token'),
+          newPassword: 'another passphrase here',
+          client: 'web',
+        },
+      });
+      expect(spent.status()).toBe(400);
+      expect((await spent.json()).error.code).toBe('invalid_reset');
+      await noor.page.goto('/');
+      await noor.page.waitForURL(/\/(welcome|sign-in)/);
+      await fresh.close();
+      // Her wrong code (400), and her browser's kept copy of the closed organization's page
+      // asking for its updates once more (404), as the test before saw.
+      expect(lina.errors.filter((e) => !/400|404.*\/updates|404 \(Not Found\)/.test(e))).toEqual(
+        [],
+      );
+      lina.errors.length = 0;
     });
   });

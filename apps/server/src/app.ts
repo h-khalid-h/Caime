@@ -22,6 +22,7 @@ import { registerBillingJobs } from './lib/billing';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCallSweep } from './lib/calls';
+import { createMailer, type Mailer } from './lib/email';
 import { AppError } from './lib/errors';
 import { registerGroupCallSweep } from './lib/group-calls';
 import { startWorkers } from './lib/jobs';
@@ -79,6 +80,8 @@ export interface BuiltApp {
 
 export interface BuildOptions {
   now?: () => Date;
+  /** A mailer in place of SMTP (tests read its outbox). */
+  mail?: Mailer;
   /** Skip migrations (the test template database is already migrated). */
   skipMigrations?: boolean;
 }
@@ -127,6 +130,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     limiter: new RateLimiter(),
     metrics: createMetrics(database.pool),
     ai: createAiAssist(config),
+    mail: options.mail ?? createMailer(config, app.log),
     dns: {
       resolveTxt: (hostname) => {
         const resolver = new Resolver({ timeout: 4000, tries: 2 });

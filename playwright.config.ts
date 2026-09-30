@@ -16,6 +16,8 @@ const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 /** A stand-in for the Messages API (e2e/anthropic-stub.mjs), so AI assist runs without a key. */
 const AI_STUB = `http://127.0.0.1:${Number(process.env.E2E_AI_STUB_PORT ?? 8799)}`;
 const DNS_PORT = Number(process.env.E2E_DNS_PORT ?? 8853);
+const SMTP_STUB = `http://127.0.0.1:${Number(process.env.E2E_SMTP_STUB_PORT ?? 8795)}`;
+const SMTP_PORT = Number(process.env.E2E_SMTP_PORT ?? 8825);
 /** A stand-in for Stripe (e2e/stripe-stub.mjs): its Checkout and portal pages, and its API. */
 const STRIPE_STUB = `http://127.0.0.1:${Number(process.env.E2E_STRIPE_STUB_PORT ?? 8796)}`;
 const STRIPE_KEY = 'sk_test_e2e_0123456789abcdef';
@@ -66,6 +68,12 @@ export default defineConfig({
           env: { PORT: new URL(DNS_STUB).port, DNS_PORT: String(DNS_PORT) },
         },
         {
+          command: 'node e2e/smtp-stub.mjs',
+          url: `${SMTP_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(SMTP_STUB).port, SMTP_PORT: String(SMTP_PORT) },
+        },
+        {
           command: 'node e2e/stripe-stub.mjs',
           url: `${STRIPE_STUB}/health`,
           reuseExistingServer: !process.env.CI,
@@ -97,6 +105,8 @@ export default defineConfig({
             ADMIN_TOKEN,
             METRICS_TOKEN,
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
+            SMTP_URL: `smtp://127.0.0.1:${SMTP_PORT}`,
+            EMAIL_FROM: 'Caime <hello@caime.test>',
             // Calls between two browsers on this machine need no STUN server out there.
             STUN_URLS: '',
             // Help is published somewhere else; the privacy policy and the terms are Caime's own.

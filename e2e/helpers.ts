@@ -9,6 +9,15 @@ export const ADMIN_TOKEN = 'e2e-operator-token-0123456789abcdef';
 export const METRICS_TOKEN = 'e2e-metrics-token-0123456789abcdef';
 /** The DNS stand-in (e2e/dns-stub.mjs) organizations verify their domains against. */
 export const DNS_STUB = `http://127.0.0.1:${Number(process.env.E2E_DNS_STUB_PORT ?? 8797)}`;
+export const SMTP_STUB = `http://127.0.0.1:${Number(process.env.E2E_SMTP_STUB_PORT ?? 8795)}`;
+
+/** What the mail stand-in (e2e/smtp-stub.mjs) received for an address, oldest first. */
+export async function mailsTo(
+  address: string,
+): Promise<Array<{ to: string; subject: string; text: string }>> {
+  const r = await fetch(`${SMTP_STUB}/mails?to=${encodeURIComponent(address)}`);
+  return (await r.json()) as Array<{ to: string; subject: string; text: string }>;
+}
 
 /** Publish a TXT record where the server will look for it. */
 export async function publishTxt(name: string, values: string[]) {

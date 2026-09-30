@@ -397,3 +397,16 @@ with its reason, so it isn't proposed again without new facts.
   stay as they were. What Pro doesn't sell, and why: several identities (not built; the wedge's
   privacy model already gives each relationship its own face, R2), history beyond a year (taking
   history away is taking the wedge away), search (free, R23).
+
+- **R48 — Email, at last.** R25 listed transactional email as built to the integration point;
+  it wasn't built. Now it is, for the two things an account can't do without: confirming the
+  address (six digits at sign-up, kept hashed, a day, ten tries, a new one on request; Settings ›
+  Security takes them) and a forgotten password (a link to the address, hashed, an hour, once;
+  "Forgot your password?" leads there, the answer is the same for any address so nobody learns
+  which are here, and opening the link signs the person in on that device and out of every
+  other, tokens and app grants included, as a recovery code does; it also confirms the address,
+  since the mailbox was proved). Plain text, from `EMAIL_FROM`, through `SMTP_URL`, sent after
+  the response and never through the job queue (a link is a secret; the queue keeps payloads).
+  Without an SMTP server nothing is sent, and the routes say so (`503 email_unavailable`), so
+  recovery codes stay the way back until the operator sets one (R25). Nothing else is mailed:
+  no digests, no notifications, no marketing.

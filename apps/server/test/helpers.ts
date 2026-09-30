@@ -4,6 +4,7 @@ import pg from 'pg';
 import { buildApp } from '../src/app';
 import { loadConfig } from '../src/config';
 import type { AppContext } from '../src/context';
+import type { Mailer } from '../src/lib/email';
 import { adminUrl, dropDatabase, TEMPLATE, urlFor } from './global-setup';
 
 export interface TestApp {
@@ -13,7 +14,10 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
+export async function createTestApp(
+  env: Record<string, string> = {},
+  options: { mail?: Mailer } = {},
+): Promise<TestApp> {
   const name = `caime_t_${randomBytes(6).toString('hex')}`;
   const admin = new pg.Client({ connectionString: adminUrl() });
   await admin.connect();
@@ -38,7 +42,11 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
     BACKUP_ENABLED: 'false',
     ...env,
   });
-  const { app, ctx } = await buildApp(config, { now: () => clock.now, skipMigrations: true });
+  const { app, ctx } = await buildApp(config, {
+    now: () => clock.now,
+    skipMigrations: true,
+    mail: options.mail,
+  });
   await app.ready();
   return {
     app,

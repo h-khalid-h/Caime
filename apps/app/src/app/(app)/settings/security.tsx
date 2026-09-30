@@ -141,6 +141,7 @@ export default function Security() {
       </Group>
       <PrivateDevices />
       <RecoveryKey />
+      <EmailStatus />
       <Group title="Password">
         <View style={{ padding: 16, gap: 12 }}>
           <TextField
@@ -306,5 +307,80 @@ export default function Security() {
         />
       </Sheet>
     </SettingsPage>
+  );
+}
+
+/** The address on the account (R48): confirmed, or the six digits from the email to confirm it. */
+function EmailStatus() {
+  const user = useSession((s) => s.user);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!user) return null;
+  const confirm = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { user: next } = await endpoints.verifyEmail(code);
+      useSession.getState().setUser(next);
+      toast('Email confirmed');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const resend = async () => {
+    try {
+      await endpoints.resendEmailCode();
+      toast(`A new code is on its way to ${user.email}`);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  };
+  return (
+    <Group
+      title="Email"
+      footer={
+        user.emailVerified
+          ? undefined
+          : 'Confirming it means a forgotten password can be reset by email, and that it\u2019s yours.'
+      }
+    >
+      <View style={{ padding: 16, gap: 12 }}>
+        <Text variant="label" testID="email-status">
+          {user.email}
+          {user.emailVerified ? ' \u00b7 confirmed' : ' \u00b7 not confirmed yet'}
+        </Text>
+        {user.emailVerified ? null : (
+          <>
+            <TextField
+              label="Code from the email"
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              autoComplete="one-time-code"
+              error={error ?? undefined}
+              testID="email-code"
+            />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Button
+                label="Confirm"
+                onPress={confirm}
+                loading={busy}
+                disabled={code.trim().length < 6}
+                testID="email-confirm"
+              />
+              <Button
+                label="Send a new code"
+                variant="ghost"
+                onPress={() => void resend()}
+                testID="email-resend"
+              />
+            </View>
+          </>
+        )}
+      </View>
+    </Group>
   );
 }

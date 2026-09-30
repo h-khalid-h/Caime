@@ -540,8 +540,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
       numbers with consent on both sides. Everything else in it (reading other apps'
       notifications, auto-replies in the person's name, an Android hub) is declined for good
+- [x] Email (R48): the address confirmed with six digits, a forgotten password reset by a link,
+      through `SMTP_URL` (`email.test.ts`, E2E with `e2e/smtp-stub.mjs`) ⛔ an SMTP account on
+      production: until then nothing is sent and recovery codes are the way back
 - [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; moderation
-      reviewer UI; email verification and reset; per-operator admin tokens; pentest
+      reviewer UI; per-operator admin tokens; pentest
 - Measurements still to take: a load test, Lighthouse, a screen reader on a device
 
 ## Log
@@ -1134,3 +1137,7 @@ outperforming the alternatives is reach and operations. In the order the review 
   `GET /v1/me/insights` (Pro; 403 `plan_limit` with `nextPlan` otherwise), automations by plan
   (`assertAutomationRoom`), `PlanUsageView.used.automations`, the plan screen's "what Pro
   includes" and the Settings › Relationship insights screen.
+- 2026-09-30 · R48, email: `lib/email.ts` (nodemailer over `SMTP_URL`, a memory mailer for
+  tests), `email_codes` and `password_resets` (0042), `POST /auth/email/{send,verify}`,
+  `POST /auth/reset` and `/reset/confirm`, the `/forgot` and `/reset` screens, the Email group in
+  Security. Production needs `SMTP_URL` and `EMAIL_FROM` set by the operator.

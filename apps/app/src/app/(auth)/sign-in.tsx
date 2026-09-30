@@ -95,8 +95,9 @@ export default function SignIn() {
       <View style={{ alignItems: 'center', gap: 4 }}>
         <Pressable
           accessibilityRole="link"
-          onPress={() => router.push('/recover')}
+          onPress={() => router.push('/forgot')}
           style={{ padding: 8 }}
+          testID="signin-forgot"
         >
           <Text variant="bodyStrong" color="link">
             Forgot your password?
