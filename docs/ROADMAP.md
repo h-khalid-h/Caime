@@ -343,8 +343,9 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       operator's plan is never changed or sold over, nothing is sold twice while a webhook is
       late, test and live mode stay apart, and the plan page shows what the subscription itself
       costs (`billing.test.ts` against a Stripe stand-in, 34 mutations, E2E through the stand-in's
-      Checkout and portal pages). ⛔ The live account's products, prices,
-      portal and webhook endpoint are set up once billing is deployed (`docs/DEPLOY.md`)
+      Checkout and portal pages). The live account has its products and prices
+      (Pro €6 a month or €60 a year, Business €29 or €290; lookup keys `caishy_*`), portal and
+      webhook endpoint; a refusal by Stripe is answered in its words (2026-09-29)
 - [x] Metrics: `/metrics` for the operator's scraper (PRD §81), product metrics from what Caime
       already keeps (PRD §82–83: activation, engagement, the core rates, retention), and insights
       for organizations on Business (PRD §71: customers who wrote, first answer, waiting,
@@ -486,6 +487,34 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
 - [ ] `@caime/sdk` (R39): a typed client for the API and webhook signatures, for organizations'
       apps
 - [ ] Broadcasts (§59, R40): fan-out measured at 500,000 followers before any is that big
+
+## M9 — Reach, and what the review found (docs/REVIEW-2026-09.md)
+
+The product reviewed whole on 2026-09-30: the wedge works end to end on the web; what stops it
+outperforming the alternatives is reach and operations. In the order the review gives:
+
+- [ ] Backups (P0): nightly `pg_dump` kept 30 days, a restore drill written down, a
+      `caime_backup_age_seconds` gauge. Nothing else is safe without it
+- [ ] A readable web (P1): a server-rendered landing page for visitors, public profiles at
+      `/@handle` and `/o/handle` with Open Graph, canonical and JSON-LD (only what's already
+      shown to everyone; a person can turn theirs off), a real 404, `sitemap.xml` and
+      `robots.txt` of Caime's own, `Permissions-Policy`
+- [ ] Operations (P1): an uptime check and alerts on readiness, 5xx rate, job-queue depth and
+      oldest-job age (new gauges), backup age; `pnpm audit` in CI
+- [ ] The phone (P1): EAS configuration and a development build on the owner's iPhone (calls,
+      private conversations, push), then TestFlight and Play internal testing ⛔ Apple and Google
+      developer accounts, `EXPO_ACCESS_TOKEN`
+- [ ] Pro that sells the wedge (P1): what §84 promised (rules without limit, several identities,
+      history beyond a year, a person's relationship analytics), the core free as R23 says.
+      Decided with the owner first
+- [ ] Network bootstrap (P1): import of an exported WhatsApp chat into the right conversation;
+      the contextual invite measured at ≤ 60 s invite-to-reply in E2E
+- [ ] Polish that shows (P2): the review's UX list (empty states that end in an action,
+      confirmations on one-tap destructive actions, skeletons and retry, no pronoun fallback,
+      colours through the theme, missing labels, start/end for RTL, onboarding to a first message)
+- [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; moderation
+      reviewer UI; email verification and reset; per-operator admin tokens; pentest
+- Measurements still to take: a load test, Lighthouse, a screen reader on a device
 
 ## Log
 
@@ -1043,3 +1072,9 @@ super-app brainstorm the product takes, and what it leaves with the reason, is R
   wrong and withdrawn; the cause is in Stripe's answer to Checkout itself, which the deployed
   fix now shows. Then: an organization's owner and admins see every space of its and join one
   as its admin; a person's profile shows the organizations they're with.
+- 2026-09-30 — The product reviewed whole (docs/REVIEW-2026-09.md): four audits (UX, web presence,
+  engineering, competitive) and production probed. Findings: no database backups (P0); a
+  signed-out visitor sees an empty shell, nothing public for search or answer engines, no
+  sitemap (P1); no phone in anyone's hands (P1); paid tiers sell capacity, not the wedge (P1);
+  no alerting (P1); a UX polish list (P2). The plan is M9. The stale line about Stripe's live
+  prices corrected: they exist.
