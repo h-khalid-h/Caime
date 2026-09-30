@@ -499,9 +499,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       --list`, kept 30 days on the data volume, the last remembered in the database and on
       `/metrics` (`caime_backup_last_success_timestamp_seconds`, `caime_backup_bytes`), the
       operator's `GET`/`POST /v1/admin/backups`, the image carrying `postgresql-client-16`, and
-      the restore drill in `docs/DEPLOY.md` (`backup.test.ts`). ⛔ A copy off the host (the
-      volume's backup to S3) is the operator's to switch on; the drill itself is to be run once
-      on production
+      the restore drill in `docs/DEPLOY.md` (`backup.test.ts`), and a copy of each checked dump
+      off the host to any S3-compatible bucket (`lib/s3.ts`, `copyOffHost`, tried again hourly
+      when the store was away, `caime_backup_last_copy_timestamp_seconds`; `backup-copy.test.ts`)
+      ⛔ the bucket and its keys (`BACKUP_S3_*`) are the owner's to set; the drill itself is to
+      be run once on production
 - [x] A readable web (R44, P1): the landing page in the shell for a visitor who isn't signed in,
       public pages at `/@handle` and `/o/handle` (Open Graph, Twitter cards, canonical, JSON-LD
       `Person`/`Organization`, a plain body the app replaces), only what's shown to everyone and
@@ -1188,6 +1190,10 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · Backups off the host: `lib/s3.ts` (Signature Version 4 over fetch, put and
+  delete, no SDK) and `copyOffHost` in `lib/backup.ts`; each checked dump goes to
+  `BACKUP_S3_*`'s bucket, a failed copy is tried again hourly, `/metrics` says when the last
+  went (`backup-copy.test.ts` against a signing stand-in) ⛔ the owner's bucket and keys.
 - 2026-09-30 · The job loop rests until something is due and wakes on `enqueue` (LISTEN/NOTIFY
   through the bus, `onNotify`): an idle instance asks the queue every 5 s (its soonest sweep)
   rather than every second, and a job for now runs at once (`jobs.test.ts`).

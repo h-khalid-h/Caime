@@ -6,17 +6,20 @@
  * (`caime_backup_last_success_timestamp_seconds`). The hourly task takes an advisory lock, so
  * two worker instances never dump at once, and dumps only when the last one is due.
  *
- * What this is not: an off-box copy. BACKUP_DIR is on the data volume, beside uploads; the
- * volume's own backup (EasyPanel's, or S3 when that adapter lands) is what survives the box.
+ * Off the host: with BACKUP_S3_* set, each dump is put in a bucket once it's checked
+ * (`copyOffHost`), and the hourly task tries again for a backup whose copy failed while the
+ * file is still here. Without it, the volume's own backup is what survives the box.
  */
 import { execFile } from 'node:child_process';
-import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { sql } from 'kysely';
+import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { registerPeriodic } from './jobs';
 import { backupState } from './metrics';
+import { type S3Config, s3Put } from './s3';
 
 const run = promisify(execFile);
 const SETTING = 'backup.last';
@@ -28,6 +31,33 @@ export interface BackupRecord {
   bytes: number;
   /** ISO time. */
   at: string;
+  /** Where the copy off the host went (`s3://bucket/key`), or null when none has. */
+  copy?: string | null;
+}
+
+/** The bucket a copy goes to, when every part of it is set. */
+export function backupBucket(config: Config): S3Config | null {
+  const {
+    BACKUP_S3_ENDPOINT,
+    BACKUP_S3_BUCKET,
+    BACKUP_S3_ACCESS_KEY_ID,
+    BACKUP_S3_SECRET_ACCESS_KEY,
+  } = config;
+  if (
+    !BACKUP_S3_ENDPOINT ||
+    !BACKUP_S3_BUCKET ||
+    !BACKUP_S3_ACCESS_KEY_ID ||
+    !BACKUP_S3_SECRET_ACCESS_KEY
+  )
+    return null;
+  return {
+    endpoint: BACKUP_S3_ENDPOINT,
+    bucket: BACKUP_S3_BUCKET,
+    region: config.BACKUP_S3_REGION,
+    accessKeyId: BACKUP_S3_ACCESS_KEY_ID,
+    secretAccessKey: BACKUP_S3_SECRET_ACCESS_KEY,
+    pathStyle: config.BACKUP_S3_PATH_STYLE,
+  };
 }
 
 export function backupDir(ctx: AppContext): string {
@@ -45,8 +75,36 @@ export async function lastBackup(ctx: AppContext): Promise<BackupRecord | null> 
   if (last) {
     backupState.at = Date.parse(last.at);
     backupState.bytes = last.bytes;
+    if (last.copy) backupState.copiedAt = Math.max(backupState.copiedAt, Date.parse(last.at));
   }
   return last;
+}
+
+/**
+ * Puts the backup in the bucket, and remembers where. A copy that fails is logged and left
+ * for the hourly task to try again; the backup itself stands. Returns the record as it is now.
+ */
+export async function copyOffHost(ctx: AppContext, record: BackupRecord): Promise<BackupRecord> {
+  const bucket = backupBucket(ctx.config);
+  if (!bucket || record.copy) return record;
+  const key = `${ctx.config.BACKUP_S3_PREFIX}${record.file}`;
+  try {
+    const body = await readFile(join(backupDir(ctx), record.file));
+    await s3Put(bucket, key, body, 'application/octet-stream', ctx.now());
+  } catch (err) {
+    ctx.log.warn({ err, file: record.file }, 'backup: the copy off the host failed');
+    return record;
+  }
+  const copied: BackupRecord = { ...record, copy: `s3://${bucket.bucket}/${key}` };
+  await ctx.db
+    .updateTable('server_settings')
+    .set({ value: JSON.stringify(copied), updated_at: ctx.now() })
+    .where('key', '=', SETTING)
+    .where(sql`value->>'file'`, '=', record.file)
+    .execute();
+  backupState.copiedAt = ctx.now().getTime();
+  ctx.log.info({ file: record.file, copy: copied.copy }, 'backup copied off the host');
+  return copied;
 }
 
 /** The backups on this instance's disk, newest first. */
@@ -69,48 +127,51 @@ export async function listBackups(ctx: AppContext): Promise<BackupRecord[]> {
 export async function runBackup(ctx: AppContext): Promise<BackupRecord | null> {
   const dir = backupDir(ctx);
   await mkdir(dir, { recursive: true });
-  return ctx.db.transaction().execute(async (trx) => {
-    const { locked } = await sql<{ locked: boolean }>`
+  return ctx.db
+    .transaction()
+    .execute(async (trx) => {
+      const { locked } = await sql<{ locked: boolean }>`
       select pg_try_advisory_xact_lock(hashtext('caime-backup')) as locked
     `
-      .execute(trx)
-      .then((r) => r.rows[0] ?? { locked: false });
-    if (!locked) return null;
-    const now = ctx.now();
-    const file = `${PREFIX}${now.toISOString().replace(/[:.]/g, '-')}${SUFFIX}`;
-    const path = join(dir, file);
-    const part = `${path}.part`;
-    // Custom format is compressed and restores selectively; no owners or grants, so it restores
-    // into any role. The connection string is an argument, never in the log.
-    await run('pg_dump', [
-      '--format=custom',
-      '--no-owner',
-      '--no-privileges',
-      `--file=${part}`,
-      ctx.config.DATABASE_URL,
-    ]);
-    // A dump that can't be listed can't be restored: it's thrown away, and the failure logged.
-    const listed = await run('pg_restore', ['--list', part]);
-    if (!/TABLE DATA/.test(listed.stdout)) {
-      await rm(part, { force: true });
-      throw new Error('The backup lists no table data.');
-    }
-    await rename(part, path);
-    const { size } = await stat(path);
-    const record: BackupRecord = { file, bytes: size, at: now.toISOString() };
-    await trx
-      .insertInto('server_settings')
-      .values({ key: SETTING, value: JSON.stringify(record) })
-      .onConflict((oc) =>
-        oc.column('key').doUpdateSet({ value: JSON.stringify(record), updated_at: now }),
-      )
-      .execute();
-    backupState.at = now.getTime();
-    backupState.bytes = size;
-    await forgetOld(ctx, dir, now);
-    ctx.log.info({ file, bytes: size }, 'database backed up');
-    return record;
-  });
+        .execute(trx)
+        .then((r) => r.rows[0] ?? { locked: false });
+      if (!locked) return null;
+      const now = ctx.now();
+      const file = `${PREFIX}${now.toISOString().replace(/[:.]/g, '-')}${SUFFIX}`;
+      const path = join(dir, file);
+      const part = `${path}.part`;
+      // Custom format is compressed and restores selectively; no owners or grants, so it restores
+      // into any role. The connection string is an argument, never in the log.
+      await run('pg_dump', [
+        '--format=custom',
+        '--no-owner',
+        '--no-privileges',
+        `--file=${part}`,
+        ctx.config.DATABASE_URL,
+      ]);
+      // A dump that can't be listed can't be restored: it's thrown away, and the failure logged.
+      const listed = await run('pg_restore', ['--list', part]);
+      if (!/TABLE DATA/.test(listed.stdout)) {
+        await rm(part, { force: true });
+        throw new Error('The backup lists no table data.');
+      }
+      await rename(part, path);
+      const { size } = await stat(path);
+      const record: BackupRecord = { file, bytes: size, at: now.toISOString(), copy: null };
+      await trx
+        .insertInto('server_settings')
+        .values({ key: SETTING, value: JSON.stringify(record) })
+        .onConflict((oc) =>
+          oc.column('key').doUpdateSet({ value: JSON.stringify(record), updated_at: now }),
+        )
+        .execute();
+      backupState.at = now.getTime();
+      backupState.bytes = size;
+      await forgetOld(ctx, dir, now);
+      ctx.log.info({ file, bytes: size }, 'database backed up');
+      return record;
+    })
+    .then((record) => (record ? copyOffHost(ctx, record) : record));
 }
 
 async function forgetOld(ctx: AppContext, dir: string, now: Date): Promise<void> {
@@ -142,7 +203,16 @@ export function registerBackupJob(): void {
     background: true,
     run: async (ctx) => {
       if (!ctx.config.BACKUP_ENABLED) return;
-      if (await backupDue(ctx)) await runBackup(ctx);
+      if (await backupDue(ctx)) {
+        await runBackup(ctx);
+        return;
+      }
+      // The last one's copy failed (the bucket was away): again, while the file is here.
+      const last = await lastBackup(ctx);
+      if (last && !last.copy && backupBucket(ctx.config)) {
+        const here = await stat(join(backupDir(ctx), last.file)).catch(() => null);
+        if (here) await copyOffHost(ctx, last);
+      }
     },
   });
 }

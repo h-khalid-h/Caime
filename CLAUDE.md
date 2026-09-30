@@ -341,7 +341,10 @@ These are rules, not preferences.
 - Backups (`lib/backup.ts`): a periodic task dumps the database with `pg_dump` (the image has
   client 16; tests need `pg_dump`/`pg_restore` on the PATH), checks it with `pg_restore --list`,
   and keeps the last in `server_settings` (`backup.last`) for the `caime_backup_*` gauges; tests
-  run with `BACKUP_ENABLED=false` unless they're about it.
+  run with `BACKUP_ENABLED=false` unless they're about it. With `BACKUP_S3_*` set, `copyOffHost`
+  puts each checked dump in the bucket through `lib/s3.ts` (Signature Version 4 by hand over
+  fetch: put and delete, nothing else; a new use of S3 extends it rather than adding an SDK),
+  and `backup-copy.test.ts` runs a signing stand-in. Caime never deletes in the bucket.
 - The operator's routes take `ADMIN_TOKEN` or a named token from `OPERATOR_TOKENS`
   (`requireOperator` in `lib/operator.ts` answers who: `operator`, or the name). A new admin
   route that writes puts that name in its audit entry's `metadata.operator` (a lib function it

@@ -73,6 +73,19 @@ const Env = z.object({
   BACKUP_EVERY_HOURS: z.coerce.number().int().positive().default(24),
   BACKUP_KEEP_DAYS: z.coerce.number().int().positive().default(30),
   /**
+   * A copy of each backup off the host, to any S3-compatible bucket (docs/DEPLOY.md,
+   * "Backups"): all four set, each dump is put there once it's checked; none set, backups stay
+   * on the volume alone. The bucket's own lifecycle rule keeps or expires the copies.
+   */
+  BACKUP_S3_ENDPOINT: z.string().url().optional(),
+  BACKUP_S3_BUCKET: z.string().min(1).optional(),
+  BACKUP_S3_REGION: z.string().min(1).default('auto'),
+  BACKUP_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  BACKUP_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  /** Where in the bucket (`caime/backups/`), so one bucket may hold more than Caime's. */
+  BACKUP_S3_PREFIX: z.string().default('caime/backups/'),
+  BACKUP_S3_PATH_STYLE: bool.default(true),
+  /**
    * Let webhooks reach private and loopback addresses, and plain http. For tests and local
    * development only: in production it would let an app probe the server's own network.
    */

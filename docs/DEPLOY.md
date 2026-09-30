@@ -106,6 +106,8 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN` | — | Calls: Cloudflare's TURN relay instead of running one. In the Cloudflare dashboard, **Realtime → TURN Server → Create**, then set the key's id and its API token here. Each person gets credentials for 12 hours when a call starts; if Cloudflare doesn't answer in 4 seconds the call goes on with STUN only (`caime_turn_credentials_total{outcome}` counts both). The privacy page then says calls may go through a relay Cloudflare runs. |
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
+| `BACKUP_ENABLED`, `BACKUP_DIR`, `BACKUP_EVERY_HOURS`, `BACKUP_KEEP_DAYS` | `true`, `DATA_DIR/backups`, `24`, `30` | Database backups (below). |
+| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | — | A copy of each backup off the host, to an S3-compatible bucket (Backups, below); all four, or none. `BACKUP_S3_REGION` (`auto`), `BACKUP_S3_PREFIX` (`caime/backups/`) and `BACKUP_S3_PATH_STYLE` (`true`) beside them. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |
 
 ### Billing (Stripe)
@@ -352,6 +354,10 @@ BACKUP_ENABLED=true
 BACKUP_DIR=/data/backups
 BACKUP_EVERY_HOURS=24
 BACKUP_KEEP_DAYS=30
+# BACKUP_S3_ENDPOINT=              # a copy of each backup off the host: all four, or none
+# BACKUP_S3_BUCKET=
+# BACKUP_S3_ACCESS_KEY_ID=
+# BACKUP_S3_SECRET_ACCESS_KEY=
 LEGAL_NAME=DATA C OÜ
 CONTACT_EMAIL=hello@cai.me
 VAPID_SUBJECT=mailto:hello@cai.me
@@ -421,9 +427,21 @@ dropdb -h db -U postgres caime_restore
 To restore for real: stop the `caime` service, restore into a fresh database the same way, point
 `DATABASE_URL` at it, start the service (its migrations run forward as needed).
 
-**What this doesn't cover:** the dumps sit on the same volume as uploads. A copy off the box
-(EasyPanel's volume backup to S3, or the S3 storage adapter when it lands) is what survives the
-host; until then, take one by hand after anything you'd hate to lose.
+**Off the host.** With `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID` and
+`BACKUP_S3_SECRET_ACCESS_KEY` set (any S3-compatible store: AWS, Cloudflare R2, Backblaze B2,
+Hetzner, MinIO; `BACKUP_S3_REGION` where the store wants one, `BACKUP_S3_PREFIX`, default
+`caime/backups/`, `BACKUP_S3_PATH_STYLE=true` unless the store wants virtual hosts), each dump
+is put in the bucket the moment it has been checked, signed per request (Signature Version 4)
+with keys that may only write that prefix. The record says where (`copy`), `/metrics` says when
+(`caime_backup_last_copy_timestamp_seconds`), and a copy that failed (the store away) is tried
+again by the hourly task while the file is still on the volume. The bucket's own lifecycle rule
+expires old copies (thirty days matches `BACKUP_KEEP_DAYS`); Caime never deletes there. To
+restore from the bucket, download the object and follow the drill above. ⛔ Until the owner sets
+those four, the dumps sit on the same volume as uploads: take one by hand after anything you'd
+hate to lose.
+
+**Alert** when no copy has gone for a day and a half, once a bucket is set:
+`time() - caime_backup_last_copy_timestamp_seconds > 129600`.
 
 ## What the proxy needn't do
 

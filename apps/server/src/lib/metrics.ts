@@ -118,7 +118,7 @@ export class Histogram extends Family {
 const SECONDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 
 /** The last database backup that succeeded (lib/backup.ts writes it): when, and how big. */
-export const backupState = { at: 0, bytes: 0 };
+export const backupState = { at: 0, bytes: 0, copiedAt: 0 };
 
 /** What the server measures about itself. One per app, so tests don't share counts. */
 export function createMetrics(pool: pg.Pool) {
@@ -178,6 +178,11 @@ export function createMetrics(pool: pg.Pool) {
     new Gauge('caime_backup_bytes', 'The size of the last database backup.', () => [
       { labels: {}, value: backupState.bytes },
     ]),
+    new Gauge(
+      'caime_backup_last_copy_timestamp_seconds',
+      'When the last backup was last copied off the host (0 when no copy is configured or none has gone).',
+      () => [{ labels: {}, value: Math.round(backupState.copiedAt / 1000) }],
+    ),
     new Gauge('process_uptime_seconds', 'Seconds since this instance started.', () => [
       { labels: {}, value: Math.round((Date.now() - started) / 1000) },
     ]),
