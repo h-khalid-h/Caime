@@ -264,6 +264,26 @@ scrape_configs:
     static_configs: [{ targets: ['caime.example.com'] }]
 ```
 
+**Alerts** worth having, in Prometheus's terms (any scraper's equivalent will do); the uptime
+check is a GET of `/v1/readyz` every minute from outside:
+
+```yaml
+groups:
+  - name: caime
+    rules:
+      - alert: CaimeDown
+        expr: up{job="caime"} == 0
+        for: 3m
+      - alert: CaimeErrors
+        expr: sum(rate(caime_http_requests_total{status=~"5.."}[5m])) / sum(rate(caime_http_requests_total[5m])) > 0.02
+        for: 10m
+      - alert: CaimeJobsStuck
+        expr: caime_jobs_oldest_seconds > 600
+        for: 10m
+      - alert: CaimeBackupOld
+        expr: time() - caime_backup_last_success_timestamp_seconds > 129600
+```
+
 **The product** (PRD §82–83). With `ADMIN_TOKEN`, `GET /v1/admin/metrics?days=28` answers with
 activation (signed up, connected, messaged, classified, activated within a day), engagement,
 the core rates (connection completion, relationship completion, waiting and attention

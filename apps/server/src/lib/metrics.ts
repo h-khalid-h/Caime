@@ -135,6 +135,12 @@ export function createMetrics(pool: pg.Pool) {
     realtime: new Gauge('caime_realtime_connections', 'Open realtime connections.'),
     messages: new Counter('caime_messages_total', 'Messages sent, by kind.'),
     jobs: new Counter('caime_jobs_total', 'Background jobs run, by kind and outcome.'),
+    // Set as /metrics is scraped (modules/metrics.ts): what waits, and for how long.
+    jobsQueued: new Gauge('caime_jobs_queued', 'Background jobs waiting to run, or running.'),
+    jobsOldestSeconds: new Gauge(
+      'caime_jobs_oldest_seconds',
+      'How long the longest-waiting due job has waited.',
+    ),
     jobSeconds: new Histogram('caime_job_duration_seconds', 'Time a job took, by kind.', SECONDS),
     webhooks: new Counter(
       'caime_webhook_deliveries_total',

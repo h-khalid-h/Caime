@@ -58,6 +58,8 @@ describe('/metrics (PRD §81)', () => {
     expect(body).toContain('caime_messages_total{kind="text"} 1');
     expect(body).toMatch(/^caime_db_pool_connections\{state="total"\} \d+$/m);
     expect(body).toMatch(/^process_uptime_seconds \d+$/m);
+    expect(body).toMatch(/^caime_jobs_queued \d+$/m);
+    expect(body).toMatch(/^caime_jobs_oldest_seconds \d+$/m);
     // Nothing anyone said, and nothing that identifies anyone or anything.
     for (const secret of [
       'marmalade',

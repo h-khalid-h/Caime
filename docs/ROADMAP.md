@@ -507,8 +507,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       app's screens marked noindex; `robots.txt` and `sitemap.xml` (organizations, never
       people); `Permissions-Policy`; a logo and a photo shown to everyone served without sign-in
       for the cards (`public-pages.test.ts`, E2E)
-- [ ] Operations (P1): an uptime check and alerts on readiness, 5xx rate, job-queue depth and
-      oldest-job age (new gauges), backup age; `pnpm audit` in CI
+- [~] Operations (P1): `caime_jobs_queued` and `caime_jobs_oldest_seconds` on `/metrics`,
+      `pnpm audit --prod --audit-level=high` in CI, the alert rules written down in
+      `docs/DEPLOY.md` (readiness, 5xx, queue age, backup age). ⛔ The uptime check and the
+      alert receiver are the operator's to point at it (Grafana Cloud, Better Stack, or
+      Prometheus's Alertmanager)
 - [ ] The phone (P1): EAS configuration and a development build on the owner's iPhone (calls,
       private conversations, push), then TestFlight and Play internal testing ⛔ Apple and Google
       developer accounts, `EXPO_ACCESS_TOKEN`
