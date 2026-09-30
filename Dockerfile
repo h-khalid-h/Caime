@@ -23,6 +23,7 @@ FROM deps AS build
 COPY . .
 # The web app is exported without an API URL: it talks to the server that serves it.
 RUN pnpm --filter @caime/app build:web \
+ && node scripts/precompress.mjs apps/app/dist \
  && pnpm --filter @caime/server build \
  && pnpm --filter @caime/server deploy --prod --legacy /out
 

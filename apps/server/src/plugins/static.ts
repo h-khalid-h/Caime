@@ -69,6 +69,9 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     index: false,
     wildcard: true,
     decorateReply: true,
+    // The hashed files come with `.br` and `.gz` siblings from the build (scripts/precompress.mjs),
+    // compressed once at the highest quality; the one the browser accepts is sent as it is.
+    preCompressed: true,
     setHeaders(res, path) {
       if (path.includes(`${join('_expo', 'static')}`) || path.includes(`${sep}fonts${sep}`)) {
         // Hashed scripts, and the web fonts (named by face and subset; a new cut gets a new name).

@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { brotliCompressSync, brotliDecompressSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestApp, type TestApp } from './helpers';
 
@@ -50,6 +51,23 @@ describe('the web app on the API origin', () => {
     const js = await get('/_expo/static/js/entry-abc.js', '*/*');
     expect(js.statusCode).toBe(200);
     expect(js.headers['cache-control']).toContain('immutable');
+    expect(js.headers['content-encoding']).toBeUndefined();
+    // A bundle compressed at build time (scripts/precompress.mjs) goes as it is to a browser
+    // that takes Brotli, marked so a shared cache keeps the variants apart.
+    writeFileSync(
+      join(dir, '_expo', 'static', 'js', 'entry-abc.js.br'),
+      brotliCompressSync(Buffer.from('console.log(1)')),
+    );
+    const br = await t.app.inject({
+      method: 'GET',
+      url: '/_expo/static/js/entry-abc.js',
+      headers: { accept: '*/*', 'accept-encoding': 'br, gzip' },
+    });
+    expect(br.statusCode).toBe(200);
+    expect(br.headers['content-encoding']).toBe('br');
+    expect(br.headers.vary).toMatch(/accept-encoding/i);
+    expect(br.headers['cache-control']).toContain('immutable');
+    expect(brotliDecompressSync(br.rawPayload).toString()).toBe('console.log(1)');
     // The web fonts, named by face and subset, for a year too.
     const font = await get('/fonts/inter-latin-400-normal.woff2', '*/*');
     expect(font.statusCode).toBe(200);

@@ -58,7 +58,8 @@ These are checked first, and any one of them sends a pull request back without f
 ## Review
 
 The reviewer reads the whole diff, runs `pnpm check` and the E2E on it, and checks it against the
-conventions, the budgets and the product review. The outcome is one of:
+conventions, the budgets and the product review. Open pull requests are looked at every six
+hours (the reviewer's routine), and sooner when the owner asks. The outcome is one of:
 
 - **Accepted**: merged as it is, or with small fixes the reviewer makes and names (a wording, a
   missing test case, a doc line). Merging is a merge commit or a rebase onto `main`, never a

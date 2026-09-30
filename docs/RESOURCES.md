@@ -50,7 +50,7 @@ Each call is paid for by the token, so what is sent is bounded and what is repea
 
 | Budget | Now | How it's held |
 | --- | --- | --- |
-| Initial web JavaScript | 450.0 KB gzip (2026-09-30), `pnpm budget` fails CI above 450 KB | Screens, panes and sheets load lazily (`lazyPart`); core and brand imported by subpath; icons one file each; a module leaves the startup chunk only when every import of it is dynamic (CLAUDE.md) |
+| Initial web JavaScript | 450.0 KB gzip, 358.8 KB over the wire as Brotli (2026-09-30); `pnpm budget` fails CI above 450 KB gzip | Screens, panes and sheets load lazily (`lazyPart`); core and brand imported by subpath; icons one file each; a module leaves the startup chunk only when every import of it is dynamic (CLAUDE.md). The build compresses every hashed file once at the highest quality (`scripts/precompress.mjs`: 966 KB gzip, 788 KB Brotli for the whole export) and the server sends that variant, so the proxy's on-the-fly compression (3.6% under gzip, measured on production) is bypassed |
 | Web fonts | 16 Latin WOFF2 cuts, 362 KB in all, a page fetches what it uses (82 KB on the landing page) | Served for a year, kept offline by the worker |
 | Lighthouse, mobile preset | landing page 100/100/100 accessibility, best practices, SEO; a visitor's organization page complete at 0.7 s | A visitor's page carries no script |
 | Network | one WebSocket, a ping every 25 s, reconnect with backoff; a query is fresh for 30 s and kept 7 days (`queryClient.ts`); live changes are patched into the cache, never refetched whole | New screens read from the cache and subscribe to events; polling only where an event can't exist (a webhook's tries, every 3 s while that sheet is open) |

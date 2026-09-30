@@ -424,6 +424,13 @@ To restore for real: stop the `caime` service, restore into a fresh database the
 (EasyPanel's volume backup to S3, or the S3 storage adapter when it lands) is what survives the
 host; until then, take one by hand after anything you'd hate to lose.
 
+## What the proxy needn't do
+
+The server sends the web app's hashed scripts precompressed (Brotli 11 or gzip 9, made at build
+time by `scripts/precompress.mjs`, `docs/RESOURCES.md`), with `Vary: Accept-Encoding`; a proxy
+that compresses on the fly leaves a response that already carries `Content-Encoding` alone, so
+nothing needs turning off. TLS, the certificate and the redirect from http are the proxy's.
+
 ## Scaling
 
 Instances are stateless apart from `/data`: realtime fans out across instances through Postgres

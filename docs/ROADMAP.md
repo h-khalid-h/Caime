@@ -1188,6 +1188,10 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · Precompressed web (`scripts/precompress.mjs`, `preCompressed` in `plugins/static.ts`):
+  the first visit downloads 358.8 KB of scripts instead of 450 KB (Brotli 11 at build time, where
+  the proxy's on-the-fly Brotli had saved 3.6% over gzip); the whole export is 788 KB instead
+  of 966 KB.
 - 2026-09-30 · Budgets and contributions: `docs/RESOURCES.md` (server, AI and device budgets,
   CLAUDE.md convention 14), `CONTRIBUTING.md` with the pull request template and the steward
   skill (convention 15); the agent's knowledge is a cached system block and the light features
