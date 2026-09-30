@@ -104,6 +104,17 @@ import { requireAuth } from '../plugins/auth';
 import { identityShownTo } from './people';
 import { createSpaceConversation } from './spaces';
 
+/** Whether the person ever had a seat here, left or not. */
+async function hadSeat(ctx: AppContext, conversationId: string, userId: string): Promise<boolean> {
+  const row = await ctx.db
+    .selectFrom('participants')
+    .select('user_id')
+    .where('conversation_id', '=', conversationId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+  return Boolean(row);
+}
+
 export async function membership(
   ctx: AppContext,
   userId: string,
@@ -944,14 +955,25 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       z.object({ id: z.string().uuid(), userId: z.string().uuid() }),
       req.params,
     );
-    const { conversation } = await membership(ctx, auth.userId, id);
+    const leaving = userId === auth.userId;
+    const found = await membership(ctx, auth.userId, id).catch(async (err: unknown) => {
+      // Leaving from two devices at once: the second finds the seat left a moment ago. Done.
+      if (
+        leaving &&
+        err instanceof AppError &&
+        err.status === 404 &&
+        (await hadSeat(ctx, id, userId))
+      )
+        return null;
+      throw err;
+    });
+    if (!found) return { ok: true };
+    const { conversation } = found;
     if (conversation.kind === 'direct' || conversation.kind === 'business')
       throw badRequest('You can archive this conversation instead.');
     if (isGroupTopic(conversation))
       throw badRequest(
-        userId === auth.userId
-          ? 'Leave the group to leave its topics. You can archive this one.'
-          : TOPIC_PEOPLE,
+        leaving ? 'Leave the group to leave its topics. You can archive this one.' : TOPIC_PEOPLE,
       );
     if (conversation.space_id && conversation.is_general)
       throw badRequest(
@@ -959,7 +981,6 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           ? 'Leave the space to leave its General conversation.'
           : 'Remove them from the space instead.',
       );
-    const leaving = userId === auth.userId;
     const done = await ctx.db.transaction().execute(async (trx) => {
       await lockConversation(trx, id);
       // Read under the lock: a role changed, or someone gone, a moment ago counts.

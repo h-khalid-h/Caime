@@ -1190,6 +1190,9 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · Leaving a group from two devices at once: the second answers done, not
+  "not found" (the membership read ran before the group's lock; `messaging.test.ts` caught it
+  once under a loaded run).
 - 2026-09-30 · Backups off the host: `lib/s3.ts` (Signature Version 4 over fetch, put and
   delete, no SDK) and `copyOffHost` in `lib/backup.ts`; each checked dump goes to
   `BACKUP_S3_*`'s bucket, a failed copy is tried again hourly, `/metrics` says when the last
