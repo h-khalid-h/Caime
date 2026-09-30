@@ -29,6 +29,8 @@ export class Bus {
   private handlers = new Set<Handler>();
   private listener: pg.PoolClient | null = null;
   private closed = false;
+  /** Other channels this instance listens on (the job queue's wake-up), by name. */
+  private channels = new Map<string, Set<(payload: string) => void>>();
   transform: BusTransform | null = null;
 
   constructor(private readonly pool: pg.Pool) {}
@@ -37,8 +39,11 @@ export class Bus {
     const client = await this.pool.connect();
     this.listener = client;
     client.on('notification', (n) => {
-      if (n.channel !== CHANNEL || !n.payload) return;
-      void this.dispatch(n.payload);
+      if (n.channel === CHANNEL) {
+        if (n.payload) void this.dispatch(n.payload);
+        return;
+      }
+      for (const fn of this.channels.get(n.channel) ?? []) fn(n.payload ?? '');
     });
     client.on('error', () => {
       // The listening connection dropped (database restart). Reconnect after a short pause.
@@ -46,6 +51,30 @@ export class Bus {
       if (!this.closed) setTimeout(() => void this.start().catch(() => {}), 1000);
     });
     await client.query(`listen ${CHANNEL}`);
+    // Whatever else was being listened for survives a reconnect.
+    for (const channel of this.channels.keys()) await client.query(`listen ${channel}`);
+  }
+
+  /**
+   * Hear a plain Postgres NOTIFY on `channel` (a name of letters and underscores), on this
+   * instance's one listening connection. Returns the way to stop.
+   */
+  async onNotify(channel: string, fn: (payload: string) => void): Promise<() => void> {
+    if (!/^[a-z_][a-z0-9_]*$/.test(channel)) throw new Error(`bad channel: ${channel}`);
+    let set = this.channels.get(channel);
+    if (!set) {
+      set = new Set();
+      this.channels.set(channel, set);
+      if (this.listener) await this.listener.query(`listen ${channel}`);
+    }
+    set.add(fn);
+    return () => {
+      set.delete(fn);
+      if (set.size === 0) {
+        this.channels.delete(channel);
+        if (this.listener) void this.listener.query(`unlisten ${channel}`).catch(() => {});
+      }
+    };
   }
 
   private async dispatch(payload: string): Promise<void> {
@@ -105,6 +134,8 @@ export class Bus {
     this.closed = true;
     if (this.listener) {
       await this.listener.query(`unlisten ${CHANNEL}`).catch(() => {});
+      for (const channel of this.channels.keys())
+        await this.listener.query(`unlisten ${channel}`).catch(() => {});
       this.listener.release();
       this.listener = null;
     }

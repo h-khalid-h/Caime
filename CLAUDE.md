@@ -352,6 +352,10 @@ These are rules, not preferences.
 - Many inserts take the database's clock (`created_at default now()`), not `ctx.now()`. A test
   that depends on those timestamps sets its clock to real time and stamps what it needs (see
   `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.
+- The worker loop (`startWorkers`, `lib/jobs.ts`) rests until the soonest job or periodic task
+  is due and wakes on `enqueue`'s NOTIFY (`ctx.bus.onNotify`, any plain channel on the one
+  listening connection); it never polls by the second. A periodic task's `everyMs` is the
+  idle floor, so nothing new sweeps more often than it must.
 - A picked photo goes through `photoToUpload` (`lib/photos.ts`, `photos.web.ts`) before
   `uploadFile`: shrunk on the device to `PHOTO_MAX_EDGE` (`lib/photoSize.ts`, pure and
   tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos, GIFs and HEIC go as they are, and

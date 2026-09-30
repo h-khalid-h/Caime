@@ -1188,6 +1188,9 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · The job loop rests until something is due and wakes on `enqueue` (LISTEN/NOTIFY
+  through the bus, `onNotify`): an idle instance asks the queue every 5 s (its soonest sweep)
+  rather than every second, and a job for now runs at once (`jobs.test.ts`).
 - 2026-09-30 · Photos shrunk on the device before upload (`lib/photoSize.ts`, expo-image-manipulator
   on phones, a canvas on the web): 2,048 px on the long edge, 1,024 for faces and logos; the
   E2E sends a 3,000 px photo and the server receives 2,048 (`photoSize.test.ts`, E2E).

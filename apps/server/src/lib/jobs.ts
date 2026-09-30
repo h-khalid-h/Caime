@@ -2,6 +2,10 @@
  * Background work (ADR-6): a Postgres job queue claimed with FOR UPDATE SKIP LOCKED, so any number
  * of instances can run workers and nothing is lost on restart; plus periodic scans (reminders,
  * held notifications, retention) that are idempotent by construction.
+ *
+ * The worker loop sleeps until something is due (the next job's time, the next periodic task,
+ * or a NOTIFY from `enqueue`), never polling by the second (docs/RESOURCES.md): an idle server
+ * asks the queue as often as its soonest sweep, and a job enqueued now runs now.
  */
 import { hostname } from 'node:os';
 import { type Selectable, sql } from 'kysely';
@@ -22,6 +26,10 @@ export type PeriodicTask = {
 
 const handlers = new Map<string, JobHandler>();
 const periodic: PeriodicTask[] = [];
+/** `enqueue` says so here, and every instance's loop wakes at once. */
+export const JOBS_CHANNEL = 'caime_jobs';
+/** However quiet, the loop looks again after this long (a job retried, a clock nudged). */
+const IDLE_MAX_MS = 30_000;
 
 export function registerJob(kind: string, handler: JobHandler): void {
   handlers.set(kind, handler);
@@ -48,6 +56,21 @@ export async function enqueue(
     })
     .onConflict((oc) => oc.column('dedupe_key').doNothing())
     .execute();
+  // Due now: wake the loop rather than wait for its next look. One due later runs at its time.
+  if (!opts.runAt || opts.runAt.getTime() <= ctx.now().getTime())
+    await sql`select pg_notify(${JOBS_CHANNEL}, '')`.execute(ctx.db);
+}
+
+/** How long until the soonest job that isn't done, or null when none waits. */
+export async function nextJobDueInMs(ctx: AppContext): Promise<number | null> {
+  const row = await ctx.db
+    .selectFrom('jobs')
+    .select(sql<Date | null>`min(run_at)`.as('at'))
+    .where('done_at', 'is', null)
+    .where(sql<boolean>`attempts < max_attempts`)
+    .executeTakeFirst();
+  if (!row?.at) return null;
+  return Math.max(0, new Date(row.at).getTime() - ctx.now().getTime());
 }
 
 const WORKER_ID = `${hostname()}:${process.pid}`;
@@ -139,6 +162,28 @@ export function startWorkers(ctx: AppContext): () => void {
   let stopped = false;
   const lastRun = new Map<string, number>();
   const going = new Set<string>();
+  // The loop's rest, cut short by a stop or by a job enqueued for now.
+  let wake: (() => void) | null = null;
+  const rest = (ms: number) =>
+    new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        wake = null;
+        resolve();
+      }, ms);
+      wake = () => {
+        clearTimeout(timer);
+        wake = null;
+        resolve();
+      };
+    });
+  let unlisten: (() => void) | null = null;
+  void ctx.bus
+    .onNotify(JOBS_CHANNEL, () => wake?.())
+    .then((off) => {
+      if (stopped) off();
+      else unlisten = off;
+    })
+    .catch((err) => ctx.log.warn({ err }, 'job queue: not listening; polling instead'));
   const loop = async () => {
     while (!stopped) {
       try {
@@ -159,15 +204,24 @@ export function startWorkers(ctx: AppContext): () => void {
             void run.finally(() => going.delete(task.name));
           }
         }
-        if (ran === 0) await new Promise((r) => setTimeout(r, 1000));
+        if (ran > 0) continue;
+        // Nothing ran: rest until the soonest thing is due, a job or a periodic task.
+        const jobIn = await nextJobDueInMs(ctx);
+        const periodicIn = Math.min(
+          ...periodic.map((task) => task.everyMs - (Date.now() - (lastRun.get(task.name) ?? 0))),
+        );
+        const delay = Math.max(0, Math.min(IDLE_MAX_MS, jobIn ?? IDLE_MAX_MS, periodicIn));
+        if (delay > 0 && !stopped) await rest(delay);
       } catch (err) {
         ctx.log.error({ err }, 'worker loop error');
-        await new Promise((r) => setTimeout(r, 5000));
+        await rest(5000);
       }
     }
   };
   void loop();
   return () => {
     stopped = true;
+    unlisten?.();
+    wake?.();
   };
 }
