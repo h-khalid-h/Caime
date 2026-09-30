@@ -35,6 +35,9 @@ async function onboard(page: Page, shot: string, findPeople: boolean) {
   await page.screenshot({ path: `${SHOTS}/${shot}-rules.png` });
   await page.getByTestId('onboarding-rules-next').click();
   await page.getByTestId(findPeople ? 'onboarding-find' : 'onboarding-skip').click();
+  // Finishing saves "onboarded" and then moves on; a navigation before it lands cancels the save
+  // and the app sends the person back here (it did, on a slow runner).
+  await page.waitForURL(findPeople ? '**/connect' : (url) => url.pathname === '/');
 }
 
 test('two people connect with private labels and talk in real time', async ({ browser }) => {
