@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Wordmark } from '@/brand/Wordmark';
 import { BrandPanel } from '@/features/auth/AuthLayout';
-import { handleIn, isAuthorizeLink } from '@/lib/paths';
+import { handleIn, inviteIn, isAuthorizeLink } from '@/lib/paths';
 import { usePendingLink } from '@/state/pendingLink';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -19,9 +19,11 @@ export default function Welcome() {
   const linkHandle = handleIn(link);
   const linkLine = linkHandle
     ? `Create an account or sign in to see @${linkHandle}`
-    : isAuthorizeLink(link)
-      ? 'An app asked to act for you. Sign in to answer it'
-      : null;
+    : inviteIn(link)
+      ? 'You were invited. Create an account or sign in and you’re connected'
+      : isAuthorizeLink(link)
+        ? 'An app asked to act for you. Sign in to answer it'
+        : null;
   const actions = (
     <View style={{ gap: 12, width: '100%', maxWidth: 420, alignSelf: 'center' }}>
       {linkLine ? (

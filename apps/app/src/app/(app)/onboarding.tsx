@@ -1,13 +1,15 @@
 import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
+import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
 import { copyText } from '@/lib/clipboard';
 import { handleLink } from '@/lib/config';
-import { handleIn, isAuthorizeLink } from '@/lib/paths';
+import { handleIn, inviteIn, isAuthorizeLink } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
 import { peekLink, takeLink } from '@/state/pendingLink';
 import { useMe, useSession } from '@/state/session';
@@ -44,8 +46,17 @@ export default function Onboarding() {
   // Came through someone's link, or an app asking to act for them: the last step opens it.
   const [pending] = useState(() => peekLink());
   const linkHandle = handleIn(pending);
+  const inviteToken = inviteIn(pending);
   const forApp = isAuthorizeLink(pending);
-  const linked = Boolean(linkHandle || forApp);
+  const linked = Boolean(linkHandle || inviteToken || forApp);
+  // Invited (R1): the last step names who, and opens the conversation they'll land in.
+  const invite = useQuery({
+    queryKey: qk.invite(inviteToken ?? ''),
+    queryFn: () => endpoints.openInvite(inviteToken ?? ''),
+    enabled: inviteToken !== null,
+    retry: false,
+  });
+  const inviter = invite.data?.invite.inviter.displayName ?? null;
 
   const finish = async (next: '/' | '/connect' | 'link') => {
     setBusy(true);
@@ -230,12 +241,20 @@ export default function Onboarding() {
                   ? 'An app asked to act for you. See what it asks first; find people by @handle or email any time.'
                   : linkHandle
                     ? `You came here for @${linkHandle}. Find others by @handle or email any time.`
-                    : `Find someone by @handle or email, or share your link: @${me.handle}`}
+                    : inviteToken
+                      ? `${inviter ?? 'Someone'} invited you: open the conversation and you’re connected. Find others by @handle or email any time.`
+                      : `Find someone by @handle or email, or share your link: @${me.handle}`}
               </Text>
             </View>
             {linked ? (
               <Button
-                label={forApp ? 'See what the app asks' : `See @${linkHandle}`}
+                label={
+                  forApp
+                    ? 'See what the app asks'
+                    : inviteToken
+                      ? `Open the conversation with ${inviter ?? 'them'}`
+                      : `See @${linkHandle}`
+                }
                 size="lg"
                 block
                 loading={busy}

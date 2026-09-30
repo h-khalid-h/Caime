@@ -4,7 +4,7 @@ import { SITE_PAGES } from '@caime/core/api';
 import { handleError } from '@caime/core/rules';
 import { isReservedHandle } from '@caime/core/schemas';
 import { describe, expect, it } from 'vitest';
-import { appPath, deepLinkPath, handleIn, isAuthorizeLink, ownLinkPath } from './paths';
+import { appPath, deepLinkPath, handleIn, inviteIn, isAuthorizeLink, ownLinkPath } from './paths';
 
 describe('paths from links', () => {
   it('opens places in the app, never the way in or somewhere else', () => {
@@ -86,6 +86,15 @@ describe('paths from links', () => {
     expect(handleIn('/@noor.haddad')).toBe('noor.haddad');
     expect(handleIn('/o/nile.dental')).toBe('nile.dental');
     expect(handleIn('/c/0192-ab')).toBeNull();
+    expect(handleIn('/i/abcdefghijklmnopqrstuv')).toBeNull();
+  });
+
+  it('says which invite a link is (R1)', () => {
+    expect(inviteIn('/i/abcdefghijklmnopqrstuv')).toBe('abcdefghijklmnopqrstuv');
+    expect(appPath('/i/abcdefghijklmnopqrstuv')).toBe('/i/abcdefghijklmnopqrstuv');
+    expect(inviteIn('/i/short')).toBeNull();
+    expect(inviteIn('/i/abcdefghijklmnopqrstuv/x')).toBeNull();
+    expect(inviteIn('/@noor')).toBeNull();
   });
 
   it('never gives anyone a handle that reads as one of the app’s own places (R35)', () => {

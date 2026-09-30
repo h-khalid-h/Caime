@@ -18,6 +18,8 @@ export const KEPT_DAYS = {
   appDeliveries: 30,
   /** The app's Profile says "a year" of this. */
   heldHandles: 365,
+  /** An invite link that ran out or was taken back (R1): nothing opens it; the count lived in events. */
+  spentInvites: 30,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
@@ -95,6 +97,12 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
       limit ${LOT} for update skip locked)`,
   );
   // A handle whose hold is over is anyone's already (lib/handles.ts): nothing more is kept of it.
+  await inLots(
+    ctx,
+    sql`delete from invites where id in (select id from invites
+      where coalesce(revoked_at, expires_at) < ${before(KEPT_DAYS.spentInvites)}
+      limit ${LOT} for update skip locked)`,
+  );
   await inLots(
     ctx,
     sql`delete from released_handles where handle in (select handle from released_handles

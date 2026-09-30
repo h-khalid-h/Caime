@@ -9,6 +9,8 @@ import type { Database } from '../db/schema';
 export type EventType =
   | 'user.created'
   | 'connection.requested'
+  | 'invite.made'
+  | 'invite.joined'
   | 'connection.created'
   | 'connection.removed'
   | 'relationship.assigned'

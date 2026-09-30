@@ -102,7 +102,8 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // A visitor on someone's page (no session here): the page as it is, without the app's
     // scripts, which would only boot to keep out of its way (R44). Its ways in are links.
     const visitor =
-      (page.kind === 'person' || page.kind === 'org') && !req.cookies?.[SESSION_COOKIE];
+      (page.kind === 'person' || page.kind === 'org' || page.kind === 'invite') &&
+      !req.cookies?.[SESSION_COOKIE];
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
     return reply
       .status(rendered.status)

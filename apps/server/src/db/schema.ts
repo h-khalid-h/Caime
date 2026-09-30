@@ -156,6 +156,21 @@ export interface ConnectionRequestsTable {
   responded_at: NullableTimestamp;
 }
 
+/** An invite link (R1, 0044): the inviter's standing offer to connect with whoever opens it. */
+export interface InvitesTable {
+  id: string;
+  user_id: string;
+  token: string;
+  relationship: Json | null;
+  context_sphere: string | null;
+  context_org_name: string | null;
+  note: string | null;
+  uses: Defaulted<number>;
+  expires_at: Date;
+  revoked_at: NullableTimestamp;
+  created_at: Generated<Date>;
+}
+
 export interface CustomRolesTable {
   id: string;
   user_id: string;
@@ -970,6 +985,7 @@ export interface Database {
   connections: ConnectionsTable;
   connection_sides: ConnectionSidesTable;
   connection_requests: ConnectionRequestsTable;
+  invites: InvitesTable;
   custom_roles: CustomRolesTable;
   relationships: RelationshipsTable;
   relationship_events: RelationshipEventsTable;

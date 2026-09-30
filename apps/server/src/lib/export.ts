@@ -68,6 +68,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     customRoles,
     connections,
     requests,
+    invites,
     blockedPeople,
     blockedOrgs,
     conversations,
@@ -216,6 +217,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .where((eb) => eb.or([eb('r.from_user', '=', me), eb('r.to_user', '=', me)]))
       .orderBy('r.created_at')
       .execute(),
+    db.selectFrom('invites').selectAll().where('user_id', '=', me).orderBy('created_at').execute(),
     db
       .selectFrom('blocks as b')
       .innerJoin('users as u', 'u.id', 'b.blocked_id')
@@ -916,6 +918,20 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         answeredAt: !sent || r.status === 'accepted' ? iso(r.responded_at) : null,
       };
     }),
+    // The invite links you made (R1): how you'd know whoever joins, what they're shown, and how
+    // many joined, never who (they're among your connections, and their side is their own).
+    inviteLinks: invites.map((i) => ({
+      url: `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/i/${i.token}`,
+      yourDescription: i.relationship,
+      sharedContext: i.context_sphere
+        ? { sphere: i.context_sphere, orgName: i.context_org_name }
+        : null,
+      note: i.note,
+      joined: i.uses,
+      expiresAt: i.expires_at.toISOString(),
+      takenBackAt: iso(i.revoked_at),
+      at: i.created_at.toISOString(),
+    })),
     blocked: {
       people: blockedPeople.map((b) => ({
         displayName: b.display_name,

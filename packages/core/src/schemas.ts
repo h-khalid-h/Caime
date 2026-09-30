@@ -156,6 +156,9 @@ export const RESERVED_HANDLES: readonly string[] = [
   'calls',
   'connect',
   'search',
+  // The invite route is /i/<token>: too short to be a handle, so it needs no reserving.
+  'invite',
+  'invites',
   'requests',
   'notifications',
   'updates',
@@ -512,6 +515,17 @@ export const ConnectionRequestBody = z.object({
 
 export const AcceptRequestBody = z.object({
   relationship: RelationshipInput.optional(),
+});
+
+/**
+ * An invite link (R1): how the inviter will know whoever joins through it (private, applied
+ * the moment they do), whether to show them the context, and a line for them.
+ */
+export const InviteBody = z.object({
+  relationship: RelationshipInput.optional(),
+  /** Show whoever opens it "Work · DATA C" (never the private label). */
+  showContext: z.boolean().optional(),
+  note: z.string().trim().max(280).nullable().optional(),
 });
 
 export const UpdateConnectionBody = z

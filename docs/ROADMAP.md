@@ -523,10 +523,14 @@ outperforming the alternatives is reach and operations. In the order the review 
       gone quiet, reply times both ways, who writes first, when they write), automations counted
       by plan (5, then 50), the plan screen saying so, insights locked with the reason on Personal
       (`insights.test.ts`, E2E). Not sold: identities (not built), history (the wedge), search
-- [~] Network bootstrap (P1): a WhatsApp export brought over as a topic of the one-to-one (R45:
+- [x] Network bootstrap (P1): a WhatsApp export brought over as a topic of the one-to-one (R45:
       read on the device, who's who chosen, dated as written, every message marked imported,
       both have read it, nothing notified or inferred; `whatsapp.test.ts`, `import.test.ts`,
-      E2E). Still to do: the contextual invite measured at ≤ 60 s invite-to-reply in E2E
+      E2E). The contextual invite (R1): a link from Connect that says who invites and, if they
+      choose, "Work · DATA C"; a visitor reads it without the app, signs up, and lands in the
+      conversation connected, the inviter's label applied on their side and the context offered
+      on the other (`invites.test.ts`); E2E measures link-open to first message sent at
+      4.8 s on a phone viewport (target ≤ 60 s; the sign-up form filled by the test, so the typing is not counted)
 - [~] Polish that shows (P2): empty states that end in an action (Requests, Notifications,
       Updates, Actions), confirmations on one-tap destructive actions (a connected app removed,
       a token revoked, an organization blocked from a request, an update taken back), skeletons
@@ -1177,3 +1181,7 @@ outperforming the alternatives is reach and operations. In the order the review 
 - 2026-09-30 · Operators by name: `OPERATOR_TOKENS` (`lib/operator.ts`) gives each person on the
   operator's side a token of their own; `requireOperator` says who it was, and every admin audit
   entry carries `metadata.operator` (left out of a person's export).
+- 2026-09-30 · Invite links (R1): `invites` (0044), `lib/invites.ts` and `modules/invites.ts`, the
+  visitor's `/i/<token>` page, the app's `InviteSheet` in Connect, the `i/[token]` route that
+  accepts and opens the conversation, onboarding and Welcome naming the inviter. E2E times
+  link-open to first message at 4.8 s.

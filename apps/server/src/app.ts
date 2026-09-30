@@ -51,6 +51,7 @@ import { handleRoutes } from './modules/handles';
 import { healthRoutes } from './modules/health';
 import { importRoutes } from './modules/imports';
 import { inboxRoutes } from './modules/inbox';
+import { inviteRoutes } from './modules/invites';
 import { kitRoutes } from './modules/kits';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
@@ -241,6 +242,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await meRoutes(v1, ctx);
       await peopleRoutes(v1, ctx);
       await connectionRoutes(v1, ctx);
+      await inviteRoutes(v1, ctx);
       await relationshipRoutes(v1, ctx);
       await policyRoutes(v1, ctx);
       await automationRoutes(v1, ctx);

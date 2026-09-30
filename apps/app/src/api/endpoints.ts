@@ -41,6 +41,9 @@ import type {
   ImportChatView,
   InboxAllResponse,
   InboxResponse,
+  InviteAcceptView,
+  InviteOpenView,
+  InviteView,
   MemoryView,
   MessagesPage,
   MessageView,
@@ -245,6 +248,18 @@ export const endpoints = {
       relationship: RelationshipView | null;
     }>(`/connections/requests/${id}/accept`, relationship ? { relationship } : {}),
   declineRequest: (id: string) => api.post<Ok>(`/connections/requests/${id}/decline`),
+  /** Invite links (R1): mine, a new one, one taken back, one opened and one joined through. */
+  invites: () => api.get<{ invites: InviteView[] }>('/invites'),
+  makeInvite: (body: {
+    relationship?: RelationshipInput;
+    showContext?: boolean;
+    note?: string | null;
+  }) => api.post<{ invite: InviteView }>('/invites', body),
+  revokeInvite: (id: string) => api.del<Ok>(`/invites/${id}`),
+  openInvite: (token: string) =>
+    api.get<{ invite: InviteOpenView }>(`/invites/${encodeURIComponent(token)}`),
+  acceptInvite: (token: string) =>
+    api.post<InviteAcceptView>(`/invites/${encodeURIComponent(token)}/accept`),
   cancelRequest: (id: string) => api.del<Ok>(`/connections/requests/${id}`),
   updateConnection: (id: string, patch: Record<string, unknown>) =>
     api.patch<Ok>(`/connections/${id}`, patch),

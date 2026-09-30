@@ -8,7 +8,7 @@
  * 18); every other path is the app's and asks not to be indexed.
  */
 import type { OrgRef } from '@caime/core';
-import { canSee, handleError, normalizeHandle } from '@caime/core';
+import { canSee, handleError, normalizeHandle, SPHERE_DEFS, type Sphere } from '@caime/core';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
 import { orgAvatarUrl, orgRef } from './business';
@@ -43,10 +43,20 @@ export interface PublicOrg {
   foundedYear: number | null;
   updatedAt: Date;
 }
+/** An invite link's page (R1): who invites, the context they chose to show, their line. */
+export interface PublicInvite {
+  kind: 'invite';
+  token: string;
+  displayName: string;
+  avatarUrl: string | null;
+  context: string | null;
+  note: string | null;
+}
 export type PublicPage =
   | { kind: 'landing' }
   | PublicPerson
   | PublicOrg
+  | PublicInvite
   | { kind: 'missing' }
   | { kind: 'app' };
 
@@ -107,9 +117,45 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
   };
 }
 
+/**
+ * An invite's page, while it's live and its maker is here: the maker's name (they handed the
+ * link out), their face only if everyone may see it, and what they chose to show.
+ */
+export async function publicInvite(db: Q, token: string, now: Date): Promise<PublicInvite | null> {
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) return null;
+  const i = await db
+    .selectFrom('invites')
+    .selectAll()
+    .where('token', '=', token)
+    .where('revoked_at', 'is', null)
+    .where('expires_at', '>', now)
+    .executeTakeFirst();
+  if (!i) return null;
+  const u = await db
+    .selectFrom('users')
+    .selectAll()
+    .where('id', '=', i.user_id)
+    .where('deleted_at', 'is', null)
+    .where('suspended_at', 'is', null)
+    .where('kind', '=', 'human')
+    .executeTakeFirst();
+  if (!u) return null;
+  const sphere = i.context_sphere ? SPHERE_DEFS[i.context_sphere as Sphere]?.label : null;
+  return {
+    kind: 'invite',
+    token,
+    displayName: u.display_name,
+    avatarUrl: canSee(privacyOf(u, now), 'profilePhoto', NOBODY) ? avatarUrl(u) : null,
+    context: sphere ? [sphere, i.context_org_name].filter(Boolean).join(' · ') : null,
+    note: i.note,
+  };
+}
+
 /** The page a path is, for whoever isn't signed in. */
 export async function publicPageFor(db: Q, path: string, now: Date): Promise<PublicPage> {
   if (path === '/') return { kind: 'landing' };
+  const invite = /^\/i\/([^/?#]+)$/.exec(path);
+  if (invite) return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing' };
   const at = /^\/@([^/?#]+)$/.exec(path);
   const org = /^\/o\/([^/?#]+)$/.exec(path);
   const raw = decodeURIComponent((at ?? org)?.[1] ?? '');
@@ -302,6 +348,26 @@ export function renderPublic(page: PublicPage, publicUrl: string, path: string):
 </main>`,
       };
     }
+    case 'invite':
+      return {
+        status: 200,
+        head: meta({
+          title: `${page.displayName} invited you · ${SITE_NAME}`,
+          description: `Join ${page.displayName} on ${SITE_NAME}${page.context ? ` (${page.context})` : ''}: sign up in half a minute and you’re connected.`,
+          image: page.avatarUrl ? `${publicUrl}${page.avatarUrl}` : null,
+          index: false,
+          canonical: false,
+        }),
+        body: `
+<main class="pub">
+  ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
+  <h1>${esc(page.displayName)} invited you</h1>
+  ${page.context ? `<p class="lead">${esc(page.context)}</p>` : ''}
+  ${page.note ? `<p>“${esc(page.note)}”</p>` : ''}
+  <p>${SITE_NAME}: ${esc(PROMISE)} Sign up in half a minute and you’re connected with ${esc(page.displayName)}, no app to install.</p>
+  <p class="cta"><a href="${wayIn('sign-up', path)}">Join ${esc(page.displayName)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
+</main>`,
+      };
     case 'missing':
       return {
         status: 404,

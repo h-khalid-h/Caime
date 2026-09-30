@@ -37,6 +37,10 @@ function useDebounced<T>(value: T, ms = 300): T {
 const ConnectSheet = lazyPart(() =>
   import('@/features/people/ConnectSheet').then((m) => m.ConnectSheet),
 );
+/** An invite link (R1), in its sheet: loaded the first time someone is invited. */
+const InviteSheet = lazyPart(() =>
+  import('@/features/people/InviteSheet').then((m) => m.InviteSheet),
+);
 
 export default function Connect() {
   const t = useTheme();
@@ -45,6 +49,7 @@ export default function Connect() {
   const [term, setTerm] = useState('');
   const debounced = useDebounced(term.trim());
   const [target, setTarget] = useState<PeopleSearchResult['person'] | null>(null);
+  const [inviting, setInviting] = useState(false);
   const results = useQuery({
     queryKey: qk.peopleSearch(debounced),
     queryFn: () => endpoints.searchPeople(debounced),
@@ -210,7 +215,12 @@ export default function Connect() {
                 No one found for “{debounced}”. They may not be on Caime yet, or they keep their
                 profile private.
               </Text>
-              <Button label="Invite them" variant="secondary" onPress={shareHandle} />
+              <Button
+                label="Invite them"
+                variant="secondary"
+                onPress={() => setInviting(true)}
+                testID="connect-invite"
+              />
             </View>
           ) : (
             <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
@@ -219,11 +229,22 @@ export default function Connect() {
                 Search by @handle or email address. People under 18 can only be found by people they
                 already know.
               </Text>
-              <Button label={`Share @${me.handle}`} variant="secondary" onPress={shareHandle} />
+              <View
+                style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
+              >
+                <Button
+                  label="Invite someone"
+                  icon={UserPlus}
+                  onPress={() => setInviting(true)}
+                  testID="connect-invite"
+                />
+                <Button label={`Share @${me.handle}`} variant="secondary" onPress={shareHandle} />
+              </View>
             </View>
           )
         }
       />
+      {inviting ? <InviteSheet open onClose={() => setInviting(false)} /> : null}
       {target ? (
         <ConnectSheet
           open

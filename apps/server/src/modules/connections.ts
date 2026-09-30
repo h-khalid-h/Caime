@@ -107,6 +107,8 @@ async function afterConnected(
   connectionId: string,
   conversationId: string,
   context: { sphere: string | null; orgName: string | null },
+  /** The request was an invite link (R1): whoever opened it is the accepter, landing in the conversation. */
+  viaInvite = false,
 ) {
   const users = await ctx.db
     .selectFrom('users')
@@ -132,8 +134,10 @@ async function afterConnected(
     userId: requesterId,
     kind: 'connection_accepted',
     level: 'activity',
-    title: `${accepter.display_name} accepted your request`,
-    body: 'Say hi when you’re ready.',
+    title: viaInvite
+      ? `${accepter.display_name} joined through your invite`
+      : `${accepter.display_name} accepted your request`,
+    body: viaInvite ? 'You’re connected. Say hi.' : 'Say hi when you’re ready.',
     data: { userId: accepterId, conversationId },
   });
 }
@@ -565,6 +569,7 @@ export async function acceptRequest(
   userId: string,
   requestId: string,
   myRelationship?: RelationshipInputT,
+  opts: { viaInvite?: boolean } = {},
 ): Promise<{
   connectionId: string;
   conversationId: string;
@@ -592,7 +597,7 @@ export async function acceptRequest(
     const theirs = request.pending_relationship as RelationshipInputT | null;
     if (theirs) {
       await createRelationship(trx, ctx, request.from_user, userId, theirs, {
-        source: 'user',
+        source: opts.viaInvite ? 'invite' : 'user',
         connectionId: result.connectionId,
       });
     }
@@ -603,9 +608,14 @@ export async function acceptRequest(
       });
     }
   });
-  await afterConnected(ctx, request.from_user, userId, result.connectionId, result.conversationId, {
-    sphere: request.context_sphere,
-    orgName: request.context_org_name,
-  });
+  await afterConnected(
+    ctx,
+    request.from_user,
+    userId,
+    result.connectionId,
+    result.conversationId,
+    { sphere: request.context_sphere, orgName: request.context_org_name },
+    opts.viaInvite,
+  );
   return { ...result, relationship: mine ? relationshipView(mine) : null };
 }

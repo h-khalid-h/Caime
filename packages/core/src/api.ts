@@ -176,6 +176,46 @@ export interface ConnectionRequestView {
   createdAt: string;
 }
 
+/** Context an inviter or a requester chose to show (PRD §52): the sphere's name, and where. */
+export interface SharedContext {
+  sphere: Sphere;
+  label: string;
+  orgName: string | null;
+}
+
+/** An invite link of mine (R1): whoever opens it lands connected with me, as I said I know them. */
+export interface InviteView {
+  id: string;
+  token: string;
+  /** The link to share (`WEB_URL/i/<token>`). */
+  url: string;
+  relationship: RelationshipView | null;
+  context: SharedContext | null;
+  note: string | null;
+  /** How many people joined through it. */
+  uses: number;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/** An invite as whoever opens it sees it: who invites, the context they chose to show, a line. */
+export interface InviteOpenView {
+  inviter: { id: string; handle: string; displayName: string; avatarUrl: string | null };
+  context: SharedContext | null;
+  note: string | null;
+  /** For whoever is signed in: it's their own, or they're connected already (then where). */
+  mine: boolean;
+  conversationId: string | null;
+}
+
+export interface InviteAcceptView {
+  status: 'connected';
+  connectionId: string;
+  conversationId: string;
+  /** True when they were connected before this: nothing changed. */
+  already: boolean;
+}
+
 export interface PeopleSearchResult {
   person: PersonView;
   connection: ConnectionStateView;

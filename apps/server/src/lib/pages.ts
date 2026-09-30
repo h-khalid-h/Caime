@@ -91,7 +91,8 @@ and your presence (Automatic, Busy, Away or Invisible). Caime also keeps when yo
 active.</li>
 <li><strong>The people you know.</strong> Who you&rsquo;re connected with, how you&rsquo;ve told
 Caime you know each of them (and how you described them before), what you call them, your
-requests to connect, and who you&rsquo;ve blocked.</li>
+requests to connect, the invite links you make (how you&rsquo;d know whoever joins, what they&rsquo;re
+shown, and how many joined), and who you&rsquo;ve blocked.</li>
 <li><strong>What you send.</strong> Messages, photos, videos, files, voice messages, places you
 share, cards (a meeting, an order, a poll) and your votes, and reactions, with which messages each
 person has received and read, so Caime can show them to the people they&rsquo;re for. A live
@@ -219,6 +220,8 @@ for ${span(KEPT_DAYS.endedSignIns)} after it ended. The log of what you do, with
 kept for ${span(KEPT_DAYS.activity)}, and copies of what you send an organization, made for its
 apps, for ${span(KEPT_DAYS.appDeliveries)}. Counts that name nobody are kept a little longer than
 a year.</li>
+<li>An invite link that ran out or was taken back is kept for ${span(KEPT_DAYS.spentInvites)}, then
+forgotten; the people who joined through it stay your connections.</li>
 <li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
 ${span(KEPT_DAYS.heldHandles)}, you included, so a link to it can&rsquo;t come to open someone
 else. Only the handle and the days are kept, never whose it was, and then it&rsquo;s
@@ -443,6 +446,11 @@ businesses you deal with. Here&rsquo;s how it works.</p>
 whoever opens it can sign in and ask to connect, as You &rarr; Privacy allows (Finding you, and
 Message requests). An adult can open the link of someone under 18 only once they&rsquo;re
 connected, or one has asked to connect with the other.</li>
+<li><strong>Inviting someone.</strong> In Connect, Invite someone makes a link that says who
+you are and, if you choose, how you know them (&ldquo;Work &middot; DATA C&rdquo;). Whoever opens
+it signs up in half a minute, on the web with nothing to install, and lands in a conversation with
+you, already connected, with your label for them applied. A link works for thirty days, for
+anyone who has it; take one back from the same place.</li>
 <li><strong>Connecting.</strong> Find someone in Connect by their @handle, name or email, or open
 their link, and ask to connect. Anyone can find you by your name or @handle while By your name or
 @handle is on, and by your email address while By your email is on (both in You &rarr; Privacy).

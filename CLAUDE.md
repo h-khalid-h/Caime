@@ -123,6 +123,12 @@ These are rules, not preferences.
   signed in, so the page stays; a new app route that must not be
   indexed needs nothing (the default is `noindex`), and a new web-root file (`robots.txt`,
   `sitemap.xml`) is a reserved handle.
+- Invite links (R1): `lib/invites.ts` makes, opens and accepts them; accepting goes through
+  `acceptRequest(…, { viaInvite: true })` on a request the invite stands for (never a second path
+  to a connection), so blocks, suggestions and notifications behave as for a request. The token
+  is the only key to one (`/i/<token>`: `publicInvite` renders the visitor's page, `inviteIn` in
+  `lib/paths.ts` recognizes it, the `i/[token]` route accepts). A person's export lists their
+  links; the privacy page says so.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
   `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
   characters, staff words, and the names of its pages, top-level screens and web-root files. A

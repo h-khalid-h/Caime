@@ -50,3 +50,8 @@ export function deepLinkPath(url: string): string | null {
 export function handleIn(path: string | null | undefined): string | null {
   return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)$/i)?.[1] ?? null;
 }
+
+/** The token of an invite link (`/i/<token>`, R1), or null. */
+export function inviteIn(path: string | null | undefined): string | null {
+  return path?.match(/^\/i\/([A-Za-z0-9_-]{16,64})$/)?.[1] ?? null;
+}

@@ -36,6 +36,8 @@ test.describe
     /** Someone new, from the link test on: the organization's customer. */
     let linaContext: BrowserContext | undefined;
     let lina: { page: Page; errors: string[] };
+    /** Someone new, brought by Noor's invite link (R1). */
+    let omarContext: BrowserContext | undefined;
 
     test.beforeAll(async ({ browser }) => {
       noorContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -66,6 +68,7 @@ test.describe
       await noorContext?.close();
       await alexContext?.close();
       await linaContext?.close();
+      await omarContext?.close();
     });
 
     test('a relationship changes, and its history says how', async () => {
@@ -846,6 +849,104 @@ test.describe
       expect(errors.filter((e) => !/handles\/nobody\.|status of 404/.test(e))).toEqual([]);
       errors.length = 0;
       expect(lina.errors).toEqual([]);
+    });
+
+    test('an invite link lands someone new in the conversation, connected, inside a minute', async ({
+      browser,
+    }) => {
+      const { page, errors } = noor;
+      // Noor makes a link that says how she'll know whoever joins, and shows them the context.
+      await page.goto('/connect');
+      await page.getByTestId('connect-invite').click();
+      await page.getByTestId('invite-classify').click();
+      // In the sheet: the People pane beside it names spheres and Alex's label too.
+      const sheet = page.getByRole('dialog');
+      await sheet.getByRole('radio', { name: 'Work', exact: true }).click();
+      await sheet.getByRole('button', { name: 'Colleague', exact: true }).click();
+      await sheet.getByPlaceholder('Company, school or organization').fill('DATA C');
+      await sheet.getByTestId('relationship-save').click();
+      await expect(sheet.getByText('Colleague · DATA C')).toBeVisible();
+      await page.getByTestId('invite-note').fill('Come find me here.');
+      await page.getByTestId('invite-make').click();
+      const url = (await page.getByTestId('invite-url').textContent())?.trim() ?? '';
+      expect(url).toMatch(/\/i\/[A-Za-z0-9_-]{22}$/);
+      await page.getByTestId('invite-copy').click();
+      await expect(visible(page, 'Link copied')).toBeVisible();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
+      await page.keyboard.press('Escape');
+
+      // Omar opens it on a phone: a page that says who invited him and why, without the app.
+      omarContext = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        // Sign-ups are counted per address: his own, as a phone on another network would be.
+        extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.77' },
+      });
+      const omar = await newPerson(omarContext);
+      const omarHandle = `omar.${stamp}`;
+      const started = Date.now();
+      await omar.page.goto(new URL(url).pathname);
+      await expect(omar.page.locator('#static')).toBeVisible();
+      await expect(visible(omar.page, 'Noor Haddad invited you')).toBeVisible();
+      await expect(visible(omar.page, 'Work · DATA C')).toBeVisible();
+      await expect(visible(omar.page, '“Come find me here.”')).toBeVisible();
+      expect(await omar.page.locator('script[src]').count()).toBe(0);
+      await omar.page.screenshot({ path: 'e2e/screenshots/phone-invite-page.png' });
+      await omar.page.getByRole('link', { name: 'Join Noor Haddad on Caime' }).click();
+      await omar.page.waitForURL(/\/sign-up/);
+      await omar.page.getByTestId('signup-name').fill('Omar Saleh');
+      await omar.page.getByTestId('signup-handle').fill(omarHandle);
+      await omar.page.getByTestId('signup-email').fill(`${omarHandle}@example.com`);
+      await omar.page.getByTestId('signup-password').fill('a long enough passphrase');
+      await omar.page.getByTestId('signup-birth-date').fill('1990-12-31');
+      await expect(omar.page.getByText('Available')).toBeVisible();
+      await omar.page.getByTestId('signup-submit').click();
+      await omar.page.waitForURL('**/onboarding');
+      await omar.page.getByText('Copy the codes').click();
+      await omar.page.getByTestId('onboarding-codes-next').click();
+      await omar.page.getByTestId('onboarding-rules-next').click();
+      await expect(
+        visible(omar.page, /Noor Haddad invited you: open the conversation/),
+      ).toBeVisible();
+      await omar.page.getByTestId('onboarding-link').click();
+      // Connected, in the conversation, and his first words reach Noor.
+      await omar.page.waitForURL(/\/c\/[0-9a-f-]+$/);
+      await expect(visible(omar.page, 'You’re connected')).toBeVisible();
+      await omar.page.getByTestId('composer-input').fill('Hi Noor, found you!');
+      await omar.page.getByTestId('composer-send').click();
+      await expect(visible(omar.page, 'Hi Noor, found you!')).toBeVisible();
+      const inviteToReply = Date.now() - started;
+      const measured = `${(inviteToReply / 1000).toFixed(1)} s from opening the link to the first message sent`;
+      test.info().annotations.push({ type: 'invite-to-reply', description: measured });
+      console.log(`invite-to-reply: ${measured}`);
+      expect(inviteToReply).toBeLessThan(60_000);
+      await omar.page.screenshot({ path: 'e2e/screenshots/phone-invite-connected.png' });
+
+      // Noor's side: Omar is a colleague at DATA C, as she said, and his message is there.
+      const omarId = new URL(omar.page.url()).pathname; // the conversation's path, for the check below
+      const mine = await (
+        await noorContext.request.get('/v1/connections', { headers: CLIENT })
+      ).json();
+      const withOmar = mine.connections.find(
+        (c: { person: { handle: string } }) => c.person.handle === omarHandle,
+      );
+      expect(withOmar.relationships[0]).toMatchObject({
+        sphere: 'work',
+        role: 'colleague',
+        orgName: 'DATA C',
+        source: 'invite',
+      });
+      expect(`/c/${withOmar.conversationId}`).toBe(omarId);
+      await page.goto(omarId);
+      await expect(visible(page, 'Hi Noor, found you!')).toBeVisible();
+      // The link counted him, and Noor was told who joined.
+      const { invites } = await (
+        await noorContext.request.get('/v1/invites', { headers: CLIENT })
+      ).json();
+      expect(invites.find((i: { url: string }) => i.url === url).uses).toBe(1);
+      await page.goto('/notifications');
+      await expect(visible(page, 'Omar Saleh joined through your invite')).toBeVisible();
+      expect(errors).toEqual([]);
+      expect(omar.errors).toEqual([]);
     });
 
     test('a customer writes to an organization, and its team answers as the organization', async () => {
