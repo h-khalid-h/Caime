@@ -1445,7 +1445,8 @@ export type RealtimeDataEvent =
   | {
       type: 'notification.created' | 'notification.updated';
       data: {
-        id: string;
+        /** Null when many people were told at once (an update's fan-out): the list refreshes. */
+        id: string | null;
         kind?: string;
         level: NotificationLevel;
         title: string;

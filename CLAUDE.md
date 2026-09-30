@@ -322,7 +322,10 @@ These are rules, not preferences.
   inbox, attention, search, AI or anyone's connections. Only the team sees `postedBy` and the
   follower count; nothing anywhere lists who follows. Followers are told by the `updates.fanout`
   job (a batch at a time, the update read again each batch, one notification per person by a
-  unique index), never in the request: anything more that tells followers belongs there. The
+  unique index), never in the request: anything more that tells followers belongs there. A step
+  tells its batch of 1,000 with one insert (`on conflict do nothing` on that index), one
+  `notification.created` to them all (`id: null`) and one `withLivePush` lookup, then pushes
+  only to those with a device; `updates-scale.test.ts` measures it (`FANOUT_FOLLOWERS`). The
   app's section is `features/updates/OrgUpdates.tsx` (in the organization page's chunk) and the
   Chats row `UpdatesRow.tsx`.
 - Web push: `apps/app/public/sw.js` (copied to the web root by the export; plain JS, no build)

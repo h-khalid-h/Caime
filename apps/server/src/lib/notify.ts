@@ -74,6 +74,24 @@ export async function notify(ctx: AppContext, input: NotifyInput): Promise<strin
   return id;
 }
 
+/**
+ * Which of these people have a device to push to right now: one query for a whole batch, so a
+ * fan-out looks up devices once a step rather than once a follower.
+ */
+export async function withLivePush(ctx: AppContext, userIds: string[]): Promise<Set<string>> {
+  if (!userIds.length) return new Set();
+  const rows = await ctx.db
+    .selectFrom('push_subscriptions as p')
+    .innerJoin('sessions as s', 's.id', 'p.session_id')
+    .select('p.user_id')
+    .distinct()
+    .where('p.user_id', 'in', userIds)
+    .where('s.revoked_at', 'is', null)
+    .where('s.expires_at', '>', ctx.now())
+    .execute();
+  return new Set(rows.map((r) => r.user_id));
+}
+
 /** Deliver a notification to devices (web push, mobile push) through the registered hooks. */
 export async function runNotificationHooks(
   ctx: AppContext,

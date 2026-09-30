@@ -178,7 +178,10 @@ describe('@caime/sdk against the server (R39)', () => {
       body: 'Blue, please.',
     });
     await runDueJobs(t.ctx);
-    const message = received.find((r) => r.headers['caime-event'] === 'business.message');
+    // The first message's delivery goes out with it too: this one is the delivery of the new one.
+    const message = received.find(
+      (r) => r.headers['caime-event'] === 'business.message' && r.body.includes('Blue, please.'),
+    );
     expect(message).toBeDefined();
     const now = t.clock.now.getTime();
     const event = parseWebhook(secret, message!.headers, message!.body, { now });

@@ -5,13 +5,13 @@
  * many do, never who. Everyone but the team reads an update as the organization's.
  */
 import type { FollowingView, OrgRef, OrgUpdateView } from '@caime/core';
-import { previewText } from '@caime/core';
+import { previewText, uuidv7 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OrgUpdate } from '../db/schema';
 import { orgRef } from './business';
 import { enqueue, registerJob } from './jobs';
-import { notify } from './notify';
+import { type NotifyInput, runNotificationHooks, withLivePush } from './notify';
 
 export function updateView(
   u: Pick<OrgUpdate, 'id' | 'body' | 'created_at' | 'edited_at'>,
@@ -54,8 +54,8 @@ export async function tellUpdatesChanged(ctx: AppContext, orgId: string): Promis
 }
 
 const FANOUT = 'updates.fanout';
-/** Followers told per step of the job. */
-const BATCH = 200;
+/** Followers told per step of the job: one insert, one device lookup, a step at a time. */
+const BATCH = 1000;
 
 /**
  * A new update: each follower who asked is told (never whoever posted it), as the organization.
@@ -120,25 +120,66 @@ async function fanOut(ctx: AppContext, p: Record<string, unknown>): Promise<void
     .orderBy('f.user_id')
     .limit(BATCH)
     .execute();
-  for (const { user_id } of told) {
-    try {
-      await notify(ctx, {
-        userId: user_id,
-        kind: 'update',
-        level: 'activity',
-        title: u.name,
-        body: updatePreview(u.body),
-        data: { orgId: u.id, handle: u.handle, updateId },
-        groupKey: `update:${u.id}`,
-        delivery: 'push',
-      });
-    } catch (err) {
-      // Told already (this step ran twice at once): once is enough.
-      if ((err as { code?: string }).code === '23505') continue;
-      // Gone meanwhile (their account deleted, say): everyone after them still hears.
-      ctx.log.warn({ err, updateId }, 'an update’s notification failed');
-    }
-  }
+  // Everyone in the batch in one statement; a step run twice at once (a retry after a restart)
+  // tells nobody twice: the unique index on (update, person) drops the second row.
+  const at = ctx.now();
+  const input = (userId: string): NotifyInput => ({
+    userId,
+    kind: 'update',
+    level: 'activity',
+    title: u.name,
+    body: updatePreview(u.body),
+    data: { orgId: u.id, handle: u.handle, updateId },
+    groupKey: `update:${u.id}`,
+    delivery: 'push',
+  });
+  const inserted = told.length
+    ? await ctx.db
+        .insertInto('notifications')
+        .values(
+          told.map(({ user_id }) => ({
+            id: uuidv7(),
+            user_id,
+            kind: 'update',
+            level: 'activity',
+            title: u.name,
+            body: updatePreview(u.body),
+            data: JSON.stringify({ orgId: u.id, handle: u.handle, updateId }),
+            group_key: `update:${u.id}`,
+            delivery: 'push',
+            created_at: at,
+            updated_at: at,
+          })),
+        )
+        .onConflict((oc) =>
+          oc.expression(sql`(data->>'updateId'), user_id`).where('kind', '=', 'update').doNothing(),
+        )
+        .returning(['id', 'user_id'])
+        .execute()
+    : [];
+  // One event for the whole batch: each hears it, and their list refreshes.
+  if (inserted.length)
+    await ctx.bus.publish(
+      inserted.map((r) => r.user_id),
+      {
+        type: 'notification.created',
+        data: {
+          id: null,
+          kind: 'update',
+          level: 'activity',
+          title: u.name,
+          body: updatePreview(u.body),
+          data: { orgId: u.id, handle: u.handle, updateId },
+        },
+      },
+    );
+  // Pushes go only to people with a device to push to, found once for the batch.
+  const pushable = await withLivePush(
+    ctx,
+    inserted.map((r) => r.user_id),
+  );
+  for (const r of inserted)
+    if (pushable.has(r.user_id)) await runNotificationHooks(ctx, r.id, input(r.user_id));
   const last = told.at(-1)?.user_id;
   if (told.length === BATCH && last)
     await enqueue(
