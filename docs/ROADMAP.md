@@ -533,6 +533,11 @@ outperforming the alternatives is reach and operations. In the order the review 
       and its end/go buttons), start/end for RTL in place of every one-sided left/right. Still
       to do: onboarding that walks the first connection to a first message (accepting a request
       already opens the conversation), a screen reader pass on a device
+- [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
+      taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
+      API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
+      numbers with consent on both sides. Everything else in it (reading other apps'
+      notifications, auto-replies in the person's name, an Android hub) is declined for good
 - [ ] The second instance (P2): rate limiter and caches out of process, S3 adapter; moderation
       reviewer UI; email verification and reset; per-operator admin tokens; pentest
 - Measurements still to take: a load test, Lighthouse, a screen reader on a device
@@ -1118,3 +1123,8 @@ outperforming the alternatives is reach and operations. In the order the review 
   nothing, names not pronouns in call history, the last raw colours onto brand tokens, and
   physical left/right styles turned to start/end so Arabic reads mirrored. CI's red on main
   (the landing page's tagline matching the welcome test's text locator) fixed first.
+- 2026-09-30 · Brainstorm "unified inbox and edge-automation engine" reviewed and declined (R46);
+  two compliant candidates recorded above. Production checked at e93217b: the readable web is
+  live (Open Graph title, sitemap, robots). Production's environment holds 12 of the server's
+  44 variables; the rest run on code defaults, and the explicit lines to add are in the session
+  notes to the owner (the panel refused writes from here).
