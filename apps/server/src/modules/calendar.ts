@@ -8,19 +8,21 @@
 import {
   buildIcs,
   type CalendarFeedView,
+  type CalendarView,
   type IcsEvent,
   KITS,
+  type OrgCalendarView,
   type TaskView,
   zonedParts,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
+import { calendarItems, orgBookings, overdueTasks } from '../lib/calendar';
 import { hashToken, newToken } from '../lib/crypto';
-import { overdueAtSql } from '../lib/due';
-import { forbidden, notFound } from '../lib/errors';
+import { badRequest, forbidden, notFound } from '../lib/errors';
+import { orgById, orgSeat } from '../lib/orgs';
 import { cardsAhead } from '../lib/upcoming';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -81,36 +83,7 @@ export async function calendarEvents(
   // Open actions with a due date that are theirs to see: their own, and what they were asked,
   // never from a message request they haven't accepted (or declined). What's ahead comes first,
   // so however much is overdue, what's coming is there.
-  const rows = await ctx.db
-    .selectFrom('tasks')
-    .selectAll()
-    .where((eb) =>
-      eb.or([
-        eb('owner_id', '=', userId),
-        eb.and([
-          eb('assignee_id', '=', userId),
-          eb('shared', '=', true),
-          eb.not(
-            eb.exists(
-              eb
-                .selectFrom('participants as p')
-                .select('p.user_id')
-                .whereRef('p.conversation_id', '=', 'tasks.conversation_id')
-                .where('p.user_id', '=', userId)
-                .where('p.request_state', 'in', ['pending', 'declined']),
-            ),
-          ),
-        ]),
-      ]),
-    )
-    .where('status', 'in', ['open', 'accepted'])
-    .where('due_at', 'is not', null)
-    .where('due_at', '>', from)
-    .where('due_at', '<', until)
-    .orderBy(sql`${overdueAtSql} < ${now}`)
-    .orderBy('due_at')
-    .limit(MAX_EVENTS)
-    .execute();
+  const rows = await overdueTasks(ctx, userId, { from, until });
   const views = await taskViews(ctx, rows, userId);
   const events: IcsEvent[] = [];
   rows.forEach((row, i) => {
@@ -155,7 +128,45 @@ export async function calendarEvents(
   return events;
 }
 
+/** From one instant to another, at most a year apart: what a calendar screen asks for. */
+const WindowQuery = z
+  .object({
+    from: z.string().datetime({ offset: true }),
+    to: z.string().datetime({ offset: true }),
+  })
+  .strict();
+const MAX_WINDOW_MS = 366 * DAY_MS;
+function windowOf(query: unknown): { from: Date; until: Date } {
+  const q = parse(WindowQuery, query);
+  const from = new Date(q.from);
+  const until = new Date(q.to);
+  if (until <= from || until.getTime() - from.getTime() > MAX_WINDOW_MS)
+    throw badRequest('Ask for up to a year, from one instant to a later one.');
+  return { from, until };
+}
+
 export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
+  // The calendar in the app (R51): what the feed shows, with whom it's with.
+  app.get('/calendar', async (req): Promise<CalendarView> => {
+    const auth = requireAuth(req);
+    const window = windowOf(req.query);
+    const items = await calendarItems(ctx, auth.userId, window, (rows) =>
+      taskViews(ctx, rows, auth.userId),
+    );
+    return { from: window.from.toISOString(), to: window.until.toISOString(), items };
+  });
+
+  // An organization's bookings (R51), for its team: the appointments in its conversations.
+  app.get('/orgs/:id/calendar', async (req): Promise<OrgCalendarView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const window = windowOf(req.query);
+    await orgById(ctx.db, id);
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    const items = await orgBookings(ctx, id, window);
+    return { from: window.from.toISOString(), to: window.until.toISOString(), items };
+  });
+
   app.get('/calendar/feed', async (req): Promise<{ feed: CalendarFeedView }> => {
     const auth = requireAuth(req);
     const row = await ctx.db

@@ -51,12 +51,16 @@ const EMPTY: Record<string, { title: string; body: string; character: 'momo' | '
 
 /** Choosing a day, loaded the first time it's opened. */
 const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
+/** The calendar (R51), loaded when it's first shown. */
+const CalendarList = lazyPart(() =>
+  import('@/features/calendar/CalendarList').then((m) => m.CalendarList),
+);
 
 export default function Actions() {
   const t = useTheme();
   const me = useMe();
   const { desktop } = useLayout();
-  const [view, setView] = useState<TaskViewFilter>('todo');
+  const [view, setView] = useState<TaskViewFilter | 'calendar'>('todo');
   const [adding, setAdding] = useState(false);
   // The action whose due date is being chosen, in the person's own days and times.
   const [dueFor, setDueFor] = useState<TaskView | null>(null);
@@ -69,7 +73,7 @@ export default function Actions() {
       toast((e as Error).message, { tone: 'danger' });
     }
   };
-  const q = useTasks(view);
+  const q = useTasks(view === 'calendar' ? 'todo' : view);
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const { creates, pending } = usePendingTasks();
@@ -118,7 +122,7 @@ export default function Actions() {
           }
         />
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-          <Segmented<TaskViewFilter>
+          <Segmented<TaskViewFilter | 'calendar'>
             label="Which actions"
             value={view}
             onChange={setView}
@@ -127,11 +131,14 @@ export default function Actions() {
               { value: 'asked_me', label: 'Asked me', count: counts?.asked_me },
               { value: 'waiting', label: 'Waiting', count: counts?.waiting },
               { value: 'done', label: 'Done' },
+              { value: 'calendar', label: 'Calendar' },
             ]}
           />
         </View>
         <ConnectionBanner />
-        {q.isPending && !q.data && !unsent.length ? (
+        {view === 'calendar' ? (
+          <CalendarList />
+        ) : q.isPending && !q.data && !unsent.length ? (
           <SkeletonRows count={5} />
         ) : (
           <FlatList

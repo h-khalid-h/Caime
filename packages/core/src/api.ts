@@ -915,6 +915,60 @@ export interface OrgView extends OrgSummaryView {
   agent: { name: string } | null;
 }
 
+/**
+ * Someone's calendar in the app (R51): what their calendar feed shows, each item with whom it's
+ * with, as the viewer sees them, and the relationship the viewer gave that person. Meetings and
+ * appointments from cards in conversations they're in (agreed, or only asked), and their open
+ * actions with a due date (their own, and what they were asked). Never from a private
+ * conversation, never from a message request they haven't accepted.
+ */
+export interface CalendarItemView {
+  kind: 'meeting' | 'appointment' | 'task';
+  /** The card's message id, or the task's id. */
+  id: string;
+  title: string;
+  at: string;
+  hasTime: boolean;
+  /** A meeting's or an appointment's end, when it has a time. */
+  endAt: string | null;
+  place: string | null;
+  conversationId: string | null;
+  /** The person it's with: a direct conversation's other side, whom a task waits on or who asked. */
+  with: PersonView | null;
+  /** The viewer's relationship to that person, as their label says it. */
+  relationship: { label: string; sphere: Sphere } | null;
+  /** The organization, for a business conversation. */
+  org: OrgRef | null;
+  /** A group's or a space's conversation, when it isn't with one person. */
+  conversationTitle: string | null;
+  /** Agreed (accepted, confirmed) or only asked; an action: open, waiting on someone, overdue. */
+  state: 'agreed' | 'asked' | 'open' | 'waiting' | 'overdue';
+}
+
+export interface CalendarView {
+  from: string;
+  to: string;
+  items: CalendarItemView[];
+}
+
+/** An organization's bookings (R51): the appointments its team agreed, or was asked, with customers. */
+export interface OrgBookingView {
+  messageId: string;
+  conversationId: string;
+  customer: { id: string; displayName: string } | null;
+  title: string;
+  at: string;
+  hasTime: boolean;
+  place: string | null;
+  state: 'requested' | 'confirmed';
+}
+
+export interface OrgCalendarView {
+  from: string;
+  to: string;
+  items: OrgBookingView[];
+}
+
 /** An organization's AI agent, for its owner and admins (PRD §74–75). */
 export interface OrgAgentView {
   name: string;

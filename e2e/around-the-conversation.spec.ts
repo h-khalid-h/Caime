@@ -497,6 +497,19 @@ test.describe
       await expect(page.getByTestId('message-highlighted')).toContainText('Venue walkthrough');
       await page.screenshot({ path: 'e2e/screenshots/desktop-kit-meeting.png' });
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-kit-meeting.png' });
+      // And on Noor's calendar (R51): by day, with whom and what Alex is to her.
+      await page.goto('/actions');
+      await page.getByText('Calendar', { exact: true }).filter({ visible: true }).click();
+      const onCalendar = page
+        .getByTestId('calendar-list')
+        .getByRole('button')
+        .filter({ hasText: 'Venue walkthrough' });
+      await expect(onCalendar).toContainText('Alex Chen');
+      await expect(onCalendar).toContainText('Cairo Opera House');
+      await expect(onCalendar).not.toContainText('asked');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-calendar.png' });
+      await onCalendar.click();
+      await page.waitForURL(`**/c/${convo}`);
       expect([...noor.errors, ...alex.errors]).toEqual([]);
     });
 
@@ -1028,6 +1041,33 @@ test.describe
         phone.getByTestId(`team-inbox-${handle}`).filter({ visible: true }),
       ).toContainText('Nobody is waiting');
       await expect(phone.getByText('Can I book a cleaning on Thursday?')).toHaveCount(0);
+
+      // The team books Lina in: an appointment card, which is a booking (R51) in the inbox's
+      // Bookings until she confirms it, and after.
+      const linaConvo = page.url().split('/c/')[1]?.split(/[?#]/)[0] ?? '';
+      await page
+        .getByRole('button', { name: 'Share a photo, a file or a card' })
+        .filter({ visible: true })
+        .click();
+      await page.getByTestId('kit-option-appointment').click();
+      await page.getByLabel('For', { exact: true }).fill('Cleaning');
+      await page.getByLabel('When', { exact: true }).fill('Thursday 10am');
+      await page.getByTestId('kit-send').click();
+      await expect(
+        page.getByTestId('kit-appointment').filter({ hasText: 'Cleaning', visible: true }),
+      ).toContainText('Requested');
+      await page.getByTestId('business-view-bookings').click();
+      const booking = page.getByTestId('org-bookings').getByRole('button').filter({ hasText: 'Cleaning' });
+      await expect(booking).toContainText(`Lina Farah`);
+      await expect(booking).toContainText('Asked');
+      await page.screenshot({ path: 'e2e/screenshots/desktop-business-bookings.png' });
+      await customer.goto(`/c/${linaConvo}`);
+      await customer
+        .getByTestId('kit-appointment')
+        .filter({ hasText: 'Cleaning', visible: true })
+        .getByRole('button', { name: 'Confirm', exact: true })
+        .click();
+      await expect(booking).toContainText('Confirmed');
 
       // Resolved, it waits until the customer writes again.
       await page.getByTestId('thread-resolve').click();

@@ -77,6 +77,16 @@ function ackDelivered(conversationId: string, seq: number): void {
 export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): void {
   const invalidate = (key: readonly unknown[], debounceKey = JSON.stringify(key)) =>
     soon(debounceKey, () => void qc.invalidateQueries({ queryKey: key }));
+  // The calendar and an organization's bookings read cards: asked again, once, a moment later.
+  const calendarChanged = () =>
+    soon(
+      'calendar',
+      () => {
+        void qc.invalidateQueries({ queryKey: ['calendar'] });
+        void qc.invalidateQueries({ queryKey: ['org-calendar'] });
+      },
+      1200,
+    );
 
   switch (event.type) {
     case 'call.ringing':
@@ -128,6 +138,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         },
         1500,
       );
+      // A dated card (a meeting, an appointment) is on the calendar (R51).
+      if (m.kind === 'kit') calendarChanged();
       return;
     }
     case 'message.updated':
@@ -140,6 +152,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         const id = event.data.conversationId;
         soon(`memory:${id}`, () => void qc.invalidateQueries({ queryKey: qk.memory(id) }), 800);
         soon('spaces', () => void qc.invalidateQueries({ queryKey: ['space'] }), 800);
+        calendarChanged();
       }
       return;
     case 'message.deleted':

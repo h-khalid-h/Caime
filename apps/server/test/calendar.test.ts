@@ -304,6 +304,97 @@ describe('a calendar feed (PRD §72)', () => {
     expect(event(await lines(url), `meeting-${standup.id}@caime`)).not.toBeNull();
   });
 
+  it('in the app (R51): what’s ahead in a window, with whom and what they are to you; an organization’s bookings for its team', async () => {
+    const from = '2026-11-01T00:00:00Z';
+    const to = '2026-12-01T00:00:00Z';
+    const window = `from=${from}&to=${to}`;
+    const meeting = await card(ana, withBen, 'meeting', {
+      title: 'Budget review',
+      start: { at: '2026-11-03T10:00:00Z', hasTime: true },
+      durationMinutes: 30,
+    });
+    // Asked, not yet agreed: on the calendar, said so, with the person and Ana's label for him.
+    let cal = await ana.get(`/v1/calendar?${window}`);
+    expect(cal.items).toMatchObject([
+      {
+        kind: 'meeting',
+        id: meeting.id,
+        state: 'asked',
+        at: '2026-11-03T10:00:00.000Z',
+        endAt: '2026-11-03T10:30:00.000Z',
+        with: { id: ben.user.id, displayName: 'Ben Calendar' },
+        relationship: { sphere: 'work' },
+        org: null,
+        conversationId: withBen,
+      },
+    ]);
+    await ben.post(`/v1/messages/${meeting.id}/kit`, { to: 'accepted' });
+    const task = (
+      await ana.post('/v1/tasks', {
+        title: 'Send the budget',
+        dueAt: '2026-11-05T09:00:00Z',
+        dueHasTime: true,
+      })
+    ).task;
+    cal = await ana.get(`/v1/calendar?${window}`);
+    expect(cal.items.map((i: any) => [i.kind, i.id, i.state])).toEqual([
+      ['meeting', meeting.id, 'agreed'],
+      ['task', task.id, 'open'],
+    ]);
+    // Ben sees the meeting with Ana; the task is hers alone.
+    const bens = await ben.get(`/v1/calendar?${window}`);
+    expect(bens.items).toMatchObject([{ kind: 'meeting', with: { displayName: 'Ana Calendar' } }]);
+    // A window is up to a year, from one instant to a later one.
+    expect((await ana.req('GET', `/v1/calendar?from=${to}&to=${from}`)).statusCode).toBe(400);
+    expect(
+      (await ana.req('GET', `/v1/calendar?from=${from}&to=2028-01-01T00:00:00Z`)).statusCode,
+    ).toBe(400);
+
+    // An organization's bookings: the appointments in its customer conversations, for its team.
+    const org = (
+      await ana.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Nile Dental',
+        handle: 'nile.clinic',
+        kind: 'clinic',
+      })
+    ).org;
+    const convo = (await ben.post(`/v1/orgs/${org.id}/conversations`, {})).conversationId;
+    const visit = await card(ana, convo, 'appointment', {
+      title: 'Cleaning',
+      start: { at: '2026-11-10T08:00:00Z', hasTime: true },
+      place: 'Room 2',
+    });
+    let bookings = await ana.get(`/v1/orgs/${org.id}/calendar?${window}`);
+    expect(bookings.items).toMatchObject([
+      {
+        messageId: visit.id,
+        conversationId: convo,
+        customer: { id: ben.user.id, displayName: 'Ben Calendar' },
+        title: 'Cleaning',
+        at: '2026-11-10T08:00:00.000Z',
+        place: 'Room 2',
+        state: 'requested',
+      },
+    ]);
+    await ben.post(`/v1/messages/${visit.id}/kit`, { to: 'confirmed' });
+    bookings = await ana.get(`/v1/orgs/${org.id}/calendar?${window}`);
+    expect(bookings.items[0].state).toBe('confirmed');
+    // The customer isn't on the team: no bookings for him, and nobody else's.
+    expect((await ben.req('GET', `/v1/orgs/${org.id}/calendar?${window}`)).statusCode).toBe(404);
+    // On his own calendar it's with the organization, never with whoever on the team sent it.
+    const his = (await ben.get(`/v1/calendar?${window}`)).items.find((i: any) => i.id === visit.id);
+    expect(his).toMatchObject({
+      kind: 'appointment',
+      state: 'agreed',
+      with: null,
+      org: { name: 'Nile Dental' },
+    });
+    // Cancelled, it's off both.
+    await ana.post(`/v1/messages/${visit.id}/kit`, { to: 'cancelled' });
+    expect((await ana.get(`/v1/orgs/${org.id}/calendar?${window}`)).items).toEqual([]);
+  });
+
   it('ends when the account is recovered: whoever had it may have made it', async () => {
     const eve = await signup(t, { displayName: 'Eve Recovered' });
     const { url } = await eve.post('/v1/calendar/feed');

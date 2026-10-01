@@ -297,8 +297,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       on, and the meetings and appointments agreed in your conversations, busy for their length
       and with where; done, cancelled or left, they go. Caime stays the record: nothing in a
       calendar changes anything in it (`calendar.test.ts`, `ics.test.ts`, E2E).
-      [ ] Storage, CRM and helpdesk connectors: apps and webhooks cover the Business inbox
-      (`docs/API.md`); two-way calendar sync needs each provider's OAuth app (⛔ credentials)
+      [x] Caime's own calendar (R51): `GET /v1/calendar` and the Calendar in the Actions tab
+      (meetings, appointments and due actions by day, each with whom and what they are to you),
+      and `GET /v1/orgs/:id/calendar` with Bookings in the Business inbox for the team
+      (`calendar.test.ts`, E2E). [ ] Bookable hours, open slots, a customer booking from them and
+      the AI agent offering slots (R51, next). [ ] Storage, CRM and helpdesk connectors: apps and
+      webhooks cover the Business inbox (`docs/API.md`); two-way calendar sync is an add-on
+      behind each provider's OAuth app (⛔ credentials)
 - [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
       private conversations: rewrite a draft (clearer, shorter, more formal, friendlier, in the
       relationship's tone), translate a message, catch me up (offered when ten or more are
@@ -1342,3 +1347,11 @@ outperforming the alternatives is reach and operations. In the order the review 
   the plans, the encryption design, the retention spans and the API's guide; prices from Stripe
   when billing is connected, "price shown in the app" otherwise (production has billing, so it
   shows them). The sitemap lists them. Budget unchanged at 437.6 KB gzip.
+- 2026-10-01 · R51, Caime's own calendar: `lib/calendar.ts` turns what the feed gathers into
+  `CalendarItemView`s with whom each is with (a direct conversation's other side, whom an action
+  waits on, or the organization) and the viewer's relationship label; the Actions tab's
+  Calendar segment lists them by day (`features/calendar/CalendarList.tsx`, loaded when shown);
+  an organization's Bookings (`orgBookings`, the appointment cards in its customer conversations)
+  are a view in the Business inbox for the team (`OrgBookings.tsx`). Live card events refresh
+  both. Budget 437.7 KB gzip (+0.1 KB); `calendar.test.ts` 11 pass; E2E 53 pass
+  (`desktop-calendar.png`, `desktop-business-bookings.png`).

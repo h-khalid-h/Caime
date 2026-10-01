@@ -20,6 +20,7 @@ import type {
   BusinessSummaryView,
   BusinessThreadView,
   CalendarFeedView,
+  CalendarView,
   CallHistoryResponse,
   CallView,
   ClosedOrgView,
@@ -55,6 +56,7 @@ import type {
   OrgAgentView,
   OrgAppSecretsView,
   OrgAppView,
+  OrgCalendarView,
   OrgInsightsView,
   OrgReclaimView,
   OrgSpaceView,
@@ -586,6 +588,11 @@ export const endpoints = {
   aiTranslate: (messageId: string) => api.post<AiTranslationView>('/ai/translate', { messageId }),
   catchUp: (id: string) => api.post<AiCatchUpView>(`/conversations/${id}/catch-up`, {}),
   findActions: (id: string) => api.post<AiActionsView>(`/conversations/${id}/ai/actions`, {}),
+
+  // The calendar (R51)
+  calendar: (from: string, to: string) => api.get<CalendarView>(`/calendar${q({ from, to })}`),
+  orgCalendar: (orgId: string, from: string, to: string) =>
+    api.get<OrgCalendarView>(`/orgs/${orgId}/calendar${q({ from, to })}`),
 
   // Actions and suggestions
   tasks: (view: TaskViewFilter, params: { conversationId?: string; personId?: string } = {}) =>

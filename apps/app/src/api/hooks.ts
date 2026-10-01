@@ -159,6 +159,16 @@ export const useOrgBilling = (orgId: string | null) =>
     enabled: Boolean(orgId),
   });
 
+/** The calendar (R51): one query per window; the window is the caller's to keep stable. */
+export const useCalendar = (from: string, to: string) =>
+  useQuery({ queryKey: qk.calendar(from, to), queryFn: () => endpoints.calendar(from, to) });
+export const useOrgCalendar = (orgId: string | undefined, from: string, to: string) =>
+  useQuery({
+    queryKey: qk.orgCalendar(orgId ?? '', from, to),
+    queryFn: () => endpoints.orgCalendar(orgId ?? '', from, to),
+    enabled: Boolean(orgId),
+  });
+
 export const useOrgInbox = (orgId: string | undefined, view: BusinessView) =>
   useQuery({
     queryKey: qk.orgInbox(orgId ?? '', view),

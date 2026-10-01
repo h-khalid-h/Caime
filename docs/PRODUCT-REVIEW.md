@@ -452,3 +452,19 @@ with its reason, so it isn't proposed again without new facts.
   from the code. Rules from it: a new fact list uses `Spec`; a new way to start something joins the sheet and
   the owner picker, never a screen of its own; a new kind of owner joins the Spaces row and the
   Business row; mono is for labels, never running text, and nothing is uppercase.
+- **R51 — Caime's own calendar, and bookings on it.** Calendar sync waited on Google's and
+  Microsoft's OAuth credentials (⛔), and with it the thing a clinic would pay for: bookings. The
+  calendar is Caime's own first, and sync to a provider an add-on later: what the feed already
+  gathers (meetings and appointments agreed in conversations, actions with a due date) is a
+  Calendar in the Actions tab, by day, each line saying whom it's with and what they are to you,
+  from the relationship you gave them; and an organization's inbox has Bookings: the
+  appointments asked for or confirmed in its customer conversations, with the customer, for the
+  team. Caime stays the record: nothing on the calendar changes a date; a card is confirmed,
+  moved or cancelled in the conversation. Visibility follows the relationship as everything does:
+  a customer's own calendar shows the organization, never which person on its team; the team
+  sees customers; nobody sees anyone's calendar but their own. Next on it: an organization's
+  bookable hours and open slots, a customer booking from them, and its AI agent offering slots
+  and booking with the customer's confirmation (always a requested card the customer confirms,
+  never a booking the agent made alone); then busy time holding Work messages, and "busy or
+  free" for colleagues and the event itself for family, each by relationship. Provider sync
+  (two-way, with Google and Microsoft) stays an add-on behind their credentials.

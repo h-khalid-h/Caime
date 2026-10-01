@@ -191,6 +191,15 @@ These are rules, not preferences.
   uses it rather than a card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
+- The calendar (R51) reads what the feed reads: `lib/calendar.ts` (`calendarItems` for a person,
+  with `overdueTasks` shared with `modules/calendar.ts`'s feed and `cardsAhead`; `orgBookings`
+  for an organization's team) behind `GET /v1/calendar?from&to` and `GET /v1/orgs/:id/calendar`
+  (a window of up to a year). Nothing on it changes a date: a card is moved in its
+  conversation. The app shows it as the Actions tab's Calendar segment and the Business inbox's
+  Bookings view (both loaded when shown), keyed by an hourly window so the query is one an hour,
+  and `realtime/apply.ts` invalidates `['calendar']` and `['org-calendar']` on a kit message
+  event. A new dated thing (a booking slot, an event) joins `calendarItems`, never a list of
+  its own.
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
   rendered in the app's shell like the landing page, for everyone, signed in or not, and never

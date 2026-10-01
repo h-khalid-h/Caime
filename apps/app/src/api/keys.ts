@@ -54,6 +54,10 @@ export const qk = {
   requests: (direction: 'incoming' | 'outgoing') => ['requests', direction] as const,
   taxonomy: ['taxonomy'] as const,
   tasks: (view: string, scope?: string) => ['tasks', view, scope ?? ''] as const,
+  /** The calendar (R51): a person's, and an organization's bookings, by window. */
+  calendar: (from: string, to: string) => ['calendar', from, to] as const,
+  orgCalendar: (orgId: string, from: string, to: string) =>
+    ['org-calendar', orgId, from, to] as const,
   decisions: (conversationId?: string) => ['decisions', conversationId ?? 'all'] as const,
   notifications: ['notifications'] as const,
   policies: ['policies'] as const,

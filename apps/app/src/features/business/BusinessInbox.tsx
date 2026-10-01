@@ -21,6 +21,7 @@ import { Chip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft, Inbox, SquarePen } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -28,6 +29,9 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { StateChip } from './states';
 import { WriteFirstSheet } from './WriteFirstSheet';
+
+/** The organization's bookings (R51), loaded when first shown. */
+const OrgBookings = lazyPart(() => import('./OrgBookings').then((m) => m.OrgBookings));
 
 const EMPTY: Record<BusinessView, { title: string; body: string }> = {
   customer_waiting: {
@@ -156,9 +160,12 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
   const open = pathname.startsWith('/c/') ? pathname.slice(3) : null;
   const org = useOrg(handle);
   const summary = org.data?.org;
-  const [view, setView] = useState<BusinessView>('customer_waiting');
+  const [view, setView] = useState<BusinessView | 'bookings'>('customer_waiting');
   const [writing, setWriting] = useState(false);
-  const inbox = useOrgInbox(summary?.myRole ? summary.id : undefined, view);
+  const inbox = useOrgInbox(
+    summary?.myRole ? summary.id : undefined,
+    view === 'bookings' ? 'customer_waiting' : view,
+  );
   const threads = inbox.data?.threads ?? [];
   const counts = inbox.data?.counts;
   // On several teams: each is a step away, and the rail comes back to this one.
@@ -254,9 +261,27 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
               />
             );
           })}
+          <Chip
+            label="Bookings"
+            selected={view === 'bookings'}
+            onPress={() => setView('bookings')}
+            testID="business-view-bookings"
+          />
         </ScrollView>
       </View>
-      {inbox.isPending && !inbox.data ? (
+      {view === 'bookings' ? (
+        <OrgBookings
+          orgId={summary?.id}
+          open={(conversationId) =>
+            desktop
+              ? router.navigate({
+                  pathname: '/c/[id]',
+                  params: { id: conversationId, inbox: handle },
+                })
+              : router.push({ pathname: '/c/[id]', params: { id: conversationId } })
+          }
+        />
+      ) : inbox.isPending && !inbox.data ? (
         <SkeletonRows />
       ) : (
         <FlatList
@@ -283,8 +308,8 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
               icon={Inbox}
               character="pico"
               expression="happy"
-              title={EMPTY[view].title}
-              body={EMPTY[view].body}
+              title={EMPTY[view as BusinessView].title}
+              body={EMPTY[view as BusinessView].body}
             />
           }
           contentContainerStyle={{ paddingBottom: 24 }}
