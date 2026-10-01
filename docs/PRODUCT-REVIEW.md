@@ -462,9 +462,31 @@ with its reason, so it isn't proposed again without new facts.
   team. Caime stays the record: nothing on the calendar changes a date; a card is confirmed,
   moved or cancelled in the conversation. Visibility follows the relationship as everything does:
   a customer's own calendar shows the organization, never which person on its team; the team
-  sees customers; nobody sees anyone's calendar but their own. Next on it: an organization's
-  bookable hours and open slots, a customer booking from them, and its AI agent offering slots
-  and booking with the customer's confirmation (always a requested card the customer confirms,
-  never a booking the agent made alone); then busy time holding Work messages, and "busy or
-  free" for colleagues and the event itself for family, each by relationship. Provider sync
-  (two-way, with Google and Microsoft) stays an add-on behind their credentials.
+  sees customers; nobody sees anyone's calendar but their own. Bookings sit on it: an
+  organization sets bookable hours (a zone, a slot length, a range per weekday, how soon and
+  how far ahead), the open slots are those hours less the appointment cards already in its
+  conversations (worked out on request, never kept), a customer or the team books one from a
+  picker on the appointment card, and its AI agent offers the next few and books the one the
+  customer picks as a requested card the customer confirms, never a time it wasn't given and
+  never a booking it made alone. Next: busy time holding Work messages, and "busy or free" for
+  colleagues and the event itself for family, each by relationship. Provider sync (two-way,
+  with Google and Microsoft) stays an add-on behind their credentials.
+- **R52 — Recording calls and meetings: consent first, paid, never private, not before a
+  provider is tested.** Recording a call into a transcript, a summary and actions is the
+  commitment engine's natural extension (PRD §42 "Act"), and it waits on the speech-to-text
+  provider the roadmap still lacks (⛔). When it comes, these are its rules, decided now so the
+  design starts from them: every participant consents each time, with an indicator everyone
+  sees for the whole recording, and anyone's no means it never starts (recording without consent
+  is a crime in places Caime serves, the UAE among them); never in a private conversation (the
+  server can't record what it can't read, and it never will); everyone on the call gets the
+  recording and the transcript, so Caime never holds a recording one side has and another
+  doesn't; stored encrypted at rest, kept for a period the organization's owner sets and deleted
+  on anyone's request (health conversations are special-category data under GDPR); summaries and
+  actions run on the smallest model that does the job, only when someone asks; a Pro and Business
+  feature with monthly minute allowances, since transcription costs money per minute and the free
+  wedge can't carry it (the allowance fields join `plans.ts` with the feature, with numbers set
+  from the provider's price). Before building: test candidate providers on real Egyptian and Gulf
+  clinic calls, since most engines handle Modern Standard Arabic far better than the dialects
+  spoken in them, and choose one with a data processing agreement that doesn't train on customer
+  audio. Nothing of this is in the code yet, on purpose: the consent flow is the first thing
+  built, and it's built against a provider that passed the test.

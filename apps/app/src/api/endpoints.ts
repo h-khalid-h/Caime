@@ -76,6 +76,7 @@ import type {
   SavedItemsResponse,
   SearchResponse,
   SessionResponse,
+  SlotsView,
   SpaceSummaryView,
   SpaceView,
   StartThreadResult,
@@ -91,6 +92,7 @@ import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
+import type { BookingHours } from '@caime/core/booking';
 import type { BusinessView } from '@caime/core/business';
 import type { CallKind } from '@caime/core/calls';
 import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
@@ -593,6 +595,11 @@ export const endpoints = {
   calendar: (from: string, to: string) => api.get<CalendarView>(`/calendar${q({ from, to })}`),
   orgCalendar: (orgId: string, from: string, to: string) =>
     api.get<OrgCalendarView>(`/orgs/${orgId}/calendar${q({ from, to })}`),
+
+  setOrgBooking: (orgId: string, booking: BookingHours | null) =>
+    api.put<{ booking: BookingHours | null }>(`/orgs/${orgId}/booking`, { booking }),
+  orgSlots: (orgId: string, from: string, to: string) =>
+    api.get<SlotsView>(`/orgs/${orgId}/slots${q({ from, to })}`),
 
   // Actions and suggestions
   tasks: (view: TaskViewFilter, params: { conversationId?: string; personId?: string } = {}) =>

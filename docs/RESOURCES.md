@@ -69,6 +69,22 @@ or jobs added, AI tokens per use and how often, bytes on the device or timers ru
 new" is a fine answer when it is true. A number claimed is a number measured: `pnpm budget`,
 `autocannon`, Lighthouse, or a test that counts queries or requests.
 
+## Bookings (R51)
+
+The open slots are worked out on request, never kept: one query for the organization's
+appointment cards in the window, then arithmetic (`openSlots`), at most 200 slots an answer. The
+AI agent's prompt grows by at most eight lines of slots over fourteen days, read once per reply
+with the same cached knowledge prefix, so a booking costs the model one short turn more than an
+answer; the card itself is sent by the server, not written by the model.
+
+## Recording (R52, not built)
+
+When it comes, each recorded minute costs the speech-to-text provider's price per minute, paid
+once per call, plus one short model turn per summary or action list asked for. The plans carry
+monthly minute allowances for it (Pro and Business; none free), set from the provider's price
+once a provider has passed the test in R52; until then the line stays unpriced here rather than
+guessed.
+
 ## The public site
 
 Each page of the site (`/business`, `/pricing`, `/security`, `/developers`, `/about`) is written

@@ -209,6 +209,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       conversation: `[1] Customer: ${body.question.replace(/\s+/g, ' ')}`,
       introduced: false,
       today: todayForAgent(ctx.now(), me.time_zone),
+      slots: null,
     });
     if (!reply) throw new AppError(503, 'ai_busy', 'It didn’t answer this time. Try again.');
     return { action: reply.action, message: reply.message };

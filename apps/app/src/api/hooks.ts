@@ -169,6 +169,14 @@ export const useOrgCalendar = (orgId: string | undefined, from: string, to: stri
     enabled: Boolean(orgId),
   });
 
+/** The open slots (R51) an organization can be booked in; none where it takes no bookings. */
+export const useOrgSlots = (orgId: string | undefined, from: string, to: string) =>
+  useQuery({
+    queryKey: qk.orgSlots(orgId ?? '', from, to),
+    queryFn: () => endpoints.orgSlots(orgId ?? '', from, to),
+    enabled: Boolean(orgId),
+  });
+
 export const useOrgInbox = (orgId: string | undefined, view: BusinessView) =>
   useQuery({
     queryKey: qk.orgInbox(orgId ?? '', view),

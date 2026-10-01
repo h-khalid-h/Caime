@@ -26,6 +26,8 @@ export type AuditAction =
   | 'calendar.feed_stopped'
   | 'org.created'
   | 'org.closed'
+  | 'org.booking_set'
+  | 'org.booking_off'
   | 'org.reclaim_started'
   | 'org.reclaimed'
   | 'org.deleted'

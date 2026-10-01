@@ -2322,6 +2322,49 @@ test.describe
       await expect(answer.getByTestId('message-automated')).toHaveText('AI agent ·');
       await customer.screenshot({ path: 'e2e/screenshots/phone-business-ai-agent.png' });
 
+      // With bookable hours set (R51), it offers open slots and books the one Lina picks, as an
+      // appointment card she confirms; the team sees it under Bookings meanwhile.
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-booking').click();
+      // Monday to Friday are offered first; every day, so the test's day is one of them.
+      await page.getByTestId('org-booking-day-0').click();
+      await page.getByTestId('org-booking-day-6').click();
+      await page.getByTestId('org-booking-save').click();
+      await expect(page.getByTestId('org-hours')).toContainText('30 min');
+      await write('Can I book a cleaning on Thursday?');
+      await expect(visible(customer, /I can offer .+ Which suits you\?/)).toBeVisible();
+      await write('The first one, please');
+      const booked = customer
+        .getByTestId('kit-appointment')
+        .filter({ hasText: 'Check-up', visible: true });
+      await expect(booked).toContainText('Requested');
+      await customer.screenshot({ path: 'e2e/screenshots/phone-business-ai-booking.png' });
+      await page.goto(`/o/${handle}/inbox`);
+      await page.getByTestId('business-view-bookings').click();
+      const asked = page
+        .getByTestId('org-bookings')
+        .getByRole('button')
+        .filter({ hasText: 'Check-up' });
+      await expect(asked).toContainText('Lina Farah');
+      await expect(asked).toContainText('Asked');
+      await booked.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect(asked).toContainText('Confirmed');
+      // A customer picks a slot too, never types a time, while the hours are set.
+      await customer
+        .getByRole('button', { name: 'Share a photo, a file or a card' })
+        .filter({ visible: true })
+        .click();
+      await customer.getByTestId('kit-option-appointment').click();
+      await expect(customer.getByTestId('slot-picker')).toBeVisible();
+      await customer.screenshot({ path: 'e2e/screenshots/phone-slot-picker.png' });
+      // The sheet's own X (its backdrop is a Close too).
+      await customer.getByRole('button', { name: 'Close', exact: true }).last().click();
+      await expect(customer.getByTestId('slot-picker')).toHaveCount(0);
+      await page.goto(`/o/${handle}`);
+      await page.getByTestId('org-booking').click();
+      await page.getByTestId('org-booking-off').click();
+      await expect(page.getByTestId('org-hours')).toHaveCount(0);
+
       // Asked for a person, it hands over, and the team sees why the customer is waiting.
       await write('Can I talk to a person about my filling?');
       await expect(

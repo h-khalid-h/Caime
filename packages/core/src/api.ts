@@ -9,6 +9,7 @@ import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
+import type { BookingHours } from './booking';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
@@ -913,6 +914,18 @@ export interface OrgView extends OrgSummaryView {
   blockedByMe: boolean;
   /** Its AI agent answers first (PRD §75): everyone sees that before they write. */
   agent: { name: string } | null;
+  /** Its bookable hours (R51), for everyone: a customer books from the open slots in them. */
+  booking: BookingHours | null;
+}
+
+/**
+ * The open slots in an organization's hours (R51), as instants, soonest first; none, with no
+ * zone, where it takes no bookings (then a day and time are written as for any card).
+ */
+export interface SlotsView {
+  timeZone: string | null;
+  slotMinutes: number | null;
+  slots: string[];
 }
 
 /**

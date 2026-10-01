@@ -6,12 +6,16 @@
  * ends the old one. Only a signed-in person over 18 makes one (no token reaches these routes).
  */
 import {
+  type BookingHours,
+  BookingHoursBody,
   buildIcs,
   type CalendarFeedView,
   type CalendarView,
+  canManageOrg,
   type IcsEvent,
   KITS,
   type OrgCalendarView,
+  type SlotsView,
   type TaskView,
   zonedParts,
 } from '@caime/core';
@@ -19,6 +23,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
+import { openSlotsFor } from '../lib/booking';
 import { calendarItems, orgBookings, overdueTasks } from '../lib/calendar';
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
@@ -165,6 +170,44 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
     const items = await orgBookings(ctx, id, window);
     return { from: window.from.toISOString(), to: window.until.toISOString(), items };
+  });
+
+  // Bookable hours (R51): set by the organization's owner or admins; null takes bookings off.
+  app.put('/orgs/:id/booking', async (req): Promise<{ booking: BookingHours | null }> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(z.object({ booking: BookingHoursBody.nullable() }).strict(), req.body);
+    await orgById(ctx.db, id);
+    const seat = await orgSeat(ctx.db, auth.userId, id);
+    if (!seat) throw notFound('That organization');
+    if (!canManageOrg(seat.role)) throw forbidden('Only the organization’s owner and admins can.');
+    await ctx.db
+      .updateTable('organizations')
+      .set({ booking: body.booking ? JSON.stringify(body.booking) : null, updated_at: ctx.now() })
+      .where('id', '=', id)
+      .execute();
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: body.booking ? 'org.booking_set' : 'org.booking_off',
+      target: id,
+      ip: req.ip,
+    });
+    return { booking: body.booking };
+  });
+
+  // The open slots (R51), for anyone signed in: a customer books from them, so may the team.
+  app.get('/orgs/:id/slots', async (req): Promise<SlotsView> => {
+    requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const window = windowOf(req.query);
+    const org = await orgById(ctx.db, id);
+    const open = await openSlotsFor(ctx, org, { from: window.from, to: window.until });
+    if (!open) return { timeZone: null, slotMinutes: null, slots: [] };
+    return {
+      timeZone: open.hours.timeZone,
+      slotMinutes: open.hours.slotMinutes,
+      slots: open.slots.map((d) => d.toISOString()),
+    };
   });
 
   app.get('/calendar/feed', async (req): Promise<{ feed: CalendarFeedView }> => {

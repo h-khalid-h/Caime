@@ -6,6 +6,7 @@ export * from './assist';
 export * from './attention';
 export * from './automations';
 export * from './billing';
+export * from './booking';
 export * from './business';
 export * from './calls';
 export * from './custom-kits';

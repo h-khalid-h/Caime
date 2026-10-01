@@ -2,7 +2,7 @@
  * Kysely table types for the SQL in ./migrations. Keep in step with the migrations: a column
  * added there is added here in the same commit.
  */
-import type { CustomKitDef } from '@caime/core';
+import type { BookingHours, CustomKitDef } from '@caime/core';
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
@@ -720,6 +720,8 @@ export interface OrganizationsTable {
   founded_year: number | null;
   /** Its logo: an image its owner or an admin uploaded. */
   avatar_file_id: string | null;
+  /** Its bookable hours (R51), or null: core `BookingHours`. */
+  booking: Json<BookingHours | null> | null;
   /** Closed: who is proving its domain to take it back (R42), and the record they must add. */
   reclaim_by: string | null;
   reclaim_token: string | null;

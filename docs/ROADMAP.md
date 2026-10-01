@@ -300,8 +300,13 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       [x] Caime's own calendar (R51): `GET /v1/calendar` and the Calendar in the Actions tab
       (meetings, appointments and due actions by day, each with whom and what they are to you),
       and `GET /v1/orgs/:id/calendar` with Bookings in the Business inbox for the team
-      (`calendar.test.ts`, E2E). [ ] Bookable hours, open slots, a customer booking from them and
-      the AI agent offering slots (R51, next). [ ] Storage, CRM and helpdesk connectors: apps and
+      (`calendar.test.ts`, E2E). [x] Bookings (R51): an organization's bookable hours
+      (`PUT /v1/orgs/:id/booking`, set on its page by its owner or admins, shown to everyone),
+      the open slots in them less what's booked (`GET /v1/orgs/:id/slots`, core `openSlots`), a
+      customer or the team booking one from a picker on the appointment card, and the AI agent
+      offering the next open slots and booking the one the customer picks as a requested card the
+      customer confirms, never a time it wasn't given (`booking.test.ts`, `agents.test.ts`, E2E).
+      [ ] Storage, CRM and helpdesk connectors: apps and
       webhooks cover the Business inbox (`docs/API.md`); two-way calendar sync is an add-on
       behind each provider's OAuth app (⛔ credentials)
 - [x] AI assist with Claude, off until each adult turns it on (Privacy settings), never on
@@ -567,6 +572,13 @@ outperforming the alternatives is reach and operations. In the order the review 
       and its end/go buttons), start/end for RTL in place of every one-sided left/right. A new
       connection with nothing said yet offers three first lines fitted to the relationship, a tap
       from the box (PRD §87, `FirstWords`, E2E). Still to do: a screen reader pass on a device
+- [ ] Recording calls and meetings into transcripts, summaries and actions (R52): consent from
+      every participant each time with a visible indicator, never in a private conversation,
+      everyone on the call gets the recording, encrypted at rest with a retention the owner sets,
+      summaries only when asked, a Pro and Business feature with monthly minute allowances. ⛔ A
+      speech-to-text provider tested on Egyptian and Gulf Arabic clinic calls, with a data
+      processing agreement and no training on customer audio; the consent flow is built first,
+      against the provider that passed
 - [ ] Candidates from the 2026-09-30 brainstorm review (R46), the owner's call: organizations
       taking WhatsApp Business messages into the Business inbox through Meta's official Cloud
       API ⛔ a Meta business account, verification and fees; contact matching by hashed phone
@@ -1355,3 +1367,16 @@ outperforming the alternatives is reach and operations. In the order the review 
   are a view in the Business inbox for the team (`OrgBookings.tsx`). Live card events refresh
   both. Budget 437.7 KB gzip (+0.1 KB); `calendar.test.ts` 11 pass; E2E 53 pass
   (`desktop-calendar.png`, `desktop-business-bookings.png`).
+- 2026-10-01 · R51, bookings: `organizations.booking` (migration 0045, core `BookingHoursBody`:
+  a zone, a slot length, a range per weekday, a lead, a horizon), `lib/booking.ts` working out the
+  open slots from the hours and the appointment cards in the organization's conversations (never
+  kept), `OrgBooking.tsx` to set them, `SlotPicker.tsx` on an appointment card wherever the
+  organization takes bookings, and the agent given its next eight open slots (fourteen days) in
+  `<slots>`: it offers up to three, and `book` with the chosen iso becomes an appointment card
+  from the organization, requested, that the customer confirms; a slot it wasn't given, or one
+  taken meanwhile, hands over to a person. Core `booking.test.ts` 3, server `booking.test.ts` 2
+  and the agent's case pass; E2E 53 pass (`phone-business-ai-booking.png`,
+  `phone-slot-picker.png`). Budget 437.8 KB gzip (+0.1 KB).
+- 2026-10-01 · R52 written: recording's rules (consent each time, never private, everyone gets
+  it, encrypted with a set retention, summaries on request, paid with minute allowances) and the
+  provider test it waits on (Arabic dialects, a DPA, no training on audio). No code, on purpose.

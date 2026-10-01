@@ -24,8 +24,9 @@ import {
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-import { AiError, type AiUsage } from './ai';
+import { type AgentReply, AiError, type AiUsage } from './ai';
 import { emitWebhook } from './apps';
+import { openSlotsFor, slotLine } from './booking';
 import { onCustomerMessage, publishThread, threadViews } from './business';
 import { recordEvent } from './events';
 import { enqueue, registerJob } from './jobs';
@@ -38,6 +39,9 @@ import { minorOf } from './users';
 /** How long it waits after a customer writes, so a message sent in three parts is read whole. */
 export const AGENT_DELAY_MS = 3000;
 const TRANSCRIPT_MESSAGES = 20;
+/** How far ahead, and how many, of the open slots the agent may offer (R51). */
+const AGENT_SLOT_DAYS = 14;
+const AGENT_SLOTS = 8;
 const DAY_MS = 86_400_000;
 
 /** The organization's agent, if it's on: its user, its name and what it knows. */
@@ -122,7 +126,7 @@ export async function askAgent(
   runBy: string,
   input: Parameters<NonNullable<AppContext['ai']>['supportAgent']>[0],
   conversationId: string | null = null,
-): Promise<{ action: AgentAction; message: string; runId: string } | null> {
+): Promise<(AgentReply & { runId: string }) | null> {
   const ai = ctx.ai;
   if (!ai) return null;
   const started = Date.now();
@@ -220,12 +224,20 @@ function passedOn(orgName: string, arabic: boolean): string {
 }
 
 /** Post as the agent, as any message is: stored, sent live, notified, recorded on the thread. */
-async function postAs(ctx: AppContext, senderId: string, conversationId: string, body: string) {
+async function postAs(
+  ctx: AppContext,
+  senderId: string,
+  conversationId: string,
+  what: string | { kind: 'kit'; payload: unknown },
+) {
   const result = await sendMessage(
     ctx,
     senderId,
     conversationId,
-    SendMessageBody.parse({ clientId: `agent:${uuidv4()}`, body }),
+    SendMessageBody.parse({
+      clientId: `agent:${uuidv4()}`,
+      ...(typeof what === 'string' ? { body: what } : what),
+    }),
   );
   if (!result.created) return;
   const [view] = await messageViews(ctx.db, [result.message], senderId);
@@ -339,6 +351,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       'o.name as org_name',
       'o.plan',
       'o.archived_at',
+      'o.booking',
     ])
     .where('t.conversation_id', '=', conversationId)
     // Still its to answer: the customer's latest, nobody on the team answering, not handed over.
@@ -425,6 +438,16 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     thread.customer_id,
     agent.bot_user_id,
   );
+  // The next open slots (R51), where the organization takes bookings: it may offer them.
+  const open = await openSlotsFor(
+    ctx,
+    { id: thread.org_id, booking: thread.booking },
+    { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
+    AGENT_SLOTS,
+  );
+  const slots = open
+    ? open.slots.map((d) => `${d.toISOString()} · ${slotLine(d, open.hours.timeZone)}`).join('\n')
+    : null;
   const reply = await askAgent(
     ctx,
     'agent',
@@ -436,6 +459,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       conversation: transcript.text,
       introduced: transcript.introduced,
       today: todayForAgent(ctx.now(), customer.time_zone),
+      slots: slots || null,
     },
     conversationId,
   );
@@ -453,6 +477,28 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     ctx.log.warn({ err, conversationId }, 'ai agent could not post');
     await discard(ctx, reply.runId);
     return;
+  }
+  // Booked (R51): one of the slots it offered, still open, becomes an appointment card from the
+  // organization, which the customer confirms; the team sees it under Bookings meanwhile.
+  if (reply.action === 'book') {
+    const at = reply.bookAt ? new Date(reply.bookAt) : null;
+    const stillOpen =
+      at && !Number.isNaN(at.getTime()) && open?.slots.some((d) => d.getTime() === at.getTime());
+    if (stillOpen && at) {
+      await postAs(ctx, agent.bot_user_id, conversationId, {
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: {
+            title: reply.bookFor || 'Appointment',
+            start: { at: at.toISOString(), hasTime: true },
+          },
+        },
+      }).catch((err) => ctx.log.warn({ err, conversationId }, 'ai agent could not book'));
+    } else {
+      // Not a slot it was given, or taken meanwhile: a person books it.
+      await handOver(ctx, thread.org_id, conversationId, agent);
+    }
   }
   if (reply.action === 'hand_over') await handOver(ctx, thread.org_id, conversationId, agent);
   if (reply.action === 'resolve') {

@@ -48,6 +48,8 @@ Done means each layer works end to end against the real server and is tested:
    sentence case everywhere, the public site a spec sheet with a layer explorer; anything is
    started from one place and asks whose it is (Mine, or an organization you run); someone on
    several teams is one step from each (a team row in the Business inbox, Spaces by owner).
+   Caime's own calendar and bookings first (R51), provider sync an add-on; recording of calls
+   only consent-first, paid, never private, and only after a provider is tested (R52).
 
 Quality bar: typecheck, lint, unit and API integration tests on real Postgres, Playwright E2E with
 screenshots of key flows, native bundles export, Docker image builds, security review before

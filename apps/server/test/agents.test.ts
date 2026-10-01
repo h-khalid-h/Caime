@@ -16,14 +16,19 @@ const replies: Array<{ status: number; json: unknown }> = [];
 /** What happens while the model is thinking: the customer writing again, say. */
 let whileThinking: (() => Promise<void>) | null = null;
 let stub: Server;
-const agentSays = (action: string, message: string) => ({
+const agentSays = (action: string, message: string, extra: Record<string, unknown> = {}) => ({
   status: 200,
   json: {
     id: 'msg_stub',
     type: 'message',
     role: 'assistant',
     model: 'claude-opus-5',
-    content: [{ type: 'text', text: JSON.stringify({ action, message }) }],
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({ action, message, bookAt: null, bookFor: null, ...extra }),
+      },
+    ],
     stop_reason: 'end_turn',
     stop_sequence: null,
     usage: { input_tokens: 300, output_tokens: 40 },
@@ -624,5 +629,93 @@ describe('an organization’s AI agent (PRD §74–75)', () => {
       'agent.removed',
     ]);
     expect(logged.every((l) => l.actor_id === noor.user.id)).toBe(true);
+  });
+
+  it('offers the open slots where the organization takes bookings, and books one as a card the customer confirms (R51)', async () => {
+    // A new day, with the agent answering: what earlier tests used up or paused is behind.
+    t.clock.advance(86_400_000 + 1);
+    await noor.req('PUT', `/v1/orgs/${orgId}/agent`, {
+      name: 'Nile Dental Assistant',
+      knowledge: KNOWLEDGE,
+      paused: false,
+    });
+    const { c: sara, conversationId } = await newCustomer('Sara Booker');
+    // Without hours, booking is a person's: nothing about slots reaches the model.
+    await send(sara, 'Can I book a cleaning?', conversationId);
+    replies.push(agentSays('hand_over', PASSED_ON));
+    await agentTurn();
+    expect(systemText(requests[0].system)).toContain('takes none here; hand over');
+    expect(requests[0].messages[0].content).not.toContain('<slots>');
+    // The thread is handed over now; a fresh customer sees the hours.
+    const now = t.clock.now;
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: {
+        timeZone: 'Africa/Cairo',
+        slotMinutes: 30,
+        days: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: '00:00', end: '23:30' })),
+        leadMinutes: 0,
+        horizonDays: 14,
+      },
+    });
+    const { c: tariq, conversationId: convo2 } = await newCustomer('Tariq Booker');
+    await send(tariq, 'Can I book a cleaning on Thursday?', convo2);
+    replies.push(agentSays('answer', 'I can offer Thursday 10:00 or 10:30. Which suits you?'));
+    await agentTurn();
+    const asked = requests[1];
+    expect(systemText(asked.system)).toContain('<slots> lists the open slots');
+    const content = asked.messages[0].content as string;
+    expect(content).toContain('<slots>');
+    const offered = content.split('<slots>')[1]!.split('</slots>')[0]!.trim().split('\n');
+    expect(offered).toHaveLength(8);
+    const [firstIso, firstLine] = offered[0]!.split(' · ');
+    expect(new Date(firstIso!).getTime()).toBeGreaterThanOrEqual(now.getTime());
+    expect(firstLine).toMatch(/^[A-Z][a-z]+day \d+ [A-Z][a-z]+, \d\d:\d\d$/);
+    // The customer picks the first: a requested appointment card from the organization follows
+    // its message, and the slot is taken.
+    await send(tariq, 'The first one, please', convo2);
+    replies.push(
+      agentSays('book', 'I’ve asked the team to confirm it. You’ll see it here.', {
+        bookAt: firstIso,
+        bookFor: 'Cleaning',
+      }),
+    );
+    await agentTurn();
+    const seen = await messages(tariq, convo2);
+    expect(seen.at(-2)).toMatchObject({
+      body: 'I’ve asked the team to confirm it. You’ll see it here.',
+      aiAgent: true,
+    });
+    expect(seen.at(-1)).toMatchObject({
+      kind: 'kit',
+      aiAgent: true,
+      automated: true,
+      payload: { kit: 'appointment', state: 'requested', fields: { title: 'Cleaning' } },
+    });
+    expect(seen.at(-1).payload.fields.start.at).toBe(new Date(firstIso!).toISOString());
+    const slotsNow = (
+      await tariq.get(
+        `/v1/orgs/${orgId}/slots?from=${now.toISOString()}&to=${new Date(now.getTime() + 86_400_000).toISOString()}`,
+      )
+    ).slots;
+    expect(slotsNow).not.toContain(new Date(firstIso!).toISOString());
+    // The team sees it under Bookings, asked; the customer confirms it.
+    const bookings = (
+      await noor.get(
+        `/v1/orgs/${orgId}/calendar?from=${now.toISOString()}&to=${new Date(now.getTime() + 14 * 86_400_000).toISOString()}`,
+      )
+    ).items;
+    expect(bookings).toMatchObject([
+      { customer: { displayName: 'Tariq Booker' }, state: 'requested' },
+    ]);
+    await tariq.post(`/v1/messages/${seen.at(-1).id}/kit`, { to: 'confirmed' });
+    // A slot the model made up, or one taken meanwhile, is never booked: a person takes over.
+    const { c: dina, conversationId: convo3 } = await newCustomer('Dina Booker');
+    await send(dina, 'Book me the same slot please', convo3);
+    replies.push(agentSays('book', 'Done!', { bookAt: firstIso, bookFor: 'Cleaning' }));
+    await agentTurn();
+    const dinas = await messages(dina, convo3);
+    expect(dinas.filter((m: any) => m.kind === 'kit')).toHaveLength(0);
+    expect((await threadOf(noor, convo3)).agentHandedOverAt).not.toBeNull();
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null });
   });
 });

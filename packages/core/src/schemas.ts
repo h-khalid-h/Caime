@@ -1062,6 +1062,55 @@ const OrgWebsite = z
   .refine((u) => /^https?:\/\//i.test(u), 'Enter a web address like https://datac.com')
   .nullable();
 
+/** An organization's bookable hours (R51), or null to take bookings off. */
+export const BookingHoursBody = z
+  .object({
+    timeZone: z
+      .string()
+      .min(1)
+      .max(64)
+      .refine(
+        (tz) => {
+          try {
+            new Intl.DateTimeFormat('en', { timeZone: tz });
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { message: 'That isn’t a time zone.' },
+      ),
+    slotMinutes: z.union([
+      z.literal(15),
+      z.literal(20),
+      z.literal(30),
+      z.literal(45),
+      z.literal(60),
+      z.literal(90),
+      z.literal(120),
+    ]),
+    days: z
+      .array(
+        z
+          .object({
+            weekday: z.number().int().min(0).max(6),
+            start: HHMM,
+            end: HHMM,
+          })
+          .strict()
+          .refine((d) => d.start < d.end, { message: 'A day ends after it starts.' }),
+      )
+      .min(1)
+      .max(7)
+      .refine((days) => new Set(days.map((d) => d.weekday)).size === days.length, {
+        message: 'One range for each day.',
+      }),
+    leadMinutes: z.number().int().min(0).max(10_080),
+    horizonDays: z.number().int().min(1).max(90),
+  })
+  .strict();
+export type BookingHoursInput = z.infer<typeof BookingHoursBody>;
+
 export const CreateOrgBody = z
   .object({
     name: OrgName,

@@ -9,9 +9,10 @@ import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
 import { firstFutureWhen, parseWhen } from '@caime/core/when';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useOrgSlots } from '@/api/hooks';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
@@ -29,6 +30,7 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { exampleAmount, parseNumber } from './amounts';
+import { SlotPicker } from './SlotPicker';
 
 /** Choosing a day, loaded the first time it's opened. */
 const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
@@ -169,6 +171,21 @@ export function KitForm({
     currency: currencies[field.key] ?? defaultCurrency,
     picked: pickedDays[field.key],
   });
+  // An appointment with an organization that takes bookings (R51): one of its open slots, picked,
+  // never typed; without bookings, the day and time are written as for any card.
+  const bookingOrgId =
+    kit === 'appointment' && conversation.business ? conversation.business.org.id : undefined;
+  const slotWindow = useMemo(() => {
+    const start = new Date();
+    start.setMinutes(0, 0, 0);
+    return {
+      from: start.toISOString(),
+      to: new Date(start.getTime() + 60 * 86_400_000).toISOString(),
+    };
+  }, []);
+  const slotsQ = useOrgSlots(bookingOrgId, slotWindow.from, slotWindow.to);
+  const slots = slotsQ.data ?? null;
+  const [slot, setSlot] = useState<string | null>(null);
   // Location: where the device says this person is, once, when they ask.
   const [spot, setSpot] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -187,6 +204,7 @@ export function KitForm({
     setError(null);
     setSpot(null);
     setLiveFor('0');
+    setSlot(null);
     onClose();
   };
 
@@ -267,6 +285,10 @@ export function KitForm({
         if ((texts[field.key] ?? '').trim() && read.value === undefined)
           return setError(`${field.label}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
+      }
+      if (slots?.slots.length) {
+        if (!slot) return setError('Pick a time.');
+        fields.start = { at: slot, hasTime: true };
       }
       const checked = custom ? prepareCustomFields(custom, fields) : prepareKitFields(kit, fields);
       if (!checked.ok) return setError(checked.error);
@@ -437,6 +459,16 @@ export function KitForm({
                   ))}
                 </View>
               </View>
+            ) : field.key === 'start' && slots?.slots.length ? (
+              <SlotPicker
+                key={field.key}
+                slots={slots.slots}
+                slotMinutes={slots.slotMinutes ?? 0}
+                value={slot}
+                onChange={setSlot}
+                timeZone={timeZone}
+                locale={locale}
+              />
             ) : (
               <TextField
                 key={field.key}

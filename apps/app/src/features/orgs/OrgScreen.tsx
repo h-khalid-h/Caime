@@ -1,4 +1,5 @@
 import type { OrgMemberView, OrgView } from '@caime/core/api';
+import { describeHours } from '@caime/core/booking';
 import {
   canChangeOrgRole,
   canManageOrg,
@@ -58,6 +59,7 @@ import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
 import { OrgAgent } from './OrgAgent';
 import { OrgApps } from './OrgApps';
+import { OrgBooking } from './OrgBooking';
 import { OrgDetailsSheet } from './OrgDetails';
 import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
@@ -325,6 +327,9 @@ export function OrgScreen({ handle }: { handle: string }) {
               org.foundedYear
                 ? { label: 'since', value: String(org.foundedYear), testID: 'org-place' }
                 : null,
+              org.booking
+                ? { label: 'bookings', value: describeHours(org.booking), testID: 'org-hours' }
+                : null,
               org.website
                 ? {
                     label: 'website',
@@ -562,6 +567,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                 );
               })}
             </View>
+            {manager ? <OrgBooking org={org} /> : null}
             {manager ? <OrgAgent org={org} /> : null}
             {manager ? <OrgApps org={org} /> : null}
             <View style={{ marginHorizontal: 16, marginTop: 16 }}>

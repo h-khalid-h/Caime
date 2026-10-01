@@ -6,13 +6,18 @@
  */
 
 /** What the agent does with a customer's message. */
-export const AGENT_ACTIONS = ['answer', 'hand_over', 'resolve'] as const;
+/**
+ * What the agent does with a customer's latest messages. `book` (R51): the customer chose one of
+ * the open slots it offered; the server sends an appointment card the customer confirms.
+ */
+export const AGENT_ACTIONS = ['answer', 'hand_over', 'resolve', 'book'] as const;
 export type AgentAction = (typeof AGENT_ACTIONS)[number];
 
 export const AGENT_ACTION_LABELS: Record<AgentAction, string> = {
   answer: 'Answers',
   hand_over: 'Hands it to your team',
   resolve: 'Closes the conversation',
+  book: 'Books an appointment for your team to confirm',
 };
 
 /** How long its name can be, and how much the organization can tell it. */

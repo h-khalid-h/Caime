@@ -38,6 +38,7 @@ import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
+import { bookingOf } from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, isCountry } from '../lib/geo';
@@ -163,6 +164,7 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     blockedByMe,
     // Everyone sees it answers first, before they write (PRD §75).
     agent: agent && ctx.ai ? { name: agent.name } : null,
+    booking: bookingOf(org),
   };
 }
 

@@ -90,10 +90,36 @@ function answer(body) {
         .filter((l) => /^\[\d+\] Customer: /.test(l))
         .pop()
         ?.replace(/^\[\d+\] Customer: /, '') ?? '';
-    const say = (action, message) => reply(JSON.stringify({ action, message }));
+    const say = (action, message, extra = {}) =>
+      reply(JSON.stringify({ action, message, bookAt: null, bookFor: null, ...extra }));
     const handOver = () =>
       say('hand_over', `I’ve passed this to the team at ${org}. Someone will answer here.`);
     if (/person|human|someone/i.test(asked)) return handOver();
+    // Bookings (R51): offered from <slots> when asked; booked when the customer picks the first.
+    const slots = between(content, '<slots>', '</slots>')
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => l.split(' · '));
+    const offeredBefore = /Which suits you\?/.test(
+      between(content, '<conversation>', '</conversation>')
+        .split('\n')
+        .filter((l) => /^\[\d+\] You: /.test(l))
+        .pop() ?? '',
+    );
+    if (slots.length && (/\b(book|appointment|slot)\b/i.test(asked) || offeredBefore)) {
+      if (offeredBefore && /first|yes|that one|please/i.test(asked))
+        return say('book', `I’ve asked the team to confirm ${slots[0][1]}. You’ll see it here.`, {
+          bookAt: slots[0][0],
+          bookFor: 'Check-up',
+        });
+      return say(
+        'answer',
+        `I can offer ${slots
+          .slice(0, 3)
+          .map((s) => s[1])
+          .join(', or ')}. Which suits you?`,
+      );
+    }
     if (/thank/i.test(asked)) return say('resolve', 'You’re welcome. Take care!');
     // The sentence of what it knows that shares the most words with the question.
     const words = (text) => text.toLowerCase().match(/[a-z]{4,}/g) ?? [];

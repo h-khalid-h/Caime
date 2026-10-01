@@ -8,7 +8,7 @@ without re-deriving decisions.
 ## Start of every session
 
 1. Read `docs/ROADMAP.md` (what is done, in progress, blocked) and `docs/GOAL.md` (the target).
-2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R50 override the PRD) and `docs/ARCHITECTURE.md`
+2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R52 override the PRD) and `docs/ARCHITECTURE.md`
    (ADRs). Open `docs/PRD.md` (cited as `PRD §n`) and `docs/BRAND.md` when a task touches them.
 3. Run `pnpm install` then `pnpm check`. If anything is red, fixing it comes first.
 4. Check the latest CI run on GitHub (`h-khalid-h/Caime`, workflow `CI`). A red `main` is work now.
@@ -200,6 +200,17 @@ These are rules, not preferences.
   and `realtime/apply.ts` invalidates `['calendar']` and `['org-calendar']` on a kit message
   event. A new dated thing (a booking slot, an event) joins `calendarItems`, never a list of
   its own.
+- Bookings (R51): an organization's hours are `organizations.booking` (core `BookingHours`,
+  `BookingHoursBody`), set by `PUT /orgs/:id/booking` (owner or admins; null turns them off) and
+  carried on `OrgView.booking` for everyone. Slots are never kept: `openSlotsFor` (`lib/booking.ts`)
+  cuts the hours with core `openSlots` and takes out the appointment cards in the organization's
+  conversations (`orgBookings`), so booking is always an appointment card (requested, confirmed by
+  the other side) and nothing else holds a slot. `GET /orgs/:id/slots` answers everyone signed in
+  (empty, no zone, where bookings are off), the app's `useOrgSlots` feeds the appointment card's
+  `SlotPicker` wherever `conversation.business` is set, and the agent gets the next `AGENT_SLOTS`
+  as `<slots>` lines ("iso · when", `slotLine`) with a `book` action whose `bookAt` must be one of
+  them now, else it hands over. The E2E stand-in offers from `<slots>` and books the first on
+  "the first one"; the server tests' queue takes `agentSays('book', …, { bookAt, bookFor })`.
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
   rendered in the app's shell like the landing page, for everyone, signed in or not, and never
