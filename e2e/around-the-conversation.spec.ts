@@ -1057,7 +1057,10 @@ test.describe
         page.getByTestId('kit-appointment').filter({ hasText: 'Cleaning', visible: true }),
       ).toContainText('Requested');
       await page.getByTestId('business-view-bookings').click();
-      const booking = page.getByTestId('org-bookings').getByRole('button').filter({ hasText: 'Cleaning' });
+      const booking = page
+        .getByTestId('org-bookings')
+        .getByRole('button')
+        .filter({ hasText: 'Cleaning' });
       await expect(booking).toContainText(`Lina Farah`);
       await expect(booking).toContainText('Asked');
       await page.screenshot({ path: 'e2e/screenshots/desktop-business-bookings.png' });
