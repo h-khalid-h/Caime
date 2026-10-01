@@ -15,6 +15,7 @@ export function savePrefs(patch: Partial<PrefValues>): void {
       personality: p.personality,
       bubbleTheme: p.bubbleTheme,
       reduceMotion: p.reduceMotion,
+      holdWhileBusy: p.holdWhileBusy,
     };
     if (p.enterToSend !== null) preferences.enterToSend = p.enterToSend;
     void endpoints

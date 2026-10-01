@@ -246,3 +246,28 @@ export async function orgBookings(
   }
   return out;
 }
+
+/**
+ * Until when someone is in an agreed meeting or appointment right now (R51), or null: from the
+ * cards in their conversations that started in the last few hours and haven't ended. One query,
+ * only for people who asked for work to wait while they're busy.
+ */
+export async function busyUntilFor(
+  ctx: AppContext,
+  userId: string,
+  now: Date,
+): Promise<Date | null> {
+  const cards = await cardsAhead(ctx, userId, {
+    from: new Date(now.getTime() - 6 * 3_600_000),
+    until: now,
+    limit: 20,
+    agreedOnly: true,
+  });
+  let until: Date | null = null;
+  for (const c of cards) {
+    if (!c.hasTime) continue;
+    const end = new Date(c.at.getTime() + (c.durationMinutes ?? MEETING_MINUTES) * 60_000);
+    if (end > now && (!until || end > until)) until = end;
+  }
+  return until;
+}

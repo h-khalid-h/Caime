@@ -17,6 +17,8 @@ export interface PrefValues {
   /** null: the platform default (Enter sends on web and desktop, never on phones). */
   enterToSend: boolean | null;
   reduceMotion: boolean;
+  /** Work messages wait while a meeting on your calendar is on (R51). */
+  holdWhileBusy: boolean;
 }
 
 interface PrefsState extends PrefValues {
@@ -29,6 +31,7 @@ export const DEFAULT_PREFS: PrefValues = {
   bubbleTheme: 'plum',
   enterToSend: null,
   reduceMotion: false,
+  holdWhileBusy: false,
 };
 
 export const usePrefs = create<PrefsState>()(

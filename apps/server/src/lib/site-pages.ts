@@ -235,8 +235,9 @@ const BUSINESS_STEPS: ExplorerItem[] = [
     id: 'agent',
     name: 'The agent answers',
     title: 'From what you wrote down, and it says so.',
-    body: `The organization’s AI agent answers only from its knowledge (up to ${n(AGENT_KNOWLEDGE_MAX)} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure.`,
-    sample: `<div class="bubble them">Yes: Thursday 10:00 or 15:30. Which suits you?</div>
+    body: `The organization’s AI agent answers only from its knowledge (up to ${n(AGENT_KNOWLEDGE_MAX)} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks, for the team to confirm.`,
+    sample: `<div class="bubble them">I can offer Thursday 10:00 or 10:30. Which suits you?</div>
+<div class="row"><span class="tag tag-3">Appointment</span><span>Cleaning · Thursday 10:00 · requested</span></div>
 <div class="mono">Nile Dental · AI agent · automated</div>`,
   },
   {
@@ -340,6 +341,10 @@ export function renderSite(
       [
         'the ai agent',
         `Answers from what you wrote down (up to ${n(AGENT_KNOWLEDGE_MAX)} characters), is marked as an AI, and hands over to a person the moment it isn’t sure. It never speaks for the team.`,
+      ],
+      [
+        'bookings',
+        'Set bookable hours once. Customers pick from the open slots, your AI agent offers the next few and books the one they choose, and every booking is an appointment your team confirms.',
       ],
       [
         'apps',

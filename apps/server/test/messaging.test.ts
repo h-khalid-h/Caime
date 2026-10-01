@@ -235,6 +235,82 @@ describe('notifications (PRD §31–§33)', () => {
     t.clock.set('2026-09-23T14:00:00Z');
   });
 
+  it('a meeting on the calendar holds work until it ends, when asked (R51)', async () => {
+    // Friday in New York, inside work hours. Sarah is in a meeting Hassan set up, 09:45 to
+    // 10:45, and asked for work to wait while she is. The card is sent well before, so the
+    // message isn't folded into its burst.
+    await sarah.patch('/v1/me', { preferences: { holdWhileBusy: true } });
+    t.clock.set('2026-09-25T13:00:00Z');
+    const meeting = await hassan
+      .post(`/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Quarter review',
+            start: { at: '2026-09-25T13:45:00Z', hasTime: true },
+            durationMinutes: 60,
+          },
+        },
+      })
+      .then((r) => r.message);
+    await sarah.post(`/v1/messages/${meeting.id}/kit`, { to: 'accepted' });
+    await t.ctx.flush();
+    // The card's notification took the database's clock; stamp it so the burst window is real.
+    await t.ctx.db
+      .updateTable('notifications')
+      .set({ updated_at: t.ctx.now() })
+      .where('user_id', '=', sarah.user.id)
+      .where('group_key', '=', `conv:${convo}`)
+      .execute();
+    t.clock.set('2026-09-25T14:00:00Z');
+    const m = await send(hassan, convo, 'Can you send the deck after?');
+    await t.ctx.flush();
+    const latest = () =>
+      t.ctx.db
+        .selectFrom('notifications')
+        .selectAll()
+        .where('user_id', '=', sarah.user.id)
+        .where('group_key', '=', `conv:${convo}`)
+        .orderBy('created_at', 'desc')
+        .executeTakeFirstOrThrow();
+    const held = await latest();
+    expect(held.data).toMatchObject({ messageId: m.id });
+    expect(held.delivery).toBe('held');
+    expect(held.hold_until?.toISOString()).toBe('2026-09-25T14:45:00.000Z');
+    expect(held.reason).toContain('in a meeting');
+    // Family isn't held by a meeting.
+    const mia = await signup(t, { displayName: 'Mia Smith' });
+    const home = await connect(
+      mia,
+      sarah,
+      { sphere: 'family', role: 'sibling' },
+      { sphere: 'family', role: 'sibling' },
+    );
+    await send(mia, home, 'Dinner at ours?');
+    await t.ctx.flush();
+    const fam = await t.ctx.db
+      .selectFrom('notifications')
+      .select('delivery')
+      .where('user_id', '=', sarah.user.id)
+      .where('group_key', '=', `conv:${home}`)
+      .executeTakeFirstOrThrow();
+    expect(fam.delivery).toBe('push');
+    // Once the meeting ends, the held one goes out; with the preference off, nothing is held.
+    t.clock.set('2026-09-25T14:46:00Z');
+    await runPeriodic(t.ctx);
+    expect((await latest()).delivery).toBe('push');
+    t.clock.set('2026-09-25T14:00:00Z');
+    await sarah.patch('/v1/me', { preferences: { holdWhileBusy: false } });
+    const m2 = await send(hassan, convo, 'And the numbers');
+    await t.ctx.flush();
+    const free = await latest();
+    expect(free.data).toMatchObject({ messageId: m2.id });
+    expect(free.delivery).toBe('push');
+    t.clock.set('2026-09-23T14:00:00Z');
+  });
+
   it('names the sender as they show themselves to each person, on a lock screen too (PRD §35)', async () => {
     const ivy = await signup(t, { displayName: 'Ivy Marsh' });
     const c = await connect(ivy, sarah);

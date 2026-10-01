@@ -306,6 +306,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       customer or the team booking one from a picker on the appointment card, and the AI agent
       offering the next open slots and booking the one the customer picks as a requested card the
       customer confirms, never a time it wasn't given (`booking.test.ts`, `agents.test.ts`, E2E).
+      [x] In a meeting, work waits (R51): the `holdWhileBusy` preference holds work, customer,
+      vendor and professional notifications until an agreed meeting or appointment ends
+      (core `policy.test.ts`, `messaging.test.ts`, E2E). [ ] "Busy or free" for colleagues and
+      the event itself for family, by relationship. ⛔ Provider sync (Google, Microsoft): their
+      OAuth credentials.
       [ ] Storage, CRM and helpdesk connectors: apps and
       webhooks cover the Business inbox (`docs/API.md`); two-way calendar sync is an add-on
       behind each provider's OAuth app (⛔ credentials)
@@ -1377,6 +1382,15 @@ outperforming the alternatives is reach and operations. In the order the review 
   taken meanwhile, hands over to a person. Core `booking.test.ts` 3, server `booking.test.ts` 2
   and the agent's case pass; E2E 53 pass (`phone-business-ai-booking.png`,
   `phone-slot-picker.png`). Budget 437.8 KB gzip (+0.1 KB).
+- 2026-10-01 · R51, in a meeting work waits: `Preferences.holdWhileBusy` (off by default; Settings ·
+  Notifications, mirrored to the account like the rest), `busyUntilFor` (`lib/calendar.ts`: the
+  agreed cards from the last six hours that haven't ended, one query, run only for people who
+  asked), and core `decideNotification` holding `HELD_WHILE_BUSY_SPHERES` (work, customer,
+  vendor, professional) until `busyUntil` with the reason "in a meeting", after mute and quiet
+  hours: calls, reminders, allowed urgency and every other sphere arrive as before, and the
+  held-notifications task releases them. Core `policy.test.ts` 10 pass, server
+  `messaging.test.ts` 60 pass, E2E toggles it. The site's business page and the landing page now
+  name bookings.
 - 2026-10-01 · R52 written: recording's rules (consent each time, never private, everyone gets
   it, encrypted with a set retention, summaries on request, paid with minute allowances) and the
   provider test it waits on (Arabic dialects, a DPA, no training on audio). No code, on purpose.

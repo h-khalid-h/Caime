@@ -436,6 +436,8 @@ export const Preferences = z
     enterToSend: z.boolean().optional(),
     mediaAutoDownload: z.enum(['always', 'wifi', 'never']).optional(),
     reduceMotion: z.boolean().optional(),
+    /** In an agreed meeting or appointment, hold work messages until it ends (R51). */
+    holdWhileBusy: z.boolean().optional(),
   })
   .strict();
 

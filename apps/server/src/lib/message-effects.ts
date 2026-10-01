@@ -10,12 +10,14 @@ import {
   firstName,
   type NotificationKind,
   resolvePolicy,
+  type Sphere,
   suggestFromAnalysis,
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
 import { runAutomations } from './automations';
+import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
 import { enqueue } from './jobs';
 import { messagePreview } from './messages';
@@ -214,7 +216,7 @@ async function notifyRecipient(
 ): Promise<void> {
   const user = await ctx.db
     .selectFrom('users')
-    .select(['time_zone', 'quiet_hours'])
+    .select(['time_zone', 'quiet_hours', 'preferences'])
     .where('id', '=', recipient.user_id)
     .executeTakeFirstOrThrow();
   const [policies, rels, shown, connectionId] = await Promise.all([
@@ -240,6 +242,11 @@ async function notifyRecipient(
           ? 'question'
           : 'message';
   const now = ctx.now();
+  // In a meeting, and asked for work to wait (R51): looked up only then, one query.
+  const holdWhileBusy = Boolean(
+    (user.preferences as { holdWhileBusy?: boolean } | null)?.holdWhileBusy,
+  );
+  const busyUntil = holdWhileBusy ? await busyUntilFor(ctx, recipient.user_id, now) : null;
   // A request they haven't accepted, or declined, never interrupts them (R14).
   const pendingRequest =
     recipient.request_state === 'pending' || recipient.request_state === 'declined';
@@ -261,6 +268,8 @@ async function notifyRecipient(
           quietHours:
             (user.quiet_hours as { days: number[]; start: string; end: string } | null) ?? null,
           relationshipLabel: rels[0] ? relationshipView(rels[0]).label : null,
+          busyUntil: busyUntil?.toISOString() ?? null,
+          sphere: (rels[0]?.sphere as Sphere | undefined) ?? null,
         },
       );
 

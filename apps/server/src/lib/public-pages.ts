@@ -278,7 +278,7 @@ export function renderPublic(
       <div><dt class="mono">to connect</dt><dd>Connect in three taps. Say how you know someone; the conversation, its notifications and its cards fit the relationship.</dd></div>
       <div><dt class="mono">attention</dt><dd>“3 need you”, never “47 unread”. The inbox puts what matters first and says why.</dd></div>
       <div><dt class="mono">memory</dt><dd>Commitments, dates, amounts and decisions are found in the conversation and offered as actions. You decide; nothing is written for you.</dd></div>
-      <div><dt class="mono">organizations</dt><dd>A business proves its domain with one DNS record; its team answers as the organization, in one inbox.</dd></div>
+      <div><dt class="mono">organizations</dt><dd>A business proves its domain with one DNS record; its team answers as the organization, in one inbox, and customers book from its open slots.</dd></div>
       <div><dt class="mono">privacy</dt><dd>Each side of your life sees what you chose. End-to-end encrypted when you say so, with a recovery key only you hold.</dd></div>
       <div><dt class="mono">money</dt><dd>Never held or moved by Caime. A split records who owes whom; nothing else.</dd></div>
       <div><dt class="mono">price</dt><dd>Free for people, always. Organizations start free and can buy Business.</dd></div>

@@ -260,6 +260,13 @@ export interface NotificationContext {
   quietHours?: Schedule | null;
   /** Label for reasons, e.g. "Manager · DATA C". */
   relationshipLabel?: string | null;
+  /**
+   * The recipient is in a meeting until this instant (an agreed meeting or appointment on
+   * their calendar, R51), and asked for work to wait while they are. Null when free.
+   */
+  busyUntil?: string | null;
+  /** The sender's sphere: only the professional spheres are held by a meeting. */
+  sphere?: Sphere | null;
 }
 
 export interface NotificationDecision {
@@ -286,6 +293,14 @@ function levelFor(event: NotificationEvent, policy: EffectivePolicy): Notificati
       return 'activity';
   }
 }
+
+/** The spheres a meeting holds (R51): work waits, the people in your life don't. */
+export const HELD_WHILE_BUSY_SPHERES: readonly Sphere[] = [
+  'work',
+  'customer',
+  'vendor',
+  'professional',
+];
 
 const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -347,6 +362,16 @@ export function decideNotification(
   ) {
     const until = nextQuietEnd(ctx.quietHours, ctx.now, ctx.timeZone);
     return { deliver: 'held', level, holdUntil: until, reason: 'Quiet hours' };
+  }
+  // In a meeting (R51): work waits until it ends; calls still ring, and the rest of life arrives.
+  if (
+    ctx.busyUntil &&
+    ctx.sphere &&
+    HELD_WHILE_BUSY_SPHERES.includes(ctx.sphere) &&
+    event.kind !== 'call' &&
+    new Date(ctx.busyUntil).getTime() > ctx.now.getTime()
+  ) {
+    return { deliver: 'held', level, holdUntil: ctx.busyUntil, reason: `${who}in a meeting` };
   }
 
   const important = level !== 'activity' || ctx.conversationPriority === 'priority';

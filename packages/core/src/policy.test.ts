@@ -143,6 +143,54 @@ describe('decideNotification', () => {
   });
 });
 
+describe('in a meeting (R51)', () => {
+  const manager = resolvePolicy(policies, { sphere: 'work', role: 'manager' });
+  const family = resolvePolicy(policies, { sphere: 'family' });
+  const busyUntil = '2026-09-24T15:00:00.000Z';
+
+  it('holds work until the meeting ends; family and calls arrive; nothing after it', () => {
+    const held = decideNotification(
+      manager,
+      { kind: 'message' },
+      { now: nyWorkday10am, timeZone: tz, relationshipLabel: 'Manager', busyUntil, sphere: 'work' },
+    );
+    expect(held).toMatchObject({
+      deliver: 'held',
+      holdUntil: busyUntil,
+      reason: 'Manager · in a meeting',
+    });
+    expect(
+      decideNotification(
+        family,
+        { kind: 'message' },
+        { now: nyWorkday10am, timeZone: tz, busyUntil, sphere: 'family' },
+      ).deliver,
+    ).toBe('push');
+    expect(
+      decideNotification(
+        manager,
+        { kind: 'call' },
+        { now: nyWorkday10am, timeZone: tz, busyUntil, sphere: 'work' },
+      ).deliver,
+    ).toBe('push');
+    expect(
+      decideNotification(
+        manager,
+        { kind: 'message', urgent: true },
+        { now: nyWorkday10am, timeZone: tz, busyUntil, sphere: 'work' },
+      ).deliver,
+    ).toBe('push');
+    // A meeting that has ended holds nothing.
+    expect(
+      decideNotification(
+        manager,
+        { kind: 'message' },
+        { now: new Date('2026-09-24T15:00:00.000Z'), timeZone: tz, busyUntil, sphere: 'work' },
+      ).deliver,
+    ).toBe('push');
+  });
+});
+
 describe('daysText', () => {
   it('names workweeks the way people say them', () => {
     expect(daysText([1, 2, 3, 4, 5])).toBe('Mon–Fri');

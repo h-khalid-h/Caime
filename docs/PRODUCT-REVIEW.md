@@ -468,9 +468,13 @@ with its reason, so it isn't proposed again without new facts.
   conversations (worked out on request, never kept), a customer or the team books one from a
   picker on the appointment card, and its AI agent offers the next few and books the one the
   customer picks as a requested card the customer confirms, never a time it wasn't given and
-  never a booking it made alone. Next: busy time holding Work messages, and "busy or free" for
-  colleagues and the event itself for family, each by relationship. Provider sync (two-way,
-  with Google and Microsoft) stays an add-on behind their credentials.
+  never a booking it made alone. The calendar also quiets the phone: with "Work waits until it
+  ends" on (Settings · Notifications, off until asked), a message from work, a customer, a
+  vendor or a professional that arrives during an agreed meeting or appointment is held until it
+  ends, as quiet hours hold it; family, friends, reminders, calls and anything urgent the
+  recipient allows come through, and nothing is held once the meeting is over. Next: "busy or
+  free" for colleagues and the event itself for family, each by relationship. Provider sync
+  (two-way, with Google and Microsoft) stays an add-on behind their credentials.
 - **R52 — Recording calls and meetings: consent first, paid, never private, not before a
   provider is tested.** Recording a call into a transcript, a summary and actions is the
   commitment engine's natural extension (PRD §42 "Act"), and it waits on the speech-to-text

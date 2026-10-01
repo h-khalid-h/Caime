@@ -3,13 +3,15 @@ import { resolvePolicy } from '@caime/core/policy';
 import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { DayPicker } from '@/features/settings/DayPicker';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { savePrefs } from '@/features/settings/savePrefs';
 import { useMe, useSession } from '@/state/session';
+import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
@@ -150,6 +152,7 @@ function NewRule({
 
 export default function Notifications() {
   const t = useTheme();
+  const prefs = usePrefs();
   const qc = useQueryClient();
   const me = useMe();
   const q = usePolicies();
@@ -202,6 +205,24 @@ export default function Notifications() {
         onPress={() => setAdding(true)}
         testID="rule-add"
       />
+      <Group title="While you’re in a meeting">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyStrong">Work waits until it ends</Text>
+            <Text variant="caption" color="textSecondary">
+              In a meeting or appointment agreed in Caime, messages from work, customers, vendors
+              and professionals are held until it ends. Family, friends and calls come through.
+            </Text>
+          </View>
+          <Switch
+            value={Boolean(prefs.holdWhileBusy)}
+            onValueChange={(v) => savePrefs({ holdWhileBusy: v })}
+            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
+            accessibilityLabel="Work waits until the meeting ends"
+            testID="hold-while-busy"
+          />
+        </View>
+      </Group>
       <Group
         title="Your work week"
         footer="Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different."

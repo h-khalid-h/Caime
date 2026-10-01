@@ -54,6 +54,7 @@ function adoptPreferences(user: MeView): void {
     bubbleTheme: p.bubbleTheme ?? usePrefs.getState().bubbleTheme,
     enterToSend: p.enterToSend ?? usePrefs.getState().enterToSend,
     reduceMotion: p.reduceMotion ?? usePrefs.getState().reduceMotion,
+    holdWhileBusy: p.holdWhileBusy ?? usePrefs.getState().holdWhileBusy,
   });
 }
 

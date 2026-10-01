@@ -199,7 +199,11 @@ These are rules, not preferences.
   Bookings view (both loaded when shown), keyed by an hourly window so the query is one an hour,
   and `realtime/apply.ts` invalidates `['calendar']` and `['org-calendar']` on a kit message
   event. A new dated thing (a booking slot, an event) joins `calendarItems`, never a list of
-  its own.
+  its own. Being in one is `busyUntilFor` (the agreed cards that haven't ended), looked up in
+  `message-effects.ts` only for someone whose `preferences.holdWhileBusy` is on, and
+  `decideNotification` holds the `HELD_WHILE_BUSY_SPHERES` until it with `busyUntil` and the
+  sender's `sphere` in its context: anything new that should wait for a meeting goes through
+  that context, never a check of its own.
 - Bookings (R51): an organization's hours are `organizations.booking` (core `BookingHours`,
   `BookingHoursBody`), set by `PUT /orgs/:id/booking` (owner or admins; null turns them off) and
   carried on `OrgView.booking` for everyone. Slots are never kept: `openSlotsFor` (`lib/booking.ts`)

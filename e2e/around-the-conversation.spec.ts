@@ -1650,6 +1650,23 @@ test.describe
       await expect(sheet).toBeVisible();
       await expect(sheet.getByTestId('rule-delete')).toHaveCount(0);
       await closeSheet();
+      // In a meeting, work waits (R51): off until asked, kept on the account once it is.
+      await page.goto('/settings/notifications');
+      // The switch's checkbox sits inside the element that carries the test id.
+      const hold = page
+        .getByTestId('hold-while-busy')
+        .filter({ visible: true })
+        .getByRole('switch');
+      await expect(hold).not.toBeChecked();
+      await hold.click();
+      await expect(hold).toBeChecked();
+      await expect
+        .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
+        .toMatchObject({ holdWhileBusy: true });
+      await page.reload();
+      await expect(
+        page.getByTestId('hold-while-busy').filter({ visible: true }).getByRole('switch'),
+      ).toBeChecked();
       expect(errors).toEqual([]);
     });
 
