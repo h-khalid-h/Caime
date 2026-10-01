@@ -247,27 +247,40 @@ export async function orgBookings(
   return out;
 }
 
+export interface BusyNow {
+  /** When the last of what's on ends. */
+  until: Date;
+  title: string;
+  conversationId: string;
+}
+
 /**
- * Until when someone is in an agreed meeting or appointment right now (R51), or null: from the
- * cards in their conversations that started in the last few hours and haven't ended. One query,
- * only for people who asked for work to wait while they're busy.
+ * What someone is in right now (R51), or null: the agreed meeting or appointment, from the cards
+ * in their conversations that started in the last few hours and haven't ended, that ends last.
+ * One query; run only where someone may know (their own hold, a viewer their rules allow).
  */
-export async function busyUntilFor(
-  ctx: AppContext,
-  userId: string,
-  now: Date,
-): Promise<Date | null> {
+export async function busyNow(ctx: AppContext, userId: string, now: Date): Promise<BusyNow | null> {
   const cards = await cardsAhead(ctx, userId, {
     from: new Date(now.getTime() - 6 * 3_600_000),
     until: now,
     limit: 20,
     agreedOnly: true,
   });
-  let until: Date | null = null;
+  let busy: BusyNow | null = null;
   for (const c of cards) {
     if (!c.hasTime) continue;
     const end = new Date(c.at.getTime() + (c.durationMinutes ?? MEETING_MINUTES) * 60_000);
-    if (end > now && (!until || end > until)) until = end;
+    if (end > now && (!busy || end > busy.until))
+      busy = { until: end, title: c.title, conversationId: c.conversationId };
   }
-  return until;
+  return busy;
+}
+
+/** Until when someone is in a meeting right now, or null. */
+export async function busyUntilFor(
+  ctx: AppContext,
+  userId: string,
+  now: Date,
+): Promise<Date | null> {
+  return (await busyNow(ctx, userId, now))?.until ?? null;
 }

@@ -203,7 +203,10 @@ These are rules, not preferences.
   `message-effects.ts` only for someone whose `preferences.holdWhileBusy` is on, and
   `decideNotification` holds the `HELD_WHILE_BUSY_SPHERES` until it with `busyUntil` and the
   sender's `sphere` in its context: anything new that should wait for a meeting goes through
-  that context, never a check of its own.
+  that context, never a check of its own. What someone is in is shown to others only through
+  the privacy fields `busy` and `busyDetails` (core `privacy.ts`), on the profile
+  (`PersonProfileView.busy`, `busyNow` run only when `canSee` allows): never on a `PersonView`
+  (every list would pay a query per person) and never anyone's calendar.
 - Bookings (R51): an organization's hours are `organizations.booking` (core `BookingHours`,
   `BookingHoursBody`), set by `PUT /orgs/:id/booking` (owner or admins; null turns them off) and
   carried on `OrgView.booking` for everyone. Slots are never kept: `openSlotsFor` (`lib/booking.ts`)

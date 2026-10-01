@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
 import { notHiddenFor } from '../lib/messages';
 import { orgsOf } from '../lib/orgs';
@@ -195,6 +196,12 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .orderBy('cv.last_message_at', sql`desc nulls last`)
       .execute();
     const conversationIds = conversations.map((c) => c.id);
+    const privacySettings = privacyOf(user, now);
+    // In a meeting right now (R51), by their rules for the viewer: looked up only where allowed.
+    const busy =
+      user.kind === 'human' && canSee(privacySettings, 'busy', relation)
+        ? await busyNow(ctx, id, now)
+        : null;
     const counts = conversationIds.length
       ? await ctx.db
           .selectNoFrom([
@@ -315,12 +322,23 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
     const privacy = resolvePolicy(policies, policyTargetFor(primary, b.connectionId)).privacy;
     // Where they work is one of their professional details, shown as those are (R43).
     const organizations =
-      user.kind !== 'human' || canSee(privacyOf(user, now), 'identityDetails', relation)
+      user.kind !== 'human' || canSee(privacySettings, 'identityDetails', relation)
         ? await orgsOf(ctx.db, id)
         : [];
     return {
       person: personView(user, relation, now, identity),
       organizations,
+      // What it is: to those their rules allow, and to anyone in the conversation it was made in.
+      busy: busy
+        ? {
+            until: busy.until.toISOString(),
+            title:
+              canSee(privacySettings, 'busyDetails', relation) ||
+              conversationIds.includes(busy.conversationId)
+                ? busy.title
+                : null,
+          }
+        : null,
       connection: connectionState(b),
       blockedByMe: b.blockedByMe,
       relationships: mine.map(relationshipView),

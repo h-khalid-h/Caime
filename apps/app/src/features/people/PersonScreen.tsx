@@ -1,5 +1,5 @@
 import type { RelationshipView } from '@caime/core/api';
-import { formatListTime, RHYTHM_TEXT } from '@caime/core/format';
+import { formatClock, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -389,6 +389,13 @@ export function PersonScreen({ id }: { id: string }) {
               </Text>
               <Spec
                 rows={[
+                  p.busy
+                    ? {
+                        label: 'now',
+                        value: `${p.busy.title ?? 'In a meeting'} until ${formatClock(p.busy.until, timeZone, locale)}`,
+                        testID: 'person-busy',
+                      }
+                    : null,
                   {
                     label: 'conversation',
                     value: [

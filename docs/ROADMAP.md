@@ -308,9 +308,11 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
       customer confirms, never a time it wasn't given (`booking.test.ts`, `agents.test.ts`, E2E).
       [x] In a meeting, work waits (R51): the `holdWhileBusy` preference holds work, customer,
       vendor and professional notifications until an agreed meeting or appointment ends
-      (core `policy.test.ts`, `messaging.test.ts`, E2E). [ ] "Busy or free" for colleagues and
-      the event itself for family, by relationship. ⛔ Provider sync (Google, Microsoft): their
-      OAuth credentials.
+      (core `policy.test.ts`, `messaging.test.ts`, E2E). [x] Busy or free, by relationship
+      (R51): privacy fields `busy` (connections) and `busyDetails` (family, and the
+      conversation it was made in), a "now" line on the profile (`PersonProfileView.busy`;
+      core `privacy-safety.test.ts`, `connections.test.ts`). ⛔ Provider sync (Google,
+      Microsoft): their OAuth credentials.
       [ ] Storage, CRM and helpdesk connectors: apps and
       webhooks cover the Business inbox (`docs/API.md`); two-way calendar sync is an add-on
       behind each provider's OAuth app (⛔ credentials)
@@ -1391,6 +1393,13 @@ outperforming the alternatives is reach and operations. In the order the review 
   held-notifications task releases them. Core `policy.test.ts` 10 pass, server
   `messaging.test.ts` 60 pass, E2E toggles it. The site's business page and the landing page now
   name bookings.
+- 2026-10-01 · R51, busy or free: `busyNow` (`lib/calendar.ts`, what `busyUntilFor` now reads)
+  behind two new privacy fields, `busy` (connections by default) and `busyDetails` (family by
+  default; both hidden by a limited preset), looked up in `GET /people/:id` only when the
+  viewer's allowed, with the title also to anyone in the card's conversation;
+  `PersonProfileView.busy`, a "now" row in the profile's spec (`person-busy`), and the two
+  fields in Settings · Privacy. Core `privacy-safety.test.ts` 20 pass, `connections.test.ts`
+  26 pass. Not in E2E: the E2E clock is real, and its meetings are ahead.
 - 2026-10-01 · R52 written: recording's rules (consent each time, never private, everyone gets
   it, encrypted with a set retention, summaries on request, paid with minute allowances) and the
   provider test it waits on (Arabic dialects, a DPA, no training on audio). No code, on purpose.

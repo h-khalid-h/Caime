@@ -472,9 +472,13 @@ with its reason, so it isn't proposed again without new facts.
   ends" on (Settings · Notifications, off until asked), a message from work, a customer, a
   vendor or a professional that arrives during an agreed meeting or appointment is held until it
   ends, as quiet hours hold it; family, friends, reminders, calls and anything urgent the
-  recipient allows come through, and nothing is held once the meeting is over. Next: "busy or
-  free" for colleagues and the event itself for family, each by relationship. Provider sync
-  (two-way, with Google and Microsoft) stays an add-on behind their credentials.
+  recipient allows come through, and nothing is held once the meeting is over. And it says, by
+  relationship, what someone is in: two privacy fields, "In a meeting" (busy, and until when;
+  connections by default) and "What the meeting is" (its title; family by default, and whoever
+  is in the conversation it was made in, who know anyway), both hidden by a limited
+  relationship, shown as a "now" line on their profile and nowhere else: never in a list, never
+  anyone's calendar. Provider sync (two-way, with Google and Microsoft) stays an add-on behind
+  their credentials.
 - **R52 — Recording calls and meetings: consent first, paid, never private, not before a
   provider is tested.** Recording a call into a transcript, a summary and actions is the
   commitment engine's natural extension (PRD §42 "Act"), and it waits on the speech-to-text

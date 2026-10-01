@@ -25,6 +25,8 @@ const FIELDS: Array<{ field: PrivacyField; label: string }> = [
   { field: 'lastSeen', label: 'Last seen' },
   { field: 'readReceipts', label: 'Read receipts' },
   { field: 'identityDetails', label: 'Work details' },
+  { field: 'busy', label: 'When you’re in a meeting' },
+  { field: 'busyDetails', label: 'What the meeting is' },
 ];
 
 type Kind = Audience['kind'];

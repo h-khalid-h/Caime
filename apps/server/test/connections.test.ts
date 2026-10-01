@@ -1,4 +1,4 @@
-import { describeRelationshipEvent } from '@caime/core';
+import { describeRelationshipEvent, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -237,6 +237,53 @@ describe('privacy by relationship (PRD §34)', () => {
     });
     await mom.post(`/v1/connections/requests/${r.requestId}/accept`, {});
     expect((await mom.get(`/v1/people/${sarah.user.id}`)).person.statusText).toBe('At the beach');
+  });
+
+  it('in a meeting (R51): a work contact sees busy until when, family what it is, nobody after', async () => {
+    t.clock.set('2026-09-25T13:00:00Z');
+    const nadia = await signup(t, { displayName: 'Nadia' });
+    const r = await sarah.post('/v1/connections/requests', {
+      toUserId: nadia.user.id,
+      relationship: { sphere: 'family', role: 'sibling' },
+    });
+    const { conversationId } = await nadia.post(`/v1/connections/requests/${r.requestId}/accept`, {
+      relationship: { sphere: 'family', role: 'sibling' },
+    });
+    const card = await sarah
+      .post(`/v1/conversations/${conversationId}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'meeting',
+          fields: {
+            title: 'Lunch with Nadia',
+            start: { at: '2026-09-25T13:45:00Z', hasTime: true },
+            durationMinutes: 60,
+          },
+        },
+      })
+      .then((res) => res.message);
+    await nadia.post(`/v1/messages/${card.id}/kit`, { to: 'accepted' });
+    t.clock.set('2026-09-25T14:00:00Z');
+    const until = '2026-09-25T14:45:00.000Z';
+    // Hassan, a work contact: busy, and until when; never what.
+    expect((await hassan.get(`/v1/people/${sarah.user.id}`)).busy).toEqual({ until, title: null });
+    // Nadia, family and in the conversation it was made in: what it is. Sarah sees her own.
+    expect((await nadia.get(`/v1/people/${sarah.user.id}`)).busy).toEqual({
+      until,
+      title: 'Lunch with Nadia',
+    });
+    expect((await sarah.get(`/v1/people/${sarah.user.id}`)).busy?.title).toBe('Lunch with Nadia');
+    // Busy for family only: a work contact sees nothing of it.
+    await sarah.req('PUT', '/v1/me/privacy', {
+      fields: { busy: { kind: 'spheres', spheres: ['family'] } },
+    });
+    expect((await hassan.get(`/v1/people/${sarah.user.id}`)).busy).toBeNull();
+    expect((await nadia.get(`/v1/people/${sarah.user.id}`)).busy?.until).toBe(until);
+    // Over, it's gone.
+    t.clock.set('2026-09-25T14:46:00Z');
+    expect((await nadia.get(`/v1/people/${sarah.user.id}`)).busy).toBeNull();
+    t.clock.set('2026-09-23T14:00:00Z');
   });
 });
 

@@ -227,6 +227,11 @@ export interface PersonProfileView {
   person: PersonView;
   /** The organizations they're on the team of (R43), shown as their professional details are. */
   organizations: OrgRef[];
+  /**
+   * In an agreed meeting or appointment right now (R51), until when, as their rules for the
+   * viewer allow (`busy`); what it is only to those allowed (`busyDetails`) or in its conversation.
+   */
+  busy: { until: string; title: string | null } | null;
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];

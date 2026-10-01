@@ -16,6 +16,8 @@ export const PRIVACY_FIELDS = [
   'readReceipts',
   'identityDetails',
   'location',
+  'busy',
+  'busyDetails',
 ] as const;
 export type PrivacyField = (typeof PRIVACY_FIELDS)[number];
 
@@ -55,6 +57,8 @@ export const FIELD_LABELS: Record<PrivacyField, string> = {
   readReceipts: 'Read receipts',
   identityDetails: 'Professional details',
   location: 'Location',
+  busy: 'In a meeting',
+  busyDetails: 'What the meeting is',
 };
 
 /** Fields a "limited" relationship preset hides even when the account-wide rule would allow them. */
@@ -66,6 +70,8 @@ const LIMITED_HIDES: PrivacyField[] = [
   'bio',
   'location',
   'pronouns',
+  'busy',
+  'busyDetails',
 ];
 
 export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
@@ -81,6 +87,10 @@ export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
       readReceipts: connections,
       identityDetails: opts.minor ? connections : { kind: 'everyone' },
       location: { kind: 'nobody' },
+      // In a meeting (R51): connections see busy or free; what it is, family (and whoever is
+      // in the conversation it was made in, who know anyway).
+      busy: connections,
+      busyDetails: { kind: 'spheres', spheres: ['family'] },
     },
     discoverByHandle: true,
     // R29: under-18 accounts are never discoverable by email.

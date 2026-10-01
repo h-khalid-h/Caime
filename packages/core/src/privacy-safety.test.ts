@@ -31,6 +31,17 @@ describe('privacy', () => {
     expect(canSee(s, 'location', connected)).toBe(false);
   });
 
+  it('in a meeting (R51): connections see busy or free, family what it is, limited nothing', () => {
+    const s = defaultPrivacy({ minor: false });
+    expect(canSee(s, 'busy', connected)).toBe(true);
+    expect(canSee(s, 'busy', stranger)).toBe(false);
+    expect(canSee(s, 'busyDetails', connected)).toBe(false);
+    expect(canSee(s, 'busyDetails', { ...connected, ownerSpheresForViewer: ['family'] })).toBe(
+      true,
+    );
+    expect(canSee(s, 'busy', { ...connected, preset: 'limited' })).toBe(false);
+  });
+
   it("rules by sphere use the owner's classification of the viewer", () => {
     const s = defaultPrivacy({ minor: false });
     s.fields.status = { kind: 'spheres', spheres: ['family', 'friend'] };
