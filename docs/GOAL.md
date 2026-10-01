@@ -10,8 +10,8 @@ in github.com/h-khalid-h/Caime: production-grade on iOS, Android and Web, deploy
 with HTTPS, at cai.me once the owner has the domain (R34–R36).
 
 Sources of truth: docs/PRD.md (product), docs/PRODUCT-REVIEW.md (refinements that override it),
-CLAUDE.md (architecture, conventions, commands), docs/ROADMAP.md (status; M9 is the plan from
-docs/REVIEW-2026-09.md, the whole-product review). Read them first;
+CLAUDE.md (architecture, conventions, commands), docs/ROADMAP.md (status; M10 is the plan from
+docs/REVIEW-2026-10.md, the whole-product review). Read them first;
 update ROADMAP and CLAUDE.md at the end of every work block so any later session resumes without
 re-deriving decisions.
 

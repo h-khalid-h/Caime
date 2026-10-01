@@ -8,7 +8,7 @@ without re-deriving decisions.
 ## Start of every session
 
 1. Read `docs/ROADMAP.md` (what is done, in progress, blocked) and `docs/GOAL.md` (the target).
-2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R52 override the PRD) and `docs/ARCHITECTURE.md`
+2. Skim `docs/PRODUCT-REVIEW.md` (refinements R1–R54 override the PRD) and `docs/ARCHITECTURE.md`
    (ADRs). Open `docs/PRD.md` (cited as `PRD §n`) and `docs/BRAND.md` when a task touches them.
 3. Run `pnpm install` then `pnpm check`. If anything is red, fixing it comes first.
 4. Check the latest CI run on GitHub (`h-khalid-h/Caime`, workflow `CI`). A red `main` is work now.

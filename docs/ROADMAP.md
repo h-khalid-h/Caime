@@ -628,6 +628,46 @@ outperforming the alternatives is reach and operations. In the order the review 
       98 ms; a visitor's organization page 1,356 req/s at p99 61 ms. Still to take: a screen
       reader on a device
 
+## M10 — The first customers (docs/REVIEW-2026-10.md)
+
+The product reviewed whole again on 2026-10-01: M9's build work is done; what stands between
+Caime and its first customers (organizations, R53) is language, the phone, a handful of the
+owner's accounts and settings, and what a clinic's lawyer needs. In the order the review gives:
+
+- [ ] ⛔ P0, the owner's, today: `CONTACT_EMAIL` and `VAPID_SUBJECT` on a domain the owner holds
+      (the live pages say `hello@cai.me`, a domain still parked for sale), an SMTP account
+      (`SMTP_URL`, `EMAIL_FROM`), a bucket (`BACKUP_S3_*`, `FILES_S3_*`), an uptime check and an
+      alert receiver. The full list, with costs, is the owner's checklist in the review
+- [ ] Caime in Arabic (R54): every interface string in one table per package, a language setting
+      (the device's by default), Arabic first with a native speaker's review ⛔, `lang` and `dir`
+      on the web, the last 14 physical styles made logical, the public site in both; the E2E
+      suite run in Arabic with screenshots
+- [ ] The organization's own door (R53): a visitor who writes from an organization's page lands
+      in the conversation as an invitee does; a QR code and a short link the app makes; "Verified"
+      explained to the customer; the organization's onboarding in a clinic's order. Measured:
+      link-open to first customer message
+- [ ] What a clinic's lawyer needs (R54): an organization's export of its conversations, erasure
+      of a customer's on request, retention for business conversations, a sub-processor list the
+      privacy page and the agreement read from one constant. ⛔ The agreement's text and a
+      lawyer's review of privacy, terms and agreement
+- [ ] ⛔ The owner's decisions: the phone (accounts, then the development build on the owner's
+      iPhone, TestFlight, Play internal testing); prices in EGP, AED and SAR, local payment
+      methods and Stripe Tax; WhatsApp Business through Meta's Cloud API; a smaller organization
+      tier (a line in `plans.ts`)
+- [ ] The app's first screen under 2 s on the mobile preset (sign-in: LCP 4.2 s, TBT 440 ms on
+      2026-10-01 against the 2.0 s target): measure the entry chunk, move what the first screen
+      doesn't draw behind `lazyPart`, record LCP in docs/RESOURCES.md
+- [ ] Polish that shows (P2): quiet hours into Notifications and priorities; the duplicate
+      organization line on a profile; disappearing messages as one row; the Actions segments on a
+      phone; `X-Frame-Options: DENY`; one description meta; the two aged help lines; the dark pass
+      in the screenshot suite; the 320-px and 200% checks; a screen-reader pass once a phone
+      exists
+- Measurements taken for the review (2026-10-01, this container, mobile preset): landing and
+  `/business` 100/100/100/100 (LCP 1.4 s, 1.2 s; TBT 20 ms); sign-in 75/100/100/63 (LCP 4.2 s,
+  TBT 440 ms). Budget 438.0 KB gzip. 1 of 106 pressables without a label or role; 14 physical
+  left/right styles beside 26 logical. Not done: a sign-up on production, a load test (unchanged
+  paths since 2026-09-30), a phone
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -1400,6 +1440,13 @@ outperforming the alternatives is reach and operations. In the order the review 
   `PersonProfileView.busy`, a "now" row in the profile's spec (`person-busy`), and the two
   fields in Settings · Privacy. Core `privacy-safety.test.ts` 20 pass, `connections.test.ts`
   26 pass. Not in E2E: the E2E clock is real, and its meetings are ahead.
+- 2026-10-01 · The product reviewed whole (docs/REVIEW-2026-10.md): facts from the repository,
+  production and Lighthouse runs; findings by dimension (strategy, reach, legal, money, product,
+  operations, UX); R53 (organizations first) and R54 (Arabic, and what an organization's lawyer
+  needs) in the product review; the plan as M10 and the owner's checklist with costs. Found
+  today: the live contact address is on `cai.me`, a domain not yet the owner's (P0, the
+  owner's to set); no SMTP on production; no Arabic interface; no DPA or organization export;
+  euro-only prices; the app's first screen at 4.2 s LCP on a throttled phone.
 - 2026-10-01 · R52 written: recording's rules (consent each time, never private, everyone gets
   it, encrypted with a set retention, summaries on request, paid with minute allowances) and the
   provider test it waits on (Arabic dialects, a DPA, no training on audio). No code, on purpose.

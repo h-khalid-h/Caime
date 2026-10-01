@@ -498,3 +498,32 @@ with its reason, so it isn't proposed again without new facts.
   spoken in them, and choose one with a data processing agreement that doesn't train on customer
   audio. Nothing of this is in the code yet, on purpose: the consent flow is the first thing
   built, and it's built against a provider that passed the test.
+- **R53 — Organizations first; their customers get the wedge.** The review of 2026-10-01
+  (docs/REVIEW-2026-10.md) found two products sharing one model: a messenger that needs both
+  sides to join, and a business messaging tool (a verified page, one inbox, an AI agent that
+  books, apps, updates, insights) with a clear buyer who brings the other side along. Caime
+  goes to market through organizations, one place and one kind at a time (clinics first, where
+  the pain of boss, customer and mother in one list is sharpest and bookings are the daily
+  job), and the consumer product is what their customers receive. What that changes in the
+  product: an organization's page is its door (a visitor who writes lands in the conversation
+  as an invitee does, with a QR code and a short link the app makes for the door, the receipt
+  and the bio), its onboarding is written in the order a clinic sets things up (hours,
+  bookings, the agent's text, the team), and "Verified" is explained to the customer in one
+  line. Nothing of the wedge moves behind the organization: a person without one still gets all
+  of it, free (R23). WhatsApp Business through Meta's Cloud API stays the owner's call (R46), and
+  local prices and payment methods theirs too; the product side of each is built to the
+  integration point (R25).
+- **R54 — Caime speaks its customers' language, and gives an organization what its lawyer
+  needs.** Two consequences of R53, decided together. First, the interface in Arabic: R21 and
+  R31 made layouts, directions and locales ready and left every string in English; the strings
+  move to one table per package with English as the source, the language follows the device
+  (chosen in Language and region, `safeLocale` deciding), Arabic is the first translation
+  (reviewed by a native speaker so it reads as Caime: names not pronouns, sentence case, no
+  guilt), the web page carries `lang` and `dir`, and the public site is in both. The E2E suite
+  runs in Arabic with screenshots. Second, an organization is a controller of its customers'
+  conversations and Caime its processor: an organization exports its own conversations, erases
+  a customer's on that customer's request, sets how long business conversations are kept, and
+  sees who processes its data (the host, Anthropic for its agent, Stripe, Cloudflare for calls,
+  Expo for push), which the privacy page and a data processing agreement read from one list in
+  the code. The agreement's words and a lawyer's review are the owner's (⛔); the product ships
+  first so there is something to review.
