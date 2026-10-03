@@ -38,7 +38,7 @@ function whom(p: Pick<PolicyView, 'scope'>): string {
   if (p.scope.connectionId) return 'this person';
   if (!sphere) return 'everyone else';
   const r = findRole(sphere, role);
-  if (r) return r.plural.toLowerCase();
+  if (r) return tr(r.plural).toLowerCase();
   switch (sphere) {
     case 'work':
       return 'people from work';
@@ -59,7 +59,7 @@ function label(p: Pick<PolicyView, 'name' | 'scope'>): string {
   const { sphere, role } = p.scope;
   if (!sphere) return tr('Everyone else');
   const r = findRole(sphere, role);
-  return tr(SPHERE_DEFS[sphere].plural) + (r ? ` · ${r.plural}` : '');
+  return tr(SPHERE_DEFS[sphere].plural) + (r ? ` · ${tr(r.plural)}` : '');
 }
 
 const inWords = (hours: number) =>

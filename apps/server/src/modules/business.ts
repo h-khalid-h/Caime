@@ -17,6 +17,7 @@ import {
   normalizeHandle,
   StartThreadBody,
   type StartThreadResult,
+  tr,
   uuidv7,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
@@ -529,7 +530,8 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
             .executeTakeFirst()
         : undefined,
     ]);
-    return `${customer?.display_name ?? 'A customer'} · ${org.name}`;
+    return (customerName: string | null | undefined = customer?.display_name) =>
+      `${customerName ?? tr('A customer')} · ${org.name}`;
   }
 
   app.post('/business/:conversationId/assign', async (req) => {
@@ -566,7 +568,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
         userId,
         kind: 'business',
         level: 'attention',
-        title: `${me.display_name} gave you a conversation`,
+        title: () => tr('{name} gave you a conversation', { name: me.display_name }),
         body: await describe(thread),
         data: { conversationId, orgId: thread.org_id },
         groupKey: `conv:${conversationId}`,
@@ -643,8 +645,8 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
         userId: m.user_id,
         kind: 'business',
         level: 'attention',
-        title: `${me.display_name} escalated a conversation`,
-        body: note ? `${about}: ${note}` : about,
+        title: () => tr('{name} escalated a conversation', { name: me.display_name }),
+        body: () => (note ? `${about()}: ${note}` : about()),
         data: { conversationId, orgId: thread.org_id },
         groupKey: `conv:${conversationId}`,
       });

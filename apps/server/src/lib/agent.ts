@@ -19,6 +19,7 @@ import {
   type AgentAction,
   ORG_ALLOWANCES,
   SendMessageBody,
+  tr,
   uuidv4,
   uuidv7,
 } from '@caime/core';
@@ -303,8 +304,8 @@ async function tellTeam(ctx: AppContext, orgId: string, conversationId: string, 
       userId: p.user_id,
       kind: 'business',
       level: 'attention',
-      title: `${agentName} handed a conversation to the team`,
-      body: `${about.customer_name ?? 'A customer'} · ${about.org_name}`,
+      title: () => tr('{agentName} handed a conversation to the team', { agentName }),
+      body: () => `${about.customer_name ?? tr('A customer')} · ${about.org_name}`,
       data: { conversationId, orgId },
       groupKey: `conv:${conversationId}`,
     });

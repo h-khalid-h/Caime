@@ -4,7 +4,14 @@
  */
 
 import type { DecisionView, TaskDirection, TasksResponse, TaskView } from '@caime/core';
-import { CreateDecisionBody, CreateTaskBody, formatDue, UpdateTaskBody, uuidv4 } from '@caime/core';
+import {
+  CreateDecisionBody,
+  CreateTaskBody,
+  formatDue,
+  tr,
+  UpdateTaskBody,
+  uuidv4,
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -392,7 +399,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         userId: assignee,
         kind: 'request',
         level: 'attention',
-        title: `${owner.display_name} asked you`,
+        title: () => tr('{name} asked you', { name: owner.display_name }),
         body: `${task.title}${due}`,
         data: { taskId: task.id, conversationId: task.conversation_id },
       });
@@ -462,18 +469,19 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         .select('display_name')
         .where('id', '=', me)
         .executeTakeFirstOrThrow();
-      const verb = {
-        done: 'finished',
-        accepted: 'accepted',
-        declined: 'declined',
-        open: 'reopened',
-        cancelled: 'cancelled',
-      }[body.status];
+      const status = body.status as 'done' | 'accepted' | 'declined' | 'open' | 'cancelled';
+      const told: Record<typeof status, (name: string) => string> = {
+        done: (name) => tr('{name} finished your request', { name }),
+        accepted: (name) => tr('{name} accepted your request', { name }),
+        declined: (name) => tr('{name} declined your request', { name }),
+        open: (name) => tr('{name} reopened your request', { name }),
+        cancelled: (name) => tr('{name} cancelled your request', { name }),
+      };
       await notify(ctx, {
         userId: t.owner_id,
         kind: 'waiting_resolved',
         level: body.status === 'done' ? 'attention' : 'activity',
-        title: `${who.display_name} ${verb} your request`,
+        title: () => told[status](who.display_name),
         body: t.title,
         data: { taskId: id, conversationId: t.conversation_id },
       });

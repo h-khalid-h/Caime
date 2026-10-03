@@ -15,17 +15,10 @@ import {
 } from '@caime/core/i18n';
 import { getLocales } from 'expo-localization';
 import { I18nManager, Platform } from 'react-native';
-import { create } from 'zustand';
+import { useLanguage } from '@/lib/languageState';
 import { usePrefs } from '@/theme/prefs';
 
-interface LanguageState {
-  /** The language the app is rendered in; null until the catalog is ready. */
-  language: InterfaceLanguage | null;
-  /** Bumped when the language changes, so the root remounts. */
-  generation: number;
-}
-
-export const useLanguage = create<LanguageState>(() => ({ language: null, generation: 0 }));
+export { useLanguage };
 
 export function deviceLanguageTag(): string | null {
   return getLocales()[0]?.languageTag ?? null;

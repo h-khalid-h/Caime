@@ -6,14 +6,22 @@ import { uuidv7 } from '@caime/core';
 import { type Kysely, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
+import { asReader } from './i18n';
 import { enqueue } from './jobs';
+
+/**
+ * Words for the reader, written in their language (R54): a function is called inside
+ * `asReader`, so every `tr` in it answers in the reader's language; a string is taken as it is.
+ */
+export type Copy = string | (() => string);
+export type OptionalCopy = string | null | (() => string | null);
 
 export interface NotifyInput {
   userId: string;
   kind: string;
   level: 'activity' | 'attention' | 'urgency';
-  title: string;
-  body?: string | null;
+  title: Copy;
+  body?: OptionalCopy;
   data?: Record<string, unknown>;
   /** The messages whose words it shows (a preview, a card's title): it goes when they do. */
   quotes?: string[];
@@ -32,7 +40,10 @@ export interface NotifyInput {
   quiet?: boolean;
 }
 
-export type NotifyHook = (ctx: AppContext, id: string, input: NotifyInput) => Promise<void>;
+/** What was written: the reader's own words, resolved. */
+export type Written = Omit<NotifyInput, 'title' | 'body'> & { title: string; body: string | null };
+
+export type NotifyHook = (ctx: AppContext, id: string, input: Written) => Promise<void>;
 const hooks: NotifyHook[] = [];
 
 /** Push delivery registers here so this module stays free of push dependencies. */
@@ -41,6 +52,15 @@ export function onNotification(hook: NotifyHook): void {
 }
 
 export async function notify(ctx: AppContext, input: NotifyInput): Promise<string> {
+  return asReader(ctx, input.userId, () => write(ctx, input));
+}
+
+async function write(ctx: AppContext, given: NotifyInput): Promise<string> {
+  const input: Written = {
+    ...given,
+    title: typeof given.title === 'function' ? given.title() : given.title,
+    body: (typeof given.body === 'function' ? given.body() : given.body) ?? null,
+  };
   const id = uuidv7();
   await ctx.db
     .insertInto('notifications')
@@ -96,7 +116,7 @@ export async function withLivePush(ctx: AppContext, userIds: string[]): Promise<
 export async function runNotificationHooks(
   ctx: AppContext,
   id: string,
-  input: NotifyInput,
+  input: Written,
 ): Promise<void> {
   for (const hook of hooks) {
     await hook(ctx, id, input).catch((err) => ctx.log.warn({ err }, 'notification hook failed'));
@@ -111,9 +131,17 @@ export async function runNotificationHooks(
 export async function replaceShown(
   ctx: AppContext,
   id: string,
-  input: Omit<NotifyInput, 'quiet' | 'pushTo'>,
+  given: Omit<NotifyInput, 'quiet' | 'pushTo'>,
 ): Promise<void> {
-  await runNotificationHooks(ctx, id, { ...input, quiet: true, pushTo: 'web' });
+  await asReader(ctx, given.userId, () =>
+    runNotificationHooks(ctx, id, {
+      ...given,
+      title: typeof given.title === 'function' ? given.title() : given.title,
+      body: (typeof given.body === 'function' ? given.body() : given.body) ?? null,
+      quiet: true,
+      pushTo: 'web',
+    }),
+  );
 }
 
 /** A notification a message took with it when it went, as its devices are told. */

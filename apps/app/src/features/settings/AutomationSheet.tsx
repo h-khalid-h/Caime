@@ -191,7 +191,7 @@ export function AutomationSheet({
                     toLowerCase: tr(SPHERE_DEFS[sphere as Sphere].plural).toLowerCase(),
                   }),
                 },
-                ...roles.map((r) => ({ value: r.id, label: r.plural })),
+                ...roles.map((r) => ({ value: r.id, label: tr(r.plural) })),
               ]}
             />
           </View>

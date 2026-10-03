@@ -218,7 +218,7 @@ These are rules, not preferences.
   as `<slots>` lines ("iso · when", `slotLine`) with a `book` action whose `bookAt` must be one of
   them now, else it hands over. The E2E stand-in offers from `<slots>` and books the first on
   "the first one"; the server tests' queue takes `agentSays('book', …, { bookAt, bookFor })`.
-- The interface's words (R54, ADR-17): every string the app or core shows is written in English
+- The interface's words (R54, ADR-16): every string the app or core shows is written in English
   where it's used, wrapped in `tr('…')` (variables as `{name}`), `trn(n, 'one thing', '{n}
   things')` for a count, or `msg('…')` in a table of options that's translated where it's shown
   (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts`, and
@@ -227,8 +227,19 @@ These are rules, not preferences.
   header, a protocol line, an id): English in, English out, but the catalog test will ask for
   its Arabic. The language is `prefs.language` (`auto`, `en`, `ar`), loaded by `lib/i18n.ts`
   before the first screen and on every change (the root remounts on `useLanguage.generation`);
-  the catalog is a dynamic import, so it never joins the startup chunk. The server's own copy
-  (notification titles, inbox reasons, relationship labels) is still English for everyone.
+  the catalog is a dynamic import, so it never joins the startup chunk. The server writes for
+  whoever reads (`apps/server/src/lib/i18n.ts`): core's `tr` asks a provider, and the server's
+  answers from AsyncLocalStorage, so a request runs in its `X-Caime-Language` header (the app
+  sends the language it shows; a token's request is English) and anything written to someone
+  else runs in `asReader(ctx, userId, …)`, their account's language (`preferences.language`,
+  else `interfaceLanguage`, what their app last showed, else the account's locale; cached five
+  minutes, `forgetLanguageOf` on a change). `notify` and `replaceShown` take `title` and `body`
+  as functions (`title: () => tr('{name} is calling', { name })`) and call them inside the
+  reader's scope: a string built before the call is in the sender's language, so never build
+  one. Anything else the server writes for a particular person (a fan-out's line, a job's)
+  goes through `asReader` the same way; the key collector reads `apps/server/src` too. A
+  table's labels (roles, kit states, kit names) are English keys: show them through `tr`.
+  Mail stays English (7-bit, R48).
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
   rendered in the app's shell like the landing page, for everyone, signed in or not, and never

@@ -12,6 +12,8 @@ import {
   resolvePolicy,
   type Sphere,
   suggestFromAnalysis,
+  tr,
+  trn,
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -19,6 +21,7 @@ import type { Conversation, Message } from '../db/schema';
 import { runAutomations } from './automations';
 import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
+import { asReader } from './i18n';
 import { enqueue } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
@@ -189,10 +192,13 @@ async function notifyBusiness(
       message,
       {
         id: thread.org_id,
+        display_name: thread.org_name,
         // A bot's or an AI agent's answer says so, even in a notification (R16, PRD §75).
-        display_name: human(sender.id)
-          ? thread.org_name
-          : `${thread.org_name} (${kindOf(sender.id) === 'agent' ? 'AI agent' : 'automated'})`,
+        labelled: human(sender.id)
+          ? undefined
+          : kindOf(sender.id) === 'agent'
+            ? 'agent'
+            : 'automated',
       },
       customer,
       true,
@@ -204,7 +210,7 @@ async function notifyRecipient(
   ctx: AppContext,
   conversation: Conversation,
   message: Message,
-  sender: { id: string; display_name: string },
+  sender: Sender,
   recipient: Recipient,
   addressed: boolean,
   isReplyToThem: boolean,
@@ -213,6 +219,38 @@ async function notifyRecipient(
     /** An edit named them: news of its own, never counted as another message in a burst. */
     edited?: boolean;
   } = {},
+): Promise<void> {
+  // Everything written here is for the recipient: their language (R54).
+  return asReader(ctx, recipient.user_id, () =>
+    writeForRecipient(
+      ctx,
+      conversation,
+      message,
+      sender,
+      recipient,
+      addressed,
+      isReplyToThem,
+      opts,
+    ),
+  );
+}
+
+/** Who wrote, as named to the recipient; an organization's bot or AI agent is labelled as one. */
+interface Sender {
+  id: string;
+  display_name: string;
+  labelled?: 'agent' | 'automated';
+}
+
+async function writeForRecipient(
+  ctx: AppContext,
+  conversation: Conversation,
+  message: Message,
+  sender: Sender,
+  recipient: Recipient,
+  addressed: boolean,
+  isReplyToThem: boolean,
+  opts: { context?: string; edited?: boolean },
 ): Promise<void> {
   const user = await ctx.db
     .selectFrom('users')
@@ -230,7 +268,10 @@ async function notifyRecipient(
       ? conversation.connection_id
       : activeConnectionId(ctx.db, recipient.user_id, sender.id),
   ]);
-  const senderName = shown?.displayName ?? sender.display_name;
+  const named = shown?.displayName ?? sender.display_name;
+  const senderName = sender.labelled
+    ? `${named} (${sender.labelled === 'agent' ? tr('AI agent') : tr('automated')})`
+    : named;
   const policy = resolvePolicy(policies, policyTargetFor(rels[0], connectionId));
   const kind: NotificationKind = message.mentions.includes(recipient.user_id)
     ? 'mention'
@@ -255,7 +296,7 @@ async function notifyRecipient(
         deliver: 'silent' as const,
         level: 'activity' as const,
         holdUntil: null,
-        reason: 'Message request',
+        reason: tr('Message request'),
       }
     : decideNotification(
         policy,
@@ -290,10 +331,10 @@ async function notifyRecipient(
   const groupTitle = space
     ? spaceConversationTitle(space, conversation)
     : group
-      ? `${group.title ?? 'Group'} · ${conversation.title ?? 'Topic'}`
-      : (conversation.title ?? 'Group');
+      ? `${group.title ?? tr('Group')} · ${conversation.title ?? tr('Topic')}`
+      : (conversation.title ?? tr('Group'));
   const preview =
-    conversation.privacy_class === 'private' ? 'New message' : messagePreview(message);
+    conversation.privacy_class === 'private' ? tr('New message') : messagePreview(message);
   const groupKey = `conv:${conversation.id}`;
   const existing = opts.edited
     ? undefined
@@ -323,8 +364,18 @@ async function notifyRecipient(
     // Whatever its words have been, since a device may still show them (forgetNotificationsOf).
     const quotes = salient ? [...new Set([...existing.quotes, message.id])] : existing.quotes;
     const title = isGroup
-      ? `${count} new messages in ${groupTitle}`
-      : `${senderName} sent ${count} messages${context}`;
+      ? trn(count, '{n} new message in {groupTitle}', '{n} new messages in {groupTitle}', {
+          groupTitle,
+        })
+      : trn(
+          count,
+          '{senderName} sent {n} message{context}',
+          '{senderName} sent {n} messages{context}',
+          {
+            senderName,
+            context,
+          },
+        );
     await ctx.db
       .updateTable('notifications')
       .set({

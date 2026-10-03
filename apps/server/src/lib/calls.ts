@@ -17,6 +17,7 @@ import {
   type CallView,
   callResult,
   type IceConfigView,
+  tr,
 } from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
@@ -236,13 +237,13 @@ export async function ringStopped(
       userId: call.callee_id,
       kind: 'call',
       level: 'activity',
-      title: caller ?? 'Call',
-      body:
+      title: () => caller ?? tr('Call'),
+      body: () =>
         call.state !== 'ended'
-          ? 'Answered'
+          ? tr('Answered')
           : call.outcome === 'declined'
-            ? 'Declined'
-            : 'Call ended',
+            ? tr('Declined')
+            : tr('Call ended'),
       data: r.data as Record<string, unknown>,
       groupKey: `call:${call.id}`,
       ttlSeconds: CALL_RING_SECONDS,
@@ -296,8 +297,8 @@ export async function endCall(
       userId: ended.callee_id,
       kind: 'call',
       level: 'attention',
-      title: `Missed ${ended.kind} call`,
-      body: caller ? `from ${caller}` : null,
+      title: () => (ended.kind === 'video' ? tr('Missed video call') : tr('Missed voice call')),
+      body: () => (caller ? tr('from {caller}', { caller }) : null),
       data: { conversationId: ended.conversation_id, callId: ended.id },
       groupKey: `call:${ended.id}`,
     });

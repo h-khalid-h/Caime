@@ -70,8 +70,10 @@ export interface Client {
     method: InjectOptions['method'],
     url: string,
     body?: unknown,
+    headers?: Record<string, string>,
   ): Promise<LightMyRequestResponse>;
-  get<T = any>(url: string): Promise<T>;
+  /** `headers` ride with the request: what the app's device says (`x-caime-language`). */
+  get<T = any>(url: string, opts?: { headers?: Record<string, string> }): Promise<T>;
   post<T = any>(url: string, body?: unknown): Promise<T>;
   patch<T = any>(url: string, body?: unknown): Promise<T>;
   del<T = any>(url: string): Promise<T>;
@@ -120,12 +122,17 @@ export function clientFor(
   user: Client['user'],
   recoveryCodes: string[] = [],
 ): Client {
-  const req = (method: InjectOptions['method'], url: string, body?: unknown) =>
+  const req = (
+    method: InjectOptions['method'],
+    url: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ) =>
     t.app.inject({
       method,
       url,
       payload: body as InjectOptions['payload'],
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}`, ...headers },
     });
   const ok = async (res: LightMyRequestResponse) => {
     if (res.statusCode >= 400) throw new Error(`${res.statusCode} ${res.body}`);
@@ -136,7 +143,7 @@ export function clientFor(
     user,
     recoveryCodes,
     req,
-    get: async (url) => ok(await req('GET', url)),
+    get: async (url, opts) => ok(await req('GET', url, undefined, opts?.headers)),
     post: async (url, body) => ok(await req('POST', url, body ?? {})),
     patch: async (url, body) => ok(await req('PATCH', url, body ?? {})),
     del: async (url) => ok(await req('DELETE', url)),

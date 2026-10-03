@@ -148,6 +148,7 @@ export function kitMoves(kit: KitId, state: string, isCreator: boolean): KitMove
   );
 }
 
+/** Every state a kit moves through, in English (the catalog's key): shown through `tr`. */
 const STATE_LABELS: Record<string, string> = {
   pending: msg('Waiting for an answer'),
   in_transit: msg('On its way'),
@@ -155,9 +156,30 @@ const STATE_LABELS: Record<string, string> = {
   in_progress: msg('In progress'),
   changes_requested: msg('Changes asked for'),
   out_for_delivery: msg('Out for delivery'),
-  void: 'Voided',
+  void: msg('Voided'),
   problem: msg('Problem reported'),
   waiting: msg('Waiting on a reply'),
+  accepted: msg('Accepted'),
+  approved: msg('Approved'),
+  cancelled: msg('Cancelled'),
+  closed: msg('Closed'),
+  confirmed: msg('Confirmed'),
+  declined: msg('Declined'),
+  delivered: msg('Delivered'),
+  done: msg('Done'),
+  fulfilled: msg('Fulfilled'),
+  open: msg('Open'),
+  overdue: msg('Overdue'),
+  paid: msg('Paid'),
+  placed: msg('Placed'),
+  proposed: msg('Proposed'),
+  rejected: msg('Rejected'),
+  requested: msg('Requested'),
+  resolved: msg('Resolved'),
+  sent: msg('Sent'),
+  settled: msg('Settled'),
+  shared: msg('Shared'),
+  shipped: msg('Shipped'),
 };
 const POSITIVE = new Set([
   'approved',
@@ -179,6 +201,7 @@ const NEGATIVE = new Set([
   'changes_requested',
 ]);
 
+/** A state's English label, the catalog's key: the app and the server show it through `tr`. */
 export function kitStateLabel(state: string): string {
   const label = STATE_LABELS[state] ?? state.replaceAll('_', ' ');
   return label.charAt(0).toUpperCase() + label.slice(1);

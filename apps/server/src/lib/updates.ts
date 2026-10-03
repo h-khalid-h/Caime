@@ -11,7 +11,7 @@ import type { AppContext } from '../context';
 import type { OrgUpdate } from '../db/schema';
 import { orgRef } from './business';
 import { enqueue, registerJob } from './jobs';
-import { type NotifyInput, runNotificationHooks, withLivePush } from './notify';
+import { runNotificationHooks, type Written, withLivePush } from './notify';
 
 export function updateView(
   u: Pick<OrgUpdate, 'id' | 'body' | 'created_at' | 'edited_at'>,
@@ -123,7 +123,8 @@ async function fanOut(ctx: AppContext, p: Record<string, unknown>): Promise<void
   // Everyone in the batch in one statement; a step run twice at once (a retry after a restart)
   // tells nobody twice: the unique index on (update, person) drops the second row.
   const at = ctx.now();
-  const input = (userId: string): NotifyInput => ({
+  // The organization's name and its own words: nothing to translate for anyone (R54).
+  const input = (userId: string): Written => ({
     userId,
     kind: 'update',
     level: 'activity',

@@ -10,6 +10,7 @@ import {
   GroupCallSignalBody,
   type GroupCallView,
   StartCallBody,
+  tr,
   uuidv7,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
@@ -220,8 +221,11 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
           kind: 'call',
           level: 'urgency',
           // By the name each of them knows the caller by.
-          title: `${(await nameShownTo(ctx, p.id, auth.userId)) ?? 'Someone'} is calling ${where}`,
-          body: body.kind === 'video' ? 'Group video call' : 'Group voice call',
+          title: (
+            (name) => () =>
+              tr('{name} is calling {where}', { name: name ?? tr('Someone'), where })
+          )(await nameShownTo(ctx, p.id, auth.userId)),
+          body: () => (body.kind === 'video' ? tr('Group video call') : tr('Group voice call')),
           data: { conversationId: id, callId: call.id },
           groupKey: `call:${call.id}`,
           delivery: muted.has(p.id) ? 'silent' : 'push',

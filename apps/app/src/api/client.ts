@@ -1,4 +1,5 @@
 import { API_URL, isWeb } from '@/lib/config';
+import { useLanguage } from '@/lib/languageState';
 
 export class ApiError extends Error {
   constructor(
@@ -81,6 +82,9 @@ export async function request<T>(
 ): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json', ...opts.headers };
   if (isWeb) headers['x-caime-client'] = 'web';
+  // The language this device shows, so the server's words in the answer are in it (R54).
+  const language = useLanguage.getState().language;
+  if (language) headers['x-caime-language'] = language;
   if (token) headers.authorization = `Bearer ${token}`;
   if (expectedUser && !WHOEVER.has(path.split('?')[0] ?? ''))
     headers['x-caime-user'] = expectedUser;

@@ -1,4 +1,5 @@
 import type { ReportView } from '@caime/core';
+import { tr } from '@caime/core';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { audit } from './audit';
@@ -282,11 +283,11 @@ export async function settleReport(
     userId: before.reporter_id,
     kind: 'report',
     level: 'activity',
-    title: 'Your report was reviewed',
-    body:
+    title: () => tr('Your report was reviewed'),
+    body: () =>
       status === 'actioned'
-        ? 'Thanks for reporting it: Caime looked and acted.'
-        : 'Thanks for reporting it: Caime looked, and didn’t act on it this time.',
+        ? tr('Thanks for reporting it: Caime looked and acted.')
+        : tr('Thanks for reporting it: Caime looked, and didn’t act on it this time.'),
     data: { reportId },
     delivery: 'silent',
   });

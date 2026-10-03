@@ -2,7 +2,7 @@
  * Background handlers: follow-up checks (PRD §69), reminders (PRD §28), held notifications
  * released when their window opens (PRD §32), retention (PRD §60) and temporary conversations.
  */
-import { previewText, resolvePolicy } from '@caime/core';
+import { previewText, resolvePolicy, tr } from '@caime/core';
 import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
@@ -91,8 +91,11 @@ export function registerWorkers(): void {
       userId: String(p.senderId),
       kind: 'follow_up',
       level: 'attention',
-      title: `No reply from ${other.display_name} yet`,
-      body: original.body ? `Follow up on “${previewText(original.body, 70)}”?` : 'Follow up?',
+      title: () => tr('No reply from {name} yet', { name: other.display_name }),
+      body: () =>
+        original.body
+          ? tr('Follow up on “{text}”?', { text: previewText(original.body, 70) })
+          : tr('Follow up?'),
       data: { conversationId: p.conversationId, messageId: p.messageId },
     });
   });
@@ -121,7 +124,7 @@ export function registerWorkers(): void {
           kind: 'reminder',
           level: 'attention',
           title: t.title,
-          body: 'Reminder',
+          body: () => tr('Reminder'),
           data: { taskId: t.id, conversationId: t.conversation_id },
         });
       }
@@ -176,7 +179,7 @@ export function registerWorkers(): void {
         kind: n.kind,
         level: 'activity',
         title: n.title,
-        body: n.kept ? null : 'Message deleted',
+        body: () => (n.kept ? null : tr('Message deleted')),
         data: n.data,
         groupKey: n.groupKey,
       });

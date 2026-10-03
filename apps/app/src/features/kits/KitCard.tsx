@@ -91,7 +91,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
             {tr('Request')}
           </Text>
           {state ? (
-            <Chip label={kitStateLabel(state)} tone={TONE[kitStateTone(state)]} size="sm" />
+            <Chip label={tr(kitStateLabel(state))} tone={TONE[kitStateTone(state)]} size="sm" />
           ) : null}
         </View>
         <Text variant="bodyStrong">{p.title ?? tr('Request')}</Text>
@@ -113,7 +113,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       m={m}
       Icon={KIT_ICONS[kit]}
       label={p.label ?? tr(KITS[kit].name)}
-      state={kitStateLabel(state)}
+      state={tr(kitStateLabel(state))}
       tone={kitStateTone(state)}
       title={p.title ?? ''}
       details={kitDetails(kit, p.fields ?? {}, clock)}

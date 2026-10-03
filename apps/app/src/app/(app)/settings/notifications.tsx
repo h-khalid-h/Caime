@@ -37,7 +37,7 @@ function scopeLabel(p: Pick<PolicyView, 'name' | 'scope'>): string {
   const { sphere, role } = p.scope;
   if (sphere) {
     const r = findRole(sphere, role);
-    return tr(SPHERE_DEFS[sphere].plural) + (role ? ` · ${r?.plural ?? role}` : '');
+    return tr(SPHERE_DEFS[sphere].plural) + (role ? ` · ${r ? tr(r.plural) : role}` : '');
   }
   return tr('Everyone else');
 }
@@ -137,7 +137,7 @@ function NewRule({
                       toLowerCase: tr(SPHERE_DEFS[sphere].plural).toLowerCase(),
                     }),
                   },
-                  ...ROLES[sphere].map((r) => ({ value: r.id, label: r.plural })),
+                  ...ROLES[sphere].map((r) => ({ value: r.id, label: tr(r.plural) })),
                 ]}
               />
             </View>

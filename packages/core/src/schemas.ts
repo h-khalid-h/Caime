@@ -440,6 +440,11 @@ export const Preferences = z
     holdWhileBusy: z.boolean().optional(),
     /** The interface language (R54): the device's, or one chosen. */
     language: z.enum(['auto', 'en', 'ar']).optional(),
+    /**
+     * The language the app last showed this person (what `auto` came to on their device), so the
+     * server writes to them in it; the last device to open wins when two differ.
+     */
+    interfaceLanguage: z.enum(['en', 'ar']).optional(),
   })
   .strict();
 

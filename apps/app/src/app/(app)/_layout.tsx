@@ -1,6 +1,7 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { endpoints } from '@/api/endpoints';
 import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
@@ -10,6 +11,7 @@ import { NavRail } from '@/features/shell/NavRail';
 import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
 import { KeyboardShortcuts } from '@/features/shell/shortcuts';
+import { useLanguage } from '@/lib/languageState';
 import { takeLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -55,6 +57,17 @@ export default function AppLayout() {
       .catch(() => {});
     return () => stop();
   }, [onboarded, user?.id]);
+  // The language this device shows is the account's too (R54), so what the server writes to
+  // this person (notifications, on every device) is in it; the last device to open wins.
+  const language = useLanguage((s) => s.language);
+  const shownIn = user?.preferences?.interfaceLanguage;
+  useEffect(() => {
+    if (!onboarded || !language || shownIn === language) return;
+    void endpoints
+      .updateMe({ preferences: { interfaceLanguage: language } })
+      .then((res) => useSession.getState().setUser(res.user))
+      .catch(() => {});
+  }, [onboarded, language, shownIn]);
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;
   // Onboarding, and an app asking to act for them, have the whole window: nothing else to do there.

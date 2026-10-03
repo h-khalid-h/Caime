@@ -176,7 +176,7 @@ export function RelationshipForm({
             {[...roles.quick, ...(moreRoles ? roles.more : [])].map((r) => (
               <Chip
                 key={r.id}
-                label={r.label}
+                label={tr(r.label)}
                 selected={value.role === r.id && !value.roleLabel}
                 onPress={() => set({ role: value.role === r.id ? null : r.id, roleLabel: '' })}
               />

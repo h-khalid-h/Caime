@@ -639,15 +639,21 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       (`SMTP_URL`, `EMAIL_FROM`), a bucket (`BACKUP_S3_*`, `FILES_S3_*`), an uptime check and an
       alert receiver. The full list, with costs, is the owner's checklist in the review
 - [x] Caime in Arabic (R54): the interface's 2,073 strings wrapped where they're written
-      (core `i18n.ts`: `tr`, `trn`, `msg`; ADR-17), the Arabic catalog (`locales/ar.ts`, a
+      (core `i18n.ts`: `tr`, `trn`, `msg`; ADR-16), the Arabic catalog (`locales/ar.ts`, a
       lazy chunk of 61.0 KB gzip, never in the startup bundle), a language setting in Language
       and region (the device's by default, mirrored to the account so every device follows),
       `lang` and `dir` on the web and `I18nManager` on phones, and `i18n-catalog.test.ts`
       failing CI for a string without its Arabic (`e2e/arabic.spec.ts`: chosen, right to left,
-      kept across a reload and followed on a second device). ⛔ A native speaker's review of
-      the Arabic. Still to do: the server's own copy per person (notification titles, inbox
-      reasons, relationship labels, kit previews), the public site in Arabic, and a long tail
-      of templated strings the extraction left in English
+      kept across a reload and followed on a second device). The server writes for whoever
+      reads (`apps/server/src/lib/i18n.ts`): a request is answered in the language its app
+      shows (`X-Caime-Language`, so inbox reasons, relationship labels and kit labels come back
+      in it), and a notification in its reader's own (`notify` and `replaceShown` resolve their
+      words inside `asReader`; `preferences.language`, else `interfaceLanguage`, what the app
+      last showed, else the account's locale; one cached lookup per reader per five minutes,
+      dropped on a change), every relationship role and kit name and state now in the catalog
+      (`i18n.test.ts` on the server, a notification in Arabic in `e2e/arabic.spec.ts`). ⛔ A
+      native speaker's review of the Arabic. Still to do: mail stays English (7-bit, R48), the
+      public site in Arabic, and a long tail of templated strings the extraction left in English
 - [ ] The organization's own door (R53): a visitor who writes from an organization's page lands
       in the conversation as an invitee does; a QR code and a short link the app makes; "Verified"
       explained to the customer; the organization's onboarding in a clinic's order. Measured:
@@ -1447,7 +1453,7 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   fields in Settings · Privacy. Core `privacy-safety.test.ts` 20 pass, `connections.test.ts`
   26 pass. Not in E2E: the E2E clock is real, and its meetings are ahead.
 - 2026-10-03 · R54, Caime in Arabic: core `i18n.ts` (a catalog keyed by the English, CLDR
-  plurals, `tr`/`trn`/`msg`, `trAll` for tables of options; ADR-17); a codemod wrapped 2,073
+  plurals, `tr`/`trn`/`msg`, `trAll` for tables of options; ADR-16); a codemod wrapped 2,073
   strings across the app and core (JSX text, labels and titles, toasts, templates with their
   variables, plural shapes, tables with `msg` and `tr` where they're shown); the Arabic
   catalog written for all of them; `scripts/i18n-keys.mjs` lists the keys and what a catalog
@@ -1470,3 +1476,9 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
 - 2026-10-03 — CI red on main at 7ab3b0a: two new advisories with no fixed release (node-forge in
   Expo's dev certificates, braces in Metro's file map), both in the app toolchain only. Ignored by
   id in `pnpm-workspace.yaml` with the reason beside each; SECURITY.md says so and when they go.
+- 2026-10-03 — R54, second layer: the server's own words per person. Core's `tr` takes its
+  translator from a provider; the server's is AsyncLocalStorage: the request's `X-Caime-Language`
+  (the app sends what it shows) for everything answered, and `asReader` for everything written to
+  someone else (notifications, replaced pushes), whose language is their account's. Every
+  relationship role (103, with plurals) and every kit name and state joined the catalog, which
+  the kit cards and the people pickers now read through `tr`. Catalog 2,333 entries.

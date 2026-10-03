@@ -69,7 +69,7 @@ export interface KitDef {
 export const KITS: Record<KitId, KitDef> = {
   approval: {
     id: 'approval',
-    name: 'Approval',
+    name: msg('Approval'),
     description: msg('Ask for a yes or no, with a record of the answer'),
     icon: 'badge-check',
     spheres: ['work', 'customer', 'vendor', 'professional', 'organization'],
@@ -83,7 +83,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   meeting: {
     id: 'meeting',
-    name: 'Meeting',
+    name: msg('Meeting'),
     description: msg('Propose a time to meet'),
     icon: 'calendar-clock',
     spheres: null,
@@ -109,7 +109,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   document_review: {
     id: 'document_review',
-    name: 'Review',
+    name: msg('Review'),
     description: msg('Ask someone to review a document'),
     icon: 'file-check',
     spheres: ['work', 'customer', 'vendor', 'professional'],
@@ -122,7 +122,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   order_status: {
     id: 'order_status',
-    name: 'Order',
+    name: msg('Order'),
     description: msg('Share an order and its status'),
     icon: 'package',
     spheres: ['customer', 'vendor', 'organization'],
@@ -138,7 +138,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   delivery: {
     id: 'delivery',
-    name: 'Delivery',
+    name: msg('Delivery'),
     description: msg('Track a delivery'),
     icon: 'truck',
     spheres: ['customer', 'vendor', 'service_provider', 'organization'],
@@ -152,7 +152,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   invoice: {
     id: 'invoice',
-    name: 'Invoice',
+    name: msg('Invoice'),
     description: msg('Send or track an invoice'),
     icon: 'receipt',
     spheres: ['customer', 'vendor', 'service_provider', 'professional', 'organization'],
@@ -167,7 +167,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   purchase_order: {
     id: 'purchase_order',
-    name: 'Purchase order',
+    name: msg('Purchase order'),
     description: msg('Raise a purchase order'),
     icon: 'clipboard-list',
     spheres: ['vendor', 'organization'],
@@ -182,7 +182,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   payment_request: {
     id: 'payment_request',
-    name: 'Payment request',
+    name: msg('Payment request'),
     description: msg('Ask for a payment and mark it paid'),
     icon: 'hand-coins',
     spheres: null,
@@ -197,7 +197,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   support_ticket: {
     id: 'support_ticket',
-    name: 'Support ticket',
+    name: msg('Support ticket'),
     description: msg('Open a tracked support issue'),
     icon: 'life-buoy',
     spheres: ['customer', 'organization', 'service_provider'],
@@ -210,7 +210,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   appointment: {
     id: 'appointment',
-    name: 'Appointment',
+    name: msg('Appointment'),
     description: msg('Book an appointment'),
     icon: 'calendar-check',
     spheres: ['customer', 'service_provider', 'professional'],
@@ -224,7 +224,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   location: {
     id: 'location',
-    name: 'Location',
+    name: msg('Location'),
     description: msg('Share a place, or where you are right now'),
     icon: 'map-pin',
     spheres: ['family', 'friend', 'service_provider'],
@@ -236,7 +236,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   shared_album: {
     id: 'shared_album',
-    name: 'Album',
+    name: msg('Album'),
     description: msg('Collect photos together'),
     icon: 'images',
     spheres: ['family', 'friend', 'community'],
@@ -246,7 +246,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   poll: {
     id: 'poll',
-    name: 'Poll',
+    name: msg('Poll'),
     description: msg('Ask everyone to choose'),
     icon: 'chart-bar',
     spheres: null,
@@ -259,7 +259,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   checklist: {
     id: 'checklist',
-    name: 'Checklist',
+    name: msg('Checklist'),
     description: msg('A shared list to tick off together'),
     icon: 'list-checks',
     spheres: ['family', 'friend', 'work', 'community'],
@@ -272,7 +272,7 @@ export const KITS: Record<KitId, KitDef> = {
   },
   split: {
     id: 'split',
-    name: 'Split',
+    name: msg('Split'),
     description: msg('Who owes what for something one of you paid, settled here, moved nowhere'),
     icon: 'hand-coins',
     spheres: ['family', 'friend', 'work', 'community'],

@@ -12,6 +12,7 @@ import {
   type CallView,
   type IceConfigView,
   StartCallBody,
+  tr,
   uuidv7,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
@@ -201,8 +202,8 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       userId: other.user_id,
       kind: 'call',
       level: 'urgency',
-      title: `${me ?? 'Someone'} is calling`,
-      body: body.kind === 'video' ? 'Video call' : 'Voice call',
+      title: () => tr('{name} is calling', { name: me ?? tr('Someone') }),
+      body: () => (body.kind === 'video' ? tr('Video call') : tr('Voice call')),
       data: { conversationId: id, callId: call.id },
       groupKey: `call:${call.id}`,
       // It's news only while it rings; and the phone apps can't answer a call yet.

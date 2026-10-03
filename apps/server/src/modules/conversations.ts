@@ -48,6 +48,8 @@ import {
   splitShares,
   splitState,
   TopicBody,
+  tr,
+  trn,
   UpdateConversationBody,
   uuidv7,
   VoteBody,
@@ -1472,8 +1474,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         userId,
         kind: 'kit',
         level: userId === m.sender_id ? 'attention' : 'activity',
-        title: `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : kitStateLabel(to)}`,
-        body: `${own ? own.label : KITS[card.kit as CardKitId].name} · ${card.title ?? ''}`,
+        title: () =>
+          `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : tr(kitStateLabel(to))}`,
+        body: () =>
+          `${own ? own.label : tr(KITS[card.kit as CardKitId].name)} · ${card.title ?? ''}`,
         // A card's moves are one notification, its latest.
         groupKey: `kit:${id}`,
         data: { conversationId: m.conversation_id, messageId: id },
@@ -1617,8 +1621,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         userId: card.creatorId,
         kind: 'kit',
         level: 'activity',
-        title: `${who.display_name} finished ${card.title ?? 'the list'}`,
-        body: 'Everything on it is ticked.',
+        title: () =>
+          card.title
+            ? tr('{name} finished {title}', { name: who.display_name, title: card.title })
+            : tr('{name} finished the list', { name: who.display_name }),
+        body: () => tr('Everything on it is ticked.'),
         data: { conversationId: found.conversation_id, messageId: id },
       });
     }
@@ -1715,11 +1722,14 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         userId: payer,
         kind: 'kit',
         level: 'activity',
-        title: `${who?.display_name ?? 'Someone'} settled up`,
-        body:
+        title: () => tr('{name} settled up', { name: who?.display_name ?? tr('Someone') }),
+        body: () =>
           amount !== null
-            ? `${formatAmount(amount, currency, locale)} of ${title ?? 'the split'}.`
-            : `Their share of ${title ?? 'the split'}.`,
+            ? tr('{amount} of {title}.', {
+                amount: formatAmount(amount, currency, locale),
+                title: title ?? tr('the split'),
+              })
+            : tr('Their share of {title}.', { title: title ?? tr('the split') }),
         data: { conversationId: found.conversation_id, messageId: id },
       });
     }
@@ -1867,7 +1877,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           userId,
           kind: 'kit',
           level: 'activity',
-          title: `${who.display_name} added ${added === 1 ? 'a photo' : `${added} photos`} to ${card.title ?? 'the album'}`,
+          title: () =>
+            trn(added, '{name} added a photo to {album}', '{name} added {n} photos to {album}', {
+              name: who.display_name,
+              album: card.title ?? tr('the album'),
+            }),
           data: { conversationId: m.conversation_id, messageId: id },
           groupKey: `album:${id}`,
         });

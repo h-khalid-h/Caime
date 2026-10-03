@@ -99,22 +99,33 @@ export function makeTranslator(language: InterfaceLanguage, catalog: Catalog): T
 export const english: Translator = makeTranslator('en', {});
 
 let current: Translator = english;
+let provider: (() => Translator | undefined) | null = null;
 
 /** The translator the app runs on; set once at boot, before the first screen. */
 export function setTranslator(translator: Translator): void {
   current = translator;
 }
 
+/**
+ * Where one process writes for many people (the server), the translator is whoever's the
+ * current work is for: a provider answers it from the work's own context (the request's header,
+ * the notification's reader), and nothing says `current` while one is set. Undefined from the
+ * provider means nobody in particular: English.
+ */
+export function setTranslatorProvider(next: (() => Translator | undefined) | null): void {
+  provider = next;
+}
+
 export function currentTranslator(): Translator {
-  return current;
+  return provider?.() ?? current;
 }
 
 export function tr(text: string, vars?: Vars): string {
-  return current.tr(text, vars);
+  return currentTranslator().tr(text, vars);
 }
 
 export function trn(count: number, one: string, other: string, vars?: Vars): string {
-  return current.trn(count, one, other, vars);
+  return currentTranslator().trn(count, one, other, vars);
 }
 
 /** Marks English written outside a component; the catalog test collects it. Identity. */

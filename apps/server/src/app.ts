@@ -25,6 +25,7 @@ import { registerCallSweep } from './lib/calls';
 import { createMailer, type Mailer } from './lib/email';
 import { AppError } from './lib/errors';
 import { registerGroupCallSweep } from './lib/group-calls';
+import { registerLanguage } from './lib/i18n';
 import { startWorkers } from './lib/jobs';
 import { requestForLog } from './lib/log';
 import { createMetrics } from './lib/metrics';
@@ -222,6 +223,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     });
   });
 
+  // Before anything answers: the request's language, for every word written in it (R54).
+  registerLanguage(app);
   registerAuth(app, ctx);
   // Every answer, by the route as declared (never the path as requested) and its status.
   app.addHook('onResponse', async (req, reply) => {

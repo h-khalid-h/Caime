@@ -26,6 +26,7 @@ import {
   releaseHandle,
   unavailableAmong,
 } from '../lib/handles';
+import { forgetLanguageOf } from '../lib/i18n';
 import { personInsights } from '../lib/insights';
 import { assertPersonInsights, planUsage } from '../lib/plans';
 import { avatarUrl, meView, minorOf, privacyOf } from '../lib/users';
@@ -132,6 +133,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.preferences !== undefined) {
       patch.preferences = JSON.stringify({ ...(current.preferences ?? {}), ...body.preferences });
     }
+    // What's written to them follows their language from the next notification (R54).
+    if (body.preferences !== undefined || body.locale !== undefined) forgetLanguageOf(auth.userId);
     if (body.aiEnabled !== undefined) patch.ai_enabled = body.aiEnabled;
     if (body.avatarFileId !== undefined) {
       if (body.avatarFileId) {

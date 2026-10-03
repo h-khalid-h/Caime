@@ -83,10 +83,17 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
   shown, in `packages/core/src/i18n.ts`), and the English text is the key into the language's
   catalog (`locales/ar.ts`), so the code stays readable, a missing entry falls back to the
   English, and `i18n-catalog.test.ts` fails CI for a string without its Arabic or an entry
-  nothing says any more. The translator is one module-level value set at boot (the app loads
-  the catalog before the first screen and remounts on a change); the server keeps English until
-  it translates per person (its copy in notifications and inbox reasons is the next step). The
-  catalog is its own lazy chunk, never in the startup bundle. Rejected: translation ids
+  nothing says any more. In the app the translator is one module-level value set at boot (the
+  catalog loads before the first screen and the app remounts on a change). On the server, one
+  process writing for many people, `tr` asks a provider, and the provider answers from
+  AsyncLocalStorage (`apps/server/src/lib/i18n.ts`): a request runs in the language its app
+  sends (`X-Caime-Language`, what the device resolved `auto` to, so inbox reasons and
+  relationship labels come back in it, at no lookup), and anything written to someone else, a
+  notification above all, runs in `asReader`, their account's language (what they chose, else
+  what their app last showed, else their locale), looked up once per reader per five minutes.
+  Stored copy (a notification's title) is in the reader's language at the time it was written.
+  The catalog is its own lazy chunk in the app, never in the startup bundle; the server bundles
+  it. Mail stays English, since it travels as 7-bit text. Rejected: translation ids
   (`settings.language.title`), which hide the words from the code and make every string a
   lookup to read; and a React hook per string, which the app's components, many of them plain
   functions, would not fit.

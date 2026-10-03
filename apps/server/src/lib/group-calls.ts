@@ -13,7 +13,7 @@
  * Who's in a call changes one change at a time, under the call's own row lock (the one a join
  * takes): what's decided about a call is decided on the call as it is.
  */
-import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView } from '@caime/core';
+import { CALL_RING_SECONDS, type CallOutcome, type GroupCallView, tr } from '@caime/core';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
@@ -282,15 +282,19 @@ export async function ringStoppedFor(
         .select(titleWithGroup('c').as('title'))
         .where('k.id', '=', callId)
         .executeTakeFirst()
-        .then((r) => `${r?.title ?? 'Group'} call`);
-    const shown = title ?? 'Group call';
+        .then((r) => r?.title ?? null);
     for (const r of read)
       await replaceShown(ctx, r.id, {
         userId,
         kind: 'call',
         level: 'activity',
-        title: shown,
-        body: why === 'joined' ? 'Joined' : why === 'declined' ? 'Turned down' : 'Call ended',
+        title: () => (title ? tr('{title} call', { title }) : tr('Group call')),
+        body: () =>
+          why === 'joined'
+            ? tr('Joined')
+            : why === 'declined'
+              ? tr('Turned down')
+              : tr('Call ended'),
         data: r.data as Record<string, unknown>,
         groupKey: `call:${callId}`,
         ttlSeconds: CALL_RING_SECONDS,
@@ -323,11 +327,12 @@ async function tellMissed(ctx: AppContext, call: Call, who: string[]) {
       userId,
       kind: 'call',
       level: 'attention',
-      title: `Missed group ${call.kind} call`,
-      body:
+      title: () =>
+        call.kind === 'video' ? tr('Missed group video call') : tr('Missed group voice call'),
+      body: () =>
         [
-          starter ? `from ${starter}` : null,
-          conversation?.title ? `in ${conversation.title}` : null,
+          starter ? tr('from {starter}', { starter }) : null,
+          conversation?.title ? tr('in {title}', { title: conversation.title }) : null,
         ]
           .filter(Boolean)
           .join(' ') || null,

@@ -9,6 +9,7 @@ import {
   type RelationshipInputT,
   SPHERE_DEFS,
   type Sphere,
+  tr,
   UpdateConnectionBody,
   uuidv7,
 } from '@caime/core';
@@ -134,10 +135,11 @@ async function afterConnected(
     userId: requesterId,
     kind: 'connection_accepted',
     level: 'activity',
-    title: viaInvite
-      ? `${accepter.display_name} joined through your invite`
-      : `${accepter.display_name} accepted your request`,
-    body: viaInvite ? 'You’re connected. Say hi.' : 'Say hi when you’re ready.',
+    title: () =>
+      viaInvite
+        ? tr('{name} joined through your invite', { name: accepter.display_name })
+        : tr('{name} accepted your request', { name: accepter.display_name }),
+    body: () => (viaInvite ? tr('You’re connected. Say hi.') : tr('Say hi when you’re ready.')),
     data: { userId: accepterId, conversationId },
   });
 }
@@ -240,7 +242,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       userId: target.id,
       kind: 'connection_request',
       level: 'attention',
-      title: `${me.display_name} wants to connect with you`,
+      title: () => tr('{name} wants to connect with you', { name: me.display_name }),
       body: contextLine ?? body.note ?? null,
       data: { requestId: id, userId: auth.userId },
     });
