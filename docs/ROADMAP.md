@@ -1467,3 +1467,6 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
 - 2026-10-01 · R52 written: recording's rules (consent each time, never private, everyone gets
   it, encrypted with a set retention, summaries on request, paid with minute allowances) and the
   provider test it waits on (Arabic dialects, a DPA, no training on audio). No code, on purpose.
+- 2026-10-03 — CI red on main at 7ab3b0a: two new advisories with no fixed release (node-forge in
+  Expo's dev certificates, braces in Metro's file map), both in the app toolchain only. Ignored by
+  id in `pnpm-workspace.yaml` with the reason beside each; SECURITY.md says so and when they go.

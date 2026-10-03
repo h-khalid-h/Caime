@@ -15,3 +15,13 @@ overrides:
   decode-uri-component: file:./vendor/decode-uri-component
   # GHSA-w5hq-g745-h8pq: xcode (iOS prebuild tooling) only calls uuid.v4, which 11.x keeps in CJS.
   xcode>uuid: ^11.1.1
+
+# Advisories without a fixed release yet, both in Expo's command line (the web export and the dev
+# server): neither package is in the server image (`pnpm deploy --prod` of the server alone) or
+# in the browser bundle. Each goes the day its package publishes a fix (docs/SECURITY.md).
+auditConfig:
+  ignoreGhsas:
+    # node-forge <= 1.4.0, RSA PKCS#1 v1.5 signature verification: only expo's dev certificates.
+    - GHSA-86w9-cpqp-85rv
+    # braces <= 3.0.3, stack exhaustion on a deeply nested glob: metro's file map, our own globs.
+    - GHSA-vfj7-8cjw-p6xm
