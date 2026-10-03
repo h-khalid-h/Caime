@@ -3,6 +3,7 @@
  * the team, picks one for an appointment card. Shown in the viewer's own time, as every time is.
  */
 import { formatClock, formatDayHeading } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Chip } from '@/ui/Chip';
@@ -34,7 +35,7 @@ export function SlotPicker({
   }, [slots, timeZone, locale, now]);
   return (
     <View style={{ gap: 10 }} testID="slot-picker">
-      <Text variant="label">When · {slotMinutes} min</Text>
+      <Text variant="label">{tr('When · {slotMinutes} min', { slotMinutes })}</Text>
       <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled>
         <View style={{ gap: 10 }}>
           {days.map(([day, times]) => (

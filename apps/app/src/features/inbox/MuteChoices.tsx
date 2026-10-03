@@ -4,6 +4,8 @@
  * sheet that offers it (RowActions), the day and time too: iOS shows one sheet at a time from a
  * screen, so one never replaces another in the same moment.
  */
+
+import { tr } from '@caime/core/i18n';
 import { type Chosen, instantOf, todayWhere } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
 import { BellOff, CalendarClock } from '@/ui/icons';
@@ -42,21 +44,36 @@ export function MuteChoices({
     : instantOf({ date: nextDay, time: MORNING }, timeZone).toISOString();
   const morning = `${early ? 'Until' : 'Until tomorrow,'} ${formatTime(MORNING, locale)}`;
   const spans: Array<{ id: string; title: string; until: () => string; said: string }> = [
-    { id: 'hour', title: 'For an hour', until: () => from(3_600_000), said: 'Muted for an hour' },
-    { id: '8h', title: 'For 8 hours', until: () => from(8 * 3_600_000), said: 'Muted for 8 hours' },
+    {
+      id: 'hour',
+      title: tr('For an hour'),
+      until: () => from(3_600_000),
+      said: tr('Muted for an hour'),
+    },
+    {
+      id: '8h',
+      title: tr('For 8 hours'),
+      until: () => from(8 * 3_600_000),
+      said: tr('Muted for 8 hours'),
+    },
     {
       id: 'morning',
       title: morning,
       until: () => morningAt,
-      said: `Muted ${morning.toLowerCase()}`,
+      said: tr('Muted {toLowerCase}', { toLowerCase: morning.toLowerCase() }),
     },
     {
       id: 'week',
-      title: 'For a week',
+      title: tr('For a week'),
       until: () => from(7 * 86_400_000),
-      said: 'Muted for a week',
+      said: tr('Muted for a week'),
     },
-    { id: 'always', title: 'Until I turn it back on', until: () => MUTED_FOR_GOOD, said: 'Muted' },
+    {
+      id: 'always',
+      title: tr('Until I turn it back on'),
+      until: () => MUTED_FOR_GOOD,
+      said: tr('Muted'),
+    },
   ];
   if (picking)
     return (
@@ -68,14 +85,16 @@ export function MuteChoices({
           const until = instantOf(c, timeZone);
           onMute(
             until.toISOString(),
-            `Muted until ${new Intl.DateTimeFormat(locale, {
-              weekday: 'short',
-              day: 'numeric',
-              month: 'short',
-              hour: 'numeric',
-              minute: '2-digit',
-              timeZone,
-            }).format(until)}`,
+            tr('Muted until {format}', {
+              format: new Intl.DateTimeFormat(locale, {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZone,
+              }).format(until),
+            }),
           );
         }}
         testID="mute-when"
@@ -94,7 +113,7 @@ export function MuteChoices({
       ))}
       <ListRow
         icon={CalendarClock}
-        title="Until a day and time…"
+        title={tr('Until a day and time…')}
         onPress={() => onPicking(true)}
         chevron
         testID="mute-until"

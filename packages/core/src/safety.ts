@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 import { zonedParts } from './time';
 /**
  * Safety rules shared by clients and the server (PRD §55, PRODUCT-REVIEW R14, R29).
@@ -165,7 +166,7 @@ export function assessLink(raw: string): LinkAssessment {
   try {
     url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
   } catch {
-    return { suspicious: true, reasons: ['Not a valid address'] };
+    return { suspicious: true, reasons: [tr('Not a valid address')] };
   }
   const host = url.hostname.toLowerCase();
   if (
@@ -181,7 +182,7 @@ export function assessLink(raw: string): LinkAssessment {
     reasons.push('Uses look-alike characters');
   if (SHORTENERS.has(host)) reasons.push('Shortened link hides where it goes');
   const tld = host.split('.').pop() ?? '';
-  if (RISKY_TLDS.has(tld)) reasons.push(`Unusual domain ending (.${tld})`);
+  if (RISKY_TLDS.has(tld)) reasons.push(tr('Unusual domain ending (.{tld})', { tld }));
   if (host.split('.').length > 5) reasons.push('Unusually many subdomains');
   const registrable = host.split('.').slice(-2).join('.');
   for (const brand of BRANDS) {
@@ -190,7 +191,7 @@ export function assessLink(raw: string): LinkAssessment {
       (l) => l !== brand && deconfuse(l).includes(brand) && !registrable.startsWith(`${brand}.`),
     );
     if (impersonates && !registrable.startsWith(`${brand}.`)) {
-      reasons.push(`Looks like ${brand} but isn't`);
+      reasons.push(tr("Looks like {brand} but isn't", { brand }));
       break;
     }
   }

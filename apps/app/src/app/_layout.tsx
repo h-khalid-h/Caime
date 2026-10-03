@@ -1,4 +1,5 @@
 import '@/lib/polyfills';
+import { tr } from '@caime/core/i18n';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
@@ -17,6 +18,7 @@ import {
 import { IconMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
 import { isWeb } from '@/lib/config';
+import { loadLanguage, useLanguage } from '@/lib/i18n';
 import { keepAppForOffline } from '@/lib/offline';
 import { handleIn, inviteIn } from '@/lib/paths';
 import { useOutbox } from '@/state/outbox';
@@ -50,13 +52,19 @@ export default function RootLayout() {
   useRememberLinks(status);
   // A slow font never holds the app hostage: after 2.5 s we render with the system font.
   const [fontTimeout, setFontTimeout] = useState(false);
+  // The interface language (R54): its catalog is loaded before the first screen, and a change
+  // remounts the app so every string runs again.
+  const language = useLanguage((s) => s.language);
+  const generation = useLanguage((s) => s.generation);
   useEffect(() => {
     void useSession.getState().boot();
+    void loadLanguage();
     keepAppForOffline();
     const timer = setTimeout(() => setFontTimeout(true), 2500);
     return () => clearTimeout(timer);
   }, []);
-  const ready = (fontsLoaded || Boolean(fontError) || fontTimeout) && status !== 'booting';
+  const ready =
+    (fontsLoaded || Boolean(fontError) || fontTimeout) && status !== 'booting' && language !== null;
   // A visitor on someone's public page (R44): the page they were sent stays, readable, with its
   // own ways in; the app mounts only once they're signed in. Mounting anything here would hide
   // the page (`#root:empty` shows it) and send them to Welcome.
@@ -87,7 +95,7 @@ export default function RootLayout() {
           }}
         >
           <ThemeProvider>
-            {ready ? <RootStack signedIn={status === 'signedIn'} /> : <Boot />}
+            {ready ? <RootStack key={generation} signedIn={status === 'signedIn'} /> : <Boot />}
             <ToastHost />
             <ThemedStatusBar />
           </ThemeProvider>
@@ -121,7 +129,7 @@ function Boot() {
         justifyContent: 'center',
         backgroundColor: t.c.canvas,
       }}
-      accessibilityLabel="Caime is starting"
+      accessibilityLabel={tr('Caime is starting')}
     >
       <IconMark size={64} />
     </View>

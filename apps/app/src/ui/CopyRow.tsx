@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { copyText } from '@/lib/clipboard';
 import { useTheme } from '@/theme/theme';
@@ -42,8 +43,8 @@ export function CopyRow({
         </Text>
         <IconButton
           icon={Copy}
-          label={`Copy the ${label.toLowerCase()}`}
-          onPress={() => void copyText(value).then(() => toast(`${label} copied`))}
+          label={tr('Copy the {toLowerCase}', { toLowerCase: label.toLowerCase() })}
+          onPress={() => void copyText(value).then(() => toast(tr('{label} copied', { label })))}
         />
       </View>
     </View>

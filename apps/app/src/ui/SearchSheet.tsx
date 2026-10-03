@@ -2,6 +2,8 @@
  * Choosing one from a long list (a country, a currency, a time zone, a language): a sheet that
  * finds it as it's typed, the one chosen first and marked, read as one choice by a screen reader.
  */
+
+import { tr } from '@caime/core/i18n';
 import { type ReactNode, useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -34,7 +36,7 @@ export function SearchSheet({
   loading = false,
   failed = false,
   onRetry,
-  empty = 'Nothing by that name.',
+  empty = tr('Nothing by that name.'),
   testID,
 }: {
   open: boolean;
@@ -111,14 +113,14 @@ export function SearchSheet({
             <View style={{ padding: 20, gap: 12, alignItems: 'flex-start' }}>
               <Text variant="body" color="textSecondary" accessibilityLiveRegion="polite">
                 {failed
-                  ? 'The list didn’t load. Check your connection and try again.'
+                  ? tr('The list didn’t load. Check your connection and try again.')
                   : loading
-                    ? 'Loading…'
+                    ? tr('Loading…')
                     : empty}
               </Text>
               {failed && onRetry ? (
                 <Button
-                  label="Try again"
+                  label={tr('Try again')}
                   variant="secondary"
                   onPress={onRetry}
                   testID={testID ? `${testID}-retry` : undefined}

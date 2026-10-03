@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -26,10 +27,10 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
     );
   }, [connections.data, term]);
   return (
-    <Sheet open={open} onClose={onClose} title="New conversation">
+    <Sheet open={open} onClose={onClose} title={tr('New conversation')}>
       <TextField
         icon={Search}
-        placeholder="Search your people"
+        placeholder={tr('Search your people')}
         value={term}
         onChangeText={setTerm}
         autoFocus
@@ -37,8 +38,8 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
       <View style={{ marginHorizontal: -20 }}>
         <ListRow
           icon={UserPlus}
-          title="Connect with someone new"
-          subtitle="Find people by @handle or email"
+          title={tr('Connect with someone new')}
+          subtitle={tr('Find people by @handle or email')}
           onPress={() => {
             onClose();
             router.push('/connect');
@@ -47,7 +48,7 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
         />
         <ListRow
           icon={Users}
-          title="New group"
+          title={tr('New group')}
           onPress={() => {
             onClose();
             router.push('/new-group');
@@ -56,8 +57,8 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
         />
         <ListRow
           icon={LayoutGrid}
-          title="Start a space"
-          subtitle="For a family, a team, a project or a club"
+          title={tr('Start a space')}
+          subtitle={tr('For a family, a team, a project or a club')}
           onPress={() => {
             onClose();
             router.push('/new-space');
@@ -94,7 +95,7 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
         ))}
         {connections.data && list.length === 0 ? (
           <Text variant="body" color="textSecondary" style={{ padding: 20 }}>
-            {term ? 'No one by that name yet.' : 'Your connections will show here.'}
+            {term ? tr('No one by that name yet.') : tr('Your connections will show here.')}
           </Text>
         ) : null}
       </View>

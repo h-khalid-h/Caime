@@ -1,4 +1,5 @@
 import type { MeView, PresenceSetting, PresenceState } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { type Href, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -55,7 +56,11 @@ export function YouButton() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={dot ? `You, ${me.displayName}, ${SAID[dot]}` : `You, ${me.displayName}`}
+      accessibilityLabel={
+        dot
+          ? tr('You, {displayName}, {SAID}', { displayName: me.displayName, SAID: SAID[dot] })
+          : tr('You, {displayName}', { displayName: me.displayName })
+      }
       testID="you-button"
       haptic
       focusRadius={22}
@@ -107,11 +112,11 @@ export function YouSheet() {
   };
   const status = [me.statusEmoji, me.statusText].filter(Boolean).join(' ');
   return (
-    <Sheet open={open} onClose={close} title="You">
+    <Sheet open={open} onClose={close} title={tr('You')}>
       <View style={{ gap: 14 }}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${me.displayName}, edit profile`}
+          accessibilityLabel={tr('{displayName}, edit profile', { displayName: me.displayName })}
           onPress={() => go('/settings/profile')}
           style={({ hovered }) => ({
             flexDirection: 'row',
@@ -141,8 +146,8 @@ export function YouSheet() {
         <Card padded={false}>
           <ListRow
             icon={Smile}
-            title={status || 'Set a status'}
-            subtitle={status ? 'Your status' : undefined}
+            title={status || tr('Set a status')}
+            subtitle={status ? tr('Your status') : undefined}
             chevron
             onPress={() => go('/settings/profile')}
             testID="you-status"
@@ -150,7 +155,7 @@ export function YouSheet() {
         </Card>
         <View style={{ gap: 6 }}>
           <Text variant="overline" color="textTertiary" accessibilityRole="header">
-            Presence
+            {tr('Presence')}
           </Text>
           <Card padded={false}>
             <PresenceChoice value={pending ?? presence} onChange={choose} />
@@ -159,15 +164,20 @@ export function YouSheet() {
         <Card padded={false}>
           <ListRow
             icon={Bell}
-            title="Notifications and priorities"
+            title={tr('Notifications and priorities')}
             chevron
             onPress={() => go('/settings/notifications')}
           />
-          <ListRow icon={Lock} title="Privacy" chevron onPress={() => go('/settings/privacy')} />
+          <ListRow
+            icon={Lock}
+            title={tr('Privacy')}
+            chevron
+            onPress={() => go('/settings/privacy')}
+          />
           <ListRow
             icon={Settings}
-            title="All settings"
-            subtitle="Appearance, security, your plan and more"
+            title={tr('All settings')}
+            subtitle={tr('Appearance, security, your plan and more')}
             chevron
             onPress={() => go('/you')}
             testID="you-all"

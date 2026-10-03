@@ -1,3 +1,4 @@
+import { tr, trn } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
@@ -9,8 +10,8 @@ import { Text } from '@/ui/Text';
 /** "2 messages and 1 action": what's waiting to go. */
 export function waitingText(messages: number, actions: number): string {
   return [
-    messages ? `${messages} message${messages === 1 ? '' : 's'}` : null,
-    actions ? `${actions} action${actions === 1 ? '' : 's'}` : null,
+    messages ? trn(messages, '{n} message', '{n} messages') : null,
+    actions ? trn(actions, '{n} action', '{n} actions') : null,
   ]
     .filter(Boolean)
     .join(' and ');
@@ -43,9 +44,11 @@ export function ConnectionBanner() {
       <Text variant="caption" color={offline ? 'warning' : 'textSecondary'} style={{ flex: 1 }}>
         {offline
           ? queued || actions
-            ? `Offline. ${waitingText(queued, actions)} will go when you’re back.`
-            : 'Offline. Showing what’s on this device.'
-          : 'Connecting…'}
+            ? tr('Offline. {waitingText} will go when you’re back.', {
+                waitingText: waitingText(queued, actions),
+              })
+            : tr('Offline. Showing what’s on this device.')
+          : tr('Connecting…')}
       </Text>
     </View>
   );

@@ -20,6 +20,7 @@ import type {
   RealtimeEvent,
 } from '@caime/core/api';
 import { CALL_RING_SECONDS, type CallKind } from '@caime/core/calls';
+import { tr } from '@caime/core/i18n';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
@@ -420,7 +421,7 @@ function reconcile(call: GroupCallView): void {
 function endNote(call: GroupCallView): string | null {
   const started = call.startedBy.id === me();
   if (started && (call.outcome === 'missed' || call.outcome === 'declined'))
-    return 'Nobody answered.';
+    return tr('Nobody answered.');
   return null;
 }
 
@@ -564,7 +565,7 @@ export async function joinGroupCall(target?: GroupCallView): Promise<void> {
   const call = target ?? current();
   if (!call || (phase && !(phase === 'incoming' && current()?.id === call.id))) return;
   if (inOneToOne()) {
-    toast('You’re already in a call.', { tone: 'danger' });
+    toast(tr('You’re already in a call.'), { tone: 'danger' });
     return;
   }
   const wasRinging = phase === 'incoming';
@@ -666,7 +667,7 @@ export async function startGroupSharing(): Promise<void> {
   } catch (e) {
     // Choosing nothing is fine; anything else is said.
     if (errorName(e) !== 'NotAllowedError')
-      toast('Caime couldn’t share your screen.', { tone: 'danger' });
+      toast(tr('Caime couldn’t share your screen.'), { tone: 'danger' });
     return;
   }
   const track = shown.getVideoTracks()[0];

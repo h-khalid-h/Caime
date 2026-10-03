@@ -8,6 +8,7 @@ import {
   type WebhookEvent,
 } from '@caime/core/apps';
 import { formatWhen } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
@@ -41,8 +42,10 @@ function hostOf(url: string | null): string | null {
   }
 }
 
-const SECRETS_TITLE = 'Copy these now';
-const SECRETS_SUBTITLE = 'They won’t be shown again. Put them where your app keeps its settings.';
+const SECRETS_TITLE = msg('Copy these now');
+const SECRETS_SUBTITLE = msg(
+  'They won’t be shown again. Put them where your app keeps its settings.',
+);
 
 /**
  * What's shown once: the token and the webhook secret, with how to use them. It takes the place
@@ -53,7 +56,7 @@ function Secrets({ shown }: { shown: OrgAppSecretsView }) {
     <View style={{ gap: 12 }}>
       {shown.token ? (
         <>
-          <CopyRow label="Token" value={shown.token} testID="org-app-token" />
+          <CopyRow label={tr('Token')} value={shown.token} testID="org-app-token" />
           <Text variant="caption" color="textSecondary">
             Send it as “Authorization: Bearer” with each request. It acts as{' '}
             {shown.app.bot?.displayName ?? shown.app.name}, and only as far as its permissions.
@@ -62,10 +65,15 @@ function Secrets({ shown }: { shown: OrgAppSecretsView }) {
       ) : null}
       {shown.webhookSecret ? (
         <>
-          <CopyRow label="Webhook secret" value={shown.webhookSecret} testID="org-app-secret" />
+          <CopyRow
+            label={tr('Webhook secret')}
+            value={shown.webhookSecret}
+            testID="org-app-secret"
+          />
           <Text variant="caption" color="textSecondary">
-            Each delivery carries a Caime-Signature header, t=time,v1=signature: the HMAC-SHA256 of
-            “time.body” with this secret. Check it, and ignore old times.
+            {tr(
+              'Each delivery carries a Caime-Signature header, t=time,v1=signature: the HMAC-SHA256 of “time.body” with this secret. Check it, and ignore old times.',
+            )}
           </Text>
         </>
       ) : null}
@@ -94,7 +102,7 @@ export function OrgApps({ org }: { org: OrgView }) {
   const forget = () => setTimeout(() => setSecrets(null), 400);
   const done = (
     <Button
-      label="Done"
+      label={tr('Done')}
       block
       size="lg"
       onPress={() => {
@@ -153,8 +161,8 @@ export function OrgApps({ org }: { org: OrgView }) {
 
   const summary = (a: OrgAppView) =>
     [
-      a.scopes.includes('messages:write') ? 'Answers customers' : 'Reads the inbox',
-      a.webhookUrl ? `Webhook to ${hostOf(a.webhookUrl)}` : null,
+      a.scopes.includes('messages:write') ? tr('Answers customers') : tr('Reads the inbox'),
+      a.webhookUrl ? tr('Webhook to {hostOf}', { hostOf: hostOf(a.webhookUrl) }) : null,
     ]
       .filter(Boolean)
       .join(' · ');
@@ -168,7 +176,7 @@ export function OrgApps({ org }: { org: OrgView }) {
         action={
           full ? undefined : (
             <Button
-              label="Add"
+              label={tr('Add')}
               icon={Plus}
               size="sm"
               variant="ghost"
@@ -181,7 +189,7 @@ export function OrgApps({ org }: { org: OrgView }) {
           )
         }
       >
-        Apps
+        {tr('Apps')}
       </SectionTitle>
       <View
         style={{
@@ -195,8 +203,9 @@ export function OrgApps({ org }: { org: OrgView }) {
       >
         {apps.length === 0 ? (
           <Text variant="caption" color="textSecondary" style={{ padding: 14 }}>
-            Connect your helpdesk or CRM, or let a bot answer the simple questions. Each app has its
-            own token and permissions, and a bot always tells customers it’s automated.
+            {tr(
+              'Connect your helpdesk or CRM, or let a bot answer the simple questions. Each app has its own token and permissions, and a bot always tells customers it’s automated.',
+            )}
           </Text>
         ) : (
           apps.map((a) => (
@@ -231,16 +240,18 @@ export function OrgApps({ org }: { org: OrgView }) {
           setCreating(false);
           forget();
         }}
-        title={secrets ? SECRETS_TITLE : 'Add an app'}
+        title={secrets ? tr(SECRETS_TITLE) : tr('Add an app')}
         subtitle={
-          secrets ? SECRETS_SUBTITLE : 'It acts as a bot on the team, only as far as you let it.'
+          secrets
+            ? tr(SECRETS_SUBTITLE)
+            : tr('It acts as a bot on the team, only as far as you let it.')
         }
         footer={
           secrets ? (
             done
           ) : (
             <Button
-              label="Add the app"
+              label={tr('Add the app')}
               block
               size="lg"
               disabled={!name.trim() || scopes.length === 0}
@@ -256,21 +267,21 @@ export function OrgApps({ org }: { org: OrgView }) {
         ) : (
           <View style={{ gap: 12 }}>
             <TextField
-              label="Name"
+              label={tr('Name')}
               value={name}
               onChangeText={setName}
               maxLength={60}
-              placeholder="Helpdesk, Tiles Assistant…"
+              placeholder={tr('Helpdesk, Tiles Assistant…')}
               testID="org-app-name"
             />
             <Text variant="captionStrong" color="textSecondary">
-              What it may do
+              {tr('What it may do')}
             </Text>
             <View style={{ marginHorizontal: -20 }}>
               {API_SCOPES.map((s) => (
                 <ListRow
                   key={s}
-                  title={API_SCOPE_LABELS[s]}
+                  title={tr(API_SCOPE_LABELS[s])}
                   checked={scopes.includes(s)}
                   onPress={() => setScopes((x) => toggled(x, s))}
                   testID={`org-app-scope-${s}`}
@@ -278,14 +289,14 @@ export function OrgApps({ org }: { org: OrgView }) {
               ))}
             </View>
             <TextField
-              label="Webhook address (optional)"
+              label={tr('Webhook address (optional)')}
               value={webhookUrl}
               onChangeText={setWebhookUrl}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               placeholder="https://helpdesk.example/caime"
-              hint="Caime sends what happens here, signed."
+              hint={tr('Caime sends what happens here, signed.')}
               testID="org-app-webhook"
             />
             {webhookUrl.trim() ? (
@@ -312,12 +323,12 @@ export function OrgApps({ org }: { org: OrgView }) {
           setRemoving(false);
           forget();
         }}
-        title={secrets ? SECRETS_TITLE : app?.name}
+        title={secrets ? tr(SECRETS_TITLE) : app?.name}
         subtitle={
           secrets
-            ? SECRETS_SUBTITLE
+            ? tr(SECRETS_SUBTITLE)
             : app?.bot
-              ? `Bot · answers as ${org.name}, labelled automated`
+              ? tr('Bot · answers as {name}, labelled automated', { name: org.name })
               : undefined
         }
         footer={
@@ -325,7 +336,7 @@ export function OrgApps({ org }: { org: OrgView }) {
             done
           ) : removing ? (
             <Button
-              label="Remove it: its token and webhook stop now"
+              label={tr('Remove it: its token and webhook stop now')}
               variant="danger"
               block
               size="lg"
@@ -337,7 +348,7 @@ export function OrgApps({ org }: { org: OrgView }) {
                   () => {
                     setOpen(null);
                     setRemoving(false);
-                    toast(`${app.name} removed`);
+                    toast(tr('{name} removed', { name: app.name }));
                   },
                 )
               }
@@ -351,7 +362,7 @@ export function OrgApps({ org }: { org: OrgView }) {
         ) : app ? (
           <View style={{ gap: 10 }}>
             <Text variant="caption" color="textSecondary">
-              {app.scopes.map((s) => API_SCOPE_LABELS[s]).join(' · ') || 'No permissions'}
+              {app.scopes.map((s) => tr(API_SCOPE_LABELS[s])).join(' · ') || tr('No permissions')}
             </Text>
             {/* (An app kept on this device from before this was listed has none.) */}
             {app.kits?.length ? (
@@ -363,14 +374,16 @@ export function OrgApps({ org }: { org: OrgView }) {
             <Text variant="caption" color="textSecondary">
               Token {app.tokenPrefix ?? '—'}…
               {app.lastUsedAt
-                ? ` · last used ${formatWhen(app.lastUsedAt, now, timeZone, locale)}`
-                : ' · not used yet'}
+                ? tr(' · last used {formatWhen}', {
+                    formatWhen: formatWhen(app.lastUsedAt, now, timeZone, locale),
+                  })
+                : tr(' · not used yet')}
             </Text>
             <View style={{ marginHorizontal: -20 }}>
               <ListRow
                 icon={KeyRound}
-                title="Replace the token"
-                subtitle="The old one stops at once"
+                title={tr('Replace the token')}
+                subtitle={tr('The old one stops at once')}
                 onPress={() =>
                   void run(
                     () => endpoints.replaceAppToken(org.id, app.id),
@@ -383,19 +396,19 @@ export function OrgApps({ org }: { org: OrgView }) {
                 <>
                   <ListRow
                     icon={Webhook}
-                    title="Send a test delivery"
+                    title={tr('Send a test delivery')}
                     subtitle={hostOf(app.webhookUrl) ?? undefined}
                     onPress={() =>
                       void run(
                         () => endpoints.pingApp(org.id, app.id),
-                        () => toast('Sent: it shows below in a moment'),
+                        () => toast(tr('Sent: it shows below in a moment')),
                       )
                     }
                     testID="org-app-ping"
                   />
                   <ListRow
                     icon={KeyRound}
-                    title="Replace the webhook secret"
+                    title={tr('Replace the webhook secret')}
                     onPress={() =>
                       void run(
                         () => endpoints.replaceAppSecret(org.id, app.id),
@@ -407,7 +420,7 @@ export function OrgApps({ org }: { org: OrgView }) {
               ) : null}
               <ListRow
                 icon={Trash}
-                title="Remove the app"
+                title={tr('Remove the app')}
                 destructive
                 onPress={() => setRemoving(true)}
                 testID="org-app-remove"
@@ -416,7 +429,7 @@ export function OrgApps({ org }: { org: OrgView }) {
             {app.webhookUrl && deliveries.data?.deliveries.length ? (
               <View style={{ gap: 4 }}>
                 <Text variant="overline" color="textTertiary">
-                  Recent deliveries
+                  {tr('Recent deliveries')}
                 </Text>
                 {deliveries.data.deliveries.slice(0, 5).map((d) => (
                   <Text
@@ -428,11 +441,11 @@ export function OrgApps({ org }: { org: OrgView }) {
                   >
                     {d.event} ·{' '}
                     {d.status === 'delivered'
-                      ? `delivered (${d.lastStatus})`
+                      ? tr('delivered ({lastStatus})', { lastStatus: d.lastStatus })
                       : d.status === 'failed'
-                        ? `failed: ${d.lastError ?? d.lastStatus}`
+                        ? tr('failed: {lastError}', { lastError: d.lastError ?? d.lastStatus })
                         : d.attempts
-                          ? `retrying: ${d.lastError ?? d.lastStatus}`
+                          ? tr('retrying: {lastError}', { lastError: d.lastError ?? d.lastStatus })
                           : 'sending'}
                   </Text>
                 ))}

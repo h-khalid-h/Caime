@@ -4,6 +4,8 @@
  * matches a sphere, optionally a role and an organization, or one connection. The most specific
  * matching policy wins, field by field.
  */
+
+import { tr } from './i18n';
 import type { Sphere } from './taxonomy';
 import { SPHERE_DEFS } from './taxonomy';
 import { isWithinSchedule, nextScheduleStart, type Schedule, workHours } from './time';
@@ -361,7 +363,7 @@ export function decideNotification(
     event.kind !== 'call'
   ) {
     const until = nextQuietEnd(ctx.quietHours, ctx.now, ctx.timeZone);
-    return { deliver: 'held', level, holdUntil: until, reason: 'Quiet hours' };
+    return { deliver: 'held', level, holdUntil: until, reason: tr('Quiet hours') };
   }
   // In a meeting (R51): work waits until it ends; calls still ring, and the rest of life arrives.
   if (
@@ -371,7 +373,12 @@ export function decideNotification(
     event.kind !== 'call' &&
     new Date(ctx.busyUntil).getTime() > ctx.now.getTime()
   ) {
-    return { deliver: 'held', level, holdUntil: ctx.busyUntil, reason: `${who}in a meeting` };
+    return {
+      deliver: 'held',
+      level,
+      holdUntil: ctx.busyUntil,
+      reason: tr('{who}in a meeting', { who }),
+    };
   }
 
   const important = level !== 'activity' || ctx.conversationPriority === 'priority';
@@ -390,7 +397,10 @@ export function decideNotification(
         deliver: 'held',
         level,
         holdUntil: next ? next.toISOString() : null,
-        reason: `${who}outside ${scheduleText(policy.schedule)}`,
+        reason: tr('{who}outside {scheduleText}', {
+          who,
+          scheduleText: scheduleText(policy.schedule),
+        }),
       };
     }
     default:
@@ -414,7 +424,9 @@ export function describePolicy(policy: EffectivePolicy): string {
       break;
     case 'schedule':
       parts.push(
-        policy.schedule ? `Notify ${scheduleText(policy.schedule)}` : 'Notify on schedule',
+        policy.schedule
+          ? tr('Notify {scheduleText}', { scheduleText: scheduleText(policy.schedule) })
+          : 'Notify on schedule',
       );
       break;
     case 'important_only':
@@ -427,10 +439,11 @@ export function describePolicy(policy: EffectivePolicy): string {
   if (policy.priority === 'priority')
     parts.push(policy.priorityInScheduleOnly ? 'Priority in hours' : 'Priority');
   if (policy.priority === 'quiet') parts.push('Quiet');
-  if (policy.followUpHours) parts.push(`Follow up after ${policy.followUpHours} h`);
+  if (policy.followUpHours)
+    parts.push(tr('Follow up after {followUpHours} h', { followUpHours: policy.followUpHours }));
   return parts.join(' · ');
 }
 
 export function sphereLabel(sphere: Sphere | null | undefined): string {
-  return sphere ? SPHERE_DEFS[sphere].label : 'Not classified';
+  return sphere ? SPHERE_DEFS[sphere].label : tr('Not classified');
 }

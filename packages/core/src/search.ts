@@ -4,6 +4,8 @@
  * Deterministic patterns cover the common shapes; with AI enabled, a model can fill the same
  * structure for anything else (R17).
  */
+
+import { tr } from './i18n';
 import { relationshipFromWord, type Sphere } from './taxonomy';
 
 export const SEARCH_SCOPES = [
@@ -93,7 +95,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       scope: fileOnly[2],
       fileKind: fileOnly[1],
       text: '',
-      interpretation: `All ${q.toLowerCase()}`,
+      interpretation: tr('All {toLowerCase}', { toLowerCase: q.toLowerCase() }),
     };
   }
 
@@ -108,7 +110,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       person: m[1]!.trim(),
       direction: 'asked_me',
       text: '',
-      interpretation: `What ${m[1]!.trim()} asked you to do`,
+      interpretation: tr('What {trim} asked you to do', { trim: m[1]!.trim() }),
     };
   }
   m = /^(?:things|what)\s+i\s+asked\s+(.+?)(?:\s+to\s+do|\s+for)?$/i.exec(q);
@@ -119,7 +121,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       person: m[1]!.trim(),
       direction: 'i_asked',
       text: '',
-      interpretation: `What you asked ${m[1]!.trim()} to do`,
+      interpretation: tr('What you asked {trim} to do', { trim: m[1]!.trim() }),
     };
   }
 
@@ -131,10 +133,15 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       scope: 'waiting',
       person: m[1]!.trim(),
       text: '',
-      interpretation: `What you're waiting for from ${m[1]!.trim()}`,
+      interpretation: tr("What you're waiting for from {trim}", { trim: m[1]!.trim() }),
     };
   if (/^(?:what\s+am\s+i\s+waiting\s+(?:on|for)|waiting)$/i.test(q)) {
-    return { ...out, scope: 'waiting', text: '', interpretation: "Everything you're waiting for" };
+    return {
+      ...out,
+      scope: 'waiting',
+      text: '',
+      interpretation: tr("Everything you're waiting for"),
+    };
   }
 
   // "what did Sarah say about the migration"
@@ -156,7 +163,9 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       ...out,
       scope: 'decisions',
       text: m[1]?.trim() ?? '',
-      interpretation: m[1] ? `Decisions about “${m[1].trim()}”` : 'All decisions',
+      interpretation: m[1]
+        ? tr('Decisions about “{trim}”', { trim: m[1].trim() })
+        : tr('All decisions'),
     };
   }
 
@@ -168,7 +177,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       scope: 'tasks',
       person: m[1]?.trim() ?? null,
       text: '',
-      interpretation: m[1] ? `Tasks with ${m[1].trim()}` : 'Your tasks',
+      interpretation: m[1] ? tr('Tasks with {trim}', { trim: m[1].trim() }) : tr('Your tasks'),
     };
   }
 
@@ -179,7 +188,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       ...out,
       scope: 'contexts',
       text: m[1]!.trim(),
-      interpretation: `Conversations about “${m[1]!.trim()}”`,
+      interpretation: tr('Conversations about “{trim}”', { trim: m[1]!.trim() }),
     };
 
   // "managers", "my customers", "family"
@@ -190,7 +199,9 @@ export function parseSearchQuery(raw: string): ParsedQuery {
       scope: 'people',
       relationship: rel,
       text: '',
-      interpretation: `People you classified as ${q.replace(/^(?:my|all(?:\s+my)?)\s+/i, '').toLowerCase()}`,
+      interpretation: tr('People you classified as {toLowerCase}', {
+        toLowerCase: q.replace(/^(?:my|all(?:\s+my)?)\s+/i, '').toLowerCase(),
+      }),
     };
   }
 
@@ -206,5 +217,5 @@ export function parseSearchQuery(raw: string): ParsedQuery {
     };
   }
 
-  return { ...out, interpretation: `Everything matching “${q}”` };
+  return { ...out, interpretation: tr('Everything matching “{q}”', { q }) };
 }

@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -32,14 +33,15 @@ export function BrandPanel() {
       <View style={{ alignItems: 'center', gap: 12, maxWidth: 440 }}>
         <Wordmark height={46} />
         <Text variant="mono" color="textTertiary" align="center">
-          messaging that understands your relationships
+          {tr('messaging that understands your relationships')}
         </Text>
         <Text variant="title" align="center">
-          Family, friends and work, each in its place.
+          {tr('Family, friends and work, each in its place.')}
         </Text>
         <Text variant="body" color="textSecondary" align="center">
-          The right conversations find you, and the rest wait politely. How you label someone is
-          only ever yours.
+          {tr(
+            'The right conversations find you, and the rest wait politely. How you label someone is only ever yours.',
+          )}
         </Text>
       </View>
     </View>
@@ -83,7 +85,7 @@ export function AuthLayout({
             {back ? (
               <IconButton
                 icon={ArrowLeft}
-                label="Back"
+                label={tr('Back')}
                 onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
               />
             ) : null}

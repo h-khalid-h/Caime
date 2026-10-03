@@ -3,6 +3,8 @@
  * holding its people and conversations. A space's kind says which sphere it belongs to, so the
  * cards its conversations offer fit it the way a relationship's do (R19).
  */
+
+import { msg } from './i18n';
 import type { Sphere } from './taxonomy';
 
 export const SPACE_KINDS = [
@@ -28,31 +30,36 @@ export interface SpaceKindDef {
 export const SPACE_KIND_DEFS: Record<SpaceKind, SpaceKindDef> = {
   family: {
     id: 'family',
-    label: 'Family',
+    label: msg('Family'),
     sphere: 'family',
-    hint: 'Home, and the family around it',
+    hint: msg('Home, and the family around it'),
   },
-  friends: { id: 'friends', label: 'Friends', sphere: 'friend', hint: 'A circle of friends' },
-  team: { id: 'team', label: 'Team', sphere: 'work', hint: 'The people you work with' },
+  friends: {
+    id: 'friends',
+    label: msg('Friends'),
+    sphere: 'friend',
+    hint: msg('A circle of friends'),
+  },
+  team: { id: 'team', label: msg('Team'), sphere: 'work', hint: msg('The people you work with') },
   project: {
     id: 'project',
-    label: 'Project',
+    label: msg('Project'),
     sphere: 'work',
-    hint: 'A goal, and the people on it',
+    hint: msg('A goal, and the people on it'),
   },
   community: {
     id: 'community',
-    label: 'Community',
+    label: msg('Community'),
     sphere: 'community',
-    hint: 'A club, a building, a group around something shared',
+    hint: msg('A club, a building, a group around something shared'),
   },
   school: {
     id: 'school',
-    label: 'School',
+    label: msg('School'),
     sphere: 'community',
-    hint: 'A class, a course, a parents’ group',
+    hint: msg('A class, a course, a parents’ group'),
   },
-  other: { id: 'other', label: 'Something else', sphere: 'other', hint: 'Anything else' },
+  other: { id: 'other', label: msg('Something else'), sphere: 'other', hint: msg('Anything else') },
 };
 
 export const SPACE_ROLES = ['owner', 'admin', 'member'] as const;

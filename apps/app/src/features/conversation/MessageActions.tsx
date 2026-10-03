@@ -1,5 +1,6 @@
 import type { MessageView } from '@caime/core/api';
 import { previewText } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -150,7 +151,7 @@ export function MessageActions({
         title,
         messageId: m.id,
       });
-      toast('Decision saved');
+      toast(tr('Decision saved'));
       void qc.invalidateQueries({ queryKey: ['decisions'] });
       void qc.invalidateQueries({ queryKey: ['memory'] });
       dismiss();
@@ -166,11 +167,11 @@ export function MessageActions({
       <Sheet
         open
         onClose={dismiss}
-        title="Save as a decision"
-        subtitle="Everyone in this conversation sees it, with a link back to the message."
+        title={tr('Save as a decision')}
+        subtitle={tr('Everyone in this conversation sees it, with a link back to the message.')}
         footer={
           <Button
-            label="Save decision"
+            label={tr('Save decision')}
             block
             size="lg"
             loading={saving}
@@ -181,7 +182,7 @@ export function MessageActions({
         }
       >
         <TextField
-          label="The decision"
+          label={tr('The decision')}
           value={decision}
           onChangeText={(title) => setDeciding({ id: m.id, title })}
           maxLength={DECISION_MAX}
@@ -197,7 +198,7 @@ export function MessageActions({
       <Pressable
         key={emoji}
         accessibilityRole="button"
-        accessibilityLabel={`React ${emoji}`}
+        accessibilityLabel={tr('React {emoji}', { emoji })}
         accessibilityState={{ selected: chosen }}
         onPress={close(() => toggleReaction(qc, m, emoji, me))}
         haptic
@@ -220,7 +221,7 @@ export function MessageActions({
     <Sheet
       open
       onClose={dismiss}
-      title={mine ? 'Your message' : 'Message'}
+      title={mine ? tr('Your message') : tr('Message')}
       subtitle={shown ? previewText(shown, 80) : undefined}
     >
       {!deleted ? (
@@ -235,7 +236,7 @@ export function MessageActions({
         more ? (
           <View
             accessibilityRole="toolbar"
-            accessibilityLabel="More reactions"
+            accessibilityLabel={tr('More reactions')}
             style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 }}
           >
             {MORE_REACTIONS.map((emoji) => reaction(emoji, 44))}
@@ -248,22 +249,22 @@ export function MessageActions({
             testID="reactions-more"
           >
             <Text variant="captionStrong" color="link">
-              More reactions
+              {tr('More reactions')}
             </Text>
           </Pressable>
         )
       ) : null}
       <View style={{ marginHorizontal: -20 }}>
         {!deleted ? (
-          <ListRow icon={CornerUpLeft} title="Reply" onPress={close(() => onReply(m))} />
+          <ListRow icon={CornerUpLeft} title={tr('Reply')} onPress={close(() => onReply(m))} />
         ) : null}
         {shown && !deleted ? (
           <ListRow
             icon={Copy}
-            title="Copy text"
+            title={tr('Copy text')}
             onPress={close(async () => {
               await copyText(shown);
-              toast('Copied');
+              toast(tr('Copied'));
             })}
             testID="message-copy"
           />
@@ -271,7 +272,7 @@ export function MessageActions({
         {onForward && forwardable(m) && !where.private && !deleted ? (
           <ListRow
             icon={Forward}
-            title="Forward"
+            title={tr('Forward')}
             onPress={close(() => onForward(m))}
             testID="message-forward"
           />
@@ -280,8 +281,8 @@ export function MessageActions({
         {canSave && keepable && !deleted && m.kind !== 'system' ? (
           <ListRow
             icon={Bookmark}
-            title="Save"
-            subtitle="Keep it in a collection of yours"
+            title={tr('Save')}
+            subtitle={tr('Keep it in a collection of yours')}
             onPress={() => setKeeping(m.id)}
             testID="message-save"
           />
@@ -289,8 +290,8 @@ export function MessageActions({
         {aiReady && !mine && !deleted && text ? (
           <ListRow
             icon={Languages}
-            title="Translate"
-            subtitle="Into your language, suggested by Caime"
+            title={tr('Translate')}
+            subtitle={tr('Into your language, suggested by Caime')}
             onPress={close(() => translate(m.id))}
             testID="message-translate"
           />
@@ -298,8 +299,8 @@ export function MessageActions({
         {keepable && !deleted && text ? (
           <ListRow
             icon={ListChecks}
-            title="Add to my actions"
-            subtitle="Keeps a link back to this message"
+            title={tr('Add to my actions')}
+            subtitle={tr('Keeps a link back to this message')}
             onPress={close(() => {
               useTaskOutbox.getState().add({
                 title: previewText(text, 120),
@@ -308,8 +309,8 @@ export function MessageActions({
               });
               toast(
                 onlineManager.isOnline()
-                  ? 'Added to your actions'
-                  : 'Added to your actions. It’s saved when you’re back online.',
+                  ? tr('Added to your actions')
+                  : tr('Added to your actions. It’s saved when you’re back online.'),
               );
             })}
           />
@@ -317,8 +318,8 @@ export function MessageActions({
         {keepable && !deleted && text ? (
           <ListRow
             icon={Star}
-            title="Save as a decision"
-            subtitle="Everyone here sees it, with a link back to this message"
+            title={tr('Save as a decision')}
+            subtitle={tr('Everyone here sees it, with a link back to this message')}
             onPress={() => setDeciding({ id: m.id, title: previewText(text, DECISION_MAX) })}
             testID="message-decision"
           />
@@ -326,14 +327,14 @@ export function MessageActions({
         {canPin && m.kind !== 'system' && !deleted ? (
           <ListRow
             icon={m.pinnedAt ? PinOff : Pin}
-            title={m.pinnedAt ? 'Unpin' : 'Pin'}
-            subtitle={m.pinnedAt ? undefined : 'Keeps it at the top for everyone here'}
+            title={m.pinnedAt ? tr('Unpin') : tr('Pin')}
+            subtitle={m.pinnedAt ? undefined : tr('Keeps it at the top for everyone here')}
             testID="message-pin"
             onPress={close(async () => {
               try {
                 if (m.pinnedAt) await endpoints.unpin(m.id);
                 else await endpoints.pin(m.id);
-                toast(m.pinnedAt ? 'Unpinned' : 'Pinned');
+                toast(m.pinnedAt ? tr('Unpinned') : tr('Pinned'));
                 void qc.invalidateQueries({ queryKey: qk.pins(m.conversationId) });
               } catch (e) {
                 toast((e as Error).message, { tone: 'danger' });
@@ -342,14 +343,14 @@ export function MessageActions({
           />
         ) : null}
         {mine && m.kind === 'text' && !deleted ? (
-          <ListRow icon={Pencil} title="Edit" onPress={close(() => onEdit(m))} />
+          <ListRow icon={Pencil} title={tr('Edit')} onPress={close(() => onEdit(m))} />
         ) : null}
         {/* A line about the conversation stays for everyone, whoever's line it is. */}
         {(mine || moderator) && m.kind !== 'system' && !deleted ? (
           <ListRow
             icon={Trash}
-            title="Delete for everyone"
-            subtitle={mine ? undefined : 'As one of the group’s admins'}
+            title={tr('Delete for everyone')}
+            subtitle={mine ? undefined : tr('As one of the group’s admins')}
             destructive
             testID="message-delete-everyone"
             onPress={close(async () => {
@@ -369,7 +370,7 @@ export function MessageActions({
         ) : null}
         <ListRow
           icon={Trash}
-          title="Delete for me"
+          title={tr('Delete for me')}
           destructive={!mine}
           onPress={close(async () => {
             try {
@@ -383,8 +384,8 @@ export function MessageActions({
         {!mine && m.senderId ? (
           <ListRow
             icon={Flag}
-            title="Report"
-            subtitle="Sends this message to Caime’s safety team"
+            title={tr('Report')}
+            subtitle={tr('Sends this message to Caime’s safety team')}
             destructive
             onPress={close(() =>
               report(

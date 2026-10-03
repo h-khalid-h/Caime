@@ -638,10 +638,16 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       (the live pages say `hello@cai.me`, a domain still parked for sale), an SMTP account
       (`SMTP_URL`, `EMAIL_FROM`), a bucket (`BACKUP_S3_*`, `FILES_S3_*`), an uptime check and an
       alert receiver. The full list, with costs, is the owner's checklist in the review
-- [ ] Caime in Arabic (R54): every interface string in one table per package, a language setting
-      (the device's by default), Arabic first with a native speaker's review ⛔, `lang` and `dir`
-      on the web, the last 14 physical styles made logical, the public site in both; the E2E
-      suite run in Arabic with screenshots
+- [x] Caime in Arabic (R54): the interface's 2,073 strings wrapped where they're written
+      (core `i18n.ts`: `tr`, `trn`, `msg`; ADR-17), the Arabic catalog (`locales/ar.ts`, a
+      lazy chunk of 61.0 KB gzip, never in the startup bundle), a language setting in Language
+      and region (the device's by default, mirrored to the account so every device follows),
+      `lang` and `dir` on the web and `I18nManager` on phones, and `i18n-catalog.test.ts`
+      failing CI for a string without its Arabic (`e2e/arabic.spec.ts`: chosen, right to left,
+      kept across a reload and followed on a second device). ⛔ A native speaker's review of
+      the Arabic. Still to do: the server's own copy per person (notification titles, inbox
+      reasons, relationship labels, kit previews), the public site in Arabic, and a long tail
+      of templated strings the extraction left in English
 - [ ] The organization's own door (R53): a visitor who writes from an organization's page lands
       in the conversation as an invitee does; a QR code and a short link the app makes; "Verified"
       explained to the customer; the organization's onboarding in a clinic's order. Measured:
@@ -1440,6 +1446,17 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   `PersonProfileView.busy`, a "now" row in the profile's spec (`person-busy`), and the two
   fields in Settings · Privacy. Core `privacy-safety.test.ts` 20 pass, `connections.test.ts`
   26 pass. Not in E2E: the E2E clock is real, and its meetings are ahead.
+- 2026-10-03 · R54, Caime in Arabic: core `i18n.ts` (a catalog keyed by the English, CLDR
+  plurals, `tr`/`trn`/`msg`, `trAll` for tables of options; ADR-17); a codemod wrapped 2,073
+  strings across the app and core (JSX text, labels and titles, toasts, templates with their
+  variables, plural shapes, tables with `msg` and `tr` where they're shown); the Arabic
+  catalog written for all of them; `scripts/i18n-keys.mjs` lists the keys and what a catalog
+  lacks, `i18n-catalog.test.ts` fails CI on a missing or stale entry or a lost placeholder;
+  the language is a preference (`language: auto | en | ar`, in Language and region, mirrored
+  to the account), loaded before the first screen (`lib/i18n.ts`, waiting for the device's
+  preferences), remounting the app on a change, with `lang` and `dir` on the web. Budget
+  440.8 KB gzip (+2.8 KB for the wrapping); the catalog is a separate chunk, 61.0 KB gzip,
+  48.0 KB Brotli, fetched only when Arabic is on. Server tests 545, core 266, app 169.
 - 2026-10-01 · The product reviewed whole (docs/REVIEW-2026-10.md): facts from the repository,
   production and Lighthouse runs; findings by dimension (strategy, reach, legal, money, product,
   operations, UX); R53 (organizations first) and R54 (Arabic, and what an organization's lawyer

@@ -1,5 +1,6 @@
 import type { InboxItemView } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { endpoints } from '@/api/endpoints';
@@ -43,7 +44,7 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       <Sheet
         open
         onClose={close}
-        title={mode === 'mute' ? 'Mute notifications' : 'Mute until'}
+        title={mode === 'mute' ? tr('Mute notifications') : tr('Mute until')}
         subtitle={listTitle(item)}
       >
         <MuteChoices
@@ -63,7 +64,7 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       {item.unreadCount > 0 ? (
         <ListRow
           icon={CheckCheck}
-          title="Mark as read"
+          title={tr('Mark as read')}
           onPress={() => {
             close();
             markInboxRead(qc, item.id);
@@ -73,37 +74,41 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       ) : null}
       <ListRow
         icon={Pin}
-        title={item.pinned ? 'Unpin' : 'Pin to the top'}
+        title={item.pinned ? tr('Unpin') : tr('Pin to the top')}
         onPress={() => run({ pinned: !item.pinned }, item.pinned ? 'Unpinned' : 'Pinned')}
       />
       {item.attention !== 'priority' ? (
         <ListRow
           icon={Star}
-          title="Always show as important"
-          subtitle="Overrides your relationship rules for this conversation"
+          title={tr('Always show as important')}
+          subtitle={tr('Overrides your relationship rules for this conversation')}
           onPress={() => run({ attention: 'priority' }, 'Marked important')}
         />
       ) : (
         <ListRow
           icon={Star}
-          title="Use my usual rules"
+          title={tr('Use my usual rules')}
           onPress={() => run({ attention: 'auto' }, 'Back to your usual rules')}
         />
       )}
       {item.attention !== 'quiet' ? (
         <ListRow
           icon={Zap}
-          title="Keep it quiet"
-          subtitle="Stays out of Needs you unless someone asks you something"
+          title={tr('Keep it quiet')}
+          subtitle={tr('Stays out of Needs you unless someone asks you something')}
           onPress={() => run({ attention: 'quiet' }, 'Kept quiet')}
         />
       ) : null}
       {item.muted ? (
-        <ListRow icon={Bell} title="Unmute" onPress={() => run({ mutedUntil: null }, 'Unmuted')} />
+        <ListRow
+          icon={Bell}
+          title={tr('Unmute')}
+          onPress={() => run({ mutedUntil: null }, 'Unmuted')}
+        />
       ) : (
         <ListRow
           icon={BellOff}
-          title="Mute notifications…"
+          title={tr('Mute notifications…')}
           onPress={() => setMode('mute')}
           chevron
           testID="row-mute"
@@ -111,8 +116,8 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       )}
       <ListRow
         icon={ArchiveIcon}
-        title={item.archived ? 'Move back to Chats' : 'Archive'}
-        subtitle={item.archived ? undefined : 'Comes back when there’s something new'}
+        title={item.archived ? tr('Move back to Chats') : tr('Archive')}
+        subtitle={item.archived ? undefined : tr('Comes back when there’s something new')}
         onPress={() => run({ archived: !item.archived }, item.archived ? 'Moved back' : 'Archived')}
       />
     </Sheet>

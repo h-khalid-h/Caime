@@ -6,6 +6,7 @@
 import type { SavedItemView } from '@caime/core/api';
 import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
 import { formatBytes, formatListTime, previewText } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -37,7 +38,9 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const from = item.message.senderId === me ? 'You' : (item.message.senderName ?? 'Someone');
-  const where = item.conversation.title ? ` in ${item.conversation.title}` : '';
+  const where = item.conversation.title
+    ? tr(' in {title}', { title: item.conversation.title })
+    : '';
   const when = formatListTime(item.message.createdAt, now, timeZone, locale);
   const remove = async () => {
     try {
@@ -58,7 +61,7 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
         </Text>
         <IconButton
           icon={MessageCircle}
-          label="Show in the conversation"
+          label={tr('Show in the conversation')}
           size={18}
           onPress={() =>
             router.navigate({
@@ -70,7 +73,7 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
         />
         <IconButton
           icon={Trash}
-          label="Remove from saved"
+          label={tr('Remove from saved')}
           size={18}
           onPress={() => void remove()}
           testID="saved-remove"
@@ -115,7 +118,7 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16 }}>
           <Zap size={12} color={t.c.textTertiary} />
           <Text variant="caption" color="textTertiary">
-            Kept by an automation
+            {tr('Kept by an automation')}
           </Text>
         </View>
       ) : null}
@@ -156,25 +159,26 @@ export default function Saved() {
       setEmptying(false);
       setChosen(undefined);
       refresh();
-      toast(`${chosen} is empty now`);
+      toast(tr('{chosen} is empty now', { chosen }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
   };
 
   return (
-    <SettingsPage title="Saved">
+    <SettingsPage title={tr('Saved')}>
       <Text variant="body" color="textSecondary">
-        What you save from a message, and what your automations keep, stays here for as long as the
-        message does.
+        {tr(
+          'What you save from a message, and what your automations keep, stays here for as long as the message does.',
+        )}
       </Text>
       {list.length ? (
         <View
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-          accessibilityLabel="Collections"
+          accessibilityLabel={tr('Collections')}
         >
           <Chip
-            label="Everything"
+            label={tr('Everything')}
             selected={chosen === undefined}
             onPress={() => setChosen(undefined)}
             testID="saved-all"
@@ -203,15 +207,15 @@ export default function Saved() {
       ) : !shown.length ? (
         <EmptyState
           icon={Bookmark}
-          title={chosen ? `Nothing in ${chosen} yet` : 'Nothing saved yet'}
+          title={chosen ? tr('Nothing in {chosen} yet', { chosen }) : tr('Nothing saved yet')}
           body={
             current?.automations
-              ? 'An automation saves here as what it looks for arrives.'
-              : 'Save a message from its actions, or set up an automation to keep what arrives.'
+              ? tr('An automation saves here as what it looks for arrives.')
+              : tr('Save a message from its actions, or set up an automation to keep what arrives.')
           }
           action={
             <Button
-              label="Automations"
+              label={tr('Automations')}
               variant="secondary"
               onPress={() => router.navigate('/settings/automations')}
             />
@@ -229,7 +233,7 @@ export default function Saved() {
       )}
       {items.hasNextPage ? (
         <Button
-          label="Show more"
+          label={tr('Show more')}
           variant="secondary"
           loading={items.isFetchingNextPage}
           onPress={() => void items.fetchNextPage()}
@@ -240,7 +244,7 @@ export default function Saved() {
         // On a phone the confirmation wraps rather than pushing "Keep it" off the screen.
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <Button
-            label="Rename"
+            label={tr('Rename')}
             variant="ghost"
             onPress={() => setRenaming(chosen)}
             testID="saved-rename"
@@ -248,16 +252,16 @@ export default function Saved() {
           {current?.automations ? null : emptying ? (
             <>
               <Button
-                label={`Take everything out of ${chosen}`}
+                label={tr('Take everything out of {chosen}', { chosen })}
                 variant="danger"
                 onPress={() => void empty()}
                 testID="saved-empty-confirm"
               />
-              <Button label="Keep it" variant="ghost" onPress={() => setEmptying(false)} />
+              <Button label={tr('Keep it')} variant="ghost" onPress={() => setEmptying(false)} />
             </>
           ) : (
             <Button
-              label="Empty it"
+              label={tr('Empty it')}
               variant="ghost"
               onPress={() => setEmptying(true)}
               testID="saved-empty"
@@ -268,11 +272,13 @@ export default function Saved() {
       <Sheet
         open={renaming !== null}
         onClose={() => setRenaming(null)}
-        title={`Rename ${chosen ?? ''}`}
-        subtitle="Its automations save to the new name. Into one you have, the two become one."
+        title={tr('Rename {chosen}', { chosen: chosen ?? '' })}
+        subtitle={tr(
+          'Its automations save to the new name. Into one you have, the two become one.',
+        )}
         footer={
           <Button
-            label="Rename"
+            label={tr('Rename')}
             block
             size="lg"
             loading={busy}
@@ -283,7 +289,7 @@ export default function Saved() {
         }
       >
         <TextField
-          label="Its name"
+          label={tr('Its name')}
           value={renaming ?? ''}
           onChangeText={setRenaming}
           maxLength={COLLECTION_MAX}

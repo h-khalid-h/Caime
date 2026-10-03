@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import type { Sphere } from '@caime/core/taxonomy';
 import { ScrollView, View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -188,7 +189,7 @@ export function RelationshipChip({
   const h = size === 'sm' ? 22 : 30;
   return (
     <View
-      accessibilityLabel={`Your label: ${label}`}
+      accessibilityLabel={tr('Your label: {label}', { label })}
       style={{
         height: h,
         paddingHorizontal: size === 'sm' ? 7 : 10,

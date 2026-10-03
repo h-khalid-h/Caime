@@ -5,6 +5,7 @@
  */
 
 import type { OrgView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { latestFoundedYear, ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -54,7 +55,7 @@ export function OrgDetailsSheet({
   const save = async () => {
     const next = {
       name: name.trim() ? undefined : 'Give the organization a name.',
-      country: country ? undefined : 'Choose where it’s based.',
+      country: country ? undefined : tr('Choose where it’s based.'),
     };
     setErrors(next);
     if (Object.values(next).some(Boolean) || !country) return;
@@ -70,7 +71,7 @@ export function OrgDetailsSheet({
       });
       onSaved(saved);
       onClose();
-      toast('Saved');
+      toast(tr('Saved'));
     } catch (e) {
       if (e instanceof ApiError && Object.keys(e.fieldErrors()).length) setErrors(e.fieldErrors());
       else toast((e as Error).message, { tone: 'danger' });
@@ -118,11 +119,11 @@ export function OrgDetailsSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title="Edit details"
+      title={tr('Edit details')}
       subtitle={`@${org.handle}`}
       footer={
         <Button
-          label="Save"
+          label={tr('Save')}
           size="lg"
           block
           loading={busy}
@@ -136,7 +137,7 @@ export function OrgDetailsSheet({
           <OrgMark kind={kind} url={logo} size={88} />
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Button
-              label={logo ? 'Change logo' : 'Add a logo'}
+              label={logo ? tr('Change logo') : tr('Add a logo')}
               icon={Camera}
               variant="secondary"
               size="sm"
@@ -146,7 +147,7 @@ export function OrgDetailsSheet({
             />
             {logo ? (
               <Button
-                label="Remove"
+                label={tr('Remove')}
                 variant="ghost"
                 size="sm"
                 onPress={() => void removeLogo()}
@@ -156,11 +157,11 @@ export function OrgDetailsSheet({
             ) : null}
           </View>
           <Text variant="caption" color="textTertiary" align="center">
-            Shown wherever the organization is: its page, its conversations, its updates.
+            {tr('Shown wherever the organization is: its page, its conversations, its updates.')}
           </Text>
         </View>
         <TextField
-          label="Name"
+          label={tr('Name')}
           value={name}
           onChangeText={setName}
           maxLength={100}
@@ -168,27 +169,27 @@ export function OrgDetailsSheet({
           testID="org-details-name"
         />
         <ChoiceChips<OrgKind>
-          label="What kind of organization"
+          label={tr('What kind of organization')}
           value={kind}
           onChange={setKind}
           wrap
           options={ORG_KINDS.map((k) => ({
             value: k,
-            label: ORG_KIND_LABELS[k],
+            label: tr(ORG_KIND_LABELS[k]),
             icon: ORG_ICONS[k],
           }))}
         />
         <CountryField
-          label="Where it’s based"
+          label={tr('Where it’s based')}
           value={country}
           onChange={setCountry}
           locale={me.locale}
           error={errors.country}
-          hint="Sets its defaults, like the currency of its cards."
+          hint={tr('Sets its defaults, like the currency of its cards.')}
           testID="org-details-country"
         />
         <YearField
-          label="Year it began (optional)"
+          label={tr('Year it began (optional)')}
           value={founded}
           onChange={setFounded}
           min={1000}
@@ -198,14 +199,14 @@ export function OrgDetailsSheet({
           testID="org-details-founded"
         />
         <TextField
-          label="About (optional)"
+          label={tr('About (optional)')}
           value={about}
           onChangeText={setAbout}
           maxLength={500}
           multiline
         />
         <TextField
-          label="Website (optional)"
+          label={tr('Website (optional)')}
           value={website}
           onChangeText={setWebsite}
           autoCapitalize="none"

@@ -1,4 +1,5 @@
 import type { OrgView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -70,12 +71,15 @@ export function WriteFirstSheet({
 
   if (!org.verified)
     return (
-      <Sheet open={open} onClose={close} title="Write to someone">
+      <Sheet open={open} onClose={close} title={tr('Write to someone')}>
         <Text variant="body" color="textSecondary">
-          {`Only a verified organization writes to someone first, so nobody can pose as one. Verify ${org.name}’s domain on its page, and anyone on the team can.`}
+          {tr(
+            'Only a verified organization writes to someone first, so nobody can pose as one. Verify {name}’s domain on its page, and anyone on the team can.',
+            { name: org.name },
+          )}
         </Text>
         <Button
-          label="Verify the domain"
+          label={tr('Verify the domain')}
           variant="secondary"
           onPress={() => {
             close();
@@ -89,11 +93,11 @@ export function WriteFirstSheet({
     <Sheet
       open={open}
       onClose={close}
-      title="Write to someone"
-      subtitle={`As ${org.name}`}
+      title={tr('Write to someone')}
+      subtitle={tr('As {name}', { name: org.name })}
       footer={
         <Button
-          label="Send"
+          label={tr('Send')}
           onPress={() => void send()}
           loading={sending}
           disabled={!handle.trim() || !body.trim()}
@@ -102,7 +106,7 @@ export function WriteFirstSheet({
       }
     >
       <TextField
-        label="Their handle"
+        label={tr('Their handle')}
         value={handle}
         onChangeText={setHandle}
         placeholder="@handle"
@@ -113,10 +117,10 @@ export function WriteFirstSheet({
         testID="write-first-handle"
       />
       <TextField
-        label="Message"
+        label={tr('Message')}
         value={body}
         onChangeText={setBody}
-        placeholder={`Hello, this is ${org.name}…`}
+        placeholder={tr('Hello, this is {name}…', { name: org.name })}
         multiline
         maxLength={4000}
         error={error}
@@ -124,10 +128,13 @@ export function WriteFirstSheet({
       />
       <View style={{ gap: 4 }}>
         <Text variant="caption" color="textSecondary">
-          {`If they haven’t written to ${org.name} before, it reaches them as a message request: nothing more from the team until they answer, and they can decline or block ${org.name}.`}
+          {tr(
+            'If they haven’t written to {name} before, it reaches them as a message request: nothing more from the team until they answer, and they can decline or block {name}.',
+            { name: org.name },
+          )}
         </Text>
         <Text variant="caption" color="textTertiary">
-          Never to anyone under 18, or who only takes messages from people they know.
+          {tr('Never to anyone under 18, or who only takes messages from people they know.')}
         </Text>
       </View>
     </Sheet>

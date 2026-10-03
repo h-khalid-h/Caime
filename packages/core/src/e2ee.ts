@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 /**
  * End-to-end encryption for private conversations (R18, PRD §61), with the Web Crypto API (the
  * browser's, and Node's for tests), so no key or message text ever reaches the server in the
@@ -108,7 +109,7 @@ export const ecPublic = (k: PublicJwk): PublicJwk => ({ kty: 'EC', crv: 'P-256',
 /** What's signed to introduce a device: whose it is, which it is, and its keys. */
 export const introductionText = (d: PublicDevice) =>
   canonical({
-    label: `${E2EE_LABEL} device`,
+    label: tr('{E2EE_LABEL} device', { E2EE_LABEL }),
     userId: d.userId,
     id: d.id,
     e: ecPublic(d.encryptionKey),

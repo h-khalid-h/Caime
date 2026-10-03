@@ -1,4 +1,5 @@
 import type { ConnectionView } from '@caime/core/api';
+import { tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -78,12 +79,12 @@ function PersonRow({
                   .map((r) => <RelationshipChip key={r.id} label={r.label} sphere={r.sphere} />)
               ) : (
                 <Text variant="caption" color="textTertiary">
-                  @{c.person.handle} · add how you know them
+                  {tr('@{handle} · add how you know them', { handle: c.person.handle })}
                 </Text>
               )}
               {c.also?.length ? (
                 <Text variant="caption" color="textTertiary">
-                  {`${c.also.length + 1} accounts`}
+                  {tr('{length} accounts', { length: c.also.length + 1 })}
                 </Text>
               ) : null}
             </View>
@@ -182,7 +183,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
     return order
       .filter((s) => bySphere.has(s))
       .map((s) => ({
-        title: s === 'unlabelled' ? 'Not labelled yet' : SPHERE_DEFS[s as Sphere].plural,
+        title: s === 'unlabelled' ? tr('Not labelled yet') : tr(SPHERE_DEFS[s as Sphere].plural),
         data: bySphere.get(s) ?? [],
       }));
   }, [people, accountsOf, shown, term]);
@@ -192,23 +193,21 @@ export function PeopleList({ pane }: { pane?: boolean }) {
   const header = (
     <View>
       <PageHeader
-        title="People"
-        subtitle={
-          people.length ? `${people.length} connection${people.length === 1 ? '' : 's'}` : null
-        }
+        title={tr('People')}
+        subtitle={people.length ? trn(people.length, '{n} connection', '{n} connections') : null}
         left={desktop ? undefined : <YouButton />}
         right={
           <View style={{ flexDirection: 'row', gap: 6 }}>
             <IconButton
               icon={Phone}
-              label="Calls"
+              label={tr('Calls')}
               filled
               onPress={() => router.push('/calls')}
               testID="people-calls"
             />
             <IconButton
               icon={UserPlus}
-              label="Connect with someone"
+              label={tr('Connect with someone')}
               tone="primary"
               size={20}
               onPress={() => router.push('/connect')}
@@ -237,7 +236,9 @@ export function PeopleList({ pane }: { pane?: boolean }) {
             color={t.scheme === 'dark' ? 'text' : 'accentStrong'}
             style={{ flex: 1 }}
           >
-            {incoming === 1 ? '1 person wants to connect' : `${incoming} people want to connect`}
+            {incoming === 1
+              ? '1 person wants to connect'
+              : tr('{incoming} people want to connect', { incoming })}
           </Text>
           <ChevronRight size={18} color={t.c.accentStrong} />
         </Pressable>
@@ -248,22 +249,22 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <TextField
             icon={Search}
-            placeholder="Search your people"
+            placeholder={tr('Search your people')}
             value={term}
             onChangeText={setTerm}
-            accessibilityLabel="Search your people"
+            accessibilityLabel={tr('Search your people')}
           />
         </View>
       ) : null}
       {all.length ? (
         <ChoiceChips<Filter>
-          label="Show people"
+          label={tr('Show people')}
           value={shown}
           onChange={setFilter}
           wrap={desktop}
           options={chips.map((f) => ({
             value: f,
-            label: `${f === 'all' ? 'Everyone' : f === 'unlabelled' ? 'Not labelled' : SPHERE_DEFS[f].plural}${counts[f] ? ` ${counts[f]}` : ''}`,
+            label: `${f === 'all' ? 'Everyone' : f === 'unlabelled' ? 'Not labelled' : tr(SPHERE_DEFS[f].plural)}${counts[f] ? ` ${counts[f]}` : ''}`,
           }))}
         />
       ) : null}
@@ -283,11 +284,13 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           character="niko"
           expression="happy"
           icon={UserPlus}
-          title="Find your people"
-          body="Connect by @handle or email. When you add someone, tell Caime how you know them: that’s what makes everything else work."
+          title={tr('Find your people')}
+          body={tr(
+            'Connect by @handle or email. When you add someone, tell Caime how you know them: that’s what makes everything else work.',
+          )}
           action={
             <Button
-              label="Connect with someone"
+              label={tr('Connect with someone')}
               icon={UserPlus}
               onPress={() => router.push('/connect')}
             />
@@ -327,7 +330,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={
           <Text variant="body" color="textSecondary" style={{ padding: 24 }} align="center">
-            No one matches.
+            {tr('No one matches.')}
           </Text>
         }
       />

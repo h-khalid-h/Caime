@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { type ErrorBoundaryProps, router } from 'expo-router';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -23,10 +24,12 @@ export function ScreenError({ error, retry }: ErrorBoundaryProps) {
     >
       <Guide character="panda" expression="sad" icon={CircleAlert} size={120} />
       <Text variant="headline" align="center">
-        Something went wrong on this screen
+        {tr('Something went wrong on this screen')}
       </Text>
       <Text variant="body" color="textSecondary" align="center" style={{ maxWidth: 420 }}>
-        Your messages are safe. Try again, and if it keeps happening, tell us what you were doing.
+        {tr(
+          'Your messages are safe. Try again, and if it keeps happening, tell us what you were doing.',
+        )}
       </Text>
       {__DEV__ ? (
         <Text variant="caption" color="danger" align="center" selectable>
@@ -34,8 +37,8 @@ export function ScreenError({ error, retry }: ErrorBoundaryProps) {
         </Text>
       ) : null}
       <View style={{ flexDirection: 'row', gap: 10 }}>
-        <Button label="Try again" onPress={() => void retry()} />
-        <Button label="Go to Chats" variant="secondary" onPress={() => router.replace('/')} />
+        <Button label={tr('Try again')} onPress={() => void retry()} />
+        <Button label={tr('Go to Chats')} variant="secondary" onPress={() => router.replace('/')} />
       </View>
     </View>
   );

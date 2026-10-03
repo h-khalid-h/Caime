@@ -1,5 +1,6 @@
 import type { SpaceSummaryView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
+import { tr, trn } from '@caime/core/i18n';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { router, usePathname } from 'expo-router';
 import { useState } from 'react';
@@ -32,7 +33,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
       accessibilityRole="button"
       accessibilityLabel={[
         s.name,
-        SPACE_KIND_DEFS[s.kind].label,
+        tr(SPACE_KIND_DEFS[s.kind].label),
         s.org?.name ?? '',
         people,
         s.unreadCount ? `${s.unreadCount} unread` : '',
@@ -74,7 +75,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
               {s.name}
             </Text>
             <Text variant="caption" color="textSecondary" numberOfLines={1}>
-              {[SPACE_KIND_DEFS[s.kind].label, s.org?.name, people].filter(Boolean).join(' · ')}
+              {[tr(SPACE_KIND_DEFS[s.kind].label), s.org?.name, people].filter(Boolean).join(' · ')}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
@@ -114,11 +115,11 @@ export function SpacesList({ pane }: { pane?: boolean }) {
       style={{ flexGrow: 0 }}
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}
       accessibilityRole="tablist"
-      accessibilityLabel="Whose spaces"
+      accessibilityLabel={tr('Whose spaces')}
       testID="spaces-owner"
     >
       <Chip
-        label="All"
+        label={tr('All')}
         selected={chosen === 'all'}
         role="radio"
         onPress={() => setOwner('all')}
@@ -126,7 +127,7 @@ export function SpacesList({ pane }: { pane?: boolean }) {
       />
       {mine ? (
         <Chip
-          label="Mine"
+          label={tr('Mine')}
           selected={chosen === 'me'}
           role="radio"
           onPress={() => setOwner('me')}
@@ -147,13 +148,13 @@ export function SpacesList({ pane }: { pane?: boolean }) {
   ) : null;
   const header = (
     <PageHeader
-      title="Spaces"
-      subtitle={spaces.length ? `${spaces.length} space${spaces.length === 1 ? '' : 's'}` : null}
+      title={tr('Spaces')}
+      subtitle={spaces.length ? trn(spaces.length, '{n} space', '{n} spaces') : null}
       left={desktop ? undefined : <YouButton />}
       right={
         <IconButton
           icon={Plus}
-          label="Start a space"
+          label={tr('Start a space')}
           tone="primary"
           size={20}
           onPress={() => router.push('/new-space')}
@@ -175,10 +176,16 @@ export function SpacesList({ pane }: { pane?: boolean }) {
           character="lumi"
           expression="happy"
           icon={LayoutGrid}
-          title="Keep a group together"
-          body="A space holds a family, a team, a project or a club: its people, and conversations everyone can find."
+          title={tr('Keep a group together')}
+          body={tr(
+            'A space holds a family, a team, a project or a club: its people, and conversations everyone can find.',
+          )}
           action={
-            <Button label="Start a space" icon={Plus} onPress={() => router.push('/new-space')} />
+            <Button
+              label={tr('Start a space')}
+              icon={Plus}
+              onPress={() => router.push('/new-space')}
+            />
           }
         />
       </ScrollView>

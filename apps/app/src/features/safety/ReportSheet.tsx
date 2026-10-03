@@ -4,6 +4,8 @@
  * anywhere with `report(target, name)` (report.ts); one sheet, loaded the first time it's asked
  * for.
  */
+
+import { msg, tr, trAll } from '@caime/core/i18n';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -16,16 +18,24 @@ import { toast } from '@/ui/Toast';
 import { type Reason, useReport } from './report';
 
 const REASONS: Array<{ value: Reason; label: string; detail: string }> = [
-  { value: 'spam', label: 'Spam', detail: 'Ads, or the same message again and again' },
-  { value: 'scam', label: 'A scam', detail: 'Asking for money, a password or a code' },
-  { value: 'harassment', label: 'Harassment or bullying', detail: 'Threats, insults, hounding' },
+  { value: 'spam', label: msg('Spam'), detail: msg('Ads, or the same message again and again') },
+  { value: 'scam', label: msg('A scam'), detail: msg('Asking for money, a password or a code') },
+  {
+    value: 'harassment',
+    label: msg('Harassment or bullying'),
+    detail: msg('Threats, insults, hounding'),
+  },
   {
     value: 'impersonation',
-    label: 'Pretending to be someone',
-    detail: 'A person or organization they aren’t',
+    label: msg('Pretending to be someone'),
+    detail: msg('A person or organization they aren’t'),
   },
-  { value: 'inappropriate', label: 'Inappropriate', detail: 'Violence, sexual content, hate' },
-  { value: 'other', label: 'Something else', detail: 'Say what below' },
+  {
+    value: 'inappropriate',
+    label: msg('Inappropriate'),
+    detail: msg('Violence, sexual content, hate'),
+  },
+  { value: 'other', label: msg('Something else'), detail: msg('Say what below') },
 ];
 
 export function ReportSheet() {
@@ -48,7 +58,7 @@ export function ReportSheet() {
         ...(details.trim() ? { details: details.trim() } : {}),
       });
       close();
-      toast('Reported. Thank you for keeping Caime safe.');
+      toast(tr('Reported. Thank you for keeping Caime safe.'));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -59,11 +69,11 @@ export function ReportSheet() {
     <Sheet
       open={target !== null}
       onClose={close}
-      title={`Report ${name}`}
-      subtitle="Caime’s safety team reads every report. Nobody is told who made it."
+      title={tr('Report {name}', { name })}
+      subtitle={tr('Caime’s safety team reads every report. Nobody is told who made it.')}
       footer={
         <Button
-          label="Send report"
+          label={tr('Send report')}
           size="lg"
           block
           loading={busy}
@@ -74,16 +84,20 @@ export function ReportSheet() {
       }
     >
       <View style={{ gap: 14 }}>
-        <Group title="What’s wrong">
+        <Group title={tr('What’s wrong')}>
           <Choice<Reason>
-            label="What’s wrong"
+            label={tr('What’s wrong')}
             value={reason ?? ('' as Reason)}
             onChange={setReason}
-            options={REASONS}
+            options={trAll(REASONS)}
           />
         </Group>
         <TextField
-          label={reason === 'other' ? 'What happened' : 'Anything else they should know (optional)'}
+          label={
+            reason === 'other'
+              ? tr('What happened')
+              : tr('Anything else they should know (optional)')
+          }
           value={details}
           onChangeText={setDetails}
           multiline
@@ -92,7 +106,7 @@ export function ReportSheet() {
         />
         {reason === 'other' && !details.trim() ? (
           <Text variant="caption" color="textTertiary">
-            Say what happened, so the team knows what to look at.
+            {tr('Say what happened, so the team knows what to look at.')}
           </Text>
         ) : null}
       </View>

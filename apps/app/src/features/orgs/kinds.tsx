@@ -1,4 +1,5 @@
 import type { OrgSummaryView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import type { OrgKind } from '@caime/core/orgs';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
@@ -88,18 +89,18 @@ export function VerifiedLine({
   if (!org.verified)
     return (
       <Text variant="caption" color="textSecondary" testID="org-unverified">
-        Not verified yet
+        {tr('Not verified yet')}
       </Text>
     );
   return (
     <View
       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-      accessibilityLabel={`Verified, ${org.verifiedDomain}`}
+      accessibilityLabel={tr('Verified, {verifiedDomain}', { verifiedDomain: org.verifiedDomain })}
       testID="org-verified"
     >
       <BadgeCheck size={14} color={t.c.success} />
       <Text variant="captionStrong" color="success">
-        Verified · {org.verifiedDomain}
+        {tr('Verified · {verifiedDomain}', { verifiedDomain: org.verifiedDomain })}
       </Text>
     </View>
   );

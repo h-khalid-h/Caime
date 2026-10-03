@@ -1,4 +1,5 @@
 import type { MessageView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -57,7 +58,11 @@ export function PollBody({
             key={o.id}
             accessibilityRole={p.multiple ? 'checkbox' : 'radio'}
             accessibilityState={{ checked: chosen }}
-            accessibilityLabel={`${o.text}, ${count} vote${count === 1 ? '' : 's'}`}
+            accessibilityLabel={tr('{text}, {count} vote{value}', {
+              text: o.text,
+              count,
+              value: count === 1 ? '' : 's',
+            })}
             onPress={() => void vote(o.id)}
             style={{
               borderRadius: 10,
@@ -98,7 +103,7 @@ export function PollBody({
       })}
       <Text variant="caption" color={meta}>
         {poll.voters} {poll.voters === 1 ? 'person' : 'people'} voted
-        {p.multiple ? ' · pick any' : ''}
+        {p.multiple ? tr(' · pick any') : ''}
       </Text>
     </View>
   );

@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 /**
  * Acting as a person (PRD §73–74): a personal access token someone makes for their own scripts,
  * and third-party apps they let in through OAuth. Either reaches a short list of routes, each
@@ -54,20 +55,20 @@ export function redirectUriError(uri: string): string | null {
   try {
     u = new URL(uri);
   } catch {
-    return `${uri} isn’t an address.`;
+    return tr('{uri} isn’t an address.', { uri });
   }
-  if (u.hash) return 'A return address can’t have a # part.';
-  if (u.username || u.password) return 'A return address can’t hold a name or password.';
+  if (u.hash) return tr('A return address can’t have a # part.');
+  if (u.username || u.password) return tr('A return address can’t hold a name or password.');
   const scheme = u.protocol.slice(0, -1);
   if (scheme === 'https') return null;
   if (scheme === 'http')
     return ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)
       ? null
-      : 'Use https (plain http is only for localhost).';
+      : tr('Use https (plain http is only for localhost).');
   if (
     ['javascript', 'data', 'file', 'blob', 'vbscript', 'about', 'ftp', 'ws', 'wss'].includes(scheme)
   )
-    return `${scheme}: addresses can’t be used.`;
+    return tr('{scheme}: addresses can’t be used.', { scheme });
   // An app's own scheme: at least a dot or a few letters, so it's clearly the app's.
-  return /^[a-z][a-z0-9+.-]{2,}$/.test(scheme) ? null : 'Use https, or your app’s own scheme.';
+  return /^[a-z][a-z0-9+.-]{2,}$/.test(scheme) ? null : tr('Use https, or your app’s own scheme.');
 }

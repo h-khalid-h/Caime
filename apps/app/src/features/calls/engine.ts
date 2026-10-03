@@ -15,6 +15,7 @@
 
 import type { CallSignalView, CallView, RealtimeEvent } from '@caime/core/api';
 import { CALL_RING_SECONDS, type CallKind } from '@caime/core/calls';
+import { tr } from '@caime/core/i18n';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { API_URL } from '@/lib/config';
@@ -192,7 +193,7 @@ function heartbeat(callId: string): void {
  */
 function couldntConnect(): void {
   if (!relayed)
-    toast('One of your networks may be blocking calls. Try again on another, such as Wi-Fi.');
+    toast(tr('One of your networks may be blocking calls. Try again on another, such as Wi-Fi.'));
   void hangUp('The call couldn’t connect.', true);
 }
 
@@ -419,7 +420,7 @@ export async function startSharing(): Promise<void> {
   } catch (e) {
     // Choosing nothing is fine; anything else is said.
     if (errorName(e) !== 'NotAllowedError')
-      toast('Caime couldn’t share your screen.', { tone: 'danger' });
+      toast(tr('Caime couldn’t share your screen.'), { tone: 'danger' });
     return;
   }
   const track = shown.getVideoTracks()[0];
@@ -477,7 +478,7 @@ export function onCallEvent(event: RealtimeEvent): void {
     }
     finish(
       iCalled && (call.outcome === 'declined' || call.outcome === 'missed')
-        ? `${call.callee.displayName} didn’t answer.`
+        ? tr('{displayName} didn’t answer.', { displayName: call.callee.displayName })
         : !iCalled && (call.outcome === 'missed' || call.outcome === 'cancelled')
           ? 'Missed call'
           : null,

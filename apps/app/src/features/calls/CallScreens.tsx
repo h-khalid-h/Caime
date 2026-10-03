@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,8 +76,8 @@ function OneToOneCallLayer() {
   const status =
     phase === 'incoming'
       ? video
-        ? 'Video call'
-        : 'Voice call'
+        ? tr('Video call')
+        : tr('Voice call')
       : phase === 'outgoing'
         ? 'Calling…'
         : phase === 'connecting'
@@ -84,7 +85,7 @@ function OneToOneCallLayer() {
           : phase === 'reconnecting'
             ? 'Reconnecting…'
             : phase === 'ended'
-              ? (note ?? 'Call ended')
+              ? (note ?? tr('Call ended'))
               : elapsed;
 
   const hasCamera = Boolean(local?.getVideoTracks().length);
@@ -133,7 +134,9 @@ function OneToOneCallLayer() {
             testID="call-theirs"
           >
             {[
-              theyShare ? `${other.displayName.split(' ')[0]} is sharing their screen` : null,
+              theyShare
+                ? tr('{other} is sharing their screen', { other: other.displayName.split(' ')[0] })
+                : null,
               theirs?.muted ? 'Muted' : null,
             ]
               .filter(Boolean)
@@ -148,7 +151,7 @@ function OneToOneCallLayer() {
           role={phase === 'active' ? 'timer' : undefined}
           testID="call-status"
         >
-          {phase === 'incoming' ? `${status} · calling you` : status}
+          {phase === 'incoming' ? tr('{status} · calling you', { status }) : status}
         </Text>
       </View>
       {sharing && phase === 'active' ? (
@@ -165,7 +168,7 @@ function OneToOneCallLayer() {
           testID="call-you-share"
         >
           <Text variant="caption" style={{ color: '#FFFFFF' }}>
-            You’re sharing your screen
+            {tr('You’re sharing your screen')}
           </Text>
         </View>
       ) : video && local && hasCamera && !cameraOff && phase !== 'incoming' && phase !== 'ended' ? (
@@ -201,14 +204,14 @@ function OneToOneCallLayer() {
             <>
               <Round
                 icon={PhoneOff}
-                label="Decline"
+                label={tr('Decline')}
                 tone="end"
                 onPress={() => void hangUp()}
                 testID="call-decline"
               />
               <Round
                 icon={video ? Video : Phone}
-                label="Answer"
+                label={tr('Answer')}
                 tone="go"
                 onPress={() => void answer()}
                 focusRef={primary}
@@ -219,7 +222,7 @@ function OneToOneCallLayer() {
             <>
               <Round
                 icon={muted ? MicOff : Mic}
-                label={muted ? 'Unmute' : 'Mute'}
+                label={muted ? tr('Unmute') : tr('Mute')}
                 on={muted}
                 onPress={toggleMute}
                 testID="call-mute"
@@ -227,7 +230,7 @@ function OneToOneCallLayer() {
               {audio.speaker !== null ? (
                 <Round
                   icon={Volume2}
-                  label={audio.speaker ? 'Speaker off' : 'Speaker'}
+                  label={audio.speaker ? tr('Speaker off') : tr('Speaker')}
                   on={audio.speaker}
                   onPress={audio.toggleSpeaker}
                   testID="call-speaker"
@@ -236,7 +239,7 @@ function OneToOneCallLayer() {
               {screenShareSupported && phase === 'active' ? (
                 <Round
                   icon={sharing ? ScreenShareOff : ScreenShare}
-                  label={sharing ? 'Stop sharing' : 'Share screen'}
+                  label={sharing ? tr('Stop sharing') : tr('Share screen')}
                   on={sharing}
                   onPress={() => void (sharing ? stopSharing() : startSharing())}
                   testID="call-share"
@@ -245,7 +248,7 @@ function OneToOneCallLayer() {
               {video && hasCamera ? (
                 <Round
                   icon={cameraOff ? VideoOff : Video}
-                  label={cameraOff ? 'Camera on' : 'Camera off'}
+                  label={cameraOff ? tr('Camera on') : tr('Camera off')}
                   on={cameraOff}
                   onPress={toggleCamera}
                   testID="call-camera"
@@ -253,7 +256,7 @@ function OneToOneCallLayer() {
               ) : null}
               <Round
                 icon={PhoneOff}
-                label={phase === 'outgoing' ? 'Cancel' : 'Hang up'}
+                label={phase === 'outgoing' ? tr('Cancel') : tr('Hang up')}
                 tone="end"
                 onPress={() => void hangUp()}
                 focusRef={primary}

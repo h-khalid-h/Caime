@@ -1,6 +1,7 @@
 import { palette } from '@caime/brand/tokens';
 import type { MessageView } from '@caime/core/api';
 import { formatBytes, formatClock, systemText } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useEffect, useRef, useState } from 'react';
@@ -77,15 +78,15 @@ function DeliveryIcon({
   switch (delivery) {
     case 'queued':
     case 'sending':
-      return <Clock size={12} color={color} accessibilityLabel="Sending" />;
+      return <Clock size={12} color={color} accessibilityLabel={tr('Sending')} />;
     case 'failed':
-      return <CircleAlert size={13} color="#FFFFFF" accessibilityLabel="Not sent" />;
+      return <CircleAlert size={13} color="#FFFFFF" accessibilityLabel={tr('Not sent')} />;
     case 'sent':
-      return <Check size={13} color={color} accessibilityLabel="Sent" />;
+      return <Check size={13} color={color} accessibilityLabel={tr('Sent')} />;
     case 'delivered':
-      return <CheckCheck size={13} color={color} accessibilityLabel="Delivered" />;
+      return <CheckCheck size={13} color={color} accessibilityLabel={tr('Delivered')} />;
     case 'read':
-      return <CheckCheck size={13} color={readColor} accessibilityLabel="Read" />;
+      return <CheckCheck size={13} color={readColor} accessibilityLabel={tr('Read')} />;
     default:
       return null;
   }
@@ -119,7 +120,7 @@ function TranslationBlock({
     >
       {value.state === 'loading' ? (
         <Text variant="caption" color={meta}>
-          Translating…
+          {tr('Translating…')}
         </Text>
       ) : value.state === 'failed' ? (
         <Text variant="caption" color="danger">
@@ -141,7 +142,7 @@ function TranslationBlock({
       {value.state !== 'loading' ? (
         <Pressable accessibilityRole="button" onPress={hide} hitSlop={6}>
           <Text variant="captionStrong" color={meta} style={{ fontSize: 11 }}>
-            Hide translation
+            {tr('Hide translation')}
           </Text>
         </Pressable>
       ) : null}
@@ -238,7 +239,7 @@ export const MessageBubble = memo(function MessageBubble({
         {topic ? (
           <Pressable
             accessibilityRole="link"
-            accessibilityHint="Opens the topic"
+            accessibilityHint={tr('Opens the topic')}
             onPress={() => router.navigate({ pathname: '/c/[id]', params: { id: topic } })}
             testID="topic-line"
           >
@@ -269,7 +270,7 @@ export const MessageBubble = memo(function MessageBubble({
       }}
     >
       <Text variant="captionStrong" color={mine ? fg : 'textSecondary'} numberOfLines={1}>
-        {m.replyTo.senderId === m.senderId ? 'Replying to themselves' : 'Reply'}
+        {m.replyTo.senderId === m.senderId ? tr('Replying to themselves') : tr('Reply')}
       </Text>
       <Text variant="caption" color={mine ? fg : 'textSecondary'} numberOfLines={2}>
         {replyText}
@@ -308,7 +309,7 @@ export const MessageBubble = memo(function MessageBubble({
   if (deleted) {
     content = (
       <Text variant="message" color={meta} style={{ fontStyle: 'italic' }}>
-        Message deleted
+        {tr('Message deleted')}
       </Text>
     );
   } else if (readAs(m, where) === 'unverified') {
@@ -321,7 +322,7 @@ export const MessageBubble = memo(function MessageBubble({
         style={{ fontStyle: 'italic' }}
         testID="message-sealed-note"
       >
-        {UNVERIFIED}
+        {tr(UNVERIFIED)}
       </Text>
     );
   } else if (m.kind === 'media' && m.files.length) {
@@ -406,7 +407,7 @@ export const MessageBubble = memo(function MessageBubble({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <UserRound size={18} color={fg} />
         <Text variant="message" color={fg}>
-          {p.name ?? 'Contact'}
+          {p.name ?? tr('Contact')}
         </Text>
       </View>
     );
@@ -440,13 +441,13 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {m.forwarded ? <Forward size={11} color={meta} /> : null}
       {m.pinnedAt && !deleted ? (
-        <Pin size={11} color={meta} accessibilityLabel="Pinned" testID="message-pinned" />
+        <Pin size={11} color={meta} accessibilityLabel={tr('Pinned')} testID="message-pinned" />
       ) : null}
       {forMe ? (
         <AtSign
           size={11}
           color={card ? t.c.accentStrong : meta}
-          accessibilityLabel="Mentions you"
+          accessibilityLabel={tr('Mentions you')}
           testID="message-mentions-me"
         />
       ) : null}
@@ -454,13 +455,13 @@ export const MessageBubble = memo(function MessageBubble({
         // A bot's message always says so (R16), and an AI agent's that it's an AI (PRD §75),
         // for the customer and the team alike.
         <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-automated">
-          {m.aiAgent ? 'AI agent ·' : 'Automated ·'}
+          {m.aiAgent ? tr('AI agent ·') : tr('Automated ·')}
         </Text>
       ) : null}
       {(m.payload as { imported?: unknown }).imported ? (
         // Brought over from another app (R45): written there, by whoever it says, before Caime.
         <Text variant="caption" color={meta} style={{ fontSize: 11 }} testID="message-imported">
-          Imported ·
+          {tr('Imported ·')}
         </Text>
       ) : null}
       {m.sentVia ? (
@@ -472,16 +473,16 @@ export const MessageBubble = memo(function MessageBubble({
           numberOfLines={1}
           testID="message-sent-via"
         >
-          {`via ${m.sentVia} ·`}
+          {tr('via {sentVia} ·', { sentVia: m.sentVia })}
         </Text>
       ) : null}
       {m.editedAt && !deleted ? (
         <Text variant="caption" color={meta} style={{ fontSize: 11 }}>
-          edited
+          {tr('edited')}
         </Text>
       ) : null}
       <Text variant="caption" color={meta} style={{ fontSize: 11 }}>
-        {delivery === 'failed' ? 'Not sent · tap to retry' : time}
+        {delivery === 'failed' ? tr('Not sent · tap to retry') : time}
       </Text>
       {mine ? (
         <DeliveryIcon
@@ -500,9 +501,9 @@ export const MessageBubble = memo(function MessageBubble({
     forMe ? 'mentions you' : '',
     m.pinnedAt && !deleted ? 'pinned' : '',
     m.forwarded && !deleted ? 'forwarded' : '',
-    m.automated ? (m.aiAgent ? 'AI agent' : 'automated') : '',
-    m.sentVia ? `sent via ${m.sentVia}` : '',
-    deleted ? 'Message deleted' : (text ?? opened.note ?? sticker?.label ?? m.kind),
+    m.automated ? (m.aiAgent ? tr('AI agent') : 'automated') : '',
+    m.sentVia ? tr('sent via {sentVia}', { sentVia: m.sentVia }) : '',
+    deleted ? tr('Message deleted') : (text ?? opened.note ?? sticker?.label ?? m.kind),
     time,
     delivery && mine ? delivery : '',
   ]
@@ -540,7 +541,7 @@ export const MessageBubble = memo(function MessageBubble({
         <Pressable
           accessibilityRole="text"
           accessibilityLabel={accessibleText}
-          accessibilityHint="Double tap and hold for actions"
+          accessibilityHint={tr('Double tap and hold for actions')}
           onLongPress={() => onLongPress?.(m)}
           onPress={delivery === 'failed' ? () => onRetry?.(m) : undefined}
           onHoverIn={hoverIn}
@@ -592,7 +593,7 @@ export const MessageBubble = memo(function MessageBubble({
           <View style={{ flexDirection: mine ? 'row-reverse' : 'row', gap: 2 }}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Reply"
+              accessibilityLabel={tr('Reply')}
               onPress={() => onReply(m)}
               onHoverIn={hoverIn}
               onHoverOut={hoverOut}
@@ -603,7 +604,7 @@ export const MessageBubble = memo(function MessageBubble({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="React"
+              accessibilityLabel={tr('React')}
               onPress={() => onLongPress?.(m)}
               onHoverIn={hoverIn}
               onHoverOut={hoverOut}

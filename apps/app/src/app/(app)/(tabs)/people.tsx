@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
 import { PeopleList } from '@/features/shell/panes';
@@ -11,11 +12,13 @@ export default function People() {
     return (
       <DetailPlaceholder
         character="zuzu"
-        title="Everyone you know, in the right place"
-        body="Pick someone to see how you know them, what’s open between you, and everything you’ve shared."
+        title={tr('Everyone you know, in the right place')}
+        body={tr(
+          'Pick someone to see how you know them, what’s open between you, and everything you’ve shared.',
+        )}
         action={
           <Button
-            label="Connect with someone"
+            label={tr('Connect with someone')}
             icon={UserPlus}
             onPress={() => router.push('/connect')}
           />

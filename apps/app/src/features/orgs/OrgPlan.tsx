@@ -1,4 +1,5 @@
 import type { OrgPlanView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { nextOrgPlan, ORG_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
 import { View } from 'react-native';
 import { useOrgBilling } from '@/api/hooks';
@@ -22,7 +23,12 @@ export function nextOrgPlanLine(plan: OrgPlanView): string | null {
   if (!next) return null;
   const a = ORG_ALLOWANCES[next];
   const insights = a.insights && !plan.allowance.insights;
-  return `${PLAN_NAMES[next]} has room for ${a.teamSize} people and ${apps(a.apps)}${insights ? ', with insights into how fast the team answers' : ''}.`;
+  return tr('{PLAN_NAMES} has room for {teamSize} people and {apps}{with}.', {
+    PLAN_NAMES: PLAN_NAMES[next],
+    teamSize: a.teamSize,
+    apps: apps(a.apps),
+    with: insights ? tr(', with insights into how fast the team answers') : '',
+  });
 }
 
 /** An organization's plan, for its owner and admins: what it includes and what's in use. */
@@ -52,22 +58,43 @@ export function OrgPlan({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Gauge size={20} color={t.c.textSecondary} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text variant="label">{`${PLAN_NAMES[plan.plan]} plan`}</Text>
+            <Text variant="label">
+              {tr('{PLAN_NAMES} plan', { PLAN_NAMES: PLAN_NAMES[plan.plan] })}
+            </Text>
             <Text variant="caption" color="textSecondary">
-              {`${plan.used.teamSize} of ${plan.allowance.teamSize} people · ${count(plan.used.apps, plan.allowance.apps, 'app')}`}
+              {tr('{teamSize} of {teamSize2} people · {count}', {
+                teamSize: plan.used.teamSize,
+                teamSize2: plan.allowance.teamSize,
+                count: count(plan.used.apps, plan.allowance.apps, 'app'),
+              })}
             </Text>
           </View>
         </View>
         <Meter
           used={plan.used.teamSize}
           of={plan.allowance.teamSize}
-          label={`People on the team: ${plan.used.teamSize} of ${plan.allowance.teamSize}`}
+          label={tr('People on the team: {teamSize} of {teamSize2}', {
+            teamSize: plan.used.teamSize,
+            teamSize2: plan.allowance.teamSize,
+          })}
         />
         <Text variant="caption" color="textSecondary">
-          {`${plan.used.startsToday} of ${plan.allowance.startsPerDay.toLocaleString('en-US')} conversations started by the team today. Customers writing first are never counted.`}
+          {tr(
+            '{startsToday} of {toLocaleString} conversations started by the team today. Customers writing first are never counted.',
+            {
+              startsToday: plan.used.startsToday,
+              toLocaleString: plan.allowance.startsPerDay.toLocaleString('en-US'),
+            },
+          )}
         </Text>
         <Text variant="caption" color="textSecondary" testID="org-plan-agent">
-          {`${plan.used.agentRepliesToday} of ${plan.allowance.agentRepliesPerDay.toLocaleString('en-US')} AI agent answers in the last 24 hours. Past that, your team answers as usual.`}
+          {tr(
+            '{agentRepliesToday} of {toLocaleString} AI agent answers in the last 24 hours. Past that, your team answers as usual.',
+            {
+              agentRepliesToday: plan.used.agentRepliesToday,
+              toLocaleString: plan.allowance.agentRepliesPerDay.toLocaleString('en-US'),
+            },
+          )}
         </Text>
         {billed && billing ? (
           <>
@@ -80,12 +107,12 @@ export function OrgPlan({
           </>
         ) : line ? (
           <Text variant="caption" color="textSecondary">
-            {plan.upgradeUrl ? line : `${line} It can’t be bought here yet.`}
+            {plan.upgradeUrl ? line : tr('{line} It can’t be bought here yet.', { line })}
           </Text>
         ) : null}
         {!billed && next && plan.upgradeUrl ? (
           <Button
-            label={`See ${PLAN_NAMES[next]}`}
+            label={tr('See {PLAN_NAMES}', { PLAN_NAMES: PLAN_NAMES[next] })}
             variant="secondary"
             size="sm"
             onPress={() => openLink(plan.upgradeUrl ?? '')}

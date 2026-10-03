@@ -1,3 +1,4 @@
+import { msg } from './i18n';
 /**
  * AI agents (PRD §74–75): an organization's support agent answers its customers from what the
  * organization told it, as its own named member of the team. It is an AI and always says so,
@@ -15,9 +16,9 @@ export type AgentAction = (typeof AGENT_ACTIONS)[number];
 
 export const AGENT_ACTION_LABELS: Record<AgentAction, string> = {
   answer: 'Answers',
-  hand_over: 'Hands it to your team',
-  resolve: 'Closes the conversation',
-  book: 'Books an appointment for your team to confirm',
+  hand_over: msg('Hands it to your team'),
+  resolve: msg('Closes the conversation'),
+  book: msg('Books an appointment for your team to confirm'),
 };
 
 /** How long its name can be, and how much the organization can tell it. */

@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { forwardRef, useState } from 'react';
 import { TextInput, type TextInputProps, View, type ViewStyle } from 'react-native';
 import { fontFamily } from '@/theme/fonts';
@@ -80,7 +81,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         {secret ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={shown ? 'Hide password' : 'Show password'}
+            accessibilityLabel={shown ? tr('Hide password') : tr('Show password')}
             onPress={() => setShown((v) => !v)}
             hitSlop={10}
           >

@@ -1,5 +1,6 @@
 import type { ConversationView } from '@caime/core/api';
 import { joinNames } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { typingIn, useLive } from '@/state/live';
@@ -66,7 +67,9 @@ export function TypingIndicator({ names }: { names: string[] }) {
         ))}
       </View>
       <Text variant="caption" color="textSecondary">
-        {names.length === 1 ? `${names[0]} is typing…` : `${joinNames(names)} are typing…`}
+        {names.length === 1
+          ? tr('{names} is typing…', { names: names[0] })
+          : tr('{joinNames} are typing…', { joinNames: joinNames(names) })}
       </Text>
     </View>
   );

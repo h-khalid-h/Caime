@@ -1,5 +1,6 @@
 import type { BusinessThreadView, ConversationView } from '@caime/core/api';
 import { waitedFor } from '@caime/core/business';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -62,9 +63,9 @@ export function ThreadBar({
   };
   const who = thread.assignee
     ? mine
-      ? 'You have it'
-      : `${thread.assignee.displayName} has it`
-    : 'Nobody has it yet';
+      ? tr('You have it')
+      : tr('{displayName} has it', { displayName: thread.assignee.displayName })
+    : tr('Nobody has it yet');
 
   return (
     <View
@@ -89,11 +90,11 @@ export function ThreadBar({
           {[
             thread.waitingSince
               ? waitedFor(thread.waitingSince, now) === 'just now'
-                ? 'Wrote just now'
-                : `Waiting ${waitedFor(thread.waitingSince, now)}`
+                ? tr('Wrote just now')
+                : tr('Waiting {waitedFor}', { waitedFor: waitedFor(thread.waitingSince, now) })
               : null,
             who,
-            thread.customerUnder18 ? 'Under 18' : null,
+            thread.customerUnder18 ? tr('Under 18') : null,
             conversation.business?.org.name,
           ]
             .filter(Boolean)
@@ -102,7 +103,7 @@ export function ThreadBar({
       </View>
       {thread.escalated ? (
         <Text variant="caption" color="danger" numberOfLines={2}>
-          {thread.escalated.byName ?? 'Someone'} escalated it
+          {thread.escalated.byName ?? tr('Someone')} escalated it
           {thread.escalated.note ? `: “${thread.escalated.note}”` : ''}
         </Text>
       ) : null}
@@ -111,7 +112,7 @@ export function ThreadBar({
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {resolved ? (
             <Button
-              label="Reopen"
+              label={tr('Reopen')}
               size="sm"
               variant="secondary"
               loading={busy}
@@ -122,7 +123,7 @@ export function ThreadBar({
             <>
               {!mine ? (
                 <Button
-                  label="Take it"
+                  label={tr('Take it')}
                   size="sm"
                   icon={UserRound}
                   loading={busy}
@@ -133,7 +134,7 @@ export function ThreadBar({
                 />
               ) : null}
               <Button
-                label="Resolve"
+                label={tr('Resolve')}
                 size="sm"
                 icon={Check}
                 variant={mine ? 'primary' : 'secondary'}
@@ -144,7 +145,7 @@ export function ThreadBar({
             </>
           )}
           <Button
-            label="More"
+            label={tr('More')}
             size="sm"
             icon={Ellipsis}
             variant="ghost"
@@ -162,20 +163,20 @@ export function ThreadBar({
         }}
         title={
           shownMenu.current === 'assign'
-            ? 'Who has it'
+            ? tr('Who has it')
             : shownMenu.current === 'escalate'
-              ? 'Escalate to the owner and admins'
-              : 'This conversation'
+              ? tr('Escalate to the owner and admins')
+              : tr('This conversation')
         }
         subtitle={
           shownMenu.current === 'escalate'
-            ? 'They’re told at once. Say what needs them, if it helps.'
+            ? tr('They’re told at once. Say what needs them, if it helps.')
             : undefined
         }
         footer={
           shownMenu.current === 'escalate' ? (
             <Button
-              label="Escalate"
+              label={tr('Escalate')}
               variant="danger"
               block
               size="lg"
@@ -195,7 +196,7 @@ export function ThreadBar({
           <View style={{ marginHorizontal: -20 }}>
             <ListRow
               icon={UserRound}
-              title="Give it to someone"
+              title={tr('Give it to someone')}
               subtitle={who}
               onPress={() => setMenu('assign')}
               testID="thread-assign"
@@ -203,7 +204,7 @@ export function ThreadBar({
             {thread.escalated ? (
               <ListRow
                 icon={TriangleAlert}
-                title="It’s handled: stop escalating"
+                title={tr('It’s handled: stop escalating')}
                 onPress={() =>
                   void act(() => endpoints.deescalateThread(conversation.id), 'No longer escalated')
                 }
@@ -211,8 +212,8 @@ export function ThreadBar({
             ) : resolved ? null : (
               <ListRow
                 icon={TriangleAlert}
-                title="Escalate"
-                subtitle="It needs the owner or an admin"
+                title={tr('Escalate')}
+                subtitle={tr('It needs the owner or an admin')}
                 onPress={() => setMenu('escalate')}
                 testID="thread-escalate"
               />
@@ -231,7 +232,11 @@ export function ThreadBar({
                     size={32}
                   />
                 }
-                title={p.userId === me.id ? `${p.person.displayName} (you)` : p.person.displayName}
+                title={
+                  p.userId === me.id
+                    ? tr('{displayName} (you)', { displayName: p.person.displayName })
+                    : p.person.displayName
+                }
                 checked={thread.assignee?.userId === p.userId}
                 onPress={() =>
                   void act(
@@ -244,8 +249,8 @@ export function ThreadBar({
             ))}
             {thread.assignee ? (
               <ListRow
-                title="Nobody"
-                subtitle="Back to New for the whole team"
+                title={tr('Nobody')}
+                subtitle={tr('Back to New for the whole team')}
                 onPress={() =>
                   void act(() => endpoints.assignThread(conversation.id, null), 'Nobody has it')
                 }
@@ -254,7 +259,7 @@ export function ThreadBar({
           </View>
         ) : (
           <TextField
-            label="What needs them (optional)"
+            label={tr('What needs them (optional)')}
             value={note}
             onChangeText={setNote}
             maxLength={300}

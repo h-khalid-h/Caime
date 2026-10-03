@@ -3,6 +3,8 @@
  * applied to the owner's own classification of the viewer — which itself is never revealed
  * (docs/ARCHITECTURE.md ADR-10).
  */
+
+import { msg, tr } from './i18n';
 import type { PrivacyPreset } from './policy';
 import type { Sphere } from './taxonomy';
 
@@ -48,17 +50,17 @@ export interface Viewer {
 }
 
 export const FIELD_LABELS: Record<PrivacyField, string> = {
-  profilePhoto: 'Profile photo',
+  profilePhoto: msg('Profile photo'),
   bio: 'About',
   pronouns: 'Pronouns',
   status: 'Status',
-  onlineStatus: 'Online status',
-  lastSeen: 'Last seen',
-  readReceipts: 'Read receipts',
-  identityDetails: 'Professional details',
+  onlineStatus: msg('Online status'),
+  lastSeen: msg('Last seen'),
+  readReceipts: msg('Read receipts'),
+  identityDetails: msg('Professional details'),
   location: 'Location',
-  busy: 'In a meeting',
-  busyDetails: 'What the meeting is',
+  busy: msg('In a meeting'),
+  busyDetails: msg('What the meeting is'),
 };
 
 /** Fields a "limited" relationship preset hides even when the account-wide rule would allow them. */
@@ -140,7 +142,7 @@ export function describeAudience(audience: Audience, sphereLabel: (s: Sphere) =>
     case 'everyone':
       return 'Everyone';
     case 'connections':
-      return 'Your connections';
+      return tr('Your connections');
     case 'spheres':
       return audience.spheres.length ? audience.spheres.map(sphereLabel).join(', ') : 'Nobody';
     case 'nobody':

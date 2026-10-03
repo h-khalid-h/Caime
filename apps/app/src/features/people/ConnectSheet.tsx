@@ -1,4 +1,5 @@
 import type { PersonView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { relationshipLabel, SPHERE_DEFS } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -69,9 +70,9 @@ export function ConnectSheet({
       // Where they know them from is offered the next time they're asked.
       if (draft?.orgName) void qc.invalidateQueries({ queryKey: qk.taxonomy });
       if (res.status === 'connected' && res.conversationId) {
-        toast(`You’re connected with ${name}`);
+        toast(tr('You’re connected with {name}', { name }));
         router.navigate({ pathname: '/c/[id]', params: { id: res.conversationId } });
-      } else toast(`Request sent to ${name}`);
+      } else toast(tr('Request sent to {name}', { name }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -84,10 +85,10 @@ export function ConnectSheet({
       <Sheet
         open={open}
         onClose={onClose}
-        title={`How do you know ${name}?`}
+        title={tr('How do you know {name}?', { name })}
         footer={
           <Button
-            label="Done"
+            label={tr('Done')}
             size="lg"
             block
             disabled={!form.sphere}
@@ -105,10 +106,10 @@ export function ConnectSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={`Connect with ${name}`}
+      title={tr('Connect with {name}', { name })}
       footer={
         <Button
-          label="Send request"
+          label={tr('Send request')}
           size="lg"
           block
           loading={busy}
@@ -119,8 +120,8 @@ export function ConnectSheet({
     >
       <View style={{ marginHorizontal: -20 }}>
         <ListRow
-          title={label ? 'How you know them' : `How do you know ${name}?`}
-          subtitle={label ? undefined : `Optional. ${name} never sees your label.`}
+          title={label ? tr('How you know them') : tr('How do you know {name}?', { name })}
+          subtitle={label ? undefined : tr('Optional. {name} never sees your label.', { name })}
           right={
             label && draft ? (
               <RelationshipChip label={label} sphere={draft.sphere} size="md" />
@@ -134,9 +135,9 @@ export function ConnectSheet({
       {draft ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Show {name} the context</Text>
+            <Text variant="bodyStrong">{tr('Show {name} the context', { name })}</Text>
             <Text variant="caption" color="textSecondary">
-              They’ll see “{SPHERE_DEFS[draft.sphere].label}
+              They’ll see “{tr(SPHERE_DEFS[draft.sphere].label)}
               {draft.orgName ? ` · ${draft.orgName}` : ''}”, not your label, so they know who’s
               asking.
             </Text>
@@ -145,13 +146,13 @@ export function ConnectSheet({
             value={shareContext}
             onValueChange={setShareContext}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Show the context"
+            accessibilityLabel={tr('Show the context')}
           />
         </View>
       ) : null}
       <TextField
-        label="Add a note (optional)"
-        placeholder={`Hi ${name}, it’s…`}
+        label={tr('Add a note (optional)')}
+        placeholder={tr('Hi {name}, it’s…', { name })}
         value={note}
         onChangeText={setNote}
         maxLength={280}
@@ -160,7 +161,7 @@ export function ConnectSheet({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Lock size={12} color={t.c.textTertiary} />
         <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
-          {name} can accept, decline or ignore. Declining is silent.
+          {tr('{name} can accept, decline or ignore. Declining is silent.', { name })}
         </Text>
       </View>
     </Sheet>

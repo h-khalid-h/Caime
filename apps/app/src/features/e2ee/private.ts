@@ -8,6 +8,7 @@
 import type { DeviceView, MessageView, MyDeviceView } from '@caime/core/api';
 import type { PrivatePayload, SealedMessage } from '@caime/core/e2ee';
 import { newRecoveryKey, parseRecoveryKey, recoveryDevice } from '@caime/core/e2ee-recovery';
+import { msg, tr } from '@caime/core/i18n';
 import { uuidv7 } from '@caime/core/ids';
 import { ApiError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
@@ -64,7 +65,7 @@ function oneTab<T>(userId: string, f: () => Promise<T>): Promise<T> {
 const signedInUser = () => {
   const userId = useSession.getState().user?.id;
   if (!userId || !keystoreSupported || !e2eeSupported())
-    throw new Error('Private conversations don’t open on this device.');
+    throw new Error(tr('Private conversations don’t open on this device.'));
   return userId;
 };
 
@@ -227,7 +228,9 @@ export async function makeRecoveryKey(): Promise<string> {
   const me = await ensureDevice();
   if (!me.approved)
     throw new Error(
-      'Make a recovery key on a device that reads your private conversations already: this one doesn’t yet.',
+      tr(
+        'Make a recovery key on a device that reads your private conversations already: this one doesn’t yet.',
+      ),
     );
   const key = newRecoveryKey();
   const rec = recoveryDevice(parseRecoveryKey(key) as Uint8Array);
@@ -261,12 +264,12 @@ export async function restoreFromRecoveryKey(typed: string): Promise<void> {
   const bytes = parseRecoveryKey(typed);
   if (!bytes)
     throw new Error(
-      'That isn’t a recovery key: it’s 32 letters and digits, in eight groups of four.',
+      tr('That isn’t a recovery key: it’s 32 letters and digits, in eight groups of four.'),
     );
   const me = await ensureDevice({ recheck: true });
   const { devices } = await endpoints.myDevices();
   const listed = devices.find((d) => d.recovery);
-  if (!listed) throw new Error('No recovery key is set up for this account.');
+  if (!listed) throw new Error(tr('No recovery key is set up for this account.'));
   const rec = recoveryDevice(bytes);
   const same = (a: { x: string; y: string }, b: { x: string; y: string }) =>
     a.x === b.x && a.y === b.y;
@@ -275,7 +278,7 @@ export async function restoreFromRecoveryKey(typed: string): Promise<void> {
     !same(listed.encryptionKey, rec.keys.encryption.publicKey) ||
     !same(listed.signingKey, rec.keys.signing.publicKey)
   )
-    throw new Error('That isn’t the recovery key for this account.');
+    throw new Error(tr('That isn’t the recovery key for this account.'));
   const keys = await importDeviceKeys(rec.keys);
   if (!me.approved) {
     const pub = { id: me.id, userId: me.userId, ...(await publicKeys(me.keys)) };
@@ -302,8 +305,9 @@ export function devicesChanged(userId: string): void {
 /** Why a private message can't be sent from here: said as it is, never sent some other way. */
 const refused = (code: string, message: string, details?: Record<string, unknown>) =>
   new ApiError(409, code, message, details);
-const WAITING =
-  'This device can’t write in private conversations until you approve it on another device where you’re signed in to Caime.';
+const WAITING = msg(
+  'This device can’t write in private conversations until you approve it on another device where you’re signed in to Caime.',
+);
 
 interface Recipients {
   people: string[];
@@ -324,7 +328,7 @@ export async function sealText(
   replyTo?: PrivatePayload['replyTo'],
 ): Promise<SealedMessage> {
   const me = await ensureDevice();
-  if (!me.approved) throw refused('waiting', WAITING);
+  if (!me.approved) throw refused('waiting', tr(WAITING));
   const view = given ?? (await endpoints.conversationDevices(conversationId));
   const j = await judge(me.userId, view.devices, view.chain);
   if (j.held.size)
@@ -404,7 +408,7 @@ export async function sendPrivate(
 /** An edit: sealed again, as the next edit of the same message (answering what it answered). */
 export async function editPrivate(message: MessageView, text: string): Promise<MessageView> {
   const sealed = message.sealed;
-  if (!sealed) throw new Error('That message isn’t private.');
+  if (!sealed) throw new Error(tr('That message isn’t private.'));
   const was = await openMessage(message, message.conversationId);
   const replyTo = was.ok ? was.payload.replyTo : undefined;
   let given: Recipients | undefined;
@@ -511,17 +515,21 @@ export function noteFor(result: Opened): string | null {
   if (result.ok) return null;
   switch (result.reason) {
     case 'not_for_this_device':
-      return 'Sent before this device could read private messages.';
+      return tr('Sent before this device could read private messages.');
     case 'waiting':
-      return 'This device reads private messages once you approve it on another of your devices.';
+      return tr(
+        'This device reads private messages once you approve it on another of your devices.',
+      );
     case 'held':
-      return 'Their security code changed since you compared it: check it in this conversation’s details to read this.';
+      return tr(
+        'Their security code changed since you compared it: check it in this conversation’s details to read this.',
+      );
     case 'stale':
-      return 'An older version of a message that was edited since.';
+      return tr('An older version of a message that was edited since.');
     case 'unverified':
-      return 'This message couldn’t be checked, so it isn’t shown.';
+      return tr('This message couldn’t be checked, so it isn’t shown.');
     default:
-      return 'This message can’t be read on this device.';
+      return tr('This message can’t be read on this device.');
   }
 }
 
@@ -610,10 +618,10 @@ export async function myDevices(): Promise<MyDevice[]> {
 /** This device approves another of mine that's waiting: it's mine, and sealed for from now. */
 export async function approveDevice(deviceId: string): Promise<void> {
   const me = await ensureDevice();
-  if (!me.approved) throw new Error(WAITING);
+  if (!me.approved) throw new Error(tr(WAITING));
   const { devices } = await endpoints.myDevices();
   const d = devices.find((x) => x.id === deviceId && !x.approved);
-  if (!d) throw new Error('That device isn’t waiting any more.');
+  if (!d) throw new Error(tr('That device isn’t waiting any more.'));
   const introduction = await introduce(me, {
     id: d.id,
     userId: me.userId,

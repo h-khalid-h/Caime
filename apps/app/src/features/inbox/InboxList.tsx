@@ -1,4 +1,5 @@
 import type { InboxItemView, InboxSectionView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -106,7 +107,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
   const header = (
     <View>
       <PageHeader
-        title="Chats"
+        title={tr('Chats')}
         subtitle={caughtUp ? null : headline}
         left={desktop ? undefined : <YouButton />}
         right={
@@ -114,7 +115,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
             {!desktop ? (
               <IconButton
                 icon={Bell}
-                label="Notifications"
+                label={tr('Notifications')}
                 filled
                 badge={badges.notifications > 0}
                 onPress={() => router.push('/notifications')}
@@ -122,7 +123,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
             ) : null}
             <IconButton
               icon={SquarePen}
-              label="New conversation"
+              label={tr('New conversation')}
               tone="primary"
               size={20}
               onPress={() => setNewChat(true)}
@@ -132,23 +133,26 @@ export function InboxList({ pane }: { pane?: boolean }) {
         }
       />
       <ChoiceChips<Show>
-        label="Show conversations"
+        label={tr('Show conversations')}
         value={show}
         onChange={setShow}
         wrap={desktop}
         options={[
           {
             value: 'attention',
-            label: needsYou ? `Attention · ${needsYou}` : 'Attention',
+            label: needsYou ? tr('Attention · {needsYou}', { needsYou }) : tr('Attention'),
             accessibilityLabel: needsYou
-              ? `Attention, ${needsYou} ${needsYou === 1 ? 'needs' : 'need'} you`
+              ? tr('Attention, {needsYou} {needs} you', {
+                  needsYou,
+                  needs: needsYou === 1 ? 'needs' : 'need',
+                })
               : 'Attention',
             testID: 'inbox-attention',
           },
-          { value: 'all', label: 'All', testID: 'inbox-all' },
+          { value: 'all', label: tr('All'), testID: 'inbox-all' },
           ...spheres.map((s) => ({
             value: s,
-            label: SPHERE_DEFS[s].plural,
+            label: tr(SPHERE_DEFS[s].plural),
             icon: sphereIcon(t.sphere(s).icon),
             testID: `inbox-${s}`,
           })),
@@ -179,7 +183,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
         >
           {playful ? <Character name="momo" expression="happy" size={40} accents={false} /> : null}
           <Text variant="bodyStrong" color="success" style={{ flex: 1 }}>
-            Nothing needs you right now. Enjoy it.
+            {tr('Nothing needs you right now. Enjoy it.')}
           </Text>
         </View>
       ) : null}
@@ -198,11 +202,17 @@ export function InboxList({ pane }: { pane?: boolean }) {
         <EmptyState
           character="niko"
           expression="excited"
-          title="Say hello to someone"
-          body="Connect with the people you talk to. Caime keeps family, friends and work each in the right place."
+          title={tr('Say hello to someone')}
+          body={tr(
+            'Connect with the people you talk to. Caime keeps family, friends and work each in the right place.',
+          )}
           icon={UserPlus}
           action={
-            <Button label="Find people" icon={UserPlus} onPress={() => router.push('/connect')} />
+            <Button
+              label={tr('Find people')}
+              icon={UserPlus}
+              onPress={() => router.push('/connect')}
+            />
           }
         />
       </>
@@ -244,7 +254,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
                 <Icon size={16} color={t.c.textTertiary} />
                 <Text variant="overline" color="textTertiary">
                   {section.section === 'requests'
-                    ? `Message requests · ${count}`
+                    ? tr('Message requests · {count}', { count })
                     : `${section.label} · ${count}`}
                 </Text>
               </Pressable>

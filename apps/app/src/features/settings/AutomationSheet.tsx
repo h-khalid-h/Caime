@@ -11,6 +11,7 @@ import {
   withoutWord,
   wordsFrom,
 } from '@caime/core/automations';
+import { msg, tr } from '@caime/core/i18n';
 import { ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -33,7 +34,7 @@ const KIND_LABELS: Record<SaveKind, string> = {
   document: 'Files',
   photo: 'Photos',
   video: 'Videos',
-  audio: 'Voice notes',
+  audio: msg('Voice notes'),
   link: 'Links',
 };
 
@@ -90,7 +91,13 @@ export function AutomationSheet({
       if (automation)
         await endpoints.updateAutomation(automation.id, { when, collection: target, enabled });
       else await endpoints.createAutomation({ when, collection: target });
-      toast(automation ? (enabled ? 'Automation changed' : 'Automation off') : 'Automation on');
+      toast(
+        automation
+          ? enabled
+            ? tr('Automation changed')
+            : tr('Automation off')
+          : tr('Automation on'),
+      );
       done();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -102,7 +109,7 @@ export function AutomationSheet({
     if (!automation) return;
     try {
       await endpoints.deleteAutomation(automation.id);
-      toast('Automation removed. What it saved stays saved.');
+      toast(tr('Automation removed. What it saved stays saved.'));
       done();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -117,15 +124,15 @@ export function AutomationSheet({
     <Sheet
       open
       onClose={onClose}
-      title={automation ? 'An automation' : 'A new automation'}
+      title={automation ? tr('An automation') : tr('A new automation')}
       subtitle={
         target
           ? describeAutomation({ when, collection: target })
-          : 'Keep what arrives, as it arrives'
+          : tr('Keep what arrives, as it arrives')
       }
       footer={
         <Button
-          label={automation ? 'Save' : 'Turn it on'}
+          label={automation ? tr('Save') : tr('Turn it on')}
           block
           size="lg"
           loading={busy}
@@ -138,19 +145,21 @@ export function AutomationSheet({
       <View style={{ gap: 12 }} testID="automation-sheet">
         {automation ? (
           <SwitchRow
-            label="On"
+            label={tr('On')}
             detail={
-              enabled ? 'Keeps what matches as it arrives' : 'Keeps nothing until it’s on again'
+              enabled
+                ? tr('Keeps what matches as it arrives')
+                : tr('Keeps nothing until it’s on again')
             }
             value={enabled}
             onChange={setEnabled}
             testID="automation-enabled"
           />
         ) : null}
-        <Overline>When</Overline>
+        <Overline>{tr('When')}</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<string>
-            label="Who sends it"
+            label={tr('Who sends it')}
             value={sphere}
             onChange={(v) => {
               setSphere(v);
@@ -159,12 +168,12 @@ export function AutomationSheet({
             options={[
               {
                 value: ANYONE,
-                label: 'Anyone',
-                detail: 'In your conversations, once you’ve let them in',
+                label: tr('Anyone'),
+                detail: tr('In your conversations, once you’ve let them in'),
               },
               ...SPHERES.filter((s) => s !== 'other').map((s) => ({
                 value: s,
-                label: SPHERE_DEFS[s].plural,
+                label: tr(SPHERE_DEFS[s].plural),
               })),
             ]}
           />
@@ -172,25 +181,30 @@ export function AutomationSheet({
         {roles.length ? (
           <View style={{ marginHorizontal: -20 }}>
             <Choice<string>
-              label="Of them"
+              label={tr('Of them')}
               value={role}
               onChange={setRole}
               options={[
-                { value: ALL, label: `All ${SPHERE_DEFS[sphere as Sphere].plural.toLowerCase()}` },
+                {
+                  value: ALL,
+                  label: tr('All {toLowerCase}', {
+                    toLowerCase: tr(SPHERE_DEFS[sphere as Sphere].plural).toLowerCase(),
+                  }),
+                },
                 ...roles.map((r) => ({ value: r.id, label: r.plural })),
               ]}
             />
           </View>
         ) : null}
-        <Overline>Sends</Overline>
+        <Overline>{tr('Sends')}</Overline>
         <View
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-          accessibilityLabel="What they send"
+          accessibilityLabel={tr('What they send')}
         >
           {SAVE_KINDS.map((k) => (
             <Chip
               key={k}
-              label={KIND_LABELS[k]}
+              label={tr(KIND_LABELS[k])}
               selected={kinds.includes(k)}
               onPress={() => toggle(k)}
               testID={`automation-kind-${k}`}
@@ -198,11 +212,11 @@ export function AutomationSheet({
           ))}
         </View>
         <TextField
-          label="With any of these words (optional)"
-          hint="In its name, or in the message it comes with. Separate them with commas."
+          label={tr('With any of these words (optional)')}
+          hint={tr('In its name, or in the message it comes with. Separate them with commas.')}
           value={words}
           onChangeText={setWords}
-          placeholder="invoice, receipt"
+          placeholder={tr('invoice, receipt')}
           testID="automation-words"
         />
         {wordsFrom(words).length ? (
@@ -213,33 +227,33 @@ export function AutomationSheet({
                 key={w}
                 label={`${w}  ×`}
                 size="sm"
-                accessibilityLabel={`Take out “${w}”`}
+                accessibilityLabel={tr('Take out “{w}”', { w })}
                 onPress={() => setWords(withoutWord(words, w))}
               />
             ))}
           </View>
         ) : null}
-        <Overline>Save it to</Overline>
+        <Overline>{tr('Save it to')}</Overline>
         <CollectionPicker
-          label="Save it to"
+          label={tr('Save it to')}
           value={collection}
           onChange={setCollection}
           collections={saved.data?.collections ?? []}
-          placeholder="Customer Files"
+          placeholder={tr('Customer Files')}
           testID="automation-collection"
         />
         {automation ? (
           confirming ? (
             <View style={{ flexDirection: 'row', gap: 10, paddingTop: 8 }}>
               <Button
-                label="Remove it"
+                label={tr('Remove it')}
                 variant="danger"
                 onPress={() => void remove()}
                 style={{ flex: 1 }}
                 testID="automation-delete-confirm"
               />
               <Button
-                label="Keep it"
+                label={tr('Keep it')}
                 variant="secondary"
                 onPress={() => setConfirming(false)}
                 style={{ flex: 1 }}
@@ -253,14 +267,15 @@ export function AutomationSheet({
               testID="automation-delete"
             >
               <Text variant="captionStrong" color="danger">
-                Remove this automation
+                {tr('Remove this automation')}
               </Text>
             </Pressable>
           )
         ) : null}
         <Text variant="caption" color="textTertiary">
-          Nothing is kept from a private conversation, from a message request you haven’t accepted,
-          or from someone blocked. What’s kept goes when its message does.
+          {tr(
+            'Nothing is kept from a private conversation, from a message request you haven’t accepted, or from someone blocked. What’s kept goes when its message does.',
+          )}
         </Text>
       </View>
     </Sheet>

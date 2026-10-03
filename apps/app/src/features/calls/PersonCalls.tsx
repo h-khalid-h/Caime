@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useCallHistory } from '@/api/hooks';
@@ -20,7 +21,7 @@ export function PersonCalls({ personId, name }: { personId: string; name: string
             <Divider inset={52} />
             <ListRow
               icon={Phone}
-              title={`All calls with ${name}`}
+              title={tr('All calls with {name}', { name })}
               chevron
               onPress={() =>
                 router.navigate({ pathname: '/calls', params: { with: personId, name } })

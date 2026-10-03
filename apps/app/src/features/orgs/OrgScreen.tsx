@@ -1,5 +1,6 @@
 import type { OrgMemberView, OrgView } from '@caime/core/api';
 import { describeHours } from '@caime/core/booking';
+import { tr } from '@caime/core/i18n';
 import {
   canChangeOrgRole,
   canManageOrg,
@@ -94,25 +95,34 @@ function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) =>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <BadgeCheck size={18} color={t.c.success} />
           <Text variant="bodyStrong" style={{ flex: 1 }}>
-            {d.name} is verified
+            {tr('{name} is verified', { name: d.name })}
           </Text>
-          <Button label="Change" size="sm" variant="ghost" onPress={() => setChanging(true)} />
+          <Button
+            label={tr('Change')}
+            size="sm"
+            variant="ghost"
+            onPress={() => setChanging(true)}
+          />
         </View>
         <Text variant="caption" color="textSecondary" style={{ marginTop: 6 }}>
-          Your team shows as “Verified at {org.name}”. Keep the TXT record in place.
+          {tr('Your team shows as “Verified at {name}”. Keep the TXT record in place.', {
+            name: org.name,
+          })}
         </Text>
       </Card>
     );
   if (!d || changing)
     return (
       <Card>
-        <Text variant="bodyStrong">Verify your domain</Text>
+        <Text variant="bodyStrong">{tr('Verify your domain')}</Text>
         <Text variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 12 }}>
-          Prove {org.name} controls its website’s domain with one DNS record. Then your team shows
-          as verified, and customers know it’s really you.
+          {tr(
+            'Prove {name} controls its website’s domain with one DNS record. Then your team shows as verified, and customers know it’s really you.',
+            { name: org.name },
+          )}
         </Text>
         <TextField
-          label="Your domain"
+          label={tr('Your domain')}
           value={domain}
           onChangeText={setDomain}
           autoCapitalize="none"
@@ -123,18 +133,18 @@ function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) =>
         />
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <Button
-            label="Get the record"
+            label={tr('Get the record')}
             loading={busy === 'set'}
             testID="org-domain-set"
             onPress={() =>
               void (domain.trim()
                 ? run('set', () => endpoints.setOrgDomain(org.id, domain.trim()))
-                : toast('Enter your domain, like datac.com.'))
+                : toast(tr('Enter your domain, like datac.com.')))
             }
           />
           {changing ? (
             <Button
-              label="Keep the current one"
+              label={tr('Keep the current one')}
               variant="ghost"
               onPress={() => setChanging(false)}
             />
@@ -144,25 +154,30 @@ function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) =>
     );
   return (
     <Card>
-      <Text variant="bodyStrong">Add this record to {d.name}</Text>
+      <Text variant="bodyStrong">{tr('Add this record to {name}', { name: d.name })}</Text>
       <Text variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 12 }}>
-        At your domain’s DNS provider, add a TXT record with this name and value, then check.
-        Changes can take a few minutes to appear.
+        {tr(
+          'At your domain’s DNS provider, add a TXT record with this name and value, then check. Changes can take a few minutes to appear.',
+        )}
       </Text>
       <View style={{ gap: 10 }}>
-        <CopyRow label="Name" value={d.record.name} testID="org-record-name" />
-        <CopyRow label="Value" value={d.record.value} testID="org-record-value" />
+        <CopyRow label={tr('Name')} value={d.record.name} testID="org-record-name" />
+        <CopyRow label={tr('Value')} value={d.record.value} testID="org-record-value" />
       </View>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
         <Button
-          label="Check now"
+          label={tr('Check now')}
           loading={busy === 'check'}
           testID="org-domain-check"
           onPress={() =>
             void run('check', () => endpoints.checkOrgDomain(org.id), `${d.name} is verified`)
           }
         />
-        <Button label="Use another domain" variant="ghost" onPress={() => setChanging(true)} />
+        <Button
+          label={tr('Use another domain')}
+          variant="ghost"
+          onPress={() => setChanging(true)}
+        />
       </View>
     </Card>
   );
@@ -237,18 +252,18 @@ export function OrgScreen({ handle }: { handle: string }) {
   const back = (
     <IconButton
       icon={ArrowLeft}
-      label="Back"
+      label={tr('Back')}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/orgs'))}
     />
   );
   if (!org)
     return (
       <Screen edges={desktop ? [] : ['top', 'bottom']}>
-        <TopBar left={desktop ? undefined : back} title="Organization" />
+        <TopBar left={desktop ? undefined : back} title={tr('Organization')} />
         {q.isError ? (
           <EmptyState
-            title="This organization isn’t here"
-            body="It may have closed, or the handle is different."
+            title={tr('This organization isn’t here')}
+            body={tr('It may have closed, or the handle is different.')}
           />
         ) : (
           <SkeletonRows />
@@ -271,15 +286,17 @@ export function OrgScreen({ handle }: { handle: string }) {
             {manager ? (
               <IconButton
                 icon={Pencil}
-                label="Edit details"
+                label={tr('Edit details')}
                 onPress={() => setEditing(true)}
                 testID="org-edit"
               />
             ) : null}
             <IconButton
               icon={Share}
-              label={`Share ${org.name}’s link`}
-              onPress={() => void shareLink(`${org.name} on Caime:`, handleLink(org.handle))}
+              label={tr('Share {name}’s link', { name: org.name })}
+              onPress={() =>
+                void shareLink(tr('{name} on Caime:', { name: org.name }), handleLink(org.handle))
+              }
               testID="org-share"
             />
           </View>
@@ -320,7 +337,7 @@ export function OrgScreen({ handle }: { handle: string }) {
               { label: 'verified', value: <VerifiedLine org={org} /> },
               org.country
                 ? {
-                    label: 'based in',
+                    label: tr('based in'),
                     value: countries?.find((c) => c.code === org.country)?.name ?? org.country,
                   }
                 : null,
@@ -353,10 +370,13 @@ export function OrgScreen({ handle }: { handle: string }) {
           {org.myRole ? null : org.blockedByMe ? (
             <View style={{ alignItems: 'center', gap: 8, marginTop: 6 }} testID="org-blocked">
               <Text variant="caption" color="textSecondary" align="center">
-                {`You blocked ${org.name}. It can’t write to you, and your conversation with it is closed.`}
+                {tr(
+                  'You blocked {name}. It can’t write to you, and your conversation with it is closed.',
+                  { name: org.name },
+                )}
               </Text>
               <Button
-                label={`Unblock ${org.name}`}
+                label={tr('Unblock {name}', { name: org.name })}
                 variant="secondary"
                 size="sm"
                 loading={busy}
@@ -373,12 +393,12 @@ export function OrgScreen({ handle }: { handle: string }) {
               align="center"
               testID="org-minor-unverified"
             >
-              Under 18, you can message organizations that have verified who they are.
+              {tr('Under 18, you can message organizations that have verified who they are.')}
             </Text>
           ) : (
             <View style={{ alignItems: 'center', gap: 6 }}>
               <Button
-                label={`Message ${org.name}`}
+                label={tr('Message {name}', { name: org.name })}
                 icon={MessageCircle}
                 loading={starting}
                 style={{ alignSelf: 'center', marginTop: 6 }}
@@ -387,12 +407,15 @@ export function OrgScreen({ handle }: { handle: string }) {
               />
               {minor ? (
                 <Text variant="caption" color="textTertiary" align="center">
-                  Its team will see you’re under 18.
+                  {tr('Its team will see you’re under 18.')}
                 </Text>
               ) : org.agent ? (
                 // Before anyone writes, they know an AI answers first (PRD §75).
                 <Text variant="caption" color="textTertiary" align="center" testID="org-agent-line">
-                  {`${org.agent.name}, its AI agent, answers first and says so. Ask for a person any time.`}
+                  {tr(
+                    '{name}, its AI agent, answers first and says so. Ask for a person any time.',
+                    { name: org.agent.name },
+                  )}
                 </Text>
               ) : null}
             </View>
@@ -404,11 +427,15 @@ export function OrgScreen({ handle }: { handle: string }) {
             <Card padded={false}>
               <ListRow
                 icon={Inbox}
-                title="Inbox"
+                title={tr('Inbox')}
                 subtitle={
                   waiting?.waiting
-                    ? `${waiting.waiting} customer${waiting.waiting === 1 ? '' : 's'} waiting${waiting.mine ? ` · ${waiting.mine} yours` : ''}`
-                    : 'Customers’ conversations with the team'
+                    ? tr('{waiting} customer{value} waiting{text}', {
+                        waiting: waiting.waiting,
+                        value: waiting.waiting === 1 ? '' : 's',
+                        text: waiting.mine ? ` · ${waiting.mine} yours` : '',
+                      })
+                    : tr('Customers’ conversations with the team')
                 }
                 onPress={() =>
                   router.push({ pathname: '/o/[handle]/inbox', params: { handle: org.handle } })
@@ -427,7 +454,7 @@ export function OrgScreen({ handle }: { handle: string }) {
               action={
                 manager ? (
                   <Button
-                    label="New space"
+                    label={tr('New space')}
                     icon={LayoutGrid}
                     size="sm"
                     variant="ghost"
@@ -439,7 +466,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                 ) : undefined
               }
             >
-              Spaces
+              {tr('Spaces')}
             </SectionTitle>
             <View style={{ marginHorizontal: 16 }} testID="org-spaces">
               {orgSpaces?.length ? (
@@ -455,7 +482,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                       right={
                         s.joined ? undefined : (
                           <Button
-                            label="Join"
+                            label={tr('Join')}
                             size="sm"
                             variant="secondary"
                             loading={busy}
@@ -484,8 +511,10 @@ export function OrgScreen({ handle }: { handle: string }) {
               ) : (
                 <Text variant="caption" color="textSecondary">
                   {manager
-                    ? 'A space keeps the team together: its people, and conversations everyone can find. Start one for the team, a project or a branch.'
-                    : 'None yet that you’re in.'}
+                    ? tr(
+                        'A space keeps the team together: its people, and conversations everyone can find. Start one for the team, a project or a branch.',
+                      )
+                    : tr('None yet that you’re in.')}
                 </Text>
               )}
             </View>
@@ -506,7 +535,7 @@ export function OrgScreen({ handle }: { handle: string }) {
               action={
                 manager ? (
                   <Button
-                    label="Add"
+                    label={tr('Add')}
                     icon={UserPlus}
                     size="sm"
                     variant="ghost"
@@ -516,7 +545,7 @@ export function OrgScreen({ handle }: { handle: string }) {
                 ) : undefined
               }
             >
-              {`Team · ${org.memberCount}`}
+              {tr('Team · {memberCount}', { memberCount: org.memberCount })}
             </SectionTitle>
             <View
               style={{
@@ -548,12 +577,16 @@ export function OrgScreen({ handle }: { handle: string }) {
                         size={36}
                       />
                     }
-                    title={self ? `${m.person.displayName} (you)` : m.person.displayName}
+                    title={
+                      self
+                        ? tr('{displayName} (you)', { displayName: m.person.displayName })
+                        : m.person.displayName
+                    }
                     subtitle={
                       m.person.kind === 'agent'
-                        ? 'AI agent · says so in everything it writes'
+                        ? tr('AI agent · says so in everything it writes')
                         : bot
-                          ? 'Bot · an app’s, labelled automated'
+                          ? tr('Bot · an app’s, labelled automated')
                           : [m.title, ORG_ROLE_LABELS[m.role]].filter(Boolean).join(' · ')
                     }
                     onPress={
@@ -574,7 +607,7 @@ export function OrgScreen({ handle }: { handle: string }) {
               <Card padded={false}>
                 <ListRow
                   icon={LogOut}
-                  title={`Leave ${org.name}`}
+                  title={tr('Leave {name}', { name: org.name })}
                   destructive
                   onPress={() => setLeaving(true)}
                   testID="org-leave"
@@ -582,8 +615,8 @@ export function OrgScreen({ handle }: { handle: string }) {
                 {org.myRole === 'owner' ? (
                   <ListRow
                     icon={ArchiveIcon}
-                    title={`Close ${org.name}`}
-                    subtitle="Its page goes, and the team’s seats end."
+                    title={tr('Close {name}', { name: org.name })}
+                    subtitle={tr('Its page goes, and the team’s seats end.')}
                     destructive
                     onPress={() => setClosing(true)}
                     testID="org-close"
@@ -600,8 +633,13 @@ export function OrgScreen({ handle }: { handle: string }) {
             style={{ paddingHorizontal: 24 }}
           >
             {org.verified
-              ? `${org.name} proved it controls ${org.verifiedDomain}.`
-              : 'Caime hasn’t verified who runs this organization. Be careful with links and payments.'}
+              ? tr('{name} proved it controls {verifiedDomain}.', {
+                  name: org.name,
+                  verifiedDomain: org.verifiedDomain,
+                })
+              : tr(
+                  'Caime hasn’t verified who runs this organization. Be careful with links and payments.',
+                )}
           </Text>
         )}
         {!org.members ? (
@@ -610,8 +648,8 @@ export function OrgScreen({ handle }: { handle: string }) {
               {org.blockedByMe ? null : (
                 <ListRow
                   icon={Ban}
-                  title={`Block ${org.name}`}
-                  subtitle="It stops being able to write to you"
+                  title={tr('Block {name}', { name: org.name })}
+                  subtitle={tr('It stops being able to write to you')}
                   destructive
                   onPress={() => setBlocking(true)}
                   testID="org-block"
@@ -619,8 +657,10 @@ export function OrgScreen({ handle }: { handle: string }) {
               )}
               <ListRow
                 icon={Flag}
-                title={`Report ${org.name}`}
-                subtitle="Sends it to Caime’s safety team, for a scam or someone posing as another"
+                title={tr('Report {name}', { name: org.name })}
+                subtitle={tr(
+                  'Sends it to Caime’s safety team, for a scam or someone posing as another',
+                )}
                 destructive
                 onPress={() => report({ orgId: org.id }, org.name)}
                 testID="org-report"
@@ -633,11 +673,13 @@ export function OrgScreen({ handle }: { handle: string }) {
       <Sheet
         open={blocking}
         onClose={() => setBlocking(false)}
-        title={`Block ${org.name}?`}
-        subtitle="It won’t be able to write to you, and your conversation with it closes. Unblock it here whenever you like."
+        title={tr('Block {name}?', { name: org.name })}
+        subtitle={tr(
+          'It won’t be able to write to you, and your conversation with it closes. Unblock it here whenever you like.',
+        )}
         footer={
           <Button
-            label="Block"
+            label={tr('Block')}
             variant="danger"
             block
             size="lg"
@@ -663,16 +705,16 @@ export function OrgScreen({ handle }: { handle: string }) {
           setAdding(false);
           setPicked(new Set());
         }}
-        title="Add to the team"
-        subtitle="People you’re connected with, over 18. They answer for the organization."
+        title={tr('Add to the team')}
+        subtitle={tr('People you’re connected with, over 18. They answer for the organization.')}
         footer={
           <Button
             label={
               room !== null && picked.size > room
-                ? `Room for ${room} more`
+                ? tr('Room for {room} more', { room })
                 : picked.size
-                  ? `Add ${picked.size}`
-                  : 'Add'
+                  ? tr('Add {size}', { size: picked.size })
+                  : tr('Add')
             }
             block
             size="lg"
@@ -683,7 +725,10 @@ export function OrgScreen({ handle }: { handle: string }) {
               void (async () => {
                 const n = picked.size;
                 if (
-                  await run(() => endpoints.addToOrg(org.id, [...picked]), `Added ${n} to the team`)
+                  await run(
+                    () => endpoints.addToOrg(org.id, [...picked]),
+                    tr('Added {n} to the team', { n }),
+                  )
                 ) {
                   setAdding(false);
                   setPicked(new Set());
@@ -702,7 +747,10 @@ export function OrgScreen({ handle }: { handle: string }) {
           >
             {room === 0
               ? `The team is full on the ${PLAN_NAMES[org.plan.plan]} plan (${org.plan.allowance.teamSize} people). ${nextOrgPlanLine(org.plan) ?? ''}`.trim()
-              : `Room for ${room} more on the ${PLAN_NAMES[org.plan.plan]} plan.`}
+              : tr('Room for {room} more on the {PLAN_NAMES} plan.', {
+                  room,
+                  PLAN_NAMES: PLAN_NAMES[org.plan.plan],
+                })}
           </Text>
         ) : null}
         <PeoplePicker
@@ -723,11 +771,11 @@ export function OrgScreen({ handle }: { handle: string }) {
             {canChangeOrgRole(org.myRole, shown.role) ? (
               <ListRow
                 icon={Settings}
-                title={shown.role === 'admin' ? 'Move to the team' : 'Make an admin'}
+                title={shown.role === 'admin' ? tr('Move to the team') : tr('Make an admin')}
                 subtitle={
                   shown.role === 'admin'
-                    ? 'They stop managing the team and verification'
-                    : 'Admins add people and verify the domain'
+                    ? tr('They stop managing the team and verification')
+                    : tr('Admins add people and verify the domain')
                 }
                 testID="org-toggle-admin"
                 onPress={() =>
@@ -750,7 +798,7 @@ export function OrgScreen({ handle }: { handle: string }) {
             {canRemoveFromOrg(org.myRole, shown.role) ? (
               <ListRow
                 icon={LogOut}
-                title="Remove from the team"
+                title={tr('Remove from the team')}
                 destructive
                 testID="org-remove"
                 onPress={() =>
@@ -772,15 +820,19 @@ export function OrgScreen({ handle }: { handle: string }) {
       <Sheet
         open={closing}
         onClose={() => setClosing(false)}
-        title={`Close ${org.name}?`}
-        subtitle={`Its page goes, its team’s seats end, and its apps stop. Customers keep what they were sent, to read. ${
-          org.verified && org.verifiedDomain
-            ? `Its handle waits for whoever verifies ${org.verifiedDomain} again, so ${org.name} can come back.`
-            : 'Its handle is held for a year, then free to anyone.'
-        }`}
+        title={tr('Close {name}?', { name: org.name })}
+        subtitle={tr(
+          'Its page goes, its team’s seats end, and its apps stop. Customers keep what they were sent, to read. {text}',
+          {
+            text:
+              org.verified && org.verifiedDomain
+                ? `Its handle waits for whoever verifies ${org.verifiedDomain} again, so ${org.name} can come back.`
+                : tr('Its handle is held for a year, then free to anyone.'),
+          },
+        )}
         footer={
           <Button
-            label={`Close ${org.name}`}
+            label={tr('Close {name}', { name: org.name })}
             variant="danger"
             block
             size="lg"
@@ -803,17 +855,19 @@ export function OrgScreen({ handle }: { handle: string }) {
       <Sheet
         open={leaving}
         onClose={() => setLeaving(false)}
-        title={`Leave ${org.name}?`}
+        title={tr('Leave {name}?', { name: org.name })}
         subtitle={
           org.myRole === 'owner'
             ? org.memberCount > 1
-              ? 'The admin who has been here longest takes over, or else the longest-standing team member.'
-              : 'You’re the last one here, so it closes.'
-            : 'You stop answering for it. An admin can add you back.'
+              ? tr(
+                  'The admin who has been here longest takes over, or else the longest-standing team member.',
+                )
+              : tr('You’re the last one here, so it closes.')
+            : tr('You stop answering for it. An admin can add you back.')
         }
         footer={
           <Button
-            label="Leave"
+            label={tr('Leave')}
             variant="danger"
             block
             size="lg"
@@ -821,7 +875,12 @@ export function OrgScreen({ handle }: { handle: string }) {
             testID="org-leave-confirm"
             onPress={() =>
               void (async () => {
-                if (await run(() => endpoints.removeFromOrg(org.id, me), `You left ${org.name}`)) {
+                if (
+                  await run(
+                    () => endpoints.removeFromOrg(org.id, me),
+                    tr('You left {name}', { name: org.name }),
+                  )
+                ) {
                   setLeaving(false);
                   router.replace('/orgs');
                 }

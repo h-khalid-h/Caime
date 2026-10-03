@@ -4,6 +4,7 @@
  * organization then continues under the same handle and page, with this person as its owner.
  */
 import type { ClosedOrgView, OrgReclaimView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -33,22 +34,30 @@ export function ReclaimCard({ closed }: { closed: ClosedOrgView }) {
   return (
     <Card>
       <View style={{ gap: 8 }} testID="org-reclaim">
-        <Text variant="bodyStrong">{closed.name} closed, and its handle is waiting for it</Text>
+        <Text variant="bodyStrong">
+          {tr('{name} closed, and its handle is waiting for it', { name: closed.name })}
+        </Text>
         <Text variant="caption" color="textSecondary">
           {started
-            ? `At ${closed.domain}’s DNS provider, add a TXT record with this name and value, then check. Changes can take a few minutes to appear.`
-            : `If you’re ${closed.name}, prove you control ${closed.domain} again and it continues: the same handle and page, with you as its owner. Its old team, apps and followers don’t come back; what its customers were sent stays theirs to read.`}
+            ? tr(
+                'At {domain}’s DNS provider, add a TXT record with this name and value, then check. Changes can take a few minutes to appear.',
+                { domain: closed.domain },
+              )
+            : tr(
+                'If you’re {name}, prove you control {domain} again and it continues: the same handle and page, with you as its owner. Its old team, apps and followers don’t come back; what its customers were sent stays theirs to read.',
+                { name: closed.name, domain: closed.domain },
+              )}
         </Text>
         {started ? (
           <View style={{ gap: 10 }}>
-            <CopyRow label="Name" value={started.record.name} testID="org-reclaim-name" />
-            <CopyRow label="Value" value={started.record.value} testID="org-reclaim-value" />
+            <CopyRow label={tr('Name')} value={started.record.name} testID="org-reclaim-name" />
+            <CopyRow label={tr('Value')} value={started.record.value} testID="org-reclaim-value" />
           </View>
         ) : null}
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {started ? (
             <Button
-              label="Check now"
+              label={tr('Check now')}
               size="sm"
               loading={busy}
               testID="org-reclaim-check"
@@ -57,14 +66,14 @@ export function ReclaimCard({ closed }: { closed: ClosedOrgView }) {
                   const { org } = await endpoints.checkReclaim(closed.id);
                   qc.setQueryData(qk.org(org.handle), { org });
                   void qc.invalidateQueries({ queryKey: qk.orgs });
-                  toast(`${org.name} is yours again`);
+                  toast(tr('{name} is yours again', { name: org.name }));
                   router.replace({ pathname: '/o/[handle]', params: { handle: org.handle } });
                 })
               }
             />
           ) : (
             <Button
-              label="Take it back"
+              label={tr('Take it back')}
               size="sm"
               variant="secondary"
               loading={busy}

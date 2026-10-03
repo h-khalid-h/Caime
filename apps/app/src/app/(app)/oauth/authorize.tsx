@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -90,11 +91,15 @@ export default function Authorize() {
             <SkeletonRows />
           ) : q.isError || !c ? (
             <View style={{ gap: 12 }} testID="oauth-bad-request">
-              <Text variant="headline">This link from an app isn’t right</Text>
+              <Text variant="headline">{tr('This link from an app isn’t right')}</Text>
               <Text variant="body" color="textSecondary">
-                {(q.error as Error | null)?.message ?? 'Go back to the app and try again.'}
+                {(q.error as Error | null)?.message ?? tr('Go back to the app and try again.')}
               </Text>
-              <Button label="Go to Caime" variant="secondary" onPress={() => router.replace('/')} />
+              <Button
+                label={tr('Go to Caime')}
+                variant="secondary"
+                onPress={() => router.replace('/')}
+              />
             </View>
           ) : (
             <View style={{ gap: 16 }} testID="oauth-consent">
@@ -112,15 +117,21 @@ export default function Authorize() {
                   <KeyRound size={22} color={t.c.text} />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text variant="headline">{`${c.app.name} wants to act for you`}</Text>
+                  <Text variant="headline">
+                    {tr('{name} wants to act for you', { name: c.app.name })}
+                  </Text>
                   <Text variant="caption" color="textSecondary">
-                    {`Made by ${c.app.owner.displayName} (@${c.app.owner.handle})${c.app.website ? ` · ${c.app.website}` : ''}`}
+                    {tr('Made by {displayName} (@{handle}){text}', {
+                      displayName: c.app.owner.displayName,
+                      handle: c.app.owner.handle,
+                      text: c.app.website ? ` · ${c.app.website}` : '',
+                    })}
                   </Text>
                 </View>
               </View>
               <View style={{ gap: 8 }}>
                 <Text variant="captionStrong" color="textSecondary">
-                  It will be able to
+                  {tr('It will be able to')}
                 </Text>
                 {c.scopes.map((s) => (
                   <View
@@ -135,11 +146,14 @@ export default function Authorize() {
                 ))}
               </View>
               <Text variant="caption" color="textSecondary">
-                {`Never your password, privacy or account. What it sends says “via ${c.app.name}”. End it any time in You → Connected apps.${c.allowedBefore ? ' You let it in before.' : ''}`}
+                {tr(
+                  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Connected apps.{You}',
+                  { name: c.app.name, You: c.allowedBefore ? tr(' You let it in before.') : '' },
+                )}
               </Text>
               {minor ? (
                 <Text variant="body" testID="oauth-minor">
-                  Apps act for people over 18, so this one can’t act for you.
+                  {tr('Apps act for people over 18, so this one can’t act for you.')}
                 </Text>
               ) : null}
               {error ? (
@@ -150,14 +164,14 @@ export default function Authorize() {
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                 {minor ? null : (
                   <Button
-                    label="Allow"
+                    label={tr('Allow')}
                     onPress={() => void decide('allow')}
                     loading={busy === 'allow'}
                     testID="oauth-allow"
                   />
                 )}
                 <Button
-                  label={minor ? `Go back to ${back}` : 'Cancel'}
+                  label={minor ? tr('Go back to {back}', { back }) : tr('Cancel')}
                   variant={minor ? 'primary' : 'secondary'}
                   onPress={() => void decide('deny')}
                   loading={busy === 'deny'}
@@ -166,7 +180,7 @@ export default function Authorize() {
               </View>
               {minor ? null : (
                 <Text variant="caption" color="textTertiary">
-                  {`Then you’ll go back to ${back}.`}
+                  {tr('Then you’ll go back to {back}.', { back })}
                 </Text>
               )}
             </View>

@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { Character } from '@/brand/Character';
@@ -19,11 +20,11 @@ export default function Welcome() {
   const link = usePendingLink((s) => s.link);
   const linkHandle = handleIn(link);
   const linkLine = linkHandle
-    ? `Create an account or sign in to see @${linkHandle}`
+    ? tr('Create an account or sign in to see @{linkHandle}', { linkHandle })
     : inviteIn(link)
-      ? 'You were invited. Create an account or sign in and you’re connected'
+      ? tr('You were invited. Create an account or sign in and you’re connected')
       : isAuthorizeLink(link)
-        ? 'An app asked to act for you. Sign in to answer it'
+        ? tr('An app asked to act for you. Sign in to answer it')
         : null;
   const actions = (
     <View style={{ gap: 12, width: '100%', maxWidth: 420, alignSelf: 'center' }}>
@@ -44,14 +45,14 @@ export default function Welcome() {
         </View>
       ) : null}
       <Button
-        label="Create your account"
+        label={tr('Create your account')}
         size="lg"
         block
         onPress={() => router.push('/sign-up')}
         testID="welcome-sign-up"
       />
       <Button
-        label="I already have an account"
+        label={tr('I already have an account')}
         variant="secondary"
         size="lg"
         block
@@ -59,7 +60,7 @@ export default function Welcome() {
         testID="welcome-sign-in"
       />
       <Text variant="caption" color="textTertiary" align="center" style={{ marginTop: 4 }}>
-        Free for people. Private by design: how you label someone is only ever yours.
+        {tr('Free for people. Private by design: how you label someone is only ever yours.')}
       </Text>
     </View>
   );
@@ -79,14 +80,15 @@ export default function Welcome() {
           >
             <View style={{ maxWidth: 420, width: '100%', alignSelf: 'center', gap: 8 }}>
               <Text variant="mono" color="textTertiary">
-                welcome
+                {tr('welcome')}
               </Text>
               <Text variant="display" accessibilityRole="header">
-                Welcome to Caime
+                {tr('Welcome to Caime')}
               </Text>
               <Text variant="body" color="textSecondary">
-                One place for everyone you talk to, and it knows the difference between your mum,
-                your manager and your plumber.
+                {tr(
+                  'One place for everyone you talk to, and it knows the difference between your mum, your manager and your plumber.',
+                )}
               </Text>
               <SpecLines />
             </View>
@@ -104,10 +106,10 @@ export default function Welcome() {
           <Wordmark height={44} />
           <View style={{ gap: 8, maxWidth: 360, width: '100%' }}>
             <Text variant="title" align="center" accessibilityRole="header">
-              Messaging that understands your relationships.
+              {tr('Messaging that understands your relationships.')}
             </Text>
             <Text variant="body" color="textSecondary" align="center">
-              Family, friends and work, each in its place. The right conversations find you.
+              {tr('Family, friends and work, each in its place. The right conversations find you.')}
             </Text>
             <SpecLines />
           </View>

@@ -1,4 +1,5 @@
 import type { PolicyView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
@@ -32,13 +33,13 @@ const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m
 /** Who a rule is for: "Work · Manager", "Customers", or its name when it has one. */
 function scopeLabel(p: Pick<PolicyView, 'name' | 'scope'>): string {
   if (p.name) return p.name;
-  if (p.scope.connectionId) return 'One person';
+  if (p.scope.connectionId) return tr('One person');
   const { sphere, role } = p.scope;
   if (sphere) {
     const r = findRole(sphere, role);
-    return SPHERE_DEFS[sphere].plural + (role ? ` · ${r?.plural ?? role}` : '');
+    return tr(SPHERE_DEFS[sphere].plural) + (role ? ` · ${r?.plural ?? role}` : '');
   }
-  return 'Everyone else';
+  return tr('Everyone else');
 }
 
 /** What applies to a rule's people where it says nothing: the broader rules around it. */
@@ -74,7 +75,7 @@ function NewRule({
         scope: { sphere, role: role === 'all' ? null : role },
         settings: {},
       });
-      if (made.existing) toast('They have a rule already: here it is');
+      if (made.existing) toast(tr('They have a rule already: here it is'));
       await qc.invalidateQueries({ queryKey: qk.policies });
       setName('');
       onMade(made.id);
@@ -88,11 +89,11 @@ function NewRule({
     <Sheet
       open={open}
       onClose={onClose}
-      title="A new rule"
-      subtitle="For everyone you know one way, or in one role"
+      title={tr('A new rule')}
+      subtitle={tr('For everyone you know one way, or in one role')}
       footer={
         <Button
-          label="Make the rule"
+          label={tr('Make the rule')}
           block
           size="lg"
           loading={busy}
@@ -103,11 +104,11 @@ function NewRule({
     >
       <View style={{ gap: 12 }}>
         <Text variant="overline" color="textTertiary" accessibilityRole="header">
-          Who it’s for
+          {tr('Who it’s for')}
         </Text>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<Sphere>
-            label="Who it’s for"
+            label={tr('Who it’s for')}
             value={sphere}
             onChange={(v) => {
               setSphere(v);
@@ -115,22 +116,27 @@ function NewRule({
             }}
             options={SPHERES.filter((s) => s !== 'other').map((s) => ({
               value: s,
-              label: SPHERE_DEFS[s].plural,
+              label: tr(SPHERE_DEFS[s].plural),
             }))}
           />
         </View>
         {ROLES[sphere].length ? (
           <>
             <Text variant="overline" color="textTertiary" accessibilityRole="header">
-              Of them
+              {tr('Of them')}
             </Text>
             <View style={{ marginHorizontal: -20 }}>
               <Choice<string>
-                label="Of them"
+                label={tr('Of them')}
                 value={role}
                 onChange={setRole}
                 options={[
-                  { value: 'all', label: `All ${SPHERE_DEFS[sphere].plural.toLowerCase()}` },
+                  {
+                    value: 'all',
+                    label: tr('All {toLowerCase}', {
+                      toLowerCase: tr(SPHERE_DEFS[sphere].plural).toLowerCase(),
+                    }),
+                  },
                   ...ROLES[sphere].map((r) => ({ value: r.id, label: r.plural })),
                 ]}
               />
@@ -138,10 +144,10 @@ function NewRule({
           </>
         ) : null}
         <TextField
-          label="Its name (optional)"
+          label={tr('Its name (optional)')}
           value={name}
           onChangeText={setName}
-          placeholder="My customers"
+          placeholder={tr('My customers')}
           maxLength={60}
           testID="rule-new-name"
         />
@@ -173,14 +179,14 @@ export default function Notifications() {
   };
 
   return (
-    <SettingsPage title="Notifications and priorities">
+    <SettingsPage title={tr('Notifications and priorities')}>
       <Text variant="body" color="textSecondary">
-        Caime decides who reaches you by how you know them. Family can always get through; work
-        waits for work hours; everyone else stays quiet unless it’s important. Change any of it, or
-        make rules of your own.
+        {tr(
+          'Caime decides who reaches you by how you know them. Family can always get through; work waits for work hours; everyone else stays quiet unless it’s important. Change any of it, or make rules of your own.',
+        )}
       </Text>
       <BrowserNotifications />
-      <Group title="By relationship">
+      <Group title={tr('By relationship')}>
         {policies.map((p, i) => (
           <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
@@ -200,46 +206,53 @@ export default function Notifications() {
         ))}
       </Group>
       <Button
-        label="Add a rule"
+        label={tr('Add a rule')}
         variant="secondary"
         onPress={() => setAdding(true)}
         testID="rule-add"
       />
-      <Group title="While you’re in a meeting">
+      <Group title={tr('While you’re in a meeting')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Work waits until it ends</Text>
+            <Text variant="bodyStrong">{tr('Work waits until it ends')}</Text>
             <Text variant="caption" color="textSecondary">
-              In a meeting or appointment agreed in Caime, messages from work, customers, vendors
-              and professionals are held until it ends. Family, friends and calls come through.
+              {tr(
+                'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.',
+              )}
             </Text>
           </View>
           <Switch
             value={Boolean(prefs.holdWhileBusy)}
             onValueChange={(v) => savePrefs({ holdWhileBusy: v })}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Work waits until the meeting ends"
+            accessibilityLabel={tr('Work waits until the meeting ends')}
             testID="hold-while-busy"
           />
         </View>
       </Group>
       <Group
-        title="Your work week"
-        footer="Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different."
+        title={tr('Your work week')}
+        footer={tr(
+          'Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different.',
+        )}
       >
         <View style={{ padding: 16 }}>
-          <DayPicker label="Your work week" days={me.workweek} onChange={(d) => void saveWeek(d)} />
+          <DayPicker
+            label={tr('Your work week')}
+            days={me.workweek}
+            onChange={(d) => void saveWeek(d)}
+          />
         </View>
       </Group>
       <Button
-        label="Reset to Caime’s defaults"
+        label={tr('Reset to Caime’s defaults')}
         variant="ghost"
         onPress={async () => {
           await endpoints
             .resetPolicies()
             .catch((e) => toast((e as Error).message, { tone: 'danger' }));
           void qc.invalidateQueries({ queryKey: qk.policies });
-          toast('Back to the defaults');
+          toast(tr('Back to the defaults'));
         }}
       />
       {rule ? (

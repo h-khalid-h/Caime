@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 /**
  * Calls (PRD §47): 1:1 voice and video in a direct conversation. The server rings, relays how
  * the two devices reach each other, and keeps the call's history; the media goes between them
@@ -30,7 +31,7 @@ export function callDuration(seconds: number): string {
   const m = Math.round(seconds / 60);
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
-  return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
+  return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : `${h} h`;
 }
 
 /**
@@ -45,18 +46,24 @@ export function callText(
   group = false,
 ): string {
   if (group) return groupCallText(kind, outcome, seconds, viewerCalled);
-  const name = kind === 'video' ? 'Video call' : 'Voice call';
+  const name = kind === 'video' ? tr('Video call') : tr('Voice call');
   switch (outcome) {
     case 'completed':
       return `${name} · ${callDuration(seconds)}`;
     case 'failed':
       return `${name} · couldn’t connect`;
     case 'declined':
-      return viewerCalled ? `${name} · no answer` : `You declined a ${name.toLowerCase()}`;
+      return viewerCalled
+        ? tr('{name} · no answer', { name })
+        : tr('You declined a {toLowerCase}', { toLowerCase: name.toLowerCase() });
     case 'cancelled':
-      return viewerCalled ? `${name} · cancelled` : `Missed ${name.toLowerCase()}`;
+      return viewerCalled
+        ? `${name} · cancelled`
+        : tr('Missed {toLowerCase}', { toLowerCase: name.toLowerCase() });
     default:
-      return viewerCalled ? `${name} · no answer` : `Missed ${name.toLowerCase()}`;
+      return viewerCalled
+        ? tr('{name} · no answer', { name })
+        : tr('Missed {toLowerCase}', { toLowerCase: name.toLowerCase() });
   }
 }
 
@@ -70,11 +77,12 @@ function groupCallText(
   seconds: number,
   viewerStarted: boolean,
 ): string {
-  const name = kind === 'video' ? 'Group video call' : 'Group voice call';
+  const name = kind === 'video' ? tr('Group video call') : tr('Group voice call');
   if (outcome === 'completed') return `${name} · ${callDuration(seconds)}`;
   if (outcome === 'failed') return `${name} · couldn’t connect`;
-  if (viewerStarted) return outcome === 'cancelled' ? `${name} · cancelled` : `${name} · no answer`;
-  return `Missed ${name.toLowerCase()}`;
+  if (viewerStarted)
+    return outcome === 'cancelled' ? `${name} · cancelled` : tr('{name} · no answer', { name });
+  return tr('Missed {toLowerCase}', { toLowerCase: name.toLowerCase() });
 }
 
 /** How a call went for one person, for their call history. */

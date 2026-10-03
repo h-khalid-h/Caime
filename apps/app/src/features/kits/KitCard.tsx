@@ -1,6 +1,7 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
 import { customDetails, customMoves, customState, isCustomCard } from '@caime/core/custom-kits';
 import { formatDue } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import {
   isCardKit,
   kitDetails,
@@ -87,13 +88,13 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <ListChecks size={16} color={t.c.accentStrong} />
           <Text variant="overline" color="textSecondary" style={{ flex: 1 }}>
-            Request
+            {tr('Request')}
           </Text>
           {state ? (
             <Chip label={kitStateLabel(state)} tone={TONE[kitStateTone(state)]} size="sm" />
           ) : null}
         </View>
-        <Text variant="bodyStrong">{p.title ?? 'Request'}</Text>
+        <Text variant="bodyStrong">{p.title ?? tr('Request')}</Text>
         {p.dueAt ? (
           <Text variant="caption" color="textSecondary">
             Due {formatDue(p.dueAt, now, timeZone, locale)}
@@ -111,7 +112,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     <CardBody
       m={m}
       Icon={KIT_ICONS[kit]}
-      label={p.label ?? KITS[kit].name}
+      label={p.label ?? tr(KITS[kit].name)}
       state={kitStateLabel(state)}
       tone={kitStateTone(state)}
       title={p.title ?? ''}
@@ -198,7 +199,7 @@ function CardBody({
       ) : null}
       {from ? (
         <Text variant="caption" color="textTertiary">
-          From {from}
+          {tr('From {from}', { from })}
         </Text>
       ) : null}
       {moves.length ? (

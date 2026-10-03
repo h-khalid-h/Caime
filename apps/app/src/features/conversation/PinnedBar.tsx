@@ -6,6 +6,7 @@
  */
 import type { MessageView } from '@caime/core/api';
 import { messagePreview } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -44,9 +45,10 @@ export function PinnedBar({
   const opened = useOpened(m, where);
   if (!m) return null;
   const words = m.sealed
-    ? (opened.text ?? opened.note ?? 'Private message')
+    ? (opened.text ?? opened.note ?? tr('Private message'))
     : messagePreview({ kind: m.kind, body: m.body, payload: m.payload, deleted: false });
-  const which = pins.length > 1 ? `Pinned, ${i + 1} of ${pins.length}` : 'Pinned';
+  const which =
+    pins.length > 1 ? tr('Pinned, {i} of {length}', { i: i + 1, length: pins.length }) : 'Pinned';
   return (
     <View
       style={{
@@ -64,7 +66,9 @@ export function PinnedBar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${which}: ${words}`}
-        accessibilityHint={pins.length > 1 ? 'Goes to it, then shows the next one' : 'Goes to it'}
+        accessibilityHint={
+          pins.length > 1 ? tr('Goes to it, then shows the next one') : tr('Goes to it')
+        }
         onPress={() => {
           onJump(m);
           setAt(i + 1);
@@ -84,14 +88,14 @@ export function PinnedBar({
       {canUnpin ? (
         <IconButton
           icon={PinOff}
-          label="Unpin this message"
+          label={tr('Unpin this message')}
           size={18}
           onPress={() =>
             void (async () => {
               try {
                 await endpoints.unpin(m.id);
                 void qc.invalidateQueries({ queryKey: qk.pins(where.conversationId) });
-                toast('Unpinned');
+                toast(tr('Unpinned'));
               } catch (e) {
                 toast((e as Error).message, { tone: 'danger' });
               }

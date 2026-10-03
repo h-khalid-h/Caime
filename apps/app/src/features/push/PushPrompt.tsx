@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -44,24 +45,24 @@ export function PushPrompt() {
       testID="push-prompt"
     >
       <Text variant="bodyStrong" color={t.scheme === 'dark' ? 'text' : 'accentStrong'}>
-        Hear calls and messages when Caime isn’t open
+        {tr('Hear calls and messages when Caime isn’t open')}
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Button
-          label="Turn on"
+          label={tr('Turn on')}
           size="sm"
           onPress={() =>
             void import('./webPush')
               .then((m) => m.enableWebPush())
               .then((answer) => {
-                if (answer === 'granted') toast('Notifications are on in this browser');
+                if (answer === 'granted') toast(tr('Notifications are on in this browser'));
               })
-              .catch(() => toast('This browser couldn’t turn them on.', { tone: 'danger' }))
+              .catch(() => toast(tr('This browser couldn’t turn them on.'), { tone: 'danger' }))
               .finally(done)
           }
           testID="push-prompt-on"
         />
-        <Button label="Not now" size="sm" variant="ghost" onPress={done} />
+        <Button label={tr('Not now')} size="sm" variant="ghost" onPress={done} />
       </View>
     </View>
   );

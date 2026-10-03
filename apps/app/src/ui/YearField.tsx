@@ -3,6 +3,8 @@
  * sheet that finds any year as it's typed, the latest first. The same on the web and the phones,
  * as the country field is; none is typed by hand, so nothing but a year is ever sent.
  */
+
+import { tr } from '@caime/core/i18n';
 import { useMemo, useState } from 'react';
 import { lazyPart } from '@/ui/Lazy';
 import { PickerField } from '@/ui/PickerField';
@@ -43,7 +45,7 @@ export function YearField({
   optional = false,
   hint,
   error,
-  placeholder = 'Choose a year',
+  placeholder = tr('Choose a year'),
   testID,
 }: YearFieldProps) {
   const [open, setOpen] = useState(false);
@@ -52,14 +54,14 @@ export function YearField({
   const items = useMemo(() => {
     const years: SearchItem[] = [];
     for (let y = max; y >= min; y--) years.push({ key: String(y), title: String(y) });
-    return optional ? [{ key: NONE, title: 'Not said' }, ...years] : years;
+    return optional ? [{ key: NONE, title: tr('Not said') }, ...years] : years;
   }, [min, max, optional]);
   return (
     <PickerField
       label={label}
       shown={value ? String(value) : null}
       placeholder={placeholder}
-      accessibilityHint="Opens the list of years"
+      accessibilityHint={tr('Opens the list of years')}
       onOpen={() => {
         setOpen(true);
         setOpened(true);
@@ -78,8 +80,8 @@ export function YearField({
           value={value ? String(value) : optional ? NONE : null}
           onPick={(key) => onChange(key === NONE ? null : Number(key))}
           matches={matches}
-          searchLabel="Type a year"
-          empty="No year like that."
+          searchLabel={tr('Type a year')}
+          empty={tr('No year like that.')}
           testID={testID}
         />
       ) : null}

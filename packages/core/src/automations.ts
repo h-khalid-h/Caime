@@ -9,6 +9,8 @@
  * deleted for oneself, it's gone from what one saved as well. Nothing is saved from a private
  * conversation, whose words Caime can't read, nor from a message request not yet accepted.
  */
+
+import { tr } from './i18n';
 import { findRole, SPHERE_DEFS, type Sphere } from './taxonomy';
 
 /** What an automation keeps: the kinds of what's shared (the asset index's). */
@@ -242,8 +244,15 @@ const orList = (items: string[]) =>
 /** "When a customer sends a file with “invoice”, save it to Customer Files" */
 export function describeAutomation(x: { when: AutomationWhen; collection: string }): string {
   const kinds = SAVE_KINDS.filter((k) => x.when.kinds.includes(k)).map((k) => KIND_NOUNS[k]);
-  const words = x.when.words.length ? ` with ${orList(x.when.words.map((w) => `“${w}”`))}` : '';
-  return `When ${whoSends(x.when)} sends ${orList(kinds)}${words}, save it to ${x.collection}`;
+  const words = x.when.words.length
+    ? tr(' with {orList}', { orList: orList(x.when.words.map((w) => `“${w}”`)) })
+    : '';
+  return tr('When {whoSends} sends {orList}{words}, save it to {collection}', {
+    whoSends: whoSends(x.when),
+    orList: orList(kinds),
+    words,
+    collection: x.collection,
+  });
 }
 
 /** A collection's name as it's kept: its spaces tidied, never empty. */

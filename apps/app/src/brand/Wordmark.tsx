@@ -1,5 +1,6 @@
 import { HEART_PATH, ICON_MARK, WORDMARK } from '@caime/brand/generated/wordmark';
 import { palette } from '@caime/brand/tokens';
+import { tr } from '@caime/core/i18n';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import { useTheme } from '@/theme/theme';
 
@@ -21,7 +22,7 @@ export function Wordmark({
       height={height}
       viewBox={WORDMARK.viewBox}
       accessibilityRole="image"
-      accessibilityLabel="Caime"
+      accessibilityLabel={tr('Caime')}
     >
       <Path d={WORDMARK.letters} fill={color ?? (t.scheme === 'dark' ? '#FFFFFF' : t.c.ink)} />
       <Path d={HEART_PATH} transform={WORDMARK.heartTransform} fill={heartColor} />

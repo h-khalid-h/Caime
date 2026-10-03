@@ -16,6 +16,7 @@ import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { randomBytes } from '@noble/hashes/utils.js';
 import { E2EE_LABEL, type PublicJwk } from './e2ee';
+import { tr } from './i18n';
 
 export const RECOVERY_KEY_BYTES = 20;
 const GROUPS = 8;
@@ -45,7 +46,7 @@ export function newRecoveryKey(): string {
 
 /** The key's bytes as the person sees them: XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX. */
 export function formatRecoveryKey(bytes: Uint8Array): string {
-  if (bytes.length !== RECOVERY_KEY_BYTES) throw new Error('Not a recovery key.');
+  if (bytes.length !== RECOVERY_KEY_BYTES) throw new Error(tr('Not a recovery key.'));
   let bits = 0;
   let value = 0;
   let out = '';
@@ -123,7 +124,7 @@ function scalar(key: Uint8Array, info: string): Uint8Array {
  * device registers; its private halves are made again only where the key is typed.
  */
 export function recoveryDevice(key: Uint8Array): { id: string; keys: RawDeviceKeys } {
-  if (key.length !== RECOVERY_KEY_BYTES) throw new Error('Not a recovery key.');
+  if (key.length !== RECOVERY_KEY_BYTES) throw new Error(tr('Not a recovery key.'));
   const id = derive(key, 'id', 16);
   // A version 4, variant 1 UUID, so nothing reads it as anything but an id.
   id[6] = ((id[6] as number) & 0x0f) | 0x40;

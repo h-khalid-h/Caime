@@ -2,6 +2,8 @@
  * The language, and region, dates, times and numbers are written in for someone: each named in
  * itself (as people look for their own), with how a date and a number look in it.
  */
+
+import { tr } from '@caime/core/i18n';
 import { LANGUAGES } from '@caime/core/languages';
 import { safeLocale } from '@caime/core/locale';
 import { getLocales } from 'expo-localization';
@@ -89,7 +91,7 @@ export function LanguageField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${shown?.title ?? value}`}
-        accessibilityHint="Opens the list of languages"
+        accessibilityHint={tr('Opens the list of languages')}
         onPress={() => {
           setOpen(true);
           setOpened(true);
@@ -129,8 +131,8 @@ export function LanguageField({
           value={value}
           onPick={onChange}
           matches={matches}
-          searchLabel="Search languages"
-          empty="No language by that name."
+          searchLabel={tr('Search languages')}
+          empty={tr('No language by that name.')}
           testID={testID}
         />
       ) : null}

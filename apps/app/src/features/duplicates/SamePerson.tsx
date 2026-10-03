@@ -5,6 +5,7 @@
  * (./index.tsx).
  */
 import type { ConnectionView, SuggestionView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -43,10 +44,12 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
     try {
       if (what === 'merge') {
         await endpoints.acceptSuggestion(s.id, { keep: keep.person.id });
-        toast(`Merged: ${shownName(keep)} is one person in People now`);
+        toast(
+          tr('Merged: {shownName} is one person in People now', { shownName: shownName(keep) }),
+        );
       } else {
         await endpoints.dismissSuggestion(s.id);
-        toast('Kept separate. We won’t ask about them again.');
+        toast(tr('Kept separate. We won’t ask about them again.'));
       }
       refresh();
     } catch (e) {
@@ -83,7 +86,10 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <Text variant="bodyStrong">{s.title}</Text>
           <Text variant="caption" color="textSecondary">
-            {`@${keep.person.handle} and @${merge.person.handle}`}
+            {tr('@{handle} and @{handle2}', {
+              handle: keep.person.handle,
+              handle2: merge.person.handle,
+            })}
           </Text>
         </View>
       </View>
@@ -92,7 +98,7 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Button
-          label="Merge"
+          label={tr('Merge')}
           size="sm"
           loading={busy === 'merge'}
           disabled={busy !== null}
@@ -100,7 +106,7 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
           testID="duplicate-merge"
         />
         <Button
-          label="Keep separate"
+          label={tr('Keep separate')}
           size="sm"
           variant="secondary"
           loading={busy === 'separate'}
@@ -134,7 +140,7 @@ export function DuplicateOffers({ all }: { all: ConnectionView[] }) {
           ))}
           {offers.length > 3 ? (
             <Text variant="caption" color="textTertiary">
-              {`${offers.length - 3} more after these.`}
+              {tr('{length} more after these.', { length: offers.length - 3 })}
             </Text>
           ) : null}
         </View>
@@ -156,7 +162,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
     setBusy(connectionId);
     try {
       await endpoints.separateConnection(connectionId);
-      toast(`Separated: ${who} is on their own in People again`);
+      toast(tr('Separated: {who} is on their own in People again', { who }));
       refresh();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -169,10 +175,15 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
     return (
       <Card>
         <View style={{ gap: 10 }} testID="shown-under">
-          <Text variant="body">{`In People, ${name} is one person with ${shownName(under)}.`}</Text>
+          <Text variant="body">
+            {tr('In People, {name} is one person with {shownName}.', {
+              name,
+              shownName: shownName(under),
+            })}
+          </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <Button
-              label={`See ${shownName(under)}`}
+              label={tr('See {shownName}', { shownName: shownName(under) })}
               size="sm"
               variant="secondary"
               onPress={() =>
@@ -180,7 +191,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
               }
             />
             <Button
-              label="Separate"
+              label={tr('Separate')}
               size="sm"
               variant="ghost"
               loading={busy === mine.connectionId}
@@ -197,7 +208,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
     <Card padded={false}>
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 }}>
         <Text variant="label">
-          {mine.also.length === 1 ? 'Also this account' : 'Also these accounts'}
+          {mine.also.length === 1 ? tr('Also this account') : tr('Also these accounts')}
         </Text>
       </View>
       {mine.also.map((a, i) => (
@@ -218,7 +229,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
             right={
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
                 <Button
-                  label="Open"
+                  label={tr('Open')}
                   size="sm"
                   variant="ghost"
                   onPress={() =>
@@ -227,7 +238,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
                   testID="open-account"
                 />
                 <Button
-                  label="Separate"
+                  label={tr('Separate')}
                   size="sm"
                   variant="ghost"
                   loading={busy === a.connectionId}
@@ -242,7 +253,7 @@ export function OtherAccounts({ personId, name }: { personId: string; name: stri
       <View style={{ flexDirection: 'row', gap: 6, padding: 16, paddingTop: 6 }}>
         <Users size={12} color={t.c.textTertiary} />
         <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
-          Only you see them as one. Each account keeps its own conversations.
+          {tr('Only you see them as one. Each account keeps its own conversations.')}
         </Text>
       </View>
     </Card>

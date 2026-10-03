@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { Share } from 'react-native';
 import { toast } from '@/ui/Toast';
 import { copyText } from './clipboard';
@@ -20,7 +21,7 @@ export async function shareLink(text: string, url: string): Promise<void> {
     }
     try {
       await copyText(url);
-      toast('Link copied');
+      toast(tr('Link copied'));
     } catch {
       toast(url);
     }

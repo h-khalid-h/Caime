@@ -1,5 +1,6 @@
 import type { ConversationView, TaskView } from '@caime/core/api';
 import { formatDue, retentionText } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -96,9 +97,9 @@ function TaskLine({
           {task.title}
         </Text>
         <Text variant="caption" color="textSecondary">
-          {taskWho(task) ?? 'Yours'}
+          {taskWho(task) ?? tr('Yours')}
           {task.dueAt ? ` · ${formatDue(task.dueAt, now, timeZone, locale, task.dueHasTime)}` : ''}
-          {pending ? ' · Pending' : ''}
+          {pending ? tr(' · Pending') : ''}
         </Text>
       </View>
     </Pressable>
@@ -121,7 +122,7 @@ function BusinessCard({
     return (
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`${org.name}, profile`}
+        accessibilityLabel={tr('{name}, profile', { name: org.name })}
         onPress={() => go({ pathname: '/o/[handle]', params: { handle: org.handle } })}
         style={{ alignItems: 'center', gap: 8, padding: 20 }}
       >
@@ -131,10 +132,10 @@ function BusinessCard({
         </Text>
         <VerifiedLine org={org} />
         <Text variant="caption" color="textSecondary" align="center">
-          A business conversation. Its team answers as {org.name}.
+          {tr('A business conversation. Its team answers as {name}.', { name: org.name })}
         </Text>
         <Text variant="captionStrong" color="link">
-          See its profile
+          {tr('See its profile')}
         </Text>
       </Pressable>
     );
@@ -156,10 +157,12 @@ function BusinessCard({
           </Text>
         </Pressable>
       ) : (
-        <Text variant="headline">Deleted account</Text>
+        <Text variant="headline">{tr('Deleted account')}</Text>
       )}
       <Text variant="caption" color="textSecondary" align="center">
-        A customer of {org.name}. They see {org.name}, not who on the team answers.
+        {tr('A customer of {name}. They see {name}, not who on the team answers.', {
+          name: org.name,
+        })}
       </Text>
       <Text variant="caption" color="textTertiary" align="center">
         Team:{' '}
@@ -216,9 +219,9 @@ export function ContextPanel({
         }}
       >
         <Text variant="label" style={{ flex: 1 }} accessibilityRole="header">
-          About this conversation
+          {tr('About this conversation')}
         </Text>
-        {onClose ? <IconButton icon={X} label="Close panel" onPress={onClose} /> : null}
+        {onClose ? <IconButton icon={X} label={tr('Close panel')} onPress={onClose} /> : null}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         {conversation.business ? (
@@ -252,13 +255,13 @@ export function ContextPanel({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Lock size={11} color={t.c.textTertiary} />
                   <Text variant="caption" color="textTertiary">
-                    Only you see this label
+                    {tr('Only you see this label')}
                   </Text>
                 </View>
               </View>
             ) : (
               <Text variant="captionStrong" color="link">
-                Add how you know them
+                {tr('Add how you know them')}
               </Text>
             )}
           </Pressable>
@@ -267,10 +270,10 @@ export function ContextPanel({
           <View style={{ alignItems: 'center', gap: 8, padding: 20 }} testID="deleted-account">
             <Avatar id={conversation.id} name="Deleted account" size={72} />
             <Text variant="headline" align="center">
-              Deleted account
+              {tr('Deleted account')}
             </Text>
             <Text variant="caption" color="textSecondary" align="center">
-              What you wrote to each other stays here. Archive it to put it away.
+              {tr('What you wrote to each other stays here. Archive it to put it away.')}
             </Text>
           </View>
         ) : (
@@ -289,7 +292,7 @@ export function ContextPanel({
               >
                 <LayoutGrid size={16} color={t.c.accentStrong} />
                 <Text variant="captionStrong" color="link" style={{ flex: 1 }} numberOfLines={1}>
-                  In {conversation.space.name} · open the space
+                  {tr('In {name} · open the space', { name: conversation.space.name })}
                 </Text>
               </Pressable>
             ) : null}
@@ -304,14 +307,14 @@ export function ContextPanel({
         <Topics conversation={conversation} go={go} />
         {m ? (
           <>
-            <Section title="Right now">
+            <Section title={tr('Right now')}>
               <Text variant="body" color="textSecondary">
                 {m.summary}
               </Text>
               {aiReady ? <AssistTools conversationId={conversation.id} /> : null}
             </Section>
             {m.upcoming.length ? (
-              <Section title="Coming up">
+              <Section title={tr('Coming up')}>
                 <ComingUpList
                   items={m.upcoming}
                   onOpen={(u) =>
@@ -326,7 +329,7 @@ export function ContextPanel({
               </Section>
             ) : null}
             {m.openItems.length ? (
-              <Section title={`Open · ${m.openItems.length}`}>
+              <Section title={tr('Open · {length}', { length: m.openItems.length })}>
                 {m.openItems.map((task) => (
                   <TaskLine
                     key={task.id}
@@ -338,7 +341,7 @@ export function ContextPanel({
               </Section>
             ) : null}
             {m.decisions.length ? (
-              <Section title="Decided">
+              <Section title={tr('Decided')}>
                 {m.decisions.map((d) => (
                   <View key={d.id} style={{ flexDirection: 'row', gap: 8 }}>
                     <Star size={14} color={t.c.warning} style={{ marginTop: 3 }} />
@@ -350,7 +353,7 @@ export function ContextPanel({
               </Section>
             ) : null}
             {m.dates.length ? (
-              <Section title="Coming up">
+              <Section title={tr('Coming up')}>
                 {m.dates.map((d) => (
                   <View
                     key={`${d.messageId}-${d.at}`}
@@ -371,12 +374,12 @@ export function ContextPanel({
               </Section>
             ) : null}
             {m.counts.files || m.links.length ? (
-              <Section title="Shared">
+              <Section title={tr('Shared')}>
                 {m.documents.slice(0, 3).map((d) => (
                   <Pressable
                     key={d.id}
                     accessibilityRole="link"
-                    accessibilityLabel={d.title ?? 'Document'}
+                    accessibilityLabel={d.title ?? tr('Document')}
                     disabled={!d.url}
                     onPress={() => {
                       const url = mediaUrl(d.url);
@@ -386,7 +389,7 @@ export function ContextPanel({
                   >
                     <FileText size={14} color={t.c.textSecondary} />
                     <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
-                      {d.title ?? 'Document'}
+                      {d.title ?? tr('Document')}
                     </Text>
                   </Pressable>
                 ))}
@@ -394,7 +397,7 @@ export function ContextPanel({
                   <Pressable
                     key={l.id}
                     accessibilityRole="link"
-                    accessibilityLabel={l.host ?? l.url ?? 'Link'}
+                    accessibilityLabel={l.host ?? l.url ?? tr('Link')}
                     disabled={!l.url}
                     onPress={() => {
                       if (l.url) void openCheckedLink(l.url);
@@ -415,19 +418,20 @@ export function ContextPanel({
                 >
                   <ImageIcon size={14} color={t.c.accentStrong} />
                   <Text variant="captionStrong" color="link" style={{ flex: 1 }}>
-                    Photos, files and links
+                    {tr('Photos, files and links')}
                   </Text>
                   <ChevronRight size={16} color={t.c.textTertiary} />
                 </Pressable>
               </Section>
             ) : null}
             {!m.openItems.length && !m.decisions.length && !m.dates.length ? (
-              <Section title="Memory">
+              <Section title={tr('Memory')}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <CircleCheck size={16} color={t.c.textTertiary} />
                   <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
-                    Promises, questions, dates and decisions from this conversation will gather
-                    here, so nothing gets lost in the scroll.
+                    {tr(
+                      'Promises, questions, dates and decisions from this conversation will gather here, so nothing gets lost in the scroll.',
+                    )}
                   </Text>
                 </View>
               </Section>
@@ -504,12 +508,14 @@ function Topics({
     }
   };
   return (
-    <Section title={topics.length ? `Topics · ${topics.length}` : 'Topics'}>
+    <Section
+      title={topics.length ? tr('Topics · {length}', { length: topics.length }) : tr('Topics')}
+    >
       {topics.map((topic) => (
         <Pressable
           key={topic.id}
           accessibilityRole="link"
-          accessibilityLabel={`${topic.title}, topic`}
+          accessibilityLabel={tr('{title}, topic', { title: topic.title })}
           onPress={() => go({ pathname: '/c/[id]', params: { id: topic.id } })}
           style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
           testID="topic-row"
@@ -529,7 +535,7 @@ function Topics({
       >
         <Hash size={14} color={t.c.accentStrong} />
         <Text variant="captionStrong" color="link">
-          Start a topic
+          {tr('Start a topic')}
         </Text>
       </Pressable>
       {where === 'direct' && other ? (
@@ -544,7 +550,7 @@ function Topics({
         >
           <FileText size={14} color={t.c.accentStrong} />
           <Text variant="captionStrong" color="link">
-            Bring over a WhatsApp chat
+            {tr('Bring over a WhatsApp chat')}
           </Text>
         </Pressable>
       ) : null}
@@ -561,15 +567,19 @@ function Topics({
       <Sheet
         open={starting}
         onClose={() => setStarting(false)}
-        title="Start a topic"
+        title={tr('Start a topic')}
         subtitle={
           where === 'group'
-            ? `A conversation of its own, with everyone in ${conversation.title}.`
-            : `A conversation of its own with ${conversation.title}, on one subject.`
+            ? tr('A conversation of its own, with everyone in {title}.', {
+                title: conversation.title,
+              })
+            : tr('A conversation of its own with {title}, on one subject.', {
+                title: conversation.title,
+              })
         }
         footer={
           <Button
-            label="Start"
+            label={tr('Start')}
             block
             size="lg"
             disabled={!name.trim()}
@@ -580,7 +590,7 @@ function Topics({
         }
       >
         <TextField
-          label="What it’s about"
+          label={tr('What it’s about')}
           value={name}
           onChangeText={setName}
           maxLength={TOPIC_MAX}
@@ -617,30 +627,36 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
       // Only what's sent from now on: what came before keeps the time it was sent with.
       toast(
         value === 'off'
-          ? 'New messages stay'
-          : `New messages disappear after ${retentionText(Number(value))}`,
+          ? tr('New messages stay')
+          : tr('New messages disappear after {retentionText}', {
+              retentionText: retentionText(Number(value)),
+            }),
       );
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
   };
   return (
-    <Section title="Disappearing messages">
+    <Section title={tr('Disappearing messages')}>
       {canChange ? (
         <Choice
-          label="Disappearing messages"
+          label={tr('Disappearing messages')}
           value={KEEP.includes(current) ? current : 'off'}
           onChange={(v) => void set(v)}
           options={KEEP.map((v) =>
             v === 'off'
-              ? { value: v, label: 'Off', detail: 'New messages stay until someone deletes them' }
+              ? {
+                  value: v,
+                  label: tr('Off'),
+                  detail: tr('New messages stay until someone deletes them'),
+                }
               : { value: v, label: retentionText(Number(v)) },
           )}
         />
       ) : (
         <Text variant="body" color="textSecondary" testID="disappearing-shown">
           {[
-            ofGroup ? `As ${ofGroup}` : null,
+            ofGroup ? tr('As {ofGroup}', { ofGroup }) : null,
             days === null ? 'Off' : `after ${retentionText(days)}`,
           ]
             .filter(Boolean)

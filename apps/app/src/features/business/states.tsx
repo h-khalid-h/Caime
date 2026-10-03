@@ -1,4 +1,5 @@
 import { THREAD_STATE_LABELS, type ThreadState } from '@caime/core/business';
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { type Theme, useTheme } from '@/theme/theme';
 import { Text } from '@/ui/Text';
@@ -46,7 +47,11 @@ export function StateChip({
       testID={testID}
     >
       <Text variant="captionStrong" color={tone.fg}>
-        {closed ? 'Closed by the customer' : request ? 'Request sent' : THREAD_STATE_LABELS[state]}
+        {closed
+          ? tr('Closed by the customer')
+          : request
+            ? tr('Request sent')
+            : tr(THREAD_STATE_LABELS[state])}
       </Text>
     </View>
   );

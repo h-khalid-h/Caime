@@ -4,6 +4,7 @@
  * renders them with the same ones, so a card reads the same on every device.
  */
 import { formatAmount, formatWhenAt, minorUnits, roundAmount } from './format';
+import { msg, tr } from './i18n';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
@@ -148,15 +149,15 @@ export function kitMoves(kit: KitId, state: string, isCreator: boolean): KitMove
 }
 
 const STATE_LABELS: Record<string, string> = {
-  pending: 'Waiting for an answer',
-  in_transit: 'On its way',
-  in_review: 'In review',
-  in_progress: 'In progress',
-  changes_requested: 'Changes asked for',
-  out_for_delivery: 'Out for delivery',
+  pending: msg('Waiting for an answer'),
+  in_transit: msg('On its way'),
+  in_review: msg('In review'),
+  in_progress: msg('In progress'),
+  changes_requested: msg('Changes asked for'),
+  out_for_delivery: msg('Out for delivery'),
   void: 'Voided',
-  problem: 'Problem reported',
-  waiting: 'Waiting on a reply',
+  problem: msg('Problem reported'),
+  waiting: msg('Waiting on a reply'),
 };
 const POSITIVE = new Set([
   'approved',
@@ -244,17 +245,23 @@ export function applyChecklistOp(
   actor: { userId: string; isCreator: boolean },
 ): { ok: true; items: ChecklistItem[] } | { ok: false; error: string; forbidden?: true } {
   const text = 'text' in op ? op.text.trim() : '';
-  if ('text' in op && !text) return { ok: false, error: 'Write something to add.' };
+  if ('text' in op && !text) return { ok: false, error: tr('Write something to add.') };
   if (text.length > CHECKLIST_ITEM_MAX)
-    return { ok: false, error: `Keep an item under ${CHECKLIST_ITEM_MAX} characters.` };
+    return {
+      ok: false,
+      error: tr('Keep an item under {CHECKLIST_ITEM_MAX} characters.', { CHECKLIST_ITEM_MAX }),
+    };
   if (op.op === 'add') {
     if (items.length >= CHECKLIST_MAX_ITEMS)
-      return { ok: false, error: `A list holds ${CHECKLIST_MAX_ITEMS} items.` };
+      return {
+        ok: false,
+        error: tr('A list holds {CHECKLIST_MAX_ITEMS} items.', { CHECKLIST_MAX_ITEMS }),
+      };
     const item = { id: nextItemId(items), text, done: false, doneBy: null, addedBy: actor.userId };
     return { ok: true, items: [...items, item] };
   }
   const item = items.find((i) => i.id === op.itemId);
-  if (!item) return { ok: false, error: 'That item isn’t on the list anymore.' };
+  if (!item) return { ok: false, error: tr('That item isn’t on the list anymore.') };
   if (op.op === 'toggle')
     return {
       ok: true,
@@ -266,7 +273,7 @@ export function applyChecklistOp(
   if (!mayChange)
     return {
       ok: false,
-      error: 'Only whoever added it, or made the list, can change it.',
+      error: tr('Only whoever added it, or made the list, can change it.'),
       forbidden: true,
     };
   if (op.op === 'edit')
@@ -329,11 +336,11 @@ export function applySplitOp(
   actor: { userId: string; isCreator: boolean; at: string },
 ): { ok: true; shares: SplitShare[] } | { ok: false; error: string; forbidden?: true } {
   const share = shares.find((s) => s.userId === op.userId);
-  if (!share) return { ok: false, error: 'That share isn’t on this split.' };
+  if (!share) return { ok: false, error: tr('That share isn’t on this split.') };
   if (!actor.isCreator && share.userId !== actor.userId)
     return {
       ok: false,
-      error: 'Only who owes it, or who paid, can settle a share.',
+      error: tr('Only who owes it, or who paid, can settle a share.'),
       forbidden: true,
     };
   const settled = op.op === 'settle';
@@ -356,24 +363,28 @@ function clean(field: KitField, raw: unknown): Cleaned {
     case 'text':
     case 'longtext':
     case 'location': {
-      if (typeof raw !== 'string') return { error: `${field.label}: write it as text.` };
+      if (typeof raw !== 'string')
+        return { error: tr('{label}: write it as text.', { label: field.label }) };
       const text = raw.trim();
       if (!text) return null;
       const max = field.type === 'longtext' ? LIMITS.longtext : LIMITS.text;
-      if (text.length > max) return { error: `${field.label}: keep it under ${max} characters.` };
+      if (text.length > max)
+        return {
+          error: tr('{label}: keep it under {max} characters.', { label: field.label, max }),
+        };
       return { value: text };
     }
     case 'datetime': {
       const w = raw as Partial<KitWhen>;
       if (typeof w?.at !== 'string' || Number.isNaN(Date.parse(w.at)))
-        return { error: `${field.label}: choose a time.` };
+        return { error: tr('{label}: choose a time.', { label: field.label }) };
       return { value: { at: new Date(w.at).toISOString(), hasTime: w.hasTime === true } };
     }
     case 'date': {
       if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw))
-        return { error: `${field.label}: choose a date.` };
+        return { error: tr('{label}: choose a date.', { label: field.label }) };
       if (Number.isNaN(Date.parse(`${raw}T00:00:00Z`)))
-        return { error: `${field.label}: choose a date.` };
+        return { error: tr('{label}: choose a date.', { label: field.label }) };
       return { value: raw };
     }
     case 'amount': {
@@ -385,13 +396,14 @@ function clean(field: KitField, raw: unknown): Cleaned {
         typeof a?.value === 'number' && Number.isFinite(a.value)
           ? roundAmount(a.value, currency)
           : Number.NaN;
-      if (!(value > 0) || value > 1e12) return { error: `${field.label}: enter an amount.` };
+      if (!(value > 0) || value > 1e12)
+        return { error: tr('{label}: enter an amount.', { label: field.label }) };
       return { value: { value, currency } };
     }
     case 'options':
       return field.choices?.some((c) => c.value === raw)
         ? { value: raw }
-        : { error: `${field.label}: pick one of the choices.` };
+        : { error: tr('{label}: pick one of the choices.', { label: field.label }) };
     case 'items': {
       // Lines as typed, or items already made from them: checking twice changes nothing.
       const texts = Array.isArray(raw)
@@ -404,13 +416,23 @@ function clean(field: KitField, raw: unknown): Cleaned {
           )
         : null;
       if (!texts || texts.some((x) => x === null))
-        return { error: `${field.label}: one line each.` };
+        return { error: tr('{label}: one line each.', { label: field.label }) };
       const lines = (texts as string[]).map((x) => x.trim()).filter(Boolean);
       if (!lines.length) return null;
       if (lines.length > CHECKLIST_MAX_ITEMS)
-        return { error: `${field.label}: up to ${CHECKLIST_MAX_ITEMS}.` };
+        return {
+          error: tr('{label}: up to {CHECKLIST_MAX_ITEMS}.', {
+            label: field.label,
+            CHECKLIST_MAX_ITEMS,
+          }),
+        };
       if (lines.some((l) => l.length > CHECKLIST_ITEM_MAX))
-        return { error: `${field.label}: keep each under ${CHECKLIST_ITEM_MAX} characters.` };
+        return {
+          error: tr('{label}: keep each under {CHECKLIST_ITEM_MAX} characters.', {
+            label: field.label,
+            CHECKLIST_ITEM_MAX,
+          }),
+        };
       return {
         value: lines.map(
           (text, i): ChecklistItem => ({
@@ -424,7 +446,7 @@ function clean(field: KitField, raw: unknown): Cleaned {
       };
     }
     default:
-      return { error: `${field.label} isn’t supported yet.` };
+      return { error: tr('{label} isn’t supported yet.', { label: field.label }) };
   }
 }
 
@@ -435,7 +457,7 @@ export function prepareKitFields(
 ):
   | { ok: true; kit: CardKitId; def: KitDef; fields: Record<string, unknown> }
   | { ok: false; error: string } {
-  if (!isCardKit(kit)) return { ok: false, error: 'That card isn’t available.' };
+  if (!isCardKit(kit)) return { ok: false, error: tr('That card isn’t available.') };
   const def = KITS[kit];
   const checked = cleanKitFields(def.fields, raw);
   return checked.ok ? { ok: true, kit, def, fields: checked.fields } : checked;
@@ -451,7 +473,8 @@ export function cleanKitFields(
   for (const field of defs) {
     const result = clean(field, input[field.key]);
     if (result === null) {
-      if (field.required) return { ok: false, error: `${field.label} is needed.` };
+      if (field.required)
+        return { ok: false, error: tr('{label} is needed.', { label: field.label }) };
       continue;
     }
     if ('error' in result) return { ok: false, error: result.error };
@@ -473,23 +496,23 @@ function amountText(v: unknown, locale: string): string {
 export function kitHeadline(kit: KitId, fields: Record<string, unknown>, locale = 'en'): string {
   switch (kit) {
     case 'order_status':
-      return [`Order ${asText(fields.reference)}`, asText(fields.summary)]
+      return [tr('Order {asText}', { asText: asText(fields.reference) }), asText(fields.summary)]
         .filter(Boolean)
         .join(' · ');
     case 'invoice':
-      return `Invoice ${asText(fields.reference)}`;
+      return tr('Invoice {asText}', { asText: asText(fields.reference) });
     case 'purchase_order':
-      return `PO ${asText(fields.reference)}`;
+      return tr('PO {asText}', { asText: asText(fields.reference) });
     case 'delivery':
       return [asText(fields.carrier), asText(fields.tracking)].filter(Boolean).join(' ');
     case 'payment_request': {
       const note = asText(fields.note);
       return note
-        ? `${amountText(fields.amount, locale)} for ${note}`
+        ? tr('{amountText} for {note}', { amountText: amountText(fields.amount, locale), note })
         : amountText(fields.amount, locale);
     }
     default:
-      return asText(fields.title) || KITS[kit].name;
+      return asText(fields.title) || tr(KITS[kit].name);
   }
 }
 

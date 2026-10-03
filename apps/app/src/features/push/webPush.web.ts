@@ -4,6 +4,8 @@
  * person once, from something they pressed; after that, each sign-in on this browser gets its
  * pushes, and a session that ends gets none (the server sends only to live sessions).
  */
+
+import { tr } from '@caime/core/i18n';
 import { endpoints } from '@/api/endpoints';
 import { type PushState, pushState, webPushSupported } from './support';
 
@@ -64,7 +66,8 @@ async function subscribe(): Promise<void> {
   }
   sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   const json = sub.toJSON();
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('No subscription');
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth)
+    throw new Error(tr('No subscription'));
   await endpoints.subscribePush({
     kind: 'webpush',
     subscription: {

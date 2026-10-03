@@ -5,6 +5,7 @@
  * Nothing here happens until it's set up.
  */
 import type { AutomationView, PolicyView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { resolvePolicy, scheduleText } from '@caime/core/policy';
 import { findRole, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { workHours } from '@caime/core/time';
@@ -16,7 +17,6 @@ import { endpoints } from '@/api/endpoints';
 import { useAutomations, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { AutomationSheet } from '@/features/settings/AutomationSheet';
-
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -49,7 +49,7 @@ function whom(p: Pick<PolicyView, 'scope'>): string {
     case 'other':
       return 'everyone else';
     default:
-      return SPHERE_DEFS[sphere].plural.toLowerCase();
+      return tr(SPHERE_DEFS[sphere].plural).toLowerCase();
   }
 }
 
@@ -57,9 +57,9 @@ function whom(p: Pick<PolicyView, 'scope'>): string {
 function label(p: Pick<PolicyView, 'name' | 'scope'>): string {
   if (p.name) return p.name;
   const { sphere, role } = p.scope;
-  if (!sphere) return 'Everyone else';
+  if (!sphere) return tr('Everyone else');
   const r = findRole(sphere, role);
-  return SPHERE_DEFS[sphere].plural + (r ? ` · ${r.plural}` : '');
+  return tr(SPHERE_DEFS[sphere].plural) + (r ? ` · ${r.plural}` : '');
 }
 
 const inWords = (hours: number) =>
@@ -93,7 +93,7 @@ function RuleFor({
       subtitle={subtitle}
       footer={
         <Button
-          label="Next"
+          label={tr('Next')}
           block
           size="lg"
           loading={busy}
@@ -111,12 +111,12 @@ function RuleFor({
     >
       <View style={{ marginHorizontal: -20 }}>
         <Choice<Sphere>
-          label="Who it’s for"
+          label={tr('Who it’s for')}
           value={sphere}
           onChange={setSphere}
           options={SPHERES.filter((s) => s !== 'other').map((s) => ({
             value: s,
-            label: SPHERE_DEFS[s].plural,
+            label: tr(SPHERE_DEFS[s].plural),
           }))}
         />
       </View>
@@ -148,7 +148,11 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
       void qc.invalidateQueries({ queryKey: qk.automations });
     }
   };
-  const status = !a.enabled ? 'Off' : a.runs ? `${a.runs} kept so far` : 'Nothing kept yet';
+  const status = !a.enabled
+    ? 'Off'
+    : a.runs
+      ? tr('{runs} kept so far', { runs: a.runs })
+      : tr('Nothing kept yet');
   // What it does opens it; the switch beside it turns it on or off, and is never inside it.
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: 16 }}>
@@ -227,26 +231,27 @@ export default function Automations() {
   };
 
   return (
-    <SettingsPage title="Automations">
+    <SettingsPage title={tr('Automations')}>
       <Text variant="body" color="textSecondary">
-        What Caime does for you by itself, only as you set it up here: keeping what arrives,
-        reminding you when someone hasn’t answered, and keeping quiet when you’d rather it did.
+        {tr(
+          'What Caime does for you by itself, only as you set it up here: keeping what arrives, reminding you when someone hasn’t answered, and keeping quiet when you’d rather it did.',
+        )}
       </Text>
       <Group
-        title="Keep what arrives"
-        footer="Kept in your Saved collections, for as long as its message is there."
+        title={tr('Keep what arrives')}
+        footer={tr('Kept in your Saved collections, for as long as its message is there.')}
       >
         {automations.isPending ? (
           <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
-            Loading your automations…
+            {tr('Loading your automations…')}
           </Text>
         ) : automations.isError && !mine.length ? (
           <View style={{ padding: 16, gap: 10, alignItems: 'flex-start' }}>
             <Text variant="body" color="textSecondary">
-              Your automations didn’t load.
+              {tr('Your automations didn’t load.')}
             </Text>
             <Button
-              label="Try again"
+              label={tr('Try again')}
               size="sm"
               variant="secondary"
               onPress={() => void automations.refetch()}
@@ -260,34 +265,38 @@ export default function Automations() {
           ))
         ) : (
           <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
-            None yet. For instance: when a customer sends a file with “invoice”, save it to Customer
-            Files.
+            {tr(
+              'None yet. For instance: when a customer sends a file with “invoice”, save it to Customer Files.',
+            )}
           </Text>
         )}
       </Group>
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
         <Button
-          label="Add an automation"
+          label={tr('Add an automation')}
           variant="secondary"
           onPress={() => setEditing('new')}
           testID="automation-add"
         />
         <Button
-          label="Saved"
+          label={tr('Saved')}
           variant="ghost"
           onPress={() => router.navigate('/settings/saved')}
           testID="automations-saved"
         />
       </View>
       <Group
-        title="Remind me"
-        footer="When they haven’t answered a question or a request of yours."
+        title={tr('Remind me')}
+        footer={tr('When they haven’t answered a question or a request of yours.')}
       >
         {reminders.map((p, i) => (
           <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
               icon={Clock}
-              title={`If ${whom(p)} haven’t answered in ${inWords(p.settings.followUpHours ?? 0)}`}
+              title={tr('If {whom} haven’t answered in {inWords}', {
+                whom: whom(p),
+                inWords: inWords(p.settings.followUpHours ?? 0),
+              })}
               subtitle={p.name}
               chevron
               onPress={() => setRule(p.id)}
@@ -296,15 +305,15 @@ export default function Automations() {
           </View>
         ))}
         <ListRow
-          title="Add a reminder"
+          title={tr('Add a reminder')}
           onPress={() => setAdding('reminder')}
           testID="reminder-add"
           style={reminders.length ? { borderTopWidth: 1, borderTopColor: t.c.border } : undefined}
         />
       </Group>
       <Group
-        title="Quiet hours"
-        footer="Outside these hours they wait, unless it’s urgent and you allow that."
+        title={tr('Quiet hours')}
+        footer={tr('Outside these hours they wait, unless it’s urgent and you allow that.')}
       >
         {quiet.map((p, i) => (
           <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
@@ -320,7 +329,7 @@ export default function Automations() {
           </View>
         ))}
         <ListRow
-          title="Add quiet hours"
+          title={tr('Add quiet hours')}
           onPress={() => setAdding('quiet')}
           testID="quiet-add"
           style={quiet.length ? { borderTopWidth: 1, borderTopColor: t.c.border } : undefined}
@@ -349,11 +358,11 @@ export default function Automations() {
       ) : null}
       <RuleFor
         open={adding !== null}
-        title={adding === 'quiet' ? 'Quiet hours' : 'A reminder'}
+        title={adding === 'quiet' ? tr('Quiet hours') : tr('A reminder')}
         subtitle={
           adding === 'quiet'
-            ? 'Whose messages wait for set hours'
-            : 'Whose answers you’d like to be reminded about'
+            ? tr('Whose messages wait for set hours')
+            : tr('Whose answers you’d like to be reminded about')
         }
         onClose={() => setAdding(null)}
         onPick={(sphere) => make(sphere, adding ?? 'reminder')}

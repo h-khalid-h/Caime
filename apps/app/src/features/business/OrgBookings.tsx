@@ -5,6 +5,7 @@
  */
 import type { OrgBookingView } from '@caime/core/api';
 import { formatClock, formatDayHeading } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useMemo } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
 import { useOrgCalendar } from '@/api/hooks';
@@ -58,8 +59,8 @@ export function OrgBookings({
       sections={sections}
       keyExtractor={(x) => x.messageId}
       renderItem={({ item }) => {
-        const name = item.customer?.displayName ?? 'Deleted account';
-        const when = item.hasTime ? formatClock(item.at, timeZone, locale) : 'All day';
+        const name = item.customer?.displayName ?? tr('Deleted account');
+        const when = item.hasTime ? formatClock(item.at, timeZone, locale) : tr('All day');
         return (
           <Pressable
             accessibilityRole="button"
@@ -97,7 +98,7 @@ export function OrgBookings({
               </Text>
             </View>
             <Chip
-              label={item.state === 'confirmed' ? 'Confirmed' : 'Asked'}
+              label={item.state === 'confirmed' ? tr('Confirmed') : tr('Asked')}
               size="sm"
               tone={item.state === 'confirmed' ? 'success' : 'warning'}
             />
@@ -121,8 +122,10 @@ export function OrgBookings({
           icon={CalendarCheck}
           character="pico"
           expression="happy"
-          title="No bookings ahead"
-          body="Appointments asked for or confirmed in your customer conversations show here by day."
+          title={tr('No bookings ahead')}
+          body={tr(
+            'Appointments asked for or confirmed in your customer conversations show here by day.',
+          )}
         />
       }
       contentContainerStyle={{ paddingBottom: 24 }}

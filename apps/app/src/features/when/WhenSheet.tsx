@@ -4,6 +4,7 @@
  * it needs one. Days and times are the person's, in their time zone.
  */
 
+import { tr } from '@caime/core/i18n';
 import { zonedParts } from '@caime/core/time';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -50,10 +51,11 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
   const picks = quickPicks(timeZone, me.workweek);
   /** Why the day (and time) can't be chosen, if it can't. */
   const problem = (chosen: Chosen | null): { on: 'day' | 'time'; text: string } | null => {
-    if (!chosen) return { on: 'day', text: 'Choose a day.' };
-    if (future && chosen.date < today) return { on: 'day', text: 'Choose today or a day after.' };
+    if (!chosen) return { on: 'day', text: tr('Choose a day.') };
+    if (future && chosen.date < today)
+      return { on: 'day', text: tr('Choose today or a day after.') };
     if (future && chosen.time && instantOf(chosen, timeZone).getTime() < Date.now())
-      return { on: 'time', text: 'That time has passed. Choose a later one.' };
+      return { on: 'time', text: tr('That time has passed. Choose a later one.') };
     return null;
   };
   /** Whether it was a day (and time) that can be chosen, and so was. */
@@ -69,7 +71,7 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
     <View style={{ gap: 16 }}>
       <View
         accessibilityRole="radiogroup"
-        accessibilityLabel="Days"
+        accessibilityLabel={tr('Days')}
         style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
       >
         {picks.map((p) => (
@@ -87,7 +89,7 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
         ))}
       </View>
       <DateField
-        label="Day"
+        label={tr('Day')}
         value={date}
         onChange={(d) => {
           setDate(d);
@@ -99,7 +101,7 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
       />
       {time === 'none' ? null : at === null ? (
         <Button
-          label="Add a time"
+          label={tr('Add a time')}
           variant="secondary"
           onPress={() => setAt('09:00')}
           testID={testID ? `${testID}-add-time` : undefined}
@@ -107,7 +109,7 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
           <TimeField
-            label="Time"
+            label={tr('Time')}
             value={at}
             error={error?.on === 'time' ? error.text : null}
             onChange={(v) => {
@@ -117,7 +119,7 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
             testID={testID ? `${testID}-time` : undefined}
           />
           {time === 'optional' ? (
-            <Button label="No time" variant="ghost" onPress={() => setAt(null)} />
+            <Button label={tr('No time')} variant="ghost" onPress={() => setAt(null)} />
           ) : null}
         </View>
       )}
@@ -136,7 +138,7 @@ export function WhenSheet({
   onClose,
   title,
   onClear,
-  clearLabel = 'No date',
+  clearLabel = tr('No date'),
   ...props
 }: WhenProps & {
   open: boolean;
@@ -155,7 +157,7 @@ export function WhenSheet({
       footer={
         <View style={{ gap: 8 }}>
           <Button
-            label="Done"
+            label={tr('Done')}
             size="lg"
             block
             onPress={() => {
@@ -193,9 +195,9 @@ export function WhenPicker({ onCancel, ...props }: WhenProps & { onCancel: () =>
     <View style={{ gap: 16 }}>
       {body}
       <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
-        <Button label="Back" variant="ghost" onPress={onCancel} />
+        <Button label={tr('Back')} variant="ghost" onPress={onCancel} />
         <Button
-          label="Done"
+          label={tr('Done')}
           onPress={() => void done()}
           testID={props.testID ? `${props.testID}-done` : undefined}
         />

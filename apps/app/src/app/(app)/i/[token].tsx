@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -23,7 +24,7 @@ export default function InviteLink() {
   const accept = useMutation({
     mutationFn: () => endpoints.acceptInvite(token),
     onSuccess: (res) => {
-      if (!res.already) toast('You’re connected');
+      if (!res.already) toast(tr('You’re connected'));
       router.replace({ pathname: '/c/[id]', params: { id: res.conversationId } });
     },
     onError: (e) => {
@@ -48,10 +49,10 @@ export default function InviteLink() {
     <Screen edges={desktop ? [] : ['top', 'bottom']}>
       {problem ? (
         <EmptyState
-          title="Nothing to open"
+          title={tr('Nothing to open')}
           body={problem}
           icon={UserPlus}
-          action={<Button label="Find people" onPress={() => router.replace('/connect')} />}
+          action={<Button label={tr('Find people')} onPress={() => router.replace('/connect')} />}
         />
       ) : (
         <SkeletonRows count={3} />

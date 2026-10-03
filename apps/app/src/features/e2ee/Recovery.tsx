@@ -4,6 +4,7 @@
  * was sent before it and to be approved without another device. Caime keeps the key nowhere.
  */
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
@@ -49,23 +50,30 @@ export function RecoveryKey() {
   };
   return (
     <Group
-      title="Recovery key"
+      title={tr('Recovery key')}
       footer={
         recovery
-          ? 'If every device of yours is lost, a new one reads your private conversations with this key, and your security code stays the same. Keep it where you keep passwords: Caime can’t show it again, or read anything without it.'
-          : 'Without one, losing every device you’re signed in on loses your private conversations for good. The key is shown once: keep it where you keep passwords.'
+          ? tr(
+              'If every device of yours is lost, a new one reads your private conversations with this key, and your security code stays the same. Keep it where you keep passwords: Caime can’t show it again, or read anything without it.',
+            )
+          : tr(
+              'Without one, losing every device you’re signed in on loses your private conversations for good. The key is shown once: keep it where you keep passwords.',
+            )
       }
     >
       <View style={{ padding: 16, gap: 12 }} testID="private-recovery">
         <Text variant="body">
           {recovery
-            ? `On, since ${formatListTime(recovery.createdAt, now, timeZone, locale)}.${here ? ' This device has it.' : ''}`
-            : 'Off.'}
+            ? tr('On, since {formatListTime}.{This}', {
+                formatListTime: formatListTime(recovery.createdAt, now, timeZone, locale),
+                This: here ? tr(' This device has it.') : '',
+              })
+            : tr('Off.')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {me?.approved ? (
             <Button
-              label={recovery ? 'Make a new key' : 'Make a recovery key'}
+              label={recovery ? tr('Make a new key') : tr('Make a recovery key')}
               onPress={make}
               loading={busy}
               testID="private-recovery-make"
@@ -73,7 +81,7 @@ export function RecoveryKey() {
           ) : null}
           {recovery && (!me?.approved || !here) ? (
             <Button
-              label="Use your recovery key"
+              label={tr('Use your recovery key')}
               variant="secondary"
               onPress={() => setRestoring(true)}
               testID="private-recovery-use"
@@ -95,11 +103,12 @@ function ShownKeySheet({ keyText, onClose }: { keyText: string | null; onClose: 
     if (!keyText) setCopied(false);
   }, [keyText]);
   return (
-    <Sheet open={keyText !== null} onClose={onClose} title="Your recovery key">
+    <Sheet open={keyText !== null} onClose={onClose} title={tr('Your recovery key')}>
       <View style={{ gap: 12, paddingBottom: 8 }}>
         <Text variant="body">
-          Write it down, or keep it where you keep passwords. Caime can’t show it again: it keeps
-          nothing of it.
+          {tr(
+            'Write it down, or keep it where you keep passwords. Caime can’t show it again: it keeps nothing of it.',
+          )}
         </Text>
         <Card>
           <View style={{ padding: 4, gap: 8, alignItems: 'center' }}>
@@ -115,23 +124,24 @@ function ShownKeySheet({ keyText, onClose }: { keyText: string | null; onClose: 
           </View>
         </Card>
         <Text variant="caption" color="textSecondary">
-          A new device with this key reads everything sent to you privately from now on, and is
-          yours without another device to approve it. Anyone with the key and your password could
-          too, so keep them apart. A key you made before stops working.
+          {tr(
+            'A new device with this key reads everything sent to you privately from now on, and is yours without another device to approve it. Anyone with the key and your password could too, so keep them apart. A key you made before stops working.',
+          )}
         </Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Button
-            label={copied ? 'Copied' : 'Copy'}
+            label={copied ? tr('Copied') : tr('Copy')}
             variant="secondary"
             onPress={() =>
               void copyText(keyText ?? '').then((ok) => {
                 setCopied(ok);
-                if (!ok) toast('Caime couldn’t copy it here: write it down.', { tone: 'danger' });
+                if (!ok)
+                  toast(tr('Caime couldn’t copy it here: write it down.'), { tone: 'danger' });
               })
             }
             testID="private-recovery-copy"
           />
-          <Button label="I’ve kept it" onPress={onClose} testID="private-recovery-kept" />
+          <Button label={tr('I’ve kept it')} onPress={onClose} testID="private-recovery-kept" />
         </View>
       </View>
     </Sheet>
@@ -141,11 +151,12 @@ function ShownKeySheet({ keyText, onClose }: { keyText: string | null; onClose: 
 /** Where the recovery key is typed, from Settings. */
 export function RestoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title="Use your recovery key">
+    <Sheet open={open} onClose={onClose} title={tr('Use your recovery key')}>
       <View style={{ gap: 12, paddingBottom: 8 }}>
         <Text variant="body">
-          Type the key you kept when you made it. This device then reads your private conversations,
-          and is yours without another device to approve it.
+          {tr(
+            'Type the key you kept when you made it. This device then reads your private conversations, and is yours without another device to approve it.',
+          )}
         </Text>
         {open ? <RestoreForm onDone={onClose} /> : null}
       </View>
@@ -164,7 +175,7 @@ function RestoreForm({ onDone }: { onDone: () => void }) {
     void loadPrivate()
       .then((p) => p.restoreFromRecoveryKey(typed))
       .then(() => {
-        toast('Your private conversations open here now.');
+        toast(tr('Your private conversations open here now.'));
         onDone();
       })
       .catch((e) => setError((e as Error).message))
@@ -173,17 +184,17 @@ function RestoreForm({ onDone }: { onDone: () => void }) {
   return (
     <>
       <TextField
-        label="Recovery key"
+        label={tr('Recovery key')}
         value={typed}
         onChangeText={setTyped}
         autoCapitalize="characters"
         autoCorrect={false}
-        placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+        placeholder={tr('XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX')}
         error={error}
         testID="private-recovery-input"
       />
       <Button
-        label="Restore"
+        label={tr('Restore')}
         onPress={restore}
         loading={busy}
         disabled={!typed.trim()}
@@ -208,18 +219,24 @@ export function RestoreFromKey({ on }: { on: boolean }) {
     <Card>
       <View style={{ gap: 8 }} testID="private-restore-offer">
         <Text variant="label">
-          {me.approved ? 'Read what was sent before this device' : 'Or use your recovery key'}
+          {me.approved
+            ? tr('Read what was sent before this device')
+            : tr('Or use your recovery key')}
         </Text>
         <Text variant="caption" color="textSecondary">
           {me.approved
-            ? 'With your recovery key, this device reads what was sent to you privately before it was yours.'
-            : 'With your recovery key, this device is yours without another device to approve it, and reads what was sent before.'}
+            ? tr(
+                'With your recovery key, this device reads what was sent to you privately before it was yours.',
+              )
+            : tr(
+                'With your recovery key, this device is yours without another device to approve it, and reads what was sent before.',
+              )}
         </Text>
         {typing ? (
           <RestoreForm onDone={() => setTyping(false)} />
         ) : (
           <Button
-            label="Use your recovery key"
+            label={tr('Use your recovery key')}
             size="sm"
             variant="secondary"
             onPress={() => setTyping(true)}

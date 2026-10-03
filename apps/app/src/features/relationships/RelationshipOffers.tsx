@@ -4,6 +4,7 @@
  * changes until it's accepted (or changed first), and "Not now" means it won't come back.
  */
 import type { ConnectionView, SuggestionView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { relationshipOfferText } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, usePathname } from 'expo-router';
@@ -61,7 +62,7 @@ function OfferCard({
     setBusy('accept');
     try {
       await endpoints.acceptSuggestion(s.id, relationship ? { relationship } : {});
-      toast('Saved. Only you see it.');
+      toast(tr('Saved. Only you see it.'));
       refresh();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -88,7 +89,9 @@ function OfferCard({
           <Sparkles size={18} color={t.c.accentStrong} />
           <View style={{ flex: 1, gap: 4 }}>
             <Text variant="bodyStrong" onPress={onOpen}>
-              {`Caime thinks ${relationshipOfferText(first, offer)}.`}
+              {tr('Caime thinks {relationshipOfferText}.', {
+                relationshipOfferText: relationshipOfferText(first, offer),
+              })}
             </Text>
             <Text variant="caption" color="textSecondary">
               {s.rationale}
@@ -97,21 +100,21 @@ function OfferCard({
         </View>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           <Button
-            label="Accept"
+            label={tr('Accept')}
             size="sm"
             loading={busy === 'accept'}
             onPress={() => void accept()}
             testID="relationship-offer-accept"
           />
           <Button
-            label="Change"
+            label={tr('Change')}
             size="sm"
             variant="secondary"
             onPress={() => setChanging(true)}
             testID="relationship-offer-change"
           />
           <Button
-            label="Not now"
+            label={tr('Not now')}
             size="sm"
             variant="ghost"
             loading={busy === 'dismiss'}
@@ -120,7 +123,9 @@ function OfferCard({
           />
         </View>
         <Text variant="caption" color="textTertiary">
-          Only you see how you know {first}, and nothing changes until you say so.
+          {tr('Only you see how you know {first}, and nothing changes until you say so.', {
+            first,
+          })}
         </Text>
       </View>
       {picking ? (

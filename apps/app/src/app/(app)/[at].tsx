@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
@@ -41,31 +42,35 @@ export default function HandleLink() {
           desktop ? undefined : (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />
           )
         }
-        title={handle ? `@${handle}` : 'Caime'}
+        title={handle ? `@${handle}` : tr('Caime')}
       />
       {missing ? (
         <EmptyState
           character="pico"
           expression="curious"
           icon={UserPlus}
-          title={handle ? `No one here goes by @${handle}` : 'There’s nothing here'}
+          title={
+            handle ? tr('No one here goes by @{handle}', { handle }) : tr('There’s nothing here')
+          }
           body={
             handle
-              ? 'Check the spelling, or ask them for their link. Some people choose not to be found by their handle.'
-              : 'The link may be old or mistyped.'
+              ? tr(
+                  'Check the spelling, or ask them for their link. Some people choose not to be found by their handle.',
+                )
+              : tr('The link may be old or mistyped.')
           }
-          action={<Button label="Find people" onPress={() => router.replace('/connect')} />}
+          action={<Button label={tr('Find people')} onPress={() => router.replace('/connect')} />}
         />
       ) : q.isError ? (
         <EmptyState
-          title="That link didn’t open"
+          title={tr('That link didn’t open')}
           body={(q.error as Error).message}
-          action={<Button label="Try again" onPress={() => void q.refetch()} />}
+          action={<Button label={tr('Try again')} onPress={() => void q.refetch()} />}
         />
       ) : (
         <SkeletonRows />

@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import type { Sphere } from '@caime/core/taxonomy';
 import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
@@ -49,7 +50,7 @@ export function PeoplePicker({
   if (among ? among.people === undefined : connections.isPending)
     return (
       <Text variant="body" color="textSecondary">
-        Loading your people…
+        {tr('Loading your people…')}
       </Text>
     );
   if (list.length === 0)
@@ -58,8 +59,8 @@ export function PeoplePicker({
         {among
           ? among.empty
           : exclude?.size
-            ? 'Everyone you’re connected with is already here.'
-            : 'Connect with people first, then add them here.'}
+            ? tr('Everyone you’re connected with is already here.')
+            : tr('Connect with people first, then add them here.')}
       </Text>
     );
   return (

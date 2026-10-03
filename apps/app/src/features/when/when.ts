@@ -2,6 +2,8 @@
  * A day, and a time on it if there is one, where the person is (their time zone, not the
  * device's): what an action's due date, a card's date and a mute's end are chosen as.
  */
+
+import { tr } from '@caime/core/i18n';
 import { addDays, weekStart, zonedParts, zonedTimeToUtc } from '@caime/core/time';
 
 export interface Chosen {
@@ -47,13 +49,13 @@ export interface QuickPick {
 export function quickPicks(timeZone: string, workweek: number[], now = new Date()): QuickPick[] {
   const today = zonedParts(now, timeZone);
   const picks: QuickPick[] = [
-    { label: 'Today', chosen: { date: dayText(today), time: null } },
-    { label: 'Tomorrow', chosen: { date: dayText(addDays(today, 1)), time: null } },
+    { label: tr('Today'), chosen: { date: dayText(today), time: null } },
+    { label: tr('Tomorrow'), chosen: { date: dayText(addDays(today, 1)), time: null } },
   ];
   const ahead = (weekStart(workweek) - today.weekday + 7) % 7 || 7;
   if (ahead > 1)
     picks.push({
-      label: 'Next week',
+      label: tr('Next week'),
       chosen: { date: dayText(addDays(today, ahead)), time: null },
     });
   return picks;

@@ -1,4 +1,5 @@
 import { type BubbleTheme, bubbleThemes } from '@caime/brand/tokens';
+import { tr } from '@caime/core/i18n';
 import { Platform, Switch, View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
@@ -25,7 +26,7 @@ function Preview() {
         }}
       >
         <Text variant="message" color={t.c.onBubbleOther}>
-          Are we still on for Saturday?
+          {tr('Are we still on for Saturday?')}
         </Text>
       </View>
       <View
@@ -40,7 +41,7 @@ function Preview() {
         }}
       >
         <Text variant="message" color={t.bubble.fg}>
-          Yes! I’ll bring the cake 🎂
+          {tr('Yes! I’ll bring the cake 🎂')}
         </Text>
         <Text
           variant="caption"
@@ -59,18 +60,20 @@ export default function Appearance() {
   const prefs = usePrefs();
   const enterDefault = Platform.OS === 'web';
   return (
-    <SettingsPage title="Appearance">
+    <SettingsPage title={tr('Appearance')}>
       <Group>
         <Preview />
       </Group>
       <Group
-        title="Your bubble colour"
-        footer="Only changes how your own messages look to you. Everyone keeps their own choice."
+        title={tr('Your bubble colour')}
+        footer={tr(
+          'Only changes how your own messages look to you. Everyone keeps their own choice.',
+        )}
       >
         <View
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, padding: 16 }}
           accessibilityRole="radiogroup"
-          accessibilityLabel="Bubble colour"
+          accessibilityLabel={tr('Bubble colour')}
         >
           {(Object.keys(bubbleThemes) as BubbleTheme[]).map((key) => {
             const b = bubbleThemes[key][t.scheme];
@@ -111,39 +114,39 @@ export default function Appearance() {
           })}
         </View>
       </Group>
-      <Group title="Theme">
+      <Group title={tr('Theme')}>
         <Choice
-          label="Theme"
+          label={tr('Theme')}
           value={prefs.theme}
           onChange={(theme) => savePrefs({ theme })}
           options={[
             {
               value: 'system',
-              label: 'Match this device',
-              detail: 'Light by day, dark by night, if your device does that',
+              label: tr('Match this device'),
+              detail: tr('Light by day, dark by night, if your device does that'),
             },
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
+            { value: 'light', label: tr('Light') },
+            { value: 'dark', label: tr('Dark') },
           ]}
         />
       </Group>
       <Group
-        title="Style"
-        footer="The same Caime either way. Minimal keeps the characters for special moments."
+        title={tr('Style')}
+        footer={tr('The same Caime either way. Minimal keeps the characters for special moments.')}
       >
         <View style={{ flexDirection: 'row', gap: 12, padding: 16 }}>
           {(
             [
               {
                 value: 'playful',
-                label: 'Playful',
-                detail: 'Characters, stickers, softer shapes',
+                label: tr('Playful'),
+                detail: tr('Characters, stickers, softer shapes'),
                 character: 'momo',
               },
               {
                 value: 'minimal',
-                label: 'Minimal',
-                detail: 'Quieter, crisper, fewer flourishes',
+                label: tr('Minimal'),
+                detail: tr('Quieter, crisper, fewer flourishes'),
                 character: 'panda',
               },
             ] as const
@@ -182,19 +185,19 @@ export default function Appearance() {
           })}
         </View>
       </Group>
-      <Group title="Behaviour">
+      <Group title={tr('Behaviour')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Enter sends the message</Text>
+            <Text variant="bodyStrong">{tr('Enter sends the message')}</Text>
             <Text variant="caption" color="textSecondary">
-              Shift + Enter for a new line
+              {tr('Shift + Enter for a new line')}
             </Text>
           </View>
           <Switch
             value={prefs.enterToSend ?? enterDefault}
             onValueChange={(v) => savePrefs({ enterToSend: v })}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Enter sends the message"
+            accessibilityLabel={tr('Enter sends the message')}
           />
         </View>
         <View
@@ -208,16 +211,16 @@ export default function Appearance() {
           }}
         >
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Reduce motion</Text>
+            <Text variant="bodyStrong">{tr('Reduce motion')}</Text>
             <Text variant="caption" color="textSecondary">
-              Fewer animations and no shimmer
+              {tr('Fewer animations and no shimmer')}
             </Text>
           </View>
           <Switch
             value={prefs.reduceMotion}
             onValueChange={(v) => savePrefs({ reduceMotion: v })}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Reduce motion"
+            accessibilityLabel={tr('Reduce motion')}
           />
         </View>
       </Group>

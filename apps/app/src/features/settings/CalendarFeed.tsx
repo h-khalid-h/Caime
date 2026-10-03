@@ -4,6 +4,7 @@
  * change. The address is shown once, as it's made; a new one ends the old one.
  */
 import { formatWhen } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -18,8 +19,9 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
-const HOW =
-  'Google Calendar: Other calendars, then From URL. Outlook: Add calendar, then Subscribe from web. Apple Calendar: File, then New Calendar Subscription.';
+const HOW = msg(
+  'Google Calendar: Other calendars, then From URL. Outlook: Add calendar, then Subscribe from web. Apple Calendar: File, then New Calendar Subscription.',
+);
 
 export function CalendarFeed() {
   const qc = useQueryClient();
@@ -56,7 +58,7 @@ export function CalendarFeed() {
       setUrl(null);
       setConfirming(null);
       void qc.invalidateQueries({ queryKey: qk.calendarFeed });
-      toast('Your calendar won’t read Caime any more');
+      toast(tr('Your calendar won’t read Caime any more'));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -67,24 +69,25 @@ export function CalendarFeed() {
   if (minor)
     return (
       <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
-        Calendars are for people over 18.
+        {tr('Calendars are for people over 18.')}
       </Text>
     );
   if (q.isPending) return <SkeletonRows count={2} />;
   return (
     <View style={{ padding: 16, gap: 12 }} testID="calendar-feed">
       <Text variant="body" color="textSecondary">
-        See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or
-        Apple Calendar. They read a private address; nothing changes in Caime from there.
+        {tr(
+          'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.',
+        )}
       </Text>
       {url ? (
         <View style={{ gap: 8 }}>
-          <CopyRow label="Calendar address" value={url} testID="calendar-feed-url" />
+          <CopyRow label={tr('Calendar address')} value={url} testID="calendar-feed-url" />
           <Text variant="caption" color="textTertiary">
-            {`Shown this once: add it to your calendar now. ${HOW}`}
+            {tr('Shown this once: add it to your calendar now. {how}', { how: tr(HOW) })}
           </Text>
           <Button
-            label="Open in your calendar app"
+            label={tr('Open in your calendar app')}
             variant="secondary"
             size="sm"
             onPress={() => openLink(url.replace(/^https?:/, 'webcal:'))}
@@ -92,23 +95,24 @@ export function CalendarFeed() {
         </View>
       ) : feed?.enabled ? (
         <Text variant="caption" color="textSecondary" testID="calendar-feed-on">
-          {`On since ${formatWhen(feed.createdAt ?? '', now, timeZone, locale)} · ${
-            feed.lastReadAt
+          {tr('On since {formatWhen} · {text}', {
+            formatWhen: formatWhen(feed.createdAt ?? '', now, timeZone, locale),
+            text: feed.lastReadAt
               ? `last read ${formatWhen(feed.lastReadAt, now, timeZone, locale)}`
-              : 'not read yet'
-          }`}
+              : tr('not read yet'),
+          })}
         </Text>
       ) : null}
       {confirming ? (
         <View style={{ gap: 8 }}>
           <Text variant="caption" color="textSecondary">
             {confirming === 'replace'
-              ? 'The address your calendar has now stops working, and you add the new one.'
-              : 'Your calendar stops showing what’s in Caime.'}
+              ? tr('The address your calendar has now stops working, and you add the new one.')
+              : tr('Your calendar stops showing what’s in Caime.')}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Button
-              label={confirming === 'replace' ? 'Get a new address' : 'Stop it'}
+              label={confirming === 'replace' ? tr('Get a new address') : tr('Stop it')}
               variant={confirming === 'stop' ? 'danger' : 'primary'}
               size="sm"
               loading={busy !== null}
@@ -117,7 +121,7 @@ export function CalendarFeed() {
               style={{ flex: 1 }}
             />
             <Button
-              label="Keep it"
+              label={tr('Keep it')}
               variant="secondary"
               size="sm"
               onPress={() => setConfirming(null)}
@@ -128,14 +132,14 @@ export function CalendarFeed() {
       ) : feed?.enabled ? (
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
           <Button
-            label="Get a new address"
+            label={tr('Get a new address')}
             variant="secondary"
             size="sm"
             onPress={() => setConfirming('replace')}
             testID="calendar-feed-replace"
           />
           <Button
-            label="Stop"
+            label={tr('Stop')}
             variant="ghost"
             size="sm"
             onPress={() => setConfirming('stop')}
@@ -144,7 +148,7 @@ export function CalendarFeed() {
         </View>
       ) : (
         <Button
-          label="Get a calendar address"
+          label={tr('Get a calendar address')}
           size="sm"
           loading={busy === 'make'}
           onPress={() => void make()}

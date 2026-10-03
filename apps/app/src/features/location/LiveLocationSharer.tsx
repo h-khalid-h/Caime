@@ -1,4 +1,5 @@
 import { formatClock } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import type { LocationSubscription } from 'expo-location';
 import { useEffect, useState } from 'react';
@@ -108,7 +109,7 @@ export function LiveLocationSharer() {
         upsertMessage(qc, (await endpoints.stopLocation(id)).message);
       } catch (e) {
         if (!(e instanceof ApiError)) {
-          toast('Couldn’t stop it just now. Try again.', { tone: 'danger' });
+          toast(tr('Couldn’t stop it just now. Try again.'), { tone: 'danger' });
           setStopping(false);
           return;
         }
@@ -150,11 +151,13 @@ export function LiveLocationSharer() {
       >
         <MapPin size={16} color={t.c.accent} />
         <Text variant="captionStrong" color="#FFFFFF">
-          {`Sharing your location live · until ${formatClock(until, timeZone, locale)}`}
+          {tr('Sharing your location live · until {formatClock}', {
+            formatClock: formatClock(until, timeZone, locale),
+          })}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Stop sharing your location"
+          accessibilityLabel={tr('Stop sharing your location')}
           disabled={stopping}
           onPress={() => void stop()}
           hitSlop={8}
@@ -167,7 +170,7 @@ export function LiveLocationSharer() {
           testID="live-location-stop"
         >
           <Text variant="captionStrong" color="#FFFFFF">
-            {stopping ? 'Stopping…' : 'Stop'}
+            {stopping ? tr('Stopping…') : tr('Stop')}
           </Text>
         </Pressable>
       </View>

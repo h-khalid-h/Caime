@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { safeLocale } from '@caime/core/locale';
 import { getCalendars, getLocales } from 'expo-localization';
 import { Platform } from 'react-native';
@@ -9,9 +10,9 @@ export function deviceInfo() {
   const timeZone = getCalendars()[0]?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const deviceName =
     Platform.OS === 'web'
-      ? 'Web browser'
+      ? tr('Web browser')
       : Platform.OS === 'ios'
         ? 'iPhone or iPad'
-        : 'Android device';
+        : tr('Android device');
   return { client: clientKind, locale, timeZone: timeZone ?? undefined, deviceName };
 }

@@ -5,6 +5,7 @@
  */
 import type { InboxAllResponse } from '@caime/core/api';
 import { inboxAllList, inboxSections } from '@caime/core/attention';
+import { msg, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
@@ -20,14 +21,14 @@ const mac =
 const MOD = mac ? '⌘' : 'Ctrl';
 
 export const SHORTCUTS: Array<{ keys: string[]; does: string }> = [
-  { keys: [MOD, 'K'], does: 'Search' },
-  { keys: ['Alt', '↑'], does: 'Previous conversation' },
-  { keys: ['Alt', '↓'], does: 'Next conversation' },
-  { keys: ['↑'], does: 'Edit your last message, from an empty message box' },
-  { keys: ['Enter'], does: 'Send' },
-  { keys: ['Shift', 'Enter'], does: 'New line' },
-  { keys: ['Esc'], does: 'Cancel a reply or an edit' },
-  { keys: ['?'], does: 'Show these shortcuts' },
+  { keys: [MOD, 'K'], does: msg('Search') },
+  { keys: ['Alt', '↑'], does: msg('Previous conversation') },
+  { keys: ['Alt', '↓'], does: msg('Next conversation') },
+  { keys: ['↑'], does: msg('Edit your last message, from an empty message box') },
+  { keys: ['Enter'], does: msg('Send') },
+  { keys: ['Shift', 'Enter'], does: msg('New line') },
+  { keys: ['Esc'], does: msg('Cancel a reply or an edit') },
+  { keys: ['?'], does: msg('Show these shortcuts') },
 ];
 
 export const useShortcutsSheet = create<{ open: boolean; setOpen: (open: boolean) => void }>(
@@ -85,13 +86,13 @@ export function KeyboardShortcuts() {
 
   if (Platform.OS !== 'web') return null;
   return (
-    <Sheet open={open} onClose={() => setOpen(false)} title="Keyboard shortcuts">
+    <Sheet open={open} onClose={() => setOpen(false)} title={tr('Keyboard shortcuts')}>
       <View style={{ gap: 12 }} accessibilityRole="list">
         {SHORTCUTS.map((s) => (
           <View
-            key={s.does}
+            key={tr(s.does)}
             accessibilityRole="text"
-            accessibilityLabel={`${s.keys.join(' ')}: ${s.does}`}
+            accessibilityLabel={`${s.keys.join(' ')}: ${tr(s.does)}`}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
           >
             <View style={{ flexDirection: 'row', gap: 4, minWidth: 104 }}>
@@ -115,7 +116,7 @@ export function KeyboardShortcuts() {
               ))}
             </View>
             <Text variant="body" style={{ flex: 1 }}>
-              {s.does}
+              {tr(s.does)}
             </Text>
           </View>
         ))}

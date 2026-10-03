@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 /**
  * Trust (PRD §54): what Caime actually knows about who someone is, said in words rather than a
  * decorative badge.
@@ -25,38 +26,44 @@ export interface Trust {
 
 export function trustFor(input: TrustInput): Trust {
   if (input.kind !== 'human') {
-    const what = input.kind === 'bot' ? 'an automated account (bot)' : 'an AI agent';
+    const what = input.kind === 'bot' ? tr('an automated account (bot)') : tr('an AI agent');
     return {
       level: input.verifiedOrgName ? 'org_verified' : 'unknown',
-      label: input.kind === 'bot' ? 'Bot' : 'AI agent',
-      detail: `This is ${what}, not a person${input.verifiedOrgName ? `, operated by ${input.verifiedOrgName}` : ''}.`,
+      label: input.kind === 'bot' ? tr('Bot') : tr('AI agent'),
+      detail: tr('This is {what}, not a person{text}.', {
+        what,
+        text: input.verifiedOrgName ? `, operated by ${input.verifiedOrgName}` : '',
+      }),
     };
   }
   if (input.verifiedOrgName) {
     return {
       level: 'org_verified',
-      label: `Verified at ${input.verifiedOrgName}`,
-      detail: `${input.verifiedOrgName} confirmed this person is part of their organization.`,
+      label: tr('Verified at {verifiedOrgName}', { verifiedOrgName: input.verifiedOrgName }),
+      detail: tr('{verifiedOrgName} confirmed this person is part of their organization.', {
+        verifiedOrgName: input.verifiedOrgName,
+      }),
     };
   }
   if (input.emailVerified) {
     return {
       level: 'verified',
-      label: 'Verified email',
-      detail: 'Caime confirmed this account controls its email address.',
+      label: tr('Verified email'),
+      detail: tr('Caime confirmed this account controls its email address.'),
     };
   }
   if (input.known) {
     return {
       level: 'known',
-      label: 'Known to you',
-      detail: 'You are connected or share a conversation.',
+      label: tr('Known to you'),
+      detail: tr('You are connected or share a conversation.'),
     };
   }
   return {
     level: 'unknown',
-    label: 'New to you',
-    detail:
+    label: tr('New to you'),
+    detail: tr(
       'You’re not connected, and Caime hasn’t verified who this is. Be careful with links and payments.',
+    ),
   };
 }

@@ -3,6 +3,8 @@
  * Caime keeps the story). The server stores a snapshot before and after each change; this turns
  * one event into one line, using the person's name and never a pronoun (R27).
  */
+
+import { tr } from './i18n';
 import { isSphere, relationshipLabel, type Sphere } from './taxonomy';
 
 export interface RelationshipEventLike {
@@ -43,29 +45,31 @@ export function describeRelationshipEvent(e: RelationshipEventLike, name: string
   const before = snapshotOf(e.before);
   const after = snapshotOf(e.after);
   const subject = after ?? before;
-  const what = subject ? quoted(subject) : 'a label';
+  const what = subject ? quoted(subject) : tr('a label');
   switch (e.kind) {
     case 'created':
-      return `Added ${what}`;
+      return tr('Added {what}', { what });
     case 'changed':
       if (before && after && quoted(before) !== quoted(after))
-        return `${quoted(before)} became ${quoted(after)}`;
+        return tr('{quoted} became {quoted2}', { quoted: quoted(before), quoted2: quoted(after) });
       if (before && after && before.contextNote !== after.contextNote)
-        return after.contextNote ? `Added a note to ${what}` : `Removed the note from ${what}`;
-      return `Updated ${what}`;
+        return after.contextNote
+          ? tr('Added a note to {what}', { what })
+          : tr('Removed the note from {what}', { what });
+      return tr('Updated {what}', { what });
     case 'ended':
       return `${before ? quoted(before) : what} ended`;
     case 'archived':
-      return `Archived ${what}`;
+      return tr('Archived {what}', { what });
     case 'restored':
-      return `Restored ${what}`;
+      return tr('Restored {what}', { what });
     case 'merged':
-      return `Merged ${before ? quoted(before) : what} into another label`;
+      return tr('Merged {quoted} into another label', { quoted: before ? quoted(before) : what });
     case 'shared':
-      return `Shared ${what} with ${name}`;
+      return tr('Shared {what} with {name}', { what, name });
     case 'unshared':
-      return `Stopped sharing ${what} with ${name}`;
+      return tr('Stopped sharing {what} with {name}', { what, name });
     default:
-      return `Updated ${what}`;
+      return tr('Updated {what}', { what });
   }
 }

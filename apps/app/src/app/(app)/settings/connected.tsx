@@ -1,6 +1,7 @@
 import { PERSONAL_SCOPE_LABELS, type PersonalScope } from '@caime/core/access';
 import type { ConnectedAppView } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -30,7 +31,7 @@ function AppRow({ app }: { app: ConnectedAppView }) {
     try {
       await endpoints.removeConnectedApp(app.grantId);
       void qc.invalidateQueries({ queryKey: qk.connectedApps });
-      toast(`${app.name} can’t act for you any more`);
+      toast(tr('{name} can’t act for you any more', { name: app.name }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
       setBusy(false);
@@ -44,14 +45,17 @@ function AppRow({ app }: { app: ConnectedAppView }) {
             {app.name}
           </Text>
           <Text variant="caption" color="textSecondary">
-            {`Made by ${app.owner}`}
+            {tr('Made by {owner}', { owner: app.owner })}
           </Text>
           <Text variant="caption" color="textSecondary">
-            {`Let in ${when(app.createdAt)} · ${app.lastUsedAt ? `last used ${when(app.lastUsedAt)}` : 'not used yet'}`}
+            {tr('Let in {when} · {text}', {
+              when: when(app.createdAt),
+              text: app.lastUsedAt ? `last used ${when(app.lastUsedAt)}` : tr('not used yet'),
+            })}
           </Text>
         </View>
         <Button
-          label="Remove"
+          label={tr('Remove')}
           size="sm"
           variant="secondary"
           loading={busy}
@@ -62,11 +66,13 @@ function AppRow({ app }: { app: ConnectedAppView }) {
       <Sheet
         open={asking}
         onClose={() => setAsking(false)}
-        title={`Remove ${app.name}?`}
-        subtitle="It stops acting for you at once. To use it again, you’d let it in again from the app itself."
+        title={tr('Remove {name}?', { name: app.name })}
+        subtitle={tr(
+          'It stops acting for you at once. To use it again, you’d let it in again from the app itself.',
+        )}
         footer={
           <Button
-            label="Remove"
+            label={tr('Remove')}
             variant="danger"
             block
             size="lg"
@@ -76,7 +82,7 @@ function AppRow({ app }: { app: ConnectedAppView }) {
         }
       >
         <Text variant="body" color="textSecondary">
-          What it already did stays as it is, marked as sent through it.
+          {tr('What it already did stays as it is, marked as sent through it.')}
         </Text>
       </Sheet>
       <Text variant="caption" color="textTertiary">
@@ -100,20 +106,24 @@ export default function ConnectedApps() {
   });
   const apps = q.data?.apps ?? [];
   return (
-    <SettingsPage title="Connected apps">
+    <SettingsPage title={tr('Connected apps')}>
       <Group
-        title="Your calendar"
-        footer="Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once."
+        title={tr('Your calendar')}
+        footer={tr(
+          'Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once.',
+        )}
       >
         <CalendarFeed />
       </Group>
       <Group
-        title="Apps that act for you"
-        footer="An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once."
+        title={tr('Apps that act for you')}
+        footer={tr(
+          'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.',
+        )}
       >
         {minor ? (
           <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
-            Apps act for people over 18.
+            {tr('Apps act for people over 18.')}
           </Text>
         ) : q.isPending ? (
           <SkeletonRows />
@@ -124,8 +134,9 @@ export default function ConnectedApps() {
             style={{ padding: 16 }}
             testID="connected-none"
           >
-            No apps act for you. When one asks, you’ll see who made it and what it wants before you
-            choose.
+            {tr(
+              'No apps act for you. When one asks, you’ll see who made it and what it wants before you choose.',
+            )}
           </Text>
         ) : (
           apps.map((a, i) => (

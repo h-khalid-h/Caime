@@ -7,6 +7,7 @@
  */
 import type { AssetView, ConversationView } from '@caime/core/api';
 import { formatBytes, formatDuration, formatListTime } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -29,15 +30,15 @@ import { Text } from '@/ui/Text';
 type Tab = 'media' | 'files' | 'links';
 
 const TABS: ReadonlyArray<{ value: Tab; label: string; kinds: readonly AssetView['kind'][] }> = [
-  { value: 'media', label: 'Photos', kinds: ['photo', 'video'] },
-  { value: 'files', label: 'Files', kinds: ['document', 'audio'] },
-  { value: 'links', label: 'Links', kinds: ['link'] },
+  { value: 'media', label: msg('Photos'), kinds: ['photo', 'video'] },
+  { value: 'files', label: msg('Files'), kinds: ['document', 'audio'] },
+  { value: 'links', label: msg('Links'), kinds: ['link'] },
 ];
 
 const EMPTY: Record<Tab, string> = {
-  media: 'No photos or videos shared here yet.',
-  files: 'No files shared here yet.',
-  links: 'No links shared here yet.',
+  media: msg('No photos or videos shared here yet.'),
+  files: msg('No files shared here yet.'),
+  links: msg('No links shared here yet.'),
 };
 
 /**
@@ -110,7 +111,7 @@ export function SharedFiles({
     mayKeep && a.messageId ? (
       <IconButton
         icon={Bookmark}
-        label="Save it"
+        label={tr('Save it')}
         size={18}
         onPress={() => setKeeping(a)}
         testID="shared-save"
@@ -120,7 +121,7 @@ export function SharedFiles({
     jump && a.messageSeq !== null ? (
       <IconButton
         icon={MessageCircle}
-        label="Show in the conversation"
+        label={tr('Show in the conversation')}
         size={18}
         onPress={() => jump(a)}
         testID="shared-jump"
@@ -136,12 +137,12 @@ export function SharedFiles({
       />
     );
   return (
-    <Sheet open onClose={onClose} title="Shared here">
+    <Sheet open onClose={onClose} title={tr('Shared here')}>
       <View style={{ gap: 12 }}>
         <Segmented
-          label="What’s shown"
+          label={tr('What’s shown')}
           value={tab}
-          options={TABS.map((x) => ({ value: x.value, label: x.label, count: count(x) }))}
+          options={TABS.map((x) => ({ value: x.value, label: tr(x.label), count: count(x) }))}
           onChange={setChosen}
         />
         {q.isError ? (
@@ -150,18 +151,18 @@ export function SharedFiles({
           </Text>
         ) : loading ? (
           <Text variant="body" color="textSecondary">
-            Loading what’s been shared…
+            {tr('Loading what’s been shared…')}
           </Text>
         ) : !assets.length ? (
           <Text variant="body" color="textSecondary" testID="shared-empty">
-            {EMPTY[tab]}
+            {tr(EMPTY[tab])}
           </Text>
         ) : tab === 'media' ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', margin: -2 }}>
             {assets.map((a) => {
               const thumb = mediaUrl(a.file?.thumbUrl ?? (a.kind === 'photo' ? a.file?.url : null));
               const video = a.kind === 'video';
-              const what = video ? 'Video' : 'Photo';
+              const what = video ? tr('Video') : tr('Photo');
               const duration =
                 video && a.file?.durationMs ? formatDuration(a.file.durationMs) : null;
               return (
@@ -219,7 +220,9 @@ export function SharedFiles({
                   {jump && a.messageSeq !== null ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Show this ${what.toLowerCase()} in the conversation`}
+                      accessibilityLabel={tr('Show this {toLowerCase} in the conversation', {
+                        toLowerCase: what.toLowerCase(),
+                      })}
                       onPress={() => jump(a)}
                       hitSlop={8}
                       focusRadius={14}
@@ -242,7 +245,9 @@ export function SharedFiles({
                   {mayKeep && a.messageId ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Save this ${what.toLowerCase()}`}
+                      accessibilityLabel={tr('Save this {toLowerCase}', {
+                        toLowerCase: what.toLowerCase(),
+                      })}
                       onPress={() => setKeeping(a)}
                       hitSlop={8}
                       focusRadius={14}
@@ -281,7 +286,9 @@ export function SharedFiles({
                     <ListRow
                       icon={a.kind === 'audio' ? Mic : FileText}
                       title={
-                        a.file?.name ?? a.title ?? (a.kind === 'audio' ? 'Voice note' : 'File')
+                        a.file?.name ??
+                        a.title ??
+                        (a.kind === 'audio' ? tr('Voice note') : tr('File'))
                       }
                       subtitle={line(a, a.file ? formatBytes(a.file.size) : null)}
                       onPress={() => openFile(a)}
@@ -289,7 +296,7 @@ export function SharedFiles({
                   ) : (
                     <ListRow
                       icon={Link}
-                      title={a.host ?? a.url ?? 'Link'}
+                      title={a.host ?? a.url ?? tr('Link')}
                       subtitle={line(a, a.url)}
                       onPress={() => {
                         if (a.url) void openCheckedLink(a.url);
@@ -305,7 +312,7 @@ export function SharedFiles({
         )}
         {q.hasNextPage ? (
           <Button
-            label="Show more"
+            label={tr('Show more')}
             variant="secondary"
             loading={q.isFetchingNextPage}
             onPress={() => void q.fetchNextPage()}

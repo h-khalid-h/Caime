@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useFollowing } from '@/api/hooks';
@@ -21,13 +22,21 @@ export function UpdatesRow() {
   // A name alone can be anyone's: one Caime hasn't verified says so (R15).
   const named = first ? `${first.org.name}${first.org.verified ? '' : ' (not verified)'}` : '';
   const line = first
-    ? `New from ${named}${news.length > 1 ? ` and ${news.length - 1} more` : ''}`
-    : `From ${following.length === 1 ? following[0]?.org.name : `${following.length} organizations`} you follow`;
+    ? tr('New from {named}{text}', {
+        named,
+        text: news.length > 1 ? ` and ${news.length - 1} more` : '',
+      })
+    : tr('From {following} you follow', {
+        following:
+          following.length === 1 ? following[0]?.org.name : `${following.length} organizations`,
+      });
   return (
     <View style={{ marginHorizontal: 6, marginBottom: 4 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Updates, ${unread ? `${unread} new. ${line}` : `nothing new. ${line}`}`}
+        accessibilityLabel={tr('Updates, {text}', {
+          text: unread ? `${unread} new. ${line}` : `nothing new. ${line}`,
+        })}
         onPress={() => router.navigate('/updates')}
         testID="updates-row"
         style={({ hovered, pressed }) => ({
@@ -57,7 +66,7 @@ export function UpdatesRow() {
           <Building size={22} color={t.c.accentStrong} />
         </View>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <Text variant="bodyStrong">Updates</Text>
+          <Text variant="bodyStrong">{tr('Updates')}</Text>
           <Text variant="caption" color="textSecondary" numberOfLines={1}>
             {line}
           </Text>

@@ -1,4 +1,5 @@
 import type { AlbumPhotoView, AlbumView, FileView, MessageView } from '@caime/core/api';
+import { tr, trn } from '@caime/core/i18n';
 import { kitMoves, kitStateLabel } from '@caime/core/kit-cards';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
@@ -82,11 +83,11 @@ function AlbumSheet({
   const remove = async (ph: AlbumPhotoView) => {
     if (!(await change(() => endpoints.removeFromAlbum(m.id, ph.file.id)))) return;
     toast(
-      'Taken out of the album',
+      tr('Taken out of the album'),
       ph.addedBy === me.id
         ? {
             action: {
-              label: 'Undo',
+              label: tr('Undo'),
               onPress: () => void change(() => endpoints.addToAlbum(m.id, [ph.file.id])),
             },
           }
@@ -98,13 +99,20 @@ function AlbumSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={p.title ?? 'Album'}
-      subtitle={`${m.album?.count ?? photos.length} photo${(m.album?.count ?? photos.length) === 1 ? '' : 's'}`}
+      title={p.title ?? tr('Album')}
+      subtitle={tr('{count} photo{value}', {
+        count: m.album?.count ?? photos.length,
+        value: (m.album?.count ?? photos.length) === 1 ? '' : 's',
+      })}
     >
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }} testID="album-sheet-photos">
         {photos.map((ph, i) => (
           <View key={ph.file.id}>
-            <Photo f={ph.file} size={104} label={`Photo ${i + 1} of ${photos.length}`} />
+            <Photo
+              f={ph.file}
+              size={104}
+              label={tr('Photo {i} of {length}', { i: i + 1, length: photos.length })}
+            />
             {mine || ph.addedBy === me.id ? (
               <View style={{ position: 'absolute', top: 6, end: 6 }}>
                 <IconButton
@@ -118,7 +126,7 @@ function AlbumSheet({
                     borderRadius: 16,
                     backgroundColor: 'rgba(0,0,0,0.55)',
                   }}
-                  label={`Take photo ${i + 1} out of the album`}
+                  label={tr('Take photo {i} out of the album', { i: i + 1 })}
                   onPress={() => void remove(ph)}
                 />
               </View>
@@ -154,7 +162,11 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
       quality: 0.9,
     });
     if (res.canceled || !res.assets.length) return;
-    setAdding(res.assets.length === 1 ? 'Adding a photo…' : `Adding ${res.assets.length} photos…`);
+    setAdding(
+      res.assets.length === 1
+        ? 'Adding a photo…'
+        : tr('Adding {length} photos…', { length: res.assets.length }),
+    );
     try {
       const ids: string[] = [];
       for (const [i, a] of res.assets.entries()) {
@@ -164,7 +176,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
       upsertMessage(qc, (await endpoints.addToAlbum(m.id, ids)).message);
       void qc.invalidateQueries({ queryKey: qk.album(m.id) });
     } catch (e) {
-      toast(`Couldn’t add them: ${(e as Error).message}`, { tone: 'danger' });
+      toast(tr('Couldn’t add them: {e}', { e: (e as Error).message }), { tone: 'danger' });
     } finally {
       setAdding(null);
     }
@@ -186,12 +198,10 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Images size={16} color={t.c.accentStrong} />
         <Text variant="overline" color="textSecondary" style={{ flex: 1 }}>
-          {p.label ?? 'Album'}
+          {p.label ?? tr('Album')}
         </Text>
         <Chip
-          label={
-            open ? `${album.count} photo${album.count === 1 ? '' : 's'}` : kitStateLabel('closed')
-          }
+          label={open ? trn(album.count, '{n} photo', '{n} photos') : kitStateLabel('closed')}
           tone="neutral"
           size="sm"
         />
@@ -200,7 +210,10 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
       {album.photos.length ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`See all ${album.count} photos in ${p.title ?? 'the album'}`}
+          accessibilityLabel={tr('See all {count} photos in {title}', {
+            count: album.count,
+            title: p.title ?? tr('the album'),
+          })}
           onPress={() => setAll(true)}
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}
           testID="album-preview"
@@ -240,13 +253,13 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
         </Pressable>
       ) : (
         <Text variant="caption" color="textSecondary">
-          {open ? 'Nothing in it yet. Everyone here can add photos.' : 'Nothing was added.'}
+          {open ? tr('Nothing in it yet. Everyone here can add photos.') : tr('Nothing was added.')}
         </Text>
       )}
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
         {open ? (
           <Button
-            label={adding ?? 'Add photos'}
+            label={adding ?? tr('Add photos')}
             icon={Plus}
             size="sm"
             loading={adding !== null}

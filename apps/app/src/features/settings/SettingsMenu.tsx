@@ -1,3 +1,4 @@
+import { msg, tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
@@ -44,85 +45,85 @@ const ITEMS: Array<{
     href: '/settings/profile',
     path: '/settings/profile',
     icon: UserRound,
-    title: 'Profile',
-    subtitle: 'Name, photo, status, pronouns',
+    title: msg('Profile'),
+    subtitle: msg('Name, photo, status, pronouns'),
   },
   {
     href: '/settings/region',
     path: '/settings/region',
     icon: Globe,
-    title: 'Language and region',
-    subtitle: 'Country, time zone, how dates and numbers look',
+    title: msg('Language and region'),
+    subtitle: msg('Country, time zone, how dates and numbers look'),
   },
   {
     href: '/settings/appearance',
     path: '/settings/appearance',
     icon: Palette,
-    title: 'Appearance',
-    subtitle: 'Theme, style, your bubble colour',
+    title: msg('Appearance'),
+    subtitle: msg('Theme, style, your bubble colour'),
   },
   {
     href: '/settings/notifications',
     path: '/settings/notifications',
     icon: Bell,
-    title: 'Notifications and priorities',
-    subtitle: 'Who reaches you, and when',
+    title: msg('Notifications and priorities'),
+    subtitle: msg('Who reaches you, and when'),
   },
   {
     href: '/settings/saved',
     path: '/settings/saved',
     icon: Bookmark,
-    title: 'Saved',
-    subtitle: 'What you and your automations kept',
+    title: msg('Saved'),
+    subtitle: msg('What you and your automations kept'),
   },
   {
     href: '/settings/automations',
     path: '/settings/automations',
     icon: Zap,
-    title: 'Automations',
-    subtitle: 'Keep what arrives, reminders, quiet hours',
+    title: msg('Automations'),
+    subtitle: msg('Keep what arrives, reminders, quiet hours'),
   },
   {
     href: '/settings/insights',
     path: '/settings/insights',
     icon: ChartBar,
-    title: 'Relationship insights',
-    subtitle: 'How your relationships are going, for you only',
+    title: msg('Relationship insights'),
+    subtitle: msg('How your relationships are going, for you only'),
   },
   {
     href: '/settings/privacy',
     path: '/settings/privacy',
     icon: Lock,
-    title: 'Privacy',
-    subtitle: 'Who sees what, who can find you',
+    title: msg('Privacy'),
+    subtitle: msg('Who sees what, who can find you'),
   },
   {
     href: '/settings/security',
     path: '/settings/security',
     icon: Shield,
-    title: 'Security',
-    subtitle: 'Devices, password, recovery codes',
+    title: msg('Security'),
+    subtitle: msg('Devices, password, recovery codes'),
   },
   {
     href: '/settings/connected',
     path: '/settings/connected',
     icon: LayoutGrid,
-    title: 'Connected apps',
-    subtitle: 'Your calendar, and apps you let act for you',
+    title: msg('Connected apps'),
+    subtitle: msg('Your calendar, and apps you let act for you'),
   },
   {
     href: '/settings/developer',
     path: '/settings/developer',
     icon: KeyRound,
-    title: 'Developer',
-    subtitle: 'Tokens for your scripts, apps for other people',
+    title: msg('Developer'),
+    subtitle: msg('Tokens for your scripts, apps for other people'),
   },
   {
     href: '/settings/about',
     path: '/settings/about',
     icon: Info,
-    title: 'About Caime',
-    subtitle: 'Version, terms, help',
+    title: msg('About Caime'),
+    subtitle: msg('Version, terms, help'),
   },
 ];
 
@@ -136,12 +137,12 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
   const content = (
     <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
       <PageHeader
-        title="You"
+        title={tr('You')}
         left={
           pane ? undefined : (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
               testID="you-back"
             />
@@ -150,7 +151,7 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${user.displayName}, edit profile`}
+        accessibilityLabel={tr('{displayName}, edit profile', { displayName: user.displayName })}
         onPress={() => router.navigate('/settings/profile')}
         style={({ hovered }) => ({
           marginHorizontal: 16,
@@ -187,8 +188,8 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
               {idx > 0 ? <Divider inset={52} /> : null}
               <ListRow
                 icon={i.icon}
-                title={i.title}
-                subtitle={i.subtitle}
+                title={tr(i.title)}
+                subtitle={tr(i.subtitle)}
                 chevron={!pane}
                 selected={pane && pathname === i.path}
                 onPress={() => router.navigate(i.href)}
@@ -200,8 +201,10 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
         <Card padded={false}>
           <ListRow
             icon={Gauge}
-            title="Plan"
-            subtitle={user.plan === 'personal' ? 'Personal · free forever' : PLAN_NAMES[user.plan]}
+            title={tr('Plan')}
+            subtitle={
+              user.plan === 'personal' ? tr('Personal · free forever') : PLAN_NAMES[user.plan]
+            }
             chevron={!pane}
             selected={pane && pathname === '/settings/plan'}
             onPress={() => router.navigate('/settings/plan')}
@@ -211,12 +214,12 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
         <Card padded={false}>
           <ListRow
             icon={Building}
-            title="Organizations"
+            title={tr('Organizations')}
             subtitle={
               teams.length
                 ? teams.slice(0, 3).join(', ') +
                   (teams.length > 3 ? ` and ${teams.length - 3} more` : '')
-                : 'Your business, clinic or school, verified'
+                : tr('Your business, clinic or school, verified')
             }
             chevron={!pane}
             selected={pane && (pathname.startsWith('/orgs') || pathname.startsWith('/o/'))}
@@ -228,8 +231,8 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
           <Card padded={false}>
             <ListRow
               icon={Keyboard}
-              title="Keyboard shortcuts"
-              subtitle="Press ? anywhere to see them"
+              title={tr('Keyboard shortcuts')}
+              subtitle={tr('Press ? anywhere to see them')}
               onPress={() => useShortcutsSheet.getState().setOpen(true)}
             />
           </Card>
@@ -237,7 +240,7 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
         <Card padded={false}>
           <ListRow
             icon={LogOut}
-            title="Sign out"
+            title={tr('Sign out')}
             destructive
             onPress={() => void useSession.getState().signOut()}
             testID="sign-out"

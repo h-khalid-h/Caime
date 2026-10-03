@@ -1,3 +1,4 @@
+import { msg, tr } from './i18n';
 /**
  * Field rules as plain functions, shared by the server's schemas and the clients' forms, so a
  * form says exactly what the server would say, before the request (and without shipping zod).
@@ -5,8 +6,8 @@
  */
 
 export const HANDLE_PATTERN = /^[a-z0-9](?:[a-z0-9._]{1,28}[a-z0-9])$/;
-export const HANDLE_RULE = 'Use 3–30 letters, numbers, dots or underscores.';
-export const HANDLE_REPEAT_RULE = 'Dots and underscores can’t be next to each other.';
+export const HANDLE_RULE = msg('Use 3–30 letters, numbers, dots or underscores.');
+export const HANDLE_REPEAT_RULE = msg('Dots and underscores can’t be next to each other.');
 
 export function normalizeHandle(value: string): string {
   return value.trim().toLowerCase().replace(/^@/, '');
@@ -14,8 +15,8 @@ export function normalizeHandle(value: string): string {
 
 export function handleError(value: string): string | null {
   const h = normalizeHandle(value);
-  if (!HANDLE_PATTERN.test(h)) return HANDLE_RULE;
-  if (/[._]{2}/.test(h)) return HANDLE_REPEAT_RULE;
+  if (!HANDLE_PATTERN.test(h)) return tr(HANDLE_RULE);
+  if (/[._]{2}/.test(h)) return tr(HANDLE_REPEAT_RULE);
   return null;
 }
 
@@ -36,22 +37,23 @@ export function handleFromName(name: string): string {
 export const PASSWORD_MIN = 10;
 
 export function passwordError(value: string): string | null {
-  if (value.length < PASSWORD_MIN) return `Use at least ${PASSWORD_MIN} characters.`;
-  if (value.length > 200) return 'That password is too long.';
-  if (new Set(value).size < 5) return 'Use a less repetitive password.';
+  if (value.length < PASSWORD_MIN)
+    return tr('Use at least {PASSWORD_MIN} characters.', { PASSWORD_MIN });
+  if (value.length > 200) return tr('That password is too long.');
+  if (new Set(value).size < 5) return tr('Use a less repetitive password.');
   return null;
 }
 
 export function emailError(value: string): string | null {
   const v = value.trim();
   if (v.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v))
-    return 'Enter a valid email address.';
+    return tr('Enter a valid email address.');
   return null;
 }
 
 export function displayNameError(value: string): string | null {
   const v = value.trim();
-  if (!v) return 'Enter your name.';
-  if (v.length > 80) return 'Keep your name under 80 characters.';
+  if (!v) return tr('Enter your name.');
+  if (v.length > 80) return tr('Keep your name under 80 characters.');
   return null;
 }

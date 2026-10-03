@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { passwordError } from '@caime/core/rules';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -35,7 +36,7 @@ export default function Recover() {
         client: deviceInfo().client,
       });
       await useSession.getState().signedIn(res);
-      toast('Password changed. Every other device was signed out.');
+      toast(tr('Password changed. Every other device was signed out.'));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : (err as Error).message);
     } finally {
@@ -46,12 +47,12 @@ export default function Recover() {
   return (
     <AuthLayout
       kicker="recovery"
-      title="Use a recovery code"
-      subtitle="You saved ten codes when you created your account. Each one works once."
+      title={tr('Use a recovery code')}
+      subtitle={tr('You saved ten codes when you created your account. Each one works once.')}
     >
       <View style={{ gap: 14 }}>
         <TextField
-          label="Email or handle"
+          label={tr('Email or handle')}
           value={identifier}
           onChangeText={setIdentifier}
           autoCapitalize="none"
@@ -59,7 +60,7 @@ export default function Recover() {
           autoComplete="username"
         />
         <TextField
-          label="Recovery code"
+          label={tr('Recovery code')}
           icon={KeyRound}
           value={code}
           onChangeText={setCode}
@@ -68,13 +69,13 @@ export default function Recover() {
           placeholder="xxxx-xxxx-xx"
         />
         <TextField
-          label="New password"
+          label={tr('New password')}
           secret
           value={password}
           onChangeText={setPassword}
           autoComplete="new-password"
           textContentType="newPassword"
-          hint="At least 10 characters."
+          hint={tr('At least 10 characters.')}
           onSubmitEditing={submit}
         />
       </View>
@@ -83,10 +84,11 @@ export default function Recover() {
           {error}
         </Text>
       ) : null}
-      <Button label="Set new password" size="lg" block loading={busy} onPress={submit} />
+      <Button label={tr('Set new password')} size="lg" block loading={busy} onPress={submit} />
       <Text variant="caption" color="textTertiary">
-        No codes left? For your safety Caime can’t reset an account without one. If you signed in on
-        another device, you can make new codes there under You → Security.
+        {tr(
+          'No codes left? For your safety Caime can’t reset an account without one. If you signed in on another device, you can make new codes there under You → Security.',
+        )}
       </Text>
     </AuthLayout>
   );

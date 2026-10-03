@@ -2,6 +2,8 @@
  * Choosing a country (where someone lives, where an organization is based): a field showing the
  * one chosen, opening a sheet that finds any of them as you type, in your language.
  */
+
+import { tr } from '@caime/core/i18n';
 import { useMemo, useState } from 'react';
 import { lazyPart } from '@/ui/Lazy';
 import { PickerField } from '@/ui/PickerField';
@@ -60,9 +62,9 @@ export function CountryField({
     <PickerField
       label={label}
       shown={name}
-      placeholder="Choose a country"
+      placeholder={tr('Choose a country')}
       mark={value ? flagOf(value) : null}
-      accessibilityHint="Opens the list of countries"
+      accessibilityHint={tr('Opens the list of countries')}
       onOpen={() => {
         setOpen(true);
         setOpened(true);
@@ -82,11 +84,11 @@ export function CountryField({
           value={value}
           onPick={onChange}
           matches={matches}
-          searchLabel="Search countries"
+          searchLabel={tr('Search countries')}
           loading={countries.isPending}
           failed={countries.isError}
           onRetry={() => void countries.refetch()}
-          empty="No country by that name."
+          empty={tr('No country by that name.')}
           testID={testID}
         />
       ) : null}

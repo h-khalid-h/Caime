@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 /**
  * Billing (PRD §84, R25): Pro for a person and Business for an organization, bought through
  * Stripe Checkout and managed in Stripe's customer portal. What each plan includes is in
@@ -125,8 +126,12 @@ export function billingDate(iso: string, timeZone: string, locale = 'en-US'): st
 export function subscriptionLine(s: SubscriptionView, timeZone: string, locale?: string): string {
   const when = s.periodEnd ? billingDate(s.periodEnd, timeZone, locale) : null;
   if (s.status === 'past_due')
-    return 'A payment didn’t go through: Stripe is trying again. Update your card in Manage billing.';
-  if (s.cancelAtPeriodEnd) return when ? `Ends on ${when}.` : 'Ends at the end of this period.';
-  if (s.status === 'trialing') return when ? `Free until ${when}.` : 'In a free trial.';
-  return when ? `Renews on ${when}.` : 'Renews automatically.';
+    return tr(
+      'A payment didn’t go through: Stripe is trying again. Update your card in Manage billing.',
+    );
+  if (s.cancelAtPeriodEnd)
+    return when ? tr('Ends on {when}.', { when }) : tr('Ends at the end of this period.');
+  if (s.status === 'trialing')
+    return when ? tr('Free until {when}.', { when }) : tr('In a free trial.');
+  return when ? tr('Renews on {when}.', { when }) : tr('Renews automatically.');
 }

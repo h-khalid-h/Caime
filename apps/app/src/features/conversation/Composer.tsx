@@ -1,5 +1,6 @@
 import type { ConversationView, CustomKitOfferView, MessageView } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
@@ -178,7 +179,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // Focus stays in the text, so the picker is told to a screen reader as it changes: who Enter
   // would mention. A live region does it on the web and Android; iOS is told outright.
   const offered = chosen
-    ? `${chosen.displayName}, ${options.indexOf(chosen) + 1} of ${options.length}. Enter mentions them, Escape closes the list.`
+    ? tr('{displayName}, {indexOf} of {length}. Enter mentions them, Escape closes the list.', {
+        displayName: chosen.displayName,
+        indexOf: options.indexOf(chosen) + 1,
+        length: options.length,
+      })
     : '';
   useEffect(() => {
     if (offered && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(offered);
@@ -315,7 +320,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       }
       onClearReply();
     } catch (e) {
-      toast(`Couldn’t upload: ${(e as Error).message}`, { tone: 'danger' });
+      toast(tr('Couldn’t upload: {e}', { e: (e as Error).message }), { tone: 'danger' });
     } finally {
       setUploading(null);
     }
@@ -360,7 +365,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       disabledAction ??
       (!disabled && thisDevice === 'waiting'
         ? {
-            label: 'Start over here instead',
+            label: tr('Start over here instead'),
             onPress: () => setStartingOver(true),
             testID: 'private-start-over',
           }
@@ -403,7 +408,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const banner = editing ? (
     <Banner
       icon={Pencil}
-      title="Editing message"
+      title={tr('Editing message')}
       body={editingText ?? ''}
       onClose={() => {
         setEditText(null);
@@ -413,12 +418,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   ) : replyTo ? (
     <Banner
       icon={Reply}
-      title={`Replying to ${replyName ?? 'message'}`}
+      title={tr('Replying to {replyName}', { replyName: replyName ?? 'message' })}
       body={replyingText ?? replyTo.kind}
       onClose={onClearReply}
     />
   ) : uploading ? (
-    <Banner icon={Paperclip} title="Uploading" body={uploading} />
+    <Banner icon={Paperclip} title={tr('Uploading')} body={uploading} />
   ) : null;
 
   return (
@@ -435,7 +440,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       {options.length ? (
         <View
           accessibilityRole="menu"
-          accessibilityLabel="People to mention"
+          accessibilityLabel={tr('People to mention')}
           testID="mention-picker"
           style={{ paddingHorizontal: 8, paddingTop: 6, gap: 2 }}
         >
@@ -445,7 +450,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               <Pressable
                 key={p.userId}
                 accessibilityRole="menuitem"
-                accessibilityLabel={`Mention ${p.displayName}`}
+                accessibilityLabel={tr('Mention {displayName}', { displayName: p.displayName })}
                 accessibilityState={{ selected: on }}
                 onPress={() => pickMention(p)}
                 testID="mention-option"
@@ -486,7 +491,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           // Photos, files and cards aren't sealed yet: a private conversation is text for now.
           <IconButton
             icon={Plus}
-            label="Share a photo, a file or a card"
+            label={tr('Share a photo, a file or a card')}
             filled
             onPress={() => setAttach(true)}
             disabled={Boolean(editing)}
@@ -507,16 +512,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             testID="composer-input"
             accessibilityLabel={
               editing
-                ? 'Edit message'
-                : `Message ${listTitle({
-                    title: conversation.title,
-                    topic: conversation.topic,
-                    other: conversation.other && {
-                      displayName: conversation.other.person.displayName,
-                    },
-                  })}`
+                ? tr('Edit message')
+                : tr('Message {listTitle}', {
+                    listTitle: listTitle({
+                      title: conversation.title,
+                      topic: conversation.topic,
+                      other: conversation.other && {
+                        displayName: conversation.other.person.displayName,
+                      },
+                    }),
+                  })
             }
-            placeholder={editing ? 'Edit message' : (placeholder ?? 'Message')}
+            placeholder={editing ? tr('Edit message') : (placeholder ?? tr('Message'))}
             placeholderTextColor={t.c.textTertiary}
             value={value}
             onChangeText={onChange}
@@ -593,7 +600,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         {canSend && aiReady ? (
           <IconButton
             icon={WandSparkles}
-            label="Rewrite with Caime"
+            label={tr('Rewrite with Caime')}
             onPress={() => setRewrite(true)}
             testID="composer-rewrite"
           />
@@ -601,7 +608,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         {canSend ? (
           <IconButton
             icon={SendHorizontal}
-            label={editing ? 'Save' : 'Send'}
+            label={editing ? tr('Save') : tr('Send')}
             tone="primary"
             onPress={() => void send()}
             testID="composer-send"
@@ -609,7 +616,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         ) : privately ? null : (
           <IconButton
             icon={Sticker}
-            label="Stickers"
+            label={tr('Stickers')}
             filled
             onPress={() => setStickers(true)}
             disabled={Boolean(editing)}
@@ -625,18 +632,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             .enqueue(id, { kind: 'sticker', payload: { pack: STICKER_PACK, sticker: s.id } })
         }
       />
-      <Sheet open={attach} onClose={() => setAttach(false)} title="Share">
+      <Sheet open={attach} onClose={() => setAttach(false)} title={tr('Share')}>
         <View style={{ marginHorizontal: -20 }}>
           <ListRow
             icon={ImageIcon}
-            title="Photos"
-            subtitle="Location data is removed before anyone sees them"
+            title={tr('Photos')}
+            subtitle={tr('Location data is removed before anyone sees them')}
             onPress={() => void pickPhotos()}
           />
           <ListRow
             icon={FileText}
-            title="A file"
-            subtitle="Documents, PDFs, anything up to 100 MB"
+            title={tr('A file')}
+            subtitle={tr('Documents, PDFs, anything up to 100 MB')}
             onPress={() => void pickFiles()}
           />
           {kits.length || own?.length ? (
@@ -646,7 +653,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                 color="textTertiary"
                 style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}
               >
-                Cards
+                {tr('Cards')}
               </Text>
               {kits.map((k) => (
                 <ListRow
@@ -666,7 +673,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                   key={`${k.app.id}:${k.key}`}
                   icon={iconNamed(k.icon)}
                   title={k.name}
-                  subtitle={k.description || `From ${k.app.name}`}
+                  subtitle={k.description || tr('From {name}', { name: k.app.name })}
                   testID={`kit-option-custom-${k.key}`}
                   onPress={() => {
                     setAttach(false);
@@ -735,7 +742,7 @@ function Banner({
           {body}
         </Text>
       </View>
-      {onClose ? <IconButton icon={X} label="Cancel" onPress={onClose} size={18} /> : null}
+      {onClose ? <IconButton icon={X} label={tr('Cancel')} onPress={onClose} size={18} /> : null}
     </View>
   );
 }

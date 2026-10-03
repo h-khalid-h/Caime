@@ -2,6 +2,8 @@
  * Choosing one emoji (a status's): the ones people reach for, a tap each, in a grid that reads as
  * one choice, with the one chosen marked. Never typed, so it's always a whole emoji.
  */
+
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
@@ -41,7 +43,7 @@ export function EmojiSheet({
       footer={
         value ? (
           <Button
-            label="No emoji"
+            label={tr('No emoji')}
             variant="ghost"
             block
             onPress={() => pick(null)}

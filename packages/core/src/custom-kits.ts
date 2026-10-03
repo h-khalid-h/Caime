@@ -5,6 +5,8 @@
  * text. A card keeps the kit as it was when the card was sent, so changing or removing the kit,
  * or the app, never changes a card already in a conversation.
  */
+
+import { tr } from './i18n';
 import { cleanKitFields, fieldDetails, kitStateLabel } from './kit-cards';
 import type { KitField } from './kits';
 
@@ -123,39 +125,48 @@ class Invalid extends Error {}
 
 function words(v: unknown, what: string, max: number, optional = false): string {
   if ((v === undefined || v === null || v === '') && optional) return '';
-  if (typeof v !== 'string' || !v.trim()) throw new Invalid(`${what}: write it as text.`);
+  if (typeof v !== 'string' || !v.trim())
+    throw new Invalid(tr('{what}: write it as text.', { what }));
   const text = v.trim();
-  if (text.length > max) throw new Invalid(`${what}: keep it under ${max} characters.`);
-  if (UNSAFE.test(text)) throw new Invalid(`${what}: plain text only.`);
-  if (!VISIBLE.test(text)) throw new Invalid(`${what}: write it as text.`);
+  if (text.length > max)
+    throw new Invalid(tr('{what}: keep it under {max} characters.', { what, max }));
+  if (UNSAFE.test(text)) throw new Invalid(tr('{what}: plain text only.', { what }));
+  if (!VISIBLE.test(text)) throw new Invalid(tr('{what}: write it as text.', { what }));
   return text;
 }
 
 function list(v: unknown, what: string, min: number, max: number): unknown[] {
   if (v === undefined && min === 0) return [];
-  if (!Array.isArray(v)) throw new Invalid(`${what}: a list, please.`);
+  if (!Array.isArray(v)) throw new Invalid(tr('{what}: a list, please.', { what }));
   if (v.length < min || v.length > max)
-    throw new Invalid(`${what}: ${min === max ? min : `${min} to ${max}`}, please.`);
+    throw new Invalid(
+      tr('{what}: {min}, please.', { what, min: min === max ? min : `${min} to ${max}` }),
+    );
   return v;
 }
 
 function object(v: unknown, what: string): Record<string, unknown> {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Invalid(`${what}: an object.`);
+  if (!v || typeof v !== 'object' || Array.isArray(v))
+    throw new Invalid(tr('{what}: an object.', { what }));
   return v as Record<string, unknown>;
 }
 
 function field(v: unknown, i: number): KitField {
-  const f = object(v, `Field ${i + 1}`);
+  const f = object(v, tr('Field {i}', { i: i + 1 }));
   if (typeof f.key !== 'string' || !FIELD_KEY.test(f.key))
-    throw new Invalid(`Field ${i + 1}: its key is a letter, then letters, digits or _.`);
-  const what = `Field “${f.key}”`;
+    throw new Invalid(
+      tr('Field {i}: its key is a letter, then letters, digits or _.', { i: i + 1 }),
+    );
+  const what = tr('Field “{key}”', { key: f.key });
   const type = f.type as KitField['type'];
   if (!(CUSTOM_KIT_FIELD_TYPES as readonly string[]).includes(type))
-    throw new Invalid(`${what}: its type is one of ${CUSTOM_KIT_FIELD_TYPES.join(', ')}.`);
+    throw new Invalid(
+      tr('{what}: its type is one of {join}.', { what, join: CUSTOM_KIT_FIELD_TYPES.join(', ') }),
+    );
   const out: KitField = { key: f.key, label: words(f.label, `${what}’s label`, 40), type };
   if (f.required === true) out.required = true;
   else if (f.required !== undefined && f.required !== false)
-    throw new Invalid(`${what}: required is true or false.`);
+    throw new Invalid(tr('{what}: required is true or false.', { what }));
   const placeholder = words(f.placeholder, `${what}’s placeholder`, 60, true);
   if (placeholder) out.placeholder = placeholder;
   if (type === 'options') {
@@ -166,11 +177,12 @@ function field(v: unknown, i: number): KitField {
         typeof choice.value === 'number' && Number.isFinite(choice.value)
           ? choice.value
           : words(choice.value, `${what}’s choice ${j + 1}`, 40);
-      if (seen.has(String(value))) throw new Invalid(`${what}: each choice once.`);
+      if (seen.has(String(value))) throw new Invalid(tr('{what}: each choice once.', { what }));
       seen.add(String(value));
       return { value, label: words(choice.label, `${what}’s choice ${j + 1} label`, 40) };
     });
-  } else if (f.choices !== undefined) throw new Invalid(`${what}: only options have choices.`);
+  } else if (f.choices !== undefined)
+    throw new Invalid(tr('{what}: only options have choices.', { what }));
   return out;
 }
 
@@ -185,60 +197,81 @@ export function parseCustomKit(
 ): { ok: true; def: CustomKitDef } | { ok: false; error: string } {
   try {
     if (typeof key !== 'string' || !KIT_KEY.test(key))
-      throw new Invalid('A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.');
+      throw new Invalid(
+        tr('A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.'),
+      );
     const k = object(input, 'The kit');
     const known = new Set(['key', 'name', 'description', 'icon', 'fields', 'states', 'moves']);
     known.add('adultsOnly');
     for (const name of Object.keys(k))
-      if (!known.has(name)) throw new Invalid(`The kit has no “${name}”.`);
+      if (!known.has(name)) throw new Invalid(tr('The kit has no “{name}”.', { name }));
     if (k.key !== undefined && k.key !== key)
-      throw new Invalid('The kit’s key is the one in its address.');
+      throw new Invalid(tr('The kit’s key is the one in its address.'));
     const icon = (k.icon ?? 'clipboard-list') as CustomKitIcon;
     if (!CUSTOM_KIT_ICONS.includes(icon))
-      throw new Invalid(`Its icon is one of ${CUSTOM_KIT_ICONS.join(', ')}.`);
+      throw new Invalid(tr('Its icon is one of {join}.', { join: CUSTOM_KIT_ICONS.join(', ') }));
 
     const fields = list(k.fields, 'Fields', 1, CUSTOM_KIT_LIMITS.fields).map(field);
     if (new Set(fields.map((f) => f.key)).size !== fields.length)
-      throw new Invalid('Each field has a key of its own.');
+      throw new Invalid(tr('Each field has a key of its own.'));
     // Each reads as itself: no two fields, states, or buttons on one state, with one label.
     const same = (labels: string[]) =>
       new Set(labels.map((l) => l.toLocaleLowerCase('en'))).size !== labels.length;
-    if (same(fields.map((f) => f.label))) throw new Invalid('Each field has a label of its own.');
+    if (same(fields.map((f) => f.label)))
+      throw new Invalid(tr('Each field has a label of its own.'));
 
     const states = list(k.states, 'States', 1, CUSTOM_KIT_LIMITS.states).map((v, i) => {
-      const s = object(v, `State ${i + 1}`);
+      const s = object(v, tr('State {i}', { i: i + 1 }));
       if (typeof s.id !== 'string' || !STATE_ID.test(s.id))
-        throw new Invalid(`State ${i + 1}: its id is lowercase letters, digits or _.`);
+        throw new Invalid(tr('State {i}: its id is lowercase letters, digits or _.', { i: i + 1 }));
       const tone = (s.tone ?? 'neutral') as CustomKitState['tone'];
       if (!TONES.includes(tone))
-        throw new Invalid(`State “${s.id}”: its tone is positive, negative or neutral.`);
-      return { id: s.id, label: words(s.label, `State “${s.id}”’s label`, 40), tone };
+        throw new Invalid(
+          tr('State “{id}”: its tone is positive, negative or neutral.', { id: s.id }),
+        );
+      return {
+        id: s.id,
+        label: words(s.label, tr('State “{id}”’s label', { id: s.id }), 40),
+        tone,
+      };
     });
     const ids = new Set(states.map((s) => s.id));
-    if (ids.size !== states.length) throw new Invalid('Each state has an id of its own.');
-    if (same(states.map((s) => s.label))) throw new Invalid('Each state has a label of its own.');
+    if (ids.size !== states.length) throw new Invalid(tr('Each state has an id of its own.'));
+    if (same(states.map((s) => s.label)))
+      throw new Invalid(tr('Each state has a label of its own.'));
 
     const pairs = new Set<string>();
     const moves = list(k.moves, 'Moves', 0, CUSTOM_KIT_LIMITS.moves).map((v, i) => {
-      const m = object(v, `Move ${i + 1}`);
+      const m = object(v, tr('Move {i}', { i: i + 1 }));
       if (typeof m.from !== 'string' || !ids.has(m.from))
-        throw new Invalid(`Move ${i + 1}: it goes from one of the kit’s states.`);
+        throw new Invalid(tr('Move {i}: it goes from one of the kit’s states.', { i: i + 1 }));
       if (typeof m.to !== 'string' || !ids.has(m.to) || m.to === m.from)
-        throw new Invalid(`Move ${i + 1}: it goes to another of the kit’s states.`);
+        throw new Invalid(tr('Move {i}: it goes to another of the kit’s states.', { i: i + 1 }));
       if (pairs.has(`${m.from}>${m.to}`))
-        throw new Invalid(`Move ${i + 1}: from ${m.from} to ${m.to} is there already.`);
+        throw new Invalid(
+          tr('Move {i}: from {from} to {to} is there already.', {
+            i: i + 1,
+            from: m.from,
+            to: m.to,
+          }),
+        );
       pairs.add(`${m.from}>${m.to}`);
       const who = m.who as CustomKitSide;
       if (!SIDES.includes(who))
-        throw new Invalid(`Move ${i + 1}: who is organization, customer or anyone.`);
-      return { from: m.from, to: m.to, label: words(m.label, `Move ${i + 1}’s label`, 40), who };
+        throw new Invalid(tr('Move {i}: who is organization, customer or anyone.', { i: i + 1 }));
+      return {
+        from: m.from,
+        to: m.to,
+        label: words(m.label, tr('Move {i}’s label', { i: i + 1 }), 40),
+        who,
+      };
     });
     for (const id of ids)
       if (same(moves.filter((m) => m.from === id).map((m) => m.label)))
-        throw new Invalid(`From ${id}, each move has a label of its own.`);
+        throw new Invalid(tr('From {id}, each move has a label of its own.', { id }));
 
     if (k.adultsOnly !== undefined && typeof k.adultsOnly !== 'boolean')
-      throw new Invalid('adultsOnly is true or false.');
+      throw new Invalid(tr('adultsOnly is true or false.'));
     return {
       ok: true,
       def: {
@@ -277,11 +310,11 @@ export function mergeCustomFields(
   change: unknown,
 ): { ok: true; fields: Record<string, unknown> } | { ok: false; error: string } {
   if (!change || typeof change !== 'object' || Array.isArray(change))
-    return { ok: false, error: 'Send the fields to change.' };
+    return { ok: false, error: tr('Send the fields to change.') };
   const known = new Set(shape.fields.map((f) => f.key));
   const next: Record<string, unknown> = { ...current };
   for (const [key, value] of Object.entries(change)) {
-    if (!known.has(key)) return { ok: false, error: `The card has no “${key}”.` };
+    if (!known.has(key)) return { ok: false, error: tr('The card has no “{key}”.', { key }) };
     if (value === null) delete next[key];
     else next[key] = value;
   }

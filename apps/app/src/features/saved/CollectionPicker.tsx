@@ -5,6 +5,7 @@
  * the same collection is never made twice.
  */
 import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
+import { tr } from '@caime/core/i18n';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -103,7 +104,7 @@ export function CollectionPicker({
     <View style={{ gap: 10 }} testID={testID}>
       {finding ? (
         <TextField
-          label="Find a collection"
+          label={tr('Find a collection')}
           value={query}
           onChangeText={setQuery}
           placeholder={names[SHOWN]}
@@ -125,7 +126,7 @@ export function CollectionPicker({
         {creating ? (
           <View style={{ padding: 12, backgroundColor: t.c.accentSoft }}>
             <TextField
-              label="New collection"
+              label={tr('New collection')}
               value={fresh}
               onChangeText={(text) => {
                 setFresh(text);
@@ -134,7 +135,7 @@ export function CollectionPicker({
               placeholder={placeholder}
               maxLength={COLLECTION_MAX}
               autoFocus={making}
-              hint={had ? `You have ${had}: it goes there.` : undefined}
+              hint={had ? tr('You have {had}: it goes there.', { had }) : undefined}
               testID={`${testID}-name`}
             />
           </View>
@@ -142,7 +143,7 @@ export function CollectionPicker({
           row({
             key: 'new',
             icon: Plus,
-            title: 'New collection',
+            title: tr('New collection'),
             selected: false,
             first: true,
             testID: `${testID}-new`,
@@ -160,7 +161,7 @@ export function CollectionPicker({
             key: n,
             icon: Folder,
             title: n,
-            ...(count ? { detail: `${count} saved` } : {}),
+            ...(count ? { detail: tr('{count} saved', { count }) } : {}),
             selected: !creating && value === n,
             first: false,
             onPress: () => {
@@ -172,12 +173,12 @@ export function CollectionPicker({
       </View>
       {finding && !typed ? (
         <Text variant="caption" color="textSecondary">
-          {`And ${names.length - shown.length} more: find them by name.`}
+          {tr('And {length} more: find them by name.', { length: names.length - shown.length })}
         </Text>
       ) : null}
       {typed && !shown.length ? (
         <Text variant="caption" color="textSecondary">
-          None is called that yet: New collection makes it.
+          {tr('None is called that yet: New collection makes it.')}
         </Text>
       ) : null}
     </View>

@@ -5,6 +5,7 @@
  * held while the app is open: its words are never written to the device's storage.
  */
 import type { MessageView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -86,7 +87,7 @@ async function sendOne(item: OutboxItem): Promise<'sent' | 'offline' | 'failed'>
     }
     update({
       status: 'failed',
-      error: err instanceof ApiError ? err.message : 'Couldn’t send.',
+      error: err instanceof ApiError ? err.message : tr('Couldn’t send.'),
     });
     return 'failed';
   }

@@ -1,6 +1,7 @@
 import type { CallHistoryItem } from '@caime/core/api';
 import { callDuration } from '@caime/core/calls';
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
@@ -25,21 +26,21 @@ export function callSummary(c: CallHistoryItem): string {
     case 'answered':
       return `${c.direction === 'outgoing' ? 'Outgoing' : 'Incoming'} · ${callDuration(c.seconds)}`;
     case 'missed':
-      return `Missed ${kind}`;
+      return tr('Missed {kind}', { kind });
     case 'declined':
-      return `You declined a ${kind}`;
+      return tr('You declined a {kind}', { kind });
     case 'unanswered':
-      return 'No answer';
+      return tr('No answer');
     case 'cancelled':
       return 'Cancelled';
     default:
-      return 'Couldn’t connect';
+      return tr('Couldn’t connect');
   }
 }
 
 /** Who a call was with: the other person, or the group's name. */
 export const callWith = (c: CallHistoryItem) =>
-  c.group ? (c.conversationTitle ?? 'Group call') : (c.with[0]?.displayName ?? 'Someone');
+  c.group ? (c.conversationTitle ?? tr('Group call')) : (c.with[0]?.displayName ?? 'Someone');
 
 /** One call: who with, how it went and when; call them back from it. */
 export function CallRow({ call }: { call: CallHistoryItem }) {
@@ -107,7 +108,10 @@ export function CallRow({ call }: { call: CallHistoryItem }) {
       {canCall ? (
         <IconButton
           icon={call.kind === 'video' ? Video : Phone}
-          label={`${call.kind === 'video' ? 'Video' : 'Voice'} call ${callWith(call)}`}
+          label={tr('{Video} call {callWith}', {
+            Video: call.kind === 'video' ? tr('Video') : tr('Voice'),
+            callWith: callWith(call),
+          })}
           onPress={() =>
             void (call.group
               ? startGroupCall(call.conversationId, call.kind)
@@ -145,12 +149,12 @@ export function CallHistoryBody({ withId, withName }: { withId?: string; withNam
       {withId ? null : (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <Segmented
-            label="Which calls"
+            label={tr('Which calls')}
             value={view}
             onChange={setView}
             options={[
-              { value: 'all', label: 'All' },
-              { value: 'missed', label: 'Missed' },
+              { value: 'all', label: tr('All') },
+              { value: 'missed', label: tr('Missed') },
             ]}
           />
         </View>
@@ -174,13 +178,13 @@ export function CallHistoryBody({ withId, withName }: { withId?: string; withNam
             <EmptyState
               character="momo"
               icon={Phone}
-              title={view === 'missed' && !withId ? 'No missed calls' : 'No calls yet'}
+              title={view === 'missed' && !withId ? tr('No missed calls') : tr('No calls yet')}
               body={
                 withId
                   ? withName
-                    ? `Your calls with ${withName} will be here.`
-                    : 'Your calls together will be here.'
-                  : 'Calls you make and get, and the ones you miss, will be here.'
+                    ? tr('Your calls with {withName} will be here.', { withName })
+                    : tr('Your calls together will be here.')
+                  : tr('Calls you make and get, and the ones you miss, will be here.')
               }
             />
           )

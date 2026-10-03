@@ -5,6 +5,7 @@
 
 import type { Rhythm } from './api';
 import { type CallKind, type CallOutcome, callText } from './calls';
+import { msg, tr } from './i18n';
 import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
 
@@ -60,11 +61,14 @@ export function joinNames(names: string[], max = 3, locale = 'en'): string {
     } catch {
       return names.length === 1
         ? names[0]!
-        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+        : tr('{join} and {names}', {
+            join: names.slice(0, -1).join(', '),
+            names: names[names.length - 1],
+          });
     }
   }
   const rest = names.length - (max - 1);
-  return `${names.slice(0, max - 1).join(', ')} and ${rest} others`;
+  return tr('{join} and {rest} others', { join: names.slice(0, max - 1).join(', '), rest });
 }
 
 const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
@@ -131,7 +135,8 @@ export function formatWhen(iso: string, now: Date, timeZone: string, locale = 'e
   const t = new Date(iso);
   const diff = now.getTime() - t.getTime();
   if (diff < 60_000 && diff > -60_000) return 'just now';
-  if (diff > 0 && diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
+  if (diff > 0 && diff < 3_600_000)
+    return tr('{floor} min ago', { floor: Math.floor(diff / 60_000) });
   const p = zonedParts(t, timeZone);
   const n = zonedParts(now, timeZone);
   if (sameDay(p, n)) return `at ${formatClock(iso, timeZone, locale)}`;
@@ -181,7 +186,10 @@ export function formatSoon(iso: string, now: Date, timeZone: string, locale = 'e
   const a = zonedParts(new Date(iso), timeZone);
   const n = zonedParts(now, timeZone);
   const today = a.year === n.year && a.month === n.month && a.day === n.day;
-  return `${today ? '' : 'tomorrow '}at ${formatClock(iso, timeZone, locale)}`;
+  return tr('{value}at {formatClock}', {
+    value: today ? '' : 'tomorrow ',
+    formatClock: formatClock(iso, timeZone, locale),
+  });
 }
 
 /**
@@ -210,10 +218,10 @@ export function formatDue(
   const dayMs = Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(n.year, n.month - 1, n.day);
   const days = Math.round(dayMs / 86_400_000);
   const clock = hasTime ? ` ${formatClock(iso, timeZone, locale)}` : '';
-  if (days === 0) return `Today${clock}`;
-  if (days === 1) return `Tomorrow${clock}`;
+  if (days === 0) return tr('Today{clock}', { clock });
+  if (days === 1) return tr('Tomorrow{clock}', { clock });
   if (days === -1) return 'Yesterday';
-  if (days < -1) return `${-days} days ago`;
+  if (days < -1) return tr('{days} days ago', { days: -days });
   if (days < 7) return `${dateFormat(locale, { weekday: 'short', timeZone }).format(t)}${clock}`;
   return dateFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
 }
@@ -373,51 +381,73 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
   const them = p.userId && p.userId === viewerId ? 'you' : (p.name ?? 'someone');
   switch (p.event) {
     case 'group_created':
-      return p.title ? `${by} created “${p.title}”` : `${by} created the group`;
+      return p.title
+        ? tr('{by} created “{title}”', { by, title: p.title })
+        : tr('{by} created the group', { by });
     case 'topic_created':
-      return p.title ? `${by} started this topic in “${p.title}”` : `${by} started this topic`;
+      return p.title
+        ? tr('{by} started this topic in “{title}”', { by, title: p.title })
+        : tr('{by} started this topic', { by });
     case 'topic_started':
-      return p.title ? `${by} started a topic: ${p.title}` : `${by} started a topic`;
+      return p.title
+        ? tr('{by} started a topic: {title}', { by, title: p.title })
+        : tr('{by} started a topic', { by });
     case 'space_created':
-      return p.title ? `${by} started the space “${p.title}”` : `${by} started the space`;
+      return p.title
+        ? tr('{by} started the space “{title}”', { by, title: p.title })
+        : tr('{by} started the space', { by });
     case 'space_renamed':
-      return p.title ? `${by} renamed the space “${p.title}”` : `${by} renamed the space`;
+      return p.title
+        ? tr('{by} renamed the space “{title}”', { by, title: p.title })
+        : tr('{by} renamed the space', { by });
     case 'renamed':
       return p.title
-        ? `${by} renamed the conversation “${p.title}”`
-        : `${by} renamed the conversation`;
+        ? tr('{by} renamed the conversation “{title}”', { by, title: p.title })
+        : tr('{by} renamed the conversation', { by });
     case 'message_pinned':
-      return `${by} pinned a message`;
+      return tr('{by} pinned a message', { by });
     case 'purpose_changed':
       return p.purpose
-        ? `${by} changed what it’s for: ${p.purpose}`
-        : `${by} took away what it’s for`;
+        ? tr('{by} changed what it’s for: {purpose}', { by, purpose: p.purpose })
+        : tr('{by} took away what it’s for', { by });
     case 'member_joined':
       return `${p.name ?? by} joined`;
     case 'members_added':
-      return p.names?.length ? `${by} added ${joinNames(p.names)}` : `${by} added people`;
+      return p.names?.length
+        ? tr('{by} added {joinNames}', { by, joinNames: joinNames(p.names) })
+        : tr('{by} added people', { by });
     case 'member_left':
       return `${p.name ?? by} left`;
     case 'member_removed':
-      return `${by} removed ${them}`;
+      return tr('{by} removed {them}', { by, them });
     case 'owner_changed':
-      return them === 'you' ? 'You own the group now' : `${p.name ?? 'Someone'} owns the group now`;
+      return them === 'you'
+        ? tr('You own the group now')
+        : tr('{name} owns the group now', { name: p.name ?? tr('Someone') });
     case 'admin_added':
-      return `${by} made ${them} an admin`;
+      return tr('{by} made {them} an admin', { by, them });
     case 'admin_removed':
       return them === 'you'
-        ? 'You’re no longer an admin'
-        : `${p.name ?? 'Someone'} is no longer an admin`;
+        ? tr('You’re no longer an admin')
+        : tr('{name} is no longer an admin', { name: p.name ?? tr('Someone') });
     case 'imported': {
       const from = p.source === 'whatsapp' ? 'WhatsApp' : 'another app';
-      return `${by} brought this chat over from ${from}. What’s above was written there.`;
+      return tr('{by} brought this chat over from {from}. What’s above was written there.', {
+        by,
+        from,
+      });
     }
     case 'decision_recorded':
-      return p.title ? `${by} recorded a decision: ${p.title}` : `${by} recorded a decision`;
+      return p.title
+        ? tr('{by} recorded a decision: {title}', { by, title: p.title })
+        : tr('{by} recorded a decision', { by });
     case 'retention_changed':
       return typeof p.days === 'number'
-        ? `${by} set new messages to disappear after ${retentionText(p.days)}`
-        : `${by} turned off disappearing messages`;
+        ? tr('{by} set new messages to disappear after {retentionText}', {
+            by,
+            retentionText: retentionText(p.days),
+          })
+        : tr('{by} turned off disappearing messages', { by });
     case 'call': {
       const c = payload as {
         kind?: CallKind;
@@ -434,7 +464,7 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
       );
     }
     default:
-      return 'Conversation updated';
+      return tr('Conversation updated');
   }
 }
 
@@ -467,8 +497,8 @@ export function messagePreview(m: {
   /** A private conversation's (R18): nothing in it to preview. */
   sealed?: unknown;
 }): string {
-  if (m.deleted) return 'Message deleted';
-  if (m.sealed) return 'Encrypted message';
+  if (m.deleted) return tr('Message deleted');
+  if (m.sealed) return tr('Encrypted message');
   const payload = (m.payload ?? {}) as {
     question?: unknown;
     title?: unknown;
@@ -519,8 +549,8 @@ export function rhythmOf(weeks: number, everTalked: boolean): Rhythm | null {
 }
 
 export const RHYTHM_TEXT: Record<Rhythm, string> = {
-  most_weeks: 'Most weeks',
-  now_and_then: 'Now and then',
-  rarely: 'Once in a while',
-  not_lately: 'Not lately',
+  most_weeks: msg('Most weeks'),
+  now_and_then: msg('Now and then'),
+  rarely: msg('Once in a while'),
+  not_lately: msg('Not lately'),
 };

@@ -1,4 +1,5 @@
 import type { ConversationView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSession } from '@/state/session';
@@ -48,28 +49,28 @@ export function PrivateSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title="Private conversation"
-      subtitle="End to end encrypted"
+      title={tr('Private conversation')}
+      subtitle={tr('End to end encrypted')}
     >
       <View style={{ gap: 14, paddingBottom: 8 }} testID="private-sheet">
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
           <Lock size={18} color={t.c.success} />
           <Text variant="body" style={{ flex: 1 }}>
-            Only the devices of the people in it can read what’s written here. Caime can’t: it keeps
-            each message sealed, and never sees the words.
+            {tr(
+              'Only the devices of the people in it can read what’s written here. Caime can’t: it keeps each message sealed, and never sees the words.',
+            )}
           </Text>
         </View>
         <Text variant="caption" color="textSecondary">
-          So there’s no search, no Caime AI and no suggestions from what’s written here, and
-          notifications say only “New message”. Caime still sees who’s in it, when messages are
-          sent, and reactions. A device you sign in on later reads what’s sent once you approve it
-          from one of yours, never what was sent before. Photos, files and cards aren’t sealed yet,
-          so for now it’s text.
+          {tr(
+            'So there’s no search, no Caime AI and no suggestions from what’s written here, and notifications say only “New message”. Caime still sees who’s in it, when messages are sent, and reactions. A device you sign in on later reads what’s sent once you approve it from one of yours, never what was sent before. Photos, files and cards aren’t sealed yet, so for now it’s text.',
+          )}
         </Text>
         {!privateSupported ? (
           <Text variant="captionStrong">
-            Private conversations don’t open on this device. Open Caime on your phone or in a
-            current browser.
+            {tr(
+              'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.',
+            )}
           </Text>
         ) : null}
         <WaitingDevices on={open && privateSupported} />
@@ -79,14 +80,16 @@ export function PrivateSheet({
         ))}
         {missing.map((p) => (
           <Text key={p.userId} variant="caption" color="textSecondary">
-            {p.person.displayName} hasn’t opened a private conversation on any device yet, so
-            nothing here is sealed for them until they do.
+            {tr(
+              '{displayName} hasn’t opened a private conversation on any device yet, so nothing here is sealed for them until they do.',
+              { displayName: p.person.displayName },
+            )}
           </Text>
         ))}
         {mine?.code ? (
           <Card>
             <View style={{ gap: 4 }}>
-              <Text variant="label">Your security code</Text>
+              <Text variant="label">{tr('Your security code')}</Text>
               <Text
                 variant="title"
                 style={{ letterSpacing: 1 }}
@@ -96,13 +99,15 @@ export function PrivateSheet({
                 {mine.code}
               </Text>
               <Text variant="caption" color="textSecondary">
-                It stays the same as you add devices (each one you approve). It changes only if you
-                start over.
+                {tr(
+                  'It stays the same as you add devices (each one you approve). It changes only if you start over.',
+                )}
               </Text>
               {mine.unconfirmed ? (
                 <Text variant="caption" color="danger" testID="private-my-unconfirmed">
-                  Caime lists a device as yours that none of yours approved. Nothing is sealed for
-                  it. If you didn’t sign in somewhere new, remove it in Settings, Security.
+                  {tr(
+                    'Caime lists a device as yours that none of yours approved. Nothing is sealed for it. If you didn’t sign in somewhere new, remove it in Settings, Security.',
+                  )}
                 </Text>
               ) : null}
             </View>
@@ -121,7 +126,7 @@ function CodeCard({ name, code }: { name: string; code: PersonCode }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           {code.verified ? <ShieldCheck size={16} color={t.c.success} /> : null}
           <Text variant="label" style={{ flex: 1 }}>
-            {name}’s security code
+            {tr('{name}’s security code', { name })}
           </Text>
         </View>
         <Text variant="title" style={{ letterSpacing: 1 }} selectable>
@@ -129,21 +134,33 @@ function CodeCard({ name, code }: { name: string; code: PersonCode }) {
         </Text>
         <Text variant="caption" color={code.changed ? 'warning' : 'textSecondary'}>
           {code.held
-            ? `It changed since you compared it: ${name} started over on a device, or someone is posing as them. Nothing is sealed for ${name}, nor shown from them, until you compare it again.`
+            ? tr(
+                'It changed since you compared it: {name} started over on a device, or someone is posing as them. Nothing is sealed for {name}, nor shown from them, until you compare it again.',
+                { name },
+              )
             : code.changed
-              ? `It changed: ${name} started over on a device. Compare it with them to be sure it’s them.`
+              ? tr(
+                  'It changed: {name} started over on a device. Compare it with them to be sure it’s them.',
+                  { name },
+                )
               : code.verified
-                ? `You compared it with ${name}.`
-                : `Compare it with ${name} (in person, or on a call): if it matches the code ${name} sees as theirs, it’s them.`}
+                ? tr('You compared it with {name}.', { name })
+                : tr(
+                    'Compare it with {name} (in person, or on a call): if it matches the code {name} sees as theirs, it’s them.',
+                    { name },
+                  )}
         </Text>
         {code.unconfirmed ? (
           <Text variant="caption" color="warning" testID="private-code-unconfirmed">
-            {`Caime lists a device for ${name} that none of theirs approved. Nothing is sealed for it.`}
+            {tr(
+              'Caime lists a device for {name} that none of theirs approved. Nothing is sealed for it.',
+              { name },
+            )}
           </Text>
         ) : null}
         {code.code && (code.changed || !code.verified) ? (
           <Button
-            label={code.changed ? 'It’s them: remember this code' : 'It matches'}
+            label={code.changed ? tr('It’s them: remember this code') : tr('It matches')}
             size="sm"
             variant="secondary"
             onPress={() =>
@@ -177,22 +194,23 @@ export function WaitingDevices({ on }: { on: boolean }) {
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
               <CircleAlert size={16} />
               <Text variant="label" style={{ flex: 1 }}>
-                {`Is this you? ${d.name ?? 'A new device'}`}
+                {tr('Is this you? {name}', { name: d.name ?? tr('A new device') })}
               </Text>
             </View>
             <Text variant="caption" color="textSecondary">
-              It signed in to your account and wants to read your private conversations. Approve it
-              only if you just signed in there yourself.
+              {tr(
+                'It signed in to your account and wants to read your private conversations. Approve it only if you just signed in there yourself.',
+              )}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Button
-                label="It’s me: approve"
+                label={tr('It’s me: approve')}
                 size="sm"
                 onPress={() => act((p) => p.approveDevice(d.id), 'Approved.')}
                 testID="private-approve"
               />
               <Button
-                label="Not me: sign it out"
+                label={tr('Not me: sign it out')}
                 size="sm"
                 variant="secondary"
                 onPress={() => act((p) => p.removeDevice(d.id), 'Signed out.')}
@@ -213,20 +231,20 @@ export function WaitingDevices({ on }: { on: boolean }) {
 export function StartOverSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   return (
-    <Sheet open={open} onClose={onClose} title="Start over here?">
+    <Sheet open={open} onClose={onClose} title={tr('Start over here?')}>
       <View style={{ gap: 12, paddingBottom: 8 }}>
         <Text variant="body">
-          This device reads your private conversations from now on, and every other device of yours
-          stops reading them until you approve it from here.
+          {tr(
+            'This device reads your private conversations from now on, and every other device of yours stops reading them until you approve it from here.',
+          )}
         </Text>
         <Text variant="caption" color="textSecondary">
-          Your security code changes, so the people you write to privately see it did. Nothing sent
-          before now opens here, and your recovery key, if you made one, stops working: make a new
-          one after. If another device of yours is at hand, approve this one from it instead; if you
-          have your recovery key, use that.
+          {tr(
+            'Your security code changes, so the people you write to privately see it did. Nothing sent before now opens here, and your recovery key, if you made one, stops working: make a new one after. If another device of yours is at hand, approve this one from it instead; if you have your recovery key, use that.',
+          )}
         </Text>
         <Button
-          label="Start over here"
+          label={tr('Start over here')}
           variant="danger"
           disabled={busy}
           onPress={() => {
@@ -278,10 +296,10 @@ export function CodeChangedBanner({
       <Lock size={16} color={alarm ? t.c.danger : t.c.warning} />
       <Text variant="caption" style={{ flex: 1 }}>
         {alarm
-          ? 'A device none of yours approved is listed as yours. Nothing is sealed for it.'
-          : `${names}’s security code changed.`}
+          ? tr('A device none of yours approved is listed as yours. Nothing is sealed for it.')
+          : tr('{names}’s security code changed.', { names })}
       </Text>
-      <Button label="View" size="sm" variant="secondary" onPress={onOpen} />
+      <Button label={tr('View')} size="sm" variant="secondary" onPress={onOpen} />
     </View>
   );
 }
@@ -307,8 +325,9 @@ export function Downgraded() {
     >
       <Lock size={16} color={t.c.danger} />
       <Text variant="caption" style={{ flex: 1 }}>
-        This conversation was private on this device. Caime now says it isn’t, so what’s written in
-        it isn’t shown or sent as private here.
+        {tr(
+          'This conversation was private on this device. Caime now says it isn’t, so what’s written in it isn’t shown or sent as private here.',
+        )}
       </Text>
     </View>
   );

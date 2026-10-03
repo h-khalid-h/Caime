@@ -2,6 +2,8 @@
  * The time zone someone's times are in (quiet hours, due dates, "tomorrow at 10"): a field with
  * its city and offset, the device's offered when it's another, any found by city or country.
  */
+
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -71,7 +73,7 @@ export function TimeZoneField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${shown ? `${shown.title}, ${shown.subtitle}` : value}`}
-        accessibilityHint="Opens the list of time zones"
+        accessibilityHint={tr('Opens the list of time zones')}
         onPress={() => {
           setOpen(true);
           setOpened(true);
@@ -104,10 +106,13 @@ export function TimeZoneField({
       {offered ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <Text variant="caption" color="textSecondary" style={{ flexShrink: 1 }}>
-            This device is in {offered.title} ({offered.subtitle}).
+            {tr('This device is in {title} ({subtitle}).', {
+              title: offered.title,
+              subtitle: offered.subtitle,
+            })}
           </Text>
           <Button
-            label="Use it"
+            label={tr('Use it')}
             size="sm"
             variant="secondary"
             onPress={() => onChange(offered.key)}
@@ -128,11 +133,11 @@ export function TimeZoneField({
           value={value}
           onPick={onChange}
           matches={matches}
-          searchLabel="Search cities or countries"
+          searchLabel={tr('Search cities or countries')}
           loading={zones.isPending}
           failed={zones.isError}
           onRetry={() => void zones.refetch()}
-          empty="No time zone by that name."
+          empty={tr('No time zone by that name.')}
           testID={testID}
         />
       ) : null}

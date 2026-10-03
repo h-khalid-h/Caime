@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Text } from './Text';
@@ -17,7 +18,7 @@ export function Badge({
   const label = mention && count <= 0 ? '@' : count > 99 ? '99+' : String(count);
   return (
     <View
-      accessibilityLabel={`${count} unread`}
+      accessibilityLabel={tr('{count} unread', { count })}
       style={{
         minWidth: 22,
         height: 22,

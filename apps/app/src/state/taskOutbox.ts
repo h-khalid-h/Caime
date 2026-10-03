@@ -4,6 +4,7 @@
  * device's id for it, so sending it again after a lost answer is the same action on the server.
  */
 import type { MemoryView, TasksResponse, TaskView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMemo } from 'react';
@@ -231,14 +232,16 @@ async function sendOne(op: PendingTaskOp): Promise<'sent' | 'offline' | 'failed'
       update({ state: 'queued' });
       return 'offline';
     }
-    const message = err instanceof ApiError ? err.message : 'Couldn’t save it.';
+    const message = err instanceof ApiError ? err.message : tr('Couldn’t save it.');
     if (op.kind === 'create') {
       update({ state: 'failed', error: message });
     } else {
       // Nothing to keep: say so, and show the action as it really is.
       finished.add(op.id);
       useTaskOutbox.setState((s) => ({ ops: s.ops.filter((o) => o.id !== op.id) }));
-      toast(`Couldn’t update “${op.title}”: ${message}`, { tone: 'danger' });
+      toast(tr('Couldn’t update “{title}”: {message}', { title: op.title, message }), {
+        tone: 'danger',
+      });
       void refresh();
     }
     return 'failed';

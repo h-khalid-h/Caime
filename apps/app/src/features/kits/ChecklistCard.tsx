@@ -1,4 +1,5 @@
 import type { MessageView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import {
   applyChecklistOp,
   type ChecklistOp,
@@ -73,10 +74,14 @@ export function ChecklistCard({ m, mine }: { m: MessageView; mine: boolean }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <ListChecks size={16} color={t.c.accentStrong} />
         <Text variant="overline" color="textSecondary" style={{ flex: 1 }}>
-          {p.label ?? 'Checklist'}
+          {p.label ?? tr('Checklist')}
         </Text>
         <Chip
-          label={items.length && done === items.length ? 'Done' : `${done} of ${items.length}`}
+          label={
+            items.length && done === items.length
+              ? tr('Done')
+              : tr('{done} of {length}', { done, length: items.length })
+          }
           tone={items.length && done === items.length ? 'success' : 'neutral'}
           size="sm"
         />
@@ -118,7 +123,7 @@ export function ChecklistCard({ m, mine }: { m: MessageView; mine: boolean }) {
                 <IconButton
                   icon={X}
                   size={28}
-                  label={`Take “${item.text}” off the list`}
+                  label={tr('Take “{text}” off the list', { text: item.text })}
                   onPress={() => void change({ op: 'remove', itemId: item.id })}
                 />
               ) : null}
@@ -130,8 +135,8 @@ export function ChecklistCard({ m, mine }: { m: MessageView; mine: boolean }) {
         <TextField
           value={adding}
           onChangeText={setAdding}
-          placeholder="Add an item"
-          accessibilityLabel={`Add to ${p.title ?? 'the list'}`}
+          placeholder={tr('Add an item')}
+          accessibilityLabel={tr('Add to {title}', { title: p.title ?? tr('the list') })}
           returnKeyType="done"
           blurOnSubmit={false}
           onSubmitEditing={add}

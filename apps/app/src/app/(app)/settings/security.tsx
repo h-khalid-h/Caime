@@ -1,5 +1,6 @@
 import type { DeviceSessionView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { passwordError } from '@caime/core/rules';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -75,7 +76,7 @@ export default function Security() {
       await endpoints.deleteAccount(confirm);
       setDeleting(false);
       await useSession.getState().signOut({ remote: false });
-      toast('Your account is deleted. Thank you for trying Caime.');
+      toast(tr('Your account is deleted. Thank you for trying Caime.'));
     } catch (e) {
       setDeleteError((e as Error).message);
     } finally {
@@ -95,7 +96,7 @@ export default function Security() {
       await endpoints.changePassword(current, next);
       setCurrent('');
       setNext('');
-      toast('Password changed. Other devices were signed out.');
+      toast(tr('Password changed. Other devices were signed out.'));
       void qc.invalidateQueries({ queryKey: qk.sessions });
     } catch (e) {
       setPwError((e as Error).message);
@@ -105,25 +106,29 @@ export default function Security() {
   };
 
   return (
-    <SettingsPage title="Security">
+    <SettingsPage title={tr('Security')}>
       <Group
-        title="Signed in on"
-        footer="Sign out anywhere you don’t recognise. It happens at once."
+        title={tr('Signed in on')}
+        footer={tr('Sign out anywhere you don’t recognise. It happens at once.')}
       >
         {(sessions.data?.sessions ?? []).map((s, i) => (
           <View key={s.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
               icon={deviceIcon(s)}
-              title={s.deviceName ?? s.platform ?? (s.kind === 'native' ? 'Phone' : 'Browser')}
+              title={
+                s.deviceName ?? s.platform ?? (s.kind === 'native' ? tr('Phone') : tr('Browser'))
+              }
               subtitle={
                 s.current
-                  ? 'This device'
-                  : `Active ${formatListTime(s.lastSeenAt, now, timeZone, locale)}`
+                  ? tr('This device')
+                  : tr('Active {formatListTime}', {
+                      formatListTime: formatListTime(s.lastSeenAt, now, timeZone, locale),
+                    })
               }
               right={
                 s.current ? null : (
                   <Button
-                    label="Sign out"
+                    label={tr('Sign out')}
                     size="sm"
                     variant="danger"
                     onPress={async () => {
@@ -142,30 +147,32 @@ export default function Security() {
       <PrivateDevices />
       <RecoveryKey />
       <EmailStatus />
-      <Group title="Password">
+      <Group title={tr('Password')}>
         <View style={{ padding: 16, gap: 12 }}>
           <TextField
-            label="Current password"
+            label={tr('Current password')}
             secret
             value={current}
             onChangeText={setCurrent}
             autoComplete="current-password"
           />
           <TextField
-            label="New password"
+            label={tr('New password')}
             secret
             value={next}
             onChangeText={setNext}
             autoComplete="new-password"
-            hint="At least 10 characters."
+            hint={tr('At least 10 characters.')}
             error={pwError}
           />
-          <Button label="Change password" onPress={changePassword} loading={busy} />
+          <Button label={tr('Change password')} onPress={changePassword} loading={busy} />
         </View>
       </Group>
       <Group
-        title="Recovery codes"
-        footer="Caime never asks for your phone number. These codes are how you get back in if you forget your password."
+        title={tr('Recovery codes')}
+        footer={tr(
+          'Caime never asks for your phone number. These codes are how you get back in if you forget your password.',
+        )}
       >
         <View style={{ padding: 16, gap: 12 }}>
           {codes ? (
@@ -188,17 +195,17 @@ export default function Security() {
                 ))}
               </View>
               <Button
-                label="Copy all"
+                label={tr('Copy all')}
                 variant="secondary"
                 onPress={async () => {
                   await copyText(codes.join('\n'));
-                  toast('Copied. Keep them somewhere safe.');
+                  toast(tr('Copied. Keep them somewhere safe.'));
                 }}
               />
             </>
           ) : (
             <Button
-              label="Make new codes"
+              label={tr('Make new codes')}
               variant="secondary"
               onPress={() => {
                 setCodesError(null);
@@ -208,18 +215,22 @@ export default function Security() {
             />
           )}
           <Text variant="caption" color="textTertiary">
-            Making new codes cancels the old ones.
+            {tr('Making new codes cancels the old ones.')}
           </Text>
         </View>
       </Group>
       <Group
-        title="Your data"
-        footer="The download has what Caime keeps about you, as the app shows it to you: your profile, how you label people, the messages you sent, your actions, files, calls, devices and more. Never other people’s words, reports others made about you, or secrets."
+        title={tr('Your data')}
+        footer={tr(
+          'The download has what Caime keeps about you, as the app shows it to you: your profile, how you label people, the messages you sent, your actions, files, calls, devices and more. Never other people’s words, reports others made about you, or secrets.',
+        )}
       >
         <ListRow
           icon={FileText}
-          title="Download your data"
-          subtitle={isWeb ? 'A JSON file, ready at once' : 'Open Caime on the web to download it'}
+          title={tr('Download your data')}
+          subtitle={
+            isWeb ? tr('A JSON file, ready at once') : tr('Open Caime on the web to download it')
+          }
           onPress={
             isWeb
               ? () => {
@@ -231,7 +242,7 @@ export default function Security() {
         <View style={{ borderTopWidth: 1, borderTopColor: t.c.border }}>
           <ListRow
             icon={Trash}
-            title="Delete your account"
+            title={tr('Delete your account')}
             destructive
             onPress={() => setDeleting(true)}
             testID="delete-account"
@@ -241,11 +252,11 @@ export default function Security() {
       <Sheet
         open={making}
         onClose={() => setMaking(false)}
-        title="Make new recovery codes"
-        subtitle="The ones you have now stop working."
+        title={tr('Make new recovery codes')}
+        subtitle={tr('The ones you have now stop working.')}
         footer={
           <Button
-            label="Make new codes"
+            label={tr('Make new codes')}
             block
             loading={codesBusy}
             onPress={() => void makeCodes()}
@@ -254,7 +265,7 @@ export default function Security() {
         }
       >
         <TextField
-          label="Your password"
+          label={tr('Your password')}
           value={codesPassword}
           onChangeText={(v) => {
             setCodesPassword(v);
@@ -272,10 +283,10 @@ export default function Security() {
       <Sheet
         open={deleting}
         onClose={() => setDeleting(false)}
-        title="Delete your account?"
+        title={tr('Delete your account?')}
         footer={
           <Button
-            label="Delete my account"
+            label={tr('Delete my account')}
             variant="danger"
             block
             size="lg"
@@ -285,7 +296,7 @@ export default function Security() {
           />
         }
       >
-        <Text variant="body">This can’t be undone. Deleting your account:</Text>
+        <Text variant="body">{tr('This can’t be undone. Deleting your account:')}</Text>
         <Text variant="body" color="textSecondary">
           • removes your profile, how you label people, your rules, suggestions, actions and
           devices, and the files only you can see{'\n'}• ends your connections, and Pro if you have
@@ -294,10 +305,12 @@ export default function Security() {
           everyone for a year, you included, so a link to you can’t open someone else.
         </Text>
         <Text variant="body" color="textSecondary">
-          An organization’s Business plan goes on for its team. If you pay for one, cancel it first.
+          {tr(
+            'An organization’s Business plan goes on for its team. If you pay for one, cancel it first.',
+          )}
         </Text>
         <TextField
-          label="Your password"
+          label={tr('Your password')}
           secret
           value={confirm}
           onChangeText={setConfirm}
@@ -323,7 +336,7 @@ function EmailStatus() {
     try {
       const { user: next } = await endpoints.verifyEmail(code);
       useSession.getState().setUser(next);
-      toast('Email confirmed');
+      toast(tr('Email confirmed'));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -333,29 +346,31 @@ function EmailStatus() {
   const resend = async () => {
     try {
       await endpoints.resendEmailCode();
-      toast(`A new code is on its way to ${user.email}`);
+      toast(tr('A new code is on its way to {email}', { email: user.email }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
   };
   return (
     <Group
-      title="Email"
+      title={tr('Email')}
       footer={
         user.emailVerified
           ? undefined
-          : 'Confirming it means a forgotten password can be reset by email, and that it\u2019s yours.'
+          : tr(
+              'Confirming it means a forgotten password can be reset by email, and that it’s yours.',
+            )
       }
     >
       <View style={{ padding: 16, gap: 12 }}>
         <Text variant="label" testID="email-status">
           {user.email}
-          {user.emailVerified ? ' \u00b7 confirmed' : ' \u00b7 not confirmed yet'}
+          {user.emailVerified ? tr(' · confirmed') : tr(' · not confirmed yet')}
         </Text>
         {user.emailVerified ? null : (
           <>
             <TextField
-              label="Code from the email"
+              label={tr('Code from the email')}
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
@@ -365,14 +380,14 @@ function EmailStatus() {
             />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Button
-                label="Confirm"
+                label={tr('Confirm')}
                 onPress={confirm}
                 loading={busy}
                 disabled={code.trim().length < 6}
                 testID="email-confirm"
               />
               <Button
-                label="Send a new code"
+                label={tr('Send a new code')}
                 variant="ghost"
                 onPress={() => void resend()}
                 testID="email-resend"

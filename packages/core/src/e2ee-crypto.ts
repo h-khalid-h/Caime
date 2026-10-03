@@ -15,6 +15,7 @@ import {
   type SealedMessage,
 } from './e2ee';
 import type { RawDeviceKeys } from './e2ee-recovery';
+import { tr } from './i18n';
 
 type Subtle = typeof globalThis.crypto.subtle;
 /** A Web Crypto key, in whichever runtime's types (the browser's, or Node's for tests). */
@@ -40,7 +41,7 @@ export type OpenResult =
 
 const subtle = () => {
   const s = globalThis.crypto?.subtle;
-  if (!s) throw new Error('This device can’t encrypt messages.');
+  if (!s) throw new Error(tr('This device can’t encrypt messages.'));
   return s;
 };
 /** Whether this runtime has what private conversations need. */

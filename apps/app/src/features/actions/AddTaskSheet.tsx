@@ -1,4 +1,5 @@
 import { formatDue } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { firstFutureWhen } from '@caime/core/when';
 import { onlineManager } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -57,38 +58,44 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
     setPicked(null);
     setUseDate(true);
     onClose();
-    toast(onlineManager.isOnline() ? 'Added' : 'Added. It’s saved when you’re back online.');
+    toast(
+      onlineManager.isOnline() ? tr('Added') : tr('Added. It’s saved when you’re back online.'),
+    );
   };
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title="New action"
-      footer={<Button label="Add" block size="lg" onPress={save} disabled={!title.trim()} />}
+      title={tr('New action')}
+      footer={<Button label={tr('Add')} block size="lg" onPress={save} disabled={!title.trim()} />}
     >
       <TextField
-        placeholder="What needs doing? Try “renew passport by Friday”"
+        placeholder={tr('What needs doing? Try “renew passport by Friday”')}
         value={title}
         onChangeText={setTitle}
         autoFocus
         onSubmitEditing={save}
         returnKeyType="done"
-        accessibilityLabel="What needs doing"
+        accessibilityLabel={tr('What needs doing')}
       />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {due ? (
           <>
             <Chip
               icon={Calendar}
-              label={`Due ${formatDue(due.at, new Date(), timeZone, locale, due.hasTime)}`}
+              label={tr('Due {formatDue}', {
+                formatDue: formatDue(due.at, new Date(), timeZone, locale, due.hasTime),
+              })}
               selected
               onPress={() => setChoosing(true)}
-              accessibilityLabel={`Due ${formatDue(due.at, new Date(), timeZone, locale, due.hasTime)}. Change the day`}
+              accessibilityLabel={tr('Due {formatDue}. Change the day', {
+                formatDue: formatDue(due.at, new Date(), timeZone, locale, due.hasTime),
+              })}
               testID="task-due"
             />
             <IconButton
               icon={X}
-              label="No due date"
+              label={tr('No due date')}
               onPress={() => {
                 setPicked(null);
                 setUseDate(false);
@@ -97,14 +104,14 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
             />
             {!picked && when ? (
               <Text variant="caption" color="textTertiary">
-                From “{when.text}”
+                {tr('From “{text}”', { text: when.text })}
               </Text>
             ) : null}
           </>
         ) : (
           <Chip
             icon={Calendar}
-            label="Add a due date"
+            label={tr('Add a due date')}
             onPress={() => setChoosing(true)}
             testID="task-due-add"
           />
@@ -114,7 +121,7 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
         <WhenSheet
           open
           onClose={() => setChoosing(false)}
-          title="Due"
+          title={tr('Due')}
           value={picked ?? (when && useDate ? { date: when.date, time: when.time } : null)}
           onChange={(c) => {
             setPicked(c);

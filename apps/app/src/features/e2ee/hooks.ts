@@ -6,6 +6,7 @@
  */
 import type { MessageView } from '@caime/core/api';
 import type { PrivatePayload } from '@caime/core/e2ee';
+import { msg, tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { qk } from '@/api/keys';
@@ -14,7 +15,7 @@ import { privateSupported } from './support';
 
 export const loadPrivate = () => import('./private');
 
-export const UNVERIFIED = 'This message couldn’t be checked, so it isn’t shown.';
+export const UNVERIFIED = msg('This message couldn’t be checked, so it isn’t shown.');
 
 /**
  * How a message is read in the conversation shown: opened on this device (sealed), shown as it
@@ -41,9 +42,13 @@ export function whyNotWritten(
   thisDevice: 'approved' | 'waiting' | null,
 ): string | null {
   if (where.private && !saysPrivate)
-    return 'This conversation was private on this device, and Caime now says it isn’t, so nothing is sent from here. Start a new private conversation instead.';
+    return tr(
+      'This conversation was private on this device, and Caime now says it isn’t, so nothing is sent from here. Start a new private conversation instead.',
+    );
   if (where.private && thisDevice === 'waiting')
-    return 'This device reads and writes private messages once you approve it on another device where you’re signed in to Caime.';
+    return tr(
+      'This device reads and writes private messages once you approve it on another device where you’re signed in to Caime.',
+    );
   return null;
 }
 
@@ -84,13 +89,15 @@ export function useOpened(
   const unsealedHere = as === 'unverified';
   const initial = (): Opened =>
     unsealedHere
-      ? { text: null, note: UNVERIFIED, loading: false }
+      ? { text: null, note: tr(UNVERIFIED), loading: false }
       : sealed
         ? privateSupported
           ? { text: null, note: null, loading: true }
           : {
               text: null,
-              note: 'Private messages don’t open on this device. Open Caime on your phone or in a current browser.',
+              note: tr(
+                'Private messages don’t open on this device. Open Caime on your phone or in a current browser.',
+              ),
               loading: false,
             }
         : { text: m?.body ?? null, note: null, loading: false };

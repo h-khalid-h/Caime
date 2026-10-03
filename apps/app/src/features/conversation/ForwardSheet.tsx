@@ -7,6 +7,7 @@
  */
 import type { MessageView } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -65,7 +66,7 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
     try {
       const n = picked.size;
       await endpoints.forward(m.id, [...picked], clientId);
-      toast(n === 1 ? 'Forwarded' : `Forwarded to ${n} conversations`);
+      toast(n === 1 ? tr('Forwarded') : tr('Forwarded to {n} conversations', { n }));
       void qc.invalidateQueries({ queryKey: qk.inbox });
       void qc.invalidateQueries({ queryKey: qk.inboxAll });
       onClose();
@@ -79,11 +80,11 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
     <Sheet
       open
       onClose={onClose}
-      title="Forward"
-      subtitle="It arrives marked as forwarded."
+      title={tr('Forward')}
+      subtitle={tr('It arrives marked as forwarded.')}
       footer={
         <Button
-          label={picked.size ? `Send to ${picked.size}` : 'Send'}
+          label={picked.size ? tr('Send to {size}', { size: picked.size }) : tr('Send')}
           block
           size="lg"
           disabled={picked.size === 0}
@@ -97,17 +98,19 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
         <TextField
           value={find}
           onChangeText={setFind}
-          placeholder="Find a conversation"
-          accessibilityLabel="Find a conversation"
+          placeholder={tr('Find a conversation')}
+          accessibilityLabel={tr('Find a conversation')}
           testID="forward-find"
         />
         {inbox.isPending || checking ? (
           <Text variant="body" color="textSecondary">
-            Loading your conversations…
+            {tr('Loading your conversations…')}
           </Text>
         ) : places.length === 0 ? (
           <Text variant="body" color="textSecondary">
-            {term ? 'No conversation by that name.' : 'There’s nowhere else to forward it yet.'}
+            {term
+              ? tr('No conversation by that name.')
+              : tr('There’s nowhere else to forward it yet.')}
           </Text>
         ) : (
           <View style={{ marginHorizontal: -20 }}>
@@ -117,7 +120,10 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
                 <ListRow
                   key={c.id}
                   title={listTitle(c)}
-                  subtitle={c.relationship?.label ?? (c.other ? null : `${c.memberCount} people`)}
+                  subtitle={
+                    c.relationship?.label ??
+                    (c.other ? null : tr('{memberCount} people', { memberCount: c.memberCount }))
+                  }
                   checked={on}
                   left={
                     c.other ? (

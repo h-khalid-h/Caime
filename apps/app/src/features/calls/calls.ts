@@ -7,6 +7,7 @@
  */
 import type { GroupCallView, RealtimeEvent } from '@caime/core/api';
 import type { CallKind } from '@caime/core/calls';
+import { tr } from '@caime/core/i18n';
 import { toast } from '@/ui/Toast';
 import { loadCallStack, callStackOr as loadedOr } from './load';
 import { callsAvailable, onPhone } from './rtc';
@@ -36,13 +37,13 @@ async function asked(): Promise<Stack | null> {
   } catch {
     toast(
       onPhone
-        ? 'Calls couldn’t load. Check your connection, then try again.'
-        : 'Calls couldn’t load. Check your connection, or reload Caime.',
+        ? tr('Calls couldn’t load. Check your connection, then try again.')
+        : tr('Calls couldn’t load. Check your connection, or reload Caime.'),
       {
         tone: 'danger',
         ...(onPhone
           ? {}
-          : { action: { label: 'Reload', onPress: () => window.location.reload() } }),
+          : { action: { label: tr('Reload'), onPress: () => window.location.reload() } }),
       },
     );
     return null;

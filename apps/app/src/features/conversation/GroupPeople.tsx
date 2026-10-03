@@ -5,6 +5,7 @@
  * who leaves hands it on); this only offers what they allow. Loaded with the details panel.
  */
 import type { ConversationView, ParticipantView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -132,11 +133,11 @@ export function GroupPeople({
           accessibilityRole="header"
           style={{ flex: 1 }}
         >
-          {people.length === 1 ? '1 person' : `${people.length} people`}
+          {people.length === 1 ? '1 person' : tr('{length} people', { length: people.length })}
         </Text>
         {manager && !fixed ? (
           <Button
-            label="Add"
+            label={tr('Add')}
             size="sm"
             variant="secondary"
             onPress={() => setAdding(true)}
@@ -149,8 +150,8 @@ export function GroupPeople({
           accessibilityRole="button"
           accessibilityLabel={
             topicOf
-              ? 'Change the topic’s name and what it’s for'
-              : 'Change the group’s name and what it’s for'
+              ? tr('Change the topic’s name and what it’s for')
+              : tr('Change the group’s name and what it’s for')
           }
           onPress={() =>
             setEditing({
@@ -163,7 +164,7 @@ export function GroupPeople({
         >
           <Pencil size={14} color={t.c.accentStrong} />
           <Text variant="captionStrong" color="link">
-            Name and what it’s for
+            {tr('Name and what it’s for')}
           </Text>
         </Pressable>
       ) : null}
@@ -183,7 +184,7 @@ export function GroupPeople({
             ]
               .filter(Boolean)
               .join(', ')}
-            accessibilityHint={manageable ? 'Opens what you can do about them' : undefined}
+            accessibilityHint={manageable ? tr('Opens what you can do about them') : undefined}
             disabled={self}
             onPress={() => (manageable ? setManaging(p.userId) : profile(p.userId))}
             testID="group-person"
@@ -192,7 +193,9 @@ export function GroupPeople({
             <Avatar id={p.userId} name={p.person.displayName} url={p.person.avatarUrl} size={32} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text variant="body" numberOfLines={1}>
-                {self ? `${p.person.displayName} (you)` : p.person.displayName}
+                {self
+                  ? tr('{displayName} (you)', { displayName: p.person.displayName })
+                  : p.person.displayName}
               </Text>
               {role === 'member' ? null : (
                 <Text variant="caption" color="textSecondary">
@@ -218,7 +221,9 @@ export function GroupPeople({
         >
           <MessageCircle size={14} color={t.c.accentStrong} />
           <Text variant="captionStrong" color="link" style={{ flex: 1 }}>
-            Its people are {conversation.title}’s: open the group to change them
+            {tr('Its people are {title}’s: open the group to change them', {
+              title: conversation.title,
+            })}
           </Text>
         </Pressable>
       ) : null}
@@ -231,7 +236,7 @@ export function GroupPeople({
         >
           <LogOut size={14} color={t.c.danger} />
           <Text variant="captionStrong" color="danger">
-            Leave the group
+            {tr('Leave the group')}
           </Text>
         </Pressable>
       )}
@@ -239,17 +244,21 @@ export function GroupPeople({
       <Sheet
         open={adding}
         onClose={() => setAdding(false)}
-        title="Add people"
+        title={tr('Add people')}
         subtitle={
           conversation.privacyClass === 'private'
-            ? 'People you’re connected with. They read what’s written from now on: what came before stays locked to the devices it was sent to.'
+            ? tr(
+                'People you’re connected with. They read what’s written from now on: what came before stays locked to the devices it was sent to.',
+              )
             : spaceOf
-              ? `People in ${spaceOf.name}. They’ll see what’s been written here, too.`
-              : 'People you’re connected with. They’ll see what’s been written here, too.'
+              ? tr('People in {name}. They’ll see what’s been written here, too.', {
+                  name: spaceOf.name,
+                })
+              : tr('People you’re connected with. They’ll see what’s been written here, too.')
         }
         footer={
           <Button
-            label={picked.size ? `Add ${picked.size}` : 'Add'}
+            label={picked.size ? tr('Add {size}', { size: picked.size }) : tr('Add')}
             block
             size="lg"
             disabled={picked.size === 0}
@@ -261,7 +270,7 @@ export function GroupPeople({
                 if (
                   await run(
                     () => endpoints.addToGroup(conversation.id, [...picked]),
-                    `Added ${n} ${n === 1 ? 'person' : 'people'}`,
+                    tr('Added {n} {person}', { n, person: n === 1 ? 'person' : 'people' }),
                   )
                 ) {
                   setAdding(false);
@@ -289,7 +298,10 @@ export function GroupPeople({
                         avatarUrl: m.person.avatarUrl,
                         relationship: m.relationship,
                       })),
-                    empty: `Everyone in ${spaceOf.name} is in it already. Add people to the space first.`,
+                    empty: tr(
+                      'Everyone in {name} is in it already. Add people to the space first.',
+                      { name: spaceOf.name },
+                    ),
                   }
                 : undefined
             }
@@ -307,7 +319,7 @@ export function GroupPeople({
           <View style={{ marginHorizontal: -20 }}>
             <ListRow
               icon={MessageCircle}
-              title="See their profile"
+              title={tr('See their profile')}
               onPress={() => {
                 const who = sheetPerson.userId;
                 setManaging(null);
@@ -317,11 +329,11 @@ export function GroupPeople({
             {canChangeSpaceRole(myRole, theirRole) ? (
               <ListRow
                 icon={Settings}
-                title={theirRole === 'admin' ? 'Make a member' : 'Make an admin'}
+                title={theirRole === 'admin' ? tr('Make a member') : tr('Make an admin')}
                 subtitle={
                   theirRole === 'admin'
-                    ? 'They stop adding and removing people, and changing the group'
-                    : 'Admins add people, remove members and change the group'
+                    ? tr('They stop adding and removing people, and changing the group')
+                    : tr('Admins add people, remove members and change the group')
                 }
                 testID="group-toggle-admin"
                 onPress={() =>
@@ -342,11 +354,14 @@ export function GroupPeople({
             {canRemoveFromSpace(myRole, theirRole) ? (
               <ListRow
                 icon={UserMinus}
-                title="Remove from the group"
+                title={tr('Remove from the group')}
                 subtitle={
                   spaceOf
-                    ? `They stop seeing what’s written here, until they join it again from ${spaceOf.name}`
-                    : 'They stop seeing what’s written here'
+                    ? tr(
+                        'They stop seeing what’s written here, until they join it again from {name}',
+                        { name: spaceOf.name },
+                      )
+                    : tr('They stop seeing what’s written here')
                 }
                 destructive
                 testID="group-remove"
@@ -356,7 +371,7 @@ export function GroupPeople({
                     setManaging(null);
                     await run(
                       () => endpoints.removeFromGroup(conversation.id, who.userId),
-                      `Removed ${who.person.displayName}`,
+                      tr('Removed {displayName}', { displayName: who.person.displayName }),
                     );
                   })()
                 }
@@ -369,17 +384,19 @@ export function GroupPeople({
       <Sheet
         open={leaving}
         onClose={() => setLeaving(false)}
-        title={`Leave “${conversation.title}”?`}
+        title={tr('Leave “{title}”?', { title: conversation.title })}
         subtitle={
           myRole !== 'owner'
-            ? 'You stop getting its messages. Someone in it can add you again.'
+            ? tr('You stop getting its messages. Someone in it can add you again.')
             : heir
-              ? `You stop getting its messages, and ${heir.person.displayName} runs it after you.`
-              : 'You stop getting its messages. Nobody else is in it.'
+              ? tr('You stop getting its messages, and {displayName} runs it after you.', {
+                  displayName: heir.person.displayName,
+                })
+              : tr('You stop getting its messages. Nobody else is in it.')
         }
         footer={
           <Button
-            label="Leave"
+            label={tr('Leave')}
             variant="danger"
             block
             size="lg"
@@ -404,7 +421,7 @@ export function GroupPeople({
                     qc.removeQueries({ queryKey: qk.messages(id) });
                   }
                   void qc.invalidateQueries({ queryKey: qk.inbox });
-                  toast(`You left “${conversation.title}”`);
+                  toast(tr('You left “{title}”', { title: conversation.title }));
                 } catch (e) {
                   toast((e as Error).message, { tone: 'danger' });
                 } finally {
@@ -421,10 +438,10 @@ export function GroupPeople({
       <Sheet
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={topicOf ? 'The topic' : 'The group'}
+        title={topicOf ? tr('The topic') : tr('The group')}
         footer={
           <Button
-            label="Save"
+            label={tr('Save')}
             block
             size="lg"
             loading={busy}
@@ -456,7 +473,7 @@ export function GroupPeople({
         {form ? (
           <View style={{ gap: 12 }}>
             <TextField
-              label="Name"
+              label={tr('Name')}
               value={form.title}
               // Only while it's open: a keystroke as it closes never opens it again.
               onChangeText={(title) => setEditing((e) => (e ? { ...e, title } : e))}
@@ -465,12 +482,12 @@ export function GroupPeople({
               testID="group-edit-title"
             />
             <TextField
-              label="What it’s for"
+              label={tr('What it’s for')}
               value={form.purpose}
               onChangeText={(purpose) => setEditing((e) => (e ? { ...e, purpose } : e))}
               maxLength={PURPOSE_MAX}
               multiline
-              placeholder="A line everyone in it sees"
+              placeholder={tr('A line everyone in it sees')}
               testID="group-edit-purpose"
             />
           </View>

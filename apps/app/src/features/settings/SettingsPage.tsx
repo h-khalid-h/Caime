@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -18,7 +19,7 @@ export function SettingsPage({ title, children }: { title: string; children: Rea
           !desktop ? (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/you'))}
             />
           ) : null

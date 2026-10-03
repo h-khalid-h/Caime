@@ -1,5 +1,6 @@
 import type { ConnectionRequestView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -46,7 +47,7 @@ export default function Requests() {
   const accept = async (r: ConnectionRequestView, relationship?: RelationshipDraft) => {
     try {
       const res = await endpoints.acceptRequest(r.id, relationship);
-      toast(`You’re connected with ${r.person.displayName}`);
+      toast(tr('You’re connected with {displayName}', { displayName: r.person.displayName }));
       refresh();
       router.navigate({ pathname: '/c/[id]', params: { id: res.conversationId } });
     } catch (e) {
@@ -66,7 +67,7 @@ export default function Requests() {
           </Text>
           {r.context ? (
             <Text variant="caption" color="textSecondary">
-              Says you know each other from{' '}
+              {tr('Says you know each other from')}{' '}
               <Text variant="captionStrong">
                 {r.context.label}
                 {r.context.orgName ? ` · ${r.context.orgName}` : ''}
@@ -83,18 +84,18 @@ export default function Requests() {
       {r.direction === 'incoming' ? (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <Button
-            label="Accept"
+            label={tr('Accept')}
             onPress={() => setAccepting(r)}
             testID={`accept-${r.person.handle}`}
           />
           <Button
-            label="Decline"
+            label={tr('Decline')}
             variant="secondary"
             onPress={async () => {
               await endpoints
                 .declineRequest(r.id)
                 .catch((e) => toast((e as Error).message, { tone: 'danger' }));
-              toast('Declined. They won’t be told.');
+              toast(tr('Declined. They won’t be told.'));
               refresh();
             }}
           />
@@ -102,7 +103,7 @@ export default function Requests() {
       ) : (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <Button
-            label="Cancel request"
+            label={tr('Cancel request')}
             variant="ghost"
             onPress={async () => {
               await endpoints
@@ -124,11 +125,11 @@ export default function Requests() {
         left={
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
           />
         }
-        title="Requests"
+        title={tr('Requests')}
       />
       <ScrollView
         contentContainerStyle={{
@@ -144,11 +145,11 @@ export default function Requests() {
         ) : incoming.isError && !incoming.data ? (
           <EmptyState
             icon={UserPlus}
-            title="Requests couldn’t load"
+            title={tr('Requests couldn’t load')}
             body={(incoming.error as Error).message}
             action={
               <Button
-                label="Try again"
+                label={tr('Try again')}
                 variant="secondary"
                 onPress={() => void incoming.refetch()}
                 testID="requests-retry"
@@ -160,11 +161,13 @@ export default function Requests() {
             character="momo"
             expression="happy"
             icon={UserPlus}
-            title="No requests"
-            body="When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer."
+            title={tr('No requests')}
+            body={tr(
+              'When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer.',
+            )}
             action={
               <Button
-                label="Find people or share your link"
+                label={tr('Find people or share your link')}
                 variant="secondary"
                 onPress={() => router.navigate('/connect')}
                 testID="requests-connect"
@@ -172,9 +175,9 @@ export default function Requests() {
             }
           />
         ) : null}
-        {inList.length ? <SectionTitle>Want to connect</SectionTitle> : null}
+        {inList.length ? <SectionTitle>{tr('Want to connect')}</SectionTitle> : null}
         {inList.map(card)}
-        {outList.length ? <SectionTitle>You asked</SectionTitle> : null}
+        {outList.length ? <SectionTitle>{tr('You asked')}</SectionTitle> : null}
         {outList.map(card)}
         <View style={{ height: 8, backgroundColor: t.c.canvas }} />
       </ScrollView>
@@ -184,7 +187,7 @@ export default function Requests() {
           onClose={() => setAccepting(null)}
           person={accepting.person}
           onPick={(draft) => void accept(accepting, draft)}
-          skip={{ label: 'Accept without a label', onPress: () => void accept(accepting) }}
+          skip={{ label: tr('Accept without a label'), onPress: () => void accept(accepting) }}
         />
       ) : null}
     </Screen>

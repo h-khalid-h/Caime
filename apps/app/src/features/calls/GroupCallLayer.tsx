@@ -1,4 +1,5 @@
 import type { CallPersonView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -137,7 +138,7 @@ const linkNote = (p: GroupPeer) =>
     : p.link === 'reconnecting'
       ? 'Reconnecting…'
       : p.link === 'failed'
-        ? 'Couldn’t connect'
+        ? tr('Couldn’t connect')
         : p.theirs?.sharing
           ? `${first(p.person.displayName)} is sharing their screen`
           : null;
@@ -169,19 +170,22 @@ export function GroupCallLayer() {
   const others = Object.values(peers);
   const joined = call.members.filter((m) => m.state === 'joined');
   const hasCamera = Boolean(local?.getVideoTracks().length);
-  const kindName = video ? 'Group video call' : 'Group voice call';
+  const kindName = video ? tr('Group video call') : tr('Group voice call');
   const status =
     phase === 'incoming'
-      ? `${call.startedBy.displayName} is calling · ${kindName}`
+      ? tr('{displayName} is calling · {kindName}', {
+          displayName: call.startedBy.displayName,
+          kindName,
+        })
       : phase === 'joining'
         ? 'Joining…'
         : phase === 'ended'
-          ? (note ?? 'Call ended')
+          ? (note ?? tr('Call ended'))
           : others.length
             ? elapsed
             : call.state === 'ringing'
               ? 'Calling…'
-              : 'Waiting for others…';
+              : tr('Waiting for others…');
   // A shared screen is shown large, with everyone else beside it.
   const spotlight = others.find((p) => p.theirs?.sharing && p.link === 'connected') ?? null;
   const picture = (p: GroupPeer) =>
@@ -210,7 +214,7 @@ export function GroupCallLayer() {
       picture={mineShown}
       mine
       muted={muted}
-      note={sharing ? 'You’re sharing your screen' : null}
+      note={sharing ? tr('You’re sharing your screen') : null}
       testID="group-call-me"
     />,
   ];
@@ -248,7 +252,9 @@ export function GroupCallLayer() {
         </Text>
         {phase === 'in' ? (
           <Text variant="caption" style={{ color: '#FFFFFFAA' }} testID="group-call-count">
-            {joined.length === 1 ? 'Only you so far' : `${joined.length} in the call`}
+            {joined.length === 1
+              ? tr('Only you so far')
+              : tr('{length} in the call', { length: joined.length })}
           </Text>
         ) : null}
       </View>
@@ -268,13 +274,14 @@ export function GroupCallLayer() {
           </View>
           <Text variant="body" style={{ color: '#FFFFFFCC' }} testID="group-call-who">
             {joined.length === 1
-              ? `${first(joined[0]?.person.displayName ?? '')} is in the call`
-              : `${joined
-                  .slice(0, 3)
-                  .map((m) => first(m.person.displayName))
-                  .join(
-                    ', ',
-                  )}${joined.length > 3 ? ` and ${joined.length - 3} more` : ''} are in the call`}
+              ? tr('{first} is in the call', { first: first(joined[0]?.person.displayName ?? '') })
+              : tr('{join}{text} are in the call', {
+                  join: joined
+                    .slice(0, 3)
+                    .map((m) => first(m.person.displayName))
+                    .join(', '),
+                  text: joined.length > 3 ? ` and ${joined.length - 3} more` : '',
+                })}
           </Text>
         </View>
       ) : phase === 'ended' ? (
@@ -328,14 +335,14 @@ export function GroupCallLayer() {
             <>
               <Round
                 icon={PhoneOff}
-                label="Decline"
+                label={tr('Decline')}
                 tone="end"
                 onPress={() => void leaveGroupCall()}
                 testID="group-call-decline"
               />
               <Round
                 icon={video ? Video : Phone}
-                label="Join"
+                label={tr('Join')}
                 tone="go"
                 onPress={() => void joinGroupCall()}
                 focusRef={primary}
@@ -346,7 +353,7 @@ export function GroupCallLayer() {
             <>
               <Round
                 icon={muted ? MicOff : Mic}
-                label={muted ? 'Unmute' : 'Mute'}
+                label={muted ? tr('Unmute') : tr('Mute')}
                 on={muted}
                 onPress={toggleGroupMute}
                 testID="group-call-mute"
@@ -354,7 +361,7 @@ export function GroupCallLayer() {
               {audio.speaker !== null ? (
                 <Round
                   icon={Volume2}
-                  label={audio.speaker ? 'Speaker off' : 'Speaker'}
+                  label={audio.speaker ? tr('Speaker off') : tr('Speaker')}
                   on={audio.speaker}
                   onPress={audio.toggleSpeaker}
                   testID="group-call-speaker"
@@ -363,7 +370,7 @@ export function GroupCallLayer() {
               {screenShareSupported && phase === 'in' ? (
                 <Round
                   icon={sharing ? ScreenShareOff : ScreenShare}
-                  label={sharing ? 'Stop sharing' : 'Share screen'}
+                  label={sharing ? tr('Stop sharing') : tr('Share screen')}
                   on={sharing}
                   onPress={() => void (sharing ? stopGroupSharing() : startGroupSharing())}
                   testID="group-call-share"
@@ -372,7 +379,7 @@ export function GroupCallLayer() {
               {video && hasCamera ? (
                 <Round
                   icon={cameraOff ? VideoOff : Video}
-                  label={cameraOff ? 'Camera on' : 'Camera off'}
+                  label={cameraOff ? tr('Camera on') : tr('Camera off')}
                   on={cameraOff}
                   onPress={toggleGroupCamera}
                   testID="group-call-camera"
@@ -380,7 +387,7 @@ export function GroupCallLayer() {
               ) : null}
               <Round
                 icon={PhoneOff}
-                label="Leave"
+                label={tr('Leave')}
                 tone="end"
                 onPress={() => void leaveGroupCall()}
                 focusRef={primary}

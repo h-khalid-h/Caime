@@ -1,4 +1,5 @@
 import type { ConversationView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -33,8 +34,13 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
         >
           <Text variant="caption" color="textSecondary" align="center">
             {org
-              ? `${conversation.business?.thread?.customer?.displayName ?? 'They'} will see this as a message request from ${org.name}.`
-              : `${other?.displayName ?? 'They'} will see this as a message request until they accept.`}
+              ? tr('{displayName} will see this as a message request from {name}.', {
+                  displayName: conversation.business?.thread?.customer?.displayName ?? tr('They'),
+                  name: org.name,
+                })
+              : tr('{displayName} will see this as a message request until they accept.', {
+                  displayName: other?.displayName ?? tr('They'),
+                })}
           </Text>
         </View>
       );
@@ -65,7 +71,9 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
     setBusy('block');
     try {
       await endpoints.blockOrg(org.id);
-      leave(`Blocked ${org.name}. It can’t write to you; unblock it from its page.`);
+      leave(
+        tr('Blocked {name}. It can’t write to you; unblock it from its page.', { name: org.name }),
+      );
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -89,23 +97,30 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <OrgMark kind={org.kind} url={org.avatarUrl} size={32} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text variant="label">{`${org.name} wrote to you first`}</Text>
+            <Text variant="label">{tr('{name} wrote to you first', { name: org.name })}</Text>
             <VerifiedLine org={org} />
           </View>
         </View>
         <Text variant="body" color="textSecondary">
-          {`You haven’t written to ${org.name} before. It won’t know you’ve seen this unless you accept, and it can’t write again until you do.`}
+          {tr(
+            'You haven’t written to {name} before. It won’t know you’ve seen this unless you accept, and it can’t write again until you do.',
+            { name: org.name },
+          )}
         </Text>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-          <Button label="Accept" onPress={() => answer('accept')} loading={busy === 'accept'} />
           <Button
-            label="Decline"
+            label={tr('Accept')}
+            onPress={() => answer('accept')}
+            loading={busy === 'accept'}
+          />
+          <Button
+            label={tr('Decline')}
             variant="secondary"
             onPress={() => answer('decline')}
             loading={busy === 'decline'}
           />
           <Button
-            label={`Block ${org.name}`}
+            label={tr('Block {name}', { name: org.name })}
             variant="ghost"
             onPress={() => setBlocking(true)}
             loading={busy === 'block'}
@@ -114,11 +129,13 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
           <Sheet
             open={blocking}
             onClose={() => setBlocking(false)}
-            title={`Block ${org.name}?`}
-            subtitle="It can’t write to you, and this conversation closes. You can unblock it from its page any time."
+            title={tr('Block {name}?', { name: org.name })}
+            subtitle={tr(
+              'It can’t write to you, and this conversation closes. You can unblock it from its page any time.',
+            )}
             footer={
               <Button
-                label="Block"
+                label={tr('Block')}
                 variant="danger"
                 block
                 size="lg"
@@ -128,7 +145,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
             }
           >
             <Text variant="body" color="textSecondary">
-              Nobody on its team is told you blocked it.
+              {tr('Nobody on its team is told you blocked it.')}
             </Text>
           </Sheet>
         </View>
@@ -149,7 +166,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <ShieldCheck size={18} color={t.c.textSecondary} />
         <Text variant="label" style={{ flex: 1 }}>
-          {other?.displayName ?? 'Someone'} wants to message you
+          {other?.displayName ?? tr('Someone')} wants to message you
         </Text>
       </View>
       <Text variant="body" color="textSecondary">
@@ -157,9 +174,9 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
         you reply.
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Button label="Accept" onPress={() => answer('accept')} loading={busy === 'accept'} />
+        <Button label={tr('Accept')} onPress={() => answer('accept')} loading={busy === 'accept'} />
         <Button
-          label="Decline"
+          label={tr('Decline')}
           variant="secondary"
           onPress={() => answer('decline')}
           loading={busy === 'decline'}

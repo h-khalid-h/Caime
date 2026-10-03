@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { Platform, View } from 'react-native';
@@ -23,12 +24,12 @@ export default function About() {
     staleTime: 3_600_000,
   }).data;
   return (
-    <SettingsPage title="About Caime">
+    <SettingsPage title={tr('About Caime')}>
       <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
         {t.playful ? <Character name="caishy" size={120} /> : null}
         <Wordmark height={34} />
         <Text variant="mono" color="textTertiary" align="center">
-          messaging that understands your relationships
+          {tr('messaging that understands your relationships')}
         </Text>
       </View>
       <Spec
@@ -37,7 +38,7 @@ export default function About() {
         rows={[
           { label: 'version', value: Constants.expoConfig?.version ?? '1.0.0' },
           {
-            label: 'running on',
+            label: tr('running on'),
             value: Platform.OS === 'web' ? 'the web' : Platform.OS === 'ios' ? 'iOS' : 'Android',
           },
           { label: 'for', value: 'people, and the organizations they deal with' },
@@ -49,8 +50,8 @@ export default function About() {
           {links.privacyUrl ? (
             <ListRow
               icon={Lock}
-              title="Privacy"
-              subtitle="How you label people is only ever yours"
+              title={tr('Privacy')}
+              subtitle={tr('How you label people is only ever yours')}
               chevron
               onPress={() => openLink(links.privacyUrl ?? '')}
               testID="about-privacy"
@@ -59,7 +60,7 @@ export default function About() {
           {links.termsUrl ? (
             <ListRow
               icon={Info}
-              title="Terms"
+              title={tr('Terms')}
               chevron
               onPress={() => openLink(links.termsUrl ?? '')}
               testID="about-terms"
@@ -68,7 +69,7 @@ export default function About() {
           {links.helpUrl ? (
             <ListRow
               icon={Globe}
-              title="Help and feedback"
+              title={tr('Help and feedback')}
               chevron
               onPress={() => openLink(links.helpUrl ?? '')}
               testID="about-help"

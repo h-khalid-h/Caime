@@ -6,6 +6,7 @@
  */
 import type { OrgUpdateView, OrgView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { UPDATE_MAX } from '@caime/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
@@ -102,14 +103,14 @@ function Update({
           <>
             <IconButton
               icon={Pencil}
-              label="Change this update"
+              label={tr('Change this update')}
               size={18}
               disabled={busy}
               onPress={() => setEditing(u.body)}
             />
             <IconButton
               icon={Trash}
-              label="Take this update back"
+              label={tr('Take this update back')}
               size={18}
               disabled={busy}
               onPress={() => setRemoving(true)}
@@ -118,11 +119,13 @@ function Update({
             <Sheet
               open={removing}
               onClose={() => setRemoving(false)}
-              title="Take this update back?"
-              subtitle="It leaves everyone’s Updates at once. Followers already told of it aren’t told again."
+              title={tr('Take this update back?')}
+              subtitle={tr(
+                'It leaves everyone’s Updates at once. Followers already told of it aren’t told again.',
+              )}
               footer={
                 <Button
-                  label="Take it back"
+                  label={tr('Take it back')}
                   variant="danger"
                   block
                   size="lg"
@@ -142,7 +145,7 @@ function Update({
         {canReport ? (
           <IconButton
             icon={Flag}
-            label="Report this update"
+            label={tr('Report this update')}
             size={18}
             disabled={busy}
             onPress={() => report({ orgId: u.org.id, updateId: u.id }, `${u.org.name}’s update`)}
@@ -160,11 +163,11 @@ function Update({
             multiline
             maxLength={UPDATE_MAX}
             autoFocus
-            accessibilityLabel="The update"
+            accessibilityLabel={tr('The update')}
           />
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Button
-              label="Save"
+              label={tr('Save')}
               size="sm"
               loading={busy}
               disabled={!editing.trim()}
@@ -172,7 +175,12 @@ function Update({
                 void run(() => endpoints.editUpdate(u.org.id, u.id, editing), 'Update changed')
               }
             />
-            <Button label="Cancel" size="sm" variant="ghost" onPress={() => setEditing(null)} />
+            <Button
+              label={tr('Cancel')}
+              size="sm"
+              variant="ghost"
+              onPress={() => setEditing(null)}
+            />
           </View>
         </View>
       )}
@@ -207,14 +215,14 @@ export function OrgUpdates({ org }: { org: OrgView }) {
   if (!first)
     return (
       <View style={{ paddingBottom: 12, gap: 8 }} testID="org-updates">
-        <SectionTitle>Updates</SectionTitle>
+        <SectionTitle>{tr('Updates')}</SectionTitle>
         {q.isError ? (
           <View style={{ paddingHorizontal: 16, gap: 8, alignItems: 'flex-start' }}>
             <Text variant="caption" color="textSecondary">
-              Its updates didn’t load.
+              {tr('Its updates didn’t load.')}
             </Text>
             <Button
-              label="Try again"
+              label={tr('Try again')}
               size="sm"
               variant="secondary"
               onPress={() => void q.refetch()}
@@ -246,7 +254,7 @@ export function OrgUpdates({ org }: { org: OrgView }) {
       await endpoints.postUpdate(org.id, draft, draftId);
       setDraft('');
       setDraftId(uuidv4());
-      toast('Posted');
+      toast(tr('Posted'));
       refresh();
     } catch (e) {
       // The draft stays, with its id, so pressing Post again can't post it twice.
@@ -261,19 +269,24 @@ export function OrgUpdates({ org }: { org: OrgView }) {
   const followRow = first.blockedByMe ? null : following ? (
     <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
       <Button
-        label="Following"
+        label={tr('Following')}
         size="sm"
         variant="secondary"
         loading={busy === 'follow'}
         onPress={() =>
-          void follow(() => endpoints.unfollow(org.id), `You no longer follow ${org.name}`)
+          void follow(
+            () => endpoints.unfollow(org.id),
+            tr('You no longer follow {name}', { name: org.name }),
+          )
         }
-        accessibilityHint="Stops following its updates"
+        accessibilityHint={tr('Stops following its updates')}
         testID="org-unfollow"
       />
       <IconButton
         icon={following.notify ? Bell : BellOff}
-        label={following.notify ? 'Stop notifying me of its updates' : 'Notify me of its updates'}
+        label={
+          following.notify ? tr('Stop notifying me of its updates') : tr('Notify me of its updates')
+        }
         onPress={() =>
           void follow(
             () => endpoints.follow(org.id, !following.notify),
@@ -285,13 +298,13 @@ export function OrgUpdates({ org }: { org: OrgView }) {
     </View>
   ) : org.myRole ? null : (
     <Button
-      label="Follow"
+      label={tr('Follow')}
       size="sm"
       loading={busy === 'follow'}
       onPress={() =>
         void follow(
           () => endpoints.follow(org.id),
-          `Following ${org.name}: its updates are in Updates`,
+          tr('Following {name}: its updates are in Updates', { name: org.name }),
         )
       }
       testID="org-follow"
@@ -300,7 +313,7 @@ export function OrgUpdates({ org }: { org: OrgView }) {
 
   return (
     <View style={{ paddingBottom: 12, gap: 8 }} testID="org-updates">
-      <SectionTitle action={followRow}>Updates</SectionTitle>
+      <SectionTitle action={followRow}>{tr('Updates')}</SectionTitle>
       <View style={{ paddingHorizontal: 16, gap: 8 }}>
         {canPost ? (
           <Card>
@@ -310,8 +323,8 @@ export function OrgUpdates({ org }: { org: OrgView }) {
                 onChangeText={setDraft}
                 multiline
                 maxLength={UPDATE_MAX}
-                placeholder={`Share news with everyone who follows ${org.name}`}
-                accessibilityLabel="A new update"
+                placeholder={tr('Share news with everyone who follows {name}', { name: org.name })}
+                accessibilityLabel={tr('A new update')}
                 testID="org-update-draft"
               />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -320,10 +333,12 @@ export function OrgUpdates({ org }: { org: OrgView }) {
                     ? ''
                     : first.followers === 1
                       ? '1 person follows it. Nobody sees who.'
-                      : `${first.followers} people follow it. Nobody sees who.`}
+                      : tr('{followers} people follow it. Nobody sees who.', {
+                          followers: first.followers,
+                        })}
                 </Text>
                 <Button
-                  label="Post"
+                  label={tr('Post')}
                   size="sm"
                   loading={busy === 'post'}
                   disabled={!draft.trim()}
@@ -346,7 +361,7 @@ export function OrgUpdates({ org }: { org: OrgView }) {
               <>
                 <Divider />
                 <Button
-                  label="Older updates"
+                  label={tr('Older updates')}
                   variant="ghost"
                   size="sm"
                   loading={q.isFetchingNextPage}
@@ -358,8 +373,10 @@ export function OrgUpdates({ org }: { org: OrgView }) {
         ) : (
           <Text variant="caption" color="textSecondary" style={{ paddingHorizontal: 4 }}>
             {canPost
-              ? 'Nothing posted yet. What you post here reaches everyone who follows it, as the organization.'
-              : `${org.name} hasn’t posted any updates yet.`}
+              ? tr(
+                  'Nothing posted yet. What you post here reaches everyone who follows it, as the organization.',
+                )
+              : tr('{name} hasn’t posted any updates yet.', { name: org.name })}
           </Text>
         )}
       </View>

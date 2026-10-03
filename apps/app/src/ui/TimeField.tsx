@@ -2,6 +2,8 @@
  * A time of day, on a phone: the phone's own time picker (Android's clock, in the 12 or 24 hours
  * the person's language uses; iOS's wheels, in a sheet with Done), shown as the language says it.
  */
+
+import { tr } from '@caime/core/i18n';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
@@ -44,7 +46,7 @@ export function TimeField({ label, value, onChange, hint, error, testID }: TimeF
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${shown}`}
-        accessibilityHint="Opens a time picker"
+        accessibilityHint={tr('Opens a time picker')}
         onPress={choose}
         testID={testID}
         style={{
@@ -80,7 +82,7 @@ export function TimeField({ label, value, onChange, hint, error, testID }: TimeF
           scroll={false}
           footer={
             <Button
-              label="Done"
+              label={tr('Done')}
               size="lg"
               block
               onPress={() => {

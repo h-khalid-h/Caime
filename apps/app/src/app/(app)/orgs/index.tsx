@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { ORG_ROLE_LABELS, orgKindName } from '@caime/core/orgs';
 import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
@@ -28,12 +29,12 @@ export default function Organizations() {
           desktop ? undefined : (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/you'))}
             />
           )
         }
-        title="Organizations"
+        title={tr('Organizations')}
       />
       <ScrollView
         contentContainerStyle={{
@@ -45,8 +46,9 @@ export default function Organizations() {
         }}
       >
         <Text variant="body" color="textSecondary">
-          A business, a clinic, a school or a nonprofit on Caime: a profile people can trust once
-          you verify your domain, and a team that answers together.
+          {tr(
+            'A business, a clinic, a school or a nonprofit on Caime: a profile people can trust once you verify your domain, and a team that answers together.',
+          )}
         </Text>
         {q.isPending && !q.data ? (
           <SkeletonRows />
@@ -88,11 +90,11 @@ export default function Organizations() {
         )}
         {me.minor ? (
           <Text variant="caption" color="textSecondary">
-            Organizations are for people over 18.
+            {tr('Organizations are for people over 18.')}
           </Text>
         ) : (
           <Button
-            label="Create an organization"
+            label={tr('Create an organization')}
             icon={Plus}
             variant={orgs.length ? 'secondary' : 'primary'}
             onPress={() => router.push('/orgs/new')}

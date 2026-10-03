@@ -7,6 +7,8 @@
  * Heuristic by design (R17): deterministic, explainable, testable, and the same on every device.
  * English and Egyptian/MSA Arabic.
  */
+
+import { tr } from './i18n';
 import { parseWhen, type WhenMatch, type WhenOptions } from './when';
 
 export const MODES = [
@@ -212,15 +214,15 @@ function decisionTitle(sentence: string, m: RegExpExecArray, english: boolean): 
   const trigger = m[0].trim().toLowerCase();
   const rest = tidy(sentence.slice(m.index + m[0].length));
   if (!english) return tidy(sentence);
-  if (/go(ing)? with/.test(trigger)) return rest ? `Go with ${rest}` : 'Go ahead';
+  if (/go(ing)? with/.test(trigger)) return rest ? tr('Go with {rest}', { rest }) : tr('Go ahead');
   if (/decided|decision/.test(trigger))
     return capitalise(rest || tidy(sentence.replace(FILLER_START, '')));
   if (/agreed/.test(trigger)) {
     const prep = /agreed (to|on|that)/.exec(trigger)?.[1];
-    return rest ? `Agreed${prep ? ` ${prep}` : ''} ${rest}` : 'Agreed';
+    return rest ? tr('Agreed{text} {rest}', { text: prep ? ` ${prep}` : '', rest }) : 'Agreed';
   }
-  if (/approved/.test(trigger)) return rest ? `Approved ${rest}` : 'Approved';
-  if (/settled on/.test(trigger)) return rest ? `Settled on ${rest}` : 'Settled';
+  if (/approved/.test(trigger)) return rest ? tr('Approved {rest}', { rest }) : 'Approved';
+  if (/settled on/.test(trigger)) return rest ? tr('Settled on {rest}', { rest }) : 'Settled';
   return capitalise(tidy(sentence.replace(FILLER_START, '')));
 }
 
@@ -572,7 +574,7 @@ export function suggestFromAnalysis(
         kind: 'reminder',
         title: a.commitment.title,
         ...due(a.commitment),
-        rationale: `You wrote ${quote(a.commitment.quote)}`,
+        rationale: tr('You wrote {quote}', { quote: quote(a.commitment.quote) }),
         confidence: a.commitment.when ? 0.9 : 0.75,
         vague,
       });
@@ -582,7 +584,10 @@ export function suggestFromAnalysis(
         // "Q3 report" when they named it; "Sarah will send it" when they only pointed at it;
         // "Confirm caterer" when the thing alone would lose what they'll do with it.
         title: vague
-          ? `${ctx.senderName} will ${lowerFirst(a.commitment.title)}`
+          ? tr('{senderName} will {lowerFirst}', {
+              senderName: ctx.senderName,
+              lowerFirst: lowerFirst(a.commitment.title),
+            })
           : waitingTitle(a.commitment),
         ...due(a.commitment),
         rationale: `${ctx.senderName} wrote ${quote(a.commitment.quote)}`,
@@ -598,7 +603,7 @@ export function suggestFromAnalysis(
         kind: 'waiting',
         title: isVague(a.request) ? a.request.title : waitingTitle(a.request),
         ...due(a.request),
-        rationale: `You asked ${quote(a.request.quote)}`,
+        rationale: tr('You asked {quote}', { quote: quote(a.request.quote) }),
         confidence: 0.7,
       });
     } else {
@@ -618,7 +623,7 @@ export function suggestFromAnalysis(
       title: a.decision.title,
       dueAt: null,
       dueText: null,
-      rationale: `Sounds like a decision: ${quote(a.decision.quote)}`,
+      rationale: tr('Sounds like a decision: {quote}', { quote: quote(a.decision.quote) }),
       confidence: 0.8,
     });
   }

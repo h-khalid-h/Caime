@@ -3,6 +3,8 @@
  * for a birthday, so decades go by in one tap); on iOS its wheels for a birthday or its calendar
  * otherwise, in a sheet with Done. Shown in the field as the person's language writes dates.
  */
+
+import { tr } from '@caime/core/i18n';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
@@ -23,7 +25,7 @@ export function DateField({
   max,
   hint,
   error,
-  placeholder = 'Choose a day',
+  placeholder = tr('Choose a day'),
   memorable,
   testID,
 }: DateFieldProps) {
@@ -69,7 +71,7 @@ export function DateField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${shown ?? 'not chosen'}`}
-        accessibilityHint="Opens a date picker"
+        accessibilityHint={tr('Opens a date picker')}
         onPress={choose}
         testID={testID}
         style={{
@@ -108,7 +110,7 @@ export function DateField({
           scroll={false}
           footer={
             <Button
-              label="Done"
+              label={tr('Done')}
               size="lg"
               block
               onPress={() => {

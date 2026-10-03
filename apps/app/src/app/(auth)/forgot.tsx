@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -34,21 +35,22 @@ export default function Forgot() {
   return (
     <AuthLayout
       kicker="password"
-      title="Forgot your password?"
-      subtitle="Caime sends a link to your email. Open it within the hour to set a new one."
+      title={tr('Forgot your password?')}
+      subtitle={tr('Caime sends a link to your email. Open it within the hour to set a new one.')}
       back
     >
       {sent ? (
         <View style={{ gap: 12 }} testID="forgot-sent">
           <Text variant="bodyStrong">
-            If that address is an account\u2019s, a link is on its way.
+            {tr('If that address is an account\\u2019s, a link is on its way.')}
           </Text>
           <Text variant="body" color="textSecondary">
-            Nothing came? Check the address and your spam folder, or use one of your recovery codes
-            instead.
+            {tr(
+              'Nothing came? Check the address and your spam folder, or use one of your recovery codes instead.',
+            )}
           </Text>
           <Button
-            label="Use a recovery code"
+            label={tr('Use a recovery code')}
             variant="secondary"
             onPress={() => router.push('/recover')}
           />
@@ -56,7 +58,7 @@ export default function Forgot() {
       ) : (
         <View style={{ gap: 14 }}>
           <TextField
-            label="Email"
+            label={tr('Email')}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -72,7 +74,7 @@ export default function Forgot() {
             </Text>
           ) : null}
           <Button
-            label="Send the link"
+            label={tr('Send the link')}
             size="lg"
             block
             loading={busy}
@@ -85,7 +87,7 @@ export default function Forgot() {
             style={{ padding: 8, alignSelf: 'center' }}
           >
             <Text variant="bodyStrong" color="link">
-              Use a recovery code instead
+              {tr('Use a recovery code instead')}
             </Text>
           </Pressable>
         </View>

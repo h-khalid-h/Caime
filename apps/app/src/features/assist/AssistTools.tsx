@@ -1,4 +1,5 @@
 import { AI_LABEL } from '@caime/core/assist';
+import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -25,7 +26,11 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
     try {
       const r = await endpoints.findActions(conversationId);
       const n = r.found.length;
-      toast(n ? `${n} follow-up${n === 1 ? '' : 's'} to review` : 'Nothing new to follow up');
+      toast(
+        n
+          ? trn(n, '{n} follow-up to review', '{n} follow-ups to review')
+          : tr('Nothing new to follow up'),
+      );
       void qc.invalidateQueries({ queryKey: ['suggestions'] });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -38,7 +43,7 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Button
-          label="Catch me up"
+          label={tr('Catch me up')}
           icon={Sparkles}
           size="sm"
           variant="secondary"
@@ -47,7 +52,7 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
           testID="assist-catch-up"
         />
         <Button
-          label="Find follow-ups"
+          label={tr('Find follow-ups')}
           icon={ListChecks}
           size="sm"
           variant="secondary"
@@ -71,7 +76,7 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Sparkles size={13} color={t.c.accentStrong} />
                 <Text variant="overline" color="accentStrong">
-                  {result.label ?? AI_LABEL}
+                  {result.label ?? tr(AI_LABEL)}
                 </Text>
               </View>
               <Text variant="body" auto={result.summary} selectable>
@@ -80,7 +85,7 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
             </>
           ) : (
             <Text variant="body" color="textSecondary">
-              Nothing to catch up on yet.
+              {tr('Nothing to catch up on yet.')}
             </Text>
           )}
         </View>

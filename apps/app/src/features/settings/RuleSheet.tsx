@@ -5,6 +5,7 @@
  * a template ("My Customers"). The rules themselves are the server's (policy.ts in core).
  */
 import type { PolicyView } from '@caime/core/api';
+import { msg, tr, trAll } from '@caime/core/i18n';
 import type {
   AiTone,
   EffectivePolicy,
@@ -37,11 +38,11 @@ import { toast } from '@/ui/Toast';
 const NAME_MAX = 60;
 
 const FOLLOW_UPS: Array<{ value: string; label: string; detail?: string }> = [
-  { value: 'off', label: 'Don’t remind me' },
-  { value: '24', label: 'After a day', detail: 'If they haven’t answered you by then' },
-  { value: '48', label: 'After 2 days' },
-  { value: '72', label: 'After 3 days' },
-  { value: '168', label: 'After a week' },
+  { value: 'off', label: msg('Don’t remind me') },
+  { value: '24', label: msg('After a day'), detail: msg('If they haven’t answered you by then') },
+  { value: '48', label: msg('After 2 days') },
+  { value: '72', label: msg('After 3 days') },
+  { value: '168', label: msg('After a week') },
 ];
 
 function Overline({ children }: { children: string }) {
@@ -170,7 +171,7 @@ export function RuleSheet({
     try {
       await endpoints.deletePolicy(ruleId.current);
       refresh();
-      toast('Rule removed');
+      toast(tr('Rule removed'));
       onDeleted?.();
       onClose();
     } catch (e) {
@@ -192,7 +193,7 @@ export function RuleSheet({
       <View style={{ gap: 12 }} testID="rule-sheet">
         {scope.connectionId ? null : (
           <TextField
-            label="Its name (optional)"
+            label={tr('Its name (optional)')}
             value={name}
             onChangeText={(v) => {
               typing.current = true;
@@ -200,15 +201,15 @@ export function RuleSheet({
             }}
             onBlur={() => void saveName()}
             onSubmitEditing={() => void saveName()}
-            placeholder="My customers"
+            placeholder={tr('My customers')}
             maxLength={NAME_MAX}
             testID="rule-name"
           />
         )}
-        <Overline>Notifications</Overline>
+        <Overline>{tr('Notifications')}</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<NotifyMode>
-            label="Notifications"
+            label={tr('Notifications')}
             value={notify}
             onChange={(v) =>
               void save(
@@ -218,33 +219,41 @@ export function RuleSheet({
               )
             }
             options={[
-              { value: 'always', label: 'Always', detail: 'Any time they write' },
-              { value: 'schedule', label: 'In these hours', detail: 'Held until the hours below' },
+              { value: 'always', label: tr('Always'), detail: tr('Any time they write') },
+              {
+                value: 'schedule',
+                label: tr('In these hours'),
+                detail: tr('Held until the hours below'),
+              },
               {
                 value: 'important_only',
-                label: 'Only if important',
-                detail: 'Questions, requests, mentions, urgent',
+                label: tr('Only if important'),
+                detail: tr('Questions, requests, mentions, urgent'),
               },
-              { value: 'mute', label: 'Never', detail: 'Still in your inbox, never a sound' },
+              {
+                value: 'mute',
+                label: tr('Never'),
+                detail: tr('Still in your inbox, never a sound'),
+              },
             ]}
           />
         </View>
         {hours ? (
           <View style={{ gap: 10 }} testID="rule-hours">
             <DayPicker
-              label="Days"
+              label={tr('Days')}
               days={schedule.days}
               onChange={(days) => void save({ schedule: { ...schedule, days } })}
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TimeField
-                label="From"
+                label={tr('From')}
                 value={schedule.start}
                 onChange={(start) => void save({ schedule: { ...schedule, start } })}
                 testID="rule-from"
               />
               <TimeField
-                label="Until"
+                label={tr('Until')}
                 value={schedule.end}
                 onChange={(end) => void save({ schedule: { ...schedule, end } })}
                 testID="rule-until"
@@ -253,33 +262,37 @@ export function RuleSheet({
           </View>
         ) : null}
         <SwitchRow
-          label="Urgent messages still reach me"
-          detail="When they mark one urgent, at any hour"
+          label={tr('Urgent messages still reach me')}
+          detail={tr('When they mark one urgent, at any hour')}
           value={Boolean(pick('allowUrgent'))}
           onChange={(v) => void save({ allowUrgent: v })}
           testID="rule-urgent"
         />
-        <Overline>In your inbox</Overline>
+        <Overline>{tr('In your inbox')}</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<Priority>
-            label="Priority"
+            label={tr('Priority')}
             value={priority}
             onChange={(v) => void save({ priority: v })}
             options={[
-              { value: 'priority', label: 'Priority', detail: 'Near the top, under Important' },
-              { value: 'normal', label: 'Normal' },
+              {
+                value: 'priority',
+                label: tr('Priority'),
+                detail: tr('Near the top, under Important'),
+              },
+              { value: 'normal', label: tr('Normal') },
               {
                 value: 'quiet',
-                label: 'Quiet',
-                detail: 'Tucked away unless they ask you something',
+                label: tr('Quiet'),
+                detail: tr('Tucked away unless they ask you something'),
               },
             ]}
           />
         </View>
         {priority === 'priority' ? (
           <SwitchRow
-            label="Priority only in these hours"
-            detail="Like a manager during the work week"
+            label={tr('Priority only in these hours')}
+            detail={tr('Like a manager during the work week')}
             value={inHoursOnly}
             onChange={(v) =>
               void save(
@@ -291,46 +304,50 @@ export function RuleSheet({
             testID="rule-priority-hours"
           />
         ) : null}
-        <Overline>Following up</Overline>
+        <Overline>{tr('Following up')}</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<string>
-            label="Remind me when they haven’t answered"
+            label={tr('Remind me when they haven’t answered')}
             value={followUp ? String(followUp) : 'off'}
             onChange={(v) => void save({ followUpHours: v === 'off' ? null : Number(v) })}
             options={
               followUp && !FOLLOW_UPS.some((f) => f.value === String(followUp))
-                ? [...FOLLOW_UPS, { value: String(followUp), label: `After ${followUp} hours` }]
-                : FOLLOW_UPS
+                ? [
+                    ...trAll(FOLLOW_UPS),
+                    { value: String(followUp), label: tr('After {followUp} hours', { followUp }) },
+                  ]
+                : trAll(FOLLOW_UPS)
             }
           />
         </View>
-        <Overline>Writing to them</Overline>
+        <Overline>{tr('Writing to them')}</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<AiTone>
-            label="The tone Caime suggests"
+            label={tr('The tone Caime suggests')}
             value={pick('aiTone') as AiTone}
             onChange={(v) => void save({ aiTone: v })}
             options={[
-              { value: 'neutral', label: 'Neutral' },
-              { value: 'friendly', label: 'Friendly' },
-              { value: 'professional', label: 'Professional' },
+              { value: 'neutral', label: tr('Neutral') },
+              { value: 'friendly', label: tr('Friendly') },
+              { value: 'professional', label: tr('Professional') },
             ]}
           />
         </View>
-        <Overline>What they see of you</Overline>
+        <Overline>{tr('What they see of you')}</Overline>
         <View style={{ marginHorizontal: -20 }}>
           <Choice<PrivacyPreset>
-            label="What they see of you"
+            label={tr('What they see of you')}
             // Only "limited" hides more than the privacy settings do (privacy.ts in core).
             value={pick('privacy') === 'limited' ? 'limited' : 'standard'}
             onChange={(v) => void save({ privacy: v })}
             options={[
-              { value: 'standard', label: 'What your privacy settings allow' },
+              { value: 'standard', label: tr('What your privacy settings allow') },
               {
                 value: 'limited',
-                label: 'Limited',
-                detail:
+                label: tr('Limited'),
+                detail: tr(
                   'Never when you’re online or were last, your status, about, pronouns or location, nor read receipts',
+                ),
               },
             ]}
           />
@@ -338,14 +355,14 @@ export function RuleSheet({
         {!rule ? null : confirming ? (
           <View style={{ flexDirection: 'row', gap: 10, paddingTop: 8 }}>
             <Button
-              label="Remove it"
+              label={tr('Remove it')}
               variant="danger"
               onPress={() => void remove()}
               style={{ flex: 1 }}
               testID="rule-delete-confirm"
             />
             <Button
-              label="Keep it"
+              label={tr('Keep it')}
               variant="secondary"
               onPress={() => setConfirming(false)}
               style={{ flex: 1 }}
@@ -359,14 +376,14 @@ export function RuleSheet({
             testID="rule-delete"
           >
             <Text variant="captionStrong" color="danger">
-              {deleteLabel ?? 'Remove this rule'}
+              {deleteLabel ?? tr('Remove this rule')}
             </Text>
           </Pressable>
         )}
         <Text variant="caption" color={t.c.textTertiary}>
           {scope.connectionId
-            ? 'Only for them. Everything it doesn’t change follows how you know them.'
-            : 'For everyone you know this way, unless one of them has a rule of their own.'}
+            ? tr('Only for them. Everything it doesn’t change follows how you know them.')
+            : tr('For everyone you know this way, unless one of them has a rule of their own.')}
         </Text>
       </View>
     </Sheet>

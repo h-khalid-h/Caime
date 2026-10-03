@@ -1,3 +1,4 @@
+import { msg, tr } from './i18n';
 /**
  * The relationship taxonomy: Sphere → Role → Context (PRD §7–§9).
  *
@@ -43,110 +44,110 @@ export interface SphereDef {
 export const SPHERE_DEFS: Record<Sphere, SphereDef> = {
   family: {
     id: 'family',
-    label: 'Family',
-    plural: 'Family',
+    label: msg('Family'),
+    plural: msg('Family'),
     group: 'personal',
     primary: true,
-    roleQuestion: "{name}'s place in your family?",
+    roleQuestion: msg("{name}'s place in your family?"),
     asksOrganization: false,
   },
   friend: {
     id: 'friend',
-    label: 'Friend',
-    plural: 'Friends',
+    label: msg('Friend'),
+    plural: msg('Friends'),
     group: 'personal',
     primary: true,
-    roleQuestion: 'What kind of friend?',
+    roleQuestion: msg('What kind of friend?'),
     asksOrganization: false,
   },
   acquaintance: {
     id: 'acquaintance',
-    label: 'Acquaintance',
-    plural: 'Acquaintances',
+    label: msg('Acquaintance'),
+    plural: msg('Acquaintances'),
     group: 'personal',
     primary: false,
-    roleQuestion: 'How did you meet {name}?',
+    roleQuestion: msg('How did you meet {name}?'),
     asksOrganization: false,
   },
   work: {
     id: 'work',
-    label: 'Work',
-    plural: 'Work',
+    label: msg('Work'),
+    plural: msg('Work'),
     group: 'professional',
     primary: true,
-    roleQuestion: "{name}'s role?",
+    roleQuestion: msg("{name}'s role?"),
     asksOrganization: true,
   },
   customer: {
     id: 'customer',
-    label: 'Customer',
-    plural: 'Customers',
+    label: msg('Customer'),
+    plural: msg('Customers'),
     group: 'professional',
     primary: true,
-    roleQuestion: "{name}'s role?",
+    roleQuestion: msg("{name}'s role?"),
     asksOrganization: true,
   },
   vendor: {
     id: 'vendor',
-    label: 'Vendor',
-    plural: 'Vendors',
+    label: msg('Vendor'),
+    plural: msg('Vendors'),
     group: 'professional',
     primary: true,
-    roleQuestion: "{name}'s role?",
+    roleQuestion: msg("{name}'s role?"),
     asksOrganization: true,
   },
   service_provider: {
     id: 'service_provider',
-    label: 'Service provider',
-    plural: 'Service providers',
+    label: msg('Service provider'),
+    plural: msg('Service providers'),
     group: 'professional',
     primary: false,
-    roleQuestion: 'What does {name} do for you?',
+    roleQuestion: msg('What does {name} do for you?'),
     asksOrganization: true,
   },
   professional: {
     id: 'professional',
-    label: 'Professional',
-    plural: 'Professionals',
+    label: msg('Professional'),
+    plural: msg('Professionals'),
     group: 'professional',
     primary: true,
-    roleQuestion: "{name}'s profession?",
+    roleQuestion: msg("{name}'s profession?"),
     asksOrganization: true,
   },
   community: {
     id: 'community',
-    label: 'Community',
-    plural: 'Community',
+    label: msg('Community'),
+    plural: msg('Community'),
     group: 'collective',
     primary: false,
-    roleQuestion: "{name}'s role in the community?",
+    roleQuestion: msg("{name}'s role in the community?"),
     asksOrganization: true,
   },
   organization: {
     id: 'organization',
-    label: 'Organization',
-    plural: 'Organizations',
+    label: msg('Organization'),
+    plural: msg('Organizations'),
     group: 'collective',
     primary: false,
-    roleQuestion: "{name}'s role?",
+    roleQuestion: msg("{name}'s role?"),
     asksOrganization: true,
   },
   public: {
     id: 'public',
-    label: 'Public',
-    plural: 'Public',
+    label: msg('Public'),
+    plural: msg('Public'),
     group: 'collective',
     primary: false,
-    roleQuestion: 'Who is {name}?',
+    roleQuestion: msg('Who is {name}?'),
     asksOrganization: false,
   },
   other: {
     id: 'other',
-    label: 'Other',
-    plural: 'Other',
+    label: msg('Other'),
+    plural: msg('Other'),
     group: 'fallback',
     primary: true,
-    roleQuestion: 'How would you describe {name}?',
+    roleQuestion: msg('How would you describe {name}?'),
     asksOrganization: false,
   },
 };
@@ -336,7 +337,8 @@ export function relationshipLabel(input: {
 }): string {
   const base = input.roleLabel?.trim() || findRole(input.sphere, input.role)?.label;
   let head = base ?? SPHERE_DEFS[input.sphere].label;
-  if (input.status === 'ended') head = `Former ${head.charAt(0).toLowerCase()}${head.slice(1)}`;
+  if (input.status === 'ended')
+    head = tr('Former {role}', { role: `${head.charAt(0).toLowerCase()}${head.slice(1)}` });
   return input.orgName ? `${head} · ${input.orgName}` : head;
 }
 
@@ -471,17 +473,33 @@ export function relationshipOfferText(
   offer: { sphere?: string | null; role?: string | null; orgName?: string | null },
 ): string {
   const sphere = (offer.sphere ?? null) as Sphere | null;
-  const at = offer.orgName ? ` at ${offer.orgName}` : '';
-  if (!sphere || !(sphere in SPHERE_DEFS)) return `${name} may be someone you know${at}`;
+  const at = offer.orgName ? tr(' at {orgName}', { orgName: offer.orgName }) : '';
+  if (!sphere || !(sphere in SPHERE_DEFS))
+    return tr('{name} may be someone you know{at}', { name, at });
   const role = findRole(sphere, offer.role);
-  if (role) return `${name} may be your ${role.label.toLowerCase()}${at}`;
-  if (sphere === 'family') return `${name} may be family`;
-  if (sphere === 'work') return `${name} may be someone you work with${at}`;
+  if (role)
+    return tr('{name} may be your {toLowerCase}{at}', {
+      name,
+      toLowerCase: role.label.toLowerCase(),
+      at,
+    });
+  if (sphere === 'family') return tr('{name} may be family', { name });
+  if (sphere === 'work') return tr('{name} may be someone you work with{at}', { name, at });
   // The spheres that name a group are said of a person: never "may be a community".
-  if (sphere === 'community') return `${name} may be someone from your community${at}`;
+  if (sphere === 'community')
+    return tr('{name} may be someone from your community{at}', { name, at });
   if (sphere === 'organization')
-    return `${name} may be someone from ${offer.orgName || 'an organization'}`;
-  if (sphere === 'public' || sphere === 'other') return `${name} may be someone you know${at}`;
+    return tr('{name} may be someone from {orgName}', {
+      name,
+      orgName: offer.orgName || tr('an organization'),
+    });
+  if (sphere === 'public' || sphere === 'other')
+    return tr('{name} may be someone you know{at}', { name, at });
   const label = SPHERE_DEFS[sphere].label.toLowerCase();
-  return `${name} may be ${/^[aeiou]/.test(label) ? 'an' : 'a'} ${label}${at}`;
+  return tr('{name} may be {an} {label}{at}', {
+    name,
+    an: /^[aeiou]/.test(label) ? 'an' : 'a',
+    label,
+    at,
+  });
 }

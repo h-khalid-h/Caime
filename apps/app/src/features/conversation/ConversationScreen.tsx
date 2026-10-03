@@ -1,6 +1,7 @@
 import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { contextLine, formatDue } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { canPin } from '@caime/core/pins';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
@@ -248,14 +249,14 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     return (
       <Screen>
         <TopBar
-          left={<IconButton icon={ArrowLeft} label="Back" onPress={() => router.back()} />}
-          title="Conversation"
+          left={<IconButton icon={ArrowLeft} label={tr('Back')} onPress={() => router.back()} />}
+          title={tr('Conversation')}
         />
         <EmptyState
           character="panda"
           expression="sad"
           icon={MessageCircle}
-          title="This conversation isn’t available"
+          title={tr('This conversation isn’t available')}
           body={(conv.error as Error).message}
         />
       </Screen>
@@ -281,16 +282,16 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const ofGroup = conversation?.topic && conversation.kind === 'group' ? conversation.title : null;
   const subtitle = privately
     ? typingNames.length
-      ? 'typing…'
-      : [ofGroup, 'Private · end to end encrypted'].filter(Boolean).join(' · ')
+      ? tr('typing…')
+      : [ofGroup, tr('Private · end to end encrypted')].filter(Boolean).join(' · ')
     : typingNames.length
-      ? 'typing…'
+      ? tr('typing…')
       : org && !thread
         ? org.verified
-          ? `Business · Verified · ${org.verifiedDomain}`
-          : 'Business · Not verified yet'
+          ? tr('Business · Verified · {verifiedDomain}', { verifiedDomain: org.verifiedDomain })
+          : tr('Business · Not verified yet')
         : thread && org
-          ? `Customer of ${org.name}`
+          ? tr('Customer of {name}', { name: org.name })
           : other
             ? (presence ?? other.person.presence) === 'online'
               ? ['Online', other.relationship?.label].filter(Boolean).join(' · ')
@@ -307,7 +308,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         !desktop ? (
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           />
         ) : null
@@ -319,7 +320,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             <>
               <IconButton
                 icon={Phone}
-                label={`Voice call ${other.person.displayName}`}
+                label={tr('Voice call {displayName}', { displayName: other.person.displayName })}
                 filled
                 size={20}
                 onPress={() => void startCall(conversation.id, 'voice')}
@@ -327,7 +328,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               />
               <IconButton
                 icon={Video}
-                label={`Video call ${other.person.displayName}`}
+                label={tr('Video call {displayName}', { displayName: other.person.displayName })}
                 filled
                 size={20}
                 onPress={() => void startCall(conversation.id, 'video')}
@@ -342,7 +343,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             <>
               <IconButton
                 icon={Phone}
-                label={`Voice call ${heading || 'the group'}`}
+                label={tr('Voice call {heading}', { heading: heading || tr('the group') })}
                 filled
                 size={20}
                 onPress={() => void startGroupCall(conversation.id, 'voice')}
@@ -350,7 +351,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               />
               <IconButton
                 icon={Video}
-                label={`Video call ${heading || 'the group'}`}
+                label={tr('Video call {heading}', { heading: heading || tr('the group') })}
                 filled
                 size={20}
                 onPress={() => void startGroupCall(conversation.id, 'video')}
@@ -361,7 +362,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           {privately ? (
             <IconButton
               icon={Lock}
-              label="About this private conversation"
+              label={tr('About this private conversation')}
               onPress={() => setPrivateInfo(true)}
               testID="private-info"
             />
@@ -369,7 +370,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           {desktop ? (
             <IconButton
               icon={PanelRight}
-              label={panel ? 'Hide details' : 'Show details'}
+              label={panel ? tr('Hide details') : tr('Show details')}
               onPress={() => setPanel((p) => !p)}
             />
           ) : null}
@@ -378,7 +379,10 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${ofGroup ? `${ofGroup} · ` : ''}${heading}, details`}
+        accessibilityLabel={tr('{text}{heading}, details', {
+          text: ofGroup ? `${ofGroup} · ` : '',
+          heading,
+        })}
         onPress={() => {
           if (desktop) setPanel(true);
           else setDetails(true);
@@ -438,7 +442,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             </Text>
             <VerifiedLine org={org} />
             <Text variant="caption" color="textTertiary" align="center">
-              A business conversation: {org.name}’s team answers as {org.name}.
+              {tr('A business conversation: {name}’s team answers as {name}.', { name: org.name })}
             </Text>
           </>
         ) : null}
@@ -465,13 +469,15 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Lock size={11} color={t.c.textTertiary} />
               <Text variant="caption" color="textTertiary">
-                Only you see how you’ve labelled {other.person.displayName}
+                {tr('Only you see how you’ve labelled {displayName}', {
+                  displayName: other.person.displayName,
+                })}
               </Text>
             </View>
           </>
         ) : (
           <Text variant="caption" color="textTertiary" align="center">
-            This is the beginning of your conversation.
+            {tr('This is the beginning of your conversation.')}
           </Text>
         )}
       </View>
@@ -501,7 +507,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         >
           <View style={{ flex: 1, height: 1, backgroundColor: t.c.accent }} />
           <Text variant="captionStrong" color="accentStrong">
-            New messages
+            {tr('New messages')}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: t.c.accent }} />
         </View>
@@ -611,7 +617,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       {!atBottom ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Jump to the newest message"
+          accessibilityLabel={tr('Jump to the newest message')}
           onPress={() => list.current?.scrollToOffset({ offset: 0, animated: true })}
           style={{
             position: 'absolute',
@@ -646,24 +652,29 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   // Closed by a block (PRD §55): the customer blocked the organization.
   const closed = business?.closed ?? false;
   const disabled = business?.orgClosed
-    ? `${org?.name ?? 'This organization'} closed on Caime. What was sent here stays to read; find it again to start a new conversation.`
+    ? tr(
+        '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.',
+        { name: org?.name ?? tr('This organization') },
+      )
     : closed
       ? thread
-        ? 'The customer closed this conversation.'
-        : `You blocked ${org?.name ?? 'this organization'}.`
+        ? tr('The customer closed this conversation.')
+        : tr('You blocked {name}.', { name: org?.name ?? tr('this organization') })
       : conversation?.request === 'incoming'
-        ? 'Accept the request to reply.'
+        ? tr('Accept the request to reply.')
         : thread?.awaitingAcceptance
-          ? 'You can write again once they answer.'
+          ? tr('You can write again once they answer.')
           : conversation && !conversation.participants.some((p) => p.userId === me.id)
-            ? 'You’re no longer in this conversation.'
+            ? tr('You’re no longer in this conversation.')
             : conversation?.privacyClass === 'private' && !privateSupported
-              ? 'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.'
+              ? tr(
+                  'Private conversations don’t open on this device. Open Caime on your phone or in a current browser.',
+                )
               : null;
   const disabledAction =
     closed && !thread && org && !business?.orgClosed
       ? {
-          label: `Unblock ${org.name}`,
+          label: tr('Unblock {name}', { name: org.name }),
           testID: 'composer-unblock-org',
           onPress: () =>
             void (async () => {
@@ -700,7 +711,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           disabled={disabled}
           disabledAction={disabledAction}
           replyName={replyName}
-          placeholder={thread && org ? `Reply as ${org.name}` : undefined}
+          placeholder={thread && org ? tr('Reply as {name}', { name: org.name }) : undefined}
           onEditLast={() => {
             const last = messages.findLast(
               (m) => m.senderId === me.id && m.kind === 'text' && m.deletedAt === null,

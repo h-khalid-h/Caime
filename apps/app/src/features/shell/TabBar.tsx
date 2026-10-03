@@ -1,3 +1,4 @@
+import { msg, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Platform, useWindowDimensions, View, type ViewStyle } from 'react-native';
@@ -14,11 +15,11 @@ const TABS: Record<
   string,
   { label: string; icon: IconComponent; badge?: 'chats' | 'people' | 'actions' }
 > = {
-  index: { label: 'Chats', icon: MessageCircle, badge: 'chats' },
-  people: { label: 'People', icon: Users, badge: 'people' },
+  index: { label: msg('Chats'), icon: MessageCircle, badge: 'chats' },
+  people: { label: msg('People'), icon: Users, badge: 'people' },
   // No badge: a space's unread shows in the list; what needs you is already on Chats (R7).
-  spaces: { label: 'Spaces', icon: LayoutGrid },
-  actions: { label: 'Actions', icon: ListChecks, badge: 'actions' },
+  spaces: { label: msg('Spaces'), icon: LayoutGrid },
+  actions: { label: msg('Actions'), icon: ListChecks, badge: 'actions' },
 };
 
 const HEIGHT = 62;
@@ -88,7 +89,13 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={
-                count ? `${tab.label}, ${count} ${count === 1 ? 'needs' : 'need'} you` : tab.label
+                count
+                  ? tr('{tr}, {count} {needs} you', {
+                      tr: tr(tab.label),
+                      count,
+                      needs: count === 1 ? 'needs' : 'need',
+                    })
+                  : tab.label
               }
               testID={`tab-${route.name}`}
               haptic
@@ -152,7 +159,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 adjustsFontSizeToFit
                 minimumFontScale={0.85}
               >
-                {tab.label}
+                {tr(tab.label)}
               </Text>
             </Pressable>
           );
@@ -160,7 +167,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Search"
+        accessibilityLabel={tr('Search')}
         testID="tab-search"
         haptic
         focusRadius={HEIGHT / 2}

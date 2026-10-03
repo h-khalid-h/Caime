@@ -3,6 +3,7 @@
  * group call alike: what to ask for, and what to say when the browser or the phone won't give it.
  */
 import type { CallKind } from '@caime/core/calls';
+import { tr } from '@caime/core/i18n';
 import { onPhone } from './rtc';
 
 /**
@@ -43,11 +44,11 @@ export function mediaTrouble(e: unknown, kind: CallKind): string {
   const where = onPhone ? 'in Settings' : 'in your browser’s site settings';
   if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError')
     return kind === 'video'
-      ? `Allow Caime to use your camera and microphone ${where}, then try again.`
-      : `Allow Caime to use your microphone ${where}, then try again.`;
+      ? tr('Allow Caime to use your camera and microphone {where}, then try again.', { where })
+      : tr('Allow Caime to use your microphone {where}, then try again.', { where });
   if (name === 'NotFoundError' || name === 'OverconstrainedError')
-    return 'Caime can’t find a microphone on this device.';
+    return tr('Caime can’t find a microphone on this device.');
   if (name === 'NotReadableError' || name === 'AbortError')
-    return 'Another app is using your microphone. Close it, then try again.';
-  return 'Caime couldn’t use your microphone.';
+    return tr('Another app is using your microphone. Close it, then try again.');
+  return tr('Caime couldn’t use your microphone.');
 }

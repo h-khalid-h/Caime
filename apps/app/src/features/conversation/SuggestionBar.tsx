@@ -1,6 +1,7 @@
 import type { SuggestionView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatDue } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -16,21 +17,21 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 const ACCEPT_LABEL: Record<string, string> = {
-  task: 'Add to actions',
-  reminder: 'Remind me',
-  waiting: 'Track it',
-  decision: 'Save decision',
-  topic: 'Start a topic',
-  relationship: 'Add label',
+  task: msg('Add to actions'),
+  reminder: msg('Remind me'),
+  waiting: msg('Track it'),
+  decision: msg('Save decision'),
+  topic: msg('Start a topic'),
+  relationship: msg('Add label'),
 };
 
 const DONE: Record<string, string> = {
-  task: 'Added to your actions',
-  reminder: 'Reminder set',
-  waiting: 'You’ll see it under Waiting',
-  decision: 'Decision saved',
-  topic: 'Topic started',
-  relationship: 'Label added. Only you see it.',
+  task: msg('Added to your actions'),
+  reminder: msg('Reminder set'),
+  waiting: msg('You’ll see it under Waiting'),
+  decision: msg('Decision saved'),
+  topic: msg('Topic started'),
+  relationship: msg('Label added. Only you see it.'),
 };
 
 /**
@@ -59,7 +60,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     setBusy(true);
     try {
       const { accepted } = await endpoints.acceptSuggestion(s.id);
-      toast(DONE[s.kind] ?? 'Done');
+      toast(tr(DONE[s.kind] ?? msg('Done')));
       // A topic started is opened, as one started from the details is.
       if (accepted.type === 'conversation') {
         void qc.invalidateQueries({ queryKey: qk.conversation(conversationId) });
@@ -83,23 +84,26 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       const undoable = done.filter((r) => r.accepted?.type === 'task').map((r) => r.id);
       const kept = done.length - undoable.length;
       if (done.length)
-        toast(`${done.length} done`, {
+        toast(tr('{length} done', { length: done.length }), {
           action: {
-            label: 'Undo',
+            label: tr('Undo'),
             onPress: () => {
               void Promise.all(undoable.map((id) => endpoints.undoSuggestion(id).catch(() => {})))
                 .then(() => {
                   toast(
                     kept
-                      ? `${undoable.length} undone; ${kept === 1 ? 'a decision stays' : `${kept} decisions stay`}`
-                      : 'Undone',
+                      ? tr('{length} undone; {a}', {
+                          length: undoable.length,
+                          a: kept === 1 ? tr('a decision stays') : `${kept} decisions stay`,
+                        })
+                      : tr('Undone'),
                   );
                 })
                 .finally(refresh);
             },
           },
         });
-      if (failed) toast(failed.error ?? 'One step couldn’t be done.', { tone: 'danger' });
+      if (failed) toast(failed.error ?? tr('One step couldn’t be done.'), { tone: 'danger' });
       const opened = done.find((r) => r.accepted?.type === 'conversation');
       if (opened?.accepted)
         router.navigate({ pathname: '/c/[id]', params: { id: opened.accepted.id } });
@@ -123,7 +127,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   if (list.length > 1 && !oneAtATime)
     return (
       <View
-        accessibilityLabel={`Suggestions: ${list.length} things here`}
+        accessibilityLabel={tr('Suggestions: {length} things here', { length: list.length })}
         testID="suggestions-card"
         style={{
           marginHorizontal: 12,
@@ -143,8 +147,8 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Sparkles size={14} color={t.c.accentStrong} />
           <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-            {list.some((x) => x.payload.source === 'ai') ? AI_LABEL : 'Suggestions'} · {list.length}{' '}
-            things here
+            {list.some((x) => x.payload.source === 'ai') ? tr(AI_LABEL) : tr('Suggestions')} ·{' '}
+            {list.length} things here
           </Text>
         </View>
         {list.map((x) => (
@@ -154,7 +158,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
             testID={`suggestion-step-${x.kind}`}
           >
             <Text variant="captionStrong" color="textSecondary">
-              {ACCEPT_LABEL[x.kind] ?? 'Yes'}:
+              {tr(ACCEPT_LABEL[x.kind] ?? msg('Yes'))}:
             </Text>
             <Text variant="bodyStrong" style={{ flexShrink: 1 }}>
               {x.title}
@@ -167,25 +171,25 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
           </View>
         ))}
         <Text variant="caption" color="textSecondary">
-          Nothing happens until you say so; each step can be taken back after.
+          {tr('Nothing happens until you say so; each step can be taken back after.')}
         </Text>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           <Button
-            label={`Do all ${list.length}`}
+            label={tr('Do all {length}', { length: list.length })}
             size="sm"
             onPress={doAll}
             loading={busy}
             testID="suggestions-all"
           />
           <Button
-            label="One at a time"
+            label={tr('One at a time')}
             size="sm"
             variant="secondary"
             onPress={() => setOneAtATime(true)}
             testID="suggestions-one"
           />
           <Button
-            label="Not now"
+            label={tr('Not now')}
             size="sm"
             variant="ghost"
             onPress={dismissAll}
@@ -205,7 +209,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   };
   return (
     <View
-      accessibilityLabel={`Suggestion: ${s.title}`}
+      accessibilityLabel={tr('Suggestion: {title}', { title: s.title })}
       style={{
         marginHorizontal: 12,
         marginBottom: 8,
@@ -224,8 +228,8 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Sparkles size={14} color={t.c.accentStrong} />
         <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-          {s.payload.source === 'ai' ? AI_LABEL : 'Suggestion'}
-          {list.length > 1 ? ` · 1 of ${list.length}` : ''}
+          {s.payload.source === 'ai' ? tr(AI_LABEL) : tr('Suggestion')}
+          {list.length > 1 ? tr(' · 1 of {length}', { length: list.length }) : ''}
         </Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -245,8 +249,13 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
         </Text>
       ) : null}
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Button label={ACCEPT_LABEL[s.kind] ?? 'Yes'} size="sm" onPress={accept} loading={busy} />
-        <Button label="Not now" size="sm" variant="ghost" onPress={dismiss} />
+        <Button
+          label={tr(ACCEPT_LABEL[s.kind] ?? msg('Yes'))}
+          size="sm"
+          onPress={accept}
+          loading={busy}
+        />
+        <Button label={tr('Not now')} size="sm" variant="ghost" onPress={dismiss} />
       </View>
     </View>
   );

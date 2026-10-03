@@ -1,4 +1,5 @@
 import type { TaskView } from '@caime/core/api';
+import { msg, tr } from '@caime/core/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import type { TaskViewFilter } from '@/api/endpoints';
@@ -28,23 +29,23 @@ import { toast } from '@/ui/Toast';
 const EMPTY: Record<string, { title: string; body: string; character: 'momo' | 'panda' | 'zuzu' }> =
   {
     todo: {
-      title: 'Nothing on your plate',
-      body: 'Promises you make in conversations can land here with one tap.',
+      title: msg('Nothing on your plate'),
+      body: msg('Promises you make in conversations can land here with one tap.'),
       character: 'momo',
     },
     asked_me: {
-      title: 'No one’s waiting on you',
-      body: 'When someone asks you for something, it shows up here.',
+      title: msg('No one’s waiting on you'),
+      body: msg('When someone asks you for something, it shows up here.'),
       character: 'momo',
     },
     waiting: {
-      title: 'You’re not waiting on anyone',
-      body: 'Ask for something in a conversation and Caime can keep track of it.',
+      title: msg('You’re not waiting on anyone'),
+      body: msg('Ask for something in a conversation and Caime can keep track of it.'),
       character: 'panda',
     },
     done: {
-      title: 'Nothing finished yet',
-      body: 'Completed actions stay here, with a link back to where they came from.',
+      title: msg('Nothing finished yet'),
+      body: msg('Completed actions stay here, with a link back to where they came from.'),
       character: 'zuzu',
     },
   };
@@ -68,7 +69,7 @@ export default function Actions() {
     try {
       await endpoints.updateTask(task.id, due);
       void q.refetch();
-      toast(due.dueAt ? 'Due date changed' : 'Due date removed');
+      toast(due.dueAt ? tr('Due date changed') : tr('Due date removed'));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     }
@@ -91,9 +92,9 @@ export default function Actions() {
     const status = task.status === 'done' ? 'open' : 'done';
     useTaskOutbox.getState().setStatus(task, status);
     if (status === 'done')
-      toast('Done', {
+      toast(tr('Done'), {
         action: {
-          label: 'Undo',
+          label: tr('Undo'),
           onPress: () => useTaskOutbox.getState().setStatus(task, 'open'),
         },
       });
@@ -107,13 +108,13 @@ export default function Actions() {
     <Screen edges={desktop ? [] : ['top']}>
       <View style={{ flex: 1, maxWidth: 760, width: '100%', alignSelf: 'center' }}>
         <PageHeader
-          title="Actions"
-          subtitle={counts?.overdue ? `${counts.overdue} overdue` : null}
+          title={tr('Actions')}
+          subtitle={counts?.overdue ? tr('{overdue} overdue', { overdue: counts.overdue }) : null}
           left={desktop ? undefined : <YouButton />}
           right={
             <IconButton
               icon={Plus}
-              label="New action"
+              label={tr('New action')}
               tone="primary"
               size={20}
               onPress={() => setAdding(true)}
@@ -123,15 +124,15 @@ export default function Actions() {
         />
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <Segmented<TaskViewFilter | 'calendar'>
-            label="Which actions"
+            label={tr('Which actions')}
             value={view}
             onChange={setView}
             options={[
-              { value: 'todo', label: 'To do', count: counts?.todo },
-              { value: 'asked_me', label: 'Asked me', count: counts?.asked_me },
-              { value: 'waiting', label: 'Waiting', count: counts?.waiting },
-              { value: 'done', label: 'Done' },
-              { value: 'calendar', label: 'Calendar' },
+              { value: 'todo', label: tr('To do'), count: counts?.todo },
+              { value: 'asked_me', label: tr('Asked me'), count: counts?.asked_me },
+              { value: 'waiting', label: tr('Waiting'), count: counts?.waiting },
+              { value: 'done', label: tr('Done') },
+              { value: 'calendar', label: tr('Calendar') },
             ]}
           />
         </View>
@@ -165,12 +166,12 @@ export default function Actions() {
               <EmptyState
                 character={empty.character}
                 icon={CircleCheck}
-                title={empty.title}
-                body={empty.body}
+                title={tr(empty.title)}
+                body={tr(empty.body)}
                 action={
                   view === 'todo' ? (
                     <Button
-                      label="Add an action"
+                      label={tr('Add an action')}
                       variant="secondary"
                       onPress={() => setAdding(true)}
                       testID="add-task-empty"
@@ -190,7 +191,7 @@ export default function Actions() {
         <WhenSheet
           open
           onClose={() => setDueFor(null)}
-          title="Due"
+          title={tr('Due')}
           value={dueFor.dueAt ? chosenOf(dueFor.dueAt, timeZone, dueFor.dueHasTime) : null}
           onChange={(c) =>
             void setDue(dueFor, {
@@ -199,7 +200,7 @@ export default function Actions() {
             })
           }
           onClear={() => void setDue(dueFor, { dueAt: null, dueHasTime: false })}
-          clearLabel="No due date"
+          clearLabel={tr('No due date')}
           testID="task-when"
         />
       ) : null}

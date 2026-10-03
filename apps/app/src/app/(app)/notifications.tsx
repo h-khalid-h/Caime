@@ -1,5 +1,6 @@
 import type { NotificationView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
@@ -58,12 +59,12 @@ export default function Notifications() {
           !desktop ? (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />
           ) : null
         }
-        title="Notifications"
+        title={tr('Notifications')}
       />
       <FlatList
         data={q.data?.notifications ?? []}
@@ -106,7 +107,7 @@ export default function Notifications() {
               ) : null}
               {item.reason ? (
                 <Text variant="caption" color="textTertiary">
-                  Why: {item.reason}
+                  {tr('Why: {reason}', { reason: item.reason })}
                 </Text>
               ) : null}
             </View>
@@ -121,11 +122,11 @@ export default function Notifications() {
           ) : q.isError && !q.data ? (
             <EmptyState
               icon={Bell}
-              title="Notifications couldn’t load"
+              title={tr('Notifications couldn’t load')}
               body={(q.error as Error).message}
               action={
                 <Button
-                  label="Try again"
+                  label={tr('Try again')}
                   variant="secondary"
                   onPress={() => void q.refetch()}
                   testID="notifications-retry"
@@ -137,11 +138,13 @@ export default function Notifications() {
               character="momo"
               expression="happy"
               icon={Bell}
-              title="All quiet"
-              body="Caime only interrupts you for what matters, by the rules you set for each relationship."
+              title={tr('All quiet')}
+              body={tr(
+                'Caime only interrupts you for what matters, by the rules you set for each relationship.',
+              )}
               action={
                 <Button
-                  label="How you’re told"
+                  label={tr('How you’re told')}
                   variant="secondary"
                   onPress={() => router.navigate('/settings/notifications')}
                   testID="notifications-settings"

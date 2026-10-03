@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import {
   displayNameError,
   emailError,
@@ -101,15 +102,15 @@ export default function SignUp() {
     next.handle =
       handleError(handle) ??
       (availability && availability.handle === normalizeHandle(handle) && !availability.available
-        ? (availability.reason ?? 'That handle isn’t available.')
+        ? (availability.reason ?? tr('That handle isn’t available.'))
         : undefined);
     next.email = emailError(email) ?? undefined;
     next.password = passwordError(password) ?? undefined;
     next.birthDate =
       !birthDate || birthDate > today || birthDate < oldest
-        ? 'Enter the day you were born.'
+        ? tr('Enter the day you were born.')
         : undefined;
-    next.country = country ? undefined : 'Choose where you live.';
+    next.country = country ? undefined : tr('Choose where you live.');
     setErrors(next);
     return !Object.values(next).some(Boolean);
   };
@@ -162,12 +163,12 @@ export default function SignUp() {
     availability && availability.handle === h ? (
       availability.available ? (
         <View
-          accessibilityLabel="Available"
+          accessibilityLabel={tr('Available')}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
         >
           <Check size={16} color={t.c.success} />
           <Text variant="caption" color="success">
-            Available
+            {tr('Available')}
           </Text>
         </View>
       ) : null
@@ -175,13 +176,13 @@ export default function SignUp() {
 
   return (
     <AuthLayout
-      kicker="new account"
-      title="Create your account"
-      subtitle="It takes a minute. You can change all of it later."
+      kicker={tr('new account')}
+      title={tr('Create your account')}
+      subtitle={tr('It takes a minute. You can change all of it later.')}
     >
       <View style={{ gap: 14 }}>
         <TextField
-          label="Your name"
+          label={tr('Your name')}
           value={displayName}
           onChangeText={setDisplayName}
           autoComplete="name"
@@ -190,13 +191,13 @@ export default function SignUp() {
           returnKeyType="next"
           onSubmitEditing={() => refs.handle.current?.focus()}
           error={errors.displayName}
-          hint="How people see you. Use any name you like."
+          hint={tr('How people see you. Use any name you like.')}
           testID="signup-name"
         />
         <View style={{ gap: 6 }}>
           <TextField
             ref={refs.handle}
-            label="Handle"
+            label={tr('Handle')}
             icon={AtSign}
             value={handle}
             onChangeText={(v) => {
@@ -215,7 +216,7 @@ export default function SignUp() {
                 ? availability.reason
                 : null)
             }
-            hint="People can find you by it. Letters, numbers, dots or underscores."
+            hint={tr('People can find you by it. Letters, numbers, dots or underscores.')}
             trailing={handleStatus}
             testID="signup-handle"
           />
@@ -231,14 +232,14 @@ export default function SignUp() {
               }}
             >
               <Text variant="captionStrong" color="link">
-                Use @{availability.suggestion}
+                {tr('Use @{suggestion}', { suggestion: availability.suggestion })}
               </Text>
             </Pressable>
           ) : null}
         </View>
         <TextField
           ref={refs.email}
-          label="Email"
+          label={tr('Email')}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -248,12 +249,12 @@ export default function SignUp() {
           returnKeyType="next"
           onSubmitEditing={() => refs.password.current?.focus()}
           error={errors.email}
-          hint="For signing in. Hidden from others unless you choose otherwise."
+          hint={tr('For signing in. Hidden from others unless you choose otherwise.')}
           testID="signup-email"
         />
         <TextField
           ref={refs.password}
-          label="Password"
+          label={tr('Password')}
           secret
           value={password}
           onChangeText={setPassword}
@@ -262,11 +263,11 @@ export default function SignUp() {
           returnKeyType="done"
           onSubmitEditing={() => void submit()}
           error={errors.password}
-          hint="At least 10 characters. A short sentence works well."
+          hint={tr('At least 10 characters. A short sentence works well.')}
           testID="signup-password"
         />
         <DateField
-          label="Date of birth"
+          label={tr('Date of birth')}
           value={birthDate}
           onChange={(day) => {
             setBirthDate(day);
@@ -276,17 +277,21 @@ export default function SignUp() {
           max={today}
           memorable
           error={errors.birthDate}
-          hint="Only to keep younger people safer, from the day you turn 18. Never shown to anyone."
+          hint={tr(
+            'Only to keep younger people safer, from the day you turn 18. Never shown to anyone.',
+          )}
           testID="signup-birth-date"
         />
         <CountryField
-          label="Where you live"
+          label={tr('Where you live')}
           value={country}
           onChange={chooseCountry}
           locale={device.locale}
           timeZone={device.timeZone}
           error={errors.country}
-          hint="Sets your defaults, like your work week and the currency of amounts. Never shown to anyone."
+          hint={tr(
+            'Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.',
+          )}
           testID="signup-country"
         />
       </View>
@@ -296,7 +301,7 @@ export default function SignUp() {
         </Text>
       ) : null}
       <Button
-        label="Create account"
+        label={tr('Create account')}
         size="lg"
         block
         loading={busy}
@@ -304,8 +309,10 @@ export default function SignUp() {
         testID="signup-submit"
       />
       <Text variant="caption" color="textSecondary" align="center">
-        By creating an account, you agree to the <PageLink name="terms">terms</PageLink>. The{' '}
-        <PageLink name="privacy">privacy policy</PageLink> says what Caime keeps, and why.
+        {tr('By creating an account, you agree to the')}
+        <PageLink name="terms">{tr('terms')}</PageLink>
+        {tr('. The')} <PageLink name="privacy">{tr('privacy policy')}</PageLink>
+        {tr('says what Caime keeps, and why.')}
       </Text>
       <Pressable
         accessibilityRole="link"
@@ -313,9 +320,9 @@ export default function SignUp() {
         style={{ alignSelf: 'center', padding: 8 }}
       >
         <Text variant="body" color="textSecondary">
-          Already have an account?{' '}
+          {tr('Already have an account?')}{' '}
           <Text variant="bodyStrong" color="link">
-            Sign in
+            {tr('Sign in')}
           </Text>
         </Text>
       </Pressable>

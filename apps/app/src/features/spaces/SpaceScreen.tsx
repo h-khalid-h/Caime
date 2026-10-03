@@ -1,4 +1,5 @@
 import type { SpaceConversationView, SpaceMemberView, SpaceView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -87,7 +88,7 @@ function ConversationRow({ space, c }: { space: SpaceView; c: SpaceConversationV
           <Badge count={c.unreadCount} />
         ) : (
           <Button
-            label="Join"
+            label={tr('Join')}
             size="sm"
             variant="secondary"
             loading={joining}
@@ -115,7 +116,11 @@ function MemberRow({
   return (
     <ListRow
       left={<Avatar id={m.userId} name={m.person.displayName} url={m.person.avatarUrl} size={36} />}
-      title={self ? `${m.person.displayName} (you)` : m.person.displayName}
+      title={
+        self
+          ? tr('{displayName} (you)', { displayName: m.person.displayName })
+          : m.person.displayName
+      }
       subtitle={m.role === 'member' ? null : SPACE_ROLE_LABELS[m.role]}
       onPress={
         manageable
@@ -176,7 +181,7 @@ export function SpaceScreen({ id }: { id: string }) {
   const back = (
     <IconButton
       icon={ArrowLeft}
-      label="Back"
+      label={tr('Back')}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/spaces'))}
     />
   );
@@ -184,14 +189,14 @@ export function SpaceScreen({ id }: { id: string }) {
   if (!space)
     return (
       <Screen edges={desktop ? [] : ['top', 'bottom']}>
-        <TopBar left={desktop ? undefined : back} title="Space" />
+        <TopBar left={desktop ? undefined : back} title={tr('Space')} />
         {q.isError ? (
           <EmptyState
             character="pico"
             icon={LayoutGrid}
-            title="This space isn’t here"
-            body="It may have closed, or you’re no longer in it."
-            action={<Button label="Your spaces" onPress={() => router.replace('/spaces')} />}
+            title={tr('This space isn’t here')}
+            body={tr('It may have closed, or you’re no longer in it.')}
+            action={<Button label={tr('Your spaces')} onPress={() => router.replace('/spaces')} />}
           />
         ) : (
           <SkeletonRows />
@@ -211,7 +216,7 @@ export function SpaceScreen({ id }: { id: string }) {
         right={
           <IconButton
             icon={Settings}
-            label="Space settings"
+            label={tr('Space settings')}
             onPress={() => {
               setDraft({ name: space.name, purpose: space.purpose ?? '', kind: space.kind });
               setSettings(true);
@@ -261,7 +266,7 @@ export function SpaceScreen({ id }: { id: string }) {
             style={{ alignSelf: 'stretch', marginTop: 6 }}
             testID="space-spec"
             rows={[
-              { label: 'kind', value: SPACE_KIND_DEFS[space.kind].label },
+              { label: 'kind', value: tr(SPACE_KIND_DEFS[space.kind].label) },
               {
                 label: 'people',
                 value: `${space.memberCount} ${space.memberCount === 1 ? 'person' : 'people'}`,
@@ -293,7 +298,7 @@ export function SpaceScreen({ id }: { id: string }) {
 
         {space.upcoming.length ? (
           <>
-            <SectionTitle>Coming up</SectionTitle>
+            <SectionTitle>{tr('Coming up')}</SectionTitle>
             <View
               style={{
                 marginHorizontal: 16,
@@ -321,7 +326,7 @@ export function SpaceScreen({ id }: { id: string }) {
         <SectionTitle
           action={
             <Button
-              label="New"
+              label={tr('New')}
               icon={Plus}
               size="sm"
               variant="ghost"
@@ -330,7 +335,7 @@ export function SpaceScreen({ id }: { id: string }) {
             />
           }
         >
-          Conversations
+          {tr('Conversations')}
         </SectionTitle>
         <View
           style={{
@@ -351,7 +356,7 @@ export function SpaceScreen({ id }: { id: string }) {
           action={
             manager ? (
               <Button
-                label="Add"
+                label={tr('Add')}
                 icon={UserPlus}
                 size="sm"
                 variant="ghost"
@@ -361,7 +366,7 @@ export function SpaceScreen({ id }: { id: string }) {
             ) : undefined
           }
         >
-          {`People · ${space.memberCount}`}
+          {tr('People · {memberCount}', { memberCount: space.memberCount })}
         </SectionTitle>
         <View
           style={{
@@ -382,25 +387,25 @@ export function SpaceScreen({ id }: { id: string }) {
           color="textTertiary"
           style={{ paddingHorizontal: 22, paddingTop: 8 }}
         >
-          How you know each person is your label: only you see it.
+          {tr('How you know each person is your label: only you see it.')}
         </Text>
       </ScrollView>
 
       <Sheet
         open={newConvo}
         onClose={() => setNewConvo(false)}
-        title="New conversation"
-        subtitle={`In ${space.name}. Anyone in the space can find it and join.`}
+        title={tr('New conversation')}
+        subtitle={tr('In {name}. Anyone in the space can find it and join.', { name: space.name })}
         footer={
           <Button
-            label="Start it"
+            label={tr('Start it')}
             block
             size="lg"
             loading={busy}
             testID="space-conversation-create"
             onPress={() =>
               void (async () => {
-                if (!title.trim()) return toast('Name the conversation.');
+                if (!title.trim()) return toast(tr('Name the conversation.'));
                 setBusy(true);
                 try {
                   const { conversation } = await endpoints.createSpaceConversation(space.id, {
@@ -422,22 +427,22 @@ export function SpaceScreen({ id }: { id: string }) {
         }
       >
         <TextField
-          label="What it’s about"
+          label={tr('What it’s about')}
           value={title}
           onChangeText={setTitle}
           maxLength={80}
-          placeholder="Venue, Budget, Weekend plans…"
+          placeholder={tr('Venue, Budget, Weekend plans…')}
           autoFocus
           testID="space-conversation-title"
         />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Chip
-            label="Everyone in the space"
+            label={tr('Everyone in the space')}
             selected={everyone}
             onPress={() => setEveryone(true)}
           />
           <Chip
-            label="Just me, until others join"
+            label={tr('Just me, until others join')}
             selected={!everyone}
             onPress={() => setEveryone(false)}
           />
@@ -450,11 +455,11 @@ export function SpaceScreen({ id }: { id: string }) {
           setAdding(false);
           setPicked(new Set());
         }}
-        title="Add people"
-        subtitle="People you’re connected with. They join General straight away."
+        title={tr('Add people')}
+        subtitle={tr('People you’re connected with. They join General straight away.')}
         footer={
           <Button
-            label={picked.size ? `Add ${picked.size}` : 'Add'}
+            label={picked.size ? tr('Add {size}', { size: picked.size }) : tr('Add')}
             block
             size="lg"
             disabled={picked.size === 0}
@@ -466,7 +471,7 @@ export function SpaceScreen({ id }: { id: string }) {
                 if (
                   await run(
                     () => endpoints.addToSpace(space.id, [...picked]),
-                    `Added ${n} ${n === 1 ? 'person' : 'people'}`,
+                    tr('Added {n} {person}', { n, person: n === 1 ? 'person' : 'people' }),
                   )
                 ) {
                   setAdding(false);
@@ -496,7 +501,7 @@ export function SpaceScreen({ id }: { id: string }) {
           <View style={{ marginHorizontal: -20 }}>
             <ListRow
               icon={MessageCircle}
-              title="See their profile"
+              title={tr('See their profile')}
               onPress={() => {
                 const who = shown.userId;
                 setManaging(null);
@@ -506,11 +511,11 @@ export function SpaceScreen({ id }: { id: string }) {
             {canChangeSpaceRole(space.myRole, shown.role) ? (
               <ListRow
                 icon={Settings}
-                title={shown.role === 'admin' ? 'Make a member' : 'Make an admin'}
+                title={shown.role === 'admin' ? tr('Make a member') : tr('Make an admin')}
                 subtitle={
                   shown.role === 'admin'
-                    ? 'They stop adding and removing people'
-                    : 'Admins add people and remove members'
+                    ? tr('They stop adding and removing people')
+                    : tr('Admins add people and remove members')
                 }
                 testID="space-toggle-admin"
                 onPress={() =>
@@ -535,8 +540,8 @@ export function SpaceScreen({ id }: { id: string }) {
             {canRemoveFromSpace(space.myRole, shown.role) ? (
               <ListRow
                 icon={LogOut}
-                title="Remove from the space"
-                subtitle="They leave its conversations too"
+                title={tr('Remove from the space')}
+                subtitle={tr('They leave its conversations too')}
                 destructive
                 testID="space-remove"
                 onPress={() =>
@@ -558,18 +563,18 @@ export function SpaceScreen({ id }: { id: string }) {
       <Sheet
         open={settings}
         onClose={() => setSettings(false)}
-        title="Space settings"
+        title={tr('Space settings')}
         footer={
           manager && draft ? (
             <Button
-              label="Save"
+              label={tr('Save')}
               block
               size="lg"
               loading={busy}
               testID="space-settings-save"
               onPress={() =>
                 void (async () => {
-                  if (!draft.name.trim()) return toast('Give the space a name.');
+                  if (!draft.name.trim()) return toast(tr('Give the space a name.'));
                   if (
                     await run(
                       () =>
@@ -591,7 +596,7 @@ export function SpaceScreen({ id }: { id: string }) {
         {manager && draft ? (
           <>
             <TextField
-              label="Name"
+              label={tr('Name')}
               value={draft.name}
               onChangeText={(v) => setDraft({ ...draft, name: v })}
               maxLength={80}
@@ -601,7 +606,7 @@ export function SpaceScreen({ id }: { id: string }) {
               {SPACE_KINDS.map((k) => (
                 <Chip
                   key={k}
-                  label={SPACE_KIND_DEFS[k].label}
+                  label={tr(SPACE_KIND_DEFS[k].label)}
                   icon={SPACE_ICONS[k]}
                   selected={draft.kind === k}
                   onPress={() => setDraft({ ...draft, kind: k })}
@@ -609,7 +614,7 @@ export function SpaceScreen({ id }: { id: string }) {
               ))}
             </View>
             <TextField
-              label="What it’s for (optional)"
+              label={tr('What it’s for (optional)')}
               value={draft.purpose}
               onChangeText={(v) => setDraft({ ...draft, purpose: v })}
               maxLength={280}
@@ -617,14 +622,14 @@ export function SpaceScreen({ id }: { id: string }) {
           </>
         ) : (
           <Text variant="body" color="textSecondary">
-            The space’s owner and admins change its name and what it’s for.
+            {tr('The space’s owner and admins change its name and what it’s for.')}
           </Text>
         )}
         <View style={{ marginHorizontal: -20, marginTop: 8 }}>
           <ListRow
             icon={LogOut}
-            title="Leave the space"
-            subtitle="You leave its conversations too"
+            title={tr('Leave the space')}
+            subtitle={tr('You leave its conversations too')}
             destructive
             testID="space-leave"
             onPress={() => {
@@ -638,17 +643,19 @@ export function SpaceScreen({ id }: { id: string }) {
       <Sheet
         open={leaving}
         onClose={() => setLeaving(false)}
-        title={`Leave ${space.name}?`}
+        title={tr('Leave {name}?', { name: space.name })}
         subtitle={
           space.myRole === 'owner'
             ? space.memberCount > 1
-              ? 'The admin who has been here longest takes over, or else the longest-standing member.'
-              : 'You’re the last one here, so the space closes.'
-            : 'You leave its conversations too. Someone in it can add you back.'
+              ? tr(
+                  'The admin who has been here longest takes over, or else the longest-standing member.',
+                )
+              : tr('You’re the last one here, so the space closes.')
+            : tr('You leave its conversations too. Someone in it can add you back.')
         }
         footer={
           <Button
-            label="Leave"
+            label={tr('Leave')}
             variant="danger"
             block
             size="lg"

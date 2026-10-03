@@ -1,4 +1,5 @@
 import type { PeopleSearchResult } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -68,28 +69,28 @@ export default function Connect() {
     const action =
       state === 'connected' ? (
         <Button
-          label="Message"
+          label={tr('Message')}
           size="sm"
           variant="secondary"
           onPress={() => void openChatWith({ conversationId: null, person: item.person })}
         />
       ) : state === 'outgoing' ? (
         <Text variant="captionStrong" color="textTertiary">
-          Requested
+          {tr('Requested')}
         </Text>
       ) : state === 'incoming' ? (
         <Button
-          label="Respond"
+          label={tr('Respond')}
           size="sm"
           onPress={() => router.push({ pathname: '/p/[id]', params: { id: item.person.id } })}
         />
       ) : item.person.id === me.id ? (
         <Text variant="captionStrong" color="textTertiary">
-          You
+          {tr('You')}
         </Text>
       ) : (
         <Button
-          label="Connect"
+          label={tr('Connect')}
           size="sm"
           onPress={() => setTarget(item.person)}
           testID={`connect-${item.person.handle}`}
@@ -132,7 +133,10 @@ export default function Connect() {
   };
 
   const shareHandle = () =>
-    void shareLink(`I’m on Caime as @${me.handle}. Find me there:`, handleLink(me.handle));
+    void shareLink(
+      tr('I’m on Caime as @{handle}. Find me there:', { handle: me.handle }),
+      handleLink(me.handle),
+    );
 
   return (
     <Screen edges={desktop ? [] : ['top']}>
@@ -140,22 +144,22 @@ export default function Connect() {
         left={
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
           />
         }
-        title="Connect"
+        title={tr('Connect')}
       />
       <View style={{ padding: 16, gap: 8, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
         <TextField
           icon={Search}
-          placeholder="@handle, name or email"
+          placeholder={tr('@handle, name or email')}
           value={term}
           onChangeText={setTerm}
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}
-          accessibilityLabel="Find people"
+          accessibilityLabel={tr('Find people')}
           testID="connect-search"
         />
       </View>
@@ -173,13 +177,13 @@ export default function Connect() {
                 color="textTertiary"
                 style={{ paddingHorizontal: 16, paddingVertical: 6 }}
               >
-                Organizations
+                {tr('Organizations')}
               </Text>
               {orgs.map((o) => (
                 <Pressable
                   key={o.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${o.name}, organization`}
+                  accessibilityLabel={tr('{name}, organization', { name: o.name })}
                   onPress={() =>
                     router.push({ pathname: '/o/[handle]', params: { handle: o.handle } })
                   }
@@ -212,11 +216,13 @@ export default function Connect() {
           orgs.length ? null : debounced.length >= 2 && results.isFetched ? (
             <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
               <Text variant="body" color="textSecondary" align="center">
-                No one found for “{debounced}”. They may not be on Caime yet, or they keep their
-                profile private.
+                {tr(
+                  'No one found for “{debounced}”. They may not be on Caime yet, or they keep their profile private.',
+                  { debounced },
+                )}
               </Text>
               <Button
-                label="Invite them"
+                label={tr('Invite them')}
                 variant="secondary"
                 onPress={() => setInviting(true)}
                 testID="connect-invite"
@@ -226,19 +232,24 @@ export default function Connect() {
             <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
               <Guide character="pico" expression="curious" icon={UserPlus} size={96} />
               <Text variant="body" color="textSecondary" align="center">
-                Search by @handle or email address. People under 18 can only be found by people they
-                already know.
+                {tr(
+                  'Search by @handle or email address. People under 18 can only be found by people they already know.',
+                )}
               </Text>
               <View
                 style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
               >
                 <Button
-                  label="Invite someone"
+                  label={tr('Invite someone')}
                   icon={UserPlus}
                   onPress={() => setInviting(true)}
                   testID="connect-invite"
                 />
-                <Button label={`Share @${me.handle}`} variant="secondary" onPress={shareHandle} />
+                <Button
+                  label={tr('Share @{handle}', { handle: me.handle })}
+                  variant="secondary"
+                  onPress={shareHandle}
+                />
               </View>
             </View>
           )

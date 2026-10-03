@@ -27,6 +27,7 @@ import {
   type SealedMessage,
 } from './e2ee';
 import type { RawDeviceKeys } from './e2ee-recovery';
+import { tr } from './i18n';
 
 /** A P-256 key pair: the public half as JSON, the private half as its 32 bytes. */
 export interface KeyPair {
@@ -73,11 +74,11 @@ function fromUtf8(b: Uint8Array): string {
   for (let i = 0; i < b.length; ) {
     const x = b[i++] as number;
     const more = x < 0x80 ? 0 : x >= 0xf0 ? 3 : x >= 0xe0 ? 2 : x >= 0xc0 ? 1 : -1;
-    if (more < 0 || i + more > b.length) throw new Error('Not UTF-8.');
+    if (more < 0 || i + more > b.length) throw new Error(tr('Not UTF-8.'));
     let c = more === 0 ? x : x & (0x3f >> more);
     for (let k = 0; k < more; k++) {
       const y = b[i++] as number;
-      if ((y & 0xc0) !== 0x80) throw new Error('Not UTF-8.');
+      if ((y & 0xc0) !== 0x80) throw new Error(tr('Not UTF-8.'));
       c = (c << 6) | (y & 63);
     }
     s += String.fromCodePoint(c);
@@ -103,14 +104,14 @@ export function toBase64Url(bytes: ArrayBuffer | Uint8Array): string {
 
 export function fromBase64Url(s: string): Uint8Array {
   const clean = s.replace(/=+$/, '').replaceAll('+', '-').replaceAll('/', '_');
-  if (clean.length % 4 === 1) throw new Error('Not base64.');
+  if (clean.length % 4 === 1) throw new Error(tr('Not base64.'));
   const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
   let bits = 0;
   let value = 0;
   let o = 0;
   for (const c of clean) {
     const v = INDEX.get(c);
-    if (v === undefined) throw new Error('Not base64.');
+    if (v === undefined) throw new Error(tr('Not base64.'));
     value = (value << 6) | v;
     bits += 6;
     if (bits >= 8) {
@@ -135,10 +136,10 @@ function jwkOf(privateKey: Uint8Array): PublicJwk {
 /** A public JWK as the uncompressed point P-256 takes (checked to be on the curve). */
 function pointOf(k: PublicJwk): Uint8Array {
   const { kty, crv, x, y } = ecPublic(k);
-  if (kty !== 'EC' || crv !== 'P-256') throw new Error('Not a P-256 key.');
+  if (kty !== 'EC' || crv !== 'P-256') throw new Error(tr('Not a P-256 key.'));
   const xs = fromBase64Url(x);
   const ys = fromBase64Url(y);
-  if (xs.length !== 32 || ys.length !== 32) throw new Error('Not a P-256 key.');
+  if (xs.length !== 32 || ys.length !== 32) throw new Error(tr('Not a P-256 key.'));
   const point = new Uint8Array(65);
   point[0] = 4;
   point.set(xs, 1);

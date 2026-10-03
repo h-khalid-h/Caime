@@ -1,4 +1,5 @@
 import type { RelationshipView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import {
   fillName,
   primarySpheres,
@@ -107,7 +108,7 @@ export function RelationshipForm({
         key={s}
         accessibilityRole="radio"
         accessibilityState={{ checked: selected }}
-        accessibilityLabel={SPHERE_DEFS[s].label}
+        accessibilityLabel={tr(SPHERE_DEFS[s].label)}
         onPress={() => {
           setMoreRoles(false);
           set({ sphere: s, role: null, roleLabel: '' });
@@ -134,7 +135,7 @@ export function RelationshipForm({
           numberOfLines={1}
           style={{ flexShrink: 1 }}
         >
-          {SPHERE_DEFS[s].label}
+          {tr(SPHERE_DEFS[s].label)}
         </Text>
       </Pressable>
     );
@@ -145,7 +146,9 @@ export function RelationshipForm({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Lock size={12} color={t.c.textTertiary} />
         <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
-          Only you see this. It changes how Caime treats {name}, never what {name} sees.
+          {tr('Only you see this. It changes how Caime treats {name}, never what {name} sees.', {
+            name,
+          })}
         </Text>
       </View>
       <View
@@ -162,7 +165,7 @@ export function RelationshipForm({
           style={{ alignSelf: 'flex-start', paddingVertical: 2 }}
         >
           <Text variant="captionStrong" color="link">
-            More kinds of relationship
+            {tr('More kinds of relationship')}
           </Text>
         </Pressable>
       ) : null}
@@ -187,21 +190,21 @@ export function RelationshipForm({
               />
             ))}
             {!moreRoles && roles.more.length ? (
-              <Chip label="More…" onPress={() => setMoreRoles(true)} />
+              <Chip label={tr('More…')} onPress={() => setMoreRoles(true)} />
             ) : null}
           </View>
           <TextField
-            placeholder="Or in your own words"
+            placeholder={tr('Or in your own words')}
             value={value.roleLabel}
             onChangeText={(roleLabel) => set({ roleLabel })}
             maxLength={60}
-            accessibilityLabel="Role in your own words"
+            accessibilityLabel={tr('Role in your own words')}
           />
           {def.asksOrganization ? (
             <>
               <TextField
-                label="Where? (optional)"
-                placeholder="Company, school or organization"
+                label={tr('Where? (optional)')}
+                placeholder={tr('Company, school or organization')}
                 value={value.orgName}
                 onChangeText={(orgName) => set({ orgName })}
                 maxLength={120}
@@ -215,7 +218,10 @@ export function RelationshipForm({
                       selected={o === had}
                       accessibilityLabel={
                         o.people
-                          ? `${o.name}, where you know ${o.people === 1 ? '1 person' : `${o.people} people`}`
+                          ? tr('{name}, where you know {person}', {
+                              name: o.name,
+                              person: o.people === 1 ? '1 person' : `${o.people} people`,
+                            })
                           : o.name
                       }
                       onPress={() => set({ orgName: o === had ? '' : o.name })}
@@ -227,15 +233,17 @@ export function RelationshipForm({
           ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 2 }}>
             <View style={{ flex: 1 }}>
-              <Text variant="bodyStrong">Share with {name}</Text>
+              <Text variant="bodyStrong">{tr('Share with {name}', { name })}</Text>
               <Text variant="caption" color="textSecondary">
-                If {name} shares too, each of you sees how the other described you.
+                {tr('If {name} shares too, each of you sees how the other described you.', {
+                  name,
+                })}
               </Text>
             </View>
             <Switch
               value={value.shared}
               onValueChange={(shared) => set({ shared })}
-              accessibilityLabel={`Share with ${name}`}
+              accessibilityLabel={tr('Share with {name}', { name })}
               trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
             />
           </View>
@@ -296,7 +304,9 @@ export function RelationshipPicker({
           .addCustomRole(draft.sphere, draft.roleLabel)
           .then(() => qc.invalidateQueries({ queryKey: qk.taxonomy }))
           .catch(() => {});
-      toast(draft.shared ? `Saved and shared with ${name}` : 'Saved. Only you see it.');
+      toast(
+        draft.shared ? tr('Saved and shared with {name}', { name }) : tr('Saved. Only you see it.'),
+      );
       onClose();
       for (const key of [
         qk.person(person.id),
@@ -321,11 +331,11 @@ export function RelationshipPicker({
     <Sheet
       open={open}
       onClose={onClose}
-      title={`How do you know ${name}?`}
+      title={tr('How do you know {name}?', { name })}
       footer={
         <>
           <Button
-            label={onPick ? 'Done' : 'Save'}
+            label={onPick ? tr('Done') : tr('Save')}
             block
             size="lg"
             onPress={save}

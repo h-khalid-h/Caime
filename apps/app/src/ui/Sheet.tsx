@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { type ReactNode, useEffect, useId } from 'react';
 import {
   KeyboardAvoidingView,
@@ -63,7 +64,7 @@ export function Sheet({
       >
         <RNPressable
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={tr('Close')}
           onPress={onClose}
           style={{
             position: 'absolute',
@@ -120,7 +121,7 @@ export function Sheet({
                   </Text>
                 ) : null}
               </View>
-              <IconButton icon={X} label="Close" onPress={onClose} />
+              <IconButton icon={X} label={tr('Close')} onPress={onClose} />
             </View>
           ) : null}
           <Body

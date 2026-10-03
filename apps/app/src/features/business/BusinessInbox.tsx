@@ -6,6 +6,7 @@ import {
   waitedFor,
 } from '@caime/core/business';
 import { formatListTime } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { router, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
@@ -35,17 +36,26 @@ const OrgBookings = lazyPart(() => import('./OrgBookings').then((m) => m.OrgBook
 
 const EMPTY: Record<BusinessView, { title: string; body: string }> = {
   customer_waiting: {
-    title: 'Nobody is waiting',
-    body: 'When a customer writes, their conversation comes here until someone answers.',
+    title: msg('Nobody is waiting'),
+    body: msg('When a customer writes, their conversation comes here until someone answers.'),
   },
-  new: { title: 'Nothing new', body: 'Conversations nobody has answered yet show up here.' },
+  new: {
+    title: msg('Nothing new'),
+    body: msg('Conversations nobody has answered yet show up here.'),
+  },
   mine: {
-    title: 'Nothing is yours right now',
-    body: 'Answer a conversation, or take one, and it’s yours.',
+    title: msg('Nothing is yours right now'),
+    body: msg('Answer a conversation, or take one, and it’s yours.'),
   },
-  waiting: { title: 'No one to hear back from', body: 'Answered conversations wait here.' },
-  escalated: { title: 'Nothing escalated', body: 'Conversations that need an owner or admin.' },
-  resolved: { title: 'Nothing resolved yet', body: 'Resolved conversations stay here.' },
+  waiting: {
+    title: msg('No one to hear back from'),
+    body: msg('Answered conversations wait here.'),
+  },
+  escalated: {
+    title: msg('Nothing escalated'),
+    body: msg('Conversations that need an owner or admin.'),
+  },
+  resolved: { title: msg('Nothing resolved yet'), body: msg('Resolved conversations stay here.') },
 };
 
 function ThreadRow({
@@ -60,7 +70,7 @@ function ThreadRow({
   const t = useTheme();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const name = thread.customer?.displayName ?? 'Deleted account';
+  const name = thread.customer?.displayName ?? tr('Deleted account');
   const last = thread.lastMessage;
   const preview = last
     ? last.fromCustomer
@@ -133,12 +143,12 @@ function ThreadRow({
             {[
               // What its AI agent did first (PRD §75): a person still owes the customer an answer.
               thread.agentHandedOverAt && !thread.resolvedAt
-                ? 'Handed over by AI'
+                ? tr('Handed over by AI')
                 : last?.fromAgent
-                  ? 'Answered by AI'
+                  ? tr('Answered by AI')
                   : null,
-              thread.assignee ? thread.assignee.displayName : 'Nobody has it',
-              thread.customerUnder18 ? 'Under 18' : null,
+              thread.assignee ? thread.assignee.displayName : tr('Nobody has it'),
+              thread.customerUnder18 ? tr('Under 18') : null,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -181,18 +191,18 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
       <DetailPlaceholder
         character="pico"
         icon={Inbox}
-        title="Pick a conversation"
-        body="Customers waiting longest are at the top."
+        title={tr('Pick a conversation')}
+        body={tr('Customers waiting longest are at the top.')}
       />
     );
 
   if (org.isError || (summary && !summary.myRole))
     return (
       <Screen edges={desktop ? [] : ['top', 'bottom']}>
-        <TopBar title="Inbox" />
+        <TopBar title={tr('Inbox')} />
         <EmptyState
-          title="This inbox isn’t yours"
-          body="Only an organization’s team sees its conversations."
+          title={tr('This inbox isn’t yours')}
+          body={tr('Only an organization’s team sees its conversations.')}
         />
       </Screen>
     );
@@ -206,7 +216,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, gap: 8 }}
           accessibilityRole="tablist"
-          accessibilityLabel="Teams"
+          accessibilityLabel={tr('Teams')}
           testID="inbox-teams"
         >
           {teams.map(({ org: team, waiting }) => (
@@ -217,7 +227,9 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
               role="radio"
               tone={waiting && team.handle !== handle ? 'warning' : 'neutral'}
               accessibilityLabel={
-                waiting ? `${team.name}, ${waiting} waiting` : `${team.name}, nobody waiting`
+                waiting
+                  ? tr('{name}, {waiting} waiting', { name: team.name, waiting })
+                  : tr('{name}, nobody waiting', { name: team.name })
               }
               onPress={() =>
                 team.handle === handle
@@ -245,8 +257,8 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
                 key={v}
                 label={
                   n && v !== 'resolved'
-                    ? `${BUSINESS_VIEW_LABELS[v]} · ${n}`
-                    : BUSINESS_VIEW_LABELS[v]
+                    ? `${tr(BUSINESS_VIEW_LABELS[v])} · ${n}`
+                    : tr(BUSINESS_VIEW_LABELS[v])
                 }
                 selected={view === v}
                 tone={
@@ -262,7 +274,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
             );
           })}
           <Chip
-            label="Bookings"
+            label={tr('Bookings')}
             selected={view === 'bookings'}
             onPress={() => setView('bookings')}
             testID="business-view-bookings"
@@ -308,8 +320,8 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
               icon={Inbox}
               character="pico"
               expression="happy"
-              title={EMPTY[view as BusinessView].title}
-              body={EMPTY[view as BusinessView].body}
+              title={tr(EMPTY[view as BusinessView].title)}
+              body={tr(EMPTY[view as BusinessView].body)}
             />
           }
           contentContainerStyle={{ paddingBottom: 24 }}
@@ -324,7 +336,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
         summary?.myRole ? (
           <IconButton
             icon={SquarePen}
-            label="Write to someone"
+            label={tr('Write to someone')}
             onPress={() => setWriting(true)}
             testID="business-write-first"
           />
@@ -334,7 +346,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
         desktop ? undefined : (
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() =>
               router.canGoBack()
                 ? router.back()
@@ -346,14 +358,14 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${summary?.name ?? ''}, profile`}
+        accessibilityLabel={tr('{name}, profile', { name: summary?.name ?? '' })}
         onPress={() => router.push({ pathname: '/o/[handle]', params: { handle } })}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
       >
         {summary ? <OrgMark kind={summary.kind} url={summary.avatarUrl} size={34} /> : null}
         <View>
           <Text variant="label" numberOfLines={1}>
-            Inbox
+            {tr('Inbox')}
           </Text>
           <Text variant="caption" color="textSecondary" numberOfLines={1}>
             {summary?.name ?? ''}

@@ -1,6 +1,7 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { extractAmounts } from '@caime/core/intelligence';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
@@ -95,7 +96,7 @@ function readField(
               shown: raw,
             };
       const when = anyTense ? parseWhen(raw, clock)[0] : firstFutureWhen(raw, clock);
-      if (!when) return { shown: 'Say a day, and a time if there is one: “Friday 3pm”' };
+      if (!when) return { shown: tr('Say a day, and a time if there is one: “Friday 3pm”') };
       const at = new Date(when.at);
       const shown = new Intl.DateTimeFormat(clock.locale, {
         weekday: 'short',
@@ -119,7 +120,11 @@ function readField(
       const found = typed === null ? extractAmounts(raw)[0] : undefined;
       const value = typed ?? found?.value;
       if (!value || !Number.isFinite(value))
-        return { shown: `Write an amount: “${exampleAmount(clock.locale)}”` };
+        return {
+          shown: tr('Write an amount: “{exampleAmount}”', {
+            exampleAmount: exampleAmount(clock.locale),
+          }),
+        };
       const currency = found?.currency ?? extra.currency ?? null;
       // Shown as it will be kept (core roundAmount: a dinar to its thousandth, a yen whole).
       const kept = roundAmount(value, currency);
@@ -134,8 +139,8 @@ function readField(
 }
 
 const PLACEHOLDERS: Partial<Record<KitField['type'], string>> = {
-  datetime: 'Friday 3pm',
-  date: 'October 15',
+  datetime: msg('Friday 3pm'),
+  date: msg('October 15'),
 };
 
 export function KitForm({
@@ -283,7 +288,7 @@ export function KitForm({
           extraFor(field),
         );
         if ((texts[field.key] ?? '').trim() && read.value === undefined)
-          return setError(`${field.label}: ${read.shown ?? 'that doesn’t look right.'}`);
+          return setError(`${tr(field.label)}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
       }
       if (slots?.slots.length) {
@@ -326,7 +331,7 @@ export function KitForm({
       subtitle={def?.description}
       footer={
         <Button
-          label="Send"
+          label={tr('Send')}
           block
           size="lg"
           onPress={() => void send()}
@@ -339,25 +344,29 @@ export function KitForm({
         <View style={{ gap: 12 }}>
           <Text variant="caption" color="textSecondary">
             {liveFor === '0' || !spot
-              ? 'Only this moment is shared, never where you go after.'
-              : 'Where you are follows here until then, while Caime is open. Stop it any time; only the latest point is kept.'}
+              ? tr('Only this moment is shared, never where you go after.')
+              : tr(
+                  'Where you are follows here until then, while Caime is open. Stop it any time; only the latest point is kept.',
+                )}
           </Text>
           {spot ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <MapPin size={18} color={t.c.success} />
               <Text variant="body" style={{ flex: 1 }} testID="location-found">
-                {spot.accuracy ? `Found you, within ${spot.accuracy} m.` : 'Found you.'}
+                {spot.accuracy
+                  ? tr('Found you, within {accuracy} m.', { accuracy: spot.accuracy })
+                  : tr('Found you.')}
               </Text>
-              <Button label="Clear" size="sm" variant="ghost" onPress={() => setSpot(null)} />
+              <Button label={tr('Clear')} size="sm" variant="ghost" onPress={() => setSpot(null)} />
             </View>
           ) : null}
           {spot ? (
             <Segmented
-              label="How long to share it"
+              label={tr('How long to share it')}
               value={liveFor}
               onChange={setLiveFor}
               options={[
-                { value: '0', label: 'Just now' },
+                { value: '0', label: tr('Just now') },
                 { value: '15', label: '15 min' },
                 { value: '60', label: '1 hour' },
                 { value: '480', label: '8 hours' },
@@ -365,7 +374,7 @@ export function KitForm({
             />
           ) : (
             <Button
-              label="Use where I am now"
+              label={tr('Use where I am now')}
               icon={MapPin}
               variant="secondary"
               loading={locating}
@@ -374,8 +383,8 @@ export function KitForm({
             />
           )}
           <TextField
-            label={spot ? 'Name it (optional)' : 'Or type a place'}
-            placeholder={spot ? 'Home, the office…' : 'Café Riche, Downtown'}
+            label={spot ? tr('Name it (optional)') : tr('Or type a place')}
+            placeholder={spot ? tr('Home, the office…') : tr('Café Riche, Downtown')}
             value={texts.label ?? ''}
             onChangeText={(v) => setTexts((s) => ({ ...s, label: v }))}
             testID="location-label"
@@ -384,7 +393,7 @@ export function KitForm({
       ) : kit === 'poll' ? (
         <View style={{ gap: 12 }}>
           <TextField
-            label="Question"
+            label={tr('Question')}
             value={texts.question ?? ''}
             onChangeText={(v) => setTexts((s) => ({ ...s, question: v }))}
             autoFocus
@@ -393,7 +402,7 @@ export function KitForm({
             <TextField
               // biome-ignore lint/suspicious/noArrayIndexKey: options are positional while typed
               key={i}
-              label={`Option ${i + 1}`}
+              label={tr('Option {i}', { i: i + 1 })}
               value={o}
               onChangeText={(v) => setOptions((all) => all.map((x, j) => (j === i ? v : x)))}
             />
@@ -401,13 +410,13 @@ export function KitForm({
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             {options.length < 12 ? (
               <Chip
-                label="Add an option"
+                label={tr('Add an option')}
                 icon={Plus}
                 onPress={() => setOptions((all) => [...all, ''])}
               />
             ) : null}
             <Chip
-              label="People can pick more than one"
+              label={tr('People can pick more than one')}
               selected={multiple}
               onPress={() => setMultiple((v) => !v)}
             />
@@ -418,13 +427,13 @@ export function KitForm({
           {def.fields.map((field, i) =>
             field.type === 'items' ? (
               <View key={field.key} style={{ gap: 8 }}>
-                <Text variant="label">{field.label}</Text>
+                <Text variant="label">{tr(field.label)}</Text>
                 {options.map((o, j) => (
                   <TextField
                     // biome-ignore lint/suspicious/noArrayIndexKey: items are positional while typed
                     key={j}
-                    accessibilityLabel={`Item ${j + 1}`}
-                    placeholder={j === 0 ? 'Milk' : j === 1 ? 'Bread' : ''}
+                    accessibilityLabel={tr('Item {j}', { j: j + 1 })}
+                    placeholder={j === 0 ? tr('Milk') : j === 1 ? tr('Bread') : ''}
                     value={o}
                     onChangeText={(v) => setOptions((all) => all.map((x, k) => (k === j ? v : x)))}
                     testID={`checklist-item-input-${j}`}
@@ -432,7 +441,7 @@ export function KitForm({
                 ))}
                 {options.length < 100 ? (
                   <Chip
-                    label="Add an item"
+                    label={tr('Add an item')}
                     icon={Plus}
                     onPress={() => setOptions((all) => [...all, ''])}
                   />
@@ -440,7 +449,7 @@ export function KitForm({
               </View>
             ) : field.type === 'options' ? (
               <View key={field.key} style={{ gap: 6 }}>
-                <Text variant="label">{field.label}</Text>
+                <Text variant="label">{tr(field.label)}</Text>
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                   {(field.choices ?? []).map((c) => (
                     <Chip
@@ -472,10 +481,14 @@ export function KitForm({
             ) : (
               <TextField
                 key={field.key}
-                label={field.required ? field.label : `${field.label} (optional)`}
+                label={
+                  field.required ? field.label : tr('{label} (optional)', { label: field.label })
+                }
                 placeholder={
                   field.placeholder ??
-                  (field.type === 'amount' ? exampleAmount(clock.locale) : PLACEHOLDERS[field.type])
+                  (field.type === 'amount'
+                    ? exampleAmount(clock.locale)
+                    : tr(PLACEHOLDERS[field.type] ?? ''))
                 }
                 value={texts[field.key] ?? ''}
                 onChangeText={(v) => setTexts((s) => ({ ...s, [field.key]: v }))}
@@ -495,7 +508,7 @@ export function KitForm({
                   ) : field.type === 'date' || field.type === 'datetime' ? (
                     <IconButton
                       icon={Calendar}
-                      label={`Choose ${field.label.toLowerCase()}`}
+                      label={tr('Choose {field}', { field: tr(field.label).toLowerCase() })}
                       onPress={() => setChoosing(field)}
                       testID={`kit-when-${field.key}`}
                     />

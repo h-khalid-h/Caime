@@ -2,6 +2,8 @@
  * The currency an amount is in: its code as a chip beside the amount, the person's or the
  * organization's country's to start with, any other found by name or code in a sheet.
  */
+
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { endpoints } from '@/api/endpoints';
@@ -55,7 +57,7 @@ export function CurrencyField({
   return (
     <>
       <Chip
-        label={value ?? 'Currency'}
+        label={value ?? tr('Currency')}
         icon={ChevronDown}
         onPress={() => {
           setOpen(true);
@@ -63,7 +65,10 @@ export function CurrencyField({
           // A list that didn't load is asked for again as it's opened.
           if (currencies.isError) void currencies.refetch();
         }}
-        accessibilityLabel={`${label}, ${name ?? value ?? 'not chosen'}. Change it`}
+        accessibilityLabel={tr('{label}, {name}. Change it', {
+          label,
+          name: name ?? value ?? tr('not chosen'),
+        })}
         testID={testID}
       />
       {opened ? (
@@ -75,11 +80,11 @@ export function CurrencyField({
           value={value}
           onPick={onChange}
           matches={matches}
-          searchLabel="Search currencies"
+          searchLabel={tr('Search currencies')}
           loading={currencies.isPending}
           failed={currencies.isError}
           onRetry={() => void currencies.refetch()}
-          empty="No currency by that name."
+          empty={tr('No currency by that name.')}
           testID={testID}
         />
       ) : null}

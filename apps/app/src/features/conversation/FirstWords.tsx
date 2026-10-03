@@ -1,4 +1,5 @@
 import type { ConversationView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { EmptyState } from '@/ui/EmptyState';
@@ -31,22 +32,28 @@ export function FirstWords({
     sphere === 'organization';
   const lines = professional
     ? [
-        `Good to have you here, ${first}.`,
-        'What are you working on this week?',
-        'Shall we keep our threads here from now on?',
+        tr('Good to have you here, {first}.', { first }),
+        tr('What are you working on this week?'),
+        tr('Shall we keep our threads here from now on?'),
       ]
-    : [`Hey ${first}! We\u2019re on Caime now.`, 'How have you been?', 'What\u2019s new with you?'];
+    : [
+        tr('Hey {first}! We’re on Caime now.', { first }),
+        tr('How have you been?'),
+        tr('What’s new with you?'),
+      ];
   return (
     <View testID="first-words">
       <EmptyState
         compact
         character="momo"
         expression="happy"
-        title={`Your first words with ${first}`}
+        title={tr('Your first words with {first}', { first })}
         body={
           other.relationship
-            ? `${other.relationship.label}: only you see that label. Say something, or pick a line to start from.`
-            : 'Say something, or pick a line to start from.'
+            ? tr('{label}: only you see that label. Say something, or pick a line to start from.', {
+                label: other.relationship.label,
+              })
+            : tr('Say something, or pick a line to start from.')
         }
         action={
           <View

@@ -6,6 +6,7 @@
  */
 import type { CalendarItemView } from '@caime/core/api';
 import { formatClock, formatDayHeading } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
@@ -57,7 +58,7 @@ function Row({
   const line = [who, item.relationship?.label, item.place].filter(Boolean).join(' · ');
   const when = item.hasTime
     ? `${formatClock(item.at, timeZone, locale)}${item.endAt ? `–${formatClock(item.endAt, timeZone, locale)}` : ''}`
-    : 'All day';
+    : tr('All day');
   const state = STATE_LABEL[item.state];
   return (
     <Pressable
@@ -165,8 +166,10 @@ export function CalendarList() {
           character="lumi"
           expression="happy"
           icon={CalendarClock}
-          title="Nothing coming up"
-          body="Meetings and appointments agreed in your conversations, and actions with a due date, show here by day."
+          title={tr('Nothing coming up')}
+          body={tr(
+            'Meetings and appointments agreed in your conversations, and actions with a due date, show here by day.',
+          )}
         />
       }
       contentContainerStyle={{

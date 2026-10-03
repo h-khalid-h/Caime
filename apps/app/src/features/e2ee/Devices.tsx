@@ -1,4 +1,5 @@
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
@@ -29,8 +30,10 @@ export function PrivateDevices() {
       .catch((e) => toast((e as Error).message, { tone: 'danger' }));
   return (
     <Group
-      title="Reading private conversations"
-      footer="A device you sign in on waits until you approve it from one of these. Removing one signs it out."
+      title={tr('Reading private conversations')}
+      footer={tr(
+        'A device you sign in on waits until you approve it from one of these. Removing one signs it out.',
+      )}
     >
       {devices.map((d, i) => (
         <View
@@ -40,25 +43,29 @@ export function PrivateDevices() {
         >
           <ListRow
             icon={d.recovery ? KeyRound : Lock}
-            title={d.recovery ? 'Your recovery key' : (d.name ?? 'A device')}
+            title={d.recovery ? tr('Your recovery key') : (d.name ?? tr('A device'))}
             subtitle={
               d.recovery
-                ? `Made ${formatListTime(d.createdAt, now, timeZone, locale)} · every private message is sealed for it too`
+                ? tr('Made {formatListTime} · every private message is sealed for it too', {
+                    formatListTime: formatListTime(d.createdAt, now, timeZone, locale),
+                  })
                 : d.current
                   ? d.approved
-                    ? 'This device'
-                    : 'This device · waiting for you to approve it on another'
+                    ? tr('This device')
+                    : tr('This device · waiting for you to approve it on another')
                   : !d.approved
-                    ? 'Waiting for you to approve it'
+                    ? tr('Waiting for you to approve it')
                     : d.unconfirmed
-                      ? 'None of your devices approved it: nothing is sealed for it'
-                      : `Added ${formatListTime(d.createdAt, now, timeZone, locale)}`
+                      ? tr('None of your devices approved it: nothing is sealed for it')
+                      : tr('Added {formatListTime}', {
+                          formatListTime: formatListTime(d.createdAt, now, timeZone, locale),
+                        })
             }
             right={
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 {!d.approved && !d.current ? (
                   <Button
-                    label="Approve"
+                    label={tr('Approve')}
                     size="sm"
                     onPress={() => act((p) => p.approveDevice(d.id), 'Approved.')}
                     testID="private-device-approve"
@@ -66,7 +73,7 @@ export function PrivateDevices() {
                 ) : null}
                 {d.current ? null : (
                   <Button
-                    label={d.recovery ? 'Turn off' : 'Remove'}
+                    label={d.recovery ? tr('Turn off') : tr('Remove')}
                     size="sm"
                     variant="danger"
                     onPress={() =>

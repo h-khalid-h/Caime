@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { IMPORT_MAX_MESSAGES } from '@caime/core/imports';
 import { otherAuthor, parseWhatsApp, type WhatsAppChat } from '@caime/core/whatsapp';
 import { useQueryClient } from '@tanstack/react-query';
@@ -70,7 +71,7 @@ export function WhatsAppImport({
       setFileName(asset.name);
       setMine(null);
     } catch {
-      toast('That file couldn’t be read.', { tone: 'danger' });
+      toast(tr('That file couldn’t be read.'), { tone: 'danger' });
     }
   };
 
@@ -89,7 +90,12 @@ export function WhatsAppImport({
         })),
       });
       void qc.invalidateQueries({ queryKey: qk.inbox });
-      toast(`${imported.toLocaleString(locale)} messages brought over`, { tone: 'success' });
+      toast(
+        tr('{toLocaleString} messages brought over', {
+          toLocaleString: imported.toLocaleString(locale),
+        }),
+        { tone: 'success' },
+      );
       onDone(conversationId);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -109,11 +115,13 @@ export function WhatsAppImport({
     <Sheet
       open
       onClose={onClose}
-      title="Bring over a WhatsApp chat"
-      subtitle={`What you and ${other.name} said there, kept as a topic here. Only you two see it.`}
+      title={tr('Bring over a WhatsApp chat')}
+      subtitle={tr('What you and {name} said there, kept as a topic here. Only you two see it.', {
+        name: other.name,
+      })}
       footer={
         <Button
-          label={chat ? 'Bring it over' : 'Choose the file'}
+          label={chat ? tr('Bring it over') : tr('Choose the file')}
           block
           size="lg"
           disabled={!!chat && !ready}
@@ -126,9 +134,9 @@ export function WhatsAppImport({
       <View style={{ gap: 16 }}>
         {!chat ? (
           <Text variant="body" color="textSecondary">
-            In WhatsApp, open the chat, then More › Export chat › Without media. Save the text file
-            somewhere you can pick it from here. Photos and files don’t come along; the words do,
-            dated as they were written.
+            {tr(
+              'In WhatsApp, open the chat, then More › Export chat › Without media. Save the text file somewhere you can pick it from here. Photos and files don’t come along; the words do, dated as they were written.',
+            )}
           </Text>
         ) : (
           <>
@@ -146,16 +154,17 @@ export function WhatsAppImport({
               </Text>
               <Text variant="caption" color="textSecondary">
                 {nothing
-                  ? 'No messages were found in it. Is it the exported chat?'
-                  : `${chat.messages.length.toLocaleString(locale)} messages, ${
-                      first && last ? `${days(first)} to ${days(last)}` : ''
-                    }${
-                      chat.mediaOmitted === 1
-                        ? ', and a photo or file the export left out'
-                        : chat.mediaOmitted
-                          ? `, and ${chat.mediaOmitted.toLocaleString(locale)} photos or files the export left out`
-                          : ''
-                    }`}
+                  ? tr('No messages were found in it. Is it the exported chat?')
+                  : tr('{toLocaleString} messages, {text}{and}', {
+                      toLocaleString: chat.messages.length.toLocaleString(locale),
+                      text: first && last ? `${days(first)} to ${days(last)}` : '',
+                      and:
+                        chat.mediaOmitted === 1
+                          ? tr(', and a photo or file the export left out')
+                          : chat.mediaOmitted
+                            ? `, and ${chat.mediaOmitted.toLocaleString(locale)} photos or files the export left out`
+                            : '',
+                    })}
               </Text>
               {chat.messages.length > IMPORT_MAX_MESSAGES ? (
                 <Text variant="caption" color="textSecondary">
@@ -165,34 +174,40 @@ export function WhatsAppImport({
             </View>
             {group ? (
               <Text variant="body" color="danger" testID="import-group">
-                This export has {chat.authors.length} names in it: it’s a group. Bring over a chat
-                with {other.name} alone.
+                {tr(
+                  'This export has {length} names in it: it’s a group. Bring over a chat with {name} alone.',
+                  { length: chat.authors.length, name: other.name },
+                )}
               </Text>
             ) : !nothing ? (
               <>
                 <Choice
-                  label="Which name is you?"
+                  label={tr('Which name is you?')}
                   value={chosen ?? ''}
                   onChange={setMine}
                   options={chat.authors.map((a) => ({
                     value: a,
                     label: a,
-                    detail: a === chosen ? 'You' : `${other.name} here`,
+                    detail: a === chosen ? tr('You') : tr('{name} here', { name: other.name }),
                   }))}
                 />
                 {chat.ambiguous ? (
                   <Choice
-                    label="How its dates read"
+                    label={tr('How its dates read')}
                     value={chat.dayFirst ? 'day' : 'month'}
                     onChange={(v) => setDayFirst(v === 'day')}
                     options={[
-                      { value: 'day', label: 'Day first', detail: '13/03/2024 is 13 March' },
-                      { value: 'month', label: 'Month first', detail: '03/13/2024 is 13 March' },
+                      { value: 'day', label: tr('Day first'), detail: '13/03/2024 is 13 March' },
+                      {
+                        value: 'month',
+                        label: tr('Month first'),
+                        detail: '03/13/2024 is 13 March',
+                      },
                     ]}
                   />
                 ) : null}
                 <TextField
-                  label="Name the topic"
+                  label={tr('Name the topic')}
                   value={title}
                   onChangeText={setTitle}
                   maxLength={80}
@@ -201,7 +216,7 @@ export function WhatsAppImport({
               </>
             ) : null}
             <Button
-              label="Choose another file"
+              label={tr('Choose another file')}
               variant="secondary"
               onPress={() => void pick()}
               testID="import-repick"

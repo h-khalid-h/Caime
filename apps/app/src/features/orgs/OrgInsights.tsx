@@ -1,4 +1,5 @@
 import { replyTimeText } from '@caime/core/business';
+import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -12,8 +13,8 @@ import { Text } from '@/ui/Text';
 
 /** Against the period before, in words read at a glance: "Up from 3", "Same as before". */
 function versus(now: number, before: number): string | null {
-  if (now === before) return before ? 'Same as before' : null;
-  return `${now > before ? 'Up' : 'Down'} from ${before}`;
+  if (now === before) return before ? tr('Same as before') : null;
+  return tr('{Up} from {before}', { Up: now > before ? tr('Up') : tr('Down'), before });
 }
 
 function Stat({
@@ -71,13 +72,13 @@ export function OrgInsights({ orgId }: { orgId: string }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <ChartBar size={20} color={t.c.textSecondary} />
           <Text variant="label" style={{ flex: 1 }}>
-            Insights
+            {tr('Insights')}
           </Text>
           <View style={{ flexShrink: 0, width: 180 }}>
             <Segmented
               value={days}
               onChange={setDays}
-              label="Period"
+              label={tr('Period')}
               options={[
                 { value: '7', label: '7 days' },
                 { value: '30', label: '30 days' },
@@ -88,29 +89,32 @@ export function OrgInsights({ orgId }: { orgId: string }) {
         {i ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             <Stat
-              label="Customers"
+              label={tr('Customers')}
               value={String(i.conversations)}
               detail={versus(i.conversations, i.previous.conversations)}
               testID="insight-conversations"
             />
             <Stat
-              label="First answer"
+              label={tr('First answer')}
               value={i.reply.medianMinutes === null ? '—' : replyTimeText(i.reply.medianMinutes)}
               detail={
                 i.reply.answered
-                  ? `${i.reply.withinHour} of ${i.reply.answered} within an hour`
-                  : 'Nothing answered yet'
+                  ? tr('{withinHour} of {answered} within an hour', {
+                      withinHour: i.reply.withinHour,
+                      answered: i.reply.answered,
+                    })
+                  : tr('Nothing answered yet')
               }
               testID="insight-reply"
             />
             <Stat
-              label="Waiting now"
+              label={tr('Waiting now')}
               value={String(i.waitingNow)}
-              detail={i.waitingNow ? 'For someone on the team' : 'Nobody'}
+              detail={i.waitingNow ? tr('For someone on the team') : tr('Nobody')}
               testID="insight-waiting"
             />
             <Stat
-              label="Resolved"
+              label={tr('Resolved')}
               value={String(i.resolved)}
               detail={versus(i.resolved, i.previous.resolved)}
               testID="insight-resolved"
@@ -118,11 +122,13 @@ export function OrgInsights({ orgId }: { orgId: string }) {
           </View>
         ) : (
           <Text variant="caption" color="textTertiary">
-            {q.isError ? 'Insights didn’t load. Try again in a moment.' : 'Loading…'}
+            {q.isError ? tr('Insights didn’t load. Try again in a moment.') : tr('Loading…')}
           </Text>
         )}
         <Text variant="caption" color="textTertiary">
-          The whole team’s numbers, never one person’s. Answers from an app’s bot don’t count.
+          {tr(
+            'The whole team’s numbers, never one person’s. Answers from an app’s bot don’t count.',
+          )}
         </Text>
       </View>
     </Card>

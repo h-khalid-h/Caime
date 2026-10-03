@@ -1,3 +1,4 @@
+import { msg, tr } from '@caime/core/i18n';
 import { type Href, router } from 'expo-router';
 import { View } from 'react-native';
 import { useBusinessSummary } from '@/api/hooks';
@@ -101,11 +102,17 @@ const ITEMS: Array<{
   href: Href;
   badge?: 'chats' | 'people' | 'actions';
 }> = [
-  { section: 'chats', label: 'Chats', icon: MessageCircle, href: '/', badge: 'chats' },
-  { section: 'people', label: 'People', icon: Users, href: '/people', badge: 'people' },
-  { section: 'spaces', label: 'Spaces', icon: LayoutGrid, href: '/spaces' },
-  { section: 'actions', label: 'Actions', icon: ListChecks, href: '/actions', badge: 'actions' },
-  { section: 'search', label: 'Search', icon: Search, href: '/search' },
+  { section: 'chats', label: msg('Chats'), icon: MessageCircle, href: '/', badge: 'chats' },
+  { section: 'people', label: msg('People'), icon: Users, href: '/people', badge: 'people' },
+  { section: 'spaces', label: msg('Spaces'), icon: LayoutGrid, href: '/spaces' },
+  {
+    section: 'actions',
+    label: msg('Actions'),
+    icon: ListChecks,
+    href: '/actions',
+    badge: 'actions',
+  },
+  { section: 'search', label: msg('Search'), icon: Search, href: '/search' },
 ];
 
 /** The desktop sidebar's first column. */
@@ -132,14 +139,14 @@ export function NavRail() {
         gap: 6,
       }}
     >
-      <View style={{ height: 44, justifyContent: 'center' }} accessibilityLabel="Caime">
+      <View style={{ height: 44, justifyContent: 'center' }} accessibilityLabel={tr('Caime')}>
         <IconMark size={40} />
       </View>
       {ITEMS.map((i) => (
         <RailItem
           key={i.section}
           icon={i.icon}
-          label={i.label}
+          label={tr(i.label)}
           href={i.href}
           active={section === i.section}
           count={i.badge ? badges[i.badge] : undefined}
@@ -148,7 +155,7 @@ export function NavRail() {
       {first ? (
         <RailItem
           icon={Briefcase}
-          label="Business"
+          label={tr('Business')}
           href={{ pathname: '/o/[handle]/inbox', params: { handle: first } }}
           active={section === 'business'}
           count={teams.reduce((n, o) => n + o.waiting, 0)}
@@ -157,14 +164,14 @@ export function NavRail() {
       <View style={{ flex: 1 }} />
       <RailItem
         icon={Bell}
-        label="Alerts"
+        label={tr('Alerts')}
         href="/notifications"
         active={section === 'notifications'}
         count={badges.notifications}
       />
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel="You and settings"
+        accessibilityLabel={tr('You and settings')}
         onPress={() => router.navigate('/you')}
         focusRadius={24}
         style={{

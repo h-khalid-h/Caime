@@ -1,4 +1,5 @@
 import type { InviteView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { relationshipLabel, SPHERE_DEFS } from '@caime/core/taxonomy';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -67,15 +68,18 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
   const revoke = useMutation({
     mutationFn: (id: string) => endpoints.revokeInvite(id),
     onSuccess: () => {
-      toast('Link taken back');
+      toast(tr('Link taken back'));
       void qc.invalidateQueries({ queryKey: qk.invites });
     },
     onError: (e) => toast((e as Error).message, { tone: 'danger' }),
   });
   const share = (invite: InviteView) =>
-    void shareLink(`${me.displayName} invited you to Caime:`, invite.url);
+    void shareLink(
+      tr('{displayName} invited you to Caime:', { displayName: me.displayName }),
+      invite.url,
+    );
   const copy = async (invite: InviteView) => {
-    if (await copyText(invite.url)) toast('Link copied');
+    if (await copyText(invite.url)) toast(tr('Link copied'));
     else toast(invite.url);
   };
 
@@ -84,10 +88,10 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
       <Sheet
         open={open}
         onClose={onClose}
-        title="How will you know them?"
+        title={tr('How will you know them?')}
         footer={
           <Button
-            label="Done"
+            label={tr('Done')}
             size="lg"
             block
             disabled={!form.sphere}
@@ -105,12 +109,14 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
       <Sheet
         open={open}
         onClose={onClose}
-        title="Your invite link"
-        subtitle="Whoever opens it signs up in half a minute and lands in a conversation with you, connected."
+        title={tr('Your invite link')}
+        subtitle={tr(
+          'Whoever opens it signs up in half a minute and lands in a conversation with you, connected.',
+        )}
         footer={
           <View style={{ gap: 8 }}>
             <Button
-              label="Share the link"
+              label={tr('Share the link')}
               size="lg"
               block
               icon={Link}
@@ -118,7 +124,7 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
               testID="invite-share"
             />
             <Button
-              label="Copy the link"
+              label={tr('Copy the link')}
               variant="secondary"
               size="lg"
               block
@@ -135,7 +141,7 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
         {made.relationship ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text variant="caption" color="textSecondary">
-              They’ll be
+              {tr('They’ll be')}
             </Text>
             <RelationshipChip label={made.relationship.label} sphere={made.relationship.sphere} />
           </View>
@@ -153,11 +159,13 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
     <Sheet
       open={open}
       onClose={onClose}
-      title="Invite someone"
-      subtitle="A link that lands them in a conversation with you, connected, the moment they sign up."
+      title={tr('Invite someone')}
+      subtitle={tr(
+        'A link that lands them in a conversation with you, connected, the moment they sign up.',
+      )}
       footer={
         <Button
-          label="Make the link"
+          label={tr('Make the link')}
           size="lg"
           block
           loading={make.isPending}
@@ -168,8 +176,8 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
     >
       <View style={{ marginHorizontal: -20 }}>
         <ListRow
-          title={label ? 'How you’ll know them' : 'How will you know them?'}
-          subtitle={label ? undefined : 'Optional. They never see your label.'}
+          title={label ? tr('How you’ll know them') : tr('How will you know them?')}
+          subtitle={label ? undefined : tr('Optional. They never see your label.')}
           right={
             label && draft ? (
               <RelationshipChip label={label} sphere={draft.sphere} size="md" />
@@ -183,9 +191,9 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
       {draft ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Show them the context</Text>
+            <Text variant="bodyStrong">{tr('Show them the context')}</Text>
             <Text variant="caption" color="textSecondary">
-              The page they open says “{SPHERE_DEFS[draft.sphere].label}
+              The page they open says “{tr(SPHERE_DEFS[draft.sphere].label)}
               {draft.orgName ? ` · ${draft.orgName}` : ''}”, not your label, so they know who’s
               asking.
             </Text>
@@ -194,13 +202,13 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
             value={showContext}
             onValueChange={setShowContext}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Show the context"
+            accessibilityLabel={tr('Show the context')}
           />
         </View>
       ) : null}
       <TextField
-        label="A line for them (optional)"
-        placeholder="Hi, it’s…"
+        label={tr('A line for them (optional)')}
+        placeholder={tr('Hi, it’s…')}
         value={note}
         onChangeText={setNote}
         maxLength={280}
@@ -210,23 +218,32 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
       {live.length ? (
         <View style={{ gap: 4, marginTop: 8 }}>
           <Text variant="overline" color="textTertiary">
-            Links you’ve made
+            {tr('Links you’ve made')}
           </Text>
           <View style={{ marginHorizontal: -20 }}>
             {live.map((i) => (
               <ListRow
                 key={i.id}
                 icon={Link}
-                title={i.relationship?.label ?? 'Anyone'}
-                subtitle={`${i.uses === 1 ? '1 person joined' : `${i.uses} people joined`} · ${daysLeft(i)} days left`}
+                title={i.relationship?.label ?? tr('Anyone')}
+                subtitle={tr('{person} · {daysLeft} days left', {
+                  person: i.uses === 1 ? '1 person joined' : `${i.uses} people joined`,
+                  daysLeft: daysLeft(i),
+                })}
                 onPress={() => share(i)}
-                accessibilityLabel={`Share the invite for ${i.relationship?.label ?? 'anyone'}`}
+                accessibilityLabel={tr('Share the invite for {label}', {
+                  label: i.relationship?.label ?? 'anyone',
+                })}
                 right={
                   <View style={{ flexDirection: 'row', gap: 4 }}>
-                    <IconButton icon={Copy} label="Copy the link" onPress={() => void copy(i)} />
+                    <IconButton
+                      icon={Copy}
+                      label={tr('Copy the link')}
+                      onPress={() => void copy(i)}
+                    />
                     <IconButton
                       icon={Trash}
-                      label="Take the link back"
+                      label={tr('Take the link back')}
                       onPress={() => revoke.mutate(i.id)}
                       testID={`invite-revoke-${i.id}`}
                     />

@@ -1,4 +1,5 @@
 import { formatListTime, snippetParts } from '@caime/core/format';
+import { msg, tr, trn } from '@caime/core/i18n';
 import { parseSearchQuery } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -36,7 +37,7 @@ const EXAMPLES = [
   'my manager',
   'files from Sarah',
   'decisions last week',
-  'DATA C',
+  msg('DATA C'),
   'links in work',
 ];
 
@@ -108,12 +109,12 @@ export default function Search() {
           !desktop ? (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />
           ) : null
         }
-        title="Search"
+        title={tr('Search')}
       />
       <ScrollView
         contentContainerStyle={{
@@ -127,17 +128,17 @@ export default function Search() {
         <View style={{ padding: 16, gap: 8 }}>
           <TextField
             icon={SearchIcon}
-            placeholder="People, messages, files, decisions…"
+            placeholder={tr('People, messages, files, decisions…')}
             value={term}
             onChangeText={setTerm}
             autoFocus
             returnKeyType="search"
-            accessibilityLabel="Search"
+            accessibilityLabel={tr('Search')}
             testID="search-input"
           />
           {offline ? (
             <Text variant="caption" color="warning" testID="search-offline">
-              Offline. Showing what’s on this device.
+              {tr('Offline. Showing what’s on this device.')}
             </Text>
           ) : interpretation ? (
             <Text variant="caption" color="textSecondary">
@@ -149,7 +150,7 @@ export default function Search() {
           <View style={{ alignItems: 'center', gap: 12, padding: 24 }}>
             <Guide character="pico" expression="curious" icon={SearchIcon} size={100} />
             <Text variant="body" color="textSecondary" align="center">
-              Search the way you think about people. Try:
+              {tr('Search the way you think about people. Try:')}
             </Text>
             <View
               style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}
@@ -169,7 +170,7 @@ export default function Search() {
                     overflow: 'hidden',
                   }}
                 >
-                  {e}
+                  {tr(e)}
                 </Text>
               ))}
             </View>
@@ -177,7 +178,7 @@ export default function Search() {
         ) : null}
         {r?.people?.length ? (
           <>
-            <SectionTitle>People</SectionTitle>
+            <SectionTitle>{tr('People')}</SectionTitle>
             {r.people.map((p) => (
               <ListRow
                 key={p.person.id}
@@ -205,13 +206,13 @@ export default function Search() {
         ) : null}
         {r?.organizations?.length ? (
           <>
-            <SectionTitle>Organizations</SectionTitle>
+            <SectionTitle>{tr('Organizations')}</SectionTitle>
             {r.organizations.map((o) => (
               <ListRow
                 key={o.name ?? ''}
                 icon={Building}
                 title={o.name ?? ''}
-                subtitle={`${o.people} ${o.people === 1 ? 'person' : 'people'}`}
+                subtitle={trn(o.people, '{n} person', '{n} people')}
                 onPress={() => setTerm(o.name ?? '')}
               />
             ))}
@@ -219,7 +220,7 @@ export default function Search() {
         ) : null}
         {r?.messages?.length ? (
           <>
-            <SectionTitle>Messages</SectionTitle>
+            <SectionTitle>{tr('Messages')}</SectionTitle>
             {r.messages.map((m) => {
               const parts = [
                 ...snippetParts(m.snippet),
@@ -229,7 +230,7 @@ export default function Search() {
                 <ListRow
                   key={m.id}
                   icon={MessageCircle}
-                  title={m.senderName ?? 'Message'}
+                  title={m.senderName ?? tr('Message')}
                   subtitle={parts.map((p) => p.text).join('')}
                   subtitleParts={parts}
                   onPress={() =>
@@ -247,12 +248,12 @@ export default function Search() {
         ) : null}
         {r?.files?.length ? (
           <>
-            <SectionTitle>Files and links</SectionTitle>
+            <SectionTitle>{tr('Files and links')}</SectionTitle>
             {r.files.map((f) => (
               <ListRow
                 key={f.id}
                 icon={f.kind === 'link' ? Link : FileText}
-                title={f.title ?? f.file?.name ?? f.host ?? 'File'}
+                title={f.title ?? f.file?.name ?? f.host ?? tr('File')}
                 subtitle={f.host ?? formatListTime(f.createdAt, now, timeZone, locale)}
                 onPress={() =>
                   open(() =>
@@ -265,7 +266,7 @@ export default function Search() {
         ) : null}
         {r?.tasks?.length ? (
           <>
-            <SectionTitle>Actions</SectionTitle>
+            <SectionTitle>{tr('Actions')}</SectionTitle>
             {r.tasks.map((task) => (
               <ListRow
                 key={task.id}
@@ -279,7 +280,7 @@ export default function Search() {
         ) : null}
         {r?.decisions?.length ? (
           <>
-            <SectionTitle>Decisions</SectionTitle>
+            <SectionTitle>{tr('Decisions')}</SectionTitle>
             {r.decisions.map((d) => (
               <ListRow
                 key={d.id}
@@ -297,12 +298,12 @@ export default function Search() {
         ) : null}
         {r?.contexts?.length ? (
           <>
-            <SectionTitle>Conversations</SectionTitle>
+            <SectionTitle>{tr('Conversations')}</SectionTitle>
             {r.contexts.map((c) => (
               <ListRow
                 key={c.conversationId}
                 icon={Hash}
-                title={c.title ?? 'Conversation'}
+                title={c.title ?? tr('Conversation')}
                 subtitle={c.context?.title ?? undefined}
                 onPress={() =>
                   open(() =>
@@ -316,8 +317,10 @@ export default function Search() {
         {nothing ? (
           <Text variant="body" color="textSecondary" align="center" style={{ padding: 24 }}>
             {local
-              ? `Nothing on this device for “${debounced}”. Try again when you’re back online.`
-              : `Nothing found for “${debounced}”.`}
+              ? tr('Nothing on this device for “{debounced}”. Try again when you’re back online.', {
+                  debounced,
+                })
+              : tr('Nothing found for “{debounced}”.', { debounced })}
           </Text>
         ) : null}
       </ScrollView>

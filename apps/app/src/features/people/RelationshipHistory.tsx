@@ -1,5 +1,6 @@
 import { formatDayHeading } from '@caime/core/format';
 import { describeRelationshipEvent } from '@caime/core/history';
+import { tr } from '@caime/core/i18n';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRelationshipHistory } from '@/api/hooks';
@@ -21,8 +22,8 @@ export function RelationshipHistory({ personId, name }: { personId: string; name
   const shown = all ? events : events.slice(0, FIRST);
   return (
     <Card>
-      <View style={{ gap: 10 }} accessibilityLabel="History">
-        <Text variant="label">History</Text>
+      <View style={{ gap: 10 }} accessibilityLabel={tr('History')}>
+        <Text variant="label">{tr('History')}</Text>
         {shown.map((e) => (
           <View key={e.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'baseline' }}>
             <Text variant="body" style={{ flex: 1 }}>
@@ -35,7 +36,7 @@ export function RelationshipHistory({ personId, name }: { personId: string; name
         ))}
         {events.length > FIRST ? (
           <Button
-            label={all ? 'Show less' : `Show all ${events.length}`}
+            label={all ? tr('Show less') : tr('Show all {length}', { length: events.length })}
             variant="ghost"
             size="sm"
             onPress={() => setAll((v) => !v)}

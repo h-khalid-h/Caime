@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { passwordError } from '@caime/core/rules';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -34,7 +35,7 @@ export default function Reset() {
         client: deviceInfo().client,
       });
       await useSession.getState().signedIn(res);
-      toast('Password changed. Every other device was signed out.');
+      toast(tr('Password changed. Every other device was signed out.'));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : (err as Error).message);
     } finally {
@@ -44,27 +45,27 @@ export default function Reset() {
   if (!token)
     return (
       <AuthLayout
-        title="This link isn\u2019t whole"
-        subtitle="Open the one in the email, or ask for a new one."
+        title={tr('This link isn\\u2019t whole')}
+        subtitle={tr('Open the one in the email, or ask for a new one.')}
       >
-        <Button label="Ask for a new link" onPress={() => router.replace('/forgot')} />
+        <Button label={tr('Ask for a new link')} onPress={() => router.replace('/forgot')} />
       </AuthLayout>
     );
   return (
     <AuthLayout
-      kicker="new password"
-      title="Set a new password"
-      subtitle="You\u2019ll be signed in here, and out everywhere else."
+      kicker={tr('new password')}
+      title={tr('Set a new password')}
+      subtitle={tr('You\\u2019ll be signed in here, and out everywhere else.')}
     >
       <View style={{ gap: 14 }}>
         <TextField
-          label="New password"
+          label={tr('New password')}
           secret
           value={password}
           onChangeText={setPassword}
           autoComplete="new-password"
           textContentType="newPassword"
-          hint="At least 10 characters."
+          hint={tr('At least 10 characters.')}
           onSubmitEditing={submit}
           autoFocus
           testID="reset-password"
@@ -75,7 +76,7 @@ export default function Reset() {
           </Text>
         ) : null}
         <Button
-          label="Set new password"
+          label={tr('Set new password')}
           size="lg"
           block
           loading={busy}

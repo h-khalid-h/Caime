@@ -1,4 +1,6 @@
 /** Settings → Notifications: whether this browser shows calls and messages when Caime isn't open. */
+
+import { tr } from '@caime/core/i18n';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
@@ -29,9 +31,9 @@ export function BrowserNotifications() {
       const answer = await (await push()).enableWebPush();
       setState(answer);
       setOn(answer === 'granted');
-      if (answer === 'granted') toast('Notifications are on in this browser');
+      if (answer === 'granted') toast(tr('Notifications are on in this browser'));
     } catch (e) {
-      toast((e as Error).message || 'This browser couldn’t turn them on.', { tone: 'danger' });
+      toast((e as Error).message || tr('This browser couldn’t turn them on.'), { tone: 'danger' });
     } finally {
       setBusy(false);
     }
@@ -41,24 +43,28 @@ export function BrowserNotifications() {
     await (await push()).disableWebPush();
     setOn(false);
     setBusy(false);
-    toast('Notifications are off in this browser');
+    toast(tr('Notifications are off in this browser'));
   };
   return (
     <Group
-      title="In this browser"
-      footer="Only while you're signed in here. What each notification says follows your rules below."
+      title={tr('In this browser')}
+      footer={tr(
+        "Only while you're signed in here. What each notification says follows your rules below.",
+      )}
     >
       <View style={{ padding: 16, gap: 10 }} testID="browser-notifications">
         <Text variant="body">
           {state === 'denied'
-            ? 'This browser blocks notifications from Caime. Allow them in its site settings, then come back.'
+            ? tr(
+                'This browser blocks notifications from Caime. Allow them in its site settings, then come back.',
+              )
             : on
-              ? 'On: calls and messages reach you here when Caime isn’t open.'
-              : 'Hear calls and messages here when Caime isn’t open.'}
+              ? tr('On: calls and messages reach you here when Caime isn’t open.')
+              : tr('Hear calls and messages here when Caime isn’t open.')}
         </Text>
         {state === 'denied' ? null : on ? (
           <Button
-            label="Turn off"
+            label={tr('Turn off')}
             variant="secondary"
             size="sm"
             loading={busy}
@@ -68,7 +74,7 @@ export function BrowserNotifications() {
           />
         ) : (
           <Button
-            label="Turn on"
+            label={tr('Turn on')}
             size="sm"
             loading={busy}
             style={{ alignSelf: 'flex-start' }}

@@ -1,5 +1,6 @@
 import type { TaskView } from '@caime/core/api';
 import { formatDue, overdueAt } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { memo } from 'react';
 import { View } from 'react-native';
@@ -11,11 +12,12 @@ import { Text } from '@/ui/Text';
 
 /** Who the task is between, from the reader's side; null when it's only theirs. */
 export function taskWho(task: TaskView): string | null {
-  if (task.direction === 'asked_me') return `${task.owner.displayName} asked you`;
+  if (task.direction === 'asked_me')
+    return tr('{displayName} asked you', { displayName: task.owner.displayName });
   if (task.direction === 'mine') return null;
   return task.assignee.id
-    ? `Waiting on ${task.assignee.displayName}`
-    : 'Waiting on a deleted account';
+    ? tr('Waiting on {displayName}', { displayName: task.assignee.displayName })
+    : tr('Waiting on a deleted account');
 }
 
 export const TaskRow = memo(function TaskRow({
@@ -60,7 +62,11 @@ export const TaskRow = memo(function TaskRow({
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
-        accessibilityLabel={done ? `Reopen ${task.title}` : `Complete ${task.title}`}
+        accessibilityLabel={
+          done
+            ? tr('Reopen {title}', { title: task.title })
+            : tr('Complete {title}', { title: task.title })
+        }
         onPress={() => onToggle(task)}
         haptic
         hitSlop={8}
@@ -92,8 +98,8 @@ export const TaskRow = memo(function TaskRow({
         {...(pending?.state === 'failed'
           ? {
               accessibilityActions: [
-                ...(onRetry ? [{ name: 'retry', label: 'Try again' }] : []),
-                ...(onDiscard ? [{ name: 'discard', label: 'Discard' }] : []),
+                ...(onRetry ? [{ name: 'retry', label: tr('Try again') }] : []),
+                ...(onDiscard ? [{ name: 'discard', label: tr('Discard') }] : []),
               ],
               onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
                 if (e.nativeEvent.actionName === 'retry') onRetry?.(task.id);
@@ -114,7 +120,7 @@ export const TaskRow = memo(function TaskRow({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {task.dueAt ? (
             <Text variant="captionStrong" color={overdue ? 'warning' : 'textSecondary'}>
-              {overdue ? 'Overdue · ' : ''}
+              {overdue ? tr('Overdue · ') : ''}
               {formatDue(task.dueAt, now, timeZone, locale, task.dueHasTime)}
             </Text>
           ) : null}
@@ -135,7 +141,7 @@ export const TaskRow = memo(function TaskRow({
             >
               <Clock size={12} color={t.c.textTertiary} />
               <Text variant="captionStrong" color="textTertiary">
-                Pending
+                {tr('Pending')}
               </Text>
             </View>
           ) : null}
@@ -143,7 +149,7 @@ export const TaskRow = memo(function TaskRow({
         {pending?.state === 'failed' ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }} testID="task-failed">
             <Text variant="caption" color="danger">
-              {`Couldn’t add it: ${pending.error ?? 'try again'}`}
+              {tr('Couldn’t add it: {error}', { error: pending.error ?? tr('try again') })}
             </Text>
             {onRetry ? (
               <Text
@@ -152,7 +158,7 @@ export const TaskRow = memo(function TaskRow({
                 accessibilityRole="button"
                 onPress={() => onRetry(task.id)}
               >
-                Try again
+                {tr('Try again')}
               </Text>
             ) : null}
             {onDiscard ? (
@@ -162,7 +168,7 @@ export const TaskRow = memo(function TaskRow({
                 accessibilityRole="button"
                 onPress={() => onDiscard(task.id)}
               >
-                Discard
+                {tr('Discard')}
               </Text>
             ) : null}
           </View>
@@ -177,7 +183,9 @@ export const TaskRow = memo(function TaskRow({
         <IconButton
           icon={CalendarClock}
           label={
-            task.dueAt ? `Change when ${task.title} is due` : `Add a due date to ${task.title}`
+            task.dueAt
+              ? tr('Change when {title} is due', { title: task.title })
+              : tr('Add a due date to {title}', { title: task.title })
           }
           onPress={() => onDue(task)}
           testID={`task-due-${task.id}`}

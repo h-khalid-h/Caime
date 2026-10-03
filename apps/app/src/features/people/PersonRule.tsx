@@ -4,13 +4,13 @@
  * them" always means something, and nothing is made or taken away by opening and closing it.
  */
 import type { RelationshipView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
-
 import { Card } from '@/ui/Card';
 import { Bell } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
@@ -60,11 +60,11 @@ export function PersonRule({
     <Card padded={false}>
       <ListRow
         icon={Bell}
-        title="Notifications and priority"
+        title={tr('Notifications and priority')}
         subtitle={
           [
             said.data?.description,
-            theirs && Object.keys(theirs.settings).length ? 'Just for them' : null,
+            theirs && Object.keys(theirs.settings).length ? tr('Just for them') : null,
           ]
             .filter(Boolean)
             .join(' · ') || null
@@ -81,10 +81,10 @@ export function PersonRule({
           scope={{ connectionId }}
           inherited={inherited}
           title={name}
-          subtitle="Just for them, over how you know them"
+          subtitle={tr('Just for them, over how you know them')}
           open
           onClose={close}
-          deleteLabel={`Treat ${name} like everyone you know this way`}
+          deleteLabel={tr('Treat {name} like everyone you know this way', { name })}
           onDeleted={refresh}
         />
       ) : null}

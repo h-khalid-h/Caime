@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { useTheme } from '@/theme/theme';
@@ -19,15 +20,15 @@ export function StickerPicker({
     <Sheet
       open={open}
       onClose={onClose}
-      title="Caishy Friends"
-      subtitle="Stickers for when words aren’t enough"
+      title={tr('Caishy Friends')}
+      subtitle={tr('Stickers for when words aren’t enough')}
     >
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
         {STICKERS.map((s) => (
           <Pressable
             key={s.id}
             accessibilityRole="button"
-            accessibilityLabel={`Send sticker: ${s.label}`}
+            accessibilityLabel={tr('Send sticker: {label}', { label: tr(s.label) })}
             onPress={() => {
               onPick(s);
               onClose();

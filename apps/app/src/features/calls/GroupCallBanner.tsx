@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useGroupCall } from '@/state/groupCall';
@@ -47,15 +48,17 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
       <Icon size={16} color={t.c.success} />
       <Text variant="caption" style={{ flex: 1 }} numberOfLines={2}>
         {elsewhere
-          ? 'You’re in this call on another device.'
-          : `${on.kind === 'video' ? 'Video' : 'Voice'} call on · ${
-              names.length > 2
-                ? `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
-                : names.join(' and ')
-            }`}
+          ? tr('You’re in this call on another device.')
+          : tr('{Video} call on · {text}', {
+              Video: on.kind === 'video' ? tr('Video') : tr('Voice'),
+              text:
+                names.length > 2
+                  ? `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
+                  : names.join(tr(' and ')),
+            })}
       </Text>
       <Button
-        label={elsewhere ? 'Join here' : 'Join'}
+        label={elsewhere ? tr('Join here') : tr('Join')}
         size="sm"
         onPress={() => void joinGroupCall(on)}
         testID="group-call-banner-join"

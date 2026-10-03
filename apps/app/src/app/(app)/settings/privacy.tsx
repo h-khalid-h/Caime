@@ -1,3 +1,4 @@
+import { msg, tr } from '@caime/core/i18n';
 import type { Audience, PrivacyField } from '@caime/core/privacy';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,33 +18,33 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 const FIELDS: Array<{ field: PrivacyField; label: string }> = [
-  { field: 'profilePhoto', label: 'Profile photo' },
-  { field: 'bio', label: 'About you' },
-  { field: 'pronouns', label: 'Pronouns' },
-  { field: 'status', label: 'Status' },
-  { field: 'onlineStatus', label: 'When you’re online' },
-  { field: 'lastSeen', label: 'Last seen' },
-  { field: 'readReceipts', label: 'Read receipts' },
-  { field: 'identityDetails', label: 'Work details' },
-  { field: 'busy', label: 'When you’re in a meeting' },
-  { field: 'busyDetails', label: 'What the meeting is' },
+  { field: 'profilePhoto', label: msg('Profile photo') },
+  { field: 'bio', label: msg('About you') },
+  { field: 'pronouns', label: msg('Pronouns') },
+  { field: 'status', label: msg('Status') },
+  { field: 'onlineStatus', label: msg('When you’re online') },
+  { field: 'lastSeen', label: msg('Last seen') },
+  { field: 'readReceipts', label: msg('Read receipts') },
+  { field: 'identityDetails', label: msg('Work details') },
+  { field: 'busy', label: msg('When you’re in a meeting') },
+  { field: 'busyDetails', label: msg('What the meeting is') },
 ];
 
 type Kind = Audience['kind'];
 
 function describe(a: Audience | undefined): string {
-  if (!a) return 'Your connections';
+  if (!a) return tr('Your connections');
   switch (a.kind) {
     case 'everyone':
       return 'Everyone';
     case 'connections':
-      return 'Your connections';
+      return tr('Your connections');
     case 'nobody':
       return 'Nobody';
     case 'spheres':
       return a.spheres.length
-        ? a.spheres.map((s) => SPHERE_DEFS[s].plural).join(', ')
-        : 'Some of your people';
+        ? a.spheres.map((s) => tr(SPHERE_DEFS[s].plural)).join(', ')
+        : tr('Some of your people');
   }
 }
 
@@ -72,28 +73,29 @@ export default function Privacy() {
     }
   };
   const current = editing ? me.privacy.fields[editing] : undefined;
-  const editingLabel = FIELDS.find((f) => f.field === editing)?.label ?? '';
+  const editingLabel = tr(FIELDS.find((f) => f.field === editing)?.label ?? '');
   return (
-    <SettingsPage title="Privacy">
+    <SettingsPage title={tr('Privacy')}>
       {me.minor ? (
         <View style={{ padding: 14, borderRadius: 16, backgroundColor: t.c.successSoft }}>
           <Text variant="bodyStrong" color="success">
-            Extra protection is on
+            {tr('Extra protection is on')}
           </Text>
           <Text variant="caption" color="textSecondary">
-            Because you’re under 18, adults you don’t know can’t find you, and only people you share
-            a connection with can message you.
+            {tr(
+              'Because you’re under 18, adults you don’t know can’t find you, and only people you share a connection with can message you.',
+            )}
           </Text>
         </View>
       ) : null}
       <Group
-        title="Who can see"
-        footer="Read receipts are two-way: you see theirs only if they see yours."
+        title={tr('Who can see')}
+        footer={tr('Read receipts are two-way: you see theirs only if they see yours.')}
       >
         {FIELDS.map((f, i) => (
           <View key={f.field} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
             <ListRow
-              title={f.label}
+              title={tr(f.label)}
               subtitle={describe(me.privacy.fields[f.field])}
               chevron
               onPress={() => setEditing(f.field)}
@@ -101,20 +103,22 @@ export default function Privacy() {
           </View>
         ))}
       </Group>
-      <Group title="Finding you">
+      <Group title={tr('Finding you')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">By your name or @handle</Text>
+            <Text variant="bodyStrong">{tr('By your name or @handle')}</Text>
             <Text variant="caption" color="textSecondary">
-              People can search for {me.displayName} or @{me.handle}, and your public page (what you
-              show to everyone) is on the web
+              {tr(
+                'People can search for {displayName} or @{handle}, and your public page (what you show to everyone) is on the web',
+                { displayName: me.displayName, handle: me.handle },
+              )}
             </Text>
           </View>
           <Switch
             value={me.privacy.discoverByHandle}
             onValueChange={(v) => void save({ discoverByHandle: v })}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Findable by name or handle"
+            accessibilityLabel={tr('Findable by name or handle')}
           />
         </View>
         <View
@@ -128,9 +132,11 @@ export default function Privacy() {
           }}
         >
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">By your email</Text>
+            <Text variant="bodyStrong">{tr('By your email')}</Text>
             <Text variant="caption" color="textSecondary">
-              {me.minor ? 'Always off under 18' : 'Someone who knows your email can find you'}
+              {me.minor
+                ? tr('Always off under 18')
+                : tr('Someone who knows your email can find you')}
             </Text>
           </View>
           <Switch
@@ -138,42 +144,48 @@ export default function Privacy() {
             disabled={me.minor}
             onValueChange={(v) => void save({ discoverByEmail: v })}
             trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel="Findable by email"
+            accessibilityLabel={tr('Findable by email')}
           />
         </View>
       </Group>
       <Group
-        title="Message requests"
+        title={tr('Message requests')}
         footer={
           me.minor
-            ? 'Messages from people you’re not connected with wait in Requests. Under 18, only people you share a connection with can send one.'
-            : 'Messages from people you’re not connected with wait in Requests. They never interrupt you.'
+            ? tr(
+                'Messages from people you’re not connected with wait in Requests. Under 18, only people you share a connection with can send one.',
+              )
+            : tr(
+                'Messages from people you’re not connected with wait in Requests. They never interrupt you.',
+              )
         }
       >
         <Choice
-          label="Who can send you a message request"
+          label={tr('Who can send you a message request')}
           value={me.privacy.messageRequests}
           onChange={(messageRequests) => void save({ messageRequests })}
           options={[
             // Not offered under 18: the server would only turn it back (R29).
-            ...(me.minor ? [] : [{ value: 'everyone' as const, label: 'Anyone' }]),
-            { value: 'shared_connections', label: 'People you share a connection with' },
-            { value: 'nobody', label: 'Nobody' },
+            ...(me.minor ? [] : [{ value: 'everyone' as const, label: tr('Anyone') }]),
+            { value: 'shared_connections', label: tr('People you share a connection with') },
+            { value: 'nobody', label: tr('Nobody') },
           ]}
         />
       </Group>
       {ai.data?.available ? (
         <Group
-          title="AI assist"
-          footer="Only when you tap an AI action, Caime sends what that action needs (your draft, the message, or the conversation you asked about) to Anthropic, its AI provider, to write a suggestion. Anthropic doesn’t use it to train models. Private conversations are never sent. What it writes is labelled and changes nothing until you choose it."
+          title={tr('AI assist')}
+          footer={tr(
+            'Only when you tap an AI action, Caime sends what that action needs (your draft, the message, or the conversation you asked about) to Anthropic, its AI provider, to write a suggestion. Anthropic doesn’t use it to train models. Private conversations are never sent. What it writes is labelled and changes nothing until you choose it.',
+          )}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
             <View style={{ flex: 1 }}>
-              <Text variant="bodyStrong">Use AI assist</Text>
+              <Text variant="bodyStrong">{tr('Use AI assist')}</Text>
               <Text variant="caption" color="textSecondary">
                 {me.minor
-                  ? 'Available from 18'
-                  : 'Rewrite drafts, translate messages, catch up and find follow-ups'}
+                  ? tr('Available from 18')
+                  : tr('Rewrite drafts, translate messages, catch up and find follow-ups')}
               </Text>
             </View>
             <Switch
@@ -181,7 +193,7 @@ export default function Privacy() {
               disabled={me.minor}
               onValueChange={(v) => void setAi(v)}
               trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-              accessibilityLabel="Use AI assist"
+              accessibilityLabel={tr('Use AI assist')}
               testID="ai-toggle"
             />
           </View>
@@ -228,7 +240,7 @@ function AudienceSheet({
       footer={
         some ? (
           <Button
-            label="Save"
+            label={tr('Save')}
             size="lg"
             block
             disabled={!spheres.length}
@@ -247,16 +259,20 @@ function AudienceSheet({
             if (k !== 'spheres') onSave({ kind: k } as Audience);
           }}
           options={[
-            { value: 'everyone', label: 'Everyone' },
-            { value: 'connections', label: 'Your connections' },
-            { value: 'spheres', label: 'Only some of your people', detail: 'By how you know them' },
-            { value: 'nobody', label: 'Nobody' },
+            { value: 'everyone', label: tr('Everyone') },
+            { value: 'connections', label: tr('Your connections') },
+            {
+              value: 'spheres',
+              label: tr('Only some of your people'),
+              detail: tr('By how you know them'),
+            },
+            { value: 'nobody', label: tr('Nobody') },
           ]}
         />
       </View>
       {some ? (
         <View
-          accessibilityLabel="Who sees it"
+          accessibilityLabel={tr('Who sees it')}
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}
         >
           {SPHERES.map((s) => {
@@ -264,7 +280,7 @@ function AudienceSheet({
             return (
               <Chip
                 key={s}
-                label={SPHERE_DEFS[s].plural}
+                label={tr(SPHERE_DEFS[s].plural)}
                 selected={on}
                 onPress={() => setSpheres((all) => (on ? all.filter((x) => x !== s) : [...all, s]))}
                 testID={`audience-${s}`}

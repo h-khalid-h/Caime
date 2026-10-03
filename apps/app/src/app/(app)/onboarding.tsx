@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -30,7 +31,10 @@ function workweekText(days: number[]): string {
   const sorted = [...days].sort((a, b) => a - b);
   const contiguous = sorted.every((d, i) => i === 0 || d === (sorted[i - 1] ?? 0) + 1);
   if (contiguous && sorted.length > 2)
-    return `${DAYS[sorted[0] ?? 0]} to ${DAYS[sorted[sorted.length - 1] ?? 0]}`;
+    return tr('{DAYS} to {DAYS2}', {
+      DAYS: DAYS[sorted[0] ?? 0],
+      DAYS2: DAYS[sorted[sorted.length - 1] ?? 0],
+    });
   return sorted.map((d) => DAYS[d]).join(', ');
 }
 
@@ -44,9 +48,13 @@ export default function Onboarding() {
   const steps = (['codes', 'rules', 'people'] as const).filter(
     (x) => x !== 'codes' || codes?.length,
   );
-  const stepLine = `step ${steps.indexOf(step) + 1} of ${steps.length} · ${
-    { codes: 'recovery codes', rules: 'how Caime works', people: 'your people' }[step]
-  }`;
+  const stepLine = tr('step {indexOf} of {length} · {codes}', {
+    indexOf: steps.indexOf(step) + 1,
+    length: steps.length,
+    codes: { codes: tr('recovery codes'), rules: tr('how Caime works'), people: tr('your people') }[
+      step
+    ],
+  });
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const name = me.displayName.split(' ')[0] ?? me.displayName;
@@ -85,12 +93,12 @@ export default function Onboarding() {
 
   // The rows that show the idea best: close people always, work in work hours, managers first.
   const PICKS: Array<{ sphere: Sphere; role?: string; label: string }> = [
-    { sphere: 'family', label: SPHERE_DEFS.family.plural },
-    { sphere: 'friend', label: SPHERE_DEFS.friend.plural },
-    { sphere: 'work', label: SPHERE_DEFS.work.plural },
-    { sphere: 'work', role: 'manager', label: 'Managers' },
-    { sphere: 'customer', label: SPHERE_DEFS.customer.plural },
-    { sphere: 'vendor', label: SPHERE_DEFS.vendor.plural },
+    { sphere: 'family', label: tr(SPHERE_DEFS.family.plural) },
+    { sphere: 'friend', label: tr(SPHERE_DEFS.friend.plural) },
+    { sphere: 'work', label: tr(SPHERE_DEFS.work.plural) },
+    { sphere: 'work', role: 'manager', label: tr('Managers') },
+    { sphere: 'customer', label: tr(SPHERE_DEFS.customer.plural) },
+    { sphere: 'vendor', label: tr(SPHERE_DEFS.vendor.plural) },
   ];
   const all = policies.data?.policies ?? [];
   const shown = PICKS.flatMap((pick) => {
@@ -124,17 +132,18 @@ export default function Onboarding() {
                 {stepLine}
               </Text>
               <Text variant="display" align="center" accessibilityRole="header">
-                Welcome, {name}
+                {tr('Welcome, {name}', { name })}
               </Text>
               <Text variant="body" color="textSecondary" align="center">
-                First, one thing to keep safe. If you ever forget your password, these codes get you
-                back in. Caime never asks for your phone number.
+                {tr(
+                  'First, one thing to keep safe. If you ever forget your password, these codes get you back in. Caime never asks for your phone number.',
+                )}
               </Text>
             </View>
             <Card>
               <View
                 style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}
-                accessibilityLabel={`Recovery codes: ${codes.join(', ')}`}
+                accessibilityLabel={tr('Recovery codes: {join}', { join: codes.join(', ') })}
               >
                 {codes.map((c) => (
                   <View
@@ -154,13 +163,13 @@ export default function Onboarding() {
               </View>
             </Card>
             <Button
-              label="Copy the codes"
+              label={tr('Copy the codes')}
               icon={KeyRound}
               variant="secondary"
               block
               onPress={async () => {
                 await copyText(codes.join('\n'));
-                toast('Copied. Paste them into your password manager or notes.');
+                toast(tr('Copied. Paste them into your password manager or notes.'));
                 setSaved(true);
               }}
             />
@@ -184,10 +193,10 @@ export default function Onboarding() {
               >
                 {saved ? <Check size={15} color={t.c.onPrimary} strokeWidth={3} /> : null}
               </View>
-              <Text variant="bodyStrong">I’ve saved them somewhere safe</Text>
+              <Text variant="bodyStrong">{tr('I’ve saved them somewhere safe')}</Text>
             </Pressable>
             <Button
-              label="Continue"
+              label={tr('Continue')}
               size="lg"
               block
               disabled={!saved}
@@ -203,11 +212,12 @@ export default function Onboarding() {
                 {stepLine}
               </Text>
               <Text variant="title" align="center" accessibilityRole="header">
-                People aren’t all the same. Neither are their messages.
+                {tr('People aren’t all the same. Neither are their messages.')}
               </Text>
               <Text variant="body" color="textSecondary" align="center">
-                When you add someone, you tell Caime how you know them (only you see it). Caime then
-                treats them the right way:
+                {tr(
+                  'When you add someone, you tell Caime how you know them (only you see it). Caime then treats them the right way:',
+                )}
               </Text>
             </View>
             <Card padded={false}>
@@ -235,7 +245,7 @@ export default function Onboarding() {
               Notifications.
             </Text>
             <Button
-              label="Sounds good"
+              label={tr('Sounds good')}
               size="lg"
               block
               onPress={() => setStep('people')}
@@ -250,26 +260,36 @@ export default function Onboarding() {
                 {stepLine}
               </Text>
               <Text variant="title" align="center" accessibilityRole="header">
-                Now, your people
+                {tr('Now, your people')}
               </Text>
               <Text variant="body" color="textSecondary" align="center">
                 {forApp
-                  ? 'An app asked to act for you. See what it asks first; find people by @handle or email any time.'
+                  ? tr(
+                      'An app asked to act for you. See what it asks first; find people by @handle or email any time.',
+                    )
                   : linkHandle
-                    ? `You came here for @${linkHandle}. Find others by @handle or email any time.`
+                    ? tr(
+                        'You came here for @{linkHandle}. Find others by @handle or email any time.',
+                        { linkHandle },
+                      )
                     : inviteToken
-                      ? `${inviter ?? 'Someone'} invited you: open the conversation and you’re connected. Find others by @handle or email any time.`
-                      : `Find someone by @handle or email, or share your link: @${me.handle}`}
+                      ? tr(
+                          '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
+                          { inviter: inviter ?? tr('Someone') },
+                        )
+                      : tr('Find someone by @handle or email, or share your link: @{handle}', {
+                          handle: me.handle,
+                        })}
               </Text>
             </View>
             {linked ? (
               <Button
                 label={
                   forApp
-                    ? 'See what the app asks'
+                    ? tr('See what the app asks')
                     : inviteToken
-                      ? `Open the conversation with ${inviter ?? 'them'}`
-                      : `See @${linkHandle}`
+                      ? tr('Open the conversation with {inviter}', { inviter: inviter ?? 'them' })
+                      : tr('See @{linkHandle}', { linkHandle })
                 }
                 size="lg"
                 block
@@ -279,7 +299,7 @@ export default function Onboarding() {
               />
             ) : null}
             <Button
-              label="Find people"
+              label={tr('Find people')}
               variant={linked ? 'secondary' : 'primary'}
               size="lg"
               block
@@ -290,17 +310,20 @@ export default function Onboarding() {
             {linked ? null : (
               <>
                 <Button
-                  label="Share your link"
+                  label={tr('Share your link')}
                   variant="secondary"
                   size="lg"
                   block
                   onPress={() =>
-                    void shareLink(`I’m on Caime as @${me.handle}.`, handleLink(me.handle))
+                    void shareLink(
+                      tr('I’m on Caime as @{handle}.', { handle: me.handle }),
+                      handleLink(me.handle),
+                    )
                   }
                   testID="onboarding-share"
                 />
                 <Button
-                  label="I’ll do it later"
+                  label={tr('I’ll do it later')}
                   variant="ghost"
                   block
                   onPress={() => void finish('/')}

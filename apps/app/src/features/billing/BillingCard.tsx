@@ -5,6 +5,7 @@ import {
   priceText,
   subscriptionLine,
 } from '@caime/core/billing';
+import { tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
@@ -54,7 +55,7 @@ export function BillingCard({
   };
   const manage = billing.canManage ? (
     <Button
-      label="Manage billing"
+      label={tr('Manage billing')}
       variant="secondary"
       size="sm"
       disabled={busy}
@@ -82,9 +83,12 @@ export function BillingCard({
   if (back === 'done')
     return (
       <View style={{ gap: 6 }} testID="billing-thanks">
-        <Text variant="bodyStrong">Thank you.</Text>
+        <Text variant="bodyStrong">{tr('Thank you.')}</Text>
         <Text variant="caption" color="textSecondary">
-          {`${name} switches on as soon as Stripe confirms the payment, usually in a few seconds.`}
+          {tr(
+            '{name} switches on as soon as Stripe confirms the payment, usually in a few seconds.',
+            { name },
+          )}
         </Text>
       </View>
     );
@@ -104,12 +108,12 @@ export function BillingCard({
     <View style={{ gap: 12 }} testID="billing-buy">
       {billing.prices.length > 1 ? (
         <Segmented
-          label="Billing period"
+          label={tr('Billing period')}
           value={period}
           onChange={setPeriod}
           options={billing.prices.map((p) => ({
             value: p.interval,
-            label: p.interval === 'month' ? 'Monthly' : 'Yearly',
+            label: p.interval === 'month' ? tr('Monthly') : tr('Yearly'),
           }))}
         />
       ) : null}
@@ -117,11 +121,12 @@ export function BillingCard({
         {priceText(price, locale)}
       </Text>
       <Text variant="caption" color="textSecondary">
-        Paid through Stripe. Cancel whenever you like: it stays on until the end of what you’ve paid
-        for, and nothing you use today goes away after.
+        {tr(
+          'Paid through Stripe. Cancel whenever you like: it stays on until the end of what you’ve paid for, and nothing you use today goes away after.',
+        )}
       </Text>
       <Button
-        label={`Get ${name}`}
+        label={tr('Get {name}', { name })}
         disabled={busy}
         onPress={() => run(() => endpoints.checkout({ plan, interval: price.interval, orgId }))}
         testID="billing-checkout"

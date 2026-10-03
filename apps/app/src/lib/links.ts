@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { Alert, Linking, Platform } from 'react-native';
 import { WEB_URL } from './config';
@@ -67,7 +68,9 @@ export function openLink(url: string, suspicious = false): void {
     go();
     return;
   }
-  const message = `This link looks unusual:\n${url}\n\nOpen it only if you trust who sent it.`;
+  const message = tr('This link looks unusual:\n{url}\n\nOpen it only if you trust who sent it.', {
+    url,
+  });
   if (Platform.OS === 'web') {
     if (window.confirm(message)) go();
     return;

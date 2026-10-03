@@ -1,5 +1,6 @@
 import type { RelationshipView } from '@caime/core/api';
 import { formatClock, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -102,7 +103,7 @@ export function PersonScreen({ id }: { id: string }) {
   const back = !desktop ? (
     <IconButton
       icon={ArrowLeft}
-      label="Back"
+      label={tr('Back')}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
     />
   ) : null;
@@ -110,12 +111,12 @@ export function PersonScreen({ id }: { id: string }) {
   if (q.isError && !p)
     return (
       <Screen>
-        <TopBar left={back} title="Profile" />
+        <TopBar left={back} title={tr('Profile')} />
         <EmptyState
           character="panda"
           expression="sad"
           icon={Users}
-          title="This profile isn’t available"
+          title={tr('This profile isn’t available')}
           body={(q.error as Error).message}
         />
       </Screen>
@@ -129,7 +130,7 @@ export function PersonScreen({ id }: { id: string }) {
 
   const primaryAction = self ? null : state === 'connected' ? (
     <Button
-      label="Message"
+      label={tr('Message')}
       icon={MessageCircle}
       size="lg"
       block
@@ -142,7 +143,7 @@ export function PersonScreen({ id }: { id: string }) {
   ) : state === 'incoming' ? (
     <View style={{ flexDirection: 'row', gap: 8 }}>
       <Button
-        label="Accept"
+        label={tr('Accept')}
         size="lg"
         style={{ flex: 1 }}
         block
@@ -151,12 +152,12 @@ export function PersonScreen({ id }: { id: string }) {
           act(
             'accept',
             () => endpoints.acceptRequest(p.connection.requestId ?? ''),
-            `You’re connected with ${name}`,
+            tr('You’re connected with {name}', { name }),
           )
         }
       />
       <Button
-        label="Decline"
+        label={tr('Decline')}
         variant="secondary"
         size="lg"
         style={{ flex: 1 }}
@@ -173,7 +174,7 @@ export function PersonScreen({ id }: { id: string }) {
     </View>
   ) : state === 'outgoing' ? (
     <Button
-      label="Request sent · Cancel"
+      label={tr('Request sent · Cancel')}
       variant="secondary"
       size="lg"
       block
@@ -188,7 +189,7 @@ export function PersonScreen({ id }: { id: string }) {
     />
   ) : (
     <Button
-      label={`Connect with ${name}`}
+      label={tr('Connect with {name}', { name })}
       icon={UserPlus}
       size="lg"
       block
@@ -291,7 +292,7 @@ export function PersonScreen({ id }: { id: string }) {
         {primaryAction}
         {state === 'connected' && privateSupported && !self ? (
           <Button
-            label="Private conversation"
+            label={tr('Private conversation')}
             icon={Lock}
             variant="secondary"
             block
@@ -314,12 +315,12 @@ export function PersonScreen({ id }: { id: string }) {
             <View style={{ gap: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text variant="label" style={{ flex: 1 }}>
-                  How you know {name}
+                  {tr('How you know {name}', { name })}
                 </Text>
                 {p.relationships.length ? (
                   <IconButton
                     icon={Pencil}
-                    label="Change"
+                    label={tr('Change')}
                     onPress={() => setPicker({ open: true, current: p.relationships[0] ?? null })}
                   />
                 ) : null}
@@ -332,7 +333,7 @@ export function PersonScreen({ id }: { id: string }) {
                 </View>
               ) : (
                 <Button
-                  label="Add how you know them"
+                  label={tr('Add how you know them')}
                   variant="secondary"
                   onPress={() => setPicker({ open: true, current: null })}
                   testID="person-classify"
@@ -342,23 +343,28 @@ export function PersonScreen({ id }: { id: string }) {
                 <Lock size={12} color={t.c.textTertiary} />
                 <Text variant="caption" color="textTertiary" style={{ flex: 1 }}>
                   {p.relationships.some((r) => r.shared)
-                    ? `Shared with ${name}.`
-                    : `Only you see this. It shapes your notifications and priorities for ${name}.`}
+                    ? tr('Shared with {name}.', { name })
+                    : tr(
+                        'Only you see this. It shapes your notifications and priorities for {name}.',
+                        { name },
+                      )}
                 </Text>
               </View>
               {p.mutual ? (
                 <Text variant="caption" color="textSecondary">
-                  {name} describes you as <Text variant="captionStrong">{p.mutual.theirLabel}</Text>
+                  {name}
+                  {tr(' describes you as ')}
+                  <Text variant="captionStrong">{p.mutual.theirLabel}</Text>
                   {p.mutual.fit === 'complementary'
-                    ? ' — that fits.'
+                    ? tr(' — that fits.')
                     : p.mutual.fit === 'same'
-                      ? ' too.'
+                      ? tr(' too.')
                       : '.'}
                 </Text>
               ) : null}
               {p.relationships.length ? (
                 <Button
-                  label="Add another"
+                  label={tr('Add another')}
                   variant="ghost"
                   size="sm"
                   onPress={() => setPicker({ open: true, current: null })}
@@ -385,7 +391,7 @@ export function PersonScreen({ id }: { id: string }) {
           <Card>
             <View style={{ gap: 2 }} testID="person-profile">
               <Text variant="label" style={{ marginBottom: 4 }}>
-                {`${name} and you`}
+                {tr('{name} and you', { name })}
               </Text>
               <Spec
                 rows={[
@@ -400,7 +406,7 @@ export function PersonScreen({ id }: { id: string }) {
                     label: 'conversation',
                     value: [
                       count(p.summary.messages, 'message', 'messages'),
-                      p.summary.rhythm ? RHYTHM_TEXT[p.summary.rhythm].toLowerCase() : null,
+                      p.summary.rhythm ? tr(RHYTHM_TEXT[p.summary.rhythm]).toLowerCase() : null,
                       p.summary.lastTalkedAt
                         ? `last ${formatListTime(p.summary.lastTalkedAt, now, timeZone, locale)}`
                         : null,
@@ -428,10 +434,16 @@ export function PersonScreen({ id }: { id: string }) {
                         label: 'answers',
                         value: [
                           p.summary.theirAsks
-                            ? `${count(p.summary.theirAsks, 'question', 'questions')} of ${name}’s for you`
+                            ? tr('{count} of {name}’s for you', {
+                                count: count(p.summary.theirAsks, 'question', 'questions'),
+                                name,
+                              })
                             : null,
                           p.summary.myAsks
-                            ? `${p.summary.myAsks} of yours waiting on ${name}`
+                            ? tr('{myAsks} of yours waiting on {name}', {
+                                myAsks: p.summary.myAsks,
+                                name,
+                              })
                             : null,
                         ]
                           .filter(Boolean)
@@ -462,7 +474,7 @@ export function PersonScreen({ id }: { id: string }) {
                 <ListRow
                   icon={c.isGeneral ? MessageCircle : Hash}
                   title={c.title}
-                  subtitle={c.isGeneral ? 'Your main conversation' : 'Topic'}
+                  subtitle={c.isGeneral ? tr('Your main conversation') : tr('Topic')}
                   chevron
                   onPress={() => router.navigate({ pathname: '/c/[id]', params: { id: c.id } })}
                 />
@@ -475,21 +487,23 @@ export function PersonScreen({ id }: { id: string }) {
           <Card padded={false}>
             <ListRow
               icon={Shield}
-              title={p.blockedByMe ? `Unblock ${name}` : `Block ${name}`}
-              subtitle={p.blockedByMe ? undefined : 'They won’t be able to message you or find you'}
+              title={p.blockedByMe ? tr('Unblock {name}', { name }) : tr('Block {name}', { name })}
+              subtitle={
+                p.blockedByMe ? undefined : tr('They won’t be able to message you or find you')
+              }
               destructive={!p.blockedByMe}
               onPress={() =>
                 act(
                   'block',
                   () => (p.blockedByMe ? endpoints.unblock(person.id) : endpoints.block(person.id)),
-                  p.blockedByMe ? 'Unblocked' : `Blocked ${name}`,
+                  p.blockedByMe ? 'Unblocked' : tr('Blocked {name}', { name }),
                 )
               }
             />
             <Divider inset={52} />
             <ListRow
               icon={Flag}
-              title="Report"
+              title={tr('Report')}
               destructive
               onPress={() => report({ userId: person.id }, name)}
             />

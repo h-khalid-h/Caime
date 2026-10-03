@@ -4,6 +4,7 @@
  */
 import type { FollowingView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { useFollowing } from '@/api/hooks';
@@ -33,7 +34,7 @@ function Row({ f }: { f: FollowingView }) {
         f.org.name,
         f.org.verified ? `verified, ${f.org.verifiedDomain}` : 'not verified yet',
         f.unread ? `${f.unread} new` : null,
-        f.latest ? `${when}, ${f.latest.body.slice(0, 200)}` : 'Nothing posted yet',
+        f.latest ? `${when}, ${f.latest.body.slice(0, 200)}` : tr('Nothing posted yet'),
       ]
         .filter(Boolean)
         .join(', ')}
@@ -85,7 +86,7 @@ function Row({ f }: { f: FollowingView }) {
                 style={{ flex: 1 }}
                 auto
               >
-                {f.latest?.body ?? 'Nothing posted yet.'}
+                {f.latest?.body ?? tr('Nothing posted yet.')}
               </Text>
               {f.unread ? <Badge count={f.unread} muted /> : null}
             </View>
@@ -105,20 +106,22 @@ export function UpdatesScreen() {
         left={
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           />
         }
-        title="Updates"
+        title={tr('Updates')}
       />
       {q.isPending && !q.data ? (
         <SkeletonRows />
       ) : q.isError && !q.data ? (
         <EmptyState
           icon={Building}
-          title="Updates didn’t load"
-          body="Check your connection, then try again."
-          action={<Button label="Try again" variant="secondary" onPress={() => void q.refetch()} />}
+          title={tr('Updates didn’t load')}
+          body={tr('Check your connection, then try again.')}
+          action={
+            <Button label={tr('Try again')} variant="secondary" onPress={() => void q.refetch()} />
+          }
         />
       ) : (
         <FlatList
@@ -132,11 +135,13 @@ export function UpdatesScreen() {
           ListEmptyComponent={
             <EmptyState
               icon={Building}
-              title="Updates from organizations you follow"
-              body="Follow an organization from its page, and what it posts shows here, apart from your conversations. Nobody sees who follows."
+              title={tr('Updates from organizations you follow')}
+              body={tr(
+                'Follow an organization from its page, and what it posts shows here, apart from your conversations. Nobody sees who follows.',
+              )}
               action={
                 <Button
-                  label="Find an organization"
+                  label={tr('Find an organization')}
                   variant="secondary"
                   onPress={() => router.navigate('/search')}
                   testID="updates-find"

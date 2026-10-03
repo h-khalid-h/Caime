@@ -55,6 +55,7 @@ function adoptPreferences(user: MeView): void {
     enterToSend: p.enterToSend ?? usePrefs.getState().enterToSend,
     reduceMotion: p.reduceMotion ?? usePrefs.getState().reduceMotion,
     holdWhileBusy: p.holdWhileBusy ?? usePrefs.getState().holdWhileBusy,
+    language: p.language ?? usePrefs.getState().language,
   });
 }
 

@@ -1,3 +1,4 @@
+import { msg, tr } from './i18n';
 /**
  * The Business inbox (PRD §37–38, R15): a customer's conversation with an organization, as its
  * team works it. A thread's state is derived, never set by hand, so it can't drift from what
@@ -15,8 +16,8 @@ export type ThreadState = (typeof THREAD_STATES)[number];
 
 export const THREAD_STATE_LABELS: Record<ThreadState, string> = {
   new: 'New',
-  customer_waiting: 'Customer waiting',
-  waiting: 'Waiting on customer',
+  customer_waiting: msg('Customer waiting'),
+  waiting: msg('Waiting on customer'),
   escalated: 'Escalated',
   resolved: 'Resolved',
 };
@@ -37,9 +38,9 @@ export type BusinessView = (typeof BUSINESS_VIEWS)[number];
 
 export const BUSINESS_VIEW_LABELS: Record<BusinessView, string> = {
   new: 'New',
-  mine: 'Assigned to me',
-  customer_waiting: 'Customer waiting',
-  waiting: 'Waiting on customer',
+  mine: msg('Assigned to me'),
+  customer_waiting: msg('Customer waiting'),
+  waiting: msg('Waiting on customer'),
   escalated: 'Escalated',
   resolved: 'Resolved',
 };
@@ -99,7 +100,7 @@ export function replyTimeText(minutes: number): string {
   const m = Math.round(minutes);
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
-  if (h < 24) return m % 60 ? `${h} h ${m % 60} min` : `${h} h`;
+  if (h < 24) return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : `${h} h`;
   const d = Math.round(h / 24);
   return d === 1 ? '1 day' : `${d} days`;
 }

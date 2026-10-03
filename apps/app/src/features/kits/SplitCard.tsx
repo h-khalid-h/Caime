@@ -1,5 +1,6 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
 import { formatAmount } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import {
   applySplitOp,
   type KitAmount,
@@ -83,13 +84,13 @@ export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <HandCoins size={16} color={t.c.accentStrong} />
         <Text variant="overline" color="textSecondary" style={{ flex: 1 }}>
-          {p.label ?? 'Split'}
+          {p.label ?? tr('Split')}
         </Text>
         <Chip
           label={
             shares.length && settled === shares.length
-              ? 'Settled'
-              : `${settled} of ${shares.length} settled`
+              ? tr('Settled')
+              : tr('{settled} of {length} settled', { settled, length: shares.length })
           }
           tone={shares.length && settled === shares.length ? 'success' : 'neutral'}
           size="sm"
@@ -134,7 +135,7 @@ export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
                 {formatAmount(share.amount, currency, locale)}
               </Text>
               <Text variant="caption" color="textTertiary">
-                {done ? 'Settled' : may ? 'Mark settled' : 'Owed'}
+                {done ? tr('Settled') : may ? tr('Mark settled') : tr('Owed')}
               </Text>
             </Pressable>
           );

@@ -1,6 +1,7 @@
 import { PERSONAL_SCOPE_LABELS, PERSONAL_SCOPES, type PersonalScope } from '@caime/core/access';
 import type { PersonalTokenView } from '@caime/core/api';
 import { formatListTime, formatWhen } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -25,8 +26,8 @@ import { toast } from '@/ui/Toast';
 const LIFETIMES = [
   { value: '30', label: '30 days' },
   { value: '90', label: '90 days' },
-  { value: '365', label: 'A year' },
-  { value: 'never', label: 'No end' },
+  { value: '365', label: msg('A year') },
+  { value: 'never', label: msg('No end') },
 ] as const;
 type Lifetime = (typeof LIFETIMES)[number]['value'];
 
@@ -71,13 +72,13 @@ function NewToken({ open, onClose }: { open: boolean; onClose: () => void }) {
     <Sheet
       open={open}
       onClose={close}
-      title={made ? 'Your new token' : 'New access token'}
+      title={made ? tr('Your new token') : tr('New access token')}
       footer={
         made ? (
-          <Button label="Done" onPress={close} testID="token-done" />
+          <Button label={tr('Done')} onPress={close} testID="token-done" />
         ) : (
           <Button
-            label="Make the token"
+            label={tr('Make the token')}
             onPress={() => void create()}
             loading={busy}
             disabled={!name.trim() || scopes.length === 0}
@@ -88,25 +89,26 @@ function NewToken({ open, onClose }: { open: boolean; onClose: () => void }) {
     >
       {made ? (
         <View style={{ gap: 12 }}>
-          <CopyRow label="Access token" value={made} testID="token-value" />
+          <CopyRow label={tr('Access token')} value={made} testID="token-value" />
           <Text variant="caption" color="textSecondary">
-            Copy it now: you won’t see it again. Anyone who has it can act as you, within what you
-            chose, so keep it where only you can reach it.
+            {tr(
+              'Copy it now: you won’t see it again. Anyone who has it can act as you, within what you chose, so keep it where only you can reach it.',
+            )}
           </Text>
         </View>
       ) : (
         <View style={{ gap: 12 }}>
           <TextField
-            label="What will use it"
+            label={tr('What will use it')}
             value={name}
             onChangeText={setName}
             maxLength={60}
-            placeholder="My reminders script"
+            placeholder={tr('My reminders script')}
             error={error}
             testID="token-name"
           />
           <Text variant="captionStrong" color="textSecondary">
-            What it may do
+            {tr('What it may do')}
           </Text>
           <View style={{ marginHorizontal: -20 }}>
             {PERSONAL_SCOPES.map((s) => (
@@ -120,14 +122,15 @@ function NewToken({ open, onClose }: { open: boolean; onClose: () => void }) {
             ))}
           </View>
           <Segmented
-            label="How long it lasts"
+            label={tr('How long it lasts')}
             value={lifetime}
             onChange={setLifetime}
-            options={LIFETIMES.map((l) => ({ value: l.value, label: l.label }))}
+            options={LIFETIMES.map((l) => ({ value: l.value, label: tr(l.label) }))}
           />
           <Text variant="caption" color="textTertiary">
-            It can never change your password, privacy or sessions, make other tokens, or delete
-            your account. Messages it sends say they came through it.
+            {tr(
+              'It can never change your password, privacy or sessions, make other tokens, or delete your account. Messages it sends say they came through it.',
+            )}
           </Text>
         </View>
       )}
@@ -148,7 +151,7 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
     try {
       await endpoints.revokeToken(token.id);
       void qc.invalidateQueries({ queryKey: qk.tokens });
-      toast(`${token.name} can’t be used any more`);
+      toast(tr('{name} can’t be used any more', { name: token.name }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -178,7 +181,7 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
           </Text>
         </View>
         <Button
-          label="Revoke"
+          label={tr('Revoke')}
           size="sm"
           variant="secondary"
           loading={busy}
@@ -189,11 +192,13 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
       <Sheet
         open={asking}
         onClose={() => setAsking(false)}
-        title={`Revoke ${token.name}?`}
-        subtitle="Anything using it stops at once, and it can’t be brought back: make a new one instead."
+        title={tr('Revoke {name}?', { name: token.name })}
+        subtitle={tr(
+          'Anything using it stops at once, and it can’t be brought back: make a new one instead.',
+        )}
         footer={
           <Button
-            label="Revoke"
+            label={tr('Revoke')}
             variant="danger"
             block
             size="lg"
@@ -203,7 +208,7 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
         }
       >
         <Text variant="body" color="textSecondary">
-          What was sent through it stays, marked as sent that way.
+          {tr('What was sent through it stays, marked as sent that way.')}
         </Text>
       </Sheet>
       <Text variant="caption" color="textTertiary">
@@ -224,18 +229,20 @@ export default function DeveloperSettings() {
   const [making, setMaking] = useState(false);
   const tokens = q.data?.tokens ?? [];
   return (
-    <SettingsPage title="Developer">
+    <SettingsPage title={tr('Developer')}>
       {minor ? (
         <Card>
           <Text variant="body" color="textSecondary">
-            Access tokens and apps are for people over 18.
+            {tr('Access tokens and apps are for people over 18.')}
           </Text>
         </Card>
       ) : (
         <>
           <Group
-            title="Personal access tokens"
-            footer="A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caime keeps only a fingerprint of each."
+            title={tr('Personal access tokens')}
+            footer={tr(
+              'A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caime keeps only a fingerprint of each.',
+            )}
           >
             {q.isPending ? (
               <SkeletonRows />
@@ -250,8 +257,8 @@ export default function DeveloperSettings() {
             {tokens.length ? <Divider /> : null}
             <ListRow
               icon={tokens.length ? Plus : KeyRound}
-              title="New access token"
-              subtitle={tokens.length ? undefined : 'For your own scripts and tools'}
+              title={tr('New access token')}
+              subtitle={tokens.length ? undefined : tr('For your own scripts and tools')}
               onPress={() => setMaking(true)}
               testID="token-new"
             />

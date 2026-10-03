@@ -1,3 +1,4 @@
+import { msg, tr } from './i18n';
 /**
  * Organizations (PRD §35–36, §55, R15): a business, a shop, a clinic, a school, a nonprofit or a
  * public service, with its team. It proves it controls a domain with a DNS TXT record, and only
@@ -29,16 +30,16 @@ export const UPDATE_MAX = 2000;
 export const ORG_KIND_LABELS: Record<OrgKind, string> = {
   business: 'Business',
   shop: 'Shop',
-  clinic: 'Clinic or practice',
+  clinic: msg('Clinic or practice'),
   school: 'School',
   nonprofit: 'Nonprofit',
-  public_service: 'Public service',
-  other: 'Something else',
+  public_service: msg('Public service'),
+  other: msg('Something else'),
 };
 
 /** The kind as a profile says it: "Something else" is a choice, not a name. */
 export function orgKindName(kind: OrgKind): string {
-  return kind === 'other' ? 'Organization' : ORG_KIND_LABELS[kind];
+  return kind === 'other' ? 'Organization' : tr(ORG_KIND_LABELS[kind]);
 }
 
 export const ORG_ROLES = ['owner', 'admin', 'agent'] as const;

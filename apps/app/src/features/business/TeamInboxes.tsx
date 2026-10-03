@@ -1,3 +1,4 @@
+import { tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useBusinessSummary } from '@/api/hooks';
@@ -24,7 +25,7 @@ export function TeamInboxes() {
         <Pressable
           key={org.id}
           accessibilityRole="button"
-          accessibilityLabel={`${org.name} inbox, ${waiting} waiting`}
+          accessibilityLabel={tr('{name} inbox, {waiting} waiting', { name: org.name, waiting })}
           onPress={() =>
             router.navigate({ pathname: '/o/[handle]/inbox', params: { handle: org.handle } })
           }
@@ -46,7 +47,7 @@ export function TeamInboxes() {
           <OrgMark kind={org.kind} url={org.avatarUrl} size={46} />
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Text variant="bodyStrong" numberOfLines={1} auto>
-              {org.name} inbox
+              {tr('{name} inbox', { name: org.name })}
             </Text>
             <Text
               variant="caption"
@@ -55,9 +56,9 @@ export function TeamInboxes() {
               numberOfLines={1}
             >
               {waiting
-                ? `${waiting} customer${waiting === 1 ? '' : 's'} waiting`
-                : 'Nobody is waiting'}
-              {mine ? ` · ${mine} yours` : ''}
+                ? trn(waiting, '{n} customer waiting', '{n} customers waiting')
+                : tr('Nobody is waiting')}
+              {mine ? tr(' · {mine} yours', { mine }) : ''}
             </Text>
           </View>
           <Badge count={waiting} />

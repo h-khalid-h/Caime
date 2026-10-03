@@ -5,6 +5,7 @@ import {
   defaultAgentName,
 } from '@caime/core/agents';
 import type { AgentTryView, OrgView } from '@caime/core/api';
+import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -20,8 +21,9 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
-const WHAT_IT_DOES =
-  'It says it’s an AI in every message, answers only from what you tell it, and hands anything else to your team: bookings, payments, complaints, or anyone who asks for a person. It never answers anyone under 18, and never takes a conversation from a person.';
+const WHAT_IT_DOES = msg(
+  'It says it’s an AI in every message, answers only from what you tell it, and hands anything else to your team: bookings, payments, complaints, or anyone who asks for a person. It never answers anyone under 18, and never takes a conversation from a person.',
+);
 
 /**
  * An organization's AI agent (PRD §74–75), for its owner and admins: what it knows, a question
@@ -85,7 +87,9 @@ export function OrgAgent({ org }: { org: OrgView }) {
       refresh();
       setOpen(false);
       toast(
-        agent ? `${name.trim()} is up to date` : `${name.trim()} answers your customers first now`,
+        agent
+          ? tr('{trim} is up to date', { trim: name.trim() })
+          : tr('{trim} answers your customers first now', { trim: name.trim() }),
       );
     });
   const tryIt = () =>
@@ -106,8 +110,8 @@ export function OrgAgent({ org }: { org: OrgView }) {
       refresh();
       toast(
         paused
-          ? `${agent.name} is paused: your team answers everyone`
-          : `${agent.name} answers first again`,
+          ? tr('{name} is paused: your team answers everyone', { name: agent.name })
+          : tr('{name} answers first again', { name: agent.name }),
       );
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -120,18 +124,21 @@ export function OrgAgent({ org }: { org: OrgView }) {
       await endpoints.removeOrgAgent(org.id);
       refresh();
       setOpen(false);
-      toast('The AI agent left the team. What it wrote stays.');
+      toast(tr('The AI agent left the team. What it wrote stays.'));
     });
 
   const status = agent
     ? agent.paused
-      ? 'Paused: your team answers everyone'
-      : `Answers first · ${agent.repliesToday} of ${agent.repliesPerDay.toLocaleString('en-US')} answers in the last 24 hours`
+      ? tr('Paused: your team answers everyone')
+      : tr('Answers first · {repliesToday} of {toLocaleString} answers in the last 24 hours', {
+          repliesToday: agent.repliesToday,
+          toLocaleString: agent.repliesPerDay.toLocaleString('en-US'),
+        })
     : null;
 
   return (
     <>
-      <SectionTitle>AI agent</SectionTitle>
+      <SectionTitle>{tr('AI agent')}</SectionTitle>
       <View
         style={{
           marginHorizontal: 16,
@@ -153,9 +160,11 @@ export function OrgAgent({ org }: { org: OrgView }) {
               testID="org-agent"
             />
             <ListRow
-              title={agent.paused ? 'Let it answer again' : 'Pause it'}
+              title={agent.paused ? tr('Let it answer again') : tr('Pause it')}
               subtitle={
-                agent.paused ? undefined : 'It stays on the team, quiet, until you let it answer'
+                agent.paused
+                  ? undefined
+                  : tr('It stays on the team, quiet, until you let it answer')
               }
               onPress={() => void pause(!agent.paused)}
               testID="org-agent-pause"
@@ -164,11 +173,14 @@ export function OrgAgent({ org }: { org: OrgView }) {
         ) : (
           <>
             <Text variant="caption" color="textSecondary" style={{ padding: 14, paddingBottom: 4 }}>
-              {`Let an AI agent answer the simple questions first, from what you tell it: hours, prices, how to book. ${WHAT_IT_DOES}`}
+              {tr(
+                'Let an AI agent answer the simple questions first, from what you tell it: hours, prices, how to book. {what}',
+                { what: tr(WHAT_IT_DOES) },
+              )}
             </Text>
             <ListRow
               icon={Sparkles}
-              title="Set up an AI agent"
+              title={tr('Set up an AI agent')}
               onPress={edit}
               testID="org-agent-setup"
             />
@@ -179,14 +191,16 @@ export function OrgAgent({ org }: { org: OrgView }) {
       <Sheet
         open={open}
         onClose={() => setOpen(false)}
-        title={agent ? agent.name : 'Set up an AI agent'}
+        title={agent ? agent.name : tr('Set up an AI agent')}
         subtitle={
-          agent ? 'What it knows, and how it answers' : 'It answers first, and says it’s an AI'
+          agent
+            ? tr('What it knows, and how it answers')
+            : tr('It answers first, and says it’s an AI')
         }
         footer={
           removing ? (
             <Button
-              label="Remove it: it leaves the team now"
+              label={tr('Remove it: it leaves the team now')}
               variant="danger"
               block
               size="lg"
@@ -196,7 +210,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
             />
           ) : (
             <Button
-              label={agent ? 'Save' : 'Turn it on'}
+              label={agent ? tr('Save') : tr('Turn it on')}
               block
               size="lg"
               loading={busy === 'save'}
@@ -209,42 +223,46 @@ export function OrgAgent({ org }: { org: OrgView }) {
       >
         <View style={{ gap: 12 }}>
           <TextField
-            label="Its name"
+            label={tr('Its name')}
             value={name}
             onChangeText={setName}
             maxLength={AGENT_NAME_MAX}
-            hint="Customers see it on everything it writes, with “AI agent”."
+            hint={tr('Customers see it on everything it writes, with “AI agent”.')}
             error={fieldErrors.name}
             testID="org-agent-name"
           />
           <TextField
-            label="What it knows"
+            label={tr('What it knows')}
             value={knowledge}
             onChangeText={setKnowledge}
             multiline
             maxLength={AGENT_KNOWLEDGE_MAX}
-            placeholder="Open Sunday to Thursday 9 to 6, Saturday 9 to 1. A check-up is 400 EGP. Book by calling 02 2345 6789."
-            hint="Hours, services, prices, how to book, what you don’t do: a few sentences at least. It answers only from this."
+            placeholder={tr(
+              'Open Sunday to Thursday 9 to 6, Saturday 9 to 1. A check-up is 400 EGP. Book by calling 02 2345 6789.',
+            )}
+            hint={tr(
+              'Hours, services, prices, how to book, what you don’t do: a few sentences at least. It answers only from this.',
+            )}
             error={fieldErrors.knowledge}
             testID="org-agent-knowledge"
           />
           <Text variant="caption" color="textTertiary">
-            {WHAT_IT_DOES}
+            {tr(WHAT_IT_DOES)}
           </Text>
           <View style={{ gap: 8 }}>
             <Text variant="captionStrong" color="textSecondary">
-              Try it first
+              {tr('Try it first')}
             </Text>
             <TextField
               value={question}
               onChangeText={setQuestion}
-              placeholder="Ask what a customer would"
+              placeholder={tr('Ask what a customer would')}
               maxLength={1000}
               onSubmitEditing={() => question.trim() && void tryIt()}
               testID="org-agent-question"
             />
             <Button
-              label="Ask it"
+              label={tr('Ask it')}
               variant="secondary"
               size="sm"
               loading={busy === 'try'}
@@ -259,7 +277,9 @@ export function OrgAgent({ org }: { org: OrgView }) {
                 testID="org-agent-tried"
               >
                 <Text variant="captionStrong" color="textSecondary">
-                  {`${AGENT_ACTION_LABELS[tried.action]} · nothing was sent`}
+                  {tr('{AGENT_ACTION_LABELS} · nothing was sent', {
+                    AGENT_ACTION_LABELS: tr(AGENT_ACTION_LABELS[tried.action]),
+                  })}
                 </Text>
                 <Text variant="body">{tried.message}</Text>
               </View>
@@ -274,8 +294,8 @@ export function OrgAgent({ org }: { org: OrgView }) {
             <View style={{ marginHorizontal: -20 }}>
               <ListRow
                 icon={Trash}
-                title="Remove the AI agent"
-                subtitle="It leaves the team; what it wrote stays"
+                title={tr('Remove the AI agent')}
+                subtitle={tr('It leaves the team; what it wrote stays')}
                 destructive
                 onPress={() => setRemoving(true)}
                 testID="org-agent-remove"

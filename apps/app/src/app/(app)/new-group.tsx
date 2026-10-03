@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -23,7 +24,7 @@ export default function NewGroup() {
   const [busy, setBusy] = useState(false);
   const create = async () => {
     if (!title.trim() || picked.size === 0) {
-      toast('Name the group and add at least one person.');
+      toast(tr('Name the group and add at least one person.'));
       return;
     }
     setBusy(true);
@@ -47,11 +48,11 @@ export default function NewGroup() {
         left={
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           />
         }
-        title="New group"
+        title={tr('New group')}
       />
       <ScrollView
         contentContainerStyle={{
@@ -63,14 +64,14 @@ export default function NewGroup() {
         }}
       >
         <TextField
-          label="Group name"
+          label={tr('Group name')}
           value={title}
           onChangeText={setTitle}
           maxLength={80}
-          placeholder="Weekend hikers, Q3 launch…"
+          placeholder={tr('Weekend hikers, Q3 launch…')}
         />
         <TextField
-          label="What it’s for (optional)"
+          label={tr('What it’s for (optional)')}
           value={purpose}
           onChangeText={setPurpose}
           maxLength={200}
@@ -78,26 +79,28 @@ export default function NewGroup() {
         {privateSupported ? (
           <>
             <Segmented
-              label="What kind of group"
+              label={tr('What kind of group')}
               value={privacy}
               onChange={setPrivacy}
               options={[
-                { value: 'standard', label: 'Standard' },
-                { value: 'private', label: 'Private' },
+                { value: 'standard', label: tr('Standard') },
+                { value: 'private', label: tr('Private') },
               ]}
             />
             <Text variant="caption" color="textSecondary">
               {privacy === 'private'
-                ? 'End to end encrypted: only the devices of the people in it can read it, so there’s no search, Caime AI or previews, and it’s text for now.'
-                : 'Search, suggestions and Caime AI work here.'}
+                ? tr(
+                    'End to end encrypted: only the devices of the people in it can read it, so there’s no search, Caime AI or previews, and it’s text for now.',
+                  )
+                : tr('Search, suggestions and Caime AI work here.')}
             </Text>
           </>
         ) : null}
         <Text variant="overline" color="textTertiary">
-          People · {picked.size} chosen
+          {tr('People · {size} chosen', { size: picked.size })}
         </Text>
         <PeoplePicker picked={picked} onToggle={(id) => setPicked((p) => toggled(p, id))} />
-        <Button label="Create group" size="lg" block onPress={create} loading={busy} />
+        <Button label={tr('Create group')} size="lg" block onPress={create} loading={busy} />
       </ScrollView>
     </Screen>
   );

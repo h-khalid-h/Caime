@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { type TextInput, View } from 'react-native';
@@ -47,13 +48,13 @@ export default function SignIn() {
 
   return (
     <AuthLayout
-      kicker="sign in"
-      title="Welcome back"
-      subtitle="Sign in with your email or @handle."
+      kicker={tr('sign in')}
+      title={tr('Welcome back')}
+      subtitle={tr('Sign in with your email or @handle.')}
     >
       <View style={{ gap: 14 }}>
         <TextField
-          label="Email or handle"
+          label={tr('Email or handle')}
           value={identifier}
           onChangeText={setIdentifier}
           autoCapitalize="none"
@@ -67,7 +68,7 @@ export default function SignIn() {
         />
         <TextField
           ref={passwordRef}
-          label="Password"
+          label={tr('Password')}
           secret
           value={password}
           onChangeText={setPassword}
@@ -89,7 +90,7 @@ export default function SignIn() {
         </Text>
       ) : null}
       <Button
-        label="Sign in"
+        label={tr('Sign in')}
         size="lg"
         block
         loading={busy}
@@ -104,7 +105,7 @@ export default function SignIn() {
           testID="signin-forgot"
         >
           <Text variant="bodyStrong" color="link">
-            Forgot your password?
+            {tr('Forgot your password?')}
           </Text>
         </Pressable>
         <Pressable
@@ -113,9 +114,9 @@ export default function SignIn() {
           style={{ padding: 8 }}
         >
           <Text variant="body" color="textSecondary">
-            New here?{' '}
+            {tr('New here?')}{' '}
             <Text variant="bodyStrong" color="link">
-              Create an account
+              {tr('Create an account')}
             </Text>
           </Text>
         </Pressable>

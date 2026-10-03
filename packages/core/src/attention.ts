@@ -6,6 +6,8 @@
  * Pure: the server computes the inputs with SQL, clients recompute locally after realtime events
  * and offline actions, and both get the same answer.
  */
+
+import { msg, tr } from './i18n';
 import type { Priority } from './policy';
 
 export const ATTENTION_SECTIONS = [
@@ -20,7 +22,7 @@ export const ATTENTION_SECTIONS = [
 export type AttentionSection = (typeof ATTENTION_SECTIONS)[number];
 
 export const SECTION_LABELS: Record<AttentionSection, string> = {
-  needs_you: 'Needs you',
+  needs_you: msg('Needs you'),
   important: 'Important',
   waiting: 'Waiting',
   recent: 'Recent',
@@ -114,7 +116,7 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
     });
   }
   if (input.dueSoonToMe > 0)
-    needs.push({ tier: 5, reason: { code: 'due_soon', label: 'Due soon' } });
+    needs.push({ tier: 5, reason: { code: 'due_soon', label: tr('Due soon') } });
   if (input.openRequestsToMe > 0) {
     needs.push({
       tier: 4,
@@ -125,18 +127,21 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
     });
   }
   if (input.unreadMentions > 0)
-    needs.push({ tier: 3, reason: { code: 'mentioned_you', label: 'Mentioned you' } });
+    needs.push({ tier: 3, reason: { code: 'mentioned_you', label: tr('Mentioned you') } });
   const inbound = input.pendingInbound;
   if (inbound && !inbound.dismissed && (inbound.isRequest || inbound.isQuestion)) {
     needs.push({
       tier: 2,
       reason: inbound.isRequest
-        ? { code: 'request_to_you', label: 'Asked you to do something' }
-        : { code: 'asked_you', label: 'Asked you a question' },
+        ? { code: 'request_to_you', label: tr('Asked you to do something') }
+        : { code: 'asked_you', label: tr('Asked you a question') },
     });
   }
   if (input.followUpDue)
-    needs.push({ tier: 1, reason: { code: 'follow_up_due', label: 'No reply yet — follow up?' } });
+    needs.push({
+      tier: 1,
+      reason: { code: 'follow_up_due', label: tr('No reply yet — follow up?') },
+    });
 
   // Only the strongest signals override the user's own "archive", "mute" and "quiet".
   const breaksThrough =
@@ -148,15 +153,15 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
   if (input.isMessageRequest) {
     return {
       section: 'requests',
-      reasons: [{ code: 'message_request', label: 'Not connected yet' }],
+      reasons: [{ code: 'message_request', label: tr('Not connected yet') }],
       rank: at,
     };
   }
   if ((muted || input.override === 'quiet') && !breaksThrough) {
     reasons.push(
       input.override === 'quiet'
-        ? { code: 'you_marked_quiet', label: 'You marked this quiet' }
-        : { code: 'muted', label: 'Muted' },
+        ? { code: 'you_marked_quiet', label: tr('You marked this quiet') }
+        : { code: 'muted', label: tr('Muted') },
     );
     return { section: 'quiet', reasons, rank: at };
   }
@@ -186,7 +191,7 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
         label: plural(input.waitingOnThem, 'You’re waiting on them', 'Waiting on {n} things'),
       });
     } else {
-      reasons.push({ code: 'awaiting_reply', label: 'Waiting for a reply' });
+      reasons.push({ code: 'awaiting_reply', label: tr('Waiting for a reply') });
     }
     return { section: 'waiting', reasons, rank: at + pinnedBoost };
   }
@@ -194,13 +199,13 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
   if (input.unreadCount > 0) {
     reasons.push({ code: 'unread', label: plural(input.unreadCount, '1 new', '{n} new') });
   }
-  if (waiting) reasons.push({ code: 'waiting_on_them', label: 'You’re waiting on them' });
+  if (waiting) reasons.push({ code: 'waiting_on_them', label: tr('You’re waiting on them') });
 
   if (priority === 'priority' && input.unreadCount > 0) {
     reasons.unshift(
       input.override === 'priority'
-        ? { code: 'you_marked_priority', label: 'You marked this priority' }
-        : { code: 'priority_relationship', label: input.relationship?.label ?? 'Priority' },
+        ? { code: 'you_marked_priority', label: tr('You marked this priority') }
+        : { code: 'priority_relationship', label: input.relationship?.label ?? tr('Priority') },
     );
     return { section: 'important', reasons, rank: at + pinnedBoost };
   }
@@ -208,12 +213,12 @@ export function classifyAttention(input: AttentionInput, now: Date): AttentionRe
   if (priority === 'quiet' && input.override !== 'priority') {
     reasons.unshift({
       code: 'quiet_relationship',
-      label: `${input.relationship?.label ?? 'This relationship'} · quiet`,
+      label: tr('{label} · quiet', { label: input.relationship?.label ?? tr('This relationship') }),
     });
     return { section: 'quiet', reasons, rank: at };
   }
 
-  if (input.pinned) reasons.push({ code: 'pinned', label: 'Pinned' });
+  if (input.pinned) reasons.push({ code: 'pinned', label: tr('Pinned') });
   return { section: 'recent', reasons, rank: at + pinnedBoost };
 }
 
@@ -236,7 +241,7 @@ export function groupBySection<T>(
   }
   return ATTENTION_SECTIONS.filter((s) => buckets.has(s)).map((section) => ({
     section,
-    label: SECTION_LABELS[section],
+    label: tr(SECTION_LABELS[section]),
     items: buckets.get(section)!.sort((a, b) => b.result.rank - a.result.rank),
   }));
 }
@@ -244,10 +249,10 @@ export function groupBySection<T>(
 /** "3 need you" — the headline count the brand voice uses instead of unread totals. */
 export function attentionHeadline(counts: Partial<Record<AttentionSection, number>>): string {
   const needs = counts.needs_you ?? 0;
-  if (needs > 0) return needs === 1 ? '1 needs you' : `${needs} need you`;
+  if (needs > 0) return needs === 1 ? '1 needs you' : tr('{needs} need you', { needs });
   const important = counts.important ?? 0;
   if (important > 0) return important === 1 ? '1 important' : `${important} important`;
-  return 'You’re all caught up';
+  return tr('You’re all caught up');
 }
 
 /** What placing a list of inbox items needs of each: where it went, and how strongly. */
@@ -269,7 +274,7 @@ export function inboxSections<T extends Placed>(
 } {
   const sections = ATTENTION_SECTIONS.map((section) => ({
     section,
-    label: SECTION_LABELS[section],
+    label: tr(SECTION_LABELS[section]),
     items: items.filter((c) => c.section === section).sort((a, b) => b.rank - a.rank),
   })).filter((s) => s.items.length > 0);
   const counts = Object.fromEntries(sections.map((s) => [s.section, s.items.length]));

@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 import { usePrefs } from '@/theme/prefs';
@@ -30,7 +31,7 @@ export function SkeletonRows({ count = 6 }: { count?: number }) {
   return (
     <Animated.View
       style={{ opacity: pulse }}
-      accessibilityLabel="Loading"
+      accessibilityLabel={tr('Loading')}
       accessibilityRole="progressbar"
     >
       {ROWS.slice(0, count).map((i) => (

@@ -77,6 +77,19 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
 - **ADR-15 — One application container.** API, realtime, workers and the web app run in one image
   beside a PostgreSQL service. Horizontal scale is more instances of the same image.
 
+- **ADR-16 — The interface is written in English in the code; other languages are catalogs
+  keyed by it.** Every string the interface shows is wrapped where it's written (`tr('…')`,
+  `trn(n, one, other)` for a count, `msg('…')` for a table of options translated where it's
+  shown, in `packages/core/src/i18n.ts`), and the English text is the key into the language's
+  catalog (`locales/ar.ts`), so the code stays readable, a missing entry falls back to the
+  English, and `i18n-catalog.test.ts` fails CI for a string without its Arabic or an entry
+  nothing says any more. The translator is one module-level value set at boot (the app loads
+  the catalog before the first screen and remounts on a change); the server keeps English until
+  it translates per person (its copy in notifications and inbox reasons is the next step). The
+  catalog is its own lazy chunk, never in the startup bundle. Rejected: translation ids
+  (`settings.language.title`), which hide the words from the code and make every string a
+  lookup to read; and a React hook per string, which the app's components, many of them plain
+  functions, would not fit.
 ## Domain model
 
 The primary object is the **connection**, not the chat (PRD §4).

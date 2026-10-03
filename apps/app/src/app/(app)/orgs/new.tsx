@@ -1,4 +1,5 @@
 import type { ClosedOrgView } from '@caime/core/api';
+import { tr } from '@caime/core/i18n';
 import { latestFoundedYear, ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
 import { handleError, handleFromName, normalizeHandle } from '@caime/core/rules';
 import { useQueryClient } from '@tanstack/react-query';
@@ -79,7 +80,7 @@ export default function NewOrganization() {
         handleError(h) ??
         (taken?.handle === h ? (taken.reason ?? 'That handle isn’t available.') : undefined),
       kind: kind ? undefined : 'Choose what kind of organization it is.',
-      country: country ? undefined : 'Choose where it’s based.',
+      country: country ? undefined : tr('Choose where it’s based.'),
     };
     setErrors(next);
     if (Object.values(next).some(Boolean) || !kind || !country) return;
@@ -117,11 +118,11 @@ export default function NewOrganization() {
         left={
           <IconButton
             icon={ArrowLeft}
-            label="Back"
+            label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/orgs'))}
           />
         }
-        title="New organization"
+        title={tr('New organization')}
       />
       <ScrollView
         contentContainerStyle={{
@@ -134,16 +135,16 @@ export default function NewOrganization() {
         keyboardShouldPersistTaps="handled"
       >
         <TextField
-          label="Name"
+          label={tr('Name')}
           value={name}
           onChangeText={setName}
           maxLength={100}
-          placeholder="DATA C, Nile Dental Clinic…"
+          placeholder={tr('DATA C, Nile Dental Clinic…')}
           error={errors.name}
           testID="org-name"
         />
         <TextField
-          label="Handle"
+          label={tr('Handle')}
           icon={AtSign}
           value={handle}
           onChangeText={(v) => {
@@ -153,7 +154,7 @@ export default function NewOrganization() {
           autoCapitalize="none"
           autoCorrect={false}
           maxLength={30}
-          hint="How people find it. Shared with people’s handles, so nobody can pose as it."
+          hint={tr('How people find it. Shared with people’s handles, so nobody can pose as it.')}
           error={
             errors.handle ??
             (taken?.handle === normalizeHandle(handle)
@@ -167,13 +168,13 @@ export default function NewOrganization() {
         ) : null}
         <View style={{ gap: 8 }}>
           <Text variant="captionStrong" color="textSecondary">
-            What kind of organization
+            {tr('What kind of organization')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {ORG_KINDS.map((k) => (
               <Chip
                 key={k}
-                label={ORG_KIND_LABELS[k]}
+                label={tr(ORG_KIND_LABELS[k])}
                 icon={ORG_ICONS[k]}
                 selected={kind === k}
                 onPress={() => setKind(k)}
@@ -188,34 +189,34 @@ export default function NewOrganization() {
           ) : null}
         </View>
         <CountryField
-          label="Where it’s based"
+          label={tr('Where it’s based')}
           value={country}
           onChange={setCountry}
           locale={me.locale}
           error={errors.country}
-          hint="Sets its defaults, like the currency of its cards."
+          hint={tr('Sets its defaults, like the currency of its cards.')}
           testID="org-country"
         />
         <YearField
-          label="Year it began (optional)"
+          label={tr('Year it began (optional)')}
           value={founded}
           onChange={setFounded}
           min={1000}
           max={latestFoundedYear()}
           optional
           error={errors.foundedYear}
-          hint="Shown on its page."
+          hint={tr('Shown on its page.')}
           testID="org-founded"
         />
         <TextField
-          label="About (optional)"
+          label={tr('About (optional)')}
           value={about}
           onChangeText={setAbout}
           maxLength={500}
           multiline
         />
         <TextField
-          label="Website (optional)"
+          label={tr('Website (optional)')}
           value={website}
           onChangeText={setWebsite}
           autoCapitalize="none"
@@ -224,10 +225,10 @@ export default function NewOrganization() {
           error={errors.website}
         />
         <Text variant="caption" color="textSecondary">
-          Next, verify your domain with one DNS record, so people can see it’s really you.
+          {tr('Next, verify your domain with one DNS record, so people can see it’s really you.')}
         </Text>
         <Button
-          label="Create it"
+          label={tr('Create it')}
           size="lg"
           block
           loading={busy}

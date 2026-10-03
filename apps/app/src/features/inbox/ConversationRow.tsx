@@ -1,5 +1,6 @@
 import type { InboxItemView } from '@caime/core/api';
 import { formatListTime, joinNames, listTitle } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { OrgMark } from '@/features/orgs/kinds';
@@ -55,12 +56,12 @@ export const ConversationRow = memo(function ConversationRow({
   const preview = typing
     ? 'typing…'
     : item.draft
-      ? `Draft: ${item.draft}`
+      ? tr('Draft: {draft}', { draft: item.draft })
       : item.lastMessage
         ? `${item.lastMessage.mine ? 'You: ' : ''}${item.lastMessage.preview}`
         : item.request === 'incoming'
-          ? 'Wants to message you'
-          : 'Say hello';
+          ? tr('Wants to message you')
+          : tr('Say hello');
   const previewColor = typing
     ? 'accentStrong'
     : item.draft
@@ -177,7 +178,7 @@ export const ConversationRow = memo(function ConversationRow({
                   // Business is visibly business (R15), and says whether that's proven.
                   <Chip
                     size="sm"
-                    label={item.org.verified ? 'Verified business' : 'Business'}
+                    label={item.org.verified ? tr('Verified business') : tr('Business')}
                     icon={item.org.verified ? BadgeCheck : Briefcase}
                     tone={item.org.verified ? 'success' : 'neutral'}
                   />

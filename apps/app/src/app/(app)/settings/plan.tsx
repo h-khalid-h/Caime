@@ -1,5 +1,6 @@
 import type { Plan, PlanUsageView } from '@caime/core/api';
 import { formatBytes, formatSoon } from '@caime/core/format';
+import { tr } from '@caime/core/i18n';
 import { nextPersonPlan, PERSON_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
 import { router } from 'expo-router';
 import { View } from 'react-native';
@@ -53,13 +54,22 @@ function Usage({
 /** What a paid plan adds (R47): the depth of the wedge, never the wedge. */
 function proIncludes(plan: Plan = 'pro'): string {
   const a = PERSON_ALLOWANCES[plan];
-  return `Relationship insights, ${a.automations} automations, ${a.aiPerDay} AI assists a day and ${formatBytes(a.storageBytes)} for files.`;
+  return tr(
+    'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {formatBytes} for files.',
+    { automations: a.automations, aiPerDay: a.aiPerDay, formatBytes: formatBytes(a.storageBytes) },
+  );
 }
 
 function aiDetail(p: PlanUsageView, timeZone: string, locale: string): string {
-  const base = `${p.used.aiToday} of ${p.allowance.aiPerDay} in the last 24 hours`;
+  const base = tr('{aiToday} of {aiPerDay} in the last 24 hours', {
+    aiToday: p.used.aiToday,
+    aiPerDay: p.allowance.aiPerDay,
+  });
   if (!p.aiNextAt) return base;
-  return `${base}. The next one is ready ${formatSoon(p.aiNextAt, new Date(), timeZone, locale)}`;
+  return tr('{base}. The next one is ready {formatSoon}', {
+    base,
+    formatSoon: formatSoon(p.aiNextAt, new Date(), timeZone, locale),
+  });
 }
 
 export default function PlanSettings() {
@@ -71,7 +81,7 @@ export default function PlanSettings() {
   const p = q.data;
   if (!p || !user)
     return (
-      <SettingsPage title="Plan">
+      <SettingsPage title={tr('Plan')}>
         <SkeletonRows />
       </SettingsPage>
     );
@@ -84,22 +94,26 @@ export default function PlanSettings() {
       billing.canManage ||
       (free && (billing.enabled || billing.unavailable)));
   return (
-    <SettingsPage title="Plan">
+    <SettingsPage title={tr('Plan')}>
       <View style={{ gap: 6, paddingHorizontal: 4 }}>
         <Text variant="title" testID="plan-name">
           {PLAN_NAMES[p.plan]}
         </Text>
         <Text variant="body" color="textSecondary">
           {free
-            ? 'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.'
-            : 'Everything in Personal, with relationship insights, more automations, more AI assist and more room for files.'}
+            ? tr(
+                'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.',
+              )
+            : tr(
+                'Everything in Personal, with relationship insights, more automations, more AI assist and more room for files.',
+              )}
         </Text>
       </View>
 
-      <Group title="What you’re using">
+      <Group title={tr('What you’re using')}>
         <Usage
           icon={Sparkles}
-          title="AI assist"
+          title={tr('AI assist')}
           detail={aiDetail(p, user.timeZone, user.locale)}
           used={p.used.aiToday}
           of={p.allowance.aiPerDay}
@@ -108,8 +122,11 @@ export default function PlanSettings() {
         <Divider />
         <Usage
           icon={HardDrive}
-          title="Files"
-          detail={`${p.used.storageBytes ? formatBytes(p.used.storageBytes) : '0'} of ${formatBytes(p.allowance.storageBytes)}`}
+          title={tr('Files')}
+          detail={tr('{formatBytes} of {formatBytes2}', {
+            formatBytes: p.used.storageBytes ? formatBytes(p.used.storageBytes) : '0',
+            formatBytes2: formatBytes(p.allowance.storageBytes),
+          })}
           used={p.used.storageBytes}
           of={p.allowance.storageBytes}
           testID="plan-files"
@@ -117,14 +134,17 @@ export default function PlanSettings() {
         <Divider />
         <Usage
           icon={Zap}
-          title="Automations"
-          detail={`${p.used.automations} of ${p.allowance.automations}`}
+          title={tr('Automations')}
+          detail={tr('{automations} of {automations2}', {
+            automations: p.used.automations,
+            automations2: p.allowance.automations,
+          })}
           used={p.used.automations}
           of={p.allowance.automations}
           testID="plan-automations"
         />
       </Group>
-      <Group title="Relationship insights">
+      <Group title={tr('Relationship insights')}>
         <Pressable
           accessibilityRole="link"
           onPress={() => router.navigate('/settings/insights')}
@@ -134,11 +154,14 @@ export default function PlanSettings() {
           <ChartBar size={20} color={p.allowance.insights ? t.c.accentStrong : t.c.textTertiary} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="label">
-              {p.allowance.insights ? 'Included in your plan' : `Comes with ${PLAN_NAMES.pro}`}
+              {p.allowance.insights
+                ? tr('Included in your plan')
+                : tr('Comes with {pro}', { pro: PLAN_NAMES.pro })}
             </Text>
             <Text variant="caption" color="textSecondary">
-              Who you write with most, who’s gone quiet, how fast you answer and are answered, and
-              when you write. Yours alone.
+              {tr(
+                'Who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write. Yours alone.',
+              )}
             </Text>
           </View>
           <ChevronRight size={18} color={t.c.textTertiary} />
@@ -162,14 +185,17 @@ export default function PlanSettings() {
           footer={
             p.upgradeUrl
               ? undefined
-              : `${PLAN_NAMES[next]} can’t be bought here yet. Nothing you use today will change when it can.`
+              : tr(
+                  '{PLAN_NAMES} can’t be bought here yet. Nothing you use today will change when it can.',
+                  { PLAN_NAMES: PLAN_NAMES[next] },
+                )
           }
         >
           <View style={{ padding: 16, gap: 12 }}>
             <Text variant="body">{proIncludes(next)}</Text>
             {p.upgradeUrl ? (
               <Button
-                label={`See ${PLAN_NAMES[next]}`}
+                label={tr('See {PLAN_NAMES}', { PLAN_NAMES: PLAN_NAMES[next] })}
                 onPress={() => openLink(p.upgradeUrl ?? '')}
                 testID="plan-upgrade"
               />

@@ -4,6 +4,7 @@
  * stays only as long as the message does.
  */
 import { SAVED_DEFAULT } from '@caime/core/automations';
+import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { endpoints } from '@/api/endpoints';
@@ -48,7 +49,11 @@ export function SaveSheet({
         collection: target,
         ...(assetId ? { assetId } : {}),
       });
-      toast(res.existing ? `Already in ${res.collection}` : `Saved to ${res.collection}`);
+      toast(
+        res.existing
+          ? tr('Already in {collection}', { collection: res.collection })
+          : tr('Saved to {collection}', { collection: res.collection }),
+      );
       void qc.invalidateQueries({ queryKey: qk.saved });
       onClose();
     } catch (e) {
@@ -61,11 +66,11 @@ export function SaveSheet({
     <Sheet
       open
       onClose={onClose}
-      title="Save"
-      subtitle="Kept for you, as long as the message is there"
+      title={tr('Save')}
+      subtitle={tr('Kept for you, as long as the message is there')}
       footer={
         <Button
-          label={target ? `Save to ${target}` : 'Save'}
+          label={target ? tr('Save to {target}', { target }) : tr('Save')}
           block
           size="lg"
           loading={busy}
@@ -76,11 +81,11 @@ export function SaveSheet({
       }
     >
       <CollectionPicker
-        label="Where to keep it"
+        label={tr('Where to keep it')}
         value={target}
         onChange={setPicked}
         collections={collections}
-        placeholder="Receipts"
+        placeholder={tr('Receipts')}
         testID="save-sheet"
       />
     </Sheet>

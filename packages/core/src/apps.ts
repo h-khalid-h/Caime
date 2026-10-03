@@ -1,3 +1,4 @@
+import { msg } from './i18n';
 /**
  * Apps (PRD §73–75, R16): what an organization connects to Caime, its helpdesk, its CRM, its
  * own bot. An app acts through a token with named scopes, hears about the organization's
@@ -21,8 +22,8 @@ export const API_SCOPE_LABELS: Record<ApiScope, string> = {
   'messages:read': 'Read customers’ conversations',
   'messages:write': 'Reply to customers (as a bot)',
   'threads:write': 'Assign, escalate and resolve',
-  updates: 'Post, change and take back the organization’s updates',
-  kits: 'Make its own cards, send them and move them on',
+  updates: msg('Post, change and take back the organization’s updates'),
+  kits: msg('Make its own cards, send them and move them on'),
 };
 
 /** What an app hears about. */

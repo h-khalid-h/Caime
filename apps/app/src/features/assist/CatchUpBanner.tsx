@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -32,16 +33,16 @@ export function CatchUpBanner({
     >
       <Sparkles size={16} color={t.c.accentStrong} />
       <Text variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
-        {count} new messages
+        {tr('{count} new messages', { count })}
       </Text>
       <Button
-        label="Catch me up"
+        label={tr('Catch me up')}
         size="sm"
         variant="secondary"
         onPress={onCatchUp}
         testID="catch-up-banner"
       />
-      <IconButton icon={X} label="Not now" onPress={onDismiss} size={18} />
+      <IconButton icon={X} label={tr('Not now')} onPress={onDismiss} size={18} />
     </View>
   );
 }

@@ -1,9 +1,10 @@
+import { tr } from '@caime/core/i18n';
 /**
  * A name for this browser's device in Settings: the browser and the system it's on. The phones'
  * is device.native.ts.
  */
 export function deviceName(): string {
-  if (typeof navigator === 'undefined') return 'This device';
+  if (typeof navigator === 'undefined') return tr('This device');
   const ua = navigator.userAgent;
   const browser = /Edg\//.test(ua)
     ? 'Edge'
@@ -13,7 +14,7 @@ export function deviceName(): string {
         ? 'Chrome'
         : /Safari\//.test(ua)
           ? 'Safari'
-          : 'A browser';
+          : tr('A browser');
   const system = /Windows/.test(ua)
     ? 'Windows'
     : /Mac OS X/.test(ua)
@@ -25,5 +26,5 @@ export function deviceName(): string {
         : /Linux/.test(ua)
           ? 'Linux'
           : null;
-  return system ? `${browser} on ${system}` : browser;
+  return system ? tr('{browser} on {system}', { browser, system }) : browser;
 }

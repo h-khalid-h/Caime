@@ -1,4 +1,5 @@
 import type { OAuthAppView } from '@caime/core/api';
+import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -21,8 +22,8 @@ import { Group } from './SettingsPage';
 
 type Kind = 'public' | 'confidential';
 const KINDS = [
-  { value: 'public', label: 'Phones and browsers' },
-  { value: 'confidential', label: 'Its own server' },
+  { value: 'public', label: msg('Phones and browsers') },
+  { value: 'confidential', label: msg('Its own server') },
 ] as const;
 
 const DISCOVERY_URL = `${WEB_URL}/.well-known/oauth-authorization-server`;
@@ -31,23 +32,26 @@ const TOKEN_URL = `${WEB_URL}/v1/oauth/token`;
 
 const kindLine = (a: OAuthAppView) =>
   a.confidential
-    ? 'This app sends its secret with the verifier when it trades a code.'
-    : 'This app proves itself with PKCE alone.';
+    ? tr('This app sends its secret with the verifier when it trades a code.')
+    : tr('This app proves itself with PKCE alone.');
 
 /** How to send people to it, and trade what comes back: the same for every app. */
 function Addresses({ app }: { app: OAuthAppView }) {
   return (
     <View style={{ gap: 12 }}>
-      <CopyRow label="Client ID" value={app.clientId} testID="oauth-app-client-id" />
-      <CopyRow label="Discovery address" value={DISCOVERY_URL} />
+      <CopyRow label={tr('Client ID')} value={app.clientId} testID="oauth-app-client-id" />
+      <CopyRow label={tr('Discovery address')} value={DISCOVERY_URL} />
       <Text variant="caption" color="textSecondary">
-        {`Most OAuth libraries need only these two. Otherwise, send people to the authorization address with response_type=code, the client ID, a return address below, the scopes it needs and an S256 code challenge, then trade the code that comes back, with the verifier, at the token address. ${kindLine(app)}`}
+        {tr(
+          'Most OAuth libraries need only these two. Otherwise, send people to the authorization address with response_type=code, the client ID, a return address below, the scopes it needs and an S256 code challenge, then trade the code that comes back, with the verifier, at the token address. {kindLine}',
+          { kindLine: kindLine(app) },
+        )}
       </Text>
-      <CopyRow label="Authorization address" value={AUTHORIZE_URL} />
-      <CopyRow label="Token address" value={TOKEN_URL} />
+      <CopyRow label={tr('Authorization address')} value={AUTHORIZE_URL} />
+      <CopyRow label={tr('Token address')} value={TOKEN_URL} />
       <View style={{ gap: 4 }}>
         <Text variant="captionStrong" color="textSecondary">
-          Return addresses
+          {tr('Return addresses')}
         </Text>
         {app.redirectUris.map((u) => (
           <Text key={u} variant="caption" selectable style={{ fontFamily: 'monospace' }}>
@@ -134,7 +138,7 @@ export function OAuthApps() {
       void qc.invalidateQueries({ queryKey: qk.oauthApps });
       setOpen(null);
       setRemoving(false);
-      toast(`${app.name} removed: it can’t act for anyone now`);
+      toast(tr('{name} removed: it can’t act for anyone now', { name: app.name }));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -145,8 +149,10 @@ export function OAuthApps() {
   return (
     <>
       <Group
-        title="Your apps"
-        footer="Register an app other people can let act for them. They see its name, who made it and what it wants before they choose, and can end it any time."
+        title={tr('Your apps')}
+        footer={tr(
+          'Register an app other people can let act for them. They see its name, who made it and what it wants before they choose, and can end it any time.',
+        )}
       >
         {q.isPending ? (
           <SkeletonRows />
@@ -171,8 +177,8 @@ export function OAuthApps() {
         {apps.length ? <Divider /> : null}
         <ListRow
           icon={Plus}
-          title="Register an app"
-          subtitle={apps.length ? undefined : 'Sign in with Caime, for people who use it'}
+          title={tr('Register an app')}
+          subtitle={apps.length ? undefined : tr('Sign in with Caime, for people who use it')}
           onPress={() => setMaking(true)}
           testID="oauth-app-new"
         />
@@ -181,20 +187,20 @@ export function OAuthApps() {
       <Sheet
         open={making}
         onClose={closeNew}
-        title={made ? 'Your app is registered' : 'Register an app'}
+        title={made ? tr('Your app is registered') : tr('Register an app')}
         subtitle={
           made?.clientSecret
-            ? 'Copy the secret now: it won’t be shown again.'
+            ? tr('Copy the secret now: it won’t be shown again.')
             : made
               ? undefined
-              : 'People who let it in see these, so make them recognisable.'
+              : tr('People who let it in see these, so make them recognisable.')
         }
         footer={
           made ? (
-            <Button label="Done" block size="lg" onPress={closeNew} testID="oauth-app-done" />
+            <Button label={tr('Done')} block size="lg" onPress={closeNew} testID="oauth-app-done" />
           ) : (
             <Button
-              label="Register the app"
+              label={tr('Register the app')}
               block
               size="lg"
               loading={busy}
@@ -210,13 +216,14 @@ export function OAuthApps() {
             {made.clientSecret ? (
               <>
                 <CopyRow
-                  label="Client secret"
+                  label={tr('Client secret')}
                   value={made.clientSecret}
                   testID="oauth-app-secret"
                 />
                 <Text variant="caption" color="textSecondary">
-                  Keep it on your server, never in an app people download. Send it with the client
-                  ID when you trade a code.
+                  {tr(
+                    'Keep it on your server, never in an app people download. Send it with the client ID when you trade a code.',
+                  )}
                 </Text>
               </>
             ) : null}
@@ -225,16 +232,16 @@ export function OAuthApps() {
         ) : (
           <View style={{ gap: 12 }}>
             <TextField
-              label="Name"
+              label={tr('Name')}
               value={name}
               onChangeText={setName}
               maxLength={60}
-              placeholder="Weekly digest"
+              placeholder={tr('Weekly digest')}
               error={errors.name}
               testID="oauth-app-name"
             />
             <TextField
-              label="Website (optional)"
+              label={tr('Website (optional)')}
               value={website}
               onChangeText={setWebsite}
               autoCapitalize="none"
@@ -245,27 +252,33 @@ export function OAuthApps() {
               testID="oauth-app-website"
             />
             <TextField
-              label="Return addresses"
+              label={tr('Return addresses')}
               value={redirects}
               onChangeText={setRedirects}
               autoCapitalize="none"
               autoCorrect={false}
               multiline
               placeholder="https://digest.example/callback"
-              hint="Where people go back to after choosing, one per line: https, http://localhost while you build it, or your app’s own scheme."
+              hint={tr(
+                'Where people go back to after choosing, one per line: https, http://localhost while you build it, or your app’s own scheme.',
+              )}
               error={errors.redirects}
               testID="oauth-app-redirects"
             />
             <Segmented
-              label="Where it runs"
+              label={tr('Where it runs')}
               value={kind}
               onChange={setKind}
-              options={KINDS.map((k) => ({ value: k.value, label: k.label }))}
+              options={KINDS.map((k) => ({ value: k.value, label: tr(k.label) }))}
             />
             <Text variant="caption" color="textTertiary">
               {kind === 'public'
-                ? 'An app on a phone or in a browser can’t keep a secret, so it proves itself with PKCE each time.'
-                : 'A server keeps a secret. It gets one, and sends it with PKCE when it trades a code.'}
+                ? tr(
+                    'An app on a phone or in a browser can’t keep a secret, so it proves itself with PKCE each time.',
+                  )
+                : tr(
+                    'A server keeps a secret. It gets one, and sends it with PKCE when it trades a code.',
+                  )}
             </Text>
             {errors.form ? (
               <Text
@@ -292,7 +305,7 @@ export function OAuthApps() {
         footer={
           removing && shown ? (
             <Button
-              label="Remove it: it stops for everyone at once"
+              label={tr('Remove it: it stops for everyone at once')}
               variant="danger"
               block
               size="lg"
@@ -309,8 +322,8 @@ export function OAuthApps() {
             <View style={{ marginHorizontal: -20 }}>
               <ListRow
                 icon={Trash}
-                title="Remove the app"
-                subtitle="Everyone who let it in is signed out of it"
+                title={tr('Remove the app')}
+                subtitle={tr('Everyone who let it in is signed out of it')}
                 destructive
                 onPress={() => setRemoving(true)}
                 testID="oauth-app-remove"

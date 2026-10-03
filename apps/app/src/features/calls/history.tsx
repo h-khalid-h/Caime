@@ -4,6 +4,8 @@
  * boundary, so one that can't load (a deploy replaced it) leaves the rest of the app as it was;
  * the Calls screen draws its bar, with a way back, before its list has loaded.
  */
+
+import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft } from '@/ui/icons';
@@ -23,12 +25,12 @@ export function CallHistory({ withId, withName }: { withId?: string; withName?: 
           !desktop || withId ? (
             <IconButton
               icon={ArrowLeft}
-              label="Back"
+              label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />
           ) : null
         }
-        title={withId ? `Calls with ${withName ?? 'them'}` : 'Calls'}
+        title={withId ? tr('Calls with {withName}', { withName: withName ?? 'them' }) : tr('Calls')}
       />
       <Body withId={withId} withName={withName} />
     </Screen>

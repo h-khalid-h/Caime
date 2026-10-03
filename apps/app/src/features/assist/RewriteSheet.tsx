@@ -1,4 +1,5 @@
 import { AI_LABEL, REWRITE_LABELS, REWRITE_STYLES, type RewriteStyle } from '@caime/core/assist';
+import { tr } from '@caime/core/i18n';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -62,12 +63,12 @@ export function RewriteSheet({
     <Sheet
       open={open}
       onClose={close}
-      title="Rewrite"
-      subtitle="Nothing changes until you choose."
+      title={tr('Rewrite')}
+      subtitle={tr('Nothing changes until you choose.')}
       footer={
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Button
-            label="Use this"
+            label={tr('Use this')}
             size="lg"
             style={{ flex: 1 }}
             disabled={!suggestion}
@@ -78,7 +79,7 @@ export function RewriteSheet({
             }}
             testID="rewrite-use"
           />
-          <Button label="Keep mine" size="lg" variant="ghost" onPress={close} />
+          <Button label={tr('Keep mine')} size="lg" variant="ghost" onPress={close} />
         </View>
       }
     >
@@ -86,7 +87,7 @@ export function RewriteSheet({
         {REWRITE_STYLES.map((s) => (
           <Chip
             key={s}
-            label={REWRITE_LABELS[s]}
+            label={tr(REWRITE_LABELS[s])}
             selected={style === s}
             onPress={() => void run(s)}
             testID={`rewrite-${s}`}
@@ -108,12 +109,12 @@ export function RewriteSheet({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Sparkles size={14} color={t.c.accentStrong} />
             <Text variant="overline" color="accentStrong">
-              {AI_LABEL}
+              {tr(AI_LABEL)}
             </Text>
           </View>
           {busy ? (
             <Text variant="body" color="textSecondary">
-              Writing…
+              {tr('Writing…')}
             </Text>
           ) : error ? (
             <Text variant="body" color="danger">
@@ -127,7 +128,9 @@ export function RewriteSheet({
         </View>
       ) : (
         <Text variant="caption" color="textSecondary" style={{ marginTop: 12 }}>
-          Caime sends your draft to its AI provider to write this. It isn’t sent to anyone else.
+          {tr(
+            'Caime sends your draft to its AI provider to write this. It isn’t sent to anyone else.',
+          )}
         </Text>
       )}
     </Sheet>
