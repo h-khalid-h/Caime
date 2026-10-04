@@ -1632,3 +1632,9 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   the location kit. Stored notifications and suggestions made before a person switched
   language stay in the language they were made in, by design. Arabic chunk 67.2 KB gzip
   (2,500 entries); budget 442.5 KB.
+- 2026-10-04 — The dark pass the review asked for (P2): `e2e/dark.spec.ts` photographs the
+  primary screens in the dark scheme on a phone (Chats, a conversation, a person, You, an
+  organization, Actions) and a desktop (a conversation with its panel, the Business inbox,
+  Notifications and priorities, People), the scheme the device's with nothing chosen in the
+  app, and fails on a console error. Read through once: contrast, chips, cards, bubbles and the
+  suggestion card hold in dark; nothing to fix.
