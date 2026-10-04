@@ -10,6 +10,7 @@
 import type { OrgRef } from '@caime/core';
 import { canSee, handleError, normalizeHandle, SPHERE_DEFS, type Sphere } from '@caime/core';
 import { MARKETING_PAGES, type MarketingPage } from '@caime/core/api';
+import { currentTranslator, tr } from '@caime/core/i18n';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
 import { orgRef } from './business';
@@ -73,7 +74,15 @@ export type PublicPage =
   | PublicOrg
   | PublicInvite
   | { kind: 'missing' }
-  | { kind: 'app' };
+  | { kind: 'app' }
+  /**
+   * The app's way in for a visitor (welcome, sign-in, sign-up): the screen's words and shape,
+   * painted before its scripts run, and replaced by the screen itself the moment the app mounts.
+   */
+  | { kind: 'entry'; screen: EntryScreen };
+
+export type EntryScreen = 'welcome' | 'sign-in' | 'sign-up';
+export const ENTRY_SCREENS: readonly EntryScreen[] = ['welcome', 'sign-in', 'sign-up'];
 
 /** An open organization's public face, by handle. */
 export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null> {
@@ -177,7 +186,12 @@ export async function publicPageFor(db: Q, path: string, now: Date): Promise<Pub
   const at = /^\/@([^/?#]+)$/.exec(path);
   const org = /^\/o\/([^/?#]+)$/.exec(path);
   const raw = decodeURIComponent((at ?? org)?.[1] ?? '');
-  if (!raw) return { kind: 'app' };
+  if (!raw) {
+    const entry = /^\/([a-z-]+)$/.exec(path)?.[1];
+    if (entry && (ENTRY_SCREENS as readonly string[]).includes(entry))
+      return { kind: 'entry', screen: entry as EntryScreen };
+    return { kind: 'app' };
+  }
   const handle = normalizeHandle(raw);
   if (handleError(handle)) return { kind: 'missing' };
   // One namespace: @handle may be an organization's; /o/ is only ever an organization's.
@@ -185,6 +199,72 @@ export async function publicPageFor(db: Q, path: string, now: Date): Promise<Pub
   if (o) return o;
   if (org) return { kind: 'missing' };
   return (await publicPerson(db, handle, now)) ?? { kind: 'missing' };
+}
+
+function entryTitle(screen: EntryScreen): string {
+  return screen === 'welcome'
+    ? tr('Welcome to Caime')
+    : screen === 'sign-in'
+      ? tr('Welcome back')
+      : tr('Create your account');
+}
+
+/** A field as the app draws one, waiting for the app: its label and an empty box. */
+const field = (label: string, type = 'text') =>
+  `<label class="field"><span>${esc(label)}</span><input type="${type}" disabled aria-disabled="true"></label>`;
+
+/**
+ * The entry screens as the app paints them, in HTML the browser paints first (R44): the same
+ * words (`tr`, in the request's language), the same shape, so the swap is invisible. The
+ * buttons that are links work before the app does; a form waits for it.
+ */
+function entryBody(screen: EntryScreen): string {
+  const dir = currentTranslator().dir;
+  const spec = `<dl class="spec">
+    <div><dt class="mono">connection</dt><dd>${esc(tr('Say who someone is to you, once. Everything fits from then on.'))}</dd></div>
+    <div><dt class="mono">attention</dt><dd>${esc(tr('“3 need you”, never “47 unread”. It says why.'))}</dd></div>
+    <div><dt class="mono">privacy</dt><dd>${esc(tr('Each side of your life sees what you chose. Only you see your labels.'))}</dd></div>
+  </dl>`;
+  if (screen === 'welcome')
+    return `
+<main class="pub pub-entry" dir="${dir}" aria-busy="true">
+  <p class="mono">${esc(tr('welcome'))}</p>
+  <h1>${esc(tr('Welcome to Caime'))}</h1>
+  <p class="lead">${esc(tr('One place for everyone you talk to, and it knows the difference between your mum, your manager and your plumber.'))}</p>
+  ${spec}
+  <p class="cta"><a href="/sign-up">${esc(tr('Create your account'))}</a><a href="/sign-in" class="quiet">${esc(tr('I already have an account'))}</a></p>
+  <p class="small">${esc(tr('Free for people. Private by design: how you label someone is only ever yours.'))}</p>
+</main>`;
+  if (screen === 'sign-in')
+    return `
+<main class="pub pub-entry" dir="${dir}" aria-busy="true">
+  <p class="mono">${esc(tr('sign in'))}</p>
+  <h1>${esc(tr('Welcome back'))}</h1>
+  <p class="lead">${esc(tr('Sign in with your email or @handle.'))}</p>
+  <form class="form" aria-disabled="true">
+    ${field(tr('Email or handle'))}
+    ${field(tr('Password'), 'password')}
+    <button type="button" disabled>${esc(tr('Sign in'))}</button>
+  </form>
+  <p class="small"><a href="/recover">${esc(tr('Forgot your password?'))}</a></p>
+  <p class="small">${esc(tr('New here?'))} <a href="/sign-up">${esc(tr('Create an account'))}</a></p>
+</main>`;
+  return `
+<main class="pub pub-entry" dir="${dir}" aria-busy="true">
+  <p class="mono">${esc(tr('new account'))}</p>
+  <h1>${esc(tr('Create your account'))}</h1>
+  <p class="lead">${esc(tr('It takes a minute. You can change all of it later.'))}</p>
+  <form class="form" aria-disabled="true">
+    ${field(tr('Your name'))}
+    ${field(tr('Handle'))}
+    ${field(tr('Email'), 'email')}
+    ${field(tr('Password'), 'password')}
+    ${field(tr('Date of birth'))}
+    ${field(tr('Where you live'))}
+    <button type="button" disabled>${esc(tr('Create account'))}</button>
+  </form>
+  <p class="small">${esc(tr('Already have an account?'))} <a href="/sign-in">${esc(tr('Sign in'))}</a></p>
+</main>`;
 }
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
@@ -397,6 +477,18 @@ export function renderPublic(
 </main>`,
       };
     }
+    case 'entry':
+      return {
+        status: 200,
+        head: meta({
+          title: `${entryTitle(page.screen)} · ${SITE_NAME}`,
+          description: LANDING_DESCRIPTION,
+          image: null,
+          index: false,
+          canonical: false,
+        }),
+        body: entryBody(page.screen),
+      };
     case 'invite':
       return {
         status: 200,
@@ -489,6 +581,17 @@ body:has(#root:empty){overflow:auto}
 .pub-sheet{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}.pub-sheet h1{font-size:2rem;font-weight:800;margin:14px 0 6px;color:var(--ink)}.pub-sheet .masthead{margin-bottom:8px}.pub-sheet .wordmark{text-decoration:none}.pub-sheet .spec{margin:14px 0 6px}
 .pub-home{max-width:840px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
 .pub .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.78rem;letter-spacing:.03em;color:var(--text3);font-weight:500}
+.pub-entry{max-width:420px;padding:28px 20px 40px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
+.pub-entry h1{font-family:Nunito,Inter,system-ui,sans-serif;font-size:1.9rem;font-weight:800;line-height:1.15;margin:4px 0 6px;color:var(--ink)}
+.pub-entry .lead{font-size:1rem;color:var(--text2);margin:0 0 14px}
+.pub-entry .spec{margin:6px 0 10px}.pub-entry .spec>div{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line)}.pub-entry .spec dd{margin:0;color:var(--text2);font-size:.95rem}
+.pub-entry .form{display:flex;flex-direction:column;gap:12px;margin:6px 0 14px}
+.pub-entry .field{display:flex;flex-direction:column;gap:6px;font-size:.9rem;color:var(--text2)}
+.pub-entry .field input{height:48px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:0 14px;font:inherit;color:var(--text)}
+.pub-entry button,.pub-entry .cta a{display:block;width:100%;box-sizing:border-box;height:52px;line-height:52px;text-align:center;border:0;border-radius:16px;background:var(--ink);color:#fff;font:inherit;font-weight:600;font-size:1rem;margin:10px 0 0;padding:0;text-decoration:none}
+.pub-entry .cta a.quiet{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.pub-entry .small{font-size:.9rem;color:var(--text3);text-align:center;margin:10px 0 0}.pub-entry .small a{color:var(--ink)}
+.pub-entry[dir=rtl]{text-align:right}
 .pub-home h1,.pub-home h3,.pub-home .wordmark,.pub-sheet .wordmark{font-family:Nunito,Inter,system-ui,sans-serif}
 .pub-home .masthead,.pub-sheet .masthead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
 .pub-home .wordmark,.pub-sheet .wordmark{font-weight:800;font-size:1.35rem;color:var(--ink);text-decoration:none}
@@ -540,6 +643,30 @@ export function injectPublic(template: string, page: Rendered): string {
     ? html.replace('</body>', `<div id="static">${page.body}\n</div>\n</body>`)
     : `${html}\n<div id="static">${page.body}\n</div>`;
 }
+
+/**
+ * On an entry screen the app's scripts are asked for only once the static screen has painted
+ * (R44): deferred scripts are still requested the moment the parser sees them, and on a slow
+ * network 360 KB of script shares the line with the words a visitor is waiting for. The three
+ * `<script src defer>` tags become one inline bootstrap that appends them, in order, after the
+ * first frame. The bootstrap is fixed text, so the content security policy allows it by hash.
+ */
+export function bootstrapScripts(html: string): { html: string; inline: string } {
+  const tags = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*><\/script>\s*/g)];
+  if (!tags.length) return { html, inline: '' };
+  const srcs = tags.map((m) => m[1] as string);
+  const inline = `<script>${BOOTSTRAP.replace('SRCS', JSON.stringify(srcs))}</script>`;
+  let out = html;
+  for (const m of tags) out = out.replace(m[0], '');
+  out = out.includes('</body>')
+    ? out.replace('</body>', `${inline}\n</body>`)
+    : `${out}\n${inline}`;
+  return { html: out, inline };
+}
+
+/** The bootstrap's text, with SRCS for the list; `async=false` keeps their order as `defer` did. */
+export const BOOTSTRAP =
+  "addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){for(var s of SRCS){var e=document.createElement('script');e.src=s;e.async=false;document.body.appendChild(e)}})})})";
 
 /** Caime's own robots.txt: the app's screens aren't pages; the public ones are. */
 export function robotsTxt(publicUrl: string): string {

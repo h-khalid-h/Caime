@@ -115,6 +115,43 @@ describe('the readable web (R44)', () => {
     expect((await visit('/@a')).statusCode).toBe(404);
   });
 
+  it('the way in is painted before the app: the screen’s words and shape, scripts kept, in the browser’s language', async () => {
+    const r = await visit('/sign-up');
+    expect(r.statusCode).toBe(200);
+    expect(r.body).toContain('<meta name="robots" content="noindex">');
+    const page = r.body.split('<div id="static">')[1] ?? '';
+    expect(page).toContain('class="pub pub-entry" dir="ltr"');
+    expect(page).toContain('<h1>Create your account</h1>');
+    expect(page).toContain('It takes a minute. You can change all of it later.');
+    expect(page).toContain('<a href="/sign-in">Sign in</a>');
+    // The app still boots and takes over, asked for once the screen has painted: its scripts
+    // are appended by a fixed inline bootstrap the policy allows by hash, in their order.
+    expect(r.body).not.toContain('<script src=');
+    expect(r.body).toContain('["/_expo/static/js/entry-abc.js"]');
+    expect(r.body).toContain('e.async=false');
+    expect(String(r.headers['content-security-policy'])).toMatch(
+      /script-src 'self' 'sha256-[A-Za-z0-9+/=]+'/,
+    );
+    // Any other page keeps the policy as it is: no inline script allowed anywhere else.
+    expect(String((await visit('/@noor')).headers['content-security-policy'])).not.toContain(
+      'sha256-',
+    );
+    const signIn = await visit('/sign-in');
+    expect(signIn.body).toContain('<h1>Welcome back</h1>');
+    expect(signIn.body).toContain('<a href="/recover">Forgot your password?</a>');
+    const welcome = await visit('/welcome');
+    expect(welcome.body).toContain('<a href="/sign-up">Create your account</a>');
+    expect(welcome.body).toContain('<dt class="mono">connection</dt>');
+    // In Arabic, right to left, from the browser's own language.
+    const arabic = await visit('/sign-in', { 'accept-language': 'ar-EG,ar;q=0.9,en;q=0.8' });
+    expect(arabic.body).toContain('class="pub pub-entry" dir="rtl"');
+    expect(arabic.body).not.toContain('<h1>Welcome back</h1>');
+    expect(arabic.body).toMatch(/<h1>[^<]*[\u0600-\u06FF][^<]*<\/h1>/);
+    // Signed in, these screens only send the person on: the app alone, nothing to paint first.
+    const theirs = await visit('/sign-in', { cookie: `caime_session=${noor.token}` });
+    expect(theirs.body).not.toContain('<div id="static">');
+  });
+
   it('an organization’s page, at /o/ and at its @handle, with its logo public', async () => {
     for (const path of ['/o/nile.dental', '/@nile.dental']) {
       const r = await visit(path);

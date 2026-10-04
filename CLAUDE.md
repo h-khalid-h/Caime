@@ -262,7 +262,10 @@ These are rules, not preferences.
   `savePrefs`' one debounced snapshot (`interfaceLanguage`): a request of its own raced a choice
   being saved and its echo (`me.updated`, or read back) undid it. `savePrefs` flushes on
   `pagehide` with `keepalive`, so a change just before a reload isn't lost; a new preference
-  joins its snapshot and `adoptPreferences`, nowhere else.
+  joins its snapshot and `adoptPreferences`, nowhere else. While a save is pending or in flight
+  (`state/prefsPending.ts`), `adoptPreferences` adopts nothing: every save echoes back as
+  `me.updated`, whose refresh would otherwise put the account's older choice back on the device
+  before the newer one was sent (it did, once in a few runs).
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
   rendered in the app's shell like the landing page, for everyone, signed in or not, and never
@@ -273,6 +276,16 @@ These are rules, not preferences.
   `KEPT_DAYS`, `BUSINESS_VIEWS`), never typed; prices come from Stripe through `publicPrices`
   (billing's ten-minute cache) and read "price shown in the app" without it. A new page joins
   `MARKETING_PAGES`, `SITE_NAV`, `renderSite` and `public-pages.test.ts`.
+- The app's entry screens (welcome, sign-in, sign-up) are painted by the server for a visitor
+  before the app runs (`kind: 'entry'`, `entryBody` in `lib/public-pages.ts`): the same words
+  through `tr` in the browser's `Accept-Language`, the same shape in `.pub-entry` CSS, links that
+  work and a form that waits (`aria-busy`), hidden by `#root:not(:empty)~#static` when the app
+  mounts. Their scripts are appended by one fixed inline bootstrap after the first frame
+  (`bootstrapScripts`), allowed by its sha256 in the policy for those pages alone (`webCsp`'s
+  second argument): change the bootstrap's text and the hash follows, since it's computed from
+  the served inline; add a word to an entry screen in the app and add it to its static twin, or
+  the swap shows. Signed in, these paths serve the bare app (they only send the person on).
+  Measure with Lighthouse's mobile preset against the local production bundle (docs/RESOURCES.md).
 - The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, mono labels
   (`.mono`, the system monospace, no font file), spec-sheet rows (`.spec`) and the landing
   page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a

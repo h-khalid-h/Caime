@@ -130,12 +130,12 @@ function SpecLines() {
       rows={[
         {
           label: 'connection',
-          value: 'Say who someone is to you, once. Everything fits from then on.',
+          value: tr('Say who someone is to you, once. Everything fits from then on.'),
         },
-        { label: 'attention', value: '“3 need you”, never “47 unread”. It says why.' },
+        { label: 'attention', value: tr('“3 need you”, never “47 unread”. It says why.') },
         {
           label: 'privacy',
-          value: 'Each side of your life sees what you chose. Only you see your labels.',
+          value: tr('Each side of your life sees what you chose. Only you see your labels.'),
         },
       ]}
     />

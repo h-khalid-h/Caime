@@ -688,9 +688,16 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       iPhone, TestFlight, Play internal testing); prices in EGP, AED and SAR, local payment
       methods and Stripe Tax; WhatsApp Business through Meta's Cloud API; a smaller organization
       tier (a line in `plans.ts`)
-- [ ] The app's first screen under 2 s on the mobile preset (sign-in: LCP 4.2 s, TBT 440 ms on
-      2026-10-01 against the 2.0 s target): measure the entry chunk, move what the first screen
-      doesn't draw behind `lazyPart`, record LCP in docs/RESOURCES.md
+- [x] The app's first screen under 2 s on the mobile preset: the entry chunk measured
+      (`expo export --source-maps`: entry 278 KB gzip is the router, React and the web renderer,
+      common 162 KB the app, core, react-query, the icons; nothing of a later screen to move), so
+      the server paints welcome, sign-in and sign-up itself before the app runs (R44,
+      `entryBody`: the screen's words through `tr` in the browser's language, its shape in CSS,
+      links that work, a form that waits) and the app's scripts are asked for after that paint
+      (`bootstrapScripts`, one inline script allowed by hash on those pages alone). Lighthouse,
+      mobile preset, 2026-10-04: LCP 1.1–1.4 s (from 4.6 s), FCP 0.8 s, TBT 690–800 ms,
+      interactive 4.4–4.6 s (from 4.2 s), CLS 0.01–0.04 (docs/RESOURCES.md). Not done: the
+      app's own weight, where interactivity still waits; a screen-reader pass on a phone
 - [ ] Polish that shows (P2): quiet hours into Notifications and priorities; the duplicate
       organization line on a profile; disappearing messages as one row; the Actions segments on a
       phone; `X-Frame-Options: DENY`; one description meta; the two aged help lines; the dark pass
@@ -1518,3 +1525,7 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   each message's expiry, and the sub-processors as one list in core that the privacy page renders
   from the server's configuration (`HOSTING_PROVIDER` names the host). The agreement itself waits
   on the owner's lawyer (⛔).
+- 2026-10-04 — The app's first screen: welcome, sign-in and sign-up are painted by the server
+  before the app runs, in the browser's language, and the app's scripts are fetched after that
+  paint through a hashed inline bootstrap. LCP 4.6 s → 1.1–1.4 s on the mobile preset; interactive
+  about 0.3 s later than before. Measured with Lighthouse against the local production bundle.

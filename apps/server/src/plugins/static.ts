@@ -3,13 +3,17 @@
  * cookie stays first-party). Hashed bundles are cached forever; the HTML never is, so a deploy
  * reaches everyone on their next load. Any unknown non-API GET gets the app (client routing).
  */
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
+import { languageFor } from '@caime/core/i18n';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { publicPrices } from '../lib/billing';
+import { inLanguage } from '../lib/i18n';
 import {
+  bootstrapScripts,
   injectPublic,
   PERMISSIONS_POLICY,
   publicPageFor,
@@ -19,11 +23,12 @@ import {
 } from '../lib/public-pages';
 import { SESSION_COOKIE } from './auth';
 
-export function webCsp(publicUrl: string): string {
+export function webCsp(publicUrl: string, inlineScriptHash: string | null = null): string {
   const ws = publicUrl.replace(/^http/, 'ws');
   return [
     "default-src 'self'",
-    "script-src 'self'",
+    // One inline script, by its hash, on an entry screen alone (bootstrapScripts): nowhere else.
+    inlineScriptHash ? `script-src 'self' 'sha256-${inlineScriptHash}'` : "script-src 'self'",
     // react-native-web writes its styles at runtime.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
@@ -94,13 +99,23 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
    * visitor who isn't signed in, a person's or an organization's public face, a 404 for a
    * handle nobody has, and for the app's own screens a shell that asks not to be indexed.
    */
+  /** The first language the browser asks for ("ar-EG,ar;q=0.9,en;q=0.8" → "ar-EG"). */
+  const acceptedLanguage = (req: FastifyRequest): string | null => {
+    const h = req.headers['accept-language'];
+    return typeof h === 'string' ? (h.split(',')[0]?.split(';')[0]?.trim() ?? null) : null;
+  };
+  const hashes = new Map<string, string>();
   const serve = async (req: FastifyRequest, reply: FastifyReply) => {
     const path = req.url.split(/[?#]/)[0] ?? '/';
     // Signed in (a session cookie, whatever it's worth): the app, not a page about Caime.
-    const page =
-      path === '/' && req.cookies?.[SESSION_COOKIE]
+    const signedIn = Boolean(req.cookies?.[SESSION_COOKIE]);
+    const found =
+      path === '/' && signedIn
         ? { kind: 'app' as const }
         : await publicPageFor(ctx.db, path, ctx.now());
+    // The way in is painted before the app only for a visitor: signed in, these screens send
+    // the person on at once, and the paint would only flash.
+    const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;
     const facts =
       page.kind === 'landing' || page.kind === 'site'
         ? {
@@ -110,8 +125,32 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
               page.kind === 'site' && page.page === 'pricing' ? await publicPrices(ctx) : null,
           }
         : null;
-    const rendered = renderPublic(page, ctx.config.PUBLIC_URL, path, facts);
+    // The entry screens' words in the browser's language (Accept-Language), as the app will show
+    // them; every other page is English.
+    const rendered =
+      page.kind === 'entry'
+        ? inLanguage(languageFor(acceptedLanguage(req)), () =>
+            renderPublic(page, ctx.config.PUBLIC_URL, path, facts),
+          )
+        : renderPublic(page, ctx.config.PUBLIC_URL, path, facts);
     let html = injectPublic(template, rendered);
+    // An entry screen asks for the app's scripts once it has painted; the policy allows the
+    // bootstrap that does so by its hash, computed once per build.
+    let pageCsp = csp;
+    if (page.kind === 'entry') {
+      const booted = bootstrapScripts(html);
+      html = booted.html;
+      if (booted.inline) {
+        hashes.set(
+          booted.inline,
+          hashes.get(booted.inline) ??
+            createHash('sha256')
+              .update(booted.inline.replace(/^<script>|<\/script>$/g, ''))
+              .digest('base64'),
+        );
+        pageCsp = webCsp(ctx.config.PUBLIC_URL, hashes.get(booted.inline) ?? null);
+      }
+    }
     // A visitor on someone's page, or on the landing page (no session here): the page as it is,
     // without the app's scripts, which would only boot to keep out of its way (R44). Its ways in
     // are links: sign-up and sign-in open the app. A page of the site about Caime is everyone's,
@@ -127,7 +166,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     return reply
       .status(rendered.status)
       .header('cache-control', page.kind === 'site' ? 'public, max-age=600' : 'no-cache')
-      .header('content-security-policy', csp)
+      .header('content-security-policy', pageCsp)
       .header('permissions-policy', PERMISSIONS_POLICY)
       .type('text/html; charset=utf-8')
       .send(html);

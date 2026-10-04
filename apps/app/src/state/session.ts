@@ -19,6 +19,7 @@ import { qk } from '@/api/keys';
 import { CACHE_VERSION, persister, queryClient } from '@/api/queryClient';
 import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
+import { prefsPending } from '@/state/prefsPending';
 import { DEFAULT_PREFS, usePrefs } from '@/theme/prefs';
 import { useDrafts } from './drafts';
 import { keepUser, keptId, keptUser } from './kept';
@@ -47,6 +48,8 @@ interface SessionState {
 export const clientKind: 'web' | 'native' = Platform.OS === 'web' ? 'web' : 'native';
 
 function adoptPreferences(user: MeView): void {
+  // A change this device is still saving is newer than anything the account answers.
+  if (prefsPending()) return;
   const p = user.preferences ?? {};
   usePrefs.getState().set({
     theme: p.theme ?? usePrefs.getState().theme,

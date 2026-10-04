@@ -2774,4 +2774,10 @@ export const ar: Catalog = {
   'Every message in it goes; the customer is told': 'تذهب كل رسالة فيها؛ ويُخبَر العميل',
   '{name} keeps this conversation for {retentionText}: messages go after that.':
     'يحفظ {name} هذه المحادثة لمدة {retentionText}: تذهب الرسائل بعدها.',
+  'Say who someone is to you, once. Everything fits from then on.':
+    'قل من يكون هذا الشخص لك، مرة واحدة. ومن ثَمّ يستقيم كل شيء.',
+  '“3 need you”, never “47 unread”. It says why.':
+    '”3 يحتاجون إليك“، لا ”47 غير مقروءة“. ويقول لماذا.',
+  'Each side of your life sees what you chose. Only you see your labels.':
+    'كل جانب من حياتك يرى ما اخترته أنت. تصنيفاتك لا يراها غيرك.',
 };

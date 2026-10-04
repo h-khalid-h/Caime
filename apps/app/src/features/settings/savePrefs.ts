@@ -2,6 +2,7 @@ import type { MeView } from '@caime/core/api';
 import { request } from '@/api/client';
 import { isWeb } from '@/lib/config';
 import { useLanguage } from '@/lib/languageState';
+import { clearPrefsPending, markPrefsPending } from '@/state/prefsPending';
 import { useSession } from '@/state/session';
 import { type PrefValues, usePrefs } from '@/theme/prefs';
 
@@ -31,13 +32,18 @@ function send(keepalive = false): void {
   timer = null;
   void request<{ user: MeView }>('PATCH', '/me', { body: { preferences: snapshot() }, keepalive })
     .then((res) => useSession.getState().setUser(res.user))
-    .catch(() => {});
+    .catch(() => {})
+    .finally(clearPrefsPending);
 }
 
-/** Apply now on this device, mirror to the account shortly after (every device follows). */
+/**
+ * Apply now on this device, mirror to the account shortly after (every device follows). Until
+ * the account has it, what's read back from the account doesn't replace it (prefsPending).
+ */
 export function savePrefs(patch: Partial<PrefValues>): void {
   usePrefs.getState().set(patch);
   if (timer) clearTimeout(timer);
+  else markPrefsPending();
   timer = setTimeout(send, 600);
 }
 
