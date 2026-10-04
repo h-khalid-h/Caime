@@ -772,8 +772,19 @@ plan hadn't reached, in the order people will ask for them.
       is learned or kept. One partial index (0047) and two small reads per suggestion made.
       `learning.test.ts` (core and server).
 - [ ] Confidence said in one line on every suggestion (the rationale carries it internally).
-- [ ] Arabic depth in the message intelligence: requests, decisions and amounts in Egyptian,
-      Gulf and Levantine phrasing, with the same tests the English has.
+- [x] Arabic depth in the message intelligence (core `intelligence.ts`): promises in Gulf and
+      Levantine phrasing ("راح أرسل لك", "رح ابعتلك", "بكرا بعطيك") and MSA beside the
+      Egyptian, taken back by a negation before them ("مش", "ما راح", "لن") and never "راح" as
+      went; requests introduced by "تقدر", "فيك", "أبغاك", "بدي ياك", "لو تكرمت", "إذا ممكن" or
+      their own verbs ("عطني", "طرشلي", "أرسل لي"), the thing asked for found past the particles
+      ("لي", "لك") and the politeness after it; decisions ("نعتمد", "خلاص نمشي على", "القرار
+      إننا", "تمت الموافقة") with the "خلاص" and "طيب" before them dropped; Gulf and Levantine
+      question words ("وين", "شو", "ليش", "شلون", "بكم"), with "ما" read as a negation where it
+      is one; a yes of several words ("خلاص تمام", "أبشر", "من عيوني"); payment words
+      ("سدد", "مصاري", "بيزات"); and amounts as Arabic writes them: Arabic-Indic digits,
+      "ألف"/"آلاف"/"مليون", "ر.س"/"د.إ"/"د.ك", a country word deciding "ريال قطري" or "دينار
+      كويتي", and a bare "دينار" or "ليرة" saying no currency rather than a wrong one. Rules, no
+      model, the same on every device; fifty more cases in `intelligence.test.ts`.
 - [ ] Memory across a relationship: what was decided and promised with one person across
       their conversations, in their profile's "and you" block.
 - [ ] ⛔ Voice notes transcribed and searchable, call summaries with decisions and actions
@@ -1684,3 +1695,8 @@ plan hadn't reached, in the order people will ask for them.
   (core `leanFrom`, `placeByLean`; server `leanFor` read in `createSuggestion`, migration 0047),
   placed in the suggestion bar with the count as the reason, off with `learnFromChoices` under
   Automations. `learning.test.ts` in core and on the server. Budget 442.6 KB.
+- 2026-10-04 — M11, Arabic depth: the message intelligence reads Gulf, Levantine and MSA
+  promises, requests, decisions, questions, confirmations and amounts beside the Egyptian
+  (core `intelligence.ts`: `AR_COMMIT`, `AR_REQUEST`, `AR_DECISION`, `AR_NOT_A_QUESTION`,
+  `AR_CURRENCY_OF`, Arabic-Indic digits through `asciiDigits`). Fifty new cases in
+  `intelligence.test.ts`; nothing on the server, nothing on an AI. Budget 442.6 KB.

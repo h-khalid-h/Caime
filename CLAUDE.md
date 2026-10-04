@@ -560,6 +560,15 @@ These are rules, not preferences.
   only their types. Before lazy-loading a module to take it out of the startup chunk, check the
   source map for what else in `__common` imports it statically: `@caime/core/when` looked like
   two sheets' alone, but `intelligence.ts` needs it, so it stays.
+- The message intelligence reads Arabic by lists in `packages/core/src/intelligence.ts`
+  (`AR_COMMIT`, `AR_REQUEST_VERBS_LIST`, `AR_REQUEST`, `AR_DECISION`, `AR_CONFIRM`, `AR_PAY`,
+  `AR_QUESTION_START` with `AR_NOT_A_QUESTION` for "ما" as a negation): a trigger is a whole
+  word, a promise's object skips the trigger's words and the particles (`AR_PARTICLES`), and a
+  negation right before a promise (`AR_NEGATIVE_BEFORE`) takes it back. A new dialect form joins
+  its list with a case in `intelligence.test.ts`, never a regex of its own in the loop. Amounts:
+  digits of any script go through `asciiDigits` (the matched text stays the writer's), and a
+  currency word with its country goes in `AR_CURRENCY_OF`; a bare word that names several
+  currencies ("دينار", "ليرة") says `null`, never a guess.
 - On a phone, the realtime socket rests 30 s after the app goes to the background (`rest()` in
   `realtime/client.ts`) and comes back with a catch-up on `active`; a call or a live location
   share keeps it. Anything new that must hear the socket while the app is put away adds its

@@ -160,6 +160,129 @@ describe('Arabic', () => {
   it('question words without a question mark', () => {
     expect(analyzeMessage('امتى الاجتماع', cairo).isQuestion).toBe(true);
   });
+
+  const riyadh = { ...cairo, timeZone: 'Asia/Riyadh', locale: 'ar-SA' };
+  const beirut = { ...cairo, timeZone: 'Asia/Beirut', locale: 'ar-LB' };
+
+  describe('commitments in Gulf, Levantine and MSA phrasing', () => {
+    it.each([
+      ['راح أرسلك العقد بكرة', 'العقد', 'بكرة'],
+      ['راح أرسل لك العرض الخميس', 'العرض', 'الخميس'],
+      ['رح ابعتلك الصور بكرا', 'الصور', 'بكرا'],
+      ['بكرا بعطيك الملف', 'الملف', 'بكرا'],
+      ['سأرسل لك التقرير غداً', 'التقرير', 'غداً'],
+      ['سوف أراجع العرض اليوم', 'العرض', 'اليوم'],
+    ])('%s → waiting for %s', (text, title, dueText) => {
+      const a = analyzeMessage(text, riyadh);
+      expect(a.isCommitment).toBe(true);
+      const [s] = suggestFromAnalysis(a, sarah);
+      expect(s).toMatchObject({ kind: 'waiting', title, dueText, vague: false });
+    });
+
+    it('my own promise is a reminder with the whole clause', () => {
+      const [s] = suggestFromAnalysis(analyzeMessage('رح ابعتلك الصور بكرا', beirut), me);
+      expect(s).toMatchObject({ kind: 'reminder', title: 'رح ابعتلك الصور', dueText: 'بكرا' });
+    });
+
+    it.each(['مش هبعت العقد بكرة', 'ما راح أقدر أرسل العقد', 'ما رح اقدر ابعتلك', 'لن أرسل العقد'])(
+      'a promise taken back is none: %s',
+      (text) => {
+        const a = analyzeMessage(text, riyadh);
+        expect(a.isCommitment).toBe(false);
+        expect(a.isQuestion).toBe(false);
+        expect(suggestFromAnalysis(a, sarah)).toEqual([]);
+      },
+    );
+
+    it('"راح" as "went" promises nothing', () => {
+      expect(analyzeMessage('راح البيت من ساعة', riyadh).isCommitment).toBe(false);
+    });
+  });
+
+  describe('requests in Gulf, Levantine and MSA phrasing', () => {
+    it.each([
+      ['تقدر ترسل لي العقد اليوم؟', 'ترسل لي العقد', 'العقد', 'اليوم'],
+      ['فيك تبعتلي الملف بكرا؟', 'تبعتلي الملف', 'الملف', 'بكرا'],
+      ['لو تكرمت ارسل لي الفاتورة', 'ارسل لي الفاتورة', 'الفاتورة', null],
+      ['إذا ممكن تحول المبلغ قبل الخميس', 'تحول المبلغ', 'المبلغ', 'الخميس'],
+      ['أبغاك تراجع العرض', 'تراجع العرض', 'العرض', null],
+      ['بدي ياك تبعتلي العنوان', 'تبعتلي العنوان', 'العنوان', null],
+      ['عطني رقم الحساب لو سمحت', 'عطني رقم الحساب', 'رقم الحساب', null],
+      ['طرشلي الموقع', 'طرشلي الموقع', 'الموقع', null],
+      ['أرجو إرسال العقد الموقع', 'إرسال العقد الموقع', 'العقد الموقع', null],
+    ])('%s → a task for me', (text, title, object, dueText) => {
+      const a = analyzeMessage(text, riyadh);
+      expect(a.isRequest).toBe(true);
+      expect(a.request).toMatchObject({ title, object });
+      const [s] = suggestFromAnalysis(a, sarah);
+      expect(s).toMatchObject({ kind: 'task', title, dueText });
+    });
+
+    it('the same request sent by me → waiting for the thing', () => {
+      const [s] = suggestFromAnalysis(analyzeMessage('تقدر ترسل لي العقد اليوم؟', riyadh), me);
+      expect(s).toMatchObject({ kind: 'waiting', title: 'العقد', dueText: 'اليوم' });
+    });
+  });
+
+  describe('decisions', () => {
+    it.each([
+      ['خلاص نمشي على العرض الثاني', 'نمشي على العرض الثاني'],
+      ['طيب، نعتمد التصميم الأخير', 'نعتمد التصميم الأخير'],
+      ['اتفقنا نبدأ الأحد', 'اتفقنا نبدأ الأحد'],
+      ['القرار إننا نأجل الإطلاق', 'القرار إننا نأجل الإطلاق'],
+      ['تمت الموافقة على الميزانية', 'تمت الموافقة على الميزانية'],
+    ])('%s', (text, title) => {
+      const a = analyzeMessage(text, riyadh);
+      expect(a.mode).toBe('decide');
+      expect(a.decision?.title).toBe(title);
+      expect(suggestFromAnalysis(a, sarah)[0]).toMatchObject({ kind: 'decision', title });
+    });
+  });
+
+  describe('questions, confirmations and money', () => {
+    it.each(['وين الاجتماع', 'شو رأيك بالعرض', 'ليش ما رديت', 'بكم العرض', 'شلون الشغل'])(
+      'a question: %s',
+      (text) => {
+        expect(analyzeMessage(text, riyadh)).toMatchObject({ isQuestion: true, mode: 'ask' });
+      },
+    );
+    it.each(['أبشر', 'خلاص تمام', 'زين', 'من عيوني', 'اوكي ماشي.'])('a yes: %s', (text) => {
+      expect(analyzeMessage(text, riyadh)).toMatchObject({ isConfirmation: true, mode: 'confirm' });
+    });
+    it('a transfer with an amount is about paying', () => {
+      const a = analyzeMessage('حولت لك المبلغ، ٥٠٠ ريال', riyadh);
+      expect(a.mode).toBe('pay');
+      expect(a.amounts[0]).toMatchObject({ value: 500, currency: 'SAR', text: '٥٠٠ ريال' });
+    });
+  });
+
+  describe('amounts as Arabic writes them', () => {
+    it.each([
+      ['٥ آلاف ريال', 5000, 'SAR'],
+      ['250 ر.س', 250, 'SAR'],
+      ['2 مليون دينار كويتي', 2_000_000, 'KWD'],
+      ['٣٠٠ درهم', 300, 'AED'],
+      ['1,200 ريال قطري', 1200, 'QAR'],
+      ['3 ألف جنيه', 3000, 'EGP'],
+      ['المبلغ 750 جنيه مصري', 750, 'EGP'],
+      ['20 شيكل', 20, 'ILS'],
+      ['٤٥ دينار أردني', 45, 'JOD'],
+      ['١٠٠ جنيه استرليني', 100, 'GBP'],
+    ])('%s', (text, value, currency) => {
+      const [a] = extractAmounts(text);
+      expect(a).toMatchObject({ value, currency });
+      expect(text).toContain(a!.text);
+    });
+
+    it('a currency word that names several currencies says none', () => {
+      expect(extractAmounts('50 دينار')[0]).toMatchObject({ value: 50, currency: null });
+      expect(extractAmounts('100 ليرة')[0]).toMatchObject({ value: 100, currency: null });
+    });
+
+    it('two currencies in one message', () => {
+      expect(extractAmounts('$40 و 300 ريال').map((a) => a.currency)).toEqual(['USD', 'SAR']);
+    });
+  });
 });
 
 describe('topics', () => {

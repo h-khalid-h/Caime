@@ -5,9 +5,10 @@
  * accept — never facts (PRODUCT-REVIEW R12).
  *
  * Heuristic by design (R17): deterministic, explainable, testable, and the same on every device.
- * English and Egyptian/MSA Arabic.
+ * English and Arabic as it's written in messages: Egyptian, Gulf and Levantine phrasing and MSA.
  */
 
+import { asciiDigits } from './digits';
 import { tr } from './i18n';
 import { parseWhen, type WhenMatch, type WhenOptions } from './when';
 
@@ -126,22 +127,187 @@ const IMPERATIVE_VERBS = new Set([
   'cancel',
 ]);
 
-const AR_COMMIT =
-  /(^|[\s،,.!؟?])(هبعت(?:لك|هولك|ها|ه)?|حبعت(?:لك)?|هكلم(?:ك)?|هتصل(?:\s+بيك)?|هرد(?:\s+عليك)?|هشوف|هخلص|هجهز|هقولك|هعمل|هجيب|هحول(?:لك)?|هدفع|هراجع|هرسل|هبلغك|سأرسل|سأتصل|سأراجع|سأقوم\s+ب|سوف\s+[؀-ۿ]+)(?=$|[\s،,.!؟?])/u;
-const AR_REQUEST =
-  /(^|[\s،,.!؟?])(ممكن|لو\s+سمحت|من\s+فضلك|ياريت|يا\s+ريت|محتاجك|عايزك|عاوزك|ابعتلي|ابعتلى|ابعت|كلمني|كلمنى|رد\s+عليا|بليز|أرجو|ارجو)(?=$|[\s،,.!؟?])/u;
-const AR_REQUEST_VERBS = /^(ابعتلي|ابعتلى|ابعت|كلمني|كلمنى|رد\s+عليا)$/u;
+// Arabic, as people write it: Egyptian (هبعتلك, ممكن), Gulf (راح أرسل, تقدر, أبغى) and
+// Levantine (رح ابعتلك, فيك, بدي) alongside MSA (سأرسل, أرجو). A trigger is a whole word.
+const AR_EDGE = '(?=$|[\\s،,.!؟?])';
+const AR_LETTER = '؀-ۿ';
+const AR_COMMIT = new RegExp(
+  `(^|[\\s،,.!؟?])(${[
+    // Egyptian: ه/ح + verb, with an attached "you"
+    'هبعت(?:لك|هولك|ها|ه)?',
+    'حبعت(?:لك)?',
+    'هكلم(?:ك)?',
+    'هتصل(?:\\s+بيك)?',
+    'هرد(?:\\s+عليك)?',
+    'هشوف',
+    'هخلص',
+    'هجهز',
+    'هقولك',
+    'هعمل',
+    'هجيب',
+    'هحول(?:لك)?',
+    'هدفع',
+    'هراجع',
+    'هرسل(?:لك)?',
+    'هبلغك',
+    'هأكد(?:لك)?',
+    'هاكد(?:لك)?',
+    // Gulf: راح + verb; Levantine: رح/حـ + verb
+    'راح\\s+(?!ال)[أاإنتي][؀-ۿ]+',
+    'رح\\s+(?!ال)[أاإنتي][؀-ۿ]+',
+    // Levantine and Gulf present-as-promise, only the verbs that promise something
+    'بعطيك',
+    'ببعت(?:لك)?',
+    'بأرسل(?:\\s+لك)?',
+    'بارسل(?:ك|لك)?',
+    'برسل(?:ك|لك)?',
+    'بحول(?:لك)?',
+    'بخبرك',
+    'بحكيلك',
+    'بأكد(?:لك)?',
+    'باكد(?:لك)?',
+    'بجهز(?:لك)?',
+    'بخلص(?:لك)?',
+    'برد\\s+عليك',
+    'بتصل\\s+فيك',
+    // MSA
+    'سأرسل(?:\\s+لك)?',
+    'سأبعث(?:\\s+لك)?',
+    'سأتصل(?:\\s+بك)?',
+    'سأراجع',
+    'سأخبرك',
+    'سأرد(?:\\s+عليك)?',
+    'سأحول(?:\\s+لك)?',
+    'سأشارك(?:ك)?',
+    'سأقوم\\s+ب',
+    'سأحجز',
+    'سأدفع',
+    'سوف\\s+[؀-ۿ]+',
+  ].join('|')})${AR_EDGE}`,
+  'u',
+);
+/** A negation right before a promise ("مش هبعت", "ما راح أقدر", "لن") takes it back. */
+const AR_NEGATIVE_BEFORE = /(^|[\s،,])(مش|ما|لن|لا|مو|مب|مهوب|ماراح|مارح)\s*$/u;
+const AR_REQUEST_VERBS_LIST = [
+  // Egyptian
+  'ابعتلي',
+  'ابعتلى',
+  'ابعتيلي',
+  'ابعت',
+  'كلمني',
+  'كلمنى',
+  'رد\\s+عليا',
+  // Gulf
+  'أرسل\\s+لي',
+  'ارسل\\s+لي',
+  'أرسلي',
+  'ارسلي',
+  'رسلي',
+  'طرشلي',
+  'عطني',
+  'عطيني',
+  'خبرني',
+  'اتصل\\s+فيني',
+  // Levantine
+  'بعتلي',
+  'بعتيلي',
+  'احكيلي',
+  'خبرني',
+  'رد\\s+علي',
+  'رد\\s+عليّ',
+  // MSA
+  'أرسل\\s+إلي',
+  'أعلمني',
+  'اعلمني',
+  'أخبرني',
+  'اخبرني',
+];
+const AR_REQUEST = new RegExp(
+  `(^|[\\s،,.!؟?])(${[
+    // what introduces a request
+    'ممكن',
+    'لو\\s+سمحت(?:ي|وا)?',
+    'من\\s+فضلك',
+    'ياريت',
+    'يا\\s+ريت',
+    'ياليت',
+    'يا\\s+ليت',
+    'محتاجك',
+    'عايزك',
+    'عاوزك',
+    'بليز',
+    'أرجو(?:ك)?',
+    'ارجو(?:ك)?',
+    'رجاء',
+    'رجاءً',
+    'تقدر(?:ي|وا)?',
+    'بتقدر(?:ي|وا)?',
+    'فيك(?:ي|ن)?',
+    'إذا\\s+ممكن',
+    'اذا\\s+ممكن',
+    'لو\\s+ممكن',
+    'لو\\s+تكرمت(?:ي)?',
+    'الله\\s+يخليك',
+    'أبغاك',
+    'ابغاك',
+    'أبيك',
+    'ابيك',
+    'بدي\\s+ياك',
+    'بدي\\s+منك',
+    'بدك',
+    ...AR_REQUEST_VERBS_LIST,
+  ].join('|')})${AR_EDGE}`,
+  'u',
+);
+const AR_REQUEST_VERBS = new RegExp(`^(${AR_REQUEST_VERBS_LIST.join('|')})$`, 'u');
+/** "to me", "for you": particles that follow a request's verb and aren't the thing asked for. */
+const AR_PARTICLES =
+  /^(?:(?:لي|لى|ليا|لك|لكم|لنا|عليا|علي|عليّ|معي|معاي|معك|إلي|الي|ياه|ياها|لو\s+سمحت)\s+)+/u;
 const AR_QUESTION_START =
-  /^(هل|ايه|إيه|امتى|إمتى|فين|مين|ليه|ازاي|إزاي|كام|متى|أين|كيف|لماذا|ماذا|ما)(?=$|[\s،,؟?])/u;
-const AR_DECISION =
-  /(^|[\s،,.!؟?])(اتفقنا(?:\s+على)?|قررنا|تم\s+الاتفاق(?:\s+على)?|موافق(?:ين)?|نمشي\s+على|هنمشي\s+على)(?=$|[\s،,.!؟?])/u;
-const AR_CONFIRM = /^(تمام|ماشي|أكيد|اكيد|حاضر|موافق|مؤكد|تم)[\s.!]*$/u;
-const AR_PAY = /(دفع|ادفع|هدفع|فلوس|تحويل|حولت|فاتورة|فاتوره|قسط|الحساب)/u;
+  /^(هل|ايه|إيه|امتى|إمتى|فين|مين|ليه|ازاي|إزاي|كام|متى|أين|اين|كيف|لماذا|ماذا|ما|وين|شو|ايش|إيش|وش|ويش|شنو|شنهو|شلون|ليش|لويش|منو|منهو|كم|قديش|قديه|وقتيش|وقتاش|بكم|بكام)(?=$|[\s،,؟?])/u;
+/** "ما" negates here ("ما راح أقدر", "ما عندي"), where elsewhere it asks ("ما رأيك"). */
+const AR_NOT_A_QUESTION =
+  /^ما\s+(?:راح|رح|ه[؀-ۿ]+|أقدر|اقدر|بقدر|قدرت|عندي|عندك|عندنا|معي|معاي|في|فيه|عرفت|أعرف|اعرف|بعرف|كان|كانت|بدي|أبغى|ابغى|أبي|حبيت|رديت|وصل|وصلت|لقيت|شفت|سمعت|لحقت|خلصت|قلت|سويت|عملت)(?=$|[\s،,؟?])/u;
+const AR_DECISION = new RegExp(
+  `(^|[\\s،,.!؟?])(${[
+    'اتفقنا(?:\\s+على|\\s+إن|\\s+ان|\\s+نـ?)?',
+    'اتفقتوا?',
+    'قررنا',
+    'قررت',
+    'تم\\s+الاتفاق(?:\\s+على)?',
+    'تم\\s+اعتماد',
+    'تمت\\s+الموافقة(?:\\s+على)?',
+    'اعتمدنا',
+    'نعتمد',
+    'معتمد',
+    'موافق(?:ين|ة)?',
+    'وافقنا',
+    'نمشي\\s+(?:على|ب|بـ)',
+    'هنمشي\\s+(?:على|ب|بـ)',
+    'راح\\s+نمشي\\s+(?:على|ب|بـ)',
+    'رح\\s+نمشي\\s+(?:على|ب|بـ)',
+    'خلينا\\s+نمشي\\s+(?:على|ب|بـ)',
+    'خلاص\\s+نمشي\\s+(?:على|ب|بـ)',
+    'نروح\\s+على',
+    'القرار\\s+(?:هو|[إا]ن[؀-ۿ]*|أن[؀-ۿ]*)',
+  ].join('|')})${AR_EDGE}`,
+  'u',
+);
+/** "خلاص", "طيب": what a decision is often prefaced with and never part of. */
+const AR_FILLER_START =
+  /^(?:(?:خلاص|طيب|تمام|ماشي|أوكي|اوكي|أوك|اوك|يلا|يلّا|يعني|طب|زين|اي|إي|ايوه|أيوه)[\s،,]+)+/u;
+const AR_CONFIRM =
+  /^(?:(?:تمام|ماشي|أكيد|اكيد|حاضر|موافق|مؤكد|تم|خلاص|طيب|زين|أوكي|اوكي|أوك|اوك|ايوه|أيوه|ايوا|أيوا|اي|إي|أبشر|ابشر|من\s+عيوني|تم\s+التمام|اتفقنا|صح|يا\s+سيدي|ياسيدي)[\s.!،,]*)+$/u;
+const AR_PAY =
+  /(دفع|ادفع|هدفع|بدفع|سدد|تسديد|فلوس|مصاري|بيزات|تحويل|حولت|حوّلت|حول(?:ت)?لك|فاتورة|فاتوره|قسط|الحساب|الدفعة|دفعة|المبلغ|مبلغ|رصيد|كاش|نقدي|شيك)/u;
 
 const LEADING_WORDS =
   /^(?:(?:you|u|me|us|them|it|him|her|the|a|an|my|your|our|their|this|that|those|these|over|back|out|up|some|all)\s+)+/i;
 const TRAILING_WORDS =
   /(?:\s+(?:please|pls|plz|asap|soon|later|today|for you|for me|to you|to me|again|as well|too|then|ok|okay|thanks|thank you))+$/i;
+/** "لو سمحت", "ضروري": what follows the thing asked for and isn't part of it. */
+const AR_TRAILING_WORDS =
+  /(?:\s+(?:لو\s+سمحت(?:ي|وا)?|من\s+فضلك|بليز|الله\s+يخليك|ضروري|بسرعة|بسرعه|عاجل|يا\s+ريت|ياريت|إذا\s+ممكن|اذا\s+ممكن|لو\s+ممكن|لو\s+تكرمت|شكرا|شكراً|وشكرا|مشكور|يعطيك\s+العافية))+[\s.!؟,،]*$/u;
 const CUT_AT =
   /\s+(?:to|for|with|by|before|after|on|at|in|from|so|and|because|when|if|once)\s+.*$/i;
 
@@ -192,7 +358,9 @@ function tidy(clause: string): string {
     .replace(/[.!?؟,;:]+$/u, '')
     .replace(/\s+/g, ' ')
     .replace(/\s+(?:by|on|at|before|until|till|in)\s*$/i, '')
+    .replace(/\s+(?:قبل|بعد|في|فى|يوم|بحلول|لغاية|لحد|حتى|لين|على|عند|من)\s*$/u, '')
     .replace(TRAILING_WORDS, '')
+    .replace(AR_TRAILING_WORDS, '')
     .trim();
 }
 
@@ -213,7 +381,7 @@ const FILLER_START = /^(?:(?:ok|okay|so|alright|great|then|and|we|well|yes|yep)[
 function decisionTitle(sentence: string, m: RegExpExecArray, english: boolean): string {
   const trigger = m[0].trim().toLowerCase();
   const rest = tidy(sentence.slice(m.index + m[0].length));
-  if (!english) return tidy(sentence);
+  if (!english) return tidy(sentence.replace(AR_FILLER_START, ''));
   if (/go(ing)? with/.test(trigger)) return rest ? tr('Go with {rest}', { rest }) : tr('Go ahead');
   if (/decided|decision/.test(trigger))
     return capitalise(rest || tidy(sentence.replace(FILLER_START, '')));
@@ -231,12 +399,16 @@ function toAction(
   quote: string,
   when: WhenMatch | null,
   arabic: boolean,
+  /** The words that promised or asked ("راح أرسل"), when the clause begins with them. */
+  trigger = '',
 ): ActionClause | null {
   if (!clause) return null;
   if (arabic) {
     const words = clause.split(' ');
-    const object = words.length > 1 ? words.slice(1).join(' ') : null;
-    return { title: clause, object, handover: true, when, quote };
+    // "راح أرسل لك العقد": the thing is "العقد", never "أرسل لك العقد" or "لي العقد".
+    const skip = Math.max(1, trigger.trim().split(/\s+/).filter(Boolean).length);
+    const rest = words.slice(skip).join(' ').replace(AR_PARTICLES, '').trim();
+    return { title: clause, object: rest || null, handover: true, when, quote };
   }
   for (const [re, object] of OBJECT_FOR_PHRASE) {
     if (re.test(clause))
@@ -317,7 +489,59 @@ const CURRENCY_ALIASES: Record<string, string> = {
   cny: 'CNY',
   دولار: 'USD',
   يورو: 'EUR',
+  'ر.س': 'SAR',
+  'د.إ': 'AED',
+  'د.ا': 'AED',
+  'ر.ق': 'QAR',
+  'د.ك': 'KWD',
+  'د.أ': 'JOD',
+  'د.ب': 'BHD',
+  'ر.ع': 'OMR',
+  bhd: 'BHD',
+  omr: 'OMR',
+  mad: 'MAD',
+  ils: 'ILS',
+  شيكل: 'ILS',
+  شيقل: 'ILS',
 };
+/** A currency word with the country after it: "ريال قطري" is QAR, "دينار" alone says nothing. */
+const AR_CURRENCY_OF: Array<[RegExp, string | null]> = [
+  [/^ريال\s+(?:قطري|قطرى)$/u, 'QAR'],
+  [/^ريال\s+(?:عماني|عمانى|عُماني)$/u, 'OMR'],
+  [/^ريال\s+(?:يمني|يمنى)$/u, 'YER'],
+  [/^ريال(?:\s+سعودي|\s+سعودى)?$/u, 'SAR'],
+  [/^درهم\s+(?:مغربي|مغربى)$/u, 'MAD'],
+  [/^درهم(?:\s+إماراتي|\s+اماراتي|\s+إماراتى)?$/u, 'AED'],
+  [/^دينار\s+(?:كويتي|كويتى)$/u, 'KWD'],
+  [/^دينار\s+(?:أردني|اردني|أردنى)$/u, 'JOD'],
+  [/^دينار\s+(?:بحريني|بحرينى)$/u, 'BHD'],
+  [/^دينار\s+(?:عراقي|عراقى)$/u, 'IQD'],
+  [/^دينار\s+(?:تونسي|تونسى)$/u, 'TND'],
+  [/^دينار\s+(?:جزائري|جزائرى)$/u, 'DZD'],
+  [/^دينار\s+(?:ليبي|ليبى)$/u, 'LYD'],
+  [/^دينار$/u, null],
+  [/^جنيه\s+(?:استرليني|إسترليني|استرلينى)$/u, 'GBP'],
+  [/^جنيه\s+(?:سوداني|سودانى)$/u, 'SDG'],
+  [/^(?:جنيه|جنية)(?:\s+مصري|\s+مصرى)?$/u, 'EGP'],
+  [/^دولار(?:\s+أمريكي|\s+امريكي|\s+أميركي)?$/u, 'USD'],
+  [/^ليرة\s+(?:لبنانية|لبنانيه)$/u, 'LBP'],
+  [/^ليرة\s+(?:سورية|سوريه)$/u, 'SYP'],
+  [/^ليرة\s+(?:تركية|تركيه)$/u, 'TRY'],
+  [/^ليرة$/u, null],
+];
+const AR_CURRENCY_WORDS =
+  '(?:ريال|درهم|دينار|جنيه|جنية|دولار|ليرة)(?:\\s+[؀-ۿ]+)?|يورو|شيكل|شيقل|ر\\.س|د\\.إ|د\\.ا|ر\\.ق|د\\.ك|د\\.أ|د\\.ب|ر\\.ع|ج\\.م';
+/** "ألف", "٥ آلاف", "مليون": the multiplier between a number and its currency. */
+const AR_MULTIPLIERS: Array<[RegExp, number]> = [
+  [/^(?:ألف|الف|آلاف|الاف|تلاف)$/u, 1000],
+  [/^(?:مليون|ملايين)$/u, 1_000_000],
+];
+
+function arabicCurrency(words: string): string | null {
+  const w = words.replace(/\s+/g, ' ').trim();
+  for (const [re, code] of AR_CURRENCY_OF) if (re.test(w)) return code;
+  return currencyCode(w);
+}
 
 function currencyCode(raw: string | undefined): string | null {
   if (!raw) return null;
@@ -326,8 +550,10 @@ function currencyCode(raw: string | undefined): string | null {
 
 // ---------------------------------------------------------------------------------------------
 
-export function extractAmounts(text: string): Amount[] {
+export function extractAmounts(input: string): Amount[] {
   const out: Amount[] = [];
+  // Arabic-Indic digits read as digits; the matched text is still the writer's own.
+  const text = asciiDigits(input);
   const num = '(\\d{1,3}(?:[,.\\s]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
   const before = new RegExp(
     `(US\\$|E£|\\$|€|£|¥|₹|\\b(?:USD|EUR|GBP|EGP|AED|SAR|QAR|KWD|JOD|CHF|CAD|AUD|INR|JPY|CNY)\\b)\\s?${num}\\s?([kKmM])?(?![\\w])`,
@@ -335,14 +561,14 @@ export function extractAmounts(text: string): Amount[] {
   );
   for (const m of text.matchAll(before)) {
     out.push({
-      text: m[0].trim(),
+      text: input.slice(m.index ?? 0, (m.index ?? 0) + m[0].length).trim(),
       index: m.index ?? 0,
       value: parseNumber(m[2]!, m[3]),
       currency: currencyCode(m[1]),
     });
   }
   const after = new RegExp(
-    `${num}\\s?([kKmM])?\\s?(USD|EUR|GBP|EGP|AED|SAR|dollars?|bucks|euros?|pounds?|LE|جنيه|جنية|ج\\.م|ريال|درهم|دولار|يورو|€|£)(?![A-Za-z])`,
+    `${num}\\s?([kKmM])?\\s?(USD|EUR|GBP|EGP|AED|SAR|dollars?|bucks|euros?|pounds?|LE|€|£)(?![A-Za-z])`,
     'g',
   );
   for (const m of text.matchAll(after)) {
@@ -350,10 +576,28 @@ export function extractAmounts(text: string): Amount[] {
     if (out.some((a) => index >= a.index && index < a.index + a.text.length)) continue;
     const cur = m[3]!;
     out.push({
-      text: m[0].trim(),
+      text: input.slice(index, index + m[0].length).trim(),
       index,
       value: parseNumber(m[1]!, m[2]),
       currency: /pounds?/i.test(cur) ? 'GBP' : currencyCode(cur),
+    });
+  }
+  // "٥ آلاف ريال", "250 ر.س", "2 مليون دينار كويتي": a number, maybe a multiplier, then the
+  // currency as Arabic says it, the country word after it deciding which.
+  const arabic = new RegExp(
+    `${num}\\s?(?:([kKmM])|((?:ألف|الف|آلاف|الاف|تلاف|مليون|ملايين)\\s+))?(${AR_CURRENCY_WORDS})(?=$|[^${AR_LETTER}])`,
+    'gu',
+  );
+  for (const m of text.matchAll(arabic)) {
+    const index = m.index ?? 0;
+    if (out.some((a) => index >= a.index && index < a.index + a.text.length)) continue;
+    const times = m[3] ? (AR_MULTIPLIERS.find(([re]) => re.test(m[3]!.trim()))?.[1] ?? 1) : 1;
+    const matched = input.slice(index, index + m[0].length);
+    out.push({
+      text: matched.trim(),
+      index,
+      value: parseNumber(m[1]!, m[2]) * times,
+      currency: arabicCurrency(m[4]!),
     });
   }
   return out.sort((a, b) => a.index - b.index);
@@ -410,7 +654,7 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
     const english = /[A-Za-z]/.test(s.text) && !/[؀-ۿ]/.test(s.text);
     const startsQuestion = english
       ? EN_QUESTION_START.test(s.text)
-      : AR_QUESTION_START.test(s.text);
+      : AR_QUESTION_START.test(s.text) && !AR_NOT_A_QUESTION.test(s.text);
     if (endsWithQuestion || (startsQuestion && s.text.length < 160 && !/[.!]$/.test(s.text)))
       isQuestion = true;
     if (EN_CONFIRM.test(s.text) || AR_CONFIRM.test(s.text)) isConfirmation = true;
@@ -428,10 +672,16 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
       if (c) {
         const clause = clauseFrom(s.text, c.index + c[0].length, s.index, dates);
         commitment = toAction(clause, s.text, firstDateIn(dates, s.index, s.text.length), false);
-      } else if (a) {
+      } else if (a && !AR_NEGATIVE_BEFORE.test(s.text.slice(0, a.index + a[1]!.length))) {
         const start = a.index + a[1]!.length;
         const clause = tidy(removeRanges(s.text.slice(start), s.index + start, dates));
-        commitment = toAction(clause, s.text, firstDateIn(dates, s.index, s.text.length), true);
+        commitment = toAction(
+          clause,
+          s.text,
+          firstDateIn(dates, s.index, s.text.length),
+          true,
+          a[2]!,
+        );
       }
     }
 
