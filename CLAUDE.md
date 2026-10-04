@@ -258,6 +258,14 @@ These are rules, not preferences.
   one. Anything else the server writes for a particular person (a fan-out's line, a job's)
   goes through `asReader` the same way; the key collector reads `apps/server/src` too. A
   table's labels (roles, kit states, kit names) are English keys: show them through `tr`.
+  A string the server writes into a view for a screen (a rule's `describePolicy` summary, a
+  schedule's day names) is in the request's language already, so it goes through `tr` in core
+  like the app's own. On the web every React Native text is `dir="auto"` (its first strong
+  letter decides), so the `Text` primitive runs any text holding an Arabic letter right to left
+  (an Arabic sentence may open with "Caime") and leaves one without (a handle, a date, a
+  number) to the browser; user-written text passes `auto` and keeps its own direction. Never
+  read `I18nManager.isRTL` on the web: React Native Web's is always false. Look at the Arabic
+  screenshots (`e2e/screenshots/*arabic*`) after a change to a shared primitive.
   Mail stays English (7-bit, R48). The device's shown language reaches the account only inside
   `savePrefs`' one debounced snapshot (`interfaceLanguage`): a request of its own raced a choice
   being saved and its echo (`me.updated`, or read back) undid it. `savePrefs` flushes on

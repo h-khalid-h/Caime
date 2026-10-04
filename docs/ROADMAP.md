@@ -1568,3 +1568,15 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   the web takes it as this device's choice when none was made (`languageInSearch`, core), so a
   reader who switched is Arabic all the way in and after a plain reload (`e2e/site.spec.ts`).
   Budget 442.3 KB. ⛔ A native speaker's review, as for the app.
+- 2026-10-04 — R54, what the Arabic screenshots showed: the notification rules' summaries
+  (`describePolicy`, "Always notify", "Quiet unless important", "Priority in hours"), the two
+  template names ("My Customers", "My Vendors") and the schedules' day names were English in an
+  Arabic interface; all through `tr`/`msg` in core `policy.ts` now (the server writes a summary
+  in the request's language). An Arabic sentence that opens with a Latin word ("Caime …") ran
+  left to right: React Native Web gives every text `dir="auto"` (first strong letter), so the
+  `Text` primitive now runs any text holding an Arabic letter right to left, and leaves text
+  without one (a handle, a date) to the browser, so "@handle" keeps its order; its
+  `I18nManager.isRTL` is never true on the web, so nothing reads it. `phone-arabic-chats.png`
+  is taken once the empty state has drawn (it was taken blank). Budget 442.4 KB. Verified on
+  production: `/business?lang=ar` serves `<html lang="ar" dir="rtl">` with `Vary:
+  Accept-Language`, and `/sign-in` in Arabic for an Arabic browser.

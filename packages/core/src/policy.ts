@@ -5,7 +5,7 @@
  * matching policy wins, field by field.
  */
 
-import { tr } from './i18n';
+import { msg, tr } from './i18n';
 import type { Sphere } from './taxonomy';
 import { SPHERE_DEFS } from './taxonomy';
 import { isWithinSchedule, nextScheduleStart, type Schedule, workHours } from './time';
@@ -163,7 +163,7 @@ export function defaultPolicies(workweek: number[]): Array<Omit<RelationshipPoli
       settings: { priority: 'priority', priorityInScheduleOnly: true, allowUrgent: true },
     },
     {
-      name: 'My Customers',
+      name: msg('My Customers'),
       scope: { sphere: 'customer' },
       settings: {
         notify: 'schedule',
@@ -175,7 +175,7 @@ export function defaultPolicies(workweek: number[]): Array<Omit<RelationshipPoli
       },
     },
     {
-      name: 'My Vendors',
+      name: msg('My Vendors'),
       scope: { sphere: 'vendor' },
       settings: {
         notify: 'important_only',
@@ -304,7 +304,8 @@ export const HELD_WHILE_BUSY_SPHERES: readonly Sphere[] = [
   'professional',
 ];
 
-const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY = [msg('Sun'), msg('Mon'), msg('Tue'), msg('Wed'), msg('Thu'), msg('Fri'), msg('Sat')];
+const day = (d: number) => tr(DAY[d] as string);
 
 /** "Mon–Fri", "Sun–Thu", "Sat–Wed", "Mon, Wed, Fri": runs of days, wrapping past Saturday. */
 export function daysText(days: number[]): string {
@@ -320,9 +321,7 @@ export function daysText(days: number[]): string {
     else runs.push([d]);
   }
   return runs
-    .map((r) =>
-      r.length >= 3 ? `${DAY[r[0]!]}–${DAY[r[r.length - 1]!]}` : r.map((d) => DAY[d]).join(', '),
-    )
+    .map((r) => (r.length >= 3 ? `${day(r[0]!)}–${day(r[r.length - 1]!)}` : r.map(day).join(', ')))
     .join(', ');
 }
 
@@ -404,7 +403,7 @@ export function decideNotification(
       };
     }
     default:
-      return push(`${who}always notify`);
+      return push(tr('{who}always notify', { who }));
   }
 }
 
@@ -420,25 +419,25 @@ export function describePolicy(policy: EffectivePolicy): string {
   const parts: string[] = [];
   switch (policy.notify) {
     case 'always':
-      parts.push('Always notify');
+      parts.push(tr('Always notify'));
       break;
     case 'schedule':
       parts.push(
         policy.schedule
           ? tr('Notify {scheduleText}', { scheduleText: scheduleText(policy.schedule) })
-          : 'Notify on schedule',
+          : tr('Notify on schedule'),
       );
       break;
     case 'important_only':
-      parts.push('Quiet unless important');
+      parts.push(tr('Quiet unless important'));
       break;
     case 'mute':
-      parts.push('Muted');
+      parts.push(tr('Muted'));
       break;
   }
   if (policy.priority === 'priority')
-    parts.push(policy.priorityInScheduleOnly ? 'Priority in hours' : 'Priority');
-  if (policy.priority === 'quiet') parts.push('Quiet');
+    parts.push(policy.priorityInScheduleOnly ? tr('Priority in hours') : tr('Priority'));
+  if (policy.priority === 'quiet') parts.push(tr('Quiet'));
   if (policy.followUpHours)
     parts.push(tr('Follow up after {followUpHours} h', { followUpHours: policy.followUpHours }));
   return parts.join(' · ');

@@ -17,6 +17,15 @@ export interface TextProps extends RNTextProps {
   auto?: boolean | string;
 }
 
+const RTL_CHARS = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff]/;
+/** Whether the children, where they are plain text, hold a letter written right to left. */
+function hasRtl(children: unknown): boolean {
+  if (typeof children === 'string') return RTL_CHARS.test(children);
+  if (Array.isArray(children))
+    return children.some((c) => typeof c === 'string' && RTL_CHARS.test(c));
+  return false;
+}
+
 /** Headings stop growing sooner than body text so layouts survive large accessibility sizes. */
 const MAX_SCALE: Partial<Record<TypeStyleName, number>> = {
   display: 1.3,
@@ -40,7 +49,12 @@ export function Text({
   const resolved = (t.c as unknown as Record<string, string>)[color] ?? color;
   const source =
     typeof auto === 'string' ? auto : auto && typeof children === 'string' ? children : undefined;
-  const dir = source ? textDirection(source) : undefined;
+  const contentDir = source ? textDirection(source) : undefined;
+  // Words with any Arabic in them run right to left: left to the browser's guess from the first
+  // strong letter (`dir="auto"`), an Arabic sentence that opens with a Latin word ("Caime …")
+  // runs left to right. Text without any (a handle, a date, "Egypt") keeps the browser's guess,
+  // so "@handle" never turns into "handle@". User-written text passes `auto` and keeps its own.
+  const dir = contentDir ?? (hasRtl(children) ? 'rtl' : undefined);
   return (
     <RNText
       maxFontSizeMultiplier={MAX_SCALE[variant] ?? 1.8}
@@ -58,7 +72,7 @@ export function Text({
           letterSpacing: spec.letterSpacing,
           textTransform: spec.uppercase ? 'uppercase' : undefined,
           color: resolved,
-          textAlign: align ?? (dir === 'rtl' ? 'right' : undefined),
+          textAlign: align ?? (contentDir === 'rtl' ? 'right' : undefined),
           writingDirection: dir,
         },
         style,

@@ -34,7 +34,7 @@ const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m
 
 /** Who a rule is for: "Work · Manager", "Customers", or its name when it has one. */
 function scopeLabel(p: Pick<PolicyView, 'name' | 'scope'>): string {
-  if (p.name) return p.name;
+  if (p.name) return tr(p.name);
   if (p.scope.connectionId) return tr('One person');
   const { sphere, role } = p.scope;
   if (sphere) {

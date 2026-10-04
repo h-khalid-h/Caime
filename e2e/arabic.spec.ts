@@ -29,6 +29,7 @@ test.describe
         .toMatchObject({ language: 'ar' });
       await page.goto('/');
       await expect(visible(page, 'الدردشات')).toBeVisible();
+      await expect(visible(page, 'ألقِ التحية على أحد')).toBeVisible();
       await page.screenshot({
         path: 'e2e/screenshots/phone-arabic-chats.png',
         animations: 'disabled',
