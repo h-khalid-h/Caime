@@ -1563,5 +1563,8 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   (`SITE_FILES`, `keysFor`), with `site-i18n.test.ts` beside core's catalog test. Logical CSS
   (`margin-inline-start`, `border-end-end-radius`) so the nav and the sample bubbles mirror.
   `public-pages.test.ts` (asked for, the browser's, back to English, signed in), `e2e/site.spec.ts`
-  (right to left on screen, the switch, an Arabic browser). Budget 442.2 KB. ⛔ A native speaker's
-  review, as for the app.
+  (right to left on screen, the switch, an Arabic browser). The way in keeps the language: the
+  site's sign-up and sign-in links carry `?lang=`, the entry screens honour it, and the app on
+  the web takes it as this device's choice when none was made (`languageInSearch`, core), so a
+  reader who switched is Arabic all the way in and after a plain reload (`e2e/site.spec.ts`).
+  Budget 442.3 KB. ⛔ A native speaker's review, as for the app.

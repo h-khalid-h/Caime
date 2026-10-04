@@ -46,6 +46,18 @@ export function languageFor(tag: string | null | undefined): InterfaceLanguage {
     : 'en';
 }
 
+/**
+ * A language asked for in a page's query (`?lang=ar`), or null: the public site's switch sets
+ * it, the entry screens and the app honour it, so a reader who switched is Arabic all the way in.
+ */
+export function languageInSearch(search: string | null | undefined): InterfaceLanguage | null {
+  if (!search) return null;
+  const lang = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get('lang');
+  return lang && (INTERFACE_LANGUAGES as readonly string[]).includes(lang)
+    ? (lang as InterfaceLanguage)
+    : null;
+}
+
 /** The language a choice resolves to on this device. */
 export function resolveLanguage(
   choice: LanguageChoice | null | undefined,

@@ -3,6 +3,7 @@ import {
   english,
   fill,
   languageFor,
+  languageInSearch,
   makeTranslator,
   msg,
   resolveLanguage,
@@ -21,6 +22,15 @@ describe('the interface language (R54)', () => {
     expect(resolveLanguage('auto', 'ar-SA')).toBe('ar');
     expect(resolveLanguage('en', 'ar-SA')).toBe('en');
     expect(resolveLanguage(undefined, 'de')).toBe('en');
+  });
+
+  it('reads a language asked for in a query, and nothing else', () => {
+    expect(languageInSearch('?lang=ar')).toBe('ar');
+    expect(languageInSearch('lang=en&x=1')).toBe('en');
+    expect(languageInSearch('?lang=xx')).toBeNull();
+    expect(languageInSearch('?other=ar')).toBeNull();
+    expect(languageInSearch('')).toBeNull();
+    expect(languageInSearch(null)).toBeNull();
   });
 
   it('fills variables and leaves what it has no value for', () => {

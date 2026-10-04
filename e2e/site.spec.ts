@@ -32,6 +32,17 @@ test('the site about Caime reads in Arabic, and a reader who switches stays swit
   const value = page.locator('dd', { hasText: 'محادثة يبدؤها عميل' }).first();
   const [l, v] = await Promise.all([label.boundingBox(), value.boundingBox()]);
   expect(l && v && l.x > v.x).toBe(true);
+  // The way in keeps it: the sign-up screen paints in Arabic before the app, the app takes it as
+  // this device's choice, and a plain reload stays in Arabic.
+  await page.getByRole('link', { name: 'ابدأ مجانًا' }).click();
+  await page.waitForURL(/\/sign-up\?lang=ar$/);
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  const create = page.getByRole('button', { name: 'إنشاء الحساب' }).filter({ visible: true });
+  await expect(create).toBeVisible();
+  await page.goto('/sign-up');
+  await expect(create).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await page.goto('/pricing?lang=ar');
   // The switch: back to English, and the nav follows.
   await page.getByRole('link', { name: 'English' }).click();
   await page.waitForURL(/\/pricing\?lang=en$/);

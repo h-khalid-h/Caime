@@ -19,9 +19,9 @@ import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { MAX_DEVICES, PRIVATE_GROUP_MAX } from '@caime/core/e2ee';
 import {
   currentTranslator,
-  INTERFACE_LANGUAGES,
   type InterfaceLanguage,
   languageFor,
+  languageInSearch,
   msg,
   tr,
   trn,
@@ -53,10 +53,7 @@ export function siteLanguage(
   const browser = languageFor(
     typeof h === 'string' ? h.split(',')[0]?.split(';')[0]?.trim() : null,
   );
-  const chosen =
-    typeof lang === 'string' && (INTERFACE_LANGUAGES as readonly string[]).includes(lang)
-      ? (lang as InterfaceLanguage)
-      : browser;
+  const chosen = (typeof lang === 'string' && languageInSearch(`lang=${lang}`)) || browser;
   return { language: chosen, linkLang: chosen === browser ? null : chosen };
 }
 
@@ -79,7 +76,10 @@ export interface SiteFacts {
   linkLang?: InterfaceLanguage | null;
 }
 
-/** The site's own pages: the ones a chosen language is carried on to. */
+/**
+ * Where a chosen language is carried on to: the site's own pages, and the two ways into the app,
+ * whose entry screens and app honour it (so a reader who switched is Arabic all the way in).
+ */
 const SITE_PATHS: ReadonlySet<string> = new Set([
   '/',
   '/business',
@@ -87,6 +87,8 @@ const SITE_PATHS: ReadonlySet<string> = new Set([
   '/security',
   '/developers',
   '/about',
+  '/sign-up',
+  '/sign-in',
 ]);
 
 /** A link within the site, carrying the chosen language where there is one. */

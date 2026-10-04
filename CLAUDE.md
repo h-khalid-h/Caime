@@ -280,7 +280,9 @@ These are rules, not preferences.
   `ExplorerItem.sample` is a function, drawn in the request's language), `siteLanguage(query.lang,
   accept-language)` picks the language (`?lang=` wins, else the browser's first language) and
   says whether to carry it on the site's own links (`facts.linkLang`, `siteHref`: only when it
-  isn't the browser's own, so a reader who switched stays switched), `langAttrs()` goes on
+  isn't the browser's own, so a reader who switched stays switched; the sign-up and sign-in
+  links carry it too, the entry screens honour it, and the app on the web takes `?lang=` as
+  the device's choice when none was made, `languageInSearch` in core), `langAttrs()` goes on
   `<main>` and `Rendered.lang` on the shell's `<html>`, `meta({ alternates: true })` writes the
   hreflang links (the English is canonical) and `og:locale`, and the response says
   `Vary: Accept-Language`. A string the site alone says is the server's: its Arabic lives in

@@ -256,6 +256,10 @@ describe('the readable web (R44)', () => {
       '<a href="/business?lang=en" lang="en" hreflang="en" rel="alternate">English</a>',
     );
     expect(asked.body).not.toContain('entry-abc.js');
+    // The ways into the app carry it too, and the entry screens honour it.
+    expect(asked.body).toContain('<a href="/sign-up?lang=ar">ابدأ مجانًا</a>');
+    expect((await visit('/sign-in?lang=ar')).body).toContain('class="pub pub-entry" dir="rtl"');
+    expect((await visit('/business')).body).toContain('<a href="/sign-up">Start free</a>');
     // The numbers are the code's still, in Arabic sentences.
     expect((await visit('/security?lang=ar')).body).toContain('حتى 64 شخصًا، و20 جهازًا');
     // The browser's own language gives Arabic without asking, and links carry nothing extra.

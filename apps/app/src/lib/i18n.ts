@@ -9,6 +9,7 @@ import {
   english,
   type InterfaceLanguage,
   type LanguageChoice,
+  languageInSearch,
   makeTranslator,
   resolveLanguage,
   setTranslator,
@@ -54,7 +55,17 @@ function prefsHydrated(): Promise<void> {
 
 /** Load the language chosen (or the device's) and make it the app's; resolves when ready. */
 export async function loadLanguage(choice?: LanguageChoice): Promise<InterfaceLanguage> {
-  if (!choice) await prefsHydrated();
+  if (!choice) {
+    await prefsHydrated();
+    // The web page was opened in a language (`?lang=ar`, from the public site's switch) and
+    // nothing has been chosen on this device yet: that's the choice, kept with the preferences
+    // (and the account's once signed in), so the reader is in that language all the way in.
+    const asked =
+      Platform.OS === 'web' && typeof location !== 'undefined'
+        ? languageInSearch(location.search)
+        : null;
+    if (asked && usePrefs.getState().language === 'auto') usePrefs.setState({ language: asked });
+  }
   const language = resolveLanguage(choice ?? usePrefs.getState().language, deviceLanguageTag());
   const catalog = language === 'en' ? null : await catalogFor(language).catch(() => null);
   setTranslator(catalog ? makeTranslator(language, catalog) : english);

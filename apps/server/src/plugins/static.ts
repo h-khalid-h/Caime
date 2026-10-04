@@ -6,7 +6,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
-import { languageFor } from '@caime/core/i18n';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
@@ -100,11 +99,6 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
    * visitor who isn't signed in, a person's or an organization's public face, a 404 for a
    * handle nobody has, and for the app's own screens a shell that asks not to be indexed.
    */
-  /** The first language the browser asks for ("ar-EG,ar;q=0.9,en;q=0.8" → "ar-EG"). */
-  const acceptedLanguage = (req: FastifyRequest): string | null => {
-    const h = req.headers['accept-language'];
-    return typeof h === 'string' ? (h.split(',')[0]?.split(';')[0]?.trim() ?? null) : null;
-  };
   const hashes = new Map<string, string>();
   const serve = async (req: FastifyRequest, reply: FastifyReply) => {
     const path = req.url.split(/[?#]/)[0] ?? '/';
@@ -117,15 +111,15 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // The way in is painted before the app only for a visitor: signed in, these screens send
     // the person on at once, and the paint would only flash.
     const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;
-    // The entry screens' words in the browser's language (Accept-Language), as the app will show
-    // them; the site's pages in the language asked for (`?lang=`), else the browser's (R54);
-    // every other page is English.
+    // The site's pages and the entry screens in the language asked for (`?lang=`, the site's
+    // switch), else the browser's (Accept-Language), as the app will show them (R54); every
+    // other page is English.
     const site = page.kind === 'landing' || page.kind === 'site';
-    const chosen = site
-      ? siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language'])
-      : null;
-    const language =
-      chosen?.language ?? (page.kind === 'entry' ? languageFor(acceptedLanguage(req)) : null);
+    const chosen =
+      site || page.kind === 'entry'
+        ? siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language'])
+        : null;
+    const language = chosen?.language ?? null;
     const facts =
       page.kind === 'landing' || page.kind === 'site'
         ? {
