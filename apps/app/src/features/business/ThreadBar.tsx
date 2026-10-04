@@ -1,5 +1,5 @@
 import type { BusinessThreadView, ConversationView } from '@caime/core/api';
-import { waitedFor } from '@caime/core/business';
+import { waitedFor, waitedMinutes } from '@caime/core/business';
 import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
@@ -93,7 +93,7 @@ export function ThreadBar({
         <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
           {[
             thread.waitingSince
-              ? waitedFor(thread.waitingSince, now) === 'just now'
+              ? waitedMinutes(thread.waitingSince, now) < 1
                 ? tr('Wrote just now')
                 : tr('Waiting {waitedFor}', { waitedFor: waitedFor(thread.waitingSince, now) })
               : null,

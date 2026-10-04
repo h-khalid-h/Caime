@@ -1606,3 +1606,12 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   the door's link unchanged), so every page the server paints but the app itself now does. Their
   strings are the server's catalog too (`SITE_FILES` covers `public-pages.ts`; the entry screens'
   words, which the app shows, stay core's). `public-pages.test.ts`.
+- 2026-10-04 — R54, the desktop in Arabic, photographed (a conversation with its context panel,
+  the Business inbox, People, You, Notifications and priorities, the alerts, Actions, Spaces):
+  the layout mirrors cleanly; found and fixed the context panel's week line ("2 messages this
+  week. Next date: …", `modules/memory.ts`, now plural forms in the request's language), a
+  customer's wait in the Business inbox ("just now", "5 min", "2 h", "3 days"; core
+  `business.ts`, with `waitedMinutes` for the thread bar's comparison) and two raw lines in
+  the location kit. Stored notifications and suggestions made before a person switched
+  language stay in the language they were made in, by design. Arabic chunk 67.2 KB gzip
+  (2,500 entries); budget 442.5 KB.

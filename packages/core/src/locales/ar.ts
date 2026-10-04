@@ -2966,4 +2966,27 @@ export const ar: Catalog = {
   '{speaker} wrote {quote}': 'كتب {speaker} {quote}',
   '{senderName} wrote {quote}': 'كتب {senderName} {quote}',
   '{senderName} asked {quote}': 'سأل {senderName} {quote}',
+  'Couldn’t find where you are just now. Try again, or type a place.':
+    'تعذّر تحديد مكانك الآن. حاول مجددًا، أو اكتب مكانًا.',
+  '{n} messages this week.': {
+    zero: 'لا رسائل هذا الأسبوع.',
+    one: 'رسالة واحدة هذا الأسبوع.',
+    two: 'رسالتان هذا الأسبوع.',
+    few: '{n} رسائل هذا الأسبوع.',
+    many: '{n} رسالة هذا الأسبوع.',
+    other: '{n} رسالة هذا الأسبوع.',
+  },
+  'Quiet this week.': 'هادئ هذا الأسبوع.',
+  '{n} open for you.': {
+    zero: 'لا شيء مفتوح لك.',
+    one: 'واحد مفتوح لك.',
+    two: 'اثنان مفتوحان لك.',
+    few: '{n} مفتوحة لك.',
+    many: '{n} مفتوحًا لك.',
+    other: '{n} مفتوح لك.',
+  },
+  'Waiting on {n}.': 'في انتظار {n}.',
+  'Last decision: {title}.': 'آخر قرار: {title}.',
+  'Next date: {date}.': 'الموعد القادم: {date}.',
+  '{n} h': '{n} س',
 };

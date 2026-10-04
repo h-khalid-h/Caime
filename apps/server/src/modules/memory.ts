@@ -5,6 +5,7 @@
 
 import type { MemoryView } from '@caime/core';
 import { CreateContextBody, formatDue, joinNames, UpdateContextBody, uuidv7 } from '@caime/core';
+import { tr, trn } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -340,12 +341,14 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     // Extractive "current state" — deterministic, no model needed (R17).
     const summary = [
       stats.week > 0
-        ? `${stats.week} message${stats.week === 1 ? '' : 's'} this week.`
-        : 'Quiet this week.',
-      mineCount ? `${mineCount} open for you.` : null,
-      waitingCount ? `Waiting on ${waitingCount}.` : null,
-      decisions[0] ? `Last decision: ${decisions[0].title}.` : null,
-      next ? `Next date: ${formatDue(next.at, now, me.time_zone, me.locale)}.` : null,
+        ? trn(stats.week, '{n} message this week.', '{n} messages this week.')
+        : tr('Quiet this week.'),
+      mineCount ? trn(mineCount, '{n} open for you.', '{n} open for you.') : null,
+      waitingCount ? tr('Waiting on {n}.', { n: waitingCount }) : null,
+      decisions[0] ? tr('Last decision: {title}.', { title: decisions[0].title }) : null,
+      next
+        ? tr('Next date: {date}.', { date: formatDue(next.at, now, me.time_zone, me.locale) })
+        : null,
     ]
       .filter(Boolean)
       .join(' ');

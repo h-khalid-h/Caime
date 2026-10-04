@@ -26,7 +26,7 @@ interface Place {
 /** "just now", "4 min ago": how fresh a live point is. */
 function ago(iso: string, now: Date): string {
   const minutes = Math.floor((now.getTime() - Date.parse(iso)) / 60_000);
-  return minutes < 1 ? 'just now' : tr('{minutes} min ago', { minutes });
+  return minutes < 1 ? tr('just now') : tr('{minutes} min ago', { minutes });
 }
 
 /**

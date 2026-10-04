@@ -233,7 +233,7 @@ export function KitForm({
         ...(coords.accuracy ? { accuracy: Math.round(coords.accuracy) } : {}),
       });
     } catch {
-      setError('Couldn’t find where you are just now. Try again, or type a place.');
+      setError(tr('Couldn’t find where you are just now. Try again, or type a place.'));
     } finally {
       setLocating(false);
     }

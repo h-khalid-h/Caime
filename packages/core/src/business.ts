@@ -1,4 +1,4 @@
-import { msg, tr } from './i18n';
+import { msg, tr, trn } from './i18n';
 /**
  * The Business inbox (PRD §37–38, R15): a customer's conversation with an organization, as its
  * team works it. A thread's state is derived, never set by hand, so it can't drift from what
@@ -98,19 +98,24 @@ export function waitingSince(t: ThreadFacts): string | null {
 export function replyTimeText(minutes: number): string {
   if (minutes < 1) return 'under a minute';
   const m = Math.round(minutes);
-  if (m < 60) return `${m} min`;
+  if (m < 60) return tr('{n} min', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : `${h} h`;
+  if (h < 24) return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : tr('{n} h', { n: h });
   const d = Math.round(h / 24);
-  return d === 1 ? '1 day' : `${d} days`;
+  return trn(d, '{n} day', '{n} days');
+}
+
+/** How long a customer has waited, in whole minutes. */
+export function waitedMinutes(since: string, now: Date): number {
+  return Math.max(0, Math.floor((now.getTime() - Date.parse(since)) / 60_000));
 }
 
 export function waitedFor(since: string, now: Date): string {
-  const minutes = Math.max(0, Math.floor((now.getTime() - Date.parse(since)) / 60_000));
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min`;
+  const minutes = waitedMinutes(since, now);
+  if (minutes < 1) return tr('just now');
+  if (minutes < 60) return tr('{n} min', { n: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h`;
+  if (hours < 24) return tr('{n} h', { n: hours });
   const days = Math.floor(hours / 24);
-  return days === 1 ? '1 day' : `${days} days`;
+  return trn(days, '{n} day', '{n} days');
 }
