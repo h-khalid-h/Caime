@@ -25,6 +25,7 @@ import {
   esc,
   explorerStyle,
   LANDING_DESCRIPTION,
+  langAttrs,
   PROMISE,
   renderLanding,
   renderSite,
@@ -386,9 +387,13 @@ export function renderPublic(
     }
     case 'person': {
       const line = [page.headline, page.organizations[0]?.name].filter(Boolean).join(' · ');
-      const description = clip(page.bio ?? line ?? `${page.displayName} is on ${SITE_NAME}.`, 200);
+      const description = clip(
+        page.bio ?? line ?? tr('{name} is on {site}.', { name: page.displayName, site: SITE_NAME }),
+        200,
+      );
       return {
         status: 200,
+        lang: currentTranslator().language,
         head: meta({
           title: `${page.displayName} (@${page.handle}) · ${SITE_NAME}`,
           description,
@@ -415,32 +420,36 @@ export function renderPublic(
           },
         }),
         body: `
-<main class="pub pub-sheet">
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">a person on ${SITE_NAME}</span></header>
+<main class="pub pub-sheet" ${langAttrs()}>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('a person on {site}', { site: SITE_NAME }))}</span></header>
   ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
   <h1>${esc(page.displayName)}</h1>
   ${page.bio ? `<p class="lead">${esc(page.bio)}</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">handle</dt><dd>@${esc(page.handle)}</dd></div>
-    ${page.headline ? `<div><dt class="mono">headline</dt><dd>${esc(page.headline)}</dd></div>` : ''}
-    ${page.organizations.length ? `<div><dt class="mono">with</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
+    <div><dt class="mono">${esc(tr('handle'))}</dt><dd>@${esc(page.handle)}</dd></div>
+    ${page.headline ? `<div><dt class="mono">${esc(tr('headline'))}</dt><dd>${esc(page.headline)}</dd></div>` : ''}
+    ${page.organizations.length ? `<div><dt class="mono">${esc(tr('with'))}</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
   </dl>
-  <p class="cta"><a href="${wayIn('sign-up', path)}">Message ${esc(page.displayName)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
+  <p class="cta"><a href="${wayIn('sign-up', path)}">${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
     case 'org': {
       const o = page.org;
       const facts = [
-        o.verified && o.verifiedDomain ? `Verified · ${o.verifiedDomain}` : null,
-        page.foundedYear ? `Since ${page.foundedYear}` : null,
+        o.verified && o.verifiedDomain
+          ? tr('Verified · {domain}', { domain: o.verifiedDomain })
+          : null,
+        page.foundedYear ? tr('Since {year}', { year: page.foundedYear }) : null,
       ].filter(Boolean);
       const description = clip(
-        page.about ?? `${o.name} is on ${SITE_NAME}. ${facts.join(' · ')}`.trim(),
+        page.about ??
+          `${tr('{name} is on {site}.', { name: o.name, site: SITE_NAME })} ${facts.join(' · ')}`.trim(),
         200,
       );
       return {
         status: 200,
+        lang: currentTranslator().language,
         head: meta({
           title: `${o.name} (@${o.handle}) · ${SITE_NAME}`,
           description,
@@ -459,18 +468,22 @@ export function renderPublic(
           },
         }),
         body: `
-<main class="pub pub-sheet">
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">an organization on ${SITE_NAME}</span></header>
+<main class="pub pub-sheet" ${langAttrs()}>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('an organization on {site}', { site: SITE_NAME }))}</span></header>
   ${o.avatarUrl ? `<img class="mark" src="${esc(o.avatarUrl)}" alt="" width="96" height="96">` : ''}
   <h1>${esc(o.name)}</h1>
   ${page.about ? `<p class="lead">${esc(page.about)}</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">handle</dt><dd>@${esc(o.handle)}</dd></div>
-    ${o.verified && o.verifiedDomain ? `<div><dt class="mono">verified</dt><dd>${esc(o.verifiedDomain)}, proved with a DNS record</dd></div>` : `<div><dt class="mono">verified</dt><dd>Not yet</dd></div>`}
-    ${page.foundedYear ? `<div><dt class="mono">since</dt><dd>${page.foundedYear}</dd></div>` : ''}
-    ${page.website ? `<div><dt class="mono">website</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
+    <div><dt class="mono">${esc(tr('handle'))}</dt><dd>@${esc(o.handle)}</dd></div>
+    <div><dt class="mono">${esc(tr('verified'))}</dt><dd>${
+      o.verified && o.verifiedDomain
+        ? esc(tr('{domain}, proved with a DNS record', { domain: o.verifiedDomain }))
+        : esc(tr('Not yet'))
+    }</dd></div>
+    ${page.foundedYear ? `<div><dt class="mono">${esc(tr('since'))}</dt><dd>${page.foundedYear}</dd></div>` : ''}
+    ${page.website ? `<div><dt class="mono">${esc(tr('website'))}</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
   </dl>
-  <p class="cta"><a href="${wayIn('sign-up', doorPath(o.handle))}">Message ${esc(o.name)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">Sign in</a></p>
+  <p class="cta"><a href="${wayIn('sign-up', doorPath(o.handle))}">${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -489,44 +502,53 @@ export function renderPublic(
     case 'invite':
       return {
         status: 200,
+        lang: currentTranslator().language,
         head: meta({
-          title: `${page.displayName} invited you · ${SITE_NAME}`,
-          description: `Join ${page.displayName} on ${SITE_NAME}${page.context ? ` (${page.context})` : ''}: sign up in half a minute and you’re connected.`,
+          title: `${tr('{name} invited you', { name: page.displayName })} · ${SITE_NAME}`,
+          description: tr(
+            'Join {name} on {site}{context}: sign up in half a minute and you’re connected.',
+            {
+              name: page.displayName,
+              site: SITE_NAME,
+              context: page.context ? ` (${page.context})` : '',
+            },
+          ),
           image: page.avatarUrl ? `${publicUrl}${page.avatarUrl}` : null,
           index: false,
           canonical: false,
         }),
         body: `
-<main class="pub pub-sheet">
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">an invitation</span></header>
+<main class="pub pub-sheet" ${langAttrs()}>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('an invitation'))}</span></header>
   ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
-  <h1>${esc(page.displayName)} invited you</h1>
+  <h1>${esc(tr('{name} invited you', { name: page.displayName }))}</h1>
   ${page.note ? `<p class="lead">“${esc(page.note)}”</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">from</dt><dd>${esc(page.displayName)}</dd></div>
-    ${page.context ? `<div><dt class="mono">about</dt><dd>${esc(page.context)}</dd></div>` : ''}
-    <div><dt class="mono">to join</dt><dd>Sign up in half a minute and you’re connected with ${esc(page.displayName)}, no app to install.</dd></div>
-    <div><dt class="mono">${SITE_NAME.toLowerCase()}</dt><dd>${esc(PROMISE)}</dd></div>
+    <div><dt class="mono">${esc(tr('from'))}</dt><dd>${esc(page.displayName)}</dd></div>
+    ${page.context ? `<div><dt class="mono">${esc(tr('about'))}</dt><dd>${esc(page.context)}</dd></div>` : ''}
+    <div><dt class="mono">${esc(tr('to join'))}</dt><dd>${esc(tr('Sign up in half a minute and you’re connected with {name}, no app to install.', { name: page.displayName }))}</dd></div>
+    <div><dt class="mono">${SITE_NAME.toLowerCase()}</dt><dd>${esc(tr(PROMISE))}</dd></div>
   </dl>
-  <p class="cta"><a href="${wayIn('sign-up', path)}">Join ${esc(page.displayName)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
+  <p class="cta"><a href="${wayIn('sign-up', path)}">${esc(tr('Join {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     case 'missing':
       return {
         status: 404,
+        lang: currentTranslator().language,
         head: meta({
-          title: `Not here · ${SITE_NAME}`,
-          description: 'Nobody by that handle.',
+          title: `${tr('Not here')} · ${SITE_NAME}`,
+          description: tr('Nobody by that handle.'),
           image: null,
           index: false,
           canonical: false,
         }),
         body: `
-<main class="pub pub-sheet">
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">not here</span></header>
-  <h1>Nobody by that handle</h1>
-  <p class="lead">It may have changed, or been let go of.</p>
-  <p class="cta"><a href="/">Open ${SITE_NAME}</a></p>
+<main class="pub pub-sheet" ${langAttrs()}>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('not here'))}</span></header>
+  <h1>${esc(tr('Nobody by that handle'))}</h1>
+  <p class="lead">${esc(tr('It may have changed, or been let go of.'))}</p>
+  <p class="cta"><a href="/">${esc(tr('Open {site}', { site: SITE_NAME }))}</a></p>
 </main>`,
       };
     default:

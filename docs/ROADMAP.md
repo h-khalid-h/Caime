@@ -1600,3 +1600,9 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   remaining raw strings in `intelligence.ts`, `suggest.ts`, `duplicates.ts` and `modules/ai.ts`
   go through `tr`. `i18n.test.ts`: the same message leaves an Arabic reader's "waiting" in
   Arabic and the English sender's "reminder" in English.
+- 2026-10-04 — R54, the door in the customer's language: a person's page, an organization's
+  page (the door a clinic prints, R53), an invitation and the 404 follow the browser's language
+  or `?lang=`, as the site does (`<html lang dir>`, `Vary: Accept-Language`; names, handles and
+  the door's link unchanged), so every page the server paints but the app itself now does. Their
+  strings are the server's catalog too (`SITE_FILES` covers `public-pages.ts`; the entry screens'
+  words, which the app shows, stay core's). `public-pages.test.ts`.

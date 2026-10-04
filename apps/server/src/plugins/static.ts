@@ -111,14 +111,13 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // The way in is painted before the app only for a visitor: signed in, these screens send
     // the person on at once, and the paint would only flash.
     const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;
-    // The site's pages and the entry screens in the language asked for (`?lang=`, the site's
-    // switch), else the browser's (Accept-Language), as the app will show them (R54); every
-    // other page is English.
-    const site = page.kind === 'landing' || page.kind === 'site';
+    // Every page but the app itself (the site, the entry screens, a person's or an
+    // organization's page, an invitation, a 404) in the language asked for (`?lang=`, the site's
+    // switch), else the browser's (Accept-Language), as the app will show it (R54).
     const chosen =
-      site || page.kind === 'entry'
-        ? siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language'])
-        : null;
+      page.kind === 'app'
+        ? null
+        : siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language']);
     const language = chosen?.language ?? null;
     const facts =
       page.kind === 'landing' || page.kind === 'site'
@@ -164,7 +163,7 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         !req.cookies?.[SESSION_COOKIE]);
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
     // A page that follows the browser's language says so to whatever caches it.
-    if (site) reply.header('vary', 'accept-language');
+    if (page.kind !== 'app') reply.header('vary', 'accept-language');
     return reply
       .status(rendered.status)
       .header('cache-control', page.kind === 'site' ? 'public, max-age=600' : 'no-cache')

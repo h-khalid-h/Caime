@@ -289,6 +289,28 @@ describe('the readable web (R44)', () => {
     expect(signedIn.body).not.toContain('<div id="static">');
   });
 
+  it('a person’s page, an organization’s, an invitation and a 404 read in the browser’s language too', async () => {
+    const org = await visit('/o/nile.dental', { 'accept-language': 'ar-EG,ar;q=0.9' });
+    expect(org.statusCode).toBe(200);
+    expect(org.headers.vary).toBe('accept-language');
+    expect(org.body).toContain('<html lang="ar" dir="rtl">');
+    expect(org.body).toContain('<main class="pub pub-sheet" lang="ar" dir="rtl">');
+    expect(org.body).toContain('<dt class="mono">المعرّف</dt><dd>@nile.dental</dd>');
+    expect(org.body).toContain('>راسل Nile Dental على Caime</a>');
+    // Names and handles stay as they are; the door is the same door.
+    expect(org.body).toContain('<h1>Nile Dental</h1>');
+    expect(org.body).toContain('%3Fwrite');
+    const person = await visit('/@noor?lang=ar');
+    expect(person.body).toContain('<span class="mono">شخص على Caime</span>');
+    expect(person.body).toContain('>راسل Noor Haddad على Caime</a>');
+    const gone = await visit('/@nobody.here', { 'accept-language': 'ar' });
+    expect(gone.statusCode).toBe(404);
+    expect(gone.body).toContain('<h1>لا أحد بهذا المعرّف</h1>');
+    // English browsers see what they always did.
+    expect((await visit('/o/nile.dental')).body).toContain('<html lang="en" dir="ltr">');
+    expect((await visit('/o/nile.dental')).body).toContain('>Message Nile Dental on Caime</a>');
+  });
+
   it('the app’s own screens ask not to be indexed; robots and the sitemap say what is', async () => {
     const screen = await visit('/c/0193b2c4-0000-7000-8000-000000000000');
     expect(screen.statusCode).toBe(200);

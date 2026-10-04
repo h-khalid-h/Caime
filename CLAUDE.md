@@ -302,7 +302,9 @@ These are rules, not preferences.
   `Vary: Accept-Language`. A string the site alone says is the server's: its Arabic lives in
   `apps/server/src/locales/ar-site.ts` (merged into the server's translator in `lib/i18n.ts`),
   never in core's `locales/ar.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them
-  apart by file (`SITE_FILES`, `keysFor`), `site-i18n.test.ts` fails for a missing or stale one
+  apart by file (`SITE_FILES`: `site-pages.ts` and `public-pages.ts`, so a person's page, an
+  organization's, an invitation and the 404 count too; every page but the app follows the
+  language in `plugins/static.ts`), `site-i18n.test.ts` fails for a missing or stale one
   (`node scripts/i18n-keys.mjs missing ar site`), and a string the app shows too belongs to
   core's catalog. Styles that have a side use logical properties (`margin-inline-start`,
   `border-end-end-radius`), never left or right. A new page joins `MARKETING_PAGES`, `SITE_NAV`,

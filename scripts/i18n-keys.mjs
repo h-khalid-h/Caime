@@ -15,7 +15,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(join(root, 'package.json'));
 
 /** The files whose strings only the public site says: their catalog is the server's. */
-export const SITE_FILES = new Set(['apps/server/src/lib/site-pages.ts']);
+export const SITE_FILES = new Set([
+  'apps/server/src/lib/site-pages.ts',
+  'apps/server/src/lib/public-pages.ts',
+]);
 
 /** Whether a key is the site's alone (said nowhere the app or core would show it). */
 export const isSiteKey = (k) => [...k.files].every((f) => SITE_FILES.has(f));
