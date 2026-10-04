@@ -1,6 +1,6 @@
 import type { RelationshipView } from '@caime/core/api';
 import { formatClock, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -54,9 +54,6 @@ const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
 );
 const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.ConnectSheet));
-
-const count = (n: number, one: string, many: string) =>
-  `${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 export function PersonScreen({ id }: { id: string }) {
   const t = useTheme();
@@ -400,36 +397,44 @@ export function PersonScreen({ id }: { id: string }) {
                 rows={[
                   p.busy
                     ? {
-                        label: 'now',
-                        value: `${p.busy.title ?? 'In a meeting'} until ${formatClock(p.busy.until, timeZone, locale)}`,
+                        label: tr('now'),
+                        value: tr('{title} until {clock}', {
+                          title: p.busy.title ?? tr('In a meeting'),
+                          clock: formatClock(p.busy.until, timeZone, locale),
+                        }),
                         testID: 'person-busy',
                       }
                     : null,
                   {
-                    label: 'conversation',
+                    label: tr('conversation'),
                     value: [
-                      count(p.summary.messages, 'message', 'messages'),
+                      trn(p.summary.messages, '{n} message', '{n} messages'),
                       p.summary.rhythm ? tr(RHYTHM_TEXT[p.summary.rhythm]).toLowerCase() : null,
                       p.summary.lastTalkedAt
-                        ? `last ${formatListTime(p.summary.lastTalkedAt, now, timeZone, locale)}`
+                        ? tr('last {when}', {
+                            when: formatListTime(p.summary.lastTalkedAt, now, timeZone, locale),
+                          })
                         : null,
                     ]
                       .filter(Boolean)
                       .join(' · '),
                   },
                   p.summary.contexts.length
-                    ? { label: 'context', value: p.summary.contexts.map((c) => c.title).join(', ') }
+                    ? {
+                        label: tr('context'),
+                        value: p.summary.contexts.map((c) => c.title).join(', '),
+                      }
                     : null,
                   {
-                    label: 'shared',
-                    value: `${count(p.summary.files, 'file', 'files')} · ${count(p.summary.links, 'link', 'links')}${
+                    label: tr('shared'),
+                    value: `${trn(p.summary.files, '{n} file', '{n} files')} · ${trn(p.summary.links, '{n} link', '{n} links')}${
                       p.summary.decisions
-                        ? ` · ${count(p.summary.decisions, 'decision', 'decisions')}`
+                        ? ` · ${trn(p.summary.decisions, '{n} decision', '{n} decisions')}`
                         : ''
                     }`,
                   },
                   {
-                    label: 'actions',
+                    label: tr('actions'),
                     value: tr('{open} open · {waiting} waiting', {
                       open: p.summary.openActions,
                       waiting: p.summary.waiting,
@@ -437,11 +442,11 @@ export function PersonScreen({ id }: { id: string }) {
                   },
                   p.summary.theirAsks || p.summary.myAsks
                     ? {
-                        label: 'answers',
+                        label: tr('answers'),
                         value: [
                           p.summary.theirAsks
                             ? tr('{count} of {name}’s for you', {
-                                count: count(p.summary.theirAsks, 'question', 'questions'),
+                                count: trn(p.summary.theirAsks, '{n} question', '{n} questions'),
                                 name,
                               })
                             : null,
@@ -458,11 +463,11 @@ export function PersonScreen({ id }: { id: string }) {
                       }
                     : null,
                   {
-                    label: 'privacy',
+                    label: tr('privacy'),
                     value:
                       p.summary.privacy === 'limited'
-                        ? `${name} sees a limited view of you`
-                        : 'Your privacy settings',
+                        ? tr('{name} sees a limited view of you', { name })
+                        : tr('Your privacy settings'),
                   },
                 ]}
               />

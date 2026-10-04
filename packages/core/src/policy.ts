@@ -353,7 +353,7 @@ export function decideNotification(
 
   // Things the user asked for themselves always arrive.
   if (event.kind === 'reminder' || event.kind === 'task_due') return push('Your reminder');
-  if (level === 'urgency') return push(`${who}urgent, allowed to break through`);
+  if (level === 'urgency') return push(tr('{who}urgent, allowed to break through', { who }));
 
   if (ctx.muted) return silent('Muted conversation');
   if (
@@ -383,14 +383,24 @@ export function decideNotification(
   const important = level !== 'activity' || ctx.conversationPriority === 'priority';
   switch (policy.notify) {
     case 'mute':
-      return silent(`${who}muted`);
+      return silent(tr('{who}muted', { who }));
     case 'important_only':
-      return important ? push(`${who}needs you`) : silent(`${who}quiet unless important`);
+      return important
+        ? push(tr('{who}needs you', { who }))
+        : silent(tr('{who}quiet unless important', { who }));
     case 'schedule': {
       if (!policy.schedule || isWithinSchedule(policy.schedule, ctx.now, ctx.timeZone)) {
-        return push(`${who}within ${policy.schedule ? scheduleText(policy.schedule) : 'hours'}`);
+        return push(
+          tr('{who}within {scheduleText}', {
+            who,
+            scheduleText: policy.schedule ? scheduleText(policy.schedule) : tr('hours'),
+          }),
+        );
       }
-      if (event.kind === 'call') return silent(`${who}outside ${scheduleText(policy.schedule)}`);
+      if (event.kind === 'call')
+        return silent(
+          tr('{who}outside {scheduleText}', { who, scheduleText: scheduleText(policy.schedule) }),
+        );
       const next = nextScheduleStart(policy.schedule, ctx.now, ctx.timeZone);
       return {
         deliver: 'held',

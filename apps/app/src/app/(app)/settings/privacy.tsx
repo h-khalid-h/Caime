@@ -36,7 +36,7 @@ function describe(a: Audience | undefined): string {
   if (!a) return tr('Your connections');
   switch (a.kind) {
     case 'everyone':
-      return 'Everyone';
+      return tr('Everyone');
     case 'connections':
       return tr('Your connections');
     case 'nobody':

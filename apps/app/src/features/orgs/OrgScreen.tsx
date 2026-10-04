@@ -354,9 +354,9 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
             style={{ alignSelf: 'stretch', marginTop: 8 }}
             testID="org-spec"
             rows={[
-              { label: 'handle', value: `@${org.handle}` },
-              { label: 'kind', value: orgKindName(org.kind) },
-              { label: 'verified', value: <VerifiedLine org={org} /> },
+              { label: tr('handle'), value: `@${org.handle}` },
+              { label: tr('kind'), value: orgKindName(org.kind) },
+              { label: tr('verified'), value: <VerifiedLine org={org} /> },
               org.country
                 ? {
                     label: tr('based in'),
@@ -364,14 +364,14 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
                   }
                 : null,
               org.foundedYear
-                ? { label: 'since', value: String(org.foundedYear), testID: 'org-place' }
+                ? { label: tr('since'), value: String(org.foundedYear), testID: 'org-place' }
                 : null,
               org.booking
-                ? { label: 'bookings', value: describeHours(org.booking), testID: 'org-hours' }
+                ? { label: tr('bookings'), value: describeHours(org.booking), testID: 'org-hours' }
                 : null,
               org.website
                 ? {
-                    label: 'website',
+                    label: tr('website'),
                     value: (
                       <Pressable
                         accessibilityRole="link"

@@ -84,4 +84,66 @@ test.describe
       await desktop.close();
       await phone.close();
     });
+
+    test('a tour of the screens in Arabic, photographed: a conversation, People, a person, an organization, Appearance', async ({
+      browser,
+    }) => {
+      const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const other = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const noor = await apiSignUp(phone, 'Noor Tour', `noor.tour.${suffix}`);
+      await apiSignUp(other, 'Tariq Hassan', `tariq.tour.${suffix}`);
+      const asked = await other.request.post('/v1/connections/requests', {
+        headers: CLIENT,
+        data: { toUserId: noor.id },
+      });
+      const { requestId } = (await asked.json()) as { requestId: string };
+      const accepted = await phone.request.post(`/v1/connections/requests/${requestId}/accept`, {
+        headers: CLIENT,
+        data: {},
+      });
+      const convo = ((await accepted.json()) as { conversationId: string }).conversationId;
+      for (const body of [
+        'Hi Noor! Can we meet on Thursday at 10?',
+        'I will send the contract tomorrow.',
+      ]) {
+        const sent = await other.request.post(`/v1/conversations/${convo}/messages`, {
+          headers: CLIENT,
+          data: { clientId: crypto.randomUUID(), kind: 'text', body },
+        });
+        expect(sent.ok(), await sent.text()).toBe(true);
+      }
+      const org = await phone.request.post('/v1/orgs', {
+        headers: CLIENT,
+        data: { country: 'EG', name: 'Nile Dental', handle: `nile.tour.${suffix}`, kind: 'clinic' },
+      });
+      expect(org.ok(), await org.text()).toBe(true);
+      const { page, errors } = await newPerson(phone);
+      await page.goto('/settings/region');
+      await page.getByRole('radio', { name: 'العربية' }).click();
+      await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+      const shot = async (path: string, name: string, settled: string) => {
+        await page.goto(path);
+        await expect(visible(page, settled)).toBeVisible();
+        await page.waitForLoadState('networkidle');
+        await page.screenshot({
+          path: `e2e/screenshots/phone-arabic-${name}.png`,
+          animations: 'disabled',
+        });
+      };
+      // The inbox's line, the row's time and the day heading are Caime's words, in Arabic.
+      await shot('/', 'inbox', 'واحدة تحتاجك');
+      await expect(visible(page, 'الآن')).toBeVisible();
+      await shot(`/c/${convo}`, 'conversation', 'اليوم');
+      await shot('/people', 'people', 'غير مصنَّف 1');
+      // A person's facts: counts in Arabic plural forms, "@handle" in its order.
+      await shot(`/@tariq.tour.${suffix}`, 'person', 'رسالتان · نادرًا · آخرها الآن');
+      await expect(visible(page, 'لا ملفات · لا روابط')).toBeVisible();
+      await expect(visible(page, `@tariq.tour.${suffix}`)).toBeVisible();
+      await shot(`/o/nile.tour.${suffix}`, 'org', 'عيادة أو مركز');
+      await expect(visible(page, 'المعرّف')).toBeVisible();
+      await shot('/settings/appearance', 'appearance', 'برقوقي');
+      expect(errors).toEqual([]);
+      await other.close();
+      await phone.close();
+    });
   });

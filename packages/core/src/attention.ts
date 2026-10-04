@@ -7,7 +7,7 @@
  * and offline actions, and both get the same answer.
  */
 
-import { msg, tr } from './i18n';
+import { msg, tr, trn } from './i18n';
 import type { Priority } from './policy';
 
 export const ATTENTION_SECTIONS = [
@@ -249,7 +249,7 @@ export function groupBySection<T>(
 /** "3 need you" — the headline count the brand voice uses instead of unread totals. */
 export function attentionHeadline(counts: Partial<Record<AttentionSection, number>>): string {
   const needs = counts.needs_you ?? 0;
-  if (needs > 0) return needs === 1 ? '1 needs you' : tr('{needs} need you', { needs });
+  if (needs > 0) return trn(needs, '{n} needs you', '{n} need you');
   const important = counts.important ?? 0;
   if (important > 0) return important === 1 ? '1 important' : `${important} important`;
   return tr('You’re all caught up');

@@ -264,7 +264,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
           wrap={desktop}
           options={chips.map((f) => ({
             value: f,
-            label: `${f === 'all' ? 'Everyone' : f === 'unlabelled' ? 'Not labelled' : tr(SPHERE_DEFS[f].plural)}${counts[f] ? ` ${counts[f]}` : ''}`,
+            label: `${f === 'all' ? tr('Everyone') : f === 'unlabelled' ? tr('Not labelled') : tr(SPHERE_DEFS[f].plural)}${counts[f] ? ` ${counts[f]}` : ''}`,
           }))}
         />
       ) : null}

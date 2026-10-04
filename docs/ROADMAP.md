@@ -1580,3 +1580,17 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   is taken once the empty state has drawn (it was taken blank). Budget 442.4 KB. Verified on
   production: `/business?lang=ar` serves `<html lang="ar" dir="rtl">` with `Vary:
   Accept-Language`, and `/sign-in` in Arabic for an Arabic browser.
+- 2026-10-04 — R54, a tour of the screens in Arabic (`e2e/arabic.spec.ts`, five more
+  screenshots: the inbox, a conversation, People, a person, an organization, Appearance) found
+  and fixed: the inbox line ("1 needs you") and the tab bar's count now plural forms
+  (`trn`, in core `attention.ts`), the notification reasons core `policy.ts` writes ("needs
+  you", "muted", "within hours"), the relative times in `format.ts` ("now", "5m", "Yesterday",
+  "just now", "at 7:00", "on Sat", the day headings), the People chips ("Everyone", "Not
+  labelled"), a person's facts (every counter a plural form; "last now"; the busy line; the
+  privacy line; the mono labels), an organization's mono labels, the privacy screen's
+  "Everyone", and the bubble themes' names. Still English, by design or for now: user-written
+  text, the pronoun suggestions (English pronouns), and a suggestion's stored rationale
+  ("Tariq wrote …", written once by `intelligence.ts` and `modules/ai.ts` when the message
+  arrives, in the sender's request language, since the row is stored, not rendered): making it
+  the reader's needs the rationale kept as a key and its values, a contract change, left for
+  the next pass. Budget 442.4 KB.

@@ -139,7 +139,6 @@ export const arSite: Catalog = {
   organizations: 'المؤسسات',
   'A business proves its domain with one DNS record; its team answers as the organization, in one inbox, and customers book from its open slots.':
     'تثبت المؤسسة نطاقها بسجل DNS واحد؛ ويجيب فريقها باسم المؤسسة، في صندوق وارد واحد، ويحجز العملاء من مواعيدها المتاحة.',
-  privacy: 'الخصوصية',
   'Each side of your life sees what you chose. End-to-end encrypted when you say so, with a recovery key only you hold.':
     'كل جانب من حياتك يرى ما اخترته. تشفير من طرف إلى طرف حين تقول ذلك، بمفتاح استعادة لا يحمله غيرك.',
   money: 'المال',
@@ -174,7 +173,6 @@ export const arSite: Catalog = {
   'the ai agent': 'وكيل الذكاء الاصطناعي',
   'Answers from what you wrote down (up to {n} characters), is marked as an AI, and hands over to a person the moment it isn’t sure. It never speaks for the team.':
     'يجيب مما كتبته (حتى {n} حرفًا)، ويُعلَّم بأنه ذكاء اصطناعي، ويسلّم الأمر لشخص لحظة لا يكون متأكدًا. ولا يتحدث باسم الفريق أبدًا.',
-  bookings: 'الحجوزات',
   'Set bookable hours once. Customers pick from the open slots, your AI agent offers the next few and books the one they choose, and every booking is an appointment your team confirms.':
     'حدد ساعات الحجز مرة واحدة. يختار العملاء من المواعيد المتاحة، ويعرض وكيلك القادمة منها ويحجز ما يختارونه، وكل حجز موعد يؤكده فريقك.',
   apps: 'التطبيقات',

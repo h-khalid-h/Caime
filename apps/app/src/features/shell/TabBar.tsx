@@ -1,4 +1,4 @@
-import { msg, tr } from '@caime/core/i18n';
+import { msg, tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Platform, useWindowDimensions, View, type ViewStyle } from 'react-native';
@@ -90,12 +90,10 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityState={{ selected: focused }}
               accessibilityLabel={
                 count
-                  ? tr('{tr}, {count} {needs} you', {
-                      tr: tr(tab.label),
-                      count,
-                      needs: count === 1 ? 'needs' : 'need',
+                  ? trn(count, '{label}, {n} needs you', '{label}, {n} need you', {
+                      label: tr(tab.label),
                     })
-                  : tab.label
+                  : tr(tab.label)
               }
               testID={`tab-${route.name}`}
               haptic

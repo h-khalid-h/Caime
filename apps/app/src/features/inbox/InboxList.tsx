@@ -1,5 +1,5 @@
 import type { InboxItemView, InboxSectionView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -142,11 +142,8 @@ export function InboxList({ pane }: { pane?: boolean }) {
             value: 'attention',
             label: needsYou ? tr('Attention · {needsYou}', { needsYou }) : tr('Attention'),
             accessibilityLabel: needsYou
-              ? tr('Attention, {needsYou} {needs} you', {
-                  needsYou,
-                  needs: needsYou === 1 ? 'needs' : 'need',
-                })
-              : 'Attention',
+              ? trn(needsYou, 'Attention, {n} needs you', 'Attention, {n} need you')
+              : tr('Attention'),
             testID: 'inbox-attention',
           },
           { value: 'all', label: tr('All'), testID: 'inbox-all' },

@@ -1,5 +1,5 @@
 import { type BubbleTheme, bubbleThemes } from '@caime/brand/tokens';
-import { tr } from '@caime/core/i18n';
+import { msg, tr } from '@caime/core/i18n';
 import { Platform, Switch, View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
@@ -9,6 +9,17 @@ import { useTheme } from '@/theme/theme';
 import { Check } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
+
+/** The bubble themes' names (brand tokens), here so the catalog knows them. */
+const BUBBLE_NAME: Record<string, string> = {
+  Plum: msg('Plum'),
+  'Caime Pink': msg('Caime Pink'),
+  Lavender: msg('Lavender'),
+  Sky: msg('Sky'),
+  Mint: msg('Mint'),
+  Sunshine: msg('Sunshine'),
+};
+const bubbleName = (label: string) => tr(BUBBLE_NAME[label] ?? label);
 
 function Preview() {
   const t = useTheme();
@@ -83,7 +94,7 @@ export default function Appearance() {
                 key={key}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
-                accessibilityLabel={bubbleThemes[key].label}
+                accessibilityLabel={bubbleName(bubbleThemes[key].label)}
                 onPress={() => savePrefs({ bubbleTheme: key })}
                 haptic
                 style={{ alignItems: 'center', gap: 6, width: 72 }}
@@ -107,7 +118,7 @@ export default function Appearance() {
                   color={selected ? 'text' : 'textSecondary'}
                   numberOfLines={1}
                 >
-                  {bubbleThemes[key].label}
+                  {bubbleName(bubbleThemes[key].label)}
                 </Text>
               </Pressable>
             );
