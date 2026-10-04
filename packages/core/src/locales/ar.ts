@@ -3003,4 +3003,11 @@ export const ar: Catalog = {
   },
   'You took {accepted} of the last {of} like this': 'أخذت بـ{accepted} من آخر {of} مثل هذا',
   'You passed on {dismissed} of the last {of} like this': 'تجاوزت {dismissed} من آخر {of} مثل هذا',
+  'Quite sure': 'شبه مؤكد',
+  'Fairly sure': 'مرجّح',
+  'A guess': 'تخمين',
+  Remembered: 'في الذاكرة',
+  '{name} owes': 'على {name}',
+  'you owe': 'عليك',
+  decided: 'تقرر',
 };

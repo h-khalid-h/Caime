@@ -6,6 +6,7 @@
  */
 import type { ConnectionView, SuggestionView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { surenessLine } from '@caime/core/sureness';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -93,8 +94,8 @@ function Offer({ s, all }: { s: SuggestionView; all: ConnectionView[] }) {
           </Text>
         </View>
       </View>
-      <Text variant="caption" color="textSecondary">
-        {s.rationale}
+      <Text variant="caption" color="textSecondary" testID="suggestion-sure">
+        {surenessLine(s.confidence, s.rationale)}
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Button

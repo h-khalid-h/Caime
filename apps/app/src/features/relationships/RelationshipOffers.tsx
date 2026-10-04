@@ -5,6 +5,7 @@
  */
 import type { ConnectionView, SuggestionView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { surenessLine } from '@caime/core/sureness';
 import { relationshipOfferText } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, usePathname } from 'expo-router';
@@ -93,8 +94,8 @@ function OfferCard({
                 relationshipOfferText: relationshipOfferText(first, offer),
               })}
             </Text>
-            <Text variant="caption" color="textSecondary">
-              {s.rationale}
+            <Text variant="caption" color="textSecondary" testID="suggestion-sure">
+              {surenessLine(s.confidence, s.rationale)}
             </Text>
           </View>
         </View>

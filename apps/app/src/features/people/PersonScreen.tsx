@@ -1,5 +1,5 @@
-import type { RelationshipView } from '@caime/core/api';
-import { formatClock, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
+import type { PersonProfileView, RelationshipView } from '@caime/core/api';
+import { formatClock, formatDue, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -471,6 +471,7 @@ export function PersonScreen({ id }: { id: string }) {
                   },
                 ]}
               />
+              <Remembered memory={p.memory} name={name} />
             </View>
           </Card>
         ) : null}
@@ -538,5 +539,66 @@ export function PersonScreen({ id }: { id: string }) {
         />
       ) : null}
     </Screen>
+  );
+}
+
+/**
+ * What Caime remembers of the two of you across every conversation (M11): the latest decisions
+ * and what's still promised either way, each opening where it was said. Only you see it; a row
+ * is a fact already recorded, never a suggestion.
+ */
+function Remembered({ memory, name }: { memory: PersonProfileView['memory']; name: string }) {
+  const now = useNow();
+  const { timeZone, locale } = useUserClock();
+  if (!memory.decisions.length && !memory.promises.length) return null;
+  const open = (conversationId: string | null) => {
+    if (conversationId) router.navigate({ pathname: '/c/[id]', params: { id: conversationId } });
+  };
+  return (
+    <View style={{ gap: 2, marginTop: 10 }} testID="person-memory">
+      <Text variant="overline" color="textSecondary" style={{ marginBottom: 4 }}>
+        {tr('Remembered')}
+      </Text>
+      {memory.promises.map((p) => (
+        <Pressable
+          key={p.id}
+          onPress={() => open(p.conversationId)}
+          accessibilityRole="button"
+          style={{ flexDirection: 'row', gap: 12, paddingVertical: 6, alignItems: 'baseline' }}
+          testID="person-memory-promise"
+        >
+          <Text variant="mono" color="textTertiary" style={{ width: 96 }}>
+            {p.direction === 'theirs' ? tr('{name} owes', { name }) : tr('you owe')}
+          </Text>
+          <Text variant="body" style={{ flex: 1 }} numberOfLines={2}>
+            {p.title}
+          </Text>
+          {p.dueAt ? (
+            <Text variant="caption" color="textTertiary">
+              {formatDue(p.dueAt, now, timeZone, locale, false)}
+            </Text>
+          ) : null}
+        </Pressable>
+      ))}
+      {memory.decisions.map((d) => (
+        <Pressable
+          key={d.id}
+          onPress={() => open(d.conversationId)}
+          accessibilityRole="button"
+          style={{ flexDirection: 'row', gap: 12, paddingVertical: 6, alignItems: 'baseline' }}
+          testID="person-memory-decision"
+        >
+          <Text variant="mono" color="textTertiary" style={{ width: 96 }}>
+            {tr('decided')}
+          </Text>
+          <Text variant="body" style={{ flex: 1 }} numberOfLines={2}>
+            {d.title}
+          </Text>
+          <Text variant="caption" color="textTertiary">
+            {formatListTime(d.decidedAt, now, timeZone, locale)}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }

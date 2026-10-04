@@ -3,6 +3,7 @@ import { AI_LABEL } from '@caime/core/assist';
 import { formatDue } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import { learnedOf, placeByLean } from '@caime/core/learning';
+import { surenessLine } from '@caime/core/sureness';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -270,11 +271,10 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
             </View>
           ) : null}
         </View>
-        {s.rationale ? (
-          <Text variant="caption" color="textSecondary" numberOfLines={2}>
-            {s.rationale}
-          </Text>
-        ) : null}
+        {/* How sure, then why, in one line (M11): a dated promise is sure, a hint a guess. */}
+        <Text variant="caption" color="textSecondary" numberOfLines={2} testID="suggestion-sure">
+          {surenessLine(s.confidence, s.rationale)}
+        </Text>
         {learnedLine(s)}
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Button

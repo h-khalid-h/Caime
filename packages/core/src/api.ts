@@ -260,6 +260,22 @@ export interface PersonProfileView {
     /** What they see of you, by your rules for them: a limited view, or your privacy settings. */
     privacy: 'limited' | 'standard';
   };
+  /**
+   * What Caime remembers of the two of you across every conversation (M11): the latest
+   * decisions, and what's still promised either way. The viewer's own data only; nothing here
+   * is anyone else's to see.
+   */
+  memory: {
+    decisions: Array<{ id: string; title: string; decidedAt: string; conversationId: string }>;
+    promises: Array<{
+      id: string;
+      title: string;
+      dueAt: string | null;
+      conversationId: string | null;
+      /** `theirs`: you're waiting on them; `mine`: they're waiting on you. */
+      direction: 'theirs' | 'mine';
+    }>;
+  };
 }
 
 /** How often two people have talked in the last twelve weeks (PRD §67, §71). */

@@ -95,6 +95,45 @@ describe('who someone is to you (PRD §67, §71)', () => {
     expect((await ben.get(`/v1/people/${ana.user.id}`)).summary.privacy).toBe('standard');
   });
 
+  it('remembers what was decided and promised across the two of you (M11)', async () => {
+    const before = (await ana.get(`/v1/people/${ben.user.id}`)).memory;
+    expect(before).toEqual({ decisions: [], promises: [] });
+    await ana.post('/v1/decisions', { conversationId: withBen, title: 'Go with the blue venue' });
+    // Ana waits on Ben for the deck (her own, private); Ben asks Ana for the budget (shared).
+    await ana.post('/v1/tasks', {
+      clientId: uuidv4(),
+      title: 'Send the deck',
+      assigneeId: ben.user.id,
+      conversationId: withBen,
+      dueAt: '2030-01-10T10:00:00.000Z',
+    });
+    await ben.post('/v1/tasks', {
+      clientId: uuidv4(),
+      title: 'Check the budget',
+      assigneeId: ana.user.id,
+      conversationId: withBen,
+      shared: true,
+    });
+    const memory = (await ana.get(`/v1/people/${ben.user.id}`)).memory;
+    expect(memory.decisions.map((d: any) => d.title)).toEqual(['Go with the blue venue']);
+    expect(memory.decisions[0]).toMatchObject({ conversationId: withBen });
+    // Dated first, then undated; each says which way it's owed.
+    expect(memory.promises.map((p: any) => [p.title, p.direction])).toEqual([
+      ['Send the deck', 'theirs'],
+      ['Check the budget', 'mine'],
+    ]);
+    // From Ben's side: what he asked reads as owed to him; Ana's private waiting item is hers.
+    const bens = (await ben.get(`/v1/people/${ana.user.id}`)).memory;
+    expect(bens.promises.map((p: any) => [p.title, p.direction])).toEqual([
+      ['Check the budget', 'theirs'],
+    ]);
+    // Nothing of it on your own profile.
+    expect((await ana.get(`/v1/people/${ana.user.id}`)).memory).toEqual({
+      decisions: [],
+      promises: [],
+    });
+  });
+
   it('leaves out what the viewer deleted for themselves', async () => {
     const before = (await ana.get(`/v1/people/${ben.user.id}`)).summary;
     const asked = (await send(ben, withBen, 'Can you book the room for Monday?')).message;

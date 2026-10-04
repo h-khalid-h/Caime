@@ -771,7 +771,11 @@ plan hadn't reached, in the order people will ask for them.
       Automations (`learnFromChoices`, the account's, mirrored like the rest), and then nothing
       is learned or kept. One partial index (0047) and two small reads per suggestion made.
       `learning.test.ts` (core and server).
-- [ ] Confidence said in one line on every suggestion (the rationale carries it internally).
+- [x] How sure, said in one line on every suggestion (core `sureness.ts`): the confidence every
+      suggestion has carried becomes words before its reason, "Quite sure · Sam wrote “…”" for
+      a dated promise or a verified team, "Fairly sure" for the rest, "A guess" for a shared
+      space; never a number. On the conversation's card, the relationship offer and the
+      same-person card (`suggestion-sure`). `sureness.test.ts`; the E2E reads it on a request.
 - [x] Arabic depth in the message intelligence (core `intelligence.ts`): promises in Gulf and
       Levantine phrasing ("راح أرسل لك", "رح ابعتلك", "بكرا بعطيك") and MSA beside the
       Egyptian, taken back by a negation before them ("مش", "ما راح", "لن") and never "راح" as
@@ -785,8 +789,13 @@ plan hadn't reached, in the order people will ask for them.
       "ألف"/"آلاف"/"مليون", "ر.س"/"د.إ"/"د.ك", a country word deciding "ريال قطري" or "دينار
       كويتي", and a bare "دينار" or "ليرة" saying no currency rather than a wrong one. Rules, no
       model, the same on every device; fifty more cases in `intelligence.test.ts`.
-- [ ] Memory across a relationship: what was decided and promised with one person across
-      their conversations, in their profile's "and you" block.
+- [x] Memory across a relationship: a person's profile remembers, under "and you", the latest
+      decisions across every conversation with them and what's still promised either way
+      ("Sam owes · Send the deck · Fri", "you owe · Check the budget"), each opening where it
+      was said (`PersonProfileView.memory`, five of each, soonest due first; the viewer's own
+      rows only: their waiting items and what was asked of them, never the other side's
+      private ones; nothing on your own profile). Two bounded reads when a profile opens.
+      `relationship-profile.test.ts`.
 - [ ] ⛔ Voice notes transcribed and searchable, call summaries with decisions and actions
       (PRD §46–47): a speech-to-text provider, the owner's choice (R52).
 
@@ -1700,3 +1709,9 @@ plan hadn't reached, in the order people will ask for them.
   (core `intelligence.ts`: `AR_COMMIT`, `AR_REQUEST`, `AR_DECISION`, `AR_NOT_A_QUESTION`,
   `AR_CURRENCY_OF`, Arabic-Indic digits through `asciiDigits`). Fifty new cases in
   `intelligence.test.ts`; nothing on the server, nothing on an AI. Budget 442.6 KB.
+- 2026-10-04 — M11, how sure and what's remembered: every suggestion says how sure Caime is in
+  words before its reason (core `sureness.ts`, `surenessLine`, on the three suggestion cards),
+  and a person's profile remembers the decisions and open promises across every conversation
+  with them (`PersonProfileView.memory`, `modules/people.ts`, the `Remembered` rows under
+  "and you"). `sureness.test.ts`, `relationship-profile.test.ts`, the E2E's business request.
+  Budget 442.8 KB.

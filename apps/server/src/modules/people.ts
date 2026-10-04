@@ -29,6 +29,9 @@ export { identityShownTo };
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
+/** How many decisions, and how many promises each way, a profile remembers (M11). */
+const MEMORY_EACH = 5;
+
 export function connectionState(b: Awaited<ReturnType<typeof between>>): ConnectionStateView {
   return {
     state: b.connected
@@ -305,7 +308,75 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
               .executeTakeFirstOrThrow()
           ).n
         : 0;
-    const [theirAsks, myAsks, contexts, policies] = await Promise.all([
+    // What's remembered of the two of them (M11): the latest decisions anywhere they talk, and
+    // what each still owes the other. Five of each, two bounded reads.
+    const remembered = async () => {
+      if (id === auth.userId) return { decisions: [], promises: [] };
+      const [decided, theirs, mine] = await Promise.all([
+        conversationIds.length
+          ? ctx.db
+              .selectFrom('decisions')
+              .select(['id', 'title', 'decided_at', 'conversation_id'])
+              .where('conversation_id', 'in', conversationIds)
+              .where('status', '=', 'active')
+              .orderBy('decided_at', 'desc')
+              .limit(MEMORY_EACH)
+              .execute()
+          : [],
+        ctx.db
+          .selectFrom('tasks')
+          .select(['id', 'title', 'due_at', 'conversation_id'])
+          .where('owner_id', '=', auth.userId)
+          .where('assignee_id', '=', id)
+          .where('status', 'in', ['open', 'accepted'])
+          .orderBy(sql`due_at asc nulls last`)
+          .orderBy('created_at', 'desc')
+          .limit(MEMORY_EACH)
+          .execute(),
+        ctx.db
+          .selectFrom('tasks')
+          .select(['id', 'title', 'due_at', 'conversation_id'])
+          .where('assignee_id', '=', auth.userId)
+          .where((w) =>
+            w.or([
+              w.and([w('owner_id', '=', id), w('shared', '=', true)]),
+              w.and([
+                w('owner_id', '=', auth.userId),
+                conversationIds.length
+                  ? w('conversation_id', 'in', conversationIds)
+                  : sql<boolean>`false`,
+              ]),
+            ]),
+          )
+          .where('status', 'in', ['open', 'accepted'])
+          .orderBy(sql`due_at asc nulls last`)
+          .orderBy('created_at', 'desc')
+          .limit(MEMORY_EACH)
+          .execute(),
+      ]);
+      const promise = (direction: 'theirs' | 'mine') => (r: (typeof theirs)[number]) => ({
+        id: r.id,
+        title: r.title,
+        dueAt: r.due_at?.toISOString() ?? null,
+        conversationId: r.conversation_id,
+        direction,
+      });
+      return {
+        decisions: decided.map((d) => ({
+          id: d.id,
+          title: d.title,
+          decidedAt: d.decided_at.toISOString(),
+          conversationId: d.conversation_id,
+        })),
+        // Soonest due first, undated after, each side's own order kept.
+        promises: [...theirs.map(promise('theirs')), ...mine.map(promise('mine'))].sort(
+          (a, b) =>
+            (a.dueAt ? Date.parse(a.dueAt) : Number.POSITIVE_INFINITY) -
+            (b.dueAt ? Date.parse(b.dueAt) : Number.POSITIVE_INFINITY),
+        ),
+      };
+    };
+    const [theirAsks, myAsks, contexts, policies, memory] = await Promise.all([
       id === auth.userId ? 0 : asks(id, talk.mine),
       id === auth.userId ? 0 : asks(auth.userId, talk.theirs),
       conversationIds.length
@@ -318,6 +389,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
             .execute()
         : [],
       loadPolicies(ctx.db, auth.userId),
+      remembered(),
     ]);
     const privacy = resolvePolicy(policies, policyTargetFor(primary, b.connectionId)).privacy;
     // Where they work is one of their professional details, shown as those are (R43).
@@ -363,6 +435,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         myAsks,
         privacy: privacy === 'limited' ? 'limited' : 'standard',
       },
+      memory,
     };
   });
 }

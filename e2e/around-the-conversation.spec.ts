@@ -1490,6 +1490,8 @@ test.describe
         await expect(offer).toContainText(
           `${orgName} asked “Please bring your insurance card on Thursday.”`,
         );
+        // How sure, said in words before the reason (M11): a dated request is quite sure.
+        await expect(offer.getByTestId('suggestion-sure')).toContainText('Quite sure · ');
         await expect(offer).not.toContainText('Noor');
         await phone.screenshot({ path: 'e2e/screenshots/phone-business-suggestion.png' });
         await offer.getByRole('button', { name: 'Add to actions' }).click();

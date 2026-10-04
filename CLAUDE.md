@@ -560,6 +560,14 @@ These are rules, not preferences.
   only their types. Before lazy-loading a module to take it out of the startup chunk, check the
   source map for what else in `__common` imports it statically: `@caime/core/when` looked like
   two sheets' alone, but `intelligence.ts` needs it, so it stays.
+- A suggestion's confidence is said in words, never a number: `surenessLine(confidence,
+  rationale)` (`packages/core/src/sureness.ts`) is the one line under every suggestion card
+  (`suggestion-sure`), so a new place that shows a suggestion uses it rather than the bare
+  rationale, and a new source of suggestions picks its confidence knowing 0.85 reads "Quite
+  sure", 0.7 "Fairly sure" and less "A guess". A person's profile remembers the two of you
+  (`PersonProfileView.memory`, `MEMORY_EACH` in `modules/people.ts`): only the viewer's own rows
+  (their decisions' conversations, their waiting items, what was asked of them), so a new thing
+  remembered there follows the same two conditions the `actions` counts use, never a wider one.
 - The message intelligence reads Arabic by lists in `packages/core/src/intelligence.ts`
   (`AR_COMMIT`, `AR_REQUEST_VERBS_LIST`, `AR_REQUEST`, `AR_DECISION`, `AR_CONFIRM`, `AR_PAY`,
   `AR_QUESTION_START` with `AR_NOT_A_QUESTION` for "ما" as a negation): a trigger is a whole
