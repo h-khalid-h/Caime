@@ -761,9 +761,16 @@ plan hadn't reached, in the order people will ask for them.
       reading beside "Suggested by Caime". Every call is one `ai_runs` row (`feature: search`),
       through the one `runAi` the AI routes use. `ai.test.ts`, `search-kits-misc.test.ts`,
       `e2e/around-the-conversation.spec.ts`.
-- [ ] A learning loop on suggestions: what a person keeps accepting is offered more readily
-      and what they dismiss less, by kind and relationship, with the reason shown ("you've
-      accepted 8 of 10 reminders from Sarah"). Rules, not a model; reversible; never silent.
+- [x] What you take, Caime offers more readily (core `learning.ts`): when a suggestion is
+      made, the person's last decisions on that kind are read (the same person's first: three
+      of Sam's promises passed on make the next quieter, three taken make it readier; the kind
+      at large needs five), and the lean is kept on the suggestion with its counts
+      (`payload.learned`). The app places, never hides: a favoured one comes first with "You
+      took 3 of the last 4 like this", quiet ones wait in one line ("2 quieter suggestions you
+      usually pass on · Show") until asked for. Rules, not a model; off with one switch under
+      Automations (`learnFromChoices`, the account's, mirrored like the rest), and then nothing
+      is learned or kept. One partial index (0047) and two small reads per suggestion made.
+      `learning.test.ts` (core and server).
 - [ ] Confidence said in one line on every suggestion (the rationale carries it internally).
 - [ ] Arabic depth in the message intelligence: requests, decisions and amounts in Egyptian,
       Gulf and Levantine phrasing, with the same tests the English has.
@@ -1673,3 +1680,7 @@ plan hadn't reached, in the order people will ask for them.
   `fromUnderstanding`; server `understandWithAi` in `modules/search.ts`, `understandSearch` in
   `lib/ai.ts`, the shared `lib/ai-run.ts`), for a person with AI assist on, labelled in the app.
   Budget 442.6 KB. The E2E stand-in answers the search prompt from the words.
+- 2026-10-04 — M11, what you take: suggestions follow a person's own decisions on each kind
+  (core `leanFrom`, `placeByLean`; server `leanFor` read in `createSuggestion`, migration 0047),
+  placed in the suggestion bar with the count as the reason, off with `learnFromChoices` under
+  Automations. `learning.test.ts` in core and on the server. Budget 442.6 KB.

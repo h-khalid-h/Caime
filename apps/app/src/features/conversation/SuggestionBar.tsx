@@ -1,11 +1,12 @@
 import type { SuggestionView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatDue } from '@caime/core/format';
-import { msg, tr } from '@caime/core/i18n';
+import { msg, tr, trn } from '@caime/core/i18n';
+import { learnedOf, placeByLean } from '@caime/core/learning';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useSuggestions } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -44,12 +45,34 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   const q = useSuggestions(conversationId);
   const [busy, setBusy] = useState(false);
   const { timeZone, locale } = useUserClock();
-  const list = (q.data?.suggestions ?? []).filter((s) => s.conversationId === conversationId);
+  const here = (q.data?.suggestions ?? []).filter((s) => s.conversationId === conversationId);
+  // What this person keeps taking comes first; what they keep passing on waits in one line,
+  // never hidden, until they ask for it (M11).
+  const [showQuiet, setShowQuiet] = useState(false);
+  const placed = placeByLean(here);
+  const list = showQuiet ? [...placed.shown, ...placed.quiet] : placed.shown;
   // Several found here (R37): offered as one card, done on one approval, until they choose to
   // take them one at a time.
   const [oneAtATime, setOneAtATime] = useState(false);
   const s: SuggestionView | undefined = list[0];
-  if (!s) return null;
+  const quietLine =
+    placed.quiet.length && !showQuiet ? (
+      <Pressable
+        onPress={() => setShowQuiet(true)}
+        accessibilityRole="button"
+        style={{ marginHorizontal: 12, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+        testID="suggestions-quiet"
+      >
+        <Text variant="caption" color="textSecondary">
+          {trn(
+            placed.quiet.length,
+            '{n} quieter suggestion you usually pass on · Show',
+            '{n} quieter suggestions you usually pass on · Show',
+          )}
+        </Text>
+      </Pressable>
+    ) : null;
+  if (!s) return quietLine;
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['suggestions'] });
     void qc.invalidateQueries({ queryKey: ['tasks'] });
@@ -126,9 +149,94 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   };
   if (list.length > 1 && !oneAtATime)
     return (
+      <>
+        <View
+          accessibilityLabel={tr('Suggestions: {length} things here', { length: list.length })}
+          testID="suggestions-card"
+          style={{
+            marginHorizontal: 12,
+            marginBottom: 8,
+            padding: 12,
+            borderRadius: 16,
+            backgroundColor: t.c.surface,
+            borderWidth: 1,
+            borderColor: t.c.border,
+            gap: 8,
+            shadowColor: '#000',
+            shadowOpacity: 0.06,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 3 },
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Sparkles size={14} color={t.c.accentStrong} />
+            <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
+              {list.some((x) => x.payload.source === 'ai') ? tr(AI_LABEL) : tr('Suggestions')} ·{' '}
+              {list.length} things here
+            </Text>
+          </View>
+          {list.map((x) => (
+            <View
+              key={x.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+              testID={`suggestion-step-${x.kind}`}
+            >
+              <Text variant="captionStrong" color="textSecondary">
+                {tr(ACCEPT_LABEL[x.kind] ?? msg('Yes'))}:
+              </Text>
+              <Text variant="bodyStrong" style={{ flexShrink: 1 }}>
+                {x.title}
+              </Text>
+              {x.dueAt ? (
+                <Text variant="captionStrong" color="textSecondary">
+                  {formatDue(x.dueAt, new Date(), timeZone, locale, Boolean(x.payload.dueHasTime))}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+          <Text variant="caption" color="textSecondary">
+            {tr('Nothing happens until you say so; each step can be taken back after.')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <Button
+              label={tr('Do all {length}', { length: list.length })}
+              size="sm"
+              onPress={doAll}
+              loading={busy}
+              testID="suggestions-all"
+            />
+            <Button
+              label={tr('One at a time')}
+              size="sm"
+              variant="secondary"
+              onPress={() => setOneAtATime(true)}
+              testID="suggestions-one"
+            />
+            <Button
+              label={tr('Not now')}
+              size="sm"
+              variant="ghost"
+              onPress={dismissAll}
+              testID="suggestions-dismiss-all"
+            />
+          </View>
+        </View>
+        {quietLine}
+      </>
+    );
+  const dismiss = async () => {
+    qc.setQueryData(
+      qk.suggestions(conversationId),
+      (d: { suggestions: SuggestionView[] } | undefined) =>
+        d ? { suggestions: d.suggestions.filter((x) => x.id !== s.id) } : d,
+    );
+    await endpoints.dismissSuggestion(s.id).catch(() => {});
+    refresh();
+  };
+  return (
+    <>
       <View
-        accessibilityLabel={tr('Suggestions: {length} things here', { length: list.length })}
-        testID="suggestions-card"
+        accessibilityLabel={tr('Suggestion: {title}', { title: s.title })}
         style={{
           marginHorizontal: 12,
           marginBottom: 8,
@@ -147,116 +255,55 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Sparkles size={14} color={t.c.accentStrong} />
           <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-            {list.some((x) => x.payload.source === 'ai') ? tr(AI_LABEL) : tr('Suggestions')} ·{' '}
-            {list.length} things here
+            {s.payload.source === 'ai' ? tr(AI_LABEL) : tr('Suggestion')}
+            {list.length > 1 ? tr(' · 1 of {length}', { length: list.length }) : ''}
           </Text>
         </View>
-        {list.map((x) => (
-          <View
-            key={x.id}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
-            testID={`suggestion-step-${x.kind}`}
-          >
-            <Text variant="captionStrong" color="textSecondary">
-              {tr(ACCEPT_LABEL[x.kind] ?? msg('Yes'))}:
-            </Text>
-            <Text variant="bodyStrong" style={{ flexShrink: 1 }}>
-              {x.title}
-            </Text>
-            {x.dueAt ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Text variant="bodyStrong">{s.title}</Text>
+          {s.dueAt ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Calendar size={13} color={t.c.textSecondary} />
               <Text variant="captionStrong" color="textSecondary">
-                {formatDue(x.dueAt, new Date(), timeZone, locale, Boolean(x.payload.dueHasTime))}
+                {formatDue(s.dueAt, new Date(), timeZone, locale, Boolean(s.payload.dueHasTime))}
               </Text>
-            ) : null}
-          </View>
-        ))}
-        <Text variant="caption" color="textSecondary">
-          {tr('Nothing happens until you say so; each step can be taken back after.')}
-        </Text>
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            </View>
+          ) : null}
+        </View>
+        {s.rationale ? (
+          <Text variant="caption" color="textSecondary" numberOfLines={2}>
+            {s.rationale}
+          </Text>
+        ) : null}
+        {learnedLine(s)}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           <Button
-            label={tr('Do all {length}', { length: list.length })}
+            label={tr(ACCEPT_LABEL[s.kind] ?? msg('Yes'))}
             size="sm"
-            onPress={doAll}
+            onPress={accept}
             loading={busy}
-            testID="suggestions-all"
           />
-          <Button
-            label={tr('One at a time')}
-            size="sm"
-            variant="secondary"
-            onPress={() => setOneAtATime(true)}
-            testID="suggestions-one"
-          />
-          <Button
-            label={tr('Not now')}
-            size="sm"
-            variant="ghost"
-            onPress={dismissAll}
-            testID="suggestions-dismiss-all"
-          />
+          <Button label={tr('Not now')} size="sm" variant="ghost" onPress={dismiss} />
         </View>
       </View>
-    );
-  const dismiss = async () => {
-    qc.setQueryData(
-      qk.suggestions(conversationId),
-      (d: { suggestions: SuggestionView[] } | undefined) =>
-        d ? { suggestions: d.suggestions.filter((x) => x.id !== s.id) } : d,
-    );
-    await endpoints.dismissSuggestion(s.id).catch(() => {});
-    refresh();
-  };
+      {quietLine}
+    </>
+  );
+}
+
+/** What this person's own choices taught about this kind, said with the count (M11). */
+function learnedLine(s: SuggestionView) {
+  const l = learnedOf(s.payload);
+  if (!l) return null;
+  const of = l.accepted + l.dismissed;
   return (
-    <View
-      accessibilityLabel={tr('Suggestion: {title}', { title: s.title })}
-      style={{
-        marginHorizontal: 12,
-        marginBottom: 8,
-        padding: 12,
-        borderRadius: 16,
-        backgroundColor: t.c.surface,
-        borderWidth: 1,
-        borderColor: t.c.border,
-        gap: 8,
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 3 },
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Sparkles size={14} color={t.c.accentStrong} />
-        <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-          {s.payload.source === 'ai' ? tr(AI_LABEL) : tr('Suggestion')}
-          {list.length > 1 ? tr(' · 1 of {length}', { length: list.length }) : ''}
-        </Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <Text variant="bodyStrong">{s.title}</Text>
-        {s.dueAt ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Calendar size={13} color={t.c.textSecondary} />
-            <Text variant="captionStrong" color="textSecondary">
-              {formatDue(s.dueAt, new Date(), timeZone, locale, Boolean(s.payload.dueHasTime))}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-      {s.rationale ? (
-        <Text variant="caption" color="textSecondary" numberOfLines={2}>
-          {s.rationale}
-        </Text>
-      ) : null}
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Button
-          label={tr(ACCEPT_LABEL[s.kind] ?? msg('Yes'))}
-          size="sm"
-          onPress={accept}
-          loading={busy}
-        />
-        <Button label={tr('Not now')} size="sm" variant="ghost" onPress={dismiss} />
-      </View>
-    </View>
+    <Text variant="caption" color="textSecondary" testID="suggestion-learned">
+      {l.lean === 'favoured'
+        ? tr('You took {accepted} of the last {of} like this', { accepted: l.accepted, of })
+        : tr('You passed on {dismissed} of the last {of} like this', {
+            dismissed: l.dismissed,
+            of,
+          })}
+    </Text>
   );
 }

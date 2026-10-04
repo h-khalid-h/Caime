@@ -10,6 +10,7 @@ import { type Insertable, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { SuggestionsTable } from '../db/schema';
 import { asReader, inLanguage, languagesOf } from './i18n';
+import { leanFor } from './learning';
 import type { Copy } from './notify';
 import { personViewsFor } from './people-batch';
 
@@ -90,6 +91,8 @@ export async function createSuggestion(
           typeof s.title === 'string' ? s.title : s.title(),
           typeof s.rationale === 'string' ? s.rationale : s.rationale(),
         ]);
+  // What their own choices on this kind have taught (M11): kept on the row, said in the app.
+  const learned = await leanFor(ctx, s.userId, s.kind, s.subjectUserId);
   const row = await ctx.db
     .insertInto('suggestions')
     .values({
@@ -99,7 +102,7 @@ export async function createSuggestion(
       title,
       rationale,
       confidence: s.confidence,
-      payload: s.payload ?? {},
+      payload: learned ? { ...(s.payload ?? {}), learned } : (s.payload ?? {}),
       subject_user_id: s.subjectUserId ?? null,
       conversation_id: s.conversationId ?? null,
       message_id: s.messageId ?? null,

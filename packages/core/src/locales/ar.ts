@@ -2989,4 +2989,18 @@ export const ar: Catalog = {
   'Last decision: {title}.': 'آخر قرار: {title}.',
   'Next date: {date}.': 'الموعد القادم: {date}.',
   '{n} h': '{n} س',
+  'What you take': 'ما تأخذ به',
+  'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.':
+    'نوع الاقتراحات الذي تواظب على قبوله يُعرض أولًا؛ والذي تواظب على تجاوزه يُوضع جانبًا، مع العدد بجانبه. لا يُخفى شيء، ويُقال السبب. والإيقاف يُبقي كل اقتراح كما هو.',
+  'Learn from what I accept': 'تعلّم مما أقبله',
+  '{n} quieter suggestions you usually pass on · Show': {
+    zero: 'لا اقتراحات أهدأ · عرض',
+    one: 'اقتراح أهدأ واحد تتجاوزه عادةً · عرض',
+    two: 'اقتراحان أهدأ تتجاوزهما عادةً · عرض',
+    few: '{n} اقتراحات أهدأ تتجاوزها عادةً · عرض',
+    many: '{n} اقتراحًا أهدأ تتجاوزها عادةً · عرض',
+    other: '{n} اقتراح أهدأ تتجاوزها عادةً · عرض',
+  },
+  'You took {accepted} of the last {of} like this': 'أخذت بـ{accepted} من آخر {of} مثل هذا',
+  'You passed on {dismissed} of the last {of} like this': 'تجاوزت {dismissed} من آخر {of} مثل هذا',
 };

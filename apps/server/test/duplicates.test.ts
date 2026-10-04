@@ -264,7 +264,10 @@ describe('possible duplicates (PRD §51)', () => {
     const offers2 = (await duplicates(noor)).filter(
       (d) => raes.includes(d.payload.keep) || raes.includes(d.payload.merge),
     );
-    expect(offers2.map((d) => d.payload)).toEqual([{ keep: r.user.id, merge: s.user.id }]);
+    // The pair alone: what Noor's choices taught about duplicates rides on the payload too (M11).
+    expect(offers2.map((d) => ({ keep: d.payload.keep, merge: d.payload.merge }))).toEqual([
+      { keep: r.user.id, merge: s.user.id },
+    ]);
     await noor.post(`/v1/connections/${row(list, p).connectionId}/separate`, {});
     const after = await connections(noor);
     expect(row(after, p)).toMatchObject({ mergedInto: null, also: [] });
@@ -283,7 +286,9 @@ describe('possible duplicates (PRD §51)', () => {
     const u3 = await signup(t, { displayName: 'Mia Stone' });
     await connect(noor, u3);
     const offers = (await duplicates(noor)).filter((x) => x.subjectUserId === u3.user.id);
-    expect(offers.map((x) => x.payload)).toEqual([{ keep: u2.user.id, merge: u3.user.id }]);
+    expect(offers.map((x) => ({ keep: x.payload.keep, merge: x.payload.merge }))).toEqual([
+      { keep: u2.user.id, merge: u3.user.id },
+    ]);
     // Merged under the one still here, it isn't left under the one who's gone.
     await noor.post(`/v1/suggestions/${offers[0].id}/accept`, { keep: u2.user.id });
     const list = await connections(noor);
@@ -304,7 +309,9 @@ describe('possible duplicates (PRD §51)', () => {
     const third = await signup(t, { displayName: 'Sarah Weller' });
     await connect(noor, third);
     const offers = (await duplicates(noor)).filter((d) => d.subjectUserId === third.user.id);
-    expect(offers.map((d) => d.payload)).toEqual([{ keep: old.user.id, merge: third.user.id }]);
+    expect(offers.map((d) => ({ keep: d.payload.keep, merge: d.payload.merge }))).toEqual([
+      { keep: old.user.id, merge: third.user.id },
+    ]);
     expect(offers[0].rationale).toContain('the same name');
   });
 

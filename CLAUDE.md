@@ -614,6 +614,13 @@ These are rules, not preferences.
   bookkeeping. A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
   checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;
   `e2e/anthropic-stub.mjs` answers the "search someone typed" prompt from the words).
+- What a person's choices teach (M11, core `learning.ts`): `createSuggestion` reads their last
+  decisions on the kind (`leanFor`, the same person's first, the kind at large with more) and
+  keeps the lean with its counts on `payload.learned`; the app places by it (`placeByLean`:
+  favoured first, quiet ones in one line, never hidden) and says the count. Rules, never a
+  model; `learnFromChoices` (an account preference, on by default) turns it off, and then
+  nothing is learned or kept. A new kind of suggestion needs nothing; a new way to decide one
+  (beyond accept and dismiss) joins the counts in `leanFor`.
 - Suggestions are accepted through `acceptSuggestion` (`modules/suggestions.ts`), the one path
   the single route, "Do all" (`POST /suggestions/accept`, each id on its own) and tests use. A
   task-like step is undone by `POST /suggestions/:id/undo` only while the task is still exactly

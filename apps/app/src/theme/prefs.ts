@@ -22,6 +22,8 @@ export interface PrefValues {
   holdWhileBusy: boolean;
   /** The interface language (R54): the device's, or one chosen. */
   language: LanguageChoice;
+  /** Suggestions follow what you keep taking and passing on (M11). */
+  learnFromChoices: boolean;
 }
 
 interface PrefsState extends PrefValues {
@@ -36,6 +38,7 @@ export const DEFAULT_PREFS: PrefValues = {
   reduceMotion: false,
   holdWhileBusy: false,
   language: 'auto',
+  learnFromChoices: true,
 };
 
 export const usePrefs = create<PrefsState>()(

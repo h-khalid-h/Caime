@@ -18,7 +18,9 @@ import { qk } from '@/api/keys';
 import { AutomationSheet } from '@/features/settings/AutomationSheet';
 import { RuleFor } from '@/features/settings/RuleFor';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { savePrefs } from '@/features/settings/savePrefs';
 import { useMe } from '@/state/session';
+import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Bookmark, Clock } from '@/ui/icons';
@@ -138,6 +140,7 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
 }
 
 export default function Automations() {
+  const prefs = usePrefs();
   const t = useTheme();
   const qc = useQueryClient();
   const _me = useMe();
@@ -247,6 +250,33 @@ export default function Automations() {
           testID="reminder-add"
           style={reminders.length ? { borderTopWidth: 1, borderTopColor: t.c.border } : undefined}
         />
+      </Group>
+      <Group
+        title={tr('What you take')}
+        footer={tr(
+          'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.',
+        )}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+          }}
+        >
+          <Text variant="bodyStrong" style={{ flex: 1 }}>
+            {tr('Learn from what I accept')}
+          </Text>
+          <Switch
+            value={prefs.learnFromChoices}
+            onValueChange={(v) => savePrefs({ learnFromChoices: v })}
+            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
+            accessibilityLabel={tr('Learn from what I accept')}
+            testID="learn-from-choices"
+          />
+        </View>
       </Group>
       {editing ? (
         <AutomationSheet

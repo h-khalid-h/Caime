@@ -441,6 +441,8 @@ export const Preferences = z
     reduceMotion: z.boolean().optional(),
     /** In an agreed meeting or appointment, hold work messages until it ends (R51). */
     holdWhileBusy: z.boolean().optional(),
+    /** Suggestions follow what this person keeps taking and passing on (M11); on by default. */
+    learnFromChoices: z.boolean().optional(),
     /** The interface language (R54): the device's, or one chosen. */
     language: z.enum(['auto', 'en', 'ar']).optional(),
     /**
