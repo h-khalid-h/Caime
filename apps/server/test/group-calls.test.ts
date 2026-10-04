@@ -1080,10 +1080,17 @@ describe('group calls (PRD §47)', () => {
     const call = (await start(noor)).json().call;
     const joined = (await join(sam, call.id, 'sam-phone-1')).json().call;
     expect(joined.rev).toBe(1);
+    // What the join told everyone has landed before the slate is cleaned (under the full
+    // suite's load a late one once counted as the decline's).
+    await t.ctx.flush();
+    await sleep(100);
     heard.length = 0;
     // Omar says no: the call's revision stays, and only Omar hears it.
     await decline(omar, call.id);
-    await sleep(150);
+    await t.ctx.flush();
+    await expect
+      .poll(() => events('groupcall.updated').length, { timeout: 3000 })
+      .toBeGreaterThan(0);
     expect(events('groupcall.updated').map((m) => m.userIds[0])).toEqual([omar.user.id]);
     expect((await alive(sam, call.id, 'sam-phone-1')).json().call.rev).toBe(1);
     await leave(sam, call.id, 'sam-phone-1');

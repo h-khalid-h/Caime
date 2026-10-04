@@ -630,6 +630,15 @@ outperforming the alternatives is reach and operations. In the order the review 
 
 ## M10 — The first customers (docs/REVIEW-2026-10.md)
 
+Status 2026-10-04: every build item of the review's plan is done and verified (Arabic across
+the app, the server's words, the public site and every public page; the organization's door;
+the lawyer's side of an organization's data; the first screen painted by the server; the P2
+polish), each on production. What remains is the owner's (⛔ below: the contact address and
+SMTP, a bucket, an uptime check, the phone accounts and the first device build, the lawyer's
+review of privacy, terms and the data processing agreement, Stripe's currencies and tax, a Meta
+business account, a native speaker's review of the Arabic) and the measurements that need a
+phone. Nothing in the plan is left for this side to build before a first customer is shown it.
+
 The product reviewed whole again on 2026-10-01: M9's build work is done; what stands between
 Caime and its first customers (organizations, R53) is language, the phone, a handful of the
 owner's accounts and settings, and what a clinic's lawyer needs. In the order the review gives:
@@ -661,8 +670,13 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       hreflang alternates with the English as canonical, the masthead offering the other
       language in its own name, and a reader who switched kept switched on the site's links):
       its 248 strings are the server's own catalog (`apps/server/src/locales/ar-site.ts`,
-      `site-i18n.test.ts`), so the app's chunk didn't grow; `e2e/site.spec.ts`. Still to do:
-      mail stays English (7-bit, R48); the privacy, terms and help pages stay English
+      `site-i18n.test.ts`), so the app's chunk didn't grow; `e2e/site.spec.ts`. Every other
+      page the server paints (a person's, an organization's door, an invitation, the 404)
+      follows the browser's language too, and what the server stores for one person (a
+      suggestion's words) is written in that person's language. Verified on production
+      (2026-10-04): `/business?lang=ar`, `/sign-in` and `/o/macrocare` for an Arabic browser.
+      Still English: mail (7-bit, R48); the privacy, terms and help pages (⛔ the lawyer's text
+      first); the pronoun suggestions (English pronouns)
 - [x] The organization's own door (R53): its public page's "Message … on Caime" is the door
       (`/o/<handle>?write`, `doorPath` in `lib/public-pages.ts`), so a visitor signs up and
       lands in the conversation as an invite's guest does (onboarding's last step names it,
