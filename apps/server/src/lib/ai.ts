@@ -10,6 +10,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { AGENT_ACTIONS, type AgentAction, type AiTone, type RewriteStyle } from '@caime/core';
+import { FILE_KINDS, SEARCH_SCOPES, type SearchUnderstanding } from '@caime/core/search';
+import { SPHERES } from '@caime/core/taxonomy';
 import { z } from 'zod';
 import type { Config } from '../config';
 
@@ -96,6 +98,8 @@ export interface AiAssist {
   }): Promise<AiResult<string>>;
   findActions(input: { transcript: Transcript; today: string }): Promise<AiResult<FoundItem[]>>;
   supportAgent(input: AgentInput): Promise<AiResult<AgentReply>>;
+  /** What a search typed as a sentence means, in the fields the rules fill (R17, PRD §25). */
+  understandSearch(input: { query: string }): Promise<AiResult<SearchUnderstanding>>;
 }
 
 /** "ar" → "Arabic", "en-US" → "English (United States)"; the tag itself when unknown. */
@@ -170,6 +174,29 @@ const AgentOutput = z.object({
   message: z.string(),
   bookAt: z.string().nullable(),
   bookFor: z.string().nullable(),
+});
+
+/** How a search is to be read: the one structure the rules fill, as the model may fill it. */
+const SEARCH_SYSTEM = `You turn a search someone typed into Caime, a messaging app, into one structured query. Caime searches their own conversations: people they know, messages, files, links, tasks (things asked of them or that they asked of others), what they're waiting for from others, decisions recorded, and conversation contexts (projects, topics).
+Fill the fields from the words alone, in the language they wrote in:
+- scope: one of ${SEARCH_SCOPES.join(', ')}. "waiting" is what they wait for from someone (a promise made to them); "tasks" is what was asked; "decisions" what was decided; "contexts" a project or topic; "files" or "links" when they ask for those; "messages" for what someone said about something; "people" for who; "all" when unsure.
+- text: the words to match (the subject), or an empty string when the person and scope say it all.
+- person: the person named, as written, or null.
+- sphere: one of ${SPHERES.join(', ')} when they name a kind of relationship ("my customers", "colleagues"), else null; role: a role within it when named ("manager"), else null.
+- fileKind: one of ${FILE_KINDS.join(', ')} when they ask for a kind of file, else null.
+- direction: for tasks, "asked_me" when others asked them, "i_asked" when they asked others, else null.
+- interpretation: how you read it, in at most ten words, in their language, as a label ("What Sam promised you"), never a question back.
+Never invent a person or a subject that isn't in the words.`;
+
+const Understood = z.object({
+  scope: z.string(),
+  text: z.string(),
+  person: z.string().nullable(),
+  sphere: z.string().nullable(),
+  role: z.string().nullable(),
+  fileKind: z.string().nullable(),
+  direction: z.string().nullable(),
+  interpretation: z.string(),
 });
 
 const Found = z.object({
@@ -319,6 +346,38 @@ export function createAiAssist(config: Config): AiAssist | null {
         .filter((i) => i.title.length > 0)
         .slice(0, 8);
       return { value: items, usage };
+    },
+    async understandSearch({ query }) {
+      const reply = await client.beta.messages
+        .parse({
+          ...shared,
+          model: light,
+          max_tokens: 512,
+          output_config: { effort: 'low', format: betaZodOutputFormat(Understood) },
+          system: SEARCH_SYSTEM,
+          messages: [{ role: 'user', content: `<search>\n${query}\n</search>` }],
+        })
+        .catch((err: unknown) => {
+          throw failureOf(err);
+        });
+      const usage = usageOf(reply);
+      if (reply.stop_reason === 'refusal') throw new AiError('declined', undefined, usage);
+      if (reply.stop_reason === 'max_tokens') throw new AiError('unavailable', 'max_tokens', usage);
+      const u = reply.parsed_output;
+      if (!u) throw new AiError('unavailable', 'unparsed', usage);
+      return {
+        value: {
+          scope: u.scope as SearchUnderstanding['scope'],
+          text: u.text,
+          person: u.person,
+          sphere: u.sphere,
+          role: u.role,
+          fileKind: u.fileKind as SearchUnderstanding['fileKind'],
+          direction: u.direction as SearchUnderstanding['direction'],
+          interpretation: u.interpretation,
+        },
+        usage,
+      };
     },
     async supportAgent({ orgName, agentName, knowledge, conversation, introduced, today, slots }) {
       const reply = await client.beta.messages

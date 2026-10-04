@@ -506,3 +506,74 @@ describe('AI assist and plans (PRD §84, R23)', () => {
     expect((await rewrite()).statusCode).toBe(403);
   });
 });
+
+describe('natural-language search (R17, PRD §25)', () => {
+  const understood = (u: Record<string, unknown>) => message(JSON.stringify(u));
+  const searchCalls = () =>
+    requests.filter((r) => JSON.stringify(r.body.system ?? '').includes('search someone typed'));
+
+  it('a sentence the rules can’t read is read by the model, labelled, and run as a query', async () => {
+    await noor.patch('/v1/me', { aiEnabled: true });
+    await say(sam, convo, 'I will send you the venue contract on Friday.');
+    await t.ctx.flush();
+    const before = searchCalls().length;
+    replies.push(
+      understood({
+        scope: 'waiting',
+        text: '',
+        person: 'Sam',
+        sphere: null,
+        role: null,
+        fileKind: null,
+        direction: null,
+        interpretation: 'What Sam promised you',
+      }),
+    );
+    const res = await noor.get('/v1/search?q=anything%20Sam%20promised%20to%20send%20me');
+    expect(res.understoodBy).toBe('ai');
+    expect(res.label).toBe('Suggested by Caime');
+    expect(res.interpretation).toBe('What Sam promised you');
+    expect(res.query).toMatchObject({ scope: 'waiting', person: 'Sam' });
+    // The model saw the words typed and nothing else, on the light model.
+    const call = searchCalls().at(-1)!;
+    expect(call.body.model).toBe('claude-test-light');
+    expect(JSON.stringify(call.body.messages)).toContain('anything Sam promised to send me');
+    expect(JSON.stringify(call.body.messages)).not.toContain('venue contract');
+    expect(searchCalls().length).toBe(before + 1);
+    // Typed again: the reading is kept, so nothing more is asked.
+    const again = await noor.get('/v1/search?q=anything%20Sam%20promised%20to%20send%20me');
+    expect(again.understoodBy).toBe('ai');
+    expect(searchCalls().length).toBe(before + 1);
+    await t.ctx.flush();
+    const runs = await t.ctx.db
+      .selectFrom('ai_runs')
+      .select(['feature', 'outcome', 'model'])
+      .where('user_id', '=', noor.user.id)
+      .where('feature', '=', 'search')
+      .execute();
+    expect(runs).toEqual([{ feature: 'search', outcome: 'ok', model: 'claude-opus-5' }]);
+  });
+
+  it('the rules’ reading stands for a term, for a person with AI off, and when the model can’t', async () => {
+    const before = searchCalls().length;
+    // A term, or a shape the rules read: never the model.
+    expect((await noor.get('/v1/search?q=contract')).understoodBy).toBe('rules');
+    expect((await noor.get('/v1/search?q=PDFs%20from%20Sam')).understoodBy).toBe('rules');
+    expect(searchCalls().length).toBe(before);
+    // AI off: the text match, no call.
+    const plain = await sam.get('/v1/search?q=anything%20Noor%20promised%20to%20send%20me');
+    expect(plain.understoodBy).toBe('rules');
+    expect(plain.label).toBeNull();
+    expect(searchCalls().length).toBe(before);
+    // The model declines: the text match, no error.
+    replies.push(refusal());
+    const declined = await noor.get(
+      '/v1/search?q=show%20me%20everything%20Sam%20decided%20last%20week',
+    );
+    expect(declined.understoodBy).toBe('rules');
+    expect(declined.interpretation).toBe(
+      'Everything matching “show me everything Sam decided last week”',
+    );
+    expect(searchCalls().length).toBe(before + 1);
+  });
+});

@@ -132,6 +132,25 @@ function answer(body) {
     const intro = content.includes('begin by saying') ? `Hi, I’m ${org}’s AI agent. ` : '';
     return say('answer', `${intro}${best.sentence}`);
   }
+  if (system.includes('search someone typed')) {
+    calls.push('search');
+    const typed = between(content, '<search>', '</search>');
+    // "anything Alex promised me" → what Alex owes; otherwise a message search for the words.
+    const who = /\b([A-Z][a-z]+)\b/.exec(typed)?.[1] ?? null;
+    const promised = /promis|owe|waiting/i.test(typed);
+    return reply(
+      JSON.stringify({
+        scope: promised ? 'waiting' : 'messages',
+        text: promised ? '' : typed.replace(/^(what|anything|everything)\s+/i, ''),
+        person: who,
+        sphere: null,
+        role: null,
+        fileKind: null,
+        direction: null,
+        interpretation: promised && who ? `What ${who} promised you` : `Messages about “${typed}”`,
+      }),
+    );
+  }
   calls.push('other');
   return reply('OK');
 }

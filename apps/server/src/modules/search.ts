@@ -5,22 +5,31 @@
 
 import type { SearchResponse, SearchResults } from '@caime/core';
 import {
+  AI_LABEL,
+  fromUnderstanding,
+  isPlainText,
+  looksLikeSentence,
   MATCH_END,
   MATCH_START,
   type ParsedQuery,
   parseSearchQuery,
   SearchOutcomeBody,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { runAi } from '../lib/ai-run';
 import { maskId, masksFor } from '../lib/business';
 import { titleWithGroup } from '../lib/conversations';
+import { AppError } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { fileView } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
+import { assertAiAllowance } from '../lib/plans';
 import { relationshipView } from '../lib/relations';
+import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
@@ -438,7 +447,59 @@ export async function runSearch(
     }));
   }
 
-  return { query: parsed, interpretation: parsed.interpretation, results };
+  return {
+    query: parsed,
+    interpretation: parsed.interpretation,
+    results,
+    understoodBy: 'rules',
+    label: null,
+  };
+}
+
+/** How long a model's reading of one person's query is kept: retyping it costs nothing more. */
+const UNDERSTOOD_MS = 10 * 60_000;
+const UNDERSTOOD_MAX = 5_000;
+const understood = new Map<string, { parsed: ParsedQuery; until: number }>();
+
+/**
+ * Natural-language search (R17, PRD §25): when the rules understood nothing of a query that
+ * reads like a sentence, and the person has AI assist on (an adult, within their plan's
+ * allowance, a server with a provider), a model reads it into the same structure the rules
+ * fill, which then runs as any query does. Anything that stops that (AI off, out of allowance,
+ * the model busy or declining) falls back to the text match, silently: search always answers.
+ * The model sees the words typed and nothing else; a reading is kept ten minutes per person.
+ */
+async function understandWithAi(
+  ctx: AppContext,
+  userId: string,
+  parsed: ParsedQuery,
+): Promise<ParsedQuery | null> {
+  const ai = ctx.ai;
+  if (!ai || !isPlainText(parsed) || !looksLikeSentence(parsed.raw)) return null;
+  const key = `${userId}:${parsed.raw.trim().toLocaleLowerCase()}`;
+  const hit = understood.get(key);
+  if (hit && hit.until > Date.now()) return hit.parsed;
+  const me = await ctx.db
+    .selectFrom('users')
+    .select(['ai_enabled', 'birth_date', 'time_zone'])
+    .where('id', '=', userId)
+    .executeTakeFirst();
+  if (!me?.ai_enabled || minorOf(me, ctx.now())) return null;
+  try {
+    await assertAiAllowance(ctx, userId);
+    const reading = await runAi(ctx, 'search', userId, () =>
+      ai.understandSearch({ query: parsed.raw }),
+    );
+    const result = fromUnderstanding(parsed.raw, reading);
+    if (understood.size >= UNDERSTOOD_MAX)
+      understood.delete(understood.keys().next().value as string);
+    understood.set(key, { parsed: result, until: Date.now() + UNDERSTOOD_MS });
+    return result;
+  } catch (err) {
+    // Out of allowance, or the model couldn't: the rules' reading stands.
+    if (err instanceof AppError) return null;
+    throw err;
+  }
 }
 
 export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -464,6 +525,9 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
       req.query,
     );
     ctx.limiter.hit(`search:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-    return runSearch(ctx, auth.userId, parseSearchQuery(q), limit);
+    const rules = parseSearchQuery(q);
+    const read = await understandWithAi(ctx, auth.userId, rules);
+    const response = await runSearch(ctx, auth.userId, read ?? rules, limit);
+    return read ? { ...response, understoodBy: 'ai', label: tr(AI_LABEL) } : response;
   });
 }

@@ -742,6 +742,36 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   left/right styles beside 26 logical. Not done: a sign-up on production, a load test (unchanged
   paths since 2026-09-30), a phone
 
+## M11 — Intelligence (R17 and PRD §42: understand, remember, predict)
+
+What Caime infers is rules you can read, in core, the same on every device, and a model only
+where a person asked (R12, R17). This milestone takes the model to the places R17 named and the
+plan hadn't reached, in the order people will ask for them.
+
+- [x] Natural-language search (R17, PRD §25): a query the rules understood nothing of and that
+      reads like a sentence ("anything Sam promised to send me", "ماذا قال سامي عن العقد") is
+      read by the model into the very structure the rules fill (`SearchUnderstanding`,
+      `fromUnderstanding` in core `search.ts`: every value checked against the taxonomy and the
+      scope and file-kind lists, so the model widens what's understood and never what's
+      searched), then runs as any query does. Only for a person with AI assist on, an adult,
+      within their plan's allowance; the model sees the words typed and nothing else, on the
+      light model; one reading is kept ten minutes per person and query; anything that stops it
+      (AI off, no allowance, a refusal, the model busy) falls back to the text match without a
+      word. The response says who read it (`understoodBy`, `label`) and the app shows the
+      reading beside "Suggested by Caime". Every call is one `ai_runs` row (`feature: search`),
+      through the one `runAi` the AI routes use. `ai.test.ts`, `search-kits-misc.test.ts`,
+      `e2e/around-the-conversation.spec.ts`.
+- [ ] A learning loop on suggestions: what a person keeps accepting is offered more readily
+      and what they dismiss less, by kind and relationship, with the reason shown ("you've
+      accepted 8 of 10 reminders from Sarah"). Rules, not a model; reversible; never silent.
+- [ ] Confidence said in one line on every suggestion (the rationale carries it internally).
+- [ ] Arabic depth in the message intelligence: requests, decisions and amounts in Egyptian,
+      Gulf and Levantine phrasing, with the same tests the English has.
+- [ ] Memory across a relationship: what was decided and promised with one person across
+      their conversations, in their profile's "and you" block.
+- [ ] ⛔ Voice notes transcribed and searchable, call summaries with decisions and actions
+      (PRD §46–47): a speech-to-text provider, the owner's choice (R52).
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -1638,3 +1668,8 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   Notifications and priorities, People), the scheme the device's with nothing chosen in the
   app, and fails on a console error. Read through once: contrast, chips, cards, bubbles and the
   suggestion card hold in dark; nothing to fix.
+- 2026-10-04 — M11, natural-language search: a sentence the rules can't read is read by the
+  model into the rules' own structure and run (core `isPlainText`, `looksLikeSentence`,
+  `fromUnderstanding`; server `understandWithAi` in `modules/search.ts`, `understandSearch` in
+  `lib/ai.ts`, the shared `lib/ai-run.ts`), for a person with AI assist on, labelled in the app.
+  Budget 442.6 KB. The E2E stand-in answers the search prompt from the words.

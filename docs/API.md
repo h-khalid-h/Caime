@@ -151,7 +151,7 @@ it sends shows "via" the token's name.
 | Permission | Route | What it does |
 | --- | --- | --- |
 | `profile:read` | `GET /v1/me` | Who it acts for: id, handle, name, avatar, time zone, locale (no email, privacy or plan) |
-| `messages:read` | `GET /v1/inbox`, `GET /v1/conversations/:id`, `GET /v1/conversations/:id/messages`, `GET /v1/search?q=` | Their inbox, conversations and search |
+| `messages:read` | `GET /v1/inbox`, `GET /v1/conversations/:id`, `GET /v1/conversations/:id/messages`, `GET /v1/search?q=` | Their inbox, conversations and search. A search's response says who read the query (`understoodBy`: `rules`, or `ai` when the person has AI assist on and the words needed a model, with `label` to show beside the interpretation) |
 | `messages:write` | `POST /v1/conversations/:id/messages` | Send as them: `{ "clientId": "<uuid>", "body": "…" }` |
 | `actions:read` | `GET /v1/tasks` | Their actions and what they wait for |
 | `actions:write` | `POST /v1/tasks`, `PATCH /v1/tasks/:id` | Add, change and finish actions. Send a `clientId` of your own (8 to 64 characters) with a new one and sending it again returns the same action |

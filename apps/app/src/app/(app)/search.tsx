@@ -1,3 +1,4 @@
+import { AI_LABEL } from '@caime/core/assist';
 import { formatListTime, snippetParts } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import { parseSearchQuery } from '@caime/core/search';
@@ -139,6 +140,10 @@ export default function Search() {
           {offline ? (
             <Text variant="caption" color="warning" testID="search-offline">
               {tr('Offline. Showing what’s on this device.')}
+            </Text>
+          ) : q.data?.understoodBy === 'ai' && q.data.query.raw === debounced ? (
+            <Text variant="caption" color="textSecondary" testID="search-understood">
+              {q.data.interpretation} · {q.data.label ?? tr(AI_LABEL)}
             </Text>
           ) : interpretation ? (
             <Text variant="caption" color="textSecondary">

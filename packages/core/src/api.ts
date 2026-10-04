@@ -1509,6 +1509,12 @@ export interface SearchResponse {
   query: ParsedQuery;
   interpretation: ParsedQuery['interpretation'];
   results: SearchResults;
+  /**
+   * Who read the query: the rules, or a model when they understood nothing of a sentence and
+   * the person has AI assist on (R17). With `ai`, `label` says so beside the interpretation.
+   */
+  understoodBy: 'rules' | 'ai';
+  label: string | null;
 }
 
 // --- Account --------------------------------------------------------------------------------

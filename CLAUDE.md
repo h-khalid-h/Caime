@@ -603,6 +603,17 @@ These are rules, not preferences.
   reads message bodies for meaning (effects, AI, attention) may leave those alone. The app shows
   "Imported ·" from that field and offers the sheet (`features/import/`, imported statically by
   the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are.
+- Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`) and, only when
+  they understood nothing of a query that `looksLikeSentence`, asks the model to fill the same
+  structure (`understandWithAi` in `modules/search.ts`, `ai.understandSearch`), for a person with
+  AI assist on and allowance left; `fromUnderstanding` (core) checks every value the model
+  returns against the taxonomy and the lists, the reading is kept ten minutes per person and
+  query, and any failure falls back to the rules without an error. The response says who read it
+  (`understoodBy`, `label`). Every model call anywhere goes through `runAi` (`lib/ai-run.ts`),
+  which records the `ai_runs` row and the metrics: a new AI feature uses it, never its own
+  bookkeeping. A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
+  checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;
+  `e2e/anthropic-stub.mjs` answers the "search someone typed" prompt from the words).
 - Suggestions are accepted through `acceptSuggestion` (`modules/suggestions.ts`), the one path
   the single route, "Do all" (`POST /suggestions/accept`, each id on its own) and tests use. A
   task-like step is undone by `POST /suggestions/:id/undo` only while the task is still exactly

@@ -27,7 +27,6 @@ import {
   messagePreview,
   resolvePolicy,
   systemText,
-  uuidv7,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
@@ -35,7 +34,8 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
-import { AiError, type AiResult, type AiUsage, languageName, type Transcript } from '../lib/ai';
+import { type AiResult, languageName, type Transcript } from '../lib/ai';
+import { runAi } from '../lib/ai-run';
 import { maskFor, maskId, maskPayload } from '../lib/business';
 import { AppError, notFound } from '../lib/errors';
 import { assertAiAllowance } from '../lib/plans';
@@ -140,58 +140,9 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
     return found;
   }
 
-  /**
-   * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome; never the
-   * text), and a failure turned into something the person can act on.
-   */
-  async function run<T>(
-    feature: string,
-    userId: string,
-    work: () => Promise<AiResult<T>>,
-  ): Promise<T> {
-    const started = Date.now();
-    const record = (outcome: string, usage: AiUsage | null) => {
-      ctx.metrics.ai.inc({ feature, outcome });
-      ctx.metrics.aiSeconds.observe({ feature }, (Date.now() - started) / 1000);
-      if (usage) {
-        ctx.metrics.aiTokens.inc({ feature, direction: 'input' }, usage.inputTokens);
-        ctx.metrics.aiTokens.inc({ feature, direction: 'output' }, usage.outputTokens);
-      }
-      ctx.defer('ai run', () =>
-        ctx.db
-          .insertInto('ai_runs')
-          .values({
-            id: uuidv7(),
-            user_id: userId,
-            feature,
-            provider: 'anthropic',
-            model: usage?.model ?? ctx.ai?.model ?? null,
-            input_tokens: usage?.inputTokens ?? null,
-            output_tokens: usage?.outputTokens ?? null,
-            latency_ms: Date.now() - started,
-            outcome,
-          })
-          .execute(),
-      );
-    };
-    try {
-      const result = await work();
-      record('ok', result.usage);
-      return result.value;
-    } catch (err) {
-      if (!(err instanceof AiError)) {
-        record('error', null);
-        throw err;
-      }
-      record(err.reason, err.usage);
-      ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
-      if (err.reason === 'declined')
-        throw new AppError(422, 'ai_declined', 'Caime can’t help with this one.');
-      if (err.reason === 'busy')
-        throw new AppError(503, 'ai_busy', 'AI assist is busy. Try again in a moment.');
-      throw new AppError(502, 'ai_failed', 'AI assist didn’t work this time. Try again.');
-    }
-  }
+  /** One model call, recorded, and a failure turned into something the person can act on. */
+  const run = <T>(feature: string, userId: string, work: () => Promise<AiResult<T>>) =>
+    runAi(ctx, feature, userId, work);
 
   /** The viewer's tone for this conversation, from their relationship policy (PRD §39). */
   async function toneFor(userId: string, conversation: Conversation): Promise<AiTone> {

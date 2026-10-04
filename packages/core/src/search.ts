@@ -6,7 +6,7 @@
  */
 
 import { tr } from './i18n';
-import { relationshipFromWord, type Sphere } from './taxonomy';
+import { findRole, relationshipFromWord, SPHERES, type Sphere } from './taxonomy';
 
 export const SEARCH_SCOPES = [
   'all',
@@ -21,7 +21,8 @@ export const SEARCH_SCOPES = [
 ] as const;
 export type SearchScope = (typeof SEARCH_SCOPES)[number];
 
-export type FileKind = 'image' | 'video' | 'audio' | 'document' | 'pdf';
+export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'pdf'] as const;
+export type FileKind = (typeof FILE_KINDS)[number];
 
 export interface ParsedQuery {
   raw: string;
@@ -218,4 +219,74 @@ export function parseSearchQuery(raw: string): ParsedQuery {
   }
 
   return { ...out, interpretation: tr('Everything matching “{q}”', { q }) };
+}
+
+/** The rules recognised nothing in it: a plain text match across everything. */
+export function isPlainText(parsed: ParsedQuery): boolean {
+  return (
+    parsed.scope === 'all' &&
+    !parsed.person &&
+    !parsed.relationship &&
+    !parsed.fileKind &&
+    !parsed.direction
+  );
+}
+
+const QUESTION_START =
+  /^(what|when|who|whom|which|where|did|does|do|has|have|had|is|are|was|were|show|find|list|anything|everything|all|any)\b/i;
+const ARABIC_QUESTION = /^(ماذا|متى|من|هل|أين|اين|ما|كل|اي|أي|وريني|ابحث)\b/u;
+
+/**
+ * Reads like a question or a sentence rather than a term: three words or more, or a question
+ * word first. Only these are worth a model's reading when the rules understood nothing (R17);
+ * a name or a word is a text match and stays one.
+ */
+export function looksLikeSentence(raw: string): boolean {
+  const q = clean(raw);
+  if (!q) return false;
+  const words = q.split(/\s+/).filter(Boolean);
+  return words.length >= 3 || QUESTION_START.test(q) || ARABIC_QUESTION.test(q);
+}
+
+/** What a model may say a search means: the same fields the rules fill, as plain values. */
+export interface SearchUnderstanding {
+  scope: SearchScope;
+  text: string;
+  person: string | null;
+  sphere: string | null;
+  role: string | null;
+  fileKind: FileKind | null;
+  direction: 'asked_me' | 'i_asked' | null;
+  interpretation: string;
+}
+
+const clip = (s: string, max: number) => {
+  const one = s.replace(/\s+/g, ' ').trim();
+  return one.length > max ? `${one.slice(0, max - 1).trimEnd()}…` : one;
+};
+
+/**
+ * A model's understanding as a query the server runs: every value checked against what Caime
+ * knows (a sphere and role from the taxonomy, a scope and file kind from the lists), anything
+ * else dropped, so the model can widen what's understood but never what's searched.
+ */
+export function fromUnderstanding(raw: string, u: SearchUnderstanding): ParsedQuery {
+  const sphere = (SPHERES as readonly string[]).includes(u.sphere ?? '')
+    ? (u.sphere as Sphere)
+    : null;
+  const role = sphere && u.role && findRole(sphere, u.role) ? u.role : undefined;
+  const scope = (SEARCH_SCOPES as readonly string[]).includes(u.scope) ? u.scope : 'all';
+  const fileKind = (FILE_KINDS as readonly string[]).includes(u.fileKind ?? '') ? u.fileKind : null;
+  const interpretation =
+    clip(u.interpretation, 120) || tr('Everything matching “{q}”', { q: clean(raw) });
+  return {
+    raw,
+    scope,
+    text: clip(u.text, 200),
+    person: u.person ? clip(u.person, 80) : null,
+    relationship: sphere ? (role ? { sphere, role } : { sphere }) : null,
+    fileKind,
+    direction: u.direction === 'asked_me' || u.direction === 'i_asked' ? u.direction : null,
+    interpretation,
+  };
 }

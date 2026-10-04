@@ -1,0 +1,63 @@
+/**
+ * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome; never the text),
+ * counted in the metrics, and a failure turned into something the person can act on. The AI
+ * routes and natural-language search share it, so every call is counted the same way.
+ */
+import { uuidv7 } from '@caime/core';
+import type { AppContext } from '../context';
+import { AiError, type AiResult, type AiUsage } from './ai';
+import { AppError } from './errors';
+
+/**
+ * One model call, recorded in `ai_runs` (feature, model, tokens, time, outcome; never the
+ * text), and a failure turned into something the person can act on.
+ */
+export async function runAi<T>(
+  ctx: AppContext,
+  feature: string,
+  userId: string,
+  work: () => Promise<AiResult<T>>,
+): Promise<T> {
+  const started = Date.now();
+  const record = (outcome: string, usage: AiUsage | null) => {
+    ctx.metrics.ai.inc({ feature, outcome });
+    ctx.metrics.aiSeconds.observe({ feature }, (Date.now() - started) / 1000);
+    if (usage) {
+      ctx.metrics.aiTokens.inc({ feature, direction: 'input' }, usage.inputTokens);
+      ctx.metrics.aiTokens.inc({ feature, direction: 'output' }, usage.outputTokens);
+    }
+    ctx.defer('ai run', () =>
+      ctx.db
+        .insertInto('ai_runs')
+        .values({
+          id: uuidv7(),
+          user_id: userId,
+          feature,
+          provider: 'anthropic',
+          model: usage?.model ?? ctx.ai?.model ?? null,
+          input_tokens: usage?.inputTokens ?? null,
+          output_tokens: usage?.outputTokens ?? null,
+          latency_ms: Date.now() - started,
+          outcome,
+        })
+        .execute(),
+    );
+  };
+  try {
+    const result = await work();
+    record('ok', result.usage);
+    return result.value;
+  } catch (err) {
+    if (!(err instanceof AiError)) {
+      record('error', null);
+      throw err;
+    }
+    record(err.reason, err.usage);
+    ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
+    if (err.reason === 'declined')
+      throw new AppError(422, 'ai_declined', 'Caime can’t help with this one.');
+    if (err.reason === 'busy')
+      throw new AppError(503, 'ai_busy', 'AI assist is busy. Try again in a moment.');
+    throw new AppError(502, 'ai_failed', 'AI assist didn’t work this time. Try again.');
+  }
+}

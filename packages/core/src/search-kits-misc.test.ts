@@ -10,7 +10,13 @@ import {
 } from './format';
 import { isUuid, uuidv7, uuidv7Time } from './ids';
 import { kitsFor } from './kits';
-import { parseSearchQuery } from './search';
+import {
+  fromUnderstanding,
+  isPlainText,
+  looksLikeSentence,
+  parseSearchQuery,
+  type SearchUnderstanding,
+} from './search';
 import { relationshipFit, relationshipLabel, rolesForPicker } from './taxonomy';
 import { trustFor } from './trust';
 
@@ -188,5 +194,66 @@ describe('ids', () => {
     expect([...ids].sort()).toEqual(ids);
     expect(uuidv7Time(ids[0]!)).toBe(t);
     expect(uuidv7(t + 1) > ids[ids.length - 1]!).toBe(true);
+  });
+});
+
+describe('natural-language search (R17): what a model may read, and how far', () => {
+  it('a sentence the rules understood nothing of is one; a name or a term is not', () => {
+    expect(isPlainText(parseSearchQuery('anything Sam promised to send me'))).toBe(true);
+    expect(looksLikeSentence('anything Sam promised to send me')).toBe(true);
+    expect(looksLikeSentence('what Sam owes')).toBe(true);
+    expect(looksLikeSentence('ماذا قال سامي عن العقد')).toBe(true);
+    expect(looksLikeSentence('Sarah')).toBe(false);
+    expect(looksLikeSentence('proposal')).toBe(false);
+    expect(looksLikeSentence('venue contract')).toBe(false);
+    // What the rules read is theirs, however long.
+    expect(isPlainText(parseSearchQuery('what did Sarah say about the migration'))).toBe(false);
+    expect(isPlainText(parseSearchQuery('PDFs from Sarah'))).toBe(false);
+  });
+
+  it('a model’s reading becomes a query only within what Caime knows', () => {
+    const q = fromUnderstanding('anything Sam promised to send me', {
+      scope: 'waiting',
+      text: '',
+      person: 'Sam',
+      sphere: null,
+      role: null,
+      fileKind: null,
+      direction: null,
+      interpretation: 'What Sam promised you',
+    });
+    expect(q).toMatchObject({ scope: 'waiting', person: 'Sam', text: '', relationship: null });
+    expect(q.interpretation).toBe('What Sam promised you');
+    // An unknown scope, sphere, role or file kind is dropped, never run.
+    // What a model may answer isn't typed: whatever it says is checked here.
+    const loose = fromUnderstanding('my dentists who sent pdfs', {
+      scope: 'everything',
+      text: 'x'.repeat(400),
+      person: null,
+      sphere: 'dentists',
+      role: 'boss',
+      fileKind: 'spreadsheet',
+      direction: 'sideways',
+      interpretation: '',
+    } as unknown as SearchUnderstanding);
+    expect(loose.scope).toBe('all');
+    expect(loose.relationship).toBeNull();
+    expect(loose.fileKind).toBeNull();
+    expect(loose.direction).toBeNull();
+    expect(loose.text.length).toBeLessThanOrEqual(200);
+    expect(loose.interpretation).toBe('Everything matching “my dentists who sent pdfs”');
+    // A sphere Caime has, with a role it knows, is kept; a role it doesn't is dropped.
+    expect(
+      fromUnderstanding('x', {
+        scope: 'people',
+        text: '',
+        person: null,
+        sphere: 'work',
+        role: 'manager',
+        fileKind: null,
+        direction: null,
+        interpretation: 'Your managers',
+      }).relationship,
+    ).toEqual({ sphere: 'work', role: 'manager' });
   });
 });

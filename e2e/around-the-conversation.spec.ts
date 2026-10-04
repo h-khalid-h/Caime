@@ -1965,6 +1965,27 @@ test.describe
       expect(errors).toEqual([]);
     });
 
+    test('a sentence typed into search is read by the model, labelled, and runs (R17)', async () => {
+      const { page } = noor;
+      await page.request.delete(AI_STUB_REQUESTS);
+      await page.goto('/search');
+      await page.getByTestId('search-input').fill('anything Alex promised me');
+      // The model's reading, said to be its, and the results it leads to.
+      await expect(page.getByTestId('search-understood')).toHaveText(
+        'What Alex promised you · Suggested by Caime',
+      );
+      const calls = (await (await page.request.get(AI_STUB_REQUESTS)).json()) as {
+        calls: string[];
+      };
+      expect(calls.calls).toEqual(['search']);
+      // A term is the rules' alone: nothing more reaches the model.
+      await page.getByTestId('search-input').fill('contract');
+      await expect(visible(page, 'Everything matching “contract”')).toBeVisible();
+      expect(
+        ((await (await page.request.get(AI_STUB_REQUESTS)).json()) as { calls: string[] }).calls,
+      ).toEqual(['search']);
+    });
+
     test('a checklist both of them tick, and a place shared where it fits', async () => {
       const { page, errors } = noor;
       await page.goto(`/c/${convo}`);
