@@ -1,7 +1,9 @@
 // The English strings the interface is written in (R54): every tr('…'), trn(n, '…', '…') and
-// msg('…') in the app and in core. The catalog test compares them with a language's catalog;
-// `node scripts/i18n-keys.mjs [missing|stale] <lang>` prints what a catalog lacks or no longer
-// needs, for whoever translates.
+// msg('…') in the app, in core and on the server. The catalog tests compare them with a
+// language's catalogs: a string the public site alone says (SITE_FILES) belongs to the server's
+// `apps/server/src/locales/<lang>-site.ts`, which the app never downloads; every other string to
+// core's `locales/<lang>.ts`. `node scripts/i18n-keys.mjs [missing|stale] <lang> [site]` prints
+// what a catalog lacks or no longer needs, for whoever translates.
 
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -12,7 +14,18 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(join(root, 'package.json'));
 
-/** Keys as {text, plural: boolean}; `one` forms of trn are kept beside their `other` key. */
+/** The files whose strings only the public site says: their catalog is the server's. */
+export const SITE_FILES = new Set(['apps/server/src/lib/site-pages.ts']);
+
+/** Whether a key is the site's alone (said nowhere the app or core would show it). */
+export const isSiteKey = (k) => [...k.files].every((f) => SITE_FILES.has(f));
+
+/** The keys a catalog answers for: the site's, or everything else's. */
+export function keysFor(keys, site) {
+  return new Map([...keys].filter(([, k]) => isSiteKey(k) === site));
+}
+
+/** Keys as {text, plural: boolean, files}; `one` forms of trn are kept beside their `other` key. */
 export function collectKeys() {
   const parser = require('@babel/parser');
   const traverse = require('@babel/traverse').default;
@@ -51,16 +64,18 @@ export function collectKeys() {
   return keys;
 }
 
-const [, , mode, lang] = process.argv;
+const [, , mode, lang, which] = process.argv;
 if (mode) {
-  const keys = collectKeys();
+  const site = which === 'site';
+  const keys = keysFor(collectKeys(), site);
   if (mode === 'list') {
     for (const k of keys.values()) console.log(k.plural ? `[plural] ${k.text}` : k.text);
   } else {
-    const mod = await import(join(root, 'packages/core/src/locales', `${lang}.ts`)).catch(
-      () => null,
-    );
-    const catalog = mod?.[lang] ?? {};
+    const file = site
+      ? join(root, 'apps/server/src/locales', `${lang}-site.ts`)
+      : join(root, 'packages/core/src/locales', `${lang}.ts`);
+    const mod = await import(file).catch(() => null);
+    const catalog = mod?.[site ? `${lang}Site` : lang] ?? {};
     if (mode === 'missing')
       for (const k of keys.values())
         if (!(k.text in catalog)) console.log(k.plural ? `[plural] ${k.text}` : k.text);

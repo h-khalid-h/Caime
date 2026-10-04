@@ -11,6 +11,9 @@
  *   else their account's locale. Looked up once per person per five minutes, so a fan-out
  *   costs one small query per reader at most, and forgotten the moment they change it here.
  *
+ * The public site's pages are rendered in the language `siteLanguage` picks (`lib/site-pages.ts`);
+ * their strings live in `locales/ar-site.ts`, the server's own catalog, merged with the app's.
+ *
  * Mail stays English: it travels as 7-bit text (`lib/email.ts`).
  */
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -27,10 +30,12 @@ import {
 import { ar } from '@caime/core/locales/ar';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
+import { arSite } from '../locales/ar-site';
 
+// The app's catalog, and beside it the public site's (server-only copy the app never downloads).
 const translators: Record<InterfaceLanguage, Translator> = {
   en: english,
-  ar: makeTranslator('ar', ar),
+  ar: makeTranslator('ar', { ...ar, ...arSite }),
 };
 
 const scope = new AsyncLocalStorage<Translator>();

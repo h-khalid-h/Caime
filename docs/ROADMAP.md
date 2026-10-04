@@ -656,8 +656,13 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       left in English (call summaries and screens, automation intervals, meeting lengths, the
       organization screen's counts, invite uses, the WhatsApp import's dates, OAuth app kinds)
       now reads through `tr` and `trn`, with CLDR plural forms in the catalog (2,394 entries,
-      65.4 KB gzip, 2026-10-04). Still to do: mail stays English (7-bit, R48), and the public
-      site in Arabic
+      65.4 KB gzip, 2026-10-04). The public site reads in Arabic too (`/business?lang=ar`, or an
+      Arabic browser's `Accept-Language`; the landing page and the five pages, right to left,
+      hreflang alternates with the English as canonical, the masthead offering the other
+      language in its own name, and a reader who switched kept switched on the site's links):
+      its 248 strings are the server's own catalog (`apps/server/src/locales/ar-site.ts`,
+      `site-i18n.test.ts`), so the app's chunk didn't grow; `e2e/site.spec.ts`. Still to do:
+      mail stays English (7-bit, R48); the privacy, terms and help pages stay English
 - [x] The organization's own door (R53): its public page's "Message … on Caime" is the door
       (`/o/<handle>?write`, `doorPath` in `lib/public-pages.ts`), so a visitor signs up and
       lands in the conversation as an invite's guest does (onboarding's last step names it,
@@ -1549,3 +1554,14 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   waiting and team-full lines, spaces' counts, invite uses, the WhatsApp import's date range and
   left-out files, OAuth app kinds) now read through `tr` and `trn`, the Arabic plural forms added
   to the catalog (2,394 entries; the chunk 65.4 KB gzip, 51.3 KB Brotli). Budget 442.2 KB.
+- 2026-10-04 — R54, the public site in Arabic: `lib/site-pages.ts` (the landing page moved in
+  beside the five pages) writes every string through `tr`, in the language `siteLanguage` picks
+  (`?lang=ar|en`, else the browser's first language), on `<html lang dir>` and `<main>`, with
+  hreflang alternates, `og:locale` and `Vary: Accept-Language`; the strings the site alone says
+  live in the server's `locales/ar-site.ts` (248 entries, 38.2 KB on disk, 12.9 KB gzip, server
+  memory only: the app's Arabic chunk stays 65.4 KB), told apart by `scripts/i18n-keys.mjs`
+  (`SITE_FILES`, `keysFor`), with `site-i18n.test.ts` beside core's catalog test. Logical CSS
+  (`margin-inline-start`, `border-end-end-radius`) so the nav and the sample bubbles mirror.
+  `public-pages.test.ts` (asked for, the browser's, back to English, signed in), `e2e/site.spec.ts`
+  (right to left on screen, the switch, an Arabic browser). Budget 442.2 KB. ⛔ A native speaker's
+  review, as for the app.

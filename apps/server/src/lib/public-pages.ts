@@ -10,19 +10,23 @@
 import type { OrgRef } from '@caime/core';
 import { canSee, handleError, normalizeHandle, SPHERE_DEFS, type Sphere } from '@caime/core';
 import { MARKETING_PAGES, type MarketingPage } from '@caime/core/api';
-import { currentTranslator, tr } from '@caime/core/i18n';
+import {
+  currentTranslator,
+  dirOf,
+  INTERFACE_LANGUAGES,
+  type InterfaceLanguage,
+  tr,
+} from '@caime/core/i18n';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
 import { orgRef } from './business';
 import { orgsOf } from './orgs';
 import {
   esc,
-  explorer,
   explorerStyle,
-  footer,
-  LANDING_LAYERS,
-  masthead,
+  LANDING_DESCRIPTION,
   PROMISE,
+  renderLanding,
   renderSite,
   SITE_NAME,
   type SiteFacts,
@@ -271,13 +275,12 @@ const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trim
 
 export { PROMISE, SITE_NAME };
 
-const LANDING_DESCRIPTION =
-  'Caime is messaging that knows who each person is to you: your family, your work, your customers, each in its place, with what needs you first. Free for people; organizations verify who they are.';
-
 interface Rendered {
   status: number;
   head: string;
   body: string;
+  /** The language the page was written in, for the shell's `<html>` (the site's pages, R54). */
+  lang?: InterfaceLanguage;
 }
 
 /** The head tags and the plain body for a page, and the status it deserves. */
@@ -295,6 +298,8 @@ export function renderPublic(
     index: boolean;
     ld?: object;
     canonical?: boolean;
+    /** A page of the site: readable in each language, the English its canonical (R54). */
+    alternates?: boolean;
   }) =>
     [
       `<title>${esc(o.title)}</title>`,
@@ -303,6 +308,16 @@ export function renderPublic(
         ? '<meta name="robots" content="index,follow">'
         : '<meta name="robots" content="noindex">',
       o.canonical === false ? '' : `<link rel="canonical" href="${esc(url)}">`,
+      ...(o.alternates
+        ? [
+            `<link rel="alternate" hreflang="x-default" href="${esc(url)}">`,
+            ...INTERFACE_LANGUAGES.map(
+              (l) =>
+                `<link rel="alternate" hreflang="${l}" href="${esc(l === 'en' ? url : `${url}?lang=${l}`)}">`,
+            ),
+            `<meta property="og:locale" content="${currentTranslator().language === 'ar' ? 'ar_AR' : 'en_US'}">`,
+          ]
+        : []),
       // Which page this is, for the app: it stays out of a visitor's way on a person's or an
       // organization's page only (R44).
       `<meta name="caime-page" content="${page.kind}">`,
@@ -322,56 +337,31 @@ export function renderPublic(
       .filter(Boolean)
       .join('\n');
   switch (page.kind) {
-    case 'landing':
+    case 'landing': {
+      const home = renderLanding(facts);
       return {
         status: 200,
+        lang: currentTranslator().language,
         head: meta({
-          title: `${SITE_NAME}: ${PROMISE.replace(/\.$/, '')}`,
-          description: LANDING_DESCRIPTION,
+          title: home.title,
+          description: home.description,
           image: null,
           index: true,
+          alternates: true,
           ld: {
             '@context': 'https://schema.org',
             '@type': 'SoftwareApplication',
             name: SITE_NAME,
             applicationCategory: 'CommunicationApplication',
             operatingSystem: 'Web, iOS, Android',
-            description: LANDING_DESCRIPTION,
+            description: home.description,
             url: publicUrl,
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
           },
         }),
-        body: `
-<main class="pub pub-home">
-  ${masthead('/')}
-  <section class="hero">
-    <h1>${esc(PROMISE)}</h1>
-    <p class="lead">Your family, your work and your customers don’t belong in one list. Say who
-    each person is to you, once. From then on Caime knows what needs you first, who may reach
-    you when, what was decided and what’s owed, and what each side of your life sees of you.</p>
-    <p class="cta"><a href="/sign-up">Start free</a> <a href="/sign-in" class="quiet">Sign in</a></p>
-  </section>
-  <section class="sheet" aria-labelledby="sheet-title">
-    <h2 id="sheet-title" class="mono">Specification</h2>
-    <dl class="spec">
-      <div><dt class="mono">primary object</dt><dd>The connection between two people, not the chat.</dd></div>
-      <div><dt class="mono">to connect</dt><dd>Connect in three taps. Say how you know someone; the conversation, its notifications and its cards fit the relationship.</dd></div>
-      <div><dt class="mono">attention</dt><dd>“3 need you”, never “47 unread”. The inbox puts what matters first and says why.</dd></div>
-      <div><dt class="mono">memory</dt><dd>Commitments, dates, amounts and decisions are found in the conversation and offered as actions. You decide; nothing is written for you.</dd></div>
-      <div><dt class="mono">organizations</dt><dd>A business proves its domain with one DNS record; its team answers as the organization, in one inbox, and customers book from its open slots.</dd></div>
-      <div><dt class="mono">privacy</dt><dd>Each side of your life sees what you chose. End-to-end encrypted when you say so, with a recovery key only you hold.</dd></div>
-      <div><dt class="mono">money</dt><dd>Never held or moved by Caime. A split records who owes whom; nothing else.</dd></div>
-      <div><dt class="mono">price</dt><dd>Free for people, always. Organizations start free and can buy Business.</dd></div>
-      <div><dt class="mono">runs on</dt><dd>Web, iOS and Android, from one account.</dd></div>
-    </dl>
-  </section>
-  ${explorer('layer', 'Layers · pick one', LANDING_LAYERS)}
-  <section class="hero">
-    <p class="cta"><a href="/business">For organizations</a> <a href="/pricing" class="quiet">Pricing</a> <a href="/security" class="quiet">Security</a></p>
-  </section>
-  ${footer(facts)}
-</main>`,
+        body: home.body,
       };
+    }
     case 'site': {
       const site = renderSite(
         page.page,
@@ -383,7 +373,14 @@ export function renderPublic(
       );
       return {
         status: 200,
-        head: meta({ title: site.title, description: site.description, image: null, index: true }),
+        lang: currentTranslator().language,
+        head: meta({
+          title: site.title,
+          description: site.description,
+          image: null,
+          index: true,
+          alternates: true,
+        }),
         body: site.body,
       };
     }
@@ -570,7 +567,7 @@ body:has(#root:empty){overflow:auto}
 .pub{max-width:640px;margin:0 auto;padding:48px 20px 64px;line-height:1.5}
 .pub h1{font-size:2rem;line-height:1.15;margin:0 0 8px;color:#3b2e5b}
 .pub .lead{font-size:1.15rem;color:#5b4f75;margin:0 0 20px}
-.pub ul{padding-left:20px}.pub li{margin:8px 0}
+.pub ul{padding-inline-start:20px}.pub li{margin:8px 0}
 .pub .cta a{display:inline-block;background:#3b2e5b;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;font-weight:600;margin:12px 8px 0 0}
 .pub .cta a.quiet{background:transparent;color:#3b2e5b;border:1px solid #3b2e5b}
 .pub .small{color:#5b4f75;font-size:.9rem}.pub a{color:#3b2e5b}
@@ -615,23 +612,27 @@ body:has(#root:empty){overflow:auto}
 .pub-home .sample .dot{width:28px;height:28px;border-radius:50%;background:var(--accent);flex:none}.pub-home .sample .dot-2{background:var(--plum)}.pub-home .sample .dot-3{background:var(--ink)}
 .pub-home .sample .tag{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem;letter-spacing:.03em;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--text);flex:none}
 .pub-home .sample .tag-2{background:var(--surface);border:1px solid var(--line)}.pub-home .sample .tag-3{background:var(--surface);border:1px dashed var(--line)}
-.pub-home .sample .bubble{max-width:80%;padding:8px 12px;border-radius:16px;background:var(--surface)}.pub-home .sample .bubble.me{background:var(--plum);color:#fff;margin-left:auto;border-bottom-right-radius:6px}.pub-home .sample .bubble.them{border-bottom-left-radius:6px}
+.pub-home .sample .bubble{max-width:80%;padding:8px 12px;border-radius:16px;background:var(--surface)}.pub-home .sample .bubble.me{background:var(--plum);color:#fff;margin-inline-start:auto;border-end-end-radius:6px}.pub-home .sample .bubble.them{border-end-start-radius:6px}
 ${explorerStyle()}
 @media (min-width:720px){.pub-home .layers{display:grid;grid-template-columns:200px 1fr;column-gap:20px;align-items:start}.pub-home .layers h2{grid-column:1/-1}.pub-home .tabs{flex-direction:column;align-items:stretch;margin:6px 0 0}.pub-home .tabs label{border-radius:10px}}
 .pub-home .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line)}
 @media (max-width:560px){.pub-home h1{font-size:1.9rem}.pub-home .spec>div,.pub-sheet .spec>div{grid-template-columns:1fr;gap:2px}.pub-home .spec dt,.pub-sheet .spec dt{padding-top:0}}
 @media (prefers-reduced-motion:no-preference){.pub-home .tabs label{transition:border-color .15s ease-out,background .15s ease-out}}
-.pub-home .masthead{align-items:baseline}.pub-home .sitenav{display:flex;gap:4px 14px;flex-wrap:wrap;margin-left:auto}.pub-home .sitenav a{color:var(--text3);text-decoration:none;padding:2px 0}.pub-home .sitenav a[aria-current]{color:var(--ink);border-bottom:1px solid var(--ink)}.pub-home .sitenav a:hover{color:var(--ink)}
+.pub-home .masthead{align-items:baseline}.pub-home .sitenav{display:flex;gap:4px 14px;flex-wrap:wrap;margin-inline-start:auto}.pub-home .sitenav a{color:var(--text3);text-decoration:none;padding:2px 0}.pub-home .sitenav a[aria-current]{color:var(--ink);border-bottom:1px solid var(--ink)}.pub-home .sitenav a:hover{color:var(--ink)}
 .pub-site .layers{margin-top:26px}.pub-site .hero+.layers{margin-top:0}.pub-home .sheet+.hero,.pub-home .layers+.hero{padding-top:20px}
 .pub-home code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.85em;background:var(--muted);padding:1px 5px;border-radius:5px}
 .pub-home .plans{display:grid;grid-template-columns:1fr;gap:14px}.pub-home .plan{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface)}.pub-home .plan h3{margin:0;font-size:1.2rem;font-weight:800;color:var(--ink);font-family:Nunito,Inter,system-ui,sans-serif}.pub-home .plan .price{margin:2px 0 8px;color:var(--text2)}.pub-home .plan .price strong{color:var(--ink);font-size:1.15rem}.pub-home .plan .spec>div{grid-template-columns:110px 1fr;gap:10px;padding:8px 0}.pub-home .plan .spec>div:last-child{border-bottom:0}.pub-home .plan .small{margin:8px 0 0}
 @media (min-width:720px){.pub-home .plans{grid-template-columns:1fr 1fr}.pub-home .plans-3{grid-template-columns:1fr 1fr 1fr}.pub-home .plan .spec>div{grid-template-columns:1fr;gap:2px}}
-@media (max-width:560px){.pub-home .sitenav{margin-left:0;width:100%}}
+@media (max-width:560px){.pub-home .sitenav{margin-inline-start:0;width:100%}}
+.pub-home[dir=rtl] h1{letter-spacing:0}
 </style>`;
 
 /** The shell with a page's head and body in it. Tolerant of a template without the markers. */
 export function injectPublic(template: string, page: Rendered): string {
   let html = template.replace(/<title>[^<]*<\/title>\s*/i, '');
+  // A page written in a language says so on the document itself, since the app never runs here.
+  if (page.lang)
+    html = html.replace(/<html\b[^>]*>/i, `<html lang="${page.lang}" dir="${dirOf(page.lang)}">`);
   html = html.includes('</head>')
     ? html.replace('</head>', `${page.head}\n${PUBLIC_STYLE}\n</head>`)
     : `${page.head}\n${PUBLIC_STYLE}\n${html}`;

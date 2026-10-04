@@ -4,11 +4,12 @@
  * `node scripts/i18n-keys.mjs missing ar` lists what's missing.
  */
 import { describe, expect, it } from 'vitest';
-import { collectKeys } from '../../../scripts/i18n-keys.mjs';
+import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { ar } from './locales/ar';
 
 describe('the Arabic catalog (R54)', () => {
-  const keys = collectKeys() as Map<string, { text: string; plural: boolean }>;
+  // The public site's own strings are the server's catalog (apps/server/test/site-i18n.test.ts).
+  const keys = keysFor(collectKeys(), false) as Map<string, { text: string; plural: boolean }>;
 
   it('has every string the code shows', () => {
     const missing = [...keys.values()].filter((k) => !(k.text in ar)).map((k) => k.text);

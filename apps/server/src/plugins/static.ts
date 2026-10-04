@@ -21,6 +21,7 @@ import {
   robotsTxt,
   sitemapXml,
 } from '../lib/public-pages';
+import { siteLanguage } from '../lib/site-pages';
 import { SESSION_COOKIE } from './auth';
 
 export function webCsp(publicUrl: string, inlineScriptHash: string | null = null): string {
@@ -116,6 +117,15 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
     // The way in is painted before the app only for a visitor: signed in, these screens send
     // the person on at once, and the paint would only flash.
     const page = found.kind === 'entry' && signedIn ? { kind: 'app' as const } : found;
+    // The entry screens' words in the browser's language (Accept-Language), as the app will show
+    // them; the site's pages in the language asked for (`?lang=`), else the browser's (R54);
+    // every other page is English.
+    const site = page.kind === 'landing' || page.kind === 'site';
+    const chosen = site
+      ? siteLanguage((req.query as Record<string, unknown>).lang, req.headers['accept-language'])
+      : null;
+    const language =
+      chosen?.language ?? (page.kind === 'entry' ? languageFor(acceptedLanguage(req)) : null);
     const facts =
       page.kind === 'landing' || page.kind === 'site'
         ? {
@@ -123,16 +133,12 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
             contactEmail: ctx.config.CONTACT_EMAIL,
             prices:
               page.kind === 'site' && page.page === 'pricing' ? await publicPrices(ctx) : null,
+            linkLang: chosen?.linkLang ?? null,
           }
         : null;
-    // The entry screens' words in the browser's language (Accept-Language), as the app will show
-    // them; every other page is English.
-    const rendered =
-      page.kind === 'entry'
-        ? inLanguage(languageFor(acceptedLanguage(req)), () =>
-            renderPublic(page, ctx.config.PUBLIC_URL, path, facts),
-          )
-        : renderPublic(page, ctx.config.PUBLIC_URL, path, facts);
+    const rendered = language
+      ? inLanguage(language, () => renderPublic(page, ctx.config.PUBLIC_URL, path, facts))
+      : renderPublic(page, ctx.config.PUBLIC_URL, path, facts);
     let html = injectPublic(template, rendered);
     // An entry screen asks for the app's scripts once it has painted; the policy allows the
     // bootstrap that does so by its hash, computed once per build.
@@ -163,6 +169,8 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
         page.kind === 'landing') &&
         !req.cookies?.[SESSION_COOKIE]);
     if (visitor) html = html.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>\s*/g, '');
+    // A page that follows the browser's language says so to whatever caches it.
+    if (site) reply.header('vary', 'accept-language');
     return reply
       .status(rendered.status)
       .header('cache-control', page.kind === 'site' ? 'public, max-age=600' : 'no-cache')

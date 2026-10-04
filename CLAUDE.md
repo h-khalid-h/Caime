@@ -268,14 +268,29 @@ These are rules, not preferences.
   before the newer one was sent (it did, once in a few runs).
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
-  rendered in the app's shell like the landing page, for everyone, signed in or not, and never
-  boot the app (`plugins/static.ts` strips the scripts; `public, max-age=600`). Every page shares
-  `masthead(path)` (wordmark, kicker, nav with `aria-current`), `spec(rows)` and `footer(facts)`;
-  an explorer is `explorer(group, title, items)` with its group in `EXPLORERS`, which writes the
-  CSS that picks a panel. Every number on a page is read from the code (plans, `e2ee.ts`,
+  rendered in the app's shell like the landing page (`renderLanding`, in the same file), for
+  everyone, signed in or not, and never boot the app (`plugins/static.ts` strips the scripts;
+  `public, max-age=600`). Every page shares `masthead(path, facts)` (wordmark, kicker, nav with
+  `aria-current`, the other language by its own name), `spec(rows)` and `footer(facts)`; an
+  explorer is `explorer(group, title, items)` with its group in `EXPLORERS`, which writes the CSS
+  that picks a panel. Every number on a page is read from the code (plans, `e2ee.ts`,
   `KEPT_DAYS`, `BUSINESS_VIEWS`), never typed; prices come from Stripe through `publicPrices`
-  (billing's ten-minute cache) and read "price shown in the app" without it. A new page joins
-  `MARKETING_PAGES`, `SITE_NAV`, `renderSite` and `public-pages.test.ts`.
+  (billing's ten-minute cache) and read "price shown in the app" without it. The site reads in
+  each interface language (R54): every string goes through `tr` (a sample's text too; an
+  `ExplorerItem.sample` is a function, drawn in the request's language), `siteLanguage(query.lang,
+  accept-language)` picks the language (`?lang=` wins, else the browser's first language) and
+  says whether to carry it on the site's own links (`facts.linkLang`, `siteHref`: only when it
+  isn't the browser's own, so a reader who switched stays switched), `langAttrs()` goes on
+  `<main>` and `Rendered.lang` on the shell's `<html>`, `meta({ alternates: true })` writes the
+  hreflang links (the English is canonical) and `og:locale`, and the response says
+  `Vary: Accept-Language`. A string the site alone says is the server's: its Arabic lives in
+  `apps/server/src/locales/ar-site.ts` (merged into the server's translator in `lib/i18n.ts`),
+  never in core's `locales/ar.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them
+  apart by file (`SITE_FILES`, `keysFor`), `site-i18n.test.ts` fails for a missing or stale one
+  (`node scripts/i18n-keys.mjs missing ar site`), and a string the app shows too belongs to
+  core's catalog. Styles that have a side use logical properties (`margin-inline-start`,
+  `border-end-end-radius`), never left or right. A new page joins `MARKETING_PAGES`, `SITE_NAV`,
+  `renderSite`, `SITE_PATHS` and `public-pages.test.ts`.
 - The app's entry screens (welcome, sign-in, sign-up) are painted by the server for a visitor
   before the app runs (`kind: 'entry'`, `entryBody` in `lib/public-pages.ts`): the same words
   through `tr` in the browser's `Accept-Language`, the same shape in `.pub-entry` CSS, links that

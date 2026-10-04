@@ -230,6 +230,61 @@ describe('the readable web (R44)', () => {
     );
   });
 
+  it('the site reads in Arabic too: asked for, or the browser’s, right to left, and stays chosen', async () => {
+    // Asked for: the whole document says what it is, and the page is the same page in Arabic.
+    const asked = await visit('/business?lang=ar');
+    expect(asked.statusCode).toBe(200);
+    expect(asked.headers.vary).toBe('accept-language');
+    expect(asked.headers['cache-control']).toBe('public, max-age=600');
+    expect(asked.body).toContain('<html lang="ar" dir="rtl">');
+    expect(asked.body).toContain('<main class="pub pub-home pub-site" lang="ar" dir="rtl">');
+    expect(asked.body).toContain('<h1>أجب باسم المؤسسة، وأثبت أنك أنت.</h1>');
+    expect(asked.body).toContain('<meta property="og:locale" content="ar_AR">');
+    // Its canonical is the English page; each language is an alternate.
+    expect(asked.body).toContain('<link rel="canonical" href="https://caime.example/business">');
+    expect(asked.body).toContain(
+      '<link rel="alternate" hreflang="ar" href="https://caime.example/business?lang=ar">',
+    );
+    expect(asked.body).toContain(
+      '<link rel="alternate" hreflang="en" href="https://caime.example/business">',
+    );
+    // The reader who switched stays switched: the nav and the calls to action carry the language;
+    // the switch itself offers the other language in its own name.
+    expect(asked.body).toContain('<a href="/pricing?lang=ar">الأسعار</a>');
+    expect(asked.body).toContain('<a href="/business?lang=ar" aria-current="page">');
+    expect(asked.body).toContain(
+      '<a href="/business?lang=en" lang="en" hreflang="en" rel="alternate">English</a>',
+    );
+    expect(asked.body).not.toContain('entry-abc.js');
+    // The numbers are the code's still, in Arabic sentences.
+    expect((await visit('/security?lang=ar')).body).toContain('حتى 64 شخصًا، و20 جهازًا');
+    // The browser's own language gives Arabic without asking, and links carry nothing extra.
+    const browser = await visit('/pricing', { 'accept-language': 'ar-EG,ar;q=0.9,en;q=0.8' });
+    expect(browser.body).toContain('<html lang="ar" dir="rtl">');
+    expect(browser.body).toContain('<h1>مجاني للأفراد. والمؤسسات تدفع لفريقها.</h1>');
+    expect(browser.body).toContain('<a href="/business">للمؤسسات</a>');
+    expect(browser.body).toContain('<dt class="mono">الفريق</dt><dd>3 أشخاص</dd>');
+    // Asked for English from an Arabic browser: English, and the links keep it.
+    const back = await visit('/pricing?lang=en', { 'accept-language': 'ar' });
+    expect(back.body).toContain('<html lang="en" dir="ltr">');
+    expect(back.body).toContain('<h1>Free for people. Organizations pay for their team.</h1>');
+    expect(back.body).toContain('<a href="/business?lang=en">For organizations</a>');
+    // The landing page too; and in English it offers Arabic by its own name.
+    const home = await visit('/?lang=ar');
+    expect(home.body).toContain('<h1>مراسلة تفهم علاقاتك.</h1>');
+    expect(home.body).toContain('<title>Caime: مراسلة تفهم علاقاتك</title>');
+    const english = await visit('/');
+    expect(english.body).toContain('<html lang="en" dir="ltr">');
+    expect(english.body).toContain(
+      '<a href="/?lang=ar" lang="ar" hreflang="ar" rel="alternate">العربية</a>',
+    );
+    // Nonsense is English; signed in, the landing page is still the app whatever the language.
+    expect((await visit('/about?lang=xx')).body).toContain('<html lang="en" dir="ltr">');
+    const signedIn = await visit('/?lang=ar', { cookie: `caime_session=${noor.token}` });
+    expect(signedIn.body).toContain('entry-abc.js');
+    expect(signedIn.body).not.toContain('<div id="static">');
+  });
+
   it('the app’s own screens ask not to be indexed; robots and the sitemap say what is', async () => {
     const screen = await visit('/c/0193b2c4-0000-7000-8000-000000000000');
     expect(screen.statusCode).toBe(200);
