@@ -704,8 +704,11 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       the privacy page as the server is configured (`processorsFor`: the host from
       `HOSTING_PROVIDER`, Cloudflare and the mail provider only when set), with a paragraph on
       organizations as controllers and Caime as their processor. `org-data.test.ts`. ⛔ The data
-      processing agreement's text and a lawyer's review of privacy, terms and agreement; the
-      page for it reads the same list when the text exists. Not done: an export too large for
+      processing agreement's text and a lawyer's review of privacy, terms and agreement. A
+      draft for the lawyer exists (`docs/DPA-DRAFT.md`, 2026-10-04: the Article 28 structure
+      filled with what the product does, every fact read from the code and held to it by
+      `dpa-draft.test.ts`, the legal wording marked for them); it is not published, and the
+      page for it reads the same list once the reviewed text exists. Not done: an export too large for
       one request (above 200,000 messages it asks to be made by Caime)
 - [ ] ⛔ The owner's decisions: the phone (accounts, then the development build on the owner's
       iPhone, TestFlight, Play internal testing); prices in EGP, AED and SAR, local payment

@@ -26,7 +26,7 @@ without re-deriving decisions.
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
 | `scripts/` | `bundle-budget.mjs` (the web JS budget). |
-| `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, and the developer guide for organizations' apps (`API.md`). |
+| `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, the developer guide for organizations' apps (`API.md`), and the draft data processing agreement for the owner's lawyer (`DPA-DRAFT.md`, facts held to the code by `dpa-draft.test.ts`; never published as it is). |
 
 ## Commands
 
