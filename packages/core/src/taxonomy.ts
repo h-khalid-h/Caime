@@ -205,14 +205,14 @@ export const ROLES: Record<Sphere, RoleDef[]> = {
     r('childhood_friend', msg('Childhood friend'), msg('Childhood friends')),
     r('school_friend', msg('School friend'), msg('School friends'), { quick: true }),
     r('university_friend', msg('University friend'), msg('University friends')),
-    r('neighbor', msg('Neighbor'), msg('Neighbors'), { quick: true }),
+    r('neighbor', msg('Neighbour'), msg('Neighbours'), { quick: true }),
     r('roommate', msg('Roommate'), msg('Roommates')),
   ],
   acquaintance: [
     r('acquaintance', msg('Acquaintance'), msg('Acquaintances'), { quick: true }),
     r('friend_of_friend', msg('Friend of a friend'), msg('Friends of friends'), { quick: true }),
     r('met_at_event', msg('Met at an event'), msg('People met at events'), { quick: true }),
-    r('neighbor', msg('Neighbor'), msg('Neighbors'), { quick: true }),
+    r('neighbor', msg('Neighbour'), msg('Neighbours'), { quick: true }),
   ],
   work: [
     r('manager', msg('Manager'), msg('Managers'), { quick: true }),

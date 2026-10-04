@@ -74,6 +74,8 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
     const html = renderPage(name, {
       processors: processorsFor(config),
       legalName: config.LEGAL_NAME,
+      legalAddress: config.LEGAL_ADDRESS ?? null,
+      governingLaw: config.GOVERNING_LAW ?? null,
       contactEmail: config.CONTACT_EMAIL,
       minimumAge: config.MINIMUM_AGE,
       publicUrl: base,

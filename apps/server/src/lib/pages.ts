@@ -20,6 +20,10 @@ export interface PageFacts {
   /** Who processes data for this Caime (R54): core's list, as this server is configured. */
   processors: SubProcessor[];
   legalName: string;
+  /** The operator's postal address (LEGAL_ADDRESS); null leaves it out of the pages. */
+  legalAddress: string | null;
+  /** The law and courts the terms are under (GOVERNING_LAW, "Estonia"); null leaves the clause out. */
+  governingLaw: string | null;
   contactEmail: string;
   minimumAge: number;
   /** Where Caime is, as people reach it: PUBLIC_URL. */
@@ -60,8 +64,9 @@ ${f.relay === 'cloudflare' ? 'a relay Cloudflare runs for Caime' : 'Caime&rsquo;
 <p class="updated mono">last updated ${UPDATED}</p>
 <p>Caime is messaging that understands the difference between the people in your life. This page
 says what Caime keeps about you, why, who else sees it, how long it&rsquo;s kept, and what you
-can do about it. Caime is run by ${f.legalName}, which is responsible for your data. Questions
-about it go to ${mail}.</p>
+can do about it. Caime is run by ${f.legalName}${f.legalAddress ? ` (${f.legalAddress})` : ''}, which is responsible for
+your data (its controller, in the words of data protection law). Questions about it go to
+${mail}.</p>
 
 <section class="short">
 <h2>The short version</h2>
@@ -145,16 +150,20 @@ from.</li>
 </ul>
 
 <h2>Why</h2>
+<p>Each of these is one of the grounds data protection law allows (in the GDPR, Article 6):</p>
 <ul>
 <li>To give you Caime: to deliver your messages and run the features you use (our agreement with
 you, the <a href="/terms">terms</a>).</li>
 <li>To keep Caime safe: limits on how fast things can be sent, blocks, reports and security
 records (our legitimate interest in protecting the people on it).</li>
-<li>To bill a paid plan, and keep the records accounting law asks for.</li>
+<li>To bill a paid plan, and keep the records accounting law asks for (a legal obligation).</li>
 <li>With your permission: AI assist, and notifications on your devices. Turn either off at any time
 (You &rarr; Privacy &rarr; AI assist; You &rarr; Notifications and priorities &rarr; In this
-browser).</li>
+browser); withdrawing it changes nothing about what happened while it was on.</li>
 </ul>
+<p>Caime makes no decision about you by machine alone that has a legal or similarly serious effect
+on you. What it sorts, suggests or infers is a suggestion you can see the reason for and
+decline.</p>
 
 <h2>Who else sees what</h2>
 <ul>
@@ -174,7 +183,11 @@ organization&rsquo;s own systems, outside Caime, and the organization is respons
 does with them. If it has an AI agent, the agent reads your messages (not your name) and answers
 first; it always says it&rsquo;s an AI, and everything it writes is marked &ldquo;AI agent&rdquo;.
 You see the organization, not which person on its team wrote. If you&rsquo;re under 18, the
-organization and its apps are told so.</li>
+organization and its apps are told so. What you write to a clinic, a pharmacy or a doctor may say
+something about your health: that is sensitive data, and it is the organization&rsquo;s to look
+after, under its own duties to you; ${f.legalName} only stores and delivers it on the
+organization&rsquo;s instructions, never reads it for anything of its own, and never uses it to
+train a model.</li>
 <li><strong>Apps you let in</strong> do only what you allowed. Remove one in You &rarr; Connected
 apps; what it already has stays with it.</li>
 <li><strong>Companies that help run Caime</strong>, each only for what it does for Caime. The same
@@ -312,7 +325,9 @@ your calendar&rsquo;s address, and apps&rsquo; tokens, codes and secrets are kep
 the exception is an organization&rsquo;s webhook secret, which Caime keeps so it can sign what it
 sends. Caime is served over HTTPS, so what passes between your device and Caime is encrypted in
 transit. The keys of private conversations are made on your devices and never leave them. No
-system is perfect: if you find a weakness, please tell us at ${mail}.</p>
+system is perfect: if you find a weakness, please tell us at ${mail}. If a breach of Caime&rsquo;s
+security puts your data at risk, we&rsquo;ll tell you what happened, what it touched and what to
+do, without undue delay, and tell the authority as the law requires.</p>
 
 <h2>On your device</h2>
 <p>On the web, Caime sets one cookie, to keep you signed in, and no advertising or analytics
@@ -331,7 +346,7 @@ web, Caime also keeps its own files (never your messages) so it can open without
 before it applies.</p>
 
 <h2>Contact</h2>
-<p>${f.legalName} &middot; ${mail}</p>`;
+<p>${f.legalName}${f.legalAddress ? ` &middot; ${f.legalAddress}` : ''} &middot; ${mail}</p>`;
 }
 
 function terms(f: PageFacts, mail: string): string {
@@ -384,6 +399,11 @@ client secrets and webhook secrets secret.</li>
 <li>&ldquo;Verified&rdquo; on an organization means it proved, with a DNS record, that it
 controlled its domain when it verified. On a person, &ldquo;Verified at&rdquo; an organization
 means that organization has them on its team. Neither is an endorsement.</li>
+<li>An organization&rsquo;s conversations with its customers are the organization&rsquo;s to answer
+for: it decides why and how long they are kept (it is their controller), and ${f.legalName}
+stores and delivers them for it (as their processor) under a data processing agreement, available
+from ${mail}. Caime is not a medical, legal or accounting record system: an organization keeps
+its own records where the law asks it to.</li>
 </ul>
 
 <h2>5. AI features</h2>
@@ -406,13 +426,16 @@ closes.</li>
 <li>Moving to a lower plan never deletes what you have. If you have more than it includes (files,
 people on a team, apps), it all stays, but you can&rsquo;t add more until it fits.</li>
 <li>Your rights as a consumer where you live, such as withdrawing from a purchase, still
-apply.</li>
+apply. In the EU you can withdraw from a plan within 14 days of buying it by writing to ${mail};
+a plan starts at once, with your agreement given when you buy, so you pay for the days it was
+on.</li>
 </ul>
 
 <h2>7. Caime as it is</h2>
 <p>We work to keep Caime running, safe and useful, but it&rsquo;s provided as it is, without a
 promise that it will never fail. Features change; when we take one away, we&rsquo;ll say so here
-first.</p>
+first. Caime&rsquo;s name, its characters, its design and its software are ours; what you send
+stays yours (see 2).</p>
 
 <h2>8. Ending</h2>
 <p>You can delete your account whenever you like (You &rarr; Security &rarr; Delete your account).
@@ -420,7 +443,9 @@ Deleting it ends Pro at once; an organization&rsquo;s Business plan goes on for 
 Spaces, groups and organizations you run pass to someone in them; an organization with no one else
 on its team closes, and its plan ends with it. We may suspend or close an account that
 breaks these terms, and we&rsquo;ll tell you why unless the law or someone&rsquo;s safety stops
-us.</p>
+us. If we ever close Caime, or your access to it for any other reason, we&rsquo;ll give you 30
+days&rsquo; notice by email, with your data there to download until then and any time paid for
+and not used returned.</p>
 
 <h2>9. Liability</h2>
 <p>As far as the law allows, we aren&rsquo;t liable for indirect or unforeseeable losses, and our
@@ -431,9 +456,20 @@ consumer.</p>
 <h2>10. Changes</h2>
 <p>When these terms change, their date above does. For a change that matters, we&rsquo;ll say so
 here before it applies. If you don&rsquo;t agree with a change, you can delete your account.</p>
+${
+  f.governingLaw
+    ? `
+<h2>11. The law</h2>
+<p>These terms are under the law of ${f.governingLaw}, and its courts settle a dispute about them,
+except that where you live in the EU as a consumer you keep the protection of your own
+country&rsquo;s law and may bring a claim in your own courts. The EU&rsquo;s online dispute
+resolution platform is at ec.europa.eu/consumers/odr.</p>
 
-<h2>11. Contact</h2>
-<p>${f.legalName} &middot; ${mail}</p>`;
+<h2>12. Contact</h2>`
+    : `
+<h2>11. Contact</h2>`
+}
+<p>${f.legalName}${f.legalAddress ? ` &middot; ${f.legalAddress}` : ''} &middot; ${mail}</p>`;
 }
 
 function help(f: PageFacts, mail: string): string {
@@ -578,6 +614,8 @@ export function renderPage(name: PageName, facts: PageFacts): string {
   const f = {
     ...facts,
     legalName: escapeHtml(facts.legalName),
+    legalAddress: facts.legalAddress ? escapeHtml(facts.legalAddress) : null,
+    governingLaw: facts.governingLaw ? escapeHtml(facts.governingLaw) : null,
     contactEmail: escapeHtml(facts.contactEmail),
   };
   const mail = `<a href="mailto:${f.contactEmail}">${f.contactEmail}</a>`;

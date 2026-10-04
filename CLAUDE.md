@@ -26,7 +26,7 @@ without re-deriving decisions.
 | `apps/app` | Expo SDK 57 universal app (Expo Router; routes in `src/app/`, screens in `src/features/`, primitives in `src/ui/`). iOS, Android and Web. |
 | `e2e/` | Playwright tests against the production bundle (`playwright.config.ts` at the root). |
 | `scripts/` | `bundle-budget.mjs` (the web JS budget). |
-| `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, the developer guide for organizations' apps (`API.md`), and the draft data processing agreement for the owner's lawyer (`DPA-DRAFT.md`, facts held to the code by `dpa-draft.test.ts`; never published as it is). |
+| `docs/` | PRD, product review, brand, competitive strategy, architecture, roadmap, goal, deploy, security, the developer guide for organizations' apps (`API.md`), the draft data processing agreement for the owner's lawyer (`DPA-DRAFT.md`, facts held to the code by `dpa-draft.test.ts`; never published as it is) and the legal review of it, the privacy policy and the terms (`LEGAL-REVIEW-2026-10.md`). |
 
 ## Commands
 
@@ -272,6 +272,14 @@ These are rules, not preferences.
   number) to the browser; user-written text passes `auto` and keeps its own direction. Never
   read `I18nManager.isRTL` on the web: React Native Web's is always false. Look at the Arabic
   screenshots (`e2e/screenshots/*arabic*`) after a change to a shared primitive.
+  Arabic is written for a reader of either gender: the masculine imperative is the neutral
+  default ("اختر", "ابدأ"), but nothing describes the reader or a third person by a gendered
+  participle or pronoun where a nominal phrase works ("لا اتصال", "حين يعود الاتصال", "على
+  الخط", "بينك وبين {name} تواصل", "تعيين مشرفًا", "تم التوثيق"); a count's adjective agrees
+  with the counted thing ("{n} متأخرة"); an organization is feminine ("موثّقة", "أثبتت أنها");
+  an admin is "مشرف", a manager (the relationship) "مدير". The English is British ("colour",
+  "recognise", "labelled", "any more") with "organization" as the product's own term; a new key
+  is spell-checked by `cspell` with `en-GB` before it's committed if in doubt.
   Mail stays English (7-bit, R48). The device's shown language reaches the account only inside
   `savePrefs`' one debounced snapshot (`interfaceLanguage`): a request of its own raced a choice
   being saved and its echo (`me.updated`, or read back) undid it. `savePrefs` flushes on

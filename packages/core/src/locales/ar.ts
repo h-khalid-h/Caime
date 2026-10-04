@@ -25,7 +25,7 @@ export const ar: Catalog = {
   Done: 'تم',
   Undo: 'تراجع',
   Actions: 'الإجراءات',
-  '{overdue} overdue': '{overdue} متأخر',
+  '{overdue} overdue': '{overdue} متأخرة',
   'New action': 'إجراء جديد',
   'Which actions': 'أي الإجراءات',
   'To do': 'للتنفيذ',
@@ -57,7 +57,7 @@ export const ar: Catalog = {
   'That link didn’t open': 'لم يُفتح هذا الرابط',
   'Try again': 'حاول مرة أخرى',
   Message: 'رسالة',
-  Requested: 'مطلوب',
+  Requested: 'أُرسل الطلب',
   Respond: 'رد',
   You: 'أنت',
   Connect: 'تواصل',
@@ -100,7 +100,7 @@ export const ar: Catalog = {
     'للمؤسسة: يمكن لأي فرد في فريقها أن يكون فيها، وتبقى مع المؤسسة.',
   'Yours, or an organization you run.': 'لك، أو لمؤسسة تديرها.',
   ' Only an organization’s owner and admins start its spaces, so not {join}’s.':
-    ' لا يبدأ مساحات المؤسسة إلا مالكها ومديروها، فليست مساحة {join}.',
+    ' لا يبدأ مساحات المؤسسة إلا مالكها ومشرفوها، فليست مساحة {join}.',
   '{name}’s space: anyone on its team can be in it, and it stays with the organization.':
     'مساحة {name}: يمكن لأي فرد في فريقها أن يكون فيها، وتبقى مع المؤسسة.',
   Name: 'الاسم',
@@ -195,7 +195,7 @@ export const ar: Catalog = {
   'Next, verify your domain with one DNS record, so people can see it’s really you.':
     'بعدها، تحقق من نطاقك بسجل DNS واحد، ليرى الناس أنها أنت فعلًا.',
   'Create it': 'أنشئها',
-  'You’re connected with {displayName}': 'أنت متواصل مع {displayName}',
+  'You’re connected with {displayName}': 'بينك وبين {displayName} تواصل',
   'Says you know each other from': 'يقول إنكما تعرفان بعضكما من',
   Accept: 'قبول',
   Decline: 'رفض',
@@ -213,7 +213,7 @@ export const ar: Catalog = {
   'DATA C': 'DATA C',
   Search: 'بحث',
   'People, messages, files, decisions…': 'أشخاص، رسائل، ملفات، قرارات…',
-  'Offline. Showing what’s on this device.': 'غير متصل. نعرض ما على هذا الجهاز.',
+  'Offline. Showing what’s on this device.': 'لا اتصال. نعرض ما على هذا الجهاز.',
   'Search the way you think about people. Try:': 'ابحث كما تفكر في الناس. جرّب:',
   People: 'الأشخاص',
   '{n} people': {
@@ -231,7 +231,7 @@ export const ar: Catalog = {
   Conversations: 'المحادثات',
   Conversation: 'محادثة',
   'Nothing on this device for “{debounced}”. Try again when you’re back online.':
-    'لا شيء على هذا الجهاز عن ”{debounced}“. حاول مرة أخرى حين تعود متصلًا.',
+    'لا شيء على هذا الجهاز عن ”{debounced}“. حاول مرة أخرى حين يعود الاتصال.',
   'Nothing found for “{debounced}”.': 'لم يُعثر على شيء عن ”{debounced}“.',
   'About Caime': 'عن Caime',
   'messaging that understands your relationships': 'مراسلة تفهم علاقاتك',
@@ -387,7 +387,7 @@ export const ar: Catalog = {
   'About you': 'نبذة عنك',
   Pronouns: 'الضمائر',
   Status: 'الحالة',
-  'When you’re online': 'حين تكون متصلًا',
+  'When you’re online': 'حين تكون على الخط',
   'Last seen': 'آخر ظهور',
   'Read receipts': 'إشعارات القراءة',
   'Work details': 'تفاصيل العمل',
@@ -459,7 +459,7 @@ export const ar: Catalog = {
   Clear: 'مسح',
   Presence: 'الحضور',
   'Invisible hides when you’re online and when you were last active, from everyone.':
-    'الوضع الخفي يخفي عن الجميع أنك متصل ومتى كنت نشطًا آخر مرة.',
+    'الوضع الخفي يخفي عن الجميع وجودك على الخط وآخر نشاط لك.',
   'Save changes': 'حفظ التغييرات',
   'Saved. Your work week follows your country now.': 'حُفظ. أسبوع عملك يتبع بلدك الآن.',
   'Language and region': 'اللغة والمنطقة',
@@ -505,7 +505,7 @@ export const ar: Catalog = {
   'Password changed. Other devices were signed out.':
     'تغيّرت كلمة المرور. سُجّل الخروج من الأجهزة الأخرى.',
   Security: 'الأمان',
-  'Signed in on': 'مسجّل الدخول على',
+  'Signed in on': 'تسجيل الدخول على',
   'Sign out anywhere you don’t recognise. It happens at once.':
     'سجّل الخروج من أي جهاز لا تعرفه. يحدث فورًا.',
   Phone: 'هاتف',
@@ -568,7 +568,7 @@ export const ar: Catalog = {
   'Recovery code': 'رمز الاستعادة',
   'Set new password': 'ضع كلمة مرور جديدة',
   'No codes left? For your safety Caime can’t reset an account without one. If you signed in on another device, you can make new codes there under You → Security.':
-    'لم يبقَ رموز؟ حفاظًا على أمانك لا يستطيع Caime إعادة ضبط حساب من دون رمز. إن كنت مسجّل الدخول على جهاز آخر، يمكنك إنشاء رموز جديدة هناك من أنت ← الأمان.',
+    'لم يبقَ رموز؟ حفاظًا على أمانك لا يستطيع Caime إعادة ضبط حساب من دون رمز. إن كان دخولك مسجّلًا على جهاز آخر، يمكنك إنشاء رموز جديدة هناك من أنت ← الأمان.',
   'This link isn\\u2019t whole': 'هذا الرابط غير مكتمل',
   'Open the one in the email, or ask for a new one.': 'افتح الذي في البريد، أو اطلب رابطًا جديدًا.',
   'Ask for a new link': 'اطلب رابطًا جديدًا',
@@ -580,7 +580,7 @@ export const ar: Catalog = {
   'Welcome back': 'أهلًا بعودتك',
   'Sign in with your email or @handle.': 'سجّل الدخول ببريدك أو @معرّفك.',
   'Sign in': 'تسجيل الدخول',
-  'New here?': 'جديد هنا؟',
+  'New here?': 'أول مرة هنا؟',
   'Create an account': 'إنشاء حساب',
   'That handle isn’t available.': 'هذا المعرّف غير متاح.',
   'Enter the day you were born.': 'أدخل يوم ميلادك.',
@@ -628,7 +628,7 @@ export const ar: Catalog = {
     'العائلة والأصدقاء والعمل، كلٌّ في مكانه. المحادثات الصحيحة تجدك.',
   'Caime is starting': 'Caime يبدأ',
   Added: 'أُضيف',
-  'Added. It’s saved when you’re back online.': 'أُضيف. يُحفظ حين تعود متصلًا.',
+  'Added. It’s saved when you’re back online.': 'أُضيف. يُحفظ حين يعود الاتصال.',
   Add: 'إضافة',
   'What needs doing? Try “renew passport by Friday”':
     'ما الذي يلزم إنجازه؟ جرّب ”تجديد جواز السفر بحلول الجمعة“',
@@ -696,7 +696,7 @@ export const ar: Catalog = {
   'No one to hear back from': 'لا أحد ننتظر رده',
   'Answered conversations wait here.': 'المحادثات المُجاب عنها تنتظر هنا.',
   'Nothing escalated': 'لا شيء مُصعَّد',
-  'Conversations that need an owner or admin.': 'المحادثات التي تحتاج مالكًا أو مديرًا.',
+  'Conversations that need an owner or admin.': 'المحادثات التي تحتاج مالكًا أو مشرفًا.',
   'Nothing resolved yet': 'لم يُحلّ شيء بعد',
   'Resolved conversations stay here.': 'المحادثات المحلولة تبقى هنا.',
   'Deleted account': 'حساب محذوف',
@@ -741,14 +741,14 @@ export const ar: Catalog = {
   Resolve: 'حلّها',
   More: 'المزيد',
   'Who has it': 'مع من هي',
-  'Escalate to the owner and admins': 'تصعيد إلى المالك والمديرين',
+  'Escalate to the owner and admins': 'تصعيد إلى المالك والمشرفين',
   'This conversation': 'هذه المحادثة',
   'They’re told at once. Say what needs them, if it helps.':
     'يُخبَرون فورًا. قل ما يحتاجهم، إن كان ذلك يفيد.',
   Escalate: 'تصعيد',
   'Give it to someone': 'أعطِها لشخص',
   'It’s handled: stop escalating': 'عولجت: إيقاف التصعيد',
-  'It needs the owner or an admin': 'تحتاج المالك أو مديرًا',
+  'It needs the owner or an admin': 'تحتاج المالك أو مشرفًا',
   '{displayName} (you)': '{displayName} (أنت)',
   'Back to New for the whole team': 'العودة إلى الجديد للفريق كله',
   'What needs them (optional)': 'ما يحتاجهم (اختياري)',
@@ -853,7 +853,7 @@ export const ar: Catalog = {
     many: '{n} إجراءً',
     other: '{n} إجراء',
   },
-  'Offline. {waitingText} will go when you’re back.': 'غير متصل. {waitingText} تُرسل حين تعود.',
+  'Offline. {waitingText} will go when you’re back.': 'لا اتصال. {waitingText} تُرسل حين يعود.',
   'Connecting…': 'جارٍ الاتصال…',
   'Something went wrong on this screen': 'حدث خطأ في هذه الشاشة',
   'Your messages are safe. Try again, and if it keeps happening, tell us what you were doing.':
@@ -995,12 +995,12 @@ export const ar: Catalog = {
   'Everyone in {name} is in it already. Add people to the space first.':
     'كل من في {name} فيها بالفعل. أضف أشخاصًا إلى المساحة أولًا.',
   'See their profile': 'انظر ملفهم الشخصي',
-  'Make a member': 'اجعله عضوًا',
-  'Make an admin': 'اجعله مديرًا',
+  'Make a member': 'تعيين عضوًا',
+  'Make an admin': 'تعيين مشرفًا',
   'They stop adding and removing people, and changing the group':
     'يتوقفون عن إضافة الأشخاص وإزالتهم وتغيير المجموعة',
   'Admins add people, remove members and change the group':
-    'المديرون يضيفون الأشخاص ويزيلون الأعضاء ويغيّرون المجموعة',
+    'المشرفون يضيفون الأشخاص ويزيلون الأعضاء ويغيّرون المجموعة',
   'Remove from the group': 'إزالة من المجموعة',
   'They stop seeing what’s written here, until they join it again from {name}':
     'يتوقفون عن رؤية ما يُكتب هنا، حتى ينضموا مجددًا من {name}',
@@ -1037,7 +1037,7 @@ export const ar: Catalog = {
   'Keeps a link back to this message': 'يحتفظ برابط يعود إلى هذه الرسالة',
   'Added to your actions': 'أُضيفت إلى إجراءاتك',
   'Added to your actions. It’s saved when you’re back online.':
-    'أُضيفت إلى إجراءاتك. تُحفظ حين تعود متصلًا.',
+    'أُضيفت إلى إجراءاتك. تُحفظ حين يعود الاتصال.',
   'Everyone here sees it, with a link back to this message':
     'يراه كل من هنا، مع رابط يعود إلى هذه الرسالة',
   Unpin: 'إلغاء التثبيت',
@@ -1047,7 +1047,7 @@ export const ar: Catalog = {
   Pinned: 'ثُبّتت',
   Edit: 'تحرير',
   'Delete for everyone': 'حذف للجميع',
-  'As one of the group’s admins': 'بصفتك أحد مديري المجموعة',
+  'As one of the group’s admins': 'بصفتك من مشرفي المجموعة',
   'Delete for me': 'حذف لي',
   Report: 'إبلاغ',
   'Sends this message to Caime’s safety team': 'يرسل هذه الرسالة إلى فريق السلامة في Caime',
@@ -1628,7 +1628,7 @@ export const ar: Catalog = {
   'Close {name}': 'إغلاق {name}',
   'Its page goes, and the team’s seats end.': 'تزول صفحتها، وتنتهي مقاعد الفريق.',
   'Caime hasn’t verified who runs this organization. Be careful with links and payments.':
-    'لم يتحقق Caime ممن يدير هذه المؤسسة. كن حذرًا مع الروابط والمدفوعات.',
+    'لم يتحقق Caime ممن يدير هذه المؤسسة. توخَّ الحذر مع الروابط والمدفوعات.',
   'It stops being able to write to you': 'لا تعود قادرة على الكتابة لك',
   'Report {name}': 'الإبلاغ عن {name}',
   'Sends it to Caime’s safety team, for a scam or someone posing as another':
@@ -1643,7 +1643,7 @@ export const ar: Catalog = {
   'Room for {room} more on the {PLAN_NAMES} plan.': 'متسع لـ {room} آخرين في خطة {PLAN_NAMES}.',
   'Move to the team': 'نقل إلى الفريق',
   'They stop managing the team and verification': 'يتوقفون عن إدارة الفريق والتحقق',
-  'Admins add people and verify the domain': 'المديرون يضيفون الأشخاص ويتحققون من النطاق',
+  'Admins add people and verify the domain': 'المشرفون يضيفون الأشخاص ويتحققون من النطاق',
   'Remove from the team': 'إزالة من الفريق',
   'Close {name}?': 'إغلاق {name}؟',
   'Its page goes, its team’s seats end, and its apps stop. Customers keep what they were sent, to read. {text}':
@@ -1651,10 +1651,10 @@ export const ar: Catalog = {
   'Its handle is held for a year, then free to anyone.': 'يُحجز معرّفها لسنة، ثم يصبح متاحًا لأي أحد.',
   'Leave {name}?': 'مغادرة {name}؟',
   'The admin who has been here longest takes over, or else the longest-standing team member.':
-    'يتولاها المدير الأقدم هنا، وإلا فالعضو الأقدم في الفريق.',
+    'يتولاها المشرف الأقدم هنا، وإلا فالعضو الأقدم في الفريق.',
   'You’re the last one here, so it closes.': 'أنت آخر من هنا، فتُغلق.',
   'You stop answering for it. An admin can add you back.':
-    'تتوقف عن الإجابة باسمها. يستطيع مدير إعادتك.',
+    'تتوقف عن الإجابة باسمها. يستطيع مشرف إعادتك.',
   'You left {name}': 'غادرت {name}',
   '{name} closed, and its handle is waiting for it': 'أُغلقت {name}، ومعرّفها في انتظارها',
   'At {domain}’s DNS provider, add a TXT record with this name and value, then check. Changes can take a few minutes to appear.':
@@ -1666,7 +1666,7 @@ export const ar: Catalog = {
   'Not verified yet': 'لم يُتحقق منها بعد',
   'Verified, {verifiedDomain}': 'متحقَّق منها، {verifiedDomain}',
   'Verified · {verifiedDomain}': 'متحقَّق منها · {verifiedDomain}',
-  'You’re connected with {name}': 'أنت متواصل مع {name}',
+  'You’re connected with {name}': 'بينك وبين {name} تواصل',
   'Request sent to {name}': 'أُرسل الطلب إلى {name}',
   'How do you know {name}?': 'كيف تعرف {name}؟',
   'Connect with {name}': 'تواصل مع {name}',
@@ -1685,7 +1685,7 @@ export const ar: Catalog = {
   'How will you know them?': 'كيف ستعرفهم؟',
   'Your invite link': 'رابط دعوتك',
   'Whoever opens it signs up in half a minute and lands in a conversation with you, connected.':
-    'من يفتحه يسجّل خلال نصف دقيقة ويصل إلى محادثة معك، متواصلًا.',
+    'من يفتحه يسجّل خلال نصف دقيقة ويصل إلى محادثة معك، وبينكما تواصل.',
   'Share the link': 'شارك الرابط',
   'Copy the link': 'انسخ الرابط',
   'They’ll be': 'سيكونون',
@@ -1892,11 +1892,11 @@ export const ar: Catalog = {
     'الخادم يحفظ سرًا. يحصل على واحد، ويرسله مع PKCE حين يستبدل رمزًا.',
   'Remove it: it stops for everyone at once': 'أزِله: يتوقف للجميع فورًا',
   'Everyone who let it in is signed out of it': 'يُسجَّل خروج كل من سمحوا له منه',
-  'Online while you use Caime': 'متصل أثناء استخدامك Caime',
+  'Online while you use Caime': 'على الخط أثناء استخدامك Caime',
   Busy: 'مشغول',
   Away: 'بعيد',
   Invisible: 'خفي',
-  'Hides when you’re online and last seen': 'يخفي أنك متصل وآخر ظهور',
+  'Hides when you’re online and last seen': 'يخفي وجودك على الخط وآخر ظهور',
   'Don’t remind me': 'لا تذكّرني',
   'After a day': 'بعد يوم',
   'If they haven’t answered you by then': 'إن لم يجيبوك بحلوله',
@@ -1935,7 +1935,7 @@ export const ar: Catalog = {
   'What your privacy settings allow': 'ما تسمح به إعدادات خصوصيتك',
   Limited: 'محدود',
   'Never when you’re online or were last, your status, about, pronouns or location, nor read receipts':
-    'لا متى تكون متصلًا أو كنت آخر مرة، ولا حالتك أو نبذتك أو ضمائرك أو موقعك، ولا إشعارات القراءة',
+    'لا متى تكون على الخط أو آخر ظهور لك، ولا حالتك أو نبذتك أو ضمائرك أو موقعك، ولا إشعارات القراءة',
   'Remove this rule': 'إزالة هذه القاعدة',
   'Only for them. Everything it doesn’t change follows how you know them.':
     'لهم فقط. كل ما لا تغيّره يتبع كيف تعرفهم.',
@@ -1991,15 +1991,15 @@ export const ar: Catalog = {
   'People you’re connected with. They join General straight away.':
     'أشخاص تتواصل معهم. ينضمون إلى العامة فورًا.',
   'They stop adding and removing people': 'يتوقفون عن إضافة الأشخاص وإزالتهم',
-  'Admins add people and remove members': 'المديرون يضيفون الأشخاص ويزيلون الأعضاء',
+  'Admins add people and remove members': 'المشرفون يضيفون الأشخاص ويزيلون الأعضاء',
   'Remove from the space': 'إزالة من المساحة',
   'They leave its conversations too': 'يغادرون محادثاتها أيضًا',
   'The space’s owner and admins change its name and what it’s for.':
-    'مالك المساحة ومديروها يغيّرون اسمها وغرضها.',
+    'مالك المساحة ومشرفوها يغيّرون اسمها وغرضها.',
   'Leave the space': 'مغادرة المساحة',
   'You leave its conversations too': 'تغادر محادثاتها أيضًا',
   'The admin who has been here longest takes over, or else the longest-standing member.':
-    'يتولاها المدير الأقدم هنا، وإلا فالعضو الأقدم.',
+    'يتولاها المشرف الأقدم هنا، وإلا فالعضو الأقدم.',
   'You’re the last one here, so the space closes.': 'أنت آخر من هنا، فتُغلق المساحة.',
   'You leave its conversations too. Someone in it can add you back.':
     'تغادر محادثاتها أيضًا. يستطيع من فيها إعادتك.',
@@ -2126,7 +2126,7 @@ export const ar: Catalog = {
   'Asked you to do something': 'طلب منك شيئًا',
   'Asked you a question': 'سألك سؤالًا',
   'No reply yet — follow up?': 'لا رد بعد — متابعة؟',
-  'Not connected yet': 'غير متواصلين بعد',
+  'Not connected yet': 'لا تواصل بينكما بعد',
   'You marked this quiet': 'علّمت هذه هادئة',
   'Waiting for a reply': 'في انتظار رد',
   'You’re waiting on them': 'تنتظرهم',
@@ -2225,11 +2225,11 @@ export const ar: Catalog = {
   '{by} added {joinNames}': 'أضاف {by} {joinNames}',
   '{by} added people': 'أضاف {by} أشخاصًا',
   '{by} removed {them}': 'أزال {by} {them}',
-  'You own the group now': 'أنت مالك المجموعة الآن',
-  '{name} owns the group now': '{name} مالك المجموعة الآن',
-  '{by} made {them} an admin': 'جعل {by} {them} مديرًا',
-  'You’re no longer an admin': 'لم تعد مديرًا',
-  '{name} is no longer an admin': 'لم يعد {name} مديرًا',
+  'You own the group now': 'المجموعة لك الآن',
+  '{name} owns the group now': 'المجموعة لـ {name} الآن',
+  '{by} made {them} an admin': 'جعل {by} {them} مشرفًا',
+  'You’re no longer an admin': 'لم تعد من المشرفين',
+  '{name} is no longer an admin': 'لم يعد {name} من المشرفين',
   '{by} brought this chat over from {from}. What’s above was written there.':
     'أحضر {by} هذه المحادثة من {from}. ما فوق كُتب هناك.',
   '{by} recorded a decision: {title}': 'سجّل {by} قرارًا: {title}',
@@ -2275,7 +2275,7 @@ export const ar: Catalog = {
   'Keep an item under {CHECKLIST_ITEM_MAX} characters.':
     'أبقِ العنصر تحت {CHECKLIST_ITEM_MAX} حرفًا.',
   'A list holds {CHECKLIST_MAX_ITEMS} items.': 'القائمة تتسع لـ {CHECKLIST_MAX_ITEMS} عناصر.',
-  'That item isn’t on the list anymore.': 'لم يعد ذلك العنصر في القائمة.',
+  'That item isn’t on the list any more.': 'لم يعد ذلك العنصر في القائمة.',
   'Only whoever added it, or made the list, can change it.':
     'من أضافه، أو من أنشأ القائمة، وحده يغيّره.',
   'That share isn’t on this split.': 'تلك الحصة ليست في هذا التقسيم.',
@@ -2429,7 +2429,7 @@ export const ar: Catalog = {
   'You are connected or share a conversation.': 'أنتما متواصلان أو تتشاركان محادثة.',
   'New to you': 'جديد عليك',
   'You’re not connected, and Caime hasn’t verified who this is. Be careful with links and payments.':
-    'لستما متواصلين، ولم يتحقق Caime ممن هذا. كن حذرًا مع الروابط والمدفوعات.',
+    'لستما متواصلين، ولم يتحقق Caime ممن هذا. توخَّ الحذر مع الروابط والمدفوعات.',
   // The server's own words, written for each reader (R54, second layer).
   '{agentName} handed a conversation to the team': 'سلّم {agentName} محادثة إلى الفريق',
   'A customer': 'عميل',
@@ -2475,8 +2475,8 @@ export const ar: Catalog = {
   '{name} escalated a conversation': 'صعّد {name} محادثة',
   '{name} is calling': '{name} يتصل',
   '{name} joined through your invite': 'انضم {name} عبر دعوتك',
-  'You’re connected. Say hi.': 'أنتما متصلان الآن. ألقِ التحية.',
-  'Say hi when you’re ready.': 'ألقِ التحية حين تكون جاهزًا.',
+  'You’re connected. Say hi.': 'أنتما متواصلان الآن. ألقِ التحية.',
+  'Say hi when you’re ready.': 'ألقِ التحية متى شئت.',
   '{name} wants to connect with you': 'يريد {name} التواصل معك',
   '{name} finished {title}': 'أنهى {name} {title}',
   '{name} finished the list': 'أنهى {name} القائمة',
@@ -2591,8 +2591,8 @@ export const ar: Catalog = {
   'School friends': 'أصدقاء المدرسة',
   'University friend': 'صديق جامعة',
   'University friends': 'أصدقاء الجامعة',
-  Neighbor: 'جار',
-  Neighbors: 'الجيران',
+  Neighbour: 'جار',
+  Neighbours: 'الجيران',
   Roommate: 'شريك سكن',
   Roommates: 'شركاء السكن',
   'Friend of a friend': 'صديق صديق',
@@ -2725,14 +2725,14 @@ export const ar: Catalog = {
   'Write to {name} on Caime:': 'اكتب إلى {name} على Caime:',
   'Couldn’t load the link. Try again.': 'تعذّر تحميل الرابط. حاول مرة أخرى.',
   'Customers see “Verified”: {name} proved it controls {domain}.':
-    'يرى العملاء ”موثّق“: أثبت {name} أنه يملك {domain}.',
+    'يرى العملاء ”موثّقة“: أثبتت {name} أنها تملك {domain}.',
   'Verify your domain below, and customers who open it see “Verified” before they write.':
     'وثّق نطاقك أدناه، فيرى العملاء الذين يفتحونه ”موثّق“ قبل أن يكتبوا.',
   'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.':
     'جئت لتكتب إلى {name}: افتح المحادثة وقل ما تحتاج إليه. ابحث عن آخرين بالمعرّف أو البريد في أي وقت.',
   'Write to {name}': 'اكتب إلى {name}',
   'Verified: {name} proved it controls {verifiedDomain}.':
-    'موثّق: أثبت {name} أنه يملك {verifiedDomain}.',
+    'موثّقة: أثبتت {name} أنها تملك {verifiedDomain}.',
   // What a clinic's lawyer needs (R54).
   '{by} erased this conversation’s messages at your request.':
     'محا {by} رسائل هذه المحادثة بناءً على طلبك.',
@@ -2776,7 +2776,7 @@ export const ar: Catalog = {
     'ما تفعله Caime لك من تلقاء نفسها، كما تضبطه هنا فقط: حفظ ما يصل، وتذكيرك حين لا يرد أحدهم. أما من يصل إليك ومتى، فتحت الإشعارات والأولويات.',
   'After {retentionText}': 'بعد {retentionText}',
   'New messages only; what came before keeps its time': 'الرسائل الجديدة فقط؛ ما سبق يحتفظ بمدته',
-  Verified: 'موثّق',
+  Verified: 'تم التوثيق',
   '{n} weeks': {
     zero: 'لا أسابيع',
     one: 'أسبوع واحد',

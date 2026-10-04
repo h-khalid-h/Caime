@@ -284,7 +284,7 @@ export function applyChecklistOp(
     return { ok: true, items: [...items, item] };
   }
   const item = items.find((i) => i.id === op.itemId);
-  if (!item) return { ok: false, error: tr('That item isn’t on the list anymore.') };
+  if (!item) return { ok: false, error: tr('That item isn’t on the list any more.') };
   if (op.op === 'toggle')
     return {
       ok: true,

@@ -70,6 +70,34 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       const terms = read((await t.app.inject({ method: 'GET', url: '/terms' })).body);
       expect(terms).toContain('between you and Nile &amp; Sons &lt;Ltd&gt; (&ldquo;we&rdquo;)');
       expect(terms).toContain('You need to be 16 or older');
+      // Without an address or a governing law set, the pages say neither (and the review says
+      // the owner owes them), rather than inventing one.
+      expect(privacy).not.toContain('(Tartu');
+      expect(terms).not.toContain('The law</h2>');
+      expect(terms).toContain('<h2>11. Contact</h2>');
+    } finally {
+      await t.close();
+    }
+  });
+
+  it('names the operator’s address and the law the terms are under, when the operator set them', async () => {
+    const t = await createTestApp({
+      LEGAL_NAME: 'Nile OÜ',
+      LEGAL_ADDRESS: 'Sepapaja 6, 15551 Tallinn, Estonia',
+      GOVERNING_LAW: 'Estonia',
+    });
+    try {
+      const privacy = read((await t.app.inject({ method: 'GET', url: '/privacy' })).body);
+      expect(privacy).toContain(
+        'Caime is run by Nile OÜ (Sepapaja 6, 15551 Tallinn, Estonia), which is responsible',
+      );
+      expect(privacy).toContain(
+        '<p>Nile OÜ &middot; Sepapaja 6, 15551 Tallinn, Estonia &middot; <a',
+      );
+      const terms = read((await t.app.inject({ method: 'GET', url: '/terms' })).body);
+      expect(terms).toContain('<h2>11. The law</h2>');
+      expect(terms).toContain('under the law of Estonia, and its courts settle a dispute');
+      expect(terms).toContain('<h2>12. Contact</h2>');
     } finally {
       await t.close();
     }
@@ -79,6 +107,8 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
     const facts: PageFacts = {
       processors: [],
       legalName: 'Nile',
+      legalAddress: null,
+      governingLaw: null,
       contactEmail: 'hi@nile.example',
       minimumAge: 13,
       publicUrl: BASE,

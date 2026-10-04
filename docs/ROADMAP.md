@@ -1736,3 +1736,19 @@ plan hadn't reached, in the order people will ask for them.
   organization's page 1,050 req/s and a person's 520 req/s, which ran four reads in a row and
   now runs three, the last two together (`publicPerson`, `publicPageFor`), 2.9 ms alone from
   4.4 ms.
+- 2026-10-04 — Reviews in three chairs. As a native speaker: the Arabic catalogs read well
+  (MSA, Caime's voice, consistent terms); fixed what read as a man addressing a man or
+  describing a third person by pronoun (participles for the reader: "متصل", "متواصل",
+  "جاهز", "جديد هنا", "مسجّل الدخول"; "اجعله" for someone of unknown gender), count
+  agreement ("{n} متأخرة"), an organization's gender ("موثّقة", "أثبتت أنها تملك"), the
+  status "Requested" ("أُرسل الطلب"), and one term: an admin is now "مشرف" everywhere (the site
+  already said so), a manager stays "مدير". The English is British with "organization" as the
+  product's term; the two leaks ("Neighbor", "anymore") are fixed; every key spell-checked
+  (cspell, en-GB), nothing else found. As a lawyer: `docs/LEGAL-REVIEW-2026-10.md`, 25
+  findings on the privacy policy, the terms and the DPA draft, the product-side ones fixed
+  (the controller's address and the governing law as `LEGAL_ADDRESS` and `GOVERNING_LAW`,
+  rendered when set; health data, legal bases, automated decisions and breach notice on the
+  privacy page; the law clause, the organizations-as-controllers clause, EU withdrawal, notice
+  on closing and Caime's own rights in the terms; the Article 28(3) clauses, health-data
+  warranty, 48-hour breach notice, sub-processor notice and objection, end-of-processing and
+  liability in the DPA), the rest marked ⛔ for the owner and a licensed lawyer.

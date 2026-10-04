@@ -10,10 +10,23 @@ facts are ours to keep true. Clauses marked **[lawyer]** need a decision or word
 
 Parties, below, are **the Organization** (a clinic, a shop, a school, any organization with a
 verified page on Caime: the controller of its customers' conversations) and **the Operator**
-(the company running this Caime, named by `LEGAL_NAME`: the processor). Where an organization's
-own people use Caime for themselves, their accounts are theirs and the Operator is their
-controller under the privacy policy; this agreement covers only the Organization's business
-conversations.
+(the company running this Caime, named by `LEGAL_NAME` and `LEGAL_ADDRESS`: the processor). Where
+an organization's own people use Caime for themselves, their accounts are theirs and the Operator
+is their controller under the privacy policy; this agreement covers only the Organization's
+business conversations.
+
+Reviewed on 2026-10-04 (docs/LEGAL-REVIEW-2026-10.md, by this session in the lawyer's chair, not
+by a lawyer): the clauses the GDPR's Article 28(3) requires are each present below or marked for
+the lawyer, and the ones a clinic's lawyer will ask about first (health data, sub-processor
+changes, breach deadlines, deletion at the end) are written out rather than left open. Where the
+Organization is in Egypt, Saudi Arabia or the UAE, its own data protection law applies to it as
+the controller (Egypt's Law No. 151 of 2020, which treats health data as sensitive and requires a
+permit to process it; Saudi Arabia's PDPL; the UAE's Federal Decree-Law No. 45 of 2021), and the
+Operator, in the EU, is under the GDPR: section 14 says how the two meet.
+
+The agreement maps onto the shape the EU's standard clauses use: sections 1–3 are Annex I (the
+processing), section 6 is Annex II (the technical and organizational measures), section 7 is
+Annex III (the sub-processors).
 
 ## 1. Subject matter and duration
 
@@ -60,15 +73,18 @@ The Operator processes the Organization's data only to provide the service as do
 retention, its AI agent on or off and its text, its hours, its apps), and as required by law.
 Caime never reads, scores or sells the Organization's conversations, trains no model on them,
 and sends an AI only what the Organization turned on (the agent) with the customer's name masked.
-**[lawyer]** the standard clause on documented instructions and on informing the controller if an
-instruction infringes the law.
+The Operator processes only on the Organization's documented instructions, which are the product's
+settings and this agreement, and tells the Organization at once if, in its view, an instruction
+infringes data protection law, unless the law forbids it to. Where the law requires the Operator
+to process otherwise, it tells the Organization first, unless the law forbids that too.
+**[lawyer]** the wording against the GDPR's Article 28(3)(a).
 
 ## 5. Confidentiality
 
-Everyone who operates this Caime is bound to confidentiality. **[lawyer]** the wording. The
-Operator's own staff reach conversations only through the operator routes, each use in the audit
-log; the Operator has no routine access to message content and the product has no "support view"
-of a conversation.
+Everyone who operates this Caime is bound to confidentiality, by contract or by a statutory
+duty, before they touch any of it. **[lawyer]** the wording. The Operator's own staff reach
+conversations only through the operator routes, each use in the audit log; the Operator has no
+routine access to message content and the product has no "support view" of a conversation.
 
 ## 6. Security measures (Article 32)
 
@@ -88,14 +104,27 @@ What the product does today, from docs/SECURITY.md, which is checked against the
 - End-to-end encryption is offered to people for private conversations; business conversations
   are not end-to-end encrypted, so that the team, the agent and the apps can read them. Say so.
 - A penetration test by a third party has **not** been done. **[owner]**
+- **Health data.** Business conversations with a clinic, a pharmacy or a practitioner carry
+  special categories of data (health). The Organization warrants it has a lawful basis for
+  processing them (for a provider of care, the GDPR's Article 9(2)(h) with its duty of secrecy;
+  in Egypt, the permit Law No. 151 of 2020 requires for sensitive data; elsewhere, its own law's
+  equivalent) and that it does not use Caime as its medical record: Caime stores and delivers
+  what was written and keeps no record of care. The Operator applies the same measures to these
+  conversations as to all others and never reads, infers from or trains on them.
 
 ## 7. Sub-processors
 
-The Organization authorizes the sub-processors below. The list is one constant in the code
-(`packages/core/src/processors.ts`); the privacy page shows which of them this Caime uses, from
-its configuration, and this agreement names them all with what each receives. A new one is added
-to the code and to this list in the same change, and the Organization is told **[lawyer]** how
-and how long before.
+The Organization gives a general authorization for the sub-processors below. The list is one
+constant in the code (`packages/core/src/processors.ts`); the privacy page shows which of them
+this Caime uses, from its configuration, and this agreement names them all with what each
+receives. A new one, or a change of one, is added to the code and to this list in the same change,
+and the Organization is told at least 30 days before it processes anything of the
+Organization's, by email to its owner and on the privacy page; within those 30 days it may object
+in writing, and if the Operator cannot offer a way round the objection, the Organization may end
+this agreement and close its page, exporting first (section 12), with any time paid for and not
+used returned. The Operator binds each sub-processor in writing to data protection obligations no
+weaker than this agreement's, and remains fully liable to the Organization for what a
+sub-processor does. **[lawyer]** the wording.
 
 | Sub-processor | What it does | What it receives | When |
 | --- | --- | --- | --- |
@@ -126,6 +155,16 @@ The Organization answers its customers' requests itself, from its inbox, with th
   sent from then on, and the customer is told where they write.
 - **Objection and restriction:** a customer blocks the Organization, which stops every write both
   ways; a customer under 18 cannot be written to first.
+- **Rectification:** a customer corrects their own name and profile; what was written in a
+  conversation is not rewritten by anyone, as a record of what was said, and the Organization
+  answers a request to correct it by writing the correction in the conversation.
+
+The Operator also helps the Organization, taking account of the nature of the processing and the
+information available to it, with its own duties under the GDPR's Articles 32 to 36: the
+security measures above, telling it of a breach (section 10), and, for a data protection impact
+assessment or a prior consultation with an authority, the facts about the processing in this
+agreement and in docs/SECURITY.md, and answers to the Organization's questions through
+`CONTACT_EMAIL` within 10 working days. **[lawyer]** whether that assistance is charged for.
 
 ## 9. The Operator's own retention
 
@@ -136,10 +175,13 @@ days. Deleting an account removes its data at once except what the law requires 
 
 ## 10. Personal data breaches
 
-The Operator tells the Organization without undue delay of a breach affecting its data, with what
-is known: what happened, which data, which customers, what was done. **[lawyer]** the deadline
-(the GDPR gives the controller 72 hours to the authority), the channel (the owner's contact
-address: today `CONTACT_EMAIL` on the service), and what the Organization must do in turn.
+The Operator tells the Organization without undue delay, and in any case within 48 hours of
+becoming aware of it, of a breach affecting its data, with what is known then: what happened,
+which data, which customers, what was done and what is advised; and completes it as more is
+learned. It writes to the Organization's owner's email address, and the Organization keeps that
+address current. The Organization answers for telling its authority (the GDPR gives it 72 hours)
+and its customers; the Operator helps with the facts. **[lawyer]** the wording; 48 hours is the
+Operator's proposal, inside the Organization's 72.
 
 ## 11. Audits
 
@@ -151,15 +193,37 @@ clause and its limits.
 ## 12. End of processing
 
 On closing, the Organization exports what it needs first (section 8); after closing, nothing more
-is written in its conversations, its customers keep what they were sent, and the Operator deletes
-the rest of the Organization's data **[lawyer]** when and how (today: a closed organization nobody
-continued is deleted only by the operator, with everything its customers were sent by it).
+is written in its conversations and its customers keep what they were sent (their own copy of a
+conversation they are a party to, as the privacy policy says). The Operator's proposal: the
+Organization's export stays available to its last owner for 30 days after closing, and after
+those 30 days the Operator deletes what was the Organization's alone (its team's roles, its
+settings, its knowledge text, its tokens and webhooks, its insights) and keeps the conversations
+only as its customers' copies, unless the law requires otherwise. **[lawyer]** whether the
+customers' copies prevail (today they do, and the product has no deletion clock after closing:
+a closed organization nobody continued is deleted only by the operator), and the wording.
 
 ## 13. International transfers
 
 The hosting provider's region is the Operator's choice (`HOSTING_PROVIDER`) **[owner]**: name the
 region. Anthropic and Stripe process in the United States and Europe under their own transfer
-mechanisms **[lawyer]** cite them.
+mechanisms **[lawyer]** cite them (Stripe Payments Europe is in Ireland; Anthropic, PBC and Expo
+are in the United States, Cloudflare, Inc. too; for the United States, the European Commission's
+standard contractual clauses, or the Data Privacy Framework where the company is certified). An
+Organization outside the EU (in Egypt, Saudi Arabia or the UAE) receives its customers' data from
+the Operator in the EU under its own law's rules on transfer **[lawyer]**.
+
+## 14. Liability, term and law
+
+- Each party is liable to the other for the damage its own breach of this agreement causes; the
+  Operator's liability to the Organization is capped as the terms cap it (what the Organization
+  paid for Caime in the 12 months before the claim), except for what the law does not allow to be
+  capped. **[lawyer]** whether a processor's liability for fines and data subjects' claims under
+  the GDPR's Article 82 should be allocated differently.
+- This agreement starts when the Organization verifies its page and ends with section 12. It
+  prevails over the terms where the two conflict about personal data.
+- It is under the same law and courts as the terms (`GOVERNING_LAW`, the Operator's; the terms
+  carry the clause) **[owner]** set it; the Organization's own data protection law applies to it
+  as the controller regardless.
 
 ---
 

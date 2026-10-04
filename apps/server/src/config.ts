@@ -133,6 +133,13 @@ const Env = z.object({
   LEGAL_NAME: z.string().trim().min(1).max(120).default('DATA C OÜ'),
   CONTACT_EMAIL: z.string().email().default('hello@cai.me'),
   /**
+   * The operator's postal address, as data protection law asks a controller to give one
+   * (docs/LEGAL-REVIEW-2026-10.md), and the law and courts the terms are under ("Estonia").
+   * Unset, the pages leave them out and say so to the operator in the review.
+   */
+  LEGAL_ADDRESS: z.string().trim().min(1).max(240).optional(),
+  GOVERNING_LAW: z.string().trim().min(1).max(80).optional(),
+  /**
    * Who hosts this Caime, as the privacy page's list of processors names it (R54): the company
    * and where, "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider".
    */
