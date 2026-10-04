@@ -38,10 +38,15 @@ function ariaOf(
   s: RNPressableProps['accessibilityState'],
 ) {
   if (!s || Platform.OS !== 'web') return {};
-  const aria: Record<string, boolean> = {};
+  const aria: Record<string, boolean | string> = {};
   if (s.checked !== undefined && s.checked !== 'mixed') aria['aria-checked'] = s.checked;
-  if (s.selected !== undefined)
-    aria[role === 'button' ? 'aria-pressed' : 'aria-selected'] = s.selected;
+  // A link that is where you are says so with aria-current (aria-selected is for tabs and
+  // options; on a link it is prohibited); a button says pressed.
+  if (s.selected !== undefined) {
+    if (role === 'link') {
+      if (s.selected) aria['aria-current'] = 'page';
+    } else aria[role === 'button' ? 'aria-pressed' : 'aria-selected'] = s.selected;
+  }
   if (s.disabled) aria['aria-disabled'] = true;
   if (s.busy) aria['aria-busy'] = true;
   if (s.expanded !== undefined) aria['aria-expanded'] = s.expanded;

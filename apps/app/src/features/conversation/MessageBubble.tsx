@@ -4,7 +4,7 @@ import { formatBytes, formatClock, systemText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, type ReactNode, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
@@ -75,18 +75,25 @@ function DeliveryIcon({
   color: string;
   readColor: string;
 }) {
+  // The words are on a View that is an image: a label on the icon itself lands on its path
+  // on the web, where a screen reader can't place it (axe: aria-prohibited-attr).
+  const mark = (label: string, icon: ReactNode) => (
+    <View accessible accessibilityRole="image" accessibilityLabel={label}>
+      {icon}
+    </View>
+  );
   switch (delivery) {
     case 'queued':
     case 'sending':
-      return <Clock size={12} color={color} accessibilityLabel={tr('Sending')} />;
+      return mark(tr('Sending'), <Clock size={12} color={color} />);
     case 'failed':
-      return <CircleAlert size={13} color="#FFFFFF" accessibilityLabel={tr('Not sent')} />;
+      return mark(tr('Not sent'), <CircleAlert size={13} color="#FFFFFF" />);
     case 'sent':
-      return <Check size={13} color={color} accessibilityLabel={tr('Sent')} />;
+      return mark(tr('Sent'), <Check size={13} color={color} />);
     case 'delivered':
-      return <CheckCheck size={13} color={color} accessibilityLabel={tr('Delivered')} />;
+      return mark(tr('Delivered'), <CheckCheck size={13} color={color} />);
     case 'read':
-      return <CheckCheck size={13} color={readColor} accessibilityLabel={tr('Read')} />;
+      return mark(tr('Read'), <CheckCheck size={13} color={readColor} />);
     default:
       return null;
   }

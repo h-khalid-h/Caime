@@ -796,6 +796,17 @@ plan hadn't reached, in the order people will ask for them.
       rows only: their waiting items and what was asked of them, never the other side's
       private ones; nothing on your own profile). Two bounded reads when a profile opens.
       `relationship-profile.test.ts`.
+- [x] The accessibility pass on the web (`e2e/a11y.spec.ts`): axe, WCAG 2.1 A and AA, over the
+      primary signed-in screens on a phone and a desktop, in English and in Arabic, and over
+      every page a visitor gets (the landing page, the five site pages, the entry screens, a
+      person's and an organization's page, the 404), a serious or critical violation failing
+      CI. The first run found five kinds, all fixed: the wordmark's and the rail's mark's name
+      on a div with no role (now an image), the desktop rail's links saying `aria-selected`
+      (now `aria-current="page"`, in the one `Pressable` that turns state into ARIA), the
+      message ticks' words on the icon's path (now an image around it), the presence dot's
+      colour with its raw state as its name (now "Online", "Busy", "Away", translated) and an
+      invalid autocomplete token on the sign-up handle. 24 screens, nothing found after. A
+      screen-reader pass on a phone still waits on a phone.
 - [ ] ⛔ Voice notes transcribed and searchable, call summaries with decisions and actions
       (PRD §46–47): a speech-to-text provider, the owner's choice (R52).
 
@@ -1715,3 +1726,8 @@ plan hadn't reached, in the order people will ask for them.
   with them (`PersonProfileView.memory`, `modules/people.ts`, the `Remembered` rows under
   "and you"). `sureness.test.ts`, `relationship-profile.test.ts`, the E2E's business request.
   Budget 442.8 KB.
+- 2026-10-04 — The accessibility pass: `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA) over 24
+  screens and pages in both languages and fails CI on a serious or critical violation; the
+  five kinds it found are fixed (`Wordmark`, `NavRail`, `Pressable`'s ARIA for a selected
+  link, the message ticks in `MessageBubble`, the presence dot in `Avatar`, the sign-up
+  handle's autocomplete). Budget 443.0 KB.

@@ -1,12 +1,20 @@
 import { avatarColors } from '@caime/brand/tokens';
 import type { PresenceState } from '@caime/core/api';
 import { initials } from '@caime/core/format';
+import { msg, tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { useTheme } from '@/theme/theme';
 import { Text } from './Text';
+
+/** The presence dot's words for a screen reader (the colour alone says nothing to it). */
+const PRESENCE_WORDS: Record<string, string> = {
+  online: msg('Online'),
+  busy: msg('Busy'),
+  away: msg('Away'),
+};
 
 export interface AvatarProps {
   id: string;
@@ -76,7 +84,9 @@ export const Avatar = memo(function Avatar({
       </View>
       {presenceColor ? (
         <View
-          accessibilityLabel={presence ?? undefined}
+          accessible={Boolean(presence)}
+          accessibilityRole={presence ? 'image' : undefined}
+          accessibilityLabel={presence ? tr(PRESENCE_WORDS[presence] ?? msg('Online')) : undefined}
           style={{
             position: 'absolute',
             end: 0,

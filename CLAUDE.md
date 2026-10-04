@@ -360,8 +360,15 @@ These are rules, not preferences.
   customer's block of an organization both stop at it. New write routes do the same, with a
   case in `blocking.test.ts`.
 - React Native Web drops `accessibilityState`; the app's `Pressable` (`src/ui/Pressable.tsx`)
-  turns it into ARIA on the web. Use that `Pressable`, and assert state in E2E with
-  `toBeChecked()` and friends rather than by styling.
+  turns it into ARIA on the web (a selected link is `aria-current="page"`, a tab or option
+  `aria-selected`, a button `aria-pressed`). Use that `Pressable`, and assert state in E2E with
+  `toBeChecked()` and friends rather than by styling. `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA)
+  over the primary screens in both languages and every visitor page, and fails on a serious or
+  critical violation: a name for a screen reader goes on a `View` with a role (`accessible`,
+  `accessibilityRole="image"` for a mark, a dot or an icon's meaning), never on an `Svg`, an
+  icon or a bare `View`, where the web puts it on an element with no role; and a state said by
+  colour (presence) says it in words through `tr` too. A new primary screen joins the spec's
+  list.
 - A kit's field checks (`prepareKitFields`) run in the app before sending and again on the
   server over what was sent, so they must be idempotent: a checked value checks the same.
 - A Split card (R38) is a record, never a transfer: `shareOut` (core `kit-cards.ts`) gives

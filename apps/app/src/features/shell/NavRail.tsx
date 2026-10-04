@@ -139,7 +139,12 @@ export function NavRail() {
         gap: 6,
       }}
     >
-      <View style={{ height: 44, justifyContent: 'center' }} accessibilityLabel={tr('Caime')}>
+      <View
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={tr('Caime')}
+        style={{ height: 44, justifyContent: 'center' }}
+      >
         <IconMark size={40} />
       </View>
       {ITEMS.map((i) => (

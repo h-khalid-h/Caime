@@ -3010,4 +3010,5 @@ export const ar: Catalog = {
   '{name} owes': 'على {name}',
   'you owe': 'عليك',
   decided: 'تقرر',
+  Online: 'على الخط',
 };

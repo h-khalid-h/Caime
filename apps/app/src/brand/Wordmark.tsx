@@ -1,6 +1,7 @@
 import { HEART_PATH, ICON_MARK, WORDMARK } from '@caime/brand/generated/wordmark';
 import { palette } from '@caime/brand/tokens';
 import { tr } from '@caime/core/i18n';
+import { View } from 'react-native';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import { useTheme } from '@/theme/theme';
 
@@ -16,17 +17,20 @@ export function Wordmark({
 }) {
   const t = useTheme();
   const width = (WORDMARK.width / WORDMARK.height) * height;
+  // The name is on a View that is an image: on the web an Svg's own label lands on a div with
+  // no role, which a screen reader can't place (axe: aria-prohibited-attr).
   return (
-    <Svg
-      width={width}
-      height={height}
-      viewBox={WORDMARK.viewBox}
+    <View
+      accessible
       accessibilityRole="image"
       accessibilityLabel={tr('Caime')}
+      style={{ width, height }}
     >
-      <Path d={WORDMARK.letters} fill={color ?? (t.scheme === 'dark' ? '#FFFFFF' : t.c.ink)} />
-      <Path d={HEART_PATH} transform={WORDMARK.heartTransform} fill={heartColor} />
-    </Svg>
+      <Svg width={width} height={height} viewBox={WORDMARK.viewBox} accessible={false}>
+        <Path d={WORDMARK.letters} fill={color ?? (t.scheme === 'dark' ? '#FFFFFF' : t.c.ink)} />
+        <Path d={HEART_PATH} transform={WORDMARK.heartTransform} fill={heartColor} />
+      </Svg>
+    </View>
   );
 }
 

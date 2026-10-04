@@ -206,7 +206,7 @@ export default function SignUp() {
             }}
             autoCapitalize="none"
             autoCorrect={false}
-            autoComplete="username-new"
+            autoComplete="username"
             textContentType="username"
             returnKeyType="next"
             onSubmitEditing={() => refs.email.current?.focus()}

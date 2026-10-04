@@ -22,6 +22,7 @@
     "e2e": "playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "2.5.14",
     "@playwright/test": "1.56.1",
     "@types/smtp-server": "^3.5.13",
