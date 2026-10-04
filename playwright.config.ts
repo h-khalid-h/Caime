@@ -29,7 +29,9 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // On CI the GitHub reporter names a failing test in the run's annotations, readable without
+  // the log or the report.
+  reporter: process.env.CI ? [['list'], ['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: BASE,
     // What CI's machines are, pinned so a run anywhere is the same run: the country sign-up

@@ -31,6 +31,7 @@ export { default as ClipboardList } from 'lucide-react-native/icons/clipboard-li
 export { default as Clock } from 'lucide-react-native/icons/clock';
 export { default as Copy } from 'lucide-react-native/icons/copy';
 export { default as CornerUpLeft } from 'lucide-react-native/icons/corner-up-left';
+export { default as Download } from 'lucide-react-native/icons/download';
 export { default as Ellipsis } from 'lucide-react-native/icons/ellipsis';
 export { default as Eye } from 'lucide-react-native/icons/eye';
 export { default as EyeOff } from 'lucide-react-native/icons/eye-off';

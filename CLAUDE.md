@@ -142,6 +142,15 @@ These are rules, not preferences.
   signed in, so the page stays; a new app route that must not be
   indexed needs nothing (the default is `noindex`), and a new web-root file (`robots.txt`,
   `sitemap.xml`) is a reserved handle.
+- An organization's door (R53): its public page's call to action is `doorPath(handle)`
+  (`/o/<handle>?write`, `lib/public-pages.ts`), which `appPath` admits, `handleIn` reads as the
+  handle and `doorIn` (`lib/paths.ts`) tells from the plain page. Onboarding names it, the
+  organization route passes `write` to `OrgScreen`, which starts (or opens) the customer's
+  conversation once through `endpoints.messageOrg` and replaces the route. The team reads
+  `GET /orgs/:id/door` (`OrgDoorView`: the link on `PUBLIC_URL`, the QR as one SVG path from
+  `lib/door.ts`, cached an hour in the browser), drawn by `features/orgs/OrgDoor.tsx`. Anything
+  else printed for a clinic (a receipt line, a bio) reuses that link and path, never another
+  encoder or a second link shape.
 - Invite links (R1): `lib/invites.ts` makes, opens and accepts them; accepting goes through
   `acceptRequest(…, { viaInvite: true })` on a request the invite stands for (never a second path
   to a connection), so blocks, suggestions and notifications behave as for a request. The token
@@ -239,7 +248,11 @@ These are rules, not preferences.
   one. Anything else the server writes for a particular person (a fan-out's line, a job's)
   goes through `asReader` the same way; the key collector reads `apps/server/src` too. A
   table's labels (roles, kit states, kit names) are English keys: show them through `tr`.
-  Mail stays English (7-bit, R48).
+  Mail stays English (7-bit, R48). The device's shown language reaches the account only inside
+  `savePrefs`' one debounced snapshot (`interfaceLanguage`): a request of its own raced a choice
+  being saved and its echo (`me.updated`, or read back) undid it. `savePrefs` flushes on
+  `pagehide` with `keepalive`, so a change just before a reload isn't lost; a new preference
+  joins its snapshot and `adoptPreferences`, nowhere else.
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
   rendered in the app's shell like the landing page, for everyone, signed in or not, and never

@@ -970,6 +970,14 @@ export interface CalendarView {
 }
 
 /** An organization's bookings (R51): the appointments its team agreed, or was asked, with customers. */
+/** An organization's door (R53): the link that lands a customer in the conversation, and its QR code. */
+export interface OrgDoorView {
+  /** The link, on Caime's web origin, ending in `?write`. */
+  url: string;
+  /** The code of it: modules per side, and the dark modules as one SVG path in module units. */
+  qr: { size: number; path: string };
+}
+
 export interface OrgBookingView {
   messageId: string;
   conversationId: string;

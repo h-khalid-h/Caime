@@ -393,7 +393,7 @@ export function renderPublic(
     ${page.foundedYear ? `<div><dt class="mono">since</dt><dd>${page.foundedYear}</dd></div>` : ''}
     ${page.website ? `<div><dt class="mono">website</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
   </dl>
-  <p class="cta"><a href="${wayIn('sign-up', path)}">Message ${esc(o.name)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', path)}" class="quiet">Sign in</a></p>
+  <p class="cta"><a href="${wayIn('sign-up', doorPath(o.handle))}">Message ${esc(o.name)} on ${SITE_NAME}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">Sign in</a></p>
 </main>`,
       };
     }
@@ -462,6 +462,12 @@ export /**
  */
 const wayIn = (to: 'sign-up' | 'sign-in', path: string) =>
   `/${to}?link=${encodeURIComponent(path)}`;
+
+/**
+ * An organization's door (R53): its page asking to be written to, so whoever signs in or up
+ * from it lands in the conversation, as an invite's guest does, with nothing more to tap.
+ */
+export const doorPath = (handle: string) => `/o/${handle}?write`;
 
 const PUBLIC_STYLE = `
 <style id="pub-style">

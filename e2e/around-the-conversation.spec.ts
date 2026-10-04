@@ -536,6 +536,10 @@ test.describe
       await expect(page.getByTestId('guide-character').filter({ visible: true })).toBeVisible();
       await page.goto('/settings/appearance');
       await page.getByRole('radio', { name: /^Minimal,/ }).click();
+      // The account has it shortly after (savePrefs debounces), and a reload reads it back.
+      await expect
+        .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
+        .toMatchObject({ personality: 'minimal' });
       await page.goto('/search');
       await expect(page.getByTestId('guide-icon').filter({ visible: true })).toBeVisible();
       await expect(page.getByTestId('guide-character')).toHaveCount(0);
@@ -770,7 +774,7 @@ test.describe
       // Its way in leads to sign-up; the app remembers this page and comes back to it after.
       await expect(
         visitor.getByRole('link', { name: `Message Nile Dental ${stamp} on Caime` }),
-      ).toHaveAttribute('href', `/sign-up?link=${encodeURIComponent(`/o/${handle}`)}`);
+      ).toHaveAttribute('href', `/sign-up?link=${encodeURIComponent(`/o/${handle}?write`)}`);
       await expect(visitor.locator('#root')).toBeHidden();
       await visiting.close();
       expect(await (await page.request.get('/sitemap.xml')).text()).toContain(`/o/${handle}<`);

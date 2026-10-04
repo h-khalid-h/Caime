@@ -1633,7 +1633,6 @@ export const ar: Catalog = {
   'Leave {name}': 'مغادرة {name}',
   'Close {name}': 'إغلاق {name}',
   'Its page goes, and the team’s seats end.': 'تزول صفحتها، وتنتهي مقاعد الفريق.',
-  '{name} proved it controls {verifiedDomain}.': 'أثبتت {name} أنها تتحكم في {verifiedDomain}.',
   'Caime hasn’t verified who runs this organization. Be careful with links and payments.':
     'لم يتحقق Caime ممن يدير هذه المؤسسة. كن حذرًا مع الروابط والمدفوعات.',
   'It stops being able to write to you': 'لا تعود قادرة على الكتابة لك',
@@ -2724,4 +2723,22 @@ export const ar: Catalog = {
   'Public services': 'الخدمات العامة',
   Journalist: 'صحفي',
   Journalists: 'الصحفيون',
+  // The organization's door (R53).
+  'Your door': 'بابك',
+  'Put this link, or its code, on the door, the receipt and the bio. Whoever opens it writes to {name} in Caime: someone new signs up and lands in the conversation, a customer opens theirs.':
+    'ضع هذا الرابط، أو رمزه، على الباب وعلى الإيصال وفي النبذة. من يفتحه يكتب إلى {name} في Caime: الجديد يسجّل ويصل إلى المحادثة مباشرة، والعميل يفتح محادثته.',
+  'QR code of {name}’s link': 'رمز QR لرابط {name}',
+  'Save the code': 'حفظ الرمز',
+  'Saved as an SVG: it prints sharp at any size.': 'حُفظ بصيغة SVG: يُطبع واضحًا بأي حجم.',
+  'Write to {name} on Caime:': 'اكتب إلى {name} على Caime:',
+  'Couldn’t load the link. Try again.': 'تعذّر تحميل الرابط. حاول مرة أخرى.',
+  'Customers see “Verified”: {name} proved it controls {domain}.':
+    'يرى العملاء ”موثّق“: أثبت {name} أنه يملك {domain}.',
+  'Verify your domain below, and customers who open it see “Verified” before they write.':
+    'وثّق نطاقك أدناه، فيرى العملاء الذين يفتحونه ”موثّق“ قبل أن يكتبوا.',
+  'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.':
+    'جئت لتكتب إلى {name}: افتح المحادثة وقل ما تحتاج إليه. ابحث عن آخرين بالمعرّف أو البريد في أي وقت.',
+  'Write to {name}': 'اكتب إلى {name}',
+  'Verified: {name} proved it controls {verifiedDomain}.':
+    'موثّق: أثبت {name} أنه يملك {verifiedDomain}.',
 };

@@ -13,6 +13,7 @@ export const qk = {
   orgs: ['orgs'] as const,
   org: (handle: string) => ['org', handle] as const,
   orgSpaces: (id: string) => ['org-spaces', id] as const,
+  orgDoor: (id: string) => ['org-door', id] as const,
   orgInbox: (orgId: string, view: string) => ['org-inbox', orgId, view] as const,
   orgInsights: (orgId: string, days: number) => ['org-insights', orgId, days] as const,
   businessSummary: ['business-summary'] as const,

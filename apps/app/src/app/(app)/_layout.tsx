@@ -1,12 +1,12 @@
 import { Redirect, router, Slot, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { endpoints } from '@/api/endpoints';
 import { CallLayer } from '@/features/calls/CallLayer';
 import { ScreenError } from '@/features/common/ScreenError';
 import { InboxList } from '@/features/inbox/InboxList';
 import { LiveLocationSharer } from '@/features/location/LiveLocationSharer';
 import { useReport } from '@/features/safety/report';
+import { savePrefs } from '@/features/settings/savePrefs';
 import { NavRail } from '@/features/shell/NavRail';
 import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
@@ -63,10 +63,9 @@ export default function AppLayout() {
   const shownIn = user?.preferences?.interfaceLanguage;
   useEffect(() => {
     if (!onboarded || !language || shownIn === language) return;
-    void endpoints
-      .updateMe({ preferences: { interfaceLanguage: language } })
-      .then((res) => useSession.getState().setUser(res.user))
-      .catch(() => {});
+    // Through the one debounced save, with the device's whole choice: a request of its own
+    // raced the choice being saved, and its echo (live, or read back) undid it.
+    savePrefs({});
   }, [onboarded, language, shownIn]);
   if (!user) return null;
   if (!user.onboarded && pathname !== '/onboarding') return <Redirect href="/onboarding" />;

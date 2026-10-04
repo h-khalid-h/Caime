@@ -20,6 +20,7 @@ import {
   nextOwner,
   normalizeDomain,
   OrgDomainBody,
+  type OrgDoorView,
   OrgMemberBody,
   OrgMembersBody,
   type OrgRole,
@@ -40,6 +41,7 @@ import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
 import { bookingOf } from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
+import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
@@ -54,6 +56,7 @@ import {
 } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
+import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
 import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { endFollowsOf } from '../lib/updates';
@@ -288,6 +291,21 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
+  });
+
+  /**
+   * Its door (R53): the link that lands a customer in the conversation, with its QR code for
+   * the door, the receipt and the bio. The team's to see; the link itself is public.
+   */
+  app.get('/orgs/:id/door', async (req, reply): Promise<OrgDoorView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const org = await orgById(ctx.db, id);
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    const url = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}${doorPath(org.handle)}`;
+    // The same for everyone on the team until the handle changes: a browser may keep it a while.
+    reply.header('cache-control', 'private, max-age=3600');
+    return { url, qr: qrPath(url) };
   });
 
   app.patch('/orgs/:id', async (req): Promise<{ org: OrgView }> => {

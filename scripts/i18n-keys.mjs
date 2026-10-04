@@ -17,7 +17,7 @@ export function collectKeys() {
   const parser = require('@babel/parser');
   const traverse = require('@babel/traverse').default;
   const files = execSync(
-    "git ls-files 'apps/app/src/**/*.ts' 'apps/app/src/**/*.tsx' 'packages/core/src/*.ts' 'apps/server/src/**/*.ts'",
+    "git ls-files --cached --others --exclude-standard 'apps/app/src/**/*.ts' 'apps/app/src/**/*.tsx' 'packages/core/src/*.ts' 'apps/server/src/**/*.ts'",
     { cwd: root },
   )
     .toString()

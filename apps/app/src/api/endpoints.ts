@@ -57,6 +57,7 @@ import type {
   OrgAppSecretsView,
   OrgAppView,
   OrgCalendarView,
+  OrgDoorView,
   OrgInsightsView,
   OrgReclaimView,
   OrgSpaceView,
@@ -390,6 +391,7 @@ export const endpoints = {
   openHandle: (handle: string) => api.get<HandleView>(`/handles/${encodeURIComponent(handle)}`),
   /** The organization's spaces (R43): yours, and running it, all of them. */
   orgSpaces: (id: string) => api.get<{ spaces: OrgSpaceView[] }>(`/orgs/${id}/spaces`),
+  orgDoor: (id: string) => api.get<OrgDoorView>(`/orgs/${id}/door`),
   joinOrgSpace: (id: string, spaceId: string) => api.post<Ok>(`/orgs/${id}/spaces/${spaceId}/join`),
   orgByHandle: (handle: string) =>
     api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),

@@ -5,12 +5,12 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { usePolicies } from '@/api/hooks';
+import { useOrg, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
 import { copyText } from '@/lib/clipboard';
 import { handleLink } from '@/lib/config';
-import { handleIn, inviteIn, isAuthorizeLink } from '@/lib/paths';
+import { doorIn, handleIn, inviteIn, isAuthorizeLink } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
 import { peekLink, takeLink } from '@/state/pendingLink';
 import { useMe, useSession } from '@/state/session';
@@ -62,6 +62,10 @@ export default function Onboarding() {
   const [pending] = useState(() => peekLink());
   const linkHandle = handleIn(pending);
   const inviteToken = inviteIn(pending);
+  // An organization's door (R53): the last step names it, and opens the conversation.
+  const doorHandle = doorIn(pending);
+  const door = useOrg(doorHandle ?? '');
+  const doorName = door.data?.org.name ?? null;
   const forApp = isAuthorizeLink(pending);
   const linked = Boolean(linkHandle || inviteToken || forApp);
   // Invited (R1): the last step names who, and opens the conversation they'll land in.
@@ -267,19 +271,24 @@ export default function Onboarding() {
                   ? tr(
                       'An app asked to act for you. See what it asks first; find people by @handle or email any time.',
                     )
-                  : linkHandle
+                  : doorHandle
                     ? tr(
-                        'You came here for @{linkHandle}. Find others by @handle or email any time.',
-                        { linkHandle },
+                        'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.',
+                        { name: doorName ?? `@${doorHandle}` },
                       )
-                    : inviteToken
+                    : linkHandle
                       ? tr(
-                          '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
-                          { inviter: inviter ?? tr('Someone') },
+                          'You came here for @{linkHandle}. Find others by @handle or email any time.',
+                          { linkHandle },
                         )
-                      : tr('Find someone by @handle or email, or share your link: @{handle}', {
-                          handle: me.handle,
-                        })}
+                      : inviteToken
+                        ? tr(
+                            '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.',
+                            { inviter: inviter ?? tr('Someone') },
+                          )
+                        : tr('Find someone by @handle or email, or share your link: @{handle}', {
+                            handle: me.handle,
+                          })}
               </Text>
             </View>
             {linked ? (
@@ -289,7 +298,9 @@ export default function Onboarding() {
                     ? tr('See what the app asks')
                     : inviteToken
                       ? tr('Open the conversation with {inviter}', { inviter: inviter ?? 'them' })
-                      : tr('See @{linkHandle}', { linkHandle })
+                      : doorHandle
+                        ? tr('Write to {name}', { name: doorName ?? `@${doorHandle}` })
+                        : tr('See @{linkHandle}', { linkHandle })
                 }
                 size="lg"
                 block

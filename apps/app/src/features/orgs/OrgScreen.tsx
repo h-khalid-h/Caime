@@ -11,7 +11,7 @@ import {
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useBusinessSummary, useOrg, useOrgSpaces } from '@/api/hooks';
@@ -62,6 +62,7 @@ import { OrgAgent } from './OrgAgent';
 import { OrgApps } from './OrgApps';
 import { OrgBooking } from './OrgBooking';
 import { OrgDetailsSheet } from './OrgDetails';
+import { OrgDoor } from './OrgDoor';
 import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
 
@@ -184,7 +185,7 @@ function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) =>
 }
 
 /** An organization (PRD §36): who it is, whether that's verified, and its team. */
-export function OrgScreen({ handle }: { handle: string }) {
+export function OrgScreen({ handle, write = false }: { handle: string; write?: boolean }) {
   const t = useTheme();
   const qc = useQueryClient();
   const { desktop } = useLayout();
@@ -223,6 +224,26 @@ export function OrgScreen({ handle }: { handle: string }) {
       setStarting(false);
     }
   };
+  // Through the door (R53, `?write`): a customer lands in the conversation with nothing more
+  // to tap. Once per screen; the team, someone who blocked it and a minor it can't take stay.
+  const walkedIn = useRef(false);
+  const canWrite = Boolean(org && !org.myRole && !org.blockedByMe && !(minor && !org.verified));
+  useEffect(() => {
+    if (!write || !org || walkedIn.current || !canWrite) return;
+    walkedIn.current = true;
+    void (async () => {
+      setStarting(true);
+      try {
+        const { conversationId } = await endpoints.messageOrg(org.id);
+        void qc.invalidateQueries({ queryKey: qk.inbox });
+        router.replace({ pathname: '/c/[id]', params: { id: conversationId } });
+      } catch (e) {
+        toast((e as Error).message, { tone: 'danger' });
+      } finally {
+        setStarting(false);
+      }
+    })();
+  }, [write, org, canWrite, qc]);
 
   const put = (o: OrgView) => {
     qc.setQueryData(qk.org(handle), { org: o });
@@ -418,6 +439,22 @@ export function OrgScreen({ handle }: { handle: string }) {
                   )}
                 </Text>
               ) : null}
+              {/* What "Verified" means, in one line, before they write (R53). */}
+              <Text
+                variant="caption"
+                color="textTertiary"
+                align="center"
+                testID="org-verified-line"
+              >
+                {org.verified
+                  ? tr('Verified: {name} proved it controls {verifiedDomain}.', {
+                      name: org.name,
+                      verifiedDomain: org.verifiedDomain,
+                    })
+                  : tr(
+                      'Caime hasn’t verified who runs this organization. Be careful with links and payments.',
+                    )}
+              </Text>
             </View>
           )}
         </View>
@@ -522,12 +559,15 @@ export function OrgScreen({ handle }: { handle: string }) {
         ) : null}
 
         {manager ? (
+          // In the order a clinic sets itself up (R53): the door customers come in by, proving
+          // who you are, hours and bookings, who answers first; then the team, apps and the plan.
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>
+            <OrgDoor org={org} />
             <Verification org={org} refresh={put} />
-            {org.plan?.allowance.insights ? <OrgInsights orgId={org.id} /> : null}
-            {org.plan ? <OrgPlan plan={org.plan} orgId={org.id} handle={org.handle} /> : null}
           </View>
         ) : null}
+        {manager ? <OrgBooking org={org} /> : null}
+        {manager ? <OrgAgent org={org} /> : null}
 
         {org.members ? (
           <>
@@ -600,9 +640,13 @@ export function OrgScreen({ handle }: { handle: string }) {
                 );
               })}
             </View>
-            {manager ? <OrgBooking org={org} /> : null}
-            {manager ? <OrgAgent org={org} /> : null}
             {manager ? <OrgApps org={org} /> : null}
+            {manager ? (
+              <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}>
+                {org.plan?.allowance.insights ? <OrgInsights orgId={org.id} /> : null}
+                {org.plan ? <OrgPlan plan={org.plan} orgId={org.id} handle={org.handle} /> : null}
+              </View>
+            ) : null}
             <View style={{ marginHorizontal: 16, marginTop: 16 }}>
               <Card padded={false}>
                 <ListRow
@@ -625,23 +669,7 @@ export function OrgScreen({ handle }: { handle: string }) {
               </Card>
             </View>
           </>
-        ) : (
-          <Text
-            variant="caption"
-            color="textTertiary"
-            align="center"
-            style={{ paddingHorizontal: 24 }}
-          >
-            {org.verified
-              ? tr('{name} proved it controls {verifiedDomain}.', {
-                  name: org.name,
-                  verifiedDomain: org.verifiedDomain,
-                })
-              : tr(
-                  'Caime hasn’t verified who runs this organization. Be careful with links and payments.',
-                )}
-          </Text>
-        )}
+        ) : null}
         {!org.members ? (
           <View style={{ marginHorizontal: 16, marginTop: 20 }}>
             <Card padded={false}>

@@ -4,7 +4,15 @@ import { SITE_PAGES } from '@caime/core/api';
 import { handleError } from '@caime/core/rules';
 import { isReservedHandle } from '@caime/core/schemas';
 import { describe, expect, it } from 'vitest';
-import { appPath, deepLinkPath, handleIn, inviteIn, isAuthorizeLink, ownLinkPath } from './paths';
+import {
+  appPath,
+  deepLinkPath,
+  doorIn,
+  handleIn,
+  inviteIn,
+  isAuthorizeLink,
+  ownLinkPath,
+} from './paths';
 
 describe('paths from links', () => {
   it('opens places in the app, never the way in or somewhere else', () => {
@@ -116,5 +124,17 @@ describe('paths from links', () => {
     expect(files).toContain('sw.js');
     for (const name of [...routes, ...files, ...SITE_PAGES])
       expect(isReservedHandle(name), name).toBe(true);
+  });
+});
+
+describe('an organization’s door (R53)', () => {
+  it('is its page asking to be written to, and nothing else', () => {
+    expect(appPath('/o/nile.dental?write')).toBe('/o/nile.dental?write');
+    expect(doorIn('/o/nile.dental?write')).toBe('nile.dental');
+    expect(handleIn('/o/nile.dental?write')).toBe('nile.dental');
+    expect(doorIn('/o/nile.dental')).toBeNull();
+    expect(doorIn('/@nile.dental?write')).toBeNull();
+    expect(doorIn('/o/nile.dental?write=1')).toBeNull();
+    expect(doorIn('/o/nile.dental?write&x=1')).toBeNull();
   });
 });

@@ -223,6 +223,9 @@ importers:
       sharp:
         specifier: ^0.35.4
         version: 0.35.4(@types/node@22.20.4)
+      toqr:
+        specifier: ^0.1.1
+        version: 0.1.1
       web-push:
         specifier: ^3.6.7
         version: 3.6.7

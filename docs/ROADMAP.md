@@ -654,10 +654,18 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       (`i18n.test.ts` on the server, a notification in Arabic in `e2e/arabic.spec.ts`). ⛔ A
       native speaker's review of the Arabic. Still to do: mail stays English (7-bit, R48), the
       public site in Arabic, and a long tail of templated strings the extraction left in English
-- [ ] The organization's own door (R53): a visitor who writes from an organization's page lands
-      in the conversation as an invitee does; a QR code and a short link the app makes; "Verified"
-      explained to the customer; the organization's onboarding in a clinic's order. Measured:
-      link-open to first customer message
+- [x] The organization's own door (R53): its public page's "Message … on Caime" is the door
+      (`/o/<handle>?write`, `doorPath` in `lib/public-pages.ts`), so a visitor signs up and
+      lands in the conversation as an invite's guest does (onboarding's last step names it,
+      "Write to Nile Dental"; the organization screen walks a signed-in customer in once, `?write`
+      from the route); the team's page shows the door (`GET /orgs/:id/door`: the link and its QR
+      code as one SVG path, `lib/door.ts` on `toqr`, MIT, server-side, so the app draws it with
+      react-native-svg and a browser saves it as an SVG file); "Verified" is explained to the
+      customer in one line under the button, and the manager's cards run in a clinic's order
+      (door, domain, hours and bookings, the agent, then the team, apps, insights, plan).
+      `door.test.ts`, `paths.test.ts`, `public-pages.test.ts`; `e2e/door.spec.ts` measures
+      door-open to first customer message: 4.0 s on a phone viewport in this container (2026-10-04), against the invite's 4.8 s. Not done: a short link
+      of its own (the handle link is the short link), the receipt and bio copy for the clinic
 - [ ] What a clinic's lawyer needs (R54): an organization's export of its conversations, erasure
       of a customer's on request, retention for business conversations, a sub-processor list the
       privacy page and the agreement read from one constant. ⛔ The agreement's text and a
@@ -1482,3 +1490,12 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   someone else (notifications, replaced pushes), whose language is their account's. Every
   relationship role (103, with plurals) and every kit name and state joined the catalog, which
   the kit cards and the people pickers now read through `tr`. Catalog 2,333 entries.
+- 2026-10-04 — R53, the organization's own door: the public page's call to action is
+  `/o/<handle>?write`, so a visitor signs up and lands in the conversation (door-open to first
+  message 4.0 s in E2E); the team's page shows the link and its QR code (encoded on the server,
+  drawn as one SVG path, saved as a file in the browser), "Verified" is said in one line before
+  the button, and a manager's cards run in a clinic's order. CI's E2E went red on 705a4da (twice:
+  not a flake): the new language mirror was a request of its own, whose answer (read back, or
+  echoed live) carried the account's preferences from before a language change still being
+  saved, undoing it; the shown language now rides the one debounced preferences save.
+  Playwright's GitHub reporter is on in CI so a failing test is named in the run's annotations.

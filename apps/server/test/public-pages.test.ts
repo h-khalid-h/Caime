@@ -125,6 +125,9 @@ describe('the readable web (R44)', () => {
       expect(r.body).toContain('"foundingDate":"1998"');
       expect(r.body).toContain('"sameAs":["https://niledental.example"]');
       expect(r.body).toContain(`<link rel="canonical" href="https://caime.example${path}">`);
+      // Its door (R53): whoever would write signs up, or in, and lands in the conversation.
+      expect(r.body).toContain('href="/sign-up?link=%2Fo%2Fnile.dental%3Fwrite"');
+      expect(r.body).toContain('href="/sign-in?link=%2Fo%2Fnile.dental%3Fwrite"');
     }
     expect((await visit('/o/noor')).statusCode).toBe(404);
     // Its logo needs no sign-in; a person's photo only when they show it to everyone.

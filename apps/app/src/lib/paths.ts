@@ -48,7 +48,15 @@ export function deepLinkPath(url: string): string | null {
 
 /** The handle a path opens (a person's or an organization's), to say whose link this is. */
 export function handleIn(path: string | null | undefined): string | null {
-  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)$/i)?.[1] ?? null;
+  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)(?:\?write)?$/i)?.[1] ?? null;
+}
+
+/**
+ * The handle of an organization's door (`/o/<handle>?write`, R53): a link that writes to it,
+ * so whoever comes in through it lands in the conversation. Null for any other path.
+ */
+export function doorIn(path: string | null | undefined): string | null {
+  return path?.match(/^\/o\/([a-z0-9._]+)\?write$/i)?.[1] ?? null;
 }
 
 /** The token of an invite link (`/i/<token>`, R1), or null. */

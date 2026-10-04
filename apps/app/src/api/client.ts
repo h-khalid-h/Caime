@@ -73,6 +73,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Raw body (uploads). */
   raw?: BodyInit;
+  /** Let the request outlive the page (a setting saved as the tab goes). */
+  keepalive?: boolean;
 }
 
 export async function request<T>(
@@ -101,6 +103,7 @@ export async function request<T>(
       body,
       credentials: isWeb ? 'include' : 'omit',
       signal: opts.signal,
+      ...(opts.keepalive ? { keepalive: true } : {}),
     });
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
