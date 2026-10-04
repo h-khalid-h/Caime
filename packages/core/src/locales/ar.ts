@@ -2941,4 +2941,29 @@ export const ar: Catalog = {
   '{who}quiet unless important': '{who}هادئ إلا للمهم',
   '{who}within {scheduleText}': '{who}ضمن {scheduleText}',
   hours: 'ساعات العمل',
+  'the same name': 'الاسم نفسه',
+  'one name is part of the other': 'أحد الاسمين جزء من الآخر',
+  'the same nickname': 'الاسم المستعار نفسه',
+  'you know both from {org}': 'تعرف كليهما من {org}',
+  '{name} may have two accounts': 'قد يكون لدى {name} حسابان',
+  '{merge} and {keep} may be the same person': 'قد يكون {merge} و{keep} الشخص نفسه',
+  'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
+    'لكليهما {reasons}. بعد الدمج يظهران كشخص واحد في الأشخاص؛ ويبقى الحسابان والمحادثات، ويمكنك فصلهما من جديد.',
+  ', and ': '، و',
+  '“{topic}” keeps coming up here. A separate topic keeps it together.':
+    '«{topic}» يتكرر هنا. موضوع منفصل يجمعه معًا.',
+  'Colleague · {org}': 'زميل · {org}',
+  'You and {other} are both on {org}’s team, and {org} is verified.':
+    'أنت و{other} كلاكما في فريق {org}، و{org} موثّقة.',
+  'You and {other} are both on {org}’s team in Caime.':
+    'أنت و{other} كلاكما في فريق {org} على Caime.',
+  'You and {other} are both in {space}, a {kind} space.':
+    'أنت و{other} كلاكما في {space}، وهي مساحة {kind}.',
+  them: 'هذا الشخص',
+  '{name} described how you know each other as {label}{where}.':
+    'وصف {name} معرفتكما ببعضكما بأنها {label}{where}.',
+  'You both use @{domain} email addresses.': 'كلاكما يستخدم عنوان بريد @{domain}.',
+  '{speaker} wrote {quote}': 'كتب {speaker} {quote}',
+  '{senderName} wrote {quote}': 'كتب {senderName} {quote}',
+  '{senderName} asked {quote}': 'سأل {senderName} {quote}',
 };

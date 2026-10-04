@@ -29,6 +29,7 @@ import {
   systemText,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -468,12 +469,12 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
           : undefined;
       // An organization is named in full; a person by their first name.
       const speaker =
-        line.speaker === 'You' ? 'You' : mask ? line.speaker : firstName(line.speaker);
+        line.speaker === 'You' ? tr('You') : mask ? line.speaker : firstName(line.speaker);
       const suggestionId = await createSuggestion(ctx, {
         userId: auth.userId,
         kind: item.kind,
         title: item.title,
-        rationale: `${speaker} wrote ${quoted(line.text)}`,
+        rationale: tr('{speaker} wrote {quote}', { speaker, quote: quoted(line.text) }),
         confidence: 0.8,
         payload: {
           source: 'ai',

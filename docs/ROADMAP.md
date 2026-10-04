@@ -1588,9 +1588,15 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   "just now", "at 7:00", "on Sat", the day headings), the People chips ("Everyone", "Not
   labelled"), a person's facts (every counter a plural form; "last now"; the busy line; the
   privacy line; the mono labels), an organization's mono labels, the privacy screen's
-  "Everyone", and the bubble themes' names. Still English, by design or for now: user-written
-  text, the pronoun suggestions (English pronouns), and a suggestion's stored rationale
-  ("Tariq wrote …", written once by `intelligence.ts` and `modules/ai.ts` when the message
-  arrives, in the sender's request language, since the row is stored, not rendered): making it
-  the reader's needs the rationale kept as a key and its values, a contract change, left for
-  the next pass. Budget 442.4 KB.
+  "Everyone", and the bubble themes' names. Still English, by design: user-written text and
+  the pronoun suggestions (English pronouns). Budget 442.4 KB.
+- 2026-10-04 — R54, stored words in the reader's language: a suggestion's title and rationale
+  are kept in a row for one person, so they are written in that person's language once, when
+  made: `createSuggestion` takes each as a string or a function and runs a function in the
+  reader's scope (`asReader`), the message effects draft each person's suggestions inside their
+  scope (the sender's own in theirs, each recipient's in theirs, a business thread's for the
+  customer and the assignee), relationship offers and duplicates run in their owner's, a
+  shared place's fan-out looks every owner's language up in one query (`languagesOf`), and the
+  remaining raw strings in `intelligence.ts`, `suggest.ts`, `duplicates.ts` and `modules/ai.ts`
+  go through `tr`. `i18n.test.ts`: the same message leaves an Arabic reader's "waiting" in
+  Arabic and the English sender's "reminder" in English.

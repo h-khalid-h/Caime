@@ -487,62 +487,24 @@ async function suggest(
   if (!analysis || conversation.privacy_class === 'private') return;
   const counterpartForSender =
     conversation.kind === 'direct' ? recipients[0]?.user_id : (message.mentions[0] ?? null);
-  const mine = suggestFromAnalysis(analysis, { senderIsMe: true, senderName: sender.display_name });
-  for (const s of mine) {
-    if (s.kind === 'waiting' && !counterpartForSender) continue;
-    // "I'll do it Thursday" in reply to their request: it's that task, now with a date.
-    if (
-      s.vague &&
-      s.kind === 'reminder' &&
-      (await absorbVague(ctx, {
-        userId: sender.id,
-        conversationId: conversation.id,
-        subjectUserId: counterpartForSender ?? null,
-        kinds: ['task', 'reminder'],
-        dueAt: s.dueAt,
-        dueText: s.dueText,
-        rationale: s.rationale,
-      }))
-    )
-      continue;
-    await createSuggestion(ctx, {
-      userId: sender.id,
-      kind: s.kind,
-      title: s.title,
-      rationale: s.rationale,
-      confidence: s.confidence,
-      payload: {
-        dueHasTime: Boolean(analysisDateHasTime(analysis, s.dueText)),
-        decidedBy: sender.id,
-      },
-      subjectUserId: s.kind === 'waiting' ? counterpartForSender : null,
-      conversationId: conversation.id,
-      messageId: message.id,
-      dueAt: s.dueAt,
-      dueText: s.dueText,
-      fingerprint: `msg:${message.id}:${s.kind}`,
+  // Each person's suggestions are written in their language (R54): the drafts are made, and
+  // filed, inside their reader scope.
+  await asReader(ctx, sender.id, async () => {
+    const mine = suggestFromAnalysis(analysis, {
+      senderIsMe: true,
+      senderName: sender.display_name,
     });
-  }
-  for (const r of recipients) {
-    // Strangers' messages (pending requests) don't create work for you (R14).
-    if (r.request_state === 'pending' || r.request_state === 'declined' || !addressed(r.user_id))
-      continue;
-    // Said with the name the sender shows this person (PRD §35).
-    const shown = await identityShownTo(ctx, sender.id, r.user_id);
-    const theirs = suggestFromAnalysis(analysis, {
-      senderIsMe: false,
-      senderName: firstName(shown?.displayName ?? sender.display_name),
-    });
-    for (const s of theirs) {
-      // "I'll send it Thursday" answering my request: the waiting item, now with a date.
+    for (const s of mine) {
+      if (s.kind === 'waiting' && !counterpartForSender) continue;
+      // "I'll do it Thursday" in reply to their request: it's that task, now with a date.
       if (
         s.vague &&
-        s.kind === 'waiting' &&
+        s.kind === 'reminder' &&
         (await absorbVague(ctx, {
-          userId: r.user_id,
+          userId: sender.id,
           conversationId: conversation.id,
-          subjectUserId: sender.id,
-          kinds: ['waiting'],
+          subjectUserId: counterpartForSender ?? null,
+          kinds: ['task', 'reminder'],
           dueAt: s.dueAt,
           dueText: s.dueText,
           rationale: s.rationale,
@@ -550,7 +512,7 @@ async function suggest(
       )
         continue;
       await createSuggestion(ctx, {
-        userId: r.user_id,
+        userId: sender.id,
         kind: s.kind,
         title: s.title,
         rationale: s.rationale,
@@ -559,7 +521,7 @@ async function suggest(
           dueHasTime: Boolean(analysisDateHasTime(analysis, s.dueText)),
           decidedBy: sender.id,
         },
-        subjectUserId: sender.id,
+        subjectUserId: s.kind === 'waiting' ? counterpartForSender : null,
         conversationId: conversation.id,
         messageId: message.id,
         dueAt: s.dueAt,
@@ -567,6 +529,53 @@ async function suggest(
         fingerprint: `msg:${message.id}:${s.kind}`,
       });
     }
+  });
+  for (const r of recipients) {
+    // Strangers' messages (pending requests) don't create work for you (R14).
+    if (r.request_state === 'pending' || r.request_state === 'declined' || !addressed(r.user_id))
+      continue;
+    // Said with the name the sender shows this person (PRD §35).
+    const shown = await identityShownTo(ctx, sender.id, r.user_id);
+    await asReader(ctx, r.user_id, async () => {
+      const theirs = suggestFromAnalysis(analysis, {
+        senderIsMe: false,
+        senderName: firstName(shown?.displayName ?? sender.display_name),
+      });
+      for (const s of theirs) {
+        // "I'll send it Thursday" answering my request: the waiting item, now with a date.
+        if (
+          s.vague &&
+          s.kind === 'waiting' &&
+          (await absorbVague(ctx, {
+            userId: r.user_id,
+            conversationId: conversation.id,
+            subjectUserId: sender.id,
+            kinds: ['waiting'],
+            dueAt: s.dueAt,
+            dueText: s.dueText,
+            rationale: s.rationale,
+          }))
+        )
+          continue;
+        await createSuggestion(ctx, {
+          userId: r.user_id,
+          kind: s.kind,
+          title: s.title,
+          rationale: s.rationale,
+          confidence: s.confidence,
+          payload: {
+            dueHasTime: Boolean(analysisDateHasTime(analysis, s.dueText)),
+            decidedBy: sender.id,
+          },
+          subjectUserId: sender.id,
+          conversationId: conversation.id,
+          messageId: message.id,
+          dueAt: s.dueAt,
+          dueText: s.dueText,
+          fingerprint: `msg:${message.id}:${s.kind}`,
+        });
+      }
+    });
   }
 }
 
@@ -636,37 +645,49 @@ async function suggestBusiness(
       fingerprint: `msg:${message.id}:${s.kind}`,
     });
 
+  // Each in its reader's language (R54): drafted and filed inside their scope.
+  const draftsFor = (
+    userId: string,
+    who: { senderIsMe: boolean; senderName: string },
+    each: (s: ReturnType<typeof suggestFromAnalysis>[number]) => Promise<unknown>,
+  ) =>
+    asReader(ctx, userId, async () => {
+      for (const s of suggestFromAnalysis(analysis, who)) await each(s);
+    });
   if (sender.id === customerId) {
     // What they promised or decided themselves.
-    for (const s of suggestFromAnalysis(analysis, {
-      senderIsMe: true,
-      senderName: sender.display_name,
-    }))
-      if (s.kind !== 'waiting') await file(customerId, s, { subject: null, decidedBy: sender.id });
+    await draftsFor(
+      customerId,
+      { senderIsMe: true, senderName: sender.display_name },
+      async (s) => {
+        if (s.kind !== 'waiting')
+          await file(customerId, s, { subject: null, decidedBy: sender.id });
+      },
+    );
     // What they asked of the team, or promised it: for whoever has the thread.
     if (thread.assignee_id) {
-      const shown = await identityShownTo(ctx, customerId, thread.assignee_id);
-      for (const s of suggestFromAnalysis(analysis, {
-        senderIsMe: false,
-        senderName: firstName(shown?.displayName ?? sender.display_name),
-      }))
-        await file(thread.assignee_id, s, { subject: customerId, decidedBy: customerId });
+      const assignee = thread.assignee_id;
+      const shown = await identityShownTo(ctx, customerId, assignee);
+      await draftsFor(
+        assignee,
+        { senderIsMe: false, senderName: firstName(shown?.displayName ?? sender.display_name) },
+        (s) => file(assignee, s, { subject: customerId, decidedBy: customerId }),
+      );
     }
     return;
   }
   // Someone on the team (or its app's bot) wrote: their own promises and questions to the customer.
   if (senderKind === 'human')
-    for (const s of suggestFromAnalysis(analysis, {
-      senderIsMe: true,
-      senderName: sender.display_name,
-    }))
-      await file(sender.id, s, {
+    await draftsFor(sender.id, { senderIsMe: true, senderName: sender.display_name }, (s) =>
+      file(sender.id, s, {
         subject: s.kind === 'waiting' ? customerId : null,
         decidedBy: sender.id,
-      });
+      }),
+    );
   // And what the organization asked of the customer, in its name.
-  for (const s of suggestFromAnalysis(analysis, { senderIsMe: false, senderName: thread.org_name }))
+  await draftsFor(customerId, { senderIsMe: false, senderName: thread.org_name }, async (s) => {
     if (s.kind !== 'waiting') await file(customerId, s, { subject: null, decidedBy: null });
+  });
 }
 
 function analysisDateHasTime(a: Analysis, dueText: string | null): boolean {
@@ -716,7 +737,8 @@ async function detectTopic(
       userId: m.user_id,
       kind: 'topic',
       title: topic,
-      rationale: `“${topic}” keeps coming up here. A separate topic keeps it together.`,
+      rationale: () =>
+        tr('“{topic}” keeps coming up here. A separate topic keeps it together.', { topic }),
       confidence: 0.7,
       payload: { parentId: conversation.id },
       conversationId: conversation.id,

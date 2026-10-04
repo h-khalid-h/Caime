@@ -5,9 +5,12 @@
  * labels. Nothing they can't see (an email, a phone number) ever links two accounts: someone
  * may keep a separate account on purpose.
  */
+
+import { tr } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
+import { asReader } from './i18n';
 import { personViewsFor } from './people-batch';
 import { createSuggestion } from './suggest';
 
@@ -38,7 +41,7 @@ interface Seen {
   labels: Array<{ sphere: string; orgName: string | null }>;
 }
 
-/** How likely two people someone knows are one, and why, in their words. */
+/** How likely two people someone knows are one, and why, in their words (their language). */
 export function sameness(a: Seen, b: Seen): { confidence: number; reasons: string[] } {
   const reasons: string[] = [];
   let confidence = 0;
@@ -47,28 +50,28 @@ export function sameness(a: Seen, b: Seen): { confidence: number; reasons: strin
   const same = wa.length > 0 && wa.join(' ') === wb.join(' ');
   if (same && wa.length > 1) {
     confidence += 0.8;
-    reasons.push('the same name');
+    reasons.push(tr('the same name'));
   } else if (same) {
     // One word ("Sam") is many people's name.
     confidence += 0.5;
-    reasons.push('the same name');
+    reasons.push(tr('the same name'));
   } else {
     const [short, long] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
     if (short.length && short[0] === long[0] && short.every((w) => long.includes(w))) {
       confidence += 0.4;
-      reasons.push('one name is part of the other');
+      reasons.push(tr('one name is part of the other'));
     }
   }
   const na = a.nickname?.trim().toLowerCase();
   if (na && na === b.nickname?.trim().toLowerCase()) {
     confidence += 0.8;
-    reasons.push('the same nickname');
+    reasons.push(tr('the same nickname'));
   }
   const place = (l: { orgName: string | null }) => l.orgName?.trim().toLowerCase() || null;
   const shared = a.labels.find((x) => place(x) && b.labels.some((y) => place(y) === place(x)));
   if (shared && confidence > 0) {
     confidence += 0.3;
-    reasons.push(`you know both from ${shared.orgName}`);
+    reasons.push(tr('you know both from {org}', { org: shared.orgName }));
   }
   return { confidence: Math.min(1, confidence), reasons };
 }
@@ -153,37 +156,46 @@ export async function suggestDuplicatesOf(
     const a = seen(subject);
     if (!a) return;
     const ours = mine.map(seen).filter((x): x is NonNullable<typeof x> => Boolean(x));
-    for (const root of roots) {
-      const group = groups.get(root) ?? [];
-      const head = group.find((s) => s.other_id === root);
-      const b = head ? seen(head) : null;
-      if (!b) continue;
-      // The closest any account of theirs comes to any of this person's.
-      let best = { confidence: 0, reasons: [] as string[] };
-      for (const x of ours)
-        for (const y of group.map(seen))
-          if (y) {
-            const m = sameness(x, y);
-            if (m.confidence > best.confidence) best = m;
-          }
-      if (best.confidence < OFFER_AT) continue;
-      // Kept under the one they've known longer.
-      const [keep, merge] = b.at <= a.at ? [b, a] : [a, b];
-      const [x, y] = [a.id, b.id].sort();
-      await createSuggestion(ctx, {
-        userId: ownerId,
-        kind: 'duplicate',
-        title:
-          merge.name === keep.name
-            ? `${keep.name} may have two accounts`
-            : `${merge.name} and ${keep.name} may be the same person`,
-        rationale: `Both have ${best.reasons.join(', and ')}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.`,
-        confidence: best.confidence,
-        payload: { keep: keep.id, merge: merge.id },
-        subjectUserId: merge.id,
-        fingerprint: `duplicate:${x}:${y}`,
-      });
-    }
+    // In the owner's language: the reasons and the offer are theirs to read.
+    await asReader(ctx, ownerId, async () => {
+      for (const root of roots) {
+        const group = groups.get(root) ?? [];
+        const head = group.find((s) => s.other_id === root);
+        const b = head ? seen(head) : null;
+        if (!b) continue;
+        // The closest any account of theirs comes to any of this person's.
+        let best = { confidence: 0, reasons: [] as string[] };
+        for (const x of ours)
+          for (const y of group.map(seen))
+            if (y) {
+              const m = sameness(x, y);
+              if (m.confidence > best.confidence) best = m;
+            }
+        if (best.confidence < OFFER_AT) continue;
+        // Kept under the one they've known longer.
+        const [keep, merge] = b.at <= a.at ? [b, a] : [a, b];
+        const [x, y] = [a.id, b.id].sort();
+        await createSuggestion(ctx, {
+          userId: ownerId,
+          kind: 'duplicate',
+          title:
+            merge.name === keep.name
+              ? tr('{name} may have two accounts', { name: keep.name })
+              : tr('{merge} and {keep} may be the same person', {
+                  merge: merge.name,
+                  keep: keep.name,
+                }),
+          rationale: tr(
+            'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.',
+            { reasons: best.reasons.join(tr(', and ')) },
+          ),
+          confidence: best.confidence,
+          payload: { keep: keep.id, merge: merge.id },
+          subjectUserId: merge.id,
+          fingerprint: `duplicate:${x}:${y}`,
+        });
+      }
+    });
   }
 }
 

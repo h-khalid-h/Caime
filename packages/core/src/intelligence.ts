@@ -590,7 +590,10 @@ export function suggestFromAnalysis(
             })
           : waitingTitle(a.commitment),
         ...due(a.commitment),
-        rationale: `${ctx.senderName} wrote ${quote(a.commitment.quote)}`,
+        rationale: tr('{senderName} wrote {quote}', {
+          senderName: ctx.senderName,
+          quote: quote(a.commitment.quote),
+        }),
         confidence: a.commitment.when ? 0.9 : 0.75,
         vague,
       });
@@ -611,7 +614,10 @@ export function suggestFromAnalysis(
         kind: 'task',
         title: a.request.title,
         ...due(a.request),
-        rationale: `${ctx.senderName} asked ${quote(a.request.quote)}`,
+        rationale: tr('{senderName} asked {quote}', {
+          senderName: ctx.senderName,
+          quote: quote(a.request.quote),
+        }),
         confidence: a.request.when ? 0.9 : 0.8,
       });
     }

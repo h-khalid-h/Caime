@@ -100,6 +100,35 @@ export async function languageOf(ctx: AppContext, userId: string): Promise<Inter
   return language;
 }
 
+/** The languages of many people at once (a fan-out): one query for whoever isn't cached. */
+export async function languagesOf(
+  ctx: AppContext,
+  userIds: string[],
+): Promise<Map<string, InterfaceLanguage>> {
+  const now = Date.now();
+  const out = new Map<string, InterfaceLanguage>();
+  const missing: string[] = [];
+  for (const id of new Set(userIds)) {
+    const hit = known.get(id);
+    if (hit && hit.until > now) out.set(id, hit.language);
+    else missing.push(id);
+  }
+  if (missing.length) {
+    const rows = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'locale', 'preferences'])
+      .where('id', 'in', missing)
+      .execute();
+    for (const user of rows) {
+      const language = languageOfAccount(user);
+      if (known.size >= CACHE_MAX) known.delete(known.keys().next().value as string);
+      known.set(user.id, { language, until: now + CACHE_MS });
+      out.set(user.id, language);
+    }
+  }
+  return out;
+}
+
 /** Their account changed what it says: the next thing written to them looks again. */
 export function forgetLanguageOf(userId: string): void {
   known.delete(userId);

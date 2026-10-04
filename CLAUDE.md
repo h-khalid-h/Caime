@@ -255,8 +255,14 @@ These are rules, not preferences.
   minutes, `forgetLanguageOf` on a change). `notify` and `replaceShown` take `title` and `body`
   as functions (`title: () => tr('{name} is calling', { name })`) and call them inside the
   reader's scope: a string built before the call is in the sender's language, so never build
-  one. Anything else the server writes for a particular person (a fan-out's line, a job's)
-  goes through `asReader` the same way; the key collector reads `apps/server/src` too. A
+  one. A suggestion is a row for one person too: `createSuggestion` takes `title` and
+  `rationale` as strings or functions and runs a function in the reader's scope, and the
+  message effects draft each person's suggestions (`suggestFromAnalysis`) inside
+  `asReader(ctx, userId, …)`, so anything new that stores words for one person does the same;
+  a fan-out that writes rows for many looks their languages up at once (`languagesOf`) and
+  writes each inside `inLanguage`. Anything else the server writes for a particular person
+  (a fan-out's line, a job's) goes through `asReader` the same way; the key collector reads
+  `apps/server/src` too. A
   table's labels (roles, kit states, kit names) are English keys: show them through `tr`.
   A string the server writes into a view for a screen (a rule's `describePolicy` summary, a
   schedule's day names) is in the request's language already, so it goes through `tr` in core

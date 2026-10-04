@@ -5,9 +5,12 @@
  * in, and a company email domain both use.
  */
 import { SPACE_KIND_DEFS, SPHERE_DEFS, type SpaceKind, type Sphere, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import { type Insertable, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { SuggestionsTable } from '../db/schema';
+import { asReader, inLanguage, languagesOf } from './i18n';
+import type { Copy } from './notify';
 import { personViewsFor } from './people-batch';
 
 const PUBLIC_DOMAINS = new Set([
@@ -64,8 +67,9 @@ export async function createSuggestion(
   s: {
     userId: string;
     kind: string;
-    title: string;
-    rationale: string;
+    /** Written for whoever the suggestion is for (R54): a function runs in their language. */
+    title: Copy;
+    rationale: Copy;
     confidence: number;
     payload?: Record<string, unknown>;
     subjectUserId?: string | null;
@@ -77,14 +81,23 @@ export async function createSuggestion(
   },
 ): Promise<string | null> {
   const id = uuidv7();
+  // A string was written in the reader's language already (its caller ran in it); a function
+  // is run in it here, once, and the row keeps the words the reader reads.
+  const [title, rationale] =
+    typeof s.title === 'string' && typeof s.rationale === 'string'
+      ? [s.title, s.rationale]
+      : await asReader(ctx, s.userId, async () => [
+          typeof s.title === 'string' ? s.title : s.title(),
+          typeof s.rationale === 'string' ? s.rationale : s.rationale(),
+        ]);
   const row = await ctx.db
     .insertInto('suggestions')
     .values({
       id,
       user_id: s.userId,
       kind: s.kind,
-      title: s.title,
-      rationale: s.rationale,
+      title,
+      rationale,
       confidence: s.confidence,
       payload: s.payload ?? {},
       subject_user_id: s.subjectUserId ?? null,
@@ -117,10 +130,13 @@ function offerOf(place: Place, other: string) {
       sphere: 'work' as Sphere,
       role: 'colleague',
       orgName: place.name,
-      title: `Colleague · ${place.name}`,
+      title: tr('Colleague · {org}', { org: place.name }),
       rationale: place.verified
-        ? `You and ${other} are both on ${place.name}’s team, and ${place.name} is verified.`
-        : `You and ${other} are both on ${place.name}’s team in Caime.`,
+        ? tr('You and {other} are both on {org}’s team, and {org} is verified.', {
+            other,
+            org: place.name,
+          })
+        : tr('You and {other} are both on {org}’s team in Caime.', { other, org: place.name }),
       confidence: place.verified ? 0.85 : 0.75,
     };
   const sphere = SPACE_KIND_DEFS[place.spaceKind]?.sphere;
@@ -130,8 +146,12 @@ function offerOf(place: Place, other: string) {
     sphere,
     role,
     orgName: null,
-    title: SPHERE_DEFS[sphere].label,
-    rationale: `You and ${other} are both in ${place.name}, a ${SPACE_KIND_DEFS[place.spaceKind].label.toLowerCase()} space.`,
+    title: tr(SPHERE_DEFS[sphere].label),
+    rationale: tr('You and {other} are both in {space}, a {kind} space.', {
+      other,
+      space: place.name,
+      kind: tr(SPACE_KIND_DEFS[place.spaceKind].label).toLowerCase(),
+    }),
     confidence: 0.6,
   };
 }
@@ -142,7 +162,8 @@ async function offer(
   subject: { id: string; displayName: string },
   place: Place,
 ) {
-  const o = offerOf(place, subject.displayName);
+  // In the owner's language: the words are theirs to read.
+  const o = await asReader(ctx, owner, async () => offerOf(place, subject.displayName));
   if (!o) return;
   await createSuggestion(ctx, {
     userId: owner,
@@ -307,8 +328,15 @@ export async function suggestFromPlace(
     .execute();
   if (!pairs.length) return;
   const rows: Insertable<SuggestionsTable>[] = [];
+  // Each in its owner's language, looked up for them all at once.
+  const languages = await languagesOf(
+    ctx,
+    pairs.map((p) => p.owner_id),
+  );
   for (const p of pairs) {
-    const o = offerOf(place, p.shown || 'them');
+    const o = inLanguage(languages.get(p.owner_id) ?? 'en', () =>
+      offerOf(place, p.shown || tr('them')),
+    );
     if (!o) continue;
     rows.push({
       id: uuidv7(),
@@ -369,11 +397,17 @@ export async function suggestRelationships(
     if (requestContext && requestContext.fromUserId === subject.id && requestContext.sphere) {
       const sphere = requestContext.sphere as Sphere;
       const where = requestContext.orgName ? ` · ${requestContext.orgName}` : '';
+      const label = () => (SPHERE_DEFS[sphere] ? tr(SPHERE_DEFS[sphere].label) : tr('Other'));
       await createSuggestion(ctx, {
         userId: owner.id,
         kind: 'relationship',
-        title: `${SPHERE_DEFS[sphere]?.label ?? 'Other'}${where}`,
-        rationale: `${shown.displayName} described how you know each other as ${SPHERE_DEFS[sphere]?.label ?? sphere}${where}.`,
+        title: () => `${label()}${where}`,
+        rationale: () =>
+          tr('{name} described how you know each other as {label}{where}.', {
+            name: shown.displayName,
+            label: label(),
+            where,
+          }),
         confidence: 0.8,
         payload: { sphere, role: null, orgName: requestContext.orgName },
         subjectUserId: subject.id,
@@ -395,8 +429,8 @@ export async function suggestRelationships(
       await createSuggestion(ctx, {
         userId: owner.id,
         kind: 'relationship',
-        title: `Colleague · ${org}`,
-        rationale: `You both use @${domainA} email addresses.`,
+        title: () => tr('Colleague · {org}', { org }),
+        rationale: () => tr('You both use @{domain} email addresses.', { domain: domainA }),
         confidence: 0.7,
         payload: { sphere: 'work', role: 'colleague', orgName: org },
         subjectUserId: subject.id,

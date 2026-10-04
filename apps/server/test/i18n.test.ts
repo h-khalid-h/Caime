@@ -127,3 +127,34 @@ describe('a notification is written in its reader’s language', () => {
     await noor.patch('/v1/me', { preferences: { language: 'en' } });
   });
 });
+
+describe('a suggestion is written in its reader’s language', () => {
+  it('the reader’s copy is Arabic, the sender’s own is English, from the same message', async () => {
+    await noor.patch('/v1/me', { preferences: { language: 'ar' } });
+    const { connections } = await hassan.get('/v1/connections');
+    const conversationId = connections.find(
+      (c: { person: { id: string } }) => c.person.id === noor.user.id,
+    ).conversationId;
+    await hassan.post(`/v1/conversations/${conversationId}/messages`, {
+      kind: 'text',
+      body: 'I will send the deck on Monday.',
+      clientId: uuidv4(),
+    });
+    await t.ctx.flush();
+    const rows = await t.ctx.db
+      .selectFrom('suggestions')
+      .select(['user_id', 'kind', 'title', 'rationale'])
+      .where('conversation_id', '=', conversationId)
+      .execute();
+    const theirs = rows.find((r) => r.user_id === noor.user.id && r.kind === 'waiting');
+    expect(theirs?.rationale).toBe(
+      arabic('{senderName} wrote {quote}', {
+        senderName: 'Hassan',
+        quote: '“I will send the deck on Monday.”',
+      }),
+    );
+    const mine = rows.find((r) => r.user_id === hassan.user.id && r.kind === 'reminder');
+    expect(mine?.rationale).toBe('You wrote “I will send the deck on Monday.”');
+    await noor.patch('/v1/me', { preferences: { language: 'en' } });
+  });
+});
