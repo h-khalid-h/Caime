@@ -298,7 +298,7 @@ scrape_configs:
 ```
 
 **Alerts** worth having, in Prometheus's terms (any scraper's equivalent will do); the uptime
-check is a GET of `/v1/readyz` every minute from outside:
+check is a GET of `/v1/readyz` every minute from outside (the path has the `/v1` prefix: the bare `/readyz` and `/healthz` answer 404 with a line saying so, never a page, so a monitor pointed at the wrong path reads down):
 
 ```yaml
 groups:

@@ -6,9 +6,8 @@
  */
 import type { AutomationView, PolicyView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import { resolvePolicy, scheduleText } from '@caime/core/policy';
-import { findRole, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
-import { workHours } from '@caime/core/time';
+import { resolvePolicy } from '@caime/core/policy';
+import { findRole, SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -17,15 +16,15 @@ import { endpoints } from '@/api/endpoints';
 import { useAutomations, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { AutomationSheet } from '@/features/settings/AutomationSheet';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { RuleFor } from '@/features/settings/RuleFor';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Bookmark, Clock, Moon } from '@/ui/icons';
+import { Bookmark, Clock } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
-import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -68,61 +67,6 @@ const inWords = (hours: number) =>
     : hours % 24 === 0
       ? `${hours / 24 === 1 ? 'a day' : `${hours / 24} days`}`
       : `${hours} hours`;
-
-/** A kind of relationship, for a reminder or quiet hours: made (or found) as its rule. */
-function RuleFor({
-  open,
-  title,
-  subtitle,
-  onClose,
-  onPick,
-}: {
-  open: boolean;
-  title: string;
-  subtitle: string;
-  onClose: () => void;
-  onPick: (sphere: Sphere) => Promise<void>;
-}) {
-  const [sphere, setSphere] = useState<Sphere>('vendor');
-  const [busy, setBusy] = useState(false);
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={title}
-      subtitle={subtitle}
-      footer={
-        <Button
-          label={tr('Next')}
-          block
-          size="lg"
-          loading={busy}
-          onPress={async () => {
-            setBusy(true);
-            try {
-              await onPick(sphere);
-            } finally {
-              setBusy(false);
-            }
-          }}
-          testID="rule-for-next"
-        />
-      }
-    >
-      <View style={{ marginHorizontal: -20 }}>
-        <Choice<Sphere>
-          label={tr('Who it’s for')}
-          value={sphere}
-          onChange={setSphere}
-          options={SPHERES.filter((s) => s !== 'other').map((s) => ({
-            value: s,
-            label: tr(SPHERE_DEFS[s].plural),
-          }))}
-        />
-      </View>
-    </Sheet>
-  );
-}
 
 function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void }) {
   const qc = useQueryClient();
@@ -196,34 +140,27 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
 export default function Automations() {
   const t = useTheme();
   const qc = useQueryClient();
-  const me = useMe();
+  const _me = useMe();
   const automations = useAutomations();
   const policies = usePolicies();
   const [editing, setEditing] = useState<AutomationView | 'new' | null>(null);
   const [rule, setRule] = useState<string | null>(null);
-  const [adding, setAdding] = useState<'reminder' | 'quiet' | null>(null);
+  const [adding, setAdding] = useState(false);
   const all = policies.data?.policies ?? [];
   const mine = automations.data?.automations ?? [];
   // What rules say for themselves, not what they take from broader ones.
   const reminders = all.filter((p) => !p.scope.connectionId && p.settings.followUpHours);
-  const quiet = all.filter((p) => !p.scope.connectionId && p.settings.notify === 'schedule');
   const open = rule ? (all.find((p) => p.id === rule) ?? null) : null;
-  const make = async (sphere: Sphere, kind: 'reminder' | 'quiet') => {
+  const make = async (sphere: Sphere) => {
     try {
       const existing = all.find(
         (p) =>
           !p.scope.connectionId && !p.scope.orgId && !p.scope.role && p.scope.sphere === sphere,
       );
-      const settings =
-        kind === 'reminder'
-          ? { followUpHours: existing?.settings.followUpHours ?? 48 }
-          : {
-              notify: 'schedule' as const,
-              schedule: existing?.settings.schedule ?? workHours(me.workweek),
-            };
+      const settings = { followUpHours: existing?.settings.followUpHours ?? 48 };
       const { id } = await endpoints.createPolicy({ scope: { sphere }, settings });
       await qc.invalidateQueries({ queryKey: qk.policies });
-      setAdding(null);
+      setAdding(false);
       setRule(id);
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -234,7 +171,7 @@ export default function Automations() {
     <SettingsPage title={tr('Automations')}>
       <Text variant="body" color="textSecondary">
         {tr(
-          'What Caime does for you by itself, only as you set it up here: keeping what arrives, reminding you when someone hasn’t answered, and keeping quiet when you’d rather it did.',
+          'What Caime does for you by itself, only as you set it up here: keeping what arrives, and reminding you when someone hasn’t answered. Who reaches you, and when, is under Notifications and priorities.',
         )}
       </Text>
       <Group
@@ -306,33 +243,9 @@ export default function Automations() {
         ))}
         <ListRow
           title={tr('Add a reminder')}
-          onPress={() => setAdding('reminder')}
+          onPress={() => setAdding(true)}
           testID="reminder-add"
           style={reminders.length ? { borderTopWidth: 1, borderTopColor: t.c.border } : undefined}
-        />
-      </Group>
-      <Group
-        title={tr('Quiet hours')}
-        footer={tr('Outside these hours they wait, unless it’s urgent and you allow that.')}
-      >
-        {quiet.map((p, i) => (
-          <View key={p.id} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: t.c.border }}>
-            <ListRow
-              icon={Moon}
-              title={`${label(p)}: ${
-                p.settings.schedule ? scheduleText(p.settings.schedule) : 'in set hours'
-              }`}
-              chevron
-              onPress={() => setRule(p.id)}
-              testID="quiet-row"
-            />
-          </View>
-        ))}
-        <ListRow
-          title={tr('Add quiet hours')}
-          onPress={() => setAdding('quiet')}
-          testID="quiet-add"
-          style={quiet.length ? { borderTopWidth: 1, borderTopColor: t.c.border } : undefined}
         />
       </Group>
       {editing ? (
@@ -357,15 +270,11 @@ export default function Automations() {
         />
       ) : null}
       <RuleFor
-        open={adding !== null}
-        title={adding === 'quiet' ? tr('Quiet hours') : tr('A reminder')}
-        subtitle={
-          adding === 'quiet'
-            ? tr('Whose messages wait for set hours')
-            : tr('Whose answers you’d like to be reminded about')
-        }
-        onClose={() => setAdding(null)}
-        onPick={(sphere) => make(sphere, adding ?? 'reminder')}
+        open={adding}
+        title={tr('A reminder')}
+        subtitle={tr('Whose answers you’d like to be reminded about')}
+        onClose={() => setAdding(false)}
+        onPick={make}
       />
     </SettingsPage>
   );

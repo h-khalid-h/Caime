@@ -402,6 +402,13 @@ These are rules, not preferences.
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
   `state/liveShares.ts` and shows the "Sharing your location live" pill.
+- A `Segmented` control scrolls sideways when its segments don't fit (a 390-px phone with five):
+  never shorten its words to fit, and never give it more than a screen's worth of segments. A
+  setting in a panel is one row that opens its choice in a `Sheet` (disappearing messages,
+  `disappearing-row`), never a list of radios laid out in the panel. Who a rule is for is picked
+  with `features/settings/RuleFor` (reminders under Automations, quiet hours under Notifications
+  and priorities: "Add quiet hours" beside "Add a rule"); everything about who reaches you, and
+  when, lives on that one screen.
 - A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
   and its Undo can't be pressed. Anything else that must show over a sheet goes inside it.

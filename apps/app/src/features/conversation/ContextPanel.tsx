@@ -38,6 +38,7 @@ import {
   X,
 } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
+import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -636,23 +637,48 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
       toast((e as Error).message, { tone: 'danger' });
     }
   };
+  const [choosing, setChoosing] = useState(false);
   return (
     <Section title={tr('Disappearing messages')}>
       {canChange ? (
-        <Choice
-          label={tr('Disappearing messages')}
-          value={KEEP.includes(current) ? current : 'off'}
-          onChange={(v) => void set(v)}
-          options={KEEP.map((v) =>
-            v === 'off'
-              ? {
-                  value: v,
-                  label: tr('Off'),
-                  detail: tr('New messages stay until someone deletes them'),
-                }
-              : { value: v, label: retentionText(Number(v)) },
-          )}
-        />
+        // One row, like every other setting here; the choice opens over it.
+        <>
+          <ListRow
+            title={
+              days === null
+                ? tr('Off')
+                : tr('After {retentionText}', { retentionText: retentionText(days) })
+            }
+            subtitle={tr('New messages only; what came before keeps its time')}
+            chevron
+            onPress={() => setChoosing(true)}
+            style={{ marginHorizontal: -16 }}
+            testID="disappearing-row"
+          />
+          <Sheet
+            open={choosing}
+            onClose={() => setChoosing(false)}
+            title={tr('Disappearing messages')}
+          >
+            <Choice
+              label={tr('Disappearing messages')}
+              value={KEEP.includes(current) ? current : 'off'}
+              onChange={(v) => {
+                setChoosing(false);
+                void set(v);
+              }}
+              options={KEEP.map((v) =>
+                v === 'off'
+                  ? {
+                      value: v,
+                      label: tr('Off'),
+                      detail: tr('New messages stay until someone deletes them'),
+                    }
+                  : { value: v, label: retentionText(Number(v)) },
+              )}
+            />
+          </Sheet>
+        </>
       ) : (
         <Text variant="body" color="textSecondary" testID="disappearing-shown">
           {[

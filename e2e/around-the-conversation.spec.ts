@@ -519,8 +519,13 @@ test.describe
       await page.goto(`/c/${convo}`);
       await page.getByRole('button', { name: /, details$/ }).click();
       await expect(visible(page, 'About this conversation')).toBeVisible();
+      // One row, like every other setting in the panel; the choice opens over it.
+      await page.getByTestId('disappearing-row').filter({ visible: true }).click();
       await page.getByRole('radio', { name: '7 days', exact: true }).click();
       await expect(visible(page, 'New messages disappear after 7 days')).toBeVisible();
+      await expect(page.getByTestId('disappearing-row').filter({ visible: true })).toContainText(
+        'After 7 days',
+      );
       await page.screenshot({ path: 'e2e/screenshots/phone-details.png' });
       await page.getByRole('button', { name: 'Close panel' }).click();
       await expect(visible(page, 'You set new messages to disappear after 7 days')).toBeVisible();

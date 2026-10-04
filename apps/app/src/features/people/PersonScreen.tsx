@@ -239,7 +239,10 @@ export function PersonScreen({ id }: { id: string }) {
               <Shield size={14} color={t.c.textTertiary} />
             )}
             <Text variant="caption" color="textSecondary" accessibilityHint={person.trust.detail}>
-              {person.trust.label}
+              {/* The organization is named once, on its chip below (R43). */}
+              {person.trust.level === 'org_verified' && p.organizations.length
+                ? tr('Verified')
+                : person.trust.label}
             </Text>
           </View>
           {p.organizations.length ? (

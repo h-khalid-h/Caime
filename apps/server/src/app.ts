@@ -162,6 +162,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     // The API sends JSON; the web app's CSP is set where it is served (static.ts).
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'same-site' },
+    // The policy says frame-ancestors 'none'; the older header says the same.
+    frameguard: { action: 'deny' },
   });
   // Apps on any site may trade codes and read where everything is: nothing there rides on a
   // cookie. The rest of the API is for CORS_ORIGINS alone, credentials and all.
@@ -232,6 +234,14 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     ctx.metrics.http.inc({ method: req.method, route, status: String(reply.statusCode) });
     ctx.metrics.httpSeconds.observe({ method: req.method, route }, reply.elapsedTime / 1000);
   });
+  // A monitor pointed at the bare path would read "up" from the app's page: it is told where
+  // the check is instead.
+  for (const path of ['/healthz', '/readyz'])
+    app.get(path, async (_req, reply) =>
+      reply.status(404).send({
+        error: { code: 'not_found', message: `The health check is at /v1${path}.` },
+      }),
+    );
   await metricsRoutes(app, ctx);
   await oauthDiscovery(app, ctx);
   await pageRoutes(app, ctx);

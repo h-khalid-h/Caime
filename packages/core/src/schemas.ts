@@ -45,6 +45,9 @@ export const Handle = z
  * so the answers don't tell the two apart; only the operator gives one out (`/v1/admin`).
  */
 export const RESERVED_HANDLES: readonly string[] = [
+  // The server's own paths at the root, answered before any page.
+  'healthz',
+  'readyz',
   // The product, by every name it has had. Caishy is also the first of its characters.
   'caime',
   'caishy',

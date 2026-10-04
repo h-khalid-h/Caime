@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
@@ -17,17 +17,16 @@ export function Segmented<T extends string>({
   label,
 }: SegmentedProps<T>) {
   const t = useTheme();
+  // Five segments don't fit a 390-px phone: rather than cut their words, the row scrolls, and
+  // each segment keeps the width its words need.
   return (
-    <View
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
       accessibilityRole="tablist"
       accessibilityLabel={label}
-      style={{
-        flexDirection: 'row',
-        backgroundColor: t.c.surfaceMuted,
-        borderRadius: 12,
-        padding: 3,
-        gap: 2,
-      }}
+      style={{ backgroundColor: t.c.surfaceMuted, borderRadius: 12 }}
+      contentContainerStyle={{ flexDirection: 'row', flexGrow: 1, padding: 3, gap: 2 }}
     >
       {options.map((o) => {
         const selected = o.value === value;
@@ -41,7 +40,8 @@ export function Segmented<T extends string>({
             haptic
             focusRadius={10}
             style={({ hovered }) => ({
-              flex: 1,
+              flexGrow: 1,
+              flexShrink: 0,
               minHeight: 34,
               borderRadius: 10,
               alignItems: 'center',
@@ -71,6 +71,6 @@ export function Segmented<T extends string>({
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }

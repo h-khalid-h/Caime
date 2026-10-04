@@ -698,11 +698,18 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       mobile preset, 2026-10-04: LCP 1.1–1.4 s (from 4.6 s), FCP 0.8 s, TBT 690–800 ms,
       interactive 4.4–4.6 s (from 4.2 s), CLS 0.01–0.04 (docs/RESOURCES.md). Not done: the
       app's own weight, where interactivity still waits; a screen-reader pass on a phone
-- [ ] Polish that shows (P2): quiet hours into Notifications and priorities; the duplicate
-      organization line on a profile; disappearing messages as one row; the Actions segments on a
-      phone; `X-Frame-Options: DENY`; one description meta; the two aged help lines; the dark pass
-      in the screenshot suite; the 320-px and 200% checks; a screen-reader pass once a phone
-      exists
+- [x] Polish that shows (P2): quiet hours are added from Notifications and priorities ("Add
+      quiet hours" beside "Add a rule"; the shared `RuleFor` picker; Automations keeps reminders
+      and what's kept), a profile names an organization once (the trust line reads "Verified"
+      when its chip is there), disappearing messages are one row that opens the choice
+      (`disappearing-row`), a segmented control that doesn't fit scrolls instead of cutting its
+      words (`Segmented`), `X-Frame-Options: DENY` agrees with `frame-ancestors 'none'`, the bare
+      `/healthz` and `/readyz` answer 404 with the real path (`/v1/…`, DEPLOY.md), the help page's
+      quiet-hours line follows the setting, and `e2e/fit.spec.ts` checks a 320-px phone and a
+      desktop at 200% (640 CSS px) for a sideways scroll and screenshots the dark scheme. Found
+      already right: one description meta (the shell carries none; a page sets its own). Not done:
+      "not in the phone apps" on the help page stays true until the store builds; a screen-reader
+      pass once a phone exists
 - Measurements taken for the review (2026-10-01, this container, mobile preset): landing and
   `/business` 100/100/100/100 (LCP 1.4 s, 1.2 s; TBT 20 ms); sign-in 75/100/100/63 (LCP 4.2 s,
   TBT 440 ms). Budget 438.0 KB gzip. 1 of 106 pressables without a label or role; 14 physical
@@ -1529,3 +1536,7 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   before the app runs, in the browser's language, and the app's scripts are fetched after that
   paint through a hashed inline bootstrap. LCP 4.6 s → 1.1–1.4 s on the mobile preset; interactive
   about 0.3 s later than before. Measured with Lighthouse against the local production bundle.
+- 2026-10-04 — P2 polish from the review: quiet hours added from Notifications and priorities,
+  one organization line on a profile, disappearing messages as one row, a scrolling segmented
+  control, `X-Frame-Options: DENY`, bare health paths answering 404 with the real path, the help
+  line, and `e2e/fit.spec.ts` (320 px, 200%, dark).

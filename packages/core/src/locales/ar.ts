@@ -271,8 +271,6 @@ export const ar: Catalog = {
   '{runs} kept so far': '{runs} محفوظ حتى الآن',
   'Nothing kept yet': 'لم يُحفظ شيء بعد',
   Automations: 'الأتمتة',
-  'What Caime does for you by itself, only as you set it up here: keeping what arrives, reminding you when someone hasn’t answered, and keeping quiet when you’d rather it did.':
-    'ما يفعله Caime من تلقاء نفسه، فقط كما تعدّه هنا: حفظ ما يصل، وتذكيرك حين لا يجيب أحدهم، والسكوت حين تفضّل ذلك.',
   'Keep what arrives': 'احفظ ما يصل',
   'Kept in your Saved collections, for as long as its message is there.':
     'يُحفظ في مجموعاتك المحفوظة، ما دامت رسالته هناك.',
@@ -288,8 +286,6 @@ export const ar: Catalog = {
   'If {whom} haven’t answered in {inWords}': 'إن لم يجب {whom} خلال {inWords}',
   'Add a reminder': 'إضافة تذكير',
   'Quiet hours': 'ساعات الهدوء',
-  'Outside these hours they wait, unless it’s urgent and you allow that.':
-    'خارج هذه الساعات تنتظر الرسائل، إلا إن كانت عاجلة وسمحت بذلك.',
   'Add quiet hours': 'إضافة ساعات هدوء',
   'A reminder': 'تذكير',
   'Whose messages wait for set hours': 'رسائل من تنتظر ساعات محددة',
@@ -2780,4 +2776,9 @@ export const ar: Catalog = {
     '”3 يحتاجون إليك“، لا ”47 غير مقروءة“. ويقول لماذا.',
   'Each side of your life sees what you chose. Only you see your labels.':
     'كل جانب من حياتك يرى ما اخترته أنت. تصنيفاتك لا يراها غيرك.',
+  'What Caime does for you by itself, only as you set it up here: keeping what arrives, and reminding you when someone hasn’t answered. Who reaches you, and when, is under Notifications and priorities.':
+    'ما تفعله Caime لك من تلقاء نفسها، كما تضبطه هنا فقط: حفظ ما يصل، وتذكيرك حين لا يرد أحدهم. أما من يصل إليك ومتى، فتحت الإشعارات والأولويات.',
+  'After {retentionText}': 'بعد {retentionText}',
+  'New messages only; what came before keeps its time': 'الرسائل الجديدة فقط؛ ما سبق يحتفظ بمدته',
+  Verified: 'موثّق',
 };

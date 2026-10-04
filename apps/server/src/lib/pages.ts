@@ -500,7 +500,7 @@ can&rsquo;t read, never count). That&rsquo;s the Attention view, which also keep
 and archived conversations, folded away at its end. All lists every other conversation.</li>
 <li>You &rarr; Notifications and priorities sets who reaches you and when: a rule for each kind of
 relationship, and your work week. A rule for one person is on their page, under Notifications and
-priority. Quiet hours are in You &rarr; Automations.</li>
+priority. Quiet hours are there too: whose messages wait for set hours.</li>
 </ul>
 
 <h2>Actions</h2>

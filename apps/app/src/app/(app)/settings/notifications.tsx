@@ -2,6 +2,7 @@ import type { PolicyView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
+import { workHours } from '@caime/core/time';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
@@ -9,6 +10,7 @@ import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { DayPicker } from '@/features/settings/DayPicker';
+import { RuleFor } from '@/features/settings/RuleFor';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { useMe, useSession } from '@/state/session';
@@ -164,10 +166,33 @@ export default function Notifications() {
   const q = usePolicies();
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  // Quiet hours are rules too (whose messages wait for set hours): made here, beside the rest,
+  // from the work week, then opened to change the hours.
+  const [addingQuiet, setAddingQuiet] = useState(false);
   const all = q.data?.policies ?? [];
   // One person's rules are on their page.
   const policies = all.filter((p) => !p.scope.connectionId);
   const rule = editing ? (all.find((p) => p.id === editing) ?? null) : null;
+  const makeQuiet = async (sphere: Sphere) => {
+    try {
+      const existing = all.find(
+        (p) =>
+          !p.scope.connectionId && !p.scope.orgId && !p.scope.role && p.scope.sphere === sphere,
+      );
+      const { id } = await endpoints.createPolicy({
+        scope: { sphere },
+        settings: {
+          notify: 'schedule' as const,
+          schedule: existing?.settings.schedule ?? workHours(me.workweek),
+        },
+      });
+      await qc.invalidateQueries({ queryKey: qk.policies });
+      setAddingQuiet(false);
+      setEditing(id);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  };
   const saveWeek = async (workweek: number[]) => {
     try {
       const { user } = await endpoints.updateMe({ workweek });
@@ -205,11 +230,26 @@ export default function Notifications() {
           </View>
         ))}
       </Group>
-      <Button
-        label={tr('Add a rule')}
-        variant="secondary"
-        onPress={() => setAdding(true)}
-        testID="rule-add"
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        <Button
+          label={tr('Add a rule')}
+          variant="secondary"
+          onPress={() => setAdding(true)}
+          testID="rule-add"
+        />
+        <Button
+          label={tr('Add quiet hours')}
+          variant="secondary"
+          onPress={() => setAddingQuiet(true)}
+          testID="quiet-add"
+        />
+      </View>
+      <RuleFor
+        open={addingQuiet}
+        title={tr('Quiet hours')}
+        subtitle={tr('Whose messages wait for set hours')}
+        onClose={() => setAddingQuiet(false)}
+        onPick={makeQuiet}
       />
       <Group title={tr('While you’re in a meeting')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
