@@ -126,14 +126,18 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
   const privacy = privacyOf(u, now);
   if (!privacy.discoverByHandle) return null;
   const see = (field: Parameters<typeof canSee>[1]) => canSee(privacy, field, NOBODY);
-  const identity = see('identityDetails')
-    ? await db
-        .selectFrom('identities')
-        .select(['headline'])
-        .where('user_id', '=', u.id)
-        .where('is_default', '=', true)
-        .executeTakeFirst()
-    : null;
+  // The headline and the organizations are two reads that need only the person: together.
+  const [identity, organizations] = see('identityDetails')
+    ? await Promise.all([
+        db
+          .selectFrom('identities')
+          .select(['headline'])
+          .where('user_id', '=', u.id)
+          .where('is_default', '=', true)
+          .executeTakeFirst(),
+        orgsOf(db, u.id),
+      ])
+    : [null, []];
   return {
     kind: 'person',
     id: u.id,
@@ -142,7 +146,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     avatarUrl: see('profilePhoto') ? avatarUrl(u) : null,
     bio: see('bio') ? u.bio : null,
     headline: identity?.headline ?? null,
-    organizations: see('identityDetails') ? await orgsOf(db, u.id) : [],
+    organizations,
   };
 }
 
@@ -199,11 +203,12 @@ export async function publicPageFor(db: Q, path: string, now: Date): Promise<Pub
   }
   const handle = normalizeHandle(raw);
   if (handleError(handle)) return { kind: 'missing' };
-  // One namespace: @handle may be an organization's; /o/ is only ever an organization's.
-  const o = await publicOrg(db, handle);
-  if (o) return o;
-  if (org) return { kind: 'missing' };
-  return (await publicPerson(db, handle, now)) ?? { kind: 'missing' };
+  // One namespace: @handle may be an organization's; /o/ is only ever an organization's. For
+  // @handle both are looked up at once (one of them misses, cheaply), so a person's page, the
+  // common one, doesn't wait a round trip on the organization's miss first.
+  if (org) return (await publicOrg(db, handle)) ?? { kind: 'missing' };
+  const [o, person] = await Promise.all([publicOrg(db, handle), publicPerson(db, handle, now)]);
+  return o ?? person ?? { kind: 'missing' };
 }
 
 function entryTitle(screen: EntryScreen): string {

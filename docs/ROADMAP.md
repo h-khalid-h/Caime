@@ -1731,3 +1731,8 @@ plan hadn't reached, in the order people will ask for them.
   five kinds it found are fixed (`Wordmark`, `NavRail`, `Pressable`'s ARIA for a selected
   link, the message ticks in `MessageBubble`, the presence dot in `Avatar`, the sign-up
   handle's autocomplete). Budget 443.0 KB.
+- 2026-10-04 — Measured again after M10 and M11 (docs/RESOURCES.md): a launch 563 KB and the
+  first message at 1.14 s; the inbox p99 126 ms at 725 req/s; `/v1/healthz` 9,437 req/s; an
+  organization's page 1,050 req/s and a person's 520 req/s, which ran four reads in a row and
+  now runs three, the last two together (`publicPerson`, `publicPageFor`), 2.9 ms alone from
+  4.4 ms.
