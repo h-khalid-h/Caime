@@ -27,7 +27,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const Icon = SPACE_ICONS[s.kind];
-  const people = `${s.memberCount} ${s.memberCount === 1 ? 'person' : 'people'}`;
+  const people = trn(s.memberCount, '{n} person', '{n} people');
   return (
     <Pressable
       accessibilityRole="button"

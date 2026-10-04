@@ -652,8 +652,12 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       last showed, else the account's locale; one cached lookup per reader per five minutes,
       dropped on a change), every relationship role and kit name and state now in the catalog
       (`i18n.test.ts` on the server, a notification in Arabic in `e2e/arabic.spec.ts`). ⛔ A
-      native speaker's review of the Arabic. Still to do: mail stays English (7-bit, R48), the
-      public site in Arabic, and a long tail of templated strings the extraction left in English
+      native speaker's review of the Arabic. The long tail of templated strings the extraction
+      left in English (call summaries and screens, automation intervals, meeting lengths, the
+      organization screen's counts, invite uses, the WhatsApp import's dates, OAuth app kinds)
+      now reads through `tr` and `trn`, with CLDR plural forms in the catalog (2,394 entries,
+      65.4 KB gzip, 2026-10-04). Still to do: mail stays English (7-bit, R48), and the public
+      site in Arabic
 - [x] The organization's own door (R53): its public page's "Message … on Caime" is the door
       (`/o/<handle>?write`, `doorPath` in `lib/public-pages.ts`), so a visitor signs up and
       lands in the conversation as an invite's guest does (onboarding's last step names it,
@@ -1540,3 +1544,8 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   one organization line on a profile, disappearing messages as one row, a scrolling segmented
   control, `X-Frame-Options: DENY`, bare health paths answering 404 with the real path, the help
   line, and `e2e/fit.spec.ts` (320 px, 200%, dark).
+- 2026-10-04 — R54, the long tail: the templated strings the extraction left in English (call
+  history and call screens, automation intervals, meeting lengths, the organization screen's
+  waiting and team-full lines, spaces' counts, invite uses, the WhatsApp import's date range and
+  left-out files, OAuth app kinds) now read through `tr` and `trn`, the Arabic plural forms added
+  to the catalog (2,394 entries; the chunk 65.4 KB gzip, 51.3 KB Brotli). Budget 442.2 KB.

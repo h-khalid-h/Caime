@@ -21,10 +21,16 @@ import { callsSupported, groupCallsSupported, startCall, startGroupCall } from '
 
 /** What a call in the list says it was: "Missed video call", "Outgoing · 4 min". */
 export function callSummary(c: CallHistoryItem): string {
-  const kind = `${c.group ? 'group ' : ''}${c.kind} call`;
+  const kind = c.group
+    ? c.kind === 'video'
+      ? tr('group video call')
+      : tr('group voice call')
+    : c.kind === 'video'
+      ? tr('video call')
+      : tr('voice call');
   switch (c.result) {
     case 'answered':
-      return `${c.direction === 'outgoing' ? 'Outgoing' : 'Incoming'} · ${callDuration(c.seconds)}`;
+      return `${c.direction === 'outgoing' ? tr('Outgoing') : tr('Incoming')} · ${callDuration(c.seconds)}`;
     case 'missed':
       return tr('Missed {kind}', { kind });
     case 'declined':

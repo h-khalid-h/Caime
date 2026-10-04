@@ -163,7 +163,7 @@ export function OAuthApps() {
               <ListRow
                 icon={LayoutGrid}
                 title={a.name}
-                subtitle={`${a.clientId} · ${a.confidential ? 'its own server' : 'phones and browsers'}`}
+                subtitle={`${a.clientId} · ${a.confidential ? tr('its own server') : tr('phones and browsers')}`}
                 chevron
                 onPress={() => {
                   setRemoving(false);

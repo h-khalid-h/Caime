@@ -1,5 +1,5 @@
 import type { RelationshipView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import {
   fillName,
   primarySpheres,
@@ -220,7 +220,7 @@ export function RelationshipForm({
                         o.people
                           ? tr('{name}, where you know {person}', {
                               name: o.name,
-                              person: o.people === 1 ? '1 person' : `${o.people} people`,
+                              person: trn(o.people, '{n} person', '{n} people'),
                             })
                           : o.name
                       }

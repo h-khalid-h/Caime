@@ -95,7 +95,11 @@ function OneToOneCallLayer() {
       ref={root}
       role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
       aria-modal
-      aria-label={`${video ? 'Video' : 'Voice'} call with ${other.displayName}`}
+      aria-label={
+        video
+          ? tr('Video call with {name}', { name: other.displayName })
+          : tr('Voice call with {name}', { name: other.displayName })
+      }
       testID="call-screen"
       style={{
         ...OVER_APP,

@@ -1,6 +1,6 @@
 import type { InboxItemView } from '@caime/core/api';
 import { formatListTime, joinNames, listTitle } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { OrgMark } from '@/features/orgs/kinds';
@@ -161,7 +161,7 @@ export const ConversationRow = memo(function ConversationRow({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text variant="body" color={previewColor} numberOfLines={1} style={{ flex: 1 }} auto>
                 {item.kind === 'group' && !item.lastMessage
-                  ? joinNames([`${item.memberCount} people`])
+                  ? joinNames([trn(item.memberCount, '{n} person', '{n} people')])
                   : preview}
               </Text>
               <Badge

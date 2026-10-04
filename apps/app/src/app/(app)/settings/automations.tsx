@@ -5,7 +5,7 @@
  * Nothing here happens until it's set up.
  */
 import type { AutomationView, PolicyView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { resolvePolicy } from '@caime/core/policy';
 import { findRole, SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
@@ -63,10 +63,10 @@ function label(p: Pick<PolicyView, 'name' | 'scope'>): string {
 
 const inWords = (hours: number) =>
   hours % 168 === 0
-    ? `${hours / 168 === 1 ? 'a week' : `${hours / 168} weeks`}`
+    ? trn(hours / 168, 'a week', '{n} weeks')
     : hours % 24 === 0
-      ? `${hours / 24 === 1 ? 'a day' : `${hours / 24} days`}`
-      : `${hours} hours`;
+      ? trn(hours / 24, 'a day', '{n} days')
+      : trn(hours, '{n} hour', '{n} hours');
 
 function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void }) {
   const qc = useQueryClient();

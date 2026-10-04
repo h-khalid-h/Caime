@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { IMPORT_MAX_MESSAGES } from '@caime/core/imports';
 import { otherAuthor, parseWhatsApp, type WhatsAppChat } from '@caime/core/whatsapp';
 import { useQueryClient } from '@tanstack/react-query';
@@ -157,12 +157,19 @@ export function WhatsAppImport({
                   ? tr('No messages were found in it. Is it the exported chat?')
                   : tr('{toLocaleString} messages, {text}{and}', {
                       toLocaleString: chat.messages.length.toLocaleString(locale),
-                      text: first && last ? `${days(first)} to ${days(last)}` : '',
+                      text:
+                        first && last
+                          ? tr('{from} to {to}', { from: days(first), to: days(last) })
+                          : '',
                       and:
                         chat.mediaOmitted === 1
                           ? tr(', and a photo or file the export left out')
                           : chat.mediaOmitted
-                            ? `, and ${chat.mediaOmitted.toLocaleString(locale)} photos or files the export left out`
+                            ? trn(
+                                chat.mediaOmitted,
+                                ', and {n} photo or file the export left out',
+                                ', and {n} photos or files the export left out',
+                              )
                             : '',
                     })}
               </Text>

@@ -1,5 +1,5 @@
 import type { InviteView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { relationshipLabel, SPHERE_DEFS } from '@caime/core/taxonomy';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -227,7 +227,7 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
                 icon={Link}
                 title={i.relationship?.label ?? tr('Anyone')}
                 subtitle={tr('{person} · {daysLeft} days left', {
-                  person: i.uses === 1 ? '1 person joined' : `${i.uses} people joined`,
+                  person: trn(i.uses, '{n} person joined', '{n} people joined'),
                   daysLeft: daysLeft(i),
                 })}
                 onPress={() => share(i)}

@@ -1,7 +1,7 @@
 import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { contextLine, formatDue, retentionText } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { canPin } from '@caime/core/pins';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
@@ -297,7 +297,10 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               ? ['Online', other.relationship?.label].filter(Boolean).join(' · ')
               : (other.relationship?.label ?? `@${other.person.handle}`)
             : conversation
-              ? [ofGroup, groupLine ?? `${conversation.participants.length} people`]
+              ? [
+                  ofGroup,
+                  groupLine ?? trn(conversation.participants.length, '{n} person', '{n} people'),
+                ]
                   .filter(Boolean)
                   .join(' · ')
               : '';

@@ -2,8 +2,10 @@
  * What's coming up (PRD §41): the meetings and appointments ahead in a conversation, or in a
  * space's conversations (its shared calendar), soonest first. Each opens its card.
  */
+
 import type { UpcomingView } from '@caime/core/api';
 import { formatWhenAt } from '@caime/core/format';
+import { tr, trn } from '@caime/core/i18n';
 import { View } from 'react-native';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
@@ -15,10 +17,14 @@ type Item = UpcomingView & { conversationTitle?: string };
 
 /** "45 min", "1 hour", "1½ hours". */
 function lengthText(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return tr('{n} min', { n: minutes });
   const hours = minutes / 60;
-  if (hours === 1) return '1 hour';
-  return Number.isInteger(hours) ? `${hours} hours` : hours === 1.5 ? '1½ hours' : `${minutes} min`;
+  if (hours === 1) return tr('1 hour');
+  return Number.isInteger(hours)
+    ? trn(hours, '{n} hour', '{n} hours')
+    : hours === 1.5
+      ? tr('1½ hours')
+      : tr('{n} min', { n: minutes });
 }
 
 export function ComingUpList({

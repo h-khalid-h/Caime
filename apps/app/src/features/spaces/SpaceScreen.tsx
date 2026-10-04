@@ -1,5 +1,5 @@
 import type { SpaceConversationView, SpaceMemberView, SpaceView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -75,7 +75,7 @@ function ConversationRow({ space, c }: { space: SpaceView; c: SpaceConversationV
   };
   const subtitle = c.lastMessage
     ? `${c.lastMessage.mine ? 'You' : (c.lastMessage.senderName ?? '')}${c.lastMessage.senderName || c.lastMessage.mine ? ': ' : ''}${c.lastMessage.preview}`
-    : (c.purpose ?? `${c.memberCount} ${c.memberCount === 1 ? 'person' : 'people'}`);
+    : (c.purpose ?? trn(c.memberCount, '{n} person', '{n} people'));
   return (
     <ListRow
       icon={c.isGeneral ? MessageCircle : Hash}
@@ -269,7 +269,7 @@ export function SpaceScreen({ id }: { id: string }) {
               { label: 'kind', value: tr(SPACE_KIND_DEFS[space.kind].label) },
               {
                 label: 'people',
-                value: `${space.memberCount} ${space.memberCount === 1 ? 'person' : 'people'}`,
+                value: trn(space.memberCount, '{n} person', '{n} people'),
               },
               space.org
                 ? {

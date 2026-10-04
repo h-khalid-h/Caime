@@ -430,7 +430,10 @@ export function PersonScreen({ id }: { id: string }) {
                   },
                   {
                     label: 'actions',
-                    value: `${p.summary.openActions} open · ${p.summary.waiting} waiting`,
+                    value: tr('{open} open · {waiting} waiting', {
+                      open: p.summary.openActions,
+                      waiting: p.summary.waiting,
+                    }),
                   },
                   p.summary.theirAsks || p.summary.myAsks
                     ? {

@@ -1,6 +1,6 @@
 import type { OrgMemberView, OrgView } from '@caime/core/api';
 import { describeHours } from '@caime/core/booking';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import {
   canChangeOrgRole,
   canManageOrg,
@@ -468,11 +468,8 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
                 title={tr('Inbox')}
                 subtitle={
                   waiting?.waiting
-                    ? tr('{waiting} customer{value} waiting{text}', {
-                        waiting: waiting.waiting,
-                        value: waiting.waiting === 1 ? '' : 's',
-                        text: waiting.mine ? ` · ${waiting.mine} yours` : '',
-                      })
+                    ? trn(waiting.waiting, '{n} customer waiting', '{n} customers waiting') +
+                      (waiting.mine ? ` · ${tr('{n} yours', { n: waiting.mine })}` : '')
                     : tr('Customers’ conversations with the team')
                 }
                 onPress={() =>
@@ -514,8 +511,8 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
                       key={s.id}
                       icon={LayoutGrid}
                       title={s.name}
-                      subtitle={`${s.memberCount} ${s.memberCount === 1 ? 'person' : 'people'}${
-                        s.joined ? '' : ' · You’re not in it'
+                      subtitle={`${trn(s.memberCount, '{n} person', '{n} people')}${
+                        s.joined ? '' : ` · ${tr('You’re not in it')}`
                       }`}
                       right={
                         s.joined ? undefined : (
@@ -776,7 +773,10 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
             testID="org-add-room"
           >
             {room === 0
-              ? `The team is full on the ${PLAN_NAMES[org.plan.plan]} plan (${org.plan.allowance.teamSize} people). ${nextOrgPlanLine(org.plan) ?? ''}`.trim()
+              ? `${tr('The team is full on the {plan} plan ({n} people).', {
+                  plan: PLAN_NAMES[org.plan.plan],
+                  n: org.plan.allowance.teamSize,
+                })} ${nextOrgPlanLine(org.plan) ?? ''}`.trim()
               : tr('Room for {room} more on the {PLAN_NAMES} plan.', {
                   room,
                   PLAN_NAMES: PLAN_NAMES[org.plan.plan],
