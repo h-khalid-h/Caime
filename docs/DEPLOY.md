@@ -107,6 +107,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `DATABASE_POOL_MAX` | `20` | Connections per instance. |
 | `LOG_LEVEL` | `info` | `warn` in quiet production. |
 | `BACKUP_ENABLED`, `BACKUP_DIR`, `BACKUP_EVERY_HOURS`, `BACKUP_KEEP_DAYS` | `true`, `DATA_DIR/backups`, `24`, `30` | Database backups (below). |
+| `HOSTING_PROVIDER` | — | Who hosts this Caime and where, as the privacy page's list of processors names it (R54): "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider". ⛔ The owner's to set in EasyPanel. |
 | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | — | A copy of each backup off the host, to an S3-compatible bucket (Backups, below); all four, or none. `BACKUP_S3_REGION` (`auto`), `BACKUP_S3_PREFIX` (`caime/backups/`) and `BACKUP_S3_PATH_STYLE` (`true`) beside them. |
 | `FILES_S3_ENDPOINT`, `FILES_S3_BUCKET`, `FILES_S3_ACCESS_KEY_ID`, `FILES_S3_SECRET_ACCESS_KEY` | — | Files in an S3-compatible bucket rather than on `DATA_DIR` (Scaling, below); all four, or none. `FILES_S3_REGION` (`auto`), `FILES_S3_PREFIX` (`caime/files/`) and `FILES_S3_PATH_STYLE` (`true`) beside them. The bucket stays private: Caime reads it, nobody else. |
 | `TRUST_PROXY` | `true` | EasyPanel's proxy sets `X-Forwarded-*`; keep it on behind it. |

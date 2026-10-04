@@ -2741,4 +2741,37 @@ export const ar: Catalog = {
   'Write to {name}': 'اكتب إلى {name}',
   'Verified: {name} proved it controls {verifiedDomain}.':
     'موثّق: أثبت {name} أنه يملك {verifiedDomain}.',
+  // What a clinic's lawyer needs (R54).
+  '{by} erased this conversation’s messages at your request.':
+    'محا {by} رسائل هذه المحادثة بناءً على طلبك.',
+  '{by} erased this conversation’s messages at {them}’s request.':
+    'محا {by} رسائل هذه المحادثة بناءً على طلب {them}.',
+  'Exported {count} conversations': 'تم تصدير {count} محادثة',
+  'Conversations stay': 'تبقى المحادثات',
+  'Conversations are kept for {retentionText}': 'تُحفظ المحادثات لمدة {retentionText}',
+  'Your customers’ data': 'بيانات عملائك',
+  'Conversations with your customers are {name}’s to answer for; Caime keeps them for you. Export them, choose how long they’re kept, and erase a customer’s at their request from its thread in the inbox (More → Erase).':
+    'المحادثات مع عملائك مسؤولية {name}؛ وCaime تحفظها لك. صدّرها، واختر مدة حفظها، وامحُ محادثة عميل بناءً على طلبه من سلسلتها في صندوق الوارد (المزيد ← محو).',
+  'Export the conversations': 'تصدير المحادثات',
+  'Export from a computer: it downloads a file.': 'صدّر من حاسوب: يُنزَّل ملف.',
+  'Keep conversations for': 'حفظ المحادثات لمدة',
+  'As long as the account exists': 'ما دام الحساب موجودًا',
+  'Unless a conversation’s own disappearing setting says otherwise':
+    'ما لم يقل إعداد الاختفاء الخاص بالمحادثة غير ذلك',
+  'Conversations are kept for {retentionText}; the owner sets it.':
+    'تُحفظ المحادثات لمدة {retentionText}؛ المالك هو من يحددها.',
+  'Conversations are kept as long as the account exists; the owner sets it.':
+    'تُحفظ المحادثات ما دام الحساب موجودًا؛ المالك هو من يحدد ذلك.',
+  'Each message goes when its time is up, as a disappearing message does, and customers see how long you keep theirs.':
+    'تذهب كل رسالة عند انتهاء مدتها، كما تذهب الرسالة المختفية، ويرى العملاء مدة حفظك لمحادثاتهم.',
+  'Who processes data for Caime': 'من يعالج البيانات لصالح Caime',
+  'Erased at the customer’s request': 'مُحيت بناءً على طلب العميل',
+  'Erase at the customer’s request': 'محو بناءً على طلب العميل',
+  'Every message in this conversation goes, for the customer and the team, and a line says {name} erased it at their request. Caime keeps that you did it. It can’t be undone.':
+    'تذهب كل رسالة في هذه المحادثة، للعميل والفريق، ويقول سطر إن {name} محاها بناءً على طلبه. تحتفظ Caime بأنك من فعل ذلك. لا يمكن التراجع عنه.',
+  'the organization': 'المؤسسة',
+  'Erase every message': 'محو كل الرسائل',
+  'Every message in it goes; the customer is told': 'تذهب كل رسالة فيها؛ ويُخبَر العميل',
+  '{name} keeps this conversation for {retentionText}: messages go after that.':
+    'يحفظ {name} هذه المحادثة لمدة {retentionText}: تذهب الرسائل بعدها.',
 };

@@ -509,6 +509,7 @@ export async function threadViews(
       closed: closed.has(t.conversation_id),
       awaitingAcceptance: awaiting.has(t.conversation_id),
       customerUnder18: t.customer_id !== null && under18.has(t.customer_id),
+      erasedAt: t.erased_at?.toISOString() ?? null,
     };
   });
 }

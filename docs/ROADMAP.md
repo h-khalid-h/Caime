@@ -666,10 +666,24 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
       `door.test.ts`, `paths.test.ts`, `public-pages.test.ts`; `e2e/door.spec.ts` measures
       door-open to first customer message: 4.0 s on a phone viewport in this container (2026-10-04), against the invite's 4.8 s. Not done: a short link
       of its own (the handle link is the short link), the receipt and bio copy for the clinic
-- [ ] What a clinic's lawyer needs (R54): an organization's export of its conversations, erasure
-      of a customer's on request, retention for business conversations, a sub-processor list the
-      privacy page and the agreement read from one constant. ⛔ The agreement's text and a
-      lawyer's review of privacy, terms and agreement
+- [x] What a clinic's lawyer needs (R54): an organization exports its own conversations
+      (`GET /orgs/:id/export`, owner or admins, three an hour, each in the audit log: the team
+      by name, each customer named once, every message with who it was from, its words, card and
+      files' names; nothing of its people's own), erases a customer's at that customer's request
+      (`DELETE /orgs/:id/conversations/:id` from the thread's More menu: every message goes by the
+      very statement the disappearing sweep runs, `eraseMessagesWhere` in `lib/org-data.ts`, the
+      customer reads a line from the organization saying so, the team who did it, the thread
+      says "Erased at the customer's request", and the audit log keeps it), and its owner sets
+      how long conversations are kept (`organizations.retention_days`, 0046: applied to every
+      message in them as `expires_at`, the shorter of it and the conversation's own, from then
+      on and for what's there; the customer reads "keeps this conversation for 90 days" where
+      they write). Who processes data is one list, `packages/core/src/processors.ts`, read by
+      the privacy page as the server is configured (`processorsFor`: the host from
+      `HOSTING_PROVIDER`, Cloudflare and the mail provider only when set), with a paragraph on
+      organizations as controllers and Caime as their processor. `org-data.test.ts`. ⛔ The data
+      processing agreement's text and a lawyer's review of privacy, terms and agreement; the
+      page for it reads the same list when the text exists. Not done: an export too large for
+      one request (above 200,000 messages it asks to be made by Caime)
 - [ ] ⛔ The owner's decisions: the phone (accounts, then the development build on the owner's
       iPhone, TestFlight, Play internal testing); prices in EGP, AED and SAR, local payment
       methods and Stripe Tax; WhatsApp Business through Meta's Cloud API; a smaller organization
@@ -1499,3 +1513,8 @@ owner's accounts and settings, and what a clinic's lawyer needs. In the order th
   echoed live) carried the account's preferences from before a language change still being
   saved, undoing it; the shown language now rides the one debounced preferences save.
   Playwright's GitHub reporter is on in CI so a failing test is named in the run's annotations.
+- 2026-10-04 — R54, the lawyer's side: an organization's export, erasure at a customer's request
+  (the disappearing sweep and an erasure now run one statement), owner-set retention applied as
+  each message's expiry, and the sub-processors as one list in core that the privacy page renders
+  from the server's configuration (`HOSTING_PROVIDER` names the host). The agreement itself waits
+  on the owner's lawyer (⛔).

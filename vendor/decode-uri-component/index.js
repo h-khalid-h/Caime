@@ -28,7 +28,7 @@ function decodeRun(run) {
 module.exports = function decodeUriComponent(encodedURI) {
   if (typeof encodedURI !== 'string') {
     throw new TypeError(
-      'Expected `encodedURI` to be of type `string`, got `' + typeof encodedURI + '`',
+      `Expected \`encodedURI\` to be of type \`string\`, got \`${typeof encodedURI}\``,
     );
   }
   var input = encodedURI.replace(/\+/g, ' ');

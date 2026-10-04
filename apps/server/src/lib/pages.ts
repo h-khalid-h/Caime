@@ -11,11 +11,14 @@
  */
 
 import type { SitePage } from '@caime/core/api';
+import type { SubProcessor } from '@caime/core/processors';
 import { KEPT_DAYS } from './retention';
 
 export type PageName = SitePage;
 
 export interface PageFacts {
+  /** Who processes data for this Caime (R54): core's list, as this server is configured. */
+  processors: SubProcessor[];
   legalName: string;
   contactEmail: string;
   minimumAge: number;
@@ -31,7 +34,7 @@ export interface PageFacts {
 }
 
 /** When each page last changed in what it says. */
-const UPDATED = '27 September 2026';
+const UPDATED = '4 October 2026';
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) =>
@@ -174,24 +177,18 @@ You see the organization, not which person on its team wrote. If you&rsquo;re un
 organization and its apps are told so.</li>
 <li><strong>Apps you let in</strong> do only what you allowed. Remove one in You &rarr; Connected
 apps; what it already has stays with it.</li>
-<li><strong>Companies that help run Caime</strong>, each only for what it does for Caime:
+<li><strong>Companies that help run Caime</strong>, each only for what it does for Caime. The same
+list, from the same place in Caime&rsquo;s code, is what an organization&rsquo;s data processing
+agreement names:
 <ul>
-<li>Our hosting provider runs Caime&rsquo;s servers, database and file storage.</li>
-<li>Stripe processes payments for paid plans. Caime gives Stripe your name and email address (for
-an organization, its name and its owner&rsquo;s email), and keeps your plan and Stripe&rsquo;s
-reference to you, never your card details.</li>
-<li>Anthropic provides the AI behind AI assist and organizations&rsquo; AI agents (Claude). AI
-assist works only when you tap it, and then sends Anthropic what that action needs: for Rewrite,
-your draft, and whether it&rsquo;s going to someone close to you or someone you work with; for
-Translate, the message; for Catch me up and Find follow-ups, up to the last 200 messages of the
-conversation, with who sent each one and when. Photos, files and voice messages aren&rsquo;t sent,
-only their captions. Anyone in a conversation with you who uses AI assist sends your messages this
-way too, unless the conversation is private: nothing from a private conversation is ever sent.
-When an organization has an AI agent, what it told the agent and the latest messages of your
-conversation with it are sent to Anthropic, without your name, so the agent can reply.</li>
-<li>On the web, notifications reach you through the push service of your browser&rsquo;s maker
-(Google, Mozilla, Apple or Microsoft). What a notification says is encrypted for your browser, so
-the push service can&rsquo;t read it.</li>
+${f.processors
+  .map(
+    (p) =>
+      `<li><strong>${escapeHtml(p.name)}</strong> ${escapeHtml(p.does)} ${escapeHtml(p.receives)}${
+        p.when === 'used' ? ' Only when the feature is used.' : ''
+      }</li>`,
+  )
+  .join('\n')}
 <li>Calls, group calls too, go directly between the devices in them, encrypted.${calls}${relay}</li>
 </ul></li>
 <li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Connected apps) to
@@ -207,6 +204,12 @@ advertising.</p>
 <h2>How long it&rsquo;s kept</h2>
 <ul>
 <li>What you keep in Caime stays while your account exists.</li>
+<li>Your conversations with an organization are the organization&rsquo;s to answer for (it is
+the controller; ${escapeHtml(f.legalName)} processes them for it). An organization can set how
+long it keeps them: each message then goes when that time is up, as a disappearing message does,
+and the conversation says so to you. It can export its conversations, and it can erase yours at
+your request, which empties every message in it and leaves a line saying so. Ask the
+organization; its team does it from its inbox.</li>
 <li>In a conversation with disappearing messages, each message is emptied within about an hour of
 its time being up: the setting when it was sent, counted from then, so a change to the setting
 applies only to messages sent after it. It then shows as &ldquo;Message deleted&rdquo;:

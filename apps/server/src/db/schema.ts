@@ -722,6 +722,8 @@ export interface OrganizationsTable {
   avatar_file_id: string | null;
   /** Its bookable hours (R51), or null: core `BookingHours`. */
   booking: Json<BookingHours | null> | null;
+  /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
+  retention_days: number | null;
   /** Closed: who is proving its domain to take it back (R42), and the record they must add. */
   reclaim_by: string | null;
   reclaim_token: string | null;
@@ -758,6 +760,9 @@ export interface BusinessThreadsTable {
   team_read_seq: ColumnType<string, string | number | undefined, string | number>;
   /** The team wrote first (R14); counted against the plan's starts. */
   started_by_team: Defaulted<boolean>;
+  /** Erased at the customer's request (R54): when, and who on the team did it. */
+  erased_at: NullableTimestamp;
+  erased_by: string | null;
   /** The customer message its AI agent last dealt with (PRD §75), so it deals with each once. */
   agent_seq: ColumnType<string, string | number | undefined, string | number>;
   /** Its AI agent handed it to the team: it stays out until the conversation is resolved. */

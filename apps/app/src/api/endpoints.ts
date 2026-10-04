@@ -58,6 +58,7 @@ import type {
   OrgAppView,
   OrgCalendarView,
   OrgDoorView,
+  OrgExportView,
   OrgInsightsView,
   OrgReclaimView,
   OrgSpaceView,
@@ -392,6 +393,11 @@ export const endpoints = {
   /** The organization's spaces (R43): yours, and running it, all of them. */
   orgSpaces: (id: string) => api.get<{ spaces: OrgSpaceView[] }>(`/orgs/${id}/spaces`),
   orgDoor: (id: string) => api.get<OrgDoorView>(`/orgs/${id}/door`),
+  /** The organization's own conversations (R54): its owner's or admins' to take. */
+  orgExport: (id: string) => api.get<OrgExportView>(`/orgs/${id}/export`),
+  /** Erase a customer's conversation at their request (R54): every message in it goes. */
+  eraseThread: (orgId: string, conversationId: string) =>
+    api.del<{ erased: number }>(`/orgs/${orgId}/conversations/${conversationId}`),
   joinOrgSpace: (id: string, spaceId: string) => api.post<Ok>(`/orgs/${id}/spaces/${spaceId}/join`),
   orgByHandle: (handle: string) =>
     api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),

@@ -77,6 +77,7 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
 
   it('says how calls connect and how long records are kept, as this Caime does', async () => {
     const facts: PageFacts = {
+      processors: [],
       legalName: 'Nile',
       contactEmail: 'hi@nile.example',
       minimumAge: 13,

@@ -8,6 +8,7 @@ import { SITE_PAGES, type SitePage } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
 import { renderPage } from '../lib/pages';
+import { processorsFor } from '../lib/processors';
 import { PERMISSIONS_POLICY } from '../lib/public-pages';
 
 /** A page is its own text and styles: no script, nothing loaded from anywhere, never framed. */
@@ -71,6 +72,7 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
   };
   for (const name of SITE_PAGES) {
     const html = renderPage(name, {
+      processors: processorsFor(config),
       legalName: config.LEGAL_NAME,
       contactEmail: config.CONTACT_EMAIL,
       minimumAge: config.MINIMUM_AGE,

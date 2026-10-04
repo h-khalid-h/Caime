@@ -380,6 +380,12 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
   const by = p.byId && p.byId === viewerId ? 'You' : (p.by ?? 'Someone');
   const them = p.userId && p.userId === viewerId ? 'you' : (p.name ?? 'someone');
   switch (p.event) {
+    // An organization erased a customer's conversation at their request (R54): the customer
+    // reads the organization's name (the business mask), the team who did it.
+    case 'erased':
+      return them === 'you'
+        ? tr('{by} erased this conversation’s messages at your request.', { by })
+        : tr('{by} erased this conversation’s messages at {them}’s request.', { by, them });
     case 'group_created':
       return p.title
         ? tr('{by} created “{title}”', { by, title: p.title })

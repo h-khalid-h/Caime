@@ -1,6 +1,6 @@
 import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
-import { contextLine, formatDue } from '@caime/core/format';
+import { contextLine, formatDue, retentionText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { canPin } from '@caime/core/pins';
 import { useQueryClient } from '@tanstack/react-query';
@@ -698,6 +698,21 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
       {header}
       {body}
       <SuggestionBar conversationId={id} />
+      {/* The customer is told how long the organization keeps this (R54), where they write. */}
+      {business?.retentionDays && !thread && org ? (
+        <Text
+          variant="caption"
+          color="textTertiary"
+          align="center"
+          style={{ paddingHorizontal: 16, paddingBottom: 4 }}
+          testID="business-retention"
+        >
+          {tr('{name} keeps this conversation for {retentionText}: messages go after that.', {
+            name: org.name,
+            retentionText: retentionText(business.retentionDays),
+          })}
+        </Text>
+      ) : null}
       {conversation ? (
         <Composer
           ref={composer}

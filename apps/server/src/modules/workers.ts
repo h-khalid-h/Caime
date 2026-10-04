@@ -14,6 +14,7 @@ import {
   runNotificationHooks,
   tellForgotten,
 } from '../lib/notify';
+import { eraseMessagesWhere } from '../lib/org-data';
 import {
   activeRelationships,
   isBlockedEitherWay,
@@ -200,41 +201,18 @@ export function registerWorkers(): void {
       const members = new Map<string, string[]>();
       for (;;) {
         const { done, forgotten } = await ctx.db.transaction().execute(async (trx) => {
-          const done = await sql<{
-            what: 'saved' | 'gone';
-            id: string;
-            conversation_id: string | null;
-          }>`
-            with due as (
-              select id from messages
+          // The same statement an erasure runs (lib/org-data.ts): what goes with a message is
+          // decided once.
+          const done = await eraseMessagesWhere(
+            trx,
+            sql`select id from messages
               where expires_at < ${ctx.now()} and deleted_at is null
               order by expires_at
-              limit ${LOT} for update skip locked
-            ),
-            gone as (
-              update messages m set deleted_at = ${ctx.now()}, body = null, payload = '{}',
-                entities = '{}', sealed = null, pinned_at = null, pinned_by = null
-              from due where m.id = due.id
-              returning m.id, m.conversation_id
-            ),
-            assets_gone as (delete from assets where message_id in (select id from gone)),
-            files_gone as (delete from message_files where message_id in (select id from gone)),
-            album_gone as (delete from album_photos where message_id in (select id from gone)),
-            saved_gone as (
-              delete from saved_items where message_id in (select id from gone) returning user_id
-            ),
-            offers_gone as (
-              update suggestions set title = '', rationale = '', payload = '{}', due_text = null,
-                status = case when status = 'pending' then 'expired' else status end,
-                resolved_at = coalesce(resolved_at, ${ctx.now()})
-              where message_id in (select id from gone)
-            )
-            select distinct 'saved' as what, user_id::text as id, null as conversation_id
-            from saved_gone
-            union all
-            select 'gone', id::text, conversation_id::text from gone`.execute(trx);
-          const gone = done.rows.filter((r) => r.what === 'gone').map((r) => r.id);
-          return { done: done.rows, forgotten: await forgetNotificationsOf(trx, gone) };
+              limit ${LOT} for update skip locked`,
+            ctx.now(),
+          );
+          const gone = done.filter((r) => r.what === 'gone').map((r) => r.id);
+          return { done, forgotten: await forgetNotificationsOf(trx, gone) };
         });
         // Whoever had saved something of it sees their lists without it, on every device.
         await tellSaved(

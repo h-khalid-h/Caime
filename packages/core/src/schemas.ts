@@ -1143,6 +1143,8 @@ export const UpdateOrgBody = z
     foundedYear: FoundedYear.nullable().optional(),
     /** Its logo: an image file the person uploaded, or null to take it away. */
     avatarFileId: z.string().uuid().nullable().optional(),
+    /** How long it keeps its customers' conversations (R54), 1–3650 days; null keeps them. Its owner's. */
+    retentionDays: z.number().int().min(1).max(3650).nullable().optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');

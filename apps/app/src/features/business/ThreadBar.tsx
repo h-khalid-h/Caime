@@ -5,13 +5,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useNow } from '@/lib/time';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
-import { Check, Ellipsis, TriangleAlert, UserRound } from '@/ui/icons';
+import { Check, Ellipsis, Trash, TriangleAlert, UserRound } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -34,7 +35,7 @@ export function ThreadBar({
   const me = useMe();
   const qc = useQueryClient();
   const now = useNow();
-  const [menu, setMenu] = useState<'more' | 'assign' | 'escalate' | null>(null);
+  const [menu, setMenu] = useState<'more' | 'assign' | 'escalate' | 'erase' | null>(null);
   const shownMenu = useRef(menu);
   if (menu) shownMenu.current = menu;
   const [note, setNote] = useState('');
@@ -45,6 +46,9 @@ export function ThreadBar({
   );
   const mine = thread.assignee?.userId === me.id;
   const resolved = thread.state === 'resolved';
+  // Erasing is the owner's and admins' (R54): shown only to them, so nobody meets a refusal.
+  const org = useOrg(conversation.business?.org.handle ?? '').data?.org;
+  const manager = org?.myRole === 'owner' || org?.myRole === 'admin';
 
   const act = async (work: () => Promise<unknown>, done: string) => {
     setBusy(true);
@@ -95,6 +99,7 @@ export function ThreadBar({
               : null,
             who,
             thread.customerUnder18 ? tr('Under 18') : null,
+            thread.erasedAt ? tr('Erased at the customer’s request') : null,
             conversation.business?.org.name,
           ]
             .filter(Boolean)
@@ -166,12 +171,19 @@ export function ThreadBar({
             ? tr('Who has it')
             : shownMenu.current === 'escalate'
               ? tr('Escalate to the owner and admins')
-              : tr('This conversation')
+              : shownMenu.current === 'erase'
+                ? tr('Erase at the customer’s request')
+                : tr('This conversation')
         }
         subtitle={
           shownMenu.current === 'escalate'
             ? tr('They’re told at once. Say what needs them, if it helps.')
-            : undefined
+            : shownMenu.current === 'erase'
+              ? tr(
+                  'Every message in this conversation goes, for the customer and the team, and a line says {name} erased it at their request. Caime keeps that you did it. It can’t be undone.',
+                  { name: conversation.business?.org.name ?? tr('the organization') },
+                )
+              : undefined
         }
         footer={
           shownMenu.current === 'escalate' ? (
@@ -188,6 +200,21 @@ export function ThreadBar({
                 )
               }
               testID="thread-escalate-confirm"
+            />
+          ) : shownMenu.current === 'erase' ? (
+            <Button
+              label={tr('Erase every message')}
+              variant="danger"
+              block
+              size="lg"
+              loading={busy}
+              onPress={() =>
+                void act(
+                  () => endpoints.eraseThread(conversation.business?.org.id ?? '', conversation.id),
+                  'Erased',
+                )
+              }
+              testID="thread-erase-confirm"
             />
           ) : undefined
         }
@@ -218,6 +245,16 @@ export function ThreadBar({
                 testID="thread-escalate"
               />
             )}
+            {manager && !thread.erasedAt ? (
+              <ListRow
+                icon={Trash}
+                title={tr('Erase at the customer’s request')}
+                subtitle={tr('Every message in it goes; the customer is told')}
+                destructive
+                onPress={() => setMenu('erase')}
+                testID="thread-erase"
+              />
+            ) : null}
           </View>
         ) : shownMenu.current === 'assign' ? (
           <View style={{ marginHorizontal: -20 }}>

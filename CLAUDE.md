@@ -142,6 +142,16 @@ These are rules, not preferences.
   signed in, so the page stays; a new app route that must not be
   indexed needs nothing (the default is `noindex`), and a new web-root file (`robots.txt`,
   `sitemap.xml`) is a reserved handle.
+- An organization's data (R54, `lib/org-data.ts`): an export is `buildOrgExport` (the
+  controller's data alone: never a team member's own account or conversations), an erasure is
+  `eraseBusinessConversation`, and both the disappearing sweep (`workers.ts`, `retention`) and an
+  erasure run `eraseMessagesWhere`: a new thing kept of a message (a copy of its words anywhere)
+  is dropped there, once. Retention is `organizations.retention_days`, applied by
+  `applyOrgRetention` to what's there and by `retentionFor` (`lib/messages.ts`) to each new
+  message as the shorter of it and the conversation's own; nothing else writes `expires_at` for
+  a business message. Who processes data is `packages/core/src/processors.ts` plus
+  `processorsFor(config)` on the server (`HOSTING_PROVIDER` names the host): a new provider
+  joins the list, and the privacy page renders it; never prose about a company anywhere else.
 - An organization's door (R53): its public page's call to action is `doorPath(handle)`
   (`/o/<handle>?write`, `lib/public-pages.ts`), which `appPath` admits, `handleIn` reads as the
   handle and `doorIn` (`lib/paths.ts`) tells from the plain page. Onboarding names it, the

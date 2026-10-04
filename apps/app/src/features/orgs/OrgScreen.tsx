@@ -61,6 +61,7 @@ import { OrgMark, VerifiedLine } from './kinds';
 import { OrgAgent } from './OrgAgent';
 import { OrgApps } from './OrgApps';
 import { OrgBooking } from './OrgBooking';
+import { OrgData } from './OrgData';
 import { OrgDetailsSheet } from './OrgDetails';
 import { OrgDoor } from './OrgDoor';
 import { OrgInsights } from './OrgInsights';
@@ -564,6 +565,7 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>
             <OrgDoor org={org} />
             <Verification org={org} refresh={put} />
+            <OrgData org={org} refresh={put} />
           </View>
         ) : null}
         {manager ? <OrgBooking org={org} /> : null}

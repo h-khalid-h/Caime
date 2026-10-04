@@ -339,6 +339,7 @@ export async function conversationView(
           thread: null,
           closed,
           orgClosed: org.archived_at !== null,
+          retentionDays: org.retention_days,
         };
       } else {
         const [view] = await threadViews(ctx, userId, [thread]);
@@ -350,6 +351,7 @@ export async function conversationView(
           thread: view ?? null,
           closed,
           orgClosed: org.archived_at !== null,
+          retentionDays: org.retention_days,
         };
       }
     }

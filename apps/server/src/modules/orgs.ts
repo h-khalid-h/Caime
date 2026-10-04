@@ -5,6 +5,7 @@
  */
 
 import type {
+  OrgExportView,
   OrgInsightsView,
   OrgMemberView,
   OrgReclaimView,
@@ -46,6 +47,7 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/erro
 import { currencyOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
+import { applyOrgRetention, buildOrgExport, eraseBusinessConversation } from '../lib/org-data';
 import {
   closedOrgById,
   closeOrg,
@@ -168,6 +170,7 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // Everyone sees it answers first, before they write (PRD §75).
     agent: agent && ctx.ai ? { name: agent.name } : null,
     booking: bookingOf(org),
+    retentionDays: org.retention_days,
   };
 }
 
@@ -308,6 +311,64 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { url, qr: qrPath(url) };
   });
 
+  /**
+   * What a clinic's lawyer needs (R54): the organization exports its own conversations (its
+   * owner or admins, a few times an hour, each in the audit log), and erases a customer's at
+   * that customer's request.
+   */
+  app.get('/orgs/:id/export', async (req, reply): Promise<OrgExportView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const org = await orgById(ctx.db, id);
+    await managerSeat(ctx, auth.userId, id);
+    ctx.limiter.hit(`org-export:${id}`, ctx.config.isTest ? 1000 : 3, 3_600_000);
+    let data: OrgExportView;
+    try {
+      data = await buildOrgExport(ctx, id, ctx.now());
+    } catch (e) {
+      if ((e as { status?: number }).status === 413)
+        throw new AppError(
+          413,
+          'export_too_large',
+          'This export is too large to make here. Write to Caime and it will be made for you.',
+        );
+      throw e;
+    }
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'org.exported',
+      target: id,
+      metadata: { conversations: data.conversations.length },
+    });
+    reply.header(
+      'content-disposition',
+      `attachment; filename="${org.handle}-caime-${ctx.now().toISOString().slice(0, 10)}.json"`,
+    );
+    return data;
+  });
+
+  app.delete(
+    '/orgs/:id/conversations/:conversationId',
+    async (req): Promise<{ erased: number }> => {
+      const auth = requireAuth(req);
+      const { id, conversationId } = parse(
+        z.object({ id: z.string().uuid(), conversationId: z.string().uuid() }),
+        req.params,
+      );
+      await orgById(ctx.db, id);
+      await managerSeat(ctx, auth.userId, id);
+      const result = await eraseBusinessConversation(ctx, id, conversationId, auth.userId);
+      if (result === null) throw notFound('That conversation');
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'org.conversation_erased',
+        target: conversationId,
+        metadata: { orgId: id, erased: result.erased },
+      });
+      return result;
+    },
+  );
+
   app.patch('/orgs/:id', async (req): Promise<{ org: OrgView }> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
@@ -316,6 +377,22 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await managerSeat(ctx, auth.userId, id);
     if (body.country !== undefined && !isCountry(body.country))
       throw badRequest('Choose where it’s based.');
+    // How long its customers' conversations are kept is its owner's to set (R54), and takes
+    // what's already there with it: the shorter time wins for every message.
+    if (body.retentionDays !== undefined) {
+      const seat = await orgSeat(ctx.db, auth.userId, id);
+      if (seat?.role !== 'owner')
+        throw forbidden('Only the owner sets how long conversations are kept.');
+      await ctx.db
+        .transaction()
+        .execute((trx) => applyOrgRetention(trx, id, body.retentionDays ?? null, ctx.now()));
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'org.retention_set',
+        target: id,
+        metadata: { retentionDays: body.retentionDays },
+      });
+    }
     // Its logo is an image of the person's own upload, as a profile photo is (modules/me.ts).
     if (body.avatarFileId) {
       const file = await ctx.db

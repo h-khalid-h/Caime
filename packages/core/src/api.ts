@@ -731,6 +731,8 @@ export interface BusinessThreadView {
   awaitingAcceptance: boolean;
   /** The customer is under 18 (R29): no money cards, and the team answers knowing it. */
   customerUnder18: boolean;
+  /** Erased at the customer's request (R54): its messages are gone, and it says so. */
+  erasedAt: string | null;
 }
 
 /** What the team gets back from writing to someone first (R14). */
@@ -752,6 +754,8 @@ export interface ConversationBusinessView {
   closed: boolean;
   /** The organization closed (R42): what was sent stays to read, and nothing more is written. */
   orgClosed: boolean;
+  /** How long the organization keeps this conversation (R54), in days; null keeps it. Said to the customer. */
+  retentionDays: number | null;
 }
 
 export interface BusinessInboxView {
@@ -921,6 +925,8 @@ export interface OrgView extends OrgSummaryView {
   agent: { name: string } | null;
   /** Its bookable hours (R51), for everyone: a customer books from the open slots in them. */
   booking: BookingHours | null;
+  /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
+  retentionDays: number | null;
 }
 
 /**
@@ -976,6 +982,44 @@ export interface OrgDoorView {
   url: string;
   /** The code of it: modules per side, and the dark modules as one SVG path in module units. */
   qr: { size: number; path: string };
+}
+
+/**
+ * An organization's export of its own conversations (R54): everything it is the controller of,
+ * nothing of its people's own. The team by name; a customer named once per conversation.
+ */
+export interface OrgExportView {
+  exportedAt: string;
+  organization: {
+    id: string;
+    name: string;
+    handle: string;
+    kind: string;
+    retentionDays: number | null;
+    createdAt: string;
+  };
+  team: Array<{ userId: string; displayName: string; role: string; since: string }>;
+  conversations: Array<{
+    conversationId: string;
+    customer: { userId: string; displayName: string; handle: string } | null;
+    state: 'open' | 'resolved';
+    startedByTeam: boolean;
+    createdAt: string;
+    erasedAt: string | null;
+    messages: Array<{
+      id: string;
+      seq: number;
+      from: 'customer' | 'team' | 'agent' | 'bot' | 'system' | 'unknown';
+      senderName: string | null;
+      kind: string;
+      body: string | null;
+      payload: Record<string, unknown> | null;
+      files: Array<{ name: string; mime: string; size: number }>;
+      createdAt: string;
+      editedAt: string | null;
+      deletedAt: string | null;
+    }>;
+  }>;
 }
 
 export interface OrgBookingView {

@@ -133,6 +133,11 @@ const Env = z.object({
   LEGAL_NAME: z.string().trim().min(1).max(120).default('DATA C OÜ'),
   CONTACT_EMAIL: z.string().email().default('hello@cai.me'),
   /**
+   * Who hosts this Caime, as the privacy page's list of processors names it (R54): the company
+   * and where, "Hetzner Online GmbH, Germany". Unset, the page says "our hosting provider".
+   */
+  HOSTING_PROVIDER: z.string().trim().min(1).max(160).optional(),
+  /**
    * The privacy policy, the terms and help, when they're published somewhere else (full http(s)
    * addresses): About links there, and Caime's own page for it sends people there too, so there
    * is only ever one of each. Without one, it's Caime's own page.

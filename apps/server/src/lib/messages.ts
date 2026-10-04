@@ -337,6 +337,27 @@ function expiresAt(now: Date, retentionDays: number | null): Date | null {
   return retentionDays ? new Date(now.getTime() + retentionDays * 86_400_000) : null;
 }
 
+/**
+ * The retention a new message in `conversationId` is sent with: the conversation's own, and its
+ * organization's if that's shorter (R54). One indexed read; nothing for a conversation that
+ * isn't an organization's.
+ */
+export async function retentionFor(
+  trx: Kysely<Database> | Transaction<Database>,
+  conversationId: string,
+  conversationDays: number | null,
+): Promise<number | null> {
+  const org = await trx
+    .selectFrom('business_threads as t')
+    .innerJoin('organizations as o', 'o.id', 't.org_id')
+    .select('o.retention_days')
+    .where('t.conversation_id', '=', conversationId)
+    .executeTakeFirst();
+  const orgDays = org?.retention_days ?? null;
+  if (orgDays === null) return conversationDays;
+  return conversationDays === null ? orgDays : Math.min(conversationDays, orgDays);
+}
+
 export async function sendMessage(
   ctx: AppContext,
   senderId: string,
@@ -685,6 +706,11 @@ export async function sendMessage(
         .returning(['last_seq', 'retention_days'])
         .executeTakeFirstOrThrow();
       const seq = bumped.last_seq;
+      // A business conversation is kept as its organization says too (R54): the shorter wins.
+      const kept =
+        conversation.kind === 'business'
+          ? await retentionFor(trx, conversationId, bumped.retention_days)
+          : bumped.retention_days;
       const row = await trx
         .insertInto('messages')
         .values({
@@ -707,7 +733,7 @@ export async function sendMessage(
           urgent: body.urgent ?? false,
           is_question: analysis?.isQuestion ?? body.kind === 'poll',
           is_request: analysis?.isRequest ?? false,
-          expires_at: expiresAt(ctx.now(), bumped.retention_days),
+          expires_at: expiresAt(ctx.now(), kept),
           created_at: ctx.now(),
         })
         .returningAll()
@@ -842,6 +868,7 @@ export async function insertSystemMessage(
       .where('id', '=', conversationId)
       .returning(['last_seq', 'retention_days'])
       .executeTakeFirstOrThrow();
+    const kept = await retentionFor(trx, conversationId, bumped.retention_days);
     const row = await trx
       .insertInto('messages')
       .values({
@@ -853,7 +880,7 @@ export async function insertSystemMessage(
         kind: 'system',
         body: null,
         payload: JSON.stringify(payload),
-        expires_at: expiresAt(ctx.now(), bumped.retention_days),
+        expires_at: expiresAt(ctx.now(), kept),
         created_at: ctx.now(),
       })
       .returningAll()
