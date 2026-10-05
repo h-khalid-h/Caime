@@ -90,6 +90,8 @@ export interface BuildOptions {
   mail?: Mailer;
   /** Skip migrations (the test template database is already migrated). */
   skipMigrations?: boolean;
+  /** Told of every query sent (tests measure what a path costs). */
+  onQuery?: () => void;
 }
 
 /** The OAuth endpoints a browser app elsewhere calls (see the CORS registration below). */
@@ -115,7 +117,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     logController: new LogController({ disableRequestLogging: config.isTest }),
   });
 
-  const database = createDb(config.DATABASE_URL, config.DATABASE_POOL_MAX);
+  const database = createDb(config.DATABASE_URL, config.DATABASE_POOL_MAX, options.onQuery);
   if (!options.skipMigrations) await migrate(database.pool, (m) => app.log.info(m));
   const bus = new Bus(database.pool);
   await bus.start();

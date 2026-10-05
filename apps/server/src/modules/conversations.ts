@@ -100,11 +100,12 @@ import {
 } from '../lib/messages';
 import { removeForEveryone } from '../lib/moderation';
 import { notify } from '../lib/notify';
+import { personViewsFor } from '../lib/people-batch';
 import {
   activeRelationships,
   between,
   pairKey,
-  readReceiptVisibleTo,
+  readReceiptsVisibleTo,
   relationshipView,
   viewerRelation,
 } from '../lib/relations';
@@ -112,7 +113,6 @@ import { spaceChanged, spaceConversationTitle, spaceRefs } from '../lib/spaces';
 import { minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { identityShownTo } from './people';
 import { createSpaceConversation } from './spaces';
 
 /** Whether the person ever had a seat here, left or not. */
@@ -232,27 +232,34 @@ export async function conversationView(
     others.map((o) => o.id),
   );
   const meUser = members.find((m) => m.id === userId);
-  const participants = await Promise.all(
-    members.map(async (m) => {
-      const relation = await viewerRelation(ctx.db, m.id, userId);
-      const identity = m.id === userId ? null : await identityShownTo(ctx, m.id, userId);
-      const rel = rels.find((r) => r.subject_id === m.id);
-      let readSeq: number | null = null;
-      if (m.id !== userId && meUser) {
-        const visible = await readReceiptVisibleTo(ctx.db, now, m, meUser);
-        readSeq = visible ? Number(m.last_read_seq) : null;
-      }
-      return {
+  // Everyone else as they show themselves to me, and whose read position I may see (R25): a
+  // fixed number of queries for the whole group, not seventeen per member.
+  const [views, receiptsVisible, myself] = await Promise.all([
+    personViewsFor(
+      ctx,
+      userId,
+      others.map((o) => o.id),
+    ),
+    meUser ? readReceiptsVisibleTo(ctx.db, now, meUser, others) : new Set<string>(),
+    meUser ? viewerRelation(ctx.db, userId, userId) : null,
+  ]);
+  const participants = members.flatMap((m) => {
+    const rel = rels.find((r) => r.subject_id === m.id);
+    const person =
+      m.id === userId ? (myself ? personView(m, myself, now, null) : null) : views.get(m.id);
+    if (!person) return [];
+    return [
+      {
         userId: m.id,
         role: m.member_role,
-        person: personView(m, relation, now, identity),
+        person,
         relationship: rel ? relationshipView(rel) : null,
-        readSeq,
+        readSeq: m.id !== userId && receiptsVisible.has(m.id) ? Number(m.last_read_seq) : null,
         deliveredSeq: Number(m.last_delivered_seq),
         joinedAt: m.member_joined_at.toISOString(),
-      };
-    }),
-  );
+      },
+    ];
+  });
   const other =
     conversation.kind === 'direct' ? participants.find((p) => p.userId !== userId) : undefined;
   const context = conversation.context_id
@@ -1171,7 +1178,29 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         seq: String(patch.last_read_seq),
       });
     }
-    const members = await participantsOf(ctx.db, id);
+    // A message's ticks are its sender's to see, so an ack is news to whoever sent what it newly
+    // covers (one query, bounded by the ack) and to the reader's own devices, never to a whole
+    // group: a hundred people reading costs a hundred events, not ten thousand.
+    const from = Number(
+      patch.last_read_seq !== undefined ? me.last_read_seq : me.last_delivered_seq,
+    );
+    const to = Math.max(patch.last_delivered_seq ?? 0, patch.last_read_seq ?? 0);
+    const senders = await ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('participants as p', (join) =>
+        join
+          .onRef('p.user_id', '=', 'm.sender_id')
+          .onRef('p.conversation_id', '=', 'm.conversation_id'),
+      )
+      .select(['m.sender_id', 'p.role'])
+      .distinct()
+      .where('m.conversation_id', '=', id)
+      .where('m.seq', '>', String(from))
+      .where('m.seq', '<=', String(to))
+      .where('m.sender_id', 'is not', null)
+      .where('m.sender_id', '!=', auth.userId)
+      .where('p.left_at', 'is', null)
+      .execute();
     const event = (readSeq: number | null) => ({
       type: 'receipts',
       data: {
@@ -1181,32 +1210,30 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         deliveredSeq: patch.last_delivered_seq ?? null,
       },
     });
-    const others = members.map((m) => m.user_id).filter((u) => u !== auth.userId);
+    const others = senders.map((s) => s.sender_id as string);
     if (patch.last_read_seq === undefined || others.length === 0) {
-      await ctx.bus.publish(
-        members.map((m) => m.user_id),
-        event(null),
-      );
+      await ctx.bus.publish([auth.userId, ...others], event(null));
       return { ok: true };
     }
-    // Read positions are private unless both sides share them (R25): check each recipient.
+    // Read positions are private unless both sides share them (R25): decided for all at once.
     const users = await ctx.db
       .selectFrom('users')
       .selectAll()
       .where('id', 'in', [auth.userId, ...others])
       .execute();
     const reader = users.find((u) => u.id === auth.userId);
-    const now = ctx.now();
+    const viewers = users.filter((u) => u.id !== auth.userId);
+    const visible = reader
+      ? await readReceiptsVisibleTo(ctx.db, ctx.now(), reader, viewers)
+      : new Set<string>();
     const allowed: string[] = [auth.userId];
     const withheld: string[] = [];
     const teamReadsForCustomer = conversation.kind === 'business' && me.role === 'agent';
-    for (const viewer of users) {
-      if (viewer.id === auth.userId) continue;
-      const customer = members.find((m) => m.user_id === viewer.id)?.role === 'member';
-      const visible =
-        (teamReadsForCustomer && customer) ||
-        (reader ? await readReceiptVisibleTo(ctx.db, now, reader, viewer) : false);
-      (visible ? allowed : withheld).push(viewer.id);
+    for (const viewer of viewers) {
+      const customer = senders.find((s) => s.sender_id === viewer.id)?.role === 'member';
+      ((teamReadsForCustomer && customer) || visible.has(viewer.id) ? allowed : withheld).push(
+        viewer.id,
+      );
     }
     await ctx.bus.publish(allowed, event(patch.last_read_seq));
     if (withheld.length) await ctx.bus.publish(withheld, event(null));

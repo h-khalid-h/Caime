@@ -9,7 +9,9 @@ import {
   detectEmergingTopic,
   firstName,
   type NotificationKind,
+  type RelationshipPolicy,
   resolvePolicy,
+  type SpaceRef,
   type Sphere,
   suggestFromAnalysis,
   tr,
@@ -17,8 +19,9 @@ import {
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-import type { Conversation, Message } from '../db/schema';
+import type { Conversation, Message, Relationship } from '../db/schema';
 import { runAutomations } from './automations';
+import { eachLimit } from './batch';
 import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
 import { asReader } from './i18n';
@@ -26,25 +29,47 @@ import { enqueue } from './jobs';
 import { messagePreview } from './messages';
 import { notify } from './notify';
 import {
-  activeConnectionId,
+  activeConnectionIds,
   activeRelationships,
   loadPolicies,
+  loadPoliciesFor,
   policyTargetFor,
   relationshipView,
 } from './relations';
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion } from './suggest';
 import { queueTranscription } from './transcribe';
-import { identityShownTo } from './users';
+import { identitiesShownTo, identityShownTo, type ShownIdentity } from './users';
 
 const BURST_WINDOW_MS = 10 * 60_000;
 const LEVEL_RANK = { activity: 0, attention: 1, urgency: 2 } as const;
 
-export async function afterMessage(
+/** Each conversation's effects, in the order its messages were sent. */
+const inOrder = new Map<string, Promise<void>>();
+
+/**
+ * What a message sets off, run after its conversation's previous message's effects: a burst
+ * consolidates into one notification only if each message finds the one before it written, and
+ * the fan-out to a group then runs one message at a time per conversation (convention 14).
+ */
+export function afterMessage(
   ctx: AppContext,
   message: Message,
   read: Analysis | null,
 ): Promise<void> {
+  const key = message.conversation_id;
+  const previous = inOrder.get(key) ?? Promise.resolve();
+  const run = previous.catch(() => undefined).then(() => effectsOf(ctx, message, read));
+  inOrder.set(key, run);
+  run
+    .finally(() => {
+      if (inOrder.get(key) === run) inOrder.delete(key);
+    })
+    .catch(() => undefined);
+  return run;
+}
+
+async function effectsOf(ctx: AppContext, message: Message, read: Analysis | null): Promise<void> {
   // Forwarded words are someone else's (R45 reads imports the same way): nothing in them is the
   // forwarder's promise, request or decision. Entities stayed on the message; suggestions don't.
   const analysis = message.forwarded_from_id ? null : read;
@@ -91,16 +116,16 @@ export async function afterMessage(
     conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
 
   await Promise.all([
-    ...recipients.map((r) =>
-      notifyRecipient(
-        ctx,
-        conversation,
-        message,
-        sender,
-        r,
-        addressed(r.user_id),
-        replyToSender === r.user_id,
-      ),
+    notifyRecipients(
+      ctx,
+      conversation,
+      message,
+      sender,
+      recipients.map((r) => ({
+        recipient: r,
+        addressed: addressed(r.user_id),
+        isReplyToThem: replyToSender === r.user_id,
+      })),
     ),
     suggest(ctx, conversation, message, analysis, sender, recipients, addressed),
     detectTopic(ctx, conversation, message),
@@ -142,10 +167,13 @@ export async function afterMentioning(
     .where('left_at', 'is', null)
     .where('user_id', 'in', userIds)
     .execute();
-  await Promise.all(
-    recipients.map((r) =>
-      notifyRecipient(ctx, conversation, message, sender, r, true, false, { edited: true }),
-    ),
+  await notifyRecipients(
+    ctx,
+    conversation,
+    message,
+    sender,
+    recipients.map((r) => ({ recipient: r, addressed: true, isReplyToThem: false })),
+    { edited: true },
   );
 }
 
@@ -181,18 +209,23 @@ async function notifyBusiness(
     const team = (
       thread.assignee_id ? recipients.filter((r) => r.user_id === thread.assignee_id) : recipients
     ).filter((r) => human(r.user_id));
-    await Promise.all(
-      team.map((r) =>
-        notifyRecipient(ctx, conversation, message, sender, r, true, replyToSender === r.user_id, {
-          context: thread.org_name,
-        }),
-      ),
+    await notifyRecipients(
+      ctx,
+      conversation,
+      message,
+      sender,
+      team.map((r) => ({
+        recipient: r,
+        addressed: true,
+        isReplyToThem: replyToSender === r.user_id,
+      })),
+      { context: thread.org_name },
     );
     return;
   }
   const customer = recipients.find((r) => r.user_id === thread.customer_id);
   if (customer)
-    await notifyRecipient(
+    await notifyRecipients(
       ctx,
       conversation,
       message,
@@ -206,39 +239,150 @@ async function notifyBusiness(
             ? 'agent'
             : 'automated',
       },
-      customer,
-      true,
-      replyToSender === customer.user_id,
+      [{ recipient: customer, addressed: true, isReplyToThem: replyToSender === customer.user_id }],
     );
 }
 
-async function notifyRecipient(
+/** How many recipients are written to at once: a group's message never floods the pool. */
+const FANOUT_CONCURRENCY = 4;
+
+interface Target {
+  recipient: Recipient;
+  addressed: boolean;
+  isReplyToThem: boolean;
+}
+
+interface NotifyOpts {
+  context?: string;
+  /** An edit named them: news of its own, never counted as another message in a burst. */
+  edited?: boolean;
+}
+
+/**
+ * Tell a set of recipients about one message. What they all need (their settings and rules,
+ * their relationship with the sender, how the sender shows themselves to each, the
+ * conversation's title, their open notification of it) is read once for the whole set, in a
+ * handful of queries, and then each is written in their own language (R54), a few at a time
+ * (convention 14): a group of eighty costs eighty notifications, not eighty of everything.
+ */
+async function notifyRecipients(
   ctx: AppContext,
   conversation: Conversation,
   message: Message,
   sender: Sender,
-  recipient: Recipient,
-  addressed: boolean,
-  isReplyToThem: boolean,
-  opts: {
-    context?: string;
-    /** An edit named them: news of its own, never counted as another message in a burst. */
-    edited?: boolean;
-  } = {},
+  targets: Target[],
+  opts: NotifyOpts = {},
 ): Promise<void> {
-  // Everything written here is for the recipient: their language (R54).
-  return asReader(ctx, recipient.user_id, () =>
-    writeForRecipient(
-      ctx,
-      conversation,
-      message,
-      sender,
-      recipient,
-      addressed,
-      isReplyToThem,
-      opts,
+  if (!targets.length) return;
+  const prepared = await prepareFor(
+    ctx,
+    conversation,
+    sender,
+    targets.map((t) => t.recipient.user_id),
+    opts,
+  );
+  await eachLimit(targets, FANOUT_CONCURRENCY, (target) =>
+    asReader(ctx, target.recipient.user_id, () =>
+      writeForRecipient(ctx, conversation, message, sender, target, prepared, opts),
     ),
   );
+}
+
+/** Everything a set of recipients shares, loaded once (see `notifyRecipients`). */
+interface Prepared {
+  users: Map<string, { time_zone: string; quiet_hours: unknown; preferences: unknown }>;
+  policies: Map<string, RelationshipPolicy[]>;
+  /** Each recipient's active relationships with the sender, primary first. */
+  relationships: Map<string, Relationship[]>;
+  /** How the sender shows themselves to each (PRD §35). */
+  shown: Map<string, ShownIdentity | null>;
+  /** The sender's active connection with each, for a rule just for them (PRD §68). */
+  connectionIds: Map<string, string>;
+  /** Each recipient's open notification of this conversation within the burst window. */
+  existing: Map<string, ExistingNotification>;
+  space: SpaceRef | undefined;
+  /** A topic's group's title ("Book club · Middlemarch"). */
+  parentTitle: string | null | undefined;
+}
+
+type ExistingNotification = Awaited<ReturnType<typeof openNotifications>>[number];
+
+function openNotifications(ctx: AppContext, userIds: string[], groupKey: string, since: Date) {
+  return ctx.db
+    .selectFrom('notifications')
+    .selectAll()
+    .where('user_id', 'in', userIds)
+    .where('group_key', '=', groupKey)
+    .where('read_at', 'is', null)
+    .where('dismissed_at', 'is', null)
+    .where('updated_at', '>', since)
+    .orderBy('updated_at', 'desc')
+    .execute();
+}
+
+async function prepareFor(
+  ctx: AppContext,
+  conversation: Conversation,
+  sender: Sender,
+  userIds: string[],
+  opts: NotifyOpts,
+): Promise<Prepared> {
+  const [users, policies, rels, shown, connectionIds, open, spaces, parent] = await Promise.all([
+    ctx.db
+      .selectFrom('users')
+      .select(['id', 'time_zone', 'quiet_hours', 'preferences'])
+      .where('id', 'in', userIds)
+      .execute(),
+    loadPoliciesFor(ctx.db, userIds),
+    ctx.db
+      .selectFrom('relationships')
+      .selectAll()
+      .where('owner_id', 'in', userIds)
+      .where('subject_id', '=', sender.id)
+      .where('status', '=', 'active')
+      .orderBy('is_primary', 'desc')
+      .orderBy('created_at', 'asc')
+      .execute(),
+    identitiesShownTo(ctx, sender.id, userIds),
+    conversation.kind === 'direct'
+      ? new Map<string, string>()
+      : activeConnectionIds(ctx.db, sender.id, userIds),
+    opts.edited
+      ? []
+      : openNotifications(
+          ctx,
+          userIds,
+          `conv:${conversation.id}`,
+          new Date(ctx.now().getTime() - BURST_WINDOW_MS),
+        ),
+    conversation.space_id ? spaceRefs(ctx.db, [conversation.space_id]) : undefined,
+    isGroupTopic(conversation)
+      ? ctx.db
+          .selectFrom('conversations')
+          .select('title')
+          .where('id', '=', conversation.parent_id as string)
+          .executeTakeFirst()
+      : undefined,
+  ]);
+  const relationships = new Map<string, Relationship[]>();
+  for (const r of rels) {
+    const list = relationships.get(r.owner_id) ?? [];
+    list.push(r);
+    relationships.set(r.owner_id, list);
+  }
+  const existing = new Map<string, ExistingNotification>();
+  // Newest first: the first seen for a person is their latest.
+  for (const n of open) if (!existing.has(n.user_id)) existing.set(n.user_id, n);
+  return {
+    users: new Map(users.map((u) => [u.id, u])),
+    policies,
+    relationships,
+    shown,
+    connectionIds,
+    existing,
+    space: conversation.space_id ? spaces?.get(conversation.space_id) : undefined,
+    parentTitle: parent ? (parent.title ?? null) : undefined,
+  };
 }
 
 /** Who wrote, as named to the recipient; an organization's bot or AI agent is labelled as one. */
@@ -253,27 +397,22 @@ async function writeForRecipient(
   conversation: Conversation,
   message: Message,
   sender: Sender,
-  recipient: Recipient,
-  addressed: boolean,
-  isReplyToThem: boolean,
-  opts: { context?: string; edited?: boolean },
+  { recipient, addressed, isReplyToThem }: Target,
+  p: Prepared,
+  opts: NotifyOpts,
 ): Promise<void> {
-  const user = await ctx.db
-    .selectFrom('users')
-    .select(['time_zone', 'quiet_hours', 'preferences'])
-    .where('id', '=', recipient.user_id)
-    .executeTakeFirstOrThrow();
-  const [policies, rels, shown, connectionId] = await Promise.all([
-    loadPolicies(ctx.db, recipient.user_id),
-    activeRelationships(ctx.db, recipient.user_id, [sender.id]),
-    // Named as the sender shows themselves to this person (PRD §35), on a lock screen too; an
-    // organization speaking in its own conversation keeps its name.
-    identityShownTo(ctx, sender.id, recipient.user_id),
-    // A rule just for the sender holds wherever they write: in a group too, by their connection.
+  const user = p.users.get(recipient.user_id);
+  if (!user) return;
+  const policies = p.policies.get(recipient.user_id) ?? [];
+  const rels = p.relationships.get(recipient.user_id) ?? [];
+  // Named as the sender shows themselves to this person (PRD §35), on a lock screen too; an
+  // organization speaking in its own conversation keeps its name.
+  const shown = p.shown.get(recipient.user_id) ?? null;
+  // A rule just for the sender holds wherever they write: in a group too, by their connection.
+  const connectionId =
     conversation.kind === 'direct'
       ? conversation.connection_id
-      : activeConnectionId(ctx.db, recipient.user_id, sender.id),
-  ]);
+      : (p.connectionIds.get(recipient.user_id) ?? null);
   const named = shown?.displayName ?? sender.display_name;
   const senderName = sender.labelled
     ? `${named} (${sender.labelled === 'agent' ? tr('AI agent') : tr('automated')})`
@@ -323,17 +462,9 @@ async function writeForRecipient(
   // A business conversation is one-to-one: a customer and an organization.
   const isGroup = conversation.kind !== 'direct' && conversation.kind !== 'business';
   const context = opts.context ? ` · ${opts.context}` : '';
-  const space = conversation.space_id
-    ? (await spaceRefs(ctx.db, [conversation.space_id])).get(conversation.space_id)
-    : undefined;
+  const space = p.space;
   // A group's topic is named with its group: "Book club · Middlemarch".
-  const group = isGroupTopic(conversation)
-    ? await ctx.db
-        .selectFrom('conversations')
-        .select('title')
-        .where('id', '=', conversation.parent_id as string)
-        .executeTakeFirst()
-    : undefined;
+  const group = p.parentTitle !== undefined ? { title: p.parentTitle } : undefined;
   const groupTitle = space
     ? spaceConversationTitle(space, conversation)
     : group
@@ -342,18 +473,7 @@ async function writeForRecipient(
   const preview =
     conversation.privacy_class === 'private' ? tr('New message') : messagePreview(message);
   const groupKey = `conv:${conversation.id}`;
-  const existing = opts.edited
-    ? undefined
-    : await ctx.db
-        .selectFrom('notifications')
-        .selectAll()
-        .where('user_id', '=', recipient.user_id)
-        .where('group_key', '=', groupKey)
-        .where('read_at', 'is', null)
-        .where('dismissed_at', 'is', null)
-        .where('updated_at', '>', new Date(now.getTime() - BURST_WINDOW_MS))
-        .orderBy('updated_at', 'desc')
-        .executeTakeFirst();
+  const existing = opts.edited ? undefined : p.existing.get(recipient.user_id);
 
   const data = {
     conversationId: conversation.id,
@@ -536,12 +656,18 @@ async function suggest(
       });
     }
   });
-  for (const r of recipients) {
+  const forWhom = recipients.filter(
+    (r) => r.request_state !== 'pending' && r.request_state !== 'declined' && addressed(r.user_id),
+  );
+  // Said with the name the sender shows each person (PRD §35): looked up once for them all.
+  const shownTo = await identitiesShownTo(
+    ctx,
+    sender.id,
+    forWhom.map((r) => r.user_id),
+  );
+  for (const r of forWhom) {
     // Strangers' messages (pending requests) don't create work for you (R14).
-    if (r.request_state === 'pending' || r.request_state === 'declined' || !addressed(r.user_id))
-      continue;
-    // Said with the name the sender shows this person (PRD §35).
-    const shown = await identityShownTo(ctx, sender.id, r.user_id);
+    const shown = shownTo.get(r.user_id) ?? null;
     await asReader(ctx, r.user_id, async () => {
       const theirs = suggestFromAnalysis(analysis, {
         senderIsMe: false,

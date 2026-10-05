@@ -11,6 +11,8 @@ export interface TestApp {
   app: FastifyInstance;
   ctx: AppContext;
   clock: { now: Date; advance(ms: number): void; set(iso: string): void };
+  /** How many queries the server has sent so far (what a path costs, convention 14). */
+  queries(): number;
   close(): Promise<void>;
 }
 
@@ -42,16 +44,21 @@ export async function createTestApp(
     BACKUP_ENABLED: 'false',
     ...env,
   });
+  let queries = 0;
   const { app, ctx } = await buildApp(config, {
     now: () => clock.now,
     skipMigrations: true,
     mail: options.mail,
+    onQuery: () => {
+      queries++;
+    },
   });
   await app.ready();
   return {
     app,
     ctx,
     clock,
+    queries: () => queries,
     async close() {
       await app.close();
       const a = new pg.Client({ connectionString: adminUrl() });

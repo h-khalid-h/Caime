@@ -178,27 +178,61 @@ export async function identityShownTo(
   ctx: Pick<AppContext, 'db'>,
   ownerId: string,
   viewerId: string,
-) {
-  const side = await ctx.db
+): Promise<ShownIdentity | null> {
+  return (await identitiesShownTo(ctx, ownerId, [viewerId])).get(viewerId) ?? null;
+}
+
+export interface ShownIdentity {
+  displayName: string;
+  headline: string | null;
+  orgName: string | null;
+}
+
+/**
+ * How someone appears to each of several people (a group they wrote to), in two queries for
+ * them all: the identity chosen for each connection, else the default one once.
+ */
+export async function identitiesShownTo(
+  ctx: Pick<AppContext, 'db'>,
+  ownerId: string,
+  viewerIds: string[],
+): Promise<Map<string, ShownIdentity | null>> {
+  const out = new Map<string, ShownIdentity | null>();
+  if (!viewerIds.length) return out;
+  const sides = await ctx.db
     .selectFrom('connection_sides')
     .innerJoin('identities', 'identities.id', 'connection_sides.identity_id')
-    .select(['identities.display_name', 'identities.headline', 'identities.org_name'])
+    .select([
+      'connection_sides.other_id',
+      'identities.display_name',
+      'identities.headline',
+      'identities.org_name',
+    ])
     .where('connection_sides.owner_id', '=', ownerId)
-    .where('connection_sides.other_id', '=', viewerId)
-    .executeTakeFirst();
-  const identity =
-    side ??
-    (await ctx.db
-      .selectFrom('identities')
-      .select(['display_name', 'headline', 'org_name'])
-      .where('user_id', '=', ownerId)
-      .where('is_default', '=', true)
-      .executeTakeFirst());
-  return identity
-    ? {
-        displayName: identity.display_name,
-        headline: identity.headline,
-        orgName: identity.org_name,
-      }
-    : null;
+    .where('connection_sides.other_id', 'in', viewerIds)
+    .execute();
+  const chosen = new Map(sides.map((s) => [s.other_id, s]));
+  const fallback =
+    chosen.size < viewerIds.length
+      ? await ctx.db
+          .selectFrom('identities')
+          .select(['display_name', 'headline', 'org_name'])
+          .where('user_id', '=', ownerId)
+          .where('is_default', '=', true)
+          .executeTakeFirst()
+      : undefined;
+  for (const id of viewerIds) {
+    const identity = chosen.get(id) ?? fallback;
+    out.set(
+      id,
+      identity
+        ? {
+            displayName: identity.display_name,
+            headline: identity.headline,
+            orgName: identity.org_name,
+          }
+        : null,
+    );
+  }
+  return out;
 }

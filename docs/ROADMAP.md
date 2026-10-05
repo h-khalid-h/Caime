@@ -875,10 +875,16 @@ listed there with its owner.
       let go of 74 notification strings they never showed;
       `i18n.test.ts` asks a 404 and a 400 in three languages. Zod's field messages stay English
       (a later block).
+- [x] A message to a group costs the group once, not per member: what every recipient needs is
+      read once for the set and each is written four at a time (`notifyRecipients`, `prepareFor`,
+      `eachLimit` in `lib/batch.ts`); a group of 80 went from 813 queries and 294 ms to 267 and
+      187 ms (`fanout-scale.test.ts`, with the counter `createTestApp` now keeps). The
+      conversation view decides every read position in one check (`readReceiptsVisibleTo`) and
+      takes its people from `personViewsFor`; an ack reaches whoever sent what it newly covers
+      and the reader's devices, never the whole group.
 - [ ] Next block: a shorter first five minutes; the relationship chip in an unlabelled
-      conversation; group fan-out in batches; the remaining hand-written role checks; the
-      intelligence dates and the edit path; the remaining UX mediums; zod's field messages
-      through `tr`.
+      conversation; the remaining hand-written role checks; the intelligence dates and the edit
+      path; the remaining UX mediums; zod's field messages through `tr`.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1873,3 +1879,7 @@ listed there with its owner.
   where it's thrown (480 sites, 336 strings in Arabic and French), the server's catalog widened
   to everything only the server says (`ar-server.ts`, `fr-server.ts`; 74 notification strings
   moved out of the app's chunks), `i18n.test.ts` asks a 404 and a 400 in three languages.
+- 2026-10-05 — A message to a group costs the group once: the fan-out reads what every recipient
+  needs in six queries and writes four at a time (813 → 267 queries for 80 members, 294 → 187
+  ms), read positions are decided in one check for a whole group, and an ack reaches only
+  whoever sent what it covers (`fanout-scale.test.ts`).

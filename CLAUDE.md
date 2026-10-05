@@ -601,6 +601,19 @@ These are rules, not preferences.
 - Count what the server does with `ctx.metrics` (`apps/server/src/lib/metrics.ts`). Label values
   come from fixed sets only (a route as declared, a kind, an outcome), never ids, handles or
   text; `metrics.test.ts` scrapes after real traffic and checks for them.
+- Telling a conversation's people about a message goes through `notifyRecipients`
+  (`lib/message-effects.ts`): `prepareFor` reads what the whole set needs (settings, rules,
+  relationships with the sender, `identitiesShownTo`, `loadPoliciesFor`, `activeConnectionIds`,
+  the open notifications) in six queries, then each recipient is written in their language four
+  at a time (`eachLimit`, `lib/batch.ts`); one conversation's `afterMessage` runs after its
+  previous message's (`inOrder`), so a burst consolidates. A new thing told to every member joins `prepareFor`,
+  never a query of its own per member; anything else that writes to many (a sweep, a fan-out)
+  goes through `eachLimit`, never a bare `Promise.all` over people. Whether people may see a read
+  position is `readReceiptsVisibleTo` for them all at once (the conversation view, the receipts
+  route; `readReceiptVisibleTo` is the one-person form of it), and a receipts event goes to
+  whoever sent what it newly covers and the reader's own devices, never a whole group. A view
+  that lists a conversation's people takes them from `personViewsFor`. `createTestApp` counts
+  the server's queries (`t.queries()`): a scale test says what a path costs, with a ceiling.
 - Many inserts take the database's clock (`created_at default now()`), not `ctx.now()`. A test
   that depends on those timestamps sets its clock to real time and stamps what it needs (see
   `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.

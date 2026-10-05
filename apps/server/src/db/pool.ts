@@ -11,13 +11,21 @@ export interface Db {
   close(): Promise<void>;
 }
 
-export function createDb(connectionString: string, max = 20): Db {
+/** `onQuery` is told of each query sent (tests count what a path costs); nothing of its text. */
+export function createDb(connectionString: string, max = 20, onQuery?: () => void): Db {
   const pool = new pg.Pool({ connectionString, max, idleTimeoutMillis: 30_000 });
   pool.on('error', (err) => {
     // An idle client died (e.g. the database restarted). The pool replaces it on next use.
     console.error('postgres pool error', err.message);
   });
-  const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) });
+  const db = new Kysely<Database>({
+    dialect: new PostgresDialect({ pool }),
+    log: onQuery
+      ? (event) => {
+          if (event.level === 'query') onQuery();
+        }
+      : undefined,
+  });
   return {
     pool,
     db,
