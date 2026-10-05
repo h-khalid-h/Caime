@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { itemsFor, personHost } from '../lib/booking';
 import { busyNow } from '../lib/calendar';
 import { notFound } from '../lib/errors';
 import { notHiddenFor } from '../lib/messages';
@@ -399,9 +400,32 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       user.kind !== 'human' || canSee(privacySettings, 'identityDetails', relation)
         ? await orgsOf(ctx.db, id)
         : [];
+    // They take bookings (R58): their hours, and the items this viewer may book; a connection
+    // may book the hours alone where there's no catalog (as a customer books an organization's).
+    const viewer = await ctx.db
+      .selectFrom('users')
+      .select(['birth_date', 'time_zone'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    const host = personHost(user);
+    const bookable = host.hours
+      ? itemsFor(host, {
+          isSelf: relation.isSelf,
+          isConnected: relation.isConnected,
+          spheres: relation.ownerSpheresForViewer,
+          adult: !minorOf(viewer, now),
+        })
+      : [];
+    const booking =
+      host.hours &&
+      !relation.blocked &&
+      (bookable.length > 0 || (host.items.length === 0 && relation.isConnected))
+        ? { hours: host.hours, items: bookable }
+        : null;
     return {
       person: personView(user, relation, now, identity),
       organizations,
+      booking,
       // What it is: to those their rules allow, and to anyone in the conversation it was made in.
       busy: busy
         ? {

@@ -3,7 +3,7 @@ import { formatClock, formatDue, formatListTime, RHYTHM_TEXT } from '@caime/core
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePerson } from '@/api/hooks';
@@ -28,6 +28,7 @@ import { IconButton } from '@/ui/IconButton';
 import {
   ArrowLeft,
   BadgeCheck,
+  CalendarCheck,
   Flag,
   Hash,
   Lock,
@@ -55,7 +56,7 @@ const RelationshipPicker = lazyPart(() =>
 );
 const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.ConnectSheet));
 
-export function PersonScreen({ id }: { id: string }) {
+export function PersonScreen({ id, book = false }: { id: string; book?: boolean }) {
   const t = useTheme();
   const me = useMe();
   const qc = useQueryClient();
@@ -73,6 +74,26 @@ export function PersonScreen({ id }: { id: string }) {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const p = q.data;
+  // Book them (R58): their open slots, in the conversation with them (a message request, for a
+  // stranger who may book a public item). A Book link does it on arrival, once.
+  const booked = useRef(false);
+  const bookWith = useCallback(async (view: PersonProfileView, replace = false) => {
+    const general = view.conversations.find((c) => c.isGeneral);
+    try {
+      const conversationId =
+        general?.id ?? (await endpoints.openDirect(view.person.id)).conversation.id;
+      const to = { pathname: '/c/[id]' as const, params: { id: conversationId, book: '1' } };
+      if (replace) router.replace(to);
+      else router.navigate(to);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+  }, []);
+  useEffect(() => {
+    if (!book || !p?.booking || booked.current || p.person.id === me.id) return;
+    booked.current = true;
+    void bookWith(p, true);
+  }, [book, p, me.id, bookWith]);
 
   const refresh = () => {
     for (const key of [
@@ -125,6 +146,18 @@ export function PersonScreen({ id }: { id: string }) {
   const name = person.displayName.split(' ')[0] ?? person.displayName;
   const state = p.connection.state;
 
+  const bookAction =
+    !self && p.booking ? (
+      <Button
+        label={tr('Book {name}', { name })}
+        icon={CalendarCheck}
+        variant={state === 'connected' ? 'secondary' : 'primary'}
+        size="lg"
+        block
+        onPress={() => void bookWith(p)}
+        testID="person-book"
+      />
+    ) : null;
   const primaryAction = self ? null : state === 'connected' ? (
     <Button
       label={tr('Message')}
@@ -290,6 +323,7 @@ export function PersonScreen({ id }: { id: string }) {
         </View>
 
         {primaryAction}
+        {bookAction}
         {state === 'connected' && privateSupported && !self ? (
           <Button
             label={tr('Private conversation')}

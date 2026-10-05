@@ -69,6 +69,7 @@ export { default as MapPin } from 'lucide-react-native/icons/map-pin';
 export { default as MessageCircle } from 'lucide-react-native/icons/message-circle';
 export { default as Mic } from 'lucide-react-native/icons/mic';
 export { default as MicOff } from 'lucide-react-native/icons/mic-off';
+export { default as Minus } from 'lucide-react-native/icons/minus';
 export { default as Monitor } from 'lucide-react-native/icons/monitor';
 export { default as Package } from 'lucide-react-native/icons/package';
 export { default as Palette } from 'lucide-react-native/icons/palette';

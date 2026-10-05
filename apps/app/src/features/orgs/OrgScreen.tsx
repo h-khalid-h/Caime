@@ -36,6 +36,7 @@ import {
   ArchiveIcon,
   ArrowLeft,
   Ban,
+  CalendarCheck,
   Flag,
   Globe,
   Inbox,
@@ -64,7 +65,15 @@ import { nextOrgPlanLine } from './planLine';
 import { setupNextLine } from './setupSteps';
 
 /** An organization (PRD §36): who it is, whether that's verified, and its team. */
-export function OrgScreen({ handle, write = false }: { handle: string; write?: boolean }) {
+export function OrgScreen({
+  handle,
+  write = false,
+  book = false,
+}: {
+  handle: string;
+  write?: boolean;
+  book?: boolean;
+}) {
   const t = useTheme();
   const qc = useQueryClient();
   const { desktop } = useLayout();
@@ -91,12 +100,16 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
   const waiting = teams?.find((x) => x.org.id === org?.id);
 
   /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
-  const message = async (orgId: string) => {
+  const message = async (orgId: string, booking = false) => {
     setStarting(true);
     try {
       const { conversationId } = await endpoints.messageOrg(orgId);
       void qc.invalidateQueries({ queryKey: qk.inbox });
-      router.push({ pathname: '/c/[id]', params: { id: conversationId } });
+      // Book (R58): the conversation opens on the appointment card's form.
+      router.push({
+        pathname: '/c/[id]',
+        params: booking ? { id: conversationId, book: '1' } : { id: conversationId },
+      });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -110,21 +123,24 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
     org && !org.myRole && !org.blockedByMe && minorMayWriteToOrg(minor, org.verified),
   );
   useEffect(() => {
-    if (!write || !org || walkedIn.current || !canWrite) return;
+    if ((!write && !book) || !org || walkedIn.current || !canWrite) return;
     walkedIn.current = true;
     void (async () => {
       setStarting(true);
       try {
         const { conversationId } = await endpoints.messageOrg(org.id);
         void qc.invalidateQueries({ queryKey: qk.inbox });
-        router.replace({ pathname: '/c/[id]', params: { id: conversationId } });
+        router.replace({
+          pathname: '/c/[id]',
+          params: book && org.booking ? { id: conversationId, book: '1' } : { id: conversationId },
+        });
       } catch (e) {
         toast((e as Error).message, { tone: 'danger' });
       } finally {
         setStarting(false);
       }
     })();
-  }, [write, org, canWrite, qc]);
+  }, [write, book, org, canWrite, qc]);
 
   const put = (o: OrgView) => {
     qc.setQueryData(qk.org(handle), { org: o });
@@ -299,14 +315,29 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
             </Text>
           ) : (
             <View style={{ alignItems: 'center', gap: 6 }}>
-              <Button
-                label={tr('Message {name}', { name: org.name })}
-                icon={MessageCircle}
-                loading={starting}
-                style={{ alignSelf: 'center', marginTop: 6 }}
-                onPress={() => void message(org.id)}
-                testID="org-message"
-              />
+              <View
+                style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
+              >
+                <Button
+                  label={tr('Message {name}', { name: org.name })}
+                  icon={MessageCircle}
+                  loading={starting}
+                  style={{ marginTop: 6 }}
+                  onPress={() => void message(org.id)}
+                  testID="org-message"
+                />
+                {org.booking ? (
+                  <Button
+                    label={tr('Book')}
+                    icon={CalendarCheck}
+                    variant="secondary"
+                    disabled={starting}
+                    style={{ marginTop: 6 }}
+                    onPress={() => void message(org.id, true)}
+                    testID="org-book"
+                  />
+                ) : null}
+              </View>
               {minor ? (
                 <Text variant="caption" color="textTertiary" align="center">
                   {tr('Its team will see you’re under 18.')}

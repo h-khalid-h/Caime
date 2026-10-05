@@ -312,6 +312,61 @@ describe('the readable web (R44)', () => {
     expect((await visit('/o/nile.dental')).body).toContain('>Message Nile Dental on Caime</a>');
   });
 
+  it('a page lists what anyone may book (R58), with Book first; nothing of the rest', async () => {
+    const hours = {
+      timeZone: 'Africa/Cairo',
+      slotMinutes: 30,
+      days: [1, 2, 3].map((weekday) => ({ weekday, start: '09:00', end: '12:00' })),
+      leadMinutes: 60,
+      horizonDays: 14,
+    };
+    const item = (patch: Record<string, unknown>) => ({
+      id: 'x',
+      name: 'X',
+      price: null,
+      unit: 'minutes',
+      minutes: 30,
+      capacity: 1,
+      maxQuantity: 1,
+      audience: 'public',
+      providers: null,
+      askTopic: false,
+      ...patch,
+    });
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: hours,
+      items: [
+        item({
+          id: 'cleaning',
+          name: 'Cleaning',
+          minutes: 45,
+          price: { value: 400, currency: 'EGP' },
+        }),
+        item({ id: 'consult', name: 'Consultation', audience: 'connections' }),
+      ],
+    });
+    const org = await visit('/o/nile.dental');
+    expect(org.body).toContain('>Book Nile Dental</a>');
+    expect(org.body).toContain('Cleaning <span class="small">45 min · EGP');
+    expect(org.body).not.toContain('Consultation');
+    expect(org.body).toContain('%2Fo%2Fnile.dental%3Fbook');
+    await noor.req('PUT', '/v1/me/booking', {
+      booking: hours,
+      items: [
+        item({ id: 'chat', name: 'A quick chat', askTopic: true }),
+        item({ id: 'lesson', name: 'Arabic lesson', audience: ['friend'] }),
+      ],
+    });
+    const person = await visit('/@noor');
+    expect(person.body).toContain('>Book Noor Haddad</a>');
+    expect(person.body).toContain('A quick chat <span class="small">30 min · Free</span>');
+    expect(person.body).not.toContain('Arabic lesson');
+    // Without hours there's nothing to book, whatever the catalog says.
+    await noor.req('PUT', '/v1/me/booking', { booking: null, items: [item({ id: 'chat' })] });
+    expect((await visit('/@noor')).body).not.toContain('>Book Noor Haddad</a>');
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, items: [] });
+  });
+
   it('the app’s own screens ask not to be indexed; robots and the sitemap say what is', async () => {
     const screen = await visit('/c/0193b2c4-0000-7000-8000-000000000000');
     expect(screen.statusCode).toBe(200);

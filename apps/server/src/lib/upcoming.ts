@@ -4,7 +4,7 @@
  * Only where they may still read it: a conversation they're in and let in (no request pending
  * or declined), never a private one, never a card deleted, or deleted by them for themselves.
  */
-import type { UpcomingView } from '@caime/core';
+import type { AppointmentBooking, UpcomingView } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 
@@ -28,6 +28,8 @@ export interface CardAhead {
   agreed: boolean;
   /** When it last changed: the last move on it, or when it was made or edited. */
   updated: Date;
+  /** What it booked from a catalog (R58), if it did. */
+  booking: AppointmentBooking | null;
 }
 
 /** A card's start, as prepareKitFields keeps it (core kit-cards.ts: `toISOString()`). */
@@ -108,6 +110,7 @@ export async function cardsAhead(
         place?: unknown;
       };
       history?: Array<{ at?: string }>;
+      booking?: AppointmentBooking | null;
     };
     const kit = payload.kit;
     const at = payload.fields?.start?.at ? new Date(payload.fields.start.at) : null;
@@ -126,6 +129,7 @@ export async function cardsAhead(
       place: typeof payload.fields?.place === 'string' ? payload.fields.place : null,
       agreed: payload.state === AGREED[kit],
       updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
+      booking: payload.booking && typeof payload.booking === 'object' ? payload.booking : null,
     });
   }
   return ahead.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, opts.limit);

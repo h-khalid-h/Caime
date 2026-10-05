@@ -87,7 +87,15 @@ const RelationshipPicker = lazyPart(() =>
  * `focusSeq` opens the conversation at one message (from search): older pages load until it's
  * there, the list scrolls to it, and it's marked for a moment.
  */
-export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: number }) {
+export function ConversationScreen({
+  id,
+  focusSeq,
+  book = false,
+}: {
+  id: string;
+  focusSeq?: number;
+  book?: boolean;
+}) {
   const t = useTheme();
   const me = useMe();
   const qc = useQueryClient();
@@ -780,6 +788,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           key={id}
           conversation={conversation}
           where={where}
+          openKit={book ? 'appointment' : null}
           replyTo={replyTo}
           onClearReply={() => setReplyTo(null)}
           editing={editing}

@@ -7,8 +7,15 @@
  * the viewer; a person's page exists only while they can be found by handle, and never under
  * 18); every other path is the app's and asks not to be indexed.
  */
-import type { OrgRef } from '@caime/core';
-import { canSee, handleError, normalizeHandle, SPHERE_DEFS, type Sphere } from '@caime/core';
+import type { BookingItem, OrgRef } from '@caime/core';
+import {
+  canSee,
+  formatAmount,
+  handleError,
+  normalizeHandle,
+  SPHERE_DEFS,
+  type Sphere,
+} from '@caime/core';
 import { MARKETING_PAGES, type MarketingPage } from '@caime/core/api';
 import {
   currentTranslator,
@@ -55,6 +62,8 @@ export interface PublicPerson {
   bio: string | null;
   headline: string | null;
   organizations: OrgRef[];
+  /** What anyone may book (R58): the public items of their catalog, while they take bookings. */
+  items: PublicItem[];
 }
 export interface PublicOrg {
   kind: 'org';
@@ -64,6 +73,16 @@ export interface PublicOrg {
   country: string | null;
   foundedYear: number | null;
   updatedAt: Date;
+  items: PublicItem[];
+}
+/** A catalog item as a visitor reads it: nothing of who does it. */
+export type PublicItem = Pick<BookingItem, 'id' | 'name' | 'price' | 'unit' | 'minutes'>;
+
+function publicItems(row: { booking: unknown; booking_items: unknown }): PublicItem[] {
+  if (!row.booking || !Array.isArray(row.booking_items)) return [];
+  return (row.booking_items as BookingItem[])
+    .filter((i) => i.audience === 'public')
+    .map((i) => ({ id: i.id, name: i.name, price: i.price, unit: i.unit, minutes: i.minutes }));
 }
 /** An invite link's page (R1): who invites, the context they chose to show, their line. */
 export interface PublicInvite {
@@ -109,6 +128,7 @@ export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null
     country: o.country,
     foundedYear: o.founded_year,
     updatedAt: o.updated_at,
+    items: publicItems(o),
   };
 }
 
@@ -150,6 +170,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     bio: see('bio') ? u.bio : null,
     headline: identity?.headline ?? null,
     organizations,
+    items: publicItems(u),
   };
 }
 
@@ -438,8 +459,9 @@ export function renderPublic(
     <div><dt class="mono">${esc(tr('handle'))}</dt><dd>@${esc(page.handle)}</dd></div>
     ${page.headline ? `<div><dt class="mono">${esc(tr('headline'))}</dt><dd>${esc(page.headline)}</dd></div>` : ''}
     ${page.organizations.length ? `<div><dt class="mono">${esc(tr('with'))}</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
+    ${itemRows(page.items)}
   </dl>
-  <p class="cta"><a href="${wayIn('sign-up', path)}">${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(page.items, bookPath(`/@${page.handle}`), page.displayName)}<a href="${wayIn('sign-up', path)}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -491,8 +513,9 @@ export function renderPublic(
     }</dd></div>
     ${page.foundedYear ? `<div><dt class="mono">${esc(tr('since'))}</dt><dd>${page.foundedYear}</dd></div>` : ''}
     ${page.website ? `<div><dt class="mono">${esc(tr('website'))}</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
+    ${itemRows(page.items)}
   </dl>
-  <p class="cta"><a href="${wayIn('sign-up', doorPath(o.handle))}">${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(page.items, bookPath(`/o/${o.handle}`), o.name)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -588,6 +611,29 @@ const wayIn = (to: 'sign-up' | 'sign-in', path: string) =>
  * from it lands in the conversation, as an invite's guest does, with nothing more to tap.
  */
 export const doorPath = (handle: string) => `/o/${handle}?write`;
+/** A link that books (R58): the page's path with `?book`, which the app opens on the card's form. */
+export const bookPath = (pagePath: string) => `${pagePath}?book`;
+
+/** "Haircut — 45 min · EGP 200": the public items as spec rows (R58), one line each. */
+function itemRows(items: PublicItem[]): string {
+  if (items.length === 0) return '';
+  const line = (i: PublicItem) =>
+    [
+      i.unit === 'minutes' && i.minutes ? tr('{m} min', { m: i.minutes }) : tr('per day'),
+      i.price
+        ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
+        : tr('Free'),
+    ].join(' · ');
+  return `<div><dt class="mono">${esc(tr('book'))}</dt><dd>${items
+    .map((i) => `${esc(i.name)} <span class="small">${esc(line(i))}</span>`)
+    .join('<br>')}</dd></div>`;
+}
+
+/** The Book call to action, first, when anything is public to book. */
+function bookLink(items: PublicItem[], path: string, name: string): string {
+  if (items.length === 0) return '';
+  return `<a href="${wayIn('sign-up', path)}">${esc(tr('Book {name}', { name }))}</a> `;
+}
 
 const PUBLIC_STYLE = `
 <style id="pub-style">

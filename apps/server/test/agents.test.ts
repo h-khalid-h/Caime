@@ -26,7 +26,14 @@ const agentSays = (action: string, message: string, extra: Record<string, unknow
     content: [
       {
         type: 'text',
-        text: JSON.stringify({ action, message, bookAt: null, bookFor: null, ...extra }),
+        text: JSON.stringify({
+          action,
+          message,
+          bookAt: null,
+          bookFor: null,
+          bookItem: null,
+          ...extra,
+        }),
       },
     ],
     stop_reason: 'end_turn',

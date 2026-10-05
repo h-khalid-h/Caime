@@ -1,9 +1,11 @@
 /**
- * Bookings (R51): an organization's bookable hours, and the open slots in them. Pure: the
- * server works out the slots (taking out what's booked) and the app shows them; nothing here
- * touches a clock or a store. Times are the organization's own, in its time zone; a slot is
- * an instant, so a customer anywhere sees it in theirs.
+ * Bookings (R51, R58): a host's bookable hours, the catalog of what can be booked in them, and
+ * the open slots for one item. A host is an organization or a person; the shape is one. Pure:
+ * the server works out the slots (taking out what's booked) and the app shows them; nothing
+ * here touches a clock or a store. Times are the host's own, in its time zone; a slot is an
+ * instant, so a booker anywhere sees it in theirs.
  */
+import type { Sphere } from './taxonomy';
 import { addDays, zonedParts, zonedTimeToUtc } from './time';
 
 export const SLOT_MINUTES = [15, 20, 30, 45, 60, 90, 120] as const;
@@ -13,17 +15,24 @@ export type SlotMinutes = (typeof SLOT_MINUTES)[number];
 export const BOOKING_HORIZON_DAYS_MAX = 90;
 export const BOOKING_LEAD_MINUTES_MAX = 7 * 24 * 60;
 
+/** A catalog holds at most this many items; an item is taken by at most this many at once. */
+export const BOOKING_ITEMS_MAX = 50;
+export const BOOKING_CAPACITY_MAX = 100;
+/** A stay of at most this many days, in one booking. */
+export const BOOKING_DAYS_MAX = 30;
+
 export interface BookingDay {
   /** 0 is Sunday, as JavaScript counts. */
   weekday: number;
-  /** "HH:MM", the organization's local time; `end` after `start`, on the same day. */
+  /** "HH:MM", the host's local time; `end` after `start`, on the same day. */
   start: string;
   end: string;
 }
 
 export interface BookingHours {
-  /** An IANA time zone: the organization's own. */
+  /** An IANA time zone: the host's own. */
   timeZone: string;
+  /** The grid a day is cut into; an item without a length of its own lasts one of these. */
   slotMinutes: SlotMinutes;
   days: BookingDay[];
   /** Nothing sooner than this from now may be booked. */
@@ -32,9 +41,59 @@ export interface BookingHours {
   horizonDays: number;
 }
 
+/** Minutes (an appointment, a lesson) or days (a room, a rental). */
+export type BookingUnit = 'minutes' | 'days';
+
+/**
+ * Who may book an item: anyone (a visitor signs up for it), anyone connected (or any customer
+ * of an organization), or the people in these spheres (a person's rate for friends). An
+ * organization's items are public or for its customers; spheres are a person's.
+ */
+export type BookingAudience = 'public' | 'connections' | Sphere[];
+
+/**
+ * One thing a host can be booked for (R58). A free item has no price. For minutes, a booking
+ * takes `minutes` at the slot and `quantity` places of `capacity` ("for 2"); for days it takes
+ * `quantity` days from the slot's day and one of `capacity` each day (a room). An item names
+ * the team members who do it, or nobody in particular (any of them); a person's own items are
+ * the person's. `askTopic` lets the booker write what it's for.
+ */
+export interface BookingItem {
+  id: string;
+  name: string;
+  price: { value: number; currency: string } | null;
+  unit: BookingUnit;
+  /** For minutes; a days item has none (a day is a day). */
+  minutes: SlotMinutes | null;
+  capacity: number;
+  maxQuantity: number;
+  audience: BookingAudience;
+  /** Team members' ids (an organization's); null for anyone on the team, or a person's own. */
+  providers: string[] | null;
+  askTopic: boolean;
+}
+
+/** What a card keeps of the item it booked (`payload.booking`), fixed at the time of booking. */
+export interface AppointmentBooking {
+  itemId: string;
+  name: string;
+  unit: BookingUnit;
+  minutes: number | null;
+  quantity: number;
+  /** The whole booking's price (the item's, times the quantity), as it was then. */
+  price: { value: number; currency: string } | null;
+  /** When it ends: the slot plus its length, or the last day's end. */
+  endAt: string;
+  /** Who on the team does it; the customer never sees this (R15). */
+  providerId: string | null;
+  providerName: string | null;
+}
+
 export interface Busy {
   start: Date;
   end: Date;
+  /** How many of an item's capacity it takes; Infinity blocks the whole time (a host's own meeting). */
+  units?: number;
 }
 
 const minutesOf = (hhmm: string): number => {
@@ -42,50 +101,151 @@ const minutesOf = (hhmm: string): number => {
   return (h ?? 0) * 60 + (m ?? 0);
 };
 
+const DAY_MS = 86_400_000;
+
+export interface SlotQuery {
+  from: Date;
+  to: Date;
+  now: Date;
+  /** What's booked of this item (its own bookings; a host's meetings as Infinity). */
+  busy: Busy[];
+  /** The item booked; without one, the hours alone (a slot of `slotMinutes`, one at a time). */
+  item?: Pick<BookingItem, 'unit' | 'minutes' | 'capacity'> | null;
+  /** Places (minutes) or days (days) wanted; 1 without. */
+  quantity?: number;
+  /**
+   * For an item with named providers: each one's own bookings. A slot is open only while one
+   * of them is free for it (a person does one thing at a time, whatever the item's capacity).
+   */
+  providersBusy?: Busy[][];
+  limit?: number;
+}
+
+/** What a booking of this item occupies from `start`, in ms, and the end instant. */
+export function bookingSpan(
+  hours: Pick<BookingHours, 'slotMinutes'>,
+  item: Pick<BookingItem, 'unit' | 'minutes'> | null | undefined,
+  quantity: number,
+  start: Date,
+): Date {
+  if (item?.unit === 'days') return new Date(start.getTime() + Math.max(1, quantity) * DAY_MS);
+  const minutes = item?.minutes ?? hours.slotMinutes;
+  return new Date(start.getTime() + minutes * 60_000);
+}
+
+/** Whether `want` more of `capacity` fit in [start, end) beside what's busy. */
+function roomFor(busy: Busy[], start: number, end: number, want: number, capacity: number) {
+  let used = 0;
+  for (const b of busy) {
+    if (b.start.getTime() < end && b.end.getTime() > start) used += b.units ?? 1;
+    if (used + want > capacity) return false;
+  }
+  return true;
+}
+
 /**
- * The slots open between `from` and `to`: each day's hours cut into slots of the length
- * chosen, from the first that starts at or after `from` and at least the lead time after
- * `now`, to the last that ends by the day's end, within the horizon, and not overlapping
- * anything busy. Soonest first, at most `limit`.
+ * The slots open between `from` and `to`: each day's hours cut into the grid, from the first
+ * that starts at or after `from` and at least the lead time after `now`, to the last whose
+ * booking ends by the day's end (minutes) or within the horizon (days), with room in the
+ * item's capacity for the quantity wanted beside what's booked, and, for an item with named
+ * providers, one of them free. Soonest first, at most `limit`.
  */
-export function openSlots(
-  hours: BookingHours,
-  opts: { from: Date; to: Date; now: Date; busy: Busy[]; limit?: number },
-): Date[] {
+export function openSlots(hours: BookingHours, opts: SlotQuery): Date[] {
   const limit = opts.limit ?? 200;
+  const item = opts.item ?? null;
+  const want = Math.max(1, opts.quantity ?? 1);
+  const capacity = item?.capacity ?? 1;
   const earliest = Math.max(opts.from.getTime(), opts.now.getTime() + hours.leadMinutes * 60_000);
-  const latest = Math.min(opts.to.getTime(), opts.now.getTime() + hours.horizonDays * 86_400_000);
+  const latest = Math.min(opts.to.getTime(), opts.now.getTime() + hours.horizonDays * DAY_MS);
   if (latest <= earliest || hours.days.length === 0) return [];
-  const slotMs = hours.slotMinutes * 60_000;
-  const busy = opts.busy.map((b) => ({ start: b.start.getTime(), end: b.end.getTime() }));
+  const days = item?.unit === 'days';
+  const lengthMs = days ? want * DAY_MS : (item?.minutes ?? hours.slotMinutes) * 60_000;
+  const stepMinutes = hours.slotMinutes;
   const out: Date[] = [];
-  // Walk the days in the organization's zone, from the day `earliest` falls on.
+  const open = (start: number, end: number): boolean => {
+    // A stay is checked a day at a time: two rooms taken on different nights are not two taken
+    // on one.
+    const pieces = days
+      ? Array.from({ length: want }, (_, i) => [start + i * DAY_MS, start + (i + 1) * DAY_MS])
+      : [[start, end]];
+    const fits = pieces.every(([s, e]) =>
+      roomFor(opts.busy, s ?? 0, e ?? 0, days ? 1 : want, capacity),
+    );
+    if (!fits) return false;
+    if (!opts.providersBusy || opts.providersBusy.length === 0) return true;
+    return opts.providersBusy.some((theirs) => roomFor(theirs, start, end, 1, 1));
+  };
+  // Walk the days in the host's zone, from the day `earliest` falls on.
   const first = zonedParts(new Date(earliest), hours.timeZone);
   for (let offset = 0; offset <= hours.horizonDays + 1 && out.length < limit; offset++) {
     const d = addDays(first, offset);
     for (const day of hours.days) {
       if (day.weekday !== d.weekday) continue;
-      const open = minutesOf(day.start);
+      const openAt = minutesOf(day.start);
       const close = minutesOf(day.end);
-      for (let m = open; m + hours.slotMinutes <= close; m += hours.slotMinutes) {
-        const start = zonedTimeToUtc(
+      const at = (m: number) =>
+        zonedTimeToUtc(
           { year: d.year, month: d.month, day: d.day, hour: Math.floor(m / 60), minute: m % 60 },
           hours.timeZone,
         ).getTime();
-        const end = start + slotMs;
+      if (days) {
+        // One slot a day, at the day's opening (a check-in time); the stay ends within the horizon.
+        const start = at(openAt);
+        const end = start + lengthMs;
+        if (start < earliest) continue;
+        if (start >= latest) break;
+        if (end > opts.now.getTime() + (hours.horizonDays + 1) * DAY_MS) break;
+        if (open(start, end)) out.push(new Date(start));
+        continue;
+      }
+      for (let m = openAt; m * 60_000 + lengthMs <= close * 60_000; m += stepMinutes) {
+        const start = at(m);
+        const end = start + lengthMs;
         if (start < earliest) continue;
         if (end > latest) {
           if (start >= latest) break;
           continue;
         }
-        if (busy.some((b) => b.start < end && b.end > start)) continue;
-        out.push(new Date(start));
+        if (open(start, end)) out.push(new Date(start));
         if (out.length >= limit) break;
       }
       if (out.length >= limit) break;
     }
   }
-  return out.sort((a, b) => a.getTime() - b.getTime());
+  return out.sort((a, b) => a.getTime() - b.getTime()).slice(0, limit);
+}
+
+/** Whether someone in this standing may book an item with this audience. */
+export function canBook(
+  audience: BookingAudience,
+  viewer: { isSelf?: boolean; isConnected: boolean; spheres: readonly Sphere[] },
+): boolean {
+  if (viewer.isSelf) return true;
+  if (audience === 'public') return true;
+  if (audience === 'connections') return viewer.isConnected;
+  return audience.some((s) => viewer.spheres.includes(s));
+}
+
+/** The items this viewer may book, in the host's order. */
+export function bookableItems(
+  items: readonly BookingItem[],
+  viewer: { isSelf?: boolean; isConnected: boolean; spheres: readonly Sphere[] },
+  opts: { adult: boolean } = { adult: true },
+): BookingItem[] {
+  // A paid item is a card about money: adults only (R29, R38).
+  return items.filter((i) => canBook(i.audience, viewer) && (opts.adult || i.price === null));
+}
+
+/** The whole booking's price: the item's, times the quantity. */
+export function bookingPrice(
+  item: Pick<BookingItem, 'price'>,
+  quantity: number,
+): { value: number; currency: string } | null {
+  if (!item.price) return null;
+  return {
+    value: Math.round(item.price.value * Math.max(1, quantity) * 100) / 100,
+    currency: item.price.currency,
+  };
 }
 
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

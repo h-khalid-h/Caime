@@ -10,6 +10,7 @@ import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
+import { BOOKING_CAPACITY_MAX, BOOKING_DAYS_MAX, BOOKING_ITEMS_MAX } from './booking';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
@@ -792,10 +793,21 @@ export const PollPayload = z.object({
     .max(12),
   multiple: z.boolean().default(false),
 });
+/** What a booker asks of a catalog item (R58): which, how many, and, for the team, who does it. */
+export const BookingAskBody = z
+  .object({
+    itemId: z.string().min(1).max(40),
+    quantity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX).default(1),
+    providerId: z.string().uuid().nullable().optional(),
+  })
+  .strict();
+export type BookingAskInput = z.infer<typeof BookingAskBody>;
+
 const KitPayload = z.object({
   kit: z.string().max(40),
   fields: z.record(z.string(), z.unknown()),
   state: z.string().max(40).optional(),
+  booking: BookingAskBody.optional(),
 });
 
 /** A private conversation's message as its sender's device sealed it (checked for shape only). */
@@ -1096,7 +1108,17 @@ const OrgWebsite = z
   .refine((u) => /^https?:\/\//i.test(u), msg('Enter a web address like https://datac.com'))
   .nullable();
 
-/** An organization's bookable hours (R51), or null to take bookings off. */
+const SlotMinutesSchema = z.union([
+  z.literal(15),
+  z.literal(20),
+  z.literal(30),
+  z.literal(45),
+  z.literal(60),
+  z.literal(90),
+  z.literal(120),
+]);
+
+/** A host's bookable hours (R51), or null to take bookings off. */
 export const BookingHoursBody = z
   .object({
     timeZone: z
@@ -1114,15 +1136,7 @@ export const BookingHoursBody = z
         },
         { message: msg('That isn’t a time zone.') },
       ),
-    slotMinutes: z.union([
-      z.literal(15),
-      z.literal(20),
-      z.literal(30),
-      z.literal(45),
-      z.literal(60),
-      z.literal(90),
-      z.literal(120),
-    ]),
+    slotMinutes: SlotMinutesSchema,
     days: z
       .array(
         z
@@ -1144,6 +1158,57 @@ export const BookingHoursBody = z
   })
   .strict();
 export type BookingHoursInput = z.infer<typeof BookingHoursBody>;
+
+/** One thing a host can be booked for (R58). */
+export const BookingItemBody = z
+  .object({
+    id: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, msg('That isn’t an item id.')),
+    name: z.string().trim().min(1, msg('Name it.')).max(60),
+    price: z
+      .object({
+        value: z.number().min(0).max(1_000_000_000),
+        currency: z.string().regex(/^[A-Z]{3}$/, msg('Use a currency code like EGP.')),
+      })
+      .strict()
+      .nullable(),
+    unit: z.enum(['minutes', 'days']),
+    minutes: SlotMinutesSchema.nullable(),
+    capacity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
+    maxQuantity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
+    audience: z.union([
+      z.literal('public'),
+      z.literal('connections'),
+      z.array(SphereSchema).min(1).max(SPHERES.length),
+    ]),
+    providers: z.array(z.string().uuid()).max(100).nullable(),
+    askTopic: z.boolean(),
+  })
+  .strict()
+  .refine((i) => (i.unit === 'minutes' ? i.minutes !== null : i.minutes === null), {
+    message: msg('An appointment has a length in minutes; a stay has none.'),
+  })
+  .refine(
+    (i) => (i.unit === 'minutes' ? i.maxQuantity <= i.capacity : i.maxQuantity <= BOOKING_DAYS_MAX),
+    {
+      message: msg('One booking can’t take more than the item has.'),
+    },
+  );
+export type BookingItemInput = z.infer<typeof BookingItemBody>;
+
+/** A host's bookings (R58): hours, or null for none, and the catalog. */
+export const BookingBody = z
+  .object({
+    booking: BookingHoursBody.nullable(),
+    items: z
+      .array(BookingItemBody)
+      .max(BOOKING_ITEMS_MAX)
+      .refine((items) => new Set(items.map((i) => i.id)).size === items.length, {
+        message: msg('Each item once.'),
+      })
+      .default([]),
+  })
+  .strict();
+export type BookingInput = z.infer<typeof BookingBody>;
 
 export const CreateOrgBody = z
   .object({

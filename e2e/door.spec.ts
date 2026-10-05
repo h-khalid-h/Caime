@@ -37,7 +37,7 @@ test.describe
       await expect(door).toContainText('Verify your domain below');
       // The door comes first, before hours and bookings (R53): a clinic's order.
       const doorBox = await door.boundingBox();
-      const bookingBox = await page.getByTestId('org-booking').boundingBox();
+      const bookingBox = await page.getByTestId('org-booking-hours').boundingBox();
       expect(doorBox && bookingBox && doorBox.y < bookingBox.y).toBe(true);
       await page.screenshot({
         path: 'e2e/screenshots/desktop-org-door.png',

@@ -26,7 +26,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { type AgentReply, AiError, type AiUsage } from './ai';
 import { emitWebhook } from './apps';
-import { openSlotsFor, slotLine } from './booking';
+import { catalogLines, itemsFor, openSlotsFor, orgHost, slotLine } from './booking';
 import { onCustomerMessage, publishThread, threadViews } from './business';
 import { recordEvent } from './events';
 import { enqueue, registerJob } from './jobs';
@@ -353,6 +353,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       'o.plan',
       'o.archived_at',
       'o.booking',
+      'o.booking_items',
     ])
     .where('t.conversation_id', '=', conversationId)
     // Still its to answer: the customer's latest, nobody on the team answering, not handed over.
@@ -443,16 +444,28 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     thread.customer_id,
     agent.bot_user_id,
   );
-  // The next open slots (R51), where the organization takes bookings: it may offer them.
+  // The next open slots (R51), where the organization takes bookings: it may offer them. With a
+  // catalog (R58), the items this customer may book, and the slots of the first of them.
+  const host = orgHost({
+    id: thread.org_id,
+    booking: thread.booking,
+    booking_items: thread.booking_items,
+  });
+  const items = itemsFor(host, {
+    isConnected: true,
+    spheres: [],
+    adult: !minorOf(customer, ctx.now()),
+  });
   const open = await openSlotsFor(
     ctx,
-    { id: thread.org_id, booking: thread.booking },
+    host,
     { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
-    AGENT_SLOTS,
+    { item: items[0] ?? null, limit: AGENT_SLOTS },
   );
   const slots = open
     ? open.slots.map((d) => `${d.toISOString()} · ${slotLine(d, open.hours.timeZone)}`).join('\n')
     : null;
+  const catalog = catalogLines(items);
   const reply = await askAgent(
     ctx,
     'agent',
@@ -465,6 +478,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       introduced: transcript.introduced,
       today: todayForAgent(ctx.now(), customer.time_zone),
       slots: slots || null,
+      catalog,
     },
     conversationId,
   );
@@ -489,18 +503,30 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     const at = reply.bookAt ? new Date(reply.bookAt) : null;
     const stillOpen =
       at && !Number.isNaN(at.getTime()) && open?.slots.some((d) => d.getTime() === at.getTime());
+    // From the catalog, the item it named, else the one whose slots it offered; the server
+    // checks the slot for that item as for any booking, and a refusal hands over.
+    const item = items.find((i) => i.id === reply.bookItem) ?? items[0] ?? null;
+    let booked = false;
     if (stillOpen && at) {
-      await postAs(ctx, agent.bot_user_id, conversationId, {
+      booked = await postAs(ctx, agent.bot_user_id, conversationId, {
         kind: 'kit',
         payload: {
           kit: 'appointment',
           fields: {
-            title: reply.bookFor || 'Appointment',
+            title:
+              item && !item.askTopic ? item.name : reply.bookFor || item?.name || 'Appointment',
             start: { at: at.toISOString(), hasTime: true },
           },
+          ...(item ? { booking: { itemId: item.id, quantity: 1 } } : {}),
         },
-      }).catch((err) => ctx.log.warn({ err, conversationId }, 'ai agent could not book'));
-    } else {
+      })
+        .then(() => true)
+        .catch((err) => {
+          ctx.log.warn({ err, conversationId }, 'ai agent could not book');
+          return false;
+        });
+    }
+    if (!booked) {
       // Not a slot it was given, or taken meanwhile: a person books it.
       await handOver(ctx, thread.org_id, conversationId, agent);
     }

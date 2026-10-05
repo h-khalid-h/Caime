@@ -15,6 +15,7 @@ import {
   Bell,
   Bookmark,
   Building,
+  CalendarCheck,
   ChartBar,
   Gauge,
   Globe,
@@ -68,6 +69,13 @@ const ITEMS: Array<{
     icon: Bell,
     title: msg('Notifications and priorities'),
     subtitle: msg('Who reaches you, and when'),
+  },
+  {
+    href: '/settings/bookings',
+    path: '/settings/bookings',
+    icon: CalendarCheck,
+    title: msg('Bookings'),
+    subtitle: msg('Your hours, and what people may book'),
   },
   {
     href: '/settings/saved',

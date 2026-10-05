@@ -561,3 +561,72 @@ with its reason, so it isn't proposed again without new facts.
   proving who you are, your customers' data, hours, who answers first, apps and the plan. The
   page offers it in one row that says what's next (verify the domain, then set hours), and the
   team's other members never see it. One screen to set up, one to work from.
+- **R58 — Bookings are a catalog, for people as well as organizations.** R51 made bookable
+  hours and open slots; what it booked was one thing, "an appointment", written in a text field,
+  for an organization alone. The owner's brainstorm (2026-10-05) asked for the rest, and each
+  piece was checked against the product before it was kept. *Who takes bookings:* a host is a
+  person or an organization. A tutor, a consultant or a therapist is a person on Caime, in the
+  spheres the appointment kit already serves, so a person sets hours and a catalog in
+  Settings · Bookings as an organization does in its setup; the shape is one (`BookingHours`,
+  `BookingItem`), the slots are one function, and a person's own agreed meetings and
+  appointments (any conversation) make them busy, so a consultant is never booked over a meeting
+  they already have. *What is booked:* a catalog item ("Haircut", "Consultation", "Duplex
+  room"): a name, a price or none (a free item has no price, so there is no Paid switch to
+  disagree with its price), a unit (minutes or days) and a length (45 minutes; a day), how many
+  may be taken at once (its capacity), how many one booking may take (a quantity, default 1: for
+  minutes, places, "for 2"; for days, days, "3 nights"), who may book it (its audience), who on
+  the team does it (its providers), and whether the booker writes what it's for (a "topic" item,
+  for the consultant who takes any question). The card's "For" is then a choice from the host's
+  catalog, and the text field stays only where there is no catalog, so nothing a clinic set up
+  on R51 changes under it. *Concurrency:* the brainstorm wanted overlapping bookings off for
+  people, on for organizations with a default limit of 100. The second half was refused:
+  capacity belongs to the item (five chairs, one consultant, twelve rooms), the examples in the
+  brainstorm say so themselves, and a default of 100 would mean nothing is ever full, so a
+  clinic would never see a taken slot until a customer stood in it. Every item starts at a
+  capacity of 1, which means "full once one is booked", and a host raises it per item, up to
+  100 (the ceiling, not the default). A hotel's rooms are an item with unit days and the rooms
+  as capacity: a booking of three nights takes one unit each night, and the "room calendar" is
+  the same open-slot calculation, never a second kind of thing. *Price:* a record, never a
+  payment (R38, GOAL): the card says "200 EGP, paid to Swibba, not through Caime"; the local
+  currency's payment stays the owner's item (⛔). A paid item is adults-only, as every card
+  about money is (R29). *Assignment:* an item names the team members who do it, or anyone
+  (Auto). The customer's conversation never names a team member (R15), so who does an
+  appointment is kept on the card for the team alone (`booking.providerId`, masked for the
+  customer as every team id is) and shown on the Bookings view, where it's changed in one tap.
+  "Auto" is settled when the team confirms the booking (the one human act that is always before
+  the time): the free member with the fewest bookings that day; an item with named providers
+  is open only when one of them is free, so capacity and a person's one-at-a-time hold at once.
+  *Who may book, and from where:* an item's audience is public (anyone, even a visitor who
+  signs up for it), connections (anyone connected, or a customer who has written), or spheres
+  (family and friends for a person; a tutor's "friends" rate), read by the same relationship
+  the privacy evaluator reads. A person's or an organization's public page lists the public
+  items as spec rows with price and length and offers "Book", beside "Message", only when at
+  least one is public; signed in, the profile offers Book where an item's audience lets the
+  viewer, and a `?book` link opens the card's form, as a door opens the conversation (R53). A
+  stranger's booking of a person is a message request carrying the card (one message until
+  answered, as any stranger's). Call stays where calls are, in the conversation one tap away: a
+  call needs the conversation's context and the device that answers it. *Before it happens:*
+  the brainstorm asked for the background work ahead of a dated thing ("analyse the week's
+  chats, mail, meetings and documents and draft the report for the weekly meeting"). Caime has
+  no mail and holds no documents but what's shared in conversations, and anything drafted is a
+  suggestion (R12), so the shape is a brief: for an agreed meeting or appointment in a work,
+  customer, vendor, professional or service relationship (never family or friends, who are not
+  a report), each participant gets, an hour before, what Caime already remembers of the two of
+  you since the last such card: decisions, promises open either way, questions unanswered,
+  files shared, actions due, and, with AI assist on and an allowance left, a bounded summary
+  of the conversation since then through `runAi`. Rules first, model only with a key (ADR-12),
+  nothing written anywhere but the reader's own view, never from a private conversation, and
+  the brief opens from the card ("Before"), where it's read on demand too. A recurring card
+  ("weekly") is a later layer; each occurrence is a card, and each gets its brief.
+- **R59 — The fourth language is Turkish.** By R55's rule (one region, through organizations):
+  Arabic, English and French cover the Middle East and North Africa; the market next to it that
+  already serves it is Türkiye, whose clinics treat Arabic-speaking patients by the hundred
+  thousand a year and run their business in Turkish, so a Turkish clinic with Arab customers is
+  R58's booking catalog exactly. Turkish is left to right, has no grammatical gender (R27 costs
+  nothing), and a counted noun takes no plural after a number, so `trn` is one form; it costs
+  the least to add well, as French did. Urdu is the next candidate (the Gulf's workforce, and
+  right to left, which Arabic already paid for), then Spanish when a new continent is the
+  decision. Turkish joins `INTERFACE_LANGUAGES` as `tr` with its catalog in core
+  (`locales/tr.ts`) and the server's (`tr-server.ts`); nothing else names it. Written for a
+  reader of either gender in "siz", sentence case, with Turkish punctuation; a native speaker's
+  review is owed, as for the others.

@@ -84,6 +84,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       () => {
         void qc.invalidateQueries({ queryKey: qk.allCalendars });
         void qc.invalidateQueries({ queryKey: qk.allOrgCalendars });
+        void qc.invalidateQueries({ queryKey: qk.allSlots });
       },
       1200,
     );

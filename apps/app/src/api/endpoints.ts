@@ -17,6 +17,7 @@ import type {
   AuthResponse,
   AutomationsResponse,
   BookingResponse,
+  BriefView,
   BusinessInboxView,
   BusinessSummaryView,
   CalendarFeedCreatedResponse,
@@ -125,7 +126,14 @@ import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
-import type { BookingHours } from '@caime/core/booking';
+import type { BookingHours, BookingItem } from '@caime/core/booking';
+
+/** Whose slots: an organization's or a person's (R58). */
+export interface BookingHostRef {
+  kind: 'org' | 'person';
+  id: string;
+}
+
 import type { BusinessView } from '@caime/core/business';
 import type { CallKind } from '@caime/core/calls';
 import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
@@ -612,10 +620,21 @@ export const endpoints = {
   orgCalendar: (orgId: string, from: string, to: string) =>
     api.get<OrgCalendarView>(`/orgs/${orgId}/calendar${q({ from, to })}`),
 
-  setOrgBooking: (orgId: string, booking: BookingHours | null) =>
-    api.put<BookingResponse>(`/orgs/${orgId}/booking`, { booking }),
-  orgSlots: (orgId: string, from: string, to: string) =>
-    api.get<SlotsView>(`/orgs/${orgId}/slots${q({ from, to })}`),
+  setOrgBooking: (orgId: string, booking: BookingHours | null, items: BookingItem[]) =>
+    api.put<BookingResponse>(`/orgs/${orgId}/booking`, { booking, items }),
+  // Bookings for people too (R58): my hours and catalog, and anyone's open slots.
+  myBooking: () => api.get<BookingResponse>('/me/booking'),
+  setMyBooking: (booking: BookingHours | null, items: BookingItem[]) =>
+    api.put<BookingResponse>('/me/booking', { booking, items }),
+  slots: (host: BookingHostRef, from: string, to: string, item?: string, quantity?: number) =>
+    api.get<SlotsView>(
+      `/${host.kind === 'org' ? 'orgs' : 'people'}/${host.id}/slots${q({ from, to, item, quantity })}`,
+    ),
+  /** Who on the team does a booking (R58); null takes the name off. */
+  setBookingProvider: (messageId: string, userId: string | null) =>
+    api.post<MessageResponse>(`/messages/${messageId}/booking/provider`, { userId }),
+  /** The brief before a meeting or an appointment (R58). */
+  brief: (messageId: string) => api.get<BriefView>(`/messages/${messageId}/brief`),
 
   // Actions and suggestions
   tasks: (view: TaskViewFilter, params: { conversationId?: string; personId?: string } = {}) =>

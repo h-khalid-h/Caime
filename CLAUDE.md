@@ -273,17 +273,42 @@ These are rules, not preferences.
   the privacy fields `busy` and `busyDetails` (core `privacy.ts`), on the profile
   (`PersonProfileView.busy`, `busyNow` run only when `canSee` allows): never on a `PersonView`
   (every list would pay a query per person) and never anyone's calendar.
-- Bookings (R51): an organization's hours are `organizations.booking` (core `BookingHours`,
-  `BookingHoursBody`), set by `PUT /orgs/:id/booking` (owner or admins; null turns them off) and
-  carried on `OrgView.booking` for everyone. Slots are never kept: `openSlotsFor` (`lib/booking.ts`)
-  cuts the hours with core `openSlots` and takes out the appointment cards in the organization's
-  conversations (`orgBookings`), so booking is always an appointment card (requested, confirmed by
-  the other side) and nothing else holds a slot. `GET /orgs/:id/slots` answers everyone signed in
-  (empty, no zone, where bookings are off), the app's `useOrgSlots` feeds the appointment card's
-  `SlotPicker` wherever `conversation.business` is set, and the agent gets the next `AGENT_SLOTS`
-  as `<slots>` lines ("iso · when", `slotLine`) with a `book` action whose `bookAt` must be one of
-  them now, else it hands over. The E2E stand-in offers from `<slots>` and books the first on
-  "the first one"; the server tests' queue takes `agentSays('book', …, { bookAt, bookFor })`.
+- Bookings (R51, R58): a host is an organization or a person (`BookingHost`, `lib/booking.ts`:
+  `orgHost`, `personHost`), each with hours (`booking`, core `BookingHours`) and a catalog
+  (`booking_items`, core `BookingItem`: a price or none, minutes or days, capacity, how many in
+  one booking, an audience, providers for an organization, `askTopic`), set by
+  `PUT /orgs/:id/booking` (owner or admins) and `PUT /me/booking` with one body (`BookingBody`)
+  and one app component (`features/booking/BookingSetup.tsx`, used by `OrgBooking` and
+  Settings · Bookings). Slots are never kept: `openSlotsFor(ctx, host, window, { item, quantity })`
+  cuts the hours with core `openSlots` (the item's length on the grid, full at its capacity,
+  a stay checked a night at a time, a named provider free) and takes out what holds a slot: an
+  organization's appointment cards (`orgBookings`), a person's own cards (`cardsAhead`, less an
+  organization's unless they do them). A booking from the catalog arrives as `payload.booking
+  = { itemId, quantity }` and `sendMessage` fixes it through `bookingFor` (the audience with core
+  `canBook`, adults for a paid item, the quantity, the slot open now: `not_bookable` 403,
+  `slot_taken` 409) as `AppointmentBooking` (name, length, quantity, price then, `endAt`,
+  `providerId`); nothing else writes it. Who does it: `pickProvider` when the team confirms, the
+  reassign route `POST /messages/:id/booking/provider`, masked for the customer in
+  `maskPayload`, shown on `OrgBookingView.booking`. `GET /orgs/:id/slots` and
+  `GET /people/:id/slots` take `item` and `quantity`; the app's `useSlots(host, …)` feeds the
+  appointment form, whose host is the organization, the other person if their profile's
+  `booking` offers items, else the sender (`useMyBooking`). Public items (`audience: 'public'`)
+  are spec rows on the public pages with "Book" first (`bookPath`, `/…?book`; `bookIn` in
+  `lib/paths.ts`), which lands in the conversation on the card's form (`?book=1` →
+  `Composer.openKit`); the profile's and the organization's Book buttons do the same. The agent
+  gets `<catalog>` lines (`catalogLines`) and its slots are the first item's; `book` carries
+  `bookItem`. The E2E stand-in and `agentSays` answer `bookItem: null`.
+- The brief before a meeting (R58, `lib/briefs.ts`): an agreed meeting or appointment queues
+  `card.brief` (`queueBrief`, from the kit move route; one per card and start, so a moved card
+  finds its old job pointless) an hour before, for the people whose own relationship to the
+  other side is in `BRIEF_SPHERES` (a business conversation: the customer and whoever does or
+  has it); `briefFor(ctx, userId, messageId, { withModel })` is the reader's own view (decisions,
+  open promises either way, their questions since the reader's last words, files, a count,
+  since the previous agreed card or a fortnight), `GET /messages/:id/brief` adds the summary
+  through `runAi('brief')` only with assist on, an adult, an allowance and a standard
+  conversation, cached ten minutes; the app opens it from the card ("Before it",
+  `features/calendar/BriefSheet.tsx`, lazy). Anything new to say before a meeting joins the
+  brief, never a notification of its own.
 - The interface's words (R54, ADR-16): every string the app or core shows is written in English
   where it's used, wrapped in `tr('…')` (variables as `{name}`), `trn(n, 'one thing', '{n}
   things')` for a count, or `msg('…')` in a table of options that's translated where it's shown

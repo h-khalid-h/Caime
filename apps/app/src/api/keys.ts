@@ -60,7 +60,16 @@ export const qk = {
   calendar: (from: string, to: string) => ['calendar', from, to] as const,
   orgCalendar: (orgId: string, from: string, to: string) =>
     ['org-calendar', orgId, from, to] as const,
-  orgSlots: (orgId: string, from: string, to: string) => ['org-slots', orgId, from, to] as const,
+  slots: (
+    kind: 'org' | 'person',
+    id: string,
+    from: string,
+    to: string,
+    item: string | null,
+    quantity: number,
+  ) => ['slots', kind, id, from, to, item, quantity] as const,
+  myBooking: ['my-booking'] as const,
+  brief: (messageId: string) => ['brief', messageId] as const,
   decisions: (conversationId?: string) => ['decisions', conversationId ?? 'all'] as const,
   notifications: ['notifications'] as const,
   policies: ['policies'] as const,
@@ -96,5 +105,6 @@ export const qk = {
   allUpdates: ['updates'] as const,
   allCalendars: ['calendar'] as const,
   allOrgCalendars: ['org-calendar'] as const,
+  allSlots: ['slots'] as const,
   allPoliciesFor: ['policy-for'] as const,
 };

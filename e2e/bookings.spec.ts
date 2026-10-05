@@ -1,0 +1,149 @@
+/**
+ * Bookings as a catalog, for organizations and people (R58): a salon sets hours and a paid
+ * item, a visitor finds "Book" on its public page, signs up and books two places from the open
+ * slots; the owner sets their own bookable item and a connection books it from their profile.
+ */
+import { type BrowserContext, expect, test } from '@playwright/test';
+import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+
+const stamp = Math.random().toString(36).slice(2, 7);
+const handle = `swibba.${stamp}`;
+const ownerHandle = `noor.book.${stamp}`;
+let orgId = '';
+let ownerId = '';
+let ownerState: Awaited<ReturnType<BrowserContext['storageState']>> | undefined;
+let customerState: Awaited<ReturnType<BrowserContext['storageState']>> | undefined;
+
+test.describe
+  .serial('bookings as a catalog (R58)', () => {
+    test('the owner sets hours and a paid item for everyone, in the setup', async ({ browser }) => {
+      const owner = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      ownerId = (await apiSignUp(owner, 'Noor Haddad', ownerHandle)).id;
+      const made = await owner.request.post('/v1/orgs', {
+        headers: CLIENT,
+        data: { name: `Swibba ${stamp}`, handle, kind: 'shop', country: 'EG' },
+      });
+      expect(made.ok(), await made.text()).toBe(true);
+      orgId = ((await made.json()) as { org: { id: string } }).org.id;
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/setup`);
+      // Hours: the defaults (Monday to Friday, 9 to 5, every half hour) are a shop's.
+      await page.getByTestId('org-booking-hours').click();
+      await page.getByTestId('org-booking-save').click();
+      await expect(visible(page, /Mon–Fri 9:00–17:00/)).toBeVisible();
+      // An item: a 45-minute haircut, 200 EGP, two chairs, for everyone.
+      await page.getByTestId('org-booking-add-item').click();
+      await page.getByTestId('org-booking-item-name').fill('Haircut');
+      await page.getByTestId('org-booking-item-paid').click();
+      await page.getByTestId('org-booking-item-price').fill('200');
+      await page.getByTestId('org-booking-item-minutes-45').click();
+      await page.getByTestId('org-booking-item-capacity-more').click();
+      await expect(page.getByTestId('org-booking-item-capacity')).toHaveText('2');
+      await page.getByTestId('org-booking-item-max-more').click();
+      await page.getByTestId('org-booking-item-public').click();
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, 'Haircut')).toBeVisible();
+      await expect(visible(page, /45 min · .*200.* · Everyone/)).toBeVisible();
+      await page.screenshot({
+        path: 'e2e/screenshots/desktop-org-booking-catalog.png',
+        animations: 'disabled',
+      });
+      expect(errors).toEqual([]);
+      ownerState = await owner.storageState();
+      await owner.close();
+    });
+
+    test('a visitor finds Book on the page, signs up and books two places from the open slots', async ({
+      browser,
+    }) => {
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.91' },
+      });
+      const { page, errors } = await newPerson(phone);
+      const customer = `salma.book.${stamp}`;
+      await page.goto(`/o/${handle}`);
+      await expect(page.locator('#static')).toBeVisible();
+      // The catalog's public item, with its price, and Book first.
+      await expect(visible(page, 'Haircut')).toBeVisible();
+      await expect(visible(page, /45 min · EGP/)).toBeVisible();
+      await page.getByRole('link', { name: `Book Swibba ${stamp}` }).click();
+      await page.waitForURL(/\/sign-up\?link=%2Fo%2F.*%3Fbook/);
+      await page.getByTestId('signup-name').fill('Salma Customer');
+      await page.getByTestId('signup-handle').fill(customer);
+      await page.getByTestId('signup-email').fill(`${customer}@example.com`);
+      await page.getByTestId('signup-password').fill('a long enough passphrase');
+      await page.getByTestId('signup-birth-date').fill('1990-12-31');
+      await expect(page.getByText('Available')).toBeVisible();
+      await page.getByTestId('signup-submit').click();
+      await page.waitForURL('**/onboarding');
+      await page.getByTestId('onboarding-link').click();
+      // In the conversation, on the appointment card's form: the one item is chosen, its slots shown.
+      await page.waitForURL(/\/c\/[0-9a-f-]+\?book=1$/);
+      await expect(page.getByTestId('book-item-line')).toContainText('45 min');
+      await expect(page.getByTestId('book-item-line')).toContainText('not paid through Caime');
+      await page.getByTestId('book-quantity-more').click();
+      await expect(page.getByTestId('book-quantity')).toHaveText('2');
+      const picker = page.getByTestId('slot-picker');
+      await expect(picker).toBeVisible();
+      await picker.locator('[data-testid^="slot-"]').first().click();
+      await page.getByTestId('kit-send').click();
+      const card = page.getByTestId('kit-appointment').first();
+      await expect(card).toBeVisible();
+      await expect(card).toContainText('Haircut · 45 min');
+      await expect(card).toContainText('For 2');
+      await expect(card).toContainText('400');
+      await page.screenshot({
+        path: 'e2e/screenshots/phone-booking-card.png',
+        animations: 'disabled',
+      });
+      expect(errors).toEqual([]);
+      customerState = await phone.storageState();
+      await phone.close();
+    });
+
+    test('the team sees the booking, who does it, and the owner is bookable too', async ({
+      browser,
+    }) => {
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      // The person's own bookings, in Settings: a free public chat, with a topic.
+      await page.goto('/settings/bookings');
+      await page.getByTestId('my-booking-hours').click();
+      await page.getByTestId('my-booking-save').click();
+      await expect(visible(page, /Mon–Fri 9:00–17:00/)).toBeVisible();
+      await page.getByTestId('my-booking-add-item').click();
+      await page.getByTestId('my-booking-item-name').fill('A quick chat');
+      await page.getByTestId('my-booking-item-public').click();
+      await page.getByTestId('my-booking-item-topic').click();
+      await page.getByTestId('my-booking-item-save').click();
+      await expect(visible(page, 'A quick chat')).toBeVisible();
+      expect(errors).toEqual([]);
+      await owner.close();
+
+      // The customer, signed in, books the owner from their profile: a message request with the
+      // card in it, and the topic they wrote.
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/p/${ownerId}`);
+      await c.getByTestId('person-book').click();
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?book=1$/);
+      await c.getByTestId('book-topic').fill('Your talk on Thursday');
+      const picker = c.getByTestId('slot-picker');
+      await expect(picker).toBeVisible();
+      await picker.locator('[data-testid^="slot-"]').first().click();
+      await c.getByTestId('kit-send').click();
+      const card = c.getByTestId('kit-appointment').first();
+      await expect(card).toContainText('Your talk on Thursday');
+      await expect(card).toContainText('A quick chat · 30 min');
+      expect(customerErrors).toEqual([]);
+      await phone.close();
+      void orgId;
+    });
+  });

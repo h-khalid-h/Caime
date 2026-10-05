@@ -91,7 +91,9 @@ function answer(body) {
         .pop()
         ?.replace(/^\[\d+\] Customer: /, '') ?? '';
     const say = (action, message, extra = {}) =>
-      reply(JSON.stringify({ action, message, bookAt: null, bookFor: null, ...extra }));
+      reply(
+        JSON.stringify({ action, message, bookAt: null, bookFor: null, bookItem: null, ...extra }),
+      );
     const handOver = () =>
       say('hand_over', `I’ve passed this to the team at ${org}. Someone will answer here.`);
     if (/person|human|someone/i.test(asked)) return handOver();

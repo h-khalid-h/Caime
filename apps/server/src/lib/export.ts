@@ -15,6 +15,7 @@ import { callResult, MANAGING_ROLES } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { automationView, visibleSaved } from './automations';
+import { bookingOf, itemsOf } from './booking';
 import { type CustomerMask, maskPayload, masksFor } from './business';
 import { relationshipView } from './relations';
 import { meView } from './users';
@@ -852,6 +853,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     note: 'Everything Caime keeps about you and by you: what you sent and set, what it worked out for you, and what it recorded of your use, for as long as it keeps each, as the app shows it to you. Other people’s words aren’t in it (their messages, their items and notes, quotes of them), nor reports others made about you, nor secrets, which Caime keeps only as hashes or never shows. Files are listed; each downloads from its link while you are signed in.',
     account: {
       ...meView(user, now),
+      // Their bookable hours and catalog (R58), as set.
+      booking: { hours: bookingOf(user), items: itemsOf(user) },
       lastActiveAt: iso(user.last_active_at),
       // Only counted, and never shown to anyone else; a person's link doesn't say whose.
       joinedThrough: invitedByOrg

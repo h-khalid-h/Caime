@@ -21,6 +21,7 @@ import { createAiAssist } from './lib/ai';
 import { registerWebhookJob } from './lib/apps';
 import { registerBackupJob } from './lib/backup';
 import { registerBillingJobs } from './lib/billing';
+import { registerBriefJob } from './lib/briefs';
 import { Bus } from './lib/bus';
 import { businessRealtime } from './lib/business';
 import { registerCallSweep } from './lib/calls';
@@ -306,6 +307,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerBackupJob();
   registerUpdateJobs();
   registerAgentJob();
+  registerBriefJob();
   registerTranscribeJob();
   registerCallSweep();
   registerGroupCallSweep();

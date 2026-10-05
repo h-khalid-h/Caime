@@ -141,6 +141,10 @@ export function maskPayload(
   }
   for (const key of ['decidedBy', 'assigneeId', 'ownerId'] as const)
     if (other(out[key])) out[key] = mask.orgId;
+  // Who on the team does a booking (R58) is the team's to know.
+  const booking = out.booking as Record<string, unknown> | undefined;
+  if (booking && typeof booking === 'object' && (booking.providerId || booking.providerName))
+    out.booking = { ...booking, providerId: null, providerName: null };
   if (Array.isArray(out.history))
     out.history = (out.history as Array<Record<string, unknown>>).map((h) =>
       other(h.by) ? { ...h, by: mask.orgId } : h,

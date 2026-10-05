@@ -1,8 +1,10 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
+import type { AppointmentBooking } from '@caime/core/booking';
 import { customDetails, customMoves, customState, isCustomCard } from '@caime/core/custom-kits';
 import { formatDue } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import {
+  bookingDetails,
   isCardKit,
   kitDetails,
   kitMoves,
@@ -21,6 +23,7 @@ import { useTheme } from '@/theme/theme';
 import { Button, type IconComponent } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { ListChecks } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { AlbumCard } from './AlbumCard';
@@ -35,7 +38,15 @@ interface CardPayload {
   state?: string;
   fields?: Record<string, unknown>;
   dueAt?: string | null;
+  /** What an appointment booked from a catalog (R58). */
+  booking?: AppointmentBooking | null;
 }
+
+/** The brief before a meeting (R58), loaded when asked for. */
+const BriefSheet = lazyPart(() =>
+  import('@/features/calendar/BriefSheet').then((m) => m.BriefSheet),
+);
+const AGREED: Record<string, string> = { meeting: 'accepted', appointment: 'confirmed' };
 
 const TONE = { positive: 'success', negative: 'danger', neutral: 'neutral' } as const;
 
@@ -108,6 +119,13 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
   if (kit === 'checklist') return <ChecklistCard m={m} mine={mine} />;
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
   if (kit === 'split') return <SplitCard m={m} mine={mine} />;
+  // Agreed and ahead (R58): what to know before it, from the card.
+  const start = (p.fields?.start as { at?: string } | undefined)?.at;
+  const ahead =
+    (kit === 'meeting' || kit === 'appointment') &&
+    state === AGREED[kit] &&
+    typeof start === 'string' &&
+    new Date(start).getTime() > now.getTime() - 3_600_000;
   return (
     <CardBody
       m={m}
@@ -116,7 +134,11 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       state={tr(kitStateLabel(state))}
       tone={kitStateTone(state)}
       title={p.title ?? ''}
-      details={kitDetails(kit, p.fields ?? {}, clock)}
+      details={[
+        ...kitDetails(kit, p.fields ?? {}, clock),
+        ...(kit === 'appointment' ? bookingDetails(p.booking, clock.locale) : []),
+      ]}
+      before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
       // In a conversation with an organization, the team is one side: anyone on it moves a card
       // the team sent, as the server has it.
       moves={
@@ -144,6 +166,7 @@ function CardBody({
   details,
   moves,
   from,
+  before,
   testID,
 }: {
   m: MessageView;
@@ -156,11 +179,14 @@ function CardBody({
   moves: Array<{ to: string; label: string }>;
   /** The organization's app whose kind of card it is. */
   from?: string;
+  /** An agreed meeting ahead (R58): the brief opens from here. */
+  before?: { messageId: string; title: string } | null;
   testID: string;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
+  const [briefOpen, setBriefOpen] = useState(false);
   const go = async (to: string) => {
     setBusy(to);
     try {
@@ -202,7 +228,7 @@ function CardBody({
           {tr('From {from}', { from })}
         </Text>
       ) : null}
-      {moves.length ? (
+      {moves.length || before ? (
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingTop: 2 }}>
           {moves.map((move, i) => (
             <Button
@@ -215,7 +241,23 @@ function CardBody({
               onPress={() => void go(move.to)}
             />
           ))}
+          {before ? (
+            <Button
+              label={tr('Before it')}
+              size="sm"
+              variant="ghost"
+              onPress={() => setBriefOpen(true)}
+              testID="kit-brief"
+            />
+          ) : null}
         </View>
+      ) : null}
+      {before && briefOpen ? (
+        <BriefSheet
+          messageId={before.messageId}
+          title={before.title}
+          onClose={() => setBriefOpen(false)}
+        />
       ) : null}
     </View>
   );

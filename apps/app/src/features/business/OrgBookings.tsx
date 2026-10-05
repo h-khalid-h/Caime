@@ -3,21 +3,27 @@
  * customers, day by day, for the team. Each opens the conversation, where the card is
  * confirmed, moved or cancelled: the booking lives there, never here.
  */
-import type { OrgBookingView } from '@caime/core/api';
-import { formatClock, formatDayHeading } from '@caime/core/format';
+import type { OrgBookingView, OrgView } from '@caime/core/api';
+import { formatAmount, formatClock, formatDayHeading } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
-import { useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
+import { endpoints } from '@/api/endpoints';
 import { useOrgCalendar } from '@/api/hooks';
+import { qk } from '@/api/keys';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Chip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { CalendarCheck } from '@/ui/icons';
+import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
+import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
+import { toast } from '@/ui/Toast';
 
 const DAY_MS = 86_400_000;
 const AHEAD_DAYS = 62;
@@ -33,13 +39,33 @@ function windowNow(now: Date): { from: string; to: string } {
 
 export function OrgBookings({
   orgId,
+  org,
   open,
 }: {
   orgId: string | undefined;
+  /** The organization, for its team (who does a booking is chosen from it, R58). */
+  org?: OrgView | null;
   open: (conversationId: string) => void;
 }) {
   const t = useTheme();
+  const qc = useQueryClient();
   const now = useNow();
+  // Who does a booking (R58): decided when confirmed, changed here in a tap.
+  const [assigning, setAssigning] = useState<OrgBookingView | null>(null);
+  const [saving, setSaving] = useState(false);
+  const assign = async (userId: string | null) => {
+    if (!assigning) return;
+    setSaving(true);
+    try {
+      await endpoints.setBookingProvider(assigning.messageId, userId);
+      void qc.invalidateQueries({ queryKey: qk.allOrgCalendars });
+      setAssigning(null);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setSaving(false);
+    }
+  };
   const { timeZone, locale } = useUserClock();
   // The window moves once an hour, so the query's key (and its cache) holds for an hour.
   const hour = Math.floor(now.getTime() / 3_600_000);
@@ -94,8 +120,42 @@ export function OrgBookings({
                 {name}
               </Text>
               <Text variant="caption" color="textSecondary" numberOfLines={1} auto>
-                {[item.title, item.place].filter(Boolean).join(' · ')}
+                {[
+                  item.title,
+                  item.booking && item.booking.name !== item.title ? item.booking.name : null,
+                  item.booking && item.booking.quantity > 1
+                    ? item.booking.unit === 'days'
+                      ? tr('{n} days', { n: item.booking.quantity })
+                      : tr('For {n}', { n: item.booking.quantity })
+                    : null,
+                  item.booking?.price
+                    ? formatAmount(item.booking.price.value, item.booking.price.currency, locale)
+                    : null,
+                  item.place,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Text>
+              {item.booking ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={tr('Who does it')}
+                  onPress={() => setAssigning(item)}
+                  focusRadius={8}
+                  style={{ alignSelf: 'flex-start' }}
+                  testID={`booking-who-${item.messageId}`}
+                >
+                  <Text
+                    variant="caption"
+                    color={item.booking.providerName ? 'textSecondary' : 'warning'}
+                    auto
+                  >
+                    {item.booking.providerName
+                      ? tr('With {name}', { name: item.booking.providerName })
+                      : tr('Nobody yet')}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
             <Chip
               label={item.state === 'confirmed' ? tr('Confirmed') : tr('Asked')}
@@ -128,6 +188,42 @@ export function OrgBookings({
       }
       contentContainerStyle={{ paddingBottom: 24 }}
       testID="org-bookings"
+      ListFooterComponent={
+        <Sheet
+          open={assigning !== null}
+          onClose={() => setAssigning(null)}
+          title={tr('Who does it')}
+          subtitle={
+            assigning
+              ? `${assigning.title} · ${formatClock(assigning.at, timeZone, locale)}`
+              : undefined
+          }
+        >
+          <View style={{ gap: 2 }}>
+            <ListRow
+              title={tr('Nobody yet')}
+              radio
+              checked={!assigning?.booking?.providerId}
+              onPress={() => void assign(null)}
+              testID="booking-who-nobody"
+            />
+            {(org?.members ?? [])
+              .filter((m) => m.person.kind === 'human')
+              .map((m) => (
+                <ListRow
+                  key={m.userId}
+                  title={m.person.displayName}
+                  subtitle={m.title ?? undefined}
+                  radio
+                  checked={assigning?.booking?.providerId === m.userId}
+                  onPress={() => void assign(m.userId)}
+                  testID={`booking-who-${m.userId}`}
+                />
+              ))}
+            {saving ? <SkeletonRows count={1} /> : null}
+          </View>
+        </Sheet>
+      }
     />
   );
 }

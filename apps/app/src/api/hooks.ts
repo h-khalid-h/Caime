@@ -3,7 +3,7 @@ import type { AssetView, InboxAllResponse, InboxResponse } from '@caime/core/api
 import { inboxAllList, inboxSections } from '@caime/core/attention';
 import type { BusinessView } from '@caime/core/business';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { endpoints, type TaskViewFilter } from './endpoints';
+import { type BookingHostRef, endpoints, type TaskViewFilter } from './endpoints';
 import { qk } from './keys';
 
 // One request carries every conversation with its section; Attention and All are read from it.
@@ -169,13 +169,27 @@ export const useOrgCalendar = (orgId: string | undefined, from: string, to: stri
     enabled: Boolean(orgId),
   });
 
-/** The open slots (R51) an organization can be booked in; none where it takes no bookings. */
-export const useOrgSlots = (orgId: string | undefined, from: string, to: string) =>
+/**
+ * The open slots (R51, R58) a host can be booked in, for an item of its catalog (its length and
+ * capacity) or its hours alone; none where it takes no bookings.
+ */
+export const useSlots = (
+  host: BookingHostRef | null,
+  from: string,
+  to: string,
+  item: string | null = null,
+  quantity = 1,
+) =>
   useQuery({
-    queryKey: qk.orgSlots(orgId ?? '', from, to),
-    queryFn: () => endpoints.orgSlots(orgId ?? '', from, to),
-    enabled: Boolean(orgId),
+    queryKey: qk.slots(host?.kind ?? 'org', host?.id ?? '', from, to, item, quantity),
+    queryFn: () =>
+      endpoints.slots(host ?? { kind: 'org', id: '' }, from, to, item ?? undefined, quantity),
+    enabled: Boolean(host),
   });
+
+/** My own hours and catalog (R58). */
+export const useMyBooking = (enabled = true) =>
+  useQuery({ queryKey: qk.myBooking, queryFn: () => endpoints.myBooking(), enabled });
 
 export const useOrgInbox = (orgId: string | undefined, view: BusinessView) =>
   useQuery({

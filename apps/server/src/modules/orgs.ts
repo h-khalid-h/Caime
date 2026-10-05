@@ -49,7 +49,7 @@ import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
-import { bookingOf } from '../lib/booking';
+import { bookingOf, itemsFor, itemsOf, orgHost } from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -179,6 +179,14 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // Everyone sees it answers first, before they write (PRD §75).
     agent: agent && ctx.ai ? { name: agent.name } : null,
     booking: bookingOf(org),
+    // The team sees the whole catalog; anyone else what they may book (R58).
+    bookingItems: seat
+      ? itemsOf(org)
+      : itemsFor(orgHost(org), {
+          isConnected: true,
+          spheres: [],
+          adult: await adult(ctx, [viewerId]),
+        }),
     retentionDays: org.retention_days,
   };
 }

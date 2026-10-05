@@ -18,7 +18,7 @@ import { SkeletonRows } from '@/ui/Skeleton';
  * Any other single-segment path lands here too, and says there's nothing there.
  */
 export default function HandleLink() {
-  const { at = '' } = useLocalSearchParams<{ at: string }>();
+  const { at = '', book } = useLocalSearchParams<{ at: string; book?: string }>();
   const { desktop } = useLayout();
   const handle = at.startsWith('@') && at.length > 1 ? at.slice(1) : null;
   const q = useQuery({
@@ -30,10 +30,12 @@ export default function HandleLink() {
   const found = q.data;
   useEffect(() => {
     if (!found) return;
+    // A Book link (R58) carries on to the page's Book.
+    const more = book !== undefined ? { book: '1' } : {};
     if (found.kind === 'org')
-      router.replace({ pathname: '/o/[handle]', params: { handle: found.handle } });
-    else router.replace({ pathname: '/p/[id]', params: { id: found.id } });
-  }, [found]);
+      router.replace({ pathname: '/o/[handle]', params: { handle: found.handle, ...more } });
+    else router.replace({ pathname: '/p/[id]', params: { id: found.id, ...more } });
+  }, [found, book]);
 
   const missing = handle === null || (q.error instanceof ApiError && q.error.status === 404);
   return (

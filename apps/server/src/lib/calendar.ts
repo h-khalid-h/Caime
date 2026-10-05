@@ -4,7 +4,14 @@
  * appointments in its customer conversations, for its team. Caime stays the record: the
  * calendar shows what conversations and actions hold, and changes nothing.
  */
-import type { CalendarItemView, OrgBookingView, OrgRef, Sphere, TaskView } from '@caime/core';
+import type {
+  AppointmentBooking,
+  CalendarItemView,
+  OrgBookingView,
+  OrgRef,
+  Sphere,
+  TaskView,
+} from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { orgRef } from './business';
@@ -15,6 +22,19 @@ import { cardsAhead } from './upcoming';
 
 /** A meeting without a length holds an hour. */
 const MEETING_MINUTES = 60;
+
+/** How long a card holds: as booked (R58), as its field says, else an hour. */
+function minutesOf(c: {
+  at: Date;
+  durationMinutes: number | null;
+  booking: AppointmentBooking | null;
+}) {
+  if (c.booking?.endAt) {
+    const m = Math.round((new Date(c.booking.endAt).getTime() - c.at.getTime()) / 60_000);
+    if (Number.isFinite(m) && m > 0) return m;
+  }
+  return c.durationMinutes ?? MEETING_MINUTES;
+}
 const MAX_ITEMS = 500;
 
 export interface Window {
@@ -124,7 +144,7 @@ export async function calendarItems(
   const items: CalendarItemView[] = [];
   for (const c of cards) {
     const a = about.get(c.conversationId);
-    const minutes = c.durationMinutes ?? MEETING_MINUTES;
+    const minutes = minutesOf(c);
     items.push({
       kind: c.kit,
       id: c.messageId,
@@ -228,6 +248,7 @@ export async function orgBookings(
     const payload = (row.payload ?? {}) as {
       state?: string;
       fields?: { title?: unknown; start?: { at?: string; hasTime?: boolean }; place?: unknown };
+      booking?: AppointmentBooking | null;
     };
     const at = payload.fields?.start?.at;
     if (!at) continue;
@@ -242,6 +263,7 @@ export async function orgBookings(
       hasTime: payload.fields?.start?.hasTime !== false,
       place: typeof payload.fields?.place === 'string' ? payload.fields.place : null,
       state: payload.state === 'confirmed' ? 'confirmed' : 'requested',
+      booking: payload.booking && typeof payload.booking === 'object' ? payload.booking : null,
     });
   }
   return out;
@@ -269,7 +291,7 @@ export async function busyNow(ctx: AppContext, userId: string, now: Date): Promi
   let busy: BusyNow | null = null;
   for (const c of cards) {
     if (!c.hasTime) continue;
-    const end = new Date(c.at.getTime() + (c.durationMinutes ?? MEETING_MINUTES) * 60_000);
+    const end = new Date(c.at.getTime() + minutesOf(c) * 60_000);
     if (end > now && (!busy || end > busy.until))
       busy = { until: end, title: c.title, conversationId: c.conversationId };
   }

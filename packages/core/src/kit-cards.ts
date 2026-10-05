@@ -3,8 +3,9 @@
  * and how it reads. The server validates and moves cards with these functions and the app
  * renders them with the same ones, so a card reads the same on every device.
  */
+import type { AppointmentBooking } from './booking';
 import { formatAmount, formatWhenAt, minorUnits, roundAmount } from './format';
-import { msg, tr } from './i18n';
+import { msg, tr, trn } from './i18n';
 import type { Mode } from './intelligence';
 import { KITS, type KitDef, type KitField, type KitId } from './kits';
 import { dateFormat } from './locale';
@@ -567,6 +568,45 @@ export function kitDetails(
     opts,
     new Set(['title', 'items', ...(IN_HEADLINE[kit] ?? [])]),
   );
+}
+
+/**
+ * What an appointment booked from a catalog says of it (R58): the item and its length, how
+ * many, and the price as it was then. Nothing of who on the team does it: that's the team's.
+ */
+export function bookingDetails(
+  booking: AppointmentBooking | null | undefined,
+  locale: string,
+): Array<{ key: string; label: string; value: string }> {
+  if (!booking || typeof booking.name !== 'string') return [];
+  const out: Array<{ key: string; label: string; value: string }> = [];
+  out.push({
+    key: 'booking',
+    label: tr('Booked'),
+    value:
+      booking.unit === 'minutes' && booking.minutes
+        ? `${booking.name} · ${tr('{m} min', { m: booking.minutes })}`
+        : booking.name,
+  });
+  if (booking.unit === 'days')
+    out.push({
+      key: 'quantity',
+      label: tr('Stay'),
+      value: trn(booking.quantity, '{n} day', '{n} days'),
+    });
+  else if (booking.quantity > 1)
+    out.push({
+      key: 'quantity',
+      label: tr('How many'),
+      value: tr('For {n}', { n: booking.quantity }),
+    });
+  if (booking.price)
+    out.push({
+      key: 'price',
+      label: tr('Price'),
+      value: formatAmount(booking.price.value, booking.price.currency, locale),
+    });
+  return out;
 }
 
 /** Fields as a card's labelled lines, but those the card already says elsewhere. */

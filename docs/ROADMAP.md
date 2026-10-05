@@ -988,6 +988,37 @@ listed there with its owner.
       registers no phone yet (`expo-notifications` is imported nowhere; the native push module
       is a stub). It joins the development build, with the store work.
 
+## M13 — Bookings for everyone (R58), the fourth language (R59)
+
+- [x] R58: a host is a person or an organization. A person sets hours and a catalog in
+      Settings · Bookings (`users.booking`, `users.booking_items`, `GET`/`PUT /me/booking`,
+      migration 0053) as an organization does in its setup (`PUT /orgs/:id/booking` takes the
+      catalog too); the shape is one (core `BookingItem`, `BookingSetup`), and a person's own
+      agreed cards make them busy. Slots are an item's (`GET /orgs/:id/slots?item&quantity`,
+      `GET /people/:id/slots`): the item's length on the hours' grid, full only at its capacity
+      for the quantity wanted (places, or days for a stay, checked a night at a time), and only
+      while one of its named providers is free. A booking from the catalog is checked on send
+      (`payload.booking`, 403 `not_bookable`, 409 `slot_taken`) and the card keeps the item,
+      quantity, the price as it was and its end. Who does it is decided when the team confirms
+      (the free member with the fewest that day), kept from the customer (masked), shown and
+      changed on the Bookings view (`POST /messages/:id/booking/provider`). Public items are on
+      the public pages with Book first (`/@handle?book`, `/o/<handle>?book`), the profile
+      and the organization's page offer Book, and a link lands on the card's form. The agent
+      reads `<catalog>` and books with `bookItem`. `booking.test.ts` (core and server),
+      `public-pages.test.ts`, `e2e/bookings.spec.ts`.
+- [x] R58: the brief before a meeting. An agreed meeting or appointment in a work, customer,
+      vendor or professional relationship (never family or friends) gets each participant a
+      notification an hour before (`card.brief` job, one per card and start) with what Caime
+      remembers since the last such card: decisions, promises open either way, their questions
+      unanswered, files, how much was said; read in full from the card ("Before it",
+      `GET /messages/:id/brief`), with a bounded AI summary only for a reader with assist on and
+      an allowance left (`runAi`, 'brief'). `briefs.test.ts`.
+- [ ] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
+      site's switch and alternates, the catalog tests over four languages.
+- [ ] Later layers of R58: a recurring card (each occurrence its own brief), a resource shared
+      by several items (one set of chairs for two services), a customer choosing who does it
+      where an organization allows it, group meetings' briefs.
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -2008,3 +2039,7 @@ listed there with its owner.
 - 2026-10-05 — ARCHITECTURE matches the code: ADR-12 and ADR-14 reworded, paging by `before`,
   the layout tree as it is.
 - 2026-10-05 — Webhook secrets rotate with a day's overlap; OAuth answers carry `iss`.
+- 2026-10-05 — R58: bookings are a catalog, for people as well as organizations: items with a
+  price, a length in minutes or days, a capacity and an audience; slots per item; who does it
+  decided at confirmation and kept from the customer; Book on the public pages and profiles;
+  the agent reads the catalog; and the brief before an agreed meeting, an hour ahead.

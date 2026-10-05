@@ -273,6 +273,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
       {view === 'bookings' ? (
         <OrgBookings
           orgId={summary?.id}
+          org={summary}
           open={(conversationId) =>
             desktop
               ? router.navigate({

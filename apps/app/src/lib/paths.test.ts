@@ -6,6 +6,7 @@ import { isReservedHandle } from '@caime/core/schemas';
 import { describe, expect, it } from 'vitest';
 import {
   appPath,
+  bookIn,
   deepLinkPath,
   doorIn,
   handleIn,
@@ -136,5 +137,16 @@ describe('an organization’s door (R53)', () => {
     expect(doorIn('/@nile.dental?write')).toBeNull();
     expect(doorIn('/o/nile.dental?write=1')).toBeNull();
     expect(doorIn('/o/nile.dental?write&x=1')).toBeNull();
+  });
+});
+
+describe('a link that books (R58)', () => {
+  it('reads the handle of a Book link, and nothing else', () => {
+    expect(bookIn('/@noor?book')).toBe('noor');
+    expect(bookIn('/o/nile.dental?book')).toBe('nile.dental');
+    expect(bookIn('/o/nile.dental?write')).toBeNull();
+    expect(bookIn('/@noor')).toBeNull();
+    expect(handleIn('/@noor?book')).toBe('noor');
+    expect(appPath('/o/nile.dental?book')).toBe('/o/nile.dental?book');
   });
 });

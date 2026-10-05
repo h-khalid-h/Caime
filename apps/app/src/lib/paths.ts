@@ -48,7 +48,15 @@ export function deepLinkPath(url: string): string | null {
 
 /** The handle a path opens (a person's or an organization's), to say whose link this is. */
 export function handleIn(path: string | null | undefined): string | null {
-  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)(?:\?write)?$/i)?.[1] ?? null;
+  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)(?:\?(?:write|book))?$/i)?.[1] ?? null;
+}
+
+/**
+ * A link that books (`/@handle?book`, `/o/<handle>?book`, R58): the page's Book, which opens
+ * the appointment card's form once the person is in the conversation. Null for any other path.
+ */
+export function bookIn(path: string | null | undefined): string | null {
+  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)\?book$/i)?.[1] ?? null;
 }
 
 /**

@@ -234,7 +234,6 @@ export const frServer: Catalog = {
     'Ce qui fait de Caime Caime n’est jamais compté : liens, relations, ce qui a besoin de vous, ce que vous attendez, recherche et synchronisation sont dans chaque forfait. Les forfaits ne diffèrent que par ce qui coûte à faire tourner, et par ce que les organisations achètent.',
   'For people': 'Pour les particuliers',
   Personal: 'Personal',
-  Free: 'Gratuit',
   ', always': ', toujours',
   'ai assist': 'assistance ia',
   '{n} actions a day, once you turn it on': '{n} actions par jour, une fois activée',
@@ -956,4 +955,30 @@ export const frServer: Catalog = {
   'This token needs the “{scope}” permission for that.':
     'Ce jeton a besoin de la permission « {scope} » pour cela.',
   '{n} apps': { one: '{n} application', other: '{n} applications' },
+
+  // Bookings (R58)
+  'Coming up: {title}': 'À venir : {title}',
+  '{n} promises open': { one: '{n} promesse ouverte', other: '{n} promesses ouvertes' },
+  '{n} questions unanswered': {
+    one: '{n} question sans réponse',
+    other: '{n} questions sans réponse',
+  },
+  'That card': 'Cette carte',
+  'That isn’t something you can book here.':
+    'Ce n’est pas quelque chose que vous pouvez réserver ici.',
+  'Paid bookings are for people over 18.':
+    'Les réservations payantes sont réservées aux plus de 18 ans.',
+  'Up to {n} in one booking.': 'Jusqu’à {n} par réservation.',
+  'They don’t do that one.': 'Cette personne ne s’en charge pas.',
+  'That time has just been taken. Pick another.':
+    'Ce créneau vient d’être pris. Choisissez-en un autre.',
+  'Your own bookings are yours to do.': 'Vos réservations sont les vôtres à assurer.',
+  'An organization’s items are public or for its customers.':
+    'Les éléments d’une organisation sont publics ou pour ses clients.',
+  'Only people on the team can be providers.':
+    'Seules les personnes de l’équipe peuvent s’en charger.',
+  'per day': 'par jour',
+  book: 'réserver',
+  'Only the team says who does a booking.': 'Seule l’équipe dit qui se charge d’une réservation.',
+  'That isn’t a booking from the catalog.': 'Ce n’est pas une réservation du catalogue.',
 };

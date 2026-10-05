@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { PersonScreen } from '@/features/people/PersonScreen';
 
 export default function Person() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  return <PersonScreen id={id} key={id} />;
+  // `?book` (R58): a Book link opens the conversation on the appointment card's form.
+  const { id, book } = useLocalSearchParams<{ id: string; book?: string }>();
+  return <PersonScreen id={id} book={book !== undefined} key={id} />;
 }

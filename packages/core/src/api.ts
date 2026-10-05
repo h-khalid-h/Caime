@@ -9,7 +9,7 @@ import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
-import type { BookingHours } from './booking';
+import type { AppointmentBooking, BookingHours, BookingItem } from './booking';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
@@ -240,6 +240,8 @@ export interface PersonProfileView {
    * viewer allow (`busy`); what it is only to those allowed (`busyDetails`) or in its conversation.
    */
   busy: { until: string; title: string | null } | null;
+  /** They take bookings (R58): their hours and the items this viewer may book, or null. */
+  booking: { hours: BookingHours; items: BookingItem[] } | null;
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];
@@ -969,6 +971,8 @@ export interface OrgView extends OrgSummaryView {
   agent: { name: string } | null;
   /** Its bookable hours (R51), for everyone: a customer books from the open slots in them. */
   booking: BookingHours | null;
+  /** What can be booked (R58): the items this viewer may book; every one for its team. */
+  bookingItems: BookingItem[];
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
 }
@@ -980,6 +984,8 @@ export interface OrgView extends OrgSummaryView {
 export interface SlotsView {
   timeZone: string | null;
   slotMinutes: number | null;
+  /** The item the slots are for (R58), when one was asked; its length is each slot's. */
+  item: Pick<BookingItem, 'id' | 'name' | 'unit' | 'minutes' | 'maxQuantity' | 'price'> | null;
   slots: string[];
 }
 
@@ -1011,6 +1017,35 @@ export interface CalendarItemView {
   conversationTitle: string | null;
   /** Agreed (accepted, confirmed) or only asked; an action: open, waiting on someone, overdue. */
   state: 'agreed' | 'asked' | 'open' | 'waiting' | 'overdue';
+}
+
+/**
+ * The brief before a meeting (R58): what Caime remembers of the two of you since the last such
+ * card, as the reader sees it. Rules first; `summary` only when the reader has AI assist.
+ */
+export interface BriefView {
+  messageId: string;
+  conversationId: string;
+  kit: 'meeting' | 'appointment';
+  title: string;
+  at: string;
+  /** From when it looks: the previous agreed card's start, or a fortnight back. */
+  since: string;
+  /** Messages since then, counted. */
+  messages: number;
+  decisions: Array<{ id: string; title: string; decidedAt: string }>;
+  /** `mine`: you promised them; `theirs`: they promised you. */
+  promises: Array<{
+    id: string;
+    title: string;
+    dueAt: string | null;
+    direction: 'mine' | 'theirs';
+  }>;
+  /** Their questions since your last message: still unanswered. */
+  questions: Array<{ messageId: string; preview: string; at: string }>;
+  files: Array<{ id: string; name: string; kind: string }>;
+  summary: string | null;
+  label: string | null;
 }
 
 export interface CalendarView {
@@ -1075,6 +1110,8 @@ export interface OrgBookingView {
   hasTime: boolean;
   place: string | null;
   state: 'requested' | 'confirmed';
+  /** What was booked (R58), when it came from the catalog; who on the team does it. */
+  booking: AppointmentBooking | null;
 }
 
 export interface OrgCalendarView {
@@ -2169,8 +2206,10 @@ export interface DeliveryResponse {
 export interface DeliveryQueuedResponse {
   deliveryId: string;
 }
+/** A host's bookings as set (R58): its hours, or null for none, and its catalog. */
 export interface BookingResponse {
   booking: BookingHours | null;
+  items: BookingItem[];
 }
 export interface OrgUpdateResponse {
   update: OrgUpdateView;

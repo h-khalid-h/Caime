@@ -87,6 +87,8 @@ export interface ComposerProps {
   placeholder?: string;
   /** The conversation shown, and whether it's private here (R18, seen so on this device too). */
   where: { conversationId: string; private: boolean };
+  /** Opened on this card's form (a Book link, R58). */
+  openKit?: KitChoice | null;
 }
 
 const MIN_H = 44;
@@ -105,6 +107,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     onEditLast,
     placeholder,
     where,
+    openKit,
   },
   ref,
 ) {
@@ -121,7 +124,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [height, setHeight] = useState(MIN_H);
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
-  const [kit, setKit] = useState<KitChoice | null>(null);
+  const [kit, setKit] = useState<KitChoice | null>(openKit ?? null);
   const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
   const [rewrite, setRewrite] = useState(false);
   const [recording, setRecording] = useState(false);

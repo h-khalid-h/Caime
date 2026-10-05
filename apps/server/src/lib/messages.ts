@@ -8,6 +8,7 @@ import {
   type Analysis,
   analyzeMessage,
   assessLink,
+  BookingAskBody,
   canPostTo,
   type FileView,
   KIT_MODES,
@@ -30,12 +31,13 @@ import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { assertCanWrite } from './blocks';
+import { type BookingHost, bookingFor, orgHost, personHost } from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { customCardFor } from './kits';
-import { isBlockedEitherWay, shareAConnection } from './relations';
+import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { minorOf, privacyOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
@@ -573,7 +575,7 @@ export async function sendMessage(
 
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['time_zone', 'locale', 'workweek', 'birth_date'])
+    .select(['id', 'time_zone', 'locale', 'workweek', 'birth_date', 'booking', 'booking_items'])
     .where('id', '=', senderId)
     .executeTakeFirstOrThrow();
   // Under-18 accounts don't share where they are (R29).
@@ -600,7 +602,7 @@ export async function sendMessage(
     });
     kitMode = 'track';
   } else if (body.kind === 'kit' && !opts.trusted) {
-    const raw = (body.payload ?? {}) as { kit?: unknown; fields?: unknown };
+    const raw = (body.payload ?? {}) as { kit?: unknown; fields?: unknown; booking?: unknown };
     const card = prepareKitFields(raw.kit, raw.fields);
     if (!card.ok) throw badRequest(card.error);
     // A business conversation is one-to-one: a customer and the organization (R15).
@@ -655,6 +657,59 @@ export async function sendMessage(
       if (!shares.length) throw badRequest(tr('There’s nobody here to split it with.'));
       card.fields.shares = shares;
     }
+    // Booked from a catalog (R58): the host's item, checked and fixed as the card keeps it. The
+    // host is the organization, or the other person if the item is theirs, else the sender
+    // (filling their own diary for someone).
+    let booking: Record<string, unknown> | null = null;
+    const ask =
+      card.kit === 'appointment' && raw.booking ? BookingAskBody.parse(raw.booking) : null;
+    if (ask) {
+      const start = (card.fields.start as { at: string }).at;
+      const adult = !minorOf(sender, ctx.now());
+      let host: BookingHost | null = null;
+      let booker: Parameters<typeof bookingFor>[2] | null = null;
+      if (conversation.kind === 'business') {
+        const mask = await customerMask(ctx.db, conversationId);
+        const org = mask
+          ? await ctx.db
+              .selectFrom('organizations')
+              .select(['id', 'booking', 'booking_items'])
+              .where('id', '=', mask.orgId)
+              .executeTakeFirst()
+          : null;
+        if (org) {
+          host = orgHost(org);
+          booker = { isSelf: senderId !== mask?.customerId, isConnected: true, spheres: [], adult };
+        }
+      } else if (conversation.kind === 'direct') {
+        const otherId = members.find((p) => p.user_id !== senderId)?.user_id;
+        const other = otherId
+          ? await ctx.db
+              .selectFrom('users')
+              .select(['id', 'booking', 'booking_items'])
+              .where('id', '=', otherId)
+              .executeTakeFirst()
+          : null;
+        if (other && personHost(other).items.some((i) => i.id === ask.itemId)) {
+          host = personHost(other);
+          const relation = await viewerRelation(ctx.db, other.id, senderId);
+          booker = {
+            isConnected: relation.isConnected,
+            spheres: relation.ownerSpheresForViewer,
+            adult,
+          };
+        } else {
+          host = personHost(sender);
+          booker = { isSelf: true, isConnected: true, spheres: [], adult };
+        }
+      }
+      if (!host || !booker)
+        throw new AppError(403, 'not_bookable', tr('That isn’t something you can book here.'));
+      booking = (await bookingFor(ctx, host, booker, ask, new Date(start))) as unknown as Record<
+        string,
+        unknown
+      >;
+    }
     payload = {
       kit: card.kit,
       label: card.def.name,
@@ -662,6 +717,7 @@ export async function sendMessage(
       fields: card.fields,
       state: card.def.states[0],
       history: [],
+      ...(booking ? { booking } : {}),
     };
     kitMode = KIT_MODES[card.kit];
   }

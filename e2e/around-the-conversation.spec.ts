@@ -2389,12 +2389,12 @@ test.describe
       // With bookable hours set (R51), it offers open slots and books the one Lina picks, as an
       // appointment card she confirms; the team sees it under Bookings meanwhile.
       await page.goto(`/o/${handle}/setup`);
-      await page.getByTestId('org-booking').click();
+      await page.getByTestId('org-booking-hours').click();
       // Monday to Friday are offered first; every day, so the test's day is one of them.
       await page.getByTestId('org-booking-day-0').click();
       await page.getByTestId('org-booking-day-6').click();
       await page.getByTestId('org-booking-save').click();
-      await expect(page.getByTestId('org-booking')).toContainText('30 min');
+      await expect(page.getByTestId('org-booking-hours')).toContainText('30 min');
       await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-hours')).toContainText('30 min');
       await write('Can I book a cleaning on Thursday?');
@@ -2427,9 +2427,9 @@ test.describe
       await customer.getByRole('button', { name: 'Close', exact: true }).last().click();
       await expect(customer.getByTestId('slot-picker')).toHaveCount(0);
       await page.goto(`/o/${handle}/setup`);
-      await page.getByTestId('org-booking').click();
+      await page.getByTestId('org-booking-hours').click();
       await page.getByTestId('org-booking-off').click();
-      await expect(page.getByTestId('org-booking')).toContainText('Bookings are off');
+      await expect(page.getByTestId('org-booking-hours')).toContainText('Bookings are off');
       await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-hours')).toHaveCount(0);
 

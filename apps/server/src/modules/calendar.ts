@@ -6,7 +6,8 @@
  * ends the old one. Only a signed-in person over 18 makes one (no token reaches these routes).
  */
 import {
-  BookingHoursBody,
+  BookingBody,
+  type BookingItem,
   buildIcs,
   type CalendarFeedView,
   type CalendarView,
@@ -20,6 +21,7 @@ import {
 } from '@caime/core';
 import type {
   BookingResponse,
+  BriefView,
   CalendarFeedCreatedResponse,
   CalendarFeedResponse,
   OkResponse,
@@ -29,11 +31,23 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
-import { openSlotsFor } from '../lib/booking';
+import {
+  assertItemsFit,
+  type Booker,
+  type BookingHost,
+  itemsFor,
+  itemsOf,
+  openSlotsFor,
+  orgHost,
+  personHost,
+} from '../lib/booking';
+import { humanTeam } from '../lib/booking-team';
+import { briefFor } from '../lib/briefs';
 import { calendarItems, orgBookings, overdueTasks } from '../lib/calendar';
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
+import { viewerRelation } from '../lib/relations';
 import { cardsAhead } from '../lib/upcoming';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -178,19 +192,26 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     return { from: window.from.toISOString(), to: window.until.toISOString(), items };
   });
 
-  // Bookable hours (R51): set by the organization's owner or admins; null takes bookings off.
+  // Bookable hours (R51) and the catalog (R58): set by the organization's owner or admins; null
+  // hours take bookings off. An item's providers are people on the team.
   app.put('/orgs/:id/booking', async (req): Promise<BookingResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const body = parse(z.object({ booking: BookingHoursBody.nullable() }).strict(), req.body);
-    await orgById(ctx.db, id);
+    const body = parse(BookingBody, req.body);
+    const org = await orgById(ctx.db, id);
     const seat = await orgSeat(ctx.db, auth.userId, id);
     if (!seat) throw notFound(tr('That organization'));
     if (!canManageOrg(seat.role))
       throw forbidden(tr('Only the organization’s owner and admins can.'));
+    const team = await humanTeam(ctx.db, id);
+    assertItemsFit(orgHost(org), body.items, new Set(team.map((u) => u.id)), true);
     await ctx.db
       .updateTable('organizations')
-      .set({ booking: body.booking ? JSON.stringify(body.booking) : null, updated_at: ctx.now() })
+      .set({
+        booking: body.booking ? JSON.stringify(body.booking) : null,
+        booking_items: JSON.stringify(body.items),
+        updated_at: ctx.now(),
+      })
       .where('id', '=', id)
       .execute();
     await audit(ctx.db, {
@@ -198,23 +219,150 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       action: body.booking ? 'org.booking_set' : 'org.booking_off',
       target: id,
       ip: req.ip,
+      metadata: { items: body.items.length },
     });
-    return { booking: body.booking };
+    return { booking: body.booking, items: body.items };
   });
+
+  const SlotsQuery = WindowQuery.extend({
+    item: z.string().max(40).optional(),
+    quantity: z.coerce.number().int().min(1).max(100).optional(),
+  });
+
+  /** The slots for a host, for this booker: of the item asked, else the hours alone. */
+  async function slotsView(host: BookingHost, booker: Booker, query: unknown): Promise<SlotsView> {
+    const q = parse(SlotsQuery, query);
+    const window = windowOf({ from: q.from, to: q.to });
+    const none: SlotsView = { timeZone: null, slotMinutes: null, item: null, slots: [] };
+    if (!host.hours) return none;
+    let item: BookingItem | null = null;
+    if (q.item) {
+      item = itemsFor(host, booker).find((i) => i.id === q.item) ?? null;
+      if (!item) return none;
+    }
+    const open = await openSlotsFor(
+      ctx,
+      host,
+      { from: window.from, to: window.until },
+      { item, quantity: q.quantity },
+    );
+    if (!open) return none;
+    return {
+      timeZone: open.hours.timeZone,
+      slotMinutes: item?.minutes ?? open.hours.slotMinutes,
+      item: item
+        ? {
+            id: item.id,
+            name: item.name,
+            unit: item.unit,
+            minutes: item.minutes,
+            maxQuantity: item.maxQuantity,
+            price: item.price,
+          }
+        : null,
+      slots: open.slots.map((d) => d.toISOString()),
+    };
+  }
+
+  async function adultViewer(userId: string): Promise<boolean> {
+    const me = await ctx.db
+      .selectFrom('users')
+      .select(['birth_date', 'time_zone'])
+      .where('id', '=', userId)
+      .executeTakeFirstOrThrow();
+    return !minorOf(me, ctx.now());
+  }
 
   // The open slots (R51), for anyone signed in: a customer books from them, so may the team.
   app.get('/orgs/:id/slots', async (req): Promise<SlotsView> => {
-    requireAuth(req);
+    const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const window = windowOf(req.query);
     const org = await orgById(ctx.db, id);
-    const open = await openSlotsFor(ctx, org, { from: window.from, to: window.until });
-    if (!open) return { timeZone: null, slotMinutes: null, slots: [] };
-    return {
-      timeZone: open.hours.timeZone,
-      slotMinutes: open.hours.slotMinutes,
-      slots: open.slots.map((d) => d.toISOString()),
-    };
+    // Anyone signed in is a customer to an organization (its "connections" audience); the team
+    // books its own slots for customers.
+    const seat = await orgSeat(ctx.db, auth.userId, id);
+    return slotsView(
+      orgHost(org),
+      {
+        isSelf: Boolean(seat),
+        isConnected: true,
+        spheres: [],
+        adult: await adultViewer(auth.userId),
+      },
+      req.query,
+    );
+  });
+
+  // A person's own bookings (R58): their hours and catalog, as an organization's.
+  app.get('/me/booking', async (req): Promise<BookingResponse> => {
+    const auth = requireAuth(req);
+    const me = await ctx.db
+      .selectFrom('users')
+      .select(['booking', 'booking_items'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    return { booking: (me.booking as BookingResponse['booking']) ?? null, items: itemsOf(me) };
+  });
+
+  app.put('/me/booking', async (req): Promise<BookingResponse> => {
+    const auth = requireAuth(req);
+    const body = parse(BookingBody, req.body);
+    const me = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'booking', 'booking_items', 'birth_date', 'time_zone'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    assertItemsFit(personHost(me), body.items, new Set(), !minorOf(me, ctx.now()));
+    await ctx.db
+      .updateTable('users')
+      .set({
+        booking: body.booking ? JSON.stringify(body.booking) : null,
+        booking_items: JSON.stringify(body.items),
+        updated_at: ctx.now(),
+      })
+      .where('id', '=', auth.userId)
+      .execute();
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: body.booking ? 'account.booking_set' : 'account.booking_off',
+      ip: req.ip,
+      metadata: { items: body.items.length },
+    });
+    return { booking: body.booking, items: body.items };
+  });
+
+  // A person's open slots (R58), for whoever their items let book: a connection, a sphere, or
+  // anyone for a public item. Someone they blocked, or who blocked them, finds nothing.
+  app.get('/people/:id/slots', async (req): Promise<SlotsView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const user = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'booking', 'booking_items', 'kind'])
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .where('suspended_at', 'is', null)
+      .executeTakeFirst();
+    if (!user || user.kind !== 'human') throw notFound(tr('That person'));
+    const relation = await viewerRelation(ctx.db, id, auth.userId);
+    if (relation.blocked) throw notFound(tr('That person'));
+    return slotsView(
+      personHost(user),
+      {
+        isSelf: relation.isSelf,
+        isConnected: relation.isConnected,
+        spheres: relation.ownerSpheresForViewer,
+        adult: await adultViewer(auth.userId),
+      },
+      req.query,
+    );
+  });
+
+  // The brief before a meeting or an appointment (R58): read from the card, the reader's own.
+  app.get('/messages/:id/brief', async (req): Promise<BriefView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return briefFor(ctx, auth.userId, id, { withModel: true });
   });
 
   app.get('/calendar/feed', async (req): Promise<CalendarFeedResponse> => {

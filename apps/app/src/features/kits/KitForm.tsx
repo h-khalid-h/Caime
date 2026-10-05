@@ -1,4 +1,5 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
+import type { BookingItem } from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
@@ -9,11 +10,12 @@ import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
 import { firstFutureWhen, parseWhen } from '@caime/core/when';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { useOrgSlots } from '@/api/hooks';
+import { useMyBooking, useSlots } from '@/api/hooks';
+import { qk } from '@/api/keys';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
@@ -24,7 +26,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { Calendar, MapPin, Plus } from '@/ui/icons';
+import { Calendar, MapPin, Minus, Plus } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
@@ -176,10 +178,53 @@ export function KitForm({
     currency: currencies[field.key] ?? defaultCurrency,
     picked: pickedDays[field.key],
   });
-  // An appointment with an organization that takes bookings (R51): one of its open slots, picked,
-  // never typed; without bookings, the day and time are written as for any card.
-  const bookingOrgId =
-    kit === 'appointment' && conversation.business ? conversation.business.org.id : undefined;
+  // An appointment with a host that takes bookings (R51, R58): one of its open slots, picked,
+  // never typed, for an item of its catalog where it has one; without bookings, the day and time
+  // are written as for any card. The host is the organization, or the other person if they take
+  // bookings I may make, else me, filling my own diary for them.
+  const appointment = kit === 'appointment';
+  const direct = conversation.kind === 'direct' && !conversation.business;
+  // Read afresh when the form opens: a copy of the organization or the profile kept from before
+  // the hours were set would say there's nothing to book.
+  const orgHandle = appointment && conversation.business ? conversation.business.org.handle : '';
+  const orgQ = useQuery({
+    queryKey: qk.org(orgHandle),
+    queryFn: () => endpoints.orgByHandle(orgHandle),
+    enabled: Boolean(orgHandle),
+    staleTime: 0,
+  });
+  const otherId = appointment && direct ? (conversation.other?.userId ?? '') : '';
+  const otherQ = useQuery({
+    queryKey: qk.person(otherId),
+    queryFn: () => endpoints.person(otherId),
+    enabled: Boolean(otherId),
+    staleTime: 0,
+  });
+  const mineQ = useMyBooking(appointment && direct && otherQ.data?.booking === null);
+  const host = useMemo(() => {
+    if (!appointment) return null;
+    // An organization's slots are asked for at once (the server says if it takes none); its
+    // catalog arrives with its view.
+    if (conversation.business)
+      return {
+        ref: { kind: 'org' as const, id: conversation.business.org.id },
+        items: orgQ.data?.org.bookingItems ?? [],
+      };
+    const theirs = otherQ.data?.booking;
+    if (theirs && conversation.other)
+      return {
+        ref: { kind: 'person' as const, id: conversation.other.userId },
+        items: theirs.items,
+      };
+    if (direct && mineQ.data?.booking)
+      return { ref: { kind: 'person' as const, id: me.id }, items: mineQ.data.items };
+    return null;
+  }, [appointment, conversation, orgQ.data, otherQ.data, mineQ.data, direct, me.id]);
+  const [itemId, setItemId] = useState<string | null>(null);
+  const item: BookingItem | null =
+    host?.items.find((i) => i.id === itemId) ??
+    (host && host.items.length === 1 ? (host.items[0] ?? null) : null);
+  const [quantity, setQuantity] = useState(1);
   const slotWindow = useMemo(() => {
     const start = new Date();
     start.setMinutes(0, 0, 0);
@@ -188,9 +233,19 @@ export function KitForm({
       to: new Date(start.getTime() + 60 * 86_400_000).toISOString(),
     };
   }, []);
-  const slotsQ = useOrgSlots(bookingOrgId, slotWindow.from, slotWindow.to);
+  // With a catalog, the slots are an item's: nothing to pick from until one is chosen.
+  const slotsQ = useSlots(
+    host && (item || host.items.length === 0) ? host.ref : null,
+    slotWindow.from,
+    slotWindow.to,
+    item?.id ?? null,
+    quantity,
+  );
   const slots = slotsQ.data ?? null;
   const [slot, setSlot] = useState<string | null>(null);
+  const price = item?.price
+    ? formatAmount(item.price.value * quantity, item.price.currency, locale)
+    : null;
   // Location: where the device says this person is, once, when they ask.
   const [spot, setSpot] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -210,6 +265,8 @@ export function KitForm({
     setSpot(null);
     setLiveFor('0');
     setSlot(null);
+    setItemId(null);
+    setQuantity(1);
     onClose();
   };
 
@@ -280,17 +337,19 @@ export function KitForm({
           if (picked[field.key] !== undefined) fields[field.key] = picked[field.key];
           continue;
         }
-        const read = readField(
-          field,
-          texts[field.key] ?? '',
-          clock,
-          Boolean(custom),
-          extraFor(field),
-        );
-        if ((texts[field.key] ?? '').trim() && read.value === undefined)
+        // Booked from a catalog (R58): the item is what it's for, or the topic they wrote.
+        const text =
+          field.key === 'title' && item
+            ? item.askTopic && (texts.title ?? '').trim()
+              ? (texts.title ?? '')
+              : item.name
+            : (texts[field.key] ?? '');
+        const read = readField(field, text, clock, Boolean(custom), extraFor(field));
+        if (text.trim() && read.value === undefined)
           return setError(`${tr(field.label)}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
       }
+      if (host?.items.length && !item) return setError(tr('Pick what it’s for.'));
       if (slots?.slots.length) {
         if (!slot) return setError('Pick a time.');
         fields.start = { at: slot, hasTime: true };
@@ -301,7 +360,11 @@ export function KitForm({
         kind: 'kit',
         payload: custom
           ? { kit: 'custom', app: custom.app.id, key: custom.key, fields: checked.fields }
-          : { kit, fields: checked.fields },
+          : {
+              kit,
+              fields: checked.fields,
+              ...(item ? { booking: { itemId: item.id, quantity } } : {}),
+            },
       };
     }
     setBusy(true);
@@ -318,6 +381,8 @@ export function KitForm({
       close();
     } catch (e) {
       setError((e as Error).message);
+      // Taken meanwhile (R58): the open slots are asked again, so the next pick is a real one.
+      if (slots) void slotsQ.refetch();
     } finally {
       setBusy(false);
     }
@@ -467,6 +532,85 @@ export function KitForm({
                     />
                   ))}
                 </View>
+              </View>
+            ) : field.key === 'title' && host && host.items.length ? (
+              <View key={field.key} style={{ gap: 10 }}>
+                <View style={{ gap: 6 }}>
+                  <Text variant="label">{tr(field.label)}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {host.items.map((i) => (
+                      <Chip
+                        key={i.id}
+                        label={
+                          i.price
+                            ? `${i.name} · ${formatAmount(i.price.value, i.price.currency, locale)}`
+                            : i.name
+                        }
+                        selected={item?.id === i.id}
+                        role="radio"
+                        onPress={() => {
+                          setItemId(i.id);
+                          setQuantity(1);
+                          setSlot(null);
+                        }}
+                        testID={`book-item-${i.id}`}
+                      />
+                    ))}
+                  </View>
+                  {item ? (
+                    <Text variant="caption" color="textTertiary" testID="book-item-line">
+                      {[
+                        item.unit === 'minutes'
+                          ? tr('{m} min', { m: item.minutes ?? 0 })
+                          : tr('Per day'),
+                        price ? tr('{price}, not paid through Caime', { price }) : tr('Free'),
+                      ].join(' · ')}
+                    </Text>
+                  ) : null}
+                </View>
+                {item && item.maxQuantity > 1 ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Text variant="label" style={{ flex: 1 }}>
+                      {item.unit === 'days' ? tr('Days') : tr('For how many')}
+                    </Text>
+                    <IconButton
+                      icon={Minus}
+                      label={tr('Fewer')}
+                      disabled={quantity <= 1}
+                      onPress={() => {
+                        setQuantity((n) => Math.max(1, n - 1));
+                        setSlot(null);
+                      }}
+                      testID="book-quantity-less"
+                    />
+                    <Text
+                      variant="bodyStrong"
+                      style={{ minWidth: 28, textAlign: 'center' }}
+                      testID="book-quantity"
+                    >
+                      {quantity}
+                    </Text>
+                    <IconButton
+                      icon={Plus}
+                      label={tr('More')}
+                      disabled={quantity >= item.maxQuantity}
+                      onPress={() => {
+                        setQuantity((n) => Math.min(item.maxQuantity, n + 1));
+                        setSlot(null);
+                      }}
+                      testID="book-quantity-more"
+                    />
+                  </View>
+                ) : null}
+                {item?.askTopic ? (
+                  <TextField
+                    label={tr('What it’s for')}
+                    placeholder={tr('A question about…')}
+                    value={texts.title ?? ''}
+                    onChangeText={(v) => setTexts((s) => ({ ...s, title: v }))}
+                    testID="book-topic"
+                  />
+                ) : null}
               </View>
             ) : field.key === 'start' && slots?.slots.length ? (
               <SlotPicker

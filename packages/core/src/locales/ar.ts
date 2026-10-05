@@ -1583,8 +1583,6 @@ export const ar: Catalog = {
   'Bookings are off': 'الحجوزات معطّلة',
   'Customers, and your AI agent, book from the open slots; your team confirms each one.':
     'العملاء، ووكيل الذكاء الاصطناعي، يحجزون من المواعيد المتاحة؛ وفريقك يؤكد كل حجز.',
-  'Set bookable hours and customers book from the open slots in them.':
-    'حدد ساعات الحجز ويحجز العملاء من المواعيد المتاحة فيها.',
   'Bookable hours': 'ساعات الحجز',
   'In {timeZone}. A booking is an appointment card your team confirms.':
     'بتوقيت {timeZone}. الحجز بطاقة موعد يؤكدها فريقك.',
@@ -1592,7 +1590,6 @@ export const ar: Catalog = {
   Days: 'الأيام',
   From: 'من',
   To: 'إلى',
-  'Each booking lasts': 'مدة كل حجز',
   '{m} min': '{m} دقيقة',
   'Bookable from': 'يمكن الحجز من',
   'Up to': 'حتى',
@@ -3043,4 +3040,98 @@ export const ar: Catalog = {
     'بابك ونطاقك وبيانات العملاء والساعات ووكيل الذكاء الاصطناعي والتطبيقات والخطة',
   'The secret it had keeps signing deliveries too (a second v1) until {when}: switch before then.':
     'السر السابق يظل يوقّع التسليمات أيضًا (v1 ثانية) حتى {when}: بدّل قبل ذلك.',
+
+  // Bookings for people too, and the catalog (R58)
+  'Per day': 'لليوم',
+  Free: 'مجانًا',
+  Connections: 'المعارف',
+  Fewer: 'أقل',
+  'People you allow can book from your open slots now':
+    'يمكن لمن تسمح لهم الحجز من مواعيدك المتاحة الآن',
+  'Pick at least one day.': 'اختر يومًا واحدًا على الأقل.',
+  'The day has to end after it starts.': 'يجب أن ينتهي اليوم بعد أن يبدأ.',
+  'People you allow book from the open slots; you confirm each one.':
+    'من تسمح لهم يحجزون من المواعيد المتاحة، وأنت تؤكد كل حجز.',
+  'Set bookable hours and people book from the open slots in them.':
+    'حدّد ساعات الحجز ويحجز الناس من المواعيد المتاحة فيها.',
+  'Add something to book': 'أضف شيئًا يُحجز',
+  '{n} items in your catalog': {
+    zero: 'لا عناصر في قائمتك',
+    one: 'عنصر واحد في قائمتك',
+    two: 'عنصران في قائمتك',
+    few: '{n} عناصر في قائمتك',
+    many: '{n} عنصرًا في قائمتك',
+    other: '{n} عنصر في قائمتك',
+  },
+  'A haircut, a consultation, a room: its length, price and who may book it. Without one, bookings are for whatever people write.':
+    'قصّة شعر، استشارة، غرفة: مدتها وسعرها ومن يجوز له حجزها. بدونها تكون الحجوزات لما يكتبه الناس.',
+  'In {timeZone}. A booking is an appointment card you confirm.':
+    'بتوقيت {timeZone}. الحجز بطاقة موعد تؤكدها أنت.',
+  'Slots every': 'موعد كل',
+  'The grid a day is cut into; each item in your catalog has a length of its own.':
+    'الشبكة التي يُقسَّم اليوم عليها؛ لكل عنصر في قائمتك مدته الخاصة.',
+  Removed: 'تمت الإزالة',
+  'Enter a price, or make it free.': 'أدخل سعرًا، أو اجعله مجانيًا.',
+  'Something to book': 'شيء يُحجز',
+  'Prices are {name}’s; nothing is paid through Caime.':
+    'الأسعار أسعار {name}؛ لا يُدفع شيء عبر Caime.',
+  'Prices are yours; nothing is paid through Caime.': 'الأسعار أسعارك؛ لا يُدفع شيء عبر Caime.',
+  What: 'ماذا',
+  Haircut: 'قصّة شعر',
+  Price: 'السعر',
+  'Booked by the': 'يُحجز بـ',
+  Minutes: 'الدقائق',
+  'A stay: one booking takes whole days from the day it starts.':
+    'إقامة: الحجز الواحد يأخذ أيامًا كاملة من يوم بدايته.',
+  'Rooms, or places, at once': 'الغرف، أو الأماكن، في الوقت نفسه',
+  'How many at once': 'كم في الوقت نفسه',
+  'Days in one booking, up to': 'الأيام في الحجز الواحد، حتى',
+  'Places in one booking, up to': 'الأماكن في الحجز الواحد، حتى',
+  'Who may book it': 'من يجوز له حجزه',
+  'Listed on your public page with its price; anyone can sign up and book it.':
+    'يظهر في صفحتك العامة بسعره؛ يمكن لأي أحد التسجيل وحجزه.',
+  'Anyone who writes to you on Caime.': 'كل من يراسلك على Caime.',
+  'Only the people you choose see it.': 'لا يراه إلا من تختار.',
+  'Who does it': 'من يقوم به',
+  'Anyone on the team': 'أي أحد في الفريق',
+  'Decided when you confirm a booking: whoever is free with the fewest that day. Customers never see who.':
+    'يتحدد عند تأكيد الحجز: من يكون متاحًا وحجوزاته أقل ذلك اليوم. لا يرى العملاء من هو أبدًا.',
+  'They write what it’s for': 'يكتبون سبب الحجز',
+  'Set hours and what can be booked in them: a lesson, a consultation, an hour of your time. Each item says who may book it; a public one is on your page. Every booking is an appointment card you confirm, and nothing is paid through Caime.':
+    'حدّد ساعات وما يمكن حجزه فيها: درس، استشارة، ساعة من وقتك. كل عنصر يقول من يجوز له حجزه؛ والعام منها يظهر في صفحتك. كل حجز بطاقة موعد تؤكدها أنت، ولا يُدفع شيء عبر Caime.',
+  'Before {title}': 'قبل {title}',
+  '{n} messages since {since}': {
+    zero: 'لا رسائل منذ {since}',
+    one: 'رسالة واحدة منذ {since}',
+    two: 'رسالتان منذ {since}',
+    few: '{n} رسائل منذ {since}',
+    many: '{n} رسالة منذ {since}',
+    other: '{n} رسالة منذ {since}',
+  },
+  Summary: 'ملخص',
+  'Still open': 'ما زال مفتوحًا',
+  'You: {title}': 'أنت: {title}',
+  'Asked, not answered': 'سُئل ولم يُجَب',
+  'Nothing open between you since last time.': 'لا شيء مفتوح بينكما منذ المرة الماضية.',
+  'For {n}': 'لـ {n}',
+  'With {name}': 'مع {name}',
+  'Nobody yet': 'لا أحد بعد',
+  'Before it': 'قبله',
+  'Pick what it’s for.': 'اختر سبب الحجز.',
+  '{price}, not paid through Caime': '{price}، لا يُدفع عبر Caime',
+  'For how many': 'لكم شخصًا',
+  'A question about…': 'سؤال عن…',
+  Book: 'احجز',
+  'Book {name}': 'احجز مع {name}',
+  'Your hours, and what people may book': 'ساعاتك، وما يمكن للناس حجزه',
+  Booked: 'المحجوز',
+  Stay: 'الإقامة',
+  'How many': 'كم',
+  'That isn’t an item id.': 'هذا ليس معرّف عنصر.',
+  'Use a currency code like EGP.': 'استخدم رمز عملة مثل EGP.',
+  'An appointment has a length in minutes; a stay has none.':
+    'للموعد مدة بالدقائق؛ وليس للإقامة مدة.',
+  'One booking can’t take more than the item has.':
+    'لا يمكن للحجز الواحد أن يأخذ أكثر مما في العنصر.',
+  'Each item once.': 'كل عنصر مرة واحدة.',
 };

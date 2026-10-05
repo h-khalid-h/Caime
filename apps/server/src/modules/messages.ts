@@ -8,7 +8,7 @@
  * Conversations and messages (PRD §15–§22, §26, §56; R14).
  */
 
-import type { AssetsResponse, MessagesPage } from '@caime/core';
+import type { AppointmentBooking, AssetsResponse, MessagesPage } from '@caime/core';
 import {
   applyChecklistOp,
   applySplitOp,
@@ -58,6 +58,9 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
+import { pickProvider } from '../lib/booking';
+import { humanTeam } from '../lib/booking-team';
+import { queueBrief } from '../lib/briefs';
 import { customerMask, maskFor, maskId } from '../lib/business';
 import { membership, sendSystem } from '../lib/conversation-views';
 import { lockConversation } from '../lib/conversations';
@@ -321,12 +324,22 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         .executeTakeFirstOrThrow();
     });
     if (!updated) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
+    // Confirmed by the team (R58): a booking from the catalog with nobody named yet gets the free
+    // member with the fewest that day; the customer never sees who (masked).
+    const confirmed = await assignOnConfirm(updated, to, business?.orgId ?? null);
+    // Agreed (R58): its people get a brief an hour before.
+    if (
+      (card.kit === 'meeting' && to === 'accepted') ||
+      (card.kit === 'appointment' && to === 'confirmed')
+    )
+      await queueBrief(ctx, id);
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
-    const [view] = await messageViews(ctx.db, [updated], auth.userId);
+    const [view] = await messageViews(ctx.db, [confirmed], auth.userId);
     await recordEvent(ctx.db, 'kit.moved', auth.userId, { messageId: id, kit: card.kit, to });
     await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
     // The card's app hears who moved it, unless it did (PRD §74).
-    if (business) await tellCardApp(ctx, updated, business, auth.userId, 'kit.moved', { from, to });
+    if (business)
+      await tellCardApp(ctx, confirmed, business, auth.userId, 'kit.moved', { from, to });
     const mover = await ctx.db
       .selectFrom('users')
       .select('display_name')
@@ -351,6 +364,82 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         data: { conversationId: m.conversation_id, messageId: id },
       });
     }
+    return { message: view! };
+  });
+
+  async function assignOnConfirm<T extends { id: string; payload: unknown }>(
+    row: T,
+    to: string,
+    orgId: string | null,
+  ): Promise<T> {
+    const p = (row.payload ?? {}) as {
+      kit?: string;
+      fields?: { start?: { at?: string } };
+      booking?: AppointmentBooking | null;
+    };
+    if (
+      to !== 'confirmed' ||
+      p.kit !== 'appointment' ||
+      !orgId ||
+      !p.booking ||
+      p.booking.providerId
+    )
+      return row;
+    const start = p.fields?.start?.at ? new Date(p.fields.start.at) : null;
+    if (!start) return row;
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select(['id', 'booking', 'booking_items'])
+      .where('id', '=', orgId)
+      .executeTakeFirst();
+    if (!org) return row;
+    const who = await pickProvider(ctx, org, p.booking, start);
+    if (!who) return row;
+    const booking = { ...p.booking, providerId: who.id, providerName: who.name };
+    const saved = await ctx.db
+      .updateTable('messages')
+      .set({ payload: sql`payload || ${JSON.stringify({ booking })}::jsonb` })
+      .where('id', '=', row.id)
+      .returning(MESSAGE_COLUMNS)
+      .executeTakeFirst();
+    return saved ? ({ ...row, ...saved } as T) : row;
+  }
+
+  // Who on the team does a booking (R58): the team changes it in one tap; null takes the name off.
+  app.post('/messages/:id/booking/provider', async (req): Promise<MessageResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const { userId } = parse(z.object({ userId: z.string().uuid().nullable() }).strict(), req.body);
+    const m = await ctx.db
+      .selectFrom('messages')
+      .select(MESSAGE_COLUMNS)
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!m || m.deleted_at) throw notFound(tr('That message'));
+    await membership(ctx, auth.userId, m.conversation_id);
+    const business = await customerMask(ctx.db, m.conversation_id);
+    const p = (m.payload ?? {}) as { kit?: string; booking?: AppointmentBooking | null };
+    if (!business || auth.userId === business.customerId)
+      throw forbidden(tr('Only the team says who does a booking.'));
+    if (p.kit !== 'appointment' || !p.booking)
+      throw badRequest(tr('That isn’t a booking from the catalog.'));
+    const team = await humanTeam(ctx.db, business.orgId);
+    const who = userId ? team.find((u) => u.id === userId) : null;
+    if (userId && !who) throw forbidden(tr('Only people on the team can be providers.'));
+    const booking = {
+      ...p.booking,
+      providerId: who?.id ?? null,
+      providerName: who?.display_name ?? null,
+    };
+    const updated = await ctx.db
+      .updateTable('messages')
+      .set({ payload: sql`payload || ${JSON.stringify({ booking })}::jsonb` })
+      .where('id', '=', id)
+      .returning(MESSAGE_COLUMNS)
+      .executeTakeFirstOrThrow();
+    const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
+    const [view] = await messageViews(ctx.db, [updated], auth.userId);
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
     return { message: view! };
   });
 

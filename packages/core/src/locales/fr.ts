@@ -1682,8 +1682,6 @@ export const fr: Catalog = {
   'Bookings are off': 'Les réservations sont désactivées',
   'Customers, and your AI agent, book from the open slots; your team confirms each one.':
     'Les clients, et votre agent IA, réservent parmi les créneaux libres ; votre équipe confirme chacun.',
-  'Set bookable hours and customers book from the open slots in them.':
-    'Définissez des heures réservables et les clients réservent parmi les créneaux libres.',
   'Bookable hours': 'Heures réservables',
   'In {timeZone}. A booking is an appointment card your team confirms.':
     'En {timeZone}. Une réservation est une carte de rendez-vous que votre équipe confirme.',
@@ -1691,7 +1689,6 @@ export const fr: Catalog = {
   Days: 'Jours',
   From: 'De',
   To: 'À',
-  'Each booking lasts': 'Chaque réservation dure',
   '{m} min': '{m} min',
   'Bookable from': 'Réservable à partir de',
   'Up to': 'Jusqu’à',
@@ -3064,4 +3061,91 @@ export const fr: Catalog = {
     'Votre porte, domaine, données des clients, horaires, agent IA, applications et forfait',
   'The secret it had keeps signing deliveries too (a second v1) until {when}: switch before then.':
     'L’ancien secret continue aussi de signer les livraisons (un second v1) jusqu’au {when} : changez avant.',
+
+  // Bookings for people too, and the catalog (R58)
+  'Per day': 'Par jour',
+  Free: 'Gratuit',
+  Connections: 'Relations',
+  Fewer: 'Moins',
+  'People you allow can book from your open slots now':
+    'Les personnes que vous autorisez peuvent réserver vos créneaux libres',
+  'Pick at least one day.': 'Choisissez au moins un jour.',
+  'The day has to end after it starts.': 'La journée doit finir après avoir commencé.',
+  'People you allow book from the open slots; you confirm each one.':
+    'Les personnes que vous autorisez réservent parmi les créneaux libres ; vous confirmez chaque réservation.',
+  'Set bookable hours and people book from the open slots in them.':
+    'Fixez des heures réservables et les gens réservent parmi les créneaux libres.',
+  'Add something to book': 'Ajouter quelque chose à réserver',
+  '{n} items in your catalog': {
+    one: '{n} élément dans votre catalogue',
+    other: '{n} éléments dans votre catalogue',
+  },
+  'A haircut, a consultation, a room: its length, price and who may book it. Without one, bookings are for whatever people write.':
+    'Une coupe, une consultation, une chambre : sa durée, son prix et qui peut la réserver. Sans catalogue, on réserve pour ce que les gens écrivent.',
+  'In {timeZone}. A booking is an appointment card you confirm.':
+    'Heure de {timeZone}. Une réservation est une carte de rendez-vous que vous confirmez.',
+  'Slots every': 'Un créneau toutes les',
+  'The grid a day is cut into; each item in your catalog has a length of its own.':
+    'La grille qui découpe la journée ; chaque élément du catalogue a sa propre durée.',
+  Removed: 'Retiré',
+  'Enter a price, or make it free.': 'Saisissez un prix, ou rendez-le gratuit.',
+  'Something to book': 'Quelque chose à réserver',
+  'Prices are {name}’s; nothing is paid through Caime.':
+    'Les prix sont ceux de {name} ; rien ne se paie par Caime.',
+  'Prices are yours; nothing is paid through Caime.':
+    'Les prix sont les vôtres ; rien ne se paie par Caime.',
+  What: 'Quoi',
+  Haircut: 'Coupe de cheveux',
+  Price: 'Prix',
+  'Booked by the': 'Réservé à la',
+  Minutes: 'Minute',
+  'A stay: one booking takes whole days from the day it starts.':
+    'Un séjour : une réservation prend des journées entières à partir de son premier jour.',
+  'Rooms, or places, at once': 'Chambres, ou places, en même temps',
+  'How many at once': 'Combien en même temps',
+  'Days in one booking, up to': 'Jours par réservation, jusqu’à',
+  'Places in one booking, up to': 'Places par réservation, jusqu’à',
+  'Who may book it': 'Qui peut le réserver',
+  'Listed on your public page with its price; anyone can sign up and book it.':
+    'Affiché sur votre page publique avec son prix ; n’importe qui peut s’inscrire et le réserver.',
+  'Anyone who writes to you on Caime.': 'Toute personne qui vous écrit sur Caime.',
+  'Only the people you choose see it.': 'Seules les personnes que vous choisissez le voient.',
+  'Who does it': 'Qui s’en charge',
+  'Anyone on the team': 'N’importe qui dans l’équipe',
+  'Decided when you confirm a booking: whoever is free with the fewest that day. Customers never see who.':
+    'Décidé quand vous confirmez une réservation : la personne libre qui en a le moins ce jour-là. Les clients ne voient jamais qui.',
+  'They write what it’s for': 'Ils écrivent l’objet',
+  'Set hours and what can be booked in them: a lesson, a consultation, an hour of your time. Each item says who may book it; a public one is on your page. Every booking is an appointment card you confirm, and nothing is paid through Caime.':
+    'Fixez des heures et ce qui peut y être réservé : un cours, une consultation, une heure de votre temps. Chaque élément dit qui peut le réserver ; un élément public figure sur votre page. Chaque réservation est une carte de rendez-vous que vous confirmez, et rien ne se paie par Caime.',
+  'Before {title}': 'Avant {title}',
+  '{n} messages since {since}': {
+    one: '{n} message depuis {since}',
+    other: '{n} messages depuis {since}',
+  },
+  Summary: 'Résumé',
+  'Still open': 'Encore ouvert',
+  'You: {title}': 'Vous : {title}',
+  'Asked, not answered': 'Demandé, sans réponse',
+  'Nothing open between you since last time.': 'Rien d’ouvert entre vous depuis la dernière fois.',
+  'For {n}': 'Pour {n}',
+  'With {name}': 'Avec {name}',
+  'Nobody yet': 'Personne pour l’instant',
+  'Before it': 'Avant',
+  'Pick what it’s for.': 'Choisissez l’objet.',
+  '{price}, not paid through Caime': '{price}, non payé par Caime',
+  'For how many': 'Pour combien',
+  'A question about…': 'Une question sur…',
+  Book: 'Réserver',
+  'Book {name}': 'Réserver avec {name}',
+  'Your hours, and what people may book': 'Vos heures, et ce que les gens peuvent réserver',
+  Booked: 'Réservé',
+  Stay: 'Séjour',
+  'How many': 'Combien',
+  'That isn’t an item id.': 'Ce n’est pas un identifiant d’élément.',
+  'Use a currency code like EGP.': 'Utilisez un code de devise comme EGP.',
+  'An appointment has a length in minutes; a stay has none.':
+    'Un rendez-vous a une durée en minutes ; un séjour n’en a pas.',
+  'One booking can’t take more than the item has.':
+    'Une réservation ne peut pas prendre plus que ce que l’élément a.',
+  'Each item once.': 'Chaque élément une seule fois.',
 };
