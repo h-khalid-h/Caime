@@ -1999,3 +1999,5 @@ listed there with its owner.
   routes tested, one `Pressable`, themed shadows.
 - 2026-10-05 — The conversations module split: shared helpers in `lib/`, message routes in
   `modules/messages.ts`, no route module importing another.
+- 2026-10-05 — ARCHITECTURE matches the code: ADR-12 and ADR-14 reworded, paging by `before`,
+  the layout tree as it is.

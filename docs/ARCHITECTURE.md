@@ -9,8 +9,11 @@ silently edited: when one changes, add a new entry that says what it replaces.
 apps/app        Expo universal app: iOS, Android and Web from one codebase (Expo Router)
 apps/server     Fastify API + WebSocket realtime + job workers + serves the web build
 packages/core   Pure TypeScript domain logic shared by both: taxonomy, schemas, engines
-deploy/         Deployment scripts (EasyPanel)
-docs/           PRD, review, brand, competitive, architecture, roadmap
+packages/brand  Tokens, the wordmark, the characters; the icon and splash generator
+packages/sdk    @caime/sdk, the typed client organizations' apps use
+e2e/            Playwright against the production bundle
+Dockerfile      The one production image; .github/workflows/ci.yml builds, tests and ships it
+docs/           PRD, review, brand, competitive, architecture, roadmap, deploy (EasyPanel)
 ```
 
 ```
@@ -65,15 +68,21 @@ docs/           PRD, review, brand, competitive, architecture, roadmap
 - **ADR-11 — Suggestions, not writes.** Everything inferred (by heuristics or a model) is stored
   as a suggestion with a rationale and becomes a fact only through an explicit accept
   (PRODUCT-REVIEW R12).
-- **ADR-12 — AI behind a provider interface.** The heuristic provider is always available; the
-  Anthropic provider is used when `ANTHROPIC_API_KEY` is set and the account has AI enabled. AI
-  usage is logged without content (feature, model, tokens, latency, outcome).
+- **ADR-12 — AI behind a provider interface.** The rules in core (dates, amounts, questions,
+  follow-ups, search) run always and first (R17) and need no provider. A model is `ctx.ai`
+  (`lib/ai.ts`, Claude through the SDK), there only when `ANTHROPIC_API_KEY` is set and used only
+  for a person with AI assist on and an assist left; without it every route that would ask
+  answers `ai_off`. Every call goes through `runAi` (`lib/ai-run.ts`), which records feature,
+  model, tokens (the cached part too), latency and outcome in `ai_runs`, never the prompt or the
+  answer. Speech to text is its own provider interface (`lib/speech.ts`, docs/SPEECH.md).
 - **ADR-13 — Files.** Stored on a mounted volume by default, S3-compatible storage when
   configured. Served only through an authorizing endpoint. Large files use chunked, resumable
   uploads. Images get dimensions and a thumbnail at upload.
 - **ADR-14 — Push.** Web Push with VAPID keys the server generates and persists on first boot (no
-  third party needed); Expo push for iOS and Android once EAS credentials exist. Whether a
-  notification is delivered, silent or held is decided server-side by the policy engine.
+  third party needed). For phones the server sends through Expo when `EXPO_ACCESS_TOKEN` is set,
+  but the app registers no phone yet: that joins the development build (ROADMAP, "Phone push").
+  Whether a notification is delivered, silent or held is decided server-side by the policy
+  engine.
 - **ADR-15 — One application container.** API, realtime, workers and the web app run in one image
   beside a PostgreSQL service. Horizontal scale is more instances of the same image.
 
@@ -144,7 +153,9 @@ The primary object is the **connection**, not the chat (PRD §4).
   `…Response` is what a route wraps it in): the route is annotated `Promise<ThatResponse>` and
   the app's endpoint reads `api.get<ThatResponse>`, so a shape that changes fails to compile on
   both sides.
-- Lists use opaque cursors; message history pages by `seq`.
+- Lists page by `before`: a message history by `seq`, the others (saved items, updates, call
+  history, what's been shared) by the last row's id, handed back as `nextBefore`; never by an
+  offset.
 - Every retried write carries `clientId`.
 - Rate limits per IP and per account on authentication, requests, messages and search.
 
