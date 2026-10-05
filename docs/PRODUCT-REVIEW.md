@@ -527,3 +527,17 @@ with its reason, so it isn't proposed again without new facts.
   Expo for push), which the privacy page and a data processing agreement read from one list in
   the code. The agreement's words and a lawyer's review are the owner's (⛔); the product ships
   first so there is something to review.
+- **R55 — The third language is French, and a language is one list.** Arabic (R54) and
+  English cover the Gulf, Egypt and the Levant; the part of the first market
+  (docs/COMPETITIVE.md: the Middle East and North Africa, through organizations) they leave out
+  is the Maghreb and Lebanon, where a clinic's or a shop's business runs in French. French is
+  also left to right with plain plurals, so it costs the least to add well, and it reaches the
+  francophone buyers of Europe without a second decision. Spanish would open a new continent,
+  which R53's "one place and one kind at a time" rules out for now. A language joins
+  `INTERFACE_LANGUAGES` and the preference's enum, gets a catalog in core
+  (`locales/<lang>.ts`) and one for the site on the server (`<lang>-site.ts`), and the catalog
+  tests run over every language, so nothing else in the code names a language: the setting, the
+  site's switch (every other language by its own name), the `hreflang` alternates and the Open
+  Graph locale all read the list. French is written for a reader of either gender ("vous", no
+  participle about the reader where a noun phrase works), in sentence case, with French
+  punctuation; a native speaker's review is owed, as Arabic's was.

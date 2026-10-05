@@ -19,6 +19,7 @@ import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { MAX_DEVICES, PRIVATE_GROUP_MAX } from '@caime/core/e2ee';
 import {
   currentTranslator,
+  INTERFACE_LANGUAGES,
   type InterfaceLanguage,
   languageFor,
   languageInSearch,
@@ -57,10 +58,11 @@ export function siteLanguage(
   return { language: chosen, linkLang: chosen === browser ? null : chosen };
 }
 
-/** The other language's name, in that language, and the link that reads this page in it. */
-const SWITCH: Record<InterfaceLanguage, { name: string; to: InterfaceLanguage }> = {
-  en: { name: 'العربية', to: 'ar' },
-  ar: { name: 'English', to: 'en' },
+/** Each language's name in itself, for the links that read this page in the others. */
+const LANGUAGE_NAMES: Record<InterfaceLanguage, string> = {
+  en: 'English',
+  ar: 'العربية',
+  fr: 'Français',
 };
 
 /** What the pages say about who runs this Caime, and what it charges. */
@@ -122,10 +124,11 @@ export function masthead(current: string, facts: Pick<SiteFacts, 'linkLang'> | n
       `<a href="${siteHref(n.path, facts)}"${n.path === current ? ' aria-current="page"' : ''}>${esc(tr(n.label))}</a>`,
   );
   links.push(`<a href="/sign-in">${esc(tr('Sign in'))}</a>`);
-  const other = SWITCH[currentTranslator().language];
-  links.push(
-    `<a href="${current}?lang=${other.to}" lang="${other.to}" hreflang="${other.to}" rel="alternate">${other.name}</a>`,
-  );
+  const here_ = currentTranslator().language;
+  for (const other of INTERFACE_LANGUAGES.filter((l) => l !== here_))
+    links.push(
+      `<a href="${current}?lang=${other}" lang="${other}" hreflang="${other}" rel="alternate">${LANGUAGE_NAMES[other]}</a>`,
+    );
   return `<header class="masthead">
     <a class="wordmark" href="/">${SITE_NAME}</a>
     <span class="mono">${esc(tr(here?.kicker ?? ''))}</span>

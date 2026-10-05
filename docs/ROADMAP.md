@@ -859,6 +859,12 @@ listed there with its owner.
       `savePrefs` and drafts retried on failure; a deliveries list and retry for apps; the
       operator's tools for a locked-out person; the migration expand/contract rule; the
       intelligence dates and the edit path; the remaining UX mediums.
+- [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
+      and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
+      Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
+      for three languages, the Open Graph locale by language, the AI agent's hand-over line in
+      French, the catalog tests over every language, `e2e/french.spec.ts`. A native speaker's
+      review is owed (as Arabic's was).
 - [ ] ⛔ The owner: `TRUST_PROXY` against the live proxy chain; payment in local currencies with
       tax; an npm account for `@caime/sdk`; a development build for calls and private
       conversations on a phone; store builds; a third-party penetration test.
@@ -1831,3 +1837,8 @@ listed there with its owner.
   fifteen Arabic leaks, the terms sentence, characters off business surfaces, keyboard access
   to a message's actions; the inbox query and its refetch, prefix search, two sweeps; the two
   webhook events and files for apps. Budget 445.9 KB gzip of 450. Tests: core 341, sdk 5, brand 50, app 170, server 589; E2E a11y, conversation, voice and core flow green.
+- 2026-10-05 — R55: the third language is French (docs/PRODUCT-REVIEW.md R55 says why: the
+  Maghreb and Lebanon are the part of the first market Arabic and English leave out). The whole
+  interface and the public site translated (`locales/fr.ts`, `fr-site.ts`), the language list
+  the one place a language is named, the catalog tests over every language, the site's switch
+  and alternates for three, the agent's hand-over line in French, an E2E that chooses it.

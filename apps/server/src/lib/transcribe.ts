@@ -44,7 +44,7 @@ function hintsFor(
   locale: string | null | undefined,
 ): string[] {
   const chosen = language && language !== 'auto' ? language : (locale ?? '').slice(0, 2);
-  return chosen === 'ar' || chosen === 'en' ? [chosen] : [];
+  return chosen === 'ar' || chosen === 'en' || chosen === 'fr' ? [chosen] : [];
 }
 
 async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {

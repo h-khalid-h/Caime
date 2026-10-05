@@ -14,7 +14,7 @@
  *   test finds it; it's translated where it's shown, with `tr(item.label)`.
  */
 
-export const INTERFACE_LANGUAGES = ['en', 'ar'] as const;
+export const INTERFACE_LANGUAGES = ['en', 'ar', 'fr'] as const;
 export type InterfaceLanguage = (typeof INTERFACE_LANGUAGES)[number];
 /** What the setting holds: the device's language, or one chosen. */
 export type LanguageChoice = 'auto' | InterfaceLanguage;

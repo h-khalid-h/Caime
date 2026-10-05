@@ -17,7 +17,8 @@ describe('the interface language (R54)', () => {
     expect(languageFor('ar-EG')).toBe('ar');
     expect(languageFor('AR')).toBe('ar');
     expect(languageFor('en-GB')).toBe('en');
-    expect(languageFor('fr-FR')).toBe('en');
+    expect(languageFor('fr-FR')).toBe('fr');
+    expect(languageFor('de-DE')).toBe('en');
     expect(languageFor(null)).toBe('en');
     expect(resolveLanguage('auto', 'ar-SA')).toBe('ar');
     expect(resolveLanguage('en', 'ar-SA')).toBe('en');

@@ -28,14 +28,17 @@ import {
   type Translator,
 } from '@caime/core/i18n';
 import { ar } from '@caime/core/locales/ar';
+import { fr } from '@caime/core/locales/fr';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { arSite } from '../locales/ar-site';
+import { frSite } from '../locales/fr-site';
 
 // The app's catalog, and beside it the public site's (server-only copy the app never downloads).
 const translators: Record<InterfaceLanguage, Translator> = {
   en: english,
   ar: makeTranslator('ar', { ...ar, ...arSite }),
+  fr: makeTranslator('fr', { ...fr, ...frSite }),
 };
 
 const scope = new AsyncLocalStorage<Translator>();

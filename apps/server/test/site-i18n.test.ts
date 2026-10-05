@@ -4,11 +4,16 @@
  * survive translation. `node scripts/i18n-keys.mjs missing ar site` lists what's missing.
  */
 import { ar } from '@caime/core/locales/ar';
+import { fr } from '@caime/core/locales/fr';
 import { describe, expect, it } from 'vitest';
 import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { arSite } from '../src/locales/ar-site';
+import { frSite } from '../src/locales/fr-site';
 
-describe('the site’s Arabic catalog (R54)', () => {
+describe.each([
+  ['Arabic (R54)', arSite, ar],
+  ['French (R55)', frSite, fr],
+])('the site’s %s catalog', (_name, arSite, ar) => {
   const keys = keysFor(collectKeys(), true) as Map<string, { text: string; plural: boolean }>;
 
   it('has every string the site shows, as strings (the site counts nothing with trn)', () => {

@@ -36,6 +36,9 @@ import { avatarUrl, minorOf, privacyOf } from './users';
 
 type Q = Kysely<Database>;
 
+/** Open Graph's locale for each interface language. */
+const OG_LOCALE: Record<InterfaceLanguage, string> = { en: 'en_US', ar: 'ar_AR', fr: 'fr_FR' };
+
 export const NOBODY = {
   isSelf: false,
   isConnected: false,
@@ -322,7 +325,7 @@ export function renderPublic(
               (l) =>
                 `<link rel="alternate" hreflang="${l}" href="${esc(l === 'en' ? url : `${url}?lang=${l}`)}">`,
             ),
-            `<meta property="og:locale" content="${currentTranslator().language === 'ar' ? 'ar_AR' : 'en_US'}">`,
+            `<meta property="og:locale" content="${OG_LOCALE[currentTranslator().language]}">`,
           ]
         : []),
       // Which page this is, for the app: it stays out of a visitor's way on a person's or an

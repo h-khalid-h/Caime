@@ -253,9 +253,15 @@ These are rules, not preferences.
 - The interface's words (R54, ADR-16): every string the app or core shows is written in English
   where it's used, wrapped in `tr('…')` (variables as `{name}`), `trn(n, 'one thing', '{n}
   things')` for a count, or `msg('…')` in a table of options that's translated where it's shown
-  (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts`, and
-  `i18n-catalog.test.ts` fails for a string without its Arabic or an entry nothing says
-  (`node scripts/i18n-keys.mjs missing ar` lists them). Never `tr()` a value that's data (a
+  (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts` and
+  `locales/fr.ts` (R55: French is the third language, for the Maghreb and Lebanon), and
+  `i18n-catalog.test.ts` fails, for every language in `INTERFACE_LANGUAGES`, for a string
+  without its translation or an entry nothing says (`node scripts/i18n-keys.mjs missing <lang>`
+  lists them). A new language is a code in `INTERFACE_LANGUAGES` and the preference's enum, a
+  catalog in core and one for the site on the server, a line in the app's `catalogFor` and
+  `LANGUAGE_NAMES`, and a translator in `apps/server/src/lib/i18n.ts`; nothing else names a
+  language (the setting, the site's switch, the `hreflang` alternates and the Open Graph locale
+  read the list). Never `tr()` a value that's data (a
   header, a protocol line, an id): English in, English out, but the catalog test will ask for
   its Arabic. The language is `prefs.language` (`auto`, `en`, `ar`), loaded by `lib/i18n.ts`
   before the first screen and on every change (the root remounts on `useLanguage.generation`);
@@ -321,8 +327,8 @@ These are rules, not preferences.
   `<main>` and `Rendered.lang` on the shell's `<html>`, `meta({ alternates: true })` writes the
   hreflang links (the English is canonical) and `og:locale`, and the response says
   `Vary: Accept-Language`. A string the site alone says is the server's: its Arabic lives in
-  `apps/server/src/locales/ar-site.ts` (merged into the server's translator in `lib/i18n.ts`),
-  never in core's `locales/ar.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them
+  `apps/server/src/locales/ar-site.ts` and `fr-site.ts` (merged into the server's translator in
+  `lib/i18n.ts`), never in core's `locales/ar.ts` or `fr.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them
   apart by file (`SITE_FILES`: `site-pages.ts` and `public-pages.ts`, so a person's page, an
   organization's, an invitation and the 404 count too; every page but the app follows the
   language in `plugins/static.ts`), `site-i18n.test.ts` fails for a missing or stale one

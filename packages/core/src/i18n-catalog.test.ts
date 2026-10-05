@@ -1,13 +1,17 @@
 /**
- * Every English string the interface is written in has its Arabic (R54): this fails for a new
- * `tr('…')` without an entry in `locales/ar.ts`, and for an entry nothing uses any more.
- * `node scripts/i18n-keys.mjs missing ar` lists what's missing.
+ * Every English string the interface is written in has its Arabic (R54) and its French (R55):
+ * this fails for a new `tr('…')` without an entry in `locales/ar.ts` or `locales/fr.ts`, and
+ * for an entry nothing uses any more. `node scripts/i18n-keys.mjs missing <lang>` lists them.
  */
 import { describe, expect, it } from 'vitest';
 import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { ar } from './locales/ar';
+import { fr } from './locales/fr';
 
-describe('the Arabic catalog (R54)', () => {
+describe.each([
+  ['Arabic (R54)', ar],
+  ['French (R55)', fr],
+])('the %s catalog', (_name, ar) => {
   // The public site's own strings are the server's catalog (apps/server/test/site-i18n.test.ts).
   const keys = keysFor(collectKeys(), false) as Map<string, { text: string; plural: boolean }>;
 

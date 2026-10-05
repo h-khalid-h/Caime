@@ -27,6 +27,7 @@ export function deviceLanguageTag(): string | null {
 
 async function catalogFor(language: InterfaceLanguage): Promise<Catalog> {
   if (language === 'ar') return (await import('@caime/core/locales/ar')).ar;
+  if (language === 'fr') return (await import('@caime/core/locales/fr')).fr;
   return {};
 }
 
@@ -85,4 +86,8 @@ usePrefs.subscribe((state, previous) => {
 });
 
 /** The names of the languages, each in itself, for the setting. */
-export const LANGUAGE_NAMES: Record<InterfaceLanguage, string> = { en: 'English', ar: 'العربية' };
+export const LANGUAGE_NAMES: Record<InterfaceLanguage, string> = {
+  en: 'English',
+  ar: 'العربية',
+  fr: 'Français',
+};

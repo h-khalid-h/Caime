@@ -218,10 +218,11 @@ export function todayForAgent(now: Date, timeZone = 'UTC'): string {
 }
 
 /** What it tells the customer when it passes a conversation on without asking the model. */
-function passedOn(orgName: string, arabic: boolean): string {
-  return arabic
-    ? `حوّلت محادثتك إلى فريق ${orgName}، وسيرد عليك أحدهم هنا.`
-    : `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
+function passedOn(orgName: string, language: 'ar' | 'fr' | 'en'): string {
+  if (language === 'ar') return `حوّلت محادثتك إلى فريق ${orgName}، وسيرد عليك أحدهم هنا.`;
+  if (language === 'fr')
+    return `J’ai transmis votre demande à l’équipe de ${orgName}. Quelqu’un vous répondra ici.`;
+  return `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
 }
 
 /** Post as the agent, as any message is: stored, sent live, notified, recorded on the thread. */
@@ -424,9 +425,13 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       .where('conversation_id', '=', conversationId)
       .where('seq', '=', String(seq))
       .executeTakeFirst();
-    const arabic =
-      /\p{Script=Arabic}/u.test(latest?.body ?? '') || customer.locale.startsWith('ar');
-    await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name, arabic)).catch(
+    const language =
+      /\p{Script=Arabic}/u.test(latest?.body ?? '') || customer.locale.startsWith('ar')
+        ? 'ar'
+        : customer.locale.startsWith('fr')
+          ? 'fr'
+          : 'en';
+    await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name, language)).catch(
       (err) => ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
     );
     await handOver(ctx, thread.org_id, conversationId, agent);
