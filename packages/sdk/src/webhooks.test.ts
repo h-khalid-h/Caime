@@ -36,6 +36,11 @@ describe('webhook signatures', () => {
     ).toBe(true);
     expect(verifyWebhookSignature(secret, 't=abc,v1=00', body, { now })).toBe(false);
     expect(verifyWebhookSignature(secret, null, body, { now })).toBe(false);
+    // For a day after a secret is replaced, a delivery carries both signatures: either counts.
+    const two = `${signWebhook('the-new-one', t, body)},v1=${signWebhook(secret, t, body).split('v1=')[1]}`;
+    expect(verifyWebhookSignature(secret, two, body, { now })).toBe(true);
+    expect(verifyWebhookSignature('the-new-one', two, body, { now })).toBe(true);
+    expect(verifyWebhookSignature('a-third', two, body, { now })).toBe(false);
     expect(verifyWebhookSignature(secret, `t=${t},v1=${'0'.repeat(64)}`, body, { now })).toBe(
       false,
     );

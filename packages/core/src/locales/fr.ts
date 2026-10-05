@@ -3062,4 +3062,6 @@ export const fr: Catalog = {
   'Next: set bookable hours': 'Ensuite : définissez des horaires de réservation',
   'Your door, domain, customers’ data, hours, AI agent, apps and plan':
     'Votre porte, domaine, données des clients, horaires, agent IA, applications et forfait',
+  'The secret it had keeps signing deliveries too (a second v1) until {when}: switch before then.':
+    'L’ancien secret continue aussi de signer les livraisons (un second v1) jusqu’au {when} : changez avant.',
 };

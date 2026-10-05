@@ -104,16 +104,20 @@ export function signWebhook(secret: string, timestamp: number, rawBody: string):
   return `t=${timestamp},v1=${v1}`;
 }
 
-function parseHeader(header: string): { t: number; v1: Buffer } | null {
-  const parts = new Map<string, string>();
+/** `t=…,v1=…[,v1=…]`: two signatures for a day after the secret was replaced; either counts. */
+function parseHeader(header: string): { t: number; v1: Buffer[] } | null {
+  let t = Number.NaN;
+  const v1: Buffer[] = [];
   for (const kv of header.split(',')) {
     const i = kv.indexOf('=');
-    if (i > 0) parts.set(kv.slice(0, i).trim(), kv.slice(i + 1).trim());
+    if (i <= 0) continue;
+    const k = kv.slice(0, i).trim();
+    const v = kv.slice(i + 1).trim();
+    if (k === 't') t = Number(v);
+    else if (k === 'v1' && /^[0-9a-f]{64}$/i.test(v)) v1.push(Buffer.from(v, 'hex'));
   }
-  const t = Number(parts.get('t'));
-  const v1 = parts.get('v1') ?? '';
-  if (!Number.isInteger(t) || !/^[0-9a-f]{64}$/i.test(v1)) return null;
-  return { t, v1: Buffer.from(v1, 'hex') };
+  if (!Number.isInteger(t) || v1.length === 0) return null;
+  return { t, v1 };
 }
 
 /**
@@ -144,8 +148,10 @@ function check(
     return new WebhookError('timestamp', 'This delivery is too old, or from the future.');
   const body = typeof rawBody === 'string' ? Buffer.from(rawBody, 'utf8') : Buffer.from(rawBody);
   const expected = createHmac('sha256', secret).update(`${parsed.t}.`).update(body).digest();
-  if (expected.length !== parsed.v1.length || !timingSafeEqual(expected, parsed.v1))
-    return new WebhookError('signature', 'The signature doesn’t match this body.');
+  const matches = parsed.v1.some(
+    (given) => expected.length === given.length && timingSafeEqual(expected, given),
+  );
+  if (!matches) return new WebhookError('signature', 'The signature doesn’t match this body.');
   return null;
 }
 

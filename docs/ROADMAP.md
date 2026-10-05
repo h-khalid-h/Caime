@@ -966,6 +966,12 @@ listed there with its owner.
       topic) and `lib/space-conversations.ts` (`createSpaceConversation`, `activeMembers`,
       `tellSpace`, out of the space routes); the message routes are `modules/messages.ts` and the
       conversation's own stay (775 lines from 2,502); no route module imports another.
+- [x] Webhook secrets rotate with a day's overlap: a replaced secret keeps signing deliveries
+      beside the new one (`t=…,v1=<new>,v1=<old>`, `SECRET_OVERLAP_MS`, migration 0052), core's
+      `parseSignature` and the SDK's verifier accept either, the app's sheet says until when
+      (`OrgAppView.secretOverlapUntil`), and the developer guide's sample checks every `v1`.
+      OAuth answers carry `iss` (RFC 9207) and the metadata says so. `apps.test.ts`,
+      `oauth.test.ts`, `webhooks.test.ts`.
 - [ ] Next block: the owner's ⛔ items as they come (TRUST_PROXY, local-currency payment, the
       npm account, a development build for a phone, store builds, the penetration test), and
       whatever the next review finds.
@@ -2001,3 +2007,4 @@ listed there with its owner.
   `modules/messages.ts`, no route module importing another.
 - 2026-10-05 — ARCHITECTURE matches the code: ADR-12 and ADR-14 reworded, paging by `before`,
   the layout tree as it is.
+- 2026-10-05 — Webhook secrets rotate with a day's overlap; OAuth answers carry `iss`.

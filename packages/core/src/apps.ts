@@ -62,13 +62,17 @@ export function signatureBase(timestamp: number, body: string): string {
   return `${timestamp}.${body}`;
 }
 
-export function parseSignature(header: string): { t: number; v1: string } | null {
-  const parts = Object.fromEntries(
-    header.split(',').map((kv) => {
-      const [k, ...v] = kv.trim().split('=');
-      return [k ?? '', v.join('=')];
-    }),
-  );
-  const t = Number(parts.t);
-  return Number.isInteger(t) && parts.v1 ? { t, v1: parts.v1 } : null;
+/**
+ * `t=<unix seconds>,v1=<hex>[,v1=<hex>]`: one signature, or two for a day after the secret was
+ * replaced (the new secret's first, the old one's after), so a receiver accepts either.
+ */
+export function parseSignature(header: string): { t: number; v1: string[] } | null {
+  let t = Number.NaN;
+  const v1: string[] = [];
+  for (const kv of header.split(',')) {
+    const [k, ...v] = kv.trim().split('=');
+    if (k === 't') t = Number(v.join('='));
+    else if (k === 'v1' && v.length) v1.push(v.join('='));
+  }
+  return Number.isInteger(t) && v1.length ? { t, v1 } : null;
 }

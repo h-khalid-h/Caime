@@ -32,6 +32,8 @@ async function allow(c: Client, params: Record<string, string>) {
   const res = await c.req('POST', '/v1/oauth/authorize', { ...params, decision: 'allow' });
   expect(res.statusCode).toBe(200);
   const url = new URL(res.json().redirect);
+  // RFC 9207: every answer names its issuer.
+  expect(url.searchParams.get('iss')).toBe(new URL(t.ctx.config.PUBLIC_URL).origin);
   return { url, code: url.searchParams.get('code') ?? '' };
 }
 /** The token endpoint, as an OAuth library calls it: a form. */
@@ -90,6 +92,7 @@ describe('OAuth for third-party apps (PRD §74)', () => {
       token_endpoint: `${base}/v1/oauth/token`,
       revocation_endpoint: `${base}/v1/oauth/revoke`,
       code_challenge_methods_supported: ['S256'],
+      authorization_response_iss_parameter_supported: true,
       scopes_supported: expect.arrayContaining(['messages:read', 'messages:write']),
     });
   });

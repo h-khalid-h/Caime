@@ -235,6 +235,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     const { r, client, scopes } = await checkRequest(rest);
     const back = new URL(r.redirect_uri);
     if (r.state) back.searchParams.set('state', r.state);
+    // RFC 9207: the answer names who gave it, so a client with several servers can't be mixed up.
+    back.searchParams.set('iss', new URL(ctx.config.PUBLIC_URL).origin);
     if (decision !== 'allow') {
       back.searchParams.set('error', 'access_denied');
       return { redirect: back.toString() };
@@ -566,6 +568,7 @@ export async function oauthDiscovery(app: FastifyInstance, ctx: AppContext) {
         code_challenge_methods_supported: ['S256'],
         token_endpoint_auth_methods_supported: auth,
         revocation_endpoint_auth_methods_supported: auth,
+        authorization_response_iss_parameter_supported: true,
         scopes_supported: [...PERSONAL_SCOPES],
       };
     },

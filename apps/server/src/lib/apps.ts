@@ -240,6 +240,9 @@ export async function postWebhook(
   });
 }
 
+/** How long a replaced webhook secret keeps signing deliveries beside the new one. */
+export const SECRET_OVERLAP_MS = 24 * 60 * 60_000;
+
 export function signWebhook(secret: string, timestamp: number, body: string): string {
   return createHmac('sha256', secret).update(signatureBase(timestamp, body)).digest('hex');
 }
@@ -317,6 +320,8 @@ export function registerWebhookJob(): void {
         'd.status',
         'a.webhook_url',
         'a.webhook_secret',
+        'a.previous_webhook_secret',
+        'a.previous_secret_until',
         'a.revoked_at',
       ])
       .where('d.id', '=', String(p.deliveryId))
@@ -332,6 +337,18 @@ export function registerWebhookJob(): void {
     }
     const body = JSON.stringify(delivery.payload);
     const timestamp = Math.floor(ctx.now().getTime() / 1000);
+    // The secret before the last replacement signs too, for a day, so an app switches in its
+    // own time; the new one's signature comes first.
+    const secrets = [delivery.webhook_secret];
+    if (
+      delivery.previous_webhook_secret &&
+      delivery.previous_secret_until &&
+      delivery.previous_secret_until > ctx.now()
+    )
+      secrets.push(delivery.previous_webhook_secret);
+    const signature = `t=${timestamp},${secrets
+      .map((s) => `v1=${signWebhook(s, timestamp, body)}`)
+      .join(',')}`;
     let status: number | null = null;
     let error: string | null = null;
     try {
@@ -343,7 +360,7 @@ export function registerWebhookJob(): void {
           'user-agent': 'Caime-Webhooks/1',
           'caime-event': delivery.event,
           'caime-delivery': delivery.id,
-          'caime-signature': `t=${timestamp},v1=${signWebhook(delivery.webhook_secret, timestamp, body)}`,
+          'caime-signature': signature,
         },
         { allowPrivate: ctx.config.WEBHOOKS_ALLOW_PRIVATE },
       );
@@ -409,6 +426,10 @@ export async function appViews(ctx: AppContext, apps: OrgApp[]): Promise<OrgAppV
       scopes: a.scopes as ApiScope[],
       webhookUrl: a.webhook_url,
       events: a.events as WebhookEvent[],
+      secretOverlapUntil:
+        a.previous_webhook_secret && a.previous_secret_until && a.previous_secret_until > ctx.now()
+          ? a.previous_secret_until.toISOString()
+          : null,
       tokenPrefix: token?.prefix ?? null,
       lastUsedAt: token?.last_used_at?.toISOString() ?? null,
       createdAt: a.created_at.toISOString(),

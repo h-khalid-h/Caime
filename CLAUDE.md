@@ -412,7 +412,10 @@ These are rules, not preferences.
 - Webhook events are `WEBHOOK_EVENTS` in core (`apps.ts`, labels through `tr`), typed in
   `packages/sdk/src/webhooks.ts`, listed in `docs/API.md` and emitted with `emitWebhook`;
   anything that removes or erases a customer conversation's words emits `message.deleted` or
-  `conversation.erased`, so an organization's app drops its copies (R54). A delivery is tried
+  `conversation.erased`, so an organization's app drops its copies (R54). A replaced webhook
+  secret signs beside the new one for `SECRET_OVERLAP_MS` (a day: `previous_webhook_secret`,
+  `previous_secret_until`; the header's second `v1`), and core's `parseSignature` and the SDK's
+  verifier take any `v1`; nothing else signs or checks a delivery. A delivery is tried
   six times over about a quarter of an hour (`WEBHOOK_ATTEMPTS`, the job loop's backoff);
   nothing is replayed on its own, but an app lists its own deliveries and retries a failed one
   (`GET /v1/apps/me/deliveries`, `POST …/:id/retry`, `requeueDelivery`), which the doc says.

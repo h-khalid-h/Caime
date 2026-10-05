@@ -37,6 +37,7 @@ import {
   newWebhookSecret,
   queueDelivery,
   requeueDelivery,
+  SECRET_OVERLAP_MS,
 } from '../lib/apps';
 import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
@@ -304,9 +305,16 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     await manager(auth.userId, id);
     await appOf(id, appId);
     const secret = newWebhookSecret();
+    const was = await appOf(id, appId);
+    // The one it had signs beside the new one for a day (SECRET_OVERLAP_MS), so the app's
+    // settings can change in their own time; replaced twice in a day, only the last two count.
     await ctx.db
       .updateTable('org_apps')
-      .set({ webhook_secret: secret })
+      .set({
+        webhook_secret: secret,
+        previous_webhook_secret: was.webhook_secret,
+        previous_secret_until: new Date(ctx.now().getTime() + SECRET_OVERLAP_MS),
+      })
       .where('id', '=', appId)
       .execute();
     await audit(ctx.db, { actorId: auth.userId, action: 'app.secret_replaced', target: appId });

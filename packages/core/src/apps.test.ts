@@ -4,8 +4,10 @@ import { CreateOrgAppBody } from './schemas';
 
 describe('apps', () => {
   it('reads a webhook signature header, and nothing that only looks like one', () => {
-    expect(parseSignature('t=1790000000,v1=ab12cd')).toEqual({ t: 1790000000, v1: 'ab12cd' });
-    expect(parseSignature(' t=1790000000 , v1=ab=12 ')).toEqual({ t: 1790000000, v1: 'ab=12' });
+    expect(parseSignature('t=1790000000,v1=ab12cd')).toEqual({ t: 1790000000, v1: ['ab12cd'] });
+    // Two for a day after the secret was replaced: the new first, the old after.
+    expect(parseSignature('t=1790000000,v1=aa,v1=bb')).toEqual({ t: 1790000000, v1: ['aa', 'bb'] });
+    expect(parseSignature(' t=1790000000 , v1=ab=12 ')).toEqual({ t: 1790000000, v1: ['ab=12'] });
     expect(parseSignature('v1=ab12cd')).toBeNull();
     expect(parseSignature('t=soon,v1=ab')).toBeNull();
     expect(signatureBase(1790000000, '{"a":1}')).toBe('1790000000.{"a":1}');

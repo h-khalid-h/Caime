@@ -3041,4 +3041,6 @@ export const ar: Catalog = {
   'Next: set bookable hours': 'التالي: حدّد ساعات الحجز',
   'Your door, domain, customers’ data, hours, AI agent, apps and plan':
     'بابك ونطاقك وبيانات العملاء والساعات ووكيل الذكاء الاصطناعي والتطبيقات والخطة',
+  'The secret it had keeps signing deliveries too (a second v1) until {when}: switch before then.':
+    'السر السابق يظل يوقّع التسليمات أيضًا (v1 ثانية) حتى {when}: بدّل قبل ذلك.',
 };

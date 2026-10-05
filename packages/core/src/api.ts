@@ -828,6 +828,8 @@ export interface OrgAppView {
   scopes: ApiScope[];
   webhookUrl: string | null;
   events: WebhookEvent[];
+  /** After a replacement, the secret before still signs deliveries until then (a second `v1`). */
+  secretOverlapUntil: string | null;
   /** The start of its token, to tell tokens apart; the whole token is shown once. */
   tokenPrefix: string | null;
   lastUsedAt: string | null;
@@ -2230,6 +2232,8 @@ export interface OAuthServerMetadata {
   code_challenge_methods_supported: string[];
   token_endpoint_auth_methods_supported: string[];
   revocation_endpoint_auth_methods_supported: string[];
+  /** RFC 9207: the authorization response names its issuer (`iss`). */
+  authorization_response_iss_parameter_supported: boolean;
   scopes_supported: string[];
 }
 

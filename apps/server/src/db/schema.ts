@@ -884,6 +884,9 @@ export interface OrgAppsTable {
   scopes: Defaulted<string[]>;
   webhook_url: string | null;
   webhook_secret: string;
+  /** The secret before the last replacement, still signing deliveries until `…_until` (0052). */
+  previous_webhook_secret: string | null;
+  previous_secret_until: NullableTimestamp;
   events: Defaulted<string[]>;
   created_by: string | null;
   created_at: Generated<Date>;

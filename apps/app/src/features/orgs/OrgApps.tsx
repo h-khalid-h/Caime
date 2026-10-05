@@ -81,6 +81,14 @@ function Secrets({ shown, orgId }: { shown: OrgAppSecretsView; orgId: string }) 
               'Each delivery carries a Caime-Signature header, t=time,v1=signature: the HMAC-SHA256 of “time.body” with this secret. Check it, and ignore old times.',
             )}
           </Text>
+          {shown.app.secretOverlapUntil ? (
+            <Text variant="caption" color="textSecondary" testID="org-app-secret-overlap">
+              {tr(
+                'The secret it had keeps signing deliveries too (a second v1) until {when}: switch before then.',
+                { when: new Date(shown.app.secretOverlapUntil).toLocaleString() },
+              )}
+            </Text>
+          ) : null}
         </>
       ) : null}
     </View>

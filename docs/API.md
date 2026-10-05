@@ -12,8 +12,10 @@ is how a helpdesk, a CRM or your own bot works with the organization's Business 
 - can have a **webhook** that hears what customers write and how conversations move, signed with
   a secret shown once.
 
-Replace a token or a secret from the app's sheet; the old one stops at once. Removing an app
-stops its token and webhook and takes its bot off the team.
+Replace a token from the app's sheet and the old one stops at once. Replace the webhook secret
+and the old one keeps signing deliveries beside the new one for 24 hours (a second `v1` in
+`Caime-Signature`), so your app switches in its own time; the sheet says until when. Removing an
+app stops its token and webhook and takes its bot off the team.
 
 ## Authentication
 
@@ -137,19 +139,22 @@ Deliveries can arrive out of order, and now and then more than once: de-duplicat
 
 ### Checking the signature
 
-`v1` is the HMAC-SHA256 of `"<t>.<raw body>"` with the webhook secret. Compare in constant time
-and refuse old timestamps, so a captured delivery can't be replayed:
+`v1` is the HMAC-SHA256 of `"<t>.<raw body>"` with the webhook secret. For a day after the secret
+was replaced the header carries two (`t=…,v1=<new>,v1=<old>`); accept the delivery if any matches.
+Compare in constant time and refuse old timestamps, so a captured delivery can't be replayed:
 
 ```js
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export function verify(secret, header, rawBody, toleranceSeconds = 300) {
-  const parts = Object.fromEntries(header.split(',').map((kv) => kv.trim().split('=')));
-  const t = Number(parts.t);
+  const parts = header.split(',').map((kv) => kv.trim().split('='));
+  const t = Number(parts.find(([k]) => k === 't')?.[1]);
   if (!Number.isInteger(t) || Math.abs(Date.now() / 1000 - t) > toleranceSeconds) return false;
   const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest();
-  const given = Buffer.from(parts.v1 ?? '', 'hex');
-  return given.length === expected.length && timingSafeEqual(given, expected);
+  return parts
+    .filter(([k]) => k === 'v1')
+    .map(([, v]) => Buffer.from(v ?? '', 'hex'))
+    .some((given) => given.length === expected.length && timingSafeEqual(given, expected));
 }
 ```
 

@@ -152,7 +152,7 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     const sig = parseSignature(String(got?.headers['caime-signature']));
     expect(sig).not.toBeNull();
     const expected = createHmac('sha256', secret).update(`${sig!.t}.${got!.body}`).digest('hex');
-    expect(sig!.v1).toBe(expected);
+    expect(sig!.v1).toEqual([expected]);
     expect(JSON.parse(got!.body)).toMatchObject({
       event: 'business.message',
       orgId,
@@ -164,12 +164,15 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     });
   });
 
-  it('rotates its webhook secret, and a ping arrives signed with the new one', async () => {
+  it('rotates its webhook secret: a ping is signed with the new one, and the old for a day', async () => {
     const appId = (await noor.get(`/v1/orgs/${orgId}/apps`)).apps[0].id;
     const rotated = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/secret`);
     expect(rotated.webhookSecret).toMatch(/^whsec_/);
     expect(rotated.webhookSecret).not.toBe(secret);
     expect(rotated.token).toBeNull();
+    expect(rotated.app.secretOverlapUntil).toBe(
+      new Date(t.clock.now.getTime() + 24 * 3_600_000).toISOString(),
+    );
     const old = secret;
     secret = rotated.webhookSecret;
     const pinged = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/ping`);
@@ -177,11 +180,18 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     const got = await deliver();
     expect(got?.headers['caime-event']).toBe('ping');
     const sig = parseSignature(String(got?.headers['caime-signature']));
-    const withNew = createHmac('sha256', secret).update(`${sig!.t}.${got!.body}`).digest('hex');
-    const withOld = createHmac('sha256', old).update(`${sig!.t}.${got!.body}`).digest('hex');
-    expect(sig!.v1).toBe(withNew);
-    expect(sig!.v1).not.toBe(withOld);
+    const sign = (s: string) =>
+      createHmac('sha256', s).update(`${sig!.t}.${got!.body}`).digest('hex');
+    // Both sign it, the new first: an app on either secret accepts the delivery.
+    expect(sig!.v1).toEqual([sign(secret), sign(old)]);
     expect(JSON.parse(got!.body)).toMatchObject({ event: 'ping', orgId, data: { appId } });
+    // A day on, the old one is gone from the header, and the view says nothing overlaps.
+    t.clock.advance(24 * 3_600_000 + 1);
+    await noor.post(`/v1/orgs/${orgId}/apps/${appId}/ping`);
+    const later = await deliver();
+    const sig2 = parseSignature(String(later?.headers['caime-signature']));
+    expect(sig2!.v1).toHaveLength(1);
+    expect((await noor.get(`/v1/orgs/${orgId}/apps`)).apps[0].secretOverlapUntil).toBeNull();
     // Only its organization's owner or admins: to anyone else the app isn't there.
     expect((await lina.req('POST', `/v1/orgs/${orgId}/apps/${appId}/ping`)).statusCode).toBe(404);
   });
