@@ -105,6 +105,19 @@ test('the signed-in screens, phone and desktop, English and Arabic', async ({ br
     await page.goto(path);
     await audit(page, `${name} (ar)`, found);
   }
+  // The keyboard reaches a message's actions (R20): focus shows them beside the bubble, Enter
+  // opens them all.
+  await page.goto(`/c/${convo}`);
+  const bubble = page.getByLabel(/I will send the contract tomorrow/).first();
+  await bubble.focus();
+  await expect(
+    page
+      .getByRole('button', { name: /^(Reply|رد)$/ })
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('message-copy')).toBeVisible();
   await page.close();
 
   const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });

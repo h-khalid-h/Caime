@@ -42,7 +42,7 @@ import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { endAllAccess } from '../lib/moderation';
-import { revokeGrantsOf } from '../lib/oauth';
+import { endSessions } from '../lib/sessions';
 import { meView, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
 import {
@@ -305,11 +305,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/auth/logout', async (req, reply) => {
     const auth = req.auth;
     if (auth) {
-      await ctx.db
-        .updateTable('sessions')
-        .set({ revoked_at: ctx.now() })
-        .where('id', '=', auth.sessionId)
-        .execute();
+      await endSessions(ctx, { userId: auth.userId, ids: [auth.sessionId] });
       await audit(ctx.db, { actorId: auth.userId, action: 'auth.logout', ...clientInfo(req) });
     }
     clearSessionCookie(reply, ctx);
@@ -361,14 +357,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   app.delete('/auth/sessions/:id', async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const res = await ctx.db
-      .updateTable('sessions')
-      .set({ revoked_at: ctx.now() })
-      .where('id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .where('revoked_at', 'is', null)
-      .executeTakeFirst();
-    if (Number(res.numUpdatedRows) === 0) throw notFound('That session');
+    const ended = await endSessions(ctx, { userId: auth.userId, ids: [id] });
+    if (ended.length === 0) throw notFound('That session');
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'session.revoked',
@@ -396,13 +386,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .execute();
     // Changing the password signs out every other device.
-    await ctx.db
-      .updateTable('sessions')
-      .set({ revoked_at: ctx.now() })
-      .where('user_id', '=', auth.userId)
-      .where('id', '<>', auth.sessionId)
-      .where('revoked_at', 'is', null)
-      .execute();
+    await endSessions(ctx, { userId: auth.userId, except: auth.sessionId });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'auth.password_changed',
@@ -453,6 +437,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/auth/email/verify', async (req) => {
     const auth = requireAuth(req);
     const body = parse(EmailCodeBody, req.body);
+    // Six digits: a few tries a minute is a person reading the mail, not a search.
+    ctx.limiter.hit(`email-verify:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 600_000);
     const wrong = new AppError(400, 'wrong_code', 'That code isn’t right. Check the email again.');
     const row = await ctx.db
       .selectFrom('email_codes')
@@ -464,9 +450,11 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (row.attempts >= CODE_TRIES)
       throw new AppError(400, 'code_expired', 'Too many tries with that code. Send a new one.');
     if (!timingSafeEqual(row.code_hash, hashToken(body.code))) {
+      // Counted in the database, not from the row read above: a burst of parallel guesses would
+      // otherwise each write 1 and the code would take any number of tries.
       await ctx.db
         .updateTable('email_codes')
-        .set({ attempts: row.attempts + 1 })
+        .set((eb) => ({ attempts: eb('attempts', '+', 1) }))
         .where('user_id', '=', auth.userId)
         .execute();
       throw wrong;

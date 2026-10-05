@@ -76,16 +76,32 @@ export interface Analysis {
 // Vocabulary
 
 const EN_COMMIT =
-  /\b(i['’]?ll|i will|i['’]?m going to|im going to|i am going to|i['’]?m gonna|im gonna|let me|i shall|we['’]?ll|we will|i promise to|i plan to|i can)\s+(?!not\b|never\b|be\b|have\b|need\b|try\b)/i;
+  /\b(i['’]?ll|i will|i['’]?m going to|im going to|i am going to|i['’]?m gonna|im gonna|let me|i shall|we['’]?ll|we will|i promise to|i plan to|i can)\s+(?!not\b|never\b|be\b|have\b|need\b|try\b|know\b|see\b|think\b|guess\b|check if\b)/i;
 const EN_NEGATIVE = /\b(won['’]?t|will not|can['’]?t|cannot|couldn['’]?t|wouldn['’]?t)\b/i;
+/** Where one clause ends and the next begins: a negation before this boundary doesn't reach past it. */
+const EN_CLAUSE_BREAK = /[,;]|\b(?:but|and|so|though|although)\b/gi;
 const EN_REQUEST =
   /\b(can you|could you|would you|will you|can u|could u|would u|pls|please|plz|kindly|i need you to|need you to|would you mind|make sure (?:to|you)|don['’]?t forget to|remember to)\b[\s,]*/i;
+/** A request's words that ask for nothing: courtesy, rhetoric, or an ask not to. */
+const EN_NOT_A_REQUEST =
+  /\b(?:please\s+(?:ignore|disregard|find\s+attached|see\s+attached|note)|can\s+you\s+believe|could\s+you\s+imagine|(?:can|could|would|will)\s+(?:you|u)\s+not\b)/i;
 const EN_DECISION =
-  /\b(we(?:['’]ve| have)? decided(?: to| that| on)?|decided to|decision:|let['’]?s go with|lets go with|we['’]?ll go with|we['’]?re going with|going with|we agreed(?: to| on| that)?|agreed to|agreed on|it['’]?s agreed|approved|it['’]?s settled|settled on|final decision(?: is)?:?)\s*/i;
+  /\b(we(?:['’]ve| have)? decided(?: to| that| on)?|decided to|decision:|let['’]?s go with|lets go with|we['’]?ll go with|we['’]?re going with|we are going with|i['’]?m going with|we agreed(?: to| on| that)?|agreed to|agreed on|it['’]?s agreed|approved|it['’]?s settled|settled on|final decision(?: is)?:?)\s*/i;
+/** A decision taken back or in doubt in the words right before it ("wasn't approved", "not sure we decided"). */
+const EN_NOT_DECIDED =
+  /\b(?:not|n['’]?t|never|no|isn['’]?t|wasn['’]?t|weren['’]?t|aren['’]?t|hasn['’]?t|haven['’]?t|not\s+sure|unless|until|if|whether|hope|hopefully|maybe|once)\b[^.!?]{0,25}$/i;
 const EN_CONFIRM =
   /^(?:ok(?:ay)?|sure|yes|yep|yeah|confirmed?|done|deal|agreed|works for me|that works|sounds good|perfect|great|👍|✅)[\s.!👍✅]*$/iu;
+/**
+ * A question without its question mark: an auxiliary and then whoever it asks about ("Is the
+ * report ready"), or a question word and a verb ("How much is it"). A bare auxiliary ("Will
+ * do", "Have a nice weekend") asks nothing.
+ */
 const EN_QUESTION_START =
-  /^(who|what|when|where|why|how|which|whose|is|are|am|was|were|do|does|did|can|could|will|would|should|shall|may|might|have|has|any|anyone|anything)\b/i;
+  /^(?:(?:is|are|am|was|were|do|does|did|can|could|will|would|should|shall|may|might|have|has)\s+(?:you|u|we|they|he|she|it|i|this|that|there|the|these|those|anyone|everyone|someone|anybody|everybody|somebody|any)\b|(?:who|what|when|where|why|how|which|whose)(?:['’]s|['’]re|['’]d|['’]ll)?\s+(?:is|are|am|was|were|do|does|did|can|could|will|would|should|shall|may|might|have|has|about|much|many|long|far|often|old|else|time|day|come|if|to|the|your|you|we|they|it)\b)/i;
+/** Said with a question's first word and no question in it. */
+const EN_NOT_A_QUESTION =
+  /^(?:have\s+a\s+(?:nice|good|great|lovely|wonderful|safe)\b|have\s+fun|will\s+do|did\s+it\b|what\s+a\b|how\s+(?:lovely|nice|cool|sweet|wonderful|exciting|fun|kind)\b|who\s+knows|can['’]?t\s+wait|was\s+(?:great|nice|good|lovely))/i;
 const EN_PLAN =
   /\b(meet|meeting|call|catch up|schedule|dinner|lunch|breakfast|coffee|trip|visit|appointment|shall we|are you free|when are you free|availability|let['’]?s)\b/i;
 const EN_PAY =
@@ -152,9 +168,10 @@ const AR_COMMIT = new RegExp(
     'هبلغك',
     'هأكد(?:لك)?',
     'هاكد(?:لك)?',
-    // Gulf: راح + verb; Levantine: رح/حـ + verb
-    'راح\\s+(?!ال)[أاإنتي][؀-ۿ]+',
-    'رح\\s+(?!ال)[أاإنتي][؀-ۿ]+',
+    // Gulf: راح + verb; Levantine: رح/حـ + verb. First person only (أ/ا: I, ن: we): "راح
+    // يجيب" is someone else's doing and "راح تحبه" is the reader's.
+    'راح\\s+(?!ال)[أاإن][؀-ۿ]+',
+    'رح\\s+(?!ال)[أاإن][؀-ۿ]+',
     // Levantine and Gulf present-as-promise, only the verbs that promise something
     'بعطيك',
     'ببعت(?:لك)?',
@@ -224,8 +241,9 @@ const AR_REQUEST_VERBS_LIST = [
 ];
 const AR_REQUEST = new RegExp(
   `(^|[\\s،,.!؟?])(${[
-    // what introduces a request
-    'ممكن',
+    // what introduces a request: "ممكن" (could you) only before a second-person verb (ت…), since
+    // alone it's "maybe" ("ممكن أتأخر", I may be late)
+    'ممكن(?=\\s+ت[؀-ۿ]+)',
     'لو\\s+سمحت(?:ي|وا)?',
     'من\\s+فضلك',
     'ياريت',
@@ -242,7 +260,8 @@ const AR_REQUEST = new RegExp(
     'رجاءً',
     'تقدر(?:ي|وا)?',
     'بتقدر(?:ي|وا)?',
-    'فيك(?:ي|ن)?',
+    // "فيك تبعتلي" (can you send me), never "يبارك فيك" (bless you)
+    'فيك(?:ي|ن)?(?=\\s+ت[؀-ۿ]+)',
     'إذا\\s+ممكن',
     'اذا\\s+ممكن',
     'لو\\s+ممكن',
@@ -254,7 +273,8 @@ const AR_REQUEST = new RegExp(
     'ابيك',
     'بدي\\s+ياك',
     'بدي\\s+منك',
-    'بدك',
+    // "بدك تبعتلي" (you should send me), never "شو بدك" (what do you want)
+    '(?<!(?:شو|ايش|إيش|وش|شنو)\\s)بدك(?=\\s+ت[؀-ۿ]+)',
     ...AR_REQUEST_VERBS_LIST,
   ].join('|')})${AR_EDGE}`,
   'u',
@@ -267,7 +287,7 @@ const AR_QUESTION_START =
   /^(هل|ايه|إيه|امتى|إمتى|فين|مين|ليه|ازاي|إزاي|كام|متى|أين|اين|كيف|لماذا|ماذا|ما|وين|شو|ايش|إيش|وش|ويش|شنو|شنهو|شلون|ليش|لويش|منو|منهو|كم|قديش|قديه|وقتيش|وقتاش|بكم|بكام)(?=$|[\s،,؟?])/u;
 /** "ما" negates here ("ما راح أقدر", "ما عندي"), where elsewhere it asks ("ما رأيك"). */
 const AR_NOT_A_QUESTION =
-  /^ما\s+(?:راح|رح|ه[؀-ۿ]+|أقدر|اقدر|بقدر|قدرت|عندي|عندك|عندنا|معي|معاي|في|فيه|عرفت|أعرف|اعرف|بعرف|كان|كانت|بدي|أبغى|ابغى|أبي|حبيت|رديت|وصل|وصلت|لقيت|شفت|سمعت|لحقت|خلصت|قلت|سويت|عملت)(?=$|[\s،,؟?])/u;
+  /^(?:ما\s+(?:راح|رح|ه[؀-ۿ]+|أقدر|اقدر|بقدر|قدرت|عندي|عندك|عندنا|معي|معاي|في|فيه|عرفت|أعرف|اعرف|بعرف|كان|كانت|بدي|أبغى|ابغى|أبي|حبيت|رديت|وصل|وصلت|لقيت|شفت|سمعت|لحقت|خلصت|قلت|سويت|عملت|شاء\s+الله|وافقنا|وافقت)|ليش\s+لا|شو\s+هال|كيف\s+ما|ايش\s+ما|إيش\s+ما)(?=$|[\s،,؟?])/u;
 const AR_DECISION = new RegExp(
   `(^|[\\s،,.!؟?])(${[
     'اتفقنا(?:\\s+على|\\s+إن|\\s+ان|\\s+نـ?)?',
@@ -329,15 +349,36 @@ function capitalise(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+/**
+ * A sentence ends at `.`, `!`, `?` or `؟` followed by a space or the end, or at a line's end: a
+ * dot inside "$2.5k", "v2.1", "sam@data-c.com" or a URL is part of the word.
+ */
 function sentences(text: string): Array<{ text: string; index: number }> {
   const out: Array<{ text: string; index: number }> = [];
-  const re = /[^.!?؟\n]+[.!?؟]*/g;
+  const re = /[^\n]+?(?:[.!?؟]+(?=\s|$)|$)/gm;
   let m: RegExpExecArray | null = re.exec(text);
   while (m) {
-    const t = m[0].trim();
-    if (t) out.push({ text: t, index: m.index + m[0].indexOf(t) });
+    if (m[0].length === 0) {
+      re.lastIndex += 1;
+    } else {
+      const t = m[0].trim();
+      if (t) out.push({ text: t, index: m.index + m[0].indexOf(t) });
+    }
     m = re.exec(text);
   }
+  return out;
+}
+
+/**
+ * Someone else's words inside a message (“I'll send it Monday”, a `> quoted` line) are not the
+ * sender's promise, request or decision: they're blanked, their length kept so every index
+ * still points into the original, before the sentences are read.
+ */
+export function maskQuoted(text: string): string {
+  let out = text.replace(/"[^"\n]{2,}"|“[^”\n]{2,}”|«[^»\n]{2,}»|„[^“”\n]{2,}[“”]/g, (q) =>
+    ' '.repeat(q.length),
+  );
+  out = out.replace(/^[ \t]*>[^\n]*/gm, (q) => ' '.repeat(q.length));
   return out;
 }
 
@@ -649,29 +690,43 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
   let isQuestion = false;
   let isConfirmation = false;
 
-  for (const s of sentences(text)) {
+  for (const s of sentences(maskQuoted(text))) {
+    // The sentence as written, for the quote a suggestion carries (quoted words included).
+    const said = text.slice(s.index, s.index + s.text.length).trim();
     const endsWithQuestion = /[?؟]\s*$/u.test(s.text);
     const english = /[A-Za-z]/.test(s.text) && !/[؀-ۿ]/.test(s.text);
     const startsQuestion = english
-      ? EN_QUESTION_START.test(s.text)
+      ? EN_QUESTION_START.test(s.text) && !EN_NOT_A_QUESTION.test(s.text)
       : AR_QUESTION_START.test(s.text) && !AR_NOT_A_QUESTION.test(s.text);
-    if (endsWithQuestion || (startsQuestion && s.text.length < 160 && !/[.!]$/.test(s.text)))
-      isQuestion = true;
+    const asks =
+      endsWithQuestion || (startsQuestion && s.text.length < 160 && !/[.!]$/.test(s.text));
+    if (asks) isQuestion = true;
     if (EN_CONFIRM.test(s.text) || AR_CONFIRM.test(s.text)) isConfirmation = true;
 
-    if (!decision) {
+    // A question isn't a decision ("Was the budget approved?"), nor is one taken back in the
+    // words before it ("wasn't approved", "ما وافقنا").
+    if (!decision && !asks) {
       const d = EN_DECISION.exec(s.text) ?? AR_DECISION.exec(s.text);
       if (d) {
-        decision = { title: decisionTitle(s.text, d, english), quote: s.text };
+        const before = s.text.slice(0, d.index + (english ? 0 : (d[1]?.length ?? 0)));
+        const negated = english ? EN_NOT_DECIDED.test(before) : AR_NEGATIVE_BEFORE.test(before);
+        if (!negated) decision = { title: decisionTitle(s.text, d, english), quote: said };
       }
     }
 
-    if (!commitment && !EN_NEGATIVE.test(s.text)) {
+    if (!commitment) {
       const c = EN_COMMIT.exec(s.text);
       const a = c ? null : AR_COMMIT.exec(s.text);
-      if (c) {
+      // "I won't be able to send it, but I'll call you tomorrow": the negation stays in its
+      // clause, so only what's said between the last clause break and the promise counts.
+      const negatedBefore = (at: number) => {
+        let from = 0;
+        for (const b of s.text.slice(0, at).matchAll(EN_CLAUSE_BREAK)) from = b.index + b[0].length;
+        return EN_NEGATIVE.test(s.text.slice(from, at));
+      };
+      if (c && !negatedBefore(c.index) && !EN_NEGATIVE.test(s.text.slice(c.index, c.index + 40))) {
         const clause = clauseFrom(s.text, c.index + c[0].length, s.index, dates);
-        commitment = toAction(clause, s.text, firstDateIn(dates, s.index, s.text.length), false);
+        commitment = toAction(clause, said, firstDateIn(dates, s.index, s.text.length), false);
       } else if (a && !AR_NEGATIVE_BEFORE.test(s.text.slice(0, a.index + a[1]!.length))) {
         const start = a.index + a[1]!.length;
         const clause = tidy(removeRanges(s.text.slice(start), s.index + start, dates));
@@ -685,7 +740,7 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
       }
     }
 
-    if (!request) {
+    if (!request && !EN_NOT_A_REQUEST.test(s.text)) {
       const r = EN_REQUEST.exec(s.text);
       const ar = r ? null : AR_REQUEST.exec(s.text);
       if (r) {
@@ -707,8 +762,15 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
             .split(/\s+/)[0]
             ?.toLowerCase()
             .replace(/[^a-z]/g, '') ?? '';
-        // A verb and only a number ("Update 55") is a label, not something to do.
-        const named = /\p{L}/u.test(s.text.split(/\s+/).slice(1).join(' '));
+        // A verb and only a number ("Update 55") is a label, not something to do; nor is a
+        // reference ("Order #48213 shipped") or something already done ("Order delivered").
+        const rest = s.text.split(/\s+/).slice(1).join(' ');
+        const named =
+          /\p{L}/u.test(rest) &&
+          !/^#/.test(rest) &&
+          !/^(?:shipped|delivered|confirmed|received|sent|done|placed|cancelled|canceled)\b/i.test(
+            rest,
+          );
         if (IMPERATIVE_VERBS.has(first) && !endsWithQuestion && named) {
           const clause = clauseFrom(s.text, 0, s.index, dates);
           request = toAction(clause, s.text, firstDateIn(dates, s.index, s.text.length), false);

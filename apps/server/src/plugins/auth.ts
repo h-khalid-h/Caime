@@ -63,10 +63,16 @@ export async function resolveSession(
   return { userId: row.user_id, sessionId: row.id, kind: row.kind };
 }
 
+/** The web build's files (`plugins/static.ts`): nothing on them is anyone's. */
+const STATIC_PREFIX = /^\/(?:_expo\/|fonts\/|assets\/)/;
+
 export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
   app.decorateRequest('auth', null);
   app.addHook('onRequest', async (req: FastifyRequest) => {
     req.auth = null;
+    // The build's hashed files are the same for everyone: a cookie on one of those requests is
+    // never looked up (a cold launch fetches a dozen of them).
+    if (STATIC_PREFIX.test(req.url)) return;
     const found = tokenFrom(req);
     if (!found) return;
     if (found.via === 'bearer' && isApiToken(found.token)) {
@@ -100,7 +106,7 @@ async function authenticateApp(ctx: AppContext, req: FastifyRequest, token: stri
   if (!app) return;
   const scope = API_ROUTES[`${req.method} ${req.routeOptions.url ?? ''}`];
   if (!scope) throw new AppError(403, 'token_route', 'An app’s token can’t do this.');
-  if (!app.scopes.includes(scope))
+  if (scope !== 'any' && !app.scopes.includes(scope))
     throw new AppError(403, 'token_scope', `This app needs the “${scope}” permission for that.`);
   ctx.limiter.hit(`api:${app.tokenId}`, ctx.config.isTest ? 10_000 : 600, 60_000);
   req.auth = {

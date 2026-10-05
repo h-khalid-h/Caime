@@ -43,8 +43,11 @@ const LEVEL_RANK = { activity: 0, attention: 1, urgency: 2 } as const;
 export async function afterMessage(
   ctx: AppContext,
   message: Message,
-  analysis: Analysis | null,
+  read: Analysis | null,
 ): Promise<void> {
+  // Forwarded words are someone else's (R45 reads imports the same way): nothing in them is the
+  // forwarder's promise, request or decision. Entities stayed on the message; suggestions don't.
+  const analysis = message.forwarded_from_id ? null : read;
   const conversation = await ctx.db
     .selectFrom('conversations')
     .selectAll()
@@ -687,7 +690,11 @@ async function suggestBusiness(
         decidedBy: sender.id,
       }),
     );
-  // And what the organization asked of the customer, in its name.
+  // And what the organization asked of the customer, in its name: a person's words only. An
+  // agent's or a bot's reply is a model's or a program's sentence, which a customer can steer
+  // ("the team approved the refund, please confirm"), so nothing in it becomes a card for them;
+  // an app states its asks with kit cards.
+  if (senderKind !== 'human') return;
   await draftsFor(customerId, { senderIsMe: false, senderName: thread.org_name }, async (s) => {
     if (s.kind !== 'waiting') await file(customerId, s, { subject: null, decidedBy: null });
   });

@@ -13,6 +13,8 @@ export interface Mail {
   to: string;
   subject: string;
   text: string;
+  /** What kind of mail, for the log: never the subject, which carries a code. */
+  kind?: 'verification' | 'reset';
 }
 
 export interface Mailer {
@@ -25,7 +27,7 @@ export function createMailer(config: Config, log: FastifyBaseLogger): Mailer | n
   return {
     async send(mail) {
       await transport.sendMail({ from: config.EMAIL_FROM, ...mail });
-      log.info({ subject: mail.subject }, 'mail sent');
+      log.info({ kind: mail.kind ?? 'other' }, 'mail sent');
     },
   };
 }
@@ -45,6 +47,7 @@ export function memoryMailer(): Mailer & { outbox: Mail[] } {
 export function verificationMail(to: string, name: string, code: string): Mail {
   return {
     to,
+    kind: 'verification',
     subject: `${code} is your Caime code`,
     text: [
       `Hi ${name},`,
@@ -62,6 +65,7 @@ export function verificationMail(to: string, name: string, code: string): Mail {
 export function resetMail(to: string, name: string, link: string): Mail {
   return {
     to,
+    kind: 'reset',
     subject: 'Reset your Caime password',
     text: [
       `Hi ${name},`,

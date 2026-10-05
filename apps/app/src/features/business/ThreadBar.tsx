@@ -108,7 +108,7 @@ export function ThreadBar({
       </View>
       {thread.escalated ? (
         <Text variant="caption" color="danger" numberOfLines={2}>
-          {thread.escalated.byName ?? tr('Someone')} escalated it
+          {tr('{name} escalated it', { name: thread.escalated.byName ?? tr('Someone') })}
           {thread.escalated.note ? `: “${thread.escalated.note}”` : ''}
         </Text>
       ) : null}

@@ -15,7 +15,7 @@ export function DetailPlaceholder({
   action,
   icon = MessageCircle,
 }: {
-  character: CharacterName;
+  character?: CharacterName;
   expression?: Expression;
   title: string;
   body?: string;

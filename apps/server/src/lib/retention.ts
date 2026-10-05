@@ -20,6 +20,10 @@ export const KEPT_DAYS = {
   heldHandles: 365,
   /** An invite link that ran out or was taken back (R1): nothing opens it; the count lived in events. */
   spentInvites: 30,
+  /** A job that ran, or gave up: its row says so for a week, for an operator's look, then goes. */
+  doneJobs: 7,
+  /** A notification: half a year, then it goes (the privacy page says so). */
+  notifications: 180,
 } as const;
 
 /** The day of `at` as Caime keeps days ('YYYY-MM-DD', UTC). */
@@ -108,5 +112,18 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
     sql`delete from released_handles where handle in (select handle from released_handles
       where held_until <= ${dayOf(ctx.now())}
       limit ${LOT} for update skip locked)`,
+  );
+  // Jobs that ran, and ones that gave up (still in the ready index until swept); notifications.
+  await inLots(
+    ctx,
+    sql`delete from jobs where id in (select id from jobs
+      where (done_at is not null and done_at < ${before(KEPT_DAYS.doneJobs)})
+         or (done_at is null and attempts >= max_attempts and run_at < ${before(KEPT_DAYS.doneJobs)})
+      limit ${LOT})`,
+  );
+  await inLots(
+    ctx,
+    sql`delete from notifications where id in (select id from notifications
+      where created_at < ${before(KEPT_DAYS.notifications)} limit ${LOT})`,
   );
 }

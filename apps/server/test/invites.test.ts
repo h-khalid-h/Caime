@@ -144,6 +144,38 @@ describe('invite links (R1)', () => {
     ).toBe(1);
   });
 
+  it('an under-18’s link stands as a request to them for an adult they don’t know (R29)', async () => {
+    const rami = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
+    const lina = await signup(t, { displayName: 'Lina Young', birthDate: '2012-06-30' });
+    const mona = await signup(t, { displayName: 'Mona Adult', birthDate: '1985-01-01' });
+    const link = (await rami.post('/v1/invites', {})).invite.token;
+    // An adult who shares nobody with Rami: a request Rami decides on, not a connection.
+    const asked = await mona.post(`/v1/invites/${link}/accept`);
+    expect(asked).toMatchObject({ status: 'requested' });
+    expect((await mona.get('/v1/connections')).connections).toEqual([]);
+    const incoming = (await rami.get('/v1/connections/requests')).requests;
+    expect(incoming.map((r: { id: string }) => r.id)).toEqual([asked.requestId]);
+    const told = (await rami.get('/v1/notifications')).notifications;
+    expect(told[0]).toMatchObject({
+      kind: 'connection_request',
+      title: 'Mona Adult opened your invite link',
+      data: { requestId: asked.requestId, userId: mona.user.id },
+    });
+    // Opened again: the same request, no second one.
+    expect(await mona.post(`/v1/invites/${link}/accept`)).toEqual(asked);
+    // Rami accepts: connected, as any request accepted.
+    const joined = await rami.post(`/v1/connections/requests/${asked.requestId}/accept`, {});
+    expect(joined.status).toBe('connected');
+    // Another under-18 connects through the link at once.
+    const peer = await lina.post(`/v1/invites/${link}/accept`);
+    expect(peer).toMatchObject({ status: 'connected', already: false });
+    // So does an adult who shares a connection with Rami now (Mona and Lina don't; Lina and Mona
+    // would through Rami): Mona opening Lina's link connects, since Rami links them.
+    const linasLink = (await lina.post('/v1/invites', {})).invite.token;
+    const known = await mona.post(`/v1/invites/${linasLink}/accept`);
+    expect(known).toMatchObject({ status: 'connected', already: false });
+  });
+
   it('is nobody’s own to accept, and no way past a block', async () => {
     const own = await noor.req('POST', `/v1/invites/${token}/accept`);
     expect(own.statusCode).toBe(400);

@@ -1031,7 +1031,7 @@ test.describe
         .filter({ visible: true })
         .fill('Yes! We have 10:00 or 15:30 on Thursday. Which suits you?');
       await page.getByTestId('composer-send').filter({ visible: true }).click();
-      await expect(page.getByTestId('thread-state')).toHaveText('Waiting on customer');
+      await expect(page.getByTestId('thread-state')).toHaveText('Waiting for the customer');
       await expect(page.getByTestId('thread-bar')).toContainText('You have it');
       await page.screenshot({ path: 'e2e/screenshots/desktop-business-inbox.png' });
 
@@ -1471,7 +1471,7 @@ test.describe
         await phone.getByTestId('composer-send').filter({ visible: true }).click();
 
         // Answered, it's an ordinary conversation with the team.
-        await expect(page.getByTestId('thread-state')).toHaveText('Customer waiting');
+        await expect(page.getByTestId('thread-state')).toHaveText('Needs a reply');
         await expect(page.getByTestId('request-outgoing')).toHaveCount(0);
         await page
           .getByTestId('composer-input')

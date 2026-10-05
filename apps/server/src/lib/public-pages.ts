@@ -273,6 +273,7 @@ function entryBody(screen: EntryScreen): string {
     ${field(tr('Where you live'))}
     <button type="button" disabled>${esc(tr('Create account'))}</button>
   </form>
+  <p class="small">${esc(tr('By creating an account, you agree to the'))} <a href="/terms">${esc(tr('terms'))}</a>${esc(tr('. The'))} <a href="/privacy">${esc(tr('privacy policy'))}</a> ${esc(tr('says what Caime keeps, and why.'))}</p>
   <p class="small">${esc(tr('Already have an account?'))} <a href="/sign-in">${esc(tr('Sign in'))}</a></p>
 </main>`;
 }
@@ -715,12 +716,17 @@ export function robotsTxt(publicUrl: string): string {
   ].join('\n');
 }
 
-/** The pages worth indexing: the landing page, Caime's own pages, and open organizations. */
+/**
+ * The pages worth indexing: the landing page, Caime's own pages, and open organizations that
+ * proved who they are (an unverified page still renders, but Caime doesn't send a crawler to
+ * a name nobody has proven).
+ */
 export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]): Promise<string> {
   const orgs = await db
     .selectFrom('organizations')
     .select(['handle', 'updated_at'])
     .where('archived_at', 'is', null)
+    .where('verified_at', 'is not', null)
     .orderBy('created_at')
     .limit(50_000)
     .execute();

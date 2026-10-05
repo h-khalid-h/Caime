@@ -23,7 +23,7 @@ export default function Recover() {
   const submit = async () => {
     const pw = passwordError(password);
     if (!identifier.trim() || code.trim().length < 8 || pw) {
-      setError(pw ?? 'Enter your email or handle and one of your recovery codes.');
+      setError(pw ?? tr('Enter your email or handle and one of your recovery codes.'));
       return;
     }
     setBusy(true);

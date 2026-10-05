@@ -701,7 +701,7 @@ communication.
 ## 38. Business Inbox
 
 Business users get: **New** (new conversations), **Assigned** (assigned to a team member),
-**Waiting** (waiting for customer), **Customer waiting** (customer waiting for business),
+**Waiting for the customer** (the team has answered), **Needs a reply** (the customer is waiting on the team),
 **Resolved** (completed conversations), **Escalated** (requires attention).
 
 ## 39. Relationship Ownership in Business

@@ -309,9 +309,9 @@ export default function SignUp() {
         testID="signup-submit"
       />
       <Text variant="caption" color="textSecondary" align="center">
-        {tr('By creating an account, you agree to the')}
+        {tr('By creating an account, you agree to the')}{' '}
         <PageLink name="terms">{tr('terms')}</PageLink>
-        {tr('. The')} <PageLink name="privacy">{tr('privacy policy')}</PageLink>
+        {tr('. The')} <PageLink name="privacy">{tr('privacy policy')}</PageLink>{' '}
         {tr('says what Caime keeps, and why.')}
       </Text>
       <Pressable

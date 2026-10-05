@@ -1,5 +1,6 @@
 import type {
   AppKitView,
+  AppMeView,
   BusinessInboxView,
   BusinessThreadView,
   ConversationView,
@@ -65,6 +66,30 @@ export class Caime {
     this.base = `${(opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '')}/v1`;
     this.fetchImpl = opts.fetch ?? fetch;
     this.userAgent = opts.userAgent ?? 'caime-sdk/0.1';
+  }
+
+  // --- Who the token is -----------------------------------------------------------------------
+
+  /** Every token: the app, its organization's id (what the other methods take) and its permissions. */
+  async me(): Promise<AppMeView['app']> {
+    const { app } = await this.call<AppMeView>('GET', '/apps/me');
+    return app;
+  }
+
+  // --- Files ----------------------------------------------------------------------------------
+
+  /**
+   * `messages:read`: a file a message carries (`message.files[].id`), as the response whose body
+   * is its bytes (`content-type` and `content-length` set). The same files the team sees in that
+   * conversation, nothing else.
+   */
+  file(fileId: string): Promise<Response> {
+    return this.raw(`/files/${enc(fileId)}`);
+  }
+
+  /** `messages:read`: a file's thumbnail (WebP), where there is one (404 otherwise). */
+  thumbnail(fileId: string): Promise<Response> {
+    return this.raw(`/files/${enc(fileId)}/thumb`);
   }
 
   // --- The inbox and its conversations ---------------------------------------------------------
@@ -230,6 +255,27 @@ export class Caime {
   private async thread(method: string, path: string, body?: unknown) {
     const { thread } = await this.call<{ thread: BusinessThreadView }>(method, path, body);
     return thread;
+  }
+
+  /** One request whose answer is bytes, not JSON (a file); a refusal is still a CaimeError. */
+  private async raw(path: string): Promise<Response> {
+    const res = await this.fetchImpl(new URL(this.base + path), {
+      method: 'GET',
+      headers: { authorization: `Bearer ${this.token}`, 'user-agent': this.userAgent },
+    });
+    if (!res.ok) {
+      let code = `http_${res.status}`;
+      let message = `Caime answered ${res.status}.`;
+      try {
+        const err = ((await res.json()) as { error?: { code?: string; message?: string } }).error;
+        code = err?.code ?? code;
+        message = err?.message ?? message;
+      } catch {
+        // Not JSON: the status says enough.
+      }
+      throw new CaimeError(res.status, code, message);
+    }
+    return res;
   }
 
   /** One request: the token, JSON in and out, and the server's refusal as a CaimeError. */

@@ -32,14 +32,19 @@ export const WEBHOOK_EVENTS = [
   'business.thread',
   'kit.posted',
   'kit.moved',
+  'message.deleted',
+  'conversation.erased',
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 
+/** English keys (R54): shown through `tr`. */
 export const WEBHOOK_EVENT_LABELS: Record<WebhookEvent, string> = {
-  'business.message': 'A customer writes',
-  'business.thread': 'A conversation is assigned, escalated, resolved or reopened',
-  'kit.posted': 'Someone on the team sends one of its cards',
-  'kit.moved': 'Someone moves one of its cards on',
+  'business.message': msg('A customer writes'),
+  'business.thread': msg('A conversation is assigned, escalated, resolved or reopened'),
+  'kit.posted': msg('Someone on the team sends one of its cards'),
+  'kit.moved': msg('Someone moves one of its cards on'),
+  'message.deleted': msg('A message in a customer conversation is removed for everyone'),
+  'conversation.erased': msg('A customer conversation is erased at their request'),
 };
 
 /** Tokens say what they are, so a leaked one is recognisable (and scannable). */

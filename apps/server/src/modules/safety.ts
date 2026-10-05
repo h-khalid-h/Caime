@@ -142,6 +142,28 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
       if (!update) throw badRequest('Choose what you’re reporting.');
     }
     ctx.limiter.hit(`report:${auth.userId}`, 30, 3_600_000);
+    // What's reported is something the reporter was shown: a message or a conversation of
+    // theirs, never an id guessed or copied from elsewhere.
+    if (body.messageId || body.conversationId) {
+      const seen = await ctx.db
+        .selectFrom('participants as p')
+        .select('p.conversation_id')
+        .where('p.user_id', '=', auth.userId)
+        .where((eb) =>
+          body.messageId
+            ? eb(
+                'p.conversation_id',
+                '=',
+                eb
+                  .selectFrom('messages')
+                  .select('messages.conversation_id')
+                  .where('messages.id', '=', body.messageId),
+              )
+            : eb('p.conversation_id', '=', body.conversationId!),
+        )
+        .executeTakeFirst();
+      if (!seen) throw notFound('That message');
+    }
     // A customer sees an organization's team, apps and agent as the organization
     // (lib/business.ts), so what they report of one comes with the organization's id: it's
     // reported as the organization's, with the message saying who wrote it.

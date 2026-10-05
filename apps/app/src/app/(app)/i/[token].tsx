@@ -24,6 +24,12 @@ export default function InviteLink() {
   const accept = useMutation({
     mutationFn: () => endpoints.acceptInvite(token),
     onSuccess: (res) => {
+      if (res.status === 'requested') {
+        // Under 18 (R29): their link stands as a request they decide on.
+        toast(tr('Sent as a request: they choose who connects with them'));
+        router.replace('/connect');
+        return;
+      }
       if (!res.already) toast(tr('You’re connected'));
       router.replace({ pathname: '/c/[id]', params: { id: res.conversationId } });
     },
@@ -35,7 +41,9 @@ export default function InviteLink() {
       }
       setProblem(
         e instanceof ApiError && e.status === 404
-          ? 'This invite has run out, or was taken back. Ask them for a new link, or find them by @handle.'
+          ? tr(
+              'This invite has run out, or was taken back. Ask them for a new link, or find them by @handle.',
+            )
           : (e as Error).message,
       );
     },
@@ -43,7 +51,7 @@ export default function InviteLink() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: once per link
   useEffect(() => {
     if (token) accept.mutate();
-    else setProblem('That isn’t an invite link.');
+    else setProblem(tr('That isn’t an invite link.'));
   }, [token]);
   return (
     <Screen edges={desktop ? [] : ['top', 'bottom']}>

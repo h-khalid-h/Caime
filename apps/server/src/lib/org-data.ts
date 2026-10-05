@@ -12,6 +12,7 @@ import type { Kysely, RawBuilder, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
+import { emitWebhook } from './apps';
 import { tellSaved } from './automations';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
@@ -110,6 +111,8 @@ export async function eraseBusinessConversation(
   );
   await tellForgotten(ctx, forgotten);
   const gone = rows.filter((r) => r.what === 'gone');
+  // The organization's apps drop what they kept of it too.
+  await emitWebhook(ctx, orgId, 'conversation.erased', { conversationId, erased: gone.length });
   const who = (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id);
   for (const r of gone.slice(0, 200))
     await ctx.bus.publish(who, { type: 'message.deleted', data: { id: r.id, conversationId } });

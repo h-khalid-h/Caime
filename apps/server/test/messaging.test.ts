@@ -1907,4 +1907,69 @@ describe('realtime', () => {
     });
     expect(code).toBe(4401);
   });
+
+  it('drops a frame it does not understand and keeps the socket (and the process) up', async () => {
+    const address = t.app.server.address() as { port: number };
+    const base = `http://127.0.0.1:${address.port}`;
+    const { ws } = await socketFor(base, hassan.token);
+    const closed: number[] = [];
+    ws.on('close', (c) => closed.push(c));
+    // A non-uuid where a uuid column is queried, a wrong type, a frame without a type, junk.
+    ws.send(JSON.stringify({ type: 'typing', conversationId: 'x' }));
+    ws.send(JSON.stringify({ type: 'typing', conversationId: 42 }));
+    ws.send(JSON.stringify({ conversationId: convo }));
+    ws.send(JSON.stringify({ type: 'auth', token: { nested: true } }));
+    ws.send('not json at all');
+    const pong = await new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(false), 3000);
+      ws.on('message', (raw) => {
+        if (JSON.parse(String(raw)).type === 'pong') {
+          clearTimeout(timer);
+          resolve(true);
+        }
+      });
+      ws.send(JSON.stringify({ type: 'ping' }));
+    });
+    expect(pong).toBe(true);
+    expect(closed).toEqual([]);
+    ws.close();
+  });
+
+  it('closes a session’s sockets the moment it ends, and no other', async () => {
+    const address = t.app.server.address() as { port: number };
+    const base = `http://127.0.0.1:${address.port}`;
+    const login = await t.app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      payload: {
+        identifier: sarah.user.handle,
+        password: 'correct horse battery',
+        client: 'native',
+        deviceName: 'Sarah’s phone',
+      },
+    });
+    const phoneToken = login.json().token as string;
+    const phone = await socketFor(base, phoneToken);
+    const laptop = await socketFor(base, sarah.token);
+    const closed = new Promise<number>((resolve) => phone.ws.on('close', (c) => resolve(c)));
+    let laptopClosed = false;
+    laptop.ws.on('close', () => {
+      laptopClosed = true;
+    });
+    // Signed out from the laptop: "that device".
+    const { sessions } = await sarah.get('/v1/auth/sessions');
+    const other = sessions.find((s: any) => !s.current);
+    await sarah.req('DELETE', `/v1/auth/sessions/${other.id}`);
+    expect(await closed).toBe(4401);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(laptopClosed).toBe(false);
+    // The ended session can't come back either.
+    const again = new WebSocket(`${base.replace('http', 'ws')}/v1/realtime`);
+    const code = await new Promise<number>((resolve) => {
+      again.on('open', () => again.send(JSON.stringify({ type: 'auth', token: phoneToken })));
+      again.on('close', (c) => resolve(c));
+    });
+    expect(code).toBe(4401);
+    laptop.ws.close();
+  });
 });

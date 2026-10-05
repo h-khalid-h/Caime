@@ -29,9 +29,11 @@ answers `401`.
 
 | Permission | Route | What it does |
 | --- | --- | --- |
+| any | `GET /v1/apps/me` | Who this token is: `{ "app": { "id", "name", "orgId", "orgHandle", "orgName", "botUserId", "scopes", "events" } }`. The `orgId` is what the routes below take, so the first call needs nothing but the token (`caime.me()` in the SDK) |
 | `inbox:read` | `GET /v1/orgs/:orgId/inbox?view=` | The inbox, by view: `customer_waiting`, `new`, `mine`, `waiting`, `escalated`, `resolved` |
 | `messages:read` | `GET /v1/conversations/:id` | One conversation, with its thread (state, who has it) |
 | `messages:read` | `GET /v1/conversations/:id/messages?before=&after=&limit=` | Its messages, oldest first |
+| `messages:read` | `GET /v1/files/:id`, `GET /v1/files/:id/thumb` | A file a message carries (`message.files[].id`), as its bytes, and its thumbnail (WebP) where there is one: the same files the team sees in that conversation, nothing else |
 | `messages:write` | `POST /v1/conversations/:id/messages` | Reply as the bot: `{ "clientId": "<uuid>", "body": "…" }`. A retried `clientId` returns the first message, never a second |
 | `threads:write` | `POST /v1/business/:id/assign` | `{ "userId": "<person on the team>" }`, or `null` for nobody |
 | `threads:write` | `POST /v1/business/:id/resolve`, `…/reopen`, `…/escalate` | Escalate takes an optional `{ "note": "…" }` and tells the owner and admins |
@@ -87,6 +89,7 @@ try {
 | Method | Route | Permission |
 | --- | --- | --- |
 | `inbox(orgId, view)` | `GET /v1/orgs/:orgId/inbox` | `inbox:read` |
+| `file(id)`, `thumbnail(id)` | `GET /v1/files/:id`, `…/thumb` | `messages:read` (a `Response` whose body is the file) |
 | `conversation(id)`, `messages(id, { before, after, limit })` | `GET /v1/conversations/:id`, `…/messages` | `messages:read` |
 | `send(id, body, { clientId })`, `sendCard(id, key, fields, { clientId })` | `POST /v1/conversations/:id/messages` | `messages:write` (+ `kits`) |
 | `assign(id, userId \| null)`, `resolve(id)`, `reopen(id)`, `escalate(id, note)`, `stopEscalating(id)` | `POST /v1/business/:id/…`, `DELETE …/escalation` | `threads:write` |
@@ -110,15 +113,20 @@ Caime `POST`s JSON to the app's address (https only) for the events it listens t
 | `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee`, `by` (`person`, `app` or `ai_agent`) |
 | `kit.posted` | Someone on the team sends one of the app's kinds of card | `conversationId`, `message` (`id`, `seq`, `createdAt`), `kit` (`key`, `name`, `custom`), `fields`, `state`, `by` (`person`), `customer` |
 | `kit.moved` | Someone moves one of its cards on (or a card of Caime's own its bot sent), never when the app did | as `kit.posted`, with `from` and `to`, and `by`: `person` (the team) or `customer` |
+| `message.deleted` | A message in a customer conversation is removed for everyone (its sender's delete, or the operator's review): drop any copy of its words you kept | `conversationId`, `messageId` |
+| `conversation.erased` | A customer conversation is erased at the customer's request (every message in it is gone): drop whatever you kept of them | `conversationId`, `erased` (how many messages) |
 | `ping` | You pressed "Send a test delivery" | `appId` |
 
 Every body is `{ "id", "event", "orgId", "createdAt", "data" }`, with the headers
 `Caime-Event`, `Caime-Delivery` (the delivery id, for de-duplicating) and
 `Caime-Signature: t=<unix seconds>,v1=<hex>`. Answer with any 2xx within 10 seconds, connecting
 included; the body of your answer is ignored and redirects aren't followed. Anything else is
-tried again, waiting longer each time, six times in all; the app's sheet shows the last
-deliveries and why they failed. Addresses on private networks are refused, when you save them
-and again each time one is looked up.
+tried again after 30 seconds, then 1, 2, 4 and 8 minutes: six attempts in all, over about a
+quarter of an hour, after which the delivery is marked failed and stays in the app's sheet with
+why. Nothing is replayed on its own: an app that was down longer reads what it missed through
+the API (the inbox, and a conversation's messages `after=` the last `seq` it saw) when it comes
+back. Addresses on private networks are refused, when you save them and again each time one is
+looked up.
 
 Deliveries can arrive out of order, and now and then more than once: de-duplicate with
 `Caime-Delivery`, and put messages in order by `message.seq`.

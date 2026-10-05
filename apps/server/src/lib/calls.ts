@@ -389,9 +389,38 @@ export async function iceConfig(ctx: AppContext, userId: string): Promise<IceCon
     const credential = createHmac('sha1', secret).update(username).digest('base64');
     iceServers.push({ urls: ctx.config.turnUrls, username, credential });
   }
-  const cloudflare = await cloudflareRelay(ctx);
+  const cloudflare = await cloudflareRelay(ctx, userId);
   if (cloudflare) iceServers.push(cloudflare);
   return { iceServers, relay: iceServers.some((s) => s.username !== undefined) };
+}
+
+/**
+ * Cloudflare's credentials, kept per person for half their life (convention 14): a call set up,
+ * answered and renegotiated asks several times, and each ask is a paid API call. Checked before
+ * each use, so nothing older than half the TTL is handed out.
+ */
+const relayCache = new Map<
+  string,
+  { until: number; server: IceConfigView['iceServers'][number] }
+>();
+const RELAY_CACHE_MAX = 10_000;
+
+async function cloudflareRelay(
+  ctx: AppContext,
+  userId: string,
+): Promise<IceConfigView['iceServers'][number] | null> {
+  if (!ctx.config.cloudflareTurn) return null;
+  const now = ctx.now().getTime();
+  const kept = relayCache.get(userId);
+  if (kept && kept.until > now) return kept.server;
+  const server = await askCloudflareRelay(ctx);
+  if (server) {
+    if (relayCache.size >= RELAY_CACHE_MAX)
+      for (const [key, v] of relayCache) if (v.until <= now) relayCache.delete(key);
+    if (relayCache.size < RELAY_CACHE_MAX)
+      relayCache.set(userId, { until: now + (TURN_TTL_S * 1000) / 2, server });
+  }
+  return server;
 }
 
 /**
@@ -399,7 +428,7 @@ export async function iceConfig(ctx: AppContext, userId: string): Promise<IceCon
  * Only its turn: and turns: addresses are passed on, and none on port 53, which browsers refuse
  * and wait on: its STUN isn't STUN_URLS, and the privacy page says whose STUN a call uses.
  */
-async function cloudflareRelay(
+async function askCloudflareRelay(
   ctx: AppContext,
 ): Promise<IceConfigView['iceServers'][number] | null> {
   const cf = ctx.config.cloudflareTurn;

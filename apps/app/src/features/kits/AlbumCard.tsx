@@ -164,7 +164,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
     if (res.canceled || !res.assets.length) return;
     setAdding(
       res.assets.length === 1
-        ? 'Adding a photo…'
+        ? tr('Adding a photo…')
         : tr('Adding {length} photos…', { length: res.assets.length }),
     );
     try {

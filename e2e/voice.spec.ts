@@ -52,11 +52,12 @@ test.describe
 
       // The note is in the conversation with its length, and plays.
       const note = page.getByTestId('voice-note').filter({ visible: true }).first();
-      await expect(note).toBeVisible({ timeout: 20_000 });
+      await expect(note).toBeVisible({ timeout: 30_000 });
       await expect(note.getByTestId('voice-length')).toContainText(/0:0[1-9]/);
       // Its words come from the speech stand-in, labelled as Caime's, and are searchable.
+      // The job runs when the worker gets to it: after a long suite its queue may be busy.
       await expect(visible(page, 'Hi Noor, the contract is signed.')).toBeVisible({
-        timeout: 30_000,
+        timeout: 60_000,
       });
       // Then it plays (pressed once the bubble has settled: a press during its slide-in is
       // cancelled by the pointer moving, as any real one would be).
@@ -76,7 +77,7 @@ test.describe
         page
           .getByRole('button', { name: /^Noor Voice, / })
           .filter({ hasText: /contract is signed/ }),
-      ).toBeVisible({ timeout: 20_000 });
+      ).toBeVisible({ timeout: 30_000 });
       expect(errors.filter((e) => !e.includes('404'))).toEqual([]);
 
       // Alex, with AI assist off, sends one too: it stays a note, nothing is sent anywhere.
@@ -98,6 +99,6 @@ test.describe
         calls: string[];
       };
       expect(after.calls).not.toContain('transcribe');
-      expect(alex.page.getByTestId('voice-transcript')).toHaveCount(1);
+      await expect(alex.page.getByTestId('voice-transcript')).toHaveCount(1);
     });
   });

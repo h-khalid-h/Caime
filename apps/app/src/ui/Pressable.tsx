@@ -27,6 +27,8 @@ export interface PressableProps extends Omit<RNPressableProps, 'style' | 'childr
   focusRadius?: number;
   /** To move focus to it (a prop in React 19). */
   ref?: Ref<View>;
+  /** A key pressed while it has focus (web). */
+  onKeyDown?: (e: KeyEvent) => void;
 }
 
 /**
@@ -53,10 +55,11 @@ function ariaOf(
   return aria;
 }
 
-type KeyEvent = {
+export type KeyEvent = {
   key?: string;
   repeat?: boolean;
-  nativeEvent?: { key?: string; repeat?: boolean };
+  shiftKey?: boolean;
+  nativeEvent?: { key?: string; repeat?: boolean; shiftKey?: boolean };
   preventDefault?: () => void;
 };
 

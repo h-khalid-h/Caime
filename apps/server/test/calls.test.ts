@@ -531,7 +531,14 @@ describe('calls (PRD §47)', () => {
           body: JSON.stringify({ ttl: 12 * 3600 }),
         },
       ]);
-      // Cloudflare refusing (a revoked token) or answering nonsense: the call goes on with STUN.
+      // Asked again within half the credentials' life: the same ones, and Cloudflare isn't asked
+      // (a paid call each time; a call sets up and renegotiates several times).
+      cf.clock.advance(5 * 3600_000);
+      expect((await noor.get('/v1/calls/ice')).relay).toBe(true);
+      expect(asked).toHaveLength(1);
+      // Past half their life, Cloudflare is asked afresh. Refusing (a revoked token) or answering
+      // nonsense: the call goes on with STUN.
+      cf.clock.advance(2 * 3600_000);
       for (const a of [
         { status: 401, body: { error: 'unauthorized' } },
         { status: 201, body: { iceServers: [{ urls: ['stun:stun.cloudflare.com:3478'] }] } },

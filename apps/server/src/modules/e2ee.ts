@@ -22,6 +22,7 @@ import { audit } from '../lib/audit';
 import { chainOf, type LiveDevice, liveDevicesOf, MAX_DEVICES, publicView } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { isBlockedEitherWay } from '../lib/relations';
+import { endSessions } from '../lib/sessions';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { membership } from './conversations';
@@ -321,14 +322,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       .returning(['session_id', 'approved_at'])
       .executeTakeFirst();
     if (!gone) throw notFound('That device');
-    if (gone.session_id)
-      await ctx.db
-        .updateTable('sessions')
-        .set({ revoked_at: ctx.now() })
-        .where('id', '=', gone.session_id)
-        .where('user_id', '=', auth.userId)
-        .where('revoked_at', 'is', null)
-        .execute();
+    if (gone.session_id) await endSessions(ctx, { userId: auth.userId, ids: [gone.session_id] });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'e2ee.device_removed',

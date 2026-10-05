@@ -118,7 +118,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
                     kept
                       ? tr('{length} undone; {a}', {
                           length: undoable.length,
-                          a: kept === 1 ? tr('a decision stays') : `${kept} decisions stay`,
+                          a: trn(kept, 'a decision stays', '{n} decisions stay'),
                         })
                       : tr('Undone'),
                   );

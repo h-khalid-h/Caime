@@ -820,6 +820,52 @@ plan hadn't reached, in the order people will ask for them.
       owner runs before a key goes on production). ⛔ Call summaries with decisions and actions
       (PRD §47, R52) wait for the consent flow and minute allowances, on the same interface.
 
+## M12 — Reviewed from all angles (docs/REVIEW-2026-10-05.md)
+
+Six reviews of the same commit (security, architecture, UX, intelligence, performance,
+integration), merged and ranked on that page. Done here means fixed with a test; the rest is
+listed there with its owner.
+
+- [x] Security: a session that ends (sign-out, revocation, password change, recovery, suspension,
+      a device removed) closes its live sockets on every instance (`endSessions`,
+      `session.ended` on the bus); invite links honour R29 (an adult an under-18 doesn't know
+      through someone gets a request the inviter decides on); push endpoints checked like
+      webhooks with a deadline; relay credentials cached and limited; the backup's connection
+      out of the command line; the email code limited and counted atomically; reports only of
+      what the reporter saw, imports marked for the operator.
+- [x] Architecture: socket frames validated (zod), a failing handler closes its socket alone,
+      an unhandled rejection is logged, never fatal.
+- [x] Intelligence: pleasantries aren't questions, negated or asked decisions aren't decisions,
+      quoted and forwarded words aren't the sender's, sentences keep "$2.5k" and URLs whole,
+      Arabic promises are first person only, "ممكن"/"فيك"/"بدك" ask only before a second-person
+      verb, an agent's reply drafts nothing for the customer; a golden set of 127 labelled lines
+      (80 English, 47 Arabic) with precision and recall floors in CI.
+- [x] UX: "Needs a reply" and "Waiting for the customer" as wrapping radio chips; fifteen strings
+      into Arabic; the terms sentence spaced, with its server twin; characters off business
+      surfaces (B2); a message's actions by keyboard on the web (focus, Enter, Shift+F10), in the
+      shortcuts sheet and `e2e/a11y.spec.ts`.
+- [x] Performance: the inbox's last message by `last_seq`, the reply's sender by a join; search
+      by word prefixes on the tsvector; `ai_runs (user_id, created_at)`; the app refetches the
+      inbox soon only for a message that can move a conversation between sections, else once a
+      quarter-minute; done jobs swept after 7 days and notifications after 180; the bus counts
+      bytes; the membership cache forgets; the build's files skip the cookie lookup.
+- [x] Integration: `GET /v1/apps/me` and `caime.me()`; `message.deleted` and
+      `conversation.erased` webhook events; `GET /v1/files/:id` and `/thumb` for apps
+      (`caime.file()`, `caime.thumbnail()`); the retry schedule and its end documented;
+      `business.thread.by` says `ai_agent`; the mail log carries the kind, not the subject.
+- [ ] Next block: permission rules into core (convention 4); error codes the app translates and
+      previews through `tr`; a shorter first five minutes; the relationship chip in an
+      unlabelled conversation; group fan-out in batches; the five foreign-key indexes;
+      `savePrefs` and drafts retried on failure; a deliveries list and retry for apps; the
+      operator's tools for a locked-out person; the migration expand/contract rule; the
+      intelligence dates and the edit path; the remaining UX mediums.
+- [ ] ⛔ The owner: `TRUST_PROXY` against the live proxy chain; payment in local currencies with
+      tax; an npm account for `@caime/sdk`; a development build for calls and private
+      conversations on a phone; store builds; a third-party penetration test.
+- [ ] Phone push: the server sends through Expo when `EXPO_ACCESS_TOKEN` is set, but the app
+      registers no phone yet (`expo-notifications` is imported nowhere; the native push module
+      is a stub). It joins the development build, with the store work.
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -1775,3 +1821,13 @@ plan hadn't reached, in the order people will ask for them.
   reflow a line, and a press that began on something inside it (the play button, a file row)
   ended on something else and was cancelled; the first click missed. They now sit beside the
   bubble over the margin, taking no room (`MessageBubble`).
+- 2026-10-05 — Reviewed from all angles (docs/REVIEW-2026-10-05.md, M12): six parallel reviews
+  of 6f1d5f9, merged and ranked, and the high findings fixed in one block with tests: live
+  sockets closed when a session ends, socket frames validated and failures contained, invite
+  links under R29, push endpoints checked, relay credentials cached, the backup's password out
+  of the log, the email code limited, reports checked; the message intelligence's false
+  positives (pleasantries, negations, quotes, forwards, dotted words, third persons) with a
+  golden set of 127 lines and precision floors in CI; the business inbox's words and chips,
+  fifteen Arabic leaks, the terms sentence, characters off business surfaces, keyboard access
+  to a message's actions; the inbox query and its refetch, prefix search, two sweeps; the two
+  webhook events and files for apps. Budget 445.9 KB gzip of 450. Tests: core 341, sdk 5, brand 50, app 170, server 589; E2E a11y, conversation, voice and core flow green.

@@ -38,6 +38,19 @@ const SNIPPET_MARKS = MATCH_START + MATCH_END;
 
 const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
+/**
+ * The words typed as a prefix tsquery: `'contr':* & 'invoic':*`, each word quoted so nothing in
+ * it reads as an operator; empty when the text holds no word (punctuation alone).
+ */
+function prefixQuery(text: string): string {
+  const words = text
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .slice(0, 12);
+  return words.map((w) => `'${w.replace(/'/g, "''")}':*`).join(' & ');
+}
+
 /** Resolve a name in the query to people the searcher knows (connections or conversation partners). */
 async function resolvePeople(ctx: AppContext, me: string, name: string): Promise<string[]> {
   const rows = await ctx.db
@@ -197,12 +210,13 @@ export async function runSearch(
         .where('m.deleted_at', 'is', null)
         .where('c.privacy_class', '=', 'standard')
         .where('m.kind', '<>', 'system')
+        // Words as prefixes against the GIN index ("contr" finds "contract"); only a query too
+        // short to index (one or two characters) falls back to a substring scan.
         .$if(Boolean(text), (qb) =>
           qb.where((eb) =>
-            eb.or([
-              sql<boolean>`m.search @@ websearch_to_tsquery('simple', ${text})`,
-              eb('m.body', 'ilike', like(text)),
-            ]),
+            text.length >= 3 && prefixQuery(text)
+              ? sql<boolean>`m.search @@ to_tsquery('simple', ${prefixQuery(text)})`
+              : eb('m.body', 'ilike', like(text)),
           ),
         )
         .$if(Boolean(personIds?.length), (qb) =>

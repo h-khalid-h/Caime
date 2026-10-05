@@ -18,7 +18,7 @@ import { useBusiness } from '@/state/business';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
-import { Chip } from '@/ui/Chip';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft, Inbox, SquarePen } from '@/ui/icons';
@@ -75,7 +75,7 @@ function ThreadRow({
   const preview = last
     ? last.fromCustomer
       ? last.preview
-      : `${last.senderName ?? 'Your team'}: ${last.preview}`
+      : `${last.senderName ?? tr('Your team')}: ${last.preview}`
     : '';
   const unread = thread.unreadCount > 0;
   return (
@@ -189,7 +189,6 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
   if (desktop && !pane)
     return (
       <DetailPlaceholder
-        character="pico"
         icon={Inbox}
         title={tr('Pick a conversation')}
         body={tr('Customers waiting longest are at the top.')}
@@ -244,43 +243,33 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
           ))}
         </ScrollView>
       ) : null}
-      <View style={{ paddingVertical: 8 }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-        >
-          {BUSINESS_VIEWS.map((v) => {
+      {/* The views, one radio each: in lines on a desktop (a wheel doesn't scroll sideways). */}
+      <ChoiceChips<BusinessView | 'bookings'>
+        label={tr('Show conversations')}
+        value={view}
+        onChange={setView}
+        wrap={desktop}
+        options={[
+          ...BUSINESS_VIEWS.map((v) => {
             const n = counts?.[v] ?? 0;
-            return (
-              <Chip
-                key={v}
-                label={
-                  n && v !== 'resolved'
-                    ? `${tr(BUSINESS_VIEW_LABELS[v])} · ${n}`
-                    : tr(BUSINESS_VIEW_LABELS[v])
-                }
-                selected={view === v}
-                tone={
-                  v === 'customer_waiting' && n
-                    ? 'warning'
-                    : v === 'escalated' && n
-                      ? 'danger'
-                      : 'neutral'
-                }
-                onPress={() => setView(v)}
-                testID={`inbox-view-${v}`}
-              />
-            );
-          })}
-          <Chip
-            label={tr('Bookings')}
-            selected={view === 'bookings'}
-            onPress={() => setView('bookings')}
-            testID="business-view-bookings"
-          />
-        </ScrollView>
-      </View>
+            return {
+              value: v,
+              label:
+                n && v !== 'resolved'
+                  ? `${tr(BUSINESS_VIEW_LABELS[v])} · ${n}`
+                  : tr(BUSINESS_VIEW_LABELS[v]),
+              tone:
+                v === 'customer_waiting' && n
+                  ? ('warning' as const)
+                  : v === 'escalated' && n
+                    ? ('danger' as const)
+                    : ('neutral' as const),
+              testID: `inbox-view-${v}`,
+            };
+          }),
+          { value: 'bookings' as const, label: tr('Bookings'), testID: 'business-view-bookings' },
+        ]}
+      />
       {view === 'bookings' ? (
         <OrgBookings
           orgId={summary?.id}
@@ -318,8 +307,6 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
             <EmptyState
               compact
               icon={Inbox}
-              character="pico"
-              expression="happy"
               title={tr(EMPTY[view as BusinessView].title)}
               body={tr(EMPTY[view as BusinessView].body)}
             />

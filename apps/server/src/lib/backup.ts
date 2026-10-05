@@ -22,6 +22,21 @@ import { backupState } from './metrics';
 import { type S3Config, s3Put } from './s3';
 
 const run = promisify(execFile);
+
+/** A connection URL as libpq's PG* variables, so no command line ever carries the password. */
+export function pgEnv(databaseUrl: string): Record<string, string> {
+  const u = new URL(databaseUrl);
+  const env: Record<string, string> = {};
+  if (u.hostname) env.PGHOST = decodeURIComponent(u.hostname.replace(/^\[|\]$/g, ''));
+  if (u.port) env.PGPORT = u.port;
+  if (u.username) env.PGUSER = decodeURIComponent(u.username);
+  if (u.password) env.PGPASSWORD = decodeURIComponent(u.password);
+  const db = u.pathname.replace(/^\//, '');
+  if (db) env.PGDATABASE = decodeURIComponent(db);
+  const ssl = u.searchParams.get('sslmode') ?? u.searchParams.get('ssl');
+  if (ssl) env.PGSSLMODE = ssl === 'true' ? 'require' : ssl;
+  return env;
+}
 const SETTING = 'backup.last';
 const PREFIX = 'caime-';
 const SUFFIX = '.dump';
@@ -141,14 +156,11 @@ export async function runBackup(ctx: AppContext): Promise<BackupRecord | null> {
       const path = join(dir, file);
       const part = `${path}.part`;
       // Custom format is compressed and restores selectively; no owners or grants, so it restores
-      // into any role. The connection string is an argument, never in the log.
-      await run('pg_dump', [
-        '--format=custom',
-        '--no-owner',
-        '--no-privileges',
-        `--file=${part}`,
-        ctx.config.DATABASE_URL,
-      ]);
+      // into any role. The connection travels in libpq's environment, never as an argument: a
+      // failure's error names the command and its arguments, and the log would carry the password.
+      await run('pg_dump', ['--format=custom', '--no-owner', '--no-privileges', `--file=${part}`], {
+        env: { ...process.env, ...pgEnv(ctx.config.DATABASE_URL) },
+      });
       // A dump that can't be listed can't be restored: it's thrown away, and the failure logged.
       const listed = await run('pg_restore', ['--list', part]);
       if (!/TABLE DATA/.test(listed.stdout)) {

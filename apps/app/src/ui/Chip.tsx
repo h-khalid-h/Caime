@@ -114,6 +114,8 @@ export interface ChoiceChip<T extends string> {
   label: string;
   icon?: IconComponent;
   accessibilityLabel?: string;
+  /** A count that needs eyes ("Needs a reply · 3") colours its chip. */
+  tone?: 'neutral' | 'accent' | 'warning' | 'success' | 'danger';
   testID?: string;
 }
 
@@ -143,6 +145,7 @@ export function ChoiceChips<T extends string>({
       role="radio"
       label={o.label}
       icon={o.icon}
+      tone={o.tone}
       accessibilityLabel={o.accessibilityLabel}
       selected={o.value === value}
       onPress={() => onChange(o.value)}

@@ -5,6 +5,8 @@
  */
 import { randomBytes } from 'node:crypto';
 import {
+  type ApiScope,
+  type AppMeView,
   CreateOrgAppBody,
   canManageOrg,
   defaultPrivacy,
@@ -13,6 +15,7 @@ import {
   UpdateOrgAppBody,
   uuidv7,
   type WebhookDeliveryView,
+  type WebhookEvent,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -57,6 +60,41 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
   const viewOf = async (a: OrgApp): Promise<OrgAppView> => (await appViews(ctx, [a]))[0]!;
   const webhook = (url: string | null | undefined) =>
     url ? checkWebhookUrl(url, ctx.config.WEBHOOKS_ALLOW_PRIVATE) : null;
+
+  /** Who this token is (docs/API.md): the first call an integration makes, with nothing else. */
+  app.get('/apps/me', async (req): Promise<AppMeView> => {
+    const auth = requireAuth(req);
+    if (!auth.app) throw forbidden('This route is for an app’s token.');
+    const row = await ctx.db
+      .selectFrom('org_apps as a')
+      .innerJoin('organizations as o', 'o.id', 'a.org_id')
+      .select([
+        'a.id',
+        'a.name',
+        'a.org_id',
+        'a.bot_user_id',
+        'a.scopes',
+        'a.events',
+        'o.handle as org_handle',
+        'o.name as org_name',
+      ])
+      .where('a.id', '=', auth.app.id)
+      .where('a.revoked_at', 'is', null)
+      .executeTakeFirst();
+    if (!row) throw notFound('That app');
+    return {
+      app: {
+        id: row.id,
+        name: row.name,
+        orgId: row.org_id,
+        orgHandle: row.org_handle,
+        orgName: row.org_name,
+        botUserId: row.bot_user_id,
+        scopes: row.scopes as ApiScope[],
+        events: row.events as WebhookEvent[],
+      },
+    };
+  });
 
   app.get('/orgs/:id/apps', async (req): Promise<{ apps: OrgAppView[] }> => {
     const auth = requireAuth(req);

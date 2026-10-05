@@ -120,8 +120,6 @@ export function OrgBookings({
         <EmptyState
           compact
           icon={CalendarCheck}
-          character="pico"
-          expression="happy"
           title={tr('No bookings ahead')}
           body={tr(
             'Appointments asked for or confirmed in your customer conversations show here by day.',

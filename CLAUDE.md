@@ -165,12 +165,21 @@ These are rules, not preferences.
   `lib/door.ts`, cached an hour in the browser), drawn by `features/orgs/OrgDoor.tsx`. Anything
   else printed for a clinic (a receipt line, a bio) reuses that link and path, never another
   encoder or a second link shape.
+- Ending a session (sign-out, "sign out that device", a password change, a recovery, a
+  suspension, removing a device for private conversations) goes through `endSessions`
+  (`lib/sessions.ts`), never an update of `sessions` by hand: it publishes `session.ended` on
+  the bus and the realtime hub on every instance closes that session's sockets (4401). A frame
+  a device sends is read through the `Frame` schema in `modules/realtime.ts` (a uuid where a
+  uuid is queried) and anything else is dropped; the message handler and `attach` catch, so a
+  failure closes that socket alone, and `index.ts` logs an unhandled rejection rather than
+  exiting. A new frame type joins the schema.
 - Invite links (R1): `lib/invites.ts` makes, opens and accepts them; accepting goes through
   `acceptRequest(…, { viaInvite: true })` on a request the invite stands for (never a second path
   to a connection), so blocks, suggestions and notifications behave as for a request. The token
   is the only key to one (`/i/<token>`: `publicInvite` renders the visitor's page, `inviteIn` in
   `lib/paths.ts` recognizes it, the `i/[token]` route accepts). A person's export lists their
-  links; the privacy page says so.
+  links; the privacy page says so. Under 18 (R29): an adult the inviter doesn't know through
+  someone gets `status: 'requested'` (a request the inviter decides on), never a connection.
 - Reserved handles (R35) are `RESERVED_HANDLES` and `isReservedHandle` beside `Handle` in
   `packages/core/src/schemas.ts`: the product's names (also inside other handles), its
   characters, staff words, and the names of its pages, top-level screens and web-root files. A
@@ -353,6 +362,12 @@ These are rules, not preferences.
   `apps/server/src/lib/business.ts`. New endpoints that return user ids or names for a
   conversation must apply `maskFor`; `business.test.ts` checks the customer's responses for
   any team id or name, so extend it with the new endpoint.
+- Webhook events are `WEBHOOK_EVENTS` in core (`apps.ts`, labels through `tr`), typed in
+  `packages/sdk/src/webhooks.ts`, listed in `docs/API.md` and emitted with `emitWebhook`;
+  anything that removes or erases a customer conversation's words emits `message.deleted` or
+  `conversation.erased`, so an organization's app drops its copies (R54). A delivery is tried
+  six times over about a quarter of an hour (`WEBHOOK_ATTEMPTS`, the job loop's backoff) and
+  nothing is replayed, which the doc says.
 - Apps' bots are users of kind `'bot'` on an organization's team. Anything that picks or
   counts people (assignees, heirs, who is notified, the team's size, search, connections)
   takes `kind = 'human'` only; a bot's messages are `automated` and never move a thread. An
@@ -587,6 +602,12 @@ These are rules, not preferences.
   (`PersonProfileView.memory`, `MEMORY_EACH` in `modules/people.ts`): only the viewer's own rows
   (their decisions' conversations, their waiting items, what was asked of them), so a new thing
   remembered there follows the same two conditions the `actions` counts use, never a wider one.
+- The message intelligence is measured, not only exampled: `intelligence-golden.test.ts` reads
+  every line of `fixtures/intelligence-golden.ts` (labelled by hand, half negatives) and fails
+  below the precision and recall floors per label and language, printing each wrong line. A
+  new rule, trigger or list entry adds its lines there (a positive and the near-miss it must
+  not catch), and a floor only ever moves up. Quoted words (`maskQuoted`) and forwarded
+  messages are nobody's promise; a sentence ends at punctuation followed by a space.
 - The message intelligence reads Arabic by lists in `packages/core/src/intelligence.ts`
   (`AR_COMMIT`, `AR_REQUEST_VERBS_LIST`, `AR_REQUEST`, `AR_DECISION`, `AR_CONFIRM`, `AR_PAY`,
   `AR_QUESTION_START` with `AR_NOT_A_QUESTION` for "ما" as a negation): a trigger is a whole

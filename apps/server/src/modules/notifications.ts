@@ -10,7 +10,12 @@ import { sql } from 'kysely';
 import webpush from 'web-push';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { checkWebhookUrl } from '../lib/apps';
 import { onNotification } from '../lib/notify';
+
+/** How long a push service gets before Caime moves on without it. */
+const PUSH_TIMEOUT_MS = 10_000;
+
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -118,6 +123,9 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
             { endpoint: s.endpoint, keys: s.keys as { p256dh: string; auth: string } },
             payload,
             {
+              // The push service is an address the browser chose: one deadline, so a service
+              // that hangs can't hold whichever request is telling this person.
+              timeout: PUSH_TIMEOUT_MS,
               TTL: input.ttlSeconds ?? 24 * 3600,
               urgency: input.quiet
                 ? 'normal'
@@ -254,7 +262,12 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
   app.post('/push/subscriptions', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(PushSubscriptionBody, req.body);
-    const endpoint = body.kind === 'webpush' ? body.subscription.endpoint : body.token;
+    // A push endpoint is an address the browser chose that Caime will POST to on every
+    // notification: the same rules as a webhook's (https, nothing on a private network).
+    const endpoint =
+      body.kind === 'webpush'
+        ? checkWebhookUrl(body.subscription.endpoint, ctx.config.WEBHOOKS_ALLOW_PRIVATE)
+        : body.token;
     const keys = body.kind === 'webpush' ? body.subscription.keys : null;
     await ctx.db
       .insertInto('push_subscriptions')

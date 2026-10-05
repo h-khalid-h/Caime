@@ -70,6 +70,9 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/calls/ice', async (req): Promise<IceConfigView> => {
     const auth = requireAuth(req);
+    // A relay is paid for by the minute: a call asks a handful of times, a loop asks for a relay
+    // of its own.
+    ctx.limiter.hit(`ice:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     return await iceConfig(ctx, auth.userId);
   });
 

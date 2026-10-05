@@ -277,7 +277,7 @@ export const LANDING_LAYERS: ExplorerItem[] = [
     ),
     sample: () =>
       row(dot(3), who('Nile Dental', tr('verified · niledental.example'))) +
-      row(tag(tr('Customer waiting')), cell(esc(tr('Lina · new patient forms')))),
+      row(tag(tr('Needs a reply')), cell(esc(tr('Lina · new patient forms')))),
   },
   {
     id: 'privacy',
@@ -351,7 +351,7 @@ const BUSINESS_STEPS: ExplorerItem[] = [
     ),
     sample: () =>
       row(
-        tag(tr('Customer waiting')),
+        tag(tr('Needs a reply')),
         `<span><strong>Lina</strong> · ${esc(tr('Can I book a cleaning on Thursday?'))}</span>`,
       ) + note(tr('new · nobody has it · 2 min')),
   },
@@ -376,7 +376,7 @@ const BUSINESS_STEPS: ExplorerItem[] = [
     ),
     sample: () =>
       bubble('me', tr('10:00 is yours. See you Thursday.')) +
-      row(tag(tr('Waiting on customer'), 2), cell(esc(tr('You have it')))),
+      row(tag(tr('Waiting for the customer'), 2), cell(esc(tr('You have it')))),
   },
   {
     id: 'apps',

@@ -48,6 +48,24 @@ afterAll(async () => {
 });
 
 describe('the operator reviews reports (R49)', () => {
+  it('takes a report only of what the reporter was shown, and says what was imported', async () => {
+    const outsider = await signup(t, { displayName: 'Omar Outside' });
+    expect(
+      (
+        await outsider.req('POST', '/v1/reports', {
+          userId: sam.user.id,
+          messageId,
+          reason: 'spam',
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (await outsider.req('POST', '/v1/reports', { conversationId, reason: 'spam' })).statusCode,
+    ).toBe(404);
+    const { reports } = (await op('GET', '/v1/admin/reports?status=open')).json();
+    expect(reports[0].message).toMatchObject({ id: messageId, imported: false });
+  });
+
   it('lists what was reported, with what is left of it, to the operator alone', async () => {
     expect((await op('GET', '/v1/admin/reports', undefined, 'not-the-token')).statusCode).toBe(401);
     expect((await noor.req('GET', '/v1/admin/reports')).statusCode).toBe(401);

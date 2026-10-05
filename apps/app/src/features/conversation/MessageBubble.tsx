@@ -6,7 +6,7 @@ import { tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { lazy, memo, type ReactNode, Suspense, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
@@ -588,11 +588,27 @@ export const MessageBubble = memo(function MessageBubble({
         <Pressable
           accessibilityRole="text"
           accessibilityLabel={accessibleText}
-          accessibilityHint={tr('Double tap and hold for actions')}
+          accessibilityHint={
+            Platform.OS === 'web'
+              ? tr('Press Enter for actions')
+              : tr('Double tap and hold for actions')
+          }
           onLongPress={() => onLongPress?.(m)}
           onPress={delivery === 'failed' ? () => onRetry?.(m) : undefined}
           onHoverIn={hoverIn}
           onHoverOut={hoverOut}
+          // The keyboard reaches what the mouse does (R20): focus shows the actions beside the
+          // bubble, and Enter, Shift+F10 or the menu key opens them all.
+          onFocus={hoverIn}
+          onBlur={hoverOut}
+          onKeyDown={(e) => {
+            const key = e.key ?? e.nativeEvent?.key;
+            const shift = e.shiftKey ?? e.nativeEvent?.shiftKey;
+            if (key === 'Enter' || key === 'ContextMenu' || (key === 'F10' && shift)) {
+              e.preventDefault?.();
+              onLongPress?.(m);
+            }
+          }}
           delayLongPress={300}
           focusRadius={r}
           style={{ flexShrink: 1 }}

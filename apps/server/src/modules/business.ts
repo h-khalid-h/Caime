@@ -512,8 +512,8 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       change,
       state: view!.state,
       assignee: view!.assignee,
-      // A person on the team, or an app's bot through its token.
-      by: actor?.kind === 'human' ? 'person' : 'app',
+      // A person on the team, the organization's AI agent, or an app's bot through its token.
+      by: actor?.kind === 'human' ? 'person' : actor?.kind === 'agent' ? 'ai_agent' : 'app',
     });
     return { thread: view! };
   }

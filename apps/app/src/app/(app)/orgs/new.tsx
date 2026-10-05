@@ -75,11 +75,11 @@ export default function NewOrganization() {
   const create = async () => {
     const h = normalizeHandle(handle);
     const next: Record<string, string | undefined> = {
-      name: name.trim() ? undefined : 'Give the organization a name.',
+      name: name.trim() ? undefined : tr('Give the organization a name.'),
       handle:
         handleError(h) ??
-        (taken?.handle === h ? (taken.reason ?? 'That handle isn’t available.') : undefined),
-      kind: kind ? undefined : 'Choose what kind of organization it is.',
+        (taken?.handle === h ? (taken.reason ?? tr('That handle isn’t available.')) : undefined),
+      kind: kind ? undefined : tr('Choose what kind of organization it is.'),
       country: country ? undefined : tr('Choose where it’s based.'),
     };
     setErrors(next);
@@ -158,7 +158,7 @@ export default function NewOrganization() {
           error={
             errors.handle ??
             (taken?.handle === normalizeHandle(handle)
-              ? (taken.reason ?? 'That handle isn’t available.')
+              ? (taken.reason ?? tr('That handle isn’t available.'))
               : undefined)
           }
           testID="org-handle"

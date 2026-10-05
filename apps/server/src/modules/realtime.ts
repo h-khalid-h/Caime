@@ -6,18 +6,34 @@
 import { canSee, resolvePolicy, type Sphere } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
+import { z } from 'zod';
 import type { AppContext } from '../context';
 import { assertCanWrite } from '../lib/blocks';
 import { loadPolicies } from '../lib/relations';
+import { SESSION_ENDED, type SessionEndedData } from '../lib/sessions';
 import { privacyOf } from '../lib/users';
 import { resolveSession } from '../plugins/auth';
 
 const PING_MS = 25_000;
 const AUTH_TIMEOUT_MS = 10_000;
 
+/**
+ * What a device may send. Anything else is dropped where it lands: a frame is the one input a
+ * signed-in device gives this process directly, so a shape it didn't expect must never reach a
+ * query (a non-uuid in a uuid column throws) or anything that could take the process down.
+ */
+const Frame = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('auth'), token: z.string().min(1).max(512) }),
+  z.object({ type: z.literal('ping') }),
+  z.object({ type: z.literal('active') }),
+  z.object({ type: z.literal('typing'), conversationId: z.string().uuid() }),
+]);
+
 interface Client {
   socket: WebSocket;
   userId: string;
+  /** The session this socket was opened with: closed when that session ends. */
+  sessionId: string;
   alive: boolean;
 }
 
@@ -53,6 +69,17 @@ export class Hub {
 
   online(userId: string): boolean {
     return (this.byUser.get(userId)?.size ?? 0) > 0;
+  }
+
+  /** Close every socket a now-ended session holds (sign-out, revocation, suspension). */
+  closeSessions(userId: string, sessionIds: string[]): number {
+    let closed = 0;
+    for (const c of this.byUser.get(userId) ?? []) {
+      if (!sessionIds.includes(c.sessionId)) continue;
+      c.socket.close(4401, 'session ended');
+      closed += 1;
+    }
+    return closed;
   }
 
   all(): Client[] {
@@ -140,6 +167,12 @@ async function broadcastPresence(
 export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Promise<Hub> {
   const hub = new Hub();
   ctx.bus.subscribe((msg) => {
+    if (msg.event.type === SESSION_ENDED) {
+      // For the hub alone, on every instance: the sockets of a session that ended go now.
+      const { sessionIds } = msg.event.data as SessionEndedData;
+      for (const userId of msg.userIds) hub.closeSessions(userId, sessionIds);
+      return;
+    }
     hub.deliver(msg.userIds, JSON.stringify({ type: 'event', event: msg.event }));
   });
 
@@ -160,6 +193,10 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
   };
 
   const heartbeat = setInterval(() => {
+    // The membership cache forgets what it hasn't seen for a minute, so it never grows past
+    // what's typing now.
+    const stale = Date.now() - 60_000;
+    for (const [key, at] of membershipCache) if (at < stale) membershipCache.delete(key);
     for (const c of hub.all()) {
       if (!c.alive) {
         c.socket.terminate();
@@ -190,8 +227,8 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
       return;
     }
 
-    const attach = async (userId: string) => {
-      client = { socket, userId, alive: true };
+    const attach = async (userId: string, sessionId: string) => {
+      client = { socket, userId, sessionId, alive: true };
       socket.on('pong', () => {
         if (client) client.alive = true;
       });
@@ -210,24 +247,34 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
       if (!client) socket.close(4401, 'authentication required');
     }, AUTH_TIMEOUT_MS);
 
+    // A handler that rejects would end the process (Node's default for an unhandled rejection
+    // from an async listener), so every failure stops at this socket.
+    const failed = (what: string) => (err: unknown) => {
+      req.log.warn({ err }, `realtime: ${what} failed`);
+      socket.close(1011, 'server error');
+    };
+
     if (req.auth) {
       clearTimeout(timer);
-      void attach(req.auth.userId);
+      attach(req.auth.userId, req.auth.sessionId).catch(failed('attach'));
     }
 
-    socket.on('message', async (raw) => {
-      let msg: { type?: string; token?: string; conversationId?: string };
+    const handle = async (raw: unknown) => {
+      let parsed: unknown;
       try {
-        msg = JSON.parse(String(raw));
+        parsed = JSON.parse(String(raw));
       } catch {
         return;
       }
+      const read = Frame.safeParse(parsed);
+      if (!read.success) return;
+      const msg = read.data;
       if (!client) {
-        if (msg.type === 'auth' && typeof msg.token === 'string') {
+        if (msg.type === 'auth') {
           const session = await resolveSession(ctx, msg.token);
           if (!session) return socket.close(4401, 'invalid session');
           clearTimeout(timer);
-          await attach(session.userId);
+          await attach(session.userId, session.sessionId);
         }
         return;
       }
@@ -244,7 +291,7 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
           .execute();
         return;
       }
-      if (msg.type === 'typing' && typeof msg.conversationId === 'string') {
+      if (msg.type === 'typing') {
         try {
           ctx.limiter.hit(`typing:${userId}:${msg.conversationId}`, 30, 60_000);
         } catch {
@@ -269,6 +316,9 @@ export async function realtimeRoutes(app: FastifyInstance, ctx: AppContext): Pro
           { type: 'typing', data: { conversationId: msg.conversationId, userId } },
         );
       }
+    };
+    socket.on('message', (raw) => {
+      handle(raw).catch(failed('message'));
     });
 
     socket.on('close', () => {

@@ -2,12 +2,14 @@ import type { ReportView } from '@caime/core';
 import { tr } from '@caime/core';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
+import { emitWebhook } from './apps';
 import { audit } from './audit';
 import { dropSaved, tellSaved } from './automations';
 import { recordEvent } from './events';
 import { participantsOf } from './messages';
 import { forgetNotificationsOf, notify, tellForgotten } from './notify';
 import { revokeGrantsOf } from './oauth';
+import { endSessions } from './sessions';
 import { retellUpdate, tellUpdatesChanged } from './updates';
 
 /**
@@ -61,6 +63,17 @@ export async function removeForEveryone(
     // Nobody keeps its words in a notification either.
     return { savers, forgotten: await forgetNotificationsOf(trx, [m.id]) };
   });
+  // Nor does an organization's app, if the message was in one of its customer conversations.
+  const business = await ctx.db
+    .selectFrom('business_threads')
+    .select('org_id')
+    .where('conversation_id', '=', m.conversation_id)
+    .executeTakeFirst();
+  if (business)
+    await emitWebhook(ctx, business.org_id, 'message.deleted', {
+      conversationId: m.conversation_id,
+      messageId: m.id,
+    });
   const people = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
   await ctx.bus.publish(people, {
     type: 'message.deleted',
@@ -142,6 +155,7 @@ export async function reportViews(
       'm.deleted_at as message_deleted_at',
       'm.sender_id as message_sender_id',
       'm.created_at as message_created_at',
+      'm.payload as message_payload',
       'u.id as update_id',
       'u.body as update_body',
       'u.deleted_at as update_deleted_at',
@@ -185,6 +199,7 @@ export async function reportViews(
             removed: r.message_deleted_at !== null,
             senderId: r.message_sender_id,
             createdAt: r.message_created_at.toISOString(),
+            imported: Boolean((r.message_payload as { imported?: unknown } | null)?.imported),
           }
         : null,
     update: r.update_id
@@ -207,12 +222,7 @@ export async function endAllAccess(
   userId: string,
   who: { ip: string | null; userAgent: string | null } | null,
 ): Promise<void> {
-  await ctx.db
-    .updateTable('sessions')
-    .set({ revoked_at: ctx.now() })
-    .where('user_id', '=', userId)
-    .where('revoked_at', 'is', null)
-    .execute();
+  await endSessions(ctx, { userId });
   await ctx.db
     .updateTable('personal_tokens')
     .set({ revoked_at: ctx.now() })

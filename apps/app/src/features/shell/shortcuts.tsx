@@ -28,6 +28,7 @@ export const SHORTCUTS: Array<{ keys: string[]; does: string }> = [
   { keys: ['Enter'], does: msg('Send') },
   { keys: ['Shift', 'Enter'], does: msg('New line') },
   { keys: ['Esc'], does: msg('Cancel a reply or an edit') },
+  { keys: ['Shift', 'F10'], does: msg('Actions for the focused message (or Enter)') },
   { keys: ['?'], does: msg('Show these shortcuts') },
 ];
 

@@ -45,15 +45,41 @@ export type KitMovedWebhook = Delivery<
   KitWebhookData & { from: string | null; to: string; by: 'person' | 'customer' }
 >;
 export type PingWebhook = Delivery<'ping', { appId: string }>;
+/**
+ * A message in a customer conversation was removed for everyone (its sender's delete, or the
+ * operator's): drop any copy of its words the app kept.
+ */
+export type MessageDeletedWebhook = Delivery<
+  'message.deleted',
+  { conversationId: string; messageId: string }
+>;
+/**
+ * A customer conversation was erased at the customer's request (R54): every message in it is
+ * gone, and so must be whatever the app kept of them. `erased` counts them.
+ */
+export type ConversationErasedWebhook = Delivery<
+  'conversation.erased',
+  { conversationId: string; erased: number }
+>;
 
 export type CaimeWebhook =
   | BusinessMessageWebhook
   | BusinessThreadWebhook
   | KitPostedWebhook
   | KitMovedWebhook
+  | MessageDeletedWebhook
+  | ConversationErasedWebhook
   | PingWebhook;
 
-const EVENTS = new Set(['business.message', 'business.thread', 'kit.posted', 'kit.moved', 'ping']);
+const EVENTS = new Set([
+  'business.message',
+  'business.thread',
+  'kit.posted',
+  'kit.moved',
+  'message.deleted',
+  'conversation.erased',
+  'ping',
+]);
 
 /** Why a delivery was refused: not Caime's, too old, or not a body Caime sends. */
 export class WebhookError extends Error {

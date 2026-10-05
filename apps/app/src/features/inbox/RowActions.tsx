@@ -118,7 +118,9 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
         icon={ArchiveIcon}
         title={item.archived ? tr('Move back to Chats') : tr('Archive')}
         subtitle={item.archived ? undefined : tr('Comes back when there’s something new')}
-        onPress={() => run({ archived: !item.archived }, item.archived ? 'Moved back' : 'Archived')}
+        onPress={() =>
+          run({ archived: !item.archived }, item.archived ? tr('Moved back') : tr('Archived'))
+        }
       />
     </Sheet>
   );

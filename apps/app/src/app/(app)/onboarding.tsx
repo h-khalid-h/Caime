@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { msg, tr } from '@caime/core/i18n';
 import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -24,18 +24,24 @@ import { Screen } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = [
+  msg('Sunday'),
+  msg('Monday'),
+  msg('Tuesday'),
+  msg('Wednesday'),
+  msg('Thursday'),
+  msg('Friday'),
+  msg('Saturday'),
+];
+const day = (d: number | undefined) => tr(DAYS[d ?? 0] ?? DAYS[0]!);
 
 function workweekText(days: number[]): string {
-  if (!days.length) return 'every day';
+  if (!days.length) return tr('every day');
   const sorted = [...days].sort((a, b) => a - b);
   const contiguous = sorted.every((d, i) => i === 0 || d === (sorted[i - 1] ?? 0) + 1);
   if (contiguous && sorted.length > 2)
-    return tr('{DAYS} to {DAYS2}', {
-      DAYS: DAYS[sorted[0] ?? 0],
-      DAYS2: DAYS[sorted[sorted.length - 1] ?? 0],
-    });
-  return sorted.map((d) => DAYS[d]).join(', ');
+    return tr('{DAYS} to {DAYS2}', { DAYS: day(sorted[0]), DAYS2: day(sorted[sorted.length - 1]) });
+  return sorted.map((d) => day(d)).join(tr(', '));
 }
 
 export default function Onboarding() {

@@ -110,7 +110,8 @@ export class Bus {
 
   private async send(msg: BusMessage): Promise<void> {
     let payload = JSON.stringify(msg);
-    if (payload.length > MAX_INLINE) {
+    // NOTIFY's limit is in bytes: an Arabic payload is longer than its character count.
+    if (Buffer.byteLength(payload, 'utf8') > MAX_INLINE) {
       const row = await this.pool.query<{ id: string }>(
         `insert into domain_events (type, payload) values ('realtime.large', $1) returning id`,
         [msg],

@@ -238,7 +238,8 @@ kept for ${span(KEPT_DAYS.activity)}, and copies of what you send an organizatio
 apps, for ${span(KEPT_DAYS.appDeliveries)}. Counts that name nobody are kept a little longer than
 a year.</li>
 <li>An invite link that ran out or was taken back is kept for ${span(KEPT_DAYS.spentInvites)}, then
-forgotten; the people who joined through it stay your connections.</li>
+forgotten; the people who joined through it stay your connections. A notification is kept for
+${span(KEPT_DAYS.notifications)}, then goes.</li>
 <li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
 ${span(KEPT_DAYS.heldHandles)}, you included, so a link to it can&rsquo;t come to open someone
 else. Only the handle and the days are kept, never whose it was, and then it&rsquo;s

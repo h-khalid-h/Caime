@@ -16,8 +16,8 @@ export type ThreadState = (typeof THREAD_STATES)[number];
 
 export const THREAD_STATE_LABELS: Record<ThreadState, string> = {
   new: 'New',
-  customer_waiting: msg('Customer waiting'),
-  waiting: msg('Waiting on customer'),
+  customer_waiting: msg('Needs a reply'),
+  waiting: msg('Waiting for the customer'),
   escalated: 'Escalated',
   resolved: 'Resolved',
 };
@@ -39,8 +39,8 @@ export type BusinessView = (typeof BUSINESS_VIEWS)[number];
 export const BUSINESS_VIEW_LABELS: Record<BusinessView, string> = {
   new: 'New',
   mine: msg('Assigned to me'),
-  customer_waiting: msg('Customer waiting'),
-  waiting: msg('Waiting on customer'),
+  customer_waiting: msg('Needs a reply'),
+  waiting: msg('Waiting for the customer'),
   escalated: 'Escalated',
   resolved: 'Resolved',
 };

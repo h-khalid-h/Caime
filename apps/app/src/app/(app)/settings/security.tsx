@@ -87,7 +87,7 @@ export default function Security() {
   const changePassword = async () => {
     const err = passwordError(next);
     if (!current || err) {
-      setPwError(err ?? 'Enter your current password.');
+      setPwError(err ?? tr('Enter your current password.'));
       return;
     }
     setBusy(true);

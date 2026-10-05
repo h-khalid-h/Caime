@@ -38,7 +38,7 @@ export default function SignIn() {
     } catch (err) {
       setError(
         err instanceof ApiError && err.code === 'rate_limited'
-          ? 'Too many tries. Wait a few minutes and try again.'
+          ? tr('Too many tries. Wait a few minutes and try again.')
           : (err as Error).message,
       );
     } finally {

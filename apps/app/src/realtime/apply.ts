@@ -118,7 +118,18 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       if (m.senderId) useLive.getState().clearTyping(m.conversationId, m.senderId);
       const known = applyMessageToInbox(qc, m, { mine, reading });
       if (!known) invalidate(qk.inbox, 'inbox');
-      else soon('inbox', () => void qc.invalidateQueries({ queryKey: qk.inbox }), 1200);
+      else {
+        // The patch carries the row (preview, unread, order). What it can't know is a move
+        // between sections, which only a message to me can make (a mention, a question or a
+        // request): that is read again soon, and the rest in one trailing read a quarter-minute
+        // on, since the inbox is the heaviest read there is (docs/RESOURCES.md).
+        const moves = !mine && (m.mentions.includes(me) || m.isQuestion || m.isRequest);
+        soon(
+          'inbox',
+          () => void qc.invalidateQueries({ queryKey: qk.inbox }),
+          moves ? 1200 : 15_000,
+        );
+      }
       if (!mine) ackDelivered(m.conversationId, m.seq);
       // Dates, amounts, open items and what's shared are read from messages: refresh them.
       soon(

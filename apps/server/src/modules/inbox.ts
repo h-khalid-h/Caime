@@ -129,12 +129,15 @@ export async function buildInbox(
   }
 
   const [lastMessages, pending, tasks, waitingByPerson] = await Promise.all([
+    // Each conversation knows its last seq (`last_seq`), so this is one index lookup per
+    // conversation on (conversation_id, seq), never a pass over every message in them.
     ctx.db
       .selectFrom('messages as m')
-      .selectAll('m')
-      .where(
-        sql<boolean>`(m.conversation_id, m.seq) in (select conversation_id, max(seq) from messages where conversation_id in (${sql.join(ids)}) group by conversation_id)`,
+      .innerJoin('conversations as lc', (j) =>
+        j.onRef('lc.id', '=', 'm.conversation_id').onRef('lc.last_seq', '=', 'm.seq'),
       )
+      .selectAll('m')
+      .where('m.conversation_id', 'in', ids)
       .execute(),
     // The latest message from someone else after my last one, that asks me something.
     ctx.db
@@ -143,6 +146,8 @@ export async function buildInbox(
         j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', userId),
       )
       .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+      // Whose message it answers comes with it, so nothing lists everything I ever sent.
+      .leftJoin('messages as r', 'r.id', 'm.reply_to_id')
       .select([
         'm.conversation_id',
         'm.seq',
@@ -151,6 +156,7 @@ export async function buildInbox(
         'm.created_at',
         'm.mentions',
         'm.reply_to_id',
+        'r.sender_id as reply_to_sender',
         'c.kind',
         'p.dismissed_seq',
       ])
@@ -195,18 +201,11 @@ export async function buildInbox(
   const directOthers = rows
     .filter((r) => r.kind === 'direct' && r.other_id)
     .map((r) => r.other_id!);
-  const [people, rels, policies, mySentReplies] = await Promise.all([
+  const [people, rels, policies] = await Promise.all([
     personViewsFor(ctx, userId, directOthers),
     activeRelationships(ctx.db, userId, directOthers),
     loadPolicies(ctx.db, userId),
-    ctx.db
-      .selectFrom('messages')
-      .select('id')
-      .where('conversation_id', 'in', ids)
-      .where('sender_id', '=', userId)
-      .execute(),
   ]);
-  const myMessageIds = new Set(mySentReplies.map((m) => m.id));
   // A customer's conversations with organizations: the organization is who they talk to (R15).
   const businessIds = rows.filter((r) => r.kind === 'business').map((r) => r.id);
   const orgs = new Map<string, OrgRef>();
@@ -246,7 +245,7 @@ export async function buildInbox(
         (m.kind === 'direct' ||
           m.kind === 'business' ||
           m.mentions.includes(userId) ||
-          (m.reply_to_id !== null && myMessageIds.has(m.reply_to_id))),
+          (m.reply_to_id !== null && m.reply_to_sender === userId)),
     );
     const myLast = r.my_last_seq ? Number(r.my_last_seq) : 0;
     const lastIsMine = last !== undefined && last.sender_id === userId && last.kind !== 'system';

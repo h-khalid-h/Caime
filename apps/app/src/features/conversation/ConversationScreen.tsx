@@ -294,7 +294,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           ? tr('Customer of {name}', { name: org.name })
           : other
             ? (presence ?? other.person.presence) === 'online'
-              ? ['Online', other.relationship?.label].filter(Boolean).join(' · ')
+              ? [tr('Online'), other.relationship?.label].filter(Boolean).join(' · ')
               : (other.relationship?.label ?? `@${other.person.handle}`)
             : conversation
               ? [

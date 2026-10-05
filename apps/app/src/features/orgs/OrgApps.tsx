@@ -51,15 +51,21 @@ const SECRETS_SUBTITLE = msg(
  * What's shown once: the token and the webhook secret, with how to use them. It takes the place
  * of the sheet's content that asked for it, never a second sheet over the first.
  */
-function Secrets({ shown }: { shown: OrgAppSecretsView }) {
+function Secrets({ shown, orgId }: { shown: OrgAppSecretsView; orgId: string }) {
   return (
     <View style={{ gap: 12 }}>
       {shown.token ? (
         <>
           <CopyRow label={tr('Token')} value={shown.token} testID="org-app-token" />
           <Text variant="caption" color="textSecondary">
-            Send it as “Authorization: Bearer” with each request. It acts as{' '}
-            {shown.app.bot?.displayName ?? shown.app.name}, and only as far as its permissions.
+            {tr(
+              'Send it as “Authorization: Bearer” with each request. It acts as {name}, and only as far as its permissions.',
+              { name: shown.app.bot?.displayName ?? shown.app.name },
+            )}
+          </Text>
+          <CopyRow label={tr('Organization id')} value={orgId} testID="org-app-org-id" />
+          <Text variant="caption" color="textSecondary">
+            {tr('What the inbox and updates routes take; GET /v1/apps/me answers it too.')}
           </Text>
         </>
       ) : null}
@@ -263,7 +269,7 @@ export function OrgApps({ org }: { org: OrgView }) {
         }
       >
         {secrets ? (
-          <Secrets shown={secrets} />
+          <Secrets shown={secrets} orgId={org.id} />
         ) : (
           <View style={{ gap: 12 }}>
             <TextField
@@ -304,7 +310,7 @@ export function OrgApps({ org }: { org: OrgView }) {
                 {WEBHOOK_EVENTS.map((e) => (
                   <ListRow
                     key={e}
-                    title={WEBHOOK_EVENT_LABELS[e]}
+                    title={tr(WEBHOOK_EVENT_LABELS[e])}
                     checked={events.includes(e)}
                     onPress={() => setEvents((x) => toggled(x, e))}
                     testID={`org-app-event-${e}`}
@@ -358,7 +364,7 @@ export function OrgApps({ org }: { org: OrgView }) {
         }
       >
         {secrets ? (
-          <Secrets shown={secrets} />
+          <Secrets shown={secrets} orgId={org.id} />
         ) : app ? (
           <View style={{ gap: 10 }}>
             <Text variant="caption" color="textSecondary">

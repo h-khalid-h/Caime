@@ -290,7 +290,9 @@ export function OrgUpdates({ org }: { org: OrgView }) {
         onPress={() =>
           void follow(
             () => endpoints.follow(org.id, !following.notify),
-            following.notify ? 'Its updates won’t notify you' : 'You’ll be notified of its updates',
+            following.notify
+              ? tr('Its updates won’t notify you')
+              : tr('You’ll be notified of its updates'),
           )
         }
         testID="org-notify"

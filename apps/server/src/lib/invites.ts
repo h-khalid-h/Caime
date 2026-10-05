@@ -7,16 +7,17 @@
  */
 import { randomBytes } from 'node:crypto';
 import type { InviteAcceptView, InviteOpenView, InviteView, RelationshipInputT } from '@caime/core';
-import { canSee, relationshipLabel, SPHERE_DEFS, type Sphere, uuidv7 } from '@caime/core';
+import { canSee, relationshipLabel, SPHERE_DEFS, type Sphere, tr, uuidv7 } from '@caime/core';
 import type { Selectable } from 'kysely';
 import type { AppContext } from '../context';
 import type { InvitesTable, User } from '../db/schema';
 import { acceptRequest } from '../modules/connections';
 import { badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
+import { notify } from './notify';
 import { NOBODY } from './public-pages';
-import { activeConnectionId, between, pairKey } from './relations';
-import { avatarUrl, privacyOf } from './users';
+import { activeConnectionId, between, pairKey, shareAConnection } from './relations';
+import { avatarUrl, minorOf, privacyOf } from './users';
 
 export const INVITE_DAYS = 30;
 /** How long after signing up a person is still counted as brought by whoever they connect with first. */
@@ -201,6 +202,55 @@ export async function acceptInvite(
     const conversationId = await directConversationId(ctx, userId, inviter.id);
     if (conversationId)
       return { status: 'connected', connectionId: b.connectionId, conversationId, already: true };
+  }
+  // Under 18 (R29): an adult the inviter doesn't already know through someone is not connected
+  // by a link they may have got anywhere. The link stands as that adult's request instead, which
+  // the inviter decides on, as `POST /connections/requests` would have asked them to.
+  const now = ctx.now();
+  if (minorOf(inviter, now) && !b.incomingRequestId) {
+    const me = await ctx.db
+      .selectFrom('users')
+      .selectAll()
+      .where('id', '=', userId)
+      .executeTakeFirstOrThrow();
+    if (!minorOf(me, now) && !(await shareAConnection(ctx.db, userId, inviter.id))) {
+      if (b.outgoingRequestId) return { status: 'requested', requestId: b.outgoingRequestId };
+      const requestId = uuidv7();
+      await ctx.db.transaction().execute(async (trx) => {
+        await trx
+          .insertInto('connection_requests')
+          .values({
+            id: requestId,
+            from_user: userId,
+            to_user: inviter.id,
+            note: null,
+            context_sphere: null,
+            context_org_name: null,
+            from_identity_id: null,
+            pending_relationship: null,
+            created_at: now,
+          })
+          .execute();
+        await recordEvent(trx, 'connection.requested', userId, {
+          requestId,
+          to: inviter.id,
+          viaInvite: invite.id,
+        });
+      });
+      await notify(ctx, {
+        userId: inviter.id,
+        kind: 'connection_request',
+        level: 'attention',
+        title: () => tr('{name} opened your invite link', { name: me.display_name }),
+        body: () => tr('You decide who connects with you: accept to connect.'),
+        data: { requestId, userId },
+      });
+      await ctx.bus.publish([inviter.id, userId], {
+        type: 'connection.request',
+        data: { requestId, from: userId, to: inviter.id },
+      });
+      return { status: 'requested', requestId };
+    }
   }
   // Their request to me, if one waits, is what this answers; else the invite is the inviter's.
   const requestId = b.incomingRequestId ?? (await standingRequest(ctx, invite, inviter.id, userId));

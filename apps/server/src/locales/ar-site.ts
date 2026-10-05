@@ -65,7 +65,6 @@ export const arSite: Catalog = {
   '{price} a month': '{price} شهريًا',
   '{price} a year': '{price} سنويًا',
   ', or ': '، أو ',
-  'A customer writes': 'عميل يكتب',
   'It lands in the inbox, first if they’ve waited longest.':
     'تصل إلى صندوق الوارد، وفي المقدمة إن كان الأطول انتظارًا.',
   'Lina writes to Nile Dental from the app she uses for everyone else. The team sees one conversation, its state and who has it; Lina sees the organization, never which person.':
@@ -163,7 +162,6 @@ export const arSite: Catalog = {
   'the inbox': 'صندوق الوارد',
   'Every customer conversation in one place, sorted by who has waited longest, in six views: {views}.':
     'كل محادثات العملاء في مكان واحد، مرتّبة حسب الأطول انتظارًا، في ست طرق عرض: {views}.',
-  ', ': '، ',
   'the team': 'الفريق',
   'Owners, admins and members. A customer sees the organization, never which person answered. A seat that ends takes nothing with it.':
     'مالكون ومشرفون وأعضاء. يرى العميل المؤسسة، لا الشخص الذي أجاب أبدًا. والمقعد الذي ينتهي لا يأخذ معه شيئًا.',

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BUSINESS_VIEW_LABELS, BUSINESS_VIEWS } from '@caime/core/business';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -326,8 +327,15 @@ describe('the readable web (R44)', () => {
     expect(sitemap.headers['content-type']).toMatch(/^application\/xml/);
     expect(sitemap.body).toContain('<loc>https://caime.example/</loc>');
     expect(sitemap.body).toContain('<loc>https://caime.example/help</loc>');
-    expect(sitemap.body).toContain('<loc>https://caime.example/o/nile.dental</loc>');
+    // An organization is listed once it has proved who it is; its page renders before that,
+    // but no crawler is sent to a name nobody has proven.
+    expect(sitemap.body).not.toContain('/o/nile.dental');
+    await sql`update organizations set verified_at = now() where handle = 'nile.dental'`.execute(
+      t.ctx.db,
+    );
+    const verified = await t.app.inject({ url: '/sitemap.xml' });
+    expect(verified.body).toContain('<loc>https://caime.example/o/nile.dental</loc>');
     // People are never listed: a page is found by its handle, not in a directory.
-    expect(sitemap.body).not.toContain('/@noor');
+    expect(verified.body).not.toContain('/@noor');
   });
 });

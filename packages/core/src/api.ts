@@ -209,13 +209,19 @@ export interface InviteOpenView {
   conversationId: string | null;
 }
 
-export interface InviteAcceptView {
-  status: 'connected';
-  connectionId: string;
-  conversationId: string;
-  /** True when they were connected before this: nothing changed. */
-  already: boolean;
-}
+export type InviteAcceptView =
+  | {
+      status: 'connected';
+      connectionId: string;
+      conversationId: string;
+      /** True when they were connected before this: nothing changed. */
+      already: boolean;
+    }
+  /**
+   * An adult opened an under-18's link and the two share no connection (R29): the link stands
+   * as a request the inviter decides on, never a connection formed behind them.
+   */
+  | { status: 'requested'; requestId: string };
 
 export interface PeopleSearchResult {
   person: PersonView;
@@ -828,6 +834,24 @@ export interface OrgAppView {
   kits: Array<{ key: string; name: string }>;
 }
 
+/**
+ * Who an app's token is (GET /v1/apps/me): the app, the organization it belongs to (the id the
+ * other routes take) and what it may do, so an integration's first call needs nothing it
+ * wasn't given with the token.
+ */
+export interface AppMeView {
+  app: {
+    id: string;
+    name: string;
+    orgId: string;
+    orgHandle: string;
+    orgName: string;
+    botUserId: string | null;
+    scopes: ApiScope[];
+    events: WebhookEvent[];
+  };
+}
+
 /** One of an app's own kinds of card, as its token reads it back (GET /v1/kits). */
 export interface AppKitView extends CustomKitDef {
   createdAt: string;
@@ -1176,6 +1200,11 @@ export interface ReportView {
     removed: boolean;
     senderId: string | null;
     createdAt: string;
+    /**
+     * Brought over from another app (R45): the words are what the importer's file said, not
+     * something the sender wrote here, so they weigh nothing against the sender.
+     */
+    imported: boolean;
   } | null;
   update: { id: string; body: string | null; removed: boolean } | null;
 }

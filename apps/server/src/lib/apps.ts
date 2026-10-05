@@ -32,11 +32,17 @@ export function newApiToken(): { token: string; prefix: string; hash: Buffer } {
 
 export const newWebhookSecret = () => `whsec_${randomBytes(24).toString('base64url')}`;
 
-/** Everything an app's token can call, and the scope each needs. The rest is refused. */
-export const API_ROUTES: Readonly<Record<string, ApiScope>> = {
+/**
+ * Everything an app's token can call, and the scope each needs (`any`: every token, whatever
+ * its permissions; who it is gives nothing away). The rest is refused.
+ */
+export const API_ROUTES: Readonly<Record<string, ApiScope | 'any'>> = {
+  'GET /v1/apps/me': 'any',
   'GET /v1/orgs/:id/inbox': 'inbox:read',
   'GET /v1/conversations/:id': 'messages:read',
   'GET /v1/conversations/:id/messages': 'messages:read',
+  'GET /v1/files/:id': 'messages:read',
+  'GET /v1/files/:id/thumb': 'messages:read',
   'POST /v1/conversations/:id/messages': 'messages:write',
   'POST /v1/business/:conversationId/assign': 'threads:write',
   'POST /v1/business/:conversationId/resolve': 'threads:write',

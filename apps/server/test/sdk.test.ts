@@ -83,6 +83,14 @@ afterAll(async () => {
 });
 
 describe('@caime/sdk against the server (R39)', () => {
+  it('says who the token is first, so an integration learns its organization’s id', async () => {
+    const me = await caime.me();
+    expect(me).toMatchObject({ name: 'Tiles Assistant', orgId, orgHandle: expect.any(String) });
+    expect(me.scopes).toContain('inbox:read');
+    expect(me.events).toEqual(['business.message', 'business.thread']);
+    expect(me.botUserId).toEqual(expect.any(String));
+  });
+
   it('reads the inbox, a conversation and its messages, and replies as the bot', async () => {
     const inbox = await caime.inbox(orgId, 'customer_waiting');
     expect(inbox.org.id).toBe(orgId);
@@ -195,5 +203,72 @@ describe('@caime/sdk against the server (R39)', () => {
     expect(() => parseWebhook('wrong', message!.headers, message!.body, { now })).toThrow(
       'doesn’t match',
     );
+  });
+
+  it('reads a file the customer sent, as the team would, and nothing outside the conversation', async () => {
+    const boundary = `----caime${Date.now()}`;
+    const payload = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="notes.txt"\r\nContent-Type: text/plain\r\n\r\n`,
+      ),
+      Buffer.from('My insurance number is 12345.'),
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+    const up = await t.app.inject({
+      method: 'POST',
+      url: '/v1/files',
+      payload,
+      headers: {
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+        authorization: `Bearer ${lina.token}`,
+      },
+    });
+    expect(up.statusCode).toBe(201);
+    const fileId = up.json().file.id as string;
+    // Not yet in any conversation the bot is in: nothing.
+    await expect(caime.file(fileId)).rejects.toMatchObject({ status: 404 });
+    await lina.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'lina-file-1',
+      kind: 'media',
+      body: 'My details',
+      fileIds: [fileId],
+    });
+    const res = await caime.file(fileId);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('My insurance number is 12345.');
+    await expect(caime.thumbnail(fileId)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('hears a message removed for everyone, and a conversation erased, so it drops its copies', async () => {
+    const { apps } = await noor.get(`/v1/orgs/${orgId}/apps`);
+    await noor.req('PATCH', `/v1/orgs/${orgId}/apps/${apps[0].id}`, {
+      events: ['business.message', 'message.deleted', 'conversation.erased'],
+    });
+    received.length = 0;
+    const sent = await lina.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'lina-0003',
+      body: 'Please forget my number.',
+    });
+    await lina.del(`/v1/messages/${sent.message.id}`);
+    await runDueJobs(t.ctx);
+    const deleted = received.find((r) => r.headers['caime-event'] === 'message.deleted');
+    expect(deleted).toBeDefined();
+    const now = t.clock.now.getTime();
+    const event = parseWebhook(secret, deleted!.headers, deleted!.body, { now });
+    expect(event.event).toBe('message.deleted');
+    if (event.event === 'message.deleted')
+      expect(event.data).toEqual({ conversationId: convo, messageId: sent.message.id });
+    // Erased at the customer's request (R54): one event for the whole conversation.
+    received.length = 0;
+    const erased = await noor.req('DELETE', `/v1/orgs/${orgId}/conversations/${convo}`);
+    expect(erased.statusCode).toBe(200);
+    await runDueJobs(t.ctx);
+    const gone = received.find((r) => r.headers['caime-event'] === 'conversation.erased');
+    expect(gone).toBeDefined();
+    const e2 = parseWebhook(secret, gone!.headers, gone!.body, { now });
+    if (e2.event === 'conversation.erased') {
+      expect(e2.data.conversationId).toBe(convo);
+      expect(e2.data.erased).toBeGreaterThan(0);
+    }
   });
 });
