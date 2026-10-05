@@ -7,7 +7,7 @@ import { surenessLine } from '@caime/core/sureness';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useSuggestions } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -15,6 +15,8 @@ import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Calendar, Sparkles } from '@/ui/icons';
+import { Pressable } from '@/ui/Pressable';
+import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -75,8 +77,8 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     ) : null;
   if (!s) return quietLine;
   const refresh = () => {
-    void qc.invalidateQueries({ queryKey: ['suggestions'] });
-    void qc.invalidateQueries({ queryKey: ['tasks'] });
+    void qc.invalidateQueries({ queryKey: qk.allSuggestions });
+    void qc.invalidateQueries({ queryKey: qk.allTasks });
     void qc.invalidateQueries({ queryKey: qk.memory(conversationId) });
     void qc.invalidateQueries({ queryKey: qk.inbox });
   };
@@ -163,10 +165,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
             borderWidth: 1,
             borderColor: t.c.border,
             gap: 8,
-            shadowColor: '#000',
-            shadowOpacity: 0.06,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 3 },
+            ...lifted(t.c.shadow, 3, 10),
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -247,10 +246,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
           borderWidth: 1,
           borderColor: t.c.border,
           gap: 8,
-          shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 3 },
+          ...lifted(t.c.shadow, 3, 10),
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

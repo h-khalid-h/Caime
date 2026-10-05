@@ -53,7 +53,7 @@ export function WriteFirstSheet({
       clientId.current = uuidv4();
       setHandle('');
       setBody('');
-      void qc.invalidateQueries({ queryKey: ['org-inbox', org.id] });
+      void qc.invalidateQueries({ queryKey: qk.orgInboxes(org.id) });
       void qc.invalidateQueries({ queryKey: qk.businessSummary });
       onClose();
       if (desktop)

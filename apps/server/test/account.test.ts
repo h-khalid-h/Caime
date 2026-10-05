@@ -1164,6 +1164,53 @@ describe('your data', () => {
   });
 });
 
+describe('identities (PRD §35)', () => {
+  it('are made, changed, made the default and removed, each one the person’s own', async () => {
+    const hassan = await signup(t, { displayName: 'Hassan Identities' });
+    const sarah = await signup(t, { displayName: 'Sarah Identities' });
+    const made = await hassan.post('/v1/me/identities', {
+      kind: 'professional',
+      displayName: 'H. Khalid',
+      headline: 'Founder',
+    });
+    expect(made.id).toMatch(/^[0-9a-f-]{36}$/);
+    const changed = await hassan.req('PATCH', `/v1/me/identities/${made.id}`, {
+      displayName: 'Hassan K.',
+      isDefault: true,
+    });
+    expect(changed.statusCode, changed.body).toBe(200);
+    const listed = (await hassan.get('/v1/me/identities')).identities;
+    expect(listed.find((i: { id: string }) => i.id === made.id)).toMatchObject({
+      displayName: 'Hassan K.',
+      headline: 'Founder',
+      isDefault: true,
+    });
+    expect(listed.filter((i: { isDefault: boolean }) => i.isDefault)).toHaveLength(1);
+    // Someone else's: not found, as if it weren't there.
+    expect(
+      (await sarah.req('PATCH', `/v1/me/identities/${made.id}`, { headline: 'x' })).statusCode,
+    ).toBe(404);
+    expect((await sarah.req('DELETE', `/v1/me/identities/${made.id}`)).statusCode).toBe(404);
+    // The default stays until another takes its place.
+    const kept = await hassan.req('DELETE', `/v1/me/identities/${made.id}`);
+    expect([kept.statusCode, kept.json().error.message]).toEqual([
+      400,
+      'Make another identity your default first.',
+    ]);
+    const other = await hassan.post('/v1/me/identities', {
+      kind: 'personal',
+      displayName: 'Hassan',
+      isDefault: true,
+    });
+    expect(other.id).toBeDefined();
+    expect((await hassan.req('DELETE', `/v1/me/identities/${made.id}`)).statusCode).toBe(200);
+    expect(
+      (await hassan.get('/v1/me/identities')).identities.map((i: { id: string }) => i.id),
+    ).not.toContain(made.id);
+    expect((await hassan.req('DELETE', `/v1/me/identities/${made.id}`)).statusCode).toBe(404);
+  });
+});
+
 describe('recovery codes at the first quiet moment (R56)', () => {
   it('the account remembers once they’re saved, and only ever forwards', async () => {
     const fresh = await signup(t, {

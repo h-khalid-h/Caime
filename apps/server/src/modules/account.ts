@@ -149,9 +149,12 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       await endFollowsOf(ctx, orgId);
     }
     await audit(ctx.db, { actorId: null, action: 'account.deleted', target: me });
+    // A file that stays behind is said so in the log, never silently kept.
+    const dropped = (key: string) => (err: unknown) =>
+      ctx.log.warn({ err, key }, 'account deletion: a file was not removed');
     for (const f of orphanFiles) {
-      await storage.remove(f.storage_key).catch(() => {});
-      if (f.thumb_key) await storage.remove(f.thumb_key).catch(() => {});
+      await storage.remove(f.storage_key).catch(dropped(f.storage_key));
+      if (f.thumb_key) await storage.remove(f.thumb_key).catch(dropped(f.thumb_key));
     }
     if (others.length)
       await ctx.bus.publish(

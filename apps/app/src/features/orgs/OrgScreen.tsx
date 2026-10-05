@@ -134,7 +134,7 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
     void qc.invalidateQueries({ queryKey: qk.org(handle) });
     void qc.invalidateQueries({ queryKey: qk.orgs });
     // Following it, and its updates, change with blocking it.
-    void qc.invalidateQueries({ queryKey: ['updates'] });
+    void qc.invalidateQueries({ queryKey: qk.allUpdates });
   };
   const run = async (work: () => Promise<unknown>, done?: string) => {
     setBusy(true);

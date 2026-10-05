@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 import { useTheme } from '@/theme/theme';
 import { Pressable } from './Pressable';
+import { lifted } from './shadow';
 import { Text } from './Text';
 
 interface ToastItem {
@@ -70,11 +71,7 @@ function ToastView({ item }: { item: ToastItem }) {
         gap: 12,
         maxWidth: 520,
         alignSelf: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.18,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 6,
+        ...lifted(t.c.shadow),
       }}
     >
       <Text variant="bodyStrong" color="#FFFFFF" style={{ flexShrink: 1 }}>

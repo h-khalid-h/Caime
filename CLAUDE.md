@@ -135,6 +135,10 @@ These are rules, not preferences.
 - Hold the socket in E2E with `page.routeWebSocket` to test what happens before it connects.
 - Write live changes into the query cache with `patchCache` (`state/cache.ts`), never a bare
   `setQueryData`: a bare write marks the data fresh, and a restored copy then never refetches.
+  Every query key is `qk`'s (`api/keys.ts`; a prefix for a kind is `qk.allTasks` and friends),
+  never an array written where it's used: `keys.test.ts` fails on one. Anything that floats
+  over the page casts the theme's shadow through `lifted(t.c.shadow, y, blur)` (`ui/shadow.ts`),
+  never a `shadowColor` of its own.
 - A sheet whose content depends on the state that closes it should keep the last content while
   it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
 - Web fonts: on the web the faces are WOFF2 in `apps/app/public/fonts` (Fontsource's Latin

@@ -105,7 +105,7 @@ export const usePolicies = () => useQuery({ queryKey: qk.policies, queryFn: endp
 /** How Caime thinks someone may be known (PRD §12), for one person or everyone. */
 export const useRelationshipOffers = (personId?: string) =>
   useQuery({
-    queryKey: ['suggestions', 'relationship', personId ?? 'all'],
+    queryKey: qk.suggestionsAbout(personId),
     queryFn: () =>
       endpoints.suggestions({
         kind: 'relationship',
@@ -227,7 +227,7 @@ export const useAssets = (
 /** Call history (PRD §47): `missed`, or `with:<id>` for the calls with one person. */
 export const useCallHistory = (filter: 'all' | 'missed' | `with:${string}`, limit = 30) =>
   useInfiniteQuery({
-    queryKey: [...qk.calls(filter), limit],
+    queryKey: qk.callsPage(filter, limit),
     queryFn: ({ pageParam }) =>
       endpoints.callHistory({
         before: pageParam,

@@ -43,10 +43,6 @@ const translators: Record<InterfaceLanguage, Translator> = {
 
 const scope = new AsyncLocalStorage<Translator>();
 
-export function translatorFor(language: InterfaceLanguage): Translator {
-  return translators[language];
-}
-
 /** The header's language, or English: a tag ("ar-EG") reads as its language, nonsense as English. */
 export function languageOfRequest(req: FastifyRequest): InterfaceLanguage {
   const header = req.headers['x-caime-language'];

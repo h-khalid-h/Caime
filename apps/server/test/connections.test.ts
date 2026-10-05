@@ -212,6 +212,53 @@ describe('relationships evolve without losing history (PRD §13)', () => {
     });
     expect(custom.relationship.label).toBe('Climbing partner');
   });
+
+  it('keeps a custom role for next time, once however often it is added', async () => {
+    for (let i = 0; i < 2; i++) {
+      const r = await hassan.req('POST', '/v1/relationships/custom-roles', {
+        sphere: 'other',
+        label: 'Climbing partner',
+      });
+      expect(r.statusCode).toBe(201);
+    }
+    const rows = await t.ctx.db
+      .selectFrom('custom_roles')
+      .select('label')
+      .where('user_id', '=', hassan.user.id)
+      .execute();
+    expect(rows.filter((r) => r.label === 'Climbing partner')).toHaveLength(1);
+  });
+
+  it('merges two relationships with the same person into one, and only with the same person', async () => {
+    const p = await hassan.get(`/v1/people/${sarah.user.id}`);
+    const keep = p.relationships.find((r: { isPrimary: boolean }) => r.isPrimary);
+    const climbing = p.relationships.find((r: { label: string }) => r.label === 'Climbing partner');
+    expect(keep && climbing).toBeTruthy();
+    const merged = await hassan.post('/v1/relationships/merge', {
+      keepId: keep.id,
+      mergeIds: [climbing.id],
+    });
+    expect(merged.relationship.id).toBe(keep.id);
+    const row = await t.ctx.db
+      .selectFrom('relationships')
+      .select(['status', 'superseded_by'])
+      .where('id', '=', climbing.id)
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ status: 'merged', superseded_by: keep.id });
+    // Someone else's relationship isn't the same person's: refused, nothing merged.
+    const lina = await signup(t, { displayName: 'Lina Merge' });
+    const req = await hassan.post('/v1/connections/requests', {
+      toUserId: lina.user.id,
+      relationship: { sphere: 'friend', role: 'friend' },
+    });
+    await lina.post(`/v1/connections/requests/${req.requestId}/accept`, {});
+    const withLina = (await hassan.get(`/v1/people/${lina.user.id}`)).relationships[0];
+    const bad = await hassan.req('POST', '/v1/relationships/merge', {
+      keepId: keep.id,
+      mergeIds: [withLina.id],
+    });
+    expect(bad.statusCode).toBe(400);
+  });
 });
 
 describe('privacy by relationship (PRD §34)', () => {

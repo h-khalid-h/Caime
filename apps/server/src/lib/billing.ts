@@ -729,7 +729,9 @@ export async function reconcileBilling(ctx: AppContext): Promise<void> {
     for (const { id, user_id, org_id, archived_at } of customers) {
       // Whoever it was for is gone, and it wasn't ended yet (Stripe was away): now, or next time.
       if ((!user_id && !org_id) || archived_at) {
-        await closeCustomer(ctx, id).catch(() => {});
+        await closeCustomer(ctx, id).catch((err) =>
+          ctx.log.warn({ err, customer: id }, 'billing reconcile: a customer was not closed'),
+        );
         continue;
       }
       const theirs = await s
@@ -741,7 +743,13 @@ export async function reconcileBilling(ctx: AppContext): Promise<void> {
         .catch((e) => (missingAtStripe(e) ? { data: [] } : null));
       // Stripe away for a moment: the next round.
       if (!theirs) continue;
-      for (const sub of theirs.data) await syncSubscription(ctx, sub.id, sub).catch(() => {});
+      for (const sub of theirs.data)
+        await syncSubscription(ctx, sub.id, sub).catch((err) =>
+          ctx.log.warn(
+            { err, subscription: sub.id },
+            'billing reconcile: a subscription was not synced',
+          ),
+        );
       // Any kept that Stripe didn't list (deleted there): asked for on its own, and ended.
       const listed = new Set(theirs.data.map((x) => x.id));
       const kept = await ctx.db
@@ -751,7 +759,13 @@ export async function reconcileBilling(ctx: AppContext): Promise<void> {
         .where('status', 'not in', [...ENDED])
         .execute();
       for (const k of kept)
-        if (!listed.has(k.id)) await syncSubscription(ctx, k.id).catch(() => {});
+        if (!listed.has(k.id))
+          await syncSubscription(ctx, k.id).catch((err) =>
+            ctx.log.warn(
+              { err, subscription: k.id },
+              'billing reconcile: a subscription was not synced',
+            ),
+          );
     }
     if (customers.length < PAGE) break;
     after = customers.at(-1)?.id ?? after;

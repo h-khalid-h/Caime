@@ -58,7 +58,7 @@ export default function Connect() {
   });
   // Businesses, clinics and schools are found here too, and messaged from their page (R15).
   const orgResults = useQuery({
-    queryKey: ['org-search', debounced],
+    queryKey: qk.orgSearch(debounced),
     queryFn: () => endpoints.searchOrgs(debounced),
     enabled: debounced.length >= 2,
   });

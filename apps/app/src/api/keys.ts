@@ -47,6 +47,7 @@ export const qk = {
   person: (id: string) => ['person', id] as const,
   /** Call history: every call, the missed ones, or those with one person. */
   calls: (filter: string) => ['calls', filter] as const,
+  callsPage: (filter: string, limit: number) => ['calls', filter, limit] as const,
   relationshipHistory: (id: string) => ['relationship-history', id] as const,
   connections: ['connections'] as const,
   /** Updates: the organizations someone follows, and each one's updates (PRD §59). */
@@ -70,4 +71,30 @@ export const qk = {
   sessions: ['sessions'] as const,
   search: (term: string, understand = false) => ['search', term, understand] as const,
   peopleSearch: (term: string) => ['people-search', term] as const,
+  orgSearch: (term: string) => ['org-search', term] as const,
+  /** Someone's page by their handle (`/@handle`), before it's known whose it is. */
+  handle: (handle: string) => ['handle', handle] as const,
+  /** An app asking to act for someone (PRD §74), by its request's parameters. */
+  oauthConsent: (params: unknown) => ['oauth-consent', params] as const,
+  appDeliveries: (appId: string) => ['app-deliveries', appId] as const,
+  /** What's suggested about one person, or about everyone. */
+  suggestionsAbout: (personId?: string) =>
+    ['suggestions', 'relationship', personId ?? 'all'] as const,
+  /** The rule that applies to one person (PRD §33). */
+  policyFor: (personId: string) => ['policy-for', personId] as const,
+  orgInboxes: (orgId: string) => ['org-inbox', orgId] as const,
+  // Prefixes: everything of a kind at once, for a live event that changes any of them.
+  allTasks: ['tasks'] as const,
+  allMemory: ['memory'] as const,
+  allSuggestions: ['suggestions'] as const,
+  allDecisions: ['decisions'] as const,
+  allMessages: ['messages'] as const,
+  allSpaces: ['space'] as const,
+  allPeople: ['person'] as const,
+  allOrgs: ['org'] as const,
+  allOrgInboxes: ['org-inbox'] as const,
+  allUpdates: ['updates'] as const,
+  allCalendars: ['calendar'] as const,
+  allOrgCalendars: ['org-calendar'] as const,
+  allPoliciesFor: ['policy-for'] as const,
 };

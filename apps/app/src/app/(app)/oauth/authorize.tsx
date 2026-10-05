@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Platform, ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { Wordmark } from '@/brand/Wordmark';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -52,7 +53,7 @@ export default function Authorize() {
     PARAMS.filter((k) => typeof raw[k] === 'string').map((k) => [k, raw[k] as string]),
   );
   const q = useQuery({
-    queryKey: ['oauth-consent', params],
+    queryKey: qk.oauthConsent(params),
     queryFn: () => endpoints.oauthConsent(params),
     retry: false,
   });

@@ -955,9 +955,16 @@ listed there with its owner.
       names (no inline shape left), and a refusal's codes are one list (`ERROR_CODES`,
       `packages/core/src/errors.ts`, typed on `AppError` and `ApiError`; the app's three own
       codes for a private conversation it may not write in yet are in it too). `errors.test.ts`.
-- [ ] Next block: the owner's ⛔ items as they come (TRUST_PROXY, local-currency payment, the
-      npm account, a development build for a phone, store builds, the penetration test), and
-      whatever the next review finds.
+- [x] The review's remaining lows: every query key lives in `qk` (`api/keys.test.ts` holds it);
+      the billing reconcile's and the account deletion's swallowed failures are logged; dead code
+      (`setInboxDraft`, `translatorFor`, `isIOS`/`isAndroid`, five icons) is gone; the nine routes
+      no test reached have tests (health, custom roles, merge, identities, an app's secret
+      rotation and ping, an update taken back from a report); the one raw `Pressable` uses the
+      app's; every shadow is the theme's (`ui/shadow.ts`, `lifted`).
+- [ ] Next block: `modules/conversations.ts` split along the review's lines (the shared helpers
+      into `lib/`, the routes by concern; `spaces` and `conversations` no longer importing each
+      other), then the owner's ⛔ items as they come (TRUST_PROXY, local-currency payment, the
+      npm account, a development build for a phone, store builds, the penetration test).
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1984,3 +1991,5 @@ listed there with its owner.
   panes to lazy imports.
 - 2026-10-05 — Every route's answer has a name in the contract, the app reads the same names, and
   error codes are one list in core.
+- 2026-10-05 — The review's remaining lows: keys in `qk`, failures logged, dead code gone, nine
+  routes tested, one `Pressable`, themed shadows.

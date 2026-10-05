@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { ListChecks, Sparkles } from '@/ui/icons';
@@ -31,7 +32,7 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
           ? trn(n, '{n} follow-up to review', '{n} follow-ups to review')
           : tr('Nothing new to follow up'),
       );
-      void qc.invalidateQueries({ queryKey: ['suggestions'] });
+      void qc.invalidateQueries({ queryKey: qk.allSuggestions });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {

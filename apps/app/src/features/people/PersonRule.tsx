@@ -33,7 +33,7 @@ export function PersonRule({
   const qc = useQueryClient();
   const policies = usePolicies();
   const said = useQuery({
-    queryKey: ['policy-for', personId],
+    queryKey: qk.policyFor(personId),
     queryFn: () => endpoints.policyFor(personId),
   });
   const [open, setOpen] = useState(false);
@@ -48,7 +48,7 @@ export function PersonRule({
     );
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.policies });
-    void qc.invalidateQueries({ queryKey: ['policy-for', personId] });
+    void qc.invalidateQueries({ queryKey: qk.policyFor(personId) });
     // Their page says what they see of you.
     void qc.invalidateQueries({ queryKey: qk.person(personId) });
   };

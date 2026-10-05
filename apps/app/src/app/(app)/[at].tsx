@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
@@ -21,7 +22,7 @@ export default function HandleLink() {
   const { desktop } = useLayout();
   const handle = at.startsWith('@') && at.length > 1 ? at.slice(1) : null;
   const q = useQuery({
-    queryKey: ['handle', handle],
+    queryKey: qk.handle(handle ?? ''),
     queryFn: () => endpoints.openHandle(handle ?? ''),
     enabled: handle !== null,
     retry: (n, e) => !(e instanceof ApiError && e.status < 500) && n < 2,

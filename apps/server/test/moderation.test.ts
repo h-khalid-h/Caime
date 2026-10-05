@@ -270,6 +270,49 @@ describe('the operator reviews reports (R49)', () => {
     expect((await op('POST', `/v1/admin/people/${sam.user.handle}/reset`)).statusCode).toBe(503);
   });
 
+  it('takes an organization’s reported update back, as its poster would', async () => {
+    // Fresh people: the tests above ended Noor's and Sam's ways in.
+    const noor = await signup(t, { displayName: 'Noor Books' });
+    const sam = await signup(t, { displayName: 'Sam Reader' });
+    const org = (
+      await noor.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Noor Books',
+        handle: 'noor.books',
+        kind: 'shop',
+      })
+    ).org;
+    const posted = await noor.post(`/v1/orgs/${org.id}/updates`, {
+      body: 'Half price on everything, send your card number to claim.',
+      clientId: uuidv4(),
+    });
+    const updateId = posted.update.id;
+    expect(
+      (await sam.req('POST', '/v1/reports', { orgId: org.id, updateId, reason: 'scam' }))
+        .statusCode,
+    ).toBe(201);
+    const { reports } = (await op('GET', '/v1/admin/reports?status=open')).json();
+    const report = reports.find(
+      (r: { update: { id: string } | null }) => r.update?.id === updateId,
+    );
+    expect(report).toBeDefined();
+    const removed = await op('POST', `/v1/admin/reports/${report.id}/remove-update`);
+    expect(removed.statusCode).toBe(200);
+    expect(removed.json().report).toMatchObject({
+      status: 'actioned',
+      update: { id: updateId, removed: true, body: null },
+    });
+    const left = (await sam.get(`/v1/orgs/${org.id}/updates`)).updates;
+    expect(left.map((u: { id: string }) => u.id)).not.toContain(updateId);
+    const [entry] = await t.ctx.db
+      .selectFrom('audit_log')
+      .select('metadata')
+      .where('action', '=', 'moderation.update_removed')
+      .where('target', '=', org.id)
+      .execute();
+    expect(entry?.metadata).toEqual({ updateId, operator: 'operator' });
+  });
+
   it('serves the reviewer page with no inline script, and the routes are gone without a token', async () => {
     const page = await t.app.inject({ method: 'GET', url: '/admin/reports' });
     expect(page.statusCode).toBe(200);

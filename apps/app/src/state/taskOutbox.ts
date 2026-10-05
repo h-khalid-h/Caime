@@ -12,6 +12,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { ApiError, NetworkError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
+import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
 import { toast } from '@/ui/Toast';
 
@@ -166,10 +167,10 @@ function showStatus(taskId: string, status: 'open' | 'done'): void {
         ? { ...t, status, completedAt: status === 'done' ? new Date().toISOString() : null }
         : t,
     );
-  queryClient.setQueriesData<TasksResponse>({ queryKey: ['tasks'] }, (data) =>
+  queryClient.setQueriesData<TasksResponse>({ queryKey: qk.allTasks }, (data) =>
     data?.tasks.some((t) => t.id === taskId) ? { ...data, tasks: change(data.tasks) } : data,
   );
-  queryClient.setQueriesData<MemoryView>({ queryKey: ['memory'] }, (data) =>
+  queryClient.setQueriesData<MemoryView>({ queryKey: qk.allMemory }, (data) =>
     data?.openItems.some((t) => t.id === taskId)
       ? { ...data, openItems: change(data.openItems) }
       : data,
@@ -178,9 +179,9 @@ function showStatus(taskId: string, status: 'open' | 'done'): void {
 
 async function refresh(conversationId?: string | null): Promise<void> {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-    conversationId ? queryClient.invalidateQueries({ queryKey: ['memory', conversationId] }) : null,
-    queryClient.invalidateQueries({ queryKey: ['person'] }),
+    queryClient.invalidateQueries({ queryKey: qk.allTasks }),
+    conversationId ? queryClient.invalidateQueries({ queryKey: qk.memory(conversationId) }) : null,
+    queryClient.invalidateQueries({ queryKey: qk.allPeople }),
   ]);
 }
 
@@ -217,8 +218,8 @@ async function sendOne(op: PendingTaskOp): Promise<'sent' | 'offline' | 'failed'
       // left due to be read again as refresh() left it (a write to the cache calls it fresh).
       if (sent !== read) {
         showStatus(task.id, sent ? 'done' : 'open');
-        void queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'none' });
-        void queryClient.invalidateQueries({ queryKey: ['memory'], refetchType: 'none' });
+        void queryClient.invalidateQueries({ queryKey: qk.allTasks, refetchType: 'none' });
+        void queryClient.invalidateQueries({ queryKey: qk.allMemory, refetchType: 'none' });
       }
     } else {
       const { task } = await endpoints.updateTask(op.taskId, { status: op.status });

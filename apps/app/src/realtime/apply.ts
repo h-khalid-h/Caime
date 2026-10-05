@@ -82,8 +82,8 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     soon(
       'calendar',
       () => {
-        void qc.invalidateQueries({ queryKey: ['calendar'] });
-        void qc.invalidateQueries({ queryKey: ['org-calendar'] });
+        void qc.invalidateQueries({ queryKey: qk.allCalendars });
+        void qc.invalidateQueries({ queryKey: qk.allOrgCalendars });
       },
       1200,
     );
@@ -145,7 +145,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         'spaces',
         () => {
           void qc.invalidateQueries({ queryKey: qk.spaces });
-          void qc.invalidateQueries({ queryKey: ['space'] });
+          void qc.invalidateQueries({ queryKey: qk.allSpaces });
         },
         1500,
       );
@@ -162,7 +162,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       if (event.data.kind === 'kit') {
         const id = event.data.conversationId;
         soon(`memory:${id}`, () => void qc.invalidateQueries({ queryKey: qk.memory(id) }), 800);
-        soon('spaces', () => void qc.invalidateQueries({ queryKey: ['space'] }), 800);
+        soon('spaces', () => void qc.invalidateQueries({ queryKey: qk.allSpaces }), 800);
         calendarChanged();
       }
       return;

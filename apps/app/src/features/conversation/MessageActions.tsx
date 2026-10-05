@@ -152,8 +152,8 @@ export function MessageActions({
         messageId: m.id,
       });
       toast(tr('Decision saved'));
-      void qc.invalidateQueries({ queryKey: ['decisions'] });
-      void qc.invalidateQueries({ queryKey: ['memory'] });
+      void qc.invalidateQueries({ queryKey: qk.allDecisions });
+      void qc.invalidateQueries({ queryKey: qk.allMemory });
       dismiss();
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });

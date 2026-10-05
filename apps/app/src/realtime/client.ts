@@ -244,7 +244,7 @@ class RealtimeClient {
       void queryClient.invalidateQueries({ queryKey: qk.inbox });
       void queryClient.invalidateQueries({ queryKey: qk.notifications });
     }
-    const cached = queryClient.getQueryCache().findAll({ queryKey: ['messages'] });
+    const cached = queryClient.getQueryCache().findAll({ queryKey: qk.allMessages });
     const active = cached.filter((q) => q.getObserversCount() > 0);
     for (const q of active) {
       const id = String(q.queryKey[1]);

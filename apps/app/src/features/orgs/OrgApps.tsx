@@ -126,7 +126,7 @@ export function OrgApps({ org }: { org: OrgView }) {
   const [removing, setRemoving] = useState(false);
   const [busy, setBusy] = useState(false);
   const deliveries = useQuery({
-    queryKey: ['app-deliveries', app?.id ?? ''],
+    queryKey: qk.appDeliveries(app?.id ?? ''),
     queryFn: () => endpoints.appDeliveries(org.id, app?.id ?? ''),
     enabled: Boolean(open?.webhookUrl),
     refetchInterval: open?.webhookUrl ? 3000 : false,

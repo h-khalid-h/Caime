@@ -1,12 +1,13 @@
 import { msg, tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { Platform, useWindowDimensions, View, type ViewStyle } from 'react-native';
+import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
 import { LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
+import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';
 import { TAB_BAR_HEIGHT } from '@/ui/tabBarHeight';
 import { useBadges } from './useBadges';
@@ -24,19 +25,6 @@ const TABS: Record<
 };
 
 const HEIGHT = TAB_BAR_HEIGHT;
-
-/** Floating over the page's own colour, with the soft shadow overlays have (BRAND.md). */
-function lifted(shadow: string): ViewStyle {
-  return Platform.OS === 'web'
-    ? ({ boxShadow: `0 6px 24px ${shadow}` } as ViewStyle)
-    : {
-        shadowColor: shadow,
-        shadowOpacity: 1,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 6,
-      };
-}
 
 /**
  * The phone's bar: the four places in a floating pill, the one you're in lit behind its name,

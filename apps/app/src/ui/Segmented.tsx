@@ -1,6 +1,7 @@
 import { ScrollView } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Pressable } from './Pressable';
+import { lifted } from './shadow';
 import { Text } from './Text';
 
 export interface SegmentedProps<T extends string> {
@@ -50,10 +51,7 @@ export function Segmented<T extends string>({
               gap: 6,
               paddingHorizontal: 8,
               backgroundColor: selected ? t.c.surface : hovered ? t.c.surfaceHover : 'transparent',
-              shadowColor: '#000',
-              shadowOpacity: selected ? 0.06 : 0,
-              shadowRadius: 4,
-              shadowOffset: { width: 0, height: 1 },
+              ...(selected ? lifted(t.c.shadow, 1, 4) : {}),
             })}
           >
             <Text

@@ -18,6 +18,7 @@ import type {
 import { MATCH_END, MATCH_START } from '@caime/core/format';
 import { parseSearchQuery, type SearchScope } from '@caime/core/search';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
+import { qk } from '@/api/keys';
 
 const MAX = 20;
 /** Around a match in a message: enough to recognise it. */
@@ -191,7 +192,7 @@ export function searchOnDevice(qc: QueryClient, term: string, meId: string): Sea
   const found: Array<{ m: MessagesPage['messages'][number]; conversationId: string }> = [];
   if (wants('messages') && (words.length || person.length))
     for (const [key, data] of qc.getQueriesData<InfiniteData<MessagesPage>>({
-      queryKey: ['messages'],
+      queryKey: qk.allMessages,
     })) {
       const conversationId = String(key[1]);
       for (const page of data?.pages ?? [])
@@ -246,7 +247,7 @@ export function searchOnDevice(qc: QueryClient, term: string, meId: string): Sea
           : null;
   const tasks = new Map<string, TaskView>();
   if (wants('tasks') || q.scope === 'waiting')
-    for (const [, data] of qc.getQueriesData<TasksResponse>({ queryKey: ['tasks'] }))
+    for (const [, data] of qc.getQueriesData<TasksResponse>({ queryKey: qk.allTasks }))
       for (const t of data?.tasks ?? []) {
         if (tasks.has(t.id)) continue;
         // As the server's search: only what's still to happen, never one done, declined or

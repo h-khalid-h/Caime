@@ -58,7 +58,7 @@ export function ThreadBar({
       toast(done);
       setMenu(null);
       void qc.invalidateQueries({ queryKey: qk.conversation(conversation.id) });
-      void qc.invalidateQueries({ queryKey: ['org-inbox'] });
+      void qc.invalidateQueries({ queryKey: qk.allOrgInboxes });
       void qc.invalidateQueries({ queryKey: qk.businessSummary });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });

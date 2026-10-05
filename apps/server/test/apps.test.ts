@@ -164,6 +164,28 @@ describe('apps: tokens, bots and webhooks (PRD §73–75, R16)', () => {
     });
   });
 
+  it('rotates its webhook secret, and a ping arrives signed with the new one', async () => {
+    const appId = (await noor.get(`/v1/orgs/${orgId}/apps`)).apps[0].id;
+    const rotated = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/secret`);
+    expect(rotated.webhookSecret).toMatch(/^whsec_/);
+    expect(rotated.webhookSecret).not.toBe(secret);
+    expect(rotated.token).toBeNull();
+    const old = secret;
+    secret = rotated.webhookSecret;
+    const pinged = await noor.post(`/v1/orgs/${orgId}/apps/${appId}/ping`);
+    expect(pinged.deliveryId).toMatch(/^[0-9a-f-]{36}$/);
+    const got = await deliver();
+    expect(got?.headers['caime-event']).toBe('ping');
+    const sig = parseSignature(String(got?.headers['caime-signature']));
+    const withNew = createHmac('sha256', secret).update(`${sig!.t}.${got!.body}`).digest('hex');
+    const withOld = createHmac('sha256', old).update(`${sig!.t}.${got!.body}`).digest('hex');
+    expect(sig!.v1).toBe(withNew);
+    expect(sig!.v1).not.toBe(withOld);
+    expect(JSON.parse(got!.body)).toMatchObject({ event: 'ping', orgId, data: { appId } });
+    // Only its organization's owner or admins: to anyone else the app isn't there.
+    expect((await lina.req('POST', `/v1/orgs/${orgId}/apps/${appId}/ping`)).statusCode).toBe(404);
+  });
+
   it('its bot answers as the organization, says it’s automated, and leaves the thread to people', async () => {
     const sent = await as(token, 'POST', `/v1/conversations/${convo}/messages`, {
       clientId: uuidv4(),

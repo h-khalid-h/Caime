@@ -131,10 +131,10 @@ export function RuleSheet({
   if (!scope) return null;
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.policies });
-    void qc.invalidateQueries({ queryKey: ['policy-for'] });
+    void qc.invalidateQueries({ queryKey: qk.allPoliciesFor });
     void qc.invalidateQueries({ queryKey: qk.inbox });
     // A person's page says what they see of you.
-    void qc.invalidateQueries({ queryKey: ['person'] });
+    void qc.invalidateQueries({ queryKey: qk.allPeople });
   };
   const save = async (settings: PolicySettings) => {
     if (removed.current) return;

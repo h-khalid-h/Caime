@@ -62,6 +62,7 @@ import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Sheet } from '@/ui/Sheet';
+import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { Composer, type ComposerHandle } from './Composer';
@@ -693,9 +694,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             justifyContent: 'center',
             borderWidth: 1,
             borderColor: t.c.border,
-            shadowColor: '#000',
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            ...lifted(t.c.shadow, 2, 8),
           }}
         >
           <ChevronDown size={20} color={t.c.textSecondary} />
@@ -743,7 +742,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
               try {
                 await endpoints.unblockOrg(org.id);
                 void qc.invalidateQueries({ queryKey: qk.conversation(id) });
-                void qc.invalidateQueries({ queryKey: ['org'] });
+                void qc.invalidateQueries({ queryKey: qk.allOrgs });
               } catch (e) {
                 toast((e as Error).message, { tone: 'danger' });
               }

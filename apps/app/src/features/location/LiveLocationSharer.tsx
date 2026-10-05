@@ -14,6 +14,7 @@ import { useTheme } from '@/theme/theme';
 import { MapPin } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
+import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -141,11 +142,7 @@ export function LiveLocationSharer() {
           borderRadius: 999,
           // As a toast is: dark on a light theme, raised on a dark one.
           backgroundColor: t.scheme === 'dark' ? t.c.surfaceRaised : t.c.ink,
-          shadowColor: '#000',
-          shadowOpacity: 0.18,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
+          ...lifted(t.c.shadow, 4, 12),
         }}
         testID="live-location-sharing"
       >
