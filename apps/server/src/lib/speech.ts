@@ -97,7 +97,13 @@ function tidy(text: unknown): string {
 }
 
 /** The usage a transcription records: no tokens, the model's name. */
-const usageOf = (model: string) => ({ model, inputTokens: 0, outputTokens: 0 });
+const usageOf = (model: string) => ({
+  model,
+  inputTokens: 0,
+  outputTokens: 0,
+  cacheReadTokens: 0,
+  cacheCreationTokens: 0,
+});
 
 /** OpenAI's `POST /v1/audio/transcriptions`: multipart, `text` back (and `language` when asked). */
 function openaiSpeech(base: string, key: string, model: string): SpeechToText {

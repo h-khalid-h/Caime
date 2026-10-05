@@ -20,7 +20,12 @@ const message = (text: string, stop = 'end_turn'): Reply => ({
     content: text ? [{ type: 'text', text }] : [],
     stop_reason: stop,
     stop_sequence: null,
-    usage: { input_tokens: 10, output_tokens: 5 },
+    usage: {
+      input_tokens: 10,
+      output_tokens: 5,
+      cache_read_input_tokens: 7,
+      cache_creation_input_tokens: 2,
+    },
   },
 });
 const refusal = (): Reply => message('', 'refusal');
@@ -346,8 +351,14 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       model: 'claude-opus-5',
       input_tokens: 10,
       output_tokens: 5,
+      cache_read_tokens: 7,
+      cache_creation_tokens: 2,
     });
-    expect(runs.at(-1)).toMatchObject({ input_tokens: null, output_tokens: null });
+    expect(runs.at(-1)).toMatchObject({
+      input_tokens: null,
+      output_tokens: null,
+      cache_read_tokens: null,
+    });
     // What AI cost, by feature, on /metrics (docs/RESOURCES.md): the tokens of every answered call.
     const scraped = await t.app.inject({
       url: '/metrics',
@@ -362,6 +373,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       );
     expect(tokens('input')).toBeGreaterThanOrEqual(10);
     expect(tokens('output')).toBeGreaterThanOrEqual(5);
+    expect(tokens('cache_read')).toBeGreaterThanOrEqual(7);
+    expect(tokens('cache_creation')).toBeGreaterThanOrEqual(2);
     // They are the person's own data: in their export, as what and when.
     const archive = JSON.parse((await noor.req('GET', '/v1/me/export')).body);
     expect(archive.aiAssist).toHaveLength(8);
@@ -377,6 +390,8 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     });
     // Which conversation the AI agent answered in, as an id: never what was said.
     expect(Object.keys(runs[0]!).sort()).toEqual([
+      'cache_creation_tokens',
+      'cache_read_tokens',
       'conversation_id',
       'created_at',
       'discarded_at',

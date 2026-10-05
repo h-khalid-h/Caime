@@ -28,6 +28,13 @@ export async function runAi<T>(
     if (usage) {
       ctx.metrics.aiTokens.inc({ feature, direction: 'input' }, usage.inputTokens);
       ctx.metrics.aiTokens.inc({ feature, direction: 'output' }, usage.outputTokens);
+      if (usage.cacheReadTokens)
+        ctx.metrics.aiTokens.inc({ feature, direction: 'cache_read' }, usage.cacheReadTokens);
+      if (usage.cacheCreationTokens)
+        ctx.metrics.aiTokens.inc(
+          { feature, direction: 'cache_creation' },
+          usage.cacheCreationTokens,
+        );
     }
     ctx.defer('ai run', () =>
       ctx.db
@@ -40,6 +47,8 @@ export async function runAi<T>(
           model: usage?.model ?? (provider === 'anthropic' ? (ctx.ai?.model ?? null) : null),
           input_tokens: usage?.inputTokens ?? null,
           output_tokens: usage?.outputTokens ?? null,
+          cache_read_tokens: usage?.cacheReadTokens ?? null,
+          cache_creation_tokens: usage?.cacheCreationTokens ?? null,
           latency_ms: Date.now() - started,
           outcome,
         })

@@ -17,6 +17,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Task } from '../db/schema';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask, maskFor } from '../lib/business';
@@ -67,7 +68,11 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
           .execute()
       : [],
     messageIds.length
-      ? ctx.db.selectFrom('messages').selectAll().where('id', 'in', messageIds).execute()
+      ? ctx.db
+          .selectFrom('messages')
+          .select(MESSAGE_COLUMNS)
+          .where('id', 'in', messageIds)
+          .execute()
       : [],
   ]);
   const name = (id: string) => users.find((u) => u.id === id)?.display_name ?? 'Someone';
@@ -143,7 +148,7 @@ async function syncRequestCard(ctx: AppContext, t: Task): Promise<void> {
   if (!t.conversation_id || !t.shared) return;
   const card = await ctx.db
     .selectFrom('messages')
-    .selectAll()
+    .select(MESSAGE_COLUMNS)
     .where('conversation_id', '=', t.conversation_id)
     .where('kind', '=', 'kit')
     .where(sql<boolean>`payload->>'taskId' = ${t.id}`)

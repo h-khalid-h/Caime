@@ -104,7 +104,11 @@ These are rules, not preferences.
   date-in-a-zone goes through `zonedParts` (a cached formatter per zone), never a new
   `Intl.DateTimeFormat`.
 - The persisted query cache is restored as-is; `invalidateQueries()` runs right after restore so
-  a relaunch shows the cache instantly and then refreshes it.
+  a relaunch shows the cache instantly and then refreshes it. Its persister is Caime's own
+  (`api/queryClient.ts`): a save is asked for on every change, taken at most every 1.5 s, and
+  serialised only once the screen is idle (`whenIdle`: `requestIdleCallback`, else after a
+  phone's interactions); `saveCacheNow` writes at once when the app is left and drops what was
+  waiting. Nothing else writes `caime.cache.v1`.
 - Playwright: text also appears in off-screen screens on phones (tabs stay mounted), so assert
   with `.filter({ visible: true })`. A failure that isn't an assertion (a `TypeError` reading
   `traceName`, `browserContext.close: Target page, context or browser has been closed` after
@@ -656,6 +660,14 @@ These are rules, not preferences.
   whoever sent what it newly covers and the reader's own devices, never a whole group. A view
   that lists a conversation's people takes them from `personViewsFor`. `createTestApp` counts
   the server's queries (`t.queries()`): a scale test says what a path costs, with a ceiling.
+- A message is selected with `.select(MESSAGE_COLUMNS)` (`db/schema.ts`), never `selectAll()`,
+  which shipped its tsvector with every row: `messaging.test.ts` holds the list to the table's
+  columns and the source to the rule, so a new column joins the list. A sweep over due rows
+  (reminders, held notifications) takes `SWEEP_BATCH` at a time and runs `background: true`,
+  so nothing holds the job loop; a check per item in a loop (the AI actions route) is a query
+  for the set first. Every model call's usage carries `cacheReadTokens` and
+  `cacheCreationTokens` (from the reply's `cache_read_input_tokens` and
+  `cache_creation_input_tokens`), kept on `ai_runs` and counted on `caime_ai_tokens_total`.
 - Many inserts take the database's clock (`created_at default now()`), not `ctx.now()`. A test
   that depends on those timestamps sets its clock to real time and stamps what it needs (see
   `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.

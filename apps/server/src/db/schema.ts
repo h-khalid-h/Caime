@@ -637,6 +637,9 @@ export interface AiRunsTable {
   model: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
+  /** Of the input, what was read from the model's cache, and what was written to it (0051). */
+  cache_read_tokens: number | null;
+  cache_creation_tokens: number | null;
   latency_ms: number | null;
   outcome: string;
   /** The conversation the AI agent was answering in, for its per-conversation bound. */
@@ -1059,7 +1062,39 @@ export type UserUpdate = Updateable<UsersTable>;
 export type Relationship = Selectable<RelationshipsTable>;
 export type Conversation = Selectable<ConversationsTable>;
 export type Participant = Selectable<ParticipantsTable>;
-export type Message = Selectable<MessagesTable>;
+/**
+ * Every column of a message but `search`, the tsvector only the search query reads: a message
+ * is selected with these (`.select(MESSAGE_COLUMNS)`), never `selectAll()`, which shipped the
+ * vector with every row read (`messaging.test.ts` holds this list to the table).
+ */
+export const MESSAGE_COLUMNS = [
+  'id',
+  'conversation_id',
+  'seq',
+  'sender_id',
+  'client_id',
+  'kind',
+  'body',
+  'payload',
+  'mode',
+  'mode_source',
+  'entities',
+  'mentions',
+  'reply_to_id',
+  'forwarded_from_id',
+  'urgent',
+  'is_question',
+  'is_request',
+  'edited_at',
+  'deleted_at',
+  'expires_at',
+  'created_at',
+  'sent_via',
+  'sealed',
+  'pinned_at',
+  'pinned_by',
+] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search'>>;
+export type Message = Selectable<Omit<MessagesTable, 'search'>>;
 export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;

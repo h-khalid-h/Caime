@@ -28,6 +28,7 @@ import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { assertCanWrite } from './blocks';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
 import { assertSealedForEveryone } from './e2ee';
@@ -138,7 +139,7 @@ export async function messageViews(
       .orderBy('message_files.position')
       .execute(),
     replyIds.length
-      ? db.selectFrom('messages').selectAll().where('id', 'in', replyIds).execute()
+      ? db.selectFrom('messages').select(MESSAGE_COLUMNS).where('id', 'in', replyIds).execute()
       : Promise.resolve([] as Message[]),
     db.selectFrom('poll_votes').selectAll().where('message_id', 'in', ids).execute(),
     senderIds.length
@@ -423,7 +424,7 @@ export async function sendMessage(
 ): Promise<SendResult | null> {
   const existing = await ctx.db
     .selectFrom('messages')
-    .selectAll()
+    .select(MESSAGE_COLUMNS)
     .where('sender_id', '=', senderId)
     .where('client_id', '=', body.clientId)
     .executeTakeFirst();
@@ -845,7 +846,7 @@ export async function sendMessage(
     if ((err as { code?: string }).code === '23505') {
       const winner = await ctx.db
         .selectFrom('messages')
-        .selectAll()
+        .select(MESSAGE_COLUMNS)
         .where('sender_id', '=', senderId)
         .where('client_id', '=', body.clientId)
         .executeTakeFirst();

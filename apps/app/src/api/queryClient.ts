@@ -4,10 +4,9 @@
  * cached inbox < 150 ms, cached conversation < 100 ms).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { dehydrate, focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
-import type { PersistedClient } from '@tanstack/react-query-persist-client';
-import { AppState, Platform } from 'react-native';
+import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
+import { AppState, InteractionManager, Platform } from 'react-native';
 import { onNetworkChange } from '@/lib/network';
 import { ApiError, NetworkError } from './client';
 
@@ -57,13 +56,55 @@ function trim(client: PersistedClient): PersistedClient {
 }
 
 const CACHE_KEY = 'caime.cache.v1';
+const SAVE_EVERY_MS = 1500;
 
-export const persister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-  key: CACHE_KEY,
-  throttleTime: 1500,
-  serialize: (client) => JSON.stringify(trim(client)),
-});
+/** A moment the screen isn't busy: the browser's idle time, or after a phone's interactions. */
+const whenIdle = (): Promise<void> =>
+  new Promise((resolve) => {
+    const idle = (
+      globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }
+    ).requestIdleCallback;
+    if (idle) idle(() => resolve(), { timeout: 2000 });
+    else if (Platform.OS !== 'web') InteractionManager.runAfterInteractions(() => resolve());
+    else setTimeout(resolve, 0);
+  });
+
+let pending: PersistedClient | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
+const dropPending = () => {
+  pending = null;
+  if (timer) clearTimeout(timer);
+  timer = null;
+};
+
+/**
+ * Saves at most every second and a half, and serialises (trimming, then `JSON.stringify` of
+ * what can be a megabyte) only once the screen is idle, never in the frame a query settled in.
+ * The latest state wins: a save asked for while one waits replaces it.
+ */
+export const persister: Persister = {
+  persistClient: (client) => {
+    pending = client;
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      const latest = pending;
+      pending = null;
+      if (!latest) return;
+      void whenIdle().then(() =>
+        AsyncStorage.setItem(CACHE_KEY, JSON.stringify(trim(latest))).catch(() => {}),
+      );
+    }, SAVE_EVERY_MS);
+  },
+  restoreClient: async () => {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as PersistedClient) : undefined;
+  },
+  removeClient: () => {
+    dropPending();
+    return AsyncStorage.removeItem(CACHE_KEY);
+  },
+};
 
 let restored = false;
 
@@ -74,6 +115,8 @@ let restored = false;
  */
 export function saveCacheNow(buster: string): void {
   if (!restored) return;
+  // Written now, so nothing older waiting its turn overwrites it after.
+  dropPending();
   const client: PersistedClient = {
     buster,
     timestamp: Date.now(),

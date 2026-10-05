@@ -34,6 +34,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { type AiResult, languageName, type Transcript } from '../lib/ai';
 import { runAi } from '../lib/ai-run';
 import { maskFor, maskId, maskPayload } from '../lib/business';
@@ -171,7 +172,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   ): Promise<{ transcript: Transcript; lines: Line[]; newCount: number }> {
     const rows = (await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', conversationId)
       .where('deleted_at', 'is', null)
       .where((eb) =>
@@ -372,6 +373,32 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       const first = others.filter((o) => firstName(o.display_name).toLocaleLowerCase() === w);
       return first.length === 1 ? first[0]!.id : null;
     };
+    // What's already suggested (by the heuristics or an earlier run) or tracked, for every line
+    // at once: three queries for the set, never two per item.
+    const lineIds = [...new Set(lines.map((l) => l.messageId))];
+    const [suggestedRows, decidedRows, taskedRows] = await Promise.all([
+      ctx.db
+        .selectFrom('suggestions')
+        .select(['message_id', 'kind'])
+        .where('user_id', '=', auth.userId)
+        .where('message_id', 'in', lineIds)
+        .execute(),
+      ctx.db
+        .selectFrom('decisions')
+        .select('message_id')
+        .where('message_id', 'in', lineIds)
+        .where('status', '=', 'active')
+        .execute(),
+      ctx.db
+        .selectFrom('tasks')
+        .select('message_id')
+        .where('message_id', 'in', lineIds)
+        .where('owner_id', '=', auth.userId)
+        .execute(),
+    ]);
+    const suggested = new Set(suggestedRows.map((r) => `${r.message_id}:${r.kind}`));
+    const decided = new Set(decidedRows.map((r) => r.message_id));
+    const tasked = new Set(taskedRows.map((r) => r.message_id));
     const created: string[] = [];
     for (const item of items) {
       const line = lines[item.line - 1];
@@ -387,29 +414,13 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       }
       // Already suggested (by the heuristics or an earlier run) or already tracked: skip it.
       const family = item.kind === 'task' ? ['task', 'reminder'] : [item.kind];
-      const [suggested, tracked] = await Promise.all([
-        ctx.db
-          .selectFrom('suggestions')
-          .select(sql<number>`1`.as('x'))
-          .where('user_id', '=', auth.userId)
-          .where('message_id', '=', line.messageId)
-          .where('kind', 'in', family)
-          .executeTakeFirst(),
-        item.kind === 'decision'
-          ? ctx.db
-              .selectFrom('decisions')
-              .select(sql<number>`1`.as('x'))
-              .where('message_id', '=', line.messageId)
-              .where('status', '=', 'active')
-              .executeTakeFirst()
-          : ctx.db
-              .selectFrom('tasks')
-              .select(sql<number>`1`.as('x'))
-              .where('message_id', '=', line.messageId)
-              .where('owner_id', '=', auth.userId)
-              .executeTakeFirst(),
-      ]);
-      if (suggested || tracked) continue;
+      const tracked = item.kind === 'decision' ? decided : tasked;
+      if (
+        family.some((k) => suggested.has(`${line.messageId}:${k}`)) ||
+        tracked.has(line.messageId)
+      )
+        continue;
+      suggested.add(`${line.messageId}:${item.kind}`);
       const when =
         item.kind !== 'decision' && item.due
           ? firstFutureWhen(item.due, {

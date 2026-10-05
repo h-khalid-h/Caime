@@ -10,6 +10,7 @@ import { isMinor } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { runAi } from './ai-run';
 import { AppError } from './errors';
 import { enqueue, registerJob } from './jobs';
@@ -54,7 +55,7 @@ async function transcribe(ctx: AppContext, payload: Record<string, unknown>): Pr
   if (!speech || !messageId) return;
   const m = await ctx.db
     .selectFrom('messages')
-    .selectAll()
+    .select(MESSAGE_COLUMNS)
     .where('id', '=', messageId)
     .executeTakeFirst();
   // Gone, emptied, sealed, or already in words: nothing to do.

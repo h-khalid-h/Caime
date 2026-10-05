@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { uuidv4 } from '@caime/core';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
+import { MESSAGE_COLUMNS } from '../src/db/schema';
 import type { BusMessage } from '../src/lib/bus';
 import { runDueJobs, runPeriodic } from '../src/lib/jobs';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
@@ -1629,6 +1631,25 @@ describe('pinned messages (PRD §22, §56)', () => {
     } finally {
       stop();
     }
+  });
+});
+
+describe('a message row (REVIEW-2026-10-05, performance)', () => {
+  it('is selected by its columns, every one of the table but the search vector', async () => {
+    const rows = await sql<{ column_name: string }>`
+      select column_name from information_schema.columns where table_name = 'messages'
+    `.execute(t.ctx.db);
+    const inTable = rows.rows.map((r) => r.column_name).sort();
+    expect([...MESSAGE_COLUMNS, 'search'].sort()).toEqual(inTable);
+    // No query over messages ships the vector: the source says `select(MESSAGE_COLUMNS)`.
+    const root = join(__dirname, '..', 'src');
+    const offenders = readdirSync(root, { recursive: true })
+      .map(String)
+      .filter((f) => f.endsWith('.ts'))
+      .filter((f) =>
+        /selectFrom\('messages'\)\s*\.selectAll\(\)/.test(readFileSync(join(root, f), 'utf8')),
+      );
+    expect(offenders).toEqual([]);
   });
 });
 

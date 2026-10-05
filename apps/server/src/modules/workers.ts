@@ -23,6 +23,9 @@ import {
 } from '../lib/relations';
 import { sweepRecords } from '../lib/retention';
 
+/** How many due reminders or held notifications one pass of a sweep takes. */
+export const SWEEP_BATCH = 200;
+
 export function registerWorkers(): void {
   registerJob('follow_up_check', async (ctx, p) => {
     const reply = await ctx.db
@@ -107,16 +110,27 @@ export function registerWorkers(): void {
     run: (ctx) => ctx.bus.sweep(),
   });
 
+  // The sweeps take a batch at a time (the rest on the next pass, half a minute on) and run
+  // beside the job loop, never holding it: a backlog after a pause is worked through, not
+  // all at once.
   registerPeriodic({
     name: 'reminders',
     everyMs: 30_000,
+    background: true,
     run: async (ctx) => {
       const due = await ctx.db
         .updateTable('tasks')
         .set({ reminded_at: ctx.now() })
-        .where('remind_at', '<=', ctx.now())
-        .where('reminded_at', 'is', null)
-        .where('status', 'in', ['open', 'accepted'])
+        .where('id', 'in', (eb) =>
+          eb
+            .selectFrom('tasks')
+            .select('id')
+            .where('remind_at', '<=', ctx.now())
+            .where('reminded_at', 'is', null)
+            .where('status', 'in', ['open', 'accepted'])
+            .orderBy('remind_at')
+            .limit(SWEEP_BATCH),
+        )
         .returning(['id', 'owner_id', 'title', 'conversation_id', 'due_at'])
         .execute();
       for (const t of due) {
@@ -135,14 +149,22 @@ export function registerWorkers(): void {
   registerPeriodic({
     name: 'held-notifications',
     everyMs: 30_000,
+    background: true,
     run: async (ctx) => {
       const ready = await ctx.db
         .updateTable('notifications')
         .set({ delivery: 'push', updated_at: ctx.now() })
-        .where('delivery', '=', 'held')
-        .where('hold_until', '<=', ctx.now())
-        .where('pushed_at', 'is', null)
-        .where('read_at', 'is', null)
+        .where('id', 'in', (eb) =>
+          eb
+            .selectFrom('notifications')
+            .select('id')
+            .where('delivery', '=', 'held')
+            .where('hold_until', '<=', ctx.now())
+            .where('pushed_at', 'is', null)
+            .where('read_at', 'is', null)
+            .orderBy('hold_until')
+            .limit(SWEEP_BATCH),
+        )
         .returningAll()
         .execute();
       for (const n of ready) {

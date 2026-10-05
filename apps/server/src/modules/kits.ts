@@ -19,6 +19,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { audit } from '../lib/audit';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask } from '../lib/business';
@@ -190,7 +191,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
     const { fields } = parse(z.object({ fields: z.record(z.string(), z.unknown()) }), req.body);
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m) throw notFound(tr('That message'));

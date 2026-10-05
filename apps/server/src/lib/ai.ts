@@ -23,6 +23,9 @@ export interface AiUsage {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  /** Of the input, what came from the model's cache and what was written to it: cheaper, and dearer. */
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
 }
 
 export interface AiResult<T> {
@@ -261,11 +264,18 @@ export function createAiAssist(config: Config): AiAssist | null {
 
   const usageOf = (reply: {
     model: string;
-    usage: { input_tokens: number; output_tokens: number };
+    usage: {
+      input_tokens: number;
+      output_tokens: number;
+      cache_read_input_tokens?: number | null;
+      cache_creation_input_tokens?: number | null;
+    };
   }): AiUsage => ({
     model: reply.model,
     inputTokens: reply.usage.input_tokens,
     outputTokens: reply.usage.output_tokens,
+    cacheReadTokens: reply.usage.cache_read_input_tokens ?? 0,
+    cacheCreationTokens: reply.usage.cache_creation_input_tokens ?? 0,
   });
 
   const text = async (

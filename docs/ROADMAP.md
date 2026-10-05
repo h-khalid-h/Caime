@@ -936,9 +936,16 @@ listed there with its owner.
       upload appends one chunk at a time under its row's lock. `log.test.ts`,
       `suggestions-many.test.ts`, `messaging.test.ts`, `auth.test.ts`, `backup.test.ts`,
       `moderation.test.ts`.
-- [ ] Next block: the review's remaining mediums (`ai.ts` queries per item; the sweeps' bounds,
-      the tsvector in `selectAll()`, the cache's serialisation; typed responses on every route),
-      and the owner's ⛔ items as they come.
+- [x] The review's performance mediums: the AI actions route checks what's suggested and
+      tracked in three queries for the set; the reminder and held-notification sweeps take 200
+      at a time beside the job loop; migration 0051 drops the covered `messages_conversation_seq`
+      and records cache read and creation tokens on `ai_runs` (and on `caime_ai_tokens_total`);
+      a message is selected by `MESSAGE_COLUMNS`, never with its tsvector (held to the table and
+      the source by `messaging.test.ts`); the app's query cache is saved at most every 1.5 s and
+      serialised in idle time (`queryClient.ts`, its own persister; the async-storage persister
+      package is gone).
+- [ ] Next block: the review's remaining mediums (typed responses on every route; the budget
+      script's blind spots), and the owner's ⛔ items as they come.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1958,3 +1965,6 @@ listed there with its owner.
 - 2026-10-05 — The review's six small lows: one accept makes one task, forwarding needs a seat,
   invite tokens out of the log, sign-in limits per handle and address, backups and report reads
   audited, upload chunks under a lock.
+- 2026-10-05 — The review's performance mediums: set queries in the AI actions route, bounded
+  background sweeps, the covered index dropped, no tsvector in a message row, cache tokens
+  recorded, the query cache serialised in idle time.

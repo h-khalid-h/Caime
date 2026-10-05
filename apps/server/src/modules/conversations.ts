@@ -70,6 +70,7 @@ const privateGroupFull = () =>
   );
 
 import type { Conversation, Participant } from '../db/schema';
+import { MESSAGE_COLUMNS } from '../db/schema';
 import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite, businessClosed } from '../lib/blocks';
 import { customerMask, maskFor, maskId, orgRef, threadViews } from '../lib/business';
@@ -1290,7 +1291,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { conversation, me } = await membership(ctx, auth.userId, id);
     let query = ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', id)
       .where((eb) =>
         eb.not(
@@ -1372,7 +1373,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const body = parse(EditMessageBody, req.body);
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m) throw notFound(tr('That message'));
@@ -1452,7 +1453,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { to } = parse(z.object({ to: z.string().min(1).max(40) }), req.body);
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m) throw notFound(tr('That message'));
@@ -1573,7 +1574,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const updated = await ctx.db.transaction().execute(async (trx) => {
       const m = await trx
         .selectFrom('messages')
-        .selectAll()
+        .select(MESSAGE_COLUMNS)
         .where('id', '=', id)
         .forUpdate()
         .executeTakeFirstOrThrow();
@@ -1636,7 +1637,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { updated, before, card } = await ctx.db.transaction().execute(async (trx) => {
       const m = await trx
         .selectFrom('messages')
-        .selectAll()
+        .select(MESSAGE_COLUMNS)
         .where('id', '=', id)
         .forUpdate()
         .executeTakeFirstOrThrow();
@@ -1717,7 +1718,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .execute(async (trx) => {
         const m = await trx
           .selectFrom('messages')
-          .selectAll()
+          .select(MESSAGE_COLUMNS)
           .where('id', '=', id)
           .forUpdate()
           .executeTakeFirstOrThrow();
@@ -1805,7 +1806,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   async function albumCard(id: string, userId: string) {
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m) throw notFound(tr('That album'));
@@ -1820,7 +1821,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   async function albumChanged(messageId: string, conversationId: string, actorId: string) {
     const updated = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', messageId)
       .executeTakeFirstOrThrow();
     const members = (await participantsOf(ctx.db, conversationId)).map((p) => p.user_id);
@@ -2011,7 +2012,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     );
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m) throw notFound(tr('That message'));
@@ -2054,7 +2055,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     await membership(ctx, auth.userId, id);
     const rows = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('conversation_id', '=', id)
       .where('pinned_at', 'is not', null)
       .where('deleted_at', 'is', null)
@@ -2080,7 +2081,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   async function tellPinned(actorId: string, messageId: string, conversationId: string) {
     const row = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', messageId)
       .executeTakeFirstOrThrow();
     const [view] = await messageViews(ctx.db, [row], actorId);
@@ -2093,7 +2094,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   async function pinnable(userId: string, messageId: string) {
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', messageId)
       .executeTakeFirst();
     if (!m || m.deleted_at) throw notFound(tr('That message'));
@@ -2259,7 +2260,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { optionIds } = parse(VoteBody, req.body);
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (m?.kind !== 'poll' || m.deleted_at) throw notFound(tr('That poll'));
@@ -2297,7 +2298,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const body = parse(ForwardBody, req.body);
     const m = await ctx.db
       .selectFrom('messages')
-      .selectAll()
+      .select(MESSAGE_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m || m.deleted_at) throw notFound(tr('That message'));
