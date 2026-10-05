@@ -13,10 +13,10 @@ export const fr: Catalog = {
   'Nothing on your plate': 'Rien sur votre liste',
   'Promises you make in conversations can land here with one tap.':
     'Les promesses que vous faites dans vos conversations peuvent arriver ici en un geste.',
-  'No one’s waiting on you': 'Personne n’attend après vous',
+  'No one’s waiting on you': 'Personne n’attend rien de vous',
   'When someone asks you for something, it shows up here.':
     'Quand quelqu’un vous demande quelque chose, cela apparaît ici.',
-  'You’re not waiting on anyone': 'Vous n’attendez après personne',
+  'You’re not waiting on anyone': 'Vous n’attendez rien de personne',
   'Ask for something in a conversation and Caime can keep track of it.':
     'Demandez quelque chose dans une conversation et Caime peut en garder la trace.',
   'Nothing finished yet': 'Rien de terminé pour l’instant',
@@ -50,7 +50,7 @@ export const fr: Catalog = {
   'Start a space': 'Créer un espace',
   Back: 'Retour',
   Caime: 'Caime',
-  'No one here goes by @{handle}': 'Personne ici ne s’appelle @{handle}',
+  'No one here goes by @{handle}': 'Personne ici n’a l’identifiant @{handle}',
   'There’s nothing here': 'Il n’y a rien ici',
   'Check the spelling, or ask them for their link. Some people choose not to be found by their handle.':
     'Vérifiez l’orthographe, ou demandez-leur leur lien. Certaines personnes choisissent de ne pas être trouvées par leur identifiant.',
@@ -69,10 +69,10 @@ export const fr: Catalog = {
   Organizations: 'Organisations',
   '{name}, organization': '{name}, organisation',
   'No one found for “{debounced}”. They may not be on Caime yet, or they keep their profile private.':
-    'Personne trouvé pour « {debounced} ». Cette personne n’est peut-être pas encore sur Caime, ou garde son profil privé.',
+    'Aucun résultat pour « {debounced} ». Cette personne n’est peut-être pas encore sur Caime, ou garde son profil privé.',
   'Invite them': 'Les inviter',
   'Search by @handle or email address. People under 18 can only be found by people they already know.':
-    'Cherchez par @identifiant ou adresse e-mail. Les moins de 18 ans ne peuvent être trouvés que par des personnes qu’ils connaissent déjà.',
+    'Cherchez par @identifiant ou adresse e-mail. Une personne de moins de 18 ans ne peut être trouvée que par des personnes qu’elle connaît déjà.',
   'Invite someone': 'Inviter quelqu’un',
   'Share @{handle}': 'Partager @{handle}',
   'Sent as a request: they choose who connects with them':
@@ -86,7 +86,7 @@ export const fr: Catalog = {
     'Nommez le groupe et ajoutez au moins une personne.',
   'New group': 'Nouveau groupe',
   'Group name': 'Nom du groupe',
-  'Weekend hikers, Q3 launch…': 'Randonneurs du dimanche, Lancement T3…',
+  'Weekend hikers, Q3 launch…': 'Randonneurs du week-end, Lancement T3…',
   'What it’s for (optional)': 'À quoi il sert (facultatif)',
   'What kind of group': 'Quel type de groupe',
   Standard: 'Standard',
@@ -134,7 +134,7 @@ export const fr: Catalog = {
   'All quiet': 'Tout est calme',
   'Caime only interrupts you for what matters, by the rules you set for each relationship.':
     'Caime ne vous interrompt que pour ce qui compte, selon les règles que vous fixez pour chaque relation.',
-  'How you’re told': 'Comment vous êtes prévenu',
+  'How you’re told': 'Comment Caime vous prévient',
   'This link from an app isn’t right': 'Ce lien venant d’une application n’est pas valide',
   'Go back to the app and try again.': 'Retournez dans l’application et réessayez.',
   'Go to Caime': 'Aller sur Caime',
@@ -163,7 +163,7 @@ export const fr: Catalog = {
   'step {indexOf} of {length} · {codes}': 'étape {indexOf} sur {length} · {codes}',
 
   'how Caime works': 'comment Caime fonctionne',
-  'your people': 'vos personnes',
+  'your people': 'votre entourage',
   Managers: 'Responsables',
 
   'Recovery codes: {join}': 'Codes de récupération : {join}',
@@ -175,17 +175,17 @@ export const fr: Catalog = {
   'People aren’t all the same. Neither are their messages.':
     'Les gens ne se ressemblent pas. Leurs messages non plus.',
   'When you add someone, you tell Caime how you know them (only you see it). Caime then treats them the right way:':
-    'Quand vous ajoutez quelqu’un, vous dites à Caime d’où vous vous connaissez (vous seul le voyez). Caime s’y adapte ensuite :',
+    'Quand vous ajoutez quelqu’un, vous dites à Caime d’où vous vous connaissez (visible par vous seulement). Caime s’y adapte ensuite :',
   'Sounds good': 'Ça me va',
-  'Now, your people': 'Maintenant, vos personnes',
+  'Now, your people': 'Maintenant, votre entourage',
   'An app asked to act for you. See what it asks first; find people by @handle or email any time.':
     'Une application a demandé à agir en votre nom. Regardez d’abord ce qu’elle demande ; trouvez des personnes par @identifiant ou e-mail à tout moment.',
   'You came here to write to {name}: open the conversation and say what you need. Find others by @handle or email any time.':
-    'Vous êtes venu écrire à {name} : ouvrez la conversation et dites ce dont vous avez besoin. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+    'Vous êtes ici pour écrire à {name} : ouvrez la conversation et dites ce dont vous avez besoin. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
   'You came here for @{linkHandle}. Find others by @handle or email any time.':
-    'Vous êtes venu pour @{linkHandle}. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+    'Vous êtes ici pour @{linkHandle}. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
   '{inviter} invited you: open the conversation and you’re connected. Find others by @handle or email any time.':
-    '{inviter} vous a invité : ouvrez la conversation et vous êtes en contact. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
+    'Invitation de {inviter} : ouvrez la conversation et vous serez en contact. Trouvez d’autres personnes par @identifiant ou e-mail à tout moment.',
   Someone: 'Quelqu’un',
   'Find someone by @handle or email, or share your link: @{handle}':
     'Trouvez quelqu’un par @identifiant ou e-mail, ou partagez votre lien : @{handle}',
@@ -208,7 +208,7 @@ export const fr: Catalog = {
   'DATA C, Nile Dental Clinic…': 'DATA C, Clinique dentaire du Nil…',
   Handle: 'Identifiant',
   'How people find it. Shared with people’s handles, so nobody can pose as it.':
-    'Comment on la trouve. Partagé avec les identifiants des personnes, pour que personne ne puisse se faire passer pour elle.',
+    'Pour la trouver. Il est unique, y compris parmi les identifiants des personnes, pour que personne ne puisse se faire passer pour elle.',
   'What kind of organization': 'Quel type d’organisation',
   'Where it’s based': 'Où elle se trouve',
   'Sets its defaults, like the currency of its cards.':
@@ -230,7 +230,7 @@ export const fr: Catalog = {
   'Requests couldn’t load': 'Les demandes n’ont pas pu se charger',
   'No requests': 'Aucune demande',
   'When someone wants to connect, you’ll see who they are and how they know you here. Share your link, and the first one is yours to answer.':
-    'Quand quelqu’un veut entrer en contact, vous verrez ici qui c’est et d’où il vous connaît. Partagez votre lien, et la première demande sera à vous de répondre.',
+    'Quand quelqu’un veut entrer en contact, vous verrez ici qui c’est et d’où cette personne vous connaît. Partagez votre lien : la première demande attend votre réponse.',
   'Find people or share your link': 'Trouver des personnes ou partager votre lien',
   'Want to connect': 'Veulent entrer en contact',
   'You asked': 'Vos demandes',
@@ -269,7 +269,7 @@ export const fr: Catalog = {
   Sky: 'Ciel',
   Mint: 'Menthe',
   Sunshine: 'Soleil',
-  'Are we still on for Saturday?': 'On maintient pour samedi ?',
+  'Are we still on for Saturday?': 'C’est toujours bon pour samedi ?',
   'Yes! I’ll bring the cake 🎂': 'Oui ! J’apporte le gâteau 🎂',
   Appearance: 'Apparence',
   'Your bubble colour': 'La couleur de vos bulles',
@@ -279,7 +279,7 @@ export const fr: Catalog = {
   Theme: 'Thème',
   'Match this device': 'Comme cet appareil',
   'Light by day, dark by night, if your device does that':
-    'Clair le jour, sombre la nuit, si votre appareil le fait',
+    'Clair le jour, sombre la nuit, si votre appareil le permet',
   Light: 'Clair',
   Dark: 'Sombre',
   Style: 'Style',
@@ -311,7 +311,7 @@ export const fr: Catalog = {
   'Nothing kept yet': 'Rien de conservé pour l’instant',
   Automations: 'Automatisations',
   'What Caime does for you by itself, only as you set it up here: keeping what arrives, and reminding you when someone hasn’t answered. Who reaches you, and when, is under Notifications and priorities.':
-    'Ce que Caime fait pour vous tout seul, uniquement comme vous le réglez ici : conserver ce qui arrive, et vous rappeler quand quelqu’un n’a pas répondu. Qui vous joint, et quand, se règle dans Notifications et priorités.',
+    'Ce que Caime fait pour vous de lui-même, uniquement comme vous le réglez ici : conserver ce qui arrive, et vous rappeler quand quelqu’un n’a pas répondu. Qui vous joint, et quand, se règle dans Notifications et priorités.',
   'Keep what arrives': 'Conserver ce qui arrive',
   'Kept in your Saved collections, for as long as its message is there.':
     'Conservé dans vos collections Enregistrés, tant que son message existe.',
@@ -326,13 +326,13 @@ export const fr: Catalog = {
     'Quand on n’a pas répondu à une de vos questions ou demandes.',
   'If {whom} haven’t answered in {inWords}': 'Si {whom} n’ont pas répondu sous {inWords}',
   'Add a reminder': 'Ajouter un rappel',
-  'What you take': 'Ce que vous retenez',
+  'What you take': 'Ce que vous acceptez',
   'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.':
-    'Un type de suggestion que vous acceptez souvent est proposé en premier ; un type que vous écartez souvent est mis à part, avec le compte à côté. Rien n’est caché, et la raison est indiquée. Désactivé, toutes les suggestions sont traitées pareil.',
+    'Un type de suggestion que vous acceptez souvent est proposé en premier ; un type que vous écartez souvent est mis à part, avec le compte à côté. Rien n’est caché, et la raison est indiquée. Désactivé, toutes les suggestions sont traitées de la même façon.',
   'Learn from what I accept': 'Apprendre de ce que j’accepte',
   'A reminder': 'Un rappel',
   'Whose answers you’d like to be reminded about':
-    'De qui vous voulez qu’on vous rappelle les réponses',
+    'Les personnes dont les réponses attendues vous seront rappelées',
   '{name} can’t act for you any more': '{name} ne peut plus agir en votre nom',
   'Made by {owner}': 'Créée par {owner}',
   'Let in {when} · {text}': 'Autorisée {when} · {text}',
@@ -340,13 +340,13 @@ export const fr: Catalog = {
   Remove: 'Retirer',
   'Remove {name}?': 'Retirer {name} ?',
   'It stops acting for you at once. To use it again, you’d let it in again from the app itself.':
-    'Elle cesse d’agir en votre nom immédiatement. Pour la réutiliser, vous l’autoriserez à nouveau depuis l’application elle-même.',
+    'Elle cesse immédiatement d’agir en votre nom. Pour la réutiliser, il faudra l’autoriser à nouveau depuis l’application elle-même.',
   'What it already did stays as it is, marked as sent through it.':
     'Ce qu’elle a déjà fait reste tel quel, marqué comme envoyé par elle.',
   'Connected apps': 'Applications connectées',
   'Your calendar': 'Votre calendrier',
   'Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once.':
-    'Quiconque a l’adresse voit ce qu’il contient : les titres et dates de vos actions, et vos réunions. Prenez une nouvelle adresse et l’ancienne cesse immédiatement.',
+    'Quiconque a l’adresse voit ce qu’il contient : les titres et dates de vos actions, et vos réunions. Générez une nouvelle adresse et l’ancienne cesse aussitôt de fonctionner.',
   'Apps that act for you': 'Applications qui agissent en votre nom',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'Une application que vous autorisez n’atteint que ce que vous avez permis, jamais votre mot de passe, votre confidentialité ni votre compte, et ce qu’elle envoie indique qu’il passe par elle. Retirez-la et elle cesse immédiatement.',
@@ -360,7 +360,7 @@ export const fr: Catalog = {
   'Make the token': 'Créer le jeton',
   'Access token': 'Jeton d’accès',
   'Copy it now: you won’t see it again. Anyone who has it can act as you, within what you chose, so keep it where only you can reach it.':
-    'Copiez-le maintenant : vous ne le reverrez pas. Quiconque le détient peut agir comme vous, dans les limites choisies, alors gardez-le là où vous seul pouvez l’atteindre.',
+    'Copiez-le maintenant : il ne sera plus affiché. Quiconque le détient peut agir comme vous, dans les limites choisies, alors gardez-le là où personne d’autre ne peut l’atteindre.',
   'What will use it': 'Ce qui l’utilisera',
   'My reminders script': 'Mon script de rappels',
   'What it may do': 'Ce qu’il peut faire',
@@ -381,7 +381,7 @@ export const fr: Catalog = {
   'A token acts as you in scripts and tools you run yourself, reaching your conversations and actions as you allowed. Caime keeps only a fingerprint of each.':
     'Un jeton agit comme vous dans les scripts et outils que vous exécutez vous-même, en atteignant vos conversations et actions comme vous l’avez permis. Caime n’en garde qu’une empreinte.',
   'For your own scripts and tools': 'Pour vos propres scripts et outils',
-  'Relationship insights': 'Aperçus de vos relations',
+  'Relationship insights': 'Analyses de vos relations',
   'One person': 'Une personne',
   'They have a rule already: here it is': 'Cette personne a déjà une règle : la voici',
   'A new rule': 'Une nouvelle règle',
@@ -395,12 +395,12 @@ export const fr: Catalog = {
   'My customers': 'Mes clients',
   'Notifications and priorities': 'Notifications et priorités',
   'Caime decides who reaches you by how you know them. Family can always get through; work waits for work hours; everyone else stays quiet unless it’s important. Change any of it, or make rules of your own.':
-    'Caime décide de qui vous joint selon la façon dont vous connaissez chacun. La famille passe toujours ; le travail attend les heures de travail ; les autres restent silencieux sauf si c’est important. Changez ce que vous voulez, ou créez vos propres règles.',
+    'Caime décide qui peut vous joindre selon la façon dont vous connaissez chacun. La famille passe toujours ; le travail attend les heures de travail ; les autres restent silencieux sauf si c’est important. Changez ce que vous voulez, ou créez vos propres règles.',
   'By relationship': 'Par relation',
   'Add a rule': 'Ajouter une règle',
   'Add quiet hours': 'Ajouter des heures de silence',
   'Quiet hours': 'Heures de silence',
-  'Whose messages wait for set hours': 'De qui les messages attendent des heures fixées',
+  'Whose messages wait for set hours': 'Les personnes dont les messages attendent certaines heures',
   'While you’re in a meeting': 'Pendant une réunion',
   'Work waits until it ends': 'Le travail attend la fin',
   'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.':
@@ -408,11 +408,11 @@ export const fr: Catalog = {
   'Work waits until the meeting ends': 'Le travail attend la fin de la réunion',
   'Your work week': 'Votre semaine de travail',
   'Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different.':
-    'Les notifications de travail attendent ces jours. Réglés d’après l’endroit où vous vivez (Langue et région) ; changez-les si les vôtres diffèrent.',
+    'Les notifications du travail n’arrivent que ces jours-là. Réglés d’après l’endroit où vous vivez (Langue et région) ; changez-les si les vôtres diffèrent.',
   'Reset to Caime’s defaults': 'Rétablir les réglages par défaut de Caime',
   'Back to the defaults': 'Réglages par défaut rétablis',
   'Relationship insights, {automations} automations, {aiPerDay} AI assists a day and {formatBytes} for files.':
-    'Aperçus de vos relations, {automations} automatisations, {aiPerDay} assistances IA par jour et {formatBytes} pour les fichiers.',
+    'Analyses de vos relations, {automations} automatisations, {aiPerDay} requêtes IA par jour et {formatBytes} pour les fichiers.',
   '{aiToday} of {aiPerDay} in the last 24 hours':
     '{aiToday} sur {aiPerDay} ces dernières 24 heures',
   '{base}. The next one is ready {formatSoon}': '{base}. La prochaine est disponible {formatSoon}',
@@ -420,7 +420,7 @@ export const fr: Catalog = {
   'Free forever: your connections, what needs you, what you’re waiting for, search and sync. No plan ever limits those.':
     'Gratuit pour toujours : vos contacts, ce qui a besoin de vous, ce que vous attendez, la recherche et la synchronisation. Aucun forfait ne limite jamais cela.',
   'Everything in Personal, with relationship insights, more automations, more AI assist and more room for files.':
-    'Tout Personal, avec les aperçus de vos relations, plus d’automatisations, plus d’assistance IA et plus de place pour les fichiers.',
+    'Tout ce qu’offre Personal, avec les analyses de vos relations, plus d’automatisations, plus d’assistance IA et plus de place pour les fichiers.',
   'What you’re using': 'Ce que vous utilisez',
   'AI assist': 'Assistance IA',
   Files: 'Fichiers',
@@ -429,7 +429,7 @@ export const fr: Catalog = {
   'Included in your plan': 'Inclus dans votre forfait',
   'Comes with {pro}': 'Inclus avec {pro}',
   'Who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write. Yours alone.':
-    'Avec qui vous écrivez le plus, qui s’est fait silencieux, à quelle vitesse vous répondez et on vous répond, et quand vous écrivez. Pour vous seul.',
+    'Avec qui vous écrivez le plus, qui ne donne plus de nouvelles, à quelle vitesse vous répondez et on vous répond, et quand vous écrivez. Rien que pour vous.',
   '{PLAN_NAMES} can’t be bought here yet. Nothing you use today will change when it can.':
     '{PLAN_NAMES} ne peut pas encore être acheté ici. Rien de ce que vous utilisez aujourd’hui ne changera quand ce sera possible.',
   'See {PLAN_NAMES}': 'Voir {PLAN_NAMES}',
@@ -445,7 +445,7 @@ export const fr: Catalog = {
   'What the meeting is': 'De quelle réunion il s’agit',
   'Your connections': 'Vos contacts',
   Everyone: 'Tout le monde',
-  'Some of your people': 'Certaines de vos personnes',
+  'Some of your people': 'Une partie de votre entourage',
   'Extra protection is on': 'Protection renforcée activée',
   'Because you’re under 18, adults you don’t know can’t find you, and only people you share a connection with can message you.':
     'Comme vous avez moins de 18 ans, les adultes que vous ne connaissez pas ne peuvent pas vous trouver, et seules les personnes avec qui vous avez un contact en commun peuvent vous écrire.',
@@ -478,7 +478,7 @@ export const fr: Catalog = {
   'Rewrite drafts, translate messages, catch up and find follow-ups':
     'Reformuler des brouillons, traduire des messages, rattraper le fil et trouver les relances',
   Save: 'Enregistrer',
-  'Only some of your people': 'Seulement certaines de vos personnes',
+  'Only some of your people': 'Seulement une partie de votre entourage',
   'By how you know them': 'Selon la façon dont vous les connaissez',
   'Who sees it': 'Qui le voit',
   'In a meeting': 'En réunion',
@@ -504,7 +504,7 @@ export const fr: Catalog = {
     'Uniquement pour mieux protéger les plus jeunes, et jamais montrée à personne. Si elle est erronée, l’Aide explique comment la corriger. Votre pays et votre fuseau horaire sont dans Langue et région.',
   Emoji: 'Emoji',
   'Status emoji, {statusEmoji}': 'Emoji de statut, {statusEmoji}',
-  'Opens the emoji to choose from': 'Ouvre les emojis au choix',
+  'Opens the emoji to choose from': 'Ouvre le choix des emojis',
   'What’s up?': 'Quoi de neuf ?',
   'On holiday until the 12th': 'En vacances jusqu’au 12',
   'Status emoji': 'Emoji de statut',
@@ -518,7 +518,7 @@ export const fr: Catalog = {
   'Language and region': 'Langue et région',
   'Where you are': 'Où vous êtes',
   'Your country sets your defaults, like the days work notifications wait for and the currency of amounts. Your time zone is what quiet hours and due dates keep to. Neither is shown to anyone.':
-    'Votre pays définit vos réglages par défaut, comme les jours qu’attendent les notifications de travail et la devise des montants. Votre fuseau horaire fixe les heures de silence et les échéances. Ni l’un ni l’autre n’est montré à personne.',
+    'Votre pays définit vos réglages par défaut, comme les jours où arrivent les notifications du travail et la devise des montants. Votre fuseau horaire fixe les heures de silence et les échéances. Ni l’un ni l’autre n’est montré à personne.',
   Country: 'Pays',
   'Time zone': 'Fuseau horaire',
   Language: 'Langue',
@@ -552,10 +552,10 @@ export const fr: Catalog = {
   'Empty it': 'Vider',
   'Rename {chosen}': 'Renommer {chosen}',
   'Its automations save to the new name. Into one you have, the two become one.':
-    'Ses automatisations enregistrent sous le nouveau nom. Vers une collection existante, les deux n’en font plus qu’une.',
+    'Ses automatisations enregistrent sous le nouveau nom. Avec le nom d’une collection existante, les deux n’en font plus qu’une.',
   'Its name': 'Son nom',
   'Your account is deleted. Thank you for trying Caime.':
-    'Votre compte est supprimé. Merci d’avoir essayé Caime.',
+    'Votre compte a été supprimé. Merci d’avoir essayé Caime.',
   'Enter your current password.': 'Saisissez votre mot de passe actuel.',
   'Password changed. Other devices were signed out.':
     'Mot de passe modifié. Les autres appareils ont été déconnectés.',
@@ -575,7 +575,7 @@ export const fr: Catalog = {
   'Change password': 'Changer le mot de passe',
   'Recovery codes': 'Codes de récupération',
   'Caime never asks for your phone number. These codes are how you get back in if you forget your password.':
-    'Caime ne demande jamais votre numéro de téléphone. Ces codes sont votre moyen de revenir si vous oubliez votre mot de passe.',
+    'Caime ne demande jamais votre numéro de téléphone. Ces codes vous permettent de récupérer votre compte si vous oubliez votre mot de passe.',
   'Copy all': 'Tout copier',
   'Copied. Keep them somewhere safe.': 'Copiés. Gardez-les en lieu sûr.',
   'Make new codes': 'Créer de nouveaux codes',
@@ -625,7 +625,7 @@ export const fr: Catalog = {
   'Recovery code': 'Code de récupération',
   'Set new password': 'Définir le nouveau mot de passe',
   'No codes left? For your safety Caime can’t reset an account without one. If you signed in on another device, you can make new codes there under You → Security.':
-    'Plus de codes ? Pour votre sécurité, Caime ne peut pas réinitialiser un compte sans. Si vous êtes connecté sur un autre appareil, vous pouvez y créer de nouveaux codes dans Vous → Sécurité.',
+    'Plus de codes ? Pour votre sécurité, Caime ne peut pas réinitialiser un compte sans code. Si une session est ouverte sur un autre appareil, vous pouvez y créer de nouveaux codes dans Vous → Sécurité.',
   'This link isn’t whole': 'Ce lien est incomplet',
   'Open the one in the email, or ask for a new one.':
     'Ouvrez celui de l’e-mail, ou demandez-en un nouveau.',
@@ -633,14 +633,14 @@ export const fr: Catalog = {
   'new password': 'nouveau mot de passe',
   'Set a new password': 'Définir un nouveau mot de passe',
   'You’ll be signed in here, and out everywhere else.':
-    'Vous serez connecté ici, et déconnecté partout ailleurs.',
+    'Votre session s’ouvrira ici et se fermera partout ailleurs.',
   'Too many tries. Wait a few minutes and try again.':
     'Trop de tentatives. Attendez quelques minutes et réessayez.',
   'sign in': 'connexion',
   'Welcome back': 'Bon retour',
   'Sign in with your email or @handle.': 'Connectez-vous avec votre e-mail ou @identifiant.',
   'Sign in': 'Se connecter',
-  'New here?': 'Nouveau ici ?',
+  'New here?': 'Première visite ?',
   'Create an account': 'Créer un compte',
   'Enter the day you were born.': 'Saisissez votre date de naissance.',
   'Choose where you live.': 'Choisissez où vous vivez.',
@@ -674,7 +674,7 @@ export const fr: Catalog = {
   'Create an account or sign in to see @{linkHandle}':
     'Créez un compte ou connectez-vous pour voir @{linkHandle}',
   'You were invited. Create an account or sign in and you’re connected':
-    'Vous avez été invité. Créez un compte ou connectez-vous et vous êtes en contact',
+    'Vous avez une invitation. Créez un compte ou connectez-vous et vous serez en contact',
   'An app asked to act for you. Sign in to answer it':
     'Une application a demandé à agir en votre nom. Connectez-vous pour lui répondre',
   'I already have an account': 'J’ai déjà un compte',
@@ -683,7 +683,7 @@ export const fr: Catalog = {
   welcome: 'bienvenue',
   'Welcome to Caime': 'Bienvenue sur Caime',
   'One place for everyone you talk to, and it knows the difference between your mum, your manager and your plumber.':
-    'Un seul endroit pour tous ceux à qui vous parlez, qui fait la différence entre votre mère, votre responsable et votre plombier.',
+    'Un seul endroit pour toutes les personnes à qui vous parlez, qui fait la différence entre votre mère, votre responsable et votre plombier.',
   'Messaging that understands your relationships.': 'La messagerie qui comprend vos relations.',
   'Family, friends and work, each in its place. The right conversations find you.':
     'Famille, amis et travail, chacun à sa place. Les bonnes conversations viennent à vous.',
@@ -692,17 +692,18 @@ export const fr: Catalog = {
   '“3 need you”, never “47 unread”. It says why.':
     '« 3 ont besoin de vous », jamais « 47 non lus ». Et la raison est donnée.',
   'Each side of your life sees what you chose. Only you see your labels.':
-    'Chaque côté de votre vie voit ce que vous avez choisi. Vous seul voyez vos étiquettes.',
+    'Chaque côté de votre vie voit ce que vous avez choisi. Vos étiquettes ne sont visibles que par vous.',
   'Caime is starting': 'Caime démarre',
   Added: 'Ajouté',
-  'Added. It’s saved when you’re back online.': 'Ajouté. Ce sera enregistré une fois en ligne.',
+  'Added. It’s saved when you’re back online.':
+    'Ajouté. Ce sera enregistré au retour de la connexion.',
   Add: 'Ajouter',
   'What needs doing? Try “renew passport by Friday”':
     'Que faut-il faire ? Essayez « renouveler le passeport d’ici vendredi »',
   'What needs doing': 'Que faut-il faire',
   'Due {formatDue}': 'Échéance {formatDue}',
   'Due {formatDue}. Change the day': 'Échéance {formatDue}. Changer le jour',
-  'From “{text}”': 'De « {text} »',
+  'From “{text}”': 'D’après « {text} »',
   'Add a due date': 'Ajouter une échéance',
   '{displayName} asked you': '{displayName} vous l’a demandé',
   'Waiting on {displayName}': 'En attente de {displayName}',
@@ -721,7 +722,7 @@ export const fr: Catalog = {
     other: '{n} relances à examiner',
   },
   'Nothing new to follow up': 'Rien de nouveau à relancer',
-  'Catch me up': 'Me résumer',
+  'Catch me up': 'Faire le point',
   'Find follow-ups': 'Trouver les relances',
   'Nothing to catch up on yet.': 'Rien à rattraper pour l’instant.',
   '{count} new messages': '{count} nouveaux messages',
@@ -747,7 +748,7 @@ export const fr: Catalog = {
   Yearly: 'Annuel',
   'Paid through Stripe. Cancel whenever you like: it stays on until the end of what you’ve paid for, and nothing you use today goes away after.':
     'Payé via Stripe. Annulez quand vous voulez : il reste actif jusqu’à la fin de la période payée, et rien de ce que vous utilisez aujourd’hui ne disparaît ensuite.',
-  'Get {name}': 'Prendre {name}',
+  'Get {name}': 'Passer à {name}',
   'Nobody is waiting': 'Personne n’attend',
   'When a customer writes, their conversation comes here until someone answers.':
     'Quand un client écrit, sa conversation arrive ici jusqu’à ce que quelqu’un réponde.',
@@ -757,18 +758,18 @@ export const fr: Catalog = {
   'Nothing is yours right now': 'Rien ne vous est attribué pour l’instant',
   'Answer a conversation, or take one, and it’s yours.':
     'Répondez à une conversation, ou prenez-en une, et elle est à vous.',
-  'No one to hear back from': 'Personne dont attendre la réponse',
+  'No one to hear back from': 'Aucune réponse attendue',
   'Answered conversations wait here.': 'Les conversations auxquelles on a répondu attendent ici.',
-  'Nothing escalated': 'Rien de signalé',
+  'Nothing escalated': 'Rien de remonté',
   'Conversations that need an owner or admin.':
     'Les conversations qui ont besoin du propriétaire ou d’un admin.',
   'Nothing resolved yet': 'Rien de résolu pour l’instant',
   'Resolved conversations stay here.': 'Les conversations résolues restent ici.',
   'Deleted account': 'Compte supprimé',
   'Your team': 'Votre équipe',
-  'Handed over by AI': 'Transmis par l’IA',
-  'Answered by AI': 'Répondu par l’IA',
-  'Nobody has it': 'Personne ne l’a',
+  'Handed over by AI': 'Transmise par l’IA',
+  'Answered by AI': 'Réponse de l’IA',
+  'Nobody has it': 'Personne ne s’en occupe',
   'Under 18': 'Moins de 18 ans',
   'Customers waiting longest are at the top.':
     'Les clients qui attendent depuis le plus longtemps sont en haut.',
@@ -796,36 +797,36 @@ export const fr: Catalog = {
     other: '{n} clients en attente',
   },
   ' · {mine} yours': ' · {mine} à vous',
-  'You have it': 'Vous l’avez',
-  '{displayName} has it': '{displayName} l’a',
-  'Nobody has it yet': 'Personne ne l’a encore',
+  'You have it': 'Vous vous en occupez',
+  '{displayName} has it': '{displayName} s’en occupe',
+  'Nobody has it yet': 'Personne ne s’en occupe encore',
   'Wrote just now': 'A écrit à l’instant',
   'Waiting {waitedFor}': 'Attend depuis {waitedFor}',
   'Erased at the customer’s request': 'Effacée à la demande du client',
-  '{name} escalated it': '{name} l’a signalée',
+  '{name} escalated it': '{name} l’a fait remonter',
   Reopen: 'Rouvrir',
   'Take it': 'La prendre',
   Resolve: 'Résoudre',
   More: 'Plus',
-  'Who has it': 'Qui l’a',
-  'Escalate to the owner and admins': 'Signaler au propriétaire et aux admins',
+  'Who has it': 'Qui s’en occupe',
+  'Escalate to the owner and admins': 'Faire remonter au propriétaire et aux admins',
   'Erase at the customer’s request': 'Effacer à la demande du client',
   'This conversation': 'Cette conversation',
   'They’re told at once. Say what needs them, if it helps.':
-    'Ils sont prévenus immédiatement. Dites ce qui a besoin d’eux, si cela aide.',
+    'Le propriétaire et les admins sont prévenus aussitôt. Précisez ce qui requiert leur attention, si cela aide.',
   'Every message in this conversation goes, for the customer and the team, and a line says {name} erased it at their request. Caime keeps that you did it. It can’t be undone.':
     'Chaque message de cette conversation disparaît, pour le client comme pour l’équipe, et une ligne indique que {name} l’a effacée à sa demande. Caime garde la trace que vous l’avez fait. C’est irréversible.',
   'the organization': 'l’organisation',
-  Escalate: 'Signaler',
+  Escalate: 'Faire remonter',
   'Erase every message': 'Effacer tous les messages',
   'Give it to someone': 'L’attribuer à quelqu’un',
-  'It’s handled: stop escalating': 'C’est pris en charge : ne plus signaler',
+  'It’s handled: stop escalating': 'C’est pris en charge : ne plus faire remonter',
   'It needs the owner or an admin': 'Elle a besoin du propriétaire ou d’un admin',
   'Every message in it goes; the customer is told':
     'Tous ses messages disparaissent ; le client est prévenu',
   '{displayName} (you)': '{displayName} (vous)',
   'Back to New for the whole team': 'Retour dans Nouveau pour toute l’équipe',
-  'What needs them (optional)': 'Ce qui a besoin d’eux (facultatif)',
+  'What needs them (optional)': 'Ce qui requiert leur attention (facultatif)',
   'Only a verified organization writes to someone first, so nobody can pose as one. Verify {name}’s domain on its page, and anyone on the team can.':
     'Seule une organisation vérifiée écrit la première à quelqu’un, pour que personne ne puisse se faire passer pour elle. Vérifiez le domaine de {name} sur sa page, et toute l’équipe le pourra.',
   'Verify the domain': 'Vérifier le domaine',
@@ -836,7 +837,7 @@ export const fr: Catalog = {
   'If they haven’t written to {name} before, it reaches them as a message request: nothing more from the team until they answer, and they can decline or block {name}.':
     'Si cette personne n’a jamais écrit à {name}, cela lui parvient comme demande de message : rien de plus de l’équipe tant qu’elle n’a pas répondu, et elle peut refuser ou bloquer {name}.',
   'Never to anyone under 18, or who only takes messages from people they know.':
-    'Jamais à une personne de moins de 18 ans, ni à qui n’accepte que les messages de ses connaissances.',
+    'Jamais à une personne de moins de 18 ans, ni à une personne qui n’accepte que les messages de ses connaissances.',
   'Closed by the customer': 'Fermée par le client',
   'Request sent': 'Demande envoyée',
   'Nothing coming up': 'Rien à venir',
@@ -861,10 +862,10 @@ export const fr: Catalog = {
   Missed: 'Manqués',
   'No missed calls': 'Aucun appel manqué',
   'No calls yet': 'Aucun appel pour l’instant',
-  'Your calls with {withName} will be here.': 'Vos appels avec {withName} seront ici.',
-  'Your calls together will be here.': 'Vos appels ensemble seront ici.',
+  'Your calls with {withName} will be here.': 'Vos appels avec {withName} apparaîtront ici.',
+  'Your calls together will be here.': 'Vos appels ensemble apparaîtront ici.',
   'Calls you make and get, and the ones you miss, will be here.':
-    'Les appels que vous passez et recevez, et ceux que vous manquez, seront ici.',
+    'Les appels que vous passez et recevez, et ceux que vous manquez, apparaîtront ici.',
   'Video call': 'Appel vidéo',
   'Voice call': 'Appel vocal',
   'Call ended': 'Appel terminé',
@@ -892,7 +893,7 @@ export const fr: Catalog = {
   'Group voice call': 'Appel vocal de groupe',
   '{displayName} is calling · {kindName}': '{displayName} appelle · {kindName}',
   'Waiting for others…': 'En attente des autres…',
-  'Only you so far': 'Vous seul pour l’instant',
+  'Only you so far': 'Personne d’autre pour l’instant',
   '{length} in the call': '{length} dans l’appel',
   '{first} is in the call': '{first} est dans l’appel',
   '{join}{text} are in the call': '{join}{text} sont dans l’appel',
@@ -933,12 +934,12 @@ export const fr: Catalog = {
   'Offline. {waitingText} will go when you’re back.':
     'Hors ligne. {waitingText} partiront à votre retour.',
   'Connecting…': 'Connexion…',
-  'Something went wrong on this screen': 'Quelque chose s’est mal passé sur cet écran',
+  'Something went wrong on this screen': 'Un problème est survenu sur cet écran',
   'Your messages are safe. Try again, and if it keeps happening, tell us what you were doing.':
     'Vos messages sont en sécurité. Réessayez, et si cela continue, dites-nous ce que vous faisiez.',
   'Go to Chats': 'Aller aux discussions',
   '{displayName}, {indexOf} of {length}. Enter mentions them, Escape closes the list.':
-    '{displayName}, {indexOf} sur {length}. Entrée le mentionne, Échap ferme la liste.',
+    '{displayName}, {indexOf} sur {length}. Entrée pour mentionner, Échap pour fermer la liste.',
   'Voice note': 'Note vocale',
   'Couldn’t upload: {e}': 'Envoi impossible : {e}',
   'Start over here instead': 'Recommencer ici plutôt',
@@ -968,10 +969,10 @@ export const fr: Catalog = {
     'Une conversation professionnelle. Son équipe répond en tant que {name}.',
   'See its profile': 'Voir son profil',
   'A customer of {name}. They see {name}, not who on the team answers.':
-    'Un client de {name}. Il voit {name}, pas qui répond dans l’équipe.',
+    'Client de {name}. Cette personne voit {name}, pas qui répond dans l’équipe.',
   'About this conversation': 'À propos de cette conversation',
   'Close panel': 'Fermer le panneau',
-  'Only you see this label': 'Vous seul voyez cette étiquette',
+  'Only you see this label': 'Cette étiquette n’est visible que par vous',
   'Add how you know them': 'Ajouter d’où vous vous connaissez',
   'What you wrote to each other stays here. Archive it to put it away.':
     'Ce que vous vous êtes écrit reste ici. Archivez-la pour la ranger.',
@@ -1012,8 +1013,8 @@ export const fr: Catalog = {
   'This conversation isn’t available': 'Cette conversation n’est pas disponible',
   'typing…': 'écrit…',
   'Private · end to end encrypted': 'Privée · chiffrée de bout en bout',
-  'Business · Verified · {verifiedDomain}': 'Pro · Vérifiée · {verifiedDomain}',
-  'Business · Not verified yet': 'Pro · Pas encore vérifiée',
+  'Business · Verified · {verifiedDomain}': 'Entreprise · Vérifiée · {verifiedDomain}',
+  'Business · Not verified yet': 'Entreprise · Pas encore vérifiée',
   'Customer of {name}': 'Client de {name}',
   Online: 'En ligne',
   'Voice call {displayName}': 'Appeler {displayName} en vocal',
@@ -1028,12 +1029,12 @@ export const fr: Catalog = {
   'A business conversation: {name}’s team answers as {name}.':
     'Une conversation professionnelle : l’équipe de {name} répond en tant que {name}.',
   'Only you see how you’ve labelled {displayName}':
-    'Vous seul voyez comment vous avez étiqueté {displayName}',
+    'Personne d’autre que vous ne voit comment vous avez étiqueté {displayName}',
   'This is the beginning of your conversation.': 'C’est le début de votre conversation.',
   'New messages': 'Nouveaux messages',
   'Jump to the newest message': 'Aller au message le plus récent',
   '{name} closed on Caime. What was sent here stays to read; find it again to start a new conversation.':
-    '{name} a fermé sur Caime. Ce qui a été envoyé ici reste lisible ; retrouvez-la pour commencer une nouvelle conversation.',
+    '{name} a cessé son activité sur Caime. Ce qui a été envoyé ici reste lisible ; retrouvez-la pour commencer une nouvelle conversation.',
   'This organization': 'Cette organisation',
   'The customer closed this conversation.': 'Le client a fermé cette conversation.',
   'You blocked {name}.': 'Vous avez bloqué {name}.',
@@ -1048,7 +1049,7 @@ export const fr: Catalog = {
   '{name} keeps this conversation for {retentionText}: messages go after that.':
     '{name} conserve cette conversation pendant {retentionText} : les messages disparaissent ensuite.',
   'Reply as {name}': 'Répondre en tant que {name}',
-  'Good to have you here, {first}.': 'Content de vous avoir ici, {first}.',
+  'Good to have you here, {first}.': 'Un plaisir de vous voir ici, {first}.',
   'What are you working on this week?': 'Sur quoi travaillez-vous cette semaine ?',
   'Shall we keep our threads here from now on?': 'On garde nos échanges ici désormais ?',
   'Hey {first}! We’re on Caime now.': 'Salut {first} ! On est sur Caime maintenant.',
@@ -1056,7 +1057,7 @@ export const fr: Catalog = {
   'What’s new with you?': 'Quoi de neuf chez vous ?',
   'Your first words with {first}': 'Vos premiers mots avec {first}',
   '{label}: only you see that label. Say something, or pick a line to start from.':
-    '{label} : vous seul voyez cette étiquette. Dites quelque chose, ou choisissez une phrase pour commencer.',
+    '{label} : cette étiquette n’est visible que par vous. Dites quelque chose, ou choisissez une phrase pour commencer.',
   'Say something, or pick a line to start from.':
     'Dites quelque chose, ou choisissez une phrase pour commencer.',
   Forwarded: 'Transféré',
@@ -1100,7 +1101,7 @@ export const fr: Catalog = {
   'They stop seeing what’s written here, until they join it again from {name}':
     'Cette personne cesse de voir ce qui s’écrit ici, jusqu’à ce qu’elle le rejoigne à nouveau depuis {name}',
   'They stop seeing what’s written here': 'Cette personne cesse de voir ce qui s’écrit ici',
-  'Removed {displayName}': '{displayName} retiré du groupe',
+  'Removed {displayName}': '{displayName} ne fait plus partie du groupe',
   'Leave “{title}”?': 'Quitter « {title} » ?',
   'You stop getting its messages. Someone in it can add you again.':
     'Vous cessez de recevoir ses messages. Un de ses membres peut vous rajouter.',
@@ -1132,7 +1133,7 @@ export const fr: Catalog = {
   'Keeps a link back to this message': 'Garde un lien vers ce message',
   'Added to your actions': 'Ajouté à vos actions',
   'Added to your actions. It’s saved when you’re back online.':
-    'Ajouté à vos actions. Ce sera enregistré une fois en ligne.',
+    'Ajouté à vos actions. Ce sera enregistré au retour de la connexion.',
   'Everyone here sees it, with a link back to this message':
     'Tout le monde ici la voit, avec un lien vers ce message',
   Unpin: 'Désépingler',
@@ -1182,7 +1183,7 @@ export const fr: Catalog = {
     '{displayName} verra ceci comme une demande de message de {name}.',
   They: 'Cette personne',
   '{displayName} will see this as a message request until they accept.':
-    '{displayName} verra ceci comme une demande de message jusqu’à l’accepter.',
+    '{displayName} verra ceci comme une demande de message tant qu’elle n’est pas acceptée.',
   'Blocked {name}. It can’t write to you; unblock it from its page.':
     '{name} bloquée. Elle ne peut plus vous écrire ; débloquez-la depuis sa page.',
   '{name} wrote to you first': '{name} vous a écrit en premier',
@@ -1212,7 +1213,7 @@ export const fr: Catalog = {
   'Reminder set': 'Rappel créé',
   'You’ll see it under Waiting': 'Vous le verrez sous En attente',
   'Topic started': 'Sujet ouvert',
-  'Label added. Only you see it.': 'Étiquette ajoutée. Vous seul la voyez.',
+  'Label added. Only you see it.': 'Étiquette ajoutée. Elle n’est visible que par vous.',
   '{n} quieter suggestions you usually pass on · Show': {
     one: '{n} suggestion plus discrète que vous écartez d’habitude · Afficher',
     other: '{n} suggestions plus discrètes que vous écartez d’habitude · Afficher',
@@ -1244,7 +1245,7 @@ export const fr: Catalog = {
   'Merged: {shownName} is one person in People now':
     'Fusionné : {shownName} est une seule personne dans Personnes maintenant',
   'Kept separate. We won’t ask about them again.':
-    'Gardés séparés. Nous ne vous le redemanderons pas.',
+    'Comptes gardés séparés. La question ne sera plus posée.',
   '@{handle} and @{handle2}': '@{handle} et @{handle2}',
   Merge: 'Fusionner',
   'Keep separate': 'Garder séparés',
@@ -1259,7 +1260,7 @@ export const fr: Catalog = {
   'Also these accounts': 'Aussi ces comptes',
   Open: 'Ouvrir',
   'Only you see them as one. Each account keeps its own conversations.':
-    'Vous seul les voyez comme une seule personne. Chaque compte garde ses propres conversations.',
+    'Ils ne sont réunis que pour vous. Chaque compte garde ses propres conversations.',
   'Reading private conversations': 'Lecture des conversations privées',
   'A device you sign in on waits until you approve it from one of these. Removing one signs it out.':
     'Un appareil sur lequel vous vous connectez attend que vous l’approuviez depuis l’un de ceux-ci. En retirer un le déconnecte.',
@@ -1287,18 +1288,18 @@ export const fr: Catalog = {
   'It stays the same as you add devices (each one you approve). It changes only if you start over.':
     'Il reste le même quand vous ajoutez des appareils (chacun que vous approuvez). Il ne change que si vous recommencez à zéro.',
   'Caime lists a device as yours that none of yours approved. Nothing is sealed for it. If you didn’t sign in somewhere new, remove it in Settings, Security.':
-    'Caime liste comme vôtre un appareil qu’aucun des vôtres n’a approuvé. Rien n’est scellé pour lui. Si vous ne vous êtes pas connecté quelque part de nouveau, retirez-le dans Réglages, Sécurité.',
+    'Caime liste comme vôtre un appareil qu’aucun des vôtres n’a approuvé. Rien n’est scellé pour lui. Si vous n’avez pas ouvert de session sur un nouvel appareil, retirez-le dans Réglages, Sécurité.',
   '{name}’s security code': 'Code de sécurité de {name}',
   'It changed since you compared it: {name} started over on a device, or someone is posing as them. Nothing is sealed for {name}, nor shown from them, until you compare it again.':
     'Il a changé depuis que vous l’avez comparé : {name} a recommencé à zéro sur un appareil, ou quelqu’un se fait passer pour {name}. Rien n’est scellé pour {name}, ni affiché de sa part, tant que vous ne l’avez pas comparé à nouveau.',
   'It changed: {name} started over on a device. Compare it with them to be sure it’s them.':
-    'Il a changé : {name} a recommencé à zéro sur un appareil. Comparez-le avec {name} pour être sûr que c’est bien la bonne personne.',
+    'Il a changé : {name} a recommencé à zéro sur un appareil. Comparez-le avec {name} pour vous assurer que c’est bien la bonne personne.',
   'You compared it with {name}.': 'Vous l’avez comparé avec {name}.',
   'Compare it with {name} (in person, or on a call): if it matches the code {name} sees as theirs, it’s them.':
     'Comparez-le avec {name} (en personne, ou en appel) : s’il correspond au code que {name} voit comme le sien, c’est bien {name}.',
   'Caime lists a device for {name} that none of theirs approved. Nothing is sealed for it.':
     'Caime liste pour {name} un appareil qu’aucun des siens n’a approuvé. Rien n’est scellé pour lui.',
-  'It’s them: remember this code': 'C’est bien la personne : retenir ce code',
+  'It’s them: remember this code': 'C’est bien cette personne : retenir ce code',
   'It matches': 'Il correspond',
   'Is this you? {name}': 'Est-ce vous ? {name}',
   'A new device': 'Un nouvel appareil',
@@ -1308,9 +1309,9 @@ export const fr: Catalog = {
   'Not me: sign it out': 'Ce n’est pas moi : le déconnecter',
   'Start over here?': 'Recommencer à zéro ici ?',
   'This device reads your private conversations from now on, and every other device of yours stops reading them until you approve it from here.':
-    'Cet appareil lit vos conversations privées à partir de maintenant, et chacun de vos autres appareils cesse de les lire jusqu’à ce que vous l’approuviez d’ici.',
+    'Cet appareil lit vos conversations privées à partir de maintenant, et chacun de vos autres appareils cesse de les lire jusqu’à ce que vous l’approuviez depuis celui-ci.',
   'Your security code changes, so the people you write to privately see it did. Nothing sent before now opens here, and your recovery key, if you made one, stops working: make a new one after. If another device of yours is at hand, approve this one from it instead; if you have your recovery key, use that.':
-    'Votre code de sécurité change, et les personnes à qui vous écrivez en privé le voient. Rien d’envoyé avant maintenant ne s’ouvre ici, et votre clé de récupération, si vous en avez créé une, cesse de fonctionner : créez-en une nouvelle ensuite. Si un autre de vos appareils est à portée, approuvez plutôt celui-ci depuis lui ; si vous avez votre clé de récupération, utilisez-la.',
+    'Votre code de sécurité change, et les personnes à qui vous écrivez en privé le voient. Rien de ce qui a été envoyé jusqu’ici ne s’ouvre sur cet appareil, et votre clé de récupération, si vous en avez créé une, cesse de fonctionner : créez-en une nouvelle ensuite. Si un autre de vos appareils est à portée de main, approuvez plutôt celui-ci depuis cet autre appareil ; si vous avez votre clé de récupération, utilisez-la.',
   'Start over here': 'Recommencer à zéro ici',
   'A device none of yours approved is listed as yours. Nothing is sealed for it.':
     'Un appareil qu’aucun des vôtres n’a approuvé est listé comme vôtre. Rien n’est scellé pour lui.',
@@ -1322,9 +1323,9 @@ export const fr: Catalog = {
   'If every device of yours is lost, a new one reads your private conversations with this key, and your security code stays the same. Keep it where you keep passwords: Caime can’t show it again, or read anything without it.':
     'Si tous vos appareils sont perdus, un nouveau lit vos conversations privées avec cette clé, et votre code de sécurité reste le même. Gardez-la là où vous gardez vos mots de passe : Caime ne peut ni la réafficher, ni rien lire sans elle.',
   'Without one, losing every device you’re signed in on loses your private conversations for good. The key is shown once: keep it where you keep passwords.':
-    'Sans clé, perdre tous les appareils où vous êtes connecté fait perdre vos conversations privées pour de bon. La clé est affichée une seule fois : gardez-la là où vous gardez vos mots de passe.',
+    'Sans clé, perdre tous les appareils où votre session est ouverte fait perdre vos conversations privées pour de bon. La clé est affichée une seule fois : gardez-la là où vous gardez vos mots de passe.',
   'On, since {formatListTime}.{This}': 'Activée, depuis {formatListTime}.{This}',
-  ' This device has it.': ' Cet appareil l’a.',
+  ' This device has it.': ' Elle est sur cet appareil.',
   'Off.': 'Désactivée.',
   'Make a new key': 'Créer une nouvelle clé',
   'Make a recovery key': 'Créer une clé de récupération',
@@ -1359,7 +1360,7 @@ export const fr: Catalog = {
   'This conversation was private on this device, and Caime now says it isn’t, so nothing is sent from here. Start a new private conversation instead.':
     'Cette conversation était privée sur cet appareil, et Caime dit maintenant qu’elle ne l’est pas, donc rien n’est envoyé d’ici. Ouvrez plutôt une nouvelle conversation privée.',
   'This device reads and writes private messages once you approve it on another device where you’re signed in to Caime.':
-    'Cet appareil lit et écrit des messages privés une fois approuvé depuis un autre appareil où vous êtes connecté à Caime.',
+    'Cet appareil lit et écrit des messages privés une fois approuvé depuis un autre appareil où votre session Caime est ouverte.',
   'Private messages don’t open on this device. Open Caime on your phone or in a current browser.':
     'Les messages privés ne s’ouvrent pas sur cet appareil. Ouvrez Caime sur votre téléphone ou dans un navigateur récent.',
   'Private conversations don’t open on this device.':
@@ -1373,7 +1374,7 @@ export const fr: Catalog = {
   'That isn’t the recovery key for this account.':
     'Ce n’est pas la clé de récupération de ce compte.',
   'This device can’t write in private conversations until you approve it on another device where you’re signed in to Caime.':
-    'Cet appareil ne peut pas écrire dans les conversations privées tant que vous ne l’approuvez pas depuis un autre appareil où vous êtes connecté à Caime.',
+    'Cet appareil ne peut pas écrire dans les conversations privées tant que vous ne l’approuvez pas depuis un autre appareil où votre session Caime est ouverte.',
   'That message isn’t private.': 'Ce message n’est pas privé.',
   'Sent before this device could read private messages.':
     'Envoyé avant que cet appareil puisse lire les messages privés.',
@@ -1405,7 +1406,7 @@ export const fr: Catalog = {
   'That file couldn’t be read.': 'Ce fichier n’a pas pu être lu.',
   '{toLocaleString} messages brought over': '{toLocaleString} messages importés',
   'What you and {name} said there, kept as a topic here. Only you two see it.':
-    'Ce que vous et {name} vous êtes dit là-bas, gardé comme sujet ici. Vous deux seuls le voyez.',
+    'Ce que vous et {name} vous êtes dit là-bas, gardé comme sujet ici. Visible par vous deux seulement.',
   'Bring it over': 'Importer',
   'Choose the file': 'Choisir le fichier',
   'In WhatsApp, open the chat, then More › Export chat › Without media. Save the text file somewhere you can pick it from here. Photos and files don’t come along; the words do, dated as they were written.':
@@ -1433,7 +1434,7 @@ export const fr: Catalog = {
   'Wants to message you': 'Veut vous écrire',
   'Say hello': 'Dire bonjour',
   'Verified business': 'Organisation vérifiée',
-  Business: 'Pro',
+  Business: 'Entreprise',
   Chats: 'Discussions',
   'New conversation': 'Nouvelle conversation',
   'Attention · {needsYou}': 'Attention · {needsYou}',
@@ -1454,11 +1455,11 @@ export const fr: Catalog = {
   'Muted {toLowerCase}': 'En sourdine {toLowerCase}',
   'For a week': 'Pendant une semaine',
   'Muted for a week': 'En sourdine pendant une semaine',
-  'Until I turn it back on': 'Jusqu’à ce que je la réactive',
+  'Until I turn it back on': 'Jusqu’à ce que je les réactive',
   Muted: 'En sourdine',
   'Muted until {format}': 'En sourdine jusqu’à {format}',
   'Until a day and time…': 'Jusqu’à un jour et une heure…',
-  'Search your people': 'Rechercher parmi vos personnes',
+  'Search your people': 'Rechercher dans votre entourage',
   'Connect with someone new': 'Entrer en contact avec quelqu’un de nouveau',
   'Find people by @handle or email': 'Trouver des personnes par @identifiant ou e-mail',
   'For a family, a team, a project or a club': 'Pour une famille, une équipe, un projet ou un club',
@@ -1479,18 +1480,18 @@ export const fr: Catalog = {
   'Move back to Chats': 'Remettre dans Discussions',
   Archive: 'Archiver',
   'Comes back when there’s something new': 'Revient quand il y a du nouveau',
-  'Moved back': 'Remise en place',
+  'Moved back': 'Remise dans Discussions',
   Archived: 'Archivée',
   'How far back': 'Sur quelle période',
   'A quarter': 'Un trimestre',
   'Comes with Pro': 'Inclus avec Pro',
   'See Pro': 'Voir Pro',
-  'Insights couldn’t load': 'Les aperçus n’ont pas pu se charger',
-  ' · {unanswered} waiting on you': ' · {unanswered} en attente de vous',
-  ' · {unanswered} waiting on them': ' · {unanswered} en attente d’eux',
+  'Insights couldn’t load': 'Les analyses n’ont pas pu se charger',
+  ' · {unanswered} waiting on you': ' · {unanswered} en attente de votre part',
+  ' · {unanswered} waiting on them': ' · {unanswered} en attente de leur part',
   '{who} in about {minutes} · {withinHour} of {answered} within the hour{waiting}':
     '{who} en {minutes} environ · {withinHour} sur {answered} dans l’heure{waiting}',
-  'Your people': 'Vos personnes',
+  'Your people': 'Votre entourage',
   '{total} connections': '{total} contacts',
   'You wrote with {count} of them in this time, {change} {previous} the time before.':
     'Vous avez écrit avec {count} d’entre eux sur cette période, {change} {previous} la période précédente.',
@@ -1502,16 +1503,16 @@ export const fr: Catalog = {
   Closest: 'Les plus proches',
   '{messages} messages · you wrote {pct}': '{messages} messages · vous en avez écrit {pct}',
   'Nothing said one to one in this time.': 'Rien dit en tête-à-tête sur cette période.',
-  'Gone quiet': 'Devenus silencieux',
+  'Gone quiet': 'Plus de nouvelles',
   'Connections you’d written with before this time, and not since. Whether to write is yours: Caime only shows it.':
-    'Des contacts avec qui vous aviez écrit avant cette période, et plus depuis. Écrire ou non vous appartient : Caime ne fait que le montrer.',
-  'Last {formatWhen}': 'Dernier {formatWhen}',
-  'Nobody’s gone quiet.': 'Personne n’est devenu silencieux.',
+    'Des contacts avec qui vous écriviez avant cette période, et plus depuis. Écrire ou non vous appartient : Caime ne fait que le montrer.',
+  'Last {formatWhen}': 'Dernier échange {formatWhen}',
+  'Nobody’s gone quiet.': 'Tout le monde donne des nouvelles.',
   'When you write': 'Quand vous écrivez',
   'Your messages by the hour of your day.': 'Vos messages par heure de la journée.',
   'Messages by hour: {join}': 'Messages par heure : {join}',
   'Worked out from your own one-to-ones, for you only. Nobody else sees this, and nothing anyone said is read for it.':
-    'Calculé à partir de vos propres tête-à-tête, pour vous seul. Personne d’autre ne le voit, et rien de ce que quiconque a dit n’est lu pour cela.',
+    'Calculé à partir de vos propres tête-à-tête, rien que pour vous. Personne d’autre ne le voit, et rien de ce que quiconque a dit n’est lu pour cela.',
   'Taken out of the album': 'Retirée de l’album',
   Album: 'Album',
   '{count} photo{value}': '{count} photo{value}',
@@ -1548,7 +1549,7 @@ export const fr: Catalog = {
   'Only this moment is shared, never where you go after.':
     'Seul cet instant est partagé, jamais où vous allez ensuite.',
   'Where you are follows here until then, while Caime is open. Stop it any time; only the latest point is kept.':
-    'Votre position suit ici jusque-là, tant que Caime est ouvert. Arrêtez quand vous voulez ; seul le dernier point est gardé.',
+    'Votre position est mise à jour ici jusque-là, tant que Caime est ouvert. Arrêtez quand vous voulez ; seul le dernier point est gardé.',
   'Found you, within {accuracy} m.': 'Position trouvée, à {accuracy} m près.',
   'Found you.': 'Position trouvée.',
   'How long to share it': 'Pendant combien de temps la partager',
@@ -1556,7 +1557,7 @@ export const fr: Catalog = {
   'Use where I am now': 'Utiliser ma position actuelle',
   'Name it (optional)': 'Nommer (facultatif)',
   'Or type a place': 'Ou saisissez un lieu',
-  'Home, the office…': 'Maison, le bureau…',
+  'Home, the office…': 'Maison, bureau…',
   'Café Riche, Downtown': 'Café Riche, centre-ville',
   Question: 'Question',
   'Option {i}': 'Option {i}',
@@ -1568,7 +1569,7 @@ export const fr: Catalog = {
   '{label} (optional)': '{label} (facultatif)',
   'Choose {field}': 'Choisir {field}',
   'When · {slotMinutes} min': 'Quand · {slotMinutes} min',
-  Split: 'Partage',
+  Split: 'Partage des frais',
   Settled: 'Réglé',
   '{settled} of {length} settled': '{settled} sur {length} réglés',
   'Mark settled': 'Marquer comme réglé',
@@ -1593,9 +1594,9 @@ export const fr: Catalog = {
   'Your live location': 'Votre position en direct',
   'Live location': 'Position en direct',
   'Where you were': 'Où vous étiez',
-  'Where they were': 'Où ils étaient',
+  'Where they were': 'Où était cette personne',
   'It says it’s an AI in every message, answers only from what you tell it, and hands anything else to your team: bookings, payments, complaints, or anyone who asks for a person. It never answers anyone under 18, and never takes a conversation from a person.':
-    'Il dit être une IA dans chaque message, ne répond qu’à partir de ce que vous lui indiquez, et transmet le reste à votre équipe : réservations, paiements, réclamations, ou quiconque demande une personne. Il ne répond jamais à un moins de 18 ans, et ne prend jamais une conversation à une personne.',
+    'Il dit être une IA dans chaque message, ne répond qu’à partir de ce que vous lui indiquez, et transmet le reste à votre équipe : réservations, paiements, réclamations, ou quiconque demande à parler à une personne. Il ne répond jamais à une personne de moins de 18 ans, et ne reprend jamais une conversation à un humain.',
   '{trim} is up to date': '{trim} est à jour',
   '{trim} answers your customers first now': '{trim} répond maintenant en premier à vos clients',
   '{name} is paused: your team answers everyone':
@@ -1647,16 +1648,16 @@ export const fr: Catalog = {
   'Webhook to {hostOf}': 'Webhook vers {hostOf}',
   Apps: 'Applications',
   'Connect your helpdesk or CRM, or let a bot answer the simple questions. Each app has its own token and permissions, and a bot always tells customers it’s automated.':
-    'Connectez votre helpdesk ou votre CRM, ou laissez un bot répondre aux questions simples. Chaque application a son propre jeton et ses permissions, et un bot dit toujours aux clients qu’il est automatique.',
+    'Connectez votre outil de support ou votre CRM, ou laissez un bot répondre aux questions simples. Chaque application a son propre jeton et ses permissions, et un bot dit toujours aux clients qu’il est automatisé.',
   'Add an app': 'Ajouter une application',
   'It acts as a bot on the team, only as far as you let it.':
     'Elle agit comme un bot dans l’équipe, seulement dans la limite que vous fixez.',
   'Add the app': 'Ajouter l’application',
   'Helpdesk, Tiles Assistant…': 'Helpdesk, Assistant Carrelage…',
   'Webhook address (optional)': 'Adresse du webhook (facultatif)',
-  'Caime sends what happens here, signed.': 'Caime y envoie ce qui se passe, signé.',
+  'Caime sends what happens here, signed.': 'Caime y envoie, signé, ce qui se passe ici.',
   'Bot · answers as {name}, labelled automated':
-    'Bot · répond en tant que {name}, marqué automatique',
+    'Bot · répond en tant que {name}, signalé comme automatisé',
   'Remove it: its token and webhook stop now':
     'La retirer : son jeton et son webhook s’arrêtent maintenant',
   '{name} removed': '{name} retirée',
@@ -1681,10 +1682,10 @@ export const fr: Catalog = {
     'Les clients peuvent maintenant réserver parmi vos créneaux libres',
   'Bookings are off': 'Les réservations sont désactivées',
   'Customers, and your AI agent, book from the open slots; your team confirms each one.':
-    'Les clients, et votre agent IA, réservent parmi les créneaux libres ; votre équipe confirme chacun.',
+    'Les clients, et votre agent IA, réservent parmi les créneaux libres ; votre équipe confirme chaque réservation.',
   'Bookable hours': 'Heures réservables',
   'In {timeZone}. A booking is an appointment card your team confirms.':
-    'En {timeZone}. Une réservation est une carte de rendez-vous que votre équipe confirme.',
+    'Fuseau horaire : {timeZone}. Une réservation est une carte de rendez-vous que votre équipe confirme.',
   'Turn bookings off': 'Désactiver les réservations',
   Days: 'Jours',
   From: 'De',
@@ -1735,7 +1736,7 @@ export const fr: Catalog = {
   '{Up} from {before}': '{Up} par rapport à {before}',
   Up: 'En hausse',
   Down: 'En baisse',
-  Insights: 'Aperçus',
+  Insights: 'Statistiques',
   Period: 'Période',
   Customers: 'Clients',
   'First answer': 'Première réponse',
@@ -1745,13 +1746,13 @@ export const fr: Catalog = {
   'For someone on the team': 'D’un membre de l’équipe',
   Resolved: 'Résolues',
   'Insights didn’t load. Try again in a moment.':
-    'Les aperçus ne se sont pas chargés. Réessayez dans un instant.',
+    'Les statistiques ne se sont pas chargées. Réessayez dans un instant.',
   'The whole team’s numbers, never one person’s. Answers from an app’s bot don’t count.':
     'Les chiffres de toute l’équipe, jamais ceux d’une personne. Les réponses du bot d’une application ne comptent pas.',
   '{PLAN_NAMES} has room for {teamSize} people and {apps}{with}.':
     '{PLAN_NAMES} a de la place pour {teamSize} personnes et {apps}{with}.',
   ', with insights into how fast the team answers':
-    ', avec des aperçus de la rapidité de réponse de l’équipe',
+    ', avec des statistiques sur la rapidité de réponse de l’équipe',
   '{PLAN_NAMES} plan': 'Forfait {PLAN_NAMES}',
   '{teamSize} of {teamSize2} people · {count}': '{teamSize} sur {teamSize2} personnes · {count}',
   'People on the team: {teamSize} of {teamSize2}':
@@ -1802,21 +1803,21 @@ export const fr: Catalog = {
   'Verified: {name} proved it controls {verifiedDomain}.':
     'Vérifiée : {name} a prouvé qu’elle contrôle {verifiedDomain}.',
   'Caime hasn’t verified who runs this organization. Be careful with links and payments.':
-    'Caime n’a pas vérifié qui dirige cette organisation. Soyez prudent avec les liens et les paiements.',
+    'Caime n’a pas vérifié qui dirige cette organisation. Prudence avec les liens et les paiements.',
   '{n} yours': '{n} à vous',
   'Customers’ conversations with the team': 'Conversations des clients avec l’équipe',
   Spaces: 'Espaces',
   'You’re not in it': 'Vous n’en faites pas partie',
   'A space keeps the team together: its people, and conversations everyone can find. Start one for the team, a project or a branch.':
     'Un espace garde l’équipe ensemble : ses membres, et des conversations que tout le monde retrouve. Créez-en un pour l’équipe, un projet ou une agence.',
-  'None yet that you’re in.': 'Aucun pour l’instant dont vous faites partie.',
+  'None yet that you’re in.': 'Vous ne faites encore partie d’aucun espace.',
   'Team · {memberCount}': 'Équipe · {memberCount}',
   'AI agent · says so in everything it writes': 'Agent IA · le dit dans tout ce qu’il écrit',
-  'Bot · an app’s, labelled automated': 'Bot · d’une application, marqué automatique',
+  'Bot · an app’s, labelled automated': 'Bot · d’une application, signalé comme automatisé',
   'Leave {name}': 'Quitter {name}',
   'Close {name}': 'Fermer {name}',
   'Its page goes, and the team’s seats end.':
-    'Sa page disparaît, et les sièges de l’équipe prennent fin.',
+    'Sa page disparaît, et les accès de l’équipe prennent fin.',
   'It stops being able to write to you': 'Elle ne peut plus vous écrire',
   'Report {name}': 'Signaler {name}',
   'Sends it to Caime’s safety team, for a scam or someone posing as another':
@@ -1827,7 +1828,7 @@ export const fr: Catalog = {
   'People you’re connected with, over 18. They answer for the organization.':
     'Vos contacts de plus de 18 ans. Ils répondent pour l’organisation.',
   'Room for {room} more': 'Place pour {room} de plus',
-  'Added {n} to the team': '{n} ajoutés à l’équipe',
+  'Added {n} to the team': 'Ajouts à l’équipe : {n}',
   'The team is full on the {plan} plan ({n} people).':
     'L’équipe est complète avec le forfait {plan} ({n} personnes).',
   'Room for {room} more on the {PLAN_NAMES} plan.':
@@ -1840,7 +1841,7 @@ export const fr: Catalog = {
   'Remove from the team': 'Retirer de l’équipe',
   'Close {name}?': 'Fermer {name} ?',
   'Its page goes, its team’s seats end, and its apps stop. Customers keep what they were sent, to read. {text}':
-    'Sa page disparaît, les sièges de son équipe prennent fin, et ses applications s’arrêtent. Les clients gardent ce qui leur a été envoyé, en lecture. {text}',
+    'Sa page disparaît, les accès de son équipe prennent fin, et ses applications s’arrêtent. Les clients gardent ce qui leur a été envoyé, en lecture. {text}',
   'Its handle is held for a year, then free to anyone.':
     'Son identifiant est réservé un an, puis libre pour tous.',
   'Leave {name}?': 'Quitter {name} ?',
@@ -1850,7 +1851,8 @@ export const fr: Catalog = {
   'You stop answering for it. An admin can add you back.':
     'Vous cessez de répondre pour elle. Un admin peut vous réintégrer.',
   'You left {name}': 'Vous avez quitté {name}',
-  '{name} closed, and its handle is waiting for it': '{name} a fermé, et son identifiant l’attend',
+  '{name} closed, and its handle is waiting for it':
+    '{name} a fermé, et son identifiant lui reste réservé',
   'At {domain}’s DNS provider, add a TXT record with this name and value, then check. Changes can take a few minutes to appear.':
     'Chez le fournisseur DNS de {domain}, ajoutez un enregistrement TXT avec ce nom et cette valeur, puis vérifiez. Les changements peuvent prendre quelques minutes à apparaître.',
   'If you’re {name}, prove you control {domain} again and it continues: the same handle and page, with you as its owner. Its old team, apps and followers don’t come back; what its customers were sent stays theirs to read.':
@@ -1874,22 +1876,23 @@ export const fr: Catalog = {
   '{name} can accept, decline or ignore. Declining is silent.':
     '{name} peut accepter, refuser ou ignorer. Un refus est silencieux.',
   'Link taken back': 'Lien retiré',
-  '{displayName} invited you to Caime:': '{displayName} vous a invité sur Caime :',
+  '{displayName} invited you to Caime:': '{displayName} vous invite sur Caime :',
   'Link copied': 'Lien copié',
-  'How will you know them?': 'D’où les connaîtrez-vous ?',
+  'How will you know them?': 'Qui sera cette personne pour vous ?',
   'Your invite link': 'Votre lien d’invitation',
   'Whoever opens it signs up in half a minute and lands in a conversation with you, connected.':
     'Quiconque l’ouvre s’inscrit en une demi-minute et arrive dans une conversation avec vous, en contact.',
   'Share the link': 'Partager le lien',
   'Copy the link': 'Copier le lien',
-  'They’ll be': 'Ce seront',
+  'They’ll be': 'Cette personne sera',
   'A link that lands them in a conversation with you, connected, the moment they sign up.':
-    'Un lien qui les fait arriver dans une conversation avec vous, en contact, dès leur inscription.',
+    'Un lien qui fait arriver la personne dans une conversation avec vous, en contact, dès son inscription.',
   'Make the link': 'Créer le lien',
-  'How you’ll know them': 'D’où vous les connaîtrez',
-  'Optional. They never see your label.': 'Facultatif. Ils ne voient jamais votre étiquette.',
-  'Show them the context': 'Leur montrer le contexte',
-  'A line for them (optional)': 'Un mot pour eux (facultatif)',
+  'How you’ll know them': 'Ce que cette personne sera pour vous',
+  'Optional. They never see your label.':
+    'Facultatif. Cette personne ne voit jamais votre étiquette.',
+  'Show them the context': 'Lui montrer le contexte',
+  'A line for them (optional)': 'Un mot pour cette personne (facultatif)',
   'Hi, it’s…': 'Bonjour, c’est…',
   'Links you’ve made': 'Liens que vous avez créés',
   '{person} · {daysLeft} days left': '{person} · {daysLeft} jours restants',
@@ -1909,11 +1912,11 @@ export const fr: Catalog = {
   '{incoming} people want to connect': '{incoming} personnes veulent entrer en contact',
   'Show people': 'Afficher les personnes',
   'Not labelled': 'Sans étiquette',
-  'Find your people': 'Trouvez vos personnes',
+  'Find your people': 'Retrouvez votre entourage',
   'Connect by @handle or email. When you add someone, tell Caime how you know them: that’s what makes everything else work.':
     'Entrez en contact par @identifiant ou e-mail. Quand vous ajoutez quelqu’un, dites à Caime d’où vous vous connaissez : c’est ce qui fait fonctionner tout le reste.',
   'No one matches.': 'Personne ne correspond.',
-  'Loading your people…': 'Chargement de vos personnes…',
+  'Loading your people…': 'Chargement de votre entourage…',
   'Everyone you’re connected with is already here.': 'Tous vos contacts sont déjà ici.',
   'Connect with people first, then add them here.':
     'Entrez d’abord en contact avec des personnes, puis ajoutez-les ici.',
@@ -1922,16 +1925,16 @@ export const fr: Catalog = {
   'Just for them, over how you know them':
     'Pour cette personne seulement, au-delà de la façon dont vous la connaissez',
   'Treat {name} like everyone you know this way':
-    'Traiter {name} comme tous ceux que vous connaissez ainsi',
+    'Traiter {name} comme toutes les personnes que vous connaissez ainsi',
   'This profile isn’t available': 'Ce profil n’est pas disponible',
   'Request sent · Cancel': 'Demande envoyée · Annuler',
   Verified: 'Vérifié',
   'How you know {name}': 'D’où vous connaissez {name}',
   'Shared with {name}.': 'Partagé avec {name}.',
   'Only you see this. It shapes your notifications and priorities for {name}.':
-    'Vous seul voyez ceci. Cela façonne vos notifications et priorités pour {name}.',
+    'Visible par vous seulement. Cela détermine vos notifications et priorités pour {name}.',
   ' describes you as ': ' vous décrit comme ',
-  ' — that fits.': ' — ça colle.',
+  ' — that fits.': ' — c’est bien ça.',
   ' too.': ' aussi.',
   'Add another': 'En ajouter une autre',
   '{name} and you': '{name} et vous',
@@ -1954,7 +1957,7 @@ export const fr: Catalog = {
     other: '{n} décisions',
   },
   actions: 'actions',
-  '{open} open · {waiting} waiting': '{open} ouvertes · {waiting} en attente',
+  '{open} open · {waiting} waiting': '{open} en cours · {waiting} en attente',
   answers: 'réponses',
   '{count} of {name}’s for you': '{count} de {name} pour vous',
   '{n} questions': {
@@ -1963,13 +1966,13 @@ export const fr: Catalog = {
   },
   '{myAsks} of yours waiting on {name}': '{myAsks} des vôtres en attente de {name}',
   privacy: 'confidentialité',
-  '{name} sees a limited view of you': '{name} voit une vue limitée de vous',
+  '{name} sees a limited view of you': '{name} ne voit qu’une partie de votre profil',
   'Your privacy settings': 'Vos réglages de confidentialité',
   'Your main conversation': 'Votre conversation principale',
   Topic: 'Sujet',
   'They won’t be able to message you or find you':
     'Cette personne ne pourra plus vous écrire ni vous trouver',
-  'Blocked {name}': '{name} bloqué',
+  'Blocked {name}': 'Vous avez bloqué {name}',
   Remembered: 'Mémoire',
   '{name} owes': '{name} doit',
   'you owe': 'vous devez',
@@ -1982,7 +1985,7 @@ export const fr: Catalog = {
   'Notifications are off in this browser': 'Les notifications sont désactivées dans ce navigateur',
   'In this browser': 'Dans ce navigateur',
   "Only while you're signed in here. What each notification says follows your rules below.":
-    'Seulement tant que vous êtes connecté ici. Ce que dit chaque notification suit vos règles ci-dessous.',
+    'Seulement tant que votre session est ouverte ici. Ce que dit chaque notification suit vos règles ci-dessous.',
   'This browser blocks notifications from Caime. Allow them in its site settings, then come back.':
     'Ce navigateur bloque les notifications de Caime. Autorisez-les dans ses réglages de site, puis revenez.',
   'On: calls and messages reach you here when Caime isn’t open.':
@@ -1993,12 +1996,12 @@ export const fr: Catalog = {
   'Hear calls and messages when Caime isn’t open':
     'Recevoir les appels et messages quand Caime n’est pas ouvert',
   'No subscription': 'Aucun abonnement',
-  'Saved. Only you see it.': 'Enregistré. Vous seul le voyez.',
+  'Saved. Only you see it.': 'Enregistré. Visible par vous seulement.',
   'Caime thinks {relationshipOfferText}.': 'Caime pense {relationshipOfferText}.',
   'Only you see how you know {first}, and nothing changes until you say so.':
-    'Vous seul voyez d’où vous connaissez {first}, et rien ne change sans votre accord.',
+    'Personne d’autre que vous ne voit d’où vous connaissez {first}, et rien ne change sans votre accord.',
   'Only you see this. It changes how Caime treats {name}, never what {name} sees.':
-    'Vous seul voyez ceci. Cela change la façon dont Caime traite {name}, jamais ce que {name} voit.',
+    'Visible par vous seulement. Cela change la façon dont Caime traite {name}, jamais ce que {name} voit.',
   'More kinds of relationship': 'Plus de types de relation',
   'More…': 'Plus…',
   'Or in your own words': 'Ou avec vos mots',
@@ -2017,7 +2020,7 @@ export const fr: Catalog = {
   'Harassment or bullying': 'Harcèlement ou intimidation',
   'Threats, insults, hounding': 'Menaces, insultes, acharnement',
   'Pretending to be someone': 'Usurpation d’identité',
-  'A person or organization they aren’t': 'Une personne ou une organisation qu’ils ne sont pas',
+  'A person or organization they aren’t': 'Se faire passer pour une autre personne ou organisation',
   Inappropriate: 'Inapproprié',
   'Violence, sexual content, hate': 'Violence, contenu sexuel, haine',
   'Something else': 'Autre chose',
@@ -2034,7 +2037,7 @@ export const fr: Catalog = {
     'Dites ce qui s’est passé, pour que l’équipe sache quoi regarder.',
   'Find a collection': 'Trouver une collection',
   'New collection': 'Nouvelle collection',
-  'You have {had}: it goes there.': 'Vous avez {had} : il y va.',
+  'You have {had}: it goes there.': 'Vous avez déjà {had} : l’élément y sera rangé.',
   '{count} saved': '{count} enregistrés',
   'And {length} more: find them by name.': 'Et {length} de plus : trouvez-les par leur nom.',
   'None is called that yet: New collection makes it.':
@@ -2060,7 +2063,7 @@ export const fr: Catalog = {
   When: 'Quand',
   'Who sends it': 'Qui l’envoie',
   'In your conversations, once you’ve let them in':
-    'Dans vos conversations, une fois que vous les avez acceptés',
+    'Dans vos conversations, une fois leur demande acceptée',
   Sends: 'Envoie',
   'What they send': 'Ce qu’ils envoient',
   'With any of these words (optional)': 'Avec l’un de ces mots (facultatif)',
@@ -2079,7 +2082,7 @@ export const fr: Catalog = {
   'Your calendar won’t read Caime any more': 'Votre calendrier ne lira plus Caime',
   'Calendars are for people over 18.': 'Les calendriers sont réservés aux plus de 18 ans.',
   'See your actions’ due dates and the meetings you agree to in Google Calendar, Outlook or Apple Calendar. They read a private address; nothing changes in Caime from there.':
-    'Voyez les échéances de vos actions et les réunions que vous acceptez dans Google Agenda, Outlook ou Calendrier Apple. Ils lisent une adresse privée ; rien ne change dans Caime depuis là.',
+    'Voyez les échéances de vos actions et les réunions que vous acceptez dans Google Agenda, Outlook ou Calendrier Apple. Ils lisent une adresse privée ; rien ne change dans Caime depuis ces applications.',
   'Calendar address': 'Adresse du calendrier',
   'Shown this once: add it to your calendar now. {how}':
     'Affichée une seule fois : ajoutez-la à votre calendrier maintenant. {how}',
@@ -2087,7 +2090,7 @@ export const fr: Catalog = {
   'On since {formatWhen} · {text}': 'Active depuis {formatWhen} · {text}',
   'not read yet': 'pas encore lue',
   'The address your calendar has now stops working, and you add the new one.':
-    'L’adresse qu’a votre calendrier cesse de fonctionner, et vous ajoutez la nouvelle.',
+    'L’adresse actuelle de votre calendrier cesse de fonctionner, et vous ajoutez la nouvelle.',
   'Your calendar stops showing what’s in Caime.':
     'Votre calendrier cesse d’afficher ce qui est dans Caime.',
   'Get a new address': 'Obtenir une nouvelle adresse',
@@ -2113,12 +2116,13 @@ export const fr: Catalog = {
   'its own server': 'son propre serveur',
   'phones and browsers': 'téléphones et navigateurs',
   'Register an app': 'Enregistrer une application',
-  'Sign in with Caime, for people who use it': 'Se connecter avec Caime, pour ceux qui l’utilisent',
+  'Sign in with Caime, for people who use it':
+    'Se connecter avec Caime, pour les personnes qui l’utilisent',
   'Your app is registered': 'Votre application est enregistrée',
   'Copy the secret now: it won’t be shown again.':
     'Copiez le secret maintenant : il ne sera plus affiché.',
   'People who let it in see these, so make them recognisable.':
-    'Les personnes qui l’autorisent voient ceci, alors rendez-le reconnaissable.',
+    'Les personnes qui l’autorisent voient ces informations : rendez-les reconnaissables.',
   'Register the app': 'Enregistrer l’application',
   'Client secret': 'Secret client',
   'Keep it on your server, never in an app people download. Send it with the client ID when you trade a code.':
@@ -2156,7 +2160,7 @@ export const fr: Catalog = {
   'Only if important': 'Seulement si important',
   'Questions, requests, mentions, urgent': 'Questions, demandes, mentions, urgent',
   Never: 'Jamais',
-  'Still in your inbox, never a sound': 'Toujours dans votre boîte, jamais un son',
+  'Still in your inbox, never a sound': 'Toujours dans votre boîte, jamais de son',
   Until: 'Jusqu’à',
   'Urgent messages still reach me': 'Les messages urgents me parviennent quand même',
   'When they mark one urgent, at any hour': 'Quand ils en marquent un comme urgent, à toute heure',
@@ -2185,7 +2189,7 @@ export const fr: Catalog = {
   'Only for them. Everything it doesn’t change follows how you know them.':
     'Pour cette personne seulement. Tout ce qu’elle ne change pas suit la façon dont vous la connaissez.',
   'For everyone you know this way, unless one of them has a rule of their own.':
-    'Pour tous ceux que vous connaissez ainsi, sauf si l’un d’eux a sa propre règle.',
+    'Pour toutes les personnes que vous connaissez ainsi, sauf si l’une d’elles a sa propre règle.',
   'Name, photo, status, pronouns': 'Nom, photo, statut, pronoms',
   'Country, time zone, how dates and numbers look':
     'Pays, fuseau horaire, format des dates et des nombres',
@@ -2194,7 +2198,8 @@ export const fr: Catalog = {
   'What you and your automations kept': 'Ce que vous et vos automatisations avez conservé',
   'Keep what arrives, reminders, quiet hours':
     'Conserver ce qui arrive, rappels, heures de silence',
-  'How your relationships are going, for you only': 'Comment vont vos relations, pour vous seul',
+  'How your relationships are going, for you only':
+    'Comment vont vos relations, rien que pour vous',
   'Who sees what, who can find you': 'Qui voit quoi, qui peut vous trouver',
   'Devices, password, recovery codes': 'Appareils, mot de passe, codes de récupération',
   'Your calendar, and apps you let act for you':
@@ -2208,7 +2213,7 @@ export const fr: Catalog = {
   'Keyboard shortcuts': 'Raccourcis clavier',
   'Press ? anywhere to see them': 'Appuyez sur ? n’importe où pour les voir',
 
-  'You and settings': 'Vous et réglages',
+  'You and settings': 'Vous et vos réglages',
   '{label}, {n} need you': {
     one: '{label}, {n} a besoin de vous',
     other: '{label}, {n} ont besoin de vous',
@@ -2230,20 +2235,20 @@ export const fr: Catalog = {
   Space: 'Espace',
   'This space isn’t here': 'Cet espace n’est pas ici',
   'It may have closed, or you’re no longer in it.':
-    'Il a peut-être fermé, ou vous n’en faites plus partie.',
+    'Il a peut-être été fermé, ou vous n’en faites plus partie.',
   'Your spaces': 'Vos espaces',
   'Space settings': 'Réglages de l’espace',
   New: 'Nouveau',
   'People · {memberCount}': 'Personnes · {memberCount}',
   'How you know each person is your label: only you see it.':
-    'D’où vous connaissez chacun est votre étiquette : vous seul la voyez.',
+    'La façon dont vous connaissez chaque personne est votre étiquette : elle n’est visible que par vous.',
   'In {name}. Anyone in the space can find it and join.':
     'Dans {name}. Tout membre de l’espace peut la trouver et la rejoindre.',
   'Start it': 'Ouvrir',
   'Name the conversation.': 'Nommez la conversation.',
   'Venue, Budget, Weekend plans…': 'Lieu, Budget, Projets du week-end…',
   'Everyone in the space': 'Tous les membres de l’espace',
-  'Just me, until others join': 'Moi seul, jusqu’à ce que d’autres rejoignent',
+  'Just me, until others join': 'Juste moi, jusqu’à ce que d’autres me rejoignent',
   'People you’re connected with. They join General straight away.':
     'Vos contacts. Ils rejoignent Général tout de suite.',
   'They stop adding and removing people':
@@ -2262,12 +2267,12 @@ export const fr: Catalog = {
     'Vous êtes la dernière personne ici, donc l’espace ferme.',
   'You leave its conversations too. Someone in it can add you back.':
     'Vous quittez aussi ses conversations. Un de ses membres peut vous rajouter.',
-  'Whose spaces': 'Espaces de qui',
+  'Whose spaces': 'À qui sont les espaces',
   '{n} spaces': {
     one: '{n} espace',
     other: '{n} espaces',
   },
-  'Keep a group together': 'Gardez un groupe ensemble',
+  'Keep a group together': 'Rassemblez un groupe',
   'A space holds a family, a team, a project or a club: its people, and conversations everyone can find.':
     'Un espace réunit une famille, une équipe, un projet ou un club : ses membres, et des conversations que tout le monde retrouve.',
   'Caishy Friends': 'Les amis de Caishy',
@@ -2299,25 +2304,25 @@ export const fr: Catalog = {
   Updates: 'Actualités',
   'Its updates didn’t load.': 'Ses actualités ne se sont pas chargées.',
   Posted: 'Publiée',
-  Following: 'Abonné',
+  Following: 'Vous suivez',
   'You no longer follow {name}': 'Vous ne suivez plus {name}',
   'Stops following its updates': 'Cesse de suivre ses actualités',
   'Stop notifying me of its updates': 'Ne plus me notifier de ses actualités',
   'Notify me of its updates': 'Me notifier de ses actualités',
   'Its updates won’t notify you': 'Ses actualités ne vous notifieront pas',
-  'You’ll be notified of its updates': 'Vous serez notifié de ses actualités',
+  'You’ll be notified of its updates': 'Ses actualités vous seront notifiées',
   Follow: 'Suivre',
   'Following {name}: its updates are in Updates':
     'Vous suivez {name} : ses actualités sont dans Actualités',
   'Share news with everyone who follows {name}':
-    'Partagez des nouvelles avec tous ceux qui suivent {name}',
+    'Partagez des nouvelles avec toutes les personnes qui suivent {name}',
   'A new update': 'Une nouvelle actualité',
   '{followers} people follow it. Nobody sees who.':
     '{followers} personnes la suivent. Personne ne voit qui.',
   Post: 'Publier',
   'Older updates': 'Actualités plus anciennes',
   'Nothing posted yet. What you post here reaches everyone who follows it, as the organization.':
-    'Rien de publié pour l’instant. Ce que vous publiez ici atteint tous ceux qui la suivent, au nom de l’organisation.',
+    'Rien de publié pour l’instant. Ce que vous publiez ici atteint toutes les personnes qui la suivent, au nom de l’organisation.',
   '{name} hasn’t posted any updates yet.': '{name} n’a encore publié aucune actualité.',
   'New from {named}{text}': 'Nouveau de {named}{text}',
   'From {following} you follow': 'De {following} que vous suivez',
@@ -2345,7 +2350,7 @@ export const fr: Catalog = {
   'Choose a day.': 'Choisissez un jour.',
   'Choose today or a day after.': 'Choisissez aujourd’hui ou un jour suivant.',
   'That time has passed. Choose a later one.':
-    'Cette heure est passée. Choisissez-en une plus tard.',
+    'Cette heure est passée. Choisissez une heure ultérieure.',
   Day: 'Jour',
   'Add a time': 'Ajouter une heure',
   Time: 'Heure',
@@ -2355,7 +2360,7 @@ export const fr: Catalog = {
   Tomorrow: 'Demain',
   'Next week': 'La semaine prochaine',
   'This link looks unusual:\n{url}\n\nOpen it only if you trust who sent it.':
-    'Ce lien semble inhabituel :\n{url}\n\nOuvrez-le seulement si vous faites confiance à qui l’a envoyé.',
+    'Ce lien semble inhabituel :\n{url}\n\nOuvrez-le seulement si vous faites confiance à la personne qui l’a envoyé.',
   'Couldn’t send.': 'Envoi impossible.',
   'Couldn’t save it.': 'Enregistrement impossible.',
   'Couldn’t update “{title}”: {message}': 'Impossible de mettre à jour « {title} » : {message}',
@@ -2377,12 +2382,12 @@ export const fr: Catalog = {
   'Not said': 'Non indiqué',
   'Opens the list of years': 'Ouvre la liste des années',
   'Type a year': 'Saisissez une année',
-  'No year like that.': 'Aucune année de ce genre.',
+  'No year like that.': 'Année introuvable.',
 
   Declined: 'Refusé',
 
   'Needs you': 'À traiter',
-  'Needs a reply': 'À répondre',
+  'Needs a reply': 'Réponse attendue',
   'A customer writes': 'Un client écrit',
   Appointment: 'Rendez-vous',
   'Waiting for the customer': 'En attente du client',
@@ -2409,7 +2414,7 @@ export const fr: Catalog = {
   'Make its own cards, send them and move them on':
     'Créer ses propres cartes, les envoyer et les faire avancer',
   'A conversation is assigned, escalated, resolved or reopened':
-    'Une conversation est attribuée, signalée, résolue ou rouverte',
+    'Une conversation est attribuée, remontée, résolue ou rouverte',
   'Someone on the team sends one of its cards': 'Un membre de l’équipe envoie une de ses cartes',
   'Someone moves one of its cards on': 'Quelqu’un fait avancer une de ses cartes',
   'A message in a customer conversation is removed for everyone':
@@ -2426,7 +2431,7 @@ export const fr: Catalog = {
   'Not connected yet': 'Pas encore en contact',
   'You marked this quiet': 'Vous l’avez marquée discrète',
   'Waiting for a reply': 'En attente d’une réponse',
-  'You’re waiting on them': 'Vous attendez après eux',
+  'You’re waiting on them': 'Vous attendez leur réponse',
   'You marked this priority': 'Vous l’avez marquée prioritaire',
   '{label} · quiet': '{label} · discrète',
   'This relationship': 'Cette relation',
@@ -2446,14 +2451,14 @@ export const fr: Catalog = {
   'In a free trial.': 'En essai gratuit.',
   'Renews on {when}.': 'Se renouvelle le {when}.',
   'Renews automatically.': 'Se renouvelle automatiquement.',
-  'Assigned to me': 'À moi',
+  'Assigned to me': 'Attribuées à moi',
   '{h} h {m} min': '{h} h {m} min',
   '{n} h': '{n} h',
   '{name} · no answer': '{name} · pas de réponse',
   'You declined a {toLowerCase}': 'Vous avez refusé un {toLowerCase}',
   'Missed {toLowerCase}': '{toLowerCase} manqué',
   '{what}: write it as text.': '{what} : écrivez-le en texte.',
-  '{what}: keep it under {max} characters.': '{what} : restez sous {max} caractères.',
+  '{what}: keep it under {max} characters.': '{what} : {max} caractères maximum.',
   '{what}: plain text only.': '{what} : texte brut seulement.',
   '{what}: a list, please.': '{what} : une liste, s’il vous plaît.',
   '{what}: {min}, please.': '{what} : {min}, s’il vous plaît.',
@@ -2465,9 +2470,9 @@ export const fr: Catalog = {
   '{what}: its type is one of {join}.': '{what} : son type est l’un de {join}.',
   '{what}: required is true or false.': '{what} : required vaut true ou false.',
   '{what}: each choice once.': '{what} : chaque choix une fois.',
-  '{what}: only options have choices.': '{what} : seuls les options ont des choix.',
+  '{what}: only options have choices.': '{what} : seules les options ont des choix.',
   'A kit’s key is 2 to 40 lowercase letters, digits or _, from a letter.':
-    'La clé d’un kit fait 2 à 40 lettres minuscules, chiffres ou _, à partir d’une lettre.',
+    'La clé d’un kit fait 2 à 40 lettres minuscules, chiffres ou _, et commence par une lettre.',
   'The kit has no “{name}”.': 'Le kit n’a pas de « {name} ».',
   'The kit’s key is the one in its address.': 'La clé du kit est celle de son adresse.',
   'Its icon is one of {join}.': 'Son icône est l’une de {join}.',
@@ -2546,7 +2551,7 @@ export const fr: Catalog = {
   '{by} recorded a decision: {title}': '{by} a enregistré une décision : {title}',
   '{by} recorded a decision': '{by} a enregistré une décision',
   '{by} set new messages to disappear after {retentionText}':
-    '{by} a réglé les nouveaux messages pour disparaître après {retentionText}',
+    '{by} a réglé les nouveaux messages pour qu’ils disparaissent après {retentionText}',
   '{by} turned off disappearing messages': '{by} a désactivé les messages éphémères',
   'Conversation updated': 'Conversation mise à jour',
   'Encrypted message': 'Message chiffré',
@@ -2555,21 +2560,21 @@ export const fr: Catalog = {
   'Once in a while': 'Rarement',
   'Not lately': 'Pas récemment',
   'a label': 'une étiquette',
-  'Added {what}': '{what} ajoutée',
+  'Added {what}': 'Ajout de {what}',
   '{quoted} became {quoted2}': '{quoted} est devenu {quoted2}',
   'Added a note to {what}': 'Note ajoutée à {what}',
   'Removed the note from {what}': 'Note retirée de {what}',
-  'Updated {what}': '{what} mise à jour',
-  'Archived {what}': '{what} archivée',
-  'Restored {what}': '{what} restaurée',
-  'Merged {quoted} into another label': '{quoted} fusionnée dans une autre étiquette',
-  'Shared {what} with {name}': '{what} partagée avec {name}',
-  'Stopped sharing {what} with {name}': 'Partage de {what} avec {name} arrêté',
+  'Updated {what}': 'Mise à jour de {what}',
+  'Archived {what}': 'Archivage de {what}',
+  'Restored {what}': 'Restauration de {what}',
+  'Merged {quoted} into another label': 'Fusion de {quoted} dans une autre étiquette',
+  'Shared {what} with {name}': 'Partage de {what} avec {name}',
+  'Stopped sharing {what} with {name}': 'Fin du partage de {what} avec {name}',
   'Go with {rest}': 'Choisir {rest}',
   'Go ahead': 'Feu vert',
   'Agreed{text} {rest}': 'Convenu{text} {rest}',
   'Approved {rest}': 'Approuvé {rest}',
-  'Settled on {rest}': 'Arrêté sur {rest}',
+  'Settled on {rest}': 'Choix arrêté : {rest}',
   'You wrote {quote}': 'Vous avez écrit {quote}',
   '{senderName} will {lowerFirst}': '{senderName} va {lowerFirst}',
   '{senderName} wrote {quote}': '{senderName} a écrit {quote}',
@@ -2578,7 +2583,7 @@ export const fr: Catalog = {
   'Sounds like a decision: {quote}': 'On dirait une décision : {quote}',
   'Waiting for an answer': 'En attente d’une réponse',
   'On its way': 'En route',
-  'In review': 'En examen',
+  'In review': 'En relecture',
   'In progress': 'En cours',
   'Changes asked for': 'Modifications demandées',
   'Out for delivery': 'En cours de livraison',
@@ -2598,7 +2603,7 @@ export const fr: Catalog = {
   Shipped: 'Expédiée',
   'Write something to add.': 'Écrivez quelque chose à ajouter.',
   'Keep an item under {CHECKLIST_ITEM_MAX} characters.':
-    'Gardez un élément sous {CHECKLIST_ITEM_MAX} caractères.',
+    'Un élément ne peut pas dépasser {CHECKLIST_ITEM_MAX} caractères.',
   'A list holds {CHECKLIST_MAX_ITEMS} items.': 'Une liste contient {CHECKLIST_MAX_ITEMS} éléments.',
   'That item isn’t on the list any more.': 'Cet élément n’est plus sur la liste.',
   'Only whoever added it, or made the list, can change it.':
@@ -2607,15 +2612,15 @@ export const fr: Catalog = {
   'Only who owes it, or who paid, can settle a share.':
     'Seule la personne qui la doit, ou qui a payé, peut régler une part.',
   '{label}: write it as text.': '{label} : écrivez-le en texte.',
-  '{label}: keep it under {max} characters.': '{label} : restez sous {max} caractères.',
+  '{label}: keep it under {max} characters.': '{label} : {max} caractères maximum.',
   '{label}: choose a time.': '{label} : choisissez une heure.',
   '{label}: choose a date.': '{label} : choisissez une date.',
   '{label}: enter an amount.': '{label} : saisissez un montant.',
   '{label}: pick one of the choices.': '{label} : choisissez l’une des options.',
-  '{label}: one line each.': '{label} : une ligne chacun.',
+  '{label}: one line each.': '{label} : une ligne par élément.',
   '{label}: up to {CHECKLIST_MAX_ITEMS}.': '{label} : jusqu’à {CHECKLIST_MAX_ITEMS}.',
   '{label}: keep each under {CHECKLIST_ITEM_MAX} characters.':
-    '{label} : gardez chacun sous {CHECKLIST_ITEM_MAX} caractères.',
+    '{label} : {CHECKLIST_ITEM_MAX} caractères maximum chacun.',
   '{label} isn’t supported yet.': '{label} n’est pas encore pris en charge.',
   'That card isn’t available.': 'Cette carte n’est pas disponible.',
   '{label} is needed.': '{label} est requis.',
@@ -2637,7 +2642,7 @@ export const fr: Catalog = {
   'Place or link': 'Lieu ou lien',
   Review: 'Relecture',
   'Ask someone to review a document': 'Demandez à quelqu’un de relire un document',
-  'Review by': 'Relecture pour le',
+  'Review by': 'Relecture avant le',
   Order: 'Commande',
   'Share an order and its status': 'Partagez une commande et son état',
   'Order number': 'Numéro de commande',
@@ -2661,7 +2666,7 @@ export const fr: Catalog = {
   'Open a tracked support issue': 'Ouvrez une demande d’assistance suivie',
   Issue: 'Problème',
   'Book an appointment': 'Prenez un rendez-vous',
-  Location: 'Position',
+  Location: 'Localisation',
   'Share a place, or where you are right now': 'Partagez un lieu, ou votre position actuelle',
   Place: 'Lieu',
   'Collect photos together': 'Rassemblez des photos ensemble',
@@ -2672,7 +2677,7 @@ export const fr: Catalog = {
   'A shared list to tick off together': 'Une liste partagée à cocher ensemble',
   'List name': 'Nom de la liste',
   'Who owes what for something one of you paid, settled here, moved nowhere':
-    'Qui doit quoi pour une dépense payée par l’un de vous, réglée ici, sans aucun transfert',
+    'Qui doit quoi pour une dépense payée par l’un de vous : suivi ici, sans aucun transfert d’argent',
   'What it was for': 'Pour quoi',
   'Paid in all': 'Payé au total',
   'Clinic or practice': 'Clinique ou cabinet',
@@ -2699,7 +2704,7 @@ export const fr: Catalog = {
   'Notify {scheduleText}': 'Notifier {scheduleText}',
   'Notify on schedule': 'Notifier selon l’horaire',
   'Quiet unless important': 'Discret sauf si important',
-  'Priority in hours': 'Prioritaire pendant les heures',
+  'Priority in hours': 'Prioritaire à certaines heures',
   'Follow up after {followUpHours} h': 'Relancer après {followUpHours} h',
   'Not classified': 'Non classé',
   'Online status': 'Statut en ligne',
@@ -2713,10 +2718,10 @@ export const fr: Catalog = {
   'Use a less repetitive password.': 'Utilisez un mot de passe moins répétitif.',
   'Enter a valid email address.': 'Saisissez une adresse e-mail valide.',
   'Enter your name.': 'Saisissez votre nom.',
-  'Keep your name under 80 characters.': 'Gardez votre nom sous 80 caractères.',
+  'Keep your name under 80 characters.': 'Votre nom ne peut pas dépasser 80 caractères.',
   'Not a valid address': 'Adresse non valide',
   'Unusual domain ending (.{tld})': 'Terminaison de domaine inhabituelle (.{tld})',
-  "Looks like {brand} but isn't": 'Ressemble à {brand} mais n’en est pas',
+  "Looks like {brand} but isn't": 'Ressemble à {brand} sans l’être',
   'What {trim} asked you to do': 'Ce que {trim} vous a demandé de faire',
   'What you asked {trim} to do': 'Ce que vous avez demandé à {trim} de faire',
   "What you're waiting for from {trim}": 'Ce que vous attendez de {trim}',
@@ -2741,8 +2746,8 @@ export const fr: Catalog = {
   School: 'École',
   'A class, a course, a parents’ group': 'Une classe, un cours, un groupe de parents',
   'Anything else': 'Autre',
-  'Quite sure': 'Assez sûr',
-  'Fairly sure': 'Plutôt sûr',
+  'Quite sure': 'Très probable',
+  'Fairly sure': 'Probable',
   'A guess': 'Une supposition',
   "{name}'s place in your family?": 'La place de {name} dans votre famille ?',
   Friend: 'Ami',
@@ -2781,7 +2786,7 @@ export const fr: Catalog = {
   Relatives: 'Membres de la famille',
   Guardian: 'Tuteur',
   Guardians: 'Tuteurs',
-  'Step-family': 'Belle-famille recomposée',
+  'Step-family': 'Famille recomposée',
   'In-law': 'Belle-famille',
   'In-laws': 'Belle-famille',
   'Chosen family': 'Famille de cœur',
@@ -2961,7 +2966,7 @@ export const fr: Catalog = {
   '{name} may be someone from {orgName}': '{name} est peut-être quelqu’un de {orgName}',
   'an organization': 'une organisation',
   '{name} may be {an} {label}{at}': '{name} : peut-être {label}{at}',
-  'an automated account (bot)': 'un compte automatique (bot)',
+  'an automated account (bot)': 'un compte automatisé (bot)',
   'an AI agent': 'un agent IA',
   Bot: 'Bot',
   'This is {what}, not a person{text}.': 'Ceci est {what}, pas une personne{text}.',
@@ -2971,19 +2976,19 @@ export const fr: Catalog = {
   'Verified email': 'E-mail vérifié',
   'Caime confirmed this account controls its email address.':
     'Caime a confirmé que ce compte contrôle son adresse e-mail.',
-  'Known to you': 'Connu de vous',
+  'Known to you': 'Déjà en lien avec vous',
   'You are connected or share a conversation.':
     'Vous êtes en contact ou partagez une conversation.',
-  'New to you': 'Nouveau pour vous',
+  'New to you': 'Pas encore en lien avec vous',
   'You’re not connected, and Caime hasn’t verified who this is. Be careful with links and payments.':
-    'Vous n’êtes pas en contact, et Caime n’a pas vérifié qui c’est. Soyez prudent avec les liens et les paiements.',
+    'Vous n’êtes pas en contact, et Caime n’a pas vérifié qui c’est. Prudence avec les liens et les paiements.',
   'Voice message': 'Message vocal',
-  Sticker: 'Autocollant',
+  Sticker: 'Sticker',
   Card: 'Carte',
   'Enter your password.': 'Saisissez votre mot de passe.',
   'Keep your recovery codes': 'Gardez vos codes de récupération',
   'If you ever forget your password, they get you back in. Caime never asks for your phone number.':
-    'Si vous oubliez un jour votre mot de passe, ils vous permettent de revenir. Caime ne demande jamais votre numéro de téléphone.',
+    'Si vous oubliez un jour votre mot de passe, ils vous permettent de récupérer votre compte. Caime ne demande jamais votre numéro de téléphone.',
   'Show the codes': 'Afficher les codes',
   'Make the codes': 'Créer les codes',
   'Each works once. Paste them into your password manager or notes.':
@@ -3023,7 +3028,7 @@ export const fr: Catalog = {
   'That signature isn’t right.': 'Cette signature n’est pas la bonne.',
   'That key isn’t right.': 'Cette clé n’est pas la bonne.',
   'Write a message.': 'Écrivez un message.',
-  'Choose a sticker.': 'Choisissez un autocollant.',
+  'Choose a sticker.': 'Choisissez un sticker.',
   'Choose a location.': 'Choisissez une position.',
   'Choose a contact.': 'Choisissez un contact.',
   'Add a question and at least two options.': 'Ajoutez une question et au moins deux options.',
@@ -3034,7 +3039,7 @@ export const fr: Catalog = {
   'That year hasn’t come yet.': 'Cette année n’est pas encore arrivée.',
   'Enter a web address like https://datac.com': 'Saisissez une adresse web comme https://datac.com',
   'That isn’t a time zone.': 'Ce n’est pas un fuseau horaire.',
-  'A day ends after it starts.': 'Une journée se termine après avoir commencé.',
+  'A day ends after it starts.': 'La fin de la journée doit suivre son début.',
   'One range for each day.': 'Une plage par jour.',
   'Pro is for you; Business is for an organization.':
     'Pro est pour vous ; Business est pour une organisation.',
@@ -3050,7 +3055,7 @@ export const fr: Catalog = {
   'Ask one of them to make you an admin, or to change what you need.':
     'Demandez à l’un d’eux de vous nommer admin, ou de changer ce qu’il vous faut.',
   'In the order a clinic does it: the door customers come in by, proving who you are, their data, your hours, who answers first, then apps and the plan. Come back any time.':
-    'Dans l’ordre d’une clinique : la porte par laquelle entrent les clients, la preuve de qui vous êtes, leurs données, vos horaires, qui répond en premier, puis les applications et le forfait. Revenez quand vous voulez.',
+    'Dans l’ordre que suivrait une clinique : la porte par laquelle entrent les clients, la preuve de qui vous êtes, leurs données, vos horaires, qui répond en premier, puis les applications et le forfait. Revenez quand vous voulez.',
   'The team, its inbox, updates, spaces and insights are on {name}’s page.':
     'L’équipe, sa boîte de réception, les actualités, les espaces et les statistiques sont sur la page de {name}.',
   'Next: verify your domain': 'Ensuite : vérifiez votre domaine',
@@ -3063,12 +3068,12 @@ export const fr: Catalog = {
   // Bookings for people too, and the catalog (R58)
   'Per day': 'Par jour',
   Free: 'Gratuit',
-  Connections: 'Relations',
+  Connections: 'Contacts',
   Fewer: 'Moins',
   'People you allow can book from your open slots now':
     'Les personnes que vous autorisez peuvent réserver vos créneaux libres',
   'Pick at least one day.': 'Choisissez au moins un jour.',
-  'The day has to end after it starts.': 'La journée doit finir après avoir commencé.',
+  'The day has to end after it starts.': 'La fin de la journée doit suivre son début.',
   'People you allow book from the open slots; you confirm each one.':
     'Les personnes que vous autorisez réservent parmi les créneaux libres ; vous confirmez chaque réservation.',
   'Set bookable hours and people book from the open slots in them.':
@@ -3078,19 +3083,19 @@ export const fr: Catalog = {
     other: '{n} éléments dans votre catalogue',
   },
   'A haircut, a consultation, a room: its length, price and who may book it. Without one, bookings are for whatever people write.':
-    'Une coupe, une consultation, une chambre : sa durée, son prix et qui peut la réserver. Sans catalogue, on réserve pour ce que les gens écrivent.',
+    'Une coupe, une consultation, une chambre : sa durée, son prix et qui peut la réserver. Sans catalogue, les réservations portent sur ce que les gens écrivent.',
   'In {timeZone}. A booking is an appointment card you confirm.':
-    'Heure de {timeZone}. Une réservation est une carte de rendez-vous que vous confirmez.',
+    'Fuseau horaire : {timeZone}. Une réservation est une carte de rendez-vous que vous confirmez.',
   'Slots every': 'Un créneau toutes les',
   'The grid a day is cut into; each item in your catalog has a length of its own.':
     'La grille qui découpe la journée ; chaque élément du catalogue a sa propre durée.',
   Removed: 'Retiré',
-  'Enter a price, or make it free.': 'Saisissez un prix, ou rendez-le gratuit.',
+  'Enter a price, or make it free.': 'Saisissez un prix, ou indiquez que c’est gratuit.',
   'Something to book': 'Quelque chose à réserver',
   'Prices are {name}’s; nothing is paid through Caime.':
-    'Les prix sont ceux de {name} ; rien ne se paie par Caime.',
+    'Les prix sont ceux de {name} ; aucun paiement ne passe par Caime.',
   'Prices are yours; nothing is paid through Caime.':
-    'Les prix sont les vôtres ; rien ne se paie par Caime.',
+    'Les prix sont les vôtres ; aucun paiement ne passe par Caime.',
   What: 'Quoi',
   Haircut: 'Coupe de cheveux',
   Price: 'Prix',
@@ -3111,14 +3116,14 @@ export const fr: Catalog = {
   'Anyone on the team': 'N’importe qui dans l’équipe',
   'Decided when you confirm a booking: whoever is free with the fewest that day. Customers never see who.':
     'Décidé quand vous confirmez une réservation : la personne libre qui en a le moins ce jour-là. Les clients ne voient jamais qui.',
-  'They write what it’s for': 'Ils écrivent l’objet',
+  'They write what it’s for': 'La personne indique l’objet',
   'Before {title}': 'Avant {title}',
   '{n} messages since {since}': {
     one: '{n} message depuis {since}',
     other: '{n} messages depuis {since}',
   },
   Summary: 'Résumé',
-  'Still open': 'Encore ouvert',
+  'Still open': 'Encore en cours',
   'You: {title}': 'Vous : {title}',
   'Asked, not answered': 'Demandé, sans réponse',
   'Nothing open between you since last time.': 'Rien d’ouvert entre vous depuis la dernière fois.',
@@ -3127,7 +3132,7 @@ export const fr: Catalog = {
   'Nobody yet': 'Personne pour l’instant',
   'Before it': 'Avant',
   'Pick what it’s for.': 'Choisissez l’objet.',
-  '{price}, not paid through Caime': '{price}, non payé par Caime',
+  '{price}, not paid through Caime': '{price}, réglé en dehors de Caime',
   'For how many': 'Pour combien',
   'A question about…': 'Une question sur…',
   Book: 'Réserver',
@@ -3140,7 +3145,7 @@ export const fr: Catalog = {
   'An appointment has a length in minutes; a stay has none.':
     'Un rendez-vous a une durée en minutes ; un séjour n’en a pas.',
   'One booking can’t take more than the item has.':
-    'Une réservation ne peut pas prendre plus que ce que l’élément a.',
+    'Une réservation ne peut pas dépasser la capacité de l’élément.',
   'Each item once.': 'Chaque élément une seule fois.',
 
   // Orders from the catalog (R60)
@@ -3148,7 +3153,7 @@ export const fr: Catalog = {
   'Orders are on': 'Les commandes sont activées',
   'Orders are off': 'Les commandes sont désactivées',
   'Orders: {ways}': 'Commandes : {ways}',
-  Pickup: 'À emporter',
+  Pickup: 'Retrait sur place',
   'What you sell by the piece is ordered on an Order card; you confirm each one.':
     'Ce que vous vendez à la pièce se commande sur une carte Commande ; vous confirmez chaque commande.',
   'Sell by the piece: a dish, a cake, a bag of coffee. Turn orders on to take them.':
@@ -3156,12 +3161,12 @@ export const fr: Catalog = {
   'Add something to book or order': 'Ajouter quelque chose à réserver ou à commander',
   Orders: 'Commandes',
   'An order is a card you confirm; nothing is paid through Caime.':
-    'Une commande est une carte que vous confirmez ; rien ne se paie par Caime.',
+    'Une commande est une carte que vous confirmez ; aucun paiement ne passe par Caime.',
   'Pick how orders are had.': 'Choisissez comment les commandes sont remises.',
   'Turn orders off': 'Désactiver les commandes',
   'How they’re had': 'Comment elles sont remises',
   'A line customers read first (optional)': 'Une ligne que les clients lisent d’abord (facultatif)',
-  'Ready in about 20 minutes': 'Prêt dans environ 20 minutes',
+  'Ready in about 20 minutes': 'Disponible dans environ 20 minutes',
   'The piece': 'La pièce',
   'Ordered on an Order card, never a time: a dish, a cake, a bag of coffee.':
     'Commandé sur une carte Commande, jamais un créneau : un plat, un gâteau, un sachet de café.',
@@ -3171,9 +3176,10 @@ export const fr: Catalog = {
   'Order from {name}': 'Commander chez {name}',
   Ready: 'Prêt',
   How: 'Comment',
-  'Something ordered has nobody named to do it.': 'Ce qui se commande n’a personne de désigné.',
+  'Something ordered has nobody named to do it.':
+    'Un article commandé à la pièce n’a personne de désigné pour s’en charger.',
   'Each way once.': 'Chaque mode une seule fois.',
-  'Not here any more': 'Plus ici',
+  'Not here any more': 'N’est plus disponible',
   'It may have been taken off, or it isn’t offered to you.':
     'Il a peut-être été retiré, ou il ne vous est pas proposé.',
   'Nothing here you can take yet.': 'Rien ici pour vous pour l’instant.',
@@ -3208,7 +3214,7 @@ export const fr: Catalog = {
   'That collection isn’t there.': 'Cette collection n’existe pas.',
   'Bank transfer': 'Virement bancaire',
   'Payment link': 'Lien de paiement',
-  Wallet: 'Portefeuille',
+  Wallet: 'Portefeuille mobile',
   Cash: 'Espèces',
   'That isn’t a link.': 'Ce n’est pas un lien.',
   'A payment link starts with https://.': 'Un lien de paiement commence par https://.',
@@ -3216,20 +3222,20 @@ export const fr: Catalog = {
   'Ways to be paid': 'Moyens de paiement',
   'Add a way to be paid': 'Ajouter un moyen de paiement',
   'A bank account, a payment link of your own, a wallet number, or cash. A Pay card shows them to whoever pays; nothing is paid through Caime.':
-    'Un compte bancaire, votre propre lien de paiement, un numéro de portefeuille ou des espèces. Une carte Payer les montre à qui paie ; rien n’est payé via Caime.',
+    'Un compte bancaire, votre propre lien de paiement, un numéro de portefeuille mobile ou des espèces. Une carte Payer les montre à qui paie ; aucun paiement ne passe par Caime.',
   'Your page says you take it, never its details; a Pay card shows them to the payer.':
     'Votre page dit que vous l’acceptez, jamais ses détails ; une carte Payer les montre à qui paie.',
   'Say what the payer needs: an account or a number.':
-    'Indiquez ce dont le payeur a besoin : un compte ou un numéro.',
+    'Indiquez ce dont la personne qui paie a besoin : un compte ou un numéro.',
   'A way to be paid': 'Un moyen de paiement',
   'Nothing is paid through Caime: this is what the payer reads.':
-    'Rien n’est payé via Caime : voici ce que lit le payeur.',
+    'Aucun paiement ne passe par Caime : voici ce que lit la personne qui paie.',
   'Your payment link': 'Votre lien de paiement',
   'Account or IBAN': 'Compte ou IBAN',
-  'What the payer needs': 'Ce dont le payeur a besoin',
+  'What the payer needs': 'Ce dont la personne qui paie a besoin',
   'What you offer': 'Ce que vous proposez',
   'What people may book, order or pay you for: a lesson, a consultation, a cake, an hour of your time. Each thing says who sees it; a public one has a page of its own. Every booking, order and payment is a card you confirm, and nothing is paid through Caime.':
-    'Ce que l’on peut réserver, commander ou vous payer : un cours, une consultation, un gâteau, une heure de votre temps. Chaque chose dit qui la voit ; une chose publique a sa propre page. Chaque réservation, commande et paiement est une carte que vous confirmez, et rien n’est payé via Caime.',
+    'Ce que l’on peut réserver, commander ou vous payer : un cours, une consultation, un gâteau, une heure de votre temps. Chaque élément indique qui le voit ; un élément public a sa propre page. Chaque réservation, commande et paiement est une carte que vous confirmez, et aucun paiement ne passe par Caime.',
   'To {name}': 'À {name}',
   Pay: 'Payer',
   'Pay {name}': 'Payer {name}',
@@ -3242,19 +3248,19 @@ export const fr: Catalog = {
   Collected: 'Retiré',
   'Report a problem': 'Signaler un problème',
   'On its way again': 'De nouveau en route',
-  'Mark paid': 'Marquer payé',
-  'Mark overdue': 'Marquer en retard',
+  'Mark paid': 'Marquer comme payé',
+  'Mark overdue': 'Marquer comme en retard',
   Void: 'Annuler',
   'I’ve paid': 'J’ai payé',
-  'Mark received': 'Marquer reçu',
+  'Mark received': 'Marquer comme reçu',
   Received: 'Reçu',
   'Not received yet': 'Pas encore reçu',
   'Sent again': 'Renvoyé',
   'Back on it': 'On s’y remet',
   'Close the album': 'Fermer l’album',
-  'Ask to be paid, or say you’re paying': 'Demandez à être payé, ou dites que vous payez',
+  'Ask to be paid, or say you’re paying': 'Demandez un paiement, ou indiquez que vous payez',
   'Which way': 'Dans quel sens',
-  'Ask to be paid': 'Demander à être payé',
+  'Ask to be paid': 'Demander un paiement',
   'I’m paying': 'Je paie',
   'A payment link needs its address.': 'Un lien de paiement a besoin de son adresse.',
   'Only a payment link has an address.': 'Seul un lien de paiement a une adresse.',
