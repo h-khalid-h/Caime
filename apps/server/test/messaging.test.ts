@@ -162,6 +162,42 @@ describe('message intelligence → suggestions (PRD §23, §29)', () => {
     expect(task.relationship_snapshot).toMatchObject({ label: 'Direct report · DATA C' });
   });
 
+  it('an edit is read again: its new promise and date count, each kind of suggestion once', async () => {
+    const m = await send(hassan, convo, 'ok');
+    await t.ctx.flush();
+    const edited = await hassan.req('PATCH', `/v1/messages/${m.id}`, {
+      body: "I'll send the deck by Friday.",
+    });
+    expect(edited.statusCode).toBe(200);
+    await t.ctx.flush();
+    const row = await t.ctx.db
+      .selectFrom('messages')
+      .select(['is_question', 'is_request', 'entities'])
+      .where('id', '=', m.id)
+      .executeTakeFirstOrThrow();
+    expect(row.is_question).toBe(false);
+    // Wednesday 2026-09-23: Friday is the 25th.
+    expect((row.entities as { dates: Array<{ date: string }> }).dates.map((d) => d.date)).toEqual([
+      '2026-09-25',
+    ]);
+    const mine = (await hassan.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.filter(
+      (s: any) => s.messageId === m.id,
+    );
+    expect(mine.map((s: any) => s.kind)).toEqual(['reminder']);
+    expect(mine[0]).toMatchObject({ dueText: 'by Friday' });
+    const hers = (await sarah.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.filter(
+      (s: any) => s.messageId === m.id,
+    );
+    expect(hers.map((s: any) => s.kind)).toEqual(['waiting']);
+    // Edited again with the same words: nothing is offered twice.
+    await hassan.req('PATCH', `/v1/messages/${m.id}`, { body: "I'll send the deck by Friday!" });
+    await t.ctx.flush();
+    const again = (await hassan.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.filter(
+      (s: any) => s.messageId === m.id,
+    );
+    expect(again).toHaveLength(1);
+  });
+
   it('a decision is recorded once, whoever accepts first', async () => {
     const m = await send(sarah, convo, "Let's go with the blue design.");
     await t.ctx.flush();

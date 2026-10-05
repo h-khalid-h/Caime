@@ -121,6 +121,47 @@ describe('parseWhen — Arabic and local workweeks', () => {
   });
 });
 
+describe('parseWhen — the recent past, days of the month, evenings', () => {
+  it('last Friday, yesterday and last week are past, never ahead', () => {
+    // Wednesday: last Friday is five days back.
+    expect(one('I sent it last Friday')).toMatchObject({ date: '2026-09-18', past: true });
+    expect(one('we spoke yesterday')).toMatchObject({ date: '2026-09-22', past: true });
+    expect(one('the day before yesterday').date).toBe('2026-09-21');
+    expect(one('last night at 9')).toMatchObject({ date: '2026-09-22', time: '21:00', past: true });
+    expect(one('photos from last week')).toMatchObject({ date: '2026-09-16', past: true });
+    // "last Wednesday" on a Wednesday is a week ago, not today.
+    expect(one('last Wednesday').date).toBe('2026-09-16');
+    expect(firstFutureWhen('I sent it last Friday', ny)).toBeUndefined();
+  });
+
+  it('a day of the month is this month while ahead, else next', () => {
+    expect(one("I'll pay you back on the 30th")).toMatchObject({ date: '2026-09-30', past: false });
+    expect(one('by the 12th').date).toBe('2026-10-12');
+    expect(one('the 23rd').date).toBe('2026-09-23');
+    expect(parseWhen('the 3rd time around', ny)).toEqual([]);
+    expect(parseWhen('on the 5th floor', ny)).toEqual([]);
+  });
+
+  it('a meal or an evening makes a bare hour the evening’s', () => {
+    expect(one('dinner at 8').time).toBe('20:00');
+    expect(one('tonight at 8')).toMatchObject({ date: '2026-09-23', time: '20:00' });
+    expect(one('tomorrow evening at 7')).toMatchObject({ date: '2026-09-24', time: '19:00' });
+    expect(one('drinks at 9?').time).toBe('21:00');
+    // Without such a word, nine is still the morning and ten the hour it says.
+    expect(one('call me at 9').time).toBe('09:00');
+    expect(one('tomorrow morning at 10')).toMatchObject({ date: '2026-09-24', time: '10:00' });
+  });
+
+  it('Arabic durations and half hours', () => {
+    expect(one('رح أبعتلك الملف بعد أسبوعين', cairo).date).toBe('2026-10-09');
+    expect(one('خلال 3 أيام', cairo).date).toBe('2026-09-28');
+    expect(one('بعد شهر', cairo).date).toBe('2026-10-25');
+    expect(one('نتقابل الساعة 5 ونص', cairo).time).toBe('17:30');
+    expect(one('الساعة 10 وربع الصبح', cairo).time).toBe('10:15');
+    expect(one('الساعة 6 إلا ربع مساء', cairo).time).toBe('17:45');
+  });
+});
+
 describe('firstFutureWhen', () => {
   it('skips past references', () => {
     expect(firstFutureWhen('we met Sep 20, next meeting Oct 2', ny)?.date).toBe('2026-10-02');

@@ -901,8 +901,17 @@ listed there with its owner.
       arriving in an open conversation is read to a screen reader (`new-message-announcer`); and
       a form's own field messages go through `msg()` in core's schemas and `tr` in `validate.ts`,
       so a refused field reads in the app's language too.
-- [ ] Next block: the remaining hand-written role checks; the intelligence dates and the edit
-      path; the organization page's setup apart from its daily work.
+- [x] The intelligence's dates and the edit path: the recent past ("last Friday", "yesterday",
+      "last night", "last week") is past and never a due date; a day of the month ("by the 12th")
+      is this month while ahead, else next; Arabic durations ("بعد أسبوعين", "خلال 3 أيام") and
+      clock words ("5 ونص", "إلا ربع"); a bare hour after dinner, drinks or tonight is the
+      evening's; an edited message is read again (`analyseText` in `lib/messages.ts`,
+      `afterEdit`), its flags and dates kept and its new suggestions offered once each.
+      `when.test.ts`, five golden lines, `messaging.test.ts`.
+- [ ] Next block: the remaining hand-written role checks; the organization page's setup apart
+      from its daily work; a vague promise re-dating an unrelated suggestion; the search rules'
+      misread of "photos from last week" and the model on every typing pause; same-name
+      duplicates.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1909,3 +1918,5 @@ listed there with its owner.
 - 2026-10-05 — The remaining UX mediums: toasts in thumb reach, reduced motion read from the
   device, Arabic mono joined, Notifications named once, new messages announced to a screen
   reader, and a form's field messages in the app's language (`msg()` in the schemas).
+- 2026-10-05 — The intelligence reads the recent past as past, a day of the month, Arabic
+  durations and clock words, and an evening's bare hour; an edited message is read again.

@@ -87,8 +87,9 @@ import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { leaveGroupCallsIn } from '../lib/group-calls';
 import { tellCardApp } from '../lib/kits';
-import { afterMentioning, afterMessage } from '../lib/message-effects';
+import { afterEdit, afterMentioning, afterMessage } from '../lib/message-effects';
 import {
+  analyseText,
   assertCanMessage,
   assertCanSend,
   fileView,
@@ -1399,10 +1400,30 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       body.mentions === undefined
         ? undefined
         : [...new Set(body.mentions)].filter((u) => members.has(u) && u !== auth.userId);
+    // Its words are read again: the dates, asks and promises it now carries are its own.
+    const reread =
+      body.body !== undefined
+        ? analyseText(
+            body.body.trim(),
+            await ctx.db
+              .selectFrom('users')
+              .select(['time_zone', 'locale', 'workweek'])
+              .where('id', '=', auth.userId)
+              .executeTakeFirstOrThrow(),
+            ctx.now(),
+          )
+        : null;
     const updated = await ctx.db
       .updateTable('messages')
       .set({
         ...(body.body !== undefined ? { body: body.body, edited_at: ctx.now() } : {}),
+        ...(reread
+          ? {
+              entities: JSON.stringify(reread.entities),
+              is_question: reread.analysis?.isQuestion ?? false,
+              is_request: reread.analysis?.isRequest ?? false,
+            }
+          : {}),
         ...(body.sealed ? { sealed: JSON.stringify(body.sealed), edited_at: ctx.now() } : {}),
         ...(body.mode !== undefined ? { mode: body.mode, mode_source: 'user' } : {}),
         ...(mentions ? { mentions } : {}),
@@ -1413,6 +1434,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     // Someone it names now who it didn't before is told, as they would be of a new message.
     const added = mentions?.filter((u) => !m.mentions.includes(u)) ?? [];
     if (added.length) ctx.defer('after-message', () => afterMentioning(ctx, updated, added));
+    if (reread?.analysis) ctx.defer('after-edit', () => afterEdit(ctx, updated, reread.analysis));
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await recordEvent(ctx.db, 'message.edited', auth.userId, { messageId: id });
     await ctx.bus.publish(

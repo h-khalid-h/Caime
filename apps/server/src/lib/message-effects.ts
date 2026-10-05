@@ -141,6 +141,51 @@ type Recipient = {
   attention: string;
 };
 
+/**
+ * An edit's words are read again (docs/REVIEW-2026-10-05.md, intelligence M): what they now ask
+ * or promise is offered as suggestions, each kind once per message (the fingerprint), with no
+ * notification (the message was already told of) and nothing for a business or a private one.
+ */
+export async function afterEdit(
+  ctx: AppContext,
+  message: Message,
+  analysis: Analysis | null,
+): Promise<void> {
+  if (!analysis || !message.sender_id || message.forwarded_from_id) return;
+  const conversation = await ctx.db
+    .selectFrom('conversations')
+    .selectAll()
+    .where('id', '=', message.conversation_id)
+    .executeTakeFirstOrThrow();
+  if (conversation.kind === 'business' || conversation.privacy_class === 'private') return;
+  const sender = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'display_name'])
+    .where('id', '=', message.sender_id)
+    .executeTakeFirst();
+  if (!sender) return;
+  const recipients = (
+    await ctx.db
+      .selectFrom('participants')
+      .select(['user_id', 'request_state'])
+      .where('conversation_id', '=', conversation.id)
+      .where('left_at', 'is', null)
+      .execute()
+  ).filter((r) => r.user_id !== sender.id);
+  const replyToSender = message.reply_to_id
+    ? (
+        await ctx.db
+          .selectFrom('messages')
+          .select('sender_id')
+          .where('id', '=', message.reply_to_id)
+          .executeTakeFirst()
+      )?.sender_id
+    : null;
+  const addressed = (userId: string) =>
+    conversation.kind === 'direct' || message.mentions.includes(userId) || replyToSender === userId;
+  await suggest(ctx, conversation, message, analysis, sender, recipients, addressed);
+}
+
 /** An edit names people it didn't before (PRD §20): they're told, as of a message for them. */
 export async function afterMentioning(
   ctx: AppContext,

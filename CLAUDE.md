@@ -665,6 +665,13 @@ These are rules, not preferences.
   new rule, trigger or list entry adds its lines there (a positive and the near-miss it must
   not catch), and a floor only ever moves up. Quoted words (`maskQuoted`) and forwarded
   messages are nobody's promise; a sentence ends at punctuation followed by a space.
+- Dates are `parseWhen` (`packages/core/src/when.ts`): a piece carries a `date`, a `time`, or a
+  `softTime` (what "tonight" or "tomorrow evening" suggests, which a written hour beside it
+  replaces, read as that part of the day), and the recent past ("last Friday", "yesterday")
+  comes out `past: true`, which `firstFutureWhen` skips, so nothing in the past is a due date.
+  A new phrase joins its scanner there with a case in `when.test.ts` and a golden line. A
+  message's words are read by `analyseText` (`lib/messages.ts`) when sent and again when edited
+  (`afterEdit` in `message-effects.ts` offers what they now say, once per kind by fingerprint).
 - The message intelligence reads Arabic by lists in `packages/core/src/intelligence.ts`
   (`AR_COMMIT`, `AR_REQUEST_VERBS_LIST`, `AR_REQUEST`, `AR_DECISION`, `AR_CONFIRM`, `AR_PAY`,
   `AR_QUESTION_START` with `AR_NOT_A_QUESTION` for "ما" as a negation): a trigger is a whole

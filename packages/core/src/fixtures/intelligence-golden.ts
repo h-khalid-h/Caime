@@ -250,4 +250,30 @@ export const INTELLIGENCE_GOLDEN: GoldenLine[] = [
   { text: 'ما وافقنا على شي لسه', lang: 'ar', expect: {} },
   { text: 'هل اتفقتوا على موعد؟', lang: 'ar', expect: { question: true } },
   { text: 'مش موافق على كده', lang: 'ar', expect: {} },
+  // ---- Dates read as the words place them (review 2026-10-05, intelligence M)
+  {
+    text: "I'll pay you back on the 12th",
+    lang: 'en',
+    expect: { commitment: true },
+    due: '2026-10-12',
+  },
+  {
+    text: "I'll send the invoice tomorrow evening",
+    lang: 'en',
+    expect: { commitment: true },
+    due: '2026-10-06',
+  },
+  {
+    text: 'I sent the files last Friday, did you get them?',
+    lang: 'en',
+    expect: { question: true },
+    due: null,
+  },
+  { text: 'We had dinner at 8 and it was lovely', lang: 'en', expect: {} },
+  {
+    text: 'رح أبعتلك الملف بعد أسبوعين',
+    lang: 'ar',
+    expect: { commitment: true },
+    due: '2026-10-19',
+  },
 ];

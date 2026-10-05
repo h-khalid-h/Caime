@@ -361,6 +361,44 @@ export async function retentionFor(
   return conversationDays === null ? orgDays : Math.min(conversationDays, orgDays);
 }
 
+/**
+ * What the rules read in a message's words (PRD §23), as the sender's zone and week place
+ * them: run when a message is sent and again when it's edited, so an edit's new dates and
+ * asks count as its words now say (docs/REVIEW-2026-10-05.md, intelligence M).
+ */
+export function analyseText(
+  text: string,
+  sender: { time_zone: string; locale: string; workweek: number[] },
+  now: Date,
+): { analysis: Analysis | null; entities: Record<string, unknown> } {
+  const analysis = text
+    ? analyzeMessage(text, {
+        now,
+        timeZone: sender.time_zone,
+        locale: sender.locale,
+        workweek: sender.workweek,
+      })
+    : null;
+  const entities = analysis
+    ? {
+        dates: analysis.dates.map((d) => ({
+          text: d.text,
+          date: d.date,
+          time: d.time,
+          at: d.at,
+          past: d.past,
+        })),
+        amounts: analysis.amounts,
+        links: analysis.links.map((l) => ({ url: l.url, host: l.host, ...assessLink(l.url) })),
+        refs: analysis.refs,
+        topics: analysis.topics,
+        emails: analysis.emails,
+        phones: analysis.phones,
+      }
+    : {};
+  return { analysis, entities };
+}
+
 export async function sendMessage(
   ctx: AppContext,
   senderId: string,
@@ -542,31 +580,7 @@ export async function sendMessage(
   if (body.kind === 'location' && minorOf(sender, ctx.now()))
     throw forbidden(tr('Sharing a location is for people over 18.'));
   const text = body.body?.trim() ?? '';
-  const analysis = text
-    ? analyzeMessage(text, {
-        now: ctx.now(),
-        timeZone: sender.time_zone,
-        locale: sender.locale,
-        workweek: sender.workweek,
-      })
-    : null;
-  const entities = analysis
-    ? {
-        dates: analysis.dates.map((d) => ({
-          text: d.text,
-          date: d.date,
-          time: d.time,
-          at: d.at,
-          past: d.past,
-        })),
-        amounts: analysis.amounts,
-        links: analysis.links.map((l) => ({ url: l.url, host: l.host, ...assessLink(l.url) })),
-        refs: analysis.refs,
-        topics: analysis.topics,
-        emails: analysis.emails,
-        phones: analysis.phones,
-      }
-    : {};
+  const { analysis, entities } = analyseText(text, sender, ctx.now());
   // Kit cards (PRD §41): the sender picks the kit and fills its fields; the server decides what
   // the card says and where it starts, and only POST /messages/:id/kit moves it on.
   let payload = body.payload ?? {};

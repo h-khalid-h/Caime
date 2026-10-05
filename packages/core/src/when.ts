@@ -51,7 +51,16 @@ interface Piece {
   time?: { hour: number; minute: number };
   /** Time words that also imply the date is today when no date is given ("tonight"). */
   impliesToday?: boolean;
+  /**
+   * A time the words only suggest ("tonight" is around 20:00, "tomorrow evening" 19:00): a
+   * time written beside it wins, read as that part of the day ("tonight at 8" is 20:00).
+   */
+  softTime?: boolean;
 }
+
+/** Words before a bare "at 8" that make it an evening (dinner, drinks, tonight…). */
+const EVENING_BEFORE =
+  /(?:dinner|supper|drinks|party|movie|tonight|evening|night|العشا|العشاء|مساء|بالليل|الليلة|الليله)\s*(?:\S+\s+){0,3}$/i;
 
 const MONTHS: Record<string, number> = {
   jan: 1,
@@ -206,6 +215,7 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
       end: m.index + m[0].length,
       date: plusDays(offset),
       time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      softTime: hour !== undefined,
     });
   }
 
@@ -215,7 +225,40 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
       end: m.index + m[0].length,
       date: today,
       time: { hour: DAY_PARTS[m[1]!]!, minute: 0 },
+      softTime: true,
     });
+  }
+
+  // --- The recent past: said of what was, never a due date ---------------------------------
+  for (const m of scan(
+    /\b(the day before yesterday|day before yesterday|yesterday|last night|last week)\b(?:\s+(morning|afternoon|evening))?/i,
+    lower,
+  )) {
+    const word = m[1]!;
+    const offset = word.includes('before') ? -2 : word === 'last week' ? -7 : -1;
+    const part = m[2] ?? (word === 'last night' ? 'night' : undefined);
+    add({
+      index: m.index,
+      end: m.index + m[0].length,
+      date: plusDays(offset),
+      time: part ? { hour: DAY_PARTS[part]!, minute: 0 } : undefined,
+      softTime: Boolean(part),
+    });
+  }
+
+  // --- A day of the month: "on the 12th", "by the 3rd" (this month if still ahead, else next) ----
+  for (const m of scan(
+    /\b(?:on|by|until|till|before|the)\s+(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?:time|place|floor|year|edition|round|half|quarter|of\b|birthday|anniversary))/i,
+    lower,
+  )) {
+    const day = Number(m[1]);
+    if (day < 1 || day > 31) continue;
+    let date: LocalDate = { year: today.year, month: today.month, day };
+    if (day < today.day) {
+      const month = today.month === 12 ? 1 : today.month + 1;
+      date = { year: today.month === 12 ? today.year + 1 : today.year, month, day };
+    }
+    if (isValidDate(date)) add({ index: m.index, end: m.index + m[0].length, date });
   }
 
   // --- End of day / week / month, next week / month, weekend ------------------------------
@@ -298,7 +341,7 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
 
   // --- Weekdays ------------------------------------------------------------------------------
   for (const m of scan(
-    /\b(?:(next|this|coming|on|by|until|till|before)\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu(?:rs?)?|fri|sat|sun)\b/i,
+    /\b(?:(next|this|coming|last|on|by|until|till|before)\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu(?:rs?)?|fri|sat|sun)\b/i,
     lower,
   )) {
     const cue = m[1];
@@ -310,6 +353,8 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     if (weekday === undefined) continue;
     let d = daysUntil(weekday);
     if (d === 0 && cue !== 'this') d = 7;
+    // "last Friday" is the one just gone, never the one ahead.
+    if (cue === 'last') d = d === 7 ? -7 : d - 7;
     if (cue === 'next') {
       // "next Friday" is the Friday of next week when this week's Friday is still ahead.
       const daysToWeekEnd = (firstDay - nowParts.weekday + 7) % 7 || 7;
@@ -408,8 +453,8 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
   )) {
     let hour = Number(m[1]);
     if (hour < 1 || hour > 12) continue;
-    // A bare "at 3" in conversation is afternoon; "at 9" is morning.
-    if (hour <= 7) hour += 12;
+    // A bare "at 3" in conversation is afternoon; "at 9" is morning; "dinner at 8" is evening.
+    if (hour <= 7 || (hour < 12 && EVENING_BEFORE.test(lower.slice(0, m.index)))) hour += 12;
     add({ index: m.index, end: m.index + m[0].length, time: { hour, minute: 0 } });
   }
   for (const m of scan(/\b(?:at\s+)?(noon|midday|midnight)\b/i, lower)) {
@@ -462,14 +507,61 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
       add({ index: start, end: start + m[2]!.length, date: plusDays(d) });
     }
   }
+  // "بعد أسبوعين" (in two weeks), "خلال 3 أيام" (within three days): counted from today.
   for (const m of scan(
-    /(?:الساعة|الساعه)\s*(\d{1,2})(?::(\d{2}))?\s*(ص|م|الصبح|صباحا|صباحاً|مساء|مساءً|بالليل|العصر|الضهر|الظهر)?/u,
+    new RegExp(
+      `${AR_EDGE_BEFORE}((?:بعد|خلال|في خلال)\\s+(?:(\\d+)\\s*)?(يومين|يوم|أيام|ايام|أسبوعين|اسبوعين|أسبوع|اسبوع|أسابيع|اسابيع|شهرين|شهر|شهور|أشهر|ساعتين|ساعة|ساعه|ساعات))${AR_EDGE_AFTER}`,
+      'u',
+    ),
+    text,
+  )) {
+    const unit = m[4]!;
+    const n = m[3] ? Number(m[3]) : /ين$/.test(unit) ? 2 : 1;
+    const start = m.index + m[1]!.length;
+    const end = start + m[2]!.length;
+    if (/^ساع/.test(unit)) {
+      const target = zonedParts(new Date(options.now.getTime() + n * 3600000), tz);
+      add({
+        index: start,
+        end,
+        date: { year: target.year, month: target.month, day: target.day },
+        time: { hour: target.hour, minute: target.minute },
+      });
+    } else if (/^(يوم|أيام|ايام)/.test(unit)) add({ index: start, end, date: plusDays(n) });
+    else if (/^(أسبوع|اسبوع|أسابيع|اسابيع)/.test(unit))
+      add({ index: start, end, date: plusDays(n * 7) });
+    else {
+      const total = today.month - 1 + n;
+      const year = today.year + Math.floor(total / 12);
+      const month = (total % 12) + 1;
+      add({
+        index: start,
+        end,
+        date: { year, month, day: Math.min(today.day, daysInMonth(year, month)) },
+      });
+    }
+  }
+  for (const m of scan(
+    /(?:الساعة|الساعه)\s*(\d{1,2})(?::(\d{2}))?(?:\s*(ونص|ونصف|وربع|وثلث|وعشرة|إلا ربع|الا ربع|إلا ثلث|الا ثلث))?\s*(ص|م|الصبح|صباحا|صباحاً|مساء|مساءً|بالليل|العصر|الضهر|الظهر)?/u,
     text,
   )) {
     let hour = Number(m[1]);
-    const minute = m[2] ? Number(m[2]) : 0;
-    const part = m[3] ?? '';
-    if (hour > 23) continue;
+    let minute = m[2] ? Number(m[2]) : 0;
+    // "5 ونص" is half past five; "إلا ربع" a quarter to.
+    const words = m[3] ?? '';
+    if (/^ونص/.test(words)) minute = 30;
+    else if (words === 'وربع') minute = 15;
+    else if (words === 'وثلث') minute = 20;
+    else if (words === 'وعشرة') minute = 10;
+    else if (/ربع$/.test(words) && words !== 'وربع') {
+      minute = 45;
+      hour -= 1;
+    } else if (/ثلث$/.test(words) && words !== 'وثلث') {
+      minute = 40;
+      hour -= 1;
+    }
+    const part = m[4] ?? '';
+    if (hour > 23 || hour < 0) continue;
     if (/^(م|مساء|مساءً|بالليل|العصر)$/.test(part) && hour < 12) hour += 12;
     else if (/^(الضهر|الظهر)$/.test(part) && hour < 12 && hour <= 4) hour += 12;
     else if (!part && hour >= 1 && hour <= 7) hour += 12;
@@ -499,12 +591,20 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     if (
       last &&
       adjacent &&
-      ((last.date && !last.time && p.time && !p.date) ||
+      ((last.date && (!last.time || last.softTime) && p.time && !p.date) ||
         (last.time && !last.date && p.date && !p.time))
     ) {
       last.end = p.end;
       last.date = last.date ?? p.date;
-      last.time = last.time ?? p.time;
+      if (p.time && last.softTime && last.time) {
+        // "tonight at 8": the eight is the evening's.
+        const hour =
+          last.time.hour >= 17 && p.time.hour >= 1 && p.time.hour < 12
+            ? p.time.hour + 12
+            : p.time.hour;
+        last.time = { hour, minute: p.time.minute };
+        last.softTime = false;
+      } else last.time = last.time ?? p.time;
       continue;
     }
     merged.push({ ...p });
