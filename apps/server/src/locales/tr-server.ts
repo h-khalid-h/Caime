@@ -5,10 +5,10 @@
 import type { Catalog } from '@caime/core/i18n';
 
 export const turkishServer: Catalog = {
-  '{name} is on {site}.': '{name}, {site} üzerinde.',
-  'a person on {site}': '{site} üzerinde bir kişi',
+  '{name} is on {site}.': '{name}, {site} kullanıyor.',
+  'a person on {site}': 'bir {site} kullanıcısı',
   headline: 'başlık',
-  with: 'birlikte',
+  with: 'kuruluşlar',
   'Message {name} on {site}': '{site} üzerinden {name} ile yazışın',
   'Verified · {domain}': 'Doğrulanmış · {domain}',
   'Since {year}': '{year} yılından beri',
@@ -17,22 +17,22 @@ export const turkishServer: Catalog = {
   'Not yet': 'Henüz değil',
   '{name} invited you': '{name} sizi davet etti',
   'Join {name} on {site}{context}: sign up in half a minute and you’re connected.':
-    '{site} üzerinde {name} ile buluşun{context}: yarım dakikada kaydolun, bağlanmış olun.',
+    '{name}{context} sizi {site} üzerinde bekliyor: yarım dakikada kaydolun, bağlantınız hazır olsun.',
   'an invitation': 'bir davet',
   from: 'kimden',
-  about: 'hakkında',
-  'to join': 'katılmak için',
+  about: 'konu',
+  'to join': 'katılım',
   'Sign up in half a minute and you’re connected with {name}, no app to install.':
-    'Yarım dakikada kaydolun ve {name} ile bağlanın; yüklenecek uygulama yok.',
-  'Join {name} on {site}': '{site} üzerinde {name} ile buluşun',
-  'Not here': 'Burada değil',
-  'Nobody by that handle.': 'Bu kullanıcı adında kimse yok.',
-  'not here': 'burada değil',
-  'Nobody by that handle': 'Bu kullanıcı adında kimse yok',
+    'Yarım dakikada kaydolun, {name} ile bağlantınız kurulsun; uygulama yüklemenize gerek yok.',
+  'Join {name} on {site}': '{site} üzerinde {name} ile bağlantı kurun',
+  'Not here': 'Burada yok',
+  'Nobody by that handle.': 'Bu kullanıcı adıyla kimse yok.',
+  'not here': 'burada yok',
+  'Nobody by that handle': 'Bu kullanıcı adıyla kimse yok',
   'It may have changed, or been let go of.': 'Değişmiş ya da bırakılmış olabilir.',
-  'Open {site}': '{site} aç',
+  'Open {site}': '{site} uygulamasını açın',
   'Caime is messaging that knows who each person is to you: your family, your work, your customers, each in its place, with what needs you first. Free for people; organizations verify who they are.':
-    'Caime, her kişinin sizin için kim olduğunu bilen mesajlaşmadır: aileniz, işiniz, müşterileriniz, her biri yerinde ve sizi bekleyenler önce. Kişiler için ücretsiz; kuruluşlar kim olduklarını doğrular.',
+    'Caime, her kişinin sizin için kim olduğunu bilen bir mesajlaşma uygulamasıdır: aileniz, işiniz, müşterileriniz; her biri kendi yerinde ve önce sizi bekleyenler. Kişiler için ücretsiz; kuruluşlar kimliklerini doğrular.',
   Home: 'Ana sayfa',
   'For organizations': 'Kuruluşlar için',
   'for organizations': 'kuruluşlar için',
@@ -45,187 +45,189 @@ export const turkishServer: Catalog = {
   Help: 'Yardım',
   Example: 'Örnek',
   Connection: 'Bağlantı',
-  'Who someone is to you comes first.': 'Birinin sizin için kim olduğu önce gelir.',
+  'Who someone is to you comes first.': 'Birinin sizin için kim olduğu her şeyden önce gelir.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
-    'Bir bağlantı, iki kişi ve birbirlerini nereden tanıdıklarıdır; her taraf kendisi söyler, her tarafa özeldir. Caime’deki her şey ona bağlıdır.',
+    'Bağlantı, iki kişi ve birbirlerini nereden tanıdıklarıdır; bunu her taraf kendisi söyler ve her tarafa özel kalır. Caime’deki her şey bağlantıya dayanır.',
   'colleague · DATA C · work': 'iş arkadaşı · DATA C · iş',
   'brother · family': 'erkek kardeş · aile',
   'Messages that know their context.': 'Bağlamını bilen mesajlar.',
   'One-to-one, groups, topics under a connection, spaces for a family, a team or a club. Ordered, delivered once, and yours offline.':
-    'Bire bir, gruplar, bir bağlantı altındaki konular, bir aile, ekip veya kulüp için alanlar. Sıralı, bir kez teslim edilmiş ve çevrimdışıyken de sizin.',
+    'Bire bir konuşmalar, gruplar, bir bağlantının altında konular; aile, ekip ya da kulüp için alanlar. Sıralı, yalnızca bir kez teslim edilir ve çevrimdışıyken de elinizin altındadır.',
   'Did the contract arrive?': 'Sözleşme geldi mi?',
-  'Yes, signing it Friday.': 'Evet, cuma imzalıyorum.',
+  'Yes, signing it Friday.': 'Evet, cuma günü imzalıyorum.',
   'read · 2 min': 'okundu · 2 dk',
-  'What needs you, not everything.': 'Sizi gerektiren, her şey değil.',
+  'What needs you, not everything.': 'Her şey değil, sizi bekleyenler.',
   'The inbox sorts by what needs you, what’s important, what’s waiting on someone else and what’s quiet, and says why. Your rules by relationship win.':
-    'Gelen kutusu sizi gerektirene, önemliye, başkasını bekleyene ve sessize göre sıralar ve nedenini söyler. İlişkiye göre kurallarınız geçerlidir.',
+    'Gelen kutusu konuşmaları sizi bekleyenler, önemliler, başkasını bekleyenler ve sessizler diye ayırır ve nedenini söyler. İlişkiye göre koyduğunuz kurallar her zaman önce gelir.',
   'Sarah asked about the contract': 'Sarah sözleşmeyi sordu',
   'Omar · the deck · since Tuesday': 'Omar · sunum · salıdan beri',
   '3 need you': '3 kişi sizi bekliyor',
   'Nothing said is lost.': 'Söylenen hiçbir şey kaybolmaz.',
   'Commitments, dates, amounts, questions and decisions are found in the conversation and offered back as actions. They become facts only when you say so.':
-    'Sözler, tarihler, tutarlar, sorular ve kararlar konuşmada bulunur ve size eylem olarak sunulur. Yalnızca siz söylediğinizde gerçek olurlar.',
-  Suggested: 'Önerildi',
+    'Verilen sözler, tarihler, tutarlar, sorular ve kararlar konuşmadan çıkarılır ve size eylem olarak önerilir. Ancak siz onayladığınızda kesinleşir.',
+  Suggested: 'Öneri',
   'Remind me: send the deck · Monday': 'Hatırlat: sunumu gönder · pazartesi',
-  'Waiting on Sarah: contract': 'Sarah bekleniyor: sözleşme',
+  'Waiting on Sarah: contract': 'Sarah’tan bekleniyor: sözleşme',
   'based on “I’ll send the deck on Monday.”': '“Sunumu pazartesi gönderirim” mesajına göre',
-  'A business that proves it’s the business.': 'Kendisi olduğunu kanıtlayan bir işletme.',
+  'A business that proves it’s the business.': 'Kim olduğunu kanıtlayan işletme.',
   'An organization verifies its domain with one DNS record. Its team answers customers as the organization, in one inbox, with apps and an AI agent that always say what they are.':
-    'Bir kuruluş alan adını tek bir DNS kaydıyla doğrular. Ekibi müşterilere tek bir gelen kutusunda kuruluş olarak yanıt verir; uygulamalar ve AI temsilci her zaman ne olduklarını söyler.',
+    'Kuruluş, alan adını tek bir DNS kaydıyla doğrular. Ekibi müşterilere tek bir gelen kutusundan, kuruluş adına yanıt verir; uygulamalar ve AI temsilcisi ne olduklarını her zaman belli eder.',
   'verified · niledental.example': 'doğrulanmış · niledental.example',
   'Lina · new patient forms': 'Lina · yeni hasta formları',
   'Each side of your life sees what you chose.': 'Hayatınızın her yanı seçtiklerinizi görür.',
   'Profile fields by sphere, read receipts only both ways, requests before strangers reach you, and end-to-end encryption when a conversation should be private.':
-    'Alana göre profil alanları, yalnızca karşılıklı okundu bilgisi, yabancılar size ulaşmadan önce istekler ve bir konuşma özel olmalıysa uçtan uca şifreleme.',
-  'work sees': 'iş görür',
+    'Çevreye göre profil alanları, yalnızca karşılıklı okundu bilgisi, yabancılar size ulaşmadan önce istek ve özel kalması gereken konuşmalar için uçtan uca şifreleme.',
+  'work sees': 'iş çevreniz görür',
   'name · headline · organization': 'ad · başlık · kuruluş',
-  'family sees': 'aile görür',
+  'family sees': 'aileniz görür',
   'everything, and where you are when you share it':
     'her şeyi ve paylaştığınızda nerede olduğunuzu',
   'a stranger sees': 'bir yabancı görür',
-  'your name and handle, and may ask': 'adınızı ve kullanıcı adınızı; istekte bulunabilir',
+  'your name and handle, and may ask': 'adınızı ve kullanıcı adınızı; size istek gönderebilir',
   '{n} GB': '{n} GB',
   'price shown in the app': 'fiyat uygulamada gösterilir',
   '{price} a month': 'ayda {price}',
   '{price} a year': 'yılda {price}',
   ', or ': ' veya ',
   'It lands in the inbox, first if they’ve waited longest.':
-    'Gelen kutusuna düşer; en uzun bekleyen en önde.',
+    'Gelen kutusuna düşer; en uzun bekleyen en üstte.',
   'Lina writes to Nile Dental from the app she uses for everyone else. The team sees one conversation, its state and who has it; Lina sees the organization, never which person.':
-    'Lina, Nile Dental’e herkes için kullandığı uygulamadan yazar. Ekip tek bir konuşmayı, durumunu ve kimin üstlendiğini görür; Lina kuruluşu görür, hangi kişi olduğunu asla.',
+    'Lina, Nile Dental’e herkese yazdığı uygulamadan yazar. Ekip tek bir konuşma, durumunu ve kimin üstlendiğini görür; Lina ise kuruluşu görür, hangi kişinin yanıtladığını asla.',
   'Can I book a cleaning on Thursday?': 'Perşembe için diş temizliği randevusu alabilir miyim?',
   'new · nobody has it · 2 min': 'yeni · kimse üstlenmedi · 2 dk',
-  'The agent answers': 'Temsilci yanıtlar',
-  'From what you wrote down, and it says so.': 'Yazdıklarınızdan ve bunu söyler.',
+  'The agent answers': 'AI temsilcisi yanıtlar',
+  'From what you wrote down, and it says so.':
+    'Sizin yazdıklarınıza dayanarak; bunu da açıkça söyler.',
   'The organization’s AI agent answers only from its knowledge (up to {n} characters you gave it), is marked as an AI, and hands over to a person the moment it isn’t sure. With bookable hours set, it offers the open slots and books the one the customer picks, for the team to confirm.':
-    'Kuruluşun AI temsilcisi yalnızca bilgisinden (verdiğiniz en fazla {n} karakter) yanıt verir, AI olarak işaretlidir ve emin olmadığı anda bir insana devreder. Rezervasyon saatleri belirlendiğinde boş zamanları sunar ve müşterinin seçtiğini ekibin onayına rezerve eder.',
+    'Kuruluşun AI temsilcisi yalnızca kendisine verilen bilgilerden (sizin yazdığınız en fazla {n} karakter) yanıt verir, AI olarak işaretlenir ve emin olmadığı anda konuşmayı bir insana devreder. Rezervasyon saatleri ayarlıysa boş saatleri önerir ve müşterinin seçtiği saati, ekip onaylamak üzere ayırır.',
   'I can offer Thursday 10:00 or 10:30. Which suits you?':
-    'Perşembe 10:00 veya 10:30 önerebilirim. Hangisi uygun?',
-  'Cleaning · Thursday 10:00 · requested': 'Temizlik · Perşembe 10:00 · istendi',
-  'Nile Dental · AI agent · automated': 'Nile Dental · AI temsilci · otomatik',
+    'Perşembe 10:00 ya da 10:30 olabilir. Hangisi size uyar?',
+  'Cleaning · Thursday 10:00 · requested': 'Temizlik · Perşembe 10:00 · talep edildi',
+  'Nile Dental · AI agent · automated': 'Nile Dental · AI temsilcisi · otomatik',
   'The team answers': 'Ekip yanıtlar',
   'Whoever answers has it; the customer hears from the organization.':
-    'Kim yanıtlarsa o üstlenir; müşteri kuruluştan duyar.',
+    'Yanıtlayan konuşmayı üstlenir; müşteri yanıtı kuruluştan alır.',
   'Answering takes the conversation. Assign it, escalate it to an owner or admin with a note, or resolve it; it comes back the moment the customer writes again.':
-    'Yanıtlamak konuşmayı üstlenmektir. Atayın, bir notla sahibine veya bir yöneticiye yükseltin ya da çözün; müşteri yeniden yazdığı anda geri gelir.',
-  '10:00 is yours. See you Thursday.': '10:00 sizin. Perşembe görüşürüz.',
-  'Your tools hear it': 'Araçlarınız duyar',
+    'Yanıt vermek konuşmayı üstlenmek demektir. Konuşmayı birine atayın, bir notla sahibine ya da bir yöneticiye yükseltin veya çözüldü olarak kapatın; müşteri yeniden yazdığı anda konuşma geri gelir.',
+  '10:00 is yours. See you Thursday.': '10:00 sizin. Perşembe görüşmek üzere.',
+  'Your tools hear it': 'Araçlarınız da haberdar olur',
   'A helpdesk, a CRM or your own bot, in the same conversation.':
-    'Bir yardım masası, bir CRM ya da kendi botunuz, aynı konuşmada.',
+    'Yardım masası, CRM ya da kendi botunuz; hepsi aynı konuşmada.',
   'An app’s bot replies as the organization, marked automated, and never counts as the team’s answer. Its webhook hears each message and each change of state.':
-    'Bir uygulamanın botu kuruluş olarak, otomatik işaretli yanıt verir ve asla ekibin yanıtı sayılmaz. Webhook’u her mesajı ve her durum değişikliğini duyar.',
+    'Bir uygulamanın botu kuruluş adına, otomatik olarak işaretlenmiş yanıt verir ve hiçbir zaman ekibin yanıtı sayılmaz. Webhook’u her mesajdan ve her durum değişikliğinden haberdar olur.',
   'resolved · by person': 'çözüldü · bir kişi tarafından',
   'Booking · confirmed · by customer': 'Rezervasyon · onaylandı · müşteri tarafından',
-  'A colleague sees the professional you.': 'Bir iş arkadaşı profesyonel sizi görür.',
+  'A colleague sees the professional you.': 'İş arkadaşlarınız profesyonel yüzünüzü görür.',
   'Name, headline, organization, the hours you answer in. Your birthday, your family and your location stay out of it unless you say otherwise.':
-    'Ad, başlık, kuruluş, yanıt verdiğiniz saatler. Doğum gününüz, aileniz ve konumunuz siz aksini söylemedikçe dışarıda kalır.',
+    'Adınız, başlığınız, kuruluşunuz ve yanıt verdiğiniz saatler. Doğum gününüz, aileniz ve konumunuz, siz aksini söylemedikçe görünmez.',
   sees: 'görür',
   'Noor Haddad · Dentist · Nile Dental': 'Noor Haddad · Diş hekimi · Nile Dental',
   'doesn’t see': 'görmez',
   'birthday · family · where you are': 'doğum günü · aile · nerede olduğunuz',
-  'Family sees more, because you said so.': 'Aile daha fazlasını görür, çünkü siz öyle dediniz.',
+  'Family sees more, because you said so.':
+    'Aileniz daha fazlasını görür, çünkü siz öyle istediniz.',
   'What each sphere sees is a setting you own, field by field. Sharing your location live is one tap, for as long as you chose, and ends on its own.':
-    'Her alanın ne gördüğü, alan alan sizin ayarınızdır. Konumunuzu canlı paylaşmak tek dokunuştur; seçtiğiniz süre boyunca sürer ve kendiliğinden biter.',
+    'Her çevrenin neyi göreceğini alan alan siz ayarlarsınız. Konumunuzu canlı paylaşmak tek dokunuş; seçtiğiniz süre boyunca sürer ve kendiliğinden biter.',
   'everything you chose, and where you are while you share it':
     'seçtiğiniz her şeyi ve paylaşırken nerede olduğunuzu',
-  until: 'şu zamana kadar',
+  until: 'bitiş',
   'the hour you picked': 'seçtiğiniz saat',
   'A stranger': 'Bir yabancı',
-  'A stranger may ask. Nothing more.': 'Bir yabancı isteyebilir. Fazlası değil.',
+  'A stranger may ask. Nothing more.': 'Bir yabancı yalnızca istekte bulunabilir. Fazlası yok.',
   'Someone who isn’t connected to you sees your name and handle, if you let yourself be found. Their first message arrives as a request: one message until you answer.':
-    'Size bağlı olmayan biri, bulunmanıza izin verdiyseniz adınızı ve kullanıcı adınızı görür. İlk mesajı bir istek olarak gelir: siz yanıtlayana kadar tek mesaj.',
+    'Bağlantınız olmayan biri, bulunmanıza izin verdiyseniz adınızı ve kullanıcı adınızı görür. İlk mesajı istek olarak gelir: siz yanıtlayana kadar yalnızca bir mesaj.',
   'Hi Noor, found you!': 'Merhaba Noor, seni buldum!',
   'one message until you answer · decline and they never know':
-    'siz yanıtlayana kadar tek mesaj · reddedin, asla bilmezler',
+    'siz yanıtlayana kadar tek mesaj · reddederseniz haberi olmaz',
   'A customer sees the organization, never its people.':
-    'Bir müşteri kuruluşu görür, asla kişilerini değil.',
+    'Müşteri kuruluşu görür, çalışanlarını asla.',
   'In a business conversation the team’s names and ids are masked everywhere: messages, read receipts, suggestions, exports. Anything filed for the customer names the organization.':
-    'Bir iş konuşmasında ekibin adları ve kimlikleri her yerde gizlenir: mesajlar, okundu bilgileri, öneriler, dışa aktarımlar. Müşteri için kaydedilen her şey kuruluşu adlandırır.',
-  'verified · answered in an hour': 'doğrulanmış · bir saatte yanıtlandı',
+    'İş konuşmalarında ekibin adları ve kimlikleri her yerde gizlenir: mesajlarda, okundu bilgilerinde, önerilerde, dışa aktarımlarda. Müşteri için kaydedilen her şeyde yalnızca kuruluşun adı geçer.',
+  'verified · answered in an hour': 'doğrulanmış · bir saat içinde yanıtladı',
   '{n} actions a day': 'günde {n} eylem',
   '{n} conversations a day': 'günde {n} konuşma',
   '{n} answers a day': 'günde {n} yanıt',
   'Your family, your work and your customers don’t belong in one list. Say who each person is to you, once. From then on Caime knows what needs you first, who may reach you when, what was decided and what’s owed, and what each side of your life sees of you.':
-    'Aileniz, işiniz ve müşterileriniz tek bir listeye ait değildir. Her kişinin sizin için kim olduğunu bir kez söyleyin. O andan sonra Caime sizi önce neyin beklediğini, size kimin ne zaman ulaşabileceğini, neyin kararlaştırıldığını ve neyin borçlu olunduğunu ve hayatınızın her yanının sizden ne gördüğünü bilir.',
+    'Aileniz, işiniz ve müşterileriniz aynı listeye sığmaz. Her kişinin sizin için kim olduğunu bir kez söyleyin. Caime o andan itibaren önce neyin sizi beklediğini, kimin size ne zaman ulaşabileceğini, neye karar verildiğini, kimin neyi yapacağını ve hayatınızın her yanının sizden neyi gördüğünü bilir.',
   'Start free': 'Ücretsiz başlayın',
-  Specification: 'Özellikler',
+  Specification: 'Teknik özellikler',
   'primary object': 'temel nesne',
   'The connection between two people, not the chat.': 'Sohbet değil, iki kişi arasındaki bağlantı.',
-  'to connect': 'bağlanmak',
+  'to connect': 'bağlantı kurmak',
   'Connect in three taps. Say how you know someone; the conversation, its notifications and its cards fit the relationship.':
-    'Üç dokunuşta bağlanın. Birini nereden tanıdığınızı söyleyin; konuşma, bildirimleri ve kartları ilişkiye uyar.',
+    'Üç dokunuşla bağlanın. Birini nereden tanıdığınızı söyleyin; konuşma, bildirimleri ve kartları ilişkiye göre şekillenir.',
   attention: 'dikkat',
   '“3 need you”, never “47 unread”. The inbox puts what matters first and says why.':
-    '“3 kişi sizi bekliyor”, asla “47 okunmamış”. Gelen kutusu önemli olanı öne koyar ve nedenini söyler.',
+    '“3 kişi sizi bekliyor”, asla “47 okunmamış”. Gelen kutusu önemli olanı öne alır ve nedenini söyler.',
   memory: 'hafıza',
   'Commitments, dates, amounts and decisions are found in the conversation and offered as actions. You decide; nothing is written for you.':
-    'Sözler, tarihler, tutarlar ve kararlar konuşmada bulunur ve eylem olarak sunulur. Siz karar verirsiniz; sizin yerinize hiçbir şey yazılmaz.',
+    'Verilen sözler, tarihler, tutarlar ve kararlar konuşmadan çıkarılır ve eylem olarak önerilir. Kararı siz verirsiniz; sizin yerinize hiçbir şey yazılmaz.',
   organizations: 'kuruluşlar',
   'A business proves its domain with one DNS record; its team answers as the organization, in one inbox, and customers book from its open slots.':
-    'Bir işletme alan adını tek bir DNS kaydıyla kanıtlar; ekibi tek bir gelen kutusunda kuruluş olarak yanıt verir ve müşteriler boş zamanlarından rezervasyon yapar.',
+    'İşletme, alan adını tek bir DNS kaydıyla kanıtlar; ekibi tek bir gelen kutusundan kuruluş adına yanıt verir, müşteriler de boş saatlerden randevu alır.',
   'Each side of your life sees what you chose. End-to-end encrypted when you say so, with a recovery key only you hold.':
-    'Hayatınızın her yanı seçtiklerinizi görür. Siz söylediğinizde uçtan uca şifreli; kurtarma anahtarı yalnızca sizde.',
+    'Hayatınızın her yanı seçtiklerinizi görür. İsterseniz uçtan uca şifreli; kurtarma anahtarı yalnızca sizde.',
   money: 'para',
   'Never held or moved by Caime. A split records who owes whom; nothing else.':
-    'Caime asla tutmaz ve aktarmaz. Bir bölüşme kimin kime borçlu olduğunu kaydeder; o kadar.',
+    'Caime parayı asla tutmaz, aktarmaz. Bölüşme kartı yalnızca kimin kime borçlu olduğunu kaydeder; o kadar.',
   'Free for people, always. Organizations start free and can buy Business.':
-    'Kişiler için her zaman ücretsiz. Kuruluşlar ücretsiz başlar ve Business satın alabilir.',
-  'runs on': 'çalıştığı yer',
-  'Web, iOS and Android, from one account.': 'Tek hesapla Web, iOS ve Android.',
+    'Kişiler için her zaman ücretsiz. Kuruluşlar ücretsiz başlar, isterse Business planını satın alır.',
+  'runs on': 'platformlar',
+  'Web, iOS and Android, from one account.': 'Tek hesapla web, iOS ve Android.',
   'Layers · pick one': 'Katmanlar · birini seçin',
   '{site} for organizations: answer as the organization, and prove it’s you':
-    'Kuruluşlar için {site}: kuruluş olarak yanıt verin ve siz olduğunuzu kanıtlayın',
+    'Kuruluşlar için {site}: kuruluş adına yanıt verin, kim olduğunuzu kanıtlayın',
   'A clinic, a shop, a school or a nonprofit verifies its domain with one DNS record and answers customers as the organization, in one inbox, with an AI agent and apps that always say what they are. Free for a team of three.':
-    'Bir klinik, dükkân, okul veya dernek alan adını tek bir DNS kaydıyla doğrular ve müşterilere tek bir gelen kutusunda kuruluş olarak yanıt verir; AI temsilci ve uygulamalar her zaman ne olduklarını söyler. Üç kişilik ekip için ücretsiz.',
+    'Klinik, mağaza, okul ya da dernek; alan adını tek bir DNS kaydıyla doğrular ve müşterilere tek bir gelen kutusundan kuruluş adına yanıt verir. AI temsilcisi ve uygulamalar ne olduklarını her zaman belli eder. Üç kişilik ekipler için ücretsiz.',
   'Answer as the organization, and prove it’s you.':
-    'Kuruluş olarak yanıt verin ve siz olduğunuzu kanıtlayın.',
+    'Kuruluş adına yanıt verin, kim olduğunuzu kanıtlayın.',
   'A clinic, a shop, a school, a nonprofit or a public service gets a profile people can trust once it verifies its domain, and one inbox where its team answers customers as the organization. Customers write from the app they already use for everyone else in their life.':
-    'Bir klinik, dükkân, okul, dernek veya kamu hizmeti, alan adını doğruladığında insanların güvenebileceği bir profil ve ekibinin müşterilere kuruluş olarak yanıt verdiği tek bir gelen kutusu edinir. Müşteriler hayatlarındaki herkes için zaten kullandıkları uygulamadan yazar.',
+    'Klinik, mağaza, okul, dernek ya da kamu hizmeti; alan adını doğruladığında insanların güvenebileceği bir profile ve ekibinin müşterilere kuruluş adına yanıt verdiği tek bir gelen kutusuna sahip olur. Müşteriler, hayatlarındaki herkesle zaten yazıştıkları uygulamadan yazar.',
   verification: 'doğrulama',
   'One TXT record on your domain. Verified shows on your page and beside your team; it is checked, never bought, and yours again if you ever close and come back.':
-    'Alan adınızda tek bir TXT kaydı. Doğrulanmış ibaresi sayfanızda ve ekibinizin yanında görünür; kontrol edilir, asla satın alınmaz ve kapatıp geri dönerseniz yeniden sizin olur.',
+    'Alan adınızda tek bir TXT kaydı. Doğrulanmış rozeti sayfanızda ve ekibinizin yanında görünür; satın alınmaz, kontrol edilerek verilir ve bir gün kapatıp geri dönerseniz yine sizindir.',
   'the inbox': 'gelen kutusu',
   'Every customer conversation in one place, sorted by who has waited longest, in six views: {views}.':
-    'Her müşteri konuşması tek yerde, en uzun bekleyene göre sıralı, altı görünümde: {views}.',
+    'Tüm müşteri konuşmaları tek yerde, en uzun bekleyen en üstte, altı görünümde: {views}.',
   'the team': 'ekip',
   'Owners, admins and members. A customer sees the organization, never which person answered. A seat that ends takes nothing with it.':
-    'Sahipler, yöneticiler ve üyeler. Bir müşteri kuruluşu görür, hangi kişinin yanıtladığını asla. Sona eren bir koltuk hiçbir şeyi yanında götürmez.',
-  'writing first': 'önce yazmak',
+    'Sahipler, yöneticiler ve üyeler. Müşteri kuruluşu görür, hangi kişinin yanıtladığını asla. Ekipten ayrılan biri hiçbir şeyi yanında götürmez.',
+  'writing first': 'ilk mesaj',
   'Your team may write to someone first. It arrives as a request: one message until they answer, and their answer opens the conversation.':
-    'Ekibiniz birine önce yazabilir. İstek olarak ulaşır: yanıtlayana kadar tek mesaj; yanıtları konuşmayı açar.',
-  'the ai agent': 'ai temsilci',
+    'Ekibiniz birine ilk mesajı atabilir. Mesaj istek olarak ulaşır: karşı taraf yanıtlayana kadar yalnızca bir mesaj; yanıt verdiğinde konuşma açılır.',
+  'the ai agent': 'ai temsilcisi',
   'Answers from what you wrote down (up to {n} characters), is marked as an AI, and hands over to a person the moment it isn’t sure. It never speaks for the team.':
-    'Yazdıklarınızdan (en fazla {n} karakter) yanıt verir, AI olarak işaretlidir ve emin olmadığı anda bir insana devreder. Asla ekip adına konuşmaz.',
+    'Sizin yazdıklarınızdan (en fazla {n} karakter) yanıt verir, AI olarak işaretlenir ve emin olmadığı anda bir insana devreder. Ekip adına asla konuşmaz.',
   'Set bookable hours once. Customers pick from the open slots, your AI agent offers the next few and books the one they choose, and every booking is an appointment your team confirms.':
-    'Rezervasyon saatlerini bir kez belirleyin. Müşteriler boş zamanlardan seçer, AI temsilciniz yakın olanları sunar ve seçileni rezerve eder; her rezervasyon ekibinizin onayladığı bir randevudur.',
+    'Rezervasyon saatlerini bir kez ayarlayın. Müşteriler boş saatlerden seçer, AI temsilciniz en yakın birkaçını önerir ve seçileni ayırır; her rezervasyon, ekibinizin onayladığı bir randevu olur.',
   apps: 'uygulamalar',
   'A helpdesk, a CRM or your own bot: a token that reaches only your conversations, a signed webhook, and cards of your own design.':
-    'Bir yardım masası, bir CRM ya da kendi botunuz: yalnızca konuşmalarınıza ulaşan bir belirteç, imzalı bir webhook ve kendi tasarımınız kartlar.',
+    'Yardım masası, CRM ya da kendi botunuz: yalnızca sizin konuşmalarınıza erişen bir belirteç, imzalı bir webhook ve kendi tasarladığınız kartlar.',
   updates: 'güncellemeler',
   'Post to everyone who follows you. Nobody sees who follows, and nothing about following reaches anyone’s inbox.':
-    'Sizi takip eden herkese paylaşın. Kimin takip ettiğini kimse görmez ve takipte olan hiçbir şey kimsenin gelen kutusuna ulaşmaz.',
+    'Sizi takip eden herkese paylaşın. Kimin takip ettiğini kimse göremez ve takiple ilgili hiçbir şey kimsenin gelen kutusuna düşmez.',
   spaces: 'alanlar',
   'Spaces for the team, a project or a branch, started from the organization’s page, with your team already there to pick from.':
-    'Ekip, bir proje ya da bir şube için alanlar; kuruluşun sayfasından başlatılır, ekibiniz seçmeye hazır.',
+    'Ekip, proje ya da şube için alanlar; kuruluşun sayfasından açılır, ekibiniz de seçilmeye hazır bekler.',
   calls: 'aramalar',
   'Voice and video, one to one and in groups of up to {n}, in the browser.':
-    'Tarayıcıda sesli ve görüntülü; bire bir ve en fazla {n} kişilik gruplarda.',
+    'Tarayıcıda sesli ve görüntülü arama; bire bir ya da en fazla {n} kişilik gruplarla.',
   insights: 'içgörüler',
   'How fast the team answers, how many customers write and what is still open. On Business.':
-    'Ekibin ne hızla yanıt verdiği, kaç müşterinin yazdığı ve neyin açık kaldığı. Business’ta.',
+    'Ekibin ne kadar hızlı yanıt verdiği, kaç müşterinin yazdığı ve neyin hâlâ açık olduğu. Business planında.',
   'Free for a team of {team}, with {apps}. Business for the rest: {pricing}.':
-    '{team} kişilik ekip için ücretsiz, {apps} ile. Gerisi için Business: {pricing}.',
+    '{team} kişilik ekiplere {apps} ile ücretsiz. Daha fazlası için Business: {pricing}.',
   'one app': 'bir uygulama',
   'A customer’s day · pick a step': 'Bir müşterinin günü · bir adım seçin',
   'For developers': 'Geliştiriciler için',
   '{site} pricing: free for people, organizations pay for their team':
-    '{site} fiyatları: kişiler için ücretsiz, kuruluşlar ekipleri için öder',
+    '{site} fiyatlandırması: kişiler için ücretsiz, kuruluşlar ekipleri için öder',
   'What makes Caime Caime is never counted. People use it free; Pro adds AI, storage, automations and insights. Organizations start free for a team of three and buy Business for the rest.':
-    'Caime’yi Caime yapan şey asla sayılmaz. Kişiler ücretsiz kullanır; Pro AI, depolama, otomasyonlar ve içgörüler ekler. Kuruluşlar üç kişilik ekip için ücretsiz başlar ve gerisi için Business satın alır.',
+    'Caime’yi Caime yapan hiçbir şey kotaya girmez. Kişiler ücretsiz kullanır; Pro, AI, depolama, otomasyonlar ve içgörüler ekler. Kuruluşlar üç kişilik ekiple ücretsiz başlar, fazlası için Business planını alır.',
   'Free for people. Organizations pay for their team.':
     'Kişiler için ücretsiz. Kuruluşlar ekipleri için öder.',
   'What makes Caime Caime is never counted: connections, relationships, what needs you, what you’re waiting for, search and sync are in every plan. Plans differ only in what costs money to run, and in what organizations buy.':
-    'Caime’yi Caime yapan şey asla sayılmaz: bağlantılar, ilişkiler, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme her plandadır. Planlar yalnızca çalıştırması para gerektirenlerde ve kuruluşların satın aldıklarında farklılaşır.',
+    'Caime’yi Caime yapan hiçbir şey kotaya girmez: bağlantılar, ilişkiler, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme her planda var. Planlar yalnızca çalıştırması para tutan özelliklerde ve kuruluşların satın aldıklarında ayrılır.',
   'For people': 'Kişiler için',
   Personal: 'Kişisel',
   ', always': ', her zaman',
@@ -238,130 +240,131 @@ export const turkishServer: Catalog = {
     'bağlantılar, dikkat, hafıza, alanlar, aramalar, özel konuşmalar',
   Pro: 'Pro',
   'how your relationships are going, from your own messages, for you only':
-    'ilişkileriniz nasıl gidiyor; kendi mesajlarınızdan, yalnızca sizin için',
+    'ilişkileriniz nasıl gidiyor: kendi mesajlarınızdan, yalnızca size özel',
   team: 'ekip',
-  'ai agent': 'ai temsilci',
+  'ai agent': 'ai temsilcisi',
   'how fast the team answers, who is waiting, what is open':
-    'ekip ne hızla yanıt veriyor, kim bekliyor, ne açık',
+    'ekip ne kadar hızlı yanıt veriyor, kim bekliyor, ne açık',
   Enterprise: 'Enterprise',
-  'Talk to us': 'Bizimle konuşun',
+  'Talk to us': 'Bize ulaşın',
   included: 'dahil',
   'The rules': 'Kurallar',
-  'never counted': 'asla sayılmaz',
+  'never counted': 'kotaya girmez',
   'A conversation a customer starts. Anyone who writes to you. Your connections, however many.':
-    'Bir müşterinin başlattığı konuşma. Size yazan herkes. Bağlantılarınız, kaç tane olursa olsun.',
-  'a lower plan': 'daha düşük bir plan',
+    'Müşterinin başlattığı konuşmalar. Size yazan herkes. Bağlantılarınız, kaç tane olursa olsun.',
+  'a lower plan': 'daha düşük bir plana geçmek',
   'takes nothing away: nobody is removed from a team and no app stops. It only stops new additions until they fit.':
-    'hiçbir şeyi elinizden almaz: kimse ekipten çıkarılmaz ve hiçbir uygulama durmaz. Yalnızca sığana kadar yeni eklemeleri durdurur.',
+    'hiçbir şeyi elinizden almaz: kimse ekipten çıkarılmaz, hiçbir uygulama durmaz. Yalnızca sınırın altına inene kadar yeni ekleme yapılamaz.',
   paying: 'ödeme',
   'Through Stripe, by card. Cancel whenever you like: it stays on until the end of what you paid for, and nothing you use today goes away after.':
-    'Stripe üzerinden, kartla. İstediğiniz zaman iptal edin: ödediğiniz dönemin sonuna kadar açık kalır ve bugün kullandığınız hiçbir şey sonrasında kaybolmaz.',
-  'a seat': 'bir koltuk',
+    'Stripe üzerinden, kartla. İstediğiniz zaman iptal edin: ödediğiniz dönemin sonuna kadar açık kalır, bugün kullandığınız hiçbir şey sonrasında kaybolmaz.',
+  'a seat': 'ekip üyeliği',
   'on a Business or Enterprise team includes everything Pro does.':
-    'Business veya Enterprise ekibinde Pro’nun her şeyini içerir.',
+    'Business ya da Enterprise ekibinde Pro’daki her şeyi içerir.',
   '{site} security and privacy: each side of your life sees what you chose':
     '{site} güvenlik ve gizlilik: hayatınızın her yanı seçtiklerinizi görür',
   'How you describe people is only ever yours. Profile by sphere, read receipts both ways only, requests before strangers, end-to-end encryption with a recovery key you hold, and a server that keeps envelopes, not words.':
-    'İnsanları nasıl tanımladığınız yalnızca size aittir. Alana göre profil, yalnızca karşılıklı okundu bilgisi, yabancılardan önce istekler, sizin tuttuğunuz kurtarma anahtarıyla uçtan uca şifreleme ve sözleri değil zarfları saklayan bir sunucu.',
+    'İnsanları nasıl tanımladığınız yalnızca size aittir. Çevreye göre profil, yalnızca karşılıklı okundu bilgisi, yabancılar için önce istek, kurtarma anahtarı sizde olan uçtan uca şifreleme ve sözcükleri değil yalnızca zarfları saklayan bir sunucu.',
   'Privacy in Caime isn’t a setting you find later. How you describe someone is only ever yours, what each sphere of your life sees of you is decided by you, field by field, and a conversation that should be private is encrypted so that not even Caime can read it.':
-    'Caime’de gizlilik sonradan bulduğunuz bir ayar değildir. Birini nasıl tanımladığınız yalnızca size aittir; hayatınızın her alanının sizden ne gördüğüne alan alan siz karar verirsiniz ve özel olması gereken bir konuşma Caime bile okuyamayacak şekilde şifrelenir.',
-  'Who sees what · pick a side': 'Kim ne görür · bir taraf seçin',
+    'Caime’de gizlilik sonradan aranıp bulunan bir ayar değildir. Birini nasıl tanımladığınız yalnızca size aittir; hayatınızın her çevresinin sizden neyi göreceğine alan alan siz karar verirsiniz ve özel kalması gereken bir konuşma, Caime’nin bile okuyamayacağı şekilde şifrelenir.',
+  'Who sees what · pick a side': 'Kim neyi görür · bir taraf seçin',
   'your labels': 'etiketleriniz',
   'How you describe the people you know (family, work, a client) is yours. The person you describe sees it only if you both turn on sharing; nobody else ever does.':
-    'Tanıdığınız kişileri nasıl tanımladığınız (aile, iş, bir müşteri) size aittir. Tanımladığınız kişi bunu yalnızca ikiniz de paylaşımı açarsanız görür; başka kimse asla görmez.',
+    'Tanıdıklarınızı nasıl tanımladığınız (aile, iş, müşteri) size aittir. Tanımladığınız kişi bunu yalnızca ikiniz de paylaşımı açarsanız görür; başka hiç kimse görmez.',
   'read receipts': 'okundu bilgisi',
   'Only both ways: you see theirs when they see yours.':
-    'Yalnızca karşılıklı: onlar sizinkini gördüğünde siz de onlarınkini görürsünüz.',
+    'Yalnızca karşılıklı: onlar sizinkini görüyorsa siz de onlarınkini görürsünüz.',
   strangers: 'yabancılar',
   'A message from someone you don’t know arrives as a request: one message until you answer. Declined, they never know.':
-    'Tanımadığınız birinden gelen mesaj bir istek olarak ulaşır: siz yanıtlayana kadar tek mesaj. Reddederseniz asla bilmezler.',
+    'Tanımadığınız birinin mesajı istek olarak gelir: siz yanıtlayana kadar yalnızca bir mesaj. Reddederseniz karşı tarafın haberi olmaz.',
   'under 18': '18 yaş altı',
   'No public page, no money cards, no messages from organizations they didn’t write to first, and adults are told when a conversation includes a minor.':
-    'Herkese açık sayfa yok, para kartları yok, önce yazmadıkları kuruluşlardan mesaj yok ve bir konuşmada reşit olmayan biri olduğunda yetişkinlere söylenir.',
+    'Herkese açık sayfa yok, para kartları yok, kendilerinin önce yazmadığı kuruluşlardan mesaj yok; bir konuşmada reşit olmayan biri varsa yetişkinlere bildirilir.',
   'private conversations': 'özel konuşmalar',
   'End to end encrypted: a fresh AES-256-GCM key for every message, wrapped for each device allowed to read it with P-256 ECDH and HKDF, and the whole envelope signed by the device that sent it. The server keeps envelopes, never words. Up to {people} people, {devices} devices each.':
-    'Uçtan uca şifreli: her mesaj için yeni bir AES-256-GCM anahtarı, okumasına izin verilen her cihaz için P-256 ECDH ve HKDF ile sarılır ve tüm zarf gönderen cihaz tarafından imzalanır. Sunucu zarfları saklar, sözleri asla. En fazla {people} kişi, her biri {devices} cihaz.',
+    'Uçtan uca şifreli: her mesaja yeni bir AES-256-GCM anahtarı; bu anahtar, mesajı okumasına izin verilen her cihaz için P-256 ECDH ve HKDF ile sarmalanır ve zarfın tamamı gönderen cihaz tarafından imzalanır. Sunucu zarfları saklar, sözcükleri asla. En fazla {people} kişi, kişi başına {devices} cihaz.',
   'your devices': 'cihazlarınız',
   'A new device reads nothing until you say it’s yours on one you already have. Your security code is your first device’s, so it stays the same as you add devices and changes only when you start over.':
-    'Yeni bir cihaz, zaten sahip olduğunuz bir cihazda onun sizin olduğunu söyleyene kadar hiçbir şey okumaz. Güvenlik kodunuz ilk cihazınızınkidir; bu yüzden cihaz ekledikçe aynı kalır ve yalnızca baştan başladığınızda değişir.',
+    'Yeni bir cihaz, zaten kullandığınız bir cihazdan onu onaylayana kadar hiçbir şey okuyamaz. Güvenlik kodunuz ilk cihazınıza aittir; bu yüzden cihaz ekledikçe değişmez, yalnızca sıfırdan başladığınızda değişir.',
   recovery: 'kurtarma',
   'A recovery key you hold, shown once, brings your private conversations back when every device is gone. Caime keeps nothing of it.':
-    'Sizin tuttuğunuz, bir kez gösterilen bir kurtarma anahtarı, tüm cihazlar gittiğinde özel konuşmalarınızı geri getirir. Caime ondan hiçbir şey saklamaz.',
+    'Yalnızca sizde olan ve bir kez gösterilen kurtarma anahtarı, tüm cihazlarınızı kaybettiğinizde özel konuşmalarınızı geri getirir. Caime ondan hiçbir iz saklamaz.',
   'what isn’t hidden': 'gizlenmeyenler',
   'Who is in a conversation, when messages are sent and how long they are, and reactions. The app says so.':
-    'Bir konuşmada kimin olduğu, mesajların ne zaman gönderildiği ve uzunlukları ile tepkiler. Uygulama bunu söyler.',
-  'blocks and reports': 'engellemeler ve şikâyetler',
+    'Bir konuşmada kimlerin olduğu, mesajların ne zaman gönderildiği ve ne kadar uzun olduğu, bir de tepkiler. Uygulama bunu açıkça belirtir.',
+  'blocks and reports': 'engelleme ve şikâyetler',
   'A block stops every write, both ways. Reports are read by a person and acted on; every action is in the audit log.':
-    'Bir engelleme her yazmayı iki yönde durdurur. Şikâyetleri bir insan okur ve gereğini yapar; her işlem denetim kaydındadır.',
+    'Engelleme, iki yönde de her türlü yazmayı durdurur. Şikâyetleri bir insan okur ve gereğini yapar; her işlem denetim kaydında yer alır.',
   'your data': 'verileriniz',
   'Download all of it, or delete your account, from Settings. Ended sign-ins are kept {signIns} days, security records {records}, a handle you let go of {handles} from everyone.':
-    'Hepsini indirin ya da hesabınızı silin; Ayarlar’dan. Sona eren oturumlar {signIns} gün, güvenlik kayıtları {records}, bıraktığınız bir kullanıcı adı herkesten {handles} saklanır.',
+    'Tüm verilerinizi indirebilir ya da hesabınızı Ayarlar’dan silebilirsiniz. Sona eren oturumlar {signIns} gün, güvenlik kayıtları {records} saklanır; bıraktığınız bir kullanıcı adı {handles} boyunca kimseye verilmez.',
   'a year': 'bir yıl',
   'the server': 'sunucu',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
-    'Her sayfada bir içerik güvenlik politikası, üçüncü taraf betik yok, reklam yok, siteler arası izleme yok ve her dökümden sonra kontrol edilen bir yedek.',
+    'Her sayfada içerik güvenlik politikası; üçüncü taraf betik yok, reklam yok, siteler arası izleme yok; her yedek alındıktan sonra kontrol edilir.',
   ai: 'ai',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
-    'Bir yetişkin açana kadar kapalı, özel bir konuşmada asla ve çıkardığı her şey kabul ettiğiniz ya da etmediğiniz bir öneridir.',
+    'Bir yetişkin açana kadar kapalıdır, özel konuşmalarda asla çalışmaz ve çıkardığı her şey, kabul edip etmemek size kalmış bir öneridir.',
   'Read the privacy policy': 'Gizlilik politikasını okuyun',
-  'Report a concern': 'Bir endişe bildirin',
+  'Report a concern': 'Bir sorun bildirin',
   '{site} for developers: an API that reaches only what it was given':
     'Geliştiriciler için {site}: yalnızca kendisine verilene ulaşan bir API',
   'Apps for organizations with scoped tokens, signed webhooks, bots and cards of their own; personal tokens and OAuth for apps that act for a person; a typed SDK. Every write is idempotent.':
-    'Kapsamlı belirteçler, imzalı webhook’lar, botlar ve kendi kartlarıyla kuruluşlar için uygulamalar; bir kişi adına işlem yapan uygulamalar için kişisel belirteçler ve OAuth; tipli bir SDK. Her yazma idempotent’tir.',
+    'Kuruluşlar için yetkisi sınırlı belirteçler, imzalı webhook’lar, botlar ve kendi kartlarıyla uygulamalar; bir kişi adına çalışan uygulamalar için kişisel belirteçler ve OAuth; tip güvenli bir SDK. Her yazma işlemi idempotent’tir.',
   'An API that reaches only what it was given.': 'Yalnızca kendisine verilene ulaşan bir API.',
   'Organizations connect a helpdesk, a CRM or a bot of their own. People let an app act for them, with the permissions they chose. Every token reaches a fixed set of routes, every webhook is signed, and nothing an app does is passed off as a person.':
-    'Kuruluşlar bir yardım masası, bir CRM ya da kendi botlarını bağlar. Kişiler bir uygulamanın seçtikleri izinlerle kendi adlarına işlem yapmasına izin verir. Her belirteç sabit bir rota kümesine ulaşır, her webhook imzalıdır ve bir uygulamanın yaptığı hiçbir şey bir insanınmış gibi gösterilmez.',
+    'Kuruluşlar yardım masalarını, CRM’lerini ya da kendi botlarını bağlar. Kişiler, seçtikleri izinlerle bir uygulamanın kendi adlarına işlem yapmasına izin verir. Her belirteç yalnızca belirli rotalara erişir, her webhook imzalıdır ve bir uygulamanın yaptığı hiçbir şey bir insanın yapmış gibi gösterilmez.',
   'Added on the organization’s page. Each has its own bot on the team, a token shown once, and a webhook signed with a secret shown once. Replace either and the old one stops at once.':
-    'Kuruluşun sayfasından eklenir. Her birinin ekipte kendi botu, bir kez gösterilen bir belirteci ve bir kez gösterilen bir gizli anahtarla imzalanmış bir webhook’u vardır. Birini değiştirin, eskisi hemen durur.',
+    'Kuruluşun sayfasından eklenir. Her uygulamanın ekipte kendi botu, bir kez gösterilen bir belirteci ve bir kez gösterilen gizli anahtarla imzalanan bir webhook’u olur. Birini yenilediğinizde eskisi hemen geçersiz olur.',
   permissions: 'izinler',
   '{scopes}: given one by one. A route the token can’t use answers 403.':
-    '{scopes}: tek tek verilir. Belirtecin kullanamadığı bir rota 403 yanıtı verir.',
+    '{scopes}: tek tek verilir. Belirtecin kullanamadığı bir rota 403 döndürür.',
   webhooks: 'webhook’lar',
   '{events}. Signed, https only, no private addresses, one deadline for the whole exchange.':
-    '{events}. İmzalı, yalnızca https, özel adres yok, tüm alışveriş için tek bir son süre.',
+    '{events}. İmzalı, yalnızca https, özel adres yok, tüm iletişim için tek bir zaman aşımı.',
   'your own cards': 'kendi kartlarınız',
   'Define a kind of card with fields and states. Your bot sends it, the team and the customer move it, and you hear when they do.':
-    'Alanları ve durumlarıyla bir kart türü tanımlayın. Botunuz gönderir, ekip ve müşteri ilerletir ve siz bunu duyarsınız.',
+    'Alanları ve durumlarıyla bir kart türü tanımlayın. Botunuz gönderir, ekip ve müşteri ilerletir; her adımdan haberiniz olur.',
   idempotent: 'idempotent',
   'Every write carries a {clientId}. Sending it again returns the first result, never a second message.':
-    'Her yazma bir {clientId} taşır. Yeniden göndermek ilk sonucu döndürür, asla ikinci bir mesaj değil.',
+    'Her yazma işlemi bir {clientId} taşır. Yeniden gönderildiğinde ilk sonuç döner; asla ikinci bir mesaj oluşmaz.',
   rate: 'hız sınırı',
   '{n} requests a minute per token.': 'Belirteç başına dakikada {n} istek.',
   'the sdk': 'sdk',
   '{sdk}: a typed client for every route an app reaches, and the webhook check. Built from the repository until it is on npm.':
-    '{sdk}: bir uygulamanın ulaştığı her rota için tipli bir istemci ve webhook kontrolü. npm’de olana kadar depodan derlenir.',
+    '{sdk}: bir uygulamanın erişebildiği her rota için tip güvenli bir istemci ve webhook doğrulaması. npm’de yayımlanana kadar depodan derlenir.',
   'personal tokens': 'kişisel belirteçler',
   'A person makes a token for their own scripts ({scopes}). It never reaches the account itself.':
-    'Bir kişi kendi betikleri için bir belirteç oluşturur ({scopes}). Hesabın kendisine asla ulaşmaz.',
+    'Kişi, kendi betikleri için bir belirteç oluşturur ({scopes}). Bu belirteç hesabın kendisine asla erişemez.',
   oauth: 'oauth',
   'Third-party apps ask people for consent (OAuth 2.0; errors as RFC 6749 and 7009 say), hold only what they were given, and can be revoked any time from Settings.':
-    'Üçüncü taraf uygulamalar kişilerden izin ister (OAuth 2.0; hatalar RFC 6749 ve 7009’a göre), yalnızca kendilerine verileni tutar ve Ayarlar’dan istendiği zaman iptal edilebilir.',
+    'Üçüncü taraf uygulamalar kişilerden onay ister (OAuth 2.0; hatalar RFC 6749 ve 7009’a uygun), yalnızca kendilerine verilene erişir ve Ayarlar’dan her an iptal edilebilir.',
   'the guide': 'kılavuz',
   'In the app: Settings → Developer, and beside each app on the organization’s page.':
-    'Uygulamada: Ayarlar → Geliştirici ve kuruluşun sayfasında her uygulamanın yanında.',
+    'Uygulamada: Ayarlar → Geliştirici; ayrıca kuruluşun sayfasında her uygulamanın yanında.',
   'About {site}': '{site} hakkında',
   '{site} is made by {maker}: a communication product, and only that. It never holds or moves money, runs no third-party code and has no feed. The primary object is the connection between two people, not the chat.':
-    '{site}, {maker} tarafından yapılmıştır: bir iletişim ürünü, yalnızca bu. Asla para tutmaz veya aktarmaz, üçüncü taraf kod çalıştırmaz ve akışı yoktur. Temel nesne sohbet değil, iki kişi arasındaki bağlantıdır.',
+    '{site}, {maker} tarafından yapılır: yalnızca bir iletişim ürünü, başka bir şey değil. Parayı asla tutmaz ya da aktarmaz, üçüncü taraf kod çalıştırmaz ve akışı yoktur. Temel nesne sohbet değil, iki kişi arasındaki bağlantıdır.',
   'Made for the people in your life, not for a feed.':
     'Bir akış için değil, hayatınızdaki insanlar için yapıldı.',
   '{site} is made by {maker}. It is a communication product, and only that: it never holds or moves money, runs no third-party code, and has no feed. The primary object is the connection between two people, not the chat.':
-    '{site}, {maker} tarafından yapılmıştır. Bir iletişim ürünüdür, yalnızca bu: asla para tutmaz veya aktarmaz, üçüncü taraf kod çalıştırmaz ve akışı yoktur. Temel nesne sohbet değil, iki kişi arasındaki bağlantıdır.',
-  'made by': 'yapan',
-  'what it is': 'ne olduğu',
+    '{site}, {maker} tarafından yapılır. Yalnızca bir iletişim ürünüdür, başka bir şey değil: parayı asla tutmaz ya da aktarmaz, üçüncü taraf kod çalıştırmaz ve akışı yoktur. Temel nesne sohbet değil, iki kişi arasındaki bağlantıdır.',
+  'made by': 'yapımcı',
+  'what it is': 'nedir',
   'Messaging for people, and for the organizations they deal with, on the web, iOS and Android, from one account.':
     'Kişiler ve muhatap oldukları kuruluşlar için mesajlaşma; web, iOS ve Android’de, tek hesapla.',
-  'what it isn’t': 'ne olmadığı',
+  'what it isn’t': 'ne değildir',
   'A super-app. No wallet, no marketplace, no feed, no scripts from anyone else.':
-    'Bir süper uygulama. Cüzdan yok, pazar yeri yok, akış yok, başkasından betik yok.',
+    'Bir süper uygulama. Cüzdan yok, pazar yeri yok, akış yok, başkalarının betikleri yok.',
   'the characters': 'karakterler',
   'Caishy and friends (Momo, Panda, Lumi, Pico, Niko and Zuzu) appear where there is something to celebrate or nothing yet to show, never beside your invoice.':
-    'Caishy ve arkadaşları (Momo, Panda, Lumi, Pico, Niko ve Zuzu) kutlanacak bir şey olduğunda ya da henüz gösterecek bir şey olmadığında görünür; faturanızın yanında asla.',
-  'how it’s built': 'nasıl yapıldığı',
+    'Caishy ve arkadaşları (Momo, Panda, Lumi, Pico, Niko ve Zuzu) kutlanacak bir şey olduğunda ya da henüz gösterilecek bir şey olmadığında ortaya çıkar; faturanızın yanında asla.',
+  'how it’s built': 'nasıl yapılıyor',
   'One codebase for the server, the web and the phones. Every change is tested end to end against the real server before it ships, and only what passed goes live.':
-    'Sunucu, web ve telefonlar için tek bir kod tabanı. Her değişiklik yayınlanmadan önce gerçek sunucuya karşı uçtan uca test edilir ve yalnızca geçen yayına çıkar.',
+    'Sunucu, web ve telefonlar için tek kod tabanı. Her değişiklik yayına çıkmadan önce gerçek sunucuya karşı uçtan uca test edilir; yalnızca testi geçen yayına alınır.',
   'your say': 'söz sizde',
-  'Questions, ideas and concerns go to {mail}.': 'Sorular, fikirler ve endişeler {mail} adresine.',
+  'Questions, ideas and concerns go to {mail}.':
+    'Sorularınızı, fikirlerinizi ve endişelerinizi {mail} adresine yazın.',
   'Web, iOS and Android.': 'Web, iOS ve Android.',
   '{agentName} handed a conversation to the team': '{agentName} bir konuşmayı ekibe devretti',
   'A customer': 'Bir müşteri',
@@ -369,97 +372,96 @@ export const turkishServer: Catalog = {
   Answered: 'Yanıtlandı',
   'Missed video call': 'Cevapsız görüntülü arama',
   'Missed voice call': 'Cevapsız sesli arama',
-  'from {caller}': '{caller} tarafından',
+  'from {caller}': 'Arayan: {caller}',
   'the same name': 'aynı ad',
-  'one name is part of the other': 'bir ad diğerinin parçası',
+  'one name is part of the other': 'adlardan biri diğerinin parçası',
   'the same nickname': 'aynı takma ad',
   'you know both from {org}': 'ikisini de {org} üzerinden tanıyorsunuz',
-  '{name} may have two accounts': '{name} kişisinin iki hesabı olabilir',
+  '{name} may have two accounts': '{name} adlı kişinin iki hesabı olabilir',
   '{merge} and {keep} may be the same person': '{merge} ve {keep} aynı kişi olabilir',
   'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
-    'İkisinde de {reasons} var. Birleştirilince Kişiler’de tek görünürler; iki hesap ve konuşmalar kalır ve yeniden ayırabilirsiniz.',
+    'Ortak noktaları: {reasons}. Birleştirirseniz Kişiler’de tek kişi olarak görünürler; iki hesap da konuşmalar da kalır ve onları yeniden ayırabilirsiniz.',
   ', and ': ' ve ',
   '{title} call': '{title} araması',
-  Joined: 'Katıldı',
-  'Turned down': 'Geri çevrildi',
+  Joined: 'Katıldınız',
+  'Turned down': 'Reddettiniz',
   'Missed group video call': 'Cevapsız grup görüntülü araması',
   'Missed group voice call': 'Cevapsız grup sesli araması',
-  'from {starter}': '{starter} tarafından',
-  'in {title}': '{title} içinde',
+  'from {starter}': 'Başlatan: {starter}',
+  'in {title}': 'Konuşma: {title}',
   '{name} opened your invite link': '{name} davet bağlantınızı açtı',
   'You decide who connects with you: accept to connect.':
-    'Sizinle kimin bağlanacağına siz karar verirsiniz: bağlanmak için kabul edin.',
+    'Kiminle bağlantı kuracağınıza siz karar verirsiniz: bağlanmak için kabul edin.',
   automated: 'otomatik',
   'Message request': 'Mesaj isteği',
   Group: 'Grup',
   'New message': 'Yeni mesaj',
   '{n} new messages in {groupTitle}': {
-    one: '{groupTitle} içinde {n} yeni mesaj',
-    other: '{groupTitle} içinde {n} yeni mesaj',
+    one: '{groupTitle} grubunda {n} yeni mesaj',
+    other: '{groupTitle} grubunda {n} yeni mesaj',
   },
   '{senderName} sent {n} messages{context}': {
     one: '{senderName} {n} mesaj gönderdi{context}',
     other: '{senderName} {n} mesaj gönderdi{context}',
   },
   '“{topic}” keeps coming up here. A separate topic keeps it together.':
-    '“{topic}” burada sürekli geçiyor. Ayrı bir konu onu bir arada tutar.',
+    '“{topic}” burada sık sık açılıyor. Ayrı bir konu açarsanız hepsi bir arada durur.',
   'Your report was reviewed': 'Şikâyetiniz incelendi',
   'Thanks for reporting it: Caime looked and acted.':
-    'Bildirdiğiniz için teşekkürler: Caime baktı ve gereğini yaptı.',
+    'Bildirdiğiniz için teşekkürler: Caime inceledi ve gereğini yaptı.',
   'Thanks for reporting it: Caime looked, and didn’t act on it this time.':
-    'Bildirdiğiniz için teşekkürler: Caime baktı ve bu sefer bir işlem yapmadı.',
+    'Bildirdiğiniz için teşekkürler: Caime inceledi; bu kez bir işlem yapmadı.',
   'Colleague · {org}': 'İş arkadaşı · {org}',
   'You and {other} are both on {org}’s team, and {org} is verified.':
-    'Siz ve {other} ikiniz de {org} ekibindesiniz ve {org} doğrulanmış.',
+    'Siz ve {other}, ikiniz de {org} ekibindesiniz ve {org} doğrulanmış bir kuruluş.',
   'You and {other} are both on {org}’s team in Caime.':
-    'Siz ve {other} ikiniz de Caime’de {org} ekibindesiniz.',
+    'Siz ve {other}, Caime’de ikiniz de {org} ekibindesiniz.',
   'You and {other} are both in {space}, a {kind} space.':
-    'Siz ve {other} ikiniz de {space} içindesiniz; bir {kind} alanı.',
-  them: 'onlar',
+    'Siz ve {other}, ikiniz de {kind} türündeki {space} alanındasınız.',
+  them: 'bu kişi',
   '{name} described how you know each other as {label}{where}.':
-    '{name}, birbirinizi nereden tanıdığınızı {label}{where} olarak tanımladı.',
-  'You both use @{domain} email addresses.':
-    'İkiniz de @{domain} e-posta adresleri kullanıyorsunuz.',
-  '{name} asked you': '{name} sizden istedi',
+    '{name}, birbirinizi nereden tanıdığınızı “{label}{where}” olarak tanımladı.',
+  'You both use @{domain} email addresses.': 'İkiniz de @{domain} e-posta adresi kullanıyorsunuz.',
+  '{name} asked you': '{name} sizden bir şey istedi',
   '{name} finished your request': '{name} isteğinizi tamamladı',
   '{name} accepted your request': '{name} isteğinizi kabul etti',
   '{name} declined your request': '{name} isteğinizi reddetti',
   '{name} reopened your request': '{name} isteğinizi yeniden açtı',
   '{name} cancelled your request': '{name} isteğinizi iptal etti',
-  '{speaker} wrote {quote}': '{speaker} yazdı: {quote}',
-  '{name} gave you a conversation': '{name} size bir konuşma verdi',
+  '{speaker} wrote {quote}': '{speaker} şunu yazdı: {quote}',
+  '{name} gave you a conversation': '{name} bir konuşmayı size atadı',
   '{name} escalated a conversation': '{name} bir konuşmayı yükseltti',
   '{name} is calling': '{name} arıyor',
-  '{name} joined through your invite': '{name} davetiniz aracılığıyla katıldı',
-  'You’re connected. Say hi.': 'Bağlandınız. Merhaba deyin.',
+  '{name} joined through your invite': '{name} davetinizle katıldı',
+  'You’re connected. Say hi.': 'Bağlandınız. Bir merhaba deyin.',
   'Say hi when you’re ready.': 'Hazır olduğunuzda merhaba deyin.',
   '{name} wants to connect with you': '{name} sizinle bağlanmak istiyor',
-  '{name} finished {title}': '{name}, {title} listesini bitirdi',
+  '{name} finished {title}': '{name} listeyi bitirdi: {title}',
   '{name} finished the list': '{name} listeyi bitirdi',
-  'Everything on it is ticked.': 'Üzerindeki her şey işaretlendi.',
-  '{name} settled up': '{name} hesabı kapattı',
-  '{amount} of {title}.': '{title} için {amount}.',
+  'Everything on it is ticked.': 'Listedeki her şey işaretlendi.',
+  '{name} settled up': '{name} payını ödedi',
+  '{amount} of {title}.': '{title}: {amount}.',
   'the split': 'bölüşme',
-  'Their share of {title}.': '{title} içindeki payı.',
+  'Their share of {title}.': '{title} için kendi payı.',
   '{name} added {n} photos to {album}': {
     one: '{name}, {album} albümüne {n} fotoğraf ekledi',
     other: '{name}, {album} albümüne {n} fotoğraf ekledi',
   },
-  '{name} is calling {where}': '{name} arıyor {where}',
+  '{name} is calling {where}': '{name} arıyor: {where}',
   '{n} messages this week.': { one: 'Bu hafta {n} mesaj.', other: 'Bu hafta {n} mesaj.' },
   'Quiet this week.': 'Bu hafta sessiz.',
-  '{n} open for you.': { one: 'Sizin için {n} açık.', other: 'Sizin için {n} açık.' },
-  'Waiting on {n}.': '{n} bekleniyor.',
+  '{n} open for you.': { one: 'Sizde {n} açık iş var.', other: 'Sizde {n} açık iş var.' },
+  'Waiting on {n}.': 'Beklenen: {n}.',
   'Last decision: {title}.': 'Son karar: {title}.',
   'Next date: {date}.': 'Sonraki tarih: {date}.',
   'No reply from {name} yet': '{name} henüz yanıt vermedi',
-  'Follow up on “{text}”?': '“{text}” takip edilsin mi?',
-  'Follow up?': 'Takip edilsin mi?',
-  Reminder: 'Hatırlatıcı',
-  'Caime can’t help with this one.': 'Caime bunda yardımcı olamaz.',
+  'Follow up on “{text}”?': '“{text}” için hatırlatma yapılsın mı?',
+  'Follow up?': 'Hatırlatma yapılsın mı?',
+  Reminder: 'Hatırlatma',
+  'Caime can’t help with this one.': 'Caime bu konuda yardımcı olamıyor.',
   'AI assist is busy. Try again in a moment.': 'AI yardımı meşgul. Birazdan yeniden deneyin.',
-  'AI assist didn’t work this time. Try again.': 'AI yardımı bu sefer çalışmadı. Yeniden deneyin.',
-  'Webhooks go to https addresses.': 'Webhook’lar https adreslerine gider.',
+  'AI assist didn’t work this time. Try again.': 'AI yardımı bu kez çalışmadı. Yeniden deneyin.',
+  'Webhooks go to https addresses.': 'Webhook adresleri https olmalıdır.',
   'That address is on a private network.': 'Bu adres özel bir ağda.',
   '{plan} can’t be bought right now.': '{plan} şu anda satın alınamıyor.',
   '{lead}: Stripe said “{message}”.': '{lead}: Stripe “{message}” dedi.',
@@ -469,50 +471,50 @@ export const turkishServer: Catalog = {
   'There’s nothing paid for here yet.': 'Burada henüz ödenmiş bir şey yok.',
   'You can’t message this person.': 'Bu kişiye mesaj gönderemezsiniz.',
   'You blocked {orgName}. Unblock it to write to it again.':
-    '{orgName} engellendi. Yeniden yazmak için engeli kaldırın.',
+    '{orgName} engellenmiş durumda. Yeniden yazmak için engeli kaldırın.',
   'This device isn’t set up for private conversations: sign in again to write here.':
-    'Bu cihaz özel konuşmalar için ayarlanmamış: burada yazmak için yeniden oturum açın.',
+    'Bu cihaz özel konuşmalar için ayarlı değil: buraya yazmak için yeniden oturum açın.',
   'Someone’s devices changed since this was sealed.':
-    'Bu mühürlendiğinden beri birinin cihazları değişti.',
+    'Bu mühürlendikten sonra birinin cihazları değişti.',
   'Sign in to continue.': 'Devam etmek için oturum açın.',
   'You can’t do that here.': 'Bunu burada yapamazsınız.',
   That: 'Bu',
   '{what} wasn’t found.': '{what} bulunamadı.',
   'Too many requests. Try again in a moment.': 'Çok fazla istek. Birazdan yeniden deneyin.',
   'Caime can’t send email here yet. Use a recovery code instead, or ask whoever runs it.':
-    'Caime burada henüz e-posta gönderemiyor. Bunun yerine bir kurtarma kodu kullanın ya da yöneten kişiye sorun.',
+    'Caime burada henüz e-posta gönderemiyor. Bunun yerine bir kurtarma kodu kullanın ya da sunucuyu yöneten kişiye başvurun.',
   'It belongs to {name}, which closed. If you’re {name}, verify {domain} to take it back.':
-    'Kapanan {name} kuruluşuna ait. {name} sizseniz, geri almak için {domain} alan adını doğrulayın.',
+    'Bu kullanıcı adı kapanan {name} kuruluşuna ait. {name} sizseniz, geri almak için {domain} alan adını doğrulayın.',
   'That invite': 'Bu davet',
   'That’s your own invite.': 'Bu sizin kendi davetiniz.',
   'You can’t connect with this person.': 'Bu kişiyle bağlanamazsınız.',
   'An organization’s own cards are for conversations with it.':
-    'Bir kuruluşun kendi kartları onunla yapılan konuşmalar içindir.',
+    'Bir kuruluşun kendi kartları yalnızca onunla yapılan konuşmalarda kullanılır.',
   'Only the organization sends its cards.': 'Kartlarını yalnızca kuruluş gönderir.',
   'This app needs the “kits” permission for that.':
     'Bu uygulamanın bunun için “kits” iznine ihtiyacı var.',
   'Say which app’s card, and which of its cards.':
-    'Hangi uygulamanın hangi kartı olduğunu söyleyin.',
+    'Hangi uygulamanın hangi kartı olduğunu belirtin.',
   'An app sends only its own cards.': 'Bir uygulama yalnızca kendi kartlarını gönderir.',
   'That card isn’t available here.': 'Bu kart burada kullanılamıyor.',
   '{name} cards aren’t available in this conversation.':
     '{name} kartları bu konuşmada kullanılamıyor.',
   'That person': 'Bu kişi',
   '{name} only takes messages from people they know. Send a connection request instead.':
-    '{name} yalnızca tanıdıklarından mesaj alıyor. Bunun yerine bir bağlantı isteği gönderin.',
+    '{name} yalnızca tanıdığı kişilerden mesaj alıyor. Bunun yerine bağlantı isteği gönderin.',
   'That clientId was already used.': 'Bu clientId zaten kullanıldı.',
   'That conversation': 'Bu konuşma',
-  'Only admins can post here.': 'Burada yalnızca yöneticiler paylaşabilir.',
+  'Only admins can post here.': 'Burada yalnızca yöneticiler paylaşım yapabilir.',
   'Only a person, on their own device, writes in a private conversation.':
-    'Özel bir konuşmada yalnızca bir insan, kendi cihazından yazar.',
+    'Özel konuşmaya yalnızca bir insan, kendi cihazından yazabilir.',
   'Messages in a private conversation are text, sealed on your device.':
-    'Özel bir konuşmadaki mesajlar, cihazınızda mühürlenmiş metindir.',
+    'Özel konuşmadaki mesajlar, cihazınızda mühürlenen metinlerdir.',
   'Only private conversations take sealed messages.':
     'Mühürlü mesajları yalnızca özel konuşmalar alır.',
   'This organization closed, so nothing more is written here. Find it again to start a new conversation.':
-    'Bu kuruluş kapandı; bu yüzden burada artık bir şey yazılmaz. Yeni bir konuşma başlatmak için yeniden bulun.',
+    'Bu kuruluş kapandı; artık buraya bir şey yazılamaz. Yeni bir konuşma başlatmak için kuruluşu yeniden bulun.',
   'You can send more once they accept your message request.':
-    'Mesaj isteğinizi kabul ettiklerinde daha fazla gönderebilirsiniz.',
+    'Mesaj isteğinizi kabul ettiklerinde daha fazlasını gönderebilirsiniz.',
   'You can only reply to a message in this conversation.':
     'Yalnızca bu konuşmadaki bir mesajı yanıtlayabilirsiniz.',
   'One of the attachments isn’t available.': 'Eklerden biri kullanılamıyor.',
@@ -520,139 +522,144 @@ export const turkishServer: Catalog = {
   '{name} cards are for one-to-one conversations.': '{name} kartları bire bir konuşmalar içindir.',
   '{name} cards aren’t for conversations with an organization.':
     '{name} kartları bir kuruluşla yapılan konuşmalar için değildir.',
-  'There’s nobody here to split it with.': 'Burada bölüşülecek kimse yok.',
+  'There’s nobody here to split it with.': 'Burada masrafı bölüşecek kimse yok.',
   'Live location is for people you know, not organizations.':
-    'Canlı konum kuruluşlar için değil, tanıdığınız kişiler içindir.',
+    'Canlı konum, kuruluşlar için değil, tanıdığınız kişiler içindir.',
   'That organization': 'Bu kuruluş',
   'You’ve used today’s {aiPerDay} AI assists.{ready}{more}':
-    'Bugünkü {aiPerDay} AI yardımını kullandınız.{ready}{more}',
-  'The next one is ready {when}.': 'Sıradaki {when} hazır.',
-  '{plan} includes {n} a day.': '{plan} günde {n} içerir.',
-  '{plan} includes {bytes}.': '{plan} {bytes} içerir.',
+    'Bugünkü {aiPerDay} AI yardımı hakkınızı kullandınız.{ready}{more}',
+  'The next one is ready {when}.': 'Sıradaki hakkınız {when} hazır olur.',
+  '{plan} includes {n} a day.': '{plan} planında günde {n} hak var.',
+  '{plan} includes {bytes}.': '{plan} planında {bytes} alan var.',
   'That’s more than the {allowed} of files your plan includes ({used} used).{more}':
-    'Bu, planınızın içerdiği {allowed} dosya alanından fazla ({used} kullanıldı).{more}',
-  '{plan} has room for {n}.': '{plan} {n} için yer içerir.',
+    'Bu, planınızdaki {allowed} dosya alanını aşıyor ({used} kullanıldı).{more}',
+  '{plan} has room for {n}.': '{plan} planında {n} kişilik yer var.',
   '{name}’s {plan} plan has room for {room} people on the team.{more}':
     '{name} kuruluşunun {plan} planında ekipte {room} kişilik yer var.{more}',
-  '{plan} includes {n}.': '{plan} {n} içerir.',
+  '{plan} includes {n}.': '{plan} planında {n} uygulamaya kadar yer var.',
   '{org}’s {plan} plan includes {apps}.{more}':
     '{org} kuruluşunun {plan} planı {apps} içerir.{more}',
-  'The next can start {when}.': 'Sıradaki {when} başlayabilir.',
+  'The next can start {when}.': 'Bir sonraki konuşma {when} başlatılabilir.',
   '{name} has started today’s {startsPerDay} new conversations.{ready}{more}':
     '{name} bugünkü {startsPerDay} yeni konuşmayı başlattı.{ready}{more}',
   'Insights come with Business: how fast {name}’s team answers, how many customers write, and what’s still open.':
-    'İçgörüler Business ile gelir: {name} ekibinin ne hızla yanıt verdiği, kaç müşterinin yazdığı ve neyin açık kaldığı.',
+    'İçgörüler Business planıyla gelir: {name} ekibinin ne kadar hızlı yanıt verdiği, kaç müşterinin yazdığı ve neyin hâlâ açık olduğu.',
   'Relationship insights come with {pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.':
-    'İlişki içgörüleri {pro} ile gelir: en çok kiminle yazıştığınız, kimin sessizleştiği, ne hızla yanıt verdiğiniz ve aldığınız, ne zaman yazdığınız.',
-  '{plan} keeps {n}.': '{plan} {n} saklar.',
+    'İlişki içgörüleri {pro} ile gelir: en çok kiminle yazıştığınız, kimin sessizleştiği, ne kadar hızlı yanıt verdiğiniz ve yanıt aldığınız, ne zaman yazdığınız.',
+  '{plan} keeps {n}.': '{plan} planında {n} otomasyona kadar yer var.',
   '{plan} keeps {most} automations. Remove one to add another.{more}':
-    '{plan} {most} otomasyon saklar. Başka eklemek için birini kaldırın.{more}',
+    '{plan} planında en fazla {most} otomasyon olabilir. Yenisini eklemek için birini kaldırın.{more}',
   'That space': 'Bu alan',
-  'That recording is too long to transcribe.': 'Bu kayıt dökülemeyecek kadar uzun.',
+  'That recording is too long to transcribe.': 'Bu kayıt yazıya dökülemeyecek kadar uzun.',
   'Invalid request.': 'Geçersiz istek.',
   'Your account': 'Hesabınız',
   'That password isn’t right.': 'Bu parola doğru değil.',
-  'A message is linked with its conversation.': 'Bir mesaj kendi konuşmasıyla bağlantılıdır.',
+  'A message is linked with its conversation.': 'Bir mesaj kendi konuşmasına bağlıdır.',
   'That message': 'Bu mesaj',
   'That context': 'Bu bağlam',
   'That task': 'Bu görev',
   'You can’t assign this person.': 'Bu kişiyi atayamazsınız.',
-  'You can ask people you’re connected with.': 'Bağlı olduğunuz kişilerden isteyebilirsiniz.',
-  'A request goes to someone else.': 'Bir istek başka birine gider.',
+  'You can ask people you’re connected with.':
+    'Yalnızca bağlantınız olan kişilerden bir şey isteyebilirsiniz.',
+  'A request goes to someone else.': 'İstek yalnızca başka birine gönderilebilir.',
   'Requests between a customer and an organization aren’t available yet.':
-    'Bir müşteri ile bir kuruluş arasındaki istekler henüz kullanılamıyor.',
+    'Müşteri ile kuruluş arasında istekler henüz kullanılamıyor.',
   'Only the person who asked can change this.': 'Bunu yalnızca isteyen kişi değiştirebilir.',
   'Only the person asked can accept or decline.':
-    'Yalnızca istenen kişi kabul edebilir veya reddedebilir.',
+    'Yalnızca kendisinden istenen kişi kabul edebilir veya reddedebilir.',
   'Only the person who asked can cancel.': 'Yalnızca isteyen kişi iptal edebilir.',
   'Only the person who created this can delete it.': 'Bunu yalnızca oluşturan kişi silebilir.',
   'That decision': 'Bu karar',
   'Only whoever recorded it, or the group’s admins, change a decision.':
-    'Bir kararı yalnızca kaydeden ya da grubun yöneticileri değiştirir.',
+    'Bir kararı yalnızca onu kaydeden kişi ya da grubun yöneticileri değiştirebilir.',
   '{plan} is paid for through Stripe: cancel it there (at once, or at the end of what’s paid), and the plan follows.':
-    '{plan} Stripe üzerinden ödeniyor: orada iptal edin (hemen ya da ödenen dönemin sonunda), plan da izler.',
+    '{plan} Stripe üzerinden ödeniyor: aboneliği orada iptal edin (hemen ya da ödenen dönemin sonunda), plan da buna göre değişir.',
   'That report': 'Bu şikâyet',
   'This report isn’t about a message.': 'Bu şikâyet bir mesajla ilgili değil.',
-  'Lines about the conversation stay.': 'Konuşmayla ilgili satırlar kalır.',
+  'Lines about the conversation stay.': 'Konuşmanın bilgi satırları kalır.',
   'This report isn’t about an update.': 'Bu şikâyet bir güncellemeyle ilgili değil.',
   'This report isn’t about a person.': 'Bu şikâyet bir kişiyle ilgili değil.',
-  'Another instance is backing up right now.': 'Başka bir örnek şu anda yedekleme yapıyor.',
+  'Another instance is backing up right now.': 'Başka bir sunucu örneği şu anda yedek alıyor.',
   'That handle isn’t reserved or held: whoever wants it can take it themselves.':
-    'Bu kullanıcı adı ayrılmış veya tutulmuyor: isteyen kendisi alabilir.',
+    'Bu kullanıcı adı ayrılmış ya da bekletilmiyor: isteyen kendisi alabilir.',
   'Someone else has that handle.': 'Bu kullanıcı adı başka birinde.',
-  'Only a closed organization is deleted.': 'Yalnızca kapanmış bir kuruluş silinir.',
+  'Only a closed organization is deleted.': 'Yalnızca kapanmış bir kuruluş silinebilir.',
   'Only the organization’s owner and admins can.':
-    'Yalnızca kuruluşun sahibi ve yöneticileri yapabilir.',
+    'Bunu yalnızca kuruluşun sahibi ve yöneticileri yapabilir.',
   'AI isn’t available on this Caime server.': 'Bu Caime sunucusunda AI kullanılamıyor.',
   'That organization’s AI agent': 'Bu kuruluşun AI temsilcisi',
-  'It didn’t answer this time. Try again.': 'Bu sefer yanıt vermedi. Yeniden deneyin.',
+  'It didn’t answer this time. Try again.': 'Bu kez yanıt vermedi. Yeniden deneyin.',
   'AI assist isn’t set up on this server.': 'Bu sunucuda AI yardımı kurulu değil.',
   'AI assist is for adults for now.': 'AI yardımı şimdilik yetişkinler için.',
-  'Turn on AI assist in Settings to use it.': 'Kullanmak için AI yardımını Ayarlar’dan açın.',
+  'Turn on AI assist in Settings to use it.': 'Kullanmak için Ayarlar’dan AI yardımını açın.',
   'This conversation is private, so AI assist can’t read it.':
-    'Bu konuşma özel; bu yüzden AI yardımı okuyamaz.',
+    'Bu konuşma özel; AI yardımı onu okuyamaz.',
   'That app': 'Bu uygulama',
-  'This route is for an app’s token.': 'Bu rota bir uygulamanın belirteci içindir.',
-  'A failed delivery of this app by that id': 'Bu uygulamanın o kimlikle başarısız bir teslimatı',
+  'This route is for an app’s token.': 'Bu rota uygulama belirteçleri içindir.',
+  'A failed delivery of this app by that id': 'Bu uygulamanın bu kimliğe sahip başarısız teslimatı',
   'A webhook address for that app': 'O uygulama için bir webhook adresi',
   'You need to be at least {MINIMUM_AGE} to use Caime.':
     'Caime’yi kullanmak için en az {MINIMUM_AGE} yaşında olmalısınız.',
   'That email already has an account. Sign in instead?':
-    'Bu e-postanın zaten bir hesabı var. Bunun yerine oturum açılsın mı?',
+    'Bu e-postayla zaten bir hesap var. Oturum açmak ister misiniz?',
   'That email or handle and password don’t match.':
-    'Bu e-posta veya kullanıcı adı ile parola eşleşmiyor.',
+    'E-posta veya kullanıcı adı ile parola eşleşmiyor.',
   'That session': 'Bu oturum',
   'Your current password isn’t right.': 'Mevcut parolanız doğru değil.',
   'Your password isn’t right.': 'Parolanız doğru değil.',
   'This address is confirmed.': 'Bu adres doğrulandı.',
   'That code isn’t right. Check the email again.':
-    'Bu kod doğru değil. E-postayı yeniden kontrol edin.',
-  'That code has run out. Send a new one.': 'Bu kodun süresi doldu. Yenisini gönderin.',
-  'Too many tries with that code. Send a new one.': 'Bu kodla çok fazla deneme. Yenisini gönderin.',
+    'Bu kod doğru değil. E-postanızı yeniden kontrol edin.',
+  'That code has run out. Send a new one.': 'Bu kodun süresi doldu. Yeni bir kod isteyin.',
+  'Too many tries with that code. Send a new one.':
+    'Bu kodla çok fazla deneme yapıldı. Yeni bir kod isteyin.',
   'That link has been used or has run out. Ask for a new one.':
     'Bu bağlantı kullanılmış ya da süresi dolmuş. Yenisini isteyin.',
   'That recovery code doesn’t match this account.': 'Bu kurtarma kodu bu hesapla eşleşmiyor.',
   'That automation': 'Bu otomasyon',
   'A private conversation keeps to itself: nothing in it is saved elsewhere.':
-    'Özel bir konuşma kendine saklar: içindeki hiçbir şey başka yere kaydedilmez.',
+    'Özel konuşma kendi içinde kalır: içindeki hiçbir şey başka bir yere kaydedilmez.',
   'Accept the message request to save anything from it.':
-    'Ondan bir şey kaydetmek için mesaj isteğini kabul edin.',
-  'A line about the conversation isn’t saved.': 'Konuşmayla ilgili bir satır kaydedilmez.',
+    'Buradan bir şey kaydetmek için mesaj isteğini kabul edin.',
+  'A line about the conversation isn’t saved.': 'Konuşmanın bilgi satırları kaydedilmez.',
   'That file': 'Bu dosya',
   'You’ve saved {SAVED_MAX} things, the most there’s room for. Remove some to save more.':
-    '{SAVED_MAX} şey kaydettiniz; sığabilecek en fazla bu. Daha fazla kaydetmek için bazılarını kaldırın.',
-  'That saved item': 'Bu kayıtlı öge',
+    '{SAVED_MAX} öge kaydettiniz; sığabilecek en fazla bu. Daha fazlasını kaydetmek için bazılarını kaldırın.',
+  'That saved item': 'Bu kaydedilen öge',
   'An automation saves to {collection}. Change it or remove it first.':
     'Bir otomasyon {collection} koleksiyonuna kaydediyor. Önce onu değiştirin ya da kaldırın.',
-  'Plans are bought by someone 18 or over.': 'Planları 18 yaş ve üstü biri satın alır.',
+  'Plans are bought by someone 18 or over.':
+    'Planları yalnızca 18 yaş ve üstü kişiler satın alabilir.',
   'Only the organization’s owner and admins can change what it pays.':
-    'Kuruluşun ödediğini yalnızca sahibi ve yöneticileri değiştirebilir.',
-  'That isn’t from Stripe.': 'Bu Stripe’tan değil.',
+    'Kuruluşun planını yalnızca sahibi ve yöneticileri değiştirebilir.',
+  'That isn’t from Stripe.': 'Bu Stripe’tan gelmiyor.',
   'That isn’t an event.': 'Bu bir olay değil.',
-  'You’re on its team. Leave the team instead.': 'Ekibindesiniz. Bunun yerine ekipten ayrılın.',
+  'You’re on its team. Leave the team instead.':
+    'Bu kuruluşun ekibindesiniz. Bunun yerine ekipten ayrılın.',
   'You’re on its team: its conversations are in its inbox.':
-    'Ekibindesiniz: konuşmaları gelen kutusunda.',
+    'Bu kuruluşun ekibindesiniz: konuşmaları kuruluşun gelen kutusunda.',
   'Under 18, you can message organizations that have verified who they are. {name} hasn’t yet.':
-    '18 yaş altında, kim olduğunu doğrulamış kuruluşlara mesaj gönderebilirsiniz. {name} henüz doğrulamadı.',
+    '18 yaşından küçükseniz yalnızca kimliğini doğrulamış kuruluşlara mesaj gönderebilirsiniz. {name} henüz doğrulanmadı.',
   'You blocked {name}. Unblock it to write to it again.':
-    '{name} engellendi. Yeniden yazmak için engeli kaldırın.',
+    '{name} engellenmiş durumda. Yeniden yazmak için engeli kaldırın.',
   'A person on the team writes first; an app answers customers.':
-    'Önce ekipteki bir kişi yazar; bir uygulama müşterilere yanıt verir.',
+    'İlk mesajı ekipteki bir kişi yazar; uygulamalar müşterilere yalnızca yanıt verir.',
   'Nobody by that handle can hear from {name}.':
-    'Bu kullanıcı adıyla {name} kuruluşundan mesaj alabilecek kimse yok.',
-  'They’re on the team: write to them directly.': 'Ekipteler: onlara doğrudan yazın.',
+    'Bu kullanıcı adına sahip, {name} kuruluşundan mesaj alabilecek kimse yok.',
+  'They’re on the team: write to them directly.': 'Bu kişi ekipte: ona doğrudan yazın.',
   'Verify {name}’s domain first: only a verified organization writes to someone first.':
-    'Önce {name} alan adını doğrulayın: birine önce yalnızca doğrulanmış bir kuruluş yazar.',
+    'Önce {name} kuruluşunun alan adını doğrulayın: birine ilk mesajı yalnızca doğrulanmış kuruluşlar yazabilir.',
   '{name} only takes messages from people they know.':
-    '{name} yalnızca tanıdıklarından mesaj alıyor.',
-  'They aren’t on the team.': 'Ekipte değiller.',
-  'That’s the AI agent: give it to a person.': 'Bu AI temsilci: bir kişiye verin.',
-  'That’s an app’s bot: give it to a person.': 'Bu bir uygulamanın botu: bir kişiye verin.',
+    '{name} yalnızca tanıdığı kişilerden mesaj alıyor.',
+  'They aren’t on the team.': 'Bu kişi ekipte değil.',
+  'That’s the AI agent: give it to a person.': 'Bu AI temsilcisi: konuşmayı bir kişiye atayın.',
+  'That’s an app’s bot: give it to a person.':
+    'Bu bir uygulamanın botu: konuşmayı bir kişiye atayın.',
   'It’s already resolved.': 'Zaten çözüldü.',
   'It’s open already.': 'Zaten açık.',
   'Reopen it first.': 'Önce yeniden açın.',
   'Ask for up to a year, from one instant to a later one.':
-    'Bir andan daha sonraki bir ana, en fazla bir yıl isteyin.',
+    'En fazla bir yıllık bir aralık isteyin: bir başlangıç ve ondan sonraki bir bitiş.',
   'That calendar': 'Bu takvim',
   'That call': 'Bu arama',
   'That call has ended.': 'Bu arama bitti.',
@@ -668,7 +675,7 @@ export const turkishServer: Catalog = {
   'This device isn’t in that call.': 'Bu cihaz o aramada değil.',
   'That’s you.': 'Bu sizsiniz.',
   'You’re already connected.': 'Zaten bağlısınız.',
-  'Your request is waiting for them.': 'İsteğiniz onları bekliyor.',
+  'Your request is waiting for them.': 'İsteğiniz yanıt bekliyor.',
   '{name} isn’t accepting requests from people they don’t know yet.':
     '{name} henüz tanımadığı kişilerden istek kabul etmiyor.',
   'You can send another request later.': 'Daha sonra başka bir istek gönderebilirsiniz.',
@@ -677,15 +684,15 @@ export const turkishServer: Catalog = {
   'That connection': 'Bu bağlantı',
   'That merged connection': 'Bu birleştirilmiş bağlantı',
   'A private group holds up to {PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.':
-    'Özel bir grup en fazla {PRIVATE_GROUP_MAX} kişi alır: her mesaj içindeki her cihaz için mühürlenir.',
+    'Özel bir grupta en fazla {PRIVATE_GROUP_MAX} kişi olabilir: her mesaj gruptaki her cihaz için ayrı ayrı mühürlenir.',
   'A topic’s people are its group’s: add, remove or make admins there.':
-    'Bir konunun kişileri grubunundur: oradan ekleyin, çıkarın veya yönetici yapın.',
+    'Bir konunun üyeleri, grubunun üyeleridir: kişi ekleme, çıkarma ve yönetici atama grupta yapılır.',
   'Topics are for conversations between people.': 'Konular kişiler arasındaki konuşmalar içindir.',
   'Connect first to start topics.': 'Konu başlatmak için önce bağlanın.',
   'A private conversation keeps to itself: start a topic from your main one.':
-    'Özel bir konuşma kendine saklar: konuyu ana konuşmanızdan başlatın.',
+    'Özel konuşma kendi içinde kalır: konuyu ana konuşmanızdan başlatın.',
   'Topics branch off a one-to-one, a group, or a space’s General.':
-    'Konular bire bir bir konuşmadan, bir gruptan ya da bir alanın Genel’inden dallanır.',
+    'Konular bire bir bir konuşmadan, bir gruptan ya da bir alanın Genel konuşmasından açılır.',
   'Connect first to start a private conversation.':
     'Özel bir konuşma başlatmak için önce bağlanın.',
   'You can add people you’re connected with.': 'Bağlı olduğunuz kişileri ekleyebilirsiniz.',
@@ -693,36 +700,36 @@ export const turkishServer: Catalog = {
     'Özel bir konuşmadaki taslaklar cihazınızda kalır.',
   'Only admins can change this.': 'Bunu yalnızca yöneticiler değiştirebilir.',
   'A topic’s messages disappear as its group’s do: change it there.':
-    'Bir konunun mesajları grubununkiler gibi kaybolur: oradan değiştirin.',
+    'Bir konudaki mesajlar, grubundakiler gibi kaybolur: bunu grupta değiştirin.',
   'Only someone who may change that context links it here.':
-    'O bağlamı buraya yalnızca onu değiştirebilen biri bağlar.',
-  'The general conversation takes the person’s name.': 'Genel konuşma kişinin adını alır.',
+    'Bir bağlamı buraya yalnızca o bağlamı değiştirebilen biri bağlayabilir.',
+  'The general conversation takes the person’s name.': 'Genel konuşma, kişinin adını taşır.',
   'General takes the space’s name. Rename the space instead.':
-    'Genel, alanın adını alır. Bunun yerine alanı yeniden adlandırın.',
+    'Genel konuşma, alanın adını taşır. Bunun yerine alanı yeniden adlandırın.',
   'There’s no request to answer here.': 'Burada yanıtlanacak istek yok.',
   'Start a group to add people.': 'Kişi eklemek için bir grup başlatın.',
   'Its team is the organization’s: add people to the team instead.':
-    'Ekibi kuruluşundur: bunun yerine ekibe kişi ekleyin.',
+    'Ekip kuruluşa aittir: bunun yerine kişileri kuruluşun ekibine ekleyin.',
   'Only admins can add people.': 'Yalnızca yöneticiler kişi ekleyebilir.',
   'Add people to the space instead.': 'Bunun yerine alana kişi ekleyin.',
   'Add them to the space first.': 'Önce onları alana ekleyin.',
   'You can archive this conversation instead.': 'Bunun yerine bu konuşmayı arşivleyebilirsiniz.',
   'Leave the group to leave its topics. You can archive this one.':
-    'Konularından ayrılmak için gruptan ayrılın. Bunu arşivleyebilirsiniz.',
+    'Konularından ayrılmak için gruptan ayrılın. Bu konuşmayı arşivleyebilirsiniz.',
   'Leave the space to leave its General conversation.':
-    'Genel konuşmasından ayrılmak için alandan ayrılın.',
+    'Genel konuşmadan ayrılmak için alandan ayrılın.',
   'Remove them from the space instead.': 'Bunun yerine onları alandan çıkarın.',
   'That person in this conversation': 'Bu konuşmadaki bu kişi',
   'Admins remove members; the owner removes admins.':
-    'Yöneticiler üyeleri çıkarır; sahibi yöneticileri çıkarır.',
+    'Üyeleri yöneticiler, yöneticileri ise sahibi çıkarır.',
   'Only admins can remove people.': 'Yalnızca yöneticiler kişi çıkarabilir.',
-  'Only a group has admins.': 'Yalnızca bir grubun yöneticileri vardır.',
+  'Only a group has admins.': 'Yalnızca grupların yöneticisi olur.',
   'Make them an admin of the space instead.': 'Bunun yerine onları alanın yöneticisi yapın.',
   'Only the owner makes admins.': 'Yöneticileri yalnızca sahibi atar.',
   'You can only edit your own messages.': 'Yalnızca kendi mesajlarınızı düzenleyebilirsiniz.',
   'That message was deleted.': 'Bu mesaj silindi.',
   'Only text messages can be edited.': 'Yalnızca metin mesajları düzenlenebilir.',
-  'That isn’t a card that can change.': 'Bu değişebilen bir kart değil.',
+  'That isn’t a card that can change.': 'Bu, değiştirilebilen bir kart değil.',
   'An app moves only its own cards.': 'Bir uygulama yalnızca kendi kartlarını ilerletir.',
   'You can’t make that change to this card.': 'Bu karta bu değişikliği yapamazsınız.',
   'Someone just changed this card.': 'Biri bu kartı az önce değiştirdi.',
@@ -734,21 +741,21 @@ export const turkishServer: Catalog = {
   'That album': 'Bu albüm',
   'This album is closed.': 'Bu albüm kapalı.',
   'Add photos you’ve uploaded.': 'Yüklediğiniz fotoğrafları ekleyin.',
-  'Albums take photos and videos.': 'Albümler fotoğraf ve video alır.',
-  'An album holds {ALBUM_MAX} photos.': 'Bir albüm {ALBUM_MAX} fotoğraf alır.',
+  'Albums take photos and videos.': 'Albümlere yalnızca fotoğraf ve video eklenebilir.',
+  'An album holds {ALBUM_MAX} photos.': 'Bir albümde en fazla {ALBUM_MAX} fotoğraf olabilir.',
   'That photo': 'Bu fotoğraf',
   'Only whoever added it, or made the album, can take it out.':
-    'Yalnızca onu ekleyen ya da albümü oluşturan çıkarabilir.',
+    'Yalnızca onu ekleyen ya da albümü oluşturan kişi çıkarabilir.',
   'Lines about the conversation stay. You can delete it for yourself.':
-    'Konuşmayla ilgili satırlar kalır. Kendiniz için silebilirsiniz.',
-  'You can delete your own messages.': 'Kendi mesajlarınızı silebilirsiniz.',
+    'Konuşmanın bilgi satırları kalır. Kendiniz için silebilirsiniz.',
+  'You can delete your own messages.': 'Yalnızca kendi mesajlarınızı silebilirsiniz.',
   'Pinned messages are for conversations between people.':
     'Sabitlenmiş mesajlar kişiler arasındaki konuşmalar içindir.',
   'Only the group’s owner and admins pin messages.':
     'Mesajları yalnızca grubun sahibi ve yöneticileri sabitler.',
   'Messages are pinned once the message request is answered.':
-    'Mesajlar, mesaj isteği yanıtlandığında sabitlenir.',
-  'Lines about the conversation aren’t pinned.': 'Konuşmayla ilgili satırlar sabitlenmez.',
+    'Mesajlar, mesaj isteği yanıtlandıktan sonra sabitlenebilir.',
+  'Lines about the conversation aren’t pinned.': 'Konuşmanın bilgi satırları sabitlenmez.',
   '{PINNED_MAX} messages are pinned already, including {n} you deleted for yourself. Unpin one first.':
     {
       one: 'Kendiniz için sildiğiniz {n} mesaj dahil {PINNED_MAX} mesaj zaten sabitli. Önce birinin sabitlemesini kaldırın.',
@@ -767,40 +774,41 @@ export const turkishServer: Catalog = {
   'Only a device signed in to Caime reads private conversations.':
     'Özel konuşmaları yalnızca Caime’de oturum açmış bir cihaz okur.',
   'This device can’t pick up where it left off: it registers afresh.':
-    'Bu cihaz kaldığı yerden devam edemez: yeniden kaydolur.',
+    'Bu cihaz kaldığı yerden devam edemez: yeniden kaydedilecek.',
   'That device': 'Bu cihaz',
   'Private conversations open on up to {MAX_DEVICES} devices: remove one in Settings first.':
     'Özel konuşmalar en fazla {MAX_DEVICES} cihazda açılır: önce Ayarlar’dan birini kaldırın.',
   'That device is registered already.': 'Bu cihaz zaten kayıtlı.',
   'Approve it from a device that reads your private conversations already: this one doesn’t yet.':
-    'Özel konuşmalarınızı zaten okuyan bir cihazdan onaylayın: bu cihaz henüz okumuyor.',
+    'Özel konuşmalarınızı zaten okuyabilen bir cihazdan onaylayın: bu cihaz henüz okuyamıyor.',
   'That key was used already.': 'Bu anahtar zaten kullanıldı.',
   'A recovery key for your account': 'Hesabınız için bir kurtarma anahtarı',
   'Only private conversations are sealed.': 'Yalnızca özel konuşmalar mühürlenir.',
   'That photo couldn’t be read, so it wasn’t sent. Try another.':
-    'Bu fotoğraf okunamadı; bu yüzden gönderilmedi. Başka birini deneyin.',
+    'Bu fotoğraf okunamadı, bu yüzden gönderilmedi. Başka bir fotoğraf deneyin.',
   'That file is over 100 MB.': 'Bu dosya 100 MB’tan büyük.',
   'That upload': 'Bu yükleme',
   'This upload is already complete.': 'Bu yükleme zaten tamamlandı.',
-  'Resume from the server’s offset.': 'Sunucunun konumundan devam edin.',
-  'More bytes than declared.': 'Bildirilenden fazla bayt.',
+  'Resume from the server’s offset.': 'Sunucunun bildirdiği konumdan devam edin.',
+  'More bytes than declared.': 'Bildirilenden fazla bayt gönderildi.',
   'That thumbnail': 'Bu küçük resim',
   'That logo': 'Bu logo',
   'That avatar': 'Bu profil resmi',
-  'There’s a call on here already: join it.': 'Burada zaten bir arama var: katılın.',
+  'There’s a call on here already: join it.': 'Burada zaten süren bir arama var: katılın.',
   'Group calls are for group conversations.': 'Grup aramaları grup konuşmaları içindir.',
   'You can call once you’ve joined the conversation.': 'Konuşmaya katıldığınızda arayabilirsiniz.',
   'Calls are for groups of up to {GROUP_CALL_MAX} people.':
     'Aramalar en fazla {GROUP_CALL_MAX} kişilik gruplar içindir.',
-  'You can join once you’ve joined the conversation.': 'Konuşmaya katıldığınızda katılabilirsiniz.',
+  'You can join once you’ve joined the conversation.':
+    'Konuşmaya katıldığınızda aramaya da katılabilirsiniz.',
   'This call is full.': 'Bu arama dolu.',
   'You can’t join this call.': 'Bu aramaya katılamazsınız.',
   'That handle': 'Bu kullanıcı adı',
-  'Connect first to bring a chat over.': 'Bir sohbeti taşımak için önce bağlanın.',
+  'Connect first to bring a chat over.': 'Bir sohbeti buraya aktarmak için önce bağlanın.',
   'Only an app’s token does this.': 'Bunu yalnızca bir uygulamanın belirteci yapar.',
   'An app has up to {perApp} kinds of card. Remove one to make another.':
     'Bir uygulamanın en fazla {perApp} kart türü olur. Başkasını oluşturmak için birini kaldırın.',
-  'That kit': 'Bu kit',
+  'That kit': 'Bu kart türü',
   'That isn’t one of an app’s cards.': 'Bu bir uygulamanın kartlarından biri değil.',
   'An app changes only its own cards.': 'Bir uygulama yalnızca kendi kartlarını değiştirir.',
   'Choose a time zone from the list.': 'Listeden bir saat dilimi seçin.',
@@ -808,7 +816,7 @@ export const turkishServer: Catalog = {
   'You can have up to 10 identities.': 'En fazla 10 kimliğiniz olabilir.',
   'That identity': 'Bu kimlik',
   'Make another identity your default first.': 'Önce başka bir kimliği varsayılanınız yapın.',
-  'Apps are made by people over 18.': 'Uygulamaları 18 yaş üstü kişiler yapar.',
+  'Apps are made by people over 18.': 'Uygulamaları yalnızca 18 yaş üstü kişiler oluşturabilir.',
   'You have {MAX_APPS} apps. Remove one first.':
     '{MAX_APPS} uygulamanız var. Önce birini kaldırın.',
   'That app isn’t registered with Caime.': 'Bu uygulama Caime’ye kayıtlı değil.',
@@ -817,7 +825,7 @@ export const turkishServer: Catalog = {
   '“{unknown}” isn’t something an app can ask for.':
     '“{unknown}” bir uygulamanın isteyebileceği bir şey değil.',
   'This export is too large to make here. Write to Caime and it will be made for you.':
-    'Bu dışa aktarma burada yapılamayacak kadar büyük. Caime’ye yazın, sizin için yapılsın.',
+    'Bu dışa aktarım burada hazırlanamayacak kadar büyük. Caime’ye yazın, sizin için hazırlansın.',
   'Only the owner sets how long conversations are kept.':
     'Konuşmaların ne kadar saklanacağını yalnızca sahibi belirler.',
   'You’re in it already.': 'Zaten içindesiniz.',
@@ -826,7 +834,7 @@ export const turkishServer: Catalog = {
   'That’s an app’s bot: remove the app instead.':
     'Bu bir uygulamanın botu: bunun yerine uygulamayı kaldırın.',
   'Admins remove the team; the owner removes admins.':
-    'Yöneticiler ekip üyelerini çıkarır; sahibi yöneticileri çıkarır.',
+    'Ekip üyelerini yöneticiler, yöneticileri ise sahibi çıkarır.',
   'Only the organization’s owner and admins remove people.':
     'Kişileri yalnızca kuruluşun sahibi ve yöneticileri çıkarır.',
   'That’s an app’s bot: change the app instead.':
@@ -838,12 +846,12 @@ export const turkishServer: Catalog = {
     'Kaydı henüz bulamadık. DNS değişiklikleri birkaç dakika, bazen bir saat sürebilir.',
   'Only the organization’s owner closes it.': 'Kuruluşu yalnızca sahibi kapatır.',
   'This organization was never verified at a domain, so there’s no way to prove it’s yours.':
-    'Bu kuruluş hiçbir alan adında doğrulanmadı; bu yüzden sizin olduğunu kanıtlamanın yolu yok.',
-  'Start taking it back first.': 'Önce geri almaya başlayın.',
+    'Bu kuruluş hiçbir alan adıyla doğrulanmadı; bu yüzden size ait olduğunu kanıtlamanın bir yolu yok.',
+  'Start taking it back first.': 'Önce geri alma işlemini başlatın.',
   'That rule': 'Bu kural',
   'There’s a rule for them already: change that one.':
-    'Onlar için zaten bir kural var: onu değiştirin.',
-  'Unknown sphere.': 'Bilinmeyen alan.',
+    'Bunun için zaten bir kural var: onu değiştirin.',
+  'Unknown sphere.': 'Bilinmeyen çevre.',
   '“{role}” isn’t a {sphere} role. Use a custom role instead.':
     '“{role}” bir {sphere} rolü değil. Bunun yerine özel bir rol kullanın.',
   'Choose a role or write your own, not both.':
@@ -851,37 +859,41 @@ export const turkishServer: Catalog = {
   'That relationship': 'Bu ilişki',
   'Connect with this person first.': 'Önce bu kişiyle bağlanın.',
   'Restore this relationship before changing it.': 'Değiştirmeden önce bu ilişkiyi geri yükleyin.',
-  'This relationship is {status}.': 'Bu ilişki: {status}.',
+  'This relationship is {status}.': 'Bu ilişkinin durumu: {status}.',
   'This kind of relationship doesn’t end. Archive it instead.':
-    'Bu tür bir ilişki bitmez. Bunun yerine arşivleyin.',
+    'Bu tür bir ilişki sona ermez. Bunun yerine arşivleyin.',
   'Only an active relationship can be the main one.':
     'Yalnızca etkin bir ilişki ana ilişki olabilir.',
-  'Merge relationships with the same person.': 'Aynı kişiyle olan ilişkileri birleştirin.',
+  'Merge relationships with the same person.':
+    'Yalnızca aynı kişiyle olan ilişkiler birleştirilebilir.',
   'You can’t block yourself.': 'Kendinizi engelleyemezsiniz.',
   'Choose what you’re reporting.': 'Neyi şikâyet ettiğinizi seçin.',
   'You can add people on the organization’s team, or people you’re connected with.':
     'Kuruluşun ekibindeki kişileri ya da bağlı olduğunuz kişileri ekleyebilirsiniz.',
   'Only the organization’s owner and admins start its spaces.':
     'Alanlarını yalnızca kuruluşun sahibi ve yöneticileri başlatır.',
-  'Only the space’s owner and admins can.': 'Yalnızca alanın sahibi ve yöneticileri yapabilir.',
+  'Only the space’s owner and admins can.':
+    'Bunu yalnızca alanın sahibi ve yöneticileri yapabilir.',
   'Only the space’s owner and admins add people.':
     'Kişileri yalnızca alanın sahibi ve yöneticileri ekler.',
-  'That person in this space': 'Bu alandaki bu kişi',
+  'That person in this space': 'Bu alanda bu kişi',
   'Admins can remove members; the owner removes admins.':
-    'Yöneticiler üyeleri çıkarabilir; sahibi yöneticileri çıkarır.',
+    'Üyeleri yöneticiler, yöneticileri ise sahibi çıkarabilir.',
   'Only the space’s owner and admins remove people.':
     'Kişileri yalnızca alanın sahibi ve yöneticileri çıkarır.',
-  'Only the space’s owner makes people admins.': 'Kişileri yalnızca alanın sahibi yönetici yapar.',
+  'Only the space’s owner makes people admins.':
+    'Kişileri yalnızca alanın sahibi yönetici yapabilir.',
   'That suggestion': 'Bu öneri',
   'This step can’t be taken back here.': 'Bu adım burada geri alınamaz.',
-  'That step was changed since: it stays.': 'Bu adım o zamandan beri değişti: kalır.',
-  'Keep one of the two.': 'İkisinden birini tutun.',
-  'You aren’t connected with both of them any more.': 'Artık ikisiyle de bağlı değilsiniz.',
-  'One of them is blocked: it can’t be merged.': 'Biri engelli: birleştirilemez.',
-  'This suggestion is missing its person.': 'Bu önerinin kişisi eksik.',
-  'This suggestion is missing its conversation.': 'Bu önerinin konuşması eksik.',
+  'That step was changed since: it stays.':
+    'Bu adım o zamandan beri değiştirildi: olduğu gibi kalır.',
+  'Keep one of the two.': 'İkisinden birini seçin.',
+  'You aren’t connected with both of them any more.': 'Artık ikisiyle birden bağlantınız yok.',
+  'One of them is blocked: it can’t be merged.': 'Biri engellenmiş: birleştirilemez.',
+  'This suggestion is missing its person.': 'Bu önerinin ait olduğu kişi bulunamıyor.',
+  'This suggestion is missing its conversation.': 'Bu önerinin ait olduğu konuşma bulunamıyor.',
   'Accepting a {kind} suggestion isn’t supported yet.':
-    '{kind} önerisini kabul etmek henüz desteklenmiyor.',
+    '{kind} türündeki bir öneriyi kabul etmek henüz desteklenmiyor.',
   'Access tokens are for people over 18.': 'Erişim belirteçleri 18 yaş üstü kişiler içindir.',
   'You have {MAX_TOKENS} tokens. Revoke one you don’t use first.':
     '{MAX_TOKENS} belirteciniz var. Önce kullanmadığınız birini iptal edin.',
@@ -891,11 +903,11 @@ export const turkishServer: Catalog = {
   'That update is being posted already.': 'Bu güncelleme zaten paylaşılıyor.',
   'That update': 'Bu güncelleme',
   'You’ve blocked it. Unblock it to follow its updates.':
-    'Engellediniz. Güncellemelerini takip etmek için engeli kaldırın.',
+    'Bu kuruluşu engellediniz. Güncellemelerini takip etmek için engeli kaldırın.',
   'This account is suspended. If you think that’s wrong, write to whoever runs Caime.':
     'Bu hesap askıya alındı. Bunun yanlış olduğunu düşünüyorsanız Caime’yi yöneten kişiye yazın.',
   'Missing X-Caime-Client header.': 'X-Caime-Client başlığı eksik.',
-  'Someone else is signed in here now.': 'Şu anda burada başka biri oturum açmış.',
+  'Someone else is signed in here now.': 'Bu cihazda şu anda başka biri oturum açmış.',
   'An app’s token can’t do this.': 'Bir uygulamanın belirteci bunu yapamaz.',
   'This app needs the “{scope}” permission for that.':
     'Bu uygulamanın bunun için “{scope}” iznine ihtiyacı var.',
@@ -907,26 +919,28 @@ export const turkishServer: Catalog = {
   '{n} promises open': { one: '{n} açık söz', other: '{n} açık söz' },
   '{n} questions unanswered': { one: '{n} yanıtsız soru', other: '{n} yanıtsız soru' },
   'That card': 'Bu kart',
-  'That isn’t something you can book here.': 'Bu, burada rezerve edebileceğiniz bir şey değil.',
+  'That isn’t something you can book here.':
+    'Bu, burada rezervasyon yapabileceğiniz bir şey değil.',
   'Paid bookings are for people over 18.': 'Ücretli rezervasyonlar 18 yaş üstü kişiler içindir.',
-  'Up to {n} in one booking.': 'Bir rezervasyonda en fazla {n}.',
-  'They don’t do that one.': 'Bunu yapmıyorlar.',
-  'That time has just been taken. Pick another.': 'Bu saat az önce alındı. Başka birini seçin.',
-  'Your own bookings are yours to do.': 'Kendi rezervasyonlarınızı siz yaparsınız.',
+  'Up to {n} in one booking.': 'Bir rezervasyonda en fazla {n} adet.',
+  'They don’t do that one.': 'Bu hizmeti sunmuyorlar.',
+  'That time has just been taken. Pick another.': 'Bu saat az önce doldu. Başka bir saat seçin.',
+  'Your own bookings are yours to do.': 'Kendi rezervasyonlarınızı kendiniz yerine getirirsiniz.',
   'An organization’s items are public or for its customers.':
-    'Bir kuruluşun ögeleri herkese açıktır ya da müşterileri içindir.',
-  'Only people on the team can be providers.': 'Yalnızca ekipteki kişiler hizmeti verebilir.',
+    'Bir kuruluşun ögeleri ya herkese açıktır ya da yalnızca müşterileri içindir.',
+  'Only people on the team can be providers.': 'Hizmeti yalnızca ekipteki kişiler verebilir.',
   'per day': 'günlük',
-  'Only the team says who does a booking.': 'Rezervasyonu kimin yapacağını yalnızca ekip söyler.',
-  'That isn’t a booking from the catalog.': 'Bu katalogdan bir rezervasyon değil.',
+  'Only the team says who does a booking.':
+    'Rezervasyonu kimin üstleneceğine yalnızca ekip karar verir.',
+  'That isn’t a booking from the catalog.': 'Bu, katalogdan yapılmış bir rezervasyon değil.',
   'Orders aren’t taken here.': 'Burada sipariş alınmıyor.',
   'That isn’t something you can order here.': 'Bu, burada sipariş edebileceğiniz bir şey değil.',
-  'Up to {n} of that in one order.': 'Bir siparişte bundan en fazla {n}.',
-  'They don’t offer that way.': 'Bu yolu sunmuyorlar.',
-  offers: 'sunduklar',
+  'Up to {n} of that in one order.': 'Bir siparişte bundan en fazla {n} adet.',
+  'They don’t offer that way.': 'Bu teslimat yöntemini sunmuyorlar.',
+  offers: 'sunulanlar',
   collections: 'koleksiyonlar',
-  'Ways to be paid are for people over 18.': 'Ödeme alma yolları 18 yaşından büyükler içindir.',
+  'Ways to be paid are for people over 18.': 'Ödeme alma yolları 18 yaş üstü kişiler içindir.',
   'In a group, ask to be paid; say you’re paying where it’s two of you.':
-    'Bir grupta ödeme isteyin; ödediğinizi yalnızca ikiniz olduğunuz yerde söyleyin.',
-  'pays by': 'ödeme yolu',
+    'Grupta ödeme isteyebilirsiniz; “ödüyorum” demek yalnızca iki kişilik konuşmalarda olur.',
+  'pays by': 'ödeme yolları',
 };
