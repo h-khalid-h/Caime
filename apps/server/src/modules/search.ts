@@ -184,6 +184,11 @@ export async function runSearch(
     else {
       const rows = await ctx.db
         .selectFrom('messages as m')
+        .$if(Boolean(parsed.period), (qb) =>
+          qb
+            .where('m.created_at', '>=', new Date(parsed.period!.since))
+            .where('m.created_at', '<', new Date(parsed.period!.until)),
+        )
         .innerJoin('participants as p', (j) =>
           j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', me),
         )
@@ -273,6 +278,11 @@ export async function runSearch(
     else if (scope !== 'all' || text) {
       const rows = await ctx.db
         .selectFrom('assets as a')
+        .$if(Boolean(parsed.period), (qb) =>
+          qb
+            .where('a.created_at', '>=', new Date(parsed.period!.since))
+            .where('a.created_at', '<', new Date(parsed.period!.until)),
+        )
         .innerJoin('participants as p', (j) =>
           j.onRef('p.conversation_id', '=', 'a.conversation_id').on('p.user_id', '=', me),
         )
@@ -364,6 +374,11 @@ export async function runSearch(
     let q = ctx.db
       .selectFrom('tasks')
       .selectAll()
+      .$if(Boolean(parsed.period), (qb) =>
+        qb
+          .where('created_at', '>=', new Date(parsed.period!.since))
+          .where('created_at', '<', new Date(parsed.period!.until)),
+      )
       .where((eb) =>
         eb.or([
           eb('owner_id', '=', me),
@@ -405,6 +420,11 @@ export async function runSearch(
   if (want('decisions') || (scope === 'all' && text)) {
     const rows = await ctx.db
       .selectFrom('decisions as d')
+      .$if(Boolean(parsed.period), (qb) =>
+        qb
+          .where('d.decided_at', '>=', new Date(parsed.period!.since))
+          .where('d.decided_at', '<', new Date(parsed.period!.until)),
+      )
       .innerJoin('participants as p', (j) =>
         j.onRef('p.conversation_id', '=', 'd.conversation_id').on('p.user_id', '=', me),
       )
@@ -531,16 +551,18 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/search', async (req) => {
     const auth = requireAuth(req);
-    const { q, limit } = parse(
+    const { q, limit, understand } = parse(
       z.object({
         q: z.string().trim().min(1).max(200),
         limit: z.coerce.number().int().min(1).max(50).default(20),
+        /** The app says when the person has finished typing (a pause, Enter): only then a model. */
+        understand: z.enum(['0', '1']).optional(),
       }),
       req.query,
     );
     ctx.limiter.hit(`search:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
-    const rules = parseSearchQuery(q);
-    const read = await understandWithAi(ctx, auth.userId, rules);
+    const rules = parseSearchQuery(q, { now: ctx.now() });
+    const read = understand === '1' ? await understandWithAi(ctx, auth.userId, rules) : null;
     const response = await runSearch(ctx, auth.userId, read ?? rules, limit);
     return read ? { ...response, understoodBy: 'ai', label: tr(AI_LABEL) } : response;
   });

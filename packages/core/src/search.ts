@@ -35,8 +35,104 @@ export interface ParsedQuery {
   fileKind: FileKind | null;
   /** For tasks: who asked whom. */
   direction: 'asked_me' | 'i_asked' | null;
+  /**
+   * When ("photos from last week", "decisions in March"): the days to search, as YYYY-MM-DD
+   * from `since` up to but not including `until`, and the words as written.
+   */
+  period: { since: string; until: string; label: string } | null;
   /** How the query was understood, shown under the search box. */
   interpretation: string;
+}
+
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const MONTH_NAMES = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+];
+const PERIOD_WORDS =
+  /(?:^|\s)(?:(?:from|in|during|since|on|of)\s+)?((?:last|this|past)\s+(?:week|month|year)|yesterday|today|last\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)|(?:in\s+)?(?:january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?|(\d{4}))$/i;
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+const utcDay = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d));
+
+/**
+ * The days a phrase at the end of a query names, by the calendar ("last week" is Monday to
+ * Sunday before this week's; "March" is the last March), and the query without it. Days, not
+ * instants: the search is by day, in UTC, which is near enough for "last week".
+ */
+export function splitPeriod(q: string, now: Date): { rest: string; period: ParsedQuery['period'] } {
+  const m = PERIOD_WORDS.exec(q);
+  if (!m) return { rest: q, period: null };
+  const words = m[1]!
+    .toLowerCase()
+    .replace(/^in\s+/, '')
+    .replace(/\s+/g, ' ');
+  const y = now.getUTCFullYear();
+  const mo = now.getUTCMonth();
+  const d = now.getUTCDate();
+  const today = utcDay(y, mo, d);
+  // Weeks start on Monday here; a reader's own week is the inbox's affair, not a search's.
+  const sinceMonday = (now.getUTCDay() + 6) % 7;
+  let since: Date;
+  let until: Date;
+  if (words === 'yesterday') {
+    since = utcDay(y, mo, d - 1);
+    until = today;
+  } else if (words === 'today') {
+    since = today;
+    until = utcDay(y, mo, d + 1);
+  } else if (/^(last|past) week$/.test(words)) {
+    until = utcDay(y, mo, d - sinceMonday);
+    since = utcDay(y, mo, d - sinceMonday - 7);
+  } else if (words === 'this week') {
+    since = utcDay(y, mo, d - sinceMonday);
+    until = utcDay(y, mo, d + 1);
+  } else if (/^(last|past) month$/.test(words)) {
+    since = utcDay(y, mo - 1, 1);
+    until = utcDay(y, mo, 1);
+  } else if (words === 'this month') {
+    since = utcDay(y, mo, 1);
+    until = utcDay(y, mo, d + 1);
+  } else if (/^(last|past) year$/.test(words)) {
+    since = utcDay(y - 1, 0, 1);
+    until = utcDay(y, 0, 1);
+  } else if (words === 'this year') {
+    since = utcDay(y, 0, 1);
+    until = utcDay(y, mo, d + 1);
+  } else if (words.startsWith('last ')) {
+    const weekday = WEEKDAYS.indexOf(words.slice(5));
+    let back = (now.getUTCDay() - weekday + 7) % 7;
+    if (back === 0) back = 7;
+    since = utcDay(y, mo, d - back);
+    until = utcDay(y, mo, d - back + 1);
+  } else if (/^\d{4}$/.test(words)) {
+    const year = Number(words);
+    since = utcDay(year, 0, 1);
+    until = utcDay(year + 1, 0, 1);
+  } else {
+    const [name, yearWord] = words.split(' ');
+    const month = MONTH_NAMES.indexOf(name ?? '');
+    if (month < 0) return { rest: q, period: null };
+    const year = yearWord ? Number(yearWord) : month <= mo ? y : y - 1;
+    since = utcDay(year, month, 1);
+    until = utcDay(year, month + 1, 1);
+  }
+  const rest = q
+    .slice(0, m.index)
+    .trim()
+    .replace(/\s+(?:from|in|during|since|on|of)$/i, '')
+    .trim();
+  return { rest, period: { since: iso(since), until: iso(until), label: m[1]!.trim() } };
 }
 
 const FILE_WORDS: Array<[RegExp, FileKind | null, SearchScope]> = [
@@ -65,15 +161,24 @@ function base(raw: string): ParsedQuery {
     relationship: null,
     fileKind: null,
     direction: null,
+    period: null,
     interpretation: '',
   };
 }
 
-export function parseSearchQuery(raw: string): ParsedQuery {
-  const q = clean(raw);
+export function parseSearchQuery(raw: string, opts: { now?: Date } = {}): ParsedQuery {
+  const q0 = clean(raw);
   const out = base(raw);
-  if (!q) return out;
+  if (!q0) return out;
+  // When, first: "photos from last week" is photos, in those days, from nobody in particular.
+  const { rest, period } = splitPeriod(q0, opts.now ?? new Date());
+  if (!period) return parseWords(q0, out);
+  if (!rest) return { ...out, text: '', period, interpretation: period.label };
+  const parsed = parseWords(rest, { ...out, text: rest, period });
+  return { ...parsed, interpretation: `${parsed.interpretation} · ${period.label}` };
+}
 
+function parseWords(q: string, out: ParsedQuery): ParsedQuery {
   // "PDFs from Sarah", "photos with Ahmed", "links from DATA C"
   let m = /^(.+?)\s+(?:from|by|with|of)\s+(.+)$/i.exec(q);
   if (m) {
@@ -228,7 +333,8 @@ export function isPlainText(parsed: ParsedQuery): boolean {
     !parsed.person &&
     !parsed.relationship &&
     !parsed.fileKind &&
-    !parsed.direction
+    !parsed.direction &&
+    !parsed.period
   );
 }
 
@@ -286,6 +392,7 @@ export function fromUnderstanding(raw: string, u: SearchUnderstanding): ParsedQu
     person: u.person ? clip(u.person, 80) : null,
     relationship: sphere ? (role ? { sphere, role } : { sphere }) : null,
     fileKind,
+    period: null,
     direction: u.direction === 'asked_me' || u.direction === 'i_asked' ? u.direction : null,
     interpretation,
   };

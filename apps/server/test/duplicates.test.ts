@@ -6,7 +6,14 @@ import { type Client, createTestApp, signup, type TestApp } from './helpers';
 let t: TestApp;
 let noor: Client;
 
+/** Connected, each labelling the other as a colleague at the same place: a name and a place. */
 async function connect(a: Client, b: Client): Promise<void> {
+  const relationship = { sphere: 'work', role: 'colleague', orgName: 'Same Co' };
+  const r = await a.post('/v1/connections/requests', { toUserId: b.user.id, relationship });
+  await b.post(`/v1/connections/requests/${r.requestId}/accept`, { relationship });
+}
+/** Connected with no label on either side: a name alone. */
+async function connectPlain(a: Client, b: Client): Promise<void> {
   const r = await a.post('/v1/connections/requests', { toUserId: b.user.id });
   await b.post(`/v1/connections/requests/${r.requestId}/accept`, {});
 }
@@ -34,7 +41,9 @@ const seen = (name: string, extra: Partial<Parameters<typeof sameness>[0]> = {})
 describe('possible duplicates (PRD §51)', () => {
   it('compares names as people write them, and never offers on too little', () => {
     expect(nameWords('  Zoë  O’Brien-Smith ')).toEqual(['zoe', 'o', 'brien', 'smith']);
-    expect(sameness(seen('Sarah Smith'), seen('sarah  smith')).confidence).toBe(0.8);
+    // Two words are many people's name too: a hint short of an offer (OFFER_AT is 0.65).
+    expect(sameness(seen('Sarah Smith'), seen('sarah  smith')).confidence).toBe(0.6);
+    expect(sameness(seen('Sarah Jane Smith'), seen('Sarah Jane Smith')).confidence).toBe(0.7);
     // One word is many people's name; one name inside another is a hint, not enough.
     expect(sameness(seen('Sam'), seen('Sam')).confidence).toBe(0.5);
     expect(sameness(seen('Sarah'), seen('Sarah Smith')).confidence).toBe(0.4);
@@ -72,17 +81,26 @@ describe('possible duplicates (PRD §51)', () => {
       expect(nameWords(one)).toHaveLength(1);
     expect(sameness(seen('राहुल'), seen('राहुल')).confidence).toBe(0.5);
     expect(sameness(seen('प्रिया'), seen('प्रिय')).confidence).toBe(0);
-    expect(sameness(seen('प्रिया शर्मा'), seen('प्रिया शर्मा')).confidence).toBe(0.8);
+    expect(sameness(seen('प्रिया शर्मा'), seen('प्रिया शर्मा')).confidence).toBe(0.6);
   });
 
   it('offers it to whoever knows both, from what they can see, and nobody else', async () => {
     const first = await signup(t, { displayName: 'Sarah Smith' });
     const second = await signup(t, { displayName: 'Sarah Smith' });
     const other = await signup(t, { displayName: 'Omar Farouk' });
-    await connect(noor, first);
-    await connect(noor, other);
+    await connectPlain(noor, first);
+    await connectPlain(noor, other);
     expect(await duplicates(noor)).toEqual([]);
-    await connect(second, noor);
+    await connectPlain(second, noor);
+    // Two words of a name alone aren't an offer: a second sign, a place they share, is.
+    expect(await duplicates(noor)).toEqual([]);
+    for (const who of [first, second])
+      await noor.post('/v1/relationships', {
+        userId: who.user.id,
+        sphere: 'work',
+        role: 'colleague',
+        orgName: 'DATA C',
+      });
     const [s] = await duplicates(noor);
     expect(s).toMatchObject({
       kind: 'duplicate',
@@ -90,12 +108,12 @@ describe('possible duplicates (PRD §51)', () => {
       subjectUserId: second.user.id,
       payload: { keep: first.user.id, merge: second.user.id },
     });
-    expect(s.rationale).toContain('Both have the same name.');
+    expect(s.rationale).toContain('Both have the same name, and you know both from DATA C.');
     // One word is many people's name: two Sams aren't offered.
     const sam = await signup(t, { displayName: 'Sam' });
     const sam2 = await signup(t, { displayName: 'Sam' });
-    await connect(noor, sam);
-    await connect(noor, sam2);
+    await connectPlain(noor, sam);
+    await connectPlain(noor, sam2);
     expect((await duplicates(noor)).map((d) => d.subjectUserId)).toEqual([second.user.id]);
     // The two Sarahs don't know each other; nobody else hears of it.
     expect(await duplicates(first)).toEqual([]);

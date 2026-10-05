@@ -1,7 +1,7 @@
 import { AI_LABEL } from '@caime/core/assist';
 import { formatListTime, snippetParts } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
-import { parseSearchQuery } from '@caime/core/search';
+import { looksLikeSentence, parseSearchQuery } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -71,14 +71,25 @@ export default function Search() {
     const timer = setTimeout(() => setDebounced(term.trim()), 250);
     return () => clearTimeout(timer);
   }, [term]);
+  // The rules answer as they type; a sentence goes to the model only once they've stopped (a
+  // second's pause, or Enter), never on every keystroke's pause (R17, convention 14).
+  const [settled, setSettled] = useState('');
+  useEffect(() => {
+    if (!looksLikeSentence(debounced)) return;
+    const timer = setTimeout(() => setSettled(debounced), 1000);
+    return () => clearTimeout(timer);
+  }, [debounced]);
+  const understand = debounced.length >= 2 && settled === debounced && looksLikeSentence(debounced);
   const interpretation = useMemo(
     () => (debounced ? parseSearchQuery(debounced).interpretation : null),
     [debounced],
   );
   const q = useQuery({
-    queryKey: qk.search(debounced),
-    queryFn: () => endpoints.search(debounced),
+    queryKey: qk.search(debounced, understand),
+    queryFn: () => endpoints.search(debounced, understand),
     enabled: debounced.length >= 2,
+    // The rules' answer stays on screen while the model's is fetched.
+    placeholderData: (previous) => previous,
   });
   // Offline, what's on this device is searched instead, and says so (PRD §49).
   const qc = useQueryClient();
@@ -134,6 +145,7 @@ export default function Search() {
             onChangeText={setTerm}
             autoFocus
             returnKeyType="search"
+            onSubmitEditing={() => setSettled(term.trim())}
             accessibilityLabel={tr('Search')}
             testID="search-input"
           />

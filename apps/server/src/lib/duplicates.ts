@@ -48,8 +48,13 @@ export function sameness(a: Seen, b: Seen): { confidence: number; reasons: strin
   const wa = nameWords(a.name);
   const wb = nameWords(b.name);
   const same = wa.length > 0 && wa.join(' ') === wb.join(' ');
-  if (same && wa.length > 1) {
-    confidence += 0.8;
+  if (same && wa.length > 2) {
+    confidence += 0.7;
+    reasons.push(tr('the same name'));
+  } else if (same && wa.length > 1) {
+    // Two words ("Sarah Smith") are many people's too: enough to offer only with a place or a
+    // nickname they share (docs/REVIEW-2026-10-05.md, intelligence M).
+    confidence += 0.6;
     reasons.push(tr('the same name'));
   } else if (same) {
     // One word ("Sam") is many people's name.

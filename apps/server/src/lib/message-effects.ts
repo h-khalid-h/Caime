@@ -599,13 +599,15 @@ async function absorbVague(
     dueAt: string | null;
     dueText: string | null;
     rationale: string;
+    /** The message the vague promise answers, if it's a reply: that one's suggestion is its. */
+    replyToMessageId: string | null;
   },
 ): Promise<boolean> {
   if (!opts.subjectUserId) return false;
   const since = new Date(ctx.now().getTime() - 14 * 86_400_000);
-  const open = await ctx.db
+  const candidates = await ctx.db
     .selectFrom('suggestions')
-    .select(['id', 'due_at'])
+    .select(['id', 'due_at', 'message_id', 'created_at'])
     .where('user_id', '=', opts.userId)
     .where('conversation_id', '=', opts.conversationId)
     .where('subject_user_id', '=', opts.subjectUserId)
@@ -613,7 +615,14 @@ async function absorbVague(
     .where('status', '=', 'pending')
     .where('created_at', '>', since)
     .orderBy('created_at', 'desc')
-    .executeTakeFirst();
+    .limit(2)
+    .execute();
+  // "I'll do it Thursday" belongs to one open item: the one it replies to, or the only one of
+  // the last two days. With two open and no reply, it's nobody's to re-date: a new suggestion.
+  const recent = new Date(ctx.now().getTime() - 2 * 86_400_000);
+  const open =
+    candidates.find((c) => c.message_id !== null && c.message_id === opts.replyToMessageId) ??
+    (candidates.length === 1 && candidates[0]!.created_at > recent ? candidates[0] : undefined);
   if (open) {
     await ctx.db
       .updateTable('suggestions')
@@ -679,6 +688,7 @@ async function suggest(
           dueAt: s.dueAt,
           dueText: s.dueText,
           rationale: s.rationale,
+          replyToMessageId: message.reply_to_id,
         }))
       )
         continue;
@@ -731,6 +741,7 @@ async function suggest(
             dueAt: s.dueAt,
             dueText: s.dueText,
             rationale: s.rationale,
+            replyToMessageId: message.reply_to_id,
           }))
         )
           continue;

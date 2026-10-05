@@ -529,7 +529,9 @@ describe('natural-language search (R17, PRD §25)', () => {
         interpretation: 'What Sam promised you',
       }),
     );
-    const res = await noor.get('/v1/search?q=anything%20Sam%20promised%20to%20send%20me');
+    const res = await noor.get(
+      '/v1/search?q=anything%20Sam%20promised%20to%20send%20me&understand=1',
+    );
     expect(res.understoodBy).toBe('ai');
     expect(res.label).toBe('Suggested by Caime');
     expect(res.interpretation).toBe('What Sam promised you');
@@ -541,7 +543,9 @@ describe('natural-language search (R17, PRD §25)', () => {
     expect(JSON.stringify(call.body.messages)).not.toContain('venue contract');
     expect(searchCalls().length).toBe(before + 1);
     // Typed again: the reading is kept, so nothing more is asked.
-    const again = await noor.get('/v1/search?q=anything%20Sam%20promised%20to%20send%20me');
+    const again = await noor.get(
+      '/v1/search?q=anything%20Sam%20promised%20to%20send%20me&understand=1',
+    );
     expect(again.understoodBy).toBe('ai');
     expect(searchCalls().length).toBe(before + 1);
     await t.ctx.flush();
@@ -561,18 +565,20 @@ describe('natural-language search (R17, PRD §25)', () => {
     expect((await noor.get('/v1/search?q=PDFs%20from%20Sam')).understoodBy).toBe('rules');
     expect(searchCalls().length).toBe(before);
     // AI off: the text match, no call.
-    const plain = await sam.get('/v1/search?q=anything%20Noor%20promised%20to%20send%20me');
+    const plain = await sam.get(
+      '/v1/search?q=anything%20Noor%20promised%20to%20send%20me&understand=1',
+    );
     expect(plain.understoodBy).toBe('rules');
     expect(plain.label).toBeNull();
     expect(searchCalls().length).toBe(before);
     // The model declines: the text match, no error.
     replies.push(refusal());
     const declined = await noor.get(
-      '/v1/search?q=show%20me%20everything%20Sam%20decided%20last%20week',
+      '/v1/search?q=show%20me%20everything%20Sam%20decided%20about%20the%20venue&understand=1',
     );
     expect(declined.understoodBy).toBe('rules');
     expect(declined.interpretation).toBe(
-      'Everything matching “show me everything Sam decided last week”',
+      'Everything matching “show me everything Sam decided about the venue”',
     );
     expect(searchCalls().length).toBe(before + 1);
   });

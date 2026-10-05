@@ -42,6 +42,39 @@ describe('search (PRD §25 examples)', () => {
   it('explains how it understood the query', () => {
     expect(parseSearchQuery('PDFs from Sarah').interpretation).toBe('PDFs from Sarah');
   });
+  it('reads a time at the end as the days to search, never as a person', () => {
+    // Wednesday 2026-09-23.
+    const now = new Date('2026-09-23T14:00:00Z');
+    const at = (q: string) => parseSearchQuery(q, { now });
+    expect(at('photos from last week')).toMatchObject({
+      scope: 'files',
+      fileKind: 'image',
+      person: null,
+      period: { since: '2026-09-14', until: '2026-09-21', label: 'last week' },
+      interpretation: 'All photos · last week',
+    });
+    expect(at('decisions last week')).toMatchObject({
+      scope: 'decisions',
+      period: { since: '2026-09-14' },
+    });
+    expect(at('contract yesterday')).toMatchObject({
+      scope: 'all',
+      text: 'contract',
+      period: { since: '2026-09-22', until: '2026-09-23' },
+    });
+    expect(at('files from Sarah in March').period).toEqual({
+      since: '2026-03-01',
+      until: '2026-04-01',
+      label: 'March',
+    });
+    expect(at('files from Sarah in March').person).toBe('Sarah');
+    expect(at('this month').period).toMatchObject({ since: '2026-09-01', until: '2026-09-24' });
+    expect(at('last Friday').period).toMatchObject({ since: '2026-09-18', until: '2026-09-19' });
+    expect(at('invoices 2025').period).toMatchObject({ since: '2025-01-01', until: '2026-01-01' });
+    // A period is the rules' understanding: no model for it.
+    expect(isPlainText(at('photos from last week'))).toBe(false);
+    expect(isPlainText(at('contract yesterday'))).toBe(false);
+  });
 });
 
 describe('kits (R19)', () => {

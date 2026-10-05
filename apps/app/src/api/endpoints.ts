@@ -654,7 +654,9 @@ export const endpoints = {
   undoSuggestion: (id: string) => api.post<Ok>(`/suggestions/${id}/undo`),
 
   // Search, notifications, policies, safety
-  search: (term: string) => api.get<SearchResponse>(`/search${q({ q: term })}`),
+  /** `understand`: the person has finished typing (a pause, Enter), so a sentence may go to the model. */
+  search: (term: string, understand = false) =>
+    api.get<SearchResponse>(`/search${q({ q: term, understand: understand ? '1' : undefined })}`),
   /** How a search ended: found or not, and how long it took. Never what was searched for. */
   searchOutcome: (outcome: { found: boolean; ms: number }) =>
     api.post<Ok>('/search/outcome', outcome),

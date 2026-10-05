@@ -908,10 +908,16 @@ listed there with its owner.
       evening's; an edited message is read again (`analyseText` in `lib/messages.ts`,
       `afterEdit`), its flags and dates kept and its new suggestions offered once each.
       `when.test.ts`, five golden lines, `messaging.test.ts`.
+- [x] The intelligence's leftovers: a vague promise ("I'll do it Thursday") re-dates only the
+      item it answers, the one it replies to or the only one open within two days, else it's a
+      suggestion of its own (`absorbVague`); a time at the end of a search ("photos from last
+      week", "decisions in March", "invoices 2025") is the days to search (`splitPeriod`,
+      `query.period`, filtered on the server), never a person; the model reads a sentence only
+      once typing has settled for a second or on Enter (`understand=1`; the rules answer every
+      keystroke); two people with the same two-word name are offered as one only with a place or
+      a nickname they share. `search-kits-misc.test.ts`, `ai.test.ts`, `duplicates.test.ts`.
 - [ ] Next block: the remaining hand-written role checks; the organization page's setup apart
-      from its daily work; a vague promise re-dating an unrelated suggestion; the search rules'
-      misread of "photos from last week" and the model on every typing pause; same-name
-      duplicates.
+      from its daily work.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1920,3 +1926,6 @@ listed there with its owner.
   reader, and a form's field messages in the app's language (`msg()` in the schemas).
 - 2026-10-05 — The intelligence reads the recent past as past, a day of the month, Arabic
   durations and clock words, and an evening's bare hour; an edited message is read again.
+- 2026-10-05 — The intelligence's leftovers: a vague promise re-dates only its own item, a time
+  at the end of a search is a period, the model reads a sentence once typing settles, and
+  same-name duplicates need a second sign.

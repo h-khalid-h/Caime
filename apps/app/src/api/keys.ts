@@ -68,6 +68,6 @@ export const qk = {
   saved: ['saved'] as const,
   savedItems: (collection?: string) => ['saved', 'items', collection ?? ''] as const,
   sessions: ['sessions'] as const,
-  search: (term: string) => ['search', term] as const,
+  search: (term: string, understand = false) => ['search', term, understand] as const,
   peopleSearch: (term: string) => ['people-search', term] as const,
 };

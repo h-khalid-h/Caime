@@ -553,7 +553,9 @@ These are rules, not preferences.
   registers with `resume: true` to take its device up again; a browser forgets them. Anything
   that lists a person's devices to seal for includes the recovery device; anything that picks a
   sender excludes it.
-- Possible duplicates (PRD §51): `lib/duplicates.ts` offers them, from what the viewer sees only;
+- Possible duplicates (PRD §51): `lib/duplicates.ts` offers them, from what the viewer sees only
+  (`sameness`: a two-word name alone is 0.6, under `OFFER_AT`; a place or a nickname they share
+  makes the offer);
   `connection_sides.merged_into` always names a group's root (accepting a `duplicate` suggestion
   unions two groups), and `GET /connections` folds each group into its root's `also`. The app's
   card and section load only when there's one (`features/duplicates/`).
@@ -671,7 +673,9 @@ These are rules, not preferences.
   comes out `past: true`, which `firstFutureWhen` skips, so nothing in the past is a due date.
   A new phrase joins its scanner there with a case in `when.test.ts` and a golden line. A
   message's words are read by `analyseText` (`lib/messages.ts`) when sent and again when edited
-  (`afterEdit` in `message-effects.ts` offers what they now say, once per kind by fingerprint).
+  (`afterEdit` in `message-effects.ts` offers what they now say, once per kind by fingerprint). A
+  vague promise ("I'll do it Thursday") re-dates an open suggestion only when it answers it
+  (`absorbVague`: the one it replies to, or the only one open within two days), else it's its own.
 - The message intelligence reads Arabic by lists in `packages/core/src/intelligence.ts`
   (`AR_COMMIT`, `AR_REQUEST_VERBS_LIST`, `AR_REQUEST`, `AR_DECISION`, `AR_CONFIRM`, `AR_PAY`,
   `AR_QUESTION_START` with `AR_NOT_A_QUESTION` for "ما" as a negation): a trigger is a whole
@@ -737,8 +741,12 @@ These are rules, not preferences.
   `features/voice/Recorder.tsx` and plays in `VoiceNote.tsx`, both loaded lazily (the audio
   module stays out of the startup chunk); the E2E stand-in answers `/v1/audio/transcriptions`
   with fixed words. Recording a call (R52) uses this interface when it comes, never a second one.
-- Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`) and, only when
-  they understood nothing of a query that `looksLikeSentence`, asks the model to fill the same
+- Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`; a time at the
+  end, "last week", "in March", "2025", is `query.period`, the days to search, split off first by
+  `splitPeriod` and filtered on the server, never read as a person) and, only when they
+  understood nothing of a query that `looksLikeSentence` and the app said the typing is done
+  (`understand=1`: a second's pause or Enter in `search.tsx`; the rules answer every keystroke
+  without it), asks the model to fill the same
   structure (`understandWithAi` in `modules/search.ts`, `ai.understandSearch`), for a person with
   AI assist on and allowance left; `fromUnderstanding` (core) checks every value the model
   returns against the taxonomy and the lists, the reading is kept ten minutes per person and
