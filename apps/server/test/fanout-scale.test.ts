@@ -79,18 +79,17 @@ describe('a message to a big group', () => {
     await omar.post(`/v1/conversations/${group}/receipts`, { delivered: 1 });
     await omar.post(`/v1/conversations/${group}/receipts`, { read: 1 });
     const queries = t.queries() - before;
+    const receipts = () => heard.filter((m) => m.event.type === 'receipts');
+    // The read reached its sender: visible or not (they aren't connected, so not), Noor hears
+    // something, in an event of her own; the bus delivers after the response.
+    await expect.poll(() => receipts().some((r) => r.userIds.includes(noor.user.id))).toBe(true);
     stop();
-    const receipts = heard.filter((m) => m.event.type === 'receipts');
-    expect(receipts.length).toBeGreaterThan(0);
-    for (const r of receipts) {
-      expect(r.userIds).toContain(omar.user.id);
+    // Every receipts event went to Omar's own devices, to Noor, or to both: never to the group.
+    expect(receipts().some((r) => r.userIds.includes(omar.user.id))).toBe(true);
+    for (const r of receipts()) {
       expect(r.userIds.length).toBeLessThanOrEqual(2);
-      expect(r.userIds.filter((u) => u !== omar.user.id)).toEqual(
-        r.userIds.includes(noor.user.id) ? [noor.user.id] : [],
-      );
+      expect(r.userIds.every((u) => u === omar.user.id || u === noor.user.id)).toBe(true);
     }
-    // The read reached its sender: visible or not, Noor hears something.
-    expect(receipts.some((r) => r.userIds.includes(noor.user.id))).toBe(true);
     console.log(`two acks in a group of ${MEMBERS}: ${queries} queries`);
     expect(queries).toBeLessThan(40);
   });
