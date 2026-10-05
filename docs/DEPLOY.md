@@ -93,6 +93,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `GOVERNING_LAW` | — | The law and courts the terms are under ("Estonia"); the terms carry the clause only when it's set. |
 | `PRIVACY_URL`, `TERMS_URL`, `HELP_URL` | Caime's own pages | Caime serves its own privacy policy, terms and help at `/privacy`, `/terms` and `/help` on `PUBLIC_URL`, for anyone, signed in or not (link app store listings there). Set one of these (a full http(s) address) to publish that page somewhere else instead: You → About links there, and Caime's own page redirects there, so there's only ever one of each. The app reads them from the server (`GET /v1/about`), so no domain is built into it. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | — | Billing (below): Stripe's secret or restricted key, and the signing secret of the webhook endpoint at `/v1/billing/webhook`. With both, Pro and Business are bought in the app through Stripe Checkout and managed in Stripe's customer portal. |
+| `STRIPE_CONNECT_CLIENT_ID`, `STRIPE_CONNECT_WEBHOOK_SECRET` | — | An organization's own checkout (R65, above): Connect's client id and the signing secret of the Connect endpoint at `/v1/checkout/stripe/webhook`. With them and `STRIPE_SECRET_KEY`, an organization's owner can connect its own Stripe account and its Pay cards are paid by card. |
 | `STRIPE_PORTAL_CONFIGURATION` | the account's default | The customer portal configuration (`bpc_…`) to open. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Web Push keys. Generated and stored in the database on first boot; set them only to reuse existing keys. |
 | `VAPID_SUBJECT` | `mailto:hello@cai.me` | Contact for push services. |
@@ -168,6 +169,29 @@ price, by what the server already knew of it and by whom its Checkout was for (t
   dashboard is forgotten, and a new one is made when needed.
 - **An organization's receipts go to its owner.** They go to the owner's email, whichever admin
   pays, and it's brought up to date whenever its billing is opened.
+
+### An organization's own checkout (Stripe Connect, R65) ⛔ not turned on in production
+
+An organization's owner can connect the organization's **own** Stripe account, and its Pay cards
+can then be paid by card straight into it. Caime takes no fee and never sees a card. It's off
+until the operator turns it on, which needs the owner of Caime's live Stripe account (tell them
+first: it's live):
+
+1. **Connect.** In the Stripe dashboard, turn on Connect for the platform (Standard accounts,
+   OAuth) and add `https://<PUBLIC_URL>/v1/checkout/stripe/return` as a redirect URI. Its client
+   id (`ca_…`) is `STRIPE_CONNECT_CLIENT_ID`.
+2. **Connect webhook.** An endpoint at `https://<PUBLIC_URL>/v1/checkout/stripe/webhook`
+   listening to **connected accounts**, for `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `checkout.session.expired` and
+   `account.updated`, on API version `2024-06-20`. Its signing secret is
+   `STRIPE_CONNECT_WEBHOOK_SECRET`.
+3. Set both on the service and redeploy. `STRIPE_SECRET_KEY` is the same key billing uses; a
+   restricted key also needs write access to Checkout Sessions on connected accounts and read
+   access to Accounts.
+
+A card is marked paid only from what Stripe says when the server asks it (the payer's return,
+or the webhook naming the card), never from an event's own copy. Disconnecting asks Stripe to
+forget Caime's access (`/oauth/deauthorize`).
 
 ### 4. Continuous deployment
 

@@ -48,6 +48,7 @@ import { billingRoutes } from './modules/billing';
 import { businessRoutes } from './modules/business';
 import { calendarRoutes } from './modules/calendar';
 import { callRoutes } from './modules/calls';
+import { checkoutRoutes } from './modules/checkout';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
 import { e2eeRoutes } from './modules/e2ee';
@@ -275,6 +276,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await groupCallRoutes(v1, ctx);
       await e2eeRoutes(v1, ctx);
       await billingRoutes(v1, ctx);
+      await checkoutRoutes(v1, ctx);
       await inboxRoutes(v1, ctx);
       await realtimeRoutes(v1, ctx);
       await actionRoutes(v1, ctx);

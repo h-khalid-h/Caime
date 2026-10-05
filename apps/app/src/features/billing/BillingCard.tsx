@@ -8,19 +8,14 @@ import {
 import { tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useState } from 'react';
-import { Linking, Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { leaveFor } from '@/lib/links';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Segmented } from '@/ui/Segmented';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
-
-/** To Stripe (Checkout, the portal): in this tab on the web, so it comes back here. */
-function goTo(url: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.assign(url);
-  else void Linking.openURL(url).catch(() => {});
-}
 
 /**
  * What can be bought for a person (Pro) or an organization (Business), and what's paid for:
@@ -47,7 +42,7 @@ export function BillingCard({
   const run = (f: () => Promise<{ url: string }>) => {
     setBusy(true);
     void f()
-      .then(({ url }) => goTo(url))
+      .then(({ url }) => leaveFor(url))
       .catch((e) => {
         setBusy(false);
         toast((e as Error).message, { tone: 'danger' });

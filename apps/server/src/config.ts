@@ -174,6 +174,16 @@ const Env = z.object({
   /** The customer portal configuration to open (bpc_…); without it, the account's default. */
   STRIPE_PORTAL_CONFIGURATION: z.string().optional(),
   /**
+   * An organization's own checkout (R65): the platform's Connect client id (ca_…), which with
+   * STRIPE_SECRET_KEY lets an organization's owner connect its own Stripe account, and the
+   * signing secret of the Connect webhook endpoint at /v1/checkout/stripe/webhook. Without the
+   * client id, Pay cards are paid by the ways an organization lists, as before.
+   */
+  STRIPE_CONNECT_CLIENT_ID: z.string().min(10).optional(),
+  STRIPE_CONNECT_WEBHOOK_SECRET: z.string().min(10).optional(),
+  /** Another Connect origin (the local stub the tests run). */
+  STRIPE_CONNECT_BASE: z.string().url().default('https://connect.stripe.com'),
+  /**
    * Calls (PRD §47): STUN servers that tell each side its public address, comma-separated.
    * Empty for none (then calls connect only on the same network).
    */

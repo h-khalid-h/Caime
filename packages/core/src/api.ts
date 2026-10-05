@@ -1958,6 +1958,30 @@ export interface IdResponse {
 export interface UrlResponse {
   url: string;
 }
+/**
+ * An organization's own checkout (R65), as its owner and admins see it: whether this Caime can
+ * connect one, and the account connected (its last four, never a key).
+ */
+export interface OrgCheckoutView {
+  available: boolean;
+  connected: {
+    provider: 'stripe';
+    account: string;
+    /** Stripe says it can take payments now (its owner finished Stripe's own setup). */
+    chargesEnabled: boolean;
+    /** Real money; false for a test account. */
+    live: boolean;
+    connectedAt: string;
+  } | null;
+}
+export interface OrgCheckoutResponse {
+  checkout: OrgCheckoutView;
+}
+/** What a Pay card's checkout is now, as Stripe says, with the card as it stands. */
+export interface CheckoutSettledResponse {
+  status: 'paid' | 'open' | 'expired' | 'none';
+  message: MessageView;
+}
 export interface HealthResponse {
   ok: boolean;
 }

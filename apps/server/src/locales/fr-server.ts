@@ -992,4 +992,20 @@ export const frServer: Catalog = {
     'Dans un groupe, demandez un paiement ; à deux, indiquez que vous payez.',
   'pays by': 'moyens de paiement',
   '{name}, for {org}': '{name}, pour {org}',
+  'That isn’t a Pay card.': 'Ce n’est pas une carte Payer.',
+  'This card isn’t paid by card.': 'Cette carte ne se règle pas par carte bancaire.',
+  'Only whoever pays it pays by card, while it isn’t paid.':
+    'Seul celui qui la règle peut payer par carte, tant qu’elle n’est pas payée.',
+  '{name} doesn’t take cards here any more.': '{name} n’accepte plus les cartes ici.',
+  'This card has no amount to pay by card.': 'Cette carte n’a pas de montant à régler par carte.',
+  'Payment to {name}': 'Paiement à {name}',
+  'Only the organization’s owner connects where its money goes.':
+    'Seul le propriétaire de l’organisation choisit où va son argent.',
+  'Paying by card here': 'Le paiement par carte ici',
+  'Payments are set by someone 18 or over.':
+    'Les paiements sont configurés par une personne de 18 ans ou plus.',
+  'Stripe can’t be asked right now': 'Stripe ne répond pas pour le moment',
+  'Only a person pays by card.': 'Seule une personne peut payer par carte.',
+  'Paying by card can’t start right now':
+    'Le paiement par carte ne peut pas démarrer pour le moment',
 };

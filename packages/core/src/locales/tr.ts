@@ -3165,4 +3165,26 @@ export const turkish: Catalog = {
   'Writing as': 'Kimin adına',
   'You write here for {name}: its payments go to its own ways to be paid.':
     'Burada {name} adına yazıyorsunuz: ona yapılan ödemeler kendi ödeme yöntemlerine gider.',
+  'Connected. Cards paid on Pay cards go to {name}’s Stripe account.':
+    'Bağlandı. Öde kartlarında kartla yapılan ödemeler {name} adlı kuruluşun Stripe hesabına gider.',
+  'Stripe didn’t connect. Try again, as the organization’s owner.':
+    'Stripe bağlanamadı. Kuruluşun sahibi olarak yeniden deneyin.',
+  'Card payments': 'Kartla ödeme',
+  'Connect {name}’s own Stripe account, and customers can pay its Pay cards by card. The money goes to that account; Caime takes nothing and never sees a card.':
+    '{name} kuruluşunun kendi Stripe hesabını bağlayın; müşteriler Öde kartlarını kartla ödeyebilsin. Para doğrudan o hesaba gider; Caime hiçbir pay almaz ve hiçbir kartı görmez.',
+  account: 'hesap',
+  cards: 'kartlar',
+  'Accepted now': 'Kabul ediliyor',
+  'Not yet: finish Stripe’s own setup': 'Henüz değil: Stripe’taki kurulumu tamamlayın',
+  mode: 'mod',
+  Test: 'Test',
+  'Connect Stripe': 'Stripe’ı bağla',
+  'Check again': 'Yeniden kontrol et',
+  Disconnect: 'Bağlantıyı kes',
+  'Only its owner connects where its money goes.':
+    'Paranın nereye gideceğini yalnızca kuruluşun sahibi belirler.',
+  'Paid. The card says so.': 'Ödendi. Kartta da öyle görünüyor.',
+  'Paid by card, through {name}’s own Stripe account':
+    '{name} kuruluşunun kendi Stripe hesabı üzerinden kartla ödendi',
+  'Pay by card': 'Kartla öde',
 };

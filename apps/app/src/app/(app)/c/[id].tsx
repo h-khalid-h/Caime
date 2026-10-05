@@ -2,13 +2,14 @@ import { useLocalSearchParams } from 'expo-router';
 import { ConversationScreen } from '@/features/conversation/ConversationScreen';
 
 export default function Conversation() {
-  const { id, seq, book, order, pay, item } = useLocalSearchParams<{
+  const { id, seq, book, order, pay, item, checkout } = useLocalSearchParams<{
     id: string;
     seq?: string;
     book?: string;
     order?: string;
     pay?: string;
     item?: string;
+    checkout?: string;
   }>();
   const focusSeq = seq && /^\d+$/.test(seq) ? Number(seq) : undefined;
   // `?book` (R58) and `?order` (R60): opened on that card's form; `?item` (R61) chosen in it.
@@ -27,6 +28,8 @@ export default function Conversation() {
       }
       // `?pay` (R62): the Pay card, paying them.
       kitStart={item ? { itemId: item } : pay !== undefined ? { direction: 'send' } : null}
+      // `?checkout` (R65): back from paying a Pay card by card.
+      checkout={checkout && /^[0-9a-f-]{36}$/i.test(checkout) ? checkout : null}
       key={`${id}:${seq ?? ''}`}
     />
   );

@@ -34,6 +34,8 @@ export type AuditAction =
   | 'org.closed'
   | 'org.booking_set'
   | 'org.booking_off'
+  | 'org.checkout_connected'
+  | 'org.checkout_removed'
   | 'account.booking_set'
   | 'account.booking_off'
   | 'org.exported'

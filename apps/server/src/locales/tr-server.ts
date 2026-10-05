@@ -944,4 +944,18 @@ export const turkishServer: Catalog = {
     'Grupta ödeme isteyebilirsiniz; “ödüyorum” demek yalnızca iki kişilik konuşmalarda olur.',
   'pays by': 'ödeme yolları',
   '{name}, for {org}': '{name}, {org} adına',
+  'That isn’t a Pay card.': 'Bu bir Öde kartı değil.',
+  'This card isn’t paid by card.': 'Bu kart kredi kartıyla ödenmiyor.',
+  'Only whoever pays it pays by card, while it isn’t paid.':
+    'Kartla ödemeyi yalnızca ödeyecek taraf, kart henüz ödenmemişken yapabilir.',
+  '{name} doesn’t take cards here any more.': '{name} artık burada kartla ödeme almıyor.',
+  'This card has no amount to pay by card.': 'Bu kartta kartla ödenecek bir tutar yok.',
+  'Payment to {name}': '{name} için ödeme',
+  'Only the organization’s owner connects where its money goes.':
+    'Paranın nereye gideceğini yalnızca kuruluşun sahibi belirler.',
+  'Paying by card here': 'Burada kartla ödeme',
+  'Payments are set by someone 18 or over.': 'Ödemeleri 18 yaşında veya daha büyük biri ayarlar.',
+  'Stripe can’t be asked right now': 'Stripe’a şu anda ulaşılamıyor',
+  'Only a person pays by card.': 'Kartla yalnızca bir kişi ödeyebilir.',
+  'Paying by card can’t start right now': 'Kartla ödeme şu anda başlatılamıyor',
 };

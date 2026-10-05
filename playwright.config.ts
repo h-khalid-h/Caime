@@ -22,6 +22,7 @@ const SMTP_PORT = Number(process.env.E2E_SMTP_PORT ?? 8825);
 const STRIPE_STUB = `http://127.0.0.1:${Number(process.env.E2E_STRIPE_STUB_PORT ?? 8796)}`;
 const STRIPE_KEY = 'sk_test_e2e_0123456789abcdef';
 const STRIPE_WEBHOOK_SECRET = 'whsec_e2e_0123456789abcdef';
+const STRIPE_CONNECT_WEBHOOK_SECRET = 'whsec_e2e_connect_0123456789';
 
 export default defineConfig({
   testDir: './e2e',
@@ -88,6 +89,8 @@ export default defineConfig({
             STRIPE_KEY,
             WEBHOOK_SECRET: STRIPE_WEBHOOK_SECRET,
             WEBHOOK_URL: `${BASE}/v1/billing/webhook`,
+            CONNECT_WEBHOOK_SECRET: STRIPE_CONNECT_WEBHOOK_SECRET,
+            CONNECT_WEBHOOK_URL: `${BASE}/v1/checkout/stripe/webhook`,
           },
         },
         {
@@ -124,6 +127,10 @@ export default defineConfig({
             STRIPE_SECRET_KEY: STRIPE_KEY,
             STRIPE_WEBHOOK_SECRET,
             STRIPE_API_BASE: STRIPE_STUB,
+            // An organization's own checkout (R65), through the same stand-in's Connect.
+            STRIPE_CONNECT_CLIENT_ID: 'ca_e2e_0123456789',
+            STRIPE_CONNECT_WEBHOOK_SECRET,
+            STRIPE_CONNECT_BASE: STRIPE_STUB,
           },
         },
       ],

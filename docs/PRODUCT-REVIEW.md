@@ -687,8 +687,8 @@ with its reason, so it isn't proposed again without new facts.
   Pay where a way is open to that reader (a public page names only the kinds, never an account).
   Person to person, person to organization and back are all here, and organization to
   organization since R64. Later layers: a payment
-  provider's checkout for an organization that wants one (its own account, Stripe Connect,
-  never Caime's), receipts from a paid card, a split's shares paid with the Pay card.
+  provider's checkout for an organization that wants one (R65), receipts from a paid card, a
+  split's shares paid with the Pay card.
 - **R63 — A photo for each thing offered.** An item keeps one photo its host uploaded, shown
   wherever the item is: its page (and every link preview and answer engine's picture of it), its
   sheet, a collection's list and the order picker. It's seen by whoever may see the item, and no
@@ -702,3 +702,14 @@ with its reason, so it isn't proposed again without new facts.
   through its ways for those it knows, under its name, never the person's own; an ask pays the
   team's organization as for any customer. Nothing else changes: it's a business conversation,
   masked as one (R15), with the same blocks, rules for under-18s and retention.
+- **R65 — An organization's own checkout.** An organization's owner connects its own Stripe
+  account (Stripe's own consent page; a Standard account, the organization's, never Caime's).
+  From then on a Pay card that pays the organization offers its payer **Pay by card**: Stripe's
+  page, made on the organization's account, for the card's amount and note; the money goes to the
+  organization and Caime takes nothing and never sees a card. Back in the conversation the card
+  says it's paid, and the team sees it paid without saying so: the server asks Stripe, when the
+  payer comes back and when Stripe's webhook names the card, and believes only Stripe's answer.
+  The ways it lists stay beside it (cash, a transfer). Only the owner connects or disconnects;
+  admins see whether it's connected and taking cards; an adult only. Off until the operator sets
+  Connect up on Caime's Stripe account (docs/DEPLOY.md), so nothing changes before then. Later:
+  refunds from the card, a receipt from a paid card, other providers behind the same card.

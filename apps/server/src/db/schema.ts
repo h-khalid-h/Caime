@@ -949,6 +949,26 @@ export interface WebhookDeliveriesTable {
   delivered_at: NullableTimestamp;
 }
 
+/** An organization's own payment provider account (R65). */
+export interface OrgCheckoutTable {
+  org_id: string;
+  provider: Generated<string>;
+  account_id: string;
+  livemode: boolean;
+  charges_enabled: Generated<boolean>;
+  connected_by: string | null;
+  connected_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+/** A connection under way: whose, for which organization, until when. */
+export interface CheckoutStatesTable {
+  token: string;
+  org_id: string;
+  user_id: string;
+  expires_at: Date;
+}
+
 export interface ServerSettingsTable {
   key: string;
   value: Json;
@@ -1065,6 +1085,8 @@ export interface Database {
   spaces: SpacesTable;
   space_members: SpaceMembersTable;
   organizations: OrganizationsTable;
+  org_checkout: OrgCheckoutTable;
+  checkout_states: CheckoutStatesTable;
   org_members: OrgMembersTable;
   business_threads: BusinessThreadsTable;
   org_apps: OrgAppsTable;

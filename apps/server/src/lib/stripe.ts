@@ -48,8 +48,11 @@ export interface Stripe {
   del<T>(path: string): Promise<T>;
 }
 
-/** Stripe, when a key is set; null otherwise. */
-export function stripe(ctx: AppContext): Stripe | null {
+/**
+ * Stripe, when a key is set; null otherwise. With `account`, every call acts on that connected
+ * account (R65, the `Stripe-Account` header): an organization's own, never Caime's.
+ */
+export function stripe(ctx: AppContext, account?: string): Stripe | null {
   const key = ctx.config.STRIPE_SECRET_KEY;
   if (!key) return null;
   const base = ctx.config.STRIPE_API_BASE.replace(/\/$/, '');
@@ -66,6 +69,7 @@ export function stripe(ctx: AppContext): Stripe | null {
       headers: {
         authorization: `Bearer ${key}`,
         'stripe-version': STRIPE_VERSION,
+        ...(account ? { 'stripe-account': account } : {}),
         ...(method === 'POST' ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
         ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}),
       },

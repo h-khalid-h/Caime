@@ -49,6 +49,7 @@ import {
   personHost,
 } from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
+import { checkoutAccountOf } from './checkout-account';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
@@ -350,6 +351,15 @@ async function payToFor(
       .executeTakeFirst();
   const shown = (name: string, settings: PaymentSettings | null, methods: PayTo['methods']) =>
     methods.length || settings?.note ? { name, methods, note: settings?.note ?? null } : null;
+  // An organization paid through its own checkout (R65) is payable by card, ways or none.
+  const withCheckout = async (
+    orgId: string,
+    payTo: PayTo | null,
+    name: string,
+  ): Promise<PayTo | null> => {
+    if (!(await checkoutAccountOf(ctx, orgId))) return payTo;
+    return { ...(payTo ?? { name, methods: [], note: null }), orgId, checkout: true };
+  };
   if (conversation.kind === 'business') {
     const mask = await customerMask(ctx.db, conversation.id);
     if (!mask) return null;
@@ -363,7 +373,11 @@ async function payToFor(
         .executeTakeFirst();
       if (!org) return null;
       const settings = paymentsOf(org);
-      return shown(org.name, settings, methodsFor(settings, { isConnected: true, spheres: [] }));
+      return withCheckout(
+        mask.orgId,
+        shown(org.name, settings, methodsFor(settings, { isConnected: true, spheres: [] })),
+        org.name,
+      );
     }
     // The customer's organization is paid (R64): its ways for those it knows.
     if (mask.customerOrgId) {
@@ -374,7 +388,11 @@ async function payToFor(
         .executeTakeFirst();
       if (!theirs) return null;
       const settings = paymentsOf(theirs);
-      return shown(theirs.name, settings, methodsFor(settings, { isConnected: true, spheres: [] }));
+      return withCheckout(
+        mask.customerOrgId,
+        shown(theirs.name, settings, methodsFor(settings, { isConnected: true, spheres: [] })),
+        theirs.name,
+      );
     }
     // The customer is paid (a refund): only their ways for everyone.
     const c = await person(mask.customerId);

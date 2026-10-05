@@ -38,7 +38,7 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
     name: 'Stripe Payments Europe, Ltd.',
     does: 'Processes payments for paid plans.',
     receives:
-      'Your name and email address (for an organization, its name and its owner’s email), your plan, and what you paid; your card details reach Stripe alone, never Caime.',
+      'Your name and email address (for an organization, its name and its owner’s email), your plan, and what you paid; your card details reach Stripe alone, never Caime. When you pay an organization by card on its own Stripe account, Stripe processes it for that organization: Caime sends the amount and the card’s note, and Caime takes nothing.',
     when: 'used',
   },
   {

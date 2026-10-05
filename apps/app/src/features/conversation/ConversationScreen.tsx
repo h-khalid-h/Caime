@@ -38,7 +38,13 @@ import type { KitChoice, KitStart } from '@/features/kits/KitForm';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { leftConversation } from '@/realtime/apply';
-import { flatMessages, type MessagePages, markInboxRead, maxSeq } from '@/state/cache';
+import {
+  flatMessages,
+  type MessagePages,
+  markInboxRead,
+  maxSeq,
+  upsertMessage,
+} from '@/state/cache';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
 import { useMe } from '@/state/session';
@@ -93,9 +99,12 @@ export function ConversationScreen({
   focusSeq,
   openKit = null,
   kitStart = null,
+  checkout = null,
 }: {
   id: string;
   focusSeq?: number;
+  /** Back from paying a Pay card by card (R65): that card, to ask Stripe about. */
+  checkout?: string | null;
   /** Opened on a card's form: a Book or an Order link (R58, R60). */
   openKit?: KitChoice | null;
   /** What that form starts with: the item chosen (R61). */
@@ -135,6 +144,21 @@ export function ConversationScreen({
   );
 
   useEffect(() => setPanel(wide), [wide]);
+
+  // Back from the organization's Stripe page (R65): what Stripe says now, once, on the card.
+  const checked = useRef(false);
+  useEffect(() => {
+    if (!checkout || checked.current) return;
+    checked.current = true;
+    void endpoints
+      .checkCheckout(checkout)
+      .then((res) => {
+        upsertMessage(qc, res.message);
+        if (res.status === 'paid') toast(tr('Paid. The card says so.'));
+      })
+      .catch((e) => toast((e as Error).message, { tone: 'danger' }))
+      .finally(() => router.setParams({ checkout: undefined }));
+  }, [checkout, qc]);
 
   // Where "new messages" starts, and how many: taken from the first fresh copy of the
   // conversation (a copy restored on the device can be behind), then fixed, so the line doesn't

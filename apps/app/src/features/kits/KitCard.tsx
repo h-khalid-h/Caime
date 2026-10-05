@@ -1,5 +1,6 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
 import type { AppointmentBooking, PlacedOrder } from '@caime/core/booking';
+import type { CardCheckout } from '@caime/core/checkout';
 import { customDetails, customMoves, customState, isCustomCard } from '@caime/core/custom-kits';
 import { formatDue } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -13,7 +14,7 @@ import {
   orderDetails,
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
-import { PAYMENT_KIND_LABELS, type PayTo } from '@caime/core/payments';
+import { PAYMENT_KIND_LABELS, type PayTo, senderPays } from '@caime/core/payments';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -21,7 +22,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useCardAction } from '@/features/conversation/cardActions';
 import { copyText } from '@/lib/clipboard';
-import { openLink } from '@/lib/links';
+import { leaveFor, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { upsertMessage } from '@/state/cache';
 import { useSession } from '@/state/session';
@@ -53,18 +54,57 @@ interface CardPayload {
   payee?: { kind: 'org' | 'person'; id: string } | null;
   /** A Pay card's payee and the ways the payer may see (R62). */
   payTo?: PayTo | null;
+  /** Its checkout on the organization's own account (R65), as Stripe last said. */
+  checkout?: CardCheckout | null;
+  history?: unknown[];
 }
 
 /**
  * A Pay card's payee and their ways (R62), as the server fixed them: what to copy, a link to
  * open. Nothing here moves money; the buttons below say what happened.
  */
-function PayToBlock({ to }: { to: PayTo }) {
+function PayToBlock({
+  to,
+  messageId,
+  byCard,
+  paidByCard,
+}: {
+  to: PayTo;
+  messageId: string;
+  /** This reader pays it, and may pay by card now (R65). */
+  byCard: boolean;
+  paidByCard: boolean;
+}) {
+  const [opening, setOpening] = useState(false);
+  // On the organization's own Stripe page; the conversation checks what Stripe says on return.
+  const payByCard = async () => {
+    setOpening(true);
+    try {
+      leaveFor((await endpoints.payByCard(messageId)).url);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setOpening(false);
+    }
+  };
   return (
     <View style={{ gap: 6 }} testID="pay-to">
       <Text variant="caption" color="textSecondary">
         {tr('To {name}', { name: to.name })}
       </Text>
+      {paidByCard ? (
+        <Text variant="captionStrong" color="success" testID="pay-paid-by-card">
+          {tr('Paid by card, through {name}’s own Stripe account', { name: to.name })}
+        </Text>
+      ) : byCard ? (
+        <Button
+          label={tr('Pay by card')}
+          size="sm"
+          loading={opening}
+          onPress={() => void payByCard()}
+          testID="pay-by-card"
+        />
+      ) : null}
       {to.note ? (
         <Text variant="caption" color="textSecondary" auto>
           {to.note}
@@ -218,6 +258,9 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
           }),
       }
     : null;
+  // In a conversation with an organization, the team is one side: anyone on it moves a card
+  // the team sent, as the server has it.
+  const senderSide = mine || Boolean(thread?.customer && m.senderId !== thread.customer.id);
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
   if (kit === 'split') return <SplitCard m={m} mine={mine} />;
   // Agreed and ahead (R58): what to know before it, from the card.
@@ -243,19 +286,27 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       ]}
       before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
       action={pay}
-      extra={kit === 'payment_request' && p.payTo ? <PayToBlock to={p.payTo} /> : null}
+      extra={
+        kit === 'payment_request' && p.payTo ? (
+          <PayToBlock
+            to={p.payTo}
+            messageId={m.id}
+            byCard={Boolean(
+              p.payTo.checkout &&
+                !m.deletedAt &&
+                // Its payer: the other side of an ask, the sender of a send (as the server has it).
+                (senderPays(p.fields) ? senderSide : !senderSide) &&
+                (state === 'requested' ||
+                  state === 'not_received' ||
+                  (state === 'sent' && senderPays(p.fields) && !p.history?.length)),
+            )}
+            paidByCard={p.checkout?.status === 'paid'}
+          />
+        ) : null
+      }
       // In a conversation with an organization, the team is one side: anyone on it moves a card
       // the team sent, as the server has it.
-      moves={
-        m.deletedAt
-          ? []
-          : kitMoves(
-              kit,
-              state,
-              mine || Boolean(thread?.customer && m.senderId !== thread.customer.id),
-              p.fields,
-            )
-      }
+      moves={m.deletedAt ? [] : kitMoves(kit, state, senderSide, p.fields)}
       testID={`kit-${kit}`}
     />
   );

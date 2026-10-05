@@ -1054,8 +1054,20 @@ listed there with its owner.
       inbox row), the writer `business.asOrg` ("As …", inbox "…, for …"), and a Pay card the team
       sends pays the writing organization through its ways for those it knows (`payToFor`).
       OrgScreen's "Writing as" chips. `org-payments.test.ts`, `e2e/org-to-org.spec.ts`.
-- [ ] Later layers of R62: an organization's own checkout through its own provider account, a
-      receipt from a paid card, a split's shares paid with Pay.
+- [x] R65: an organization's own checkout: its owner connects its own Stripe account (Connect
+      OAuth, `org_checkout`, a one-time `checkout_states` row per consent), a Pay card the
+      organization is paid by carries `payTo.checkout`, its payer opens a Checkout Session on the
+      organization's account (`Stripe-Account`, no fee) from **Pay by card**, and the card is
+      marked paid only from Stripe's answer (`settleCheckout`: the payer's return and the Connect
+      webhook). Setup's Card payments section (owner connects or disconnects, admins see).
+      `checkout.test.ts` (server, against `stripe-connect-stub.ts`), `checkout.test.ts` (core),
+      `e2e/checkout.spec.ts` against the stand-in's Connect.
+- [ ] ⛔ R65 in production: Connect turned on for Caime's live Stripe account, the redirect URI and
+      the Connect webhook endpoint added, `STRIPE_CONNECT_CLIENT_ID` and
+      `STRIPE_CONNECT_WEBHOOK_SECRET` set in EasyPanel. Needs the owner of the live Stripe account
+      (docs/DEPLOY.md). Until then nothing offers it.
+- [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
+      split's shares paid with Pay.
 - [x] R63: an item's photo: `BookingItem.photoFileId`, set only to an image its saver uploaded
       (`assertItemPhotos`), served by `/v1/{orgs,people}/:id/items/:itemId/photo` to whoever may
       see the item (anyone for a public one), addressed by core `itemPhotoPath`; on the item's
@@ -2121,6 +2133,9 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-05 — R65: an organization's own checkout through its own Stripe account (Connect),
+  verified against stand-ins on the server and end to end; off in production until the owner
+  turns Connect on for the live account.
 - 2026-10-05 — R64: organizations write to and pay each other: "Writing as" on an
   organization's page, the other team sees whom it answers, and Pay goes to the writing
   organization's own ways.

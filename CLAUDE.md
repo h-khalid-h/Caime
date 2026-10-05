@@ -475,6 +475,17 @@ These are rules, not preferences.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
+- An organization's own checkout (R65, `lib/checkout.ts`, `modules/checkout.ts`): Stripe Connect
+  with the platform's key and `Stripe-Account` (`stripe(ctx, account)`), never a second Stripe
+  client. Its owner connects through `connectUrl` (a one-time `checkout_states` token) and the
+  return route `finishConnect`; whether an organization takes cards is `checkoutAccountOf`
+  (`lib/checkout-account.ts`, apart so the message path needn't import the checkout), which
+  `payToFor` reads to put `orgId` and `checkout: true` on `PayTo`. A card is paid only through
+  `settleCheckout`, which asks Stripe about the card's own session; the webhook and the payer's
+  return (`/c/<id>?checkout=<messageId>`) both call it, and nothing reads an event's copy.
+  Amounts go to Stripe through core `chargeUnits`. Tests run `test/stripe-connect-stub.ts`; the
+  E2E stand-in (`e2e/stripe-stub.mjs`) is Connect too. A provider page is left for in the same
+  tab on the web (`leaveFor`, `lib/links.ts`), so its return lands where it was asked from.
 - Organizations to organizations (R64): a business thread's `customer_org_id` is the
   organization its customer writes for (set at the start, `asOrgId`, its owner or admins only;
   one thread per organization, person and writing-as, null for themselves), carried on

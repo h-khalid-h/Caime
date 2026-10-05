@@ -3285,4 +3285,26 @@ export const fr: Catalog = {
   'Writing as': 'Écrire en tant que',
   'You write here for {name}: its payments go to its own ways to be paid.':
     'Vous écrivez ici pour {name} : ses paiements arrivent sur ses propres moyens de paiement.',
+  'Connected. Cards paid on Pay cards go to {name}’s Stripe account.':
+    'Connecté. Les paiements par carte des cartes Payer arrivent sur le compte Stripe de {name}.',
+  'Stripe didn’t connect. Try again, as the organization’s owner.':
+    'La connexion à Stripe a échoué. Réessayez en tant que propriétaire de l’organisation.',
+  'Card payments': 'Paiement par carte',
+  'Connect {name}’s own Stripe account, and customers can pay its Pay cards by card. The money goes to that account; Caime takes nothing and never sees a card.':
+    'Connectez le compte Stripe de {name} : ses clients pourront régler ses cartes Payer par carte bancaire. L’argent arrive sur ce compte ; Caime ne prélève rien et ne voit jamais aucune carte.',
+  account: 'compte',
+  cards: 'cartes',
+  'Accepted now': 'Acceptées',
+  'Not yet: finish Stripe’s own setup': 'Pas encore : terminez la configuration chez Stripe',
+  mode: 'mode',
+  Test: 'Test',
+  'Connect Stripe': 'Connecter Stripe',
+  'Check again': 'Vérifier à nouveau',
+  Disconnect: 'Déconnecter',
+  'Only its owner connects where its money goes.':
+    'Seul son propriétaire choisit où va son argent.',
+  'Paid. The card says so.': 'Payé. La carte l’indique.',
+  'Paid by card, through {name}’s own Stripe account':
+    'Payé par carte, via le compte Stripe de {name}',
+  'Pay by card': 'Payer par carte',
 };

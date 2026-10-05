@@ -47,6 +47,10 @@ export interface PayTo {
   name: string;
   methods: Array<Omit<PaymentMethod, 'audience'>>;
   note: string | null;
+  /** The organization paid, when it's one. */
+  orgId?: string;
+  /** The payee is an organization with its own checkout (R65): the payer may pay by card. */
+  checkout?: boolean;
 }
 
 /** Which way a Pay card goes: the sender asks to be paid, or says they're paying. */

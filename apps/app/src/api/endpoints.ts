@@ -25,6 +25,7 @@ import type {
   CalendarView,
   CallHistoryResponse,
   CallResponse,
+  CheckoutSettledResponse,
   CollectionRenamedResponse,
   ConnectedAppsResponse,
   ConnectionRequestsResponse,
@@ -77,6 +78,7 @@ import type {
   OrgAppSecretsView,
   OrgAppsResponse,
   OrgCalendarView,
+  OrgCheckoutResponse,
   OrgConversationResponse,
   OrgDoorView,
   OrgExportView,
@@ -457,6 +459,15 @@ export const endpoints = {
       `/orgs/${orgId}/conversations`,
       asOrgId ? { asOrgId } : undefined,
     ),
+  // An organization's own checkout (R65): connected by its owner, paid into by card
+  orgCheckout: (orgId: string) => api.get<OrgCheckoutResponse>(`/orgs/${orgId}/checkout`),
+  connectCheckout: (orgId: string) => api.post<UrlResponse>(`/orgs/${orgId}/checkout/connect`),
+  refreshCheckout: (orgId: string) =>
+    api.post<OrgCheckoutResponse>(`/orgs/${orgId}/checkout/refresh`),
+  disconnectCheckout: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/checkout`),
+  payByCard: (messageId: string) => api.post<UrlResponse>(`/messages/${messageId}/checkout`),
+  checkCheckout: (messageId: string) =>
+    api.post<CheckoutSettledResponse>(`/messages/${messageId}/checkout/check`),
   // Personal access tokens (PRD §74): made and revoked only while signed in
   tokens: () => api.get<PersonalTokensResponse>('/me/tokens'),
   createToken: (body: { name: string; scopes: string[]; days: 30 | 90 | 365 | null }) =>

@@ -955,4 +955,18 @@ export const arServer: Catalog = {
     'في المجموعة، اطلب أن يُدفع لك؛ أما في محادثة بين اثنين فقل إنك تدفع.',
   'pays by': 'الدفع عبر',
   '{name}, for {org}': '{name}، باسم {org}',
+  'That isn’t a Pay card.': 'هذه ليست بطاقة دفع.',
+  'This card isn’t paid by card.': 'هذه البطاقة لا تُدفع بالبطاقة المصرفية.',
+  'Only whoever pays it pays by card, while it isn’t paid.':
+    'الدفع بالبطاقة متاح لمن عليه الدفع فقط، ما دامت لم تُدفع بعد.',
+  '{name} doesn’t take cards here any more.': 'لم تعد {name} تقبل الدفع بالبطاقة هنا.',
+  'This card has no amount to pay by card.': 'لا يوجد في هذه البطاقة مبلغ يمكن دفعه بالبطاقة.',
+  'Payment to {name}': 'دفعة إلى {name}',
+  'Only the organization’s owner connects where its money goes.':
+    'مالك المؤسسة وحده يحدد أين تذهب أموالها.',
+  'Paying by card here': 'الدفع بالبطاقة هنا',
+  'Payments are set by someone 18 or over.': 'يضبط المدفوعاتِ من بلغ 18 عامًا أو أكثر.',
+  'Stripe can’t be asked right now': 'تعذّر التواصل مع Stripe الآن',
+  'Only a person pays by card.': 'الدفع بالبطاقة لشخص فقط، لا لتطبيق.',
+  'Paying by card can’t start right now': 'تعذّر بدء الدفع بالبطاقة الآن',
 };

@@ -3,7 +3,9 @@
  * STRIPE_API_BASE. It answers the API calls billing makes (prices, customers, Checkout and portal
  * sessions, subscriptions), and serves a Checkout page and a portal page a test clicks through.
  * Paying or cancelling there sends the server the event Stripe would, signed with the webhook
- * secret, and then goes back where Stripe would.
+ * secret, and then goes back where Stripe would. For an organization's own checkout (R65) it is
+ * Connect too: a consent page that connects an account, the token exchange, the account, and a
+ * card payment page for a session made on that account, which tells the Connect endpoint.
  */
 import { createHmac } from 'node:crypto';
 import { createServer } from 'node:http';
@@ -13,6 +15,9 @@ const origin = `http://127.0.0.1:${port}`;
 const KEY = process.env.STRIPE_KEY ?? 'sk_test_e2e_0123456789abcdef';
 const SECRET = process.env.WEBHOOK_SECRET ?? 'whsec_e2e_0123456789abcdef';
 const WEBHOOK = process.env.WEBHOOK_URL ?? 'http://localhost:8787/v1/billing/webhook';
+const CONNECT_SECRET = process.env.CONNECT_WEBHOOK_SECRET ?? 'whsec_e2e_connect_0123456789';
+const CONNECT_WEBHOOK =
+  process.env.CONNECT_WEBHOOK_URL ?? 'http://localhost:8787/v1/checkout/stripe/webhook';
 
 const PRICES = [
   ['price_pro_m', 'caishy_pro_month', 600],
@@ -37,18 +42,39 @@ const customers = new Map();
 const byIdempotency = new Map();
 const sessions = new Map();
 const subscriptions = new Map();
+// Connect (R65): accounts, the codes the consent page hands back, and sessions made on accounts.
+const accounts = new Map();
+const codes = new Map();
+const payments = new Map();
 
-async function tell(type, object) {
-  const body = JSON.stringify({ id: next('evt'), object: 'event', type, data: { object } });
+async function tell(type, object, connect = null) {
+  const body = JSON.stringify({
+    id: next('evt'),
+    object: 'event',
+    type,
+    ...(connect ? { account: connect } : {}),
+    data: { object },
+  });
   const t = Math.floor(Date.now() / 1000);
-  const v1 = createHmac('sha256', SECRET).update(`${t}.${body}`).digest('hex');
-  const res = await fetch(WEBHOOK, {
+  const v1 = createHmac('sha256', connect ? CONNECT_SECRET : SECRET)
+    .update(`${t}.${body}`)
+    .digest('hex');
+  const res = await fetch(connect ? CONNECT_WEBHOOK : WEBHOOK, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'stripe-signature': `t=${t},v1=${v1}` },
     body,
   });
   if (!res.ok) console.error(`webhook ${type}: ${res.status} ${await res.text()}`);
 }
+
+const sessionOf = (s) => ({
+  id: s.id,
+  object: 'checkout.session',
+  status: s.status,
+  payment_status: s.payment_status,
+  metadata: s.metadata,
+  url: s.status === 'open' ? `${origin}/pay/${s.id}` : null,
+});
 
 const page = (title, body) =>
   `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="font-family:sans-serif;max-width:420px;margin:48px auto">${body}</body></html>`;
@@ -72,6 +98,43 @@ const server = createServer(async (req, res) => {
     res.end();
   };
   if (path === '/health') return json(200, { ok: true });
+
+  // Connect's consent page (R65): allowing it makes an account and goes back with a code.
+  if (path === '/oauth/authorize')
+    return html(
+      page(
+        'Connect',
+        `<h1>Connect ${url.searchParams.get('stripe_user[business_name]') ?? ''} to Caime</h1><form method="post" action="/oauth/authorize/allow?${url.searchParams}"><button type="submit">Connect my Stripe account</button></form>`,
+      ),
+    );
+  if (path === '/oauth/authorize/allow') {
+    const account = next('acct');
+    accounts.set(account, { chargesEnabled: true });
+    const code = next('ac');
+    codes.set(code, account);
+    const back = new URL(url.searchParams.get('redirect_uri') ?? '/');
+    back.searchParams.set('code', code);
+    back.searchParams.set('state', url.searchParams.get('state') ?? '');
+    return redirect(back.toString());
+  }
+  // Paying a session made on an organization's account, by card.
+  const pay = /^\/pay\/(\w+)(\/done)?$/.exec(path);
+  if (pay) {
+    const s = payments.get(pay[1]);
+    if (!s) return json(404, { error: 'No such session' });
+    if (s.status !== 'open') return html(page('Pay', `<h1>This checkout has ${s.status}.</h1>`));
+    if (!pay[2])
+      return html(
+        page(
+          'Pay',
+          `<h1>${s.name}</h1><p>${s.amount} ${s.currency.toUpperCase()}</p><form method="post" action="/pay/${s.id}/done"><button type="submit">Pay by card</button></form>`,
+        ),
+      );
+    s.status = 'complete';
+    s.payment_status = 'paid';
+    await tell('checkout.session.completed', sessionOf(s), s.account);
+    return redirect(s.success_url);
+  }
 
   // The pages a person clicks through.
   const checkout = /^\/checkout\/(\w+)(\/pay)?$/.exec(path);
@@ -204,6 +267,48 @@ const server = createServer(async (req, res) => {
     if (!x) return missing('checkout session');
     if (x.status === 'open') x.status = 'expired';
     return json(200, { id: x.id, object: 'checkout.session', status: x.status });
+  }
+  // Connect (R65): the token exchange, the account, and sessions made on it.
+  if (req.method === 'POST' && path === '/oauth/token') {
+    const account = codes.get(params.get('code'));
+    if (!account) return json(400, { error: 'invalid_grant', error_description: 'Bad code.' });
+    codes.delete(params.get('code'));
+    return json(200, { stripe_user_id: account, livemode: false, scope: 'read_write' });
+  }
+  if (req.method === 'POST' && path === '/oauth/deauthorize')
+    return json(200, { stripe_user_id: params.get('stripe_user_id') });
+  const acct = /^\/v1\/accounts\/(\w+)$/.exec(path);
+  if (req.method === 'GET' && acct) {
+    const a = accounts.get(acct[1]);
+    if (!a) return missing('account');
+    return json(200, { id: acct[1], object: 'account', charges_enabled: a.chargesEnabled });
+  }
+  const on = req.headers['stripe-account'];
+  if (on) {
+    if (!accounts.has(on)) return missing('account');
+    if (req.method === 'POST' && path === '/v1/checkout/sessions') {
+      const id = next('cs');
+      const metadata = {};
+      for (const [k, v] of params) if (k.startsWith('metadata[')) metadata[k.slice(9, -1)] = v;
+      payments.set(id, {
+        id,
+        account: on,
+        status: 'open',
+        payment_status: 'unpaid',
+        name: params.get('line_items[0][price_data][product_data][name]'),
+        amount: params.get('line_items[0][price_data][unit_amount]'),
+        currency: params.get('line_items[0][price_data][currency]'),
+        metadata,
+        success_url: params.get('success_url'),
+      });
+      return json(200, sessionOf(payments.get(id)));
+    }
+    const one = /^\/v1\/checkout\/sessions\/(\w+)$/.exec(path);
+    if (req.method === 'GET' && one) {
+      const s = payments.get(one[1]);
+      if (!s || s.account !== on) return missing('checkout session');
+      return json(200, sessionOf(s));
+    }
   }
   if (req.method === 'POST' && path === '/v1/checkout/sessions') {
     const of = customers.get(params.get('customer'));

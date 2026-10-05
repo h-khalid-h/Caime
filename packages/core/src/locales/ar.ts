@@ -3288,4 +3288,25 @@ export const ar: Catalog = {
   'Writing as': 'الكتابة باسم',
   'You write here for {name}: its payments go to its own ways to be paid.':
     'تكتب هنا باسم {name}: ما يُدفع لها يصل إلى طرق الدفع الخاصة بها.',
+  'Connected. Cards paid on Pay cards go to {name}’s Stripe account.':
+    'تم الربط. ما يُدفع بالبطاقة على بطاقات الدفع يصل إلى حساب Stripe الخاص بـ{name}.',
+  'Stripe didn’t connect. Try again, as the organization’s owner.':
+    'لم يتم الربط مع Stripe. أعد المحاولة بصفتك مالك المؤسسة.',
+  'Card payments': 'الدفع بالبطاقة',
+  'Connect {name}’s own Stripe account, and customers can pay its Pay cards by card. The money goes to that account; Caime takes nothing and never sees a card.':
+    'اربط حساب Stripe الخاص بـ{name}، ليتمكن العملاء من دفع بطاقات الدفع ببطاقاتهم. يصل المال إلى ذلك الحساب مباشرة؛ لا يأخذ Caime شيئًا ولا يرى أي بطاقة.',
+  account: 'الحساب',
+  cards: 'البطاقات',
+  'Accepted now': 'مقبولة الآن',
+  'Not yet: finish Stripe’s own setup': 'ليس بعد: أكمل الإعداد لدى Stripe',
+  mode: 'الوضع',
+  Test: 'تجريبي',
+  'Connect Stripe': 'اربط Stripe',
+  'Check again': 'تحقّق مجددًا',
+  Disconnect: 'افصل الربط',
+  'Only its owner connects where its money goes.': 'مالك المؤسسة وحده يحدد أين تذهب أموالها.',
+  'Paid. The card says so.': 'تم الدفع، والبطاقة تُظهر ذلك.',
+  'Paid by card, through {name}’s own Stripe account':
+    'دُفع بالبطاقة عبر حساب Stripe الخاص بـ{name}',
+  'Pay by card': 'ادفع بالبطاقة',
 };

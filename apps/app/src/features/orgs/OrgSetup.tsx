@@ -22,6 +22,7 @@ import { Text } from '@/ui/Text';
 import { OrgAgent } from './OrgAgent';
 import { OrgApps } from './OrgApps';
 import { OrgBooking } from './OrgBooking';
+import { OrgCheckout } from './OrgCheckout';
 import { OrgData } from './OrgData';
 import { OrgDoor } from './OrgDoor';
 import { OrgPlan } from './OrgPlan';
@@ -98,6 +99,9 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
           <OrgData org={org} refresh={put} />
         </View>
         <OrgBooking org={org} />
+        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+          <OrgCheckout org={org} />
+        </View>
         <OrgAgent org={org} />
         <OrgApps org={org} />
         {org.plan ? (

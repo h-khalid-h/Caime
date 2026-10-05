@@ -56,6 +56,15 @@ export function opensWithEnter(open: () => void): object {
 }
 
 /** Open a link, asking first when the server flagged it as unusual (link safety, PRD §60). */
+/**
+ * To a payment provider's own page (Stripe's Checkout, its portal, its consent page): in this
+ * tab on the web, so its return lands back where it was asked from; the browser on a phone.
+ */
+export function leaveFor(url: string): void {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.assign(url);
+  else void Linking.openURL(url).catch(() => {});
+}
+
 export function openLink(url: string, suspicious = false): void {
   // A link to Caime itself (someone's @handle) opens here, not in another tab.
   const own = ownLinkPath(url, WEB_URL);
