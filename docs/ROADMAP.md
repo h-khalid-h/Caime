@@ -2139,8 +2139,8 @@ listed there with its owner.
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
 - 2026-10-05 — R66: the design brainstorm checked (Attention home, quiet intelligence, the
-  relationship's effects adopted; the name "Cai" and the boards' colours not, per R34 and
-  BRAND.md).
+  relationship's effects adopted; "Cai" adopted as Caime's short name where the intelligence is
+  asked for, amending R34; the boards' colours and mark not, per BRAND.md).
 - 2026-10-05 — R65: an organization's own checkout through its own Stripe account (Connect),
   verified against stand-ins on the server and end to end; off in production until the owner
   turns Connect on for the live account.

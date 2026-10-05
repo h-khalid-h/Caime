@@ -232,7 +232,8 @@ with its reason, so it isn't proposed again without new facts.
   voice, and the characters with their names, including Caishy *The Dreamer*, who keeps leading
   the Caishy Friends stickers, a mascot with a name of its own as Duolingo's is Duo. The assistant
   gets no human name ("Cai"): a person's name on an AI blurs the line §75 keeps sharp, and Cai is
-  also people's name (a Welsh given name, a common Chinese surname).
+  also people's name (a Welsh given name, a common Chinese surname). *Amended by R66:* "Cai" is used as
+  Caime's short name (not a persona's) where the intelligence is asked for.
 - **R35 — A link people can say: `cai.me/@handle`.** Every person and organization has one, for a
   card, an email signature or a QR code. It opens their public profile on the web, or the app
   where it's installed (universal links on iOS, app links on Android), and survives sign-up as
@@ -732,10 +733,17 @@ with its reason, so it isn't proposed again without new facts.
     "Only you see this". Read from the policy the label resolves to, never invented.
   - **Uncertainty is said.** "I couldn't find a reply" is never turned into "it didn't happen":
     waiting items that have aged say so and offer "Still waiting · Resolved · Not relevant".
+  - **"Cai", the short name for Caime.** The owner's clarification: Cai isn't a persona's name
+    but Caime shortened, as the address is `cai.me`. This amends R34, whose objection was to a
+    human name on the AI; a short form of the product's own name, shown with the product's own
+    mark, doesn't put a person's name on it. It's used only where the intelligence is asked for
+    or speaks up ("Ask Cai", "Catch me up", a suggestion's "Cai noticed"), in the plum and pink
+    of the brand, never a colour or mark of its own, and it never talks as if it were someone
+    ("Cai noticed", not "I noticed"). Where an organization's customers meet AI, its agent keeps
+    an explicit identity, the agent's name with "AI agent" (PRD §75), so nobody takes it for a
+    person. `@cai` stays reserved (R34). Most of the intelligence carries no label at all: the
+    ordering of Attention, the open strip, the relationship's effects.
   Not adopted, with the reason:
-  - **The name "Cai".** R34 decided the assistance layer has no human name; the brainstorm's
-    own rule ("intelligence should be quiet", "no AI label") argues the same way. What the
-    boards call Cai stays "Caime" where it must be named ("Ask Caime", "Catch me up").
   - **The boards' visual system.** They were generated: a blue-violet accent, an asterisk mark
     and a "Cai" colour are not Caime's. The brand stays as BRAND.md has it (the plum ink, the
     pink heart, the characters on two intensities, B2). The boards' calm spacing, fewer
