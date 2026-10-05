@@ -14,6 +14,7 @@ import {
   RegisterRecoveryBody,
   RestoreDeviceBody,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     // A token or an app acts for someone; it never reads their private conversations.
     if (auth.kind !== 'web' && auth.kind !== 'native')
-      throw forbidden('Only a device signed in to Caime reads private conversations.');
+      throw forbidden(tr('Only a device signed in to Caime reads private conversations.'));
     return auth;
   };
   const myView = (d: LiveDevice, sessionId: string): MyDeviceView => ({
@@ -78,7 +79,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
         throw new AppError(
           409,
           'not_resumable',
-          'This device can’t pick up where it left off: it registers afresh.',
+          tr('This device can’t pick up where it left off: it registers afresh.'),
         );
       await ctx.db.transaction().execute(async (trx) => {
         await trx
@@ -97,7 +98,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       await audit(ctx.db, { actorId: auth.userId, action: 'e2ee.device_resumed', target: kept.id });
       await tellDevicesChanged(auth.userId, true);
       const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === kept.id);
-      if (!device) throw notFound('That device');
+      if (!device) throw notFound(tr('That device'));
       return { device };
     }
     const live = await liveDevicesOf(ctx, [auth.userId], { waiting: true });
@@ -106,14 +107,17 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         409,
         'too_many_devices',
-        `Private conversations open on up to ${MAX_DEVICES} devices: remove one in Settings first.`,
+        tr(
+          'Private conversations open on up to {MAX_DEVICES} devices: remove one in Settings first.',
+          { MAX_DEVICES },
+        ),
       );
     const taken = await ctx.db
       .selectFrom('e2ee_devices')
       .select('id')
       .where('id', '=', body.id)
       .executeTakeFirst();
-    if (taken) throw new AppError(409, 'device_exists', 'That device is registered already.');
+    if (taken) throw new AppError(409, 'device_exists', tr('That device is registered already.'));
     const first = body.startOver === true || !others.some((d) => d.approved);
     const replaced = live.find((d) => d.sessionId === auth.sessionId);
     await ctx.db.transaction().execute(async (trx) => {
@@ -153,7 +157,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     await tellDevicesChanged(auth.userId, first || Boolean(replaced?.approved));
     reply.status(201);
     const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === body.id);
-    if (!device) throw notFound('That device');
+    if (!device) throw notFound(tr('That device'));
     return { device };
   });
 
@@ -186,9 +190,11 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const by = live.find((d) => d.sessionId === auth.sessionId && d.approved);
     if (!by)
       throw forbidden(
-        'Approve it from a device that reads your private conversations already: this one doesn’t yet.',
+        tr(
+          'Approve it from a device that reads your private conversations already: this one doesn’t yet.',
+        ),
       );
-    if (!live.some((d) => d.id === id && !d.approved)) throw notFound('That device');
+    if (!live.some((d) => d.id === id && !d.approved)) throw notFound(tr('That device'));
     const done = await ctx.db
       .updateTable('e2ee_devices')
       .set({ introduced_by: by.id, introduction: body.introduction, approved_at: ctx.now() })
@@ -198,7 +204,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .returning('id')
       .executeTakeFirst();
-    if (!done) throw notFound('That device');
+    if (!done) throw notFound(tr('That device'));
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'e2ee.device_approved',
@@ -207,7 +213,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     await tellDevicesChanged(auth.userId, true);
     const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === id);
-    if (!device) throw notFound('That device');
+    if (!device) throw notFound(tr('That device'));
     return { device };
   });
 
@@ -224,14 +230,16 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const by = live.find((d) => d.sessionId === auth.sessionId && d.approved);
     if (!by)
       throw forbidden(
-        'Make a recovery key on a device that reads your private conversations already: this one doesn’t yet.',
+        tr(
+          'Make a recovery key on a device that reads your private conversations already: this one doesn’t yet.',
+        ),
       );
     const taken = await ctx.db
       .selectFrom('e2ee_devices')
       .select('id')
       .where('id', '=', body.id)
       .executeTakeFirst();
-    if (taken) throw new AppError(409, 'device_exists', 'That key was used already.');
+    if (taken) throw new AppError(409, 'device_exists', tr('That key was used already.'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('e2ee_devices')
@@ -266,7 +274,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     await tellDevicesChanged(auth.userId, true);
     reply.status(201);
     const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === body.id);
-    if (!device) throw notFound('That device');
+    if (!device) throw notFound(tr('That device'));
     return { device };
   });
 
@@ -281,9 +289,9 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(RestoreDeviceBody, req.body);
     const live = await liveDevicesOf(ctx, [auth.userId], { waiting: true });
     const recovery = live.find((d) => d.recovery);
-    if (!recovery) throw notFound('A recovery key for your account');
+    if (!recovery) throw notFound(tr('A recovery key for your account'));
     const me = live.find((d) => d.id === id && d.sessionId === auth.sessionId && !d.approved);
-    if (!me) throw notFound('That device');
+    if (!me) throw notFound(tr('That device'));
     const done = await ctx.db
       .updateTable('e2ee_devices')
       .set({ introduced_by: recovery.id, introduction: body.introduction, approved_at: ctx.now() })
@@ -293,7 +301,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .returning('id')
       .executeTakeFirst();
-    if (!done) throw notFound('That device');
+    if (!done) throw notFound(tr('That device'));
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'e2ee.device_restored',
@@ -302,7 +310,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     await tellDevicesChanged(auth.userId, true);
     const device = (await mine(auth.userId, auth.sessionId)).find((d) => d.id === id);
-    if (!device) throw notFound('That device');
+    if (!device) throw notFound(tr('That device'));
     return { device };
   });
 
@@ -321,7 +329,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .returning(['session_id', 'approved_at'])
       .executeTakeFirst();
-    if (!gone) throw notFound('That device');
+    if (!gone) throw notFound(tr('That device'));
     if (gone.session_id) await endSessions(ctx, { userId: auth.userId, ids: [gone.session_id] });
     await audit(ctx.db, {
       actorId: auth.userId,
@@ -344,7 +352,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
     const q = parse(z.object({ ids: z.string().max(4000).optional() }).strict(), req.query);
     const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.privacy_class !== 'private')
-      throw badRequest('Only private conversations are sealed.');
+      throw badRequest(tr('Only private conversations are sealed.'));
     const rows = await ctx.db
       .selectFrom('participants')
       .select(['user_id', 'left_at'])

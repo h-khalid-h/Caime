@@ -3,6 +3,7 @@
  * opens a person or an organization. A person is found here exactly as search would find them.
  */
 import { type HandleView, handleError, normalizeHandle } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -19,7 +20,7 @@ export async function handleRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`handle-open:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 60_000);
     const wanted = normalizeHandle(handle);
     // Nobody by that handle, and somebody you can't find, answer the same.
-    const nobody = () => notFound('That handle');
+    const nobody = () => notFound(tr('That handle'));
     if (handleError(wanted)) throw nobody();
 
     const org = await ctx.db

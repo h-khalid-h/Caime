@@ -12,7 +12,7 @@
  *   costs one small query per reader at most, and forgotten the moment they change it here.
  *
  * The public site's pages are rendered in the language `siteLanguage` picks (`lib/site-pages.ts`);
- * their strings live in `locales/ar-site.ts`, the server's own catalog, merged with the app's.
+ * their strings live in `locales/ar-server.ts`, the server's own catalog, merged with the app's.
  *
  * Mail stays English: it travels as 7-bit text (`lib/email.ts`).
  */
@@ -31,14 +31,14 @@ import { ar } from '@caime/core/locales/ar';
 import { fr } from '@caime/core/locales/fr';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
-import { arSite } from '../locales/ar-site';
-import { frSite } from '../locales/fr-site';
+import { arServer } from '../locales/ar-server';
+import { frServer } from '../locales/fr-server';
 
 // The app's catalog, and beside it the public site's (server-only copy the app never downloads).
 const translators: Record<InterfaceLanguage, Translator> = {
   en: english,
-  ar: makeTranslator('ar', { ...ar, ...arSite }),
-  fr: makeTranslator('fr', { ...fr, ...frSite }),
+  ar: makeTranslator('ar', { ...ar, ...arServer }),
+  fr: makeTranslator('fr', { ...fr, ...frServer }),
 };
 
 const scope = new AsyncLocalStorage<Translator>();

@@ -4,6 +4,7 @@
  * routes and natural-language search share it, so every call is counted the same way.
  */
 import { uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import { AiError, type AiResult, type AiUsage } from './ai';
 import { AppError } from './errors';
@@ -57,9 +58,9 @@ export async function runAi<T>(
     record(err.reason, err.usage);
     ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
     if (err.reason === 'declined')
-      throw new AppError(422, 'ai_declined', 'Caime can’t help with this one.');
+      throw new AppError(422, 'ai_declined', tr('Caime can’t help with this one.'));
     if (err.reason === 'busy')
-      throw new AppError(503, 'ai_busy', 'AI assist is busy. Try again in a moment.');
-    throw new AppError(502, 'ai_failed', 'AI assist didn’t work this time. Try again.');
+      throw new AppError(503, 'ai_busy', tr('AI assist is busy. Try again in a moment.'));
+    throw new AppError(502, 'ai_failed', tr('AI assist didn’t work this time. Try again.'));
   }
 }

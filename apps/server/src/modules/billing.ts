@@ -10,6 +10,7 @@ import {
   canManageOrg,
   PLAN_NAMES,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -29,7 +30,7 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 /** Paying takes being 18 or over (a card, a contract): said instead of offering it. */
-const ADULTS_ONLY = 'Plans are bought by someone 18 or over.';
+const ADULTS_ONLY = () => tr('Plans are bought by someone 18 or over.');
 
 export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
   /** Who pays, as the person asking may act for: themselves, or an organization they run. */
@@ -48,16 +49,16 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
         minor,
       };
     const seat = await orgSeat(ctx.db, userId, orgId);
-    if (!seat) throw notFound('That organization');
+    if (!seat) throw notFound(tr('That organization'));
     if (!canManageOrg(seat.role))
-      throw forbidden('Only the organization’s owner and admins can change what it pays.');
+      throw forbidden(tr('Only the organization’s owner and admins can change what it pays.'));
     const org = await ctx.db
       .selectFrom('organizations')
       .select(['name', 'handle'])
       .where('id', '=', orgId)
       .where('archived_at', 'is', null)
       .executeTakeFirst();
-    if (!org) throw notFound('That organization');
+    if (!org) throw notFound(tr('That organization'));
     // Its receipts and notices go to its owner, whoever of its admins pays: never to someone
     // who has since left the team.
     const owner = await ctx.db
@@ -81,14 +82,14 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/billing', async (req): Promise<BillingView> => {
     const auth = requireAuth(req);
     const { payer, minor } = await payerFor(auth.userId);
-    return billingView(ctx, payer, { unavailable: minor ? ADULTS_ONLY : null });
+    return billingView(ctx, payer, { unavailable: minor ? ADULTS_ONLY() : null });
   });
 
   app.get('/orgs/:id/billing', async (req): Promise<BillingView> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { payer, minor } = await payerFor(auth.userId, id);
-    return billingView(ctx, payer, { unavailable: minor ? ADULTS_ONLY : null });
+    return billingView(ctx, payer, { unavailable: minor ? ADULTS_ONLY() : null });
   });
 
   /** Buy Pro, or Business for an organization: the page on Stripe to pay on. */
@@ -97,7 +98,7 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CheckoutBody, req.body);
     paced(auth.userId);
     const { payer, who, back, minor } = await payerFor(auth.userId, body.orgId);
-    if (minor) throw forbidden(ADULTS_ONLY);
+    if (minor) throw forbidden(ADULTS_ONLY());
     try {
       return { url: await startCheckout(ctx, payer, who, body.interval, back) };
     } catch (e) {
@@ -134,17 +135,17 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     hooks.post('/billing/webhook', async (req) => {
       const secret = ctx.config.STRIPE_WEBHOOK_SECRET;
-      if (!secret || !stripe(ctx)) throw notFound('That');
+      if (!secret || !stripe(ctx)) throw notFound(tr('That'));
       const body = req.body as Buffer;
       const signature = req.headers['stripe-signature'];
       const now = Math.floor(ctx.now().getTime() / 1000);
       if (!Buffer.isBuffer(body) || !stripeSigned(secret, String(signature ?? ''), body, now))
-        throw new AppError(400, 'bad_signature', 'That isn’t from Stripe.');
+        throw new AppError(400, 'bad_signature', tr('That isn’t from Stripe.'));
       let event: Parameters<typeof handleStripeEvent>[1];
       try {
         event = JSON.parse(body.toString('utf8'));
       } catch {
-        throw new AppError(400, 'bad_request', 'That isn’t an event.');
+        throw new AppError(400, 'bad_request', tr('That isn’t an event.'));
       }
       await handleStripeEvent(ctx, event);
       return { received: true };

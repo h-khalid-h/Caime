@@ -517,19 +517,19 @@ export function messagePreview(m: {
     case 'text':
       return previewText(m.body ?? '');
     case 'media':
-      return m.body ? `📷 ${previewText(m.body, 80)}` : '📷 Photo';
+      return m.body ? `📷 ${previewText(m.body, 80)}` : `📷 ${tr('Photo')}`;
     case 'file':
-      return m.body ? `📎 ${previewText(m.body, 80)}` : '📎 File';
+      return m.body ? `📎 ${previewText(m.body, 80)}` : `📎 ${tr('File')}`;
     case 'voice':
-      return '🎙 Voice message';
+      return `🎙 ${tr('Voice message')}`;
     case 'location':
-      return payload.live ? '📍 Live location' : '📍 Location';
+      return payload.live ? `📍 ${tr('Live location')}` : `📍 ${tr('Location')}`;
     case 'contact':
-      return '👤 Contact';
+      return `👤 ${tr('Contact')}`;
     case 'poll':
-      return `📊 ${previewText(String(payload.question ?? 'Poll'), 80)}`;
+      return `📊 ${previewText(String(payload.question ?? tr('Poll')), 80)}`;
     case 'sticker':
-      return 'Sticker';
+      return tr('Sticker');
     case 'system':
       return previewText(systemText(m.payload), 80);
     case 'kit':
@@ -537,7 +537,7 @@ export function messagePreview(m: {
       return previewText(
         payload.label
           ? `${String(payload.label)}: ${String(payload.title ?? '')}`
-          : String(payload.title ?? 'Card'),
+          : String(payload.title ?? tr('Card')),
         80,
       );
     default:

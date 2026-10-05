@@ -7,6 +7,8 @@
  * - A business conversation whose customer blocked the organization: it's closed, for the
  *   customer and for the whole team (its apps' bots included), until the customer unblocks it.
  */
+
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
@@ -63,7 +65,7 @@ export async function assertCanWrite(
       .where('user_id', '<>', userId)
       .executeTakeFirst();
     if (other && (await isBlockedEitherWay(ctx.db, userId, other.user_id)))
-      throw forbidden('You can’t message this person.');
+      throw forbidden(tr('You can’t message this person.'));
     return;
   }
   if (conversation.kind === 'business') {
@@ -73,8 +75,8 @@ export async function assertCanWrite(
       throw new AppError(
         403,
         'org_blocked',
-        `You blocked ${closed.orgName}. Unblock it to write to it again.`,
+        tr('You blocked {orgName}. Unblock it to write to it again.', { orgName: closed.orgName }),
       );
-    throw new AppError(403, 'conversation_closed', 'The customer closed this conversation.');
+    throw new AppError(403, 'conversation_closed', tr('The customer closed this conversation.'));
   }
 }

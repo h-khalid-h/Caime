@@ -23,6 +23,7 @@ import {
   priceLookupKey,
   type SubscriptionView,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
@@ -275,7 +276,11 @@ async function currentCustomer(ctx: AppContext, payer: Payer, who: PayerContact)
 }
 
 const unavailable = (plan: BilledPlan) =>
-  new AppError(503, 'billing_unavailable', `${PLAN_NAMES[plan]} can’t be bought right now.`);
+  new AppError(
+    503,
+    'billing_unavailable',
+    tr('{plan} can’t be bought right now.', { plan: PLAN_NAMES[plan] }),
+  );
 
 /**
  * What Stripe refused, said to whoever asked (the person buying, or the organization's owner or
@@ -292,7 +297,11 @@ export function refusedByStripe(
     { stripe: { status: e.status, type: e.type, code: e.code, message: e.message } },
     'stripe refused',
   );
-  return new AppError(503, 'billing_unavailable', `${lead}: Stripe said “${e.message}”.`);
+  return new AppError(
+    503,
+    'billing_unavailable',
+    tr('{lead}: Stripe said “{message}”.', { lead, message: e.message }),
+  );
 }
 
 /** Checkout for the payer's plan: the page on Stripe to pay on, and back here after. */
@@ -311,7 +320,11 @@ export async function startCheckout(
   );
   if (!price) throw unavailable(plan);
   if (operatorsPlan(payer, await planNow(payer, ctx.db)))
-    throw new AppError(409, 'plan_included', `${PLAN_NAMES[plan]} is part of this plan already.`);
+    throw new AppError(
+      409,
+      'plan_included',
+      tr('{plan} is part of this plan already.', { plan: PLAN_NAMES[plan] }),
+    );
   const customer = await currentCustomer(ctx, payer, who);
   // Paying already, perhaps before Stripe's word of it has come: never bought twice. What Stripe
   // says of the customer's subscriptions is taken now.
@@ -325,14 +338,18 @@ export async function startCheckout(
     throw new AppError(
       409,
       'already_subscribed',
-      `${PLAN_NAMES[plan]} is on already: change it from Manage billing.`,
+      tr('{plan} is on already: change it from Manage billing.', { plan: PLAN_NAMES[plan] }),
     );
   // Nothing paying for it, yet more than the plan everyone starts on (whoever set it): nothing
   // is sold over it.
   await settlePayer(ctx, payer);
   const now = await planNow(payer, ctx.db);
   if (now && now.plan !== basePlan(payer))
-    throw new AppError(409, 'plan_included', `${PLAN_NAMES[plan]} is part of this plan already.`);
+    throw new AppError(
+      409,
+      'plan_included',
+      tr('{plan} is part of this plan already.', { plan: PLAN_NAMES[plan] }),
+    );
   const back = `${ctx.config.PUBLIC_URL}${returnPath}`;
   // Only the newest Checkout can be paid: any other still open for them closes first. One
   // payer's are made one at a time, so two taps at once leave one open, never two.
@@ -373,7 +390,7 @@ export async function openPortal(
   const s = stripe(ctx);
   if (!s || !billingEnabled(ctx)) throw unavailable(planFor(payer));
   if (!(await customerOf(ctx, payer)))
-    throw new AppError(404, 'not_found', 'There’s nothing paid for here yet.');
+    throw new AppError(404, 'not_found', tr('There’s nothing paid for here yet.'));
   const customer = await currentCustomer(ctx, payer, who);
   const session = await s.post<{ url: string }>('/v1/billing_portal/sessions', {
     customer,

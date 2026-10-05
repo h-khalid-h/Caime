@@ -5,6 +5,7 @@
 
 import type { PolicyView } from '@caime/core';
 import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql, type Transaction } from 'kysely';
 import { z } from 'zod';
@@ -38,7 +39,7 @@ async function assertOwnConnection(ctx: AppContext, userId: string, scope: Scope
     .where('id', '=', scope.connectionId)
     .where((w) => w.or([w('user_a', '=', userId), w('user_b', '=', userId)]))
     .executeTakeFirst();
-  if (!conn) throw notFound('That connection');
+  if (!conn) throw notFound(tr('That connection'));
 }
 
 export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -118,7 +119,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!existing) throw notFound('That rule');
+    if (!existing) throw notFound(tr('That rule'));
     if (body.scope) await assertOwnConnection(ctx, auth.userId, body.scope);
     await ctx.db.transaction().execute(async (trx) => {
       await lockRules(trx, auth.userId);
@@ -128,7 +129,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
           (p) => p.id !== id && sameScope(p.scope, body.scope!),
         )
       )
-        throw conflict('rule_exists', 'There’s a rule for them already: change that one.');
+        throw conflict('rule_exists', tr('There’s a rule for them already: change that one.'));
       await trx
         .updateTable('relationship_policies')
         .set({
@@ -162,7 +163,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (Number(res.numDeletedRows) === 0) throw notFound('That rule');
+    if (Number(res.numDeletedRows) === 0) throw notFound(tr('That rule'));
     await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     return { ok: true };
   });

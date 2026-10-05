@@ -866,10 +866,19 @@ listed there with its owner.
       (`GET /v1/admin/people/:handle`), every way in ended at once (`DELETE …/sessions`), a reset
       link mailed to the account's own address (`POST …/reset`, the sign-in screen's link through
       `lib/reset.ts`); audited with who did it; docs/DEPLOY.md "Someone locked out".
-- [ ] Next block: error codes the app translates and previews through `tr`; a shorter first
-      five minutes; the relationship chip in an unlabelled conversation; group fan-out in
-      batches; the remaining hand-written role checks; the intelligence dates and the edit
-      path; the remaining UX mediums.
+- [x] A refusal reads in the app's language (R54): every `AppError` message on the server goes
+      through `tr` where it's thrown (480 sites, 336 strings), so a 404, a rule's "Only the
+      owner…" or a plan's limit reaches an Arabic or French app in its words; what only the
+      server says (those, the site's pages, notifications) is the server's own catalog
+      (`locales/ar-server.ts`, `fr-server.ts`, `isServerKey` in `scripts/i18n-keys.mjs`,
+      `server-i18n.test.ts`), so the app's Arabic and French chunks took on none of the 336 and
+      let go of 74 notification strings they never showed;
+      `i18n.test.ts` asks a 404 and a 400 in three languages. Zod's field messages stay English
+      (a later block).
+- [ ] Next block: a shorter first five minutes; the relationship chip in an unlabelled
+      conversation; group fan-out in batches; the remaining hand-written role checks; the
+      intelligence dates and the edit path; the remaining UX mediums; zod's field messages
+      through `tr`.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1860,3 +1869,7 @@ listed there with its owner.
 - 2026-10-05 — The operator helps someone locked out (R48): their account's facts without its
   content, every way in ended at once, a reset link to the account's own address; the sign-in
   screen's reset and the operator's share `lib/reset.ts`; `mailUnavailable` is `lib/errors`'.
+- 2026-10-05 — A refusal reads in the app's language: every server error message through `tr`
+  where it's thrown (480 sites, 336 strings in Arabic and French), the server's catalog widened
+  to everything only the server says (`ar-server.ts`, `fr-server.ts`; 74 notification strings
+  moved out of the app's chunks), `i18n.test.ts` asks a 404 and a 400 in three languages.

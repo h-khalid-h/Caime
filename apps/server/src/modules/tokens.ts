@@ -4,6 +4,7 @@
  * signed-in person reaches these routes: no token can make or list tokens.
  */
 import { CreatePersonalTokenBody, type PersonalTokenView, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -39,7 +40,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (minorOf(me, ctx.now())) throw forbidden('Access tokens are for people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden(tr('Access tokens are for people over 18.'));
     ctx.limiter.hit(`token-create:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
     const live = await ctx.db
       .selectFrom('personal_tokens')
@@ -48,7 +49,9 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .execute();
     if (live.length >= MAX_TOKENS)
-      throw badRequest(`You have ${MAX_TOKENS} tokens. Revoke one you don’t use first.`);
+      throw badRequest(
+        tr('You have {MAX_TOKENS} tokens. Revoke one you don’t use first.', { MAX_TOKENS }),
+      );
     const { token, prefix, hash } = newPersonalToken();
     const row = await ctx.db
       .insertInto('personal_tokens')
@@ -81,7 +84,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .returning('id')
       .executeTakeFirst();
-    if (!done) throw notFound('That token');
+    if (!done) throw notFound(tr('That token'));
     await audit(ctx.db, { actorId: auth.userId, action: 'token.revoked', target: id });
     return { ok: true };
   });

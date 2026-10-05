@@ -8,7 +8,7 @@
  * The site reads in English or Arabic (R54): every string goes through `tr`, in the language
  * `siteLanguage` picks for the request (`?lang=ar|en`, else the browser's first language), and
  * the masthead offers the other. Its copy is the server's alone, so its Arabic lives in
- * `apps/server/src/locales/ar-site.ts`, never in the catalog the app downloads.
+ * `apps/server/src/locales/ar-server.ts`, never in the catalog the app downloads.
  */
 
 import { AGENT_KNOWLEDGE_MAX } from '@caime/core/agents';

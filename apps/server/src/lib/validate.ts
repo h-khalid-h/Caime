@@ -1,3 +1,4 @@
+import { tr } from '@caime/core/i18n';
 import type { z } from 'zod';
 import { badRequest } from './errors';
 
@@ -8,7 +9,7 @@ export function parse<S extends z.ZodType>(schema: S, input: unknown): z.infer<S
     const fields = result.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message }));
     const first = fields[0];
     throw badRequest(
-      first ? `${first.path ? `${first.path}: ` : ''}${first.message}` : 'Invalid request.',
+      first ? `${first.path ? `${first.path}: ` : ''}${first.message}` : tr('Invalid request.'),
       { fields },
     );
   }

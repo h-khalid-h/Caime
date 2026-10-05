@@ -62,7 +62,10 @@ import type { AppContext } from '../context';
 
 const privateGroupFull = () =>
   badRequest(
-    `A private group holds up to ${PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.`,
+    tr(
+      'A private group holds up to {PRIVATE_GROUP_MAX} people: each message is sealed for every device in it.',
+      { PRIVATE_GROUP_MAX },
+    ),
   );
 
 import type { Conversation, Participant } from '../db/schema';
@@ -157,7 +160,7 @@ export async function membership(
     .where('participants.user_id', '=', userId)
     .where('participants.left_at', 'is', null)
     .executeTakeFirst();
-  if (!row) throw notFound('That conversation');
+  if (!row) throw notFound(tr('That conversation'));
   const conversation: Conversation = {
     id: conversationId,
     kind: row.kind,
@@ -419,7 +422,8 @@ export async function conversationView(
 }
 
 /** Why a topic's people aren't changed in it. */
-const TOPIC_PEOPLE = 'A topic’s people are its group’s: add, remove or make admins there.';
+const TOPIC_PEOPLE = () =>
+  tr('A topic’s people are its group’s: add, remove or make admins there.');
 
 /**
  * Whether someone may start a topic from a conversation (PRD §58), however they start it (from
@@ -434,7 +438,7 @@ export async function assertCanStartTopic(
 ): Promise<void> {
   await assertCanWrite(ctx, conversation.id, userId);
   if (conversation.kind === 'business')
-    throw badRequest('Topics are for conversations between people.');
+    throw badRequest(tr('Topics are for conversations between people.'));
   if (conversation.kind === 'direct') {
     // Connected now: a connection removed since leaves the pair's one-to-one, not its topics.
     const other = await ctx.db
@@ -444,10 +448,12 @@ export async function assertCanStartTopic(
       .where('user_id', '<>', userId)
       .executeTakeFirst();
     if (!other || !(await between(ctx.db, userId, other.user_id)).connected)
-      throw forbidden('Connect first to start topics.');
+      throw forbidden(tr('Connect first to start topics.'));
     // A private one-to-one keeps to itself: a topic of it would be written in the clear.
     if (conversation.privacy_class === 'private')
-      throw badRequest('A private conversation keeps to itself: start a topic from your main one.');
+      throw badRequest(
+        tr('A private conversation keeps to itself: start a topic from your main one.'),
+      );
   }
   ctx.limiter.hit(`topic:${userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
 }
@@ -466,7 +472,7 @@ export async function createTopicConversation(
   if (conversation.kind === 'group' && !conversation.space_id)
     return createGroupTopic(ctx, userId, conversation.parent_id ?? conversation.id, title);
   if (conversation.kind !== 'direct' || !conversation.direct_key)
-    throw badRequest('Topics branch off a one-to-one, a group, or a space’s General.');
+    throw badRequest(tr('Topics branch off a one-to-one, a group, or a space’s General.'));
   const members = await participantsOf(ctx.db, parentId);
   const id = uuidv7();
   await ctx.db.transaction().execute(async (trx) => {
@@ -512,7 +518,7 @@ async function createGroupTopic(
   const name = title.trim();
   const made = await ctx.db.transaction().execute(async (trx) => {
     await lockConversation(trx, groupId);
-    if (!(await seatIn(trx, groupId, userId))) throw notFound('That conversation');
+    if (!(await seatIn(trx, groupId, userId))) throw notFound(tr('That conversation'));
     const group = await trx
       .selectFrom('conversations')
       .selectAll()
@@ -575,15 +581,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const auth = requireAuth(req);
     const body = parse(CreateConversationBody, req.body);
     if (body.kind === 'direct') {
-      if (body.userId === auth.userId) throw badRequest('That’s you.');
+      if (body.userId === auth.userId) throw badRequest(tr('That’s you.'));
       const b = await between(ctx.db, auth.userId, body.userId);
-      if (b.blockedByMe || b.blockedMe) throw forbidden('You can’t message this person.');
+      if (b.blockedByMe || b.blockedMe) throw forbidden(tr('You can’t message this person.'));
       if (body.title || body.private) {
         if (!b.connected)
           throw forbidden(
             body.private
-              ? 'Connect first to start a private conversation.'
-              : 'Connect first to start topics.',
+              ? tr('Connect first to start a private conversation.')
+              : tr('Connect first to start topics.'),
           );
         const general = await ensureDirectConversation(ctx.db, auth.userId, body.userId, {
           connectionId: b.connectionId,
@@ -650,7 +656,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('c.status', '=', 'active')
       .execute();
     if (connected.length !== memberIds.length)
-      throw badRequest('You can add people you’re connected with.');
+      throw badRequest(tr('You can add people you’re connected with.'));
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
@@ -726,7 +732,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { conversation, me } = await membership(ctx, auth.userId, id);
     // What's being written in a private conversation stays on the device writing it.
     if (body.draft && conversation.privacy_class === 'private')
-      throw badRequest('Drafts in a private conversation stay on your device.');
+      throw badRequest(tr('Drafts in a private conversation stay on your device.'));
     const shared: Record<string, unknown> = {};
     if (
       body.title !== undefined ||
@@ -735,23 +741,23 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       body.retentionDays !== undefined
     ) {
       if (!canEditConversation(conversation.kind, me.role))
-        throw forbidden('Only admins can change this.');
+        throw forbidden(tr('Only admins can change this.'));
       // A topic's messages disappear as its group's do: that's changed in the group.
       if (body.retentionDays !== undefined && isGroupTopic(conversation))
-        throw badRequest('A topic’s messages disappear as its group’s do: change it there.');
+        throw badRequest(tr('A topic’s messages disappear as its group’s do: change it there.'));
       // Linked only to a context they may change: an id alone opens nothing, and one they only
       // read (a group's, where they're a member) isn't theirs to take somewhere they'd run it.
       if (body.contextId) {
         if (!(await contextVisible(ctx.db, auth.userId, body.contextId)))
-          throw notFound('That context');
+          throw notFound(tr('That context'));
         if (!(await contextEditable(ctx.db, auth.userId, body.contextId)))
-          throw forbidden('Only someone who may change that context links it here.');
+          throw forbidden(tr('Only someone who may change that context links it here.'));
       }
       if (body.title !== undefined) {
         if (conversation.kind === 'direct' && conversation.is_general)
-          throw badRequest('The general conversation takes the person’s name.');
+          throw badRequest(tr('The general conversation takes the person’s name.'));
         if (conversation.space_id && conversation.is_general)
-          throw badRequest('General takes the space’s name. Rename the space instead.');
+          throw badRequest(tr('General takes the space’s name. Rename the space instead.'));
         shared.title = body.title;
       }
       if (body.purpose !== undefined) shared.purpose = body.purpose;
@@ -843,7 +849,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { decision } = parse(z.object({ decision: z.enum(['accept', 'decline']) }), req.body);
     const { me } = await membership(ctx, auth.userId, id);
-    if (me.request_state !== 'pending') throw badRequest('There’s no request to answer here.');
+    if (me.request_state !== 'pending') throw badRequest(tr('There’s no request to answer here.'));
     await ctx.db
       .updateTable('participants')
       .set({
@@ -874,14 +880,14 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(MembersBody, req.body);
     const { conversation, me } = await membership(ctx, auth.userId, id);
-    if (conversation.kind === 'direct') throw badRequest('Start a group to add people.');
+    if (conversation.kind === 'direct') throw badRequest(tr('Start a group to add people.'));
     if (conversation.kind === 'business')
-      throw badRequest('Its team is the organization’s: add people to the team instead.');
-    if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE);
-    if (!['owner', 'admin'].includes(me.role)) throw forbidden('Only admins can add people.');
+      throw badRequest(tr('Its team is the organization’s: add people to the team instead.'));
+    if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE());
+    if (!['owner', 'admin'].includes(me.role)) throw forbidden(tr('Only admins can add people.'));
     if (conversation.space_id) {
       // A space's conversations hold its people: General all of them, the others who join.
-      if (conversation.is_general) throw badRequest('Add people to the space instead.');
+      if (conversation.is_general) throw badRequest(tr('Add people to the space instead.'));
       const inSpace = await ctx.db
         .selectFrom('space_members')
         .select('user_id')
@@ -890,7 +896,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .where('left_at', 'is', null)
         .execute();
       if (inSpace.length !== new Set(body.userIds).size)
-        throw badRequest('Add them to the space first.');
+        throw badRequest(tr('Add them to the space first.'));
     } else {
       const connected = await ctx.db
         .selectFrom('connection_sides as s')
@@ -901,14 +907,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .where('c.status', '=', 'active')
         .execute();
       if (connected.length !== new Set(body.userIds).size)
-        throw badRequest('You can add people you’re connected with.');
+        throw badRequest(tr('You can add people you’re connected with.'));
     }
     const added = await ctx.db.transaction().execute(async (trx) => {
       await lockConversation(trx, id);
       // Who runs it, and who's in it, as they are now.
       const mine = await seatIn(trx, id, auth.userId);
-      if (!mine) throw notFound('That conversation');
-      if (!['owner', 'admin'].includes(mine.role)) throw forbidden('Only admins can add people.');
+      if (!mine) throw notFound(tr('That conversation'));
+      if (!['owner', 'admin'].includes(mine.role))
+        throw forbidden(tr('Only admins can add people.'));
       const inIt = new Set((await participantsOf(trx, id)).map((p) => p.user_id));
       const fresh = [...new Set(body.userIds)].filter((u) => !inIt.has(u));
       // Every message in a private group is sealed for each of its people's devices.
@@ -980,16 +987,18 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (!found) return { ok: true };
     const { conversation } = found;
     if (conversation.kind === 'direct' || conversation.kind === 'business')
-      throw badRequest('You can archive this conversation instead.');
+      throw badRequest(tr('You can archive this conversation instead.'));
     if (isGroupTopic(conversation))
       throw badRequest(
-        leaving ? 'Leave the group to leave its topics. You can archive this one.' : TOPIC_PEOPLE,
+        leaving
+          ? tr('Leave the group to leave its topics. You can archive this one.')
+          : TOPIC_PEOPLE(),
       );
     if (conversation.space_id && conversation.is_general)
       throw badRequest(
         userId === auth.userId
-          ? 'Leave the space to leave its General conversation.'
-          : 'Remove them from the space instead.',
+          ? tr('Leave the space to leave its General conversation.')
+          : tr('Remove them from the space instead.'),
       );
     const done = await ctx.db.transaction().execute(async (trx) => {
       await lockConversation(trx, id);
@@ -997,15 +1006,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       const me = await seatIn(trx, id, auth.userId);
       // Left already, from another of their devices: that's done.
       if (!me && leaving) return null;
-      if (!me) throw notFound('That conversation');
+      if (!me) throw notFound(tr('That conversation'));
       const target = leaving ? me : await seatIn(trx, id, userId);
-      if (!target) throw notFound('That person in this conversation');
+      if (!target) throw notFound(tr('That person in this conversation'));
       // The owner removes anyone; admins remove members; anyone may leave (PRD §56).
       if (!leaving && !canRemoveFromSpace(me.role as SpaceRole, target.role as SpaceRole))
         throw forbidden(
           me.role === 'admin'
-            ? 'Admins remove members; the owner removes admins.'
-            : 'Only admins can remove people.',
+            ? tr('Admins remove members; the owner removes admins.')
+            : tr('Only admins can remove people.'),
         );
       // Out, they're nobody in it: added again, they start as a member.
       await trx
@@ -1065,20 +1074,20 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const body = parse(SpaceRoleBody, req.body);
     const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.kind === 'direct' || conversation.kind === 'business')
-      throw badRequest('Only a group has admins.');
-    if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE);
+      throw badRequest(tr('Only a group has admins.'));
+    if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE());
     if (conversation.space_id && conversation.is_general)
-      throw badRequest('Make them an admin of the space instead.');
+      throw badRequest(tr('Make them an admin of the space instead.'));
     const changed = await ctx.db.transaction().execute(async (trx) => {
       await lockConversation(trx, id);
       // Both as they are now: the owner may have just left, or handed it to them.
       const me = await seatIn(trx, id, auth.userId);
-      if (!me) throw notFound('That conversation');
+      if (!me) throw notFound(tr('That conversation'));
       const target = await seatIn(trx, id, userId);
       if (!target || !['admin', 'member'].includes(target.role))
-        throw notFound('That person in this conversation');
+        throw notFound(tr('That person in this conversation'));
       if (!canChangeSpaceRole(me.role as SpaceRole, target.role as SpaceRole))
-        throw forbidden('Only the owner makes admins.');
+        throw forbidden(tr('Only the owner makes admins.'));
       if (target.role === body.role) return false;
       // Only from the role read: never over an owner someone just handed it to.
       const done = await trx
@@ -1338,22 +1347,23 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
+    if (!m) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
-    if (m.sender_id !== auth.userId) throw forbidden('You can only edit your own messages.');
+    if (m.sender_id !== auth.userId) throw forbidden(tr('You can only edit your own messages.'));
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
-    if (m.deleted_at) throw badRequest('That message was deleted.');
+    if (m.deleted_at) throw badRequest(tr('That message was deleted.'));
     if (body.body !== undefined && m.kind !== 'text')
-      throw badRequest('Only text messages can be edited.');
+      throw badRequest(tr('Only text messages can be edited.'));
     // A private one is edited by sealing it again, as the next edit of the same message.
     if (m.sealed) {
       const was = m.sealed as { edit?: number };
       if (!body.sealed || body.body !== undefined || body.mentions?.length)
-        throw badRequest('Messages in a private conversation are text, sealed on your device.');
+        throw badRequest(tr('Messages in a private conversation are text, sealed on your device.'));
       if (body.sealed.cid !== m.client_id || body.sealed.edit <= (was.edit ?? 0))
-        throw badRequest('That message isn’t sealed properly.');
+        throw badRequest(tr('That message isn’t sealed properly.'));
       await assertSealedForEveryone(ctx, m.conversation_id, auth.userId, body.sealed);
-    } else if (body.sealed) throw badRequest('Only private conversations take sealed messages.');
+    } else if (body.sealed)
+      throw badRequest(tr('Only private conversations take sealed messages.'));
     // Who it mentions is who its words now name (PRD §20): people in it, other than its sender.
     const members = new Set(
       (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
@@ -1396,7 +1406,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
+    if (!m) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const card = (m.payload ?? {}) as {
@@ -1407,10 +1417,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     };
     const own = isCustomCard(m.payload) ? m.payload : null;
     if (m.kind !== 'kit' || m.deleted_at || !(own || isCardKit(card.kit)))
-      throw badRequest('That isn’t a card that can change.');
+      throw badRequest(tr('That isn’t a card that can change.'));
     // An app moves only its own cards: those of its kits, and Caime's own its bot sent.
     if (auth.app && !(own ? own.app.id === auth.app.id : m.sender_id === auth.userId))
-      throw forbidden('An app moves only its own cards.');
+      throw forbidden(tr('An app moves only its own cards.'));
     const from = card.state ?? '';
     // In a business conversation the team is one side: anyone on it acts for a card it sent.
     const business = await customerMask(ctx.db, m.conversation_id);
@@ -1425,7 +1435,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       : isCardKit(card.kit)
         ? kitMoves(card.kit, from, senderSide).find((x) => x.to === to)
         : undefined;
-    if (!move) throw forbidden('You can’t make that change to this card.');
+    if (!move) throw forbidden(tr('You can’t make that change to this card.'));
     // Each move tells the other side: one person, or one app, moves a conversation's cards only
     // so often.
     ctx.limiter.hit(
@@ -1455,7 +1465,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .returningAll()
         .executeTakeFirstOrThrow();
     });
-    if (!updated) throw new AppError(409, 'conflict', 'Someone just changed this card.');
+    if (!updated) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await recordEvent(ctx.db, 'kit.moved', auth.userId, { messageId: id, kit: card.kit, to });
@@ -1508,7 +1518,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .select('conversation_id')
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!found) throw notFound('That message');
+    if (!found) throw notFound(tr('That message'));
     await membership(ctx, userId, found.conversation_id);
     await assertCanWrite(ctx, found.conversation_id, userId);
     const updated = await ctx.db.transaction().execute(async (trx) => {
@@ -1520,11 +1530,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .executeTakeFirstOrThrow();
       const card = (m.payload ?? {}) as LocationPayloadT & { live?: LiveLocation };
       if (m.kind !== 'location' || m.deleted_at || !card.live)
-        throw badRequest('That isn’t a live location.');
-      if (m.sender_id !== userId) throw forbidden('Only whoever is sharing it can change it.');
+        throw badRequest(tr('That isn’t a live location.'));
+      if (m.sender_id !== userId) throw forbidden(tr('Only whoever is sharing it can change it.'));
       const at = ctx.now();
       if (!liveNow(card.live, at))
-        throw new AppError(409, 'location_ended', 'This live location has ended.');
+        throw new AppError(409, 'location_ended', tr('This live location has ended.'));
       return trx
         .updateTable('messages')
         .set({ payload: JSON.stringify(change({ ...card, live: card.live }, at)) })
@@ -1571,7 +1581,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .select('conversation_id')
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!found) throw notFound('That message');
+    if (!found) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, found.conversation_id);
     await assertCanWrite(ctx, found.conversation_id, auth.userId);
     const { updated, before, card } = await ctx.db.transaction().execute(async (trx) => {
@@ -1588,7 +1598,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         fields?: Record<string, unknown>;
       };
       if (m.kind !== 'kit' || m.deleted_at || card.kit !== 'checklist')
-        throw badRequest('That isn’t a checklist.');
+        throw badRequest(tr('That isn’t a checklist.'));
       const applied = applyChecklistOp(checklistItems(card.fields ?? {}), op, {
         userId: auth.userId,
         isCreator: m.sender_id === auth.userId,
@@ -1649,7 +1659,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .select('conversation_id')
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!found) throw notFound('That message');
+    if (!found) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, found.conversation_id);
     await assertCanWrite(ctx, found.conversation_id, auth.userId);
     const at = ctx.now().toISOString();
@@ -1669,7 +1679,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
           fields?: Record<string, unknown>;
         };
         if (m.kind !== 'kit' || m.deleted_at || card.kit !== 'split')
-          throw badRequest('That isn’t a split.');
+          throw badRequest(tr('That isn’t a split.'));
         const before = splitShares(card.fields ?? {});
         const applied = applySplitOp(before, op, {
           userId: auth.userId,
@@ -1749,11 +1759,11 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m) throw notFound('That album');
+    if (!m) throw notFound(tr('That album'));
     await membership(ctx, userId, m.conversation_id);
     const card = (m.payload ?? {}) as { kit?: unknown; state?: string; title?: string };
     if (m.kind !== 'kit' || m.deleted_at || card.kit !== 'shared_album')
-      throw notFound('That album');
+      throw notFound(tr('That album'));
     return { m, card };
   }
 
@@ -1812,7 +1822,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     );
     const { m, card } = await albumCard(id, auth.userId);
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
-    if (card.state === 'closed') throw badRequest('This album is closed.');
+    if (card.state === 'closed') throw badRequest(tr('This album is closed.'));
     const wanted = [...new Set(fileIds)];
     const files = await ctx.db
       .selectFrom('files')
@@ -1824,15 +1834,16 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       files.length !== wanted.length ||
       files.some((f) => f.owner_id !== auth.userId || f.status !== 'ready')
     )
-      throw badRequest('Add photos you’ve uploaded.');
+      throw badRequest(tr('Add photos you’ve uploaded.'));
     if (files.some((f) => f.kind !== 'image' && f.kind !== 'video'))
-      throw badRequest('Albums take photos and videos.');
+      throw badRequest(tr('Albums take photos and videos.'));
     const { n } = await ctx.db
       .selectFrom('album_photos')
       .select(sql<number>`count(*)::int`.as('n'))
       .where('message_id', '=', id)
       .executeTakeFirstOrThrow();
-    if (n + files.length > ALBUM_MAX) throw badRequest(`An album holds ${ALBUM_MAX} photos.`);
+    if (n + files.length > ALBUM_MAX)
+      throw badRequest(tr('An album holds {ALBUM_MAX} photos.', { ALBUM_MAX }));
     const added = await ctx.db.transaction().execute(async (trx) => {
       const inserted = await trx
         .insertInto('album_photos')
@@ -1906,10 +1917,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('message_id', '=', id)
       .where('file_id', '=', fileId)
       .executeTakeFirst();
-    if (!photo) throw notFound('That photo');
+    if (!photo) throw notFound(tr('That photo'));
     // Whoever added it, or whoever made the album, takes it out.
     if (photo.added_by !== auth.userId && m.sender_id !== auth.userId)
-      throw forbidden('Only whoever added it, or made the album, can take it out.');
+      throw forbidden(tr('Only whoever added it, or made the album, can take it out.'));
     const savers = await ctx.db.transaction().execute(async (trx) => {
       await trx
         .deleteFrom('album_photos')
@@ -1954,7 +1965,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
+    if (!m) throw notFound(tr('That message'));
     const { conversation, me } = await membership(ctx, auth.userId, m.conversation_id);
     if (forEveryone === 'false') {
       await ctx.db
@@ -1978,9 +1989,9 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     }
     // A line about the conversation (who joined, who changed what) is its record, for everyone.
     if (m.kind === 'system')
-      throw badRequest('Lines about the conversation stay. You can delete it for yourself.');
+      throw badRequest(tr('Lines about the conversation stay. You can delete it for yourself.'));
     if (m.sender_id !== auth.userId && !canRemoveOthersMessages(conversation.kind, me.role))
-      throw forbidden('You can delete your own messages.');
+      throw forbidden(tr('You can delete your own messages.'));
     await removeForEveryone(ctx, m, auth.userId);
     return { ok: true };
   });
@@ -2036,12 +2047,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', messageId)
       .executeTakeFirst();
-    if (!m || m.deleted_at) throw notFound('That message');
+    if (!m || m.deleted_at) throw notFound(tr('That message'));
     const { conversation, me } = await membership(ctx, userId, m.conversation_id);
     if (conversation.kind === 'business')
-      throw badRequest('Pinned messages are for conversations between people.');
+      throw badRequest(tr('Pinned messages are for conversations between people.'));
     if (!canPin(conversation.kind, me.role))
-      throw forbidden('Only the group’s owner and admins pin messages.');
+      throw forbidden(tr('Only the group’s owner and admins pin messages.'));
     // Either way it changes what everyone sees at the top, and pinning says so in a line: only
     // from someone who may write there (blocks), and not while a message request is unanswered,
     // which allows one message and nothing more (R14).
@@ -2057,7 +2068,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       throw new AppError(
         403,
         'awaiting_acceptance',
-        'Messages are pinned once the message request is answered.',
+        tr('Messages are pinned once the message request is answered.'),
       );
     ctx.limiter.hit(`pin:${userId}`, ctx.config.isTest ? 1000 : 30, 60_000);
     return m;
@@ -2067,7 +2078,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const m = await pinnable(auth.userId, id);
-    if (m.kind === 'system') throw badRequest('Lines about the conversation aren’t pinned.');
+    if (m.kind === 'system') throw badRequest(tr('Lines about the conversation aren’t pinned.'));
     if (m.pinned_at) return { ok: true };
     const pinned = await ctx.db.transaction().execute(async (trx) => {
       await lockConversation(trx, m.conversation_id);
@@ -2088,8 +2099,13 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (n >= PINNED_MAX)
         throw badRequest(
           hidden
-            ? `${PINNED_MAX} messages are pinned already, including ${hidden === 1 ? 'one' : hidden} you deleted for yourself. Unpin one first.`
-            : `${PINNED_MAX} messages are pinned already. Unpin one first.`,
+            ? trn(
+                hidden,
+                '{PINNED_MAX} messages are pinned already, including one you deleted for yourself. Unpin one first.',
+                '{PINNED_MAX} messages are pinned already, including {n} you deleted for yourself. Unpin one first.',
+                { PINNED_MAX },
+              )
+            : tr('{PINNED_MAX} messages are pinned already. Unpin one first.', { PINNED_MAX }),
         );
       const done = await trx
         .updateTable('messages')
@@ -2129,7 +2145,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .select(['conversation_id', 'deleted_at'])
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m || m.deleted_at) throw notFound('That message');
+    if (!m || m.deleted_at) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
     await ctx.db
@@ -2164,7 +2180,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .select(['conversation_id'])
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
+    if (!m) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
     await ctx.db
       .deleteFrom('reactions')
@@ -2197,13 +2213,14 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (m?.kind !== 'poll' || m.deleted_at) throw notFound('That poll');
+    if (m?.kind !== 'poll' || m.deleted_at) throw notFound(tr('That poll'));
     await membership(ctx, auth.userId, m.conversation_id);
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const poll = PollPayload.parse(m.payload);
     const valid = new Set(poll.options.map((o) => o.id));
-    if (optionIds.some((o) => !valid.has(o))) throw badRequest('That option isn’t in the poll.');
-    if (!poll.multiple && optionIds.length > 1) throw badRequest('Choose one option.');
+    if (optionIds.some((o) => !valid.has(o)))
+      throw badRequest(tr('That option isn’t in the poll.'));
+    if (!poll.multiple && optionIds.length > 1) throw badRequest(tr('Choose one option.'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .deleteFrom('poll_votes')
@@ -2234,15 +2251,15 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m || m.deleted_at) throw notFound('That message');
+    if (!m || m.deleted_at) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
     // Its words are only on the devices it was sealed for, and stay in the private conversation.
-    if (m.sealed) throw badRequest('Messages in a private conversation stay in it.');
+    if (m.sealed) throw badRequest(tr('Messages in a private conversation stay in it.'));
     // A copy of a card, a poll or a live location isn't the same thing: they stay where they were
     // shared (their state, votes and whereabouts are theirs), and so do lines about a conversation.
     const live = m.kind === 'location' && Boolean((m.payload as { live?: unknown } | null)?.live);
     if (m.kind === 'system' || m.kind === 'kit' || m.kind === 'poll' || live)
-      throw badRequest('Cards, polls and live locations stay where they were shared.');
+      throw badRequest(tr('Cards, polls and live locations stay where they were shared.'));
     const kind = m.kind;
     const files = await ctx.db
       .selectFrom('message_files')
@@ -2265,7 +2282,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     for (const conversationId of targets) {
       const { conversation } = await membership(ctx, auth.userId, conversationId);
       if (conversation.privacy_class === 'private')
-        throw badRequest('Nothing is forwarded into a private conversation.');
+        throw badRequest(tr('Nothing is forwarded into a private conversation.'));
       await assertCanWrite(ctx, conversationId, auth.userId);
       await assertCanSend(ctx, auth.userId, conversationId, copy(conversationId), {
         forwardedFromId: id,

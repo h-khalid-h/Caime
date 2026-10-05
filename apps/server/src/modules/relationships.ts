@@ -22,6 +22,7 @@ import {
   secondarySpheres,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import { z } from 'zod';
@@ -61,12 +62,15 @@ function validateRole(
   role: string | null | undefined,
   roleLabel: string | null | undefined,
 ) {
-  if (!isSphere(sphere)) throw badRequest('Unknown sphere.');
+  if (!isSphere(sphere)) throw badRequest(tr('Unknown sphere.'));
   if (role && !findRole(sphere, role))
     throw badRequest(
-      `“${role}” isn’t a ${SPHERE_DEFS[sphere].label.toLowerCase()} role. Use a custom role instead.`,
+      tr('“{role}” isn’t a {sphere} role. Use a custom role instead.', {
+        role,
+        sphere: tr(SPHERE_DEFS[sphere].label).toLowerCase(),
+      }),
     );
-  if (role && roleLabel) throw badRequest('Choose a role or write your own, not both.');
+  if (role && roleLabel) throw badRequest(tr('Choose a role or write your own, not both.'));
 }
 
 /** May `owner` classify `subject`? Connected, requested either way, or sharing a conversation. */
@@ -216,7 +220,7 @@ async function owned(db: Q, ownerId: string, id: string): Promise<Relationship> 
     .where('id', '=', id)
     .where('owner_id', '=', ownerId)
     .executeTakeFirst();
-  if (!r) throw notFound('That relationship');
+  if (!r) throw notFound(tr('That relationship'));
   return r;
 }
 
@@ -327,9 +331,9 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
   app.post('/relationships', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(CreateRelationshipBody, req.body);
-    if (body.userId === auth.userId) throw badRequest('That’s you.');
+    if (body.userId === auth.userId) throw badRequest(tr('That’s you.'));
     if (!(await mayClassify(ctx.db, auth.userId, body.userId)))
-      throw forbidden('Connect with this person first.');
+      throw forbidden(tr('Connect with this person first.'));
     const row = await ctx.db
       .transaction()
       .execute((trx) =>
@@ -351,7 +355,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     const body = parse(ChangeRelationshipBody, req.body);
     const current = await owned(ctx.db, auth.userId, id);
     if (current.status !== 'active')
-      throw badRequest('Restore this relationship before changing it.');
+      throw badRequest(tr('Restore this relationship before changing it.'));
     // "data c" for their "DATA C" changes nothing.
     const orgName =
       body.orgName !== undefined
@@ -463,13 +467,13 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
       const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
       const current = await owned(ctx.db, auth.userId, id);
       if (!from.includes(current.status))
-        throw badRequest(`This relationship is ${current.status}.`);
+        throw badRequest(tr('This relationship is {status}.', { status: current.status }));
       if (
         kind === 'ended' &&
         current.role &&
         findRole(current.sphere as Sphere, current.role)?.endable === false
       ) {
-        throw badRequest('This kind of relationship doesn’t end. Archive it instead.');
+        throw badRequest(tr('This kind of relationship doesn’t end. Archive it instead.'));
       }
       const next = await ctx.db.transaction().execute(async (trx) => {
         // A restored relationship becomes the main one again unless another already is.
@@ -514,7 +518,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const current = await owned(ctx.db, auth.userId, id);
     if (current.status !== 'active')
-      throw badRequest('Only an active relationship can be the main one.');
+      throw badRequest(tr('Only an active relationship can be the main one.'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('relationships')
@@ -543,7 +547,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('subject_id', '=', keep.subject_id)
       .execute();
     if (merge.length !== body.mergeIds.length)
-      throw badRequest('Merge relationships with the same person.');
+      throw badRequest(tr('Merge relationships with the same person.'));
     await ctx.db.transaction().execute(async (trx) => {
       for (const m of merge) {
         await trx

@@ -157,7 +157,7 @@ export async function openInvite(
   viewerId: string | null,
 ): Promise<InviteOpenView> {
   const found = await liveInvite(ctx, token);
-  if (!found) throw notFound('That invite');
+  if (!found) throw notFound(tr('That invite'));
   const { invite, inviter } = found;
   const now = ctx.now();
   const see = canSee(privacyOf(inviter, now), 'profilePhoto', NOBODY);
@@ -193,11 +193,11 @@ export async function acceptInvite(
   userId: string,
 ): Promise<InviteAcceptView> {
   const found = await liveInvite(ctx, token);
-  if (!found) throw notFound('That invite');
+  if (!found) throw notFound(tr('That invite'));
   const { invite, inviter } = found;
-  if (inviter.id === userId) throw badRequest('That’s your own invite.');
+  if (inviter.id === userId) throw badRequest(tr('That’s your own invite.'));
   const b = await between(ctx.db, userId, inviter.id);
-  if (b.blockedMe || b.blockedByMe) throw forbidden('You can’t connect with this person.');
+  if (b.blockedMe || b.blockedByMe) throw forbidden(tr('You can’t connect with this person.'));
   if (b.connected && b.connectionId) {
     const conversationId = await directConversationId(ctx, userId, inviter.id);
     if (conversationId)

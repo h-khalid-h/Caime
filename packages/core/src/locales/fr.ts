@@ -2383,53 +2383,9 @@ export const fr: Catalog = {
   'Opens the list of years': 'Ouvre la liste des années',
   'Type a year': 'Saisissez une année',
   'No year like that.': 'Aucune année de ce genre.',
-  '{agentName} handed a conversation to the team':
-    '{agentName} a transmis une conversation à l’équipe',
-  'A customer': 'Un client',
-  Call: 'Appel',
-  Answered: 'Répondu',
+
   Declined: 'Refusé',
-  'Missed video call': 'Appel vidéo manqué',
-  'Missed voice call': 'Appel vocal manqué',
-  'from {caller}': 'de {caller}',
-  'the same name': 'le même nom',
-  'one name is part of the other': 'un nom fait partie de l’autre',
-  'the same nickname': 'le même surnom',
-  'you know both from {org}': 'vous connaissez les deux de {org}',
-  '{name} may have two accounts': '{name} a peut-être deux comptes',
-  '{merge} and {keep} may be the same person': '{merge} et {keep} sont peut-être la même personne',
-  'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
-    'Les deux ont {reasons}. Fusionnés, ils apparaissent comme une seule personne dans Personnes ; les deux comptes et conversations restent, et vous pouvez les séparer à nouveau.',
-  ', and ': ', et ',
-  '{title} call': 'Appel {title}',
-  Joined: 'A rejoint',
-  'Turned down': 'Refusé',
-  'Missed group video call': 'Appel vidéo de groupe manqué',
-  'Missed group voice call': 'Appel vocal de groupe manqué',
-  'from {starter}': 'de {starter}',
-  'in {title}': 'dans {title}',
-  '{name} opened your invite link': '{name} a ouvert votre lien d’invitation',
-  'You decide who connects with you: accept to connect.':
-    'Vous décidez qui entre en contact avec vous : acceptez pour vous mettre en contact.',
-  automated: 'automatique',
-  'Message request': 'Demande de message',
-  Group: 'Groupe',
-  'New message': 'Nouveau message',
-  '{n} new messages in {groupTitle}': {
-    one: '{n} nouveau message dans {groupTitle}',
-    other: '{n} nouveaux messages dans {groupTitle}',
-  },
-  '{senderName} sent {n} messages{context}': {
-    one: '{senderName} a envoyé {n} message{context}',
-    other: '{senderName} a envoyé {n} messages{context}',
-  },
-  '“{topic}” keeps coming up here. A separate topic keeps it together.':
-    '« {topic} » revient souvent ici. Un sujet à part le garde rassemblé.',
-  'Your report was reviewed': 'Votre signalement a été examiné',
-  'Thanks for reporting it: Caime looked and acted.':
-    'Merci de l’avoir signalé : Caime a regardé et agi.',
-  'Thanks for reporting it: Caime looked, and didn’t act on it this time.':
-    'Merci de l’avoir signalé : Caime a regardé, et n’a pas agi cette fois.',
+
   'Needs you': 'À traiter',
   'Needs a reply': 'À répondre',
   'A customer writes': 'Un client écrit',
@@ -2437,61 +2393,9 @@ export const fr: Catalog = {
   'Waiting for the customer': 'En attente du client',
   Work: 'Travail',
   Family: 'Famille',
-  'Colleague · {org}': 'Collègue · {org}',
-  'You and {other} are both on {org}’s team, and {org} is verified.':
-    'Vous et {other} êtes tous deux dans l’équipe de {org}, et {org} est vérifiée.',
-  'You and {other} are both on {org}’s team in Caime.':
-    'Vous et {other} êtes tous deux dans l’équipe de {org} sur Caime.',
-  'You and {other} are both in {space}, a {kind} space.':
-    'Vous et {other} êtes tous deux dans {space}, un espace {kind}.',
-  them: 'cette personne',
+
   Other: 'Autre',
-  '{name} described how you know each other as {label}{where}.':
-    '{name} a décrit votre lien comme {label}{where}.',
-  'You both use @{domain} email addresses.':
-    'Vous utilisez tous deux des adresses e-mail @{domain}.',
-  '{name} asked you': '{name} vous l’a demandé',
-  '{name} finished your request': '{name} a terminé votre demande',
-  '{name} accepted your request': '{name} a accepté votre demande',
-  '{name} declined your request': '{name} a refusé votre demande',
-  '{name} reopened your request': '{name} a rouvert votre demande',
-  '{name} cancelled your request': '{name} a annulé votre demande',
-  '{speaker} wrote {quote}': '{speaker} a écrit {quote}',
-  '{name} gave you a conversation': '{name} vous a attribué une conversation',
-  '{name} escalated a conversation': '{name} a signalé une conversation',
-  '{name} is calling': '{name} appelle',
-  '{name} joined through your invite': '{name} a rejoint grâce à votre invitation',
-  'You’re connected. Say hi.': 'Vous êtes en contact. Dites bonjour.',
-  'Say hi when you’re ready.': 'Dites bonjour quand vous voulez.',
-  '{name} wants to connect with you': '{name} veut entrer en contact avec vous',
-  '{name} finished {title}': '{name} a terminé {title}',
-  '{name} finished the list': '{name} a terminé la liste',
-  'Everything on it is ticked.': 'Tout y est coché.',
-  '{name} settled up': '{name} a réglé',
-  '{amount} of {title}.': '{amount} de {title}.',
-  'the split': 'le partage',
-  'Their share of {title}.': 'Sa part de {title}.',
-  '{name} added {n} photos to {album}': {
-    one: '{name} a ajouté {n} photo à {album}',
-    other: '{name} a ajouté {n} photos à {album}',
-  },
-  '{name} is calling {where}': '{name} appelle {where}',
-  '{n} messages this week.': {
-    one: '{n} message cette semaine.',
-    other: '{n} messages cette semaine.',
-  },
-  'Quiet this week.': 'Calme cette semaine.',
-  '{n} open for you.': {
-    one: '{n} ouverte pour vous.',
-    other: '{n} ouvertes pour vous.',
-  },
-  'Waiting on {n}.': 'En attente de {n}.',
-  'Last decision: {title}.': 'Dernière décision : {title}.',
-  'Next date: {date}.': 'Prochaine date : {date}.',
-  'No reply from {name} yet': 'Pas encore de réponse de {name}',
-  'Follow up on “{text}”?': 'Relancer « {text} » ?',
-  'Follow up?': 'Relancer ?',
-  Reminder: 'Rappel',
+
   '{uri} isn’t an address.': '{uri} n’est pas une adresse.',
   'A return address can’t have a # part.': 'Une adresse de retour ne peut pas avoir de partie #.',
   'A return address can’t hold a name or password.':
@@ -3080,4 +2984,7 @@ export const fr: Catalog = {
   'New to you': 'Nouveau pour vous',
   'You’re not connected, and Caime hasn’t verified who this is. Be careful with links and payments.':
     'Vous n’êtes pas en contact, et Caime n’a pas vérifié qui c’est. Soyez prudent avec les liens et les paiements.',
+  'Voice message': 'Message vocal',
+  Sticker: 'Autocollant',
+  Card: 'Carte',
 };

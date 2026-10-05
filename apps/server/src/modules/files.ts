@@ -7,6 +7,7 @@
 import { createHash } from 'node:crypto';
 import { type Readable, Transform } from 'node:stream';
 import { canSee, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -84,7 +85,7 @@ async function finalize(
       if (REENCODE.has(sniffed.mime) && !cleaned) {
         await storage.remove(tempKey);
         await storage.remove(`${tempKey}.clean`);
-        throw badRequest('That photo couldn’t be read, so it wasn’t sent. Try another.');
+        throw badRequest(tr('That photo couldn’t be read, so it wasn’t sent. Try another.'));
       }
     }
   }
@@ -185,7 +186,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     ctx.limiter.hit(`upload:${auth.userId}`, ctx.config.isTest ? 10_000 : 300, 3_600_000);
     const part = await req.file({ limits: { fileSize: MAX_BYTES } });
-    if (!part) throw badRequest('Attach a file.');
+    if (!part) throw badRequest(tr('Attach a file.'));
     const q = parse(
       z.object({
         durationMs: z.coerce
@@ -214,7 +215,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     await storage.write(tempKey, part.file.pipe(hasher));
     if (part.file.truncated) {
       await storage.remove(tempKey);
-      throw new AppError(413, 'too_large', 'That file is over 100 MB.');
+      throw new AppError(413, 'too_large', tr('That file is over 100 MB.'));
     }
     try {
       await assertStorage(ctx, auth.userId, bytes);
@@ -309,7 +310,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('owner_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!f) throw notFound('That upload');
+    if (!f) throw notFound(tr('That upload'));
     reply
       .header('upload-offset', String(f.upload_offset))
       .header('upload-length', String(f.size))
@@ -326,12 +327,12 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('owner_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!f) throw notFound('That upload');
+    if (!f) throw notFound(tr('That upload'));
     if (f.status !== 'uploading')
-      throw new AppError(409, 'upload_complete', 'This upload is already complete.');
+      throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
     const offset = Number(req.headers['upload-offset']);
     if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
-      throw new AppError(409, 'offset_mismatch', 'Resume from the server’s offset.', {
+      throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
         offset: Number(f.upload_offset),
       });
     }
@@ -339,7 +340,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     if (written > Number(f.size)) {
       await storage.remove(f.storage_key);
       await ctx.db.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
-      throw badRequest('More bytes than declared.');
+      throw badRequest(tr('More bytes than declared.'));
     }
     if (written < Number(f.size)) {
       await ctx.db
@@ -385,14 +386,14 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/files/:id', async (req, reply) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    if (!(await canReadFile(ctx, auth.userId, id))) throw notFound('That file');
+    if (!(await canReadFile(ctx, auth.userId, id))) throw notFound(tr('That file'));
     const f = await ctx.db
       .selectFrom('files')
       .selectAll()
       .where('id', '=', id)
       .where('status', '=', 'ready')
       .executeTakeFirst();
-    if (!f) throw notFound('That file');
+    if (!f) throw notFound(tr('That file'));
     const sniffedInline = [
       'image/jpeg',
       'image/png',
@@ -415,13 +416,13 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/files/:id/thumb', async (req, reply) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    if (!(await canReadFile(ctx, auth.userId, id))) throw notFound('That file');
+    if (!(await canReadFile(ctx, auth.userId, id))) throw notFound(tr('That file'));
     const f = await ctx.db
       .selectFrom('files')
       .select(['thumb_key', 'name'])
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!f?.thumb_key) throw notFound('That thumbnail');
+    if (!f?.thumb_key) throw notFound(tr('That thumbnail'));
     const size = (await storage.size(f.thumb_key)) ?? 0;
     return streamFile(
       req,
@@ -440,13 +441,13 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .select('avatar_file_id')
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!org?.avatar_file_id) throw notFound('That logo');
+    if (!org?.avatar_file_id) throw notFound(tr('That logo'));
     const f = await ctx.db
       .selectFrom('files')
       .selectAll()
       .where('id', '=', org.avatar_file_id)
       .executeTakeFirst();
-    if (!f) throw notFound('That logo');
+    if (!f) throw notFound(tr('That logo'));
     const key = f.thumb_key ?? f.storage_key;
     const size = (await storage.size(key)) ?? Number(f.size);
     reply.header('cache-control', 'private, max-age=3600');
@@ -471,20 +472,20 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!user?.avatar_file_id) throw notFound('That avatar');
+    if (!user?.avatar_file_id) throw notFound(tr('That avatar'));
     const privacy = privacyOf(user, ctx.now());
     const relation = req.auth
       ? await viewerRelation(ctx.db, id, req.auth.userId)
       : privacy.discoverByHandle && !minorOf(user, ctx.now())
         ? NOBODY
         : null;
-    if (!relation || !canSee(privacy, 'profilePhoto', relation)) throw notFound('That avatar');
+    if (!relation || !canSee(privacy, 'profilePhoto', relation)) throw notFound(tr('That avatar'));
     const f = await ctx.db
       .selectFrom('files')
       .selectAll()
       .where('id', '=', user.avatar_file_id)
       .executeTakeFirst();
-    if (!f) throw notFound('That avatar');
+    if (!f) throw notFound(tr('That avatar'));
     const key = f.thumb_key ?? f.storage_key;
     const size = (await storage.size(key)) ?? Number(f.size);
     reply.header('cache-control', 'private, max-age=3600');

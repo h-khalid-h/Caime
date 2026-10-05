@@ -6,6 +6,7 @@
  */
 import type { FollowingView, OrgUpdatesView, OrgUpdateView } from '@caime/core';
 import { canManageOrg, EditUpdateBody, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -37,12 +38,12 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
   async function poster(req: FastifyRequest, orgId: string): Promise<string> {
     const auth = requireAuth(req);
     if (auth.app) {
-      if (auth.app.orgId !== orgId) throw notFound('That organization');
+      if (auth.app.orgId !== orgId) throw notFound(tr('That organization'));
       return auth.userId;
     }
     const seat = await orgSeat(ctx.db, auth.userId, orgId);
     if (!seat || !canManageOrg(seat.role))
-      throw forbidden('Only the organization’s owner and admins post its updates.');
+      throw forbidden(tr('Only the organization’s owner and admins post its updates.'));
     return auth.userId;
   }
 
@@ -73,7 +74,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
       req.query,
     );
-    if (auth.app && auth.app.orgId !== id) throw notFound('That organization');
+    if (auth.app && auth.app.orgId !== id) throw notFound(tr('That organization'));
     const org = await orgById(ctx.db, id);
     const seat = auth.app ? null : await orgSeat(ctx.db, auth.userId, id);
     const team = Boolean(seat) || Boolean(auth.app);
@@ -166,7 +167,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!row) {
       const raced = await again();
-      if (!raced) throw new AppError(409, 'conflict', 'That update is being posted already.');
+      if (!raced) throw new AppError(409, 'conflict', tr('That update is being posted already.'));
       return { update: updateView(raced, ref, await postedByOf(by)) };
     }
     await audit(ctx.db, {
@@ -195,7 +196,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('org_id', '=', id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!current) throw notFound('That update');
+    if (!current) throw notFound(tr('That update'));
     // Nothing changed: nobody needs to hear of it.
     if (current.body === body.body)
       return { update: updateView(current, orgRef(org), await postedByOf(by)) };
@@ -208,7 +209,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .returningAll()
       .executeTakeFirst();
-    if (!row) throw notFound('That update');
+    if (!row) throw notFound(tr('That update'));
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.update_edited',
@@ -228,7 +229,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     limitChanges(id);
     // Taken back: its words go, from its page and from every follower's notifications; that
     // there was one stays, for the audit log (lib/moderation.ts, as the operator does it).
-    if (!(await takeBackUpdate(ctx, id, updateId, auth.userId))) throw notFound('That update');
+    if (!(await takeBackUpdate(ctx, id, updateId, auth.userId))) throw notFound(tr('That update'));
     return { ok: true };
   });
 
@@ -244,7 +245,11 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
         trx,
       );
       if (await orgBlocked(trx, auth.userId, id))
-        throw new AppError(409, 'blocked', 'You’ve blocked it. Unblock it to follow its updates.');
+        throw new AppError(
+          409,
+          'blocked',
+          tr('You’ve blocked it. Unblock it to follow its updates.'),
+        );
       return trx
         .insertInto('org_follows')
         .values({

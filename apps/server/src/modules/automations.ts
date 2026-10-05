@@ -19,6 +19,7 @@ import {
   uuidv7,
   wordsFrom,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -147,7 +148,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (Number(res.numUpdatedRows) === 0) throw notFound('That automation');
+    if (Number(res.numUpdatedRows) === 0) throw notFound(tr('That automation'));
     await changed(auth.userId);
     return { ok: true };
   });
@@ -160,7 +161,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (Number(res.numDeletedRows) === 0) throw notFound('That automation');
+    if (Number(res.numDeletedRows) === 0) throw notFound(tr('That automation'));
     // What it saved stays saved.
     await changed(auth.userId);
     return { ok: true };
@@ -349,23 +350,25 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       ])
       .where('m.id', '=', id)
       .executeTakeFirst();
-    if (!m || m.deleted_at || m.left_at) throw notFound('That message');
+    if (!m || m.deleted_at || m.left_at) throw notFound(tr('That message'));
     if (m.privacy_class === 'private')
-      throw forbidden('A private conversation keeps to itself: nothing in it is saved elsewhere.');
+      throw forbidden(
+        tr('A private conversation keeps to itself: nothing in it is saved elsewhere.'),
+      );
     if (m.request_state === 'pending' || m.request_state === 'declined')
       throw new AppError(
         403,
         'awaiting_acceptance',
-        'Accept the message request to save anything from it.',
+        tr('Accept the message request to save anything from it.'),
       );
-    if (m.kind === 'system') throw badRequest('A line about the conversation isn’t saved.');
+    if (m.kind === 'system') throw badRequest(tr('A line about the conversation isn’t saved.'));
     const hidden = await ctx.db
       .selectFrom('hidden_messages')
       .select('message_id')
       .where('message_id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (hidden) throw notFound('That message');
+    if (hidden) throw notFound(tr('That message'));
     if (body.assetId) {
       const asset = await ctx.db
         .selectFrom('assets')
@@ -373,7 +376,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', body.assetId)
         .where('message_id', '=', id)
         .executeTakeFirst();
-      if (!asset) throw notFound('That file');
+      if (!asset) throw notFound(tr('That file'));
     }
     ctx.limiter.hit(`save:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 60_000);
     const collection = await theirCollection(ctx.db, auth.userId, body.collection ?? SAVED_DEFAULT);
@@ -397,7 +400,10 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       if ((await savedCount(trx, auth.userId)) >= SAVED_MAX)
         throw conflict(
           'saved_full',
-          `You’ve saved ${SAVED_MAX} things, the most there’s room for. Remove some to save more.`,
+          tr(
+            'You’ve saved {SAVED_MAX} things, the most there’s room for. Remove some to save more.',
+            { SAVED_MAX },
+          ),
         );
       return trx
         .insertInto('saved_items')
@@ -416,7 +422,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     // Saved at the same moment from another device: that one.
     const savedId = inserted?.id ?? (await find())?.id;
-    if (!savedId) throw notFound('That message');
+    if (!savedId) throw notFound(tr('That message'));
     await savedChanged(auth.userId);
     reply.status(inserted ? 201 : 200);
     return { id: savedId, collection, ...(inserted ? {} : { existing: true }) };
@@ -434,7 +440,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!item) throw notFound('That saved item');
+    if (!item) throw notFound(tr('That saved item'));
     if (item.collection !== collection) {
       await ctx.db.transaction().execute(async (trx) => {
         await trx
@@ -461,7 +467,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (Number(res.numDeletedRows) === 0) throw notFound('That saved item');
+    if (Number(res.numDeletedRows) === 0) throw notFound(tr('That saved item'));
     await savedChanged(auth.userId);
     return { ok: true };
   });
@@ -517,7 +523,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     if (used)
       throw conflict(
         'collection_in_use',
-        `An automation saves to ${collection}. Change it or remove it first.`,
+        tr('An automation saves to {collection}. Change it or remove it first.', { collection }),
       );
     await ctx.db
       .deleteFrom('saved_items')

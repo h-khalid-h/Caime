@@ -14,6 +14,7 @@ import {
   KITS,
   prepareCustomFields,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { queueDelivery } from './apps';
@@ -50,16 +51,16 @@ export async function customCardFor(
   },
 ): Promise<CustomKitCard> {
   const { mask, senderId, app, raw } = args;
-  if (!mask) throw badRequest('An organization’s own cards are for conversations with it.');
-  if (senderId === mask.customerId) throw forbidden('Only the organization sends its cards.');
+  if (!mask) throw badRequest(tr('An organization’s own cards are for conversations with it.'));
+  if (senderId === mask.customerId) throw forbidden(tr('Only the organization sends its cards.'));
   if (app && !app.scopes.includes('kits'))
-    throw new AppError(403, 'token_scope', 'This app needs the “kits” permission for that.');
+    throw new AppError(403, 'token_scope', tr('This app needs the “kits” permission for that.'));
   const appId = app ? app.id : raw.app;
   if (typeof appId !== 'string' || typeof raw.key !== 'string')
-    throw badRequest('Say which app’s card, and which of its cards.');
+    throw badRequest(tr('Say which app’s card, and which of its cards.'));
   if (app && raw.app !== undefined && raw.app !== app.id)
-    throw forbidden('An app sends only its own cards.');
-  if (!isUuid(appId)) throw badRequest('That card isn’t available here.');
+    throw forbidden(tr('An app sends only its own cards.'));
+  if (!isUuid(appId)) throw badRequest(tr('That card isn’t available here.'));
   const row = await ctx.db
     .selectFrom('app_kits as k')
     .innerJoin('org_apps as a', 'a.id', 'k.app_id')
@@ -69,7 +70,7 @@ export async function customCardFor(
     .where('a.org_id', '=', mask.orgId)
     .where('a.revoked_at', 'is', null)
     .executeTakeFirst();
-  if (!row) throw badRequest('That card isn’t available here.');
+  if (!row) throw badRequest(tr('That card isn’t available here.'));
   const def = row.definition;
   const checked = prepareCustomFields(def, raw.fields);
   if (!checked.ok) throw badRequest(checked.error);
@@ -80,7 +81,9 @@ export async function customCardFor(
       .where('id', 'in', args.memberIds)
       .execute();
     if (people.some((u) => minorOf(u, ctx.now())))
-      throw forbidden(`${def.name} cards aren’t available in this conversation.`);
+      throw forbidden(
+        tr('{name} cards aren’t available in this conversation.', { name: def.name }),
+      );
   }
   return {
     kit: 'custom',

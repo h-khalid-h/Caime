@@ -22,6 +22,7 @@ import {
   shareOut,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -260,7 +261,7 @@ export async function assertCanMessage(
   targetId: string,
 ): Promise<void> {
   if (await isBlockedEitherWay(ctx.db, senderId, targetId))
-    throw forbidden('You can’t message this person.');
+    throw forbidden(tr('You can’t message this person.'));
   const [target, sender] = await Promise.all([
     ctx.db
       .selectFrom('users')
@@ -274,14 +275,16 @@ export async function assertCanMessage(
       .where('id', '=', senderId)
       .executeTakeFirstOrThrow(),
   ]);
-  if (!target) throw notFound('That person');
+  if (!target) throw notFound(tr('That person'));
   const now = ctx.now();
   const privacy = privacyOf(target, now);
   const refuse = () =>
     new AppError(
       403,
       'not_accepting_requests',
-      `${target.display_name} only takes messages from people they know. Send a connection request instead.`,
+      tr('{name} only takes messages from people they know. Send a connection request instead.', {
+        name: target.display_name,
+      }),
     );
   if (privacy.messageRequests === 'nobody') throw refuse();
   // Under-18 accounts only hear from adults they share a connection with (R29).
@@ -387,7 +390,7 @@ export async function sendMessage(
     .executeTakeFirst();
   if (existing) {
     if (existing.conversation_id !== conversationId)
-      throw badRequest('That clientId was already used.');
+      throw badRequest(tr('That clientId was already used.'));
     return opts.checkOnly ? null : { message: existing, created: false, analysis: null };
   }
 
@@ -396,18 +399,18 @@ export async function sendMessage(
     .selectAll()
     .where('id', '=', conversationId)
     .executeTakeFirst();
-  if (!conversation) throw notFound('That conversation');
+  if (!conversation) throw notFound(tr('That conversation'));
   const members = await participantsOf(ctx.db, conversationId);
   const me = members.find((p) => p.user_id === senderId);
-  if (!me) throw notFound('That conversation');
+  if (!me) throw notFound(tr('That conversation'));
   if (conversation.kind === 'broadcast' && !['owner', 'admin'].includes(me.role)) {
-    throw forbidden('Only admins can post here.');
+    throw forbidden(tr('Only admins can post here.'));
   }
   // End to end encrypted (R18): only text sealed on one of the sender's own devices, for every
   // device of everyone in it. Nothing the server could read, so nothing it would work from.
   if (conversation.privacy_class === 'private') {
     if (opts.sentVia || opts.trusted)
-      throw forbidden('Only a person, on their own device, writes in a private conversation.');
+      throw forbidden(tr('Only a person, on their own device, writes in a private conversation.'));
     if (
       !body.sealed ||
       body.kind !== 'text' ||
@@ -416,11 +419,11 @@ export async function sendMessage(
       body.fileIds?.length ||
       body.mentions?.length
     )
-      throw badRequest('Messages in a private conversation are text, sealed on your device.');
+      throw badRequest(tr('Messages in a private conversation are text, sealed on your device.'));
     if (body.sealed.cid !== body.clientId || body.sealed.edit !== 0)
-      throw badRequest('That message isn’t sealed properly.');
+      throw badRequest(tr('That message isn’t sealed properly.'));
     await assertSealedForEveryone(ctx, conversationId, senderId, body.sealed);
-  } else if (body.sealed) throw badRequest('Only private conversations take sealed messages.');
+  } else if (body.sealed) throw badRequest(tr('Only private conversations take sealed messages.'));
   if (conversation.kind === 'business' && conversation.org_id) {
     const org = await ctx.db
       .selectFrom('organizations')
@@ -432,7 +435,9 @@ export async function sendMessage(
       throw new AppError(
         409,
         'org_closed',
-        'This organization closed, so nothing more is written here. Find it again to start a new conversation.',
+        tr(
+          'This organization closed, so nothing more is written here. Find it again to start a new conversation.',
+        ),
       );
     // Its customer blocked it: closed both ways until they unblock (PRD §55).
     await assertCanWrite(ctx, conversationId, senderId);
@@ -447,7 +452,7 @@ export async function sendMessage(
     if (customer?.user_id === senderId) {
       if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
     } else if (customer?.request_state === 'declined') {
-      throw unanswered('You can write again once they answer.');
+      throw unanswered(tr('You can write again once they answer.'));
     } else if (customer?.request_state === 'pending') {
       const sent = await ctx.db
         .selectFrom('messages')
@@ -456,19 +461,19 @@ export async function sendMessage(
         .where('sender_id', '<>', customer.user_id)
         .where('kind', '<>', 'system')
         .executeTakeFirstOrThrow();
-      if (sent.n >= 1) throw unanswered('You can write again once they answer.');
+      if (sent.n >= 1) throw unanswered(tr('You can write again once they answer.'));
     }
   }
   if (conversation.kind === 'direct') {
     const other = members.find((p) => p.user_id !== senderId);
     if (other) {
       if (await isBlockedEitherWay(ctx.db, senderId, other.user_id))
-        throw forbidden('You can’t message this person.');
+        throw forbidden(tr('You can’t message this person.'));
       // Replying accepts their request, even one declined before.
       if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
       // Declined, it reads to the sender as still unanswered, as a connection request does.
       if (other.request_state === 'declined')
-        throw unanswered('You can send more once they accept your message request.');
+        throw unanswered(tr('You can send more once they accept your message request.'));
       if (other.request_state === 'pending') {
         const sent = await ctx.db
           .selectFrom('messages')
@@ -480,7 +485,7 @@ export async function sendMessage(
           throw new AppError(
             403,
             'awaiting_acceptance',
-            'You can send more once they accept your message request.',
+            tr('You can send more once they accept your message request.'),
           );
         }
       }
@@ -494,7 +499,7 @@ export async function sendMessage(
       .where('id', '=', body.replyToId)
       .executeTakeFirst();
     if (reply?.conversation_id !== conversationId)
-      throw badRequest('You can only reply to a message in this conversation.');
+      throw badRequest(tr('You can only reply to a message in this conversation.'));
   }
   const memberIds = new Set(members.map((p) => p.user_id));
   const mentions = [...new Set(body.mentions ?? [])].filter(
@@ -525,7 +530,7 @@ export async function sendMessage(
       )
       .execute();
     if (files.length !== new Set(body.fileIds).size)
-      throw badRequest('One of the attachments isn’t available.');
+      throw badRequest(tr('One of the attachments isn’t available.'));
   }
 
   const sender = await ctx.db
@@ -535,7 +540,7 @@ export async function sendMessage(
     .executeTakeFirstOrThrow();
   // Under-18 accounts don't share where they are (R29).
   if (body.kind === 'location' && minorOf(sender, ctx.now()))
-    throw forbidden('Sharing a location is for people over 18.');
+    throw forbidden(tr('Sharing a location is for people over 18.'));
   const text = body.body?.trim() ?? '';
   const analysis = text
     ? analyzeMessage(text, {
@@ -586,7 +591,9 @@ export async function sendMessage(
     if (!card.ok) throw badRequest(card.error);
     // A business conversation is one-to-one: a customer and the organization (R15).
     if (conversation.kind !== 'direct' && conversation.kind !== 'business' && !card.def.groups)
-      throw badRequest(`${card.def.name} cards are for one-to-one conversations.`);
+      throw badRequest(
+        tr('{name} cards are for one-to-one conversations.', { name: card.def.name }),
+      );
     // With an organization, only the cards a customer relationship offers (orders, tickets…).
     if (
       conversation.kind === 'business' &&
@@ -594,7 +601,9 @@ export async function sendMessage(
         (k) => k.id === card.kit,
       )
     )
-      throw badRequest(`${card.def.name} cards aren’t for conversations with an organization.`);
+      throw badRequest(
+        tr('{name} cards aren’t for conversations with an organization.', { name: card.def.name }),
+      );
     if (card.def.adultsOnly) {
       const people = await ctx.db
         .selectFrom('users')
@@ -606,7 +615,9 @@ export async function sendMessage(
         )
         .execute();
       if (people.some((u) => minorOf(u, ctx.now())))
-        throw forbidden(`${card.def.name} cards aren’t available in this conversation.`);
+        throw forbidden(
+          tr('{name} cards aren’t available in this conversation.', { name: card.def.name }),
+        );
     }
     if (card.kit === 'split') {
       // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
@@ -627,7 +638,7 @@ export async function sendMessage(
         senderId,
         people.map((u) => u.id),
       );
-      if (!shares.length) throw badRequest('There’s nobody here to split it with.');
+      if (!shares.length) throw badRequest(tr('There’s nobody here to split it with.'));
       card.fields.shares = shares;
     }
     payload = {
@@ -645,7 +656,7 @@ export async function sendMessage(
     const place = LocationPayload.parse(body.payload);
     if (place.live) {
       if (conversation.kind === 'business')
-        throw badRequest('Live location is for people you know, not organizations.');
+        throw badRequest(tr('Live location is for people you know, not organizations.'));
       const at = ctx.now();
       payload = {
         ...place,

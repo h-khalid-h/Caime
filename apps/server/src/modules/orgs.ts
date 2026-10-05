@@ -30,6 +30,7 @@ import {
   uuidv7,
   verificationRecord,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -185,8 +186,9 @@ async function adult(ctx: AppContext, userIds: string[]): Promise<boolean> {
 
 async function managerSeat(ctx: AppContext, userId: string, orgId: string) {
   const seat = await orgSeat(ctx.db, userId, orgId);
-  if (!seat) throw notFound('That organization');
-  if (!canManageOrg(seat.role)) throw forbidden('Only the organization’s owner and admins can.');
+  if (!seat) throw notFound(tr('That organization'));
+  if (!canManageOrg(seat.role))
+    throw forbidden(tr('Only the organization’s owner and admins can.'));
   return seat;
 }
 
@@ -199,9 +201,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(CreateOrgBody, req.body);
     ctx.limiter.hit(`org:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     if (!(await adult(ctx, [auth.userId])))
-      throw forbidden('Organizations are for people over 18.');
+      throw forbidden(tr('Organizations are for people over 18.'));
     await assertHandleAvailable(ctx.db, body.handle, ctx.now());
-    if (!isCountry(body.country)) throw badRequest('Choose where it’s based.');
+    if (!isCountry(body.country)) throw badRequest(tr('Choose where it’s based.'));
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       await trx
@@ -286,7 +288,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.replace(/^@/, '').toLowerCase())
       .where('archived_at', 'is', null)
       .executeTakeFirst();
-    if (!org) throw notFound('That organization');
+    if (!org) throw notFound(tr('That organization'));
     return { org: await orgView(ctx, auth.userId, org) };
   });
 
@@ -304,7 +306,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
-    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
     const url = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}${doorPath(org.handle)}`;
     // The same for everyone on the team until the handle changes: a browser may keep it a while.
     reply.header('cache-control', 'private, max-age=3600');
@@ -330,7 +332,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         throw new AppError(
           413,
           'export_too_large',
-          'This export is too large to make here. Write to Caime and it will be made for you.',
+          tr('This export is too large to make here. Write to Caime and it will be made for you.'),
         );
       throw e;
     }
@@ -358,7 +360,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       await orgById(ctx.db, id);
       await managerSeat(ctx, auth.userId, id);
       const result = await eraseBusinessConversation(ctx, id, conversationId, auth.userId);
-      if (result === null) throw notFound('That conversation');
+      if (result === null) throw notFound(tr('That conversation'));
       await audit(ctx.db, {
         actorId: auth.userId,
         action: 'org.conversation_erased',
@@ -376,13 +378,13 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await orgById(ctx.db, id);
     await managerSeat(ctx, auth.userId, id);
     if (body.country !== undefined && !isCountry(body.country))
-      throw badRequest('Choose where it’s based.');
+      throw badRequest(tr('Choose where it’s based.'));
     // How long its customers' conversations are kept is its owner's to set (R54), and takes
     // what's already there with it: the shorter time wins for every message.
     if (body.retentionDays !== undefined) {
       const seat = await orgSeat(ctx.db, auth.userId, id);
       if (seat?.role !== 'owner')
-        throw forbidden('Only the owner sets how long conversations are kept.');
+        throw forbidden(tr('Only the owner sets how long conversations are kept.'));
       await ctx.db
         .transaction()
         .execute((trx) => applyOrgRetention(trx, id, body.retentionDays ?? null, ctx.now()));
@@ -401,7 +403,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', body.avatarFileId)
         .where('owner_id', '=', auth.userId)
         .executeTakeFirst();
-      if (file?.kind !== 'image') throw badRequest('Choose an image you uploaded.');
+      if (file?.kind !== 'image') throw badRequest(tr('Choose an image you uploaded.'));
     }
     await ctx.db
       .updateTable('organizations')
@@ -428,7 +430,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);
     const seat = await orgSeat(ctx.db, auth.userId, id);
-    if (!seat) throw notFound('That organization');
+    if (!seat) throw notFound(tr('That organization'));
     return { spaces: await orgSpaceViews(ctx, auth.userId, id, canManageOrg(seat.role)) };
   });
 
@@ -448,7 +450,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('org_id', '=', id)
       .where('archived_at', 'is', null)
       .executeTakeFirst();
-    if (!space) throw notFound('That space');
+    if (!space) throw notFound(tr('That space'));
     const inIt = await ctx.db
       .selectFrom('space_members')
       .select('user_id')
@@ -456,7 +458,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .where('left_at', 'is', null)
       .executeTakeFirst();
-    if (inIt) throw conflict('already_in', 'You’re in it already.');
+    if (inIt) throw conflict('already_in', tr('You’re in it already.'));
     await addToSpace(ctx, spaceId, [auth.userId], auth.userId, 'admin');
     return { ok: true };
   });
@@ -487,7 +489,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await orgById(ctx.db, id);
     const seat = await managerSeat(ctx, auth.userId, id);
     if (body.role === 'admin' && seat.role !== 'owner')
-      throw forbidden('Only the owner makes admins.');
+      throw forbidden(tr('Only the owner makes admins.'));
     const current = new Set((await team(ctx, id)).map((m) => m.user_id));
     const adding = [...new Set(body.userIds)].filter((u) => !current.has(u));
     if (adding.length === 0) return { ok: true };
@@ -501,8 +503,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('c.status', '=', 'active')
       .execute();
     if (new Set(connected.map((c) => c.other_id)).size !== adding.length)
-      throw badRequest('You can add people you’re connected with.');
-    if (!(await adult(ctx, adding))) throw forbidden('Teams are for people over 18.');
+      throw badRequest(tr('You can add people you’re connected with.'));
+    if (!(await adult(ctx, adding))) throw forbidden(tr('Teams are for people over 18.'));
     await assertTeamRoom(ctx, id, adding.length);
     for (const userId of adding)
       await ctx.db
@@ -545,19 +547,20 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id, userId } = parse(memberParam, req.params);
     await orgById(ctx.db, id);
     const seat = await orgSeat(ctx.db, auth.userId, id);
-    if (!seat) throw notFound('That organization');
+    if (!seat) throw notFound(tr('That organization'));
     const members = await team(ctx, id);
     const target = members.find((m) => m.user_id === userId);
-    if (!target) throw notFound('That person on the team');
-    if (target.kind !== 'human') throw badRequest('That’s an app’s bot: remove the app instead.');
+    if (!target) throw notFound(tr('That person on the team'));
+    if (target.kind !== 'human')
+      throw badRequest(tr('That’s an app’s bot: remove the app instead.'));
     // Only people run an organization: a bot never inherits it, nor keeps it open alone.
     const people = members.filter((m) => m.kind === 'human');
     const leaving = userId === auth.userId;
     if (!leaving && !canRemoveFromOrg(seat.role, target.role))
       throw forbidden(
         seat.role === 'admin'
-          ? 'Admins remove the team; the owner removes admins.'
-          : 'Only the organization’s owner and admins remove people.',
+          ? tr('Admins remove the team; the owner removes admins.')
+          : tr('Only the organization’s owner and admins remove people.'),
       );
     const heir =
       target.role === 'owner'
@@ -617,10 +620,11 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     await orgById(ctx.db, id);
     const seat = await managerSeat(ctx, auth.userId, id);
     const target = (await team(ctx, id)).find((m) => m.user_id === userId);
-    if (!target) throw notFound('That person on the team');
-    if (target.kind !== 'human') throw badRequest('That’s an app’s bot: change the app instead.');
+    if (!target) throw notFound(tr('That person on the team'));
+    if (target.kind !== 'human')
+      throw badRequest(tr('That’s an app’s bot: change the app instead.'));
     if (body.role !== undefined && !canChangeOrgRole(seat.role, target.role))
-      throw forbidden('Only the owner makes admins.');
+      throw forbidden(tr('Only the owner makes admins.'));
     await ctx.db
       .updateTable('org_members')
       .set({
@@ -641,7 +645,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const org = await orgById(ctx.db, id);
     await managerSeat(ctx, auth.userId, id);
     const domain = normalizeDomain(body.domain);
-    if (!domain) throw badRequest('Enter a domain like datac.com.');
+    if (!domain) throw badRequest(tr('Enter a domain like datac.com.'));
     const holder = await ctx.db
       .selectFrom('organizations')
       .select('id')
@@ -649,7 +653,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('verified_at', 'is not', null)
       .where('id', '<>', id)
       .executeTakeFirst();
-    if (holder) throw conflict('domain_taken', 'Another organization has verified this domain.');
+    if (holder)
+      throw conflict('domain_taken', tr('Another organization has verified this domain.'));
     if (org.domain !== domain || !org.verify_token)
       await ctx.db
         .updateTable('organizations')
@@ -666,7 +671,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const org = await orgById(ctx.db, id);
     await managerSeat(ctx, auth.userId, id);
     ctx.limiter.hit(`org-verify:${id}`, ctx.config.isTest ? 1000 : 10, 60_000);
-    if (!org.domain || !org.verify_token) throw badRequest('Add your domain first.');
+    if (!org.domain || !org.verify_token) throw badRequest(tr('Add your domain first.'));
     if (!org.verified_at) {
       const record = verificationRecord(org.domain, org.verify_token);
       const [named, apex] = await Promise.all([
@@ -677,7 +682,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         throw new AppError(
           422,
           'record_not_found',
-          'We couldn’t find the record yet. DNS changes can take a few minutes, sometimes an hour.',
+          tr(
+            'We couldn’t find the record yet. DNS changes can take a few minutes, sometimes an hour.',
+          ),
         );
       try {
         await ctx.db
@@ -687,7 +694,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .execute();
       } catch (err) {
         if ((err as { code?: string }).code === '23505')
-          throw conflict('domain_taken', 'Another organization has verified this domain.');
+          throw conflict('domain_taken', tr('Another organization has verified this domain.'));
         throw err;
       }
       await audit(ctx.db, {
@@ -710,7 +717,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
     const seat = await orgSeat(ctx.db, auth.userId, id);
-    if (seat?.role !== 'owner') throw forbidden('Only the organization’s owner closes it.');
+    if (seat?.role !== 'owner') throw forbidden(tr('Only the organization’s owner closes it.'));
     const members = await team(ctx, id);
     await ctx.db.transaction().execute((trx) => closeOrg(trx, id, ctx.now()));
     await audit(ctx.db, {
@@ -737,12 +744,14 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     ctx.limiter.hit(`org-reclaim:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     if (!(await adult(ctx, [auth.userId])))
-      throw forbidden('Organizations are for people over 18.');
+      throw forbidden(tr('Organizations are for people over 18.'));
     const org = await closedOrgById(ctx.db, id);
     if (!org.domain || !org.verified_at)
       throw conflict(
         'not_reclaimable',
-        'This organization was never verified at a domain, so there’s no way to prove it’s yours.',
+        tr(
+          'This organization was never verified at a domain, so there’s no way to prove it’s yours.',
+        ),
       );
     const token = newVerifyToken();
     await ctx.db
@@ -770,7 +779,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`org-verify:${id}`, ctx.config.isTest ? 1000 : 10, 60_000);
     const org = await closedOrgById(ctx.db, id);
     if (!org.domain || org.reclaim_by !== auth.userId || !org.reclaim_token)
-      throw badRequest('Start taking it back first.');
+      throw badRequest(tr('Start taking it back first.'));
     const record = verificationRecord(org.domain, org.reclaim_token);
     const [named, apex] = await Promise.all([
       ctx.dns.resolveTxt(record.name).catch(() => [] as string[][]),
@@ -780,7 +789,9 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         422,
         'record_not_found',
-        'We couldn’t find the record yet. DNS changes can take a few minutes, sometimes an hour.',
+        tr(
+          'We couldn’t find the record yet. DNS changes can take a few minutes, sometimes an hour.',
+        ),
       );
     const newId = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {

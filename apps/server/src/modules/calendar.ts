@@ -19,6 +19,7 @@ import {
   type TaskView,
   zonedParts,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -146,7 +147,7 @@ function windowOf(query: unknown): { from: Date; until: Date } {
   const from = new Date(q.from);
   const until = new Date(q.to);
   if (until <= from || until.getTime() - from.getTime() > MAX_WINDOW_MS)
-    throw badRequest('Ask for up to a year, from one instant to a later one.');
+    throw badRequest(tr('Ask for up to a year, from one instant to a later one.'));
   return { from, until };
 }
 
@@ -167,7 +168,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const window = windowOf(req.query);
     await orgById(ctx.db, id);
-    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
     const items = await orgBookings(ctx, id, window);
     return { from: window.from.toISOString(), to: window.until.toISOString(), items };
   });
@@ -179,8 +180,9 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(z.object({ booking: BookingHoursBody.nullable() }).strict(), req.body);
     await orgById(ctx.db, id);
     const seat = await orgSeat(ctx.db, auth.userId, id);
-    if (!seat) throw notFound('That organization');
-    if (!canManageOrg(seat.role)) throw forbidden('Only the organization’s owner and admins can.');
+    if (!seat) throw notFound(tr('That organization'));
+    if (!canManageOrg(seat.role))
+      throw forbidden(tr('Only the organization’s owner and admins can.'));
     await ctx.db
       .updateTable('organizations')
       .set({ booking: body.booking ? JSON.stringify(body.booking) : null, updated_at: ctx.now() })
@@ -228,7 +230,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (minorOf(me, ctx.now())) throw forbidden('Calendars are for people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden(tr('Calendars are for people over 18.'));
     ctx.limiter.hit(`calendar-feed:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const token = newToken('cal');
     const row = await ctx.db
@@ -268,7 +270,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/calendar/:file', async (req, reply) => {
     const { file } = parse(z.object({ file: z.string().max(80) }), req.params);
     const token = FILE.exec(file)?.[1];
-    if (!token) throw notFound('That calendar');
+    if (!token) throw notFound(tr('That calendar'));
     const hash = hashToken(token);
     const feed = await ctx.db
       .selectFrom('calendar_feeds as f')
@@ -279,14 +281,14 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!feed) {
       ctx.limiter.hit(`calendar-miss:${req.ip}`, ctx.config.isTest ? 10_000 : 300, 3_600_000);
-      throw notFound('That calendar');
+      throw notFound(tr('That calendar'));
     }
     ctx.limiter.hit(
       `calendar:${hash.toString('hex')}`,
       ctx.config.isTest ? 10_000 : 120,
       3_600_000,
     );
-    if (minorOf(feed, ctx.now())) throw notFound('That calendar');
+    if (minorOf(feed, ctx.now())) throw notFound(tr('That calendar'));
     const now = ctx.now();
     const events = await calendarEvents(ctx, feed.user_id, feed.time_zone);
     if (!feed.last_read_at || now.getTime() - feed.last_read_at.getTime() > READ_EVERY_MS) {

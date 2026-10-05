@@ -7,6 +7,7 @@
  * work, never for them to be safe.
  */
 import type { DeviceView, PublicJwk, SealedMessage } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { AppError } from './errors';
@@ -158,16 +159,21 @@ export async function assertSealedForEveryone(
     throw new AppError(
       403,
       'unknown_device',
-      'This device isn’t set up for private conversations: sign in again to write here.',
+      tr('This device isn’t set up for private conversations: sign in again to write here.'),
     );
   if (devices.some((d) => !sealed.keys[d.id]))
-    throw new AppError(409, 'devices_changed', 'Someone’s devices changed since this was sealed.', {
-      people,
-      devices: devices.map(publicView),
-      chain: await chainOf(
-        ctx,
-        devices.map((d) => d.id),
+    throw new AppError(
+      409,
+      'devices_changed',
+      tr('Someone’s devices changed since this was sealed.'),
+      {
         people,
-      ),
-    });
+        devices: devices.map(publicView),
+        chain: await chainOf(
+          ctx,
+          devices.map((d) => d.id),
+          people,
+        ),
+      },
+    );
 }

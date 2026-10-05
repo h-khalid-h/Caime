@@ -10,6 +10,7 @@ import {
   type RelationshipInputT,
   TopicBody,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -145,10 +146,10 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!s || s.status !== 'accepted') throw notFound('That suggestion');
+    if (!s || s.status !== 'accepted') throw notFound(tr('That suggestion'));
     const ref = s.result_ref as { type?: string; id?: string; title?: string } | null;
     if (!['task', 'reminder', 'waiting'].includes(s.kind) || ref?.type !== 'task' || !ref.id)
-      throw new AppError(400, 'not_undoable', 'This step can’t be taken back here.');
+      throw new AppError(400, 'not_undoable', tr('This step can’t be taken back here.'));
     const task = await ctx.db
       .selectFrom('tasks')
       .select(['id', 'owner_id', 'assignee_id', 'shared', 'title', 'status'])
@@ -158,7 +159,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     // Renamed, done or otherwise touched since, it's the person's own now, and stays.
     if (!task || task.status !== 'open' || (ref.title !== undefined && task.title !== ref.title))
-      throw new AppError(400, 'not_undoable', 'That step was changed since: it stays.');
+      throw new AppError(400, 'not_undoable', tr('That step was changed since: it stays.'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx.deleteFrom('tasks').where('id', '=', task.id).execute();
       await trx
@@ -185,7 +186,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .where('status', '=', 'pending')
       .executeTakeFirst();
-    if (Number(res.numUpdatedRows) === 0) throw notFound('That suggestion');
+    if (Number(res.numUpdatedRows) === 0) throw notFound(tr('That suggestion'));
     await ctx.bus.publish([auth.userId], {
       type: 'suggestion.resolved',
       data: { id, status: 'dismissed' },
@@ -231,7 +232,7 @@ export async function acceptSuggestion(
       if (seat) return { accepted: { type: 'conversation', id: ref.id } };
     }
   }
-  if (s?.status !== 'pending') throw notFound('That suggestion');
+  if (s?.status !== 'pending') throw notFound(tr('That suggestion'));
   // About a conversation they're no longer in: nothing of it is theirs to act on any more (a
   // decision would be recorded in a group they've left, a task would quote it).
   if (s.conversation_id && ['decision', 'task', 'reminder', 'waiting'].includes(s.kind)) {
@@ -248,7 +249,7 @@ export async function acceptSuggestion(
         .set({ status: 'expired', resolved_at: ctx.now() })
         .where('id', '=', id)
         .execute();
-      throw notFound('That suggestion');
+      throw notFound(tr('That suggestion'));
     }
   }
   const title = edits.title ?? s.title;
@@ -300,7 +301,7 @@ export async function acceptSuggestion(
         // only. Both accounts and their conversations stay as they are.
         const pair = [String(payload.keep), String(payload.merge)];
         const kept = edits.keep ?? pair[0];
-        if (!kept || !pair.includes(kept)) throw badRequest('Keep one of the two.');
+        if (!kept || !pair.includes(kept)) throw badRequest(tr('Keep one of the two.'));
         const merged = pair.find((p) => p !== kept) as string;
         const sideOf = (otherId: string) =>
           trx
@@ -322,11 +323,11 @@ export async function acceptSuggestion(
         const keeping = await shownUnder(kept);
         const merging = await shownUnder(merged);
         if (!keeping || !merging)
-          throw badRequest('You aren’t connected with both of them any more.');
+          throw badRequest(tr('You aren’t connected with both of them any more.'));
         // Someone blocked either way (since it was offered) isn't anyone's duplicate.
         for (const other of pair)
           if (await isBlockedEitherWay(trx, auth.userId, other))
-            throw badRequest('One of them is blocked: it can’t be merged.');
+            throw badRequest(tr('One of them is blocked: it can’t be merged.'));
         const into = keeping.one;
         if (into !== merging.one) {
           // The one kept under stands on its own; the one merged, and anyone already under it,
@@ -372,13 +373,13 @@ export async function acceptSuggestion(
         break;
       }
       case 'relationship': {
-        if (!s.subject_user_id) throw badRequest('This suggestion is missing its person.');
+        if (!s.subject_user_id) throw badRequest(tr('This suggestion is missing its person.'));
         // As when it's said by hand: never about someone blocked, either way.
         if (
           (await isBlockedEitherWay(trx, auth.userId, s.subject_user_id)) ||
           !(await mayClassify(trx, auth.userId, s.subject_user_id))
         )
-          throw forbidden('Connect with this person first.');
+          throw forbidden(tr('Connect with this person first.'));
         const input = (edits.relationship ?? payload) as RelationshipInputT;
         const r = await createRelationship(trx, ctx, auth.userId, s.subject_user_id, input, {
           source: 'suggestion',
@@ -404,7 +405,7 @@ export async function acceptSuggestion(
         break;
       }
       case 'waiting': {
-        if (!s.subject_user_id) throw badRequest('This suggestion is missing its person.');
+        if (!s.subject_user_id) throw badRequest(tr('This suggestion is missing its person.'));
         const t = await createTask(trx, ctx, {
           ownerId: auth.userId,
           assigneeId: s.subject_user_id,
@@ -419,7 +420,8 @@ export async function acceptSuggestion(
         break;
       }
       case 'decision': {
-        if (!s.conversation_id) throw badRequest('This suggestion is missing its conversation.');
+        if (!s.conversation_id)
+          throw badRequest(tr('This suggestion is missing its conversation.'));
         // Its line goes in the conversation: only from someone who may write there (blocks).
         await assertCanWrite(ctx, s.conversation_id, auth.userId);
         const d = await createDecision(trx, ctx, {
@@ -442,7 +444,9 @@ export async function acceptSuggestion(
         break;
       }
       default:
-        throw badRequest(`Accepting a ${s.kind} suggestion isn’t supported yet.`);
+        throw badRequest(
+          tr('Accepting a {kind} suggestion isn’t supported yet.', { kind: s.kind }),
+        );
     }
     await trx
       .updateTable('suggestions')

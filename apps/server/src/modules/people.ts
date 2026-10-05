@@ -26,6 +26,7 @@ import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
 
+import { tr } from '@caime/core/i18n';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -177,7 +178,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!user) throw notFound('That person');
+    if (!user) throw notFound(tr('That person'));
     const [relation, b, identity, mine] = await Promise.all([
       viewerRelation(ctx.db, id, auth.userId),
       between(ctx.db, auth.userId, id),
@@ -185,7 +186,7 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       id === auth.userId ? Promise.resolve([]) : activeRelationships(ctx.db, auth.userId, [id]),
     ]);
     // Being blocked by them looks exactly like not existing.
-    if (b.blockedMe) throw notFound('That person');
+    if (b.blockedMe) throw notFound(tr('That person'));
     const now = ctx.now();
     const { key } = pairKey(auth.userId, id);
     const conversations = await ctx.db

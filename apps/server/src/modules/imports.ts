@@ -1,4 +1,5 @@
 import { ImportChatBody, type ImportChatView, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
 import { assertCanWrite } from '../lib/blocks';
@@ -27,10 +28,10 @@ export async function importRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/conversations/import', { bodyLimit: BODY_LIMIT }, async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(ImportChatBody, req.body);
-    if (body.userId === auth.userId) throw badRequest('That’s you.');
+    if (body.userId === auth.userId) throw badRequest(tr('That’s you.'));
     const b = await between(ctx.db, auth.userId, body.userId);
-    if (b.blockedByMe || b.blockedMe) throw forbidden('You can’t message this person.');
-    if (!b.connected) throw forbidden('Connect first to bring a chat over.');
+    if (b.blockedByMe || b.blockedMe) throw forbidden(tr('You can’t message this person.'));
+    if (!b.connected) throw forbidden(tr('Connect first to bring a chat over.'));
     ctx.limiter.hit(`import:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     const general = await ensureDirectConversation(ctx.db, auth.userId, body.userId, {
       connectionId: b.connectionId,

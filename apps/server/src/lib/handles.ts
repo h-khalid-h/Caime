@@ -9,6 +9,7 @@
  * organization's handle stays with it, closed or not (its row stays).
  */
 import { type ClosedOrgView, isReservedHandle } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../db/schema';
 import { AppError, conflict } from './errors';
@@ -17,7 +18,7 @@ import { dayOf, KEPT_DAYS } from './retention';
 type Q = Kysely<Database> | Transaction<Database>;
 
 /** How a handle that can't be had reads: someone has it, it's held, or it's reserved. */
-export const HANDLE_UNAVAILABLE = 'That handle isn’t available.';
+export const HANDLE_UNAVAILABLE = () => tr('That handle isn’t available.');
 
 /**
  * A closed organization holding `handle` (R42): one that was verified at its domain keeps it
@@ -134,15 +135,18 @@ export async function assertHandleAvailable(
   // Whether someone has it before whether it's held: a handle is held in the transaction that
   // lets it go, so once the first no longer finds its holder, the second finds the hold.
   if (isReservedHandle(handle) || (await handleTaken(db, handle, except)))
-    throw conflict('handle_taken', HANDLE_UNAVAILABLE);
+    throw conflict('handle_taken', HANDLE_UNAVAILABLE());
   // A closed organization's, verified: said, with its domain, so that the organization itself
   // can take it back (R42). Anyone else gets what a taken handle gets.
   const closed = await closedOrgHolding(db, handle);
   if (closed)
     throw new AppError(409, 'handle_closed_org', closedOrgMessage(closed), { closedOrg: closed });
-  if (await handleHeld(db, handle, now)) throw conflict('handle_taken', HANDLE_UNAVAILABLE);
+  if (await handleHeld(db, handle, now)) throw conflict('handle_taken', HANDLE_UNAVAILABLE());
 }
 
 /** What whoever asks for a closed organization's handle is told. */
 export const closedOrgMessage = (o: ClosedOrgView) =>
-  `It belongs to ${o.name}, which closed. If you’re ${o.name}, verify ${o.domain} to take it back.`;
+  tr('It belongs to {name}, which closed. If you’re {name}, verify {domain} to take it back.', {
+    name: o.name,
+    domain: o.domain,
+  });

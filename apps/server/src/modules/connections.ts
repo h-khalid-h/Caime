@@ -150,7 +150,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/connections/requests', async (req, reply) => {
     const auth = requireAuth(req);
     const body = parse(ConnectionRequestBody, req.body);
-    if (body.toUserId === auth.userId) throw badRequest('That’s you.');
+    if (body.toUserId === auth.userId) throw badRequest(tr('That’s you.'));
     ctx.limiter.hit(`conn-request:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 86_400_000);
     const target = await ctx.db
       .selectFrom('users')
@@ -159,10 +159,10 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .where('kind', '=', 'human') // An app's bot is nobody to connect with.
       .executeTakeFirst();
-    if (!target) throw notFound('That person');
+    if (!target) throw notFound(tr('That person'));
     const b = await between(ctx.db, auth.userId, target.id);
-    if (b.blockedMe || b.blockedByMe) throw forbidden('You can’t connect with this person.');
-    if (b.connected) throw conflict('already_connected', 'You’re already connected.');
+    if (b.blockedMe || b.blockedByMe) throw forbidden(tr('You can’t connect with this person.'));
+    if (b.connected) throw conflict('already_connected', tr('You’re already connected.'));
     const me = await ctx.db
       .selectFrom('users')
       .selectAll()
@@ -176,7 +176,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       return { status: 'connected', ...result };
     }
     if (b.outgoingRequestId)
-      throw conflict('already_requested', 'Your request is waiting for them.');
+      throw conflict('already_requested', tr('Your request is waiting for them.'));
 
     const privacy = privacyOf(target, now);
     const targetMinor = minorOf(target, now);
@@ -193,7 +193,9 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         403,
         'not_accepting_requests',
-        `${target.display_name} isn’t accepting requests from people they don’t know yet.`,
+        tr('{name} isn’t accepting requests from people they don’t know yet.', {
+          name: target.display_name,
+        }),
       );
     }
     const recentDecline = await ctx.db
@@ -205,7 +207,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('responded_at', '>', new Date(now.getTime() - DECLINE_COOLDOWN_DAYS * 86_400_000))
       .executeTakeFirst();
     if (recentDecline)
-      throw new AppError(429, 'recently_declined', 'You can send another request later.');
+      throw new AppError(429, 'recently_declined', tr('You can send another request later.'));
 
     if (body.identityId) {
       const owned = await ctx.db
@@ -214,7 +216,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', body.identityId)
         .where('user_id', '=', auth.userId)
         .executeTakeFirst();
-      if (!owned) throw badRequest('Choose one of your identities.');
+      if (!owned) throw badRequest(tr('Choose one of your identities.'));
     }
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
@@ -322,7 +324,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('status', '=', 'pending')
       .returning(['from_user'])
       .executeTakeFirst();
-    if (!res) throw notFound('That request');
+    if (!res) throw notFound(tr('That request'));
     // The requester is not told it was declined; it simply stays unanswered on their side.
     await ctx.bus.publish([auth.userId], {
       type: 'connection.request.resolved',
@@ -342,7 +344,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('status', '=', 'pending')
       .returning(['to_user'])
       .executeTakeFirst();
-    if (!res) throw notFound('That request');
+    if (!res) throw notFound(tr('That request'));
     await ctx.bus.publish([auth.userId, res.to_user], {
       type: 'connection.request.resolved',
       data: { requestId: id },
@@ -479,7 +481,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('connection_id', '=', id)
       .where('owner_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!side) throw notFound('That connection');
+    if (!side) throw notFound(tr('That connection'));
     if (body.identityId) {
       const owned = await ctx.db
         .selectFrom('identities')
@@ -487,7 +489,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', body.identityId)
         .where('user_id', '=', auth.userId)
         .executeTakeFirst();
-      if (!owned) throw badRequest('Choose one of your identities.');
+      if (!owned) throw badRequest(tr('Choose one of your identities.'));
     }
     await ctx.db
       .updateTable('connection_sides')
@@ -522,7 +524,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('merged_into', 'is not', null)
       .returning('connection_id')
       .executeTakeFirst();
-    if (!side) throw notFound('That merged connection');
+    if (!side) throw notFound(tr('That merged connection'));
     await ctx.bus.publish([auth.userId], {
       type: 'connection.updated',
       data: { connectionId: id },
@@ -540,7 +542,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('status', '=', 'active')
       .executeTakeFirst();
     if (!conn || (conn.user_a !== auth.userId && conn.user_b !== auth.userId))
-      throw notFound('That connection');
+      throw notFound(tr('That connection'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('connections')
@@ -584,7 +586,7 @@ export async function acceptRequest(
     .where('to_user', '=', userId)
     .where('status', '=', 'pending')
     .executeTakeFirst();
-  if (!request) throw notFound('That request');
+  if (!request) throw notFound(tr('That request'));
   let result!: { connectionId: string; conversationId: string };
   let mine: Awaited<ReturnType<typeof createRelationship>> | null = null;
   await ctx.db.transaction().execute(async (trx) => {

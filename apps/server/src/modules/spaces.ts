@@ -31,6 +31,7 @@ import {
   UpdateSpaceBody,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -100,8 +101,8 @@ async function assertConnected(
   if (ids.some((id) => !allowed.has(id)))
     throw badRequest(
       orgId
-        ? 'You can add people on the organization’s team, or people you’re connected with.'
-        : 'You can add people you’re connected with.',
+        ? tr('You can add people on the organization’s team, or people you’re connected with.')
+        : tr('You can add people you’re connected with.'),
     );
 }
 
@@ -451,7 +452,7 @@ export async function summaries(
 
 async function spaceView(ctx: AppContext, userId: string, spaceId: string): Promise<SpaceView> {
   const [summary] = await summaries(ctx, userId, spaceId);
-  if (!summary) throw notFound('That space');
+  if (!summary) throw notFound(tr('That space'));
   const members = await activeMembers(ctx, spaceId);
   const ids = members.map((m) => m.user_id);
   const others = ids.filter((id) => id !== userId);
@@ -573,7 +574,7 @@ async function spaceView(ctx: AppContext, userId: string, spaceId: string): Prom
         Date.parse(b.lastMessageAt ?? '1970-01-01') - Date.parse(a.lastMessageAt ?? '1970-01-01'),
     );
   const general = conversations.find((c) => c.is_general);
-  if (!general) throw notFound('That space');
+  if (!general) throw notFound(tr('That space'));
   // Its calendar: what's ahead in the conversations of it they're in (PRD §41).
   const titles = new Map(views.map((v) => [v.id, v.isGeneral ? summary.name : v.title]));
   const upcoming = (
@@ -629,7 +630,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
       await orgById(ctx.db, body.orgId);
       const seat = await orgSeat(ctx.db, auth.userId, body.orgId);
       if (!seat || !canManageOrg(seat.role))
-        throw forbidden('Only the organization’s owner and admins start its spaces.');
+        throw forbidden(tr('Only the organization’s owner and admins start its spaces.'));
     }
     await assertConnected(ctx, auth.userId, memberIds, body.orgId ?? null);
     const spaceId = uuidv7();
@@ -705,7 +706,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const body = parse(UpdateSpaceBody, req.body);
     const { space, seat } = await spaceSeat(ctx.db, auth.userId, id);
-    if (!canManageSpace(seat.role)) throw forbidden('Only the space’s owner and admins can.');
+    if (!canManageSpace(seat.role)) throw forbidden(tr('Only the space’s owner and admins can.'));
     await ctx.db
       .updateTable('spaces')
       .set({
@@ -743,7 +744,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(MembersBody, req.body);
     const { space, seat } = await spaceSeat(ctx.db, auth.userId, id);
     if (!canManageSpace(seat.role))
-      throw forbidden('Only the space’s owner and admins add people.');
+      throw forbidden(tr('Only the space’s owner and admins add people.'));
     ctx.limiter.hit(`space-add:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     const current = new Set((await activeMembers(ctx, id)).map((m) => m.user_id));
     const adding = [...new Set(body.userIds)].filter((u) => !current.has(u));
@@ -760,12 +761,12 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const leaving = userId === auth.userId;
     const members = await activeMembers(ctx, id);
     const target = members.find((m) => m.user_id === userId);
-    if (!target) throw notFound('That person in this space');
+    if (!target) throw notFound(tr('That person in this space'));
     if (!leaving && !canRemoveFromSpace(seat.role, target.role))
       throw forbidden(
         seat.role === 'admin'
-          ? 'Admins can remove members; the owner removes admins.'
-          : 'Only the space’s owner and admins remove people.',
+          ? tr('Admins can remove members; the owner removes admins.')
+          : tr('Only the space’s owner and admins remove people.'),
       );
     await removeFromSpace(ctx, id, userId, auth.userId);
     return { ok: true };
@@ -777,9 +778,9 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     const { role } = parse(SpaceRoleBody, req.body);
     const { seat } = await spaceSeat(ctx.db, auth.userId, id);
     const target = (await activeMembers(ctx, id)).find((m) => m.user_id === userId);
-    if (!target) throw notFound('That person in this space');
+    if (!target) throw notFound(tr('That person in this space'));
     if (!canChangeSpaceRole(seat.role, target.role))
-      throw forbidden('Only the space’s owner makes people admins.');
+      throw forbidden(tr('Only the space’s owner makes people admins.'));
     await ctx.db
       .updateTable('space_members')
       .set({ role })
@@ -822,7 +823,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', conversationId)
         .where('space_id', '=', id)
         .executeTakeFirst();
-      if (!convo) throw notFound('That conversation');
+      if (!convo) throw notFound(tr('That conversation'));
       const already = await ctx.db
         .selectFrom('participants')
         .select('user_id')

@@ -4,6 +4,7 @@
  * this stops CSRF. Native sends a Bearer token.
  */
 import { isApiToken, isPersonToken, OAUTH_ACCESS_PREFIX } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AppContext, Auth } from '../context';
 import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/access';
@@ -28,7 +29,7 @@ export const suspended = () =>
   new AppError(
     403,
     'suspended',
-    'This account is suspended. If you think that’s wrong, write to whoever runs Caime.',
+    tr('This account is suspended. If you think that’s wrong, write to whoever runs Caime.'),
   );
 
 export async function resolveSession(
@@ -86,13 +87,13 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     const session = await resolveSession(ctx, found.token);
     if (!session) return;
     if (found.via === 'cookie' && UNSAFE.has(req.method) && !req.headers['x-caime-client']) {
-      throw new AppError(403, 'csrf', 'Missing X-Caime-Client header.');
+      throw new AppError(403, 'csrf', tr('Missing X-Caime-Client header.'));
     }
     // The app says whose account it's showing: a call meant as one person never acts as another
     // (another tab of the browser signed in as them since, and the cookie is theirs now).
     const expected = req.headers['x-caime-user'];
     if (typeof expected === 'string' && expected !== session.userId)
-      throw new AppError(409, 'wrong_account', 'Someone else is signed in here now.');
+      throw new AppError(409, 'wrong_account', tr('Someone else is signed in here now.'));
     req.auth = { ...session, via: found.via };
   });
 }
@@ -105,9 +106,13 @@ async function authenticateApp(ctx: AppContext, req: FastifyRequest, token: stri
   const app = await resolveApiToken(ctx, token);
   if (!app) return;
   const scope = API_ROUTES[`${req.method} ${req.routeOptions.url ?? ''}`];
-  if (!scope) throw new AppError(403, 'token_route', 'An app’s token can’t do this.');
+  if (!scope) throw new AppError(403, 'token_route', tr('An app’s token can’t do this.'));
   if (scope !== 'any' && !app.scopes.includes(scope))
-    throw new AppError(403, 'token_scope', `This app needs the “${scope}” permission for that.`);
+    throw new AppError(
+      403,
+      'token_scope',
+      tr('This app needs the “{scope}” permission for that.', { scope }),
+    );
   ctx.limiter.hit(`api:${app.tokenId}`, ctx.config.isTest ? 10_000 : 600, 60_000);
   req.auth = {
     userId: app.botUserId,
@@ -128,9 +133,14 @@ async function authenticatePerson(ctx: AppContext, req: FastifyRequest, token: s
     : await resolvePersonalToken(ctx, token);
   if (!found) return;
   const scope = PERSON_ROUTES[`${req.method} ${req.routeOptions.url ?? ''}`];
-  if (!scope) throw new AppError(403, 'token_route', 'A token can’t do this: sign in to Caime.');
+  if (!scope)
+    throw new AppError(403, 'token_route', tr('A token can’t do this: sign in to Caime.'));
   if (!found.grant.scopes.includes(scope))
-    throw new AppError(403, 'token_scope', `This token needs the “${scope}” permission for that.`);
+    throw new AppError(
+      403,
+      'token_scope',
+      tr('This token needs the “{scope}” permission for that.', { scope }),
+    );
   ctx.limiter.hit(`person-token:${found.grant.id}`, ctx.config.isTest ? 10_000 : 300, 60_000);
   req.auth = {
     userId: found.userId,

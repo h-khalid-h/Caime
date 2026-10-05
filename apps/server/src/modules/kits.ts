@@ -14,6 +14,7 @@ import {
   parseCustomKit,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -35,7 +36,7 @@ const idParam = z.object({ id: z.string().uuid() });
 /** Only an app's own token keeps its kits: never a person, whoever they are. */
 function appOf(req: FastifyRequest) {
   const auth = requireAuth(req);
-  if (!auth.app) throw forbidden('Only an app’s token does this.');
+  if (!auth.app) throw forbidden(tr('Only an app’s token does this.'));
   return { auth, app: auth.app };
 }
 
@@ -87,7 +88,9 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
         throw new AppError(
           409,
           'limit',
-          `An app has up to ${CUSTOM_KIT_LIMITS.perApp} kinds of card. Remove one to make another.`,
+          tr('An app has up to {perApp} kinds of card. Remove one to make another.', {
+            perApp: CUSTOM_KIT_LIMITS.perApp,
+          }),
         );
       return {
         created: true,
@@ -123,7 +126,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('key', '=', key)
       .returning('id')
       .executeTakeFirst();
-    if (!gone) throw notFound('That kit');
+    if (!gone) throw notFound(tr('That kit'));
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'app.kit_removed',
@@ -190,12 +193,12 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
+    if (!m) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
     const card = m.payload;
     if (m.kind !== 'kit' || m.deleted_at || !isCustomCard(card))
-      throw badRequest('That isn’t one of an app’s cards.');
-    if (card.app.id !== me.id) throw forbidden('An app changes only its own cards.');
+      throw badRequest(tr('That isn’t one of an app’s cards.'));
+    if (card.app.id !== me.id) throw forbidden(tr('An app changes only its own cards.'));
     await assertCanWrite(ctx, m.conversation_id, auth.userId);
     // One change at a time (the card's row is locked, and read again under the lock), so two at
     // once never undo each other, and none is written into a card taken back meanwhile.
@@ -208,7 +211,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
         .executeTakeFirst();
       const now = row?.payload;
       if (!row || row.deleted_at || !isCustomCard(now))
-        throw badRequest('That isn’t one of an app’s cards.');
+        throw badRequest(tr('That isn’t one of an app’s cards.'));
       const merged = mergeCustomFields(now.def, now.fields, fields);
       if (!merged.ok) throw badRequest(merged.error);
       return trx

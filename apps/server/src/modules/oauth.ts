@@ -20,6 +20,7 @@ import {
   type PersonalScope,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { type Selectable, sql } from 'kysely';
 import { z } from 'zod';
@@ -111,7 +112,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (minorOf(me, ctx.now())) throw forbidden('Apps are made by people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden(tr('Apps are made by people over 18.'));
     ctx.limiter.hit(`oauth-app:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const live = await ctx.db
       .selectFrom('oauth_clients')
@@ -119,7 +120,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('owner_id', '=', auth.userId)
       .where('revoked_at', 'is', null)
       .execute();
-    if (live.length >= MAX_APPS) throw badRequest(`You have ${MAX_APPS} apps. Remove one first.`);
+    if (live.length >= MAX_APPS)
+      throw badRequest(tr('You have {MAX_APPS} apps. Remove one first.', { MAX_APPS }));
     const secret = body.confidential ? newClientSecret() : null;
     const row = await ctx.db
       .insertInto('oauth_clients')
@@ -152,7 +154,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('revoked_at', 'is', null)
       .returning('id')
       .executeTakeFirst();
-    if (!done) throw notFound('That app');
+    if (!done) throw notFound(tr('That app'));
     // Everyone it acted for is let go of at once.
     const grants = await ctx.db
       .selectFrom('oauth_grants')
@@ -184,14 +186,15 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('c.client_id', '=', r.client_id)
       .where('c.revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!client) throw badRequest('That app isn’t registered with Caime.');
+    if (!client) throw badRequest(tr('That app isn’t registered with Caime.'));
     // Exactly one it registered, or nowhere at all: never an address it didn't name.
     if (!client.redirect_uris.includes(r.redirect_uri))
-      throw badRequest('That app didn’t register this return address.');
+      throw badRequest(tr('That app didn’t register this return address.'));
     const scopes = [...new Set(r.scope.split(/\s+/).filter(Boolean))];
-    if (!scopes.length) throw badRequest('The app didn’t say what it wants to do.');
+    if (!scopes.length) throw badRequest(tr('The app didn’t say what it wants to do.'));
     const unknown = scopes.find((s) => !isPersonalScope(s));
-    if (unknown) throw badRequest(`“${unknown}” isn’t something an app can ask for.`);
+    if (unknown)
+      throw badRequest(tr('“{unknown}” isn’t something an app can ask for.', { unknown }));
     return { r, client, scopes: scopes as PersonalScope[] };
   }
 
@@ -232,7 +235,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (minorOf(me, ctx.now())) throw forbidden('Apps act for people over 18.');
+    if (minorOf(me, ctx.now())) throw forbidden(tr('Apps act for people over 18.'));
     ctx.limiter.hit(`oauth-allow:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
     // One grant per app and person, and allowing again only adds to it: an app asking for one
     // more thing (or another install of it asking for less) never loses what it was allowed.
@@ -519,7 +522,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .where('revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!grant) throw notFound('That app');
+    if (!grant) throw notFound(tr('That app'));
     await revokeGrant(ctx, grant.id);
     await audit(ctx.db, { actorId: auth.userId, action: 'oauth.removed', target: grant.client_id });
     return { ok: true };

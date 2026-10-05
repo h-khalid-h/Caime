@@ -14,6 +14,7 @@ import {
   TryOrgAgentBody,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -32,11 +33,12 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
   async function manager(userId: string, orgId: string) {
     const org = await orgById(ctx.db, orgId);
     const seat = await orgSeat(ctx.db, userId, orgId);
-    if (!seat) throw notFound('That organization');
-    if (!canManageOrg(seat.role)) throw forbidden('Only the organization’s owner and admins can.');
+    if (!seat) throw notFound(tr('That organization'));
+    if (!canManageOrg(seat.role))
+      throw forbidden(tr('Only the organization’s owner and admins can.'));
     return org;
   }
-  const unavailable = () => badRequest('AI isn’t available on this Caime server.');
+  const unavailable = () => badRequest(tr('AI isn’t available on this Caime server.'));
 
   async function viewOf(orgId: string): Promise<OrgAgentView | null> {
     const row = await ctx.db
@@ -172,7 +174,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       .select('bot_user_id')
       .where('org_id', '=', id)
       .executeTakeFirst();
-    if (!existing) throw notFound('That organization’s AI agent');
+    if (!existing) throw notFound(tr('That organization’s AI agent'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx.deleteFrom('org_agents').where('org_id', '=', id).execute();
       await trx
@@ -211,7 +213,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
       today: todayForAgent(ctx.now(), me.time_zone),
       slots: null,
     });
-    if (!reply) throw new AppError(503, 'ai_busy', 'It didn’t answer this time. Try again.');
+    if (!reply) throw new AppError(503, 'ai_busy', tr('It didn’t answer this time. Try again.'));
     return { action: reply.action, message: reply.message };
   });
 }

@@ -12,6 +12,7 @@ import {
   UpdateMeBody,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -113,12 +114,12 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     if (body.timeZone !== undefined) {
       // By the name it has now: a device may still report an older one (Asia/Calcutta).
       const zone = currentZone(body.timeZone);
-      if (!zone) throw badRequest('Choose a time zone from the list.');
+      if (!zone) throw badRequest(tr('Choose a time zone from the list.'));
       patch.time_zone = zone;
     }
     if (body.locale !== undefined) patch.locale = safeLocale(body.locale);
     if (body.country !== undefined && body.country !== current.country) {
-      if (!isCountry(body.country)) throw badRequest('Choose where you live.');
+      if (!isCountry(body.country)) throw badRequest(tr('Choose where you live.'));
       patch.country = body.country;
       // A work week that was where they lived's own follows them to the new one (R31); one they
       // set themselves stays theirs.
@@ -144,7 +145,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('id', '=', body.avatarFileId)
           .where('owner_id', '=', auth.userId)
           .executeTakeFirst();
-        if (file?.kind !== 'image') throw badRequest('Choose an image you uploaded.');
+        if (file?.kind !== 'image') throw badRequest(tr('Choose an image you uploaded.'));
       }
       patch.avatar_file_id = body.avatarFileId;
     }
@@ -260,7 +261,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const closedOrg = await closedOrgHolding(ctx.db, wanted);
     return {
       available: false,
-      reason: closedOrg ? closedOrgMessage(closedOrg) : HANDLE_UNAVAILABLE,
+      reason: closedOrg ? closedOrgMessage(closedOrg) : HANDLE_UNAVAILABLE(),
       suggestion: candidates.slice(1).find(free) ?? null,
       ...(closedOrg ? { closedOrg } : {}),
     };
@@ -297,7 +298,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(ctx.db.fn.countAll<number>().as('n'))
       .where('user_id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (Number(count.n) >= 10) throw badRequest('You can have up to 10 identities.');
+    if (Number(count.n) >= 10) throw badRequest(tr('You can have up to 10 identities.'));
     const id = uuidv7();
     await ctx.db.transaction().execute(async (trx) => {
       if (body.isDefault)
@@ -333,7 +334,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!existing) throw notFound('That identity');
+    if (!existing) throw notFound(tr('That identity'));
     await ctx.db.transaction().execute(async (trx) => {
       if (body.isDefault)
         await trx
@@ -365,8 +366,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!existing) throw notFound('That identity');
-    if (existing.is_default) throw badRequest('Make another identity your default first.');
+    if (!existing) throw notFound(tr('That identity'));
+    if (existing.is_default) throw badRequest(tr('Make another identity your default first.'));
     await ctx.db.deleteFrom('identities').where('id', '=', id).execute();
     return { ok: true };
   });

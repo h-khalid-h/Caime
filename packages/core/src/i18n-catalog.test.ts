@@ -12,7 +12,7 @@ describe.each([
   ['Arabic (R54)', ar],
   ['French (R55)', fr],
 ])('the %s catalog', (_name, ar) => {
-  // The public site's own strings are the server's catalog (apps/server/test/site-i18n.test.ts).
+  // What only the server says is the server's catalog (apps/server/test/server-i18n.test.ts).
   const keys = keysFor(collectKeys(), false) as Map<string, { text: string; plural: boolean }>;
 
   it('has every string the code shows', () => {

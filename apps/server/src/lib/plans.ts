@@ -16,6 +16,7 @@ import {
   type PlanUsageView,
   safeLocale,
 } from '@caime/core';
+import { tr, trn } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { AppError } from './errors';
@@ -73,15 +74,19 @@ export async function assertAiAllowance(ctx: AppContext, userId: string): Promis
   if (used < aiPerDay) return;
   const nextAt = oldest ? new Date(oldest.getTime() + DAY_MS) : null;
   const ready = nextAt
-    ? ` The next one is ready ${formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale))}.`
+    ? ` ${tr('The next one is ready {when}.', { when: formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale)) })}`
     : '';
   const next = nextPersonPlan(me.plan);
   const more = next
-    ? ` ${PLAN_NAMES[next]} includes ${PERSON_ALLOWANCES[next].aiPerDay} a day.`
+    ? ` ${tr('{plan} includes {n} a day.', { plan: PLAN_NAMES[next], n: PERSON_ALLOWANCES[next].aiPerDay })}`
     : '';
-  throw limit(ctx, `You’ve used today’s ${aiPerDay} AI assists.${ready}${more}`, {
-    nextAt: nextAt?.toISOString() ?? null,
-  });
+  throw limit(
+    ctx,
+    tr('You’ve used today’s {aiPerDay} AI assists.{ready}{more}', { aiPerDay, ready, more }),
+    {
+      nextAt: nextAt?.toISOString() ?? null,
+    },
+  );
 }
 
 /** Room for `adding` more bytes of someone's files. */
@@ -92,11 +97,15 @@ export async function assertStorage(ctx: AppContext, userId: string, adding: num
   if (used + adding <= storageBytes) return;
   const next = nextPersonPlan(plan);
   const more = next
-    ? ` ${PLAN_NAMES[next]} includes ${formatBytes(PERSON_ALLOWANCES[next].storageBytes)}.`
+    ? ` ${tr('{plan} includes {bytes}.', { plan: PLAN_NAMES[next], bytes: formatBytes(PERSON_ALLOWANCES[next].storageBytes) })}`
     : '';
   throw limit(
     ctx,
-    `That’s more than the ${formatBytes(storageBytes)} of files your plan includes (${formatBytes(used)} used).${more}`,
+    tr('That’s more than the {allowed} of files your plan includes ({used} used).{more}', {
+      allowed: formatBytes(storageBytes),
+      used: formatBytes(used),
+      more,
+    }),
   );
 }
 
@@ -136,10 +145,17 @@ export async function assertTeamRoom(ctx: AppContext, orgId: string, adding: num
   const { teamSize: room } = ORG_ALLOWANCES[org.plan];
   if ((await teamSize(ctx, orgId)) + adding <= room) return;
   const next = nextOrgPlan(org.plan);
-  const more = next ? ` ${PLAN_NAMES[next]} has room for ${ORG_ALLOWANCES[next].teamSize}.` : '';
+  const more = next
+    ? ` ${tr('{plan} has room for {n}.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].teamSize })}`
+    : '';
   throw limit(
     ctx,
-    `${org.name}’s ${PLAN_NAMES[org.plan]} plan has room for ${room} people on the team.${more}`,
+    tr('{name}’s {plan} plan has room for {room} people on the team.{more}', {
+      name: org.name,
+      plan: PLAN_NAMES[org.plan],
+      room,
+      more,
+    }),
   );
 }
 
@@ -148,10 +164,17 @@ export async function assertAppRoom(ctx: AppContext, orgId: string) {
   const { apps } = ORG_ALLOWANCES[org.plan];
   if ((await appCount(ctx, orgId)) < apps) return;
   const next = nextOrgPlan(org.plan);
-  const more = next ? ` ${PLAN_NAMES[next]} includes ${ORG_ALLOWANCES[next].apps}.` : '';
+  const more = next
+    ? ` ${tr('{plan} includes {n}.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].apps })}`
+    : '';
   throw limit(
     ctx,
-    `${org.name}’s ${PLAN_NAMES[org.plan]} plan includes ${apps === 1 ? 'one app' : `${apps} apps`}.${more}`,
+    tr('{org}’s {plan} plan includes {apps}.{more}', {
+      org: org.name,
+      plan: PLAN_NAMES[org.plan],
+      apps: trn(apps, 'one app', '{n} apps'),
+      more,
+    }),
   );
 }
 
@@ -180,15 +203,20 @@ export async function assertStartRoom(ctx: AppContext, orgId: string, userId: st
     .executeTakeFirstOrThrow();
   const nextAt = oldest ? new Date(oldest.getTime() + DAY_MS) : null;
   const ready = nextAt
-    ? ` The next can start ${formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale))}.`
+    ? ` ${tr('The next can start {when}.', { when: formatSoon(nextAt.toISOString(), ctx.now(), me.time_zone, safeLocale(me.locale)) })}`
     : '';
   const next = nextOrgPlan(org.plan);
   const more = next
-    ? ` ${PLAN_NAMES[next]} includes ${ORG_ALLOWANCES[next].startsPerDay.toLocaleString('en-US')} a day.`
+    ? ` ${tr('{plan} includes {n} a day.', { plan: PLAN_NAMES[next], n: ORG_ALLOWANCES[next].startsPerDay.toLocaleString('en-US') })}`
     : '';
   throw limit(
     ctx,
-    `${org.name} has started today’s ${startsPerDay} new conversations.${ready}${more}`,
+    tr('{name} has started today’s {startsPerDay} new conversations.{ready}{more}', {
+      name: org.name,
+      startsPerDay,
+      ready,
+      more,
+    }),
     { nextAt: nextAt?.toISOString() ?? null },
   );
 }
@@ -199,7 +227,10 @@ export async function assertInsights(ctx: AppContext, orgId: string) {
   if (ORG_ALLOWANCES[org.plan].insights) return;
   throw limit(
     ctx,
-    `Insights come with Business: how fast ${org.name}’s team answers, how many customers write, and what’s still open.`,
+    tr(
+      'Insights come with Business: how fast {name}’s team answers, how many customers write, and what’s still open.',
+      { name: org.name },
+    ),
   );
 }
 
@@ -209,7 +240,10 @@ export async function assertPersonInsights(ctx: AppContext, userId: string) {
   if (PERSON_ALLOWANCES[plan].insights) return;
   throw limit(
     ctx,
-    `Relationship insights come with ${PLAN_NAMES.pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.`,
+    tr(
+      'Relationship insights come with {pro}: who you write with most, who’s gone quiet, how fast you answer and are answered, and when you write.',
+      { pro: PLAN_NAMES.pro },
+    ),
     { nextPlan: nextPersonPlan(plan) },
   );
 }
@@ -226,11 +260,15 @@ export async function assertAutomationRoom(ctx: AppContext, userId: string, coun
   // Named only when it keeps more: Enterprise keeps what Pro does.
   const more =
     next && PERSON_ALLOWANCES[next].automations > most
-      ? ` ${PLAN_NAMES[next]} keeps ${PERSON_ALLOWANCES[next].automations}.`
+      ? ` ${tr('{plan} keeps {n}.', { plan: PLAN_NAMES[next], n: PERSON_ALLOWANCES[next].automations })}`
       : '';
   throw limit(
     ctx,
-    `${PLAN_NAMES[plan]} keeps ${most} automations. Remove one to add another.${more}`,
+    tr('{plan} keeps {most} automations. Remove one to add another.{more}', {
+      plan: PLAN_NAMES[plan],
+      most,
+      more,
+    }),
     { nextPlan: next },
   );
 }

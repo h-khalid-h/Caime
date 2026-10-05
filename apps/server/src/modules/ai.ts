@@ -117,12 +117,13 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
   /** Who may use AI assist, checked on every call. */
   async function gate(userId: string) {
     const ai = ctx.ai;
-    if (!ai) throw new AppError(503, 'ai_unavailable', 'AI assist isn’t set up on this server.');
+    if (!ai)
+      throw new AppError(503, 'ai_unavailable', tr('AI assist isn’t set up on this server.'));
     const me = await person(userId);
     if (minorOf(me, ctx.now()))
-      throw new AppError(403, 'ai_adults_only', 'AI assist is for adults for now.');
+      throw new AppError(403, 'ai_adults_only', tr('AI assist is for adults for now.'));
     if (!me.ai_enabled)
-      throw new AppError(403, 'ai_off', 'Turn on AI assist in Settings to use it.');
+      throw new AppError(403, 'ai_off', tr('Turn on AI assist in Settings to use it.'));
     ctx.limiter.hit(`ai:${userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     await assertAiAllowance(ctx, userId);
     return { ai, me };
@@ -135,7 +136,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         403,
         'ai_private',
-        'This conversation is private, so AI assist can’t read it.',
+        tr('This conversation is private, so AI assist can’t read it.'),
       );
     return found;
   }
@@ -305,7 +306,7 @@ export async function aiRoutes(app: FastifyInstance, ctx: AppContext) {
         ),
       )
       .executeTakeFirst();
-    if (!message || message.deleted_at || !message.body?.trim()) throw notFound('That message');
+    if (!message || message.deleted_at || !message.body?.trim()) throw notFound(tr('That message'));
     await readable(auth.userId, message.conversation_id);
     const to = body.to ?? baseLanguage(me.locale);
     const language = languageName(to);

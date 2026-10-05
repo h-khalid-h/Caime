@@ -1,4 +1,4 @@
-import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { randomInt, timingSafeEqual } from 'node:crypto';
 /**
  * Accounts and sessions (PRD §35, §55; PRODUCT-REVIEW R24, R29; ADR-7).
  */
@@ -20,6 +20,7 @@ import {
   safeLocale,
   uuidv7,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -171,7 +172,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     // The device's zone by the name it has now; UTC for one that isn't a zone.
     const timeZone = currentZone(body.timeZone) ?? 'UTC';
     if (!plausibleBirthDate(body.birthDate, now, timeZone))
-      throw badRequest('Enter the day you were born.', {
+      throw badRequest(tr('Enter the day you were born.'), {
         fields: [{ path: 'birthDate', message: 'Enter the day you were born.' }],
       });
     // Their birthday, where they are.
@@ -179,7 +180,9 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         400,
         'too_young',
-        `You need to be at least ${ctx.config.MINIMUM_AGE} to use Caime.`,
+        tr('You need to be at least {MINIMUM_AGE} to use Caime.', {
+          MINIMUM_AGE: ctx.config.MINIMUM_AGE,
+        }),
       );
     }
     const existing = await ctx.db
@@ -188,13 +191,13 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('email', '=', body.email)
       .executeTakeFirst();
     if (existing) {
-      throw conflict('email_taken', 'That email already has an account. Sign in instead?');
+      throw conflict('email_taken', tr('That email already has an account. Sign in instead?'));
     }
     await assertHandleAvailable(ctx.db, body.handle, now);
     const id = uuidv7();
     const locale = safeLocale(body.locale);
     if (!isCountry(body.country))
-      throw badRequest('Choose where you live.', {
+      throw badRequest(tr('Choose where you live.'), {
         fields: [{ path: 'country', message: 'Choose where you live.' }],
       });
     const workweek = workweekFor(body.country);
@@ -294,7 +297,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new AppError(
         401,
         'invalid_credentials',
-        'That email or handle and password don’t match.',
+        tr('That email or handle and password don’t match.'),
       );
     }
     const token = await createSession(ctx, req, reply, user.id, body.client, body.deviceName);
@@ -358,7 +361,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const ended = await endSessions(ctx, { userId: auth.userId, ids: [id] });
-    if (ended.length === 0) throw notFound('That session');
+    if (ended.length === 0) throw notFound(tr('That session'));
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'session.revoked',
@@ -378,7 +381,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (!(await verifyPassword(body.currentPassword, user.password_hash))) {
-      throw new AppError(400, 'wrong_password', 'Your current password isn’t right.');
+      throw new AppError(400, 'wrong_password', tr('Your current password isn’t right.'));
     }
     await ctx.db
       .updateTable('users')
@@ -405,7 +408,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (!(await verifyPassword(password, user.password_hash))) {
-      throw new AppError(400, 'wrong_password', 'Your password isn’t right.');
+      throw new AppError(400, 'wrong_password', tr('Your password isn’t right.'));
     }
     const codes = await storeRecoveryCodes(ctx, auth.userId);
     await audit(ctx.db, {
@@ -428,7 +431,8 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['email', 'display_name', 'email_verified_at'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    if (user.email_verified_at) throw conflict('already_verified', 'This address is confirmed.');
+    if (user.email_verified_at)
+      throw conflict('already_verified', tr('This address is confirmed.'));
     await sendEmailCode(ctx, auth.userId, user.email, user.display_name);
     return { ok: true };
   });
@@ -439,16 +443,20 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(EmailCodeBody, req.body);
     // Six digits: a few tries a minute is a person reading the mail, not a search.
     ctx.limiter.hit(`email-verify:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 600_000);
-    const wrong = new AppError(400, 'wrong_code', 'That code isn’t right. Check the email again.');
+    const wrong = new AppError(
+      400,
+      'wrong_code',
+      tr('That code isn’t right. Check the email again.'),
+    );
     const row = await ctx.db
       .selectFrom('email_codes')
       .selectAll()
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
     if (!row || row.expires_at <= ctx.now())
-      throw new AppError(400, 'code_expired', 'That code has run out. Send a new one.');
+      throw new AppError(400, 'code_expired', tr('That code has run out. Send a new one.'));
     if (row.attempts >= CODE_TRIES)
-      throw new AppError(400, 'code_expired', 'Too many tries with that code. Send a new one.');
+      throw new AppError(400, 'code_expired', tr('Too many tries with that code. Send a new one.'));
     if (!timingSafeEqual(row.code_hash, hashToken(body.code))) {
       // Counted in the database, not from the row read above: a burst of parallel guesses would
       // otherwise each write 1 and the code would take any number of tries.
@@ -506,7 +514,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const failure = new AppError(
       400,
       'invalid_reset',
-      'That link has been used or has run out. Ask for a new one.',
+      tr('That link has been used or has run out. Ask for a new one.'),
     );
     const row = await ctx.db
       .selectFrom('password_resets')
@@ -557,7 +565,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const failure = new AppError(
       400,
       'invalid_recovery',
-      'That recovery code doesn’t match this account.',
+      tr('That recovery code doesn’t match this account.'),
     );
     const unused = user
       ? await ctx.db

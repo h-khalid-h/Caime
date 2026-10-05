@@ -5,6 +5,7 @@
 import { randomBytes } from 'node:crypto';
 import type { OrgRef } from '@caime/core';
 import { nextOwner } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database, Organization, OrgMember } from '../db/schema';
 import { orgRef } from './business';
@@ -20,7 +21,7 @@ export async function orgById(db: Q, orgId: string): Promise<Organization> {
     .where('id', '=', orgId)
     .where('archived_at', 'is', null)
     .executeTakeFirst();
-  if (!org) throw notFound('That organization');
+  if (!org) throw notFound(tr('That organization'));
   return org;
 }
 
@@ -220,6 +221,6 @@ export async function closedOrgById(db: Q, orgId: string): Promise<Organization>
     .where('archived_at', 'is not', null)
     .where('succeeded_by', 'is', null)
     .executeTakeFirst();
-  if (!org) throw notFound('That organization');
+  if (!org) throw notFound(tr('That organization'));
   return org;
 }

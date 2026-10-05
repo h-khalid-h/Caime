@@ -17,6 +17,7 @@ import {
   type WebhookDeliveryView,
   type WebhookEvent,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -44,8 +45,9 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
   async function manager(userId: string, orgId: string) {
     await orgById(ctx.db, orgId);
     const seat = await orgSeat(ctx.db, userId, orgId);
-    if (!seat) throw notFound('That organization');
-    if (!canManageOrg(seat.role)) throw forbidden('Only the organization’s owner and admins can.');
+    if (!seat) throw notFound(tr('That organization'));
+    if (!canManageOrg(seat.role))
+      throw forbidden(tr('Only the organization’s owner and admins can.'));
   }
   async function appOf(orgId: string, appId: string): Promise<OrgApp> {
     const found = await ctx.db
@@ -55,7 +57,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('org_id', '=', orgId)
       .where('revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!found) throw notFound('That app');
+    if (!found) throw notFound(tr('That app'));
     return found;
   }
   const viewOf = async (a: OrgApp): Promise<OrgAppView> => (await appViews(ctx, [a]))[0]!;
@@ -70,7 +72,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     deliveredAt: d.delivered_at?.toISOString() ?? null,
   });
   const appOnly = (auth: ReturnType<typeof requireAuth>) => {
-    if (!auth.app) throw forbidden('This route is for an app’s token.');
+    if (!auth.app) throw forbidden(tr('This route is for an app’s token.'));
     return auth.app;
   };
   const webhook = (url: string | null | undefined) =>
@@ -79,7 +81,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
   /** Who this token is (docs/API.md): the first call an integration makes, with nothing else. */
   app.get('/apps/me', async (req): Promise<AppMeView> => {
     const auth = requireAuth(req);
-    if (!auth.app) throw forbidden('This route is for an app’s token.');
+    if (!auth.app) throw forbidden(tr('This route is for an app’s token.'));
     const row = await ctx.db
       .selectFrom('org_apps as a')
       .innerJoin('organizations as o', 'o.id', 'a.org_id')
@@ -96,7 +98,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('a.id', '=', auth.app.id)
       .where('a.revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!row) throw notFound('That app');
+    if (!row) throw notFound(tr('That app'));
     return {
       app: {
         id: row.id,
@@ -142,7 +144,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
       const me = appOnly(requireAuth(req));
       const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
       if (!(await requeueDelivery(ctx, me.id, id)))
-        throw notFound('A failed delivery of this app by that id');
+        throw notFound(tr('A failed delivery of this app by that id'));
       const row = await ctx.db
         .selectFrom('webhook_deliveries')
         .selectAll()
@@ -312,7 +314,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id, appId } = parse(appParam, req.params);
     await manager(auth.userId, id);
     const found = await appOf(id, appId);
-    if (!found.webhook_url) throw notFound('A webhook address for that app');
+    if (!found.webhook_url) throw notFound(tr('A webhook address for that app'));
     return { deliveryId: await queueDelivery(ctx, appId, id, 'ping', { appId }) };
   });
 

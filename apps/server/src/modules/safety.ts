@@ -2,6 +2,7 @@
  * Block and report (PRD §55). Blocking is silent: the blocked person just stops reaching you.
  */
 import { ReportBody, uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -49,7 +50,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/blocks', async (req) => {
     const auth = requireAuth(req);
     const { userId } = parse(z.object({ userId: z.string().uuid() }), req.body);
-    if (userId === auth.userId) throw badRequest('You can’t block yourself.');
+    if (userId === auth.userId) throw badRequest(tr('You can’t block yourself.'));
     await ctx.db
       .insertInto('blocks')
       .values({ blocker_id: auth.userId, blocked_id: userId })
@@ -128,7 +129,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const body = parse(ReportBody, req.body);
     if (!body.userId && !body.messageId && !body.conversationId && !body.orgId)
-      throw badRequest('Choose what you’re reporting.');
+      throw badRequest(tr('Choose what you’re reporting.'));
     // An update is reported with its organization, and only as one of that organization's.
     if (body.updateId) {
       const update = body.orgId
@@ -139,7 +140,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
             .where('org_id', '=', body.orgId)
             .executeTakeFirst()
         : undefined;
-      if (!update) throw badRequest('Choose what you’re reporting.');
+      if (!update) throw badRequest(tr('Choose what you’re reporting.'));
     }
     ctx.limiter.hit(`report:${auth.userId}`, 30, 3_600_000);
     // What's reported is something the reporter was shown: a message or a conversation of
@@ -162,7 +163,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
             : eb('p.conversation_id', '=', body.conversationId!),
         )
         .executeTakeFirst();
-      if (!seen) throw notFound('That message');
+      if (!seen) throw notFound(tr('That message'));
     }
     // A customer sees an organization's team, apps and agent as the organization
     // (lib/business.ts), so what they report of one comes with the organization's id: it's
@@ -182,7 +183,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
             .where('id', '=', body.userId)
             .executeTakeFirst()
         : undefined;
-    if (body.userId && !person && !speaker) throw notFound('That person');
+    if (body.userId && !person && !speaker) throw notFound(tr('That person'));
     await ctx.db
       .insertInto('reports')
       .values({

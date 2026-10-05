@@ -284,7 +284,12 @@ These are rules, not preferences.
   a fan-out that writes rows for many looks their languages up at once (`languagesOf`) and
   writes each inside `inLanguage`. Anything else the server writes for a particular person
   (a fan-out's line, a job's) goes through `asReader` the same way; the key collector reads
-  `apps/server/src` too. A
+  `apps/server/src` too. A refusal is written in the request's language as well: every
+  `AppError` message is `tr('…')` where it's thrown (`badRequest(tr('…'))`, `notFound(tr('That
+  message'))`, which reads "{what} wasn't found."), built inside the request and never kept in a
+  module constant (a constant is a function, `TOPIC_PEOPLE()`), and a sentence assembled from
+  parts translates each part; the app shows `err.message` as it came. A zod message
+  (`lib/validate.ts`, `first.message`) is still English. A
   table's labels (roles, kit states, kit names) are English keys: show them through `tr`.
   A string the server writes into a view for a screen (a rule's `describePolicy` summary, a
   schedule's day names) is in the request's language already, so it goes through `tr` in core
@@ -329,14 +334,14 @@ These are rules, not preferences.
   the device's choice when none was made, `languageInSearch` in core), `langAttrs()` goes on
   `<main>` and `Rendered.lang` on the shell's `<html>`, `meta({ alternates: true })` writes the
   hreflang links (the English is canonical) and `og:locale`, and the response says
-  `Vary: Accept-Language`. A string the site alone says is the server's: its Arabic lives in
-  `apps/server/src/locales/ar-site.ts` and `fr-site.ts` (merged into the server's translator in
-  `lib/i18n.ts`), never in core's `locales/ar.ts` or `fr.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them
-  apart by file (`SITE_FILES`: `site-pages.ts` and `public-pages.ts`, so a person's page, an
-  organization's, an invitation and the 404 count too; every page but the app follows the
-  language in `plugins/static.ts`), `site-i18n.test.ts` fails for a missing or stale one
-  (`node scripts/i18n-keys.mjs missing ar site`), and a string the app shows too belongs to
-  core's catalog. Styles that have a side use logical properties (`margin-inline-start`,
+  `Vary: Accept-Language`. A string only the server says (a site page's, a notification's, a
+  refusal's) is the server's: its Arabic and French live in `apps/server/src/locales/ar-server.ts`
+  and `fr-server.ts` (merged into the server's translator in `lib/i18n.ts`), never in core's
+  `locales/ar.ts` or `fr.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them apart
+  by file (`isServerKey`: every file of the key is under `apps/server/src`; every page but the
+  app follows the language in `plugins/static.ts`), `server-i18n.test.ts` fails for a missing or
+  stale one (`node scripts/i18n-keys.mjs missing ar server`), and a string the app shows too
+  belongs to core's catalog. Styles that have a side use logical properties (`margin-inline-start`,
   `border-end-end-radius`), never left or right. A new page joins `MARKETING_PAGES`, `SITE_NAV`,
   `renderSite`, `SITE_PATHS` and `public-pages.test.ts`.
 - The app's entry screens (welcome, sign-in, sign-up) are painted by the server for a visitor

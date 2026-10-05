@@ -83,9 +83,7 @@ export const ar: Catalog = {
   'A customer conversation is erased at their request': 'مُحيت محادثة عميل بناءً على طلبه',
   'Sent as a request: they choose who connects with them':
     'أُرسل كطلب: هم من يختارون من يتواصل معهم',
-  '{name} opened your invite link': 'فتح {name} رابط دعوتك',
-  'You decide who connects with you: accept to connect.':
-    'أنت من يقرر من يتواصل معك: اقبل للتواصل.',
+
   'Nothing to open': 'لا شيء لفتحه',
   'Name the group and add at least one person.': 'سمِّ المجموعة وأضف شخصًا واحدًا على الأقل.',
   'New group': 'مجموعة جديدة',
@@ -2479,73 +2477,7 @@ export const ar: Catalog = {
   'You’re not connected, and Caime hasn’t verified who this is. Be careful with links and payments.':
     'لستما متواصلين، ولم يتحقق Caime ممن هذا. توخَّ الحذر مع الروابط والمدفوعات.',
   // The server's own words, written for each reader (R54, second layer).
-  '{agentName} handed a conversation to the team': 'سلّم {agentName} محادثة إلى الفريق',
-  'A customer': 'عميل',
-  'Missed video call': 'مكالمة فيديو فائتة',
-  'Missed voice call': 'مكالمة صوتية فائتة',
-  'from {caller}': 'من {caller}',
-  'Missed group video call': 'مكالمة فيديو جماعية فائتة',
-  'Missed group voice call': 'مكالمة صوتية جماعية فائتة',
-  'from {starter}': 'من {starter}',
-  'in {title}': 'في {title}',
-  automated: 'آلي',
-  'Message request': 'طلب مراسلة',
-  Group: 'مجموعة',
-  'New message': 'رسالة جديدة',
-  '{n} new messages in {groupTitle}': {
-    zero: 'لا رسائل جديدة في {groupTitle}',
-    one: 'رسالة جديدة واحدة في {groupTitle}',
-    two: 'رسالتان جديدتان في {groupTitle}',
-    few: '{n} رسائل جديدة في {groupTitle}',
-    many: '{n} رسالة جديدة في {groupTitle}',
-    other: '{n} رسالة جديدة في {groupTitle}',
-  },
-  '{senderName} sent {n} messages{context}': {
-    zero: 'لم يرسل {senderName} رسائل{context}',
-    one: 'أرسل {senderName} رسالة واحدة{context}',
-    two: 'أرسل {senderName} رسالتين{context}',
-    few: 'أرسل {senderName} {n} رسائل{context}',
-    many: 'أرسل {senderName} {n} رسالة{context}',
-    other: 'أرسل {senderName} {n} رسالة{context}',
-  },
-  'Your report was reviewed': 'تمت مراجعة بلاغك',
-  'Thanks for reporting it: Caime looked and acted.':
-    'شكرًا على الإبلاغ: نظرت Caime في الأمر واتخذت إجراءً.',
-  'Thanks for reporting it: Caime looked, and didn’t act on it this time.':
-    'شكرًا على الإبلاغ: نظرت Caime في الأمر ولم تتخذ إجراءً هذه المرة.',
-  '{name} asked you': 'طلب منك {name}',
-  '{name} finished your request': 'أنهى {name} طلبك',
-  '{name} accepted your request': 'قبل {name} طلبك',
-  '{name} declined your request': 'رفض {name} طلبك',
-  '{name} reopened your request': 'أعاد {name} فتح طلبك',
-  '{name} cancelled your request': 'ألغى {name} طلبك',
-  '{name} gave you a conversation': 'أسند إليك {name} محادثة',
-  '{name} escalated a conversation': 'صعّد {name} محادثة',
-  '{name} is calling': '{name} يتصل',
-  '{name} joined through your invite': 'انضم {name} عبر دعوتك',
-  'You’re connected. Say hi.': 'أنتما متواصلان الآن. ألقِ التحية.',
-  'Say hi when you’re ready.': 'ألقِ التحية متى شئت.',
-  '{name} wants to connect with you': 'يريد {name} التواصل معك',
-  '{name} finished {title}': 'أنهى {name} {title}',
-  '{name} finished the list': 'أنهى {name} القائمة',
-  'Everything on it is ticked.': 'كل ما فيها مُنجز.',
-  '{name} settled up': 'سدّد {name} حصته',
-  '{amount} of {title}.': '{amount} من {title}.',
-  'the split': 'التقسيم',
-  'Their share of {title}.': 'حصته من {title}.',
-  '{name} added {n} photos to {album}': {
-    zero: 'لم يضف {name} صورًا إلى {album}',
-    one: 'أضاف {name} صورة إلى {album}',
-    two: 'أضاف {name} صورتين إلى {album}',
-    few: 'أضاف {name} {n} صور إلى {album}',
-    many: 'أضاف {name} {n} صورة إلى {album}',
-    other: 'أضاف {name} {n} صورة إلى {album}',
-  },
-  '{name} is calling {where}': '{name} يتصل {where}',
-  'No reply from {name} yet': 'لا رد من {name} بعد',
-  'Follow up on “{text}”?': 'متابعة بشأن ”{text}“؟',
-  'Follow up?': 'متابعة؟',
-  Reminder: 'تذكير',
+
   Voided: 'ملغاة',
   Accepted: 'مقبول',
   Approved: 'موافَق عليه',
@@ -2571,11 +2503,7 @@ export const ar: Catalog = {
   Appointment: 'موعد',
   Location: 'موقع',
   Poll: 'استطلاع',
-  Call: 'مكالمة',
-  Answered: 'تم الرد',
-  '{title} call': 'مكالمة {title}',
-  Joined: 'انضممت',
-  'Turned down': 'تم الرفض',
+
   // Relationship roles (taxonomy.ts), each with its plural.
   Parent: 'أحد الوالدين',
   Parents: 'الوالدان',
@@ -2989,53 +2917,12 @@ export const ar: Catalog = {
   '{who}quiet unless important': '{who}هادئ إلا للمهم',
   '{who}within {scheduleText}': '{who}ضمن {scheduleText}',
   hours: 'ساعات العمل',
-  'the same name': 'الاسم نفسه',
-  'one name is part of the other': 'أحد الاسمين جزء من الآخر',
-  'the same nickname': 'الاسم المستعار نفسه',
-  'you know both from {org}': 'تعرف كليهما من {org}',
-  '{name} may have two accounts': 'قد يكون لدى {name} حسابان',
-  '{merge} and {keep} may be the same person': 'قد يكون {merge} و{keep} الشخص نفسه',
-  'Both have {reasons}. Merged, they show as one in People; both accounts and conversations stay, and you can separate them again.':
-    'لكليهما {reasons}. بعد الدمج يظهران كشخص واحد في الأشخاص؛ ويبقى الحسابان والمحادثات، ويمكنك فصلهما من جديد.',
-  ', and ': '، و',
-  '“{topic}” keeps coming up here. A separate topic keeps it together.':
-    '«{topic}» يتكرر هنا. موضوع منفصل يجمعه معًا.',
-  'Colleague · {org}': 'زميل · {org}',
-  'You and {other} are both on {org}’s team, and {org} is verified.':
-    'أنت و{other} كلاكما في فريق {org}، و{org} موثّقة.',
-  'You and {other} are both on {org}’s team in Caime.':
-    'أنت و{other} كلاكما في فريق {org} على Caime.',
-  'You and {other} are both in {space}, a {kind} space.':
-    'أنت و{other} كلاكما في {space}، وهي مساحة {kind}.',
-  them: 'هذا الشخص',
-  '{name} described how you know each other as {label}{where}.':
-    'وصف {name} معرفتكما ببعضكما بأنها {label}{where}.',
-  'You both use @{domain} email addresses.': 'كلاكما يستخدم عنوان بريد @{domain}.',
-  '{speaker} wrote {quote}': 'كتب {speaker} {quote}',
+
   '{senderName} wrote {quote}': 'كتب {senderName} {quote}',
   '{senderName} asked {quote}': 'سأل {senderName} {quote}',
   'Couldn’t find where you are just now. Try again, or type a place.':
     'تعذّر تحديد مكانك الآن. حاول مجددًا، أو اكتب مكانًا.',
-  '{n} messages this week.': {
-    zero: 'لا رسائل هذا الأسبوع.',
-    one: 'رسالة واحدة هذا الأسبوع.',
-    two: 'رسالتان هذا الأسبوع.',
-    few: '{n} رسائل هذا الأسبوع.',
-    many: '{n} رسالة هذا الأسبوع.',
-    other: '{n} رسالة هذا الأسبوع.',
-  },
-  'Quiet this week.': 'هادئ هذا الأسبوع.',
-  '{n} open for you.': {
-    zero: 'لا شيء مفتوح لك.',
-    one: 'واحد مفتوح لك.',
-    two: 'اثنان مفتوحان لك.',
-    few: '{n} مفتوحة لك.',
-    many: '{n} مفتوحًا لك.',
-    other: '{n} مفتوح لك.',
-  },
-  'Waiting on {n}.': 'في انتظار {n}.',
-  'Last decision: {title}.': 'آخر قرار: {title}.',
-  'Next date: {date}.': 'الموعد القادم: {date}.',
+
   '{n} h': '{n} س',
   'What you take': 'ما تأخذ به',
   'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.':
@@ -3079,4 +2966,7 @@ export const ar: Catalog = {
   'Organization id': 'معرّف المؤسسة',
   'What the inbox and updates routes take; GET /v1/apps/me answers it too.':
     'ما تأخذه مسارات صندوق الوارد والتحديثات؛ ويجيب عنه GET /v1/apps/me أيضًا.',
+  'Voice message': 'رسالة صوتية',
+  Sticker: 'ملصق',
+  Card: 'بطاقة',
 };

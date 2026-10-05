@@ -16,6 +16,7 @@ import {
   type ReportView,
   SuspensionBody,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -40,7 +41,10 @@ import { sendResetLink } from '../lib/reset';
 import { parse } from '../lib/validate';
 
 const PAYING = (plan: string) =>
-  `${plan} is paid for through Stripe: cancel it there (at once, or at the end of what’s paid), and the plan follows.`;
+  tr(
+    '{plan} is paid for through Stripe: cancel it there (at once, or at the end of what’s paid), and the plan follows.',
+    { plan },
+  );
 
 export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   const operator = (req: FastifyRequest) =>
@@ -55,7 +59,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('kind', '=', 'human')
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person) throw notFound('That person');
+    if (!person) throw notFound(tr('That person'));
     return person;
   };
 
@@ -71,7 +75,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   const reportParam = z.object({ id: z.string().uuid() });
   const oneReport = async (id: string): Promise<ReportView> => {
     const [report] = await reportViews(ctx, { status: 'all', limit: 1, id });
-    if (!report) throw notFound('That report');
+    if (!report) throw notFound(tr('That report'));
     return report;
   };
 
@@ -96,14 +100,14 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
-    if (!report.message) throw badRequest('This report isn’t about a message.');
+    if (!report.message) throw badRequest(tr('This report isn’t about a message.'));
     const m = await ctx.db
       .selectFrom('messages')
       .select(['id', 'conversation_id', 'pinned_at', 'deleted_at', 'kind'])
       .where('id', '=', report.message.id)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
-    if (m.kind === 'system') throw badRequest('Lines about the conversation stay.');
+    if (!m) throw notFound(tr('That message'));
+    if (m.kind === 'system') throw badRequest(tr('Lines about the conversation stay.'));
     if (!m.deleted_at) await removeForEveryone(ctx, m, null);
     await settleReport(ctx, id, 'actioned');
     await audit(ctx.db, {
@@ -120,7 +124,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
-    if (!report.update || !report.org) throw badRequest('This report isn’t about an update.');
+    if (!report.update || !report.org) throw badRequest(tr('This report isn’t about an update.'));
     await takeBackUpdate(ctx, report.org.id, report.update.id, null, by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
@@ -137,7 +141,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person || person.kind !== 'human') throw notFound('That person');
+    if (!person || person.kind !== 'human') throw notFound(tr('That person'));
     await setSuspended(ctx, person.id, body.suspended, body.reason ?? null, by);
     return { ok: true };
   });
@@ -167,7 +171,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person || person.kind !== 'human') throw notFound('That person');
+    if (!person || person.kind !== 'human') throw notFound(tr('That person'));
     const now = ctx.now();
     const [sessions, devices, tokens, grants, codes, orgs] = await Promise.all([
       ctx.db
@@ -285,7 +289,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
-    if (!report.person) throw badRequest('This report isn’t about a person.');
+    if (!report.person) throw badRequest(tr('This report isn’t about a person.'));
     await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`, by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
@@ -306,7 +310,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/admin/backups', async (req) => {
     operator(req);
     const made = await runBackup(ctx);
-    if (!made) throw conflict('backup_running', 'Another instance is backing up right now.');
+    if (!made) throw conflict('backup_running', tr('Another instance is backing up right now.'));
     return { backup: made };
   });
 
@@ -331,7 +335,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('kind', '=', 'human')
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person) throw notFound('That person');
+    if (!person) throw notFound(tr('That person'));
     // Paying for Pro, they keep it until that ends: never charged for a plan they don't have.
     if (plan === 'personal' && (await paysThroughBilling(ctx, { userId: person.id })))
       throw new AppError(409, 'paying', PAYING('Pro'));
@@ -366,7 +370,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.replace(/^@/, ''))
       .where('archived_at', 'is', null)
       .executeTakeFirst();
-    if (!org) throw notFound('That organization');
+    if (!org) throw notFound(tr('That organization'));
     if (plan === 'free' && (await paysThroughBilling(ctx, { orgId: org.id })))
       throw new AppError(409, 'paying', PAYING('Business'));
     await ctx.db
@@ -395,7 +399,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     const { handle } = parse(z.object({ handle: Handle }), body);
     if (!isReservedHandle(handle) && !(await handleHeld(ctx.db, handle, ctx.now())))
       throw badRequest(
-        'That handle isn’t reserved or held: whoever wants it can take it themselves.',
+        tr('That handle isn’t reserved or held: whoever wants it can take it themselves.'),
       );
     return handle;
   };
@@ -414,7 +418,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       await sql`select pg_advisory_xact_lock(hashtext(${`handle:${handle}`}))`.execute(trx);
       const theirs = to.of === 'person' ? { userId: to.id } : { orgId: to.id };
       if (await handleTaken(trx, handle, theirs))
-        throw conflict('handle_taken', 'Someone else has that handle.');
+        throw conflict('handle_taken', tr('Someone else has that handle.'));
       const change = { handle, updated_at: ctx.now() };
       if (to.of === 'person')
         await trx.updateTable('users').set(change).where('id', '=', to.id).execute();
@@ -443,7 +447,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('kind', '=', 'human')
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person) throw notFound('That person');
+    if (!person) throw notFound(tr('That person'));
     await giveHandle(req, by, { of: 'person', ...person }, wanted);
     await ctx.bus.publish([person.id], { type: 'me.updated', data: { id: person.id } });
     return { kind: 'person', id: person.id, handle: wanted };
@@ -463,8 +467,8 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['id', 'handle', 'archived_at', 'succeeded_by'])
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!org) throw notFound('That organization');
-    if (!org.archived_at) throw conflict('org_open', 'Only a closed organization is deleted.');
+    if (!org) throw notFound(tr('That organization'));
+    if (!org.archived_at) throw conflict('org_open', tr('Only a closed organization is deleted.'));
     await endBillingOf(ctx, { orgId: id });
     const bots = await ctx.db
       .selectFrom('org_apps')
@@ -504,7 +508,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.replace(/^@/, ''))
       .where('archived_at', 'is', null)
       .executeTakeFirst();
-    if (!org) throw notFound('That organization');
+    if (!org) throw notFound(tr('That organization'));
     await giveHandle(req, by, { of: 'organization', ...org }, wanted);
     return { kind: 'org', id: org.id, handle: wanted };
   });

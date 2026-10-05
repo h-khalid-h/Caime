@@ -67,7 +67,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);
     if (await orgSeat(ctx.db, auth.userId, id))
-      throw badRequest('You’re on its team. Leave the team instead.');
+      throw badRequest(tr('You’re on its team. Leave the team instead.'));
     // Its updates stop reaching them too (PRD §59): one at a time with following it
     // (modules/updates.ts), so a follow can't slip in between.
     await ctx.db.transaction().execute(async (trx) => {
@@ -151,7 +151,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
     if (await orgSeat(ctx.db, auth.userId, id))
-      throw badRequest('You’re on its team: its conversations are in its inbox.');
+      throw badRequest(tr('You’re on its team: its conversations are in its inbox.'));
     const me = await ctx.db
       .selectFrom('users')
       .select(['birth_date', 'time_zone'])
@@ -160,13 +160,16 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     // Under 18, only an organization that has proved who it is: a school, a club, a clinic (R29).
     if (!minorMayWriteToOrg(minorOf(me, ctx.now()), org.verified_at !== null))
       throw forbidden(
-        `Under 18, you can message organizations that have verified who they are. ${org.name} hasn’t yet.`,
+        tr(
+          'Under 18, you can message organizations that have verified who they are. {name} hasn’t yet.',
+          { name: org.name },
+        ),
       );
     if (await orgBlocked(ctx.db, auth.userId, id))
       throw new AppError(
         403,
         'org_blocked',
-        `You blocked ${org.name}. Unblock it to write to it again.`,
+        tr('You blocked {name}. Unblock it to write to it again.', { name: org.name }),
       );
     const existing = await ctx.db
       .selectFrom('business_threads')
@@ -251,18 +254,22 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const body = parse(StartThreadBody, req.body);
     const org = await orgById(ctx.db, id);
-    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
     const writer = await ctx.db
       .selectFrom('users')
       .select('kind')
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     if (writer.kind !== 'human')
-      throw forbidden('A person on the team writes first; an app answers customers.');
+      throw forbidden(tr('A person on the team writes first; an app answers customers.'));
     ctx.limiter.hit(`business-reach:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 3_600_000);
     // Nobody by that handle, and somebody the organization can't write to, answer the same.
     const nobody = () =>
-      new AppError(404, 'not_found', `Nobody by that handle can hear from ${org.name}.`);
+      new AppError(
+        404,
+        'not_found',
+        tr('Nobody by that handle can hear from {name}.', { name: org.name }),
+      );
     const wanted = normalizeHandle(body.handle);
     if (handleError(wanted)) throw nobody();
     const target = await ctx.db
@@ -273,7 +280,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (target?.kind !== 'human') throw nobody();
     if (await orgSeat(ctx.db, target.id, id))
-      throw badRequest('They’re on the team: write to them directly.');
+      throw badRequest(tr('They’re on the team: write to them directly.'));
 
     const existing = await ctx.db
       .selectFrom('business_threads')
@@ -287,7 +294,10 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       const now = ctx.now();
       if (!org.verified_at)
         throw forbidden(
-          `Verify ${org.name}’s domain first: only a verified organization writes to someone first.`,
+          tr(
+            'Verify {name}’s domain first: only a verified organization writes to someone first.',
+            { name: org.name },
+          ),
         );
       const privacy = privacyOf(target, now);
       if (
@@ -301,7 +311,9 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
         throw new AppError(
           403,
           'not_accepting_requests',
-          `${target.display_name} only takes messages from people they know.`,
+          tr('{name} only takes messages from people they know.', {
+            name: target.display_name,
+          }),
         );
       await assertStartRoom(ctx, id, auth.userId);
       const fresh = uuidv7();
@@ -403,7 +415,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       req.query,
     );
     const org = await orgById(ctx.db, id);
-    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound('That organization');
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
     // A conversation shows up once someone has written in it: the customer, or the team first
     // (R14). The newest few hundred are plenty.
     const threads = await ctx.db
@@ -488,7 +500,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('conversation_id', '=', conversationId)
       .executeTakeFirst();
     const seat = thread ? await orgSeat(ctx.db, userId, thread.org_id) : null;
-    if (!thread || !seat) throw notFound('That conversation');
+    if (!thread || !seat) throw notFound(tr('That conversation'));
     return { thread, seat };
   }
 
@@ -547,10 +559,12 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('id', '=', userId)
         .executeTakeFirst();
       if (!person || !(await orgSeat(ctx.db, userId, thread.org_id)))
-        throw badRequest('They aren’t on the team.');
+        throw badRequest(tr('They aren’t on the team.'));
       // A bot answers, but only a person takes a conversation (R16).
-      if (person.kind === 'agent') throw badRequest('That’s the AI agent: give it to a person.');
-      if (person.kind !== 'human') throw badRequest('That’s an app’s bot: give it to a person.');
+      if (person.kind === 'agent')
+        throw badRequest(tr('That’s the AI agent: give it to a person.'));
+      if (person.kind !== 'human')
+        throw badRequest(tr('That’s an app’s bot: give it to a person.'));
     }
     await ctx.db
       .updateTable('business_threads')
@@ -582,7 +596,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { thread } = await teamThread(auth.userId, conversationId);
-    if (thread.resolved_at) throw badRequest('It’s already resolved.');
+    if (thread.resolved_at) throw badRequest(tr('It’s already resolved.'));
     await ctx.db
       .updateTable('business_threads')
       .set({
@@ -602,7 +616,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { thread } = await teamThread(auth.userId, conversationId);
-    if (!thread.resolved_at) throw badRequest('It’s open already.');
+    if (!thread.resolved_at) throw badRequest(tr('It’s open already.'));
     await ctx.db
       .updateTable('business_threads')
       .set({ resolved_at: null, resolved_by: null, updated_at: ctx.now() })
@@ -617,7 +631,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     const { conversationId } = parse(threadParam, req.params);
     const { note } = parse(EscalateThreadBody, req.body ?? {});
     const { thread } = await teamThread(auth.userId, conversationId);
-    if (thread.resolved_at) throw badRequest('Reopen it first.');
+    if (thread.resolved_at) throw badRequest(tr('Reopen it first.'));
     await ctx.db
       .updateTable('business_threads')
       .set({

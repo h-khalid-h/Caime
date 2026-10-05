@@ -7,6 +7,8 @@ import { uuidv4 } from '@caime/core';
 import { fill } from '@caime/core/i18n';
 import { ar } from '@caime/core/locales/ar';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { arServer } from '../src/locales/ar-server';
+import { frServer } from '../src/locales/fr-server';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -14,8 +16,13 @@ let hassan: Client;
 let noor: Client;
 
 const arabic = (key: string, vars?: Record<string, string | number>) => {
-  const entry = ar[key];
+  const entry = ar[key] ?? arServer[key];
   if (!entry) throw new Error(`no Arabic for ${JSON.stringify(key)}`);
+  return fill(typeof entry === 'string' ? entry : entry.other, vars);
+};
+const french = (key: string, vars?: Record<string, string | number>) => {
+  const entry = frServer[key];
+  if (!entry) throw new Error(`no French for ${JSON.stringify(key)}`);
   return fill(typeof entry === 'string' ? entry : entry.other, vars);
 };
 
@@ -70,6 +77,34 @@ describe('a request is answered in the language its app shows', () => {
   });
 });
 
+describe('a refusal is written in the language the app shows', () => {
+  it('a 404 and a 400 read in Arabic, in French, and in English for an app that says nothing', async () => {
+    const gone = `/v1/conversations/${uuidv4()}`;
+    const english = await hassan.req('GET', gone);
+    expect(english.statusCode).toBe(404);
+    expect(english.json().error.message).toBe('That conversation wasn’t found.');
+    const inArabic = await hassan.req('GET', gone, undefined, { 'x-caime-language': 'ar' });
+    expect(inArabic.statusCode).toBe(404);
+    expect(inArabic.json().error).toMatchObject({
+      code: 'not_found',
+      message: arabic('{what} wasn’t found.', { what: arabic('That conversation') }),
+    });
+    const inFrench = await hassan.req('GET', gone, undefined, { 'x-caime-language': 'fr-FR' });
+    expect(inFrench.json().error.message).toBe(
+      french('{what} wasn’t found.', { what: french('That conversation') }),
+    );
+    // A rule's refusal too, built where it's thrown.
+    const self = await hassan.req(
+      'POST',
+      '/v1/connections/requests',
+      { toUserId: hassan.user.id },
+      { 'x-caime-language': 'ar' },
+    );
+    expect(self.statusCode).toBe(400);
+    expect(self.json().error.message).toBe(arabic('That’s you.'));
+  });
+});
+
 describe('a notification is written in its reader’s language', () => {
   it('the reader chose Arabic: told in Arabic, whatever the sender’s app shows', async () => {
     const sara = await signup(t, { displayName: 'Sara Ali', handle: 'sara', email: 's@datac.io' });
@@ -119,7 +154,7 @@ describe('a notification is written in its reader’s language', () => {
       });
     const titles = await titlesFor(noor.user.id);
     // Three messages: Arabic's "few" form, with the sender's name.
-    const entry = ar['{senderName} sent {n} messages{context}'];
+    const entry = arServer['{senderName} sent {n} messages{context}'];
     if (!entry || typeof entry === 'string') throw new Error('expected plural forms');
     expect(titles).toContain(
       fill(entry.few ?? entry.other, { senderName: 'Hassan Khalid', n: 3, context: '' }),

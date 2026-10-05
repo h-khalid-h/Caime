@@ -5,6 +5,8 @@
  * Messages you sent stay in other people's conversations without your name; files you uploaded
  * that nobody else can see are removed from storage.
  */
+
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -39,7 +41,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       .select('id')
       .where('id', '=', me)
       .executeTakeFirst();
-    if (!found) throw notFound('Your account');
+    if (!found) throw notFound(tr('Your account'));
     const now = ctx.now();
     const archive = await buildExport(ctx, me, now);
     await audit(ctx.db, { actorId: me, action: 'account.exported' });
@@ -64,9 +66,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       .select(['id', 'handle', 'password_hash'])
       .where('id', '=', me)
       .executeTakeFirst();
-    if (!user) throw notFound('Your account');
+    if (!user) throw notFound(tr('Your account'));
     if (!(await verifyPassword(password, user.password_hash))) {
-      throw new AppError(401, 'invalid_credentials', 'That password isn’t right.');
+      throw new AppError(401, 'invalid_credentials', tr('That password isn’t right.'));
     }
     // Who to tell, and which files only this account could see (in no message and no album).
     const [others, orphanFiles] = await Promise.all([

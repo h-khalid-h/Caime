@@ -18,6 +18,7 @@ import {
   uuidv7,
   type WebhookEvent,
 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OrgApp } from '../db/schema';
@@ -169,17 +170,17 @@ export function checkWebhookUrl(raw: string, allowPrivate: boolean): string {
   try {
     url = new URL(raw);
   } catch {
-    throw badRequest('Enter the full address, starting with https://');
+    throw badRequest(tr('Enter the full address, starting with https://'));
   }
   if (url.protocol !== 'https:' && !(allowPrivate && url.protocol === 'http:'))
-    throw badRequest('Webhooks go to https addresses.');
+    throw badRequest(tr('Webhooks go to https addresses.'));
   const host = url.hostname.replace(/^\[|\]$/g, '').replace(/\.+$/, '');
   if (
     !allowPrivate &&
     (host === 'localhost' || host.endsWith('.localhost') || (isIP(host) && isPrivateAddress(host)))
   )
-    throw badRequest('That address is on a private network.');
-  if (url.username || url.password) throw badRequest('Leave passwords out of the address.');
+    throw badRequest(tr('That address is on a private network.'));
+  if (url.username || url.password) throw badRequest(tr('Leave passwords out of the address.'));
   return url.toString();
 }
 

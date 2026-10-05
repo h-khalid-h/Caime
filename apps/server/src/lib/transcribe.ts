@@ -7,6 +7,7 @@
  * voice note. Every call is one `ai_runs` row (`feature: transcribe`), through `runAi`.
  */
 import { isMinor } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { runAi } from './ai-run';
@@ -143,7 +144,7 @@ async function readAll(ctx: AppContext, key: string, size: number): Promise<Buff
     const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
     total += b.length;
     if (total > Math.min(size, SPEECH_MAX_BYTES))
-      throw new AppError(413, 'too_large', 'That recording is too long to transcribe.');
+      throw new AppError(413, 'too_large', tr('That recording is too long to transcribe.'));
     chunks.push(b);
   }
   return Buffer.concat(chunks);

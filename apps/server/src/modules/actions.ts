@@ -118,22 +118,23 @@ async function checkSources(
   body: { conversationId?: string; messageId?: string; contextId?: string },
 ) {
   if (body.messageId) {
-    if (!body.conversationId) throw badRequest('A message is linked with its conversation.');
+    if (!body.conversationId) throw badRequest(tr('A message is linked with its conversation.'));
     const m = await ctx.db
       .selectFrom('messages')
       .select('id')
       .where('id', '=', body.messageId)
       .where('conversation_id', '=', body.conversationId)
       .executeTakeFirst();
-    if (!m) throw notFound('That message');
+    if (!m) throw notFound(tr('That message'));
   }
   if (body.contextId && !(await contextVisible(ctx.db, me, body.contextId)))
-    throw notFound('That context');
+    throw notFound(tr('That context'));
 }
 
 async function visibleTask(ctx: AppContext, me: string, id: string): Promise<Task> {
   const t = await ctx.db.selectFrom('tasks').selectAll().where('id', '=', id).executeTakeFirst();
-  if (!t || (t.owner_id !== me && !(t.shared && t.assignee_id === me))) throw notFound('That task');
+  if (!t || (t.owner_id !== me && !(t.shared && t.assignee_id === me)))
+    throw notFound(tr('That task'));
   return t;
 }
 
@@ -281,18 +282,18 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const assignee = body.assigneeId ?? me;
     if (assignee !== me) {
       const b = await between(ctx.db, me, assignee);
-      if (b.blockedByMe || b.blockedMe) throw forbidden('You can’t assign this person.');
+      if (b.blockedByMe || b.blockedMe) throw forbidden(tr('You can’t assign this person.'));
       let related = b.connected;
       if (!related && body.conversationId) {
         const members = await participantsOf(ctx.db, body.conversationId);
         related =
           members.some((m) => m.user_id === me) && members.some((m) => m.user_id === assignee);
       }
-      if (!related) throw forbidden('You can ask people you’re connected with.');
+      if (!related) throw forbidden(tr('You can ask people you’re connected with.'));
     }
     if (body.conversationId) await membership(ctx, me, body.conversationId);
     await checkSources(ctx, me, body);
-    if (body.shared && assignee === me) throw badRequest('A request goes to someone else.');
+    if (body.shared && assignee === me) throw badRequest(tr('A request goes to someone else.'));
     // A request across a business conversation would name who on the team asked (R15).
     const business = body.conversationId ? await customerMask(ctx.db, body.conversationId) : null;
     if (
@@ -300,7 +301,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       assignee !== me &&
       (me === business.customerId) !== (assignee === business.customerId)
     )
-      throw forbidden('Requests between a customer and an organization aren’t available yet.');
+      throw forbidden(tr('Requests between a customer and an organization aren’t available yet.'));
     // A request's card goes in the conversation: whatever would refuse it refuses it before
     // anything is written (a message request that has had its one message, a closed business
     // conversation, a private one), so nothing is asked that nobody was told of.
@@ -428,13 +429,13 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       body.notes !== undefined ||
       body.dueAt !== undefined ||
       body.remindAt !== undefined;
-    if (editsContent && !isOwner) throw forbidden('Only the person who asked can change this.');
+    if (editsContent && !isOwner) throw forbidden(tr('Only the person who asked can change this.'));
     if (body.status) {
       const assigneeOnly = ['accepted', 'declined'].includes(body.status);
       if (assigneeOnly && !(isAssignee && t.shared && !isOwner))
-        throw badRequest('Only the person asked can accept or decline.');
+        throw badRequest(tr('Only the person asked can accept or decline.'));
       if (body.status === 'cancelled' && !isOwner)
-        throw forbidden('Only the person who asked can cancel.');
+        throw forbidden(tr('Only the person who asked can cancel.'));
       if (body.status === 'done' && !isOwner && !isAssignee) throw forbidden();
     }
     const done = body.status === 'done';
@@ -495,7 +496,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const t = await visibleTask(ctx, auth.userId, id);
     if (t.owner_id !== auth.userId)
-      throw forbidden('Only the person who created this can delete it.');
+      throw forbidden(tr('Only the person who created this can delete it.'));
     await ctx.db.deleteFrom('tasks').where('id', '=', id).execute();
     await ctx.bus.publish(audienceOf(t), {
       type: 'task.deleted',
@@ -606,7 +607,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirst();
-    if (!d) throw notFound('That decision');
+    if (!d) throw notFound(tr('That decision'));
     // Whoever recorded or made it changes it, or reverses it; in a group so do its owner and
     // admins, and either person in a one-to-one.
     const { conversation, me } = await membership(ctx, auth.userId, d.conversation_id);
@@ -615,7 +616,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       d.decided_by !== auth.userId &&
       !canEditConversation(conversation.kind, me.role)
     )
-      throw forbidden('Only whoever recorded it, or the group’s admins, change a decision.');
+      throw forbidden(tr('Only whoever recorded it, or the group’s admins, change a decision.'));
     await ctx.db.updateTable('decisions').set(body).where('id', '=', id).execute();
     await ctx.bus.publish(
       (await participantsOf(ctx.db, d.conversation_id)).map((p) => p.user_id),

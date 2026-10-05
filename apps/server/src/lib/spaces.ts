@@ -4,6 +4,7 @@
  * ("Family" for its General conversation, "Family · Venue" for the others).
  */
 import { nextSpaceOwner, type SpaceRef } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, Space, SpaceMember } from '../db/schema';
@@ -41,7 +42,7 @@ export async function spaceSeat(
     .where('m.left_at', 'is', null)
     .where('s.archived_at', 'is', null)
     .executeTakeFirst();
-  if (!row) throw notFound('That space');
+  if (!row) throw notFound(tr('That space'));
   const { user_id, role, added_by, joined_at, left_at, space_id, ...space } = row;
   return {
     space: space as Space,

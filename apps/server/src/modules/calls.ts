@@ -63,10 +63,10 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('is_group', '=', false)
       .where((eb) => eb.or([eb('caller_id', '=', userId), eb('callee_id', '=', userId)]))
       .executeTakeFirst();
-    if (!call) throw notFound('That call');
+    if (!call) throw notFound(tr('That call'));
     return call;
   }
-  const over = () => new AppError(409, 'call_ended', 'That call has ended.');
+  const over = () => new AppError(409, 'call_ended', tr('That call has ended.'));
 
   app.get('/calls/ice', async (req): Promise<IceConfigView> => {
     const auth = requireAuth(req);
@@ -125,26 +125,26 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(StartCallBody, req.body);
     const { conversation } = await membership(ctx, auth.userId, id);
     if (conversation.kind !== 'direct')
-      throw badRequest('Calls are for conversations between two people.');
+      throw badRequest(tr('Calls are for conversations between two people.'));
     const people = await participantsOf(ctx.db, id);
     const other = people.find((p) => p.user_id !== auth.userId);
-    if (!other) throw badRequest('There’s nobody to call here.');
+    if (!other) throw badRequest(tr('There’s nobody to call here.'));
     // Someone who hasn't accepted a message request can't be rung either (R14).
     if (people.some((p) => p.request_state === 'pending' || p.request_state === 'declined'))
       throw new AppError(
         403,
         'awaiting_acceptance',
-        'You can call once your message request is accepted.',
+        tr('You can call once your message request is accepted.'),
       );
     if (await isBlockedEitherWay(ctx.db, auth.userId, other.user_id))
-      throw forbidden('You can’t call this person.');
+      throw forbidden(tr('You can’t call this person.'));
     const callee = await ctx.db
       .selectFrom('users')
       .select(['display_name', 'kind', 'presence'])
       .where('id', '=', other.user_id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (callee?.kind !== 'human') throw badRequest('There’s nobody to call here.');
+    if (callee?.kind !== 'human') throw badRequest(tr('There’s nobody to call here.'));
     ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
     // "On another call" says they're around right now: only to someone who may see that.
     const shown = (await personViewsFor(ctx, auth.userId, [other.user_id])).get(other.user_id);
@@ -155,7 +155,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         (await liveCallOf(ctx, auth.userId, trx)) ||
         (await joinedGroupCallOf(ctx, auth.userId, trx))
       )
-        throw new AppError(409, 'in_call', 'You’re already in a call.');
+        throw new AppError(409, 'in_call', tr('You’re already in a call.'));
       let rung = true;
       if (
         (await liveCallOf(ctx, other.user_id, trx)) ||
@@ -165,7 +165,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
           throw new AppError(
             409,
             'busy',
-            `${shown?.displayName ?? callee.display_name} is on another call.`,
+            tr('{name} is on another call.', { name: shown?.displayName ?? callee.display_name }),
           );
         // To anyone else it rings like any call nobody answers, and is missed like one: they
         // aren't rung, and find it among their missed calls.
@@ -222,7 +222,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
     const call = await mine(auth.userId, id);
-    if (call.callee_id !== auth.userId) throw forbidden('Only the person called can answer.');
+    if (call.callee_id !== auth.userId) throw forbidden(tr('Only the person called can answer.'));
     // Never rung for them (they were on another call): nothing to answer.
     if (!call.callee_rung) throw over();
     const answered = await ctx.db.transaction().execute(async (trx) => {
@@ -233,7 +233,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         (await joinedGroupCallOf(ctx, auth.userId, trx)) ||
         (await otherCallIn(ctx, auth.userId, id, trx))
       )
-        throw new AppError(409, 'in_call', 'You’re already in a call.');
+        throw new AppError(409, 'in_call', tr('You’re already in a call.'));
       return trx
         .updateTable('calls')
         .set({
@@ -259,7 +259,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const call = await mine(auth.userId, id);
-    if (call.callee_id !== auth.userId) throw forbidden('Only the person called can decline.');
+    if (call.callee_id !== auth.userId) throw forbidden(tr('Only the person called can decline.'));
     if (call.state !== 'ringing') throw over();
     const ended = (await endCall(ctx, call, 'declined')) ?? call;
     return { call: await callView(ctx, ended, auth.userId) };
@@ -298,7 +298,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const myDevice = caller ? call.caller_device : call.callee_device;
     const theirDevice = caller ? call.callee_device : call.caller_device;
     if (body.deviceId !== myDevice || !theirDevice)
-      throw forbidden('This device isn’t in that call.');
+      throw forbidden(tr('This device isn’t in that call.'));
     ctx.limiter.hit(`call-signal:${id}:${auth.userId}`, ctx.config.isTest ? 10_000 : 300, 60_000);
     // An offer or an answer is large and rare (one each, and one more per reconnect); only a
     // candidate is many. Large ones pass through the database (lib/bus.ts), so few of them.
@@ -337,7 +337,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     const call = await mine(auth.userId, id);
     const caller = call.caller_id === auth.userId;
     if (deviceId !== (caller ? call.caller_device : call.callee_device))
-      throw forbidden('This device isn’t in that call.');
+      throw forbidden(tr('This device isn’t in that call.'));
     const now =
       call.state === 'ended' ? undefined : await stillThere(ctx, id, caller ? 'caller' : 'callee');
     // Over: say how it ended, for a device that missed the event.
@@ -347,7 +347,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
         .selectAll()
         .where('id', '=', id)
         .executeTakeFirstOrThrow();
-      throw new AppError(409, 'call_ended', 'That call has ended.', {
+      throw new AppError(409, 'call_ended', tr('That call has ended.'), {
         call: await callView(ctx, ended, auth.userId),
       });
     }

@@ -4,6 +4,7 @@
 
 import { Resolver } from 'node:dns/promises';
 import { uuidv7 } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -212,7 +213,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     if (config.isTest) console.error('unhandled error', err);
     return reply
       .status(500)
-      .send({ error: { code: 'internal', message: 'Something went wrong on our side.' } });
+      .send({ error: { code: 'internal', message: tr('Something went wrong on our side.') } });
   });
   let web: WebApp | null = null;
   app.setNotFoundHandler((req, reply) => {

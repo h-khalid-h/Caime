@@ -5,6 +5,7 @@
  */
 import type { InviteAcceptView, InviteOpenView, InviteView } from '@caime/core';
 import { InviteBody } from '@caime/core';
+import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -32,7 +33,7 @@ export async function inviteRoutes(app: FastifyInstance, ctx: AppContext) {
   app.delete('/invites/:id', async (req): Promise<{ ok: true }> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    if (!(await revokeInvite(ctx, auth.userId, id))) throw notFound('That invite');
+    if (!(await revokeInvite(ctx, auth.userId, id))) throw notFound(tr('That invite'));
     return { ok: true };
   });
 
