@@ -685,11 +685,20 @@ with its reason, so it isn't proposed again without new facts.
   priced order or booking offers **Pay** to whoever pays, which opens the Pay card filled with
   its total and replying to it. Profiles, the organization's page and the public pages offer
   Pay where a way is open to that reader (a public page names only the kinds, never an account).
-  Person to person, person to organization and back are all here; organization to organization
-  waits for conversations between organizations, which don't exist yet. Later layers: a payment
+  Person to person, person to organization and back are all here, and organization to
+  organization since R64. Later layers: a payment
   provider's checkout for an organization that wants one (its own account, Stripe Connect,
   never Caime's), receipts from a paid card, a split's shares paid with the Pay card.
 - **R63 — A photo for each thing offered.** An item keeps one photo its host uploaded, shown
   wherever the item is: its page (and every link preview and answer engine's picture of it), its
   sheet, a collection's list and the order picker. It's seen by whoever may see the item, and no
   one else; a public item's photo is public like its page.
+- **R64 — Organizations pay each other.** Whoever runs an organization (its owner or admins)
+  may write to another one as it: the organization's page asks "Writing as" (you, or each
+  organization you run), and each choice is a conversation of its own beside the personal one.
+  The other team sees the organization first and the person writing for it second ("Acme
+  Supply · Karim Saleh"), in its inbox and the conversation; the writer sees "As Acme Supply".
+  Money follows the organization: a Pay card the team sends pays the writing organization
+  through its ways for those it knows, under its name, never the person's own; an ask pays the
+  team's organization as for any customer. Nothing else changes: it's a business conversation,
+  masked as one (R15), with the same blocks, rules for under-18s and retention.

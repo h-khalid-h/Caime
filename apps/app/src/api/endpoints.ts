@@ -452,7 +452,11 @@ export const endpoints = {
   checkReclaim: (id: string) => api.post<OrgResponse>(`/orgs/${id}/reclaim/check`),
 
   // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
-  messageOrg: (orgId: string) => api.post<OrgConversationResponse>(`/orgs/${orgId}/conversations`),
+  messageOrg: (orgId: string, asOrgId: string | null = null) =>
+    api.post<OrgConversationResponse>(
+      `/orgs/${orgId}/conversations`,
+      asOrgId ? { asOrgId } : undefined,
+    ),
   // Personal access tokens (PRD §74): made and revoked only while signed in
   tokens: () => api.get<PersonalTokensResponse>('/me/tokens'),
   createToken: (body: { name: string; scopes: string[]; days: 30 | 90 | 365 | null }) =>

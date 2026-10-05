@@ -150,9 +150,21 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/orgs/:id/conversations', async (req, reply): Promise<OrgConversationResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
+    // As an organization they run (R64), or as themselves.
+    const { asOrgId } = parse(
+      z.object({ asOrgId: z.string().uuid().nullable().optional() }).strict(),
+      req.body ?? {},
+    );
     const org = await orgById(ctx.db, id);
     if (await orgSeat(ctx.db, auth.userId, id))
       throw badRequest(tr('You’re on its team: its conversations are in its inbox.'));
+    // Its own team was refused above, so an organization never writes to itself.
+    if (asOrgId) {
+      await orgById(ctx.db, asOrgId);
+      const mine = await orgSeat(ctx.db, auth.userId, asOrgId);
+      if (!mine || !canManageOrg(mine.role))
+        throw forbidden(tr('Only the organization’s owner and admins can.'));
+    }
     const me = await ctx.db
       .selectFrom('users')
       .select(['birth_date', 'time_zone'])
@@ -177,6 +189,9 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .select('conversation_id')
       .where('org_id', '=', id)
       .where('customer_id', '=', auth.userId)
+      .where((eb) =>
+        asOrgId ? eb('customer_org_id', '=', asOrgId) : eb('customer_org_id', 'is', null),
+      )
       .executeTakeFirst();
     if (existing) {
       // Back in it if they had archived it.
@@ -214,6 +229,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
             conversation_id: conversationId,
             org_id: id,
             customer_id: auth.userId,
+            customer_org_id: asOrgId ?? null,
             created_at: ctx.now(),
             updated_at: ctx.now(),
           })
@@ -232,6 +248,9 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
         .select('conversation_id')
         .where('org_id', '=', id)
         .where('customer_id', '=', auth.userId)
+        .where((eb) =>
+          asOrgId ? eb('customer_org_id', '=', asOrgId) : eb('customer_org_id', 'is', null),
+        )
         .executeTakeFirstOrThrow();
       return { conversationId: winner.conversation_id, created: false };
     }

@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { useBusinessSummary, useOrg, useOrgSpaces } from '@/api/hooks';
+import { useBusinessSummary, useOrg, useOrgSpaces, useOrgs } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useCountries } from '@/features/geo/countries';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
@@ -30,6 +30,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
+import { ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import {
@@ -127,6 +128,11 @@ export function OrgScreen({
   const teams = useBusinessSummary(Boolean(org?.myRole)).data?.orgs;
   const orgSpaces = useOrgSpaces(org?.myRole ? (org?.id ?? null) : null).data?.spaces;
   const waiting = teams?.find((x) => x.org.id === org?.id);
+  // Writing as an organization one runs (R64), or as oneself (''): a conversation for each.
+  const [writingAs, setWritingAs] = useState('');
+  const mine = (useOrgs().data?.orgs ?? []).filter(
+    (o) => o.id !== org?.id && canManageOrg(o.myRole),
+  );
 
   /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
   const message = async (
@@ -136,7 +142,7 @@ export function OrgScreen({
   ) => {
     setStarting(true);
     try {
-      const { conversationId } = await endpoints.messageOrg(orgId);
+      const { conversationId } = await endpoints.messageOrg(orgId, writingAs || null);
       void qc.invalidateQueries({ queryKey: qk.inbox });
       // Book (R58): the conversation opens on the card's form, with the item chosen (R61).
       router.push({ pathname: '/c/[id]', params: cardParams(conversationId, kit, itemId) });
@@ -350,6 +356,30 @@ export function OrgScreen({
             </Text>
           ) : (
             <View style={{ alignItems: 'center', gap: 6 }}>
+              {mine.length && !minor ? (
+                <View
+                  style={{ alignSelf: 'stretch', alignItems: 'center' }}
+                  testID="org-writing-as"
+                >
+                  <Text variant="caption" color="textSecondary">
+                    {tr('Writing as')}
+                  </Text>
+                  <ChoiceChips
+                    label={tr('Writing as')}
+                    value={writingAs}
+                    onChange={setWritingAs}
+                    wrap
+                    options={[
+                      { value: '', label: tr('You'), testID: 'writing-as-me' },
+                      ...mine.map((o) => ({
+                        value: o.id,
+                        label: o.name,
+                        testID: `writing-as-${o.handle}`,
+                      })),
+                    ]}
+                  />
+                </View>
+              ) : null}
               <View
                 style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
               >

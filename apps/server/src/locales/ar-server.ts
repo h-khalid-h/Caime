@@ -954,4 +954,5 @@ export const arServer: Catalog = {
   'In a group, ask to be paid; say you’re paying where it’s two of you.':
     'في المجموعة، اطلب أن يُدفع لك؛ أما في محادثة بين اثنين فقل إنك تدفع.',
   'pays by': 'الدفع عبر',
+  '{name}, for {org}': '{name}، باسم {org}',
 };

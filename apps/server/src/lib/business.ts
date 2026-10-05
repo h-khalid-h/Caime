@@ -58,6 +58,8 @@ export interface CustomerMask {
   orgId: string;
   orgName: string;
   customerId: string;
+  /** The organization the customer writes for (R64), or null when they write as themselves. */
+  customerOrgId: string | null;
 }
 
 const MASK_TTL_MS = 60_000;
@@ -77,14 +79,20 @@ export async function customerMask(db: Q, conversationId: string): Promise<Custo
     .selectFrom('conversations as c')
     .leftJoin('business_threads as t', 't.conversation_id', 'c.id')
     .leftJoin('organizations as o', 'o.id', 't.org_id')
-    .select(['c.kind', 't.org_id', 't.customer_id', 'o.name'])
+    .select(['c.kind', 't.org_id', 't.customer_id', 't.customer_org_id', 'o.name'])
     .where('c.id', '=', conversationId)
     .executeTakeFirst();
   if (!row) return null;
   const business = row.kind === 'business';
   const mask =
     business && row.org_id && row.customer_id
-      ? { conversationId, orgId: row.org_id, orgName: row.name ?? '', customerId: row.customer_id }
+      ? {
+          conversationId,
+          orgId: row.org_id,
+          orgName: row.name ?? '',
+          customerId: row.customer_id,
+          customerOrgId: row.customer_org_id ?? null,
+        }
       : null;
   if (masks.size >= MASK_CACHE_MAX) masks.delete(masks.keys().next().value as string);
   masks.set(conversationId, { mask, at: now, business });
@@ -414,6 +422,13 @@ export async function threadViews(
     ),
   ];
   const customerIds = threads.map((t) => t.customer_id).filter((x): x is string => Boolean(x));
+  // The organizations customers write for (R64), in one query.
+  const forOrgIds = [
+    ...new Set(threads.map((t) => t.customer_org_id).filter((x): x is string => Boolean(x))),
+  ];
+  const forOrgs = forOrgIds.length
+    ? await ctx.db.selectFrom('organizations').selectAll().where('id', 'in', forOrgIds).execute()
+    : [];
   const [customers, names, lastMessages, mine, blocked, requests, ages] = await Promise.all([
     personViewsFor(ctx, viewerId, customerIds),
     people.length
@@ -486,6 +501,10 @@ export async function threadViews(
       conversationId: t.conversation_id,
       state: threadState(facts),
       customer: t.customer_id ? (customers.get(t.customer_id) ?? null) : null,
+      customerOrg: (() => {
+        const o = t.customer_org_id ? forOrgs.find((x) => x.id === t.customer_org_id) : null;
+        return o ? orgRef(o) : null;
+      })(),
       assignee: t.assignee_id
         ? { userId: t.assignee_id, displayName: nameOf(t.assignee_id) ?? 'Someone' }
         : null,

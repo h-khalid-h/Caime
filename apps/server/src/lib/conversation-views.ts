@@ -268,8 +268,17 @@ export async function conversationView(
         // The customer talks to the organization: nobody on its team is named (R15).
         shown = participants.filter((p) => p.userId === userId);
         title = org.name;
+        // Writing as one's organization (R64): said on the conversation, as it's who they are here.
+        const asOrg = thread.customer_org_id
+          ? await ctx.db
+              .selectFrom('organizations')
+              .selectAll()
+              .where('id', '=', thread.customer_org_id)
+              .executeTakeFirst()
+          : undefined;
         business = {
           org: orgRef(org),
+          asOrg: asOrg ? orgRef(asOrg) : null,
           readSeq: Number(thread.team_read_seq) || null,
           deliveredSeq: Number(conversation.last_seq),
           thread: null,
@@ -279,9 +288,13 @@ export async function conversationView(
         };
       } else {
         const [view] = await threadViews(ctx, userId, [thread]);
-        title = view?.customer?.displayName ?? 'Deleted account';
+        // An organization writing through someone (R64) is named first: it's whom the team answers.
+        title = view?.customerOrg
+          ? `${view.customerOrg.name} · ${view.customer?.displayName ?? tr('Deleted account')}`
+          : (view?.customer?.displayName ?? 'Deleted account');
         business = {
           org: orgRef(org),
+          asOrg: null,
           readSeq: null,
           deliveredSeq: 0,
           thread: view ?? null,

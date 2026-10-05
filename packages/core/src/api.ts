@@ -739,6 +739,8 @@ export interface BusinessThreadView {
   conversationId: string;
   state: ThreadState;
   customer: PersonView | null;
+  /** The organization the customer writes for (R64): the team answers it, through them. */
+  customerOrg: OrgRef | null;
   assignee: { userId: string; displayName: string } | null;
   escalated: { at: string; byName: string | null; note: string | null } | null;
   resolvedAt: string | null;
@@ -784,6 +786,8 @@ export interface ConversationBusinessView {
   deliveredSeq: number;
   /** For the team only: the thread's state, who has it, and why it's escalated. */
   thread: BusinessThreadView | null;
+  /** For the customer: the organization they write as here (R64), or null for themselves. */
+  asOrg: OrgRef | null;
   /** The customer blocked the organization: nobody writes in it until they unblock it. */
   closed: boolean;
   /** The organization closed (R42): what was sent stays to read, and nothing more is written. */

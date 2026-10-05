@@ -365,6 +365,17 @@ async function payToFor(
       const settings = paymentsOf(org);
       return shown(org.name, settings, methodsFor(settings, { isConnected: true, spheres: [] }));
     }
+    // The customer's organization is paid (R64): its ways for those it knows.
+    if (mask.customerOrgId) {
+      const theirs = await ctx.db
+        .selectFrom('organizations')
+        .select(['name', 'payments'])
+        .where('id', '=', mask.customerOrgId)
+        .executeTakeFirst();
+      if (!theirs) return null;
+      const settings = paymentsOf(theirs);
+      return shown(theirs.name, settings, methodsFor(settings, { isConnected: true, spheres: [] }));
+    }
     // The customer is paid (a refund): only their ways for everyone.
     const c = await person(mask.customerId);
     if (!c) return null;

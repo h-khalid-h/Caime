@@ -70,7 +70,9 @@ function ThreadRow({
   const t = useTheme();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const name = thread.customer?.displayName ?? tr('Deleted account');
+  const person = thread.customer?.displayName ?? tr('Deleted account');
+  // An organization writing through someone (R64) is named first, as the server titles it.
+  const name = thread.customerOrg ? `${thread.customerOrg.name} · ${person}` : person;
   const last = thread.lastMessage;
   const preview = last
     ? last.fromCustomer

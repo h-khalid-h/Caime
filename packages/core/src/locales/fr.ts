@@ -3282,4 +3282,7 @@ export const fr: Catalog = {
   'another app': 'une autre application',
   'Change the photo': 'Changer la photo',
   'Take the photo off': 'Retirer la photo',
+  'Writing as': 'Écrire en tant que',
+  'You write here for {name}: its payments go to its own ways to be paid.':
+    'Vous écrivez ici pour {name} : ses paiements arrivent sur ses propres moyens de paiement.',
 };

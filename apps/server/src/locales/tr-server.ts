@@ -943,4 +943,5 @@ export const turkishServer: Catalog = {
   'In a group, ask to be paid; say you’re paying where it’s two of you.':
     'Grupta ödeme isteyebilirsiniz; “ödüyorum” demek yalnızca iki kişilik konuşmalarda olur.',
   'pays by': 'ödeme yolları',
+  '{name}, for {org}': '{name}, {org} adına',
 };

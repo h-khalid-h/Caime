@@ -3285,4 +3285,7 @@ export const ar: Catalog = {
   'another app': 'تطبيق آخر',
   'Change the photo': 'غيّر الصورة',
   'Take the photo off': 'أزل الصورة',
+  'Writing as': 'الكتابة باسم',
+  'You write here for {name}: its payments go to its own ways to be paid.':
+    'تكتب هنا باسم {name}: ما يُدفع لها يصل إلى طرق الدفع الخاصة بها.',
 };

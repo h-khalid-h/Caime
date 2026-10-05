@@ -12,6 +12,7 @@ import {
   inboxSections,
   resolvePolicy,
   systemText,
+  tr,
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -209,12 +210,16 @@ export async function buildInbox(
   // A customer's conversations with organizations: the organization is who they talk to (R15).
   const businessIds = rows.filter((r) => r.kind === 'business').map((r) => r.id);
   const orgs = new Map<string, OrgRef>();
+  // Written for an organization of theirs (R64): its name tells the two apart.
+  const asOrgs = new Map<string, string>();
   if (businessIds.length)
     for (const o of await ctx.db
       .selectFrom('business_threads as t')
       .innerJoin('organizations as g', 'g.id', 't.org_id')
+      .leftJoin('organizations as a', 'a.id', 't.customer_org_id')
       .select([
         't.conversation_id',
+        'a.name as as_name',
         'g.id',
         'g.name',
         'g.handle',
@@ -225,8 +230,10 @@ export async function buildInbox(
         'g.avatar_file_id',
       ])
       .where('t.conversation_id', 'in', businessIds)
-      .execute())
+      .execute()) {
       orgs.set(o.conversation_id, orgRef(o));
+      if (o.as_name) asOrgs.set(o.conversation_id, o.as_name);
+    }
   const spaces = await spaceRefs(
     ctx.db,
     rows.map((r) => r.space_id),
@@ -304,7 +311,9 @@ export async function buildInbox(
       id: r.id,
       kind: r.kind,
       title: org
-        ? org.name
+        ? asOrgs.has(r.id)
+          ? tr('{name}, for {org}', { name: org.name, org: asOrgs.get(r.id) ?? '' })
+          : org.name
         : space
           ? spaceConversationTitle(space, r)
           : r.kind === 'direct'
@@ -345,6 +354,7 @@ export async function buildInbox(
                             orgId: org.id,
                             orgName: org.name,
                             customerId: userId,
+                            customerOrgId: null,
                           })
                         : last.payload,
                       userId,

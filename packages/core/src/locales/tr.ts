@@ -3162,4 +3162,7 @@ export const turkish: Catalog = {
   'another app': 'başka bir uygulama',
   'Change the photo': 'Fotoğrafı değiştir',
   'Take the photo off': 'Fotoğrafı kaldır',
+  'Writing as': 'Kimin adına',
+  'You write here for {name}: its payments go to its own ways to be paid.':
+    'Burada {name} adına yazıyorsunuz: ona yapılan ödemeler kendi ödeme yöntemlerine gider.',
 };

@@ -772,6 +772,8 @@ export interface BusinessThreadsTable {
   conversation_id: string;
   org_id: string;
   customer_id: string | null;
+  /** The organization the customer writes for (R64), or none. */
+  customer_org_id: string | null;
   assignee_id: string | null;
   escalated_at: NullableTimestamp;
   escalated_by: string | null;

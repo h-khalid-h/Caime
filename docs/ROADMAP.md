@@ -1048,9 +1048,14 @@ listed there with its owner.
       way: card buttons, choice chips and field labels were shown in English in every language,
       now through the catalogs. `payments.test.ts` (core and server), `public-pages.test.ts`,
       `e2e/bookings.spec.ts`.
-- [ ] Later layers of R62: organization to organization (needs conversations between
-      organizations), an organization's own checkout through its own provider account, a receipt
-      from a paid card, a split's shares paid with Pay.
+- [x] R64: organizations pay each other: `POST /orgs/:id/conversations` takes `asOrgId` (its
+      owner or admins only; `business_threads.customer_org_id`, one conversation per person and
+      organization they write as), the team sees `customerOrg` first (thread, title, Business
+      inbox row), the writer `business.asOrg` ("As …", inbox "…, for …"), and a Pay card the team
+      sends pays the writing organization through its ways for those it knows (`payToFor`).
+      OrgScreen's "Writing as" chips. `org-payments.test.ts`, `e2e/org-to-org.spec.ts`.
+- [ ] Later layers of R62: an organization's own checkout through its own provider account, a
+      receipt from a paid card, a split's shares paid with Pay.
 - [x] R63: an item's photo: `BookingItem.photoFileId`, set only to an image its saver uploaded
       (`assertItemPhotos`), served by `/v1/{orgs,people}/:id/items/:itemId/photo` to whoever may
       see the item (anyone for a public one), addressed by core `itemPhotoPath`; on the item's
@@ -2116,6 +2121,9 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-05 — R64: organizations write to and pay each other: "Writing as" on an
+  organization's page, the other team sees whom it answers, and Pay goes to the writing
+  organization's own ways.
 - 2026-10-05 — R63: an item's photo, on its page (and link previews), its sheet and the order
   picker. CI's red run was the site spec pinning the old Arabic headline; fixed and the full
   E2E suite run (the voice spec, last in the run, passes on its own: its job queue was busy).

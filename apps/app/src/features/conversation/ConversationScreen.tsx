@@ -337,9 +337,12 @@ export function ConversationScreen({
     : typingNames.length
       ? tr('typing…')
       : org && !thread
-        ? org.verified
-          ? tr('Business · Verified · {verifiedDomain}', { verifiedDomain: org.verifiedDomain })
-          : tr('Business · Not verified yet')
+        ? business?.asOrg
+          ? // Writing for an organization of theirs (R64): who they are here comes first.
+            tr('As {name}', { name: business.asOrg.name })
+          : org.verified
+            ? tr('Business · Verified · {verifiedDomain}', { verifiedDomain: org.verifiedDomain })
+            : tr('Business · Not verified yet')
         : thread && org
           ? tr('Customer of {name}', { name: org.name })
           : other
@@ -497,6 +500,13 @@ export function ConversationScreen({
             <Text variant="caption" color="textTertiary" align="center">
               {tr('A business conversation: {name}’s team answers as {name}.', { name: org.name })}
             </Text>
+            {business?.asOrg ? (
+              <Text variant="caption" color="textSecondary" align="center" testID="writing-as-line">
+                {tr('You write here for {name}: its payments go to its own ways to be paid.', {
+                  name: business.asOrg.name,
+                })}
+              </Text>
+            ) : null}
           </>
         ) : null}
         {other ? (

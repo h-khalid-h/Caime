@@ -475,6 +475,13 @@ These are rules, not preferences.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
+- Organizations to organizations (R64): a business thread's `customer_org_id` is the
+  organization its customer writes for (set at the start, `asOrgId`, its owner or admins only;
+  one thread per organization, person and writing-as, null for themselves), carried on
+  `CustomerMask.customerOrgId`. The team reads `BusinessThreadView.customerOrg` (named first:
+  "Acme · Karim"), the writer `ConversationBusinessView.asOrg`. Anything that pays or bills the
+  customer side of a business conversation (`payToFor`, a receipt, a checkout) pays that
+  organization when it's set, never the person.
 - Business conversations (R15): anything a customer is sent about one goes through the mask in
   `apps/server/src/lib/business.ts`. New endpoints that return user ids or names for a
   conversation must apply `maskFor`; `business.test.ts` checks the customer's responses for

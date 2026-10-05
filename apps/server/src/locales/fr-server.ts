@@ -991,4 +991,5 @@ export const frServer: Catalog = {
   'In a group, ask to be paid; say you’re paying where it’s two of you.':
     'Dans un groupe, demandez un paiement ; à deux, indiquez que vous payez.',
   'pays by': 'moyens de paiement',
+  '{name}, for {org}': '{name}, pour {org}',
 };
