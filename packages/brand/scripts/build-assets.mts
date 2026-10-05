@@ -273,6 +273,35 @@ async function main() {
     { input: markPng, top: 520, left: 1300 },
   ]);
   await sheet.png().toFile(join(docsAssets, 'brand-sheet.png'));
+
+  // Stripe's branding (Settings → Branding): a square icon at least 128 px and a logo, each a
+  // PNG under 512 KB. The logo sits on the brand colour (INK) in Checkout, the consent page and
+  // receipts, so it's the reversed wordmark with room around it; a plain one for a light colour.
+  const stripe = join(docsAssets, 'stripe');
+  await mkdir(stripe, { recursive: true });
+  // The heart mark, never a character: Checkout and receipts are money surfaces (BRAND.md B2).
+  await png(iconMarkSvg(), 512, join(stripe, 'stripe-icon.png'));
+  for (const [name, color] of [
+    ['stripe-logo.png', '#FFFFFF'],
+    ['stripe-logo-dark.png', INK],
+  ] as const) {
+    const mark = await sharp(Buffer.from(wordmarkSvg(w, color)), { density: 300 })
+      .resize({ height: 200 })
+      .png()
+      .toBuffer();
+    const { width = 0 } = await sharp(mark).metadata();
+    await sharp({
+      create: {
+        width: width + 120,
+        height: 320,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .composite([{ input: mark, top: 60, left: 60 }])
+      .png()
+      .toFile(join(stripe, name));
+  }
   console.log('brand assets written');
 }
 

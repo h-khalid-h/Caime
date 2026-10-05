@@ -189,6 +189,13 @@ first: it's live):
    restricted key also needs write access to Checkout Sessions on connected accounts and read
    access to Accounts.
 
+**Branding.** Stripe shows its own branding on Checkout, the Connect consent page and receipts.
+Upload these under Settings → Branding: icon `docs/brand/stripe/stripe-icon.png` (the heart
+mark: no character on a money surface, BRAND.md B2); logo `docs/brand/stripe/stripe-logo.png`
+(white wordmark) with brand colour `#3B2E5B` and accent colour `#FF8FB1`, or
+`stripe-logo-dark.png` for a light brand colour. They're made by
+`pnpm --filter @caime/brand assets`, never by hand.
+
 A card is marked paid only from what Stripe says when the server asks it (the payer's return,
 or the webhook naming the card), never from an event's own copy. Disconnecting asks Stripe to
 forget Caime's access (`/oauth/deauthorize`).
