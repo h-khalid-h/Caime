@@ -43,7 +43,7 @@ import { useOutbox } from '@/state/outbox';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
-import { RelationshipChip } from '@/ui/Chip';
+import { Chip, RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import {
@@ -53,9 +53,11 @@ import {
   MessageCircle,
   PanelRight,
   Phone,
+  Tag,
   Users,
   Video,
 } from '@/ui/icons';
+import { lazyPart, useOpened } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -74,6 +76,11 @@ import { buildRows, type Row } from './rows';
 import { mayKeepFrom } from './SharedFiles';
 import { SuggestionBar } from './SuggestionBar';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
+
+/** "How do you know …?" for a connection never labelled (R3), loaded the first time it opens. */
+const RelationshipPicker = lazyPart(() =>
+  import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
+);
 
 /**
  * `focusSeq` opens the conversation at one message (from search): older pages load until it's
@@ -98,6 +105,9 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const [panel, setPanel] = useState(wide);
   const [details, setDetails] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageView | null>(null);
+  // Saying how you know them, from the conversation itself (R3): the sheet, once opened.
+  const [labelling, setLabelling] = useState(false);
+  const labelled = useOpened(labelling);
   const [privateInfo, setPrivateInfo] = useState(false);
   const [editing, setEditing] = useState<MessageView | null>(null);
   const [actionsFor, setActionsFor] = useState<MessageView | null>(null);
@@ -480,9 +490,25 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
             </View>
           </>
         ) : (
-          <Text variant="caption" color="textTertiary" align="center">
-            {tr('This is the beginning of your conversation.')}
-          </Text>
+          <>
+            <Text variant="caption" color="textTertiary" align="center">
+              {tr('This is the beginning of your conversation.')}
+            </Text>
+            {other &&
+            conversation.kind === 'direct' &&
+            conversation.connected === true &&
+            !conversation.request ? (
+              // Never labelled: the one tap that makes Caime theirs (R3), here, not in a panel.
+              <Chip
+                label={tr('How do you know {name}?', {
+                  name: other.person.displayName.split(/\s+/)[0] ?? other.person.displayName,
+                })}
+                icon={Tag}
+                onPress={() => setLabelling(true)}
+                testID="label-relationship"
+              />
+            ) : null}
+          </>
         )}
       </View>
     ) : msgs.isFetchingNextPage ? (
@@ -794,6 +820,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         }}
       />
       {forwarding ? <ForwardSheet m={forwarding} onClose={() => setForwarding(null)} /> : null}
+      {labelled && other ? (
+        <RelationshipPicker
+          open={labelling}
+          onClose={() => setLabelling(false)}
+          person={{ id: other.userId, displayName: other.person.displayName }}
+        />
+      ) : null}
       {conversation && privately ? (
         <PrivateSheet
           conversation={conversation}

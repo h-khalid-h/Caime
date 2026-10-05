@@ -882,9 +882,12 @@ listed there with its owner.
       conversation view decides every read position in one check (`readReceiptsVisibleTo`) and
       takes its people from `personViewsFor`; an ack reaches whoever sent what it newly covers
       and the reader's devices, never the whole group.
-- [ ] Next block: a shorter first five minutes; the relationship chip in an unlabelled
-      conversation; the remaining hand-written role checks; the intelligence dates and the edit
-      path; the remaining UX mediums; zod's field messages through `tr`.
+- [x] A connection never labelled is asked for where the two of you are (R3): one chip in the
+      conversation's intro, "How do you know {name}?", opens the relationship picker, and the
+      intro shows the label once saved (`label-relationship`, `e2e/relationship-chip.spec.ts`).
+- [ ] Next block: a shorter first five minutes; the remaining hand-written role checks; the
+      intelligence dates and the edit path; the remaining UX mediums; zod's field messages
+      through `tr`.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1883,3 +1886,5 @@ listed there with its owner.
   needs in six queries and writes four at a time (813 → 267 queries for 80 members, 294 → 187
   ms), read positions are decided in one check for a whole group, and an ack reaches only
   whoever sent what it covers (`fanout-scale.test.ts`).
+- 2026-10-05 — An unlabelled conversation asks how you know them: one chip in its intro opens
+  the relationship picker, and the label shows there once saved (`e2e/relationship-chip.spec.ts`).

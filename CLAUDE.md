@@ -203,6 +203,10 @@ These are rules, not preferences.
   Anything that looks an organization up by id for its team uses `orgById` (open ones only);
   `closedOrgById` is for taking one back. A closed organization's conversations refuse every
   write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
+- A connection never labelled is asked for in the conversation's intro (R3): one chip,
+  `label-relationship`, opens `RelationshipPicker` (lazily) from `ConversationScreen`; the
+  person screen's "Change" and the panel's line stay. A new place that offers to label someone
+  opens that same picker, never a form of its own.
 - Starting a space is one screen, `/new-space`: it asks whose the space is only when the person
   is on an organization's team (`useOrgs`, `canManageOrg` decides which are offered; the rest
   are named, not offered), and an organization's page opens it with `?org=handle` chosen. A new
