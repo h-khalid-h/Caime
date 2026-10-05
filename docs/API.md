@@ -29,6 +29,8 @@ answers `401`.
 
 | Permission | Route | What it does |
 | --- | --- | --- |
+| any | `GET /v1/apps/me/deliveries?status=&after=&limit=` | The app's webhook deliveries (`id`, `event`, `status`, `attempts`, `lastStatus`, `lastError`, `createdAt`, `deliveredAt`), newest first, or with `after=<id>` the ones since that delivery, oldest first: an app that was down walks forward from the last id it handled. `status=failed` lists what gave up |
+| any | `POST /v1/apps/me/deliveries/:id/retry` | A failed delivery queued afresh, with the whole schedule again (`{ "delivery": … }`; 404 unless it's this app's and failed) |
 | any | `GET /v1/apps/me` | Who this token is: `{ "app": { "id", "name", "orgId", "orgHandle", "orgName", "botUserId", "scopes", "events" } }`. The `orgId` is what the routes below take, so the first call needs nothing but the token (`caime.me()` in the SDK) |
 | `inbox:read` | `GET /v1/orgs/:orgId/inbox?view=` | The inbox, by view: `customer_waiting`, `new`, `mine`, `waiting`, `escalated`, `resolved` |
 | `messages:read` | `GET /v1/conversations/:id` | One conversation, with its thread (state, who has it) |
@@ -90,6 +92,7 @@ try {
 | --- | --- | --- |
 | `inbox(orgId, view)` | `GET /v1/orgs/:orgId/inbox` | `inbox:read` |
 | `file(id)`, `thumbnail(id)` | `GET /v1/files/:id`, `…/thumb` | `messages:read` (a `Response` whose body is the file) |
+| `deliveries({ status, after, limit })`, `retryDelivery(id)` | `GET /v1/apps/me/deliveries`, `POST …/:id/retry` | any |
 | `conversation(id)`, `messages(id, { before, after, limit })` | `GET /v1/conversations/:id`, `…/messages` | `messages:read` |
 | `send(id, body, { clientId })`, `sendCard(id, key, fields, { clientId })` | `POST /v1/conversations/:id/messages` | `messages:write` (+ `kits`) |
 | `assign(id, userId \| null)`, `resolve(id)`, `reopen(id)`, `escalate(id, note)`, `stopEscalating(id)` | `POST /v1/business/:id/…`, `DELETE …/escalation` | `threads:write` |
@@ -123,9 +126,10 @@ Every body is `{ "id", "event", "orgId", "createdAt", "data" }`, with the header
 included; the body of your answer is ignored and redirects aren't followed. Anything else is
 tried again after 30 seconds, then 1, 2, 4 and 8 minutes: six attempts in all, over about a
 quarter of an hour, after which the delivery is marked failed and stays in the app's sheet with
-why. Nothing is replayed on its own: an app that was down longer reads what it missed through
-the API (the inbox, and a conversation's messages `after=` the last `seq` it saw) when it comes
-back. Addresses on private networks are refused, when you save them and again each time one is
+why. Nothing is replayed on its own: an app that was down longer lists its deliveries
+(`GET /v1/apps/me/deliveries?status=failed`, or `after=` the last id it handled) and retries each
+(`POST /v1/apps/me/deliveries/:id/retry`), or reads what it missed through the API (the inbox,
+and a conversation's messages `after=` the last `seq` it saw) when it comes back. Addresses on private networks are refused, when you save them and again each time one is
 looked up.
 
 Deliveries can arrive out of order, and now and then more than once: de-duplicate with

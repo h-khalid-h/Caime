@@ -8,6 +8,7 @@ import type {
   MessageView,
   OrgUpdatesView,
   OrgUpdateView,
+  WebhookDeliveryView,
 } from '@caime/core/api';
 import type { BusinessView } from '@caime/core/business';
 import type { CustomKitShape } from '@caime/core/custom-kits';
@@ -74,6 +75,28 @@ export class Caime {
   async me(): Promise<AppMeView['app']> {
     const { app } = await this.call<AppMeView>('GET', '/apps/me');
     return app;
+  }
+
+  // --- Deliveries -----------------------------------------------------------------------------
+
+  /**
+   * Any token: the app's webhook deliveries, newest first, or with `after` the ones since that
+   * delivery, oldest first (walk forward from the last id handled). `status: 'failed'` lists
+   * what gave up after its six tries.
+   */
+  deliveries(
+    page: { status?: 'pending' | 'delivered' | 'failed'; after?: string; limit?: number } = {},
+  ): Promise<{ deliveries: WebhookDeliveryView[] }> {
+    return this.call('GET', '/apps/me/deliveries', undefined, page);
+  }
+
+  /** Any token: a failed delivery queued afresh, with the whole schedule again. */
+  async retryDelivery(deliveryId: string): Promise<WebhookDeliveryView> {
+    const { delivery } = await this.call<{ delivery: WebhookDeliveryView }>(
+      'POST',
+      `/apps/me/deliveries/${enc(deliveryId)}/retry`,
+    );
+    return delivery;
   }
 
   // --- Files ----------------------------------------------------------------------------------

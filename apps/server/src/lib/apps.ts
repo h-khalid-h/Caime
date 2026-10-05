@@ -38,6 +38,8 @@ export const newWebhookSecret = () => `whsec_${randomBytes(24).toString('base64u
  */
 export const API_ROUTES: Readonly<Record<string, ApiScope | 'any'>> = {
   'GET /v1/apps/me': 'any',
+  'GET /v1/apps/me/deliveries': 'any',
+  'POST /v1/apps/me/deliveries/:id/retry': 'any',
   'GET /v1/orgs/:id/inbox': 'inbox:read',
   'GET /v1/conversations/:id': 'messages:read',
   'GET /v1/conversations/:id/messages': 'messages:read',
@@ -278,6 +280,27 @@ export async function queueDelivery(
     .execute();
   await enqueue(ctx, 'webhook_delivery', { deliveryId: id }, { maxAttempts: WEBHOOK_ATTEMPTS });
   return id;
+}
+
+/**
+ * A failed delivery, queued afresh at the app's own asking (docs/API.md): its attempts start
+ * over, so it gets the whole schedule again. Answers false when it isn't the app's or isn't failed.
+ */
+export async function requeueDelivery(
+  ctx: AppContext,
+  appId: string,
+  deliveryId: string,
+): Promise<boolean> {
+  const res = await ctx.db
+    .updateTable('webhook_deliveries')
+    .set({ status: 'pending', attempts: 0, last_error: null, last_status: null })
+    .where('id', '=', deliveryId)
+    .where('app_id', '=', appId)
+    .where('status', '=', 'failed')
+    .executeTakeFirst();
+  if (Number(res.numUpdatedRows) === 0) return false;
+  await enqueue(ctx, 'webhook_delivery', { deliveryId }, { maxAttempts: WEBHOOK_ATTEMPTS });
+  return true;
 }
 
 export function registerWebhookJob(): void {

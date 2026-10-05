@@ -64,6 +64,9 @@ These are rules, not preferences.
 6. **Writes are idempotent.** Retried client writes carry `clientId` (ADR-8); messages are ordered
    by `seq` (ADR-9). The sender's own echo carries its `clientId`; others get null.
 7. **Migrations are append-only** once pushed. Never edit a committed migration; add a new one.
+   Production deploys with the old container serving until the new one is ready, on the new
+   schema, so a migration expands first (add a column or table, backfill) and contracts in a
+   later release (drop or rename only once every instance runs code that no longer reads it).
 8. **Never assume gender or age.** Copy uses names, not pronouns; gender is never inferred (R27).
    Under-18 protections are rules in code, with tests (R29).
 9. **Brand on two intensities.** Characters in expressive moments (welcome, empty states,
@@ -372,8 +375,9 @@ These are rules, not preferences.
   `packages/sdk/src/webhooks.ts`, listed in `docs/API.md` and emitted with `emitWebhook`;
   anything that removes or erases a customer conversation's words emits `message.deleted` or
   `conversation.erased`, so an organization's app drops its copies (R54). A delivery is tried
-  six times over about a quarter of an hour (`WEBHOOK_ATTEMPTS`, the job loop's backoff) and
-  nothing is replayed, which the doc says.
+  six times over about a quarter of an hour (`WEBHOOK_ATTEMPTS`, the job loop's backoff);
+  nothing is replayed on its own, but an app lists its own deliveries and retries a failed one
+  (`GET /v1/apps/me/deliveries`, `POST …/:id/retry`, `requeueDelivery`), which the doc says.
 - Apps' bots are users of kind `'bot'` on an organization's team. Anything that picks or
   counts people (assignees, heirs, who is notified, the team's size, search, connections)
   takes `kind = 'human'` only; a bot's messages are `automated` and never move a thread. An
@@ -528,8 +532,11 @@ These are rules, not preferences.
   unions two groups), and `GET /connections` folds each group into its root's `also`. The app's
   card and section load only when there's one (`features/duplicates/`).
 - Groups (PRD §56): who may change a conversation (name, purpose, context, disappearing
-  messages) is `canEditConversation` in `lib/contexts.ts`, with `contextVisible` and
-  `contextEditable` for contexts; roles follow the space rules in `packages/core/src/spaces.ts`
+  messages), remove someone else's message or set disappearing messages is core's
+  (`packages/core/src/permissions.ts`: `canEditConversation`, `canRemoveOthersMessages`,
+  `canChangeDisappearing`, and `minorMayWriteToOrg` for R29), read by the server before it
+  acts and by the app before it offers; `lib/contexts.ts` re-exports the first, with
+  `contextVisible` and `contextEditable` for contexts; roles follow the space rules in `packages/core/src/spaces.ts`
   (`canRemoveFromSpace`, `canChangeSpaceRole`, `nextOwner`), and an owner who goes hands on
   through `handOverGroup`/`handOverGroups` (`lib/conversations.ts`). Anything new that changes a
   group checks one of these, never `me.role` by hand. The app's panel is

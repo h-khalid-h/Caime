@@ -205,6 +205,37 @@ describe('@caime/sdk against the server (R39)', () => {
     );
   });
 
+  it('lists its own deliveries, and retries a failed one with the whole schedule again', async () => {
+    const { deliveries } = await caime.deliveries();
+    expect(deliveries.length).toBeGreaterThan(0);
+    expect(deliveries[0]).toMatchObject({ status: 'delivered', event: expect.any(String) });
+    // Newest first; from a cursor, forward.
+    const oldest = deliveries[deliveries.length - 1]!;
+    const forward = (await caime.deliveries({ after: oldest.id })).deliveries;
+    expect(forward.map((d) => d.id)).toEqual(
+      deliveries
+        .map((d) => d.id)
+        .filter((id) => id !== oldest.id)
+        .reverse(),
+    );
+    // One that gave up (the endpoint was down): the app sees why, and asks for it again.
+    await t.ctx.db
+      .updateTable('webhook_deliveries')
+      .set({ status: 'failed', attempts: 6, last_error: 'No answer within 10 seconds' })
+      .where('id', '=', oldest.id)
+      .execute();
+    const [failed] = (await caime.deliveries({ status: 'failed' })).deliveries;
+    expect(failed).toMatchObject({ id: oldest.id, lastError: 'No answer within 10 seconds' });
+    received.length = 0;
+    const again = await caime.retryDelivery(oldest.id);
+    expect(again).toMatchObject({ id: oldest.id, status: 'pending', attempts: 0 });
+    await runDueJobs(t.ctx);
+    expect(received.map((r) => r.headers['caime-delivery'])).toContain(oldest.id);
+    expect((await caime.deliveries({ status: 'failed' })).deliveries).toEqual([]);
+    // Not failed, or not this app's: nothing to retry.
+    await expect(caime.retryDelivery(oldest.id)).rejects.toMatchObject({ status: 404 });
+  });
+
   it('reads a file the customer sent, as the team would, and nothing outside the conversation', async () => {
     const boundary = `----caime${Date.now()}`;
     const payload = Buffer.concat([

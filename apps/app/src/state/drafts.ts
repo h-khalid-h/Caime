@@ -32,8 +32,12 @@ function sync(conversationId: string, text: string): void {
       timers.delete(conversationId);
       const value = text.trim() ? text : null;
       if ((synced.get(conversationId) ?? null) === value) return;
-      synced.set(conversationId, value ?? '');
-      void endpoints.updateConversation(conversationId, { draft: value }).catch(() => {});
+      // Marked synced only once the account has it: a failed request leaves it to the next
+      // keystroke's sync, or the next sync of this conversation, to try again.
+      void endpoints
+        .updateConversation(conversationId, { draft: value })
+        .then(() => synced.set(conversationId, value ?? ''))
+        .catch(() => {});
     }, 1500),
   );
 }

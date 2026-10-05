@@ -1,6 +1,7 @@
 import type { ConversationView, TaskView } from '@caime/core/api';
 import { formatDue, retentionText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { canChangeDisappearing } from '@caime/core/permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -615,9 +616,11 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
   // A group's topic goes as its group does: that's where it's changed (PRD §58).
   const ofGroup =
     conversation.kind === 'group' && conversation.parentId ? conversation.title : null;
-  const canChange =
-    !ofGroup &&
-    (conversation.kind === 'direct' || ['owner', 'admin'].includes(conversation.me.role));
+  const canChange = canChangeDisappearing(
+    conversation.kind,
+    conversation.me.role,
+    Boolean(ofGroup),
+  );
   const current = (days === null ? 'off' : String(days)) as (typeof KEEP)[number];
   const set = async (value: (typeof KEEP)[number]) => {
     try {

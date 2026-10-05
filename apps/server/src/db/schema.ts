@@ -1051,6 +1051,7 @@ export interface Database {
 }
 
 export type User = Selectable<UsersTable>;
+export type WebhookDelivery = Selectable<WebhookDeliveriesTable>;
 export type NewUser = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 export type Relationship = Selectable<RelationshipsTable>;

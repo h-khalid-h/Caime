@@ -1,6 +1,7 @@
 import type { BusinessThreadView, ConversationView } from '@caime/core/api';
 import { waitedFor, waitedMinutes } from '@caime/core/business';
 import { tr } from '@caime/core/i18n';
+import { canManageOrg } from '@caime/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -48,7 +49,7 @@ export function ThreadBar({
   const resolved = thread.state === 'resolved';
   // Erasing is the owner's and admins' (R54): shown only to them, so nobody meets a refusal.
   const org = useOrg(conversation.business?.org.handle ?? '').data?.org;
-  const manager = org?.myRole === 'owner' || org?.myRole === 'admin';
+  const manager = canManageOrg(org?.myRole);
 
   const act = async (work: () => Promise<unknown>, done: string) => {
     setBusy(true);

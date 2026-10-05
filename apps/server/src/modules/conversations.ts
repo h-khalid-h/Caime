@@ -19,6 +19,7 @@ import {
   canChangeSpaceRole,
   canPin,
   canRemoveFromSpace,
+  canRemoveOthersMessages,
   checklistItems,
   checklistState,
   customMoves,
@@ -1954,7 +1955,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       .where('id', '=', id)
       .executeTakeFirst();
     if (!m) throw notFound('That message');
-    const { me } = await membership(ctx, auth.userId, m.conversation_id);
+    const { conversation, me } = await membership(ctx, auth.userId, m.conversation_id);
     if (forEveryone === 'false') {
       await ctx.db
         .insertInto('hidden_messages')
@@ -1978,8 +1979,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     // A line about the conversation (who joined, who changed what) is its record, for everyone.
     if (m.kind === 'system')
       throw badRequest('Lines about the conversation stay. You can delete it for yourself.');
-    const moderator = ['owner', 'admin'].includes(me.role);
-    if (m.sender_id !== auth.userId && !moderator)
+    if (m.sender_id !== auth.userId && !canRemoveOthersMessages(conversation.kind, me.role))
       throw forbidden('You can delete your own messages.');
     await removeForEveryone(ctx, m, auth.userId);
     return { ok: true };

@@ -853,12 +853,19 @@ listed there with its owner.
       `conversation.erased` webhook events; `GET /v1/files/:id` and `/thumb` for apps
       (`caime.file()`, `caime.thumbnail()`); the retry schedule and its end documented;
       `business.thread.by` says `ai_agent`; the mail log carries the kind, not the subject.
-- [ ] Next block: permission rules into core (convention 4); error codes the app translates and
-      previews through `tr`; a shorter first five minutes; the relationship chip in an
-      unlabelled conversation; group fan-out in batches; the five foreign-key indexes;
-      `savePrefs` and drafts retried on failure; a deliveries list and retry for apps; the
-      operator's tools for a locked-out person; the migration expand/contract rule; the
-      intelligence dates and the edit path; the remaining UX mediums.
+- [x] From the next block: the conversation's permission rules in core
+      (`packages/core/src/permissions.ts`: who edits a conversation, removes others' messages,
+      sets disappearing messages, and who under 18 may write to an organization), read by the
+      server and the app alike; the four foreign-key indexes (migration 0049); a failed
+      preferences save stays pending and is tried again, a draft is marked synced only once the
+      account has it; a `Sheet` closes on Escape on the web (`e2e/a11y.spec.ts`); an app lists
+      its own deliveries and retries a failed one (`GET /v1/apps/me/deliveries`,
+      `POST …/:id/retry`, `caime.deliveries()`, `caime.retryDelivery()`); migrations expand
+      first and contract later (convention 7).
+- [ ] Next block: error codes the app translates and previews through `tr`; a shorter first
+      five minutes; the relationship chip in an unlabelled conversation; group fan-out in
+      batches; the remaining hand-written role checks; the operator's tools for a locked-out
+      person; the intelligence dates and the edit path; the remaining UX mediums.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1842,3 +1849,7 @@ listed there with its owner.
   interface and the public site translated (`locales/fr.ts`, `fr-site.ts`), the language list
   the one place a language is named, the catalog tests over every language, the site's switch
   and alternates for three, the agent's hand-over line in French, an E2E that chooses it.
+- 2026-10-05 — From M12's next block: the conversation's permission rules moved into core and
+  read on both sides, the message foreign keys indexed (0049), a failed preferences save and a
+  failed draft sync no longer lose the device's choice, a Sheet closes on Escape on the web, an
+  app lists and retries its webhook deliveries, and convention 7 says expand, then contract.

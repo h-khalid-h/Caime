@@ -14,6 +14,7 @@ import {
   EscalateThreadBody,
   handleError,
   inBusinessView,
+  minorMayWriteToOrg,
   normalizeHandle,
   StartThreadBody,
   type StartThreadResult,
@@ -157,7 +158,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     // Under 18, only an organization that has proved who it is: a school, a club, a clinic (R29).
-    if (minorOf(me, ctx.now()) && !org.verified_at)
+    if (!minorMayWriteToOrg(minorOf(me, ctx.now()), org.verified_at !== null))
       throw forbidden(
         `Under 18, you can message organizations that have verified who they are. ${org.name} hasn’t yet.`,
       );

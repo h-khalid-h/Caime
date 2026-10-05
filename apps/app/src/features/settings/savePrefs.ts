@@ -7,6 +7,9 @@ import { useSession } from '@/state/session';
 import { type PrefValues, usePrefs } from '@/theme/prefs';
 
 let timer: ReturnType<typeof setTimeout> | null = null;
+/** Failed sends so far; the next try waits longer each time, and gives up after RETRIES. */
+let failures = 0;
+const RETRIES = 5;
 
 /** The device's whole choice, as the account keeps it. */
 function snapshot(): Record<string, unknown> {
@@ -32,9 +35,24 @@ function snapshot(): Record<string, unknown> {
 function send(keepalive = false): void {
   timer = null;
   void request<{ user: MeView }>('PATCH', '/me', { body: { preferences: snapshot() }, keepalive })
-    .then((res) => useSession.getState().setUser(res.user))
-    .catch(() => {})
-    .finally(clearPrefsPending);
+    .then((res) => {
+      failures = 0;
+      useSession.getState().setUser(res.user);
+      clearPrefsPending();
+    })
+    .catch(() => {
+      // The account doesn't have the device's choice yet: it stays pending (so a refresh of the
+      // account can't put the older choice back) and is sent again, a little later each time.
+      // A device that stays offline keeps its own choice; the account catches up at the next
+      // save, or the next launch's save.
+      failures += 1;
+      if (failures > RETRIES || keepalive) {
+        failures = 0;
+        clearPrefsPending();
+        return;
+      }
+      timer = setTimeout(send, Math.min(60_000, 2_000 * 2 ** (failures - 1)));
+    });
 }
 
 /**

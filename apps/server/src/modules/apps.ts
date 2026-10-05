@@ -20,13 +20,14 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import type { OrgApp } from '../db/schema';
+import type { OrgApp, WebhookDelivery } from '../db/schema';
 import {
   appViews,
   checkWebhookUrl,
   newApiToken,
   newWebhookSecret,
   queueDelivery,
+  requeueDelivery,
 } from '../lib/apps';
 import { audit } from '../lib/audit';
 import { joinThreads, leaveThreads } from '../lib/business';
@@ -58,6 +59,20 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     return found;
   }
   const viewOf = async (a: OrgApp): Promise<OrgAppView> => (await appViews(ctx, [a]))[0]!;
+  const deliveryView = (d: WebhookDelivery): WebhookDeliveryView => ({
+    id: d.id,
+    event: d.event,
+    status: d.status,
+    attempts: d.attempts,
+    lastStatus: d.last_status,
+    lastError: d.last_error,
+    createdAt: d.created_at.toISOString(),
+    deliveredAt: d.delivered_at?.toISOString() ?? null,
+  });
+  const appOnly = (auth: ReturnType<typeof requireAuth>) => {
+    if (!auth.app) throw forbidden('This route is for an app’s token.');
+    return auth.app;
+  };
   const webhook = (url: string | null | undefined) =>
     url ? checkWebhookUrl(url, ctx.config.WEBHOOKS_ALLOW_PRIVATE) : null;
 
@@ -95,6 +110,47 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
       },
     };
   });
+
+  /**
+   * The app's own deliveries (docs/API.md): what went out, what failed and why, so an app that
+   * was down reads what it missed. Newest first; with `after`, the ones since that delivery,
+   * oldest first, so a reader walks forward from the last id it handled.
+   */
+  app.get('/apps/me/deliveries', async (req): Promise<{ deliveries: WebhookDeliveryView[] }> => {
+    const me = appOnly(requireAuth(req));
+    const q = parse(
+      z.object({
+        status: z.enum(['pending', 'delivered', 'failed']).optional(),
+        after: z.string().uuid().optional(),
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+      }),
+      req.query,
+    );
+    let query = ctx.db.selectFrom('webhook_deliveries').selectAll().where('app_id', '=', me.id);
+    if (q.status) query = query.where('status', '=', q.status);
+    // Ids are time-ordered (uuidv7), so "after" is "newer than".
+    if (q.after) query = query.where('id', '>', q.after).orderBy('id', 'asc');
+    else query = query.orderBy('id', 'desc');
+    const rows = await query.limit(q.limit).execute();
+    return { deliveries: rows.map(deliveryView) };
+  });
+
+  /** A failed delivery, tried again with the whole schedule: for an endpoint that was down. */
+  app.post(
+    '/apps/me/deliveries/:id/retry',
+    async (req): Promise<{ delivery: WebhookDeliveryView }> => {
+      const me = appOnly(requireAuth(req));
+      const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+      if (!(await requeueDelivery(ctx, me.id, id)))
+        throw notFound('A failed delivery of this app by that id');
+      const row = await ctx.db
+        .selectFrom('webhook_deliveries')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow();
+      return { delivery: deliveryView(row) };
+    },
+  );
 
   app.get('/orgs/:id/apps', async (req): Promise<{ apps: OrgAppView[] }> => {
     const auth = requireAuth(req);
@@ -274,18 +330,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
         .orderBy('created_at', 'desc')
         .limit(20)
         .execute();
-      return {
-        deliveries: rows.map((d) => ({
-          id: d.id,
-          event: d.event,
-          status: d.status,
-          attempts: d.attempts,
-          lastStatus: d.last_status,
-          lastError: d.last_error,
-          createdAt: d.created_at.toISOString(),
-          deliveredAt: d.delivered_at?.toISOString() ?? null,
-        })),
-      };
+      return { deliveries: rows.map(deliveryView) };
     },
   );
 

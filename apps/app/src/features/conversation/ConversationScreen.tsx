@@ -2,6 +2,7 @@ import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
 import { contextLine, formatDue, retentionText } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import { canRemoveOthersMessages } from '@caime/core/permissions';
 import { canPin } from '@caime/core/pins';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
@@ -778,8 +779,7 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
         aiReady={aiReady}
         where={where}
         moderator={
-          conversation?.kind !== 'direct' &&
-          (conversation?.me.role === 'owner' || conversation?.me.role === 'admin')
+          conversation ? canRemoveOthersMessages(conversation.kind, conversation.me.role) : false
         }
         canPin={pinner}
         onForward={setForwarding}

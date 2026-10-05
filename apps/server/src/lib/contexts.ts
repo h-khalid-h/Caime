@@ -9,8 +9,8 @@ import type { Database } from '../db/schema';
 type Q = Kysely<Database> | Transaction<Database>;
 
 /** A conversation's name, purpose, context and disappearing messages. */
-export const canEditConversation = (kind: string, role: string): boolean =>
-  kind === 'direct' || role === 'owner' || role === 'admin';
+// The rule is core's (convention 4): the app reads the same one before it offers the change.
+export { canEditConversation } from '@caime/core/permissions';
 
 /**
  * Its maker's alone: linked to no conversation yet. Once it's a conversation's, it's read and

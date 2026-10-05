@@ -118,6 +118,9 @@ test('the signed-in screens, phone and desktop, English and Arabic', async ({ br
   ).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('message-copy')).toBeVisible();
+  // And Escape closes the sheet, as any dialog's does.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('message-copy')).toBeHidden();
   await page.close();
 
   const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });

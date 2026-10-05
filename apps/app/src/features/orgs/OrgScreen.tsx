@@ -8,6 +8,7 @@ import {
   ORG_ROLE_LABELS,
   orgKindName,
 } from '@caime/core/orgs';
+import { minorMayWriteToOrg } from '@caime/core/permissions';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -228,7 +229,9 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
   // Through the door (R53, `?write`): a customer lands in the conversation with nothing more
   // to tap. Once per screen; the team, someone who blocked it and a minor it can't take stay.
   const walkedIn = useRef(false);
-  const canWrite = Boolean(org && !org.myRole && !org.blockedByMe && !(minor && !org.verified));
+  const canWrite = Boolean(
+    org && !org.myRole && !org.blockedByMe && minorMayWriteToOrg(minor, org.verified),
+  );
   useEffect(() => {
     if (!write || !org || walkedIn.current || !canWrite) return;
     walkedIn.current = true;
