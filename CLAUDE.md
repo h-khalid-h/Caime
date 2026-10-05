@@ -168,6 +168,14 @@ These are rules, not preferences.
   `lib/door.ts`, cached an hour in the browser), drawn by `features/orgs/OrgDoor.tsx`. Anything
   else printed for a clinic (a receipt line, a bio) reuses that link and path, never another
   encoder or a second link shape.
+- An organization's setup (R57) is `/o/[handle]/setup` (`features/orgs/OrgSetup.tsx`, owner and
+  admins only; others get a line saying so): the door, `OrgVerification`, `OrgData`, `OrgBooking`,
+  `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`) is the daily
+  work (inbox, updates, spaces, team, insights) and offers the setup in one row (`org-setup`)
+  whose subtitle is `setupNextLine(org)` (`setupSteps.ts`: what's next). A new thing an
+  organization configures goes on the setup screen, never on the page; a line both need lives in
+  a small module of its own (`planLine.ts`), since a module two route chunks share moves into
+  `__common` (`nextOrgPlanLine` cost 2.1 KB there).
 - Ending a session (sign-out, "sign out that device", a password change, a recovery, a
   suspension, removing a device for private conversations) goes through `endSessions`
   (`lib/sessions.ts`), never an update of `sessions` by hand: it publishes `session.ended` on

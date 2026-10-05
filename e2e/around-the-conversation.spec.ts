@@ -701,6 +701,11 @@ test.describe
       await expect(facts).toContainText('Clinic or practice');
       await expect(page.getByTestId('org-unverified')).toBeVisible();
 
+      // Setting it up is its own screen (R57), reached from the page; the row says what's next.
+      const setup = page.getByTestId('org-setup');
+      await expect(setup).toContainText('Next: verify your domain');
+      await setup.click();
+      await expect(page).toHaveURL(new RegExp(`/o/${handle.replaceAll('.', '\\.')}/setup$`));
       // A domain of its own each run: a verified domain belongs to one organization.
       const domain = `niledental-${stamp}.example`;
       await page.getByTestId('org-domain').fill(`https://www.NileDental-${stamp}.example/about`);
@@ -712,12 +717,16 @@ test.describe
       await page.getByTestId('org-domain-check').click();
       expect((await checked).status()).toBe(422);
       await expect(visible(page, /couldn’t find the record yet/)).toBeVisible();
-      await expect(page.getByTestId('org-unverified')).toBeVisible();
+      // Still unverified: the record stays on the screen to add.
+      await expect(page.getByTestId('org-record-value')).toBeVisible();
       // Published among the domain's other records, it verifies.
       const value = (await page.getByTestId('org-record-value').textContent()) ?? '';
       await publishTxt(`_caime-verify.${domain}`, ['v=spf1 -all', value]);
       await page.getByTestId('org-domain-check').click();
+      await expect(visible(page, `${domain} is verified`)).toBeVisible();
+      await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-verified')).toHaveText(`Verified · ${domain}`);
+      await expect(page.getByTestId('org-setup')).toContainText('Next: set bookable hours');
 
       // Its logo, from Edit details: on its page at once.
       await page.getByTestId('org-edit').click();
@@ -795,6 +804,13 @@ test.describe
       await phone.getByTestId(`org-row-${handle}`).click();
       await expect(visible(phone, 'Alex Chen (you)')).toBeVisible();
       await expect(phone.getByTestId('org-domain-check')).toHaveCount(0);
+      await expect(phone.getByTestId('org-setup')).toHaveCount(0);
+      // Nor by its address: the setup screen is the owner's and admins'.
+      await phone.goto(`/o/${handle}/setup`);
+      await expect(
+        visible(phone, `Its owner and admins set Nile Dental ${stamp} up`),
+      ).toBeVisible();
+      await phone.goBack();
       await expect(
         phone.getByTestId('org-space-Front desk').filter({ visible: true }),
       ).toBeVisible();
@@ -1086,7 +1102,7 @@ test.describe
     test('an app’s bot answers a customer as the organization, and says it’s automated', async () => {
       const handle = `nile.dental.${stamp}`;
       const { page, errors } = noor;
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-app-add').click();
       await page.getByTestId('org-app-name').fill('Nile Assistant');
       await page.getByTestId('org-app-scope-messages:write').click();
@@ -1096,6 +1112,8 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-app-token.png' });
       await page.getByTestId('org-app-secrets-done').click();
       await expect(page.getByTestId('org-app-Nile Assistant')).toBeVisible();
+      // The bot is on the team, on the organization's page.
+      await page.goto(`/o/${handle}`);
       await expect(visible(page, 'Bot · an app’s, labelled automated')).toBeVisible();
 
       // The app answers through its token, as its bot, in the customer's conversation.
@@ -1148,13 +1166,14 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-plan.png' });
 
       // Nile Dental is on Free: its one app is connected, and its team has room for one more.
-      await page.goto(`/o/nile.dental.${stamp}`);
+      await page.goto(`/o/nile.dental.${stamp}/setup`);
       await expect(page.getByTestId('org-plan')).toContainText('Free plan');
       await expect(page.getByTestId('org-plan')).toContainText('2 of 3 people · 1 of 1 app');
       await expect(page.getByTestId('org-apps-full')).toContainText(
         'The Free plan includes one app. Business has room for 100 people and 25 apps',
       );
       await expect(page.getByTestId('org-app-add')).toHaveCount(0);
+      await page.goto(`/o/nile.dental.${stamp}`);
       await page.getByTestId('org-add-people').click();
       await expect(page.getByTestId('org-add-room')).toHaveText(
         'Room for 1 more on the Free plan.',
@@ -1251,10 +1270,11 @@ test.describe
         data: { plan: 'business' },
       });
       expect(upgraded.status()).toBe(200);
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await expect(page.getByTestId('org-plan')).toContainText('Business plan');
       await expect(page.getByTestId('org-app-add')).toBeVisible();
-      // Lina wrote to it, and the team answered her.
+      // Lina wrote to it, and the team answered her: insights are on the page, daily work.
+      await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('insight-conversations')).toContainText(
         /Customers\s*1\s*Up from 0/,
       );
@@ -1277,7 +1297,7 @@ test.describe
     test('an app’s own kind of card: it sends one, the customer moves it, the team sends one too', async () => {
       const handle = `nile.dental.${stamp}`;
       const { page, errors } = noor;
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-app-add').click();
       await page.getByTestId('org-app-name').fill('Nile Pharmacy');
       await page.getByTestId('org-app-scope-messages:write').click();
@@ -1365,7 +1385,7 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-kit-custom.png' });
 
       // The app's sheet says what it has made.
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-app-Nile Pharmacy').click();
       await expect(page.getByTestId('org-app-kits')).toHaveText('Its cards: Prescription');
       // A card from the team is the team writing since the conversation was resolved, so the
@@ -2328,7 +2348,7 @@ test.describe
       const orgName = `Nile Dental ${stamp}`;
       const agentName = `${orgName} Assistant`;
       const { page, errors } = noor;
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-agent-setup').click();
       await expect(page.getByTestId('org-agent-name')).toHaveValue(agentName);
       await page
@@ -2345,6 +2365,7 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-agent.png' });
       await page.getByTestId('org-agent-save').click();
       await expect(page.getByTestId('org-agent')).toContainText('Answers first');
+      await page.goto(`/o/${handle}`);
       await expect(visible(page, 'AI agent · says so in everything it writes')).toBeVisible();
 
       // Lina knows before she writes that an AI answers first, and its answer says so.
@@ -2367,12 +2388,14 @@ test.describe
 
       // With bookable hours set (R51), it offers open slots and books the one Lina picks, as an
       // appointment card she confirms; the team sees it under Bookings meanwhile.
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-booking').click();
       // Monday to Friday are offered first; every day, so the test's day is one of them.
       await page.getByTestId('org-booking-day-0').click();
       await page.getByTestId('org-booking-day-6').click();
       await page.getByTestId('org-booking-save').click();
+      await expect(page.getByTestId('org-booking')).toContainText('30 min');
+      await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-hours')).toContainText('30 min');
       await write('Can I book a cleaning on Thursday?');
       await expect(visible(customer, /I can offer .+ Which suits you\?/)).toBeVisible();
@@ -2403,9 +2426,11 @@ test.describe
       // The sheet's own X (its backdrop is a Close too).
       await customer.getByRole('button', { name: 'Close', exact: true }).last().click();
       await expect(customer.getByTestId('slot-picker')).toHaveCount(0);
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-booking').click();
       await page.getByTestId('org-booking-off').click();
+      await expect(page.getByTestId('org-booking')).toContainText('Bookings are off');
+      await page.goto(`/o/${handle}`);
       await expect(page.getByTestId('org-hours')).toHaveCount(0);
 
       // Asked for a person, it hands over, and the team sees why the customer is waiting.
@@ -2418,7 +2443,7 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-business-handed-over.png' });
 
       // Removed, it leaves the team; what it wrote stays.
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       await page.getByTestId('org-agent').click();
       await page.getByTestId('org-agent-remove').click();
       await page.getByTestId('org-agent-remove-confirm').click();

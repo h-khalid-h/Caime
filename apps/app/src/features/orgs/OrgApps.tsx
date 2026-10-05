@@ -25,7 +25,7 @@ import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
-import { nextOrgPlanLine } from './OrgPlan';
+import { nextOrgPlanLine } from './planLine';
 
 const key = (orgId: string) => ['org-apps', orgId] as const;
 

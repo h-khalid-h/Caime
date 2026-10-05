@@ -3047,4 +3047,19 @@ export const fr: Catalog = {
     'Saisissez l’adresse complète, en commençant par https://',
   'That message isn’t sealed properly.': 'Ce message n’est pas correctement scellé.',
   'Attach a file.': 'Joignez un fichier.',
+  // The organization's setup screen (R57).
+  'Set up': 'Configuration',
+  'Set up {name}': 'Configurer {name}',
+  'Its owner and admins set {name} up':
+    'La configuration de {name} revient à son propriétaire et à ses admins',
+  'Ask one of them to make you an admin, or to change what you need.':
+    'Demandez à l’un d’eux de vous nommer admin, ou de changer ce qu’il vous faut.',
+  'In the order a clinic does it: the door customers come in by, proving who you are, their data, your hours, who answers first, then apps and the plan. Come back any time.':
+    'Dans l’ordre d’une clinique : la porte par laquelle entrent les clients, la preuve de qui vous êtes, leurs données, vos horaires, qui répond en premier, puis les applications et le forfait. Revenez quand vous voulez.',
+  'The team, its inbox, updates, spaces and insights are on {name}’s page.':
+    'L’équipe, sa boîte de réception, les actualités, les espaces et les statistiques sont sur la page de {name}.',
+  'Next: verify your domain': 'Ensuite : vérifiez votre domaine',
+  'Next: set bookable hours': 'Ensuite : définissez des horaires de réservation',
+  'Your door, domain, customers’ data, hours, AI agent, apps and plan':
+    'Votre porte, domaine, données des clients, horaires, agent IA, applications et forfait',
 };

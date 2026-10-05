@@ -3027,4 +3027,18 @@ export const ar: Catalog = {
   'Enter the full address, starting with https://': 'أدخل العنوان كاملًا، بدءًا بـ https://',
   'That message isn’t sealed properly.': 'تلك الرسالة غير مختومة كما ينبغي.',
   'Attach a file.': 'أرفق ملفًا.',
+  // The organization's setup screen (R57).
+  'Set up': 'الإعداد',
+  'Set up {name}': 'إعداد {name}',
+  'Its owner and admins set {name} up': 'إعداد {name} لمالكها ومشرفيها',
+  'Ask one of them to make you an admin, or to change what you need.':
+    'اطلب من أحدهم تعيينك مشرفًا، أو تغيير ما تحتاج إليه.',
+  'In the order a clinic does it: the door customers come in by, proving who you are, their data, your hours, who answers first, then apps and the plan. Come back any time.':
+    'بالترتيب الذي تتبعه عيادة: الباب الذي يدخل منه العملاء، وإثبات هويتك، وبياناتهم، وساعات عملك، ومن يجيب أولًا، ثم التطبيقات والخطة. عُد في أي وقت.',
+  'The team, its inbox, updates, spaces and insights are on {name}’s page.':
+    'الفريق وصندوق وارده والتحديثات والمساحات والرؤى في صفحة {name}.',
+  'Next: verify your domain': 'التالي: وثّق نطاقك',
+  'Next: set bookable hours': 'التالي: حدّد ساعات الحجز',
+  'Your door, domain, customers’ data, hours, AI agent, apps and plan':
+    'بابك ونطاقك وبيانات العملاء والساعات ووكيل الذكاء الاصطناعي والتطبيقات والخطة',
 };

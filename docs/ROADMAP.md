@@ -916,8 +916,13 @@ listed there with its owner.
       once typing has settled for a second or on Enter (`understand=1`; the rules answer every
       keystroke); two people with the same two-word name are offered as one only with a place or
       a nickname they share. `search-kits-misc.test.ts`, `ai.test.ts`, `duplicates.test.ts`.
-- [ ] Next block: the remaining hand-written role checks; the organization page's setup apart
-      from its daily work.
+- [x] R57, setting up apart from the day's work: an organization's page keeps the inbox,
+      updates, spaces, the team and insights, and its owner and admins set it up on
+      `/o/<handle>/setup` (`features/orgs/OrgSetup.tsx`: the door, the domain, customers' data,
+      hours, the AI agent, apps and the plan, in a clinic's order), reached from one row that says
+      what's next (`org-setup`, `setupNextLine`); the team's others get neither the row nor the
+      screen. `door.spec.ts`, `around-the-conversation.spec.ts` and `a11y.spec.ts` walk it.
+- [ ] Next block: the remaining hand-written role checks.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1929,3 +1934,5 @@ listed there with its owner.
 - 2026-10-05 — The intelligence's leftovers: a vague promise re-dates only its own item, a time
   at the end of a search is a period, the model reads a sentence once typing settles, and
   same-name duplicates need a second sign.
+- 2026-10-05 — R57: an organization's setup (door, domain, data, hours, agent, apps, plan) moves
+  to its own screen for the owner and admins; the page is the daily work.

@@ -29,13 +29,11 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { CopyRow } from '@/ui/CopyRow';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import {
   ArchiveIcon,
   ArrowLeft,
-  BadgeCheck,
   Ban,
   Flag,
   Globe,
@@ -47,6 +45,7 @@ import {
   Settings,
   Share,
   UserPlus,
+  Wrench,
 } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
@@ -56,135 +55,12 @@ import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
-import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
-import { OrgAgent } from './OrgAgent';
-import { OrgApps } from './OrgApps';
-import { OrgBooking } from './OrgBooking';
-import { OrgData } from './OrgData';
 import { OrgDetailsSheet } from './OrgDetails';
-import { OrgDoor } from './OrgDoor';
 import { OrgInsights } from './OrgInsights';
-import { nextOrgPlanLine, OrgPlan } from './OrgPlan';
-
-/** Verify the domain (PRD §55): one TXT record, then "Check now". */
-function Verification({ org, refresh }: { org: OrgView; refresh: (o: OrgView) => void }) {
-  const t = useTheme();
-  const [domain, setDomain] = useState('');
-  const [changing, setChanging] = useState(false);
-  const [busy, setBusy] = useState<'set' | 'check' | null>(null);
-  const run = async (
-    kind: 'set' | 'check',
-    work: () => Promise<{ org: OrgView }>,
-    done?: string,
-  ) => {
-    setBusy(kind);
-    try {
-      const r = await work();
-      refresh(r.org);
-      if (done) toast(done);
-      setChanging(false);
-    } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
-    } finally {
-      setBusy(null);
-    }
-  };
-  const d = org.domain;
-  if (d?.verified && !changing)
-    return (
-      <Card>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <BadgeCheck size={18} color={t.c.success} />
-          <Text variant="bodyStrong" style={{ flex: 1 }}>
-            {tr('{name} is verified', { name: d.name })}
-          </Text>
-          <Button
-            label={tr('Change')}
-            size="sm"
-            variant="ghost"
-            onPress={() => setChanging(true)}
-          />
-        </View>
-        <Text variant="caption" color="textSecondary" style={{ marginTop: 6 }}>
-          {tr('Your team shows as “Verified at {name}”. Keep the TXT record in place.', {
-            name: org.name,
-          })}
-        </Text>
-      </Card>
-    );
-  if (!d || changing)
-    return (
-      <Card>
-        <Text variant="bodyStrong">{tr('Verify your domain')}</Text>
-        <Text variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 12 }}>
-          {tr(
-            'Prove {name} controls its website’s domain with one DNS record. Then your team shows as verified, and customers know it’s really you.',
-            { name: org.name },
-          )}
-        </Text>
-        <TextField
-          label={tr('Your domain')}
-          value={domain}
-          onChangeText={setDomain}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          placeholder="datac.com"
-          testID="org-domain"
-        />
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-          <Button
-            label={tr('Get the record')}
-            loading={busy === 'set'}
-            testID="org-domain-set"
-            onPress={() =>
-              void (domain.trim()
-                ? run('set', () => endpoints.setOrgDomain(org.id, domain.trim()))
-                : toast(tr('Enter your domain, like datac.com.')))
-            }
-          />
-          {changing ? (
-            <Button
-              label={tr('Keep the current one')}
-              variant="ghost"
-              onPress={() => setChanging(false)}
-            />
-          ) : null}
-        </View>
-      </Card>
-    );
-  return (
-    <Card>
-      <Text variant="bodyStrong">{tr('Add this record to {name}', { name: d.name })}</Text>
-      <Text variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 12 }}>
-        {tr(
-          'At your domain’s DNS provider, add a TXT record with this name and value, then check. Changes can take a few minutes to appear.',
-        )}
-      </Text>
-      <View style={{ gap: 10 }}>
-        <CopyRow label={tr('Name')} value={d.record.name} testID="org-record-name" />
-        <CopyRow label={tr('Value')} value={d.record.value} testID="org-record-value" />
-      </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-        <Button
-          label={tr('Check now')}
-          loading={busy === 'check'}
-          testID="org-domain-check"
-          onPress={() =>
-            void run('check', () => endpoints.checkOrgDomain(org.id), `${d.name} is verified`)
-          }
-        />
-        <Button
-          label={tr('Use another domain')}
-          variant="ghost"
-          onPress={() => setChanging(true)}
-        />
-      </View>
-    </Card>
-  );
-}
+import { nextOrgPlanLine } from './planLine';
+import { setupNextLine } from './setupSteps';
 
 /** An organization (PRD §36): who it is, whether that's verified, and its team. */
 export function OrgScreen({ handle, write = false }: { handle: string; write?: boolean }) {
@@ -480,6 +356,19 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
                 }
                 testID="org-inbox"
               />
+              {manager ? (
+                // Setting it up (R57) is its own screen: the door, the domain, data, hours, the
+                // AI agent, apps and the plan, in a clinic's order. The row says what's next.
+                <ListRow
+                  icon={Wrench}
+                  title={tr('Set up {name}', { name: org.name })}
+                  subtitle={setupNextLine(org)}
+                  onPress={() =>
+                    router.push({ pathname: '/o/[handle]/setup', params: { handle: org.handle } })
+                  }
+                  testID="org-setup"
+                />
+              ) : null}
             </Card>
           </View>
         ) : null}
@@ -559,18 +448,6 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
           </>
         ) : null}
 
-        {manager ? (
-          // In the order a clinic sets itself up (R53): the door customers come in by, proving
-          // who you are, hours and bookings, who answers first; then the team, apps and the plan.
-          <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}>
-            <OrgDoor org={org} />
-            <Verification org={org} refresh={put} />
-            <OrgData org={org} refresh={put} />
-          </View>
-        ) : null}
-        {manager ? <OrgBooking org={org} /> : null}
-        {manager ? <OrgAgent org={org} /> : null}
-
         {org.members ? (
           <>
             <SectionTitle
@@ -642,11 +519,9 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
                 );
               })}
             </View>
-            {manager ? <OrgApps org={org} /> : null}
-            {manager ? (
-              <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}>
-                {org.plan?.allowance.insights ? <OrgInsights orgId={org.id} /> : null}
-                {org.plan ? <OrgPlan plan={org.plan} orgId={org.id} handle={org.handle} /> : null}
+            {manager && org.plan?.allowance.insights ? (
+              <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+                <OrgInsights orgId={org.id} />
               </View>
             ) : null}
             <View style={{ marginHorizontal: 16, marginTop: 16 }}>

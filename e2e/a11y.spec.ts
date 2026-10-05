@@ -91,6 +91,7 @@ test('the signed-in screens, phone and desktop, English and Arabic', async ({ br
     ['/actions', 'phone actions'],
     ['/you', 'phone you'],
     [`/o/nile.a11y.${suffix}`, 'phone organization'],
+    [`/o/nile.a11y.${suffix}/setup`, 'phone organization setup'],
     ['/settings/region', 'phone settings'],
   ];
   for (const [path, name] of screens) {

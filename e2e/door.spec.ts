@@ -25,7 +25,7 @@ test.describe
       expect(made.ok(), await made.text()).toBe(true);
       orgId = ((await made.json()) as { org: { id: string } }).org.id;
       const { page, errors } = await newPerson(owner);
-      await page.goto(`/o/${handle}`);
+      await page.goto(`/o/${handle}/setup`);
       const door = page.getByTestId('org-door');
       await expect(door).toBeVisible();
       await expect(door.getByTestId('org-door-qr').locator('svg path')).toHaveAttribute(
@@ -123,7 +123,7 @@ test('the team sets how long conversations are kept, exports them, and erases on
     acceptDownloads: true,
   });
   const { page, errors } = await newPerson(owner);
-  await page.goto(`/o/${handle}`);
+  await page.goto(`/o/${handle}/setup`);
   const data = page.getByTestId('org-data');
   await expect(data).toBeVisible();
   // Kept for 90 days: the owner's to set, and the customer reads it where they write.

@@ -552,3 +552,12 @@ with its reason, so it isn't proposed again without new facts.
   saved (a reload on the web) the card makes new ones with the password. They are still the only
   way back without mail (R25, R48), so the card never goes away by itself; it only stops
   standing in the way.
+- **R57 — Setting up is not the day's work.** An organization's page carried everything at once:
+  the door, the domain record, retention, hours, the AI agent, apps and the plan, above the team
+  and between the inbox and the spaces, so a receptionist opening it to reach the inbox scrolled
+  past a clinic's settings every time (docs/REVIEW-2026-10-05.md, UX M). Now the page is the
+  daily work (the inbox, updates, spaces, the team, insights) and setting up is its own screen,
+  `/o/<handle>/setup`, for the owner and admins, in the order a clinic does it (R53): the door,
+  proving who you are, your customers' data, hours, who answers first, apps and the plan. The
+  page offers it in one row that says what's next (verify the domain, then set hours), and the
+  team's other members never see it. One screen to set up, one to work from.

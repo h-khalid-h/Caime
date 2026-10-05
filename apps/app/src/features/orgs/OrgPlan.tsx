@@ -1,6 +1,6 @@
 import type { OrgPlanView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import { nextOrgPlan, ORG_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
+import { nextOrgPlan, PLAN_NAMES } from '@caime/core/plans';
 import { View } from 'react-native';
 import { useOrgBilling } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -12,24 +12,10 @@ import { Card } from '@/ui/Card';
 import { Gauge } from '@/ui/icons';
 import { Meter } from '@/ui/Meter';
 import { Text } from '@/ui/Text';
+import { nextOrgPlanLine } from './planLine';
 
-const apps = (n: number) => (n === 1 ? 'one app' : `${n} apps`);
 const count = (used: number, of: number, what: string) =>
   `${used} of ${of} ${what}${of === 1 ? '' : 's'}`;
-
-/** What the next plan up adds, in a sentence; null at the top. */
-export function nextOrgPlanLine(plan: OrgPlanView): string | null {
-  const next = nextOrgPlan(plan.plan);
-  if (!next) return null;
-  const a = ORG_ALLOWANCES[next];
-  const insights = a.insights && !plan.allowance.insights;
-  return tr('{PLAN_NAMES} has room for {teamSize} people and {apps}{with}.', {
-    PLAN_NAMES: PLAN_NAMES[next],
-    teamSize: a.teamSize,
-    apps: apps(a.apps),
-    with: insights ? tr(', with insights into how fast the team answers') : '',
-  });
-}
 
 /** An organization's plan, for its owner and admins: what it includes and what's in use. */
 export function OrgPlan({
