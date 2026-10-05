@@ -8,7 +8,6 @@ import { endpoints } from '@/api/endpoints';
 import { useOrg, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
-import { copyText } from '@/lib/clipboard';
 import { handleLink } from '@/lib/config';
 import { doorIn, handleIn, inviteIn, isAuthorizeLink } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
@@ -18,8 +17,6 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { RelationshipChip } from '@/ui/Chip';
-import { Check, KeyRound } from '@/ui/icons';
-import { Pressable } from '@/ui/Pressable';
 import { Screen } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -47,23 +44,8 @@ function workweekText(days: number[]): string {
 export default function Onboarding() {
   const t = useTheme();
   const me = useMe();
-  const codes = useSession((s) => s.freshRecoveryCodes);
   const policies = usePolicies();
-  const [step, setStep] = useState<'codes' | 'rules' | 'people'>(codes?.length ? 'codes' : 'rules');
-  // Where they are, as a spec sheet labels it: "step 2 of 3 · how Caime works".
-  const steps = (['codes', 'rules', 'people'] as const).filter(
-    (x) => x !== 'codes' || codes?.length,
-  );
-  const stepLine = tr('step {indexOf} of {length} · {codes}', {
-    indexOf: steps.indexOf(step) + 1,
-    length: steps.length,
-    codes: { codes: tr('recovery codes'), rules: tr('how Caime works'), people: tr('your people') }[
-      step
-    ],
-  });
-  const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
-  const name = me.displayName.split(' ')[0] ?? me.displayName;
   // Came through someone's link, or an app asking to act for them: the last step opens it.
   const [pending] = useState(() => peekLink());
   const linkHandle = handleIn(pending);
@@ -74,6 +56,19 @@ export default function Onboarding() {
   const doorName = door.data?.org.name ?? null;
   const forApp = isAuthorizeLink(pending);
   const linked = Boolean(linkHandle || inviteToken || forApp);
+  // Two steps, how Caime works and your people; someone who came for a person, an organization
+  // or an app goes straight to it (R56). The recovery codes wait on Chats, not here.
+  const steps = (['rules', 'people'] as const).filter((x) => x !== 'rules' || !linked);
+  const [step, setStep] = useState<'rules' | 'people'>(linked ? 'people' : 'rules');
+  // Where they are, as a spec sheet labels it: "step 1 of 2 · how Caime works".
+  const stepLine =
+    steps.length > 1
+      ? tr('step {indexOf} of {length} · {codes}', {
+          indexOf: steps.indexOf(step) + 1,
+          length: steps.length,
+          codes: { rules: tr('how Caime works'), people: tr('your people') }[step],
+        })
+      : null;
   // Invited (R1): the last step names who, and opens the conversation they'll land in.
   const invite = useQuery({
     queryKey: qk.invite(inviteToken ?? ''),
@@ -89,7 +84,6 @@ export default function Onboarding() {
       const res = await endpoints.updateMe({ onboarded: true });
       // Taken before the account reads as onboarded, so the signed-in layout doesn't open it too.
       const link = takeLink();
-      useSession.getState().clearRecoveryCodes();
       useSession.getState().setUser(res.user);
       router.replace('/');
       const then = next === 'link' ? link : next === '/connect' ? '/connect' : null;
@@ -134,93 +128,15 @@ export default function Onboarding() {
           justifyContent: 'center',
         }}
       >
-        {step === 'codes' && codes ? (
-          <>
-            <View style={{ alignItems: 'center', gap: 10 }}>
-              <Character name="panda" expression="happy" size={112} />
-              <Text variant="mono" color="textTertiary" testID="onboarding-step">
-                {stepLine}
-              </Text>
-              <Text variant="display" align="center" accessibilityRole="header">
-                {tr('Welcome, {name}', { name })}
-              </Text>
-              <Text variant="body" color="textSecondary" align="center">
-                {tr(
-                  'First, one thing to keep safe. If you ever forget your password, these codes get you back in. Caime never asks for your phone number.',
-                )}
-              </Text>
-            </View>
-            <Card>
-              <View
-                style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}
-                accessibilityLabel={tr('Recovery codes: {join}', { join: codes.join(', ') })}
-              >
-                {codes.map((c) => (
-                  <View
-                    key={c}
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor: t.c.surfaceMuted,
-                    }}
-                  >
-                    <Text variant="bodyStrong" selectable style={{ fontVariant: ['tabular-nums'] }}>
-                      {c}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </Card>
-            <Button
-              label={tr('Copy the codes')}
-              icon={KeyRound}
-              variant="secondary"
-              block
-              onPress={async () => {
-                await copyText(codes.join('\n'));
-                toast(tr('Copied. Paste them into your password manager or notes.'));
-                setSaved(true);
-              }}
-            />
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: saved }}
-              onPress={() => setSaved((s) => !s)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-            >
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 7,
-                  borderWidth: 2,
-                  borderColor: saved ? t.c.primary : t.c.borderStrong,
-                  backgroundColor: saved ? t.c.primary : 'transparent',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {saved ? <Check size={15} color={t.c.onPrimary} strokeWidth={3} /> : null}
-              </View>
-              <Text variant="bodyStrong">{tr('I’ve saved them somewhere safe')}</Text>
-            </Pressable>
-            <Button
-              label={tr('Continue')}
-              size="lg"
-              block
-              disabled={!saved}
-              onPress={() => setStep('rules')}
-              testID="onboarding-codes-next"
-            />
-          </>
-        ) : step === 'rules' ? (
+        {step === 'rules' ? (
           <>
             <View style={{ alignItems: 'center', gap: 10 }}>
               <Character name="lumi" expression="curious" size={112} />
-              <Text variant="mono" color="textTertiary" testID="onboarding-step">
-                {stepLine}
-              </Text>
+              {stepLine ? (
+                <Text variant="mono" color="textTertiary" testID="onboarding-step">
+                  {stepLine}
+                </Text>
+              ) : null}
               <Text variant="title" align="center" accessibilityRole="header">
                 {tr('People aren’t all the same. Neither are their messages.')}
               </Text>
@@ -251,8 +167,9 @@ export default function Onboarding() {
               ))}
             </Card>
             <Text variant="caption" color="textTertiary" align="center">
-              Your work week is {workweekText(me.workweek)}. Change any of this later in You →
-              Notifications.
+              {tr('Your work week is {days}. Change any of this later in You → Notifications.', {
+                days: workweekText(me.workweek),
+              })}
             </Text>
             <Button
               label={tr('Sounds good')}
@@ -266,9 +183,11 @@ export default function Onboarding() {
           <>
             <View style={{ alignItems: 'center', gap: 10 }}>
               <Character name="niko" expression="excited" size={120} />
-              <Text variant="mono" color="textTertiary" testID="onboarding-step">
-                {stepLine}
-              </Text>
+              {stepLine ? (
+                <Text variant="mono" color="textTertiary" testID="onboarding-step">
+                  {stepLine}
+                </Text>
+              ) : null}
               <Text variant="title" align="center" accessibilityRole="header">
                 {tr('Now, your people')}
               </Text>

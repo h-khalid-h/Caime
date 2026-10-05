@@ -152,19 +152,17 @@ export const ar: Catalog = {
   'Then you’ll go back to {back}.': 'بعدها تعود إلى {back}.',
   '{DAYS} to {DAYS2}': 'من {DAYS} إلى {DAYS2}',
   'step {indexOf} of {length} · {codes}': 'الخطوة {indexOf} من {length} · {codes}',
-  'recovery codes': 'رموز الاستعادة',
+
   'how Caime works': 'كيف يعمل Caime',
   'your people': 'أشخاصك',
   Managers: 'المديرون',
-  'Welcome, {name}': 'أهلًا، {name}',
-  'First, one thing to keep safe. If you ever forget your password, these codes get you back in. Caime never asks for your phone number.':
-    'أولًا، شيء تحفظه بأمان. إن نسيت كلمة مرورك يومًا، فهذه الرموز تعيدك. لا يطلب Caime رقم هاتفك أبدًا.',
+
   'Recovery codes: {join}': 'رموز الاستعادة: {join}',
   'Copy the codes': 'نسخ الرموز',
   'Copied. Paste them into your password manager or notes.':
     'نُسخت. ألصقها في مدير كلمات المرور أو في ملاحظاتك.',
   'I’ve saved them somewhere safe': 'حفظتها في مكان آمن',
-  Continue: 'متابعة',
+
   'People aren’t all the same. Neither are their messages.': 'الناس ليسوا سواء. ولا رسائلهم.',
   'When you add someone, you tell Caime how you know them (only you see it). Caime then treats them the right way:':
     'عندما تضيف شخصًا، تخبر Caime كيف تعرفه (لا يراه غيرك). ثم يعامله Caime كما يليق:',
@@ -2969,4 +2967,16 @@ export const ar: Catalog = {
   'Voice message': 'رسالة صوتية',
   Sticker: 'ملصق',
   Card: 'بطاقة',
+  'Enter your password.': 'أدخل كلمة مرورك.',
+  'Keep your recovery codes': 'احتفظ برموز الاستعادة',
+  'If you ever forget your password, they get you back in. Caime never asks for your phone number.':
+    'إن نسيت كلمة مرورك يومًا، فهي تعيدك إلى حسابك. لا يطلب Caime رقم هاتفك أبدًا.',
+  'Show the codes': 'أظهر الرموز',
+  'Make the codes': 'أنشئ الرموز',
+  'Each works once. Paste them into your password manager or notes.':
+    'كل رمز يعمل مرة واحدة. ألصقها في مدير كلمات المرور أو ملاحظاتك.',
+  'The ones made at sign-up are gone from this device: make new ones.':
+    'الرموز التي أُنشئت عند التسجيل لم تعد على هذا الجهاز: أنشئ رموزًا جديدة.',
+  'Your work week is {days}. Change any of this later in You → Notifications.':
+    'أسبوع عملك {days}. غيّر أيًّا من هذا لاحقًا من أنت ← الإشعارات.',
 };

@@ -1163,3 +1163,22 @@ describe('your data', () => {
     }
   });
 });
+
+describe('recovery codes at the first quiet moment (R56)', () => {
+  it('the account remembers once they’re saved, and only ever forwards', async () => {
+    const fresh = await signup(t, {
+      displayName: 'Rana Saleh',
+      handle: 'rana',
+      email: 'r@datac.io',
+    });
+    expect((await fresh.get('/v1/me')).user.recoveryCodesSeen).toBe(false);
+    const saved = await fresh.patch('/v1/me', { recoveryCodesSeen: true });
+    expect(saved.user.recoveryCodesSeen).toBe(true);
+    // Said again, nothing changes; said "false", refused: once saved, nobody is asked again.
+    expect((await fresh.patch('/v1/me', { recoveryCodesSeen: true })).user.recoveryCodesSeen).toBe(
+      true,
+    );
+    expect((await fresh.req('PATCH', '/v1/me', { recoveryCodesSeen: false })).statusCode).toBe(400);
+    expect((await fresh.get('/v1/me')).user.recoveryCodesSeen).toBe(true);
+  });
+});

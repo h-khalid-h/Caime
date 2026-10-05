@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
 import { useInbox, useInboxAll } from '@/api/hooks';
 import { Character } from '@/brand/Character';
+import { RecoveryCodesCard } from '@/features/account/RecoveryCodesCard';
 import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useMyDevices } from '@/features/e2ee/codes';
@@ -156,6 +157,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
         ]}
       />
       <ConnectionBanner />
+      <RecoveryCodesCard />
       {waiting ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <WaitingDevices on />

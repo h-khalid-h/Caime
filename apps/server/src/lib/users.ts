@@ -79,6 +79,7 @@ export function meView(user: User, now: Date): MeView {
     preferences: (user.preferences ?? {}) as UserPreferences,
     aiEnabled: user.ai_enabled,
     onboarded: user.onboarded_at !== null,
+    recoveryCodesSeen: user.recovery_codes_seen_at !== null,
     createdAt: user.created_at.toISOString(),
   };
 }

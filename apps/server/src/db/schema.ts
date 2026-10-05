@@ -48,6 +48,8 @@ export interface UsersTable {
   preferences: JsonDefaulted<Record<string, unknown>>;
   ai_enabled: Defaulted<boolean>;
   onboarded_at: NullableTimestamp;
+  /** When they said their recovery codes are saved (R56); null while the app still asks. */
+  recovery_codes_seen_at: NullableTimestamp;
   /** The @handle link that brought them: a person's, or an organization's. */
   invited_by: string | null;
   invited_by_org: string | null;

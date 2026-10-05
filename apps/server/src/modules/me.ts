@@ -150,6 +150,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       patch.avatar_file_id = body.avatarFileId;
     }
     if (body.onboarded) patch.onboarded_at = current.onboarded_at ?? ctx.now();
+    if (body.recoveryCodesSeen)
+      patch.recovery_codes_seen_at = current.recovery_codes_seen_at ?? ctx.now();
     const week = (days: number[]) => [...days].sort((a, b) => a - b).join(',');
     const oldWeek = week(current.workweek ?? []);
     const weekMoved = patch.workweek !== undefined && week(patch.workweek as number[]) !== oldWeek;

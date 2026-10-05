@@ -161,19 +161,17 @@ export const fr: Catalog = {
   '{DAYS} to {DAYS2}': 'du {DAYS} au {DAYS2}',
   ', ': ', ',
   'step {indexOf} of {length} · {codes}': 'étape {indexOf} sur {length} · {codes}',
-  'recovery codes': 'codes de récupération',
+
   'how Caime works': 'comment Caime fonctionne',
   'your people': 'vos personnes',
   Managers: 'Responsables',
-  'Welcome, {name}': 'Bienvenue, {name}',
-  'First, one thing to keep safe. If you ever forget your password, these codes get you back in. Caime never asks for your phone number.':
-    'D’abord, une chose à garder en lieu sûr. Si vous oubliez un jour votre mot de passe, ces codes vous permettent de revenir. Caime ne demande jamais votre numéro de téléphone.',
+
   'Recovery codes: {join}': 'Codes de récupération : {join}',
   'Copy the codes': 'Copier les codes',
   'Copied. Paste them into your password manager or notes.':
     'Copiés. Collez-les dans votre gestionnaire de mots de passe ou vos notes.',
   'I’ve saved them somewhere safe': 'Je les ai mis en lieu sûr',
-  Continue: 'Continuer',
+
   'People aren’t all the same. Neither are their messages.':
     'Les gens ne se ressemblent pas. Leurs messages non plus.',
   'When you add someone, you tell Caime how you know them (only you see it). Caime then treats them the right way:':
@@ -2987,4 +2985,16 @@ export const fr: Catalog = {
   'Voice message': 'Message vocal',
   Sticker: 'Autocollant',
   Card: 'Carte',
+  'Enter your password.': 'Saisissez votre mot de passe.',
+  'Keep your recovery codes': 'Gardez vos codes de récupération',
+  'If you ever forget your password, they get you back in. Caime never asks for your phone number.':
+    'Si vous oubliez un jour votre mot de passe, ils vous permettent de revenir. Caime ne demande jamais votre numéro de téléphone.',
+  'Show the codes': 'Afficher les codes',
+  'Make the codes': 'Créer les codes',
+  'Each works once. Paste them into your password manager or notes.':
+    'Chacun ne sert qu’une fois. Collez-les dans votre gestionnaire de mots de passe ou vos notes.',
+  'The ones made at sign-up are gone from this device: make new ones.':
+    'Ceux créés à l’inscription ne sont plus sur cet appareil : créez-en de nouveaux.',
+  'Your work week is {days}. Change any of this later in You → Notifications.':
+    'Votre semaine de travail : {days}. Modifiez tout cela plus tard dans Vous → Notifications.',
 };

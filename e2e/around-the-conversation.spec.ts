@@ -892,9 +892,7 @@ test.describe
       await lina.page.waitForURL('**/onboarding');
       // The operator counts that Noor's link brought someone (PRD §82); nobody is told.
       expect(await invited()).toBe(invitedBefore + 1);
-      await lina.page.getByText('Copy the codes').click();
-      await lina.page.getByTestId('onboarding-codes-next').click();
-      await lina.page.getByTestId('onboarding-rules-next').click();
+      // Came through a link: straight to the last step (R56), nothing to read or keep first.
       await expect(visible(lina.page, `You came here for @noor.${stamp}.`)).toBeVisible();
       await lina.page.getByTestId('onboarding-link').click();
       await expect(lina.page).toHaveURL(new RegExp(`/p/${noorId}$`));
@@ -959,9 +957,7 @@ test.describe
       await expect(omar.page.getByText('Available')).toBeVisible();
       await omar.page.getByTestId('signup-submit').click();
       await omar.page.waitForURL('**/onboarding');
-      await omar.page.getByText('Copy the codes').click();
-      await omar.page.getByTestId('onboarding-codes-next').click();
-      await omar.page.getByTestId('onboarding-rules-next').click();
+      // Came through a link: straight to the last step (R56), nothing to read or keep first.
       await expect(
         visible(omar.page, /Noor Haddad invited you: open the conversation/),
       ).toBeVisible();
@@ -2311,9 +2307,7 @@ test.describe
       await expect(fresh.page.getByText('Available')).toBeVisible();
       await fresh.page.getByTestId('signup-submit').click();
       await fresh.page.waitForURL('**/onboarding');
-      await fresh.page.getByText('Copy the codes').click();
-      await fresh.page.getByTestId('onboarding-codes-next').click();
-      await fresh.page.getByTestId('onboarding-rules-next').click();
+      // Came through a link: straight to the last step (R56), nothing to read or keep first.
       await expect(visible(fresh.page, 'An app asked to act for you.')).toBeVisible();
       await fresh.page.getByTestId('onboarding-link').click();
       await expect(fresh.page.getByTestId('oauth-consent')).toContainText(

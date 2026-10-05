@@ -535,9 +535,20 @@ with its reason, so it isn't proposed again without new facts.
   francophone buyers of Europe without a second decision. Spanish would open a new continent,
   which R53's "one place and one kind at a time" rules out for now. A language joins
   `INTERFACE_LANGUAGES` and the preference's enum, gets a catalog in core
-  (`locales/<lang>.ts`) and one for the site on the server (`<lang>-site.ts`), and the catalog
+  (`locales/<lang>.ts`) and one on the server for what only it says (`<lang>-server.ts`), and the catalog
   tests run over every language, so nothing else in the code names a language: the setting, the
   site's switch (every other language by its own name), the `hreflang` alternates and the Open
   Graph locale all read the list. French is written for a reader of either gender ("vous", no
   participle about the reader where a noun phrase works), in sentence case, with French
   punctuation; a native speaker's review is owed, as Arabic's was.
+- **R56 — The first five minutes earn the rest.** Sign-up asked for six things and then stopped
+  for recovery codes before anyone had seen a message; a person who came through a friend's
+  link, an organization's door or an app's consent read a page on how Caime works first
+  (docs/REVIEW-2026-10-05.md, UX H). Now: the country is suggested from the device's time zone
+  (chosen, never typed); onboarding is two steps, how Caime works and your people, and someone
+  who came for a person, an organization or an app goes straight to it; the recovery codes wait
+  at the top of Chats, on the device that made them, until the person says they're saved, which
+  the account remembers (`recoveryCodesSeen`) so no device asks again, and gone before they were
+  saved (a reload on the web) the card makes new ones with the password. They are still the only
+  way back without mail (R25, R48), so the card never goes away by itself; it only stops
+  standing in the way.

@@ -95,6 +95,8 @@ export interface MeView {
   preferences: UserPreferences;
   aiEnabled: boolean;
   onboarded: boolean;
+  /** They said their recovery codes are saved (R56); until then the app keeps asking, once per screen. */
+  recoveryCodesSeen: boolean;
   createdAt: string;
 }
 

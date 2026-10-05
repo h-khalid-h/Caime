@@ -203,6 +203,14 @@ These are rules, not preferences.
   Anything that looks an organization up by id for its team uses `orgById` (open ones only);
   `closedOrgById` is for taking one back. A closed organization's conversations refuse every
   write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
+- Onboarding (R56) is two steps, how Caime works and your people, and a linked arrival (an
+  invite, a handle, a door, an app's consent) starts at the last; the recovery codes are a card
+  on Chats (`features/account/RecoveryCodesCard.tsx`, its sheet loaded when opened) while
+  `me.recoveryCodesSeen` is false:
+  the fresh codes come from `useSession().freshRecoveryCodes` (memory only) and Done sets
+  `recoveryCodesSeen` through `PATCH /me` (a literal `true`, never cleared). Nothing else gates
+  the first screen; a new thing to ask of a new person joins that card's place on Chats, never
+  onboarding.
 - A connection never labelled is asked for in the conversation's intro (R3): one chip,
   `label-relationship`, opens `RelationshipPicker` (lazily) from `ConversationScreen`; the
   person screen's "Change" and the panel's line stay. A new place that offers to label someone

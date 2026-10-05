@@ -29,12 +29,9 @@ async function signUp(page: Page, name: string, handle: string) {
 }
 
 async function onboard(page: Page, shot: string, findPeople: boolean) {
-  await page.getByText('Copy the codes').click();
-  // Each step says where it is, as a spec sheet labels it.
-  await expect(page.getByTestId('onboarding-step')).toHaveText('step 1 of 3 · recovery codes');
-  await page.getByTestId('onboarding-codes-next').click();
+  // Two steps, each saying where it is as a spec sheet labels it; no recovery-code gate (R56).
   await expect(page.getByTestId('onboarding-rules-next')).toBeVisible();
-  await expect(page.getByTestId('onboarding-step')).toHaveText('step 2 of 3 · how Caime works');
+  await expect(page.getByTestId('onboarding-step')).toHaveText('step 1 of 2 · how Caime works');
   await page.screenshot({ path: `${SHOTS}/${shot}-rules.png` });
   await page.getByTestId('onboarding-rules-next').click();
   await page.getByTestId(findPeople ? 'onboarding-find' : 'onboarding-skip').click();
@@ -58,6 +55,18 @@ test('two people connect with private labels and talk in real time', async ({ br
   await signUp(a.page, 'Hassan Khalid', hassan);
   await onboard(a.page, 'phone', false);
   await expect(a.page.getByText('Say hello to someone')).toBeVisible();
+  // The recovery codes wait at the top of Chats until he says they're saved (R56); the account
+  // remembers, so a reload doesn't ask again.
+  const card = a.page.getByTestId('codes-card');
+  await expect(card).toContainText('Keep your recovery codes');
+  await a.page.getByTestId('codes-show').click();
+  await expect(a.page.getByRole('dialog')).toContainText('Each works once.');
+  await a.page.getByTestId('codes-copy').click();
+  await a.page.getByTestId('codes-done').click();
+  await expect(card).toHaveCount(0);
+  await a.page.reload();
+  await expect(a.page.getByText('Say hello to someone')).toBeVisible();
+  await expect(a.page.getByTestId('codes-card')).toHaveCount(0);
 
   // Sarah signs up on a desktop, finds Hassan and labels him "Manager · DATA C".
   await signUp(b.page, 'Sarah Ahmed', sarah);

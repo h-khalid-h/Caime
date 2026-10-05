@@ -74,9 +74,7 @@ test.describe
       await expect(page.getByText('Available')).toBeVisible();
       await page.getByTestId('signup-submit').click();
       await page.waitForURL('**/onboarding');
-      await page.getByText('Copy the codes').click();
-      await page.getByTestId('onboarding-codes-next').click();
-      await page.getByTestId('onboarding-rules-next').click();
+      // Came through the door: straight to the last step (R56).
       await expect(visible(page, `You came here to write to Nile Dental ${stamp}`)).toBeVisible();
       await page.getByTestId('onboarding-link').click();
       // Straight into the conversation: no page in between, no second tap.

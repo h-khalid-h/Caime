@@ -472,6 +472,8 @@ export const UpdateMeBody = z
     aiEnabled: z.boolean().optional(),
     avatarFileId: z.string().uuid().nullable().optional(),
     onboarded: z.boolean().optional(),
+    /** Only ever set: once saved, nobody is asked again (R56). */
+    recoveryCodesSeen: z.literal(true).optional(),
   })
   .strict();
 
