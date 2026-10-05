@@ -461,15 +461,22 @@ export function PersonScreen({
                 </Text>
               </View>
               {p.mutual ? (
-                <Text variant="caption" color="textSecondary">
-                  {name}
-                  {tr(' describes you as ')}
-                  <Text variant="captionStrong">{p.mutual.theirLabel}</Text>
+                // One whole sentence for each case, so every language can order it.
+                <Text variant="caption" color="textSecondary" testID="person-mutual">
                   {p.mutual.fit === 'complementary'
-                    ? tr(' — that fits.')
+                    ? tr('{name} describes you as {label}. That fits.', {
+                        name,
+                        label: p.mutual.theirLabel,
+                      })
                     : p.mutual.fit === 'same'
-                      ? tr(' too.')
-                      : '.'}
+                      ? tr('{name} describes you as {label} too.', {
+                          name,
+                          label: p.mutual.theirLabel,
+                        })
+                      : tr('{name} describes you as {label}.', {
+                          name,
+                          label: p.mutual.theirLabel,
+                        })}
                 </Text>
               ) : null}
               {p.relationships.length ? (

@@ -1,6 +1,7 @@
 import type { InsightPersonRef, PersonInsightsView, ReplyTimesView } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
+import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -87,29 +88,39 @@ function minutes(m: number | null): string {
   return tr('{n} days', { n: Math.round((m / (60 * 24)) * 10) / 10 });
 }
 
-function replyLine(who: 'You answer' | 'You’re answered', r: ReplyTimesView): string {
+function replyLine(who: 'mine' | 'theirs', r: ReplyTimesView): string {
   const waiting =
     r.unanswered === 0
       ? ''
-      : who === 'You answer'
+      : who === 'mine'
         ? tr(' · {unanswered} waiting on you', { unanswered: r.unanswered })
         : tr(' · {unanswered} waiting on them', { unanswered: r.unanswered });
-  return tr('{who} in about {minutes} · {withinHour} of {answered} within the hour{waiting}', {
-    who,
+  const vars = {
     minutes: minutes(r.medianMinutes),
     withinHour: r.withinHour,
     answered: r.answered,
     waiting,
-  });
+  };
+  // Whole sentences: who answers is part of each, never an English word put into another.
+  return who === 'mine'
+    ? tr(
+        'You answer in about {minutes} · {withinHour} of {answered} within the hour{waiting}',
+        vars,
+      )
+    : tr(
+        'You’re answered in about {minutes} · {withinHour} of {answered} within the hour{waiting}',
+        vars,
+      );
 }
 
 function Insights({ i }: { i: PersonInsightsView }) {
   const t = useTheme();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const change = (a: number, b: number) =>
-    a === b ? 'the same as' : a > b ? 'up from' : 'down from';
-  const spheres = i.connections.bySphere.map((s) => `${s.count} ${s.sphere}`).join(' · ');
+  const active = { count: i.active.count, previous: i.active.previous };
+  const spheres = i.connections.bySphere
+    .map((s) => `${s.count} ${tr(SPHERE_DEFS[s.sphere as Sphere]?.label ?? s.sphere)}`)
+    .join(' · ');
   const most = Math.max(1, ...i.hours);
   const open = (p: InsightPersonRef) =>
     p.conversationId
@@ -120,9 +131,7 @@ function Insights({ i }: { i: PersonInsightsView }) {
       <Group title={tr('Your people')}>
         <View style={{ padding: 16, gap: 6 }}>
           <Text variant="label" testID="insights-connections">
-            {i.connections.total === 1
-              ? '1 connection'
-              : tr('{total} connections', { total: i.connections.total })}
+            {trn(i.connections.total, '{n} connection', '{n} connections')}
           </Text>
           {spheres ? (
             <Text variant="caption" color="textSecondary">
@@ -130,14 +139,20 @@ function Insights({ i }: { i: PersonInsightsView }) {
             </Text>
           ) : null}
           <Text variant="body" color="textSecondary" testID="insights-active">
-            {tr(
-              'You wrote with {count} of them in this time, {change} {previous} the time before.',
-              {
-                count: i.active.count,
-                change: change(i.active.count, i.active.previous),
-                previous: i.active.previous,
-              },
-            )}
+            {active.count === active.previous
+              ? tr(
+                  'You wrote with {count} of them in this time, as many as the time before.',
+                  active,
+                )
+              : active.count > active.previous
+                ? tr(
+                    'You wrote with {count} of them in this time, up from {previous} the time before.',
+                    active,
+                  )
+                : tr(
+                    'You wrote with {count} of them in this time, down from {previous} the time before.',
+                    active,
+                  )}
           </Text>
           <Text variant="body" color="textSecondary" testID="insights-messages">
             {tr('{sent} messages from you, {received} to you ({sent2} and {received2} before).', {
@@ -153,19 +168,17 @@ function Insights({ i }: { i: PersonInsightsView }) {
       <Group title={tr('Replies')}>
         <View style={{ padding: 16, gap: 6 }}>
           <Text variant="body" testID="insights-reply-yours">
-            {replyLine('You answer', i.reply.yours)}
+            {replyLine('mine', i.reply.yours)}
           </Text>
           <Text variant="body" color="textSecondary" testID="insights-reply-theirs">
-            {replyLine('You’re answered', i.reply.theirs)}
+            {replyLine('theirs', i.reply.theirs)}
           </Text>
           <Text variant="caption" color="textTertiary">
-            {tr(
-              'You started {byYou} {exchange} after a quiet day or more; they started {byThem}.',
-              {
-                byYou: i.started.byYou,
-                exchange: i.started.byYou === 1 ? 'exchange' : 'exchanges',
-                byThem: i.started.byThem,
-              },
+            {trn(
+              i.started.byYou,
+              'You started {n} exchange after a quiet day or more; they started {byThem}.',
+              'You started {n} exchanges after a quiet day or more; they started {byThem}.',
+              { byThem: i.started.byThem },
             )}
           </Text>
         </View>

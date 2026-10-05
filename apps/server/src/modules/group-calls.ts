@@ -215,7 +215,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
       ).map((p) => p.user_id),
     );
     // A topic by its group's name with its own ("Book club · Middlemarch").
-    const where = (await shownTitle(ctx.db, id)) ?? 'the group';
+    const where = await shownTitle(ctx.db, id);
     for (const p of rung)
       await notify(ctx, {
         userId: p.id,
@@ -224,7 +224,10 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
         // By the name each of them knows the caller by.
         title: (
           (name) => () =>
-            tr('{name} is calling {where}', { name: name ?? tr('Someone'), where })
+            tr('{name} is calling {where}', {
+              name: name ?? tr('Someone'),
+              where: where ?? tr('the group'),
+            })
         )(await nameShownTo(ctx, p.id, auth.userId)),
         body: () => (body.kind === 'video' ? tr('Group video call') : tr('Group voice call')),
         data: { conversationId: id, callId: call.id },

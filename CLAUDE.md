@@ -395,7 +395,11 @@ These are rules, not preferences.
   number) to the browser; user-written text passes `auto` and keeps its own direction. Never
   read `I18nManager.isRTL` on the web: React Native Web's is always false. Look at the Arabic
   screenshots (`e2e/screenshots/*arabic*`) after a change to a shared primitive.
-  Arabic is written for a reader of either gender: the masculine imperative is the neutral
+  A sentence is a whole key: never build one from fragments (`tr(' describes you as ')`) or put
+  an English word into it as a variable (`{value}` = 's', `{who}` = 'You answer'); a count is
+  `trn`, and a line that names who did something passes `by` already translated (`tr('You')`)
+  and is written in each catalog as "what happened: who", which reads right for "You" and for a
+  name in every language. Arabic is written for a reader of either gender: the masculine imperative is the neutral
   default ("اختر", "ابدأ"), but nothing describes the reader or a third person by a gendered
   participle or pronoun where a nominal phrase works ("لا اتصال", "حين يعود الاتصال", "على
   الخط", "بينك وبين {name} تواصل", "تعيين مشرفًا", "تم التوثيق"); a count's adjective agrees

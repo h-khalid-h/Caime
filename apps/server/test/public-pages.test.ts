@@ -239,7 +239,7 @@ describe('the readable web (R44)', () => {
     expect(asked.headers['cache-control']).toBe('public, max-age=600');
     expect(asked.body).toContain('<html lang="ar" dir="rtl">');
     expect(asked.body).toContain('<main class="pub pub-home pub-site" lang="ar" dir="rtl">');
-    expect(asked.body).toContain('<h1>أجب باسم المؤسسة، وأثبت أنك أنت.</h1>');
+    expect(asked.body).toContain('<h1>ردّ باسم مؤسستك، وأثبت هويتها.</h1>');
     expect(asked.body).toContain('<meta property="og:locale" content="ar_AR">');
     // Its canonical is the English page; each language is an alternate.
     expect(asked.body).toContain('<link rel="canonical" href="https://caime.example/business">');

@@ -100,10 +100,7 @@ function AlbumSheet({
       open={open}
       onClose={onClose}
       title={p.title ?? tr('Album')}
-      subtitle={tr('{count} photo{value}', {
-        count: m.album?.count ?? photos.length,
-        value: (m.album?.count ?? photos.length) === 1 ? '' : 's',
-      })}
+      subtitle={trn(m.album?.count ?? photos.length, '{n} photo', '{n} photos')}
     >
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }} testID="album-sheet-photos">
         {photos.map((ph, i) => (

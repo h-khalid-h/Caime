@@ -5,7 +5,7 @@
 
 import type { Rhythm } from './api';
 import { type CallKind, type CallOutcome, callText } from './calls';
-import { msg, tr } from './i18n';
+import { msg, tr, trn } from './i18n';
 import { dateFormat, numberFormat, safeLocale } from './locale';
 import { zonedParts } from './time';
 
@@ -188,10 +188,11 @@ export function formatSoon(iso: string, now: Date, timeZone: string, locale = 'e
   const a = zonedParts(new Date(iso), timeZone);
   const n = zonedParts(now, timeZone);
   const today = a.year === n.year && a.month === n.month && a.day === n.day;
-  return tr('{value}at {formatClock}', {
-    value: today ? '' : 'tomorrow ',
-    formatClock: formatClock(iso, timeZone, locale),
-  });
+  const formatted = formatClock(iso, timeZone, locale);
+  // Whole sentences, so each language orders "tomorrow" and the time its own way.
+  return today
+    ? tr('at {formatClock}', { formatClock: formatted })
+    : tr('tomorrow at {formatClock}', { formatClock: formatted });
 }
 
 /**
@@ -222,8 +223,8 @@ export function formatDue(
   const clock = hasTime ? ` ${formatClock(iso, timeZone, locale)}` : '';
   if (days === 0) return tr('Today{clock}', { clock });
   if (days === 1) return tr('Tomorrow{clock}', { clock });
-  if (days === -1) return 'Yesterday';
-  if (days < -1) return tr('{days} days ago', { days: -days });
+  if (days === -1) return tr('Yesterday');
+  if (days < -1) return trn(-days, '{n} day ago', '{n} days ago');
   if (days < 7) return `${dateFormat(locale, { weekday: 'short', timeZone }).format(t)}${clock}`;
   return dateFormat(locale, { month: 'short', day: 'numeric', timeZone }).format(t);
 }
@@ -379,13 +380,17 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
     purpose?: string | null;
     source?: string;
   };
-  const by = p.byId && p.byId === viewerId ? 'You' : (p.by ?? 'Someone');
-  const them = p.userId && p.userId === viewerId ? 'you' : (p.name ?? 'someone');
+  // Who did it, in the reader's language: each catalog writes these lines so that "You" and a
+  // name both read right (a nominal phrase where a verb would take a person or a gender).
+  const byMe = Boolean(p.byId && p.byId === viewerId);
+  const by = byMe ? tr('You') : (p.by ?? tr('Someone'));
+  const toMe = Boolean(p.userId && p.userId === viewerId);
+  const them = toMe ? tr('you') : (p.name ?? tr('someone'));
   switch (p.event) {
     // An organization erased a customer's conversation at their request (R54): the customer
     // reads the organization's name (the business mask), the team who did it.
     case 'erased':
-      return them === 'you'
+      return toMe
         ? tr('{by} erased this conversation’s messages at your request.', { by })
         : tr('{by} erased this conversation’s messages at {them}’s request.', { by, them });
     case 'group_created':
@@ -419,27 +424,27 @@ export function systemText(payload: unknown, viewerId?: string | null): string {
         ? tr('{by} changed what it’s for: {purpose}', { by, purpose: p.purpose })
         : tr('{by} took away what it’s for', { by });
     case 'member_joined':
-      return `${p.name ?? by} joined`;
+      return tr('{name} joined', { name: p.name ?? by });
     case 'members_added':
       return p.names?.length
         ? tr('{by} added {joinNames}', { by, joinNames: joinNames(p.names) })
         : tr('{by} added people', { by });
     case 'member_left':
-      return `${p.name ?? by} left`;
+      return tr('{name} left', { name: p.name ?? by });
     case 'member_removed':
       return tr('{by} removed {them}', { by, them });
     case 'owner_changed':
-      return them === 'you'
+      return toMe
         ? tr('You own the group now')
         : tr('{name} owns the group now', { name: p.name ?? tr('Someone') });
     case 'admin_added':
       return tr('{by} made {them} an admin', { by, them });
     case 'admin_removed':
-      return them === 'you'
+      return toMe
         ? tr('You’re no longer an admin')
         : tr('{name} is no longer an admin', { name: p.name ?? tr('Someone') });
     case 'imported': {
-      const from = p.source === 'whatsapp' ? 'WhatsApp' : 'another app';
+      const from = p.source === 'whatsapp' ? 'WhatsApp' : tr('another app');
       return tr('{by} brought this chat over from {from}. What’s above was written there.', {
         by,
         from,

@@ -42,7 +42,7 @@ test('the interface follows Turkish when chosen, and the site has a Turkish swit
   await site.getByRole('link', { name: 'Türkçe' }).click();
   await expect(site).toHaveURL(/lang=tr/);
   await expect(site.locator('html')).toHaveAttribute('lang', 'tr');
-  await expect(site.getByRole('heading', { level: 1 })).toContainText('Kuruluş olarak yanıt verin');
+  await expect(site.getByRole('heading', { level: 1 })).toContainText('Kuruluş adına yanıt verin');
   const alternates = await site
     .locator('link[rel="alternate"][hreflang]')
     .evaluateAll((els) => els.map((e) => e.getAttribute('hreflang')));

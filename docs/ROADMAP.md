@@ -1055,8 +1055,14 @@ listed there with its owner.
       order on the host's page, person pages' items in a sitemap only if a person opts in.
 - [x] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
       site's switch and alternates (`tr_TR`), the catalog tests over four languages, the agent's
-      hand-over line, voice-note hints; `e2e/turkish.spec.ts`. A native speaker's review is owed,
-      as for Arabic and French.
+      hand-over line, voice-note hints; `e2e/turkish.spec.ts`.
+- [x] Native-language review of all six catalogs (2026-10-05): Arabic app ~330 and site ~150,
+      French app 236 and site ~165, Turkish app ~470 and site 314 values; one glossary per
+      language shared by the app and the site. Code that left English in other languages fixed:
+      "You"/"Someone" and who-did-what lines (now "what happened: who"), "Yesterday", day counts,
+      votes and photos as plurals, "tomorrow at", the mutual description and insights as whole
+      sentences, a group call's "the group", countries named in the language on screen. A paid
+      professional translator's pass before a market launch is still worth it.
 - [ ] Later layers of R58: a recurring card (each occurrence its own brief), a resource shared
       by several items (one set of chairs for two services), a customer choosing who does it
       where an organization allows it, group meetings' briefs.
@@ -2101,3 +2107,6 @@ listed there with its owner.
 - 2026-10-05 — Harmony pass over cards: kit names in the "+" menu, the form's title, the card's
   label and a sticker's screen-reader name read in the reader's language; checked across the
   bookings, Arabic, French, Turkish, conversation and accessibility specs (66 passed).
+- 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
+  and site), and the code that put English words into translated sentences fixed. Language,
+  accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
