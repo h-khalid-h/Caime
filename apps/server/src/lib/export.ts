@@ -11,7 +11,7 @@
  * Caime keeps only as hashes or never shows (a password, tokens, recovery codes, a calendar's
  * address, a device's address for notifications).
  */
-import { callResult } from '@caime/core';
+import { callResult, MANAGING_ROLES } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { automationView, visibleSaved } from './automations';
@@ -663,7 +663,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
           .onRef('m.org_id', '=', 'a.org_id')
           .on('m.user_id', '=', me)
           .on('m.left_at', 'is', null)
-          .on('m.role', 'in', ['owner', 'admin']),
+          .on('m.role', 'in', [...MANAGING_ROLES]),
       )
       .select([
         'o.name as org_name',
@@ -687,7 +687,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
           .onRef('m.org_id', '=', 'a.org_id')
           .on('m.user_id', '=', me)
           .on('m.left_at', 'is', null)
-          .on('m.role', 'in', ['owner', 'admin']),
+          .on('m.role', 'in', [...MANAGING_ROLES]),
       )
       .select([
         'o.name as org_name',

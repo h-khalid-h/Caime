@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canAddToGroup,
   canChangeDisappearing,
+  canChangeGroupRole,
   canEditConversation,
+  canPostTo,
+  canRemoveFromGroup,
   canRemoveOthersMessages,
+  handsOverOnLeaving,
+  MANAGING_ROLES,
   minorMayWriteToOrg,
 } from './permissions';
 
@@ -27,6 +33,29 @@ describe('conversation permissions (convention 4)', () => {
     expect(canChangeDisappearing('group', 'admin', false)).toBe(true);
     expect(canChangeDisappearing('group', 'admin', true)).toBe(false);
     expect(canChangeDisappearing('group', 'member', false)).toBe(false);
+  });
+
+  it('a group’s owner and admins add people; in a broadcast only they post', () => {
+    expect(canAddToGroup('admin')).toBe(true);
+    expect(canAddToGroup('member')).toBe(false);
+    expect(canAddToGroup(null)).toBe(false);
+    expect(canPostTo('broadcast', 'member')).toBe(false);
+    expect(canPostTo('broadcast', 'owner')).toBe(true);
+    expect(canPostTo('group', 'member')).toBe(true);
+    expect([...MANAGING_ROLES]).toEqual(['owner', 'admin']);
+  });
+
+  it('removing and promoting in a group follow the space rules; an owner leaving hands over', () => {
+    expect(canRemoveFromGroup('owner', 'admin')).toBe(true);
+    expect(canRemoveFromGroup('owner', 'owner')).toBe(false);
+    expect(canRemoveFromGroup('admin', 'member')).toBe(true);
+    expect(canRemoveFromGroup('admin', 'admin')).toBe(false);
+    expect(canRemoveFromGroup('member', 'member')).toBe(false);
+    expect(canChangeGroupRole('owner', 'member')).toBe(true);
+    expect(canChangeGroupRole('admin', 'member')).toBe(false);
+    expect(handsOverOnLeaving('owner')).toBe(true);
+    expect(handsOverOnLeaving('admin')).toBe(false);
+    expect(handsOverOnLeaving(null)).toBe(false);
   });
 
   it('under 18, only a verified organization may be written to (R29)', () => {

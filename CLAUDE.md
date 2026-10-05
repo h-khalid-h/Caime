@@ -572,10 +572,15 @@ These are rules, not preferences.
   (`packages/core/src/permissions.ts`: `canEditConversation`, `canRemoveOthersMessages`,
   `canChangeDisappearing`, and `minorMayWriteToOrg` for R29), read by the server before it
   acts and by the app before it offers; `lib/contexts.ts` re-exports the first, with
-  `contextVisible` and `contextEditable` for contexts; roles follow the space rules in `packages/core/src/spaces.ts`
-  (`canRemoveFromSpace`, `canChangeSpaceRole`, `nextOwner`), and an owner who goes hands on
-  through `handOverGroup`/`handOverGroups` (`lib/conversations.ts`). Anything new that changes a
-  group checks one of these, never `me.role` by hand. The app's panel is
+  `contextVisible` and `contextEditable` for contexts; who adds people, posts in a broadcast,
+  removes or promotes whom is `canAddToGroup`, `canPostTo`, `canRemoveFromGroup` and
+  `canChangeGroupRole` there too (the last two are the space rules in
+  `packages/core/src/spaces.ts`, `canRemoveFromSpace` and `canChangeSpaceRole`, under their
+  group names), an owner's leaving is `handsOverOnLeaving` (then `nextOwner`, and
+  `handOverGroup`/`handOverGroups` in `lib/conversations.ts`), a query that wants the people who
+  run something takes `MANAGING_ROLES`, and what only an organization's owner does (closing it,
+  retention, making admins) is `ownsOrg` (`orgs.ts`). Anything new that checks a role calls one
+  of these, never `me.role` by hand; outside core a role is compared only to label it. The app's panel is
   `features/conversation/GroupPeople.tsx` (loaded with the details).
 - Organizations' updates (PRD §59): `lib/updates.ts` and `modules/updates.ts`, in tables of their
   own (`org_updates`, `org_follows`), never conversations: nothing about following may reach the

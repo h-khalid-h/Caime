@@ -7,6 +7,7 @@
 import type { OrgView } from '@caime/core/api';
 import { retentionText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { ownsOrg } from '@caime/core/orgs';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -25,7 +26,7 @@ const KEEP = ['off', '30', '90', '180', '365', '730'] as const;
 export function OrgData({ org, refresh }: { org: OrgView; refresh: (o: OrgView) => void }) {
   const t = useTheme();
   const [busy, setBusy] = useState(false);
-  const owner = org.myRole === 'owner';
+  const owner = ownsOrg(org.myRole);
   const current = (
     org.retentionDays === null ? 'off' : String(org.retentionDays)
   ) as (typeof KEEP)[number];

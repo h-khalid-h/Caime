@@ -10,6 +10,8 @@ type Q = Kysely<Database> | Transaction<Database>;
 
 /** A conversation's name, purpose, context and disappearing messages. */
 // The rule is core's (convention 4): the app reads the same one before it offers the change.
+import { MANAGING_ROLES } from '@caime/core/permissions';
+
 export { canEditConversation } from '@caime/core/permissions';
 
 /**
@@ -63,7 +65,7 @@ export async function contextEditable(db: Q, userId: string, contextId: string):
     .select('c.id')
     .where('c.context_id', '=', contextId)
     .where('p.left_at', 'is', null)
-    .where((eb) => eb.or([eb('c.kind', '=', 'direct'), eb('p.role', 'in', ['owner', 'admin'])]))
+    .where((eb) => eb.or([eb('c.kind', '=', 'direct'), eb('p.role', 'in', [...MANAGING_ROLES])]))
     .executeTakeFirst();
   return Boolean(runs) || ownAndUnlinked(db, userId, contextId);
 }

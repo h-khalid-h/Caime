@@ -16,9 +16,10 @@ import {
   type CardKitId,
   ChecklistOpBody,
   CreateConversationBody,
-  canChangeSpaceRole,
+  canAddToGroup,
+  canChangeGroupRole,
   canPin,
-  canRemoveFromSpace,
+  canRemoveFromGroup,
   canRemoveOthersMessages,
   checklistItems,
   checklistState,
@@ -27,6 +28,7 @@ import {
   EditMessageBody,
   ForwardBody,
   formatAmount,
+  handsOverOnLeaving,
   isCardKit,
   isCustomCard,
   KITS,
@@ -43,7 +45,6 @@ import {
   ReactionBody,
   ReceiptsBody,
   SendMessageBody,
-  type SpaceRole,
   SpaceRoleBody,
   SplitOpBody,
   splitShares,
@@ -892,7 +893,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     if (conversation.kind === 'business')
       throw badRequest(tr('Its team is the organization’s: add people to the team instead.'));
     if (isGroupTopic(conversation)) throw badRequest(TOPIC_PEOPLE());
-    if (!['owner', 'admin'].includes(me.role)) throw forbidden(tr('Only admins can add people.'));
+    if (!canAddToGroup(me.role)) throw forbidden(tr('Only admins can add people.'));
     if (conversation.space_id) {
       // A space's conversations hold its people: General all of them, the others who join.
       if (conversation.is_general) throw badRequest(tr('Add people to the space instead.'));
@@ -922,8 +923,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       // Who runs it, and who's in it, as they are now.
       const mine = await seatIn(trx, id, auth.userId);
       if (!mine) throw notFound(tr('That conversation'));
-      if (!['owner', 'admin'].includes(mine.role))
-        throw forbidden(tr('Only admins can add people.'));
+      if (!canAddToGroup(mine.role)) throw forbidden(tr('Only admins can add people.'));
       const inIt = new Set((await participantsOf(trx, id)).map((p) => p.user_id));
       const fresh = [...new Set(body.userIds)].filter((u) => !inIt.has(u));
       // Every message in a private group is sealed for each of its people's devices.
@@ -1018,7 +1018,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       const target = leaving ? me : await seatIn(trx, id, userId);
       if (!target) throw notFound(tr('That person in this conversation'));
       // The owner removes anyone; admins remove members; anyone may leave (PRD §56).
-      if (!leaving && !canRemoveFromSpace(me.role as SpaceRole, target.role as SpaceRole))
+      if (!leaving && !canRemoveFromGroup(me.role, target.role))
         throw forbidden(
           me.role === 'admin'
             ? tr('Admins remove members; the owner removes admins.')
@@ -1033,7 +1033,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         .where('left_at', 'is', null)
         .execute();
       // Whoever owned it hands it on as they go, so someone can always run it.
-      const heir = target.role === 'owner' ? await handOverGroup(trx, id, userId) : null;
+      const heir = handsOverOnLeaving(target.role) ? await handOverGroup(trx, id, userId) : null;
       // Out of the group is out of its topics, and they're run as it is now.
       const topics = await mirrorTopics(trx, id, ctx.now());
       // What Caime offered them about it, and its topics, is gone with them.
@@ -1094,7 +1094,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       const target = await seatIn(trx, id, userId);
       if (!target || !['admin', 'member'].includes(target.role))
         throw notFound(tr('That person in this conversation'));
-      if (!canChangeSpaceRole(me.role as SpaceRole, target.role as SpaceRole))
+      if (!canChangeGroupRole(me.role, target.role))
         throw forbidden(tr('Only the owner makes admins.'));
       if (target.role === body.role) return false;
       // Only from the role read: never over an owner someone just handed it to.

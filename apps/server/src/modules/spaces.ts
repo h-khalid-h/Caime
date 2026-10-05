@@ -22,6 +22,7 @@ import {
   canManageOrg,
   canManageSpace,
   canRemoveFromSpace,
+  handsOverOnLeaving,
   MembersBody,
   messagePreview,
   nextSpaceOwner,
@@ -244,17 +245,16 @@ export async function removeFromSpace(
   const target = members.find((m) => m.user_id === userId);
   if (!target) return;
   const leaving = userId === actorId;
-  const heir =
-    target.role === 'owner'
-      ? nextSpaceOwner(
-          members.map((m) => ({
-            userId: m.user_id,
-            role: m.role,
-            joinedAt: m.joined_at.toISOString(),
-          })),
-          userId,
-        )
-      : null;
+  const heir = handsOverOnLeaving(target.role)
+    ? nextSpaceOwner(
+        members.map((m) => ({
+          userId: m.user_id,
+          role: m.role,
+          joinedAt: m.joined_at.toISOString(),
+        })),
+        userId,
+      )
+    : null;
   const general = await generalOf(ctx.db, spaceId);
   // The line is written while they're still in General, so they see it too.
   await sendSystem(ctx, general.id, actorId, leaving ? 'member_left' : 'member_removed', {

@@ -6,6 +6,7 @@
  */
 import type { ConversationView, ParticipantView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { handsOverOnLeaving } from '@caime/core/permissions';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -113,15 +114,14 @@ export function GroupPeople({
 
   // Who runs it after its owner leaves, by the server's rule: an admin there longest, else
   // whoever has been; never an app's bot.
-  const heirId =
-    myRole === 'owner'
-      ? nextOwner(
-          people
-            .filter((p) => p.person.kind === 'human' && p.role !== 'owner')
-            .map((p) => ({ userId: p.userId, role: roleOf(p.role), joinedAt: p.joinedAt })),
-          me,
-        )
-      : null;
+  const heirId = handsOverOnLeaving(myRole)
+    ? nextOwner(
+        people
+          .filter((p) => p.person.kind === 'human' && p.role !== 'owner')
+          .map((p) => ({ userId: p.userId, role: roleOf(p.role), joinedAt: p.joinedAt })),
+        me,
+      )
+    : null;
   const heir = heirId ? people.find((p) => p.userId === heirId) : undefined;
 
   return (
@@ -386,7 +386,7 @@ export function GroupPeople({
         onClose={() => setLeaving(false)}
         title={tr('Leave “{title}”?', { title: conversation.title })}
         subtitle={
-          myRole !== 'owner'
+          !handsOverOnLeaving(myRole)
             ? tr('You stop getting its messages. Someone in it can add you again.')
             : heir
               ? tr('You stop getting its messages, and {displayName} runs it after you.', {

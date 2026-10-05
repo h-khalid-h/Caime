@@ -922,7 +922,13 @@ listed there with its owner.
       hours, the AI agent, apps and the plan, in a clinic's order), reached from one row that says
       what's next (`org-setup`, `setupNextLine`); the team's others get neither the row nor the
       screen. `door.spec.ts`, `around-the-conversation.spec.ts` and `a11y.spec.ts` walk it.
-- [ ] Next block: the remaining hand-written role checks.
+- [x] The remaining hand-written role checks are core's: `canAddToGroup`, `canPostTo` (a
+      broadcast's owner and admins), `canRemoveFromGroup` and `canChangeGroupRole` (the space
+      rules, by their group names), `handsOverOnLeaving` (whose leaving calls `nextOwner`),
+      `MANAGING_ROLES` for a query's `in` list, and `ownsOrg` (closing, retention, making
+      admins), read by the server before it acts and the app before it offers; outside core a
+      role is compared only to label it. `permissions.test.ts`, `orgs.test.ts`.
+- [ ] Next block: the review's remaining lows, and the owner's ⛔ items as they come.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1936,3 +1942,6 @@ listed there with its owner.
   same-name duplicates need a second sign.
 - 2026-10-05 — R57: an organization's setup (door, domain, data, hours, agent, apps, plan) moves
   to its own screen for the owner and admins; the page is the daily work.
+- 2026-10-05 — The last hand-written role checks become core's rules (`ownsOrg`,
+  `canAddToGroup`, `canPostTo`, `canRemoveFromGroup`, `canChangeGroupRole`,
+  `handsOverOnLeaving`, `MANAGING_ROLES`).

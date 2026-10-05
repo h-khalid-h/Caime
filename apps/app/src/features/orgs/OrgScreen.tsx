@@ -7,8 +7,9 @@ import {
   canRemoveFromOrg,
   ORG_ROLE_LABELS,
   orgKindName,
+  ownsOrg,
 } from '@caime/core/orgs';
-import { minorMayWriteToOrg } from '@caime/core/permissions';
+import { handsOverOnLeaving, minorMayWriteToOrg } from '@caime/core/permissions';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -533,7 +534,7 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
                   onPress={() => setLeaving(true)}
                   testID="org-leave"
                 />
-                {org.myRole === 'owner' ? (
+                {ownsOrg(org.myRole) ? (
                   <ListRow
                     icon={ArchiveIcon}
                     title={tr('Close {name}', { name: org.name })}
@@ -765,7 +766,7 @@ export function OrgScreen({ handle, write = false }: { handle: string; write?: b
         onClose={() => setLeaving(false)}
         title={tr('Leave {name}?', { name: org.name })}
         subtitle={
-          org.myRole === 'owner'
+          handsOverOnLeaving(org.myRole)
             ? org.memberCount > 1
               ? tr(
                   'The admin who has been here longest takes over, or else the longest-standing team member.',

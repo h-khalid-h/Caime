@@ -6,6 +6,7 @@ import {
   latestFoundedYear,
   normalizeDomain,
   orgKindName,
+  ownsOrg,
   recordMatches,
   verificationRecord,
 } from './orgs';
@@ -54,6 +55,9 @@ describe('organizations', () => {
     expect(canRemoveFromOrg('agent', 'agent')).toBe(false);
     expect(canChangeOrgRole('owner', 'agent')).toBe(true);
     expect(canChangeOrgRole('admin', 'agent')).toBe(false);
+    expect(ownsOrg('owner')).toBe(true);
+    expect(ownsOrg('admin')).toBe(false);
+    expect(ownsOrg(null)).toBe(false);
     const members = [
       { userId: 'o', role: 'owner' as const, joinedAt: '2026-01-01T00:00:00Z' },
       { userId: 't', role: 'agent' as const, joinedAt: '2026-01-02T00:00:00Z' },

@@ -1,5 +1,6 @@
 import type { SpaceConversationView, SpaceMemberView, SpaceView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
+import { handsOverOnLeaving } from '@caime/core/permissions';
 import {
   canChangeSpaceRole,
   canManageSpace,
@@ -645,7 +646,7 @@ export function SpaceScreen({ id }: { id: string }) {
         onClose={() => setLeaving(false)}
         title={tr('Leave {name}?', { name: space.name })}
         subtitle={
-          space.myRole === 'owner'
+          handsOverOnLeaving(space.myRole)
             ? space.memberCount > 1
               ? tr(
                   'The admin who has been here longest takes over, or else the longest-standing member.',

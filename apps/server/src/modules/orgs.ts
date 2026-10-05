@@ -18,6 +18,7 @@ import {
   canChangeOrgRole,
   canManageOrg,
   canRemoveFromOrg,
+  handsOverOnLeaving,
   nextOwner,
   normalizeDomain,
   OrgDomainBody,
@@ -25,6 +26,7 @@ import {
   OrgMemberBody,
   OrgMembersBody,
   type OrgRole,
+  ownsOrg,
   recordMatches,
   UpdateOrgBody,
   uuidv7,
@@ -383,7 +385,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     // what's already there with it: the shorter time wins for every message.
     if (body.retentionDays !== undefined) {
       const seat = await orgSeat(ctx.db, auth.userId, id);
-      if (seat?.role !== 'owner')
+      if (!ownsOrg(seat?.role))
         throw forbidden(tr('Only the owner sets how long conversations are kept.'));
       await ctx.db
         .transaction()
@@ -488,7 +490,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(OrgMembersBody, req.body);
     await orgById(ctx.db, id);
     const seat = await managerSeat(ctx, auth.userId, id);
-    if (body.role === 'admin' && seat.role !== 'owner')
+    if (body.role === 'admin' && !ownsOrg(seat.role))
       throw forbidden(tr('Only the owner makes admins.'));
     const current = new Set((await team(ctx, id)).map((m) => m.user_id));
     const adding = [...new Set(body.userIds)].filter((u) => !current.has(u));
@@ -562,17 +564,16 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           ? tr('Admins remove the team; the owner removes admins.')
           : tr('Only the organization’s owner and admins remove people.'),
       );
-    const heir =
-      target.role === 'owner'
-        ? nextOwner(
-            people.map((m) => ({
-              userId: m.user_id,
-              role: m.role,
-              joinedAt: m.joined_at.toISOString(),
-            })),
-            userId,
-          )
-        : null;
+    const heir = handsOverOnLeaving(target.role)
+      ? nextOwner(
+          people.map((m) => ({
+            userId: m.user_id,
+            role: m.role,
+            joinedAt: m.joined_at.toISOString(),
+          })),
+          userId,
+        )
+      : null;
     await ctx.db.transaction().execute(async (trx) => {
       await trx
         .updateTable('org_members')
@@ -717,7 +718,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
     const seat = await orgSeat(ctx.db, auth.userId, id);
-    if (seat?.role !== 'owner') throw forbidden(tr('Only the organization’s owner closes it.'));
+    if (!ownsOrg(seat?.role)) throw forbidden(tr('Only the organization’s owner closes it.'));
     const members = await team(ctx, id);
     await ctx.db.transaction().execute((trx) => closeOrg(trx, id, ctx.now()));
     await audit(ctx.db, {

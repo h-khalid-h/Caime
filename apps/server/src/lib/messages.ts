@@ -8,6 +8,7 @@ import {
   type Analysis,
   analyzeMessage,
   assessLink,
+  canPostTo,
   type FileView,
   KIT_MODES,
   kitHeadline,
@@ -441,9 +442,7 @@ export async function sendMessage(
   const members = await participantsOf(ctx.db, conversationId);
   const me = members.find((p) => p.user_id === senderId);
   if (!me) throw notFound(tr('That conversation'));
-  if (conversation.kind === 'broadcast' && !['owner', 'admin'].includes(me.role)) {
-    throw forbidden(tr('Only admins can post here.'));
-  }
+  if (!canPostTo(conversation.kind, me.role)) throw forbidden(tr('Only admins can post here.'));
   // End to end encrypted (R18): only text sealed on one of the sender's own devices, for every
   // device of everyone in it. Nothing the server could read, so nothing it would work from.
   if (conversation.privacy_class === 'private') {

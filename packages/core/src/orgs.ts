@@ -56,6 +56,11 @@ export function canManageOrg(role: OrgRole | null | undefined): boolean {
   return role === 'owner' || role === 'admin';
 }
 
+/** What only the owner does: closes it, sets how long conversations are kept, makes admins. */
+export function ownsOrg(role: OrgRole | null | undefined): boolean {
+  return role === 'owner';
+}
+
 /** Owners remove anyone but themselves; admins remove the team. Anyone may leave. */
 export function canRemoveFromOrg(actor: OrgRole, target: OrgRole): boolean {
   if (actor === 'owner') return target !== 'owner';

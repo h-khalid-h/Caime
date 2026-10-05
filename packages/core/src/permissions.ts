@@ -5,11 +5,46 @@
  * the under-18 rules an organization meets (R29).
  */
 import type { ConversationKind } from './api';
+import { canChangeSpaceRole, canRemoveFromSpace, type SpaceRole } from './spaces';
 
 /** A participant's role in a conversation, as `ConversationView.me.role` says it. */
 export type ConversationRole = 'owner' | 'admin' | 'member' | (string & {});
 
+/** The roles that run a group, a space or an organization: for a query's `in` list. */
+export const MANAGING_ROLES = ['owner', 'admin'] as const;
+
 const manages = (role: string | null | undefined): boolean => role === 'owner' || role === 'admin';
+
+/** Who adds people to a group (PRD §56): its owner and admins. */
+export function canAddToGroup(role: ConversationRole | null | undefined): boolean {
+  return manages(role);
+}
+
+/** Who writes in a conversation of a kind: in a broadcast its owner and admins; everyone else reads. */
+export function canPostTo(
+  kind: ConversationKind | string,
+  role: ConversationRole | null | undefined,
+): boolean {
+  return kind !== 'broadcast' || manages(role);
+}
+
+/** Who removes whom from a group: the owner anyone but themselves, admins members (the space rule). */
+export function canRemoveFromGroup(actor: ConversationRole, target: ConversationRole): boolean {
+  return canRemoveFromSpace(actor as SpaceRole, target as SpaceRole);
+}
+
+/** Only a group's owner makes admins, or members again (the space rule). */
+export function canChangeGroupRole(actor: ConversationRole, target: ConversationRole): boolean {
+  return canChangeSpaceRole(actor as SpaceRole, target as SpaceRole);
+}
+
+/**
+ * Whose leaving hands the thing on: a group's, a space's or an organization's owner, to
+ * `nextOwner`'s choice. Anyone else just goes.
+ */
+export function handsOverOnLeaving(role: string | null | undefined): boolean {
+  return role === 'owner';
+}
 
 /** Who changes a conversation's name, purpose, context and settings (PRD §56). */
 export function canEditConversation(
