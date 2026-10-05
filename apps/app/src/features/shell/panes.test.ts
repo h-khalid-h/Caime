@@ -9,7 +9,9 @@ import { describe, expect, it } from 'vitest';
  */
 const src = join(__dirname, '..', '..');
 const panes = readFileSync(join(__dirname, 'panes.ts'), 'utf8');
-const lazyTargets = [...panes.matchAll(/import\('(@\/features\/[^']+)'\)/g)].map((m) => m[1]);
+const lazyTargets = [...panes.matchAll(/import\('(@\/features\/[^']+)'\)/g)].flatMap((m) =>
+  m[1] ? [m[1]] : [],
+);
 
 const files = readdirSync(src, { recursive: true })
   .map(String)
