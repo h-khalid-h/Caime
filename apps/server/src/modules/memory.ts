@@ -13,6 +13,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { maskFor } from '../lib/business';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
+import { membership } from '../lib/conversation-views';
 import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { fileUrl, notHiddenFor, participantsOf } from '../lib/messages';
@@ -20,7 +21,6 @@ import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 import { taskViews } from './actions';
-import { membership } from './conversations';
 
 export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/contexts', async (req, reply): Promise<IdResponse> => {

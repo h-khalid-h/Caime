@@ -20,6 +20,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Call, Database } from '../db/schema';
 import { lockCallEntry, nameShownTo } from '../lib/calls';
+import { membership } from '../lib/conversation-views';
 import { shownTitle } from '../lib/conversations';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import {
@@ -38,7 +39,6 @@ import { participantsOf } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { membership } from './conversations';
 
 export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   const callParam = z.object({ id: z.string().uuid() });

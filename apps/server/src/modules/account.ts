@@ -14,6 +14,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { endBillingOf } from '../lib/billing';
+import { sendSystem } from '../lib/conversation-views';
 import { handOverGroups } from '../lib/conversations';
 import { verifyPassword } from '../lib/crypto';
 import { rerootMerged } from '../lib/duplicates';
@@ -28,7 +29,6 @@ import { storageFor } from '../lib/storage';
 import { endFollowsOf } from '../lib/updates';
 import { parse } from '../lib/validate';
 import { clearSessionCookie, requireAuth } from '../plugins/auth';
-import { sendSystem } from './conversations';
 
 export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
   const storage = storageFor(ctx.config);

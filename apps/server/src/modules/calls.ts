@@ -27,6 +27,7 @@ import {
   ringStopped,
   stillThere,
 } from '../lib/calls';
+import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { groupCallView, joinedGroupCallOf, ringingGroupCallFor } from '../lib/group-calls';
 import { participantsOf } from '../lib/messages';
@@ -35,7 +36,6 @@ import { personViewsFor } from '../lib/people-batch';
 import { isBlockedEitherWay } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { membership } from './conversations';
 
 const EndCallBody = z
   .object({

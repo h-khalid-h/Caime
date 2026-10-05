@@ -21,13 +21,13 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
+import { membership } from '../lib/conversation-views';
 import { chainOf, type LiveDevice, liveDevicesOf, MAX_DEVICES, publicView } from '../lib/e2ee';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { isBlockedEitherWay } from '../lib/relations';
 import { endSessions } from '../lib/sessions';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { membership } from './conversations';
 
 export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
   const signedIn = (req: Parameters<typeof requireAuth>[0]) => {

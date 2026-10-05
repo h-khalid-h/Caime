@@ -961,10 +961,14 @@ listed there with its owner.
       no test reached have tests (health, custom roles, merge, identities, an app's secret
       rotation and ping, an update taken back from a report); the one raw `Pressable` uses the
       app's; every shadow is the theme's (`ui/shadow.ts`, `lifted`).
-- [ ] Next block: `modules/conversations.ts` split along the review's lines (the shared helpers
-      into `lib/`, the routes by concern; `spaces` and `conversations` no longer importing each
-      other), then the owner's ⛔ items as they come (TRUST_PROXY, local-currency payment, the
-      npm account, a development build for a phone, store builds, the penetration test).
+- [x] `modules/conversations.ts` split: what every module shared is `lib/conversation-views.ts`
+      (`membership`, `conversationView`, `sendSystem`, `hadSeat`), `lib/topics.ts` (starting a
+      topic) and `lib/space-conversations.ts` (`createSpaceConversation`, `activeMembers`,
+      `tellSpace`, out of the space routes); the message routes are `modules/messages.ts` and the
+      conversation's own stay (775 lines from 2,502); no route module imports another.
+- [ ] Next block: the owner's ⛔ items as they come (TRUST_PROXY, local-currency payment, the
+      npm account, a development build for a phone, store builds, the penetration test), and
+      whatever the next review finds.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1993,3 +1997,5 @@ listed there with its owner.
   error codes are one list in core.
 - 2026-10-05 — The review's remaining lows: keys in `qk`, failures logged, dead code gone, nine
   routes tested, one `Pressable`, themed shadows.
+- 2026-10-05 — The conversations module split: shared helpers in `lib/`, message routes in
+  `modules/messages.ts`, no route module importing another.

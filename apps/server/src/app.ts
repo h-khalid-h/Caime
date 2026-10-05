@@ -60,6 +60,7 @@ import { inviteRoutes } from './modules/invites';
 import { kitRoutes } from './modules/kits';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
+import { messageRoutes } from './modules/messages';
 import { metricsRoutes } from './modules/metrics';
 import { moderationPageRoutes } from './modules/moderation-page';
 import { notificationRoutes } from './modules/notifications';
@@ -267,6 +268,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await automationRoutes(v1, ctx);
       await suggestionRoutes(v1, ctx);
       await conversationRoutes(v1, ctx);
+      await messageRoutes(v1, ctx);
       await importRoutes(v1, ctx);
       await callRoutes(v1, ctx);
       await groupCallRoutes(v1, ctx);

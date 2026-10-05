@@ -28,13 +28,13 @@ import { MESSAGE_COLUMNS } from '../db/schema';
 import { audit } from '../lib/audit';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask } from '../lib/business';
+import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { appKitView } from '../lib/kits';
 import { messageViews, participantsOf } from '../lib/messages';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { membership } from './conversations';
 
 const keyParam = z.object({ key: z.string().max(40) });
 const idParam = z.object({ id: z.string().uuid() });

@@ -7,9 +7,9 @@ import { ensureDirectConversation } from '../lib/conversations';
 import { badRequest, forbidden } from '../lib/errors';
 import { insertSystemMessage, participantsOf } from '../lib/messages';
 import { between } from '../lib/relations';
+import { createTopicConversation } from '../lib/topics';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { createTopicConversation } from './conversations';
 
 /** Rows in one INSERT: a whole export in a few statements, none too large for a parameter list. */
 const CHUNK = 500;

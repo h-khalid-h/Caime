@@ -23,6 +23,7 @@ import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask, maskFor } from '../lib/business';
 import { canEditConversation, contextVisible } from '../lib/contexts';
+import { membership, sendSystem } from '../lib/conversation-views';
 import { overdueAtSql } from '../lib/due';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -37,7 +38,6 @@ import { notify } from '../lib/notify';
 import { between } from '../lib/relations';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { membership, sendSystem } from './conversations';
 
 export type { TaskDirection };
 

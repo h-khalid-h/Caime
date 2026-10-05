@@ -16,7 +16,6 @@
 import {
   AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
-  type AgentAction,
   ORG_ALLOWANCES,
   SendMessageBody,
   tr,

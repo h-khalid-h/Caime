@@ -19,12 +19,13 @@ import type { AppContext } from '../context';
 import type { Suggestion } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
+import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { isBlockedEitherWay, relationshipView } from '../lib/relations';
+import { assertCanStartTopic, createTopicConversation } from '../lib/topics';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { assertCanStartTopic, createTopicConversation, membership } from './conversations';
 import { createRelationship, mayClassify } from './relationships';
 
 export function suggestionView(s: Suggestion): SuggestionView {

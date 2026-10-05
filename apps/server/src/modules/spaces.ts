@@ -44,6 +44,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { tellSaved } from '../lib/automations';
 import { orgRef } from '../lib/business';
+import { conversationView, membership, sendSystem } from '../lib/conversation-views';
 import { handOverGroups } from '../lib/conversations';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
@@ -52,25 +53,15 @@ import { participantsOf } from '../lib/messages';
 import { orgById, orgSeat } from '../lib/orgs';
 import { personViewsFor } from '../lib/people-batch';
 import { activeRelationships, relationshipView } from '../lib/relations';
+import { activeMembers, createSpaceConversation, tellSpace } from '../lib/space-conversations';
 import { generalOf, spaceSeat } from '../lib/spaces';
 import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
 import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { conversationView, membership, sendSystem } from './conversations';
 
 const ROLE_ORDER: Record<SpaceRole, number> = { owner: 0, admin: 1, member: 2 };
-
-async function activeMembers(ctx: AppContext, spaceId: string) {
-  return ctx.db
-    .selectFrom('space_members')
-    .select(['user_id', 'role', 'joined_at'])
-    .where('space_id', '=', spaceId)
-    .where('left_at', 'is', null)
-    .orderBy('joined_at')
-    .execute();
-}
 
 /**
  * Only people you're connected with (the same rule as groups); in an organization's space, its
@@ -340,60 +331,6 @@ export async function removeFromSpace(
       { type: 'conversation.updated', data: { conversationId } },
     );
   await tellSpace(ctx, spaceId);
-}
-
-/** A conversation in the space: everyone in it, or just its starter until others join. */
-export async function createSpaceConversation(
-  ctx: AppContext,
-  userId: string,
-  spaceId: string,
-  input: { title: string; purpose?: string | null; everyone: boolean },
-): Promise<string> {
-  const members = input.everyone
-    ? (await activeMembers(ctx, spaceId)).map((m) => m.user_id).filter((u) => u !== userId)
-    : [];
-  const id = uuidv7();
-  await ctx.db.transaction().execute(async (trx) => {
-    await trx
-      .insertInto('conversations')
-      .values({
-        id,
-        kind: 'group',
-        title: input.title,
-        purpose: input.purpose ?? null,
-        space_id: spaceId,
-        created_by: userId,
-      })
-      .execute();
-    await trx
-      .insertInto('participants')
-      .values([
-        { conversation_id: id, user_id: userId, role: 'owner' },
-        ...members.map((u) => ({ conversation_id: id, user_id: u, role: 'member' as const })),
-      ])
-      .execute();
-    await recordEvent(trx, 'conversation.created', userId, {
-      conversationId: id,
-      kind: 'space',
-      spaceId,
-    });
-  });
-  await sendSystem(ctx, id, userId, 'group_created', { title: input.title });
-  await ctx.bus.publish([userId, ...members], {
-    type: 'conversation.created',
-    data: { conversationId: id },
-  });
-  await tellSpace(ctx, spaceId);
-  return id;
-}
-
-/** Everyone in the space refreshes it (and whoever else is named, such as someone who left). */
-async function tellSpace(ctx: AppContext, spaceId: string, also: string[] = []) {
-  const members = (await activeMembers(ctx, spaceId)).map((m) => m.user_id);
-  await ctx.bus.publish([...new Set([...members, ...also])], {
-    type: 'space.updated',
-    data: { spaceId },
-  });
 }
 
 /** Someone's spaces: all of them, one, or an organization's (R43). */

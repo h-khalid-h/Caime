@@ -37,6 +37,7 @@ import { MESSAGE_COLUMNS } from '../db/schema';
 import { type AiResult, languageName, type Transcript } from '../lib/ai';
 import { runAi } from '../lib/ai-run';
 import { maskFor, maskId, maskPayload } from '../lib/business';
+import { membership } from '../lib/conversation-views';
 import { AppError, notFound } from '../lib/errors';
 import { assertAiAllowance } from '../lib/plans';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
@@ -44,7 +45,6 @@ import { createSuggestion } from '../lib/suggest';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { membership } from './conversations';
 import { suggestionView } from './suggestions';
 
 /** How much of a conversation a model reads: the newest messages, within both limits. */
