@@ -862,10 +862,14 @@ listed there with its owner.
       its own deliveries and retries a failed one (`GET /v1/apps/me/deliveries`,
       `POST …/:id/retry`, `caime.deliveries()`, `caime.retryDelivery()`); migrations expand
       first and contract later (convention 7).
+- [x] The operator's tools for someone locked out (R48): an account's facts without its content
+      (`GET /v1/admin/people/:handle`), every way in ended at once (`DELETE …/sessions`), a reset
+      link mailed to the account's own address (`POST …/reset`, the sign-in screen's link through
+      `lib/reset.ts`); audited with who did it; docs/DEPLOY.md "Someone locked out".
 - [ ] Next block: error codes the app translates and previews through `tr`; a shorter first
       five minutes; the relationship chip in an unlabelled conversation; group fan-out in
-      batches; the remaining hand-written role checks; the operator's tools for a locked-out
-      person; the intelligence dates and the edit path; the remaining UX mediums.
+      batches; the remaining hand-written role checks; the intelligence dates and the edit
+      path; the remaining UX mediums.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1853,3 +1857,6 @@ listed there with its owner.
   read on both sides, the message foreign keys indexed (0049), a failed preferences save and a
   failed draft sync no longer lose the device's choice, a Sheet closes on Escape on the web, an
   app lists and retries its webhook deliveries, and convention 7 says expand, then contract.
+- 2026-10-05 — The operator helps someone locked out (R48): their account's facts without its
+  content, every way in ended at once, a reset link to the account's own address; the sign-in
+  screen's reset and the operator's share `lib/reset.ts`; `mailUnavailable` is `lib/errors`'.

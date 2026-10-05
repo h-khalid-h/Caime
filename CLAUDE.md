@@ -588,6 +588,11 @@ These are rules, not preferences.
   (`requireOperator` in `lib/operator.ts` answers who: `operator`, or the name). A new admin
   route that writes puts that name in its audit entry's `metadata.operator` (a lib function it
   calls takes it as its last argument), and `lib/export.ts` keeps the name out of people's data.
+  Someone locked out is helped by `GET /v1/admin/people/:handle` (facts, never content or an
+  ip), `DELETE …/sessions` (`endAllAccess`) and `POST …/reset`, which mails the sign-in
+  screen's own reset link through `sendResetLink` (`lib/reset.ts`): a new way to send one goes
+  through it, never a second token or a link to any other address. A route that needs mail
+  throws `mailUnavailable()` from `lib/errors.ts`.
 - Count what the server does with `ctx.metrics` (`apps/server/src/lib/metrics.ts`). Label values
   come from fixed sets only (a route as declared, a kind, an outcome), never ids, handles or
   text; `metrics.test.ts` scrapes after real traffic and checks for them.

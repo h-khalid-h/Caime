@@ -23,3 +23,10 @@ export const tooMany = (retryAfterSeconds: number) =>
   new AppError(429, 'rate_limited', 'Too many requests. Try again in a moment.', {
     retryAfterSeconds,
   });
+/** No `SMTP_URL`: a route that needs mail says so (R48). */
+export const mailUnavailable = () =>
+  new AppError(
+    503,
+    'email_unavailable',
+    'Caime can’t send email here yet. Use a recovery code instead, or ask whoever runs it.',
+  );

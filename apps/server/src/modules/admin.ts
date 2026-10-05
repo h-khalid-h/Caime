@@ -23,9 +23,10 @@ import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
-import { AppError, badRequest, conflict, notFound } from '../lib/errors';
+import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../lib/errors';
 import { handleHeld, handleTaken, releaseHandle } from '../lib/handles';
 import {
+  endAllAccess,
   removeForEveryone,
   reportViews,
   setSuspended,
@@ -35,6 +36,7 @@ import {
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
+import { sendResetLink } from '../lib/reset';
 import { parse } from '../lib/validate';
 
 const PAYING = (plan: string) =>
@@ -45,6 +47,17 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     requireOperator(ctx, req, ctx.config.ADMIN_TOKEN, ctx.config.OPERATOR_TOKENS);
 
   const handleParam = z.object({ handle: z.string().trim().min(1).max(64) });
+  const personByHandle = async (handle: string) => {
+    const person = await ctx.db
+      .selectFrom('users')
+      .select(['id', 'email', 'display_name'])
+      .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
+      .where('kind', '=', 'human')
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!person) throw notFound('That person');
+    return person;
+  };
 
   /** The database's backups (docs/DEPLOY.md): the last that succeeded, and the ones on disk. */
   // --- Reports (R49): what people reported, reviewed and acted on by the operator --------------
@@ -126,6 +139,144 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!person || person.kind !== 'human') throw notFound('That person');
     await setSuspended(ctx, person.id, body.suspended, body.reason ?? null, by);
+    return { ok: true };
+  });
+
+  /**
+   * Someone locked out, or asking what Caime holds (a data-subject request): the account's
+   * facts, never its content. Who's signed in where, which devices read private conversations,
+   * what tokens and apps act for them, and the ways back in. Looking is written down too.
+   */
+  app.get('/admin/people/:handle', async (req) => {
+    const by = operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const person = await ctx.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'handle',
+        'display_name',
+        'kind',
+        'plan',
+        'created_at',
+        'last_active_at',
+        'email_verified_at',
+        'suspended_at',
+        'suspended_reason',
+      ])
+      .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!person || person.kind !== 'human') throw notFound('That person');
+    const now = ctx.now();
+    const [sessions, devices, tokens, grants, codes, orgs] = await Promise.all([
+      ctx.db
+        .selectFrom('sessions')
+        .select(['id', 'kind', 'platform', 'device_name', 'created_at', 'last_seen_at'])
+        .where('user_id', '=', person.id)
+        .where('revoked_at', 'is', null)
+        .where('expires_at', '>', now)
+        .orderBy('last_seen_at', 'desc')
+        .execute(),
+      ctx.db
+        .selectFrom('e2ee_devices')
+        .select(({ fn }) => fn.countAll<number>().as('n'))
+        .where('user_id', '=', person.id)
+        .where('revoked_at', 'is', null)
+        .executeTakeFirstOrThrow(),
+      ctx.db
+        .selectFrom('personal_tokens')
+        .select(({ fn }) => fn.countAll<number>().as('n'))
+        .where('user_id', '=', person.id)
+        .where('revoked_at', 'is', null)
+        .executeTakeFirstOrThrow(),
+      ctx.db
+        .selectFrom('oauth_grants')
+        .select(({ fn }) => fn.countAll<number>().as('n'))
+        .where('user_id', '=', person.id)
+        .where('revoked_at', 'is', null)
+        .executeTakeFirstOrThrow(),
+      ctx.db
+        .selectFrom('recovery_codes')
+        .select(({ fn }) => fn.countAll<number>().as('n'))
+        .where('user_id', '=', person.id)
+        .where('used_at', 'is', null)
+        .executeTakeFirstOrThrow(),
+      ctx.db
+        .selectFrom('org_members as m')
+        .innerJoin('organizations as o', 'o.id', 'm.org_id')
+        .select(['o.handle', 'm.role'])
+        .where('m.user_id', '=', person.id)
+        .where('m.left_at', 'is', null)
+        .where('o.archived_at', 'is', null)
+        .execute(),
+    ]);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.person_viewed',
+      target: person.id,
+      metadata: { operator: by },
+    });
+    return {
+      person: {
+        id: person.id,
+        handle: person.handle,
+        displayName: person.display_name,
+        plan: person.plan,
+        createdAt: person.created_at.toISOString(),
+        lastActiveAt: person.last_active_at?.toISOString() ?? null,
+        emailConfirmed: person.email_verified_at !== null,
+        suspended: person.suspended_at !== null,
+        suspendedReason: person.suspended_reason,
+        sessions: sessions.map((s) => ({
+          id: s.id,
+          kind: s.kind,
+          platform: s.platform,
+          deviceName: s.device_name,
+          createdAt: s.created_at.toISOString(),
+          lastSeenAt: s.last_seen_at.toISOString(),
+        })),
+        privateDevices: Number(devices.n),
+        personalTokens: Number(tokens.n),
+        appGrants: Number(grants.n),
+        recoveryCodesLeft: Number(codes.n),
+        organizations: orgs.map((o) => ({ handle: o.handle, role: o.role })),
+      },
+    };
+  });
+
+  /** Every way in ended for someone whose account may be in the wrong hands. */
+  app.delete('/admin/people/:handle/sessions', async (req): Promise<{ ok: true }> => {
+    const by = operator(req);
+    const { handle } = parse(handleParam, req.params);
+    const person = await personByHandle(handle);
+    await endAllAccess(ctx, person.id, null);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.access_ended',
+      target: person.id,
+      metadata: { operator: by },
+    });
+    return { ok: true };
+  });
+
+  /**
+   * A way back in for someone without their recovery codes: the reset link goes to the
+   * account's own address, as the sign-in screen would send it, never to an address the
+   * operator names (that would make the operator a way into any account).
+   */
+  app.post('/admin/people/:handle/reset', async (req): Promise<{ ok: true }> => {
+    const by = operator(req);
+    const { handle } = parse(handleParam, req.params);
+    if (!ctx.mail) throw mailUnavailable();
+    const person = await personByHandle(handle);
+    await sendResetLink(ctx, ctx.mail, person);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.reset_sent',
+      target: person.id,
+      metadata: { operator: by },
+    });
     return { ok: true };
   });
 

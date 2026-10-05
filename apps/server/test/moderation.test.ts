@@ -11,7 +11,12 @@ let sam: Client;
 let conversationId: string;
 let messageId: string;
 
-const op = (method: 'GET' | 'PATCH' | 'POST', url: string, body?: unknown, token = ADMIN) =>
+const op = (
+  method: 'GET' | 'PATCH' | 'POST' | 'DELETE',
+  url: string,
+  body?: unknown,
+  token = ADMIN,
+) =>
   t.app.inject({
     method,
     url,
@@ -209,6 +214,51 @@ describe('the operator reviews reports (R49)', () => {
       .where('action', 'in', ['moderation.suspended', 'moderation.unsuspended'])
       .execute();
     expect(audits).toHaveLength(2);
+  });
+
+  it('shows the operator an account’s facts, never its content, and ends every way in', async () => {
+    const r = await op('GET', `/v1/admin/people/${noor.user.handle}`);
+    expect(r.statusCode).toBe(200);
+    const { person } = r.json();
+    expect(person).toMatchObject({
+      id: noor.user.id,
+      handle: noor.user.handle,
+      displayName: 'Noor Haddad',
+      suspended: false,
+      recoveryCodesLeft: 10,
+    });
+    expect(person.sessions).toHaveLength(1);
+    expect(person.sessions[0]).toMatchObject({ kind: expect.any(String) });
+    // Nothing anyone wrote, no address, no ip.
+    const text = JSON.stringify(person);
+    expect(text).not.toContain('@');
+    expect(text).not.toContain('coins');
+    expect(text).not.toMatch(/"ip"/);
+    expect((await op('GET', '/v1/admin/people/nobody.here')).statusCode).toBe(404);
+    // Someone whose account may be in the wrong hands: every way in closes at once.
+    expect((await op('DELETE', `/v1/admin/people/${noor.user.handle}/sessions`)).statusCode).toBe(
+      200,
+    );
+    expect((await noor.req('GET', '/v1/me')).statusCode).toBe(401);
+    expect(
+      (await op('GET', `/v1/admin/people/${noor.user.handle}`)).json().person.sessions,
+    ).toEqual([]);
+    const audits = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['action', 'metadata'])
+      .where('target', '=', noor.user.id)
+      .where('action', 'in', ['admin.person_viewed', 'admin.access_ended'])
+      .execute();
+    expect(audits.map((a) => a.action).sort()).toEqual([
+      'admin.access_ended',
+      'admin.person_viewed',
+      'admin.person_viewed',
+    ]);
+    expect(audits.every((a) => (a.metadata as { operator?: string }).operator === 'operator')).toBe(
+      true,
+    );
+    // Without a mail server, a reset can't be sent, and the route says so.
+    expect((await op('POST', `/v1/admin/people/${sam.user.handle}/reset`)).statusCode).toBe(503);
   });
 
   it('serves the reviewer page with no inline script, and the routes are gone without a token', async () => {

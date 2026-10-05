@@ -3,6 +3,7 @@ import { type Mail, memoryMailer } from '../src/lib/email';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const HOUR = 3_600_000;
+const OP = 'operator-token-for-the-email-test-0001';
 let t: TestApp;
 let mail: ReturnType<typeof memoryMailer>;
 let noor: Client;
@@ -133,6 +134,42 @@ describe('a forgotten password (R48)', () => {
       payload: { token, newPassword: 'yet another passphrase', client: 'native' },
     });
     expect(late.json().error.code).toBe('invalid_reset');
+  });
+});
+
+describe('the operator helps someone locked out (R48)', () => {
+  it('mails the reset link to the account’s own address, and the link works as the person’s would', async () => {
+    const withOp = await createTestApp({ ADMIN_TOKEN: OP }, { mail });
+    try {
+      const lina = await signup(withOp, { displayName: 'Lina Locked' });
+      mail.outbox.length = 0;
+      const r = await withOp.app.inject({
+        method: 'POST',
+        url: `/v1/admin/people/${lina.user.handle}/reset`,
+        headers: { authorization: `Bearer ${OP}` },
+      });
+      expect(r.statusCode).toBe(200);
+      await withOp.ctx.flush();
+      expect(mail.outbox).toHaveLength(1);
+      expect(mail.outbox[0]).toMatchObject({ to: lina.user.email, kind: 'reset' });
+      const token = /reset\?token=([A-Za-z0-9_-]+)/.exec(mail.outbox[0]!.text)?.[1];
+      expect(token).toBeTruthy();
+      const done = await withOp.app.inject({
+        method: 'POST',
+        url: '/v1/auth/reset/confirm',
+        payload: { token, newPassword: 'a brand new password 42', client: 'web' },
+      });
+      expect(done.statusCode).toBe(200);
+      const audits = await withOp.ctx.db
+        .selectFrom('audit_log')
+        .select('action')
+        .where('target', '=', lina.user.id)
+        .where('action', '=', 'admin.reset_sent')
+        .execute();
+      expect(audits).toHaveLength(1);
+    } finally {
+      await withOp.close();
+    }
   });
 });
 

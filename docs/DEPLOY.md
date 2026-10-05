@@ -407,6 +407,27 @@ suspended (every way in closes; `PUT /v1/admin/people/:handle/suspension` with
 `{"suspended": false}` lifts it), each written to the audit log. The same is available as JSON (`GET /v1/admin/reports?status=open`, `PATCH
 /v1/admin/reports/:id`, `POST /v1/admin/reports/:id/remove-message`, `…/remove-update`).
 
+## Someone locked out
+
+A person who writes in with no password, no device and no recovery code is helped with the same
+token, and only at their account's own address (R48): nothing the operator does moves an account
+to another address or hands over a word anyone wrote.
+
+```sh
+# Their account's facts: suspended or not, plan, each session's device (never its ip), how many
+# private devices, personal tokens, app grants and recovery codes are left, the teams they're on.
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/people/noor
+# Every way in ended at once (sessions, personal tokens, app grants), for an account that may
+# be in the wrong hands. Their password still works.
+curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/people/noor/sessions
+# A reset link mailed to the account's address (the one the sign-in screen's "Forgot" sends),
+# good for an hour. 503 `email_unavailable` without SMTP_URL.
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/people/noor/reset
+```
+
+Each is in the audit log with who did it (`admin.person_viewed`, `admin.access_ended`,
+`admin.reset_sent`; `metadata.operator`), and none in anyone's data export.
+
 ## Backups
 
 A worker instance dumps the database once a day (`pg_dump`, custom format, compressed, no owners

@@ -36,12 +36,20 @@ import {
   recoverySalt,
   verifyPassword,
 } from '../lib/crypto';
-import { resetMail, verificationMail } from '../lib/email';
-import { AppError, badRequest, conflict, notFound, unauthorized } from '../lib/errors';
+import { verificationMail } from '../lib/email';
+import {
+  AppError,
+  badRequest,
+  conflict,
+  mailUnavailable,
+  notFound,
+  unauthorized,
+} from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { currentZone, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { endAllAccess } from '../lib/moderation';
+import { sendResetLink } from '../lib/reset';
 import { endSessions } from '../lib/sessions';
 import { meView, seedDefaults, workweekFor } from '../lib/users';
 import { parse } from '../lib/validate';
@@ -70,7 +78,6 @@ function platformFrom(userAgent: string | null): string | null {
 
 const CODE_LIFE_MS = 24 * 3_600_000;
 const CODE_TRIES = 10;
-const RESET_LIFE_MS = 3_600_000;
 
 /** Six digits to the address, kept hashed, a day, ten tries; a new one replaces the last. */
 async function sendEmailCode(ctx: AppContext, userId: string, email: string, name: string) {
@@ -95,13 +102,6 @@ async function sendEmailCode(ctx: AppContext, userId: string, email: string, nam
   const mail = ctx.mail;
   ctx.defer('email.code', () => mail.send(verificationMail(email, name, code)));
 }
-
-const mailUnavailable = () =>
-  new AppError(
-    503,
-    'email_unavailable',
-    'Caime can’t send email here yet. Use a recovery code instead, or ask whoever runs it.',
-  );
 
 export async function createSession(
   ctx: AppContext,
@@ -492,19 +492,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('kind', '=', 'human')
       .executeTakeFirst();
     if (user) {
-      const token = randomBytes(32).toString('base64url');
-      await ctx.db
-        .insertInto('password_resets')
-        .values({
-          id: uuidv7(),
-          user_id: user.id,
-          token_hash: hashToken(token),
-          expires_at: new Date(ctx.now().getTime() + RESET_LIFE_MS),
-        })
-        .execute();
-      const link = `${ctx.config.PUBLIC_URL.replace(/\/+$/, '')}/reset?token=${token}`;
-      const mail = ctx.mail;
-      ctx.defer('email.reset', () => mail.send(resetMail(user.email, user.display_name, link)));
+      await sendResetLink(ctx, ctx.mail, user);
       await audit(ctx.db, { actorId: user.id, action: 'auth.reset_requested', ...clientInfo(req) });
     }
     return { ok: true };
