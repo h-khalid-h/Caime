@@ -1008,4 +1008,5 @@ export const frServer: Catalog = {
   'Only a person pays by card.': 'Seule une personne peut payer par carte.',
   'Paying by card can’t start right now':
     'Le paiement par carte ne peut pas démarrer pour le moment',
+  Waiting: 'En attente',
 };

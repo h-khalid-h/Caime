@@ -969,4 +969,5 @@ export const arServer: Catalog = {
   'Stripe can’t be asked right now': 'تعذّر التواصل مع Stripe الآن',
   'Only a person pays by card.': 'الدفع بالبطاقة لشخص فقط، لا لتطبيق.',
   'Paying by card can’t start right now': 'تعذّر بدء الدفع بالبطاقة الآن',
+  Waiting: 'في الانتظار',
 };

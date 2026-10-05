@@ -23,7 +23,7 @@ test('the interface follows Turkish when chosen, and the site has a Turkish swit
   await expect
     .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
     .toMatchObject({ language: 'tr' });
-  await page.goto('/');
+  await page.goto('/chats');
   await expect(visible(page, 'Sohbetler')).toBeVisible();
   await expect(visible(page, 'Birine merhaba deyin')).toBeVisible();
   await page.screenshot({

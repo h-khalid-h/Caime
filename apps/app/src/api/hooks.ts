@@ -26,6 +26,10 @@ export const useRequests = (direction: 'incoming' | 'outgoing' = 'incoming') =>
 export const useConnections = () =>
   useQuery({ queryKey: qk.connections, queryFn: () => endpoints.connections() });
 
+/** What the Attention home adds to the inbox's "needs you" (R66). */
+export const useAttentionHome = () =>
+  useQuery({ queryKey: qk.attentionHome, queryFn: endpoints.attentionHome });
+
 export const useTasks = (
   view: TaskViewFilter,
   scope: { conversationId?: string; personId?: string } = {},

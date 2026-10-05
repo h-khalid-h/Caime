@@ -14,6 +14,7 @@ import type {
   AlbumResponse,
   AssetsResponse,
   AssetView,
+  AttentionHomeResponse,
   AuthResponse,
   AutomationsResponse,
   BookingResponse,
@@ -459,6 +460,8 @@ export const endpoints = {
       `/orgs/${orgId}/conversations`,
       asOrgId ? { asOrgId } : undefined,
     ),
+  /** The Attention home's own part (R66). */
+  attentionHome: () => api.get<AttentionHomeResponse>('/attention'),
   // An organization's own checkout (R65): connected by its owner, paid into by card
   orgCheckout: (orgId: string) => api.get<OrgCheckoutResponse>(`/orgs/${orgId}/checkout`),
   connectCheckout: (orgId: string) => api.post<UrlResponse>(`/orgs/${orgId}/checkout/connect`),

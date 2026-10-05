@@ -95,6 +95,10 @@ export const qk = {
   orgInboxes: (orgId: string) => ['org-inbox', orgId] as const,
   // Prefixes: everything of a kind at once, for a live event that changes any of them.
   allTasks: ['tasks'] as const,
+  /** The Attention home's own part (R66): waiting, coming up, the one question. */
+  attentionHome: ['attention-home'] as const,
+  /** Every conversation's view, for what changes in all of them at once (its open line). */
+  allConversationViews: ['conversation'] as const,
   allMemory: ['memory'] as const,
   allSuggestions: ['suggestions'] as const,
   allDecisions: ['decisions'] as const,

@@ -6,7 +6,9 @@ vi.mock('expo-router', () => ({ useGlobalSearchParams: () => ({}), usePathname: 
 
 describe('desktop sections', () => {
   it('keeps the list a screen came from beside it', () => {
-    expect(sectionOf('/')).toBe('chats');
+    // The first screen stands alone (R66); Chats is its own place.
+    expect(sectionOf('/')).toBe('attention');
+    expect(sectionOf('/chats')).toBe('chats');
     expect(sectionOf('/c/0193b3a4-1111-7000-8000-00000000000a')).toBe('chats');
     expect(sectionOf('/updates')).toBe('chats');
     expect(sectionOf('/people')).toBe('people');

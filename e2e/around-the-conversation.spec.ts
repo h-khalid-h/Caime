@@ -236,7 +236,7 @@ test.describe
 
     test('the web app opens with no network, from what this browser kept of it', async () => {
       const { page } = alex;
-      await page.goto('/');
+      await page.goto('/chats');
       await expect(visible(page, 'Noor Haddad')).toBeVisible();
       // What the app shows is kept on the device (it writes at most every second and a half).
       await expect
@@ -391,7 +391,7 @@ test.describe
         },
       });
       expect(asked.ok(), await asked.text()).toBe(true);
-      await page.getByRole('tab', { name: /^Asked me, 1$/ }).click();
+      await page.getByRole('tab', { name: /^Asked of you, 1$/ }).click();
       await expect(visible(page, 'Review the venue floor plan')).toBeVisible();
       await expect(visible(page, 'Alex Chen asked you')).toBeVisible();
 
@@ -499,7 +499,7 @@ test.describe
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-kit-meeting.png' });
       // And on Noor's calendar (R51): by day, with whom and what Alex is to her.
       await page.goto('/actions');
-      await page.getByText('Calendar', { exact: true }).filter({ visible: true }).click();
+      await page.getByRole('tab', { name: 'Coming up' }).filter({ visible: true }).click();
       const onCalendar = page
         .getByTestId('calendar-list')
         .getByRole('button')
@@ -1051,13 +1051,13 @@ test.describe
       await expect(visible(customer, 'Which suits you?')).toBeVisible();
       await expect(customer.getByText('Noor Haddad')).toHaveCount(0);
       await customer.screenshot({ path: 'e2e/screenshots/phone-business-customer.png' });
-      await customer.goto('/');
+      await customer.goto('/chats');
       await expect(visible(customer, orgName)).toBeVisible();
       await expect(visible(customer, 'Business')).toBeVisible();
 
       // Alex, on the team too, finds it in the inbox, not among their own chats.
       const phone = alex.page;
-      await phone.goto('/');
+      await phone.goto('/chats');
       await expect(
         phone.getByTestId(`team-inbox-${handle}`).filter({ visible: true }),
       ).toContainText('Nobody is waiting');
@@ -1249,7 +1249,7 @@ test.describe
         await page.screenshot({ path: 'e2e/screenshots/desktop-business-teams.png' });
         // Away and back: the rail's Business is the inbox she was in, not always the first.
         await page.getByRole('link', { name: /^Chats/ }).click();
-        await page.waitForURL(/\/$/);
+        await page.waitForURL(/\/chats$/);
         await page.getByRole('link', { name: /^Business/ }).click();
         await expect(page).toHaveURL(secondInbox);
         expect(errors).toEqual([]);
@@ -1470,7 +1470,7 @@ test.describe
 
         // Sam finds it among their requests: from the organization, verified, its link inert.
         const phone = sam.page;
-        await phone.goto('/');
+        await phone.goto('/chats');
         await visible(phone, 'Message requests · 1').click();
         await visible(phone, orgName).click();
         const banner = phone.getByTestId('request-incoming');
@@ -2798,7 +2798,7 @@ test.describe
       await second.page.screenshot({ path: 'e2e/screenshots/desktop-private-waiting.png' });
       // Every browser Alex signed in on since his phone waits for him (the laptop, and others
       // earlier in this run): he says each is his.
-      await alex.page.goto('/');
+      await alex.page.goto('/chats');
       const asks = alex.page.getByTestId('private-waiting');
       await expect(asks.first()).toContainText('Is this you?');
       await alex.page.screenshot({ path: 'e2e/screenshots/phone-private-approve.png' });
@@ -3133,7 +3133,7 @@ test.describe
 
       // Alex has it too, named for the group in his chats.
       const phone = alex.page;
-      await phone.goto('/');
+      await phone.goto('/chats');
       await expect(visible(phone, `${title} · Documentaries`)).toBeVisible();
       expect([...errors, ...alex.errors]).toEqual([]);
     });
@@ -3158,7 +3158,7 @@ test.describe
       await page.screenshot({ path: 'e2e/screenshots/desktop-org-updates.png' });
 
       // In Chats it's one row of its own; opened, it's what the organization said.
-      await phone.goto('/');
+      await phone.goto('/chats');
       const row = phone.getByTestId('updates-row').filter({ visible: true });
       await expect(row).toContainText(`New from ${name}`);
       await row.click();
@@ -3385,7 +3385,7 @@ test.describe
 
       // Alex has it too, as a topic with Noor, and nothing unread in it but the line saying so.
       const phone = alex.page;
-      await phone.goto('/');
+      await phone.goto('/chats');
       await expect(visible(phone, 'Noor Haddad · WhatsApp')).toBeVisible();
       await visible(phone, 'Noor Haddad · WhatsApp').click();
       await expect(

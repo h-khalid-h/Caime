@@ -12,7 +12,13 @@ import {
   UpdateTaskBody,
   uuidv4,
 } from '@caime/core';
-import type { DecisionsResponse, IdResponse, OkResponse, TaskResponse } from '@caime/core/api';
+import type {
+  AttentionHomeResponse,
+  DecisionsResponse,
+  IdResponse,
+  OkResponse,
+  TaskResponse,
+} from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -22,6 +28,7 @@ import { MESSAGE_COLUMNS } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
 import { customerMask, maskFor } from '../lib/business';
+import { calendarItems } from '../lib/calendar';
 import { canEditConversation, contextVisible } from '../lib/contexts';
 import { membership, sendSystem } from '../lib/conversation-views';
 import { overdueAtSql } from '../lib/due';
@@ -40,6 +47,12 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 export type { TaskDirection };
+
+/** The Attention home's measures (R66): a handful of each, never a list to scroll. */
+const WAITING_SHOWN = 5;
+const COMING_UP_SHOWN = 5;
+const COMING_UP_MS = 3 * 86_400_000;
+const QUIET_AFTER_MS = 3 * 86_400_000;
 
 export function directionOf(
   t: Pick<Task, 'owner_id' | 'assignee_id' | 'shared'>,
@@ -267,6 +280,49 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       )
       .executeTakeFirstOrThrow();
     return { tasks: await taskViews(ctx, rows, me), counts };
+  });
+
+  /**
+   * The Attention home's own part (R66): waiting on others, coming up, and the one wait Cai asks
+   * about. What needs the reader comes from the inbox, which the app already holds.
+   */
+  app.get('/attention', async (req): Promise<AttentionHomeResponse> => {
+    const auth = requireAuth(req);
+    const me = auth.userId;
+    const now = ctx.now();
+    const waitingWhere = ctx.db
+      .selectFrom('tasks')
+      .where('owner_id', '=', me)
+      .where('assignee_id', 'is distinct from', me)
+      .where('status', 'in', ['open', 'accepted']);
+    const [rows, count, items] = await Promise.all([
+      waitingWhere.selectAll().orderBy('created_at', 'asc').limit(WAITING_SHOWN).execute(),
+      waitingWhere.select(sql<number>`count(*)::int`.as('n')).executeTakeFirstOrThrow(),
+      calendarItems(ctx, me, { from: now, until: new Date(now.getTime() + COMING_UP_MS) }, (r) =>
+        taskViews(ctx, r, me),
+      ),
+    ]);
+    const waiting = await taskViews(ctx, rows, me);
+    // A wait gone quiet: three days or more, and not asked about since (asking sets a reminder).
+    const quiet = rows.find(
+      (t) =>
+        now.getTime() - t.created_at.getTime() >= QUIET_AFTER_MS &&
+        (!t.remind_at || t.remind_at.getTime() <= now.getTime()),
+    );
+    return {
+      waiting,
+      waitingCount: count.n,
+      comingUp: items
+        // A wait is listed with the waits, not twice; something overdue already needs you.
+        .filter(
+          (i) =>
+            i.state !== 'overdue' &&
+            i.state !== 'waiting' &&
+            Date.parse(i.at) >= now.getTime() - 3_600_000,
+        )
+        .slice(0, COMING_UP_SHOWN),
+      ask: quiet ? { taskId: quiet.id, since: quiet.created_at.toISOString() } : null,
+    };
   });
 
   app.post('/tasks', async (req, reply): Promise<TaskResponse> => {

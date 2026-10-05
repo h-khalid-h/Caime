@@ -30,10 +30,6 @@ export const fr: Catalog = {
   '{overdue} overdue': '{overdue} en retard',
   'New action': 'Nouvelle action',
   'Which actions': 'Quelles actions',
-  'To do': 'À faire',
-  'Asked me': 'On m’a demandé',
-  Waiting: 'En attente',
-  Calendar: 'Calendrier',
   'Add an action': 'Ajouter une action',
   Due: 'Échéance',
   'No due date': 'Sans échéance',
@@ -3307,4 +3303,54 @@ export const fr: Catalog = {
   'Paid by card, through {name}’s own Stripe account':
     'Payé par carte, via le compte Stripe de {name}',
   'Pay by card': 'Payer par carte',
+  'Expected {when}': 'Attendu {when}',
+  'Asked {when}': 'Demandé {when}',
+  Cai: 'Cai',
+  'I haven’t seen anything from {name} about “{title}” since {when}. Still waiting?':
+    'Je n’ai rien vu de {name} au sujet de « {title} » depuis {when}. Toujours en attente ?',
+  'Still waiting': 'Toujours en attente',
+  'I’ll ask again in three days.': 'Je redemanderai dans trois jours.',
+  'It’s done': 'C’est fait',
+  'Marked done.': 'Marqué comme fait.',
+  'Not needed any more': 'Plus nécessaire',
+  'I’ve stopped waiting on it.': 'J’ai arrêté de l’attendre.',
+  '{n} conversations need you': {
+    one: '{n} conversation a besoin de vous',
+    other: '{n} conversations ont besoin de vous',
+  },
+  'Nothing needs you right now.': 'Rien n’a besoin de vous pour l’instant.',
+  'Enjoy it. Everything else can wait.': 'Profitez-en. Tout le reste peut attendre.',
+  'Waiting on others': 'En attente des autres',
+  'All you’re waiting for': 'Tout ce que vous attendez',
+  'Good morning, {name}': 'Bonjour {name}',
+  'Good afternoon, {name}': 'Bon après-midi {name}',
+  'Good evening, {name}': 'Bonsoir {name}',
+  '{n} things need you.': {
+    one: '{n} chose a besoin de vous.',
+    other: '{n} choses ont besoin de vous.',
+  },
+  'Asked of you': 'Demandes pour vous',
+  'Waiting for': 'En attente de',
+  'What’s open here': 'Ce qui est en cours ici',
+  '{n} open': { one: '{n} en cours', other: '{n} en cours' },
+  'What this changes': 'Ce que cela change',
+  '{name} comes first in your Attention during your hours.':
+    '{name} passe en premier dans votre Attention pendant vos heures.',
+  '{name} comes first in your Attention.': '{name} passe en premier dans votre Attention.',
+  '{name} stays quiet unless something needs you.':
+    'Les messages de {name} restent discrets sauf si quelque chose a besoin de vous.',
+  'A notification whenever {name} writes.': 'Une notification à chaque message de {name}.',
+  'Notifications from {name}: {scheduleText}.': 'Notifications de {name} : {scheduleText}.',
+  'Notifications from {name} follow a schedule.': 'Notifications de {name} selon un horaire.',
+  'Notifications from {name} only when it’s important.':
+    'Notifications de {name} seulement quand c’est important.',
+  'No notifications when {name} writes.': 'Aucune notification quand {name} écrit.',
+  'Something urgent from {name} reaches you anyway.':
+    'Un message urgent de {name} vous parvient malgré tout.',
+  'If your question to {name} goes unanswered for {n} hours, Caime offers a follow-up.': {
+    one: 'Si votre question à {name} reste sans réponse {n} heure, Caime propose une relance.',
+    other: 'Si votre question à {name} reste sans réponse {n} heures, Caime propose une relance.',
+  },
+  'What {name} asks of you, and what you promise, is kept in Attention.':
+    'Ce que {name} vous demande, et ce que vous promettez, est gardé dans Attention.',
 };

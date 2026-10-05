@@ -1066,10 +1066,19 @@ listed there with its owner.
       the Connect webhook endpoint added, `STRIPE_CONNECT_CLIENT_ID` and
       `STRIPE_CONNECT_WEBHOOK_SECRET` set in EasyPanel. Needs the owner of the live Stripe account
       (docs/DEPLOY.md). Until then nothing offers it.
-- [ ] R66: the Attention home (its own first screen: needs you, waiting on others, coming up,
-      nothing needs you; grouped by space or person), the conversation's open strip, Actions'
-      words (You promised, Asked of you, Waiting for, Coming up, Done), the relationship's
-      "what this changes" lines, and aged waiting items that ask instead of assuming.
+- [x] R66: the Attention home is the first screen (`/`; Chats moves to `/chats`): a greeting in
+      the reader's own hour, "N things need you" from the inbox's needs-you rows (a space's
+      folded into one line once two need you), waiting on others oldest first, coming up for three
+      days, "Nothing needs you right now" (and "Say hello to someone" before anyone's there), the
+      recovery codes card; `GET /v1/attention`. Cai's one question about a wait gone quiet for
+      three days, in the first person ("Still waiting · It's done · Not needed any more"; still
+      waiting asks again in three days through the task's reminder). The conversation's open line
+      above the composer (`ConversationView.open`), Actions' words (Yours, Asked of you, Waiting
+      for, Coming up, Done), and "What this changes" on a person's page (`policyEffects`, from
+      their effective rule). `attention-home.test.ts`, `home.test.ts`, `policy.test.ts`,
+      `e2e/attention.spec.ts`, the Arabic tour; the whole E2E suite on the new home.
+- [ ] Later in R66: "Catch me up" and "Ask Cai" as Cai's explicit moments in a conversation and
+      in Search, Cai's settings (how proactive, ask when unsure), digests.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
       split's shares paid with Pay.
@@ -2138,6 +2147,9 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-05 — R66 built: Attention is the first screen, Cai asks about a wait gone quiet in the
+  first person, a conversation shows what's open, Actions use coordination's words, and a
+  person's page says what how you know them changes. Initial web JS 449.2 KB gzip.
 - 2026-10-05 — R66: the design brainstorm checked (Attention home, quiet intelligence, the
   relationship's effects adopted; "Cai" adopted as Caime's short name where the intelligence is
   asked for, amending R34; the boards' colours and mark not, per BRAND.md).

@@ -68,7 +68,7 @@ test.describe('what a launch costs', () => {
             .catch(() => 0);
       });
       page.on('websocket', () => sockets++);
-      await page.goto('/');
+      await page.goto('/chats');
       await expect(page.getByText('The deck is attached')).toBeVisible();
       const shown = Date.now() - started;
       // Whatever the screen fetches once it's up.

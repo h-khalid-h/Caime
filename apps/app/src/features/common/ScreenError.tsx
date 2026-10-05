@@ -38,7 +38,11 @@ export function ScreenError({ error, retry }: ErrorBoundaryProps) {
       ) : null}
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Button label={tr('Try again')} onPress={() => void retry()} />
-        <Button label={tr('Go to Chats')} variant="secondary" onPress={() => router.replace('/')} />
+        <Button
+          label={tr('Go to Chats')}
+          variant="secondary"
+          onPress={() => router.replace('/chats')}
+        />
       </View>
     </View>
   );

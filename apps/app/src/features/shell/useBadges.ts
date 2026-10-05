@@ -7,7 +7,7 @@ export function useBadges() {
   const tasks = useTasks('todo');
   const notifications = useNotifications();
   return {
-    chats: inbox.data?.counts.needs_you ?? 0,
+    attention: inbox.data?.counts.needs_you ?? 0,
     people: requests.data?.requests.length ?? 0,
     actions: (tasks.data?.counts.overdue ?? 0) + (tasks.data?.counts.asked_me ?? 0),
     notifications: notifications.data?.unread ?? 0,

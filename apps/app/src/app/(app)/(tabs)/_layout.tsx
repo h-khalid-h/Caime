@@ -10,7 +10,7 @@ export default function TabsLayout() {
   const t = useTheme();
   // On desktop the rail is the navigation, so the tab routes render straight into the detail pane.
   if (desktop) return <Slot />;
-  // You (your picture at the top of each place) isn't a tab: its sheet is one for all four, and
+  // You (your picture at the top of each place) isn't a tab: its sheet is one for all five, and
   // All settings (/you) opens over the place you were in, so Back comes back to it.
   return (
     <>
@@ -19,6 +19,7 @@ export default function TabsLayout() {
         screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: t.c.canvas } }}
       >
         <Tabs.Screen name="index" />
+        <Tabs.Screen name="chats" />
         <Tabs.Screen name="people" />
         <Tabs.Screen name="spaces" />
         <Tabs.Screen name="actions" />

@@ -725,9 +725,10 @@ with its reason, so it isn't proposed again without new facts.
   - **The conversation's open strip.** "1 open · Friday" above the composer: what the two of
     you owe each other in this conversation, from the tasks already kept. The side panel keeps
     its order: relationship, right now, open, commitments, coming up, shared.
-  - **Actions say what they are.** "You promised", "Asked of you", "Waiting for", "Coming up",
-    "Done", in place of "To do", "Asked me", "Waiting", "Calendar": the same filters, coordination's
-    words rather than a task manager's.
+  - **Actions say what they are.** "Yours", "Asked of you", "Waiting for", "Coming up", "Done",
+    in place of "To do", "Asked me", "Waiting", "Calendar": the same filters, coordination's words
+    rather than a task manager's ("Yours" rather than "You promised", since it holds what you set
+    yourself as well as what you promised).
   - **The relationship says what it changes.** Under "How you know Alex", the lines it actually
     drives: priority in Attention, the hours and rules that apply, the commitments surfaced,
     "Only you see this". Read from the policy the label resolves to, never invented.
@@ -737,9 +738,10 @@ with its reason, so it isn't proposed again without new facts.
     but Caime shortened, as the address is `cai.me`. This amends R34, whose objection was to a
     human name on the AI; a short form of the product's own name, shown with the product's own
     mark, doesn't put a person's name on it. It's used only where the intelligence is asked for
-    or speaks up ("Ask Cai", "Catch me up", a suggestion's "Cai noticed"), in the plum and pink
-    of the brand, never a colour or mark of its own, and it never talks as if it were someone
-    ("Cai noticed", not "I noticed"). Where an organization's customers meet AI, its agent keeps
+    or speaks up ("Ask Cai", "Catch me up", a question it asks), in the plum and pink of the
+    brand, never a colour or mark of its own. Where it speaks it says "I" ("I haven't seen
+    anything from Sarah since Monday. Still waiting?"): warmer, and always on a surface marked
+    Cai, so it reads as Caime speaking, not a person. Where an organization's customers meet AI, its agent keeps
     an explicit identity, the agent's name with "AI agent" (PRD §75), so nobody takes it for a
     person. `@cai` stays reserved (R34). Most of the intelligence carries no label at all: the
     ordering of Attention, the open strip, the relationship's effects.

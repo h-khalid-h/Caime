@@ -85,6 +85,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         void qc.invalidateQueries({ queryKey: qk.allCalendars });
         void qc.invalidateQueries({ queryKey: qk.allOrgCalendars });
         void qc.invalidateQueries({ queryKey: qk.allSlots });
+        void qc.invalidateQueries({ queryKey: qk.attentionHome });
       },
       1200,
     );
@@ -355,6 +356,9 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
     case 'task.updated':
     case 'task.deleted':
       invalidate(['tasks'], 'tasks');
+      invalidate(qk.attentionHome, 'attention-home');
+      // The open conversation's line above the composer counts its actions (R66).
+      invalidate(qk.allConversationViews, 'conversation-views');
       invalidate(['memory'], 'memory');
       invalidate(qk.inbox, 'inbox');
       return;

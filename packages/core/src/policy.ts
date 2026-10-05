@@ -5,7 +5,7 @@
  * matching policy wins, field by field.
  */
 
-import { msg, tr } from './i18n';
+import { msg, tr, trn } from './i18n';
 import type { Sphere } from './taxonomy';
 import { SPHERE_DEFS } from './taxonomy';
 import { isWithinSchedule, nextScheduleStart, type Schedule, workHours } from './time';
@@ -451,6 +451,56 @@ export function describePolicy(policy: EffectivePolicy): string {
   if (policy.followUpHours)
     parts.push(tr('Follow up after {followUpHours} h', { followUpHours: policy.followUpHours }));
   return parts.join(' · ');
+}
+
+/**
+ * What a relationship's rule changes for one person, in sentences (R66): read from the rule that
+ * applies to them, never invented, so the screen says what Caime actually does.
+ */
+export function policyEffects(policy: EffectivePolicy, name: string): string[] {
+  const out: string[] = [];
+  if (policy.priority === 'priority')
+    out.push(
+      policy.priorityInScheduleOnly
+        ? tr('{name} comes first in your Attention during your hours.', { name })
+        : tr('{name} comes first in your Attention.', { name }),
+    );
+  if (policy.priority === 'quiet')
+    out.push(tr('{name} stays quiet unless something needs you.', { name }));
+  switch (policy.notify) {
+    case 'always':
+      out.push(tr('A notification whenever {name} writes.', { name }));
+      break;
+    case 'schedule':
+      out.push(
+        policy.schedule
+          ? tr('Notifications from {name}: {scheduleText}.', {
+              name,
+              scheduleText: scheduleText(policy.schedule),
+            })
+          : tr('Notifications from {name} follow a schedule.', { name }),
+      );
+      break;
+    case 'important_only':
+      out.push(tr('Notifications from {name} only when it’s important.', { name }));
+      break;
+    case 'mute':
+      out.push(tr('No notifications when {name} writes.', { name }));
+      break;
+  }
+  if (policy.allowUrgent && policy.notify !== 'always')
+    out.push(tr('Something urgent from {name} reaches you anyway.', { name }));
+  if (policy.followUpHours)
+    out.push(
+      trn(
+        policy.followUpHours,
+        'If your question to {name} goes unanswered for {n} hour, Caime offers a follow-up.',
+        'If your question to {name} goes unanswered for {n} hours, Caime offers a follow-up.',
+        { name },
+      ),
+    );
+  out.push(tr('What {name} asks of you, and what you promise, is kept in Attention.', { name }));
+  return out;
 }
 
 export function sphereLabel(sphere: Sphere | null | undefined): string {

@@ -56,6 +56,7 @@ import { IconButton } from '@/ui/IconButton';
 import {
   ArrowLeft,
   ChevronDown,
+  ListChecks,
   Lock,
   MessageCircle,
   PanelRight,
@@ -806,6 +807,39 @@ export function ConversationScreen({
       {header}
       {body}
       <SuggestionBar conversationId={id} />
+      {/* What's open between you here (R66): a line above the composer, opening the details. */}
+      {conversation?.open ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tr('What’s open here')}
+          onPress={() => (desktop ? setPanel(true) : setDetails(true))}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 6,
+            marginHorizontal: 12,
+            marginBottom: 4,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 12,
+            backgroundColor: t.c.surfaceMuted,
+          }}
+          testID="conversation-open"
+        >
+          <ListChecks size={14} color={t.c.textSecondary} />
+          <Text variant="captionStrong" color="textSecondary">
+            {[
+              trn(conversation.open.count, '{n} open', '{n} open'),
+              conversation.open.nextDueAt
+                ? formatDue(conversation.open.nextDueAt, now, timeZone, locale)
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        </Pressable>
+      ) : null}
       {/* The customer is told how long the organization keeps this (R54), where they write. */}
       {business?.retentionDays && !thread && org ? (
         <Text

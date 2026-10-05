@@ -128,11 +128,12 @@ export default function Actions() {
             value={view}
             onChange={setView}
             options={[
-              { value: 'todo', label: tr('To do'), count: counts?.todo },
-              { value: 'asked_me', label: tr('Asked me'), count: counts?.asked_me },
-              { value: 'waiting', label: tr('Waiting'), count: counts?.waiting },
+              // Coordination's words, not a task manager's (R66).
+              { value: 'todo', label: tr('Yours'), count: counts?.todo },
+              { value: 'asked_me', label: tr('Asked of you'), count: counts?.asked_me },
+              { value: 'waiting', label: tr('Waiting for'), count: counts?.waiting },
+              { value: 'calendar', label: tr('Coming up') },
               { value: 'done', label: tr('Done') },
-              { value: 'calendar', label: tr('Calendar') },
             ]}
           />
         </View>

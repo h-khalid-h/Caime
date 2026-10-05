@@ -305,7 +305,23 @@ export async function conversationView(
       }
     }
   }
+  // What's open here for the viewer (R66): one count on the conversation's own index.
+  const open = await ctx.db
+    .selectFrom('tasks')
+    .select([sql<number>`count(*)::int`.as('n'), sql<Date | null>`min(due_at)`.as('next')])
+    .where('conversation_id', '=', conversation.id)
+    .where('status', 'in', ['open', 'accepted'])
+    .where((eb) =>
+      eb.or([
+        eb('owner_id', '=', userId),
+        eb.and([eb('assignee_id', '=', userId), eb('shared', '=', true)]),
+      ]),
+    )
+    .executeTakeFirstOrThrow();
   return {
+    open: open.n
+      ? { count: open.n, nextDueAt: open.next ? new Date(open.next).toISOString() : null }
+      : null,
     id: conversation.id,
     kind: conversation.kind,
     title,

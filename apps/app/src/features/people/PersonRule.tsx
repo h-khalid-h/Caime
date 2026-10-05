@@ -5,9 +5,10 @@
  */
 import type { RelationshipView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import { resolvePolicy } from '@caime/core/policy';
+import { policyEffects, resolvePolicy } from '@caime/core/policy';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -15,6 +16,7 @@ import { Card } from '@/ui/Card';
 import { Bell } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
+import { Text } from '@/ui/Text';
 
 // Shared with Notifications and Automations: loaded when their rule is opened.
 const RuleSheet = lazyPart(() => import('@/features/settings/RuleSheet').then((m) => m.RuleSheet));
@@ -73,6 +75,19 @@ export function PersonRule({
         onPress={() => setOpen(true)}
         testID="person-rule"
       />
+      {/* What it changes (R66), from the rule that applies to them: never a promise it doesn't keep. */}
+      {said.data ? (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 6 }} testID="person-effects">
+          <Text variant="overline" color="textTertiary">
+            {tr('What this changes')}
+          </Text>
+          {policyEffects(said.data.policy, name).map((line) => (
+            <Text key={line} variant="caption" color="textSecondary">
+              {`· ${line}`}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       {open ? (
         <RuleSheet
           // Theirs once it's made is the same sheet: it's keyed by them, not by the rule.

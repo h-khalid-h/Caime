@@ -180,6 +180,7 @@ function showStatus(taskId: string, status: 'open' | 'done'): void {
 async function refresh(conversationId?: string | null): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: qk.allTasks }),
+    queryClient.invalidateQueries({ queryKey: qk.attentionHome }),
     conversationId ? queryClient.invalidateQueries({ queryKey: qk.memory(conversationId) }) : null,
     queryClient.invalidateQueries({ queryKey: qk.allPeople }),
   ]);

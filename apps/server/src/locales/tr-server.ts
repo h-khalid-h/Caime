@@ -958,4 +958,5 @@ export const turkishServer: Catalog = {
   'Stripe can’t be asked right now': 'Stripe’a şu anda ulaşılamıyor',
   'Only a person pays by card.': 'Kartla yalnızca bir kişi ödeyebilir.',
   'Paying by card can’t start right now': 'Kartla ödeme şu anda başlatılamıyor',
+  Waiting: 'Bekleniyor',
 };

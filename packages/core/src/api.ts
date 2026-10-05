@@ -536,6 +536,11 @@ export interface ConversationView {
    * and in a business conversation its team knows the customer is.
    */
   hasMinor: boolean;
+  /**
+   * What's open between the viewer and the others here (R66): their actions either way, how many
+   * and the soonest due, for the line above the composer. Null when nothing is.
+   */
+  open: { count: number; nextDueAt: string | null } | null;
   lastSeq: number;
   lastMessageAt: string | null;
   createdAt: string;
@@ -645,6 +650,19 @@ export interface TaskCounts {
 export interface TasksResponse {
   tasks: TaskView[];
   counts: TaskCounts;
+}
+
+/**
+ * The Attention home (R66), beside the inbox's own "needs you": what the reader waits on others
+ * for (oldest first), what's coming up in the next three days, and at most one thing Cai would
+ * ask about, a wait gone quiet, rather than assume it's still open or done.
+ */
+export interface AttentionHomeResponse {
+  waiting: TaskView[];
+  waitingCount: number;
+  comingUp: CalendarItemView[];
+  /** A wait with no news for three days or more, not asked about since: still waiting? */
+  ask: { taskId: string; since: string } | null;
 }
 
 export interface DecisionView {

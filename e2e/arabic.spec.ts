@@ -27,7 +27,7 @@ test.describe
       await expect
         .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
         .toMatchObject({ language: 'ar' });
-      await page.goto('/');
+      await page.goto('/chats');
       await expect(visible(page, 'الدردشات')).toBeVisible();
       await expect(visible(page, 'ألقِ التحية على أحد')).toBeVisible();
       await page.screenshot({
@@ -131,7 +131,8 @@ test.describe
         });
       };
       // The inbox's line, the row's time and the day heading are Caime's words, in Arabic.
-      await shot('/', 'inbox', 'واحدة تحتاجك');
+      await shot('/', 'attention', 'أمر واحد يحتاج إليك.');
+      await shot('/chats', 'inbox', 'واحدة تحتاجك');
       await expect(visible(page, 'الآن')).toBeVisible();
       await shot(`/c/${convo}`, 'conversation', 'اليوم');
       await shot('/people', 'people', 'غير مصنَّف 1');

@@ -84,7 +84,8 @@ test('the signed-in screens, phone and desktop, English and Arabic', async ({ br
   const found: Found[] = [];
   const { page, errors } = await newPerson(phone);
   const screens: Array<[string, string]> = [
-    ['/', 'phone chats'],
+    ['/', 'phone attention'],
+    ['/chats', 'phone chats'],
     [`/c/${convo}`, 'phone conversation'],
     [`/@tariq.a11y.${suffix}`, 'phone person'],
     ['/people', 'phone people'],
@@ -128,7 +129,8 @@ test('the signed-in screens, phone and desktop, English and Arabic', async ({ br
   await apiSignUp(desk, 'Dana Desk', `dana.a11y.${suffix}`);
   const d = await newPerson(desk);
   for (const [path, name] of [
-    ['/', 'desktop chats'],
+    ['/', 'desktop attention'],
+    ['/chats', 'desktop chats'],
     ['/people', 'desktop people'],
     ['/you', 'desktop you'],
   ] as const) {

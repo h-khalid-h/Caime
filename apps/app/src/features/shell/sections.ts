@@ -1,6 +1,7 @@
 import { useGlobalSearchParams, usePathname } from 'expo-router';
 
 export type Section =
+  | 'attention'
   | 'chats'
   | 'people'
   | 'spaces'
@@ -24,8 +25,10 @@ export function sectionOf(pathname: string, inbox?: string): Section {
   if (inboxHandleOf(pathname, inbox)) return 'business';
   // Organizations' updates open from Chats; call history from People and from a person's page:
   // the list they came from stays beside them.
+  // The first screen (R66): what needs you, beside nothing.
+  if (pathname === '/') return 'attention';
   if (
-    pathname === '/' ||
+    pathname === '/chats' ||
     pathname.startsWith('/c/') ||
     pathname === '/new-group' ||
     pathname === '/updates'

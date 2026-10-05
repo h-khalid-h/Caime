@@ -8,7 +8,16 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
-import { Bell, Briefcase, LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
+import {
+  Bell,
+  Briefcase,
+  Focus,
+  LayoutGrid,
+  ListChecks,
+  MessageCircle,
+  Search,
+  Users,
+} from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { type Section, useSection } from './sections';
@@ -100,9 +109,16 @@ const ITEMS: Array<{
   label: string;
   icon: IconComponent;
   href: Href;
-  badge?: 'chats' | 'people' | 'actions';
+  badge?: 'attention' | 'people' | 'actions';
 }> = [
-  { section: 'chats', label: msg('Chats'), icon: MessageCircle, href: '/', badge: 'chats' },
+  {
+    section: 'attention',
+    label: msg('Attention'),
+    icon: Focus,
+    href: '/',
+    badge: 'attention',
+  },
+  { section: 'chats', label: msg('Chats'), icon: MessageCircle, href: '/chats' },
   { section: 'people', label: msg('People'), icon: Users, href: '/people', badge: 'people' },
   { section: 'spaces', label: msg('Spaces'), icon: LayoutGrid, href: '/spaces' },
   {

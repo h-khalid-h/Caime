@@ -224,12 +224,12 @@ These are rules, not preferences.
   write with `409 org_closed` (`sendMessage`), and the app says so in the composer's place.
 - Onboarding (R56) is two steps, how Caime works and your people, and a linked arrival (an
   invite, a handle, a door, an app's consent) starts at the last; the recovery codes are a card
-  on Chats (`features/account/RecoveryCodesCard.tsx`, its sheet loaded when opened) while
+  on Attention, the first screen (`features/account/RecoveryCodesCard.tsx`, its sheet loaded when opened) while
   `me.recoveryCodesSeen` is false:
   the fresh codes come from `useSession().freshRecoveryCodes` (memory only) and Done sets
   `recoveryCodesSeen` through `PATCH /me` (a literal `true`, never cleared). Nothing else gates
-  the first screen; a new thing to ask of a new person joins that card's place on Chats, never
-  onboarding.
+  the first screen; a new thing to ask of a new person joins that card's place on Attention,
+  never onboarding.
 - A connection never labelled is asked for in the conversation's intro (R3): one chip,
   `label-relationship`, opens `RelationshipPicker` (lazily) from `ConversationScreen`; the
   person screen's "Change" and the panel's line stay. A new place that offers to label someone
@@ -475,6 +475,21 @@ These are rules, not preferences.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
+- The first screen is Attention (R66, `features/attention/AttentionHome.tsx`, the `/` route;
+  Chats is `/chats`): the greeting and summary (core `home.ts`: `greetingKey`, `homeSummary`,
+  `homeEntries`, which folds a space's conversations into one line once two need you), the
+  inbox's own `needs_you` rows (`ConversationRow`, the same query as Chats), and
+  `GET /v1/attention` (`AttentionHomeResponse`: waiting on others oldest first, coming up for
+  three days without the waits, and `ask`, the one wait gone quiet for three days that Cai asks
+  about; "Still waiting" sets the task's `remindAt` three days on, which is also what keeps it
+  from being asked again). The recovery codes card is on it, not on Chats. It's cached under
+  `qk.attentionHome`, refreshed by task events and calendar changes, never a key under
+  `['tasks']` (the task lists' optimistic writes would read it as a task list). Cai speaks in
+  the first person, only on a surface marked "Cai" (R66). A conversation's open line (above the
+  composer) is `ConversationView.open`, one count on the tasks' conversation index, and task
+  events refresh open conversation views (`qk.allConversationViews`). What a relationship
+  changes is `policyEffects` (core `policy.ts`), read from the person's effective rule, on
+  `PersonRule`.
 - An organization's own checkout (R65, `lib/checkout.ts`, `modules/checkout.ts`): Stripe Connect
   with the platform's key and `Stripe-Account` (`stripe(ctx, account)`), never a second Stripe
   client. Its owner connects through `connectUrl` (a one-time `checkout_states` token) and the

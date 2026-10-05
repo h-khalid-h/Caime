@@ -38,6 +38,7 @@ export { default as Smile } from 'lucide-react-native/icons/face-slightly-smilin
 export { default as FileCheck } from 'lucide-react-native/icons/file-check';
 export { default as FileText } from 'lucide-react-native/icons/file-text';
 export { default as Flag } from 'lucide-react-native/icons/flag';
+export { default as Focus } from 'lucide-react-native/icons/focus';
 export { default as Folder } from 'lucide-react-native/icons/folder';
 export { default as Forward } from 'lucide-react-native/icons/forward';
 export { default as Gauge } from 'lucide-react-native/icons/gauge';

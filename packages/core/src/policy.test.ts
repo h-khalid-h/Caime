@@ -5,6 +5,7 @@ import {
   decideNotification,
   defaultPolicies,
   describePolicy,
+  policyEffects,
   type RelationshipPolicy,
   resolvePolicy,
 } from './policy';
@@ -200,5 +201,27 @@ describe('daysText', () => {
     expect(daysText([5, 6])).toBe('Fri, Sat');
     expect(daysText([0, 1, 2, 3, 4, 5, 6])).toBe('');
     expect(daysText([])).toBe('');
+  });
+});
+
+describe('what a relationship changes (R66)', () => {
+  it('says what the rule that applies does, in sentences', () => {
+    const manager = policyEffects(
+      resolvePolicy(policies, { sphere: 'work', role: 'manager' }),
+      'Alex',
+    );
+    expect(manager[0]).toBe('Alex comes first in your Attention during your hours.');
+    expect(manager.some((l) => l.startsWith('Notifications from Alex: '))).toBe(true);
+    expect(manager.at(-1)).toBe(
+      'What Alex asks of you, and what you promise, is kept in Attention.',
+    );
+    const vendor = policyEffects(resolvePolicy(policies, { sphere: 'vendor' }), 'Sam');
+    expect(vendor).toContain('Notifications from Sam only when it’s important.');
+    expect(vendor).toContain(
+      'If your question to Sam goes unanswered for 48 hours, Caime offers a follow-up.',
+    );
+    const family = policyEffects(resolvePolicy(policies, { sphere: 'family' }), 'Mona');
+    expect(family).toContain('A notification whenever Mona writes.');
+    expect(family.some((l) => l.includes('urgent'))).toBe(false);
   });
 });

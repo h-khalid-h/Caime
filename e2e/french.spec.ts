@@ -24,7 +24,7 @@ test('the interface follows the language chosen, and the site has a French switc
   await expect
     .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
     .toMatchObject({ language: 'fr' });
-  await page.goto('/');
+  await page.goto('/chats');
   await expect(visible(page, 'Discussions')).toBeVisible();
   await expect(visible(page, 'Dites bonjour à quelqu’un')).toBeVisible();
   await page.screenshot({ path: 'e2e/screenshots/phone-french-chats.png', animations: 'disabled' });

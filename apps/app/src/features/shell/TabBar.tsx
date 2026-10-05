@@ -5,19 +5,21 @@ import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
-import { LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
+import { Focus, LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';
 import { TAB_BAR_HEIGHT } from '@/ui/tabBarHeight';
 import { useBadges } from './useBadges';
 
-/** The four places, in the bar. You is your picture at the top of each (YouButton). */
+/** The five places, in the bar. You is your picture at the top of each (YouButton). */
 const TABS: Record<
   string,
-  { label: string; icon: IconComponent; badge?: 'chats' | 'people' | 'actions' }
+  { label: string; icon: IconComponent; badge?: 'attention' | 'people' | 'actions' }
 > = {
-  index: { label: msg('Chats'), icon: MessageCircle, badge: 'chats' },
+  // The first screen (R66): what needs you is counted here, not on Chats.
+  index: { label: msg('Attention'), icon: Focus, badge: 'attention' },
+  chats: { label: msg('Chats'), icon: MessageCircle },
   people: { label: msg('People'), icon: Users, badge: 'people' },
   // No badge: a space's unread shows in the list; what needs you is already on Chats (R7).
   spaces: { label: msg('Spaces'), icon: LayoutGrid },
@@ -27,7 +29,7 @@ const TABS: Record<
 const HEIGHT = TAB_BAR_HEIGHT;
 
 /**
- * The phone's bar: the four places in a floating pill, the one you're in lit behind its name,
+ * The phone's bar: the five places in a floating pill, the one you're in lit behind its name,
  * and Search in a circle of its own beside them, in a thumb's reach from anywhere.
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {

@@ -27,10 +27,6 @@ export const turkish: Catalog = {
   '{overdue} overdue': '{overdue} gecikmiş',
   'New action': 'Yeni eylem',
   'Which actions': 'Hangi eylemler',
-  'To do': 'Yapılacaklar',
-  'Asked me': 'Benden istenenler',
-  Waiting: 'Beklediklerim',
-  Calendar: 'Takvim',
   'Add an action': 'Eylem ekle',
   Due: 'Son tarih',
   'No due date': 'Son tarih yok',
@@ -3187,4 +3183,52 @@ export const turkish: Catalog = {
   'Paid by card, through {name}’s own Stripe account':
     '{name} kuruluşunun kendi Stripe hesabı üzerinden kartla ödendi',
   'Pay by card': 'Kartla öde',
+  'Expected {when}': 'Beklenen: {when}',
+  'Asked {when}': 'İstendi: {when}',
+  Cai: 'Cai',
+  'I haven’t seen anything from {name} about “{title}” since {when}. Still waiting?':
+    '{name} kişisinden “{title}” hakkında şu tarihten beri bir şey görmedim: {when}. Hâlâ bekliyor musunuz?',
+  'Still waiting': 'Hâlâ bekliyorum',
+  'I’ll ask again in three days.': 'Üç gün sonra yeniden soracağım.',
+  'It’s done': 'Tamamlandı',
+  'Marked done.': 'Tamamlandı olarak işaretlendi.',
+  'Not needed any more': 'Artık gerekmiyor',
+  'I’ve stopped waiting on it.': 'Artık beklemiyorum.',
+  '{n} conversations need you': {
+    one: '{n} konuşma sizi bekliyor',
+    other: '{n} konuşma sizi bekliyor',
+  },
+  'Nothing needs you right now.': 'Şu an sizi bekleyen bir şey yok.',
+  'Enjoy it. Everything else can wait.': 'Tadını çıkarın. Geri kalan her şey bekleyebilir.',
+  'Waiting on others': 'Başkalarını bekleyenler',
+  'All you’re waiting for': 'Beklediğiniz her şey',
+  'Good morning, {name}': 'Günaydın {name}',
+  'Good afternoon, {name}': 'İyi günler {name}',
+  'Good evening, {name}': 'İyi akşamlar {name}',
+  '{n} things need you.': { one: '{n} şey sizi bekliyor.', other: '{n} şey sizi bekliyor.' },
+  'Asked of you': 'Sizden istenenler',
+  'Waiting for': 'Beklenenler',
+  'What’s open here': 'Burada açık olanlar',
+  '{n} open': { one: '{n} açık', other: '{n} açık' },
+  'What this changes': 'Bunun değiştirdikleri',
+  '{name} comes first in your Attention during your hours.':
+    '{name}, saatleriniz içinde Öncelikli’de ilk sırada.',
+  '{name} comes first in your Attention.': '{name}, Öncelikli’de ilk sırada.',
+  '{name} stays quiet unless something needs you.':
+    'Sizi bekleyen bir şey olmadıkça {name} sessiz kalır.',
+  'A notification whenever {name} writes.': '{name} her yazdığında bildirim alırsınız.',
+  'Notifications from {name}: {scheduleText}.': '{name} için bildirimler: {scheduleText}.',
+  'Notifications from {name} follow a schedule.':
+    '{name} için bildirimler bir programa göre gelir.',
+  'Notifications from {name} only when it’s important.':
+    '{name} için yalnızca önemli olduğunda bildirim alırsınız.',
+  'No notifications when {name} writes.': '{name} yazdığında hiç bildirim almazsınız.',
+  'Something urgent from {name} reaches you anyway.':
+    '{name} kişisinden gelen acil bir şey yine de size ulaşır.',
+  'If your question to {name} goes unanswered for {n} hours, Caime offers a follow-up.': {
+    one: '{name} kişisine sorduğunuz soru {n} saat yanıtsız kalırsa Caime bir hatırlatma önerir.',
+    other: '{name} kişisine sorduğunuz soru {n} saat yanıtsız kalırsa Caime bir hatırlatma önerir.',
+  },
+  'What {name} asks of you, and what you promise, is kept in Attention.':
+    '{name} kişisinin sizden istedikleri ve verdiğiniz sözler Öncelikli’de tutulur.',
 };

@@ -55,7 +55,7 @@ test('two people connect with private labels and talk in real time', async ({ br
   await signUp(a.page, 'Hassan Khalid', hassan);
   await onboard(a.page, 'phone', false);
   await expect(a.page.getByText('Say hello to someone')).toBeVisible();
-  // The recovery codes wait at the top of Chats until he says they're saved (R56); the account
+  // The recovery codes wait at the top of Attention until he says they're saved (R56); the account
   // remembers, so a reload doesn't ask again.
   const card = a.page.getByTestId('codes-card');
   await expect(card).toContainText('Keep your recovery codes');
@@ -100,7 +100,7 @@ test('two people connect with private labels and talk in real time', async ({ br
   await expect(a.page.getByTestId('composer-input')).toHaveValue('Good to have you here, Sarah.');
 
   // A new conversation with someone he knows is the one they already have.
-  await a.page.goto('/');
+  await a.page.goto('/chats');
   await a.page.getByTestId('new-chat').filter({ visible: true }).click();
   await expect(a.page.getByText('New conversation', { exact: true })).toBeVisible();
   await a.page.getByPlaceholder('Search your people').fill('sarah');
@@ -139,7 +139,7 @@ test('two people connect with private labels and talk in real time', async ({ br
   await b.page.emulateMedia({ colorScheme: 'light' });
 
   // Sarah mutes it from its row: the choices, and a day and time, open in the row's own sheet.
-  await b.page.goto('/');
+  await b.page.goto('/chats');
   const row = b.page.locator('[data-testid^="conversation-"]').filter({ hasText: 'Hassan Khalid' });
   await row.first().click({ delay: 700 });
   await b.page.getByTestId('row-mute').click();
