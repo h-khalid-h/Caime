@@ -321,35 +321,36 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
   app.patch('/uploads/:id', { bodyLimit: 16 * 1024 * 1024 }, async (req) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const f = await ctx.db
-      .selectFrom('files')
-      .selectAll()
-      .where('id', '=', id)
-      .where('owner_id', '=', auth.userId)
-      .executeTakeFirst();
-    if (!f) throw notFound(tr('That upload'));
-    if (f.status !== 'uploading')
-      throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
     const offset = Number(req.headers['upload-offset']);
-    if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
-      throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
-        offset: Number(f.upload_offset),
-      });
-    }
-    const written = await storage.append(f.storage_key, req.body as Readable);
-    if (written > Number(f.size)) {
-      await storage.remove(f.storage_key);
-      await ctx.db.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
-      throw badRequest(tr('More bytes than declared.'));
-    }
-    if (written < Number(f.size)) {
-      await ctx.db
-        .updateTable('files')
-        .set({ upload_offset: written })
+    // One chunk at a time: the row is locked while the chunk is appended and the offset moves,
+    // so two chunks sent at once (a retry racing its original) never interleave their bytes;
+    // the second waits, finds the offset moved, and is told where to resume.
+    const { f, written } = await ctx.db.transaction().execute(async (trx) => {
+      const f = await trx
+        .selectFrom('files')
+        .selectAll()
         .where('id', '=', id)
-        .execute();
-      return { id, offset: written, complete: false };
-    }
+        .where('owner_id', '=', auth.userId)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!f) throw notFound(tr('That upload'));
+      if (f.status !== 'uploading')
+        throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
+      if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
+        throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
+          offset: Number(f.upload_offset),
+        });
+      }
+      const written = await storage.append(f.storage_key, req.body as Readable);
+      if (written > Number(f.size)) {
+        await storage.remove(f.storage_key);
+        await trx.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
+        throw badRequest(tr('More bytes than declared.'));
+      }
+      await trx.updateTable('files').set({ upload_offset: written }).where('id', '=', id).execute();
+      return { f, written };
+    });
+    if (written < Number(f.size)) return { id, offset: written, complete: false };
     const done = await finalize(
       ctx,
       storage,

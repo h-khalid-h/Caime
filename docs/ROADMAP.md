@@ -928,7 +928,17 @@ listed there with its owner.
       `MANAGING_ROLES` for a query's `in` list, and `ownsOrg` (closing, retention, making
       admins), read by the server before it acts and the app before it offers; outside core a
       role is compared only to label it. `permissions.test.ts`, `orgs.test.ts`.
-- [ ] Next block: the review's remaining lows, and the owner's ⛔ items as they come.
+- [x] The review's six small lows: a suggestion accepted twice at once makes one task
+      (`acceptSuggestion` claims the row under its lock), forwarding needs a live seat (tested),
+      an invite's token never reaches the request log (`lib/log.ts`), a stranger's wrong guesses
+      at a known handle slow that stranger alone (the per-identifier limit is per address),
+      running or listing backups and reading reports are in the audit log, and a resumable
+      upload appends one chunk at a time under its row's lock. `log.test.ts`,
+      `suggestions-many.test.ts`, `messaging.test.ts`, `auth.test.ts`, `backup.test.ts`,
+      `moderation.test.ts`.
+- [ ] Next block: the review's remaining mediums (`ai.ts` queries per item; the sweeps' bounds,
+      the tsvector in `selectAll()`, the cache's serialisation; typed responses on every route),
+      and the owner's ⛔ items as they come.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1945,3 +1955,6 @@ listed there with its owner.
 - 2026-10-05 — The last hand-written role checks become core's rules (`ownsOrg`,
   `canAddToGroup`, `canPostTo`, `canRemoveFromGroup`, `canChangeGroupRole`,
   `handsOverOnLeaving`, `MANAGING_ROLES`).
+- 2026-10-05 — The review's six small lows: one accept makes one task, forwarding needs a seat,
+  invite tokens out of the log, sign-in limits per handle and address, backups and report reads
+  audited, upload chunks under a lock.

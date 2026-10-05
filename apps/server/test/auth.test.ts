@@ -265,6 +265,13 @@ describe('sign-in and sessions', () => {
       payload: { identifier: 'ghost', password: 'nope nope nope', client: 'native' },
     });
     expect(unknown.json().error.message).toBe(wrong.json().error.message);
+    // Wrong guesses count against the handle from that address, so a stranger's never lock
+    // out the person signing in from their own.
+    const keys = [
+      ...(t.ctx.limiter as unknown as { windows: Map<string, unknown> }).windows.keys(),
+    ];
+    expect(keys).toContain('login:id:sarah@example.com:127.0.0.1');
+    expect(keys.some((k) => /^login:id:[^:]+$/.test(k))).toBe(false);
   });
 
   it('web sessions use an httpOnly cookie and require the CSRF header on writes', async () => {

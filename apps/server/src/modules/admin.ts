@@ -67,9 +67,16 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   // --- Reports (R49): what people reported, reviewed and acted on by the operator --------------
 
   app.get('/admin/reports', async (req): Promise<{ reports: ReportView[] }> => {
-    operator(req);
+    const by = operator(req);
     const { status, limit } = parse(ReportsQuery, req.query);
-    return { reports: await reportViews(ctx, { status, limit }) };
+    const reports = await reportViews(ctx, { status, limit });
+    // Reading what people reported is an act too: who looked, at which, is kept.
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.reports_viewed',
+      metadata: { status, count: reports.length, operator: by },
+    });
+    return { reports };
   });
 
   const reportParam = z.object({ id: z.string().uuid() });
@@ -296,7 +303,12 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.get('/admin/backups', async (req) => {
-    operator(req);
+    const by = operator(req);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.backups_viewed',
+      metadata: { operator: by },
+    });
     return {
       enabled: ctx.config.BACKUP_ENABLED,
       dir: backupDir(ctx),
@@ -308,9 +320,14 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
 
   /** A backup now, before a risky change or to try the restore drill. */
   app.post('/admin/backups', async (req) => {
-    operator(req);
+    const by = operator(req);
     const made = await runBackup(ctx);
     if (!made) throw conflict('backup_running', tr('Another instance is backing up right now.'));
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.backup_run',
+      metadata: { file: made.file, bytes: made.bytes, operator: by },
+    });
     return { backup: made };
   });
 

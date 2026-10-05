@@ -86,4 +86,19 @@ describe('several steps, one approval (R37)', () => {
     expect((await sarah.req('POST', `/v1/suggestions/${ids[0]}/undo`)).statusCode).toBe(404);
     expect((await hassan.req('POST', '/v1/suggestions/accept', { ids: [] })).statusCode).toBe(400);
   });
+
+  it('accepted twice at once (a double tap, or with "Do all"), it makes one task', async () => {
+    await send(hassan, convo, "I'll send the slides on Monday.");
+    await t.ctx.flush();
+    const slides = (await hassan.get(`/v1/suggestions?conversationId=${convo}`)).suggestions.find(
+      (s: { kind: string; title: string }) => s.kind === 'reminder' && /slides/i.test(s.title),
+    ) as { id: string };
+    const before = (await hassan.get('/v1/tasks')).tasks.length;
+    const [a, b] = await Promise.all([
+      hassan.req('POST', `/v1/suggestions/${slides.id}/accept`),
+      hassan.req('POST', `/v1/suggestions/${slides.id}/accept`),
+    ]);
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 404]);
+    expect((await hassan.get('/v1/tasks')).tasks.length).toBe(before + 1);
+  });
 });

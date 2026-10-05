@@ -37,6 +37,20 @@ describe('database backups (REVIEW-2026-09, P0)', () => {
     expect(await backupDue(t.ctx)).toBe(false);
     // Nothing in the dump's name or the log line is the connection string.
     expect(backup.file).not.toContain('postgres');
+    // Who ran one, and who looked, is kept.
+    const audits = await t.ctx.db
+      .selectFrom('audit_log')
+      .select(['action', 'metadata'])
+      .where('action', 'like', 'admin.backup%')
+      .orderBy('created_at')
+      .execute();
+    expect(audits).toEqual([
+      {
+        action: 'admin.backup_run',
+        metadata: { file: backup.file, bytes: backup.bytes, operator: 'operator' },
+      },
+      { action: 'admin.backups_viewed', metadata: { operator: 'operator' } },
+    ]);
   });
 
   it('metrics say when the last one succeeded and how big it was', async () => {

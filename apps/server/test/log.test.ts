@@ -18,4 +18,18 @@ describe('what a request says of itself in the log', () => {
       '/v1/calendar/feed',
     );
   });
+
+  it('never an invite’s token, which is the only key to it (R1)', () => {
+    const token = 'Qm9vay1hLXRhYmxlLWZvci10d28';
+    expect(requestForLog({ method: 'GET', url: `/i/${token}` }).url).toBe('/i/…');
+    expect(requestForLog({ method: 'GET', url: `/v1/invites/${token}?x=1` }).url).toBe(
+      '/v1/invites/…',
+    );
+    expect(requestForLog({ method: 'POST', url: `/v1/invites/${token}/accept` }).url).toBe(
+      '/v1/invites/…/accept',
+    );
+    // The list of one's own, and short paths that aren't tokens, read as they are.
+    expect(requestForLog({ method: 'GET', url: '/v1/invites' }).url).toBe('/v1/invites');
+    expect(requestForLog({ method: 'GET', url: '/i/short' }).url).toBe('/i/short');
+  });
 });

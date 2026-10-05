@@ -634,6 +634,12 @@ These are rules, not preferences.
   screen's own reset link through `sendResetLink` (`lib/reset.ts`): a new way to send one goes
   through it, never a second token or a link to any other address. A route that needs mail
   throws `mailUnavailable()` from `lib/errors.ts`.
+- The request log line is `requestForLog` (`lib/log.ts`): the method and path alone, and a
+  secret that is part of a path (a calendar feed's address, an invite's token) is masked there;
+  a new route with a secret in its path adds its mask with a case in `log.test.ts`. A sign-in
+  limit keyed by what someone typed is keyed by their address too (`login:id:<id>:<ip>`), so
+  nobody locks a handle from outside. A resumable upload's chunk is appended under the file's
+  row lock (`PATCH /uploads/:id`); anything else that appends to a file does the same.
 - Count what the server does with `ctx.metrics` (`apps/server/src/lib/metrics.ts`). Label values
   come from fixed sets only (a route as declared, a kind, an outcome), never ids, handles or
   text; `metrics.test.ts` scrapes after real traffic and checks for them.
@@ -777,7 +783,8 @@ These are rules, not preferences.
   nothing is learned or kept. A new kind of suggestion needs nothing; a new way to decide one
   (beyond accept and dismiss) joins the counts in `leanFor`.
 - Suggestions are accepted through `acceptSuggestion` (`modules/suggestions.ts`), the one path
-  the single route, "Do all" (`POST /suggestions/accept`, each id on its own) and tests use. A
+  the single route, "Do all" (`POST /suggestions/accept`, each id on its own) and tests use; it
+  claims the row under its lock inside the transaction, so two accepts at once make one thing. A
   task-like step is undone by `POST /suggestions/:id/undo` only while the task is still exactly
   as made (`result_ref.title`, status open); a new kind that should be undoable records what it
   made in `result_ref` and adds its case there. Decisions stay, as ones recorded by hand do.

@@ -294,6 +294,15 @@ export async function acceptSuggestion(
   }
 
   const result = await ctx.db.transaction().execute(async (trx) => {
+    // Claimed under its row lock: two accepts at once (a double tap, "Do all" and the card) make
+    // one task, and the second finds it already answered.
+    const fresh = await trx
+      .selectFrom('suggestions')
+      .select('status')
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst();
+    if (fresh?.status !== 'pending') throw notFound(tr('That suggestion'));
     let ref: { type: string; id: string; view?: unknown };
     switch (s.kind) {
       case 'duplicate': {

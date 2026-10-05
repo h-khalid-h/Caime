@@ -94,6 +94,15 @@ describe('the operator reviews reports (R49)', () => {
       },
       update: null,
     });
+    // Looking is kept too: which operator read which reports, never their contents.
+    const [viewed] = await t.ctx.db
+      .selectFrom('audit_log')
+      .select('metadata')
+      .where('action', '=', 'admin.reports_viewed')
+      .orderBy('created_at', 'desc')
+      .limit(1)
+      .execute();
+    expect(viewed?.metadata).toEqual({ status: 'open', count: 1, operator: 'operator' });
   });
 
   it('moves a report along, and removes the message for everyone as its sender would', async () => {

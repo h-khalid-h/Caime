@@ -4,11 +4,16 @@
  * calendar feed's address is what lets a calendar read it, so it's masked.
  */
 const CALENDAR_FEED = /\/calendar\/cal_[^/]*$/;
+/** An invite's token is the only key to it (R1): `/i/<token>`, `/v1/invites/<token>[/accept]`. */
+const INVITE_TOKEN = /\/(i|invites)\/[^/]{16,}(?=\/|$)/;
 
 export function requestForLog(req: { method: string; url: string; ip?: string }) {
   return {
     method: req.method,
-    url: req.url.split('?')[0]?.replace(CALENDAR_FEED, '/calendar/cal_….ics'),
+    url: req.url
+      .split('?')[0]
+      ?.replace(CALENDAR_FEED, '/calendar/cal_….ics')
+      .replace(INVITE_TOKEN, '/$1/…'),
     remoteAddress: req.ip,
   };
 }

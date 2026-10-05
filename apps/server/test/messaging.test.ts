@@ -1704,6 +1704,17 @@ describe('forwarding (PRD §22)', () => {
     expect((await last(bo, ab)).id).toBe(before.id);
   });
 
+  it('is for the people in it now: someone who left forwards nothing from it', async () => {
+    const m = await send(ana, g, 'Programme attached');
+    const eve = await signup(t, { displayName: 'Eve Forward' });
+    const ae = await connect(ana, eve);
+    await ana.post(`/v1/conversations/${g}/members`, { userIds: [eve.user.id] });
+    expect((await forward(eve, m.id, [ae])).statusCode).toBe(200);
+    await eve.req('DELETE', `/v1/conversations/${g}/members/${eve.user.id}`);
+    const gone = await forward(eve, m.id, [ae]);
+    expect(gone.statusCode).toBe(404);
+  });
+
   it('a message request that has had its one message stops all of it, as sending there would', async () => {
     const dee = await signup(t, { displayName: 'Dee Forward' });
     const request = (await ana.post('/v1/conversations', { kind: 'direct', userId: dee.user.id }))

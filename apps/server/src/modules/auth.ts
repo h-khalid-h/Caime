@@ -276,7 +276,9 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const identifier = body.identifier.toLowerCase().replace(/^@/, '');
     const heavy = ctx.config.isTest ? 1000 : 30;
     ctx.limiter.hit(`login:ip:${ip}`, heavy, 600_000);
-    ctx.limiter.hit(`login:id:${identifier}`, ctx.config.isTest ? 1000 : 10, 600_000);
+    // Per handle and address: a stranger's wrong guesses at a known handle slow that stranger,
+    // never the person signing in from somewhere else.
+    ctx.limiter.hit(`login:id:${identifier}:${ip}`, ctx.config.isTest ? 1000 : 10, 600_000);
     const user = await ctx.db
       .selectFrom('users')
       .selectAll()
