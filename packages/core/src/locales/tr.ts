@@ -3160,4 +3160,6 @@ export const turkish: Catalog = {
   '{name} joined': 'Katıldı: {name}',
   '{name} left': 'Ayrıldı: {name}',
   'another app': 'başka bir uygulama',
+  'Change the photo': 'Fotoğrafı değiştir',
+  'Take the photo off': 'Fotoğrafı kaldır',
 };

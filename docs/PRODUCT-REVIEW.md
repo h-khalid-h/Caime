@@ -689,3 +689,7 @@ with its reason, so it isn't proposed again without new facts.
   waits for conversations between organizations, which don't exist yet. Later layers: a payment
   provider's checkout for an organization that wants one (its own account, Stripe Connect,
   never Caime's), receipts from a paid card, a split's shares paid with the Pay card.
+- **R63 — A photo for each thing offered.** An item keeps one photo its host uploaded, shown
+  wherever the item is: its page (and every link preview and answer engine's picture of it), its
+  sheet, a collection's list and the order picker. It's seen by whoever may see the item, and no
+  one else; a public item's photo is public like its page.

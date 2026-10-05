@@ -37,7 +37,7 @@ import type { AppContext } from '../context';
 import type { Organization, User } from '../db/schema';
 import { humanTeam } from './booking-team';
 import { orgBookings } from './calendar';
-import { AppError, forbidden } from './errors';
+import { AppError, badRequest, forbidden } from './errors';
 import { cardsAhead } from './upcoming';
 
 /** Whose hours and catalog: an organization's or a person's. */
@@ -153,6 +153,40 @@ export function orderFor(host: BookingHost, booker: Booker, ask: OrderAsk): Plac
     empty: () => tr('Pick something to order.'),
   }[placed.reason];
   throw new AppError(403, 'not_bookable', why());
+}
+
+/** Whether anyone at all may see an item (R61, R63): public, in no collection or a public one. */
+export function isPublicItem(host: Pick<BookingHost, 'collections'>, item: BookingItem): boolean {
+  if (item.audience !== 'public') return false;
+  if (!item.collectionId) return true;
+  return host.collections.find((c) => c.id === item.collectionId)?.audience === 'public';
+}
+
+/**
+ * Photos set on a save (R63) are images the person saving uploaded; a photo the catalog already
+ * had stays as it is, whoever set it.
+ */
+export async function assertItemPhotos(
+  ctx: AppContext,
+  userId: string,
+  next: BookingItem[],
+  before: BookingItem[],
+): Promise<void> {
+  const kept = new Set(before.map((i) => i.photoFileId).filter(Boolean));
+  const fresh = [
+    ...new Set(
+      next.map((i) => i.photoFileId).filter((f): f is string => Boolean(f) && !kept.has(f)),
+    ),
+  ];
+  if (!fresh.length) return;
+  const mine = await ctx.db
+    .selectFrom('files')
+    .select('id')
+    .where('id', 'in', fresh)
+    .where('owner_id', '=', userId)
+    .where('kind', '=', 'image')
+    .execute();
+  if (mine.length !== fresh.length) throw badRequest(tr('Choose an image you uploaded.'));
 }
 
 /** The items this booker may take from the host's catalog. */

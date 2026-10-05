@@ -1051,8 +1051,14 @@ listed there with its owner.
 - [ ] Later layers of R62: organization to organization (needs conversations between
       organizations), an organization's own checkout through its own provider account, a receipt
       from a paid card, a split's shares paid with Pay.
-- [ ] Later layers of R61: an item's photo (on its page and in Open Graph), a collection's
-      order on the host's page, person pages' items in a sitemap only if a person opts in.
+- [x] R63: an item's photo: `BookingItem.photoFileId`, set only to an image its saver uploaded
+      (`assertItemPhotos`), served by `/v1/{orgs,people}/:id/items/:itemId/photo` to whoever may
+      see the item (anyone for a public one), addressed by core `itemPhotoPath`; on the item's
+      public page (picture, `og:image`, JSON-LD `image`), its sheet, a collection's list and the
+      order picker; added, changed or taken off in the item's editor. `item-photos.test.ts`,
+      `e2e/bookings.spec.ts`.
+- [ ] Later layers of R61: a collection's order on the host's page, person pages' items in a
+      sitemap only if a person opts in.
 - [x] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
       site's switch and alternates (`tr_TR`), the catalog tests over four languages, the agent's
       hand-over line, voice-note hints; `e2e/turkish.spec.ts`.
@@ -2110,3 +2116,6 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-05 — R63: an item's photo, on its page (and link previews), its sheet and the order
+  picker. CI's red run was the site spec pinning the old Arabic headline; fixed and the full
+  E2E suite run (the voice spec, last in the run, passes on its own: its job queue was busy).

@@ -893,6 +893,7 @@ export function OrgScreen({
         <ItemSheet
           slug={slug}
           hostPath={`/o/${org.handle}`}
+          hostRef={{ kind: 'org', id: org.id }}
           items={org.bookingItems.filter((i) =>
             isOrdered(i) ? Boolean(org.ordering) : Boolean(org.booking),
           )}

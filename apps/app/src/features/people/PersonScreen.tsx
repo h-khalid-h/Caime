@@ -652,6 +652,7 @@ export function PersonScreen({
         <ItemSheet
           slug={slug}
           hostPath={`/@${person.handle}`}
+          hostRef={{ kind: 'person', id: person.id }}
           items={[...(p.booking?.items ?? []), ...(p.ordering?.items ?? [])]}
           collections={p.collections}
           locale={locale}

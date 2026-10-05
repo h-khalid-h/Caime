@@ -3283,4 +3283,6 @@ export const ar: Catalog = {
   '{name} joined': 'انضمام: {name}',
   '{name} left': 'مغادرة: {name}',
   'another app': 'تطبيق آخر',
+  'Change the photo': 'غيّر الصورة',
+  'Take the photo off': 'أزل الصورة',
 };

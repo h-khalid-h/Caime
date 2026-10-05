@@ -14,7 +14,7 @@ test('the site about Caime reads in Arabic, and a reader who switches stays swit
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
   await expect(
-    page.getByRole('heading', { name: 'أجب باسم المؤسسة، وأثبت أنك أنت.', level: 1 }),
+    page.getByRole('heading', { name: 'ردّ باسم مؤسستك، وأثبت هويتها.', level: 1 }),
   ).toBeVisible();
   // No script ran: the page is a page.
   await expect(page.locator('script[src]')).toHaveCount(0);
@@ -28,7 +28,7 @@ test('the site about Caime reads in Arabic, and a reader who switches stays swit
     page.getByRole('heading', { name: 'مجاني للأفراد. والمؤسسات تدفع لفريقها.', level: 1 }),
   ).toBeVisible();
   // A spec-sheet row reads right to left: the label sits on the right of its value.
-  const label = page.locator('dt', { hasText: 'لا يُحسب أبدًا' }).first();
+  const label = page.locator('dt', { hasText: 'لا يُحسب عليك أبدًا' }).first();
   const value = page.locator('dd', { hasText: 'محادثة يبدؤها عميل' }).first();
   const [l, v] = await Promise.all([label.boundingBox(), value.boundingBox()]);
   expect(l && v && l.x > v.x).toBe(true);

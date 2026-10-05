@@ -5,7 +5,7 @@
  * Orders (R60): the salon sells by the piece and the customer orders two on an Order card.
  */
 import { type BrowserContext, expect, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { apiSignUp, CLIENT, newPerson, photo, visible } from './helpers';
 
 const stamp = Math.random().toString(36).slice(2, 7);
 const handle = `swibba.${stamp}`;
@@ -216,6 +216,17 @@ test.describe
       await visible(page, 'Hair oil').click();
       await page.locator('[data-testid^="org-booking-item-in-"]').first().click();
       await page.getByTestId('org-booking-item-description').fill('Argan, 50 ml.');
+      // Its photo (R63): uploaded here, kept with the item.
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByTestId('org-booking-item-photo').click();
+      await (await chooser).setFiles([
+        {
+          name: 'oil.png',
+          mimeType: 'image/png',
+          buffer: photo(240, 240, [196, 140, 60], [255, 220, 150]),
+        },
+      ]);
+      await expect(page.getByTestId('org-booking-item-photo-off')).toBeVisible();
       await page.getByTestId('org-booking-item-save').click();
       await expect(visible(page, /1 item · Everyone/)).toBeVisible();
       expect(errors).toEqual([]);
@@ -230,6 +241,12 @@ test.describe
       await expect(site.getByRole('link', { name: 'Hair care' }).first()).toBeVisible();
       const ld = await site.locator('script[type="application/ld+json"]').textContent();
       expect(ld).toContain('"@type":"Product"');
+      expect(ld).toContain('/items/');
+      // The photo is the page's, and a link preview's, picture.
+      await expect(site.locator('img.photo')).toBeVisible();
+      expect(
+        await site.locator('img.photo').evaluate((i) => (i as HTMLImageElement).naturalWidth),
+      ).toBeGreaterThan(0);
       await site.getByRole('link', { name: 'Hair care' }).first().click();
       await expect(site.getByRole('heading', { level: 1 })).toHaveText('Hair care');
       await visitor.close();
@@ -245,6 +262,7 @@ test.describe
       const sheet = c.getByTestId('item-sheet');
       await expect(sheet).toBeInViewport({ ratio: 1 });
       await expect(sheet).toContainText('Hair care');
+      await expect(sheet.locator('img').first()).toBeVisible();
       await c.screenshot({ path: 'e2e/screenshots/phone-item-sheet.png', animations: 'disabled' });
       await c.getByTestId('item-take').click();
       await c.waitForURL(/\/c\/[0-9a-f-]+\?order=1&item=/);

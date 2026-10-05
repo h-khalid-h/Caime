@@ -20,6 +20,7 @@ import {
   BOOKING_ITEMS_MAX,
   DAY_SHORT,
   describeHours,
+  itemPhotoPath,
   SLOT_MINUTES,
 } from '@caime/core/booking';
 import {
@@ -43,17 +44,29 @@ import {
 import type { Sphere } from '@caime/core/taxonomy';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { uploadFile } from '@/api/upload';
+import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { CalendarCheck, HandCoins, Layers, Minus, Plus, ShoppingBag, Tag } from '@/ui/icons';
+import {
+  CalendarCheck,
+  HandCoins,
+  ImageIcon,
+  Layers,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Tag,
+} from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
+import { ItemPhoto } from './ItemPhoto';
 
 const LEADS: Array<{ value: number; label: string }> = [
   { value: 0, label: msg('Any time') },
@@ -82,6 +95,8 @@ export interface BookingHostInfo {
   currency: string | null;
   /** The team, for an organization: who may be named as doing an item. */
   team?: Array<{ id: string; name: string }>;
+  /** Whose catalog, for its items' photos (R63). */
+  ref?: { kind: 'org' | 'person'; id: string };
 }
 
 /** "Haircut · 45 min · EGP 200 · Everyone": an item in one line. */
@@ -1069,6 +1084,31 @@ function ItemEditor({
   const [description, setDescription] = useState(item.description ?? '');
   const [slug, setSlug] = useState(item.slug);
   const [collectionId, setCollectionId] = useState<string | null>(item.collectionId);
+  // Its photo (R63): the one it has, or one just uploaded (shown by the file's own address).
+  const [photoFileId, setPhotoFileId] = useState<string | null>(item.photoFileId ?? null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(
+    host.ref ? itemPhotoPath(host.ref, item) : null,
+  );
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const pickPhoto = async () => {
+    const res = await pickFromLibrary({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.9,
+    });
+    if (res.canceled || !res.assets[0]) return;
+    setPhotoBusy(true);
+    setError(null);
+    try {
+      const file = await uploadFile(await photoToUpload(res.assets[0], 'item.jpg'));
+      setPhotoFileId(file.id);
+      setPhotoPreview(file.thumbUrl ?? file.url);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'save' | 'remove' | null>(null);
 
@@ -1103,6 +1143,7 @@ function ItemEditor({
         slug: slug.trim() || slugify(trimmed),
         description: description.trim() || null,
         collectionId,
+        photoFileId,
       });
     } catch (e) {
       setError((e as Error).message);
@@ -1156,6 +1197,27 @@ function ItemEditor({
           autoFocus={isNew}
           testID={`${testID}-name`}
         />
+        <View style={{ gap: 8 }}>
+          {photoFileId ? <ItemPhoto path={photoPreview} size={160} wide label={name} /> : null}
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <Chip
+              label={photoFileId ? tr('Change the photo') : tr('Add a photo')}
+              icon={ImageIcon}
+              onPress={photoBusy ? undefined : () => void pickPhoto()}
+              testID={`${testID}-photo`}
+            />
+            {photoFileId ? (
+              <Chip
+                label={tr('Take the photo off')}
+                onPress={() => {
+                  setPhotoFileId(null);
+                  setPhotoPreview(null);
+                }}
+                testID={`${testID}-photo-off`}
+              />
+            ) : null}
+          </View>
+        </View>
         <TextField
           label={tr('A line about it (optional)')}
           value={description}

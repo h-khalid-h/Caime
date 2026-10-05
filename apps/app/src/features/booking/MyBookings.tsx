@@ -30,7 +30,12 @@ export function MyBookings() {
       {q.data ? (
         <View testID="my-bookings">
           <BookingSetup
-            host={{ kind: 'person', name: me.displayName, currency: me.currency }}
+            host={{
+              kind: 'person',
+              name: me.displayName,
+              currency: me.currency,
+              ref: { kind: 'person', id: me.id },
+            }}
             offer={q.data}
             save={async (next) => {
               const saved = await endpoints.setMyBooking(next);

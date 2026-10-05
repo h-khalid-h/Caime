@@ -24,6 +24,7 @@ export function OrgBooking({ org }: { org: OrgView }) {
         name: org.name,
         currency: org.currency,
         team: (org.members ?? []).map((m) => ({ id: m.userId, name: m.person.displayName })),
+        ref: { kind: 'org', id: org.id },
       }}
       offer={{
         booking: org.booking,

@@ -3280,4 +3280,6 @@ export const fr: Catalog = {
   '{name} joined': 'Arrivée : {name}',
   '{name} left': 'Départ : {name}',
   'another app': 'une autre application',
+  'Change the photo': 'Changer la photo',
+  'Take the photo off': 'Retirer la photo',
 };

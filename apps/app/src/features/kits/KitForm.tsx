@@ -1,5 +1,5 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
-import { type BookingItem, grouped, isBooked, isOrdered } from '@caime/core/booking';
+import { type BookingItem, grouped, isBooked, isOrdered, itemPhotoPath } from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
@@ -16,6 +16,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useMyBooking, useSlots } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
@@ -616,6 +617,7 @@ export function KitForm({
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
                       testID={`order-item-${i.id}`}
                     >
+                      <ItemPhoto path={itemPhotoPath(host.ref, i)} size={44} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text variant="bodyStrong" auto>
                           {i.name}

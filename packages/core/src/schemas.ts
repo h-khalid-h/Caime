@@ -1240,6 +1240,8 @@ export const BookingItemBody = z
     slug: SlugSchema.optional(),
     description: z.string().trim().max(300).nullable().default(null),
     collectionId: CatalogId.nullable().default(null),
+    // R63: an image the host uploaded; checked as theirs when it's first set.
+    photoFileId: z.string().uuid().nullable().default(null),
   })
   .strict()
   .refine((i) => (i.unit === 'minutes' ? i.minutes !== null : i.minutes === null), {

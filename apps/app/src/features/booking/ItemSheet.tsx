@@ -4,7 +4,7 @@
  * opens the card's form with it chosen. A public one shows its link to share. Loaded when
  * opened, by the organization's and the person's screens alike.
  */
-import { type BookingItem, isOrdered } from '@caime/core/booking';
+import { type BookingItem, isOrdered, itemPhotoPath } from '@caime/core/booking';
 import type { CatalogCollection } from '@caime/core/catalog';
 import { formatAmount } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -17,6 +17,7 @@ import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
+import { ItemPhoto } from './ItemPhoto';
 
 /** "45 min · EGP 200": what an item is, as its page says it. */
 function line(item: BookingItem, locale: string): string {
@@ -35,6 +36,7 @@ function line(item: BookingItem, locale: string): string {
 export function ItemSheet({
   slug,
   hostPath,
+  hostRef,
   items,
   collections,
   locale,
@@ -46,6 +48,8 @@ export function ItemSheet({
   slug: string | null;
   /** The host's own path (`/o/nile.dental`), for the link to share. */
   hostPath: string;
+  /** The host, for its items' photos (R63). */
+  hostRef: { kind: 'org' | 'person'; id: string };
   /** What this viewer may book or order, and the collections they may see. */
   items: BookingItem[];
   collections: CatalogCollection[];
@@ -102,11 +106,15 @@ export function ItemSheet({
                 accessibilityRole="button"
                 onPress={() => onPick(i.slug)}
                 testID={`collection-item-${i.slug}`}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
               >
-                <Text variant="bodyStrong">{i.name}</Text>
-                <Text variant="caption" color="textSecondary">
-                  {line(i, locale)}
-                </Text>
+                <ItemPhoto path={itemPhotoPath(hostRef, i)} size={48} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="bodyStrong">{i.name}</Text>
+                  <Text variant="caption" color="textSecondary">
+                    {line(i, locale)}
+                  </Text>
+                </View>
               </Pressable>
             ))
           )}
@@ -139,6 +147,7 @@ export function ItemSheet({
       }
     >
       <View style={{ gap: 14 }} testID="item-sheet">
+        <ItemPhoto path={itemPhotoPath(hostRef, item)} size={200} wide label={item.name} />
         <Spec
           rows={[
             { label: ordered ? tr('price') : tr('booking'), value: line(item, locale) },

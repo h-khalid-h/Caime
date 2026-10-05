@@ -321,7 +321,10 @@ These are rules, not preferences.
   address routes (`o/[handle]/[slug]`, `[at]/[slug]`) redirect to the host's route with `?item`,
   which opens `features/booking/ItemSheet.tsx` (lazy); never render a screen from a second
   route (it moves into `__common`). Book or Order from it lands on `/c/<id>?book=1&item=<id>`,
-  read into `KitStart` for `KitForm`. The whole offer is saved as one `BookingResponse`.
+  read into `KitStart` for `KitForm`. The whole offer is saved as one `BookingResponse`. An
+  item's photo (R63) is `photoFileId`, checked by `assertItemPhotos` (a new one must be the
+  saver's own image), served by the items' photo route by the item's own visibility, and
+  addressed only through core `itemPhotoPath` (`ItemPhoto` draws it in the app).
 - Pay (R62): Caime never holds or moves money. A host's `payments` (core `PaymentSettings`:
   ways with audiences) are saved in the one offer body (`BookingBody.payments`, left out keeps
   them) and checked by `assertPaymentsFit`; only whoever sets them reads them as set

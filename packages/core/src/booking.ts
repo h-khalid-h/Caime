@@ -158,6 +158,21 @@ export interface BookingItem {
   description: string | null;
   /** The collection it's in (R61), or none. */
   collectionId: string | null;
+  /** Its photo (R63): an image the host uploaded, shown with it wherever it is. */
+  photoFileId?: string | null;
+}
+
+/**
+ * Where an item's photo is served (R63), for the app and the public pages alike; the `v` changes
+ * with the photo, so a browser keeps it until then. Null without one.
+ */
+export function itemPhotoPath(
+  host: { kind: 'org' | 'person'; id: string },
+  item: Pick<BookingItem, 'id' | 'photoFileId'>,
+): string | null {
+  if (!item.photoFileId) return null;
+  const kind = host.kind === 'org' ? 'orgs' : 'people';
+  return `/v1/${kind}/${host.id}/items/${encodeURIComponent(item.id)}/photo?v=${item.photoFileId.slice(-8)}`;
 }
 
 /** What a card keeps of the item it booked (`payload.booking`), fixed at the time of booking. */

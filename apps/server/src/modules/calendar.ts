@@ -32,6 +32,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import {
+  assertItemPhotos,
   assertItemsFit,
   assertPaymentsFit,
   type Booker,
@@ -217,6 +218,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       kept.collections,
     );
     assertPaymentsFit(orgHost(org), body.payments, true);
+    await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(org).items);
     await ctx.db
       .updateTable('organizations')
       .set({
@@ -355,6 +357,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const kept = catalogFrom(body, catalogOf(me).collections);
     assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
     assertPaymentsFit(personHost(me), body.payments, !minorOf(me, ctx.now()));
+    await assertItemPhotos(ctx, auth.userId, kept.items, catalogOf(me).items);
     await ctx.db
       .updateTable('users')
       .set({

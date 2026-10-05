@@ -13,8 +13,10 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { isPublicItem, itemsFor, orgHost, personHost } from '../lib/booking';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
+import { orgSeat } from '../lib/orgs';
 import { assertStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
@@ -507,4 +509,91 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       true,
     );
   });
+
+  /**
+   * An item's photo (R63): to anyone where the item is public (on a public page), else to whoever
+   * its audience lets see it, as the catalog shows it to them. Nothing of an item they can't see.
+   */
+  const itemPhoto = async (
+    kind: 'orgs' | 'people',
+    req: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<FastifyReply> => {
+    const { id, itemId } = parse(
+      z.object({ id: z.string().uuid(), itemId: z.string().max(40) }),
+      req.params,
+    );
+    const missing = () => notFound(tr('That photo'));
+    let fileId: string | null = null;
+    if (kind === 'orgs') {
+      const org = await ctx.db
+        .selectFrom('organizations')
+        .select(['id', 'booking', 'booking_items', 'ordering', 'collections', 'archived_at'])
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (!org || org.archived_at) throw missing();
+      const host = orgHost(org);
+      const item = host.items.find((i) => i.id === itemId);
+      if (!item?.photoFileId) throw missing();
+      const seat = req.auth ? await orgSeat(ctx.db, req.auth.userId, id) : null;
+      const seen =
+        isPublicItem(host, item) ||
+        (req.auth &&
+          itemsFor(host, {
+            isSelf: Boolean(seat),
+            isConnected: true,
+            spheres: [],
+            adult: true,
+          }).some((i) => i.id === itemId));
+      if (!seen) throw missing();
+      fileId = item.photoFileId;
+    } else {
+      const user = await ctx.db
+        .selectFrom('users')
+        .selectAll()
+        .where('id', '=', id)
+        .where('deleted_at', 'is', null)
+        .where('suspended_at', 'is', null)
+        .executeTakeFirst();
+      if (!user || user.kind !== 'human') throw missing();
+      const host = personHost(user);
+      const item = host.items.find((i) => i.id === itemId);
+      if (!item?.photoFileId) throw missing();
+      const relation = req.auth
+        ? await viewerRelation(ctx.db, id, req.auth.userId)
+        : privacyOf(user, ctx.now()).discoverByHandle && !minorOf(user, ctx.now())
+          ? NOBODY
+          : null;
+      const seen =
+        relation &&
+        !relation.blocked &&
+        (isPublicItem(host, item) ||
+          itemsFor(host, {
+            isSelf: relation.isSelf,
+            isConnected: relation.isConnected,
+            spheres: relation.ownerSpheresForViewer,
+            adult: true,
+          }).some((i) => i.id === itemId));
+      if (!seen) throw missing();
+      fileId = item.photoFileId;
+    }
+    const f = await ctx.db
+      .selectFrom('files')
+      .selectAll()
+      .where('id', '=', fileId)
+      .executeTakeFirst();
+    if (!f || f.kind !== 'image') throw missing();
+    const key = f.thumb_key ?? f.storage_key;
+    const size = (await storage.size(key)) ?? Number(f.size);
+    reply.header('cache-control', 'private, max-age=3600');
+    return streamFile(
+      req,
+      reply,
+      storage,
+      { name: 'item.webp', mime: f.thumb_key ? 'image/webp' : f.mime, size, storage_key: key },
+      true,
+    );
+  };
+  app.get('/orgs/:id/items/:itemId/photo', (req, reply) => itemPhoto('orgs', req, reply));
+  app.get('/people/:id/items/:itemId/photo', (req, reply) => itemPhoto('people', req, reply));
 }

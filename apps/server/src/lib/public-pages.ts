@@ -13,6 +13,7 @@ import {
   canSee,
   formatAmount,
   handleError,
+  itemPhotoPath,
   methodsFor,
   normalizeHandle,
   PAYMENT_KIND_LABELS,
@@ -93,7 +94,15 @@ export interface PublicOrg {
 /** A catalog item as a visitor reads it: nothing of who does it. */
 export type PublicItem = Pick<
   BookingItem,
-  'id' | 'name' | 'price' | 'unit' | 'minutes' | 'slug' | 'description' | 'collectionId'
+  | 'id'
+  | 'name'
+  | 'price'
+  | 'unit'
+  | 'minutes'
+  | 'slug'
+  | 'description'
+  | 'collectionId'
+  | 'photoFileId'
 >;
 export type PublicCollection = Pick<CatalogCollection, 'id' | 'slug' | 'name' | 'description'>;
 
@@ -126,6 +135,7 @@ function publicCatalog(row: {
       slug: i.slug,
       description: i.description,
       collectionId: i.collectionId,
+      photoFileId: i.photoFileId ?? null,
     }));
   const held = new Set(items.map((i) => i.collectionId));
   const collections = catalog.collections
@@ -637,7 +647,8 @@ export function renderPublic(
         item.description ?? `${item.name} · ${itemLine(item)} · ${name}`,
         200,
       );
-      const image = host.kind === 'org' ? host.org.avatarUrl : host.avatarUrl;
+      const photo = photoOf(host, item);
+      const image = photo ?? (host.kind === 'org' ? host.org.avatarUrl : host.avatarUrl);
       return {
         status: 200,
         lang: currentTranslator().language,
@@ -660,6 +671,7 @@ export function renderPublic(
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
   <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono"><a href="${esc(hostPath(host))}">${esc(name)}</a>${shelf ? ` · <a href="${esc(shelfPath(host, shelf.slug))}">${esc(shelf.name)}</a>` : ''}</span></header>
+  ${photo ? `<img class="photo" src="${esc(photo)}" alt="${esc(item.name)}" width="320" height="320">` : ''}
   <h1>${esc(item.name)}</h1>
   ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
   <dl class="spec">
@@ -848,6 +860,15 @@ function itemLine(i: PublicItem): string {
 /** The host's own path: `/o/<handle>` or `/@<handle>`. */
 export const hostPath = (host: PublicPerson | PublicOrg) =>
   host.kind === 'org' ? `/o/${host.org.handle}` : `/@${host.handle}`;
+/** An item's photo on its host (R63), as the app and every page address it. */
+const photoOf = (host: PublicPerson | PublicOrg, item: PublicItem) =>
+  itemPhotoPath(
+    {
+      kind: host.kind === 'org' ? 'org' : 'person',
+      id: host.kind === 'org' ? host.org.id : host.id,
+    },
+    item,
+  );
 const hostName = (host: PublicPerson | PublicOrg) =>
   host.kind === 'org' ? host.org.name : host.displayName;
 /** An item's or a collection's page (R61), under the host's. */
@@ -884,6 +905,7 @@ function itemLd(host: PublicPerson | PublicOrg, item: PublicItem, url: string, p
     '@type': item.unit === 'each' ? 'Product' : 'Service',
     name: item.name,
     url,
+    ...(photoOf(host, item) ? { image: `${publicUrl}${photoOf(host, item)}` } : {}),
     ...(item.description ? { description: item.description } : {}),
     ...(item.unit === 'each' ? { brand: seller } : { provider: seller }),
     offers: {
@@ -946,7 +968,7 @@ body:has(#root:empty){overflow:auto}
 .pub .cta a{display:inline-block;background:#3b2e5b;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;font-weight:600;margin:12px 8px 0 0}
 .pub .cta a.quiet{background:transparent;color:#3b2e5b;border:1px solid #3b2e5b}
 .pub .small{color:#5b4f75;font-size:.9rem}.pub a{color:#3b2e5b}
-.pub img.face{border-radius:50%}.pub img.mark{border-radius:28px}
+.pub img.face{border-radius:50%}.pub img.mark{border-radius:28px}.pub img.photo{border-radius:20px;max-width:100%;height:auto;object-fit:cover}
 @media (prefers-color-scheme:dark){#static{background:#16121f;color:#ece7f5}.pub h1,.pub a,.pub .cta a.quiet{color:#ece7f5}.pub .lead,.pub .small{color:#b9afcf}.pub .cta a{background:#ece7f5;color:#3b2e5b}.pub .cta a.quiet{background:transparent;border-color:#ece7f5}}
 .pub{--ink:#3b2e5b;--text:#2b2340;--text2:#5e5673;--text3:#6f6885;--line:#e7e2ef;--muted:#f3f0f8;--surface:#fff;--accent:#ff8fb1;--accent-soft:#ffd6e7;--plum:#5b40a0}
 @media (prefers-color-scheme:dark){.pub{--ink:#f5f2fa;--text:#f5f2fa;--text2:#b7afc9;--text3:#9c94b0;--line:#342d46;--muted:#2a2438;--surface:#1a1625;--accent:#ff8fb1;--accent-soft:#4a2c3f;--plum:#6a57a8}}
