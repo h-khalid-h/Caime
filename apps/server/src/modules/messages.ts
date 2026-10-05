@@ -271,6 +271,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       kit?: unknown;
       state?: string;
       title?: string;
+      fields?: Record<string, unknown>;
       history?: Array<{ state: string; by: string; at: string }>;
     };
     const own = isCustomCard(m.payload) ? m.payload : null;
@@ -291,7 +292,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         ? customMoves(own, onTeam(auth.userId)).find((x) => x.to === to)
         : undefined
       : isCardKit(card.kit)
-        ? kitMoves(card.kit, from, senderSide).find((x) => x.to === to)
+        ? kitMoves(card.kit, from, senderSide, card.fields).find((x) => x.to === to)
         : undefined;
     if (!move) throw forbidden(tr('You can’t make that change to this card.'));
     // Each move tells the other side: one person, or one app, moves a conversation's cards only

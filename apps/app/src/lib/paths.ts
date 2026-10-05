@@ -56,7 +56,7 @@ export function handleIn(path: string | null | undefined): string | null {
  * letters of any script, percent-encoded on the way), with its way in (`?write`, `?book`,
  * `?order`).
  */
-const HOST_LINK = /^\/(?:@|o\/)([a-z0-9._]+)(?:\/([\w%-]{1,200}))?(?:\?(write|book|order))?$/i;
+const HOST_LINK = /^\/(?:@|o\/)([a-z0-9._]+)(?:\/([\w%-]{1,200}))?(?:\?(write|book|order|pay))?$/i;
 
 /** The item's or collection's address in a link to one (R61), decoded, or null. */
 export function itemIn(path: string | null | undefined): string | null {

@@ -59,6 +59,7 @@ import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { useCardAction } from './cardActions';
 
 /** The recorder loads when the microphone is pressed, never before (the audio module). */
 const Recorder = lazy(() =>
@@ -130,6 +131,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [kit, setKit] = useState<KitChoice | null>(openKit ?? null);
   // What the form opened with starts with (R61, R62); a form opened from "+" starts empty.
   const [start, setStart] = useState<KitStart | null>(openKit ? (kitStart ?? null) : null);
+  // A card asking for another card's form here (R62: Pay on an order).
+  const asked = useCardAction((s) => s.request);
+  useEffect(() => {
+    if (!asked || asked.conversationId !== id) return;
+    useCardAction.setState({ request: null });
+    setCustom(null);
+    setStart(asked.start);
+    setKit(asked.kit);
+  }, [asked, id]);
   const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
   const [rewrite, setRewrite] = useState(false);
   const [recording, setRecording] = useState(false);

@@ -322,6 +322,18 @@ These are rules, not preferences.
   which opens `features/booking/ItemSheet.tsx` (lazy); never render a screen from a second
   route (it moves into `__common`). Book or Order from it lands on `/c/<id>?book=1&item=<id>`,
   read into `KitStart` for `KitForm`. The whole offer is saved as one `BookingResponse`.
+- Pay (R62): Caime never holds or moves money. A host's `payments` (core `PaymentSettings`:
+  ways with audiences) are saved in the one offer body (`BookingBody.payments`, left out keeps
+  them) and checked by `assertPaymentsFit`; only whoever sets them reads them as set
+  (`OrgView.payments` for managers, `/me/booking`), everyone else gets `payable`. The Pay card is
+  the `payment_request` kit with `fields.direction` (`ask` | `send`): moves name `payer` or
+  `payee`, so `kitMoves` takes the card's fields everywhere, and a new card starts at
+  `initialKitState`. `payTo` is written only by `payToFor` (`lib/messages.ts`) from the payee's
+  ways the payer may see; a priced order or booking keeps its `payee` for the app's Pay, which
+  asks the composer through `useCardAction` (`features/conversation/cardActions.ts`) with a
+  `KitStart` (direction, amount, note, `replyToId`). A public page shows only `pays` (kinds),
+  never details. A card's button label, a choice and a field label are keys: show them through
+  `tr`, as `KitCard` and `KitForm` do.
 - The brief before a meeting (R58, `lib/briefs.ts`): an agreed meeting or appointment queues
   `card.brief` (`queueBrief`, from the kit move route; one per card and start, so a moved card
   finds its old job pointless) an hour before, for the people whose own relationship to the

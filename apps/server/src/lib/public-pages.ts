@@ -7,13 +7,15 @@
  * the viewer; a person's page exists only while they can be found by handle, and never under
  * 18); every other path is the app's and asks not to be indexed.
  */
-import type { BookingItem, CatalogCollection, OrgRef } from '@caime/core';
+import type { BookingItem, CatalogCollection, OrgRef, PaymentKind } from '@caime/core';
 import {
   bySlug,
   canSee,
   formatAmount,
   handleError,
+  methodsFor,
   normalizeHandle,
+  PAYMENT_KIND_LABELS,
   SPHERE_DEFS,
   type Sphere,
 } from '@caime/core';
@@ -27,7 +29,7 @@ import {
 } from '@caime/core/i18n';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
-import { catalogOf } from './booking';
+import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
 import { orgsOf } from './orgs';
 import {
@@ -73,6 +75,8 @@ export interface PublicPerson {
   items: PublicItem[];
   /** Their public collections (R61) that hold something public. */
   collections: PublicCollection[];
+  /** The kinds of ways anyone may pay them (R62): never the details. */
+  pays: PaymentKind[];
 }
 export interface PublicOrg {
   kind: 'org';
@@ -84,6 +88,7 @@ export interface PublicOrg {
   updatedAt: Date;
   items: PublicItem[];
   collections: PublicCollection[];
+  pays: PaymentKind[];
 }
 /** A catalog item as a visitor reads it: nothing of who does it. */
 export type PublicItem = Pick<
@@ -127,6 +132,12 @@ function publicCatalog(row: {
     .filter((c) => open.has(c.id) && held.has(c.id))
     .map((c) => ({ id: c.id, slug: c.slug, name: c.name, description: c.description }));
   return { items, collections };
+}
+
+/** The kinds of ways anyone may pay a host (R62), each once: "Bank transfer, Cash". */
+function publicPays(row: { payments?: unknown }): PaymentKind[] {
+  const kinds = methodsFor(paymentsOf(row), { isConnected: false, spheres: [] }).map((m) => m.kind);
+  return [...new Set(kinds)];
 }
 
 /** One of a host's public items or collections (R61), on a page of its own. */
@@ -188,6 +199,7 @@ export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null
     foundedYear: o.founded_year,
     updatedAt: o.updated_at,
     ...publicCatalog(o),
+    pays: publicPays(o),
   };
 }
 
@@ -230,6 +242,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     headline: identity?.headline ?? null,
     organizations,
     ...publicCatalog(u),
+    pays: publicPays(u),
   };
 }
 
@@ -555,8 +568,9 @@ export function renderPublic(
     ${page.headline ? `<div><dt class="mono">${esc(tr('headline'))}</dt><dd>${esc(page.headline)}</dd></div>` : ''}
     ${page.organizations.length ? `<div><dt class="mono">${esc(tr('with'))}</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
     ${itemRows(page)}
+    ${payRow(page)}
   </dl>
-  <p class="cta">${bookLink(page.items, `/@${page.handle}`, page.displayName)}<a href="${wayIn('sign-up', path)}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(page.items, `/@${page.handle}`, page.displayName)}${payLink(page, `/@${page.handle}`, page.items.length > 0)}<a href="${wayIn('sign-up', path)}"${page.items.length || page.pays.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -609,8 +623,9 @@ export function renderPublic(
     ${page.foundedYear ? `<div><dt class="mono">${esc(tr('since'))}</dt><dd>${page.foundedYear}</dd></div>` : ''}
     ${page.website ? `<div><dt class="mono">${esc(tr('website'))}</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
     ${itemRows(page)}
+    ${payRow(page)}
   </dl>
-  <p class="cta">${bookLink(page.items, `/o/${o.handle}`, o.name)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(page.items, `/o/${o.handle}`, o.name)}${payLink(page, `/o/${o.handle}`, page.items.length > 0)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length || page.pays.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -797,6 +812,22 @@ export const doorPath = (handle: string) => `/o/${handle}?write`;
 export const bookPath = (pagePath: string) => `${pagePath}?book`;
 /** A link that orders (R60): the page's path with `?order`, which opens the Order card's form. */
 export const orderPath = (pagePath: string) => `${pagePath}?order`;
+/** A link that pays (R62): the page's path with `?pay`, which opens the Pay card's form. */
+export const payPath = (pagePath: string) => `${pagePath}?pay`;
+
+/** "Bank transfer, Cash": how anyone may pay a host, as a spec row; never an account. */
+function payRow(host: PublicPerson | PublicOrg): string {
+  if (!host.pays.length) return '';
+  return `<div><dt class="mono">${esc(tr('pays by'))}</dt><dd>${esc(
+    host.pays.map((k) => tr(PAYMENT_KIND_LABELS[k])).join(', '),
+  )}</dd></div>`;
+}
+
+/** Pay, after Book and Order, where anyone may pay the host. */
+function payLink(host: PublicPerson | PublicOrg, pagePath: string, quiet: boolean): string {
+  if (!host.pays.length) return '';
+  return `<a href="${wayIn('sign-up', payPath(pagePath))}"${quiet ? ' class="quiet"' : ''}>${esc(tr('Pay {name}', { name: hostName(host) }))}</a> `;
+}
 
 /** "45 min · EGP 200": what an item is, in a line (R58). */
 function itemLine(i: PublicItem): string {

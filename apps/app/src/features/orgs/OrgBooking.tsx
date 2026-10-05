@@ -30,6 +30,7 @@ export function OrgBooking({ org }: { org: OrgView }) {
         items: org.bookingItems,
         ordering: org.ordering,
         collections: org.collections,
+        payments: org.payments,
       }}
       save={async (next) => {
         await endpoints.setOrgBooking(org.id, next);

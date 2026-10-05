@@ -30,6 +30,7 @@ import {
   BadgeCheck,
   CalendarCheck,
   Flag,
+  HandCoins,
   Hash,
   Lock,
   MessageCircle,
@@ -61,18 +62,20 @@ const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.Conne
  * the item chosen when one was; `c/[id]` reads it. Kept in each screen's chunk, not the startup
  * one (paths.ts is in it).
  */
-const cardParams = (
-  id: string,
-  kit: 'appointment' | 'order_status' | null,
-  itemId: string | null = null,
-) =>
+const cardParams = (id: string, kit: CardKit | null, itemId: string | null = null) =>
   kit
     ? {
         id,
-        ...(kit === 'appointment' ? { book: '1' } : { order: '1' }),
+        ...(kit === 'appointment'
+          ? { book: '1' }
+          : kit === 'order_status'
+            ? { order: '1' }
+            : { pay: '1' }),
         ...(itemId ? { item: itemId } : {}),
       }
     : { id };
+/** The cards a page opens on (R58, R60, R62). */
+type CardKit = 'appointment' | 'order_status' | 'payment_request';
 
 const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
 
@@ -83,7 +86,7 @@ export function PersonScreen({
 }: {
   id: string;
   /** Arrived through a Book or an Order link (R58, R60): that card's form, once. */
-  book?: 'appointment' | 'order_status' | null;
+  book?: CardKit | null;
   /** One of their items or collections, by address (R61): its sheet, over the page. */
   slug?: string | null;
 }) {
@@ -111,7 +114,7 @@ export function PersonScreen({
     async (
       view: PersonProfileView,
       replace = false,
-      kit: 'appointment' | 'order_status' = 'appointment',
+      kit: CardKit = 'appointment',
       itemId: string | null = null,
     ) => {
       const general = view.conversations.find((c) => c.isGeneral);
@@ -132,7 +135,8 @@ export function PersonScreen({
   );
   useEffect(() => {
     if (!book || !p || booked.current || p.person.id === me.id) return;
-    if (book === 'appointment' ? !p.booking : !p.ordering) return;
+    if (book === 'appointment' ? !p.booking : book === 'order_status' ? !p.ordering : !p.payable)
+      return;
     booked.current = true;
     // From an item's address (R61), the item it was.
     const all = [...(p.booking?.items ?? []), ...(p.ordering?.items ?? [])];
@@ -213,6 +217,19 @@ export function PersonScreen({
         block
         onPress={() => void bookWith(p, false, 'order_status')}
         testID="person-order"
+      />
+    ) : null;
+  // Pay them (R62): a way they're paid that this viewer may see; the Pay card, paying.
+  const payAction =
+    !self && p.payable ? (
+      <Button
+        label={tr('Pay {name}', { name })}
+        icon={HandCoins}
+        variant="secondary"
+        size="lg"
+        block
+        onPress={() => void bookWith(p, false, 'payment_request')}
+        testID="person-pay"
       />
     ) : null;
   const primaryAction = self ? null : state === 'connected' ? (
@@ -382,6 +399,7 @@ export function PersonScreen({
         {primaryAction}
         {bookAction}
         {orderAction}
+        {payAction}
         {state === 'connected' && privateSupported && !self ? (
           <Button
             label={tr('Private conversation')}

@@ -8,6 +8,7 @@ import {
   canSee,
   isBooked,
   isOrdered,
+  methodsFor,
   resolvePolicy,
   rhythmOf,
   visibleCollections,
@@ -448,6 +449,14 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       booking,
       ordering,
       collections: booking || ordering ? collections : [],
+      // Pay them (R62): a way to be paid this viewer may see.
+      payable:
+        !relation.isSelf &&
+        !relation.blocked &&
+        methodsFor(host.payments, {
+          isConnected: relation.isConnected,
+          spheres: relation.ownerSpheresForViewer,
+        }).length > 0,
       // What it is: to those their rules allow, and to anyone in the conversation it was made in.
       busy: busy
         ? {

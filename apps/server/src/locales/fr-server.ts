@@ -477,7 +477,6 @@ export const frServer: Catalog = {
 
   'Webhooks go to https addresses.': 'Les webhooks vont vers des adresses https.',
   'That address is on a private network.': 'Cette adresse est sur un réseau privé.',
-  'Leave passwords out of the address.': 'Ne mettez pas de mot de passe dans l’adresse.',
   '{plan} can’t be bought right now.': '{plan} ne peut pas être acheté pour le moment.',
   '{lead}: Stripe said “{message}”.': '{lead} : Stripe a répondu « {message} ».',
   '{plan} is part of this plan already.': '{plan} fait déjà partie de ce forfait.',
@@ -988,4 +987,9 @@ export const frServer: Catalog = {
   'They don’t offer that way.': 'Ce mode n’est pas proposé.',
   offers: 'propose',
   collections: 'collections',
+  'Ways to be paid are for people over 18.':
+    'Les moyens de paiement sont réservés aux plus de 18 ans.',
+  'In a group, ask to be paid; say you’re paying where it’s two of you.':
+    'Dans un groupe, demandez à être payé ; dites que vous payez là où vous n’êtes que deux.',
+  'pays by': 'paiement',
 };

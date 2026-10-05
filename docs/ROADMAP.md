@@ -1037,6 +1037,20 @@ listed there with its owner.
       in the startup chunk because two lazy sheets imported it statically (2 KB gzip back), and
       the setup's day and lead labels were never translated. `catalog.test.ts`,
       `public-pages.test.ts`, `paths.test.ts`, `e2e/bookings.spec.ts`.
+- [x] R62: ways to be paid and the Pay card. `PaymentSettings` (core `payments.ts`) on
+      `users.payments` and `organizations.payments` (migration 0056), saved with the rest of the
+      offer and shown as set only to whoever sets them; the payment request is the Pay card with
+      a direction (ask or pay), payer and payee moves (`kitMoves` with the card's fields,
+      `initialKitState`), and `payTo` fixed by the server from the payee's ways the payer may see
+      (`payToFor`). Priced orders and bookings carry their `payee` and offer Pay, which opens the
+      Pay card filled and replying (`useCardAction`). Pay on profiles (`payable`), the
+      organization's page and the public pages (`?pay`, "pays by" with the kinds only). On the
+      way: card buttons, choice chips and field labels were shown in English in every language,
+      now through the catalogs. `payments.test.ts` (core and server), `public-pages.test.ts`,
+      `e2e/bookings.spec.ts`.
+- [ ] Later layers of R62: organization to organization (needs conversations between
+      organizations), an organization's own checkout through its own provider account, a receipt
+      from a paid card, a split's shares paid with Pay.
 - [ ] Later layers of R61: an item's photo (on its page and in Open Graph), a collection's
       order on the host's page, person pages' items in a sitemap only if a person opts in.
 - [x] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
@@ -2081,3 +2095,6 @@ listed there with its owner.
 - 2026-10-05 — R61: collections and a page for each public item and collection, with JSON-LD
   and sitemap lines; Book and Order from an item land on the card with it chosen. The startup
   chunk lost 2 KB gzip (the relationship picker loads with its sheets).
+- 2026-10-05 — R62: ways to be paid and the Pay card (ask or pay, payer and payee, the payee's
+  ways fixed on the card); Pay from priced orders and bookings, profiles and public pages.
+  Settings' Bookings is now What you offer. Card buttons and form labels translated at last.

@@ -486,7 +486,6 @@ export const arServer: Catalog = {
 
   'Webhooks go to https addresses.': 'تذهب الويب هوك إلى عناوين https فقط.',
   'That address is on a private network.': 'ذلك العنوان على شبكة خاصة.',
-  'Leave passwords out of the address.': 'لا تضع كلمات مرور في العنوان.',
   '{plan} can’t be bought right now.': 'لا يمكن شراء {plan} الآن.',
   '{lead}: Stripe said “{message}”.': '{lead}: قال Stripe «{message}».',
   '{plan} is part of this plan already.': '{plan} جزء من هذه الخطة بالفعل.',
@@ -951,4 +950,8 @@ export const arServer: Catalog = {
   'They don’t offer that way.': 'لا يقدّمون هذه الطريقة.',
   offers: 'يقدّم',
   collections: 'المجموعات',
+  'Ways to be paid are for people over 18.': 'طرق الدفع لمن تجاوزوا 18 عامًا.',
+  'In a group, ask to be paid; say you’re paying where it’s two of you.':
+    'في المجموعة، اطلب الدفع لك؛ وقل إنك تدفع حيث تكونان اثنين فقط.',
+  'pays by': 'الدفع عبر',
 };

@@ -33,6 +33,7 @@ import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import {
   assertItemsFit,
+  assertPaymentsFit,
   type Booker,
   type BookingHost,
   catalogFrom,
@@ -41,6 +42,7 @@ import {
   openSlotsFor,
   orderingOf,
   orgHost,
+  paymentsOf,
   personHost,
 } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
@@ -214,6 +216,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       true,
       kept.collections,
     );
+    assertPaymentsFit(orgHost(org), body.payments, true);
     await ctx.db
       .updateTable('organizations')
       .set({
@@ -223,6 +226,10 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         // Left out, ordering stays as it was (R60).
         ...(body.ordering !== undefined
           ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
+          : {}),
+        // Ways to be paid (R62): left out, they stay as they were.
+        ...(body.payments !== undefined
+          ? { payments: body.payments ? JSON.stringify(body.payments) : null }
           : {}),
         updated_at: ctx.now(),
       })
@@ -239,6 +246,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       booking: body.booking,
       ...kept,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(org),
+      payments: body.payments !== undefined ? body.payments : paymentsOf(org),
     };
   });
 
@@ -316,13 +324,14 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['booking', 'booking_items', 'ordering', 'collections'])
+      .select(['booking', 'booking_items', 'ordering', 'collections', 'payments'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     return {
       booking: (me.booking as BookingResponse['booking']) ?? null,
       ...catalogOf(me),
       ordering: orderingOf(me),
+      payments: paymentsOf(me),
     };
   });
 
@@ -337,6 +346,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         'booking_items',
         'ordering',
         'collections',
+        'payments',
         'birth_date',
         'time_zone',
       ])
@@ -344,6 +354,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     const kept = catalogFrom(body, catalogOf(me).collections);
     assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
+    assertPaymentsFit(personHost(me), body.payments, !minorOf(me, ctx.now()));
     await ctx.db
       .updateTable('users')
       .set({
@@ -352,6 +363,10 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         collections: JSON.stringify(kept.collections),
         ...(body.ordering !== undefined
           ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
+          : {}),
+        // Ways to be paid (R62): left out, they stay as they were.
+        ...(body.payments !== undefined
+          ? { payments: body.payments ? JSON.stringify(body.payments) : null }
           : {}),
         updated_at: ctx.now(),
       })
@@ -367,6 +382,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       booking: body.booking,
       ...kept,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(me),
+      payments: body.payments !== undefined ? body.payments : paymentsOf(me),
     };
   });
 

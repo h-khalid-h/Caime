@@ -490,6 +490,38 @@ describe('the readable web (R44)', () => {
     });
   });
 
+  it('a page says how anyone may pay (R62), never an account, and offers Pay', async () => {
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: null,
+      items: [],
+      payments: {
+        methods: [
+          { id: 'cash', kind: 'cash', label: 'At the desk', audience: 'public' },
+          {
+            id: 'cib',
+            kind: 'bank',
+            label: 'CIB',
+            details: 'EG38 0019 0005',
+            audience: 'connections',
+          },
+        ],
+        note: null,
+      },
+    });
+    const org = await visit('/o/nile.dental');
+    expect(org.body).toContain('<dt class="mono">pays by</dt><dd>Cash</dd>');
+    expect(org.body).not.toContain('EG38');
+    expect(org.body).not.toContain('Bank transfer');
+    expect(org.body).toContain('>Pay Nile Dental</a>');
+    expect(org.body).toContain('%2Fo%2Fnile.dental%3Fpay');
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: null,
+      items: [],
+      payments: null,
+    });
+    expect((await visit('/o/nile.dental')).body).not.toContain('>Pay Nile Dental</a>');
+  });
+
   it('the app’s own screens ask not to be indexed; robots and the sitemap say what is', async () => {
     const screen = await visit('/c/0193b2c4-0000-7000-8000-000000000000');
     expect(screen.statusCode).toBe(200);

@@ -22,10 +22,12 @@ export default function HandleLink() {
     at = '',
     book,
     order,
+    pay,
   } = useLocalSearchParams<{
     at: string;
     book?: string;
     order?: string;
+    pay?: string;
   }>();
   const { desktop } = useLayout();
   const handle = at.startsWith('@') && at.length > 1 ? at.slice(1) : null;
@@ -39,11 +41,18 @@ export default function HandleLink() {
   useEffect(() => {
     if (!found) return;
     // A Book link (R58) carries on to the page's Book.
-    const more = book !== undefined ? { book: '1' } : order !== undefined ? { order: '1' } : {};
+    const more =
+      book !== undefined
+        ? { book: '1' }
+        : order !== undefined
+          ? { order: '1' }
+          : pay !== undefined
+            ? { pay: '1' }
+            : {};
     if (found.kind === 'org')
       router.replace({ pathname: '/o/[handle]', params: { handle: found.handle, ...more } });
     else router.replace({ pathname: '/p/[id]', params: { id: found.id, ...more } });
-  }, [found, book, order]);
+  }, [found, book, order, pay]);
 
   const missing = handle === null || (q.error instanceof ApiError && q.error.status === 404);
   return (

@@ -17,6 +17,7 @@ import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
 import type { KitField } from './kits';
 import type { OrgKind, OrgRole } from './orgs';
+import type { PaymentSettings } from './payments';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
 import type { EffectivePolicy, NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
@@ -247,6 +248,8 @@ export interface PersonProfileView {
   ordering: { settings: OrderingSettings; items: BookingItem[] } | null;
   /** The collections this viewer may see (R61), for grouping what they may book or order. */
   collections: CatalogCollection[];
+  /** They have a way to be paid this viewer may see (R62): Pay is offered. */
+  payable: boolean;
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];
@@ -982,6 +985,10 @@ export interface OrgView extends OrgSummaryView {
   ordering: OrderingSettings | null;
   /** Its collections this viewer may see (R61); every one for its team. */
   collections: CatalogCollection[];
+  /** It has a way to be paid this viewer may see (R62): Pay is offered. */
+  payable: boolean;
+  /** How it's paid (R62), as set: for its owner and admins only, else null. */
+  payments: PaymentSettings | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
 }
@@ -2223,6 +2230,8 @@ export interface BookingResponse {
   ordering: OrderingSettings | null;
   /** Its collections (R61). */
   collections: CatalogCollection[];
+  /** How it's paid (R62), or null: its own, never shown to anyone else as it is. */
+  payments: PaymentSettings | null;
 }
 export interface OrgUpdateResponse {
   update: OrgUpdateView;

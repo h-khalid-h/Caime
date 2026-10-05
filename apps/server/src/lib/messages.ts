@@ -11,15 +11,20 @@ import {
   BookingAskBody,
   canPostTo,
   type FileView,
+  initialKitState,
   KIT_MODES,
   kitHeadline,
   kitsFor,
   LocationPayload,
   type MessageView,
   type Mode,
+  methodsFor,
   OrderAskBody,
   orderSummary,
+  type PaymentSettings,
+  type PayTo,
   type PlacedOrder,
+  payDirection,
   prepareKitFields,
   type SealedMessage,
   type SendMessageBodyT,
@@ -40,6 +45,7 @@ import {
   bookingFor,
   orderFor,
   orgHost,
+  paymentsOf,
   personHost,
 } from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
@@ -320,6 +326,82 @@ async function catalogHostFor(
     host: personHost(sender),
     booker: { isSelf: true, isConnected: true, spheres: [], adult },
   };
+}
+
+/**
+ * Whom a Pay card pays, and how (R62): the payee is the sender when they ask to be paid, else
+ * the other side (in a business conversation the organization is the team's side); their ways
+ * to be paid that the payer may see, as they are now. A group only asks: whoever pays there is
+ * anyone, so it shows only the ways for everyone.
+ */
+async function payToFor(
+  ctx: AppContext,
+  conversation: { id: string; kind: string },
+  members: Array<{ user_id: string }>,
+  senderId: string,
+  fields: Record<string, unknown>,
+): Promise<PayTo | null> {
+  const asks = payDirection(fields) === 'ask';
+  const person = (id: string) =>
+    ctx.db
+      .selectFrom('users')
+      .select(['id', 'display_name', 'payments'])
+      .where('id', '=', id)
+      .executeTakeFirst();
+  const shown = (name: string, settings: PaymentSettings | null, methods: PayTo['methods']) =>
+    methods.length || settings?.note ? { name, methods, note: settings?.note ?? null } : null;
+  if (conversation.kind === 'business') {
+    const mask = await customerMask(ctx.db, conversation.id);
+    if (!mask) return null;
+    const teamSends = senderId !== mask.customerId;
+    if (asks === teamSends) {
+      // The organization is paid: its ways for its customers.
+      const org = await ctx.db
+        .selectFrom('organizations')
+        .select(['name', 'payments'])
+        .where('id', '=', mask.orgId)
+        .executeTakeFirst();
+      if (!org) return null;
+      const settings = paymentsOf(org);
+      return shown(org.name, settings, methodsFor(settings, { isConnected: true, spheres: [] }));
+    }
+    // The customer is paid (a refund): only their ways for everyone.
+    const c = await person(mask.customerId);
+    if (!c) return null;
+    const settings = paymentsOf(c);
+    return shown(
+      c.display_name,
+      settings,
+      methodsFor(settings, { isConnected: false, spheres: [] }),
+    );
+  }
+  if (conversation.kind !== 'direct') {
+    if (!asks)
+      throw badRequest(tr('In a group, ask to be paid; say you’re paying where it’s two of you.'));
+    const me = await person(senderId);
+    if (!me) return null;
+    const settings = paymentsOf(me);
+    return shown(
+      me.display_name,
+      settings,
+      methodsFor(settings, { isConnected: false, spheres: [] }),
+    );
+  }
+  const otherId = members.find((p) => p.user_id !== senderId)?.user_id;
+  if (!otherId) return null;
+  const [payeeId, payerId] = asks ? [senderId, otherId] : [otherId, senderId];
+  const payee = await person(payeeId);
+  if (!payee) return null;
+  const relation = await viewerRelation(ctx.db, payeeId, payerId);
+  const settings = paymentsOf(payee);
+  return shown(
+    payee.display_name,
+    settings,
+    methodsFor(settings, {
+      isConnected: relation.isConnected,
+      spheres: relation.ownerSpheresForViewer,
+    }),
+  );
 }
 
 export async function participantsOf(
@@ -754,6 +836,7 @@ export async function sendMessage(
     // own diary, or writing down an order taken for someone).
     let booking: Record<string, unknown> | null = null;
     let order: PlacedOrder | null = null;
+    let catalogHost: BookingHost | null = null;
     const ask =
       card.kit === 'appointment' && raw.booking ? BookingAskBody.parse(raw.booking) : null;
     const orderAsk =
@@ -763,6 +846,7 @@ export async function sendMessage(
       const found = await catalogHostFor(ctx, conversation, members, sender, wanted);
       if (!found)
         throw new AppError(403, 'not_bookable', tr('That isn’t something you can book here.'));
+      catalogHost = found.host;
       if (ask) {
         const start = (card.fields.start as { at: string }).at;
         booking = (await bookingFor(
@@ -783,6 +867,14 @@ export async function sendMessage(
           card.fields.reference = orderNumber();
       }
     }
+    // Whom a priced booking or order is paid to (R62): its host, so the payer's card offers Pay.
+    const priced = (booking && (booking as { price?: unknown }).price) || order?.total;
+    const payee = priced && catalogHost ? { kind: catalogHost.kind, id: catalogHost.id } : null;
+    // Pay (R62): the payee's ways the payer may see, fixed now; nothing is paid through Caime.
+    const payTo =
+      card.kit === 'payment_request'
+        ? await payToFor(ctx, conversation, members, senderId, card.fields)
+        : null;
     // An order written down by hand says which it is.
     if (card.kit === 'order_status' && !order && !card.fields.reference)
       throw badRequest(tr('{label} is needed.', { label: tr('Order number') }));
@@ -791,10 +883,12 @@ export async function sendMessage(
       label: card.def.name,
       title: kitHeadline(card.kit, card.fields, sender.locale),
       fields: card.fields,
-      state: card.def.states[0],
+      state: initialKitState(card.kit, card.fields),
       history: [],
       ...(booking ? { booking } : {}),
       ...(order ? { order } : {}),
+      ...(payee ? { payee } : {}),
+      ...(payTo ? { payTo } : {}),
     };
     kitMode = KIT_MODES[card.kit];
   }

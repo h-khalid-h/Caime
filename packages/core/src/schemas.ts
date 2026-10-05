@@ -23,6 +23,7 @@ import { isEmoji } from './emoji';
 import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
 import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
+import { PAYMENT_KINDS, PAYMENT_METHODS_MAX, paymentUrlError } from './payments';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
 import { PRIVACY_FIELDS } from './privacy';
 import {
@@ -1270,6 +1271,50 @@ export const OrderingBody = z
   })
   .strict();
 
+/** One way to be paid (R62): a link is the host's own https address; cash needs no details. */
+export const PaymentMethodBody = z
+  .object({
+    id: CatalogId,
+    kind: z.enum(PAYMENT_KINDS),
+    label: z.string().trim().min(1, msg('Name it.')).max(60),
+    details: z.string().trim().max(300).nullable().default(null),
+    url: z.string().trim().max(500).nullable().default(null),
+    audience: CatalogAudience,
+  })
+  .strict()
+  .superRefine((m, ctx) => {
+    if (m.kind === 'link') {
+      const why = m.url ? paymentUrlError(m.url) : msg('A payment link needs its address.');
+      if (why) ctx.addIssue({ code: 'custom', message: why, path: ['url'] });
+    } else if (m.url) {
+      ctx.addIssue({
+        code: 'custom',
+        message: msg('Only a payment link has an address.'),
+        path: ['url'],
+      });
+    }
+    if ((m.kind === 'bank' || m.kind === 'wallet') && !m.details)
+      ctx.addIssue({
+        code: 'custom',
+        message: msg('Say what the payer needs: an account or a number.'),
+        path: ['details'],
+      });
+  });
+
+/** How a host is paid (R62), or null for not here. */
+export const PaymentsBody = z
+  .object({
+    methods: z
+      .array(PaymentMethodBody)
+      .min(1)
+      .max(PAYMENT_METHODS_MAX)
+      .refine((ms) => new Set(ms.map((m) => m.id)).size === ms.length, {
+        message: msg('Each way once.'),
+      }),
+    note: z.string().trim().max(300).nullable().default(null),
+  })
+  .strict();
+
 /** A host's bookings (R58): hours, or null for none, and the catalog. */
 export const BookingBody = z
   .object({
@@ -1283,6 +1328,8 @@ export const BookingBody = z
         message: msg('Each item once.'),
       })
       .default([]),
+    /** Ways to be paid (R62): left out, they stay as they are; null turns them off. */
+    payments: PaymentsBody.nullable().optional(),
     /** Collections (R61): left out, they stay as they are. */
     collections: z
       .array(CollectionBody)

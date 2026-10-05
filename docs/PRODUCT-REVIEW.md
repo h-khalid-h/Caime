@@ -667,3 +667,25 @@ with its reason, so it isn't proposed again without new facts.
   a verified organization (people are never listed, as before). Signed in, the same address is
   the host's page with the item's sheet over it. What isn't public is no page: under an
   organization it is the app's, never a crawler's.
+- **R62 — Pay, in and out, and cards that answer each other.** The owner's next idea
+  (2026-10-05): payments in or out, person to person, organization to organization, person to
+  organization and back, with payment options in settings, on cards and on public pages, and
+  cards (Pay, Book, Order) that respond with flows. Checked against R38: Caime holds no balance
+  and moves no money (that would make it a payment institution in every market it serves), so a
+  payment stays a record both sides agree on. Refined: a host keeps **ways to be paid** beside
+  its hours, catalog and orders, in the same place (Settings · What you offer; an organization's
+  setup): a bank account, a payment link of its own (Stripe, PayPal, InstaPay, anything https),
+  a wallet number, cash, each with the same audiences as everything else (everyone, connections
+  or customers, a person's spheres). The existing payment request becomes the **Pay** card with
+  two directions: *ask to be paid* (in) and *I'm paying* (out). Its sides are its payer and its
+  payee, whichever sent it: the payer says it's sent (or declines), the payee says it arrived,
+  or that it hasn't yet, which hands it back. When it's sent, the server writes on it the
+  payee's ways that this payer may see, so the payer copies an account or opens a link from the
+  card; a group only asks, and shows only the ways for everyone. Cards answer each other: a
+  priced order or booking offers **Pay** to whoever pays, which opens the Pay card filled with
+  its total and replying to it. Profiles, the organization's page and the public pages offer
+  Pay where a way is open to that reader (a public page names only the kinds, never an account).
+  Person to person, person to organization and back are all here; organization to organization
+  waits for conversations between organizations, which don't exist yet. Later layers: a payment
+  provider's checkout for an organization that wants one (its own account, Stripe Connect,
+  never Caime's), receipts from a paid card, a split's shares paid with the Pay card.

@@ -96,11 +96,11 @@ export const KITS: Record<KitId, KitDef> = {
         label: msg('Duration'),
         type: 'options',
         choices: [
-          { value: 15, label: '15 min' },
-          { value: 30, label: '30 min' },
-          { value: 45, label: '45 min' },
-          { value: 60, label: '1 hour' },
-          { value: 90, label: '1½ hours' },
+          { value: 15, label: msg('15 min') },
+          { value: 30, label: msg('30 min') },
+          { value: 45, label: msg('45 min') },
+          { value: 60, label: msg('1 hour') },
+          { value: 90, label: msg('1½ hours') },
         ],
       },
       { key: 'place', label: msg('Where'), type: 'text', placeholder: msg('Place or link') },
@@ -181,20 +181,31 @@ export const KITS: Record<KitId, KitDef> = {
     ],
     states: ['sent', 'accepted', 'fulfilled', 'cancelled'],
   },
+  // Pay (R62): ask to be paid, or say you're paying; either way a record, never a transfer.
   payment_request: {
     id: 'payment_request',
-    name: msg('Payment request'),
-    description: msg('Ask for a payment and mark it paid'),
+    name: msg('Pay'),
+    description: msg('Ask to be paid, or say you’re paying'),
     icon: 'hand-coins',
     spheres: null,
     groups: true,
     adultsOnly: true,
     fields: [
+      {
+        key: 'direction',
+        label: msg('Which way'),
+        type: 'options',
+        choices: [
+          { value: 'ask', label: msg('Ask to be paid') },
+          { value: 'send', label: msg('I’m paying') },
+        ],
+      },
       { key: 'amount', label: msg('Amount'), type: 'amount', required: true },
       { key: 'note', label: msg('For'), type: 'text' },
       { key: 'due', label: msg('Due'), type: 'date' },
     ],
-    states: ['requested', 'paid', 'declined'],
+    // The first is where an ask starts; one who's paying starts at sent (`initialKitState`).
+    states: ['requested', 'sent', 'paid', 'not_received', 'declined', 'cancelled'],
   },
   support_ticket: {
     id: 'support_ticket',

@@ -21,10 +21,10 @@ export function MyBookings() {
   const qc = useQueryClient();
   const q = useMyBooking();
   return (
-    <SettingsPage title={tr('Bookings')}>
+    <SettingsPage title={tr('What you offer')}>
       <Text variant="body" color="textSecondary" style={{ paddingHorizontal: 4 }}>
         {tr(
-          'Set hours and what can be booked in them: a lesson, a consultation, an hour of your time. Each item says who may book it; a public one is on your page. Every booking is an appointment card you confirm, and nothing is paid through Caime.',
+          'What people may book, order or pay you for: a lesson, a consultation, a cake, an hour of your time. Each thing says who sees it; a public one has a page of its own. Every booking, order and payment is a card you confirm, and nothing is paid through Caime.',
         )}
       </Text>
       {q.data ? (

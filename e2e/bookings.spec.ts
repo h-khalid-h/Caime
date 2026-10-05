@@ -255,4 +255,59 @@ test.describe
       expect(customerErrors).toEqual([]);
       await phone.close();
     });
+
+    test('Pay (R62): a way to be paid, Pay from the page and from an order, received by the team', async ({
+      browser,
+    }) => {
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/setup`);
+      await page.getByTestId('org-booking-add-way').click();
+      await page.getByTestId('org-booking-way-link').click();
+      await page.getByTestId('org-booking-way-label').fill('Pay online');
+      await page.getByTestId('org-booking-way-url').fill('https://pay.example/swibba');
+      await page.getByTestId('org-booking-way-save').click();
+      await expect(visible(page, /Payment link · Customers/)).toBeVisible();
+      expect(errors).toEqual([]);
+
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/o/${handle}`);
+      await c.getByTestId('org-pay').click();
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?pay=1$/);
+      const conversationId = new URL(c.url()).pathname.split('/')[2] ?? '';
+      // Paying them: the way is chosen, the amount is theirs to write.
+      await expect(c.getByTestId('kit-direction-send')).toBeChecked();
+      await c.getByTestId('kit-field-amount').fill('150');
+      await c.getByTestId('kit-field-note').fill('Deposit');
+      await c.getByTestId('kit-send').click();
+      const paid = c.getByTestId('kit-payment_request').last();
+      await expect(paid).toContainText('Sent');
+      await expect(paid).toContainText('Deposit');
+      await expect(paid.getByTestId('pay-to')).toContainText('Pay online');
+      await expect(paid.locator('[data-testid^="pay-open-"]')).toBeVisible();
+      await c.screenshot({ path: 'e2e/screenshots/phone-pay-card.png', animations: 'disabled' });
+      // Pay from the order: the form opens filled with its total, answering it.
+      await c.getByTestId('kit-pay').first().click();
+      await expect(c.getByTestId('kit-direction-send')).toBeChecked();
+      await expect(c.getByTestId('kit-field-amount')).toHaveValue('240');
+      await c.getByTestId('kit-send').click();
+      await expect(c.getByTestId('kit-payment_request')).toHaveCount(2);
+      expect(customerErrors).toEqual([]);
+      await phone.close();
+
+      // The team says it arrived; the customer couldn't have.
+      await page.goto(`/c/${conversationId}`);
+      const card = page.getByTestId('kit-payment_request').filter({ hasText: 'Deposit' });
+      await card.getByRole('button', { name: 'Received', exact: true }).click();
+      await expect(card).toContainText('Paid');
+      expect(errors).toEqual([]);
+      await owner.close();
+    });
   });

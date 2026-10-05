@@ -201,7 +201,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
           {p.label ?? tr('Album')}
         </Text>
         <Chip
-          label={open ? trn(album.count, '{n} photo', '{n} photos') : kitStateLabel('closed')}
+          label={open ? trn(album.count, '{n} photo', '{n} photos') : tr(kitStateLabel('closed'))}
           tone="neutral"
           size="sm"
         />
@@ -270,7 +270,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
         {moves.map((mv) => (
           <Button
             key={mv.to}
-            label={mv.label}
+            label={tr(mv.label)}
             size="sm"
             variant="secondary"
             loading={moving === mv.to}

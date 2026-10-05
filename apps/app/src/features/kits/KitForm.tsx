@@ -11,7 +11,7 @@ import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
 import { firstFutureWhen, parseWhen } from '@caime/core/when';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useMyBooking, useSlots } from '@/api/hooks';
@@ -46,6 +46,12 @@ export type KitChoice = CardKitId | 'poll' | 'location';
  */
 export interface KitStart {
   itemId?: string;
+  /** A Pay card (R62): which way, how much, what for. */
+  direction?: 'ask' | 'send';
+  amount?: { value: number; currency: string | null };
+  note?: string;
+  /** The card it answers (Pay on an order): sent as a reply to it. */
+  replyToId?: string;
 }
 
 /**
@@ -271,9 +277,7 @@ export function KitForm({
     return null;
   }, [catalog, ordering, conversation, orgQ.data, otherQ.data, mineQ.data, direct, me.id]);
   // What's in the order (R60): an item's id and how many; none to begin with.
-  const [cart, setCart] = useState<Record<string, number>>(
-    ordering && start?.itemId ? { [start.itemId]: 1 } : {},
-  );
+  const [cart, setCart] = useState<Record<string, number>>({});
   const [way, setWay] = useState<'pickup' | 'delivery' | null>(null);
   const orderTotal = useMemo(() => {
     if (!host || !ordering) return null;
@@ -283,7 +287,27 @@ export function KitForm({
     const value = priced.reduce((sum, i) => sum + (i.price?.value ?? 0) * (cart[i.id] ?? 0), 0);
     return formatAmount(Math.round(value * 100) / 100, priced[0]?.price?.currency ?? null, locale);
   }, [host, ordering, cart, locale]);
-  const [itemId, setItemId] = useState<string | null>(appointment ? (start?.itemId ?? null) : null);
+  const [itemId, setItemId] = useState<string | null>(null);
+  // What the form opens with (R61, R62), each time it opens: the item chosen, or a Pay card's
+  // way, amount and note. A Pay card asks to be paid unless it says otherwise.
+  useEffect(() => {
+    if (!kit) return;
+    if (start?.itemId) {
+      if (kit === 'order_status') setCart({ [start.itemId]: 1 });
+      if (kit === 'appointment') setItemId(start.itemId);
+    }
+    if (kit === 'payment_request') {
+      setPicked((p) => ({ ...p, direction: start?.direction ?? 'ask' }));
+      if (start?.amount) {
+        setTexts((x) => ({
+          ...x,
+          amount: String(start.amount?.value ?? ''),
+          ...(start.note ? { note: start.note } : {}),
+        }));
+        setCurrencies((c) => ({ ...c, amount: start.amount?.currency ?? null }));
+      } else if (start?.note) setTexts((x) => ({ ...x, note: start.note ?? '' }));
+    }
+  }, [kit, start]);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??
     (host && host.items.length === 1 ? (host.items[0] ?? null) : null);
@@ -443,7 +467,11 @@ export function KitForm({
     setBusy(true);
     setError(null);
     try {
-      const { message } = await endpoints.send(conversation.id, { clientId: uuidv4(), ...body });
+      const { message } = await endpoints.send(conversation.id, {
+        clientId: uuidv4(),
+        ...body,
+        ...(start?.replyToId ? { replyToId: start.replyToId } : {}),
+      });
       upsertMessage(qc, message);
       applyMessageToInbox(qc, message, { mine: true, reading: true });
       const live = (message.payload as { live?: { until: string } }).live;
@@ -684,16 +712,20 @@ export function KitForm({
                   {(field.choices ?? []).map((c) => (
                     <Chip
                       key={String(c.value)}
-                      label={c.label}
+                      label={tr(c.label)}
                       selected={picked[field.key] === c.value}
+                      // A Pay card's way is one or the other, never none (R62).
+                      role={field.key === 'direction' ? 'radio' : undefined}
                       onPress={() =>
                         setPicked((s) => {
                           const next = { ...s };
-                          if (next[field.key] === c.value) delete next[field.key];
+                          if (next[field.key] === c.value && field.key !== 'direction')
+                            delete next[field.key];
                           else next[field.key] = c.value;
                           return next;
                         })
                       }
+                      testID={`kit-${field.key}-${c.value}`}
                     />
                   ))}
                 </View>
@@ -805,8 +837,11 @@ export function KitForm({
               <TextField
                 key={field.key}
                 label={
-                  field.required ? field.label : tr('{label} (optional)', { label: field.label })
+                  field.required
+                    ? tr(field.label)
+                    : tr('{label} (optional)', { label: tr(field.label) })
                 }
+                testID={`kit-field-${field.key}`}
                 placeholder={
                   field.placeholder ??
                   (field.type === 'amount'

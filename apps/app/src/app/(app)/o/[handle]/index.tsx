@@ -6,18 +6,27 @@ export default function Organization() {
   // conversation, as an invite's guest does.
   // `?book` (R58) lands on the appointment card's form there.
   // `?item` (R61) is one of its items or collections, by address: its sheet over the page.
-  const { handle, write, book, order, item } = useLocalSearchParams<{
+  const { handle, write, book, order, pay, item } = useLocalSearchParams<{
     handle: string;
     write?: string;
     book?: string;
     order?: string;
+    pay?: string;
     item?: string;
   }>();
   return (
     <OrgScreen
       handle={handle}
       write={write !== undefined}
-      book={book !== undefined ? 'appointment' : order !== undefined ? 'order_status' : null}
+      book={
+        book !== undefined
+          ? 'appointment'
+          : order !== undefined
+            ? 'order_status'
+            : pay !== undefined
+              ? 'payment_request'
+              : null
+      }
       slug={item ? item.toLowerCase() : null}
       key={handle}
     />

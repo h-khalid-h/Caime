@@ -13,17 +13,23 @@ import {
   orderDetails,
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
+import { PAYMENT_KIND_LABELS, type PayTo } from '@caime/core/payments';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { useCardAction } from '@/features/conversation/cardActions';
+import { copyText } from '@/lib/clipboard';
+import { openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { upsertMessage } from '@/state/cache';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button, type IconComponent } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { ListChecks } from '@/ui/icons';
+import { IconButton } from '@/ui/IconButton';
+import { Copy, ListChecks } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
@@ -43,6 +49,66 @@ interface CardPayload {
   booking?: AppointmentBooking | null;
   /** What an order took from a catalog (R60). */
   order?: PlacedOrder | null;
+  /** Whom a priced booking or order is paid to (R62). */
+  payee?: { kind: 'org' | 'person'; id: string } | null;
+  /** A Pay card's payee and the ways the payer may see (R62). */
+  payTo?: PayTo | null;
+}
+
+/**
+ * A Pay card's payee and their ways (R62), as the server fixed them: what to copy, a link to
+ * open. Nothing here moves money; the buttons below say what happened.
+ */
+function PayToBlock({ to }: { to: PayTo }) {
+  return (
+    <View style={{ gap: 6 }} testID="pay-to">
+      <Text variant="caption" color="textSecondary">
+        {tr('To {name}', { name: to.name })}
+      </Text>
+      {to.note ? (
+        <Text variant="caption" color="textSecondary" auto>
+          {to.note}
+        </Text>
+      ) : null}
+      {to.methods.map((way) => (
+        <View
+          key={way.id}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          testID={`pay-way-${way.id}`}
+        >
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text variant="captionStrong" auto>
+              {way.label} · {tr(PAYMENT_KIND_LABELS[way.kind])}
+            </Text>
+            {way.details ? (
+              <Text variant="caption" selectable auto>
+                {way.details}
+              </Text>
+            ) : null}
+          </View>
+          {way.details ? (
+            <IconButton
+              icon={Copy}
+              label={tr('Copy')}
+              onPress={() =>
+                void copyText(way.details ?? '').then((ok) => ok && toast(tr('Copied')))
+              }
+              testID={`pay-copy-${way.id}`}
+            />
+          ) : null}
+          {way.url ? (
+            <Button
+              label={tr('Open')}
+              size="sm"
+              variant="secondary"
+              onPress={() => openLink(way.url ?? '')}
+              testID={`pay-open-${way.id}`}
+            />
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
 }
 
 /** The brief before a meeting (R58), loaded when asked for. */
@@ -71,6 +137,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     select: (d: { conversation: ConversationView }) => d.conversation.business?.thread ?? null,
   }).data;
   const { timeZone, locale } = useUserClock();
+  const meId = useSession((s) => s.user?.id ?? '');
   const clock = { now, timeZone, locale };
   const p = (m.payload ?? {}) as CardPayload;
   const state = p.state ?? '';
@@ -120,6 +187,37 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
 
   const kit = p.kit;
   if (kit === 'checklist') return <ChecklistCard m={m} mine={mine} />;
+  // Pay (R62): a priced booking or order offers it to whoever pays: an organization's customer,
+  // or whoever isn't the person paid; it opens the Pay card's form, filled and replying here.
+  const due =
+    kit === 'order_status' ? p.order?.total : kit === 'appointment' ? p.booking?.price : null;
+  const pays =
+    Boolean(due && p.payee) &&
+    !['cancelled', 'declined'].includes(state) &&
+    !m.deletedAt &&
+    (p.payee?.kind === 'org' ? thread === null : p.payee?.id !== meId);
+  const pay = pays
+    ? {
+        label: tr('Pay'),
+        testID: 'kit-pay',
+        onPress: () =>
+          useCardAction.setState({
+            request: {
+              conversationId: m.conversationId,
+              kit: 'payment_request',
+              start: {
+                direction: 'send',
+                amount: due ?? undefined,
+                note: [p.label ?? tr(KITS[kit].name), p.fields?.reference]
+                  .filter((x) => typeof x === 'string' && x)
+                  .join(' ')
+                  .slice(0, 200),
+                replyToId: m.id,
+              },
+            },
+          }),
+      }
+    : null;
   if (kit === 'shared_album') return <AlbumCard m={m} mine={mine} />;
   if (kit === 'split') return <SplitCard m={m} mine={mine} />;
   // Agreed and ahead (R58): what to know before it, from the card.
@@ -143,6 +241,8 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
         ...(kit === 'order_status' ? orderDetails(p.order) : []),
       ]}
       before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
+      action={pay}
+      extra={kit === 'payment_request' && p.payTo ? <PayToBlock to={p.payTo} /> : null}
       // In a conversation with an organization, the team is one side: anyone on it moves a card
       // the team sent, as the server has it.
       moves={
@@ -152,6 +252,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
               kit,
               state,
               mine || Boolean(thread?.customer && m.senderId !== thread.customer.id),
+              p.fields,
             )
       }
       testID={`kit-${kit}`}
@@ -171,6 +272,8 @@ function CardBody({
   moves,
   from,
   before,
+  action = null,
+  extra = null,
   testID,
 }: {
   m: MessageView;
@@ -185,6 +288,10 @@ function CardBody({
   from?: string;
   /** An agreed meeting ahead (R58): the brief opens from here. */
   before?: { messageId: string; title: string } | null;
+  /** One more thing to do from the card (R62: Pay a priced order). */
+  action?: { label: string; onPress: () => void; testID: string } | null;
+  /** What the card shows beneath its lines (R62: whom a Pay card pays, and how). */
+  extra?: React.ReactNode;
   testID: string;
 }) {
   const t = useTheme();
@@ -227,17 +334,18 @@ function CardBody({
           ))}
         </View>
       ) : null}
+      {extra}
       {from ? (
         <Text variant="caption" color="textTertiary">
           {tr('From {from}', { from })}
         </Text>
       ) : null}
-      {moves.length || before ? (
+      {moves.length || before || action ? (
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingTop: 2 }}>
           {moves.map((move, i) => (
             <Button
               key={move.to}
-              label={move.label}
+              label={tr(move.label)}
               size="sm"
               variant={i === 0 ? 'primary' : 'secondary'}
               loading={busy === move.to}
@@ -245,6 +353,15 @@ function CardBody({
               onPress={() => void go(move.to)}
             />
           ))}
+          {action ? (
+            <Button
+              label={action.label}
+              size="sm"
+              variant={moves.length ? 'secondary' : 'primary'}
+              onPress={action.onPress}
+              testID={action.testID}
+            />
+          ) : null}
           {before ? (
             <Button
               label={tr('Before it')}

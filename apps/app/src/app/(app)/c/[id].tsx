@@ -2,11 +2,12 @@ import { useLocalSearchParams } from 'expo-router';
 import { ConversationScreen } from '@/features/conversation/ConversationScreen';
 
 export default function Conversation() {
-  const { id, seq, book, order, item } = useLocalSearchParams<{
+  const { id, seq, book, order, pay, item } = useLocalSearchParams<{
     id: string;
     seq?: string;
     book?: string;
     order?: string;
+    pay?: string;
     item?: string;
   }>();
   const focusSeq = seq && /^\d+$/.test(seq) ? Number(seq) : undefined;
@@ -15,8 +16,17 @@ export default function Conversation() {
     <ConversationScreen
       id={id}
       focusSeq={focusSeq}
-      openKit={book !== undefined ? 'appointment' : order !== undefined ? 'order_status' : null}
-      kitStart={item ? { itemId: item } : null}
+      openKit={
+        book !== undefined
+          ? 'appointment'
+          : order !== undefined
+            ? 'order_status'
+            : pay !== undefined
+              ? 'payment_request'
+              : null
+      }
+      // `?pay` (R62): the Pay card, paying them.
+      kitStart={item ? { itemId: item } : pay !== undefined ? { direction: 'send' } : null}
       key={`${id}:${seq ?? ''}`}
     />
   );

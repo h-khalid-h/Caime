@@ -74,8 +74,9 @@ const ITEMS: Array<{
     href: '/settings/bookings',
     path: '/settings/bookings',
     icon: CalendarCheck,
-    title: msg('Bookings'),
-    subtitle: msg('Your hours, and what people may book'),
+    // One place for what someone offers (R58, R60, R61, R62): booked, ordered or paid.
+    title: msg('What you offer'),
+    subtitle: msg('Bookings, orders and ways to be paid'),
   },
   {
     href: '/settings/saved',

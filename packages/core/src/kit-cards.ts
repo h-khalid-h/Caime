@@ -50,11 +50,14 @@ export const KIT_MODES: Record<CardKitId, Mode> = {
   split: 'pay',
 };
 
-/** Who may move a card: whoever posted it, the others in the conversation, or anyone there. */
-export type KitWho = 'creator' | 'others' | 'anyone';
+/**
+ * Who may move a card: whoever posted it, the others in the conversation, or anyone there; on
+ * a Pay card (R62), whoever pays or whoever is paid, whichever side sent it.
+ */
+export type KitWho = 'creator' | 'others' | 'anyone' | 'payer' | 'payee';
 export interface KitMove {
   to: string;
-  /** The button: "Approve", "Mark paid". */
+  /** The button: "Approve", "Mark paid", as a key (shown through `tr`). */
   label: string;
   who: KitWho;
 }
@@ -63,96 +66,135 @@ const m = (to: string, label: string, who: KitWho): KitMove => ({ to, label, who
 /** From each state, the moves a card allows. A state with no moves is final. */
 export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
   approval: {
-    pending: [m('approved', 'Approve', 'others'), m('rejected', 'Reject', 'others')],
+    pending: [m('approved', msg('Approve'), 'others'), m('rejected', msg('Reject'), 'others')],
   },
   meeting: {
     proposed: [
-      m('accepted', 'Accept', 'others'),
-      m('declined', 'Decline', 'others'),
-      m('cancelled', 'Cancel', 'creator'),
+      m('accepted', msg('Accept'), 'others'),
+      m('declined', msg('Decline'), 'others'),
+      m('cancelled', msg('Cancel'), 'creator'),
     ],
-    accepted: [m('cancelled', 'Cancel', 'anyone')],
+    accepted: [m('cancelled', msg('Cancel'), 'anyone')],
   },
   document_review: {
     requested: [
-      m('in_review', 'Start review', 'others'),
-      m('approved', 'Approve', 'others'),
-      m('changes_requested', 'Ask for changes', 'others'),
+      m('in_review', msg('Start review'), 'others'),
+      m('approved', msg('Approve'), 'others'),
+      m('changes_requested', msg('Ask for changes'), 'others'),
     ],
     in_review: [
-      m('approved', 'Approve', 'others'),
-      m('changes_requested', 'Ask for changes', 'others'),
+      m('approved', msg('Approve'), 'others'),
+      m('changes_requested', msg('Ask for changes'), 'others'),
     ],
-    changes_requested: [m('requested', 'Ready again', 'creator')],
+    changes_requested: [m('requested', msg('Ready again'), 'creator')],
   },
   order_status: {
-    placed: [m('confirmed', 'Confirm', 'anyone'), m('cancelled', 'Cancel', 'anyone')],
+    placed: [m('confirmed', msg('Confirm'), 'anyone'), m('cancelled', msg('Cancel'), 'anyone')],
     // Ready to collect (R60), or on its way: whichever the order is.
     confirmed: [
-      m('ready', 'Ready to collect', 'anyone'),
-      m('shipped', 'Shipped', 'anyone'),
-      m('cancelled', 'Cancel', 'anyone'),
+      m('ready', msg('Ready to collect'), 'anyone'),
+      m('shipped', msg('Shipped'), 'anyone'),
+      m('cancelled', msg('Cancel'), 'anyone'),
     ],
-    ready: [m('delivered', 'Collected', 'anyone')],
-    shipped: [m('delivered', 'Delivered', 'anyone')],
+    ready: [m('delivered', msg('Collected'), 'anyone')],
+    shipped: [m('delivered', msg('Delivered'), 'anyone')],
   },
   delivery: {
     in_transit: [
-      m('out_for_delivery', 'Out for delivery', 'anyone'),
-      m('delivered', 'Delivered', 'anyone'),
-      m('problem', 'Report a problem', 'anyone'),
+      m('out_for_delivery', msg('Out for delivery'), 'anyone'),
+      m('delivered', msg('Delivered'), 'anyone'),
+      m('problem', msg('Report a problem'), 'anyone'),
     ],
     out_for_delivery: [
-      m('delivered', 'Delivered', 'anyone'),
-      m('problem', 'Report a problem', 'anyone'),
+      m('delivered', msg('Delivered'), 'anyone'),
+      m('problem', msg('Report a problem'), 'anyone'),
     ],
-    problem: [m('in_transit', 'On its way again', 'anyone'), m('delivered', 'Delivered', 'anyone')],
+    problem: [
+      m('in_transit', msg('On its way again'), 'anyone'),
+      m('delivered', msg('Delivered'), 'anyone'),
+    ],
   },
   invoice: {
     sent: [
-      m('paid', 'Mark paid', 'anyone'),
-      m('overdue', 'Mark overdue', 'creator'),
-      m('void', 'Void', 'creator'),
+      m('paid', msg('Mark paid'), 'anyone'),
+      m('overdue', msg('Mark overdue'), 'creator'),
+      m('void', msg('Void'), 'creator'),
     ],
-    overdue: [m('paid', 'Mark paid', 'anyone'), m('void', 'Void', 'creator')],
+    overdue: [m('paid', msg('Mark paid'), 'anyone'), m('void', msg('Void'), 'creator')],
   },
   purchase_order: {
-    sent: [m('accepted', 'Accept', 'others'), m('cancelled', 'Cancel', 'creator')],
-    accepted: [m('fulfilled', 'Fulfilled', 'anyone')],
+    sent: [m('accepted', msg('Accept'), 'others'), m('cancelled', msg('Cancel'), 'creator')],
+    accepted: [m('fulfilled', msg('Fulfilled'), 'anyone')],
   },
+  // Pay (R62): the payer says it's sent, the payee says it arrived; each side's own word.
   payment_request: {
-    requested: [m('paid', 'Mark paid', 'anyone'), m('declined', 'Decline', 'others')],
+    requested: [
+      m('sent', msg('I’ve paid'), 'payer'),
+      m('paid', msg('Mark received'), 'payee'),
+      m('declined', msg('Decline'), 'payer'),
+      m('cancelled', msg('Cancel'), 'payee'),
+    ],
+    sent: [
+      m('paid', msg('Received'), 'payee'),
+      m('not_received', msg('Not received yet'), 'payee'),
+    ],
+    not_received: [
+      m('sent', msg('Sent again'), 'payer'),
+      m('paid', msg('Received'), 'payee'),
+      m('cancelled', msg('Cancel'), 'anyone'),
+    ],
   },
   support_ticket: {
-    open: [m('in_progress', 'Start', 'others'), m('resolved', 'Resolved', 'anyone')],
+    open: [m('in_progress', msg('Start'), 'others'), m('resolved', msg('Resolved'), 'anyone')],
     in_progress: [
-      m('waiting', 'Waiting on a reply', 'others'),
-      m('resolved', 'Resolved', 'anyone'),
+      m('waiting', msg('Waiting on a reply'), 'others'),
+      m('resolved', msg('Resolved'), 'anyone'),
     ],
-    waiting: [m('in_progress', 'Back on it', 'anyone'), m('resolved', 'Resolved', 'anyone')],
-    resolved: [m('open', 'Reopen', 'anyone')],
+    waiting: [
+      m('in_progress', msg('Back on it'), 'anyone'),
+      m('resolved', msg('Resolved'), 'anyone'),
+    ],
+    resolved: [m('open', msg('Reopen'), 'anyone')],
   },
   appointment: {
-    requested: [m('confirmed', 'Confirm', 'others'), m('cancelled', 'Cancel', 'anyone')],
-    confirmed: [m('done', 'Done', 'anyone'), m('cancelled', 'Cancel', 'anyone')],
+    requested: [m('confirmed', msg('Confirm'), 'others'), m('cancelled', msg('Cancel'), 'anyone')],
+    confirmed: [m('done', msg('Done'), 'anyone'), m('cancelled', msg('Cancel'), 'anyone')],
   },
   // A checklist has no buttons to press: it's done when everything on it is ticked.
   checklist: {},
   // Whoever made an album decides when it's full: closed, nobody adds to it.
   shared_album: {
-    open: [m('closed', 'Close the album', 'creator')],
-    closed: [m('open', 'Reopen', 'creator')],
+    open: [m('closed', msg('Close the album'), 'creator')],
+    closed: [m('open', msg('Reopen'), 'creator')],
   },
   // A split has no buttons either: it's settled when every share is.
   split: {},
 };
 
-/** The moves this person may make on a card in this state. */
-export function kitMoves(kit: KitId, state: string, isCreator: boolean): KitMove[] {
+/**
+ * The moves this person may make on a card in this state. A Pay card's sides are its payer and
+ * its payee (R62): its sender pays when they said they're paying, and is paid when they asked.
+ */
+export function kitMoves(
+  kit: KitId,
+  state: string,
+  isCreator: boolean,
+  fields?: Record<string, unknown>,
+): KitMove[] {
   if (!isCardKit(kit)) return [];
-  return (KIT_FLOWS[kit][state] ?? []).filter(
-    (move) => move.who === 'anyone' || (move.who === 'creator') === isCreator,
-  );
+  const creatorPays = fields?.direction === 'send';
+  return (KIT_FLOWS[kit][state] ?? []).filter((move) => {
+    if (move.who === 'anyone') return true;
+    if (move.who === 'payer') return isCreator === creatorPays;
+    if (move.who === 'payee') return isCreator !== creatorPays;
+    return (move.who === 'creator') === isCreator;
+  });
+}
+
+/** Where a new card starts: its kit's first state, or "sent" for a Pay card that pays (R62). */
+export function initialKitState(kit: CardKitId, fields: Record<string, unknown>): string {
+  if (kit === 'payment_request' && fields.direction === 'send') return 'sent';
+  return KITS[kit].states[0] ?? '';
 }
 
 /** Every state a kit moves through, in English (the catalog's key): shown through `tr`. */
@@ -185,6 +227,7 @@ const STATE_LABELS: Record<string, string> = {
   requested: msg('Requested'),
   resolved: msg('Resolved'),
   sent: msg('Sent'),
+  not_received: msg('Not received yet'),
   settled: msg('Settled'),
   shared: msg('Shared'),
   shipped: msg('Shipped'),
@@ -208,6 +251,7 @@ const NEGATIVE = new Set([
   'problem',
   'overdue',
   'changes_requested',
+  'not_received',
 ]);
 
 /** A state's English label, the catalog's key: the app and the server show it through `tr`. */
@@ -554,7 +598,8 @@ const IN_HEADLINE: Partial<Record<KitId, string[]>> = {
   invoice: ['reference'],
   purchase_order: ['reference'],
   delivery: ['carrier', 'tracking'],
-  payment_request: ['amount', 'note'],
+  // The direction is the card's label and buttons; nothing to repeat.
+  payment_request: ['amount', 'note', 'direction'],
 };
 
 function whenText(v: unknown, now: Date, timeZone: string, locale: string): string {
@@ -665,12 +710,13 @@ export function fieldDetails(
         value = amountText(v, opts.locale);
         break;
       case 'options':
-        value = field.choices?.find((c) => c.value === v)?.label ?? String(v);
+        value = tr(field.choices?.find((c) => c.value === v)?.label ?? String(v));
         break;
       default:
         value = asText(v);
     }
-    if (value) out.push({ key: field.key, label: field.label, value });
+    // A label is a key, as the kit names it: shown in the reader's language.
+    if (value) out.push({ key: field.key, label: tr(field.label), value });
   }
   return out;
 }

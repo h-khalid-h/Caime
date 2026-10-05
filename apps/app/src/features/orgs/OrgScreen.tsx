@@ -39,6 +39,7 @@ import {
   CalendarCheck,
   Flag,
   Globe,
+  HandCoins,
   Inbox,
   LayoutGrid,
   LogOut,
@@ -71,18 +72,20 @@ import { setupNextLine } from './setupSteps';
  * the item chosen when one was; `c/[id]` reads it. Kept in each screen's chunk, not the startup
  * one (paths.ts is in it).
  */
-const cardParams = (
-  id: string,
-  kit: 'appointment' | 'order_status' | null,
-  itemId: string | null = null,
-) =>
+const cardParams = (id: string, kit: CardKit | null, itemId: string | null = null) =>
   kit
     ? {
         id,
-        ...(kit === 'appointment' ? { book: '1' } : { order: '1' }),
+        ...(kit === 'appointment'
+          ? { book: '1' }
+          : kit === 'order_status'
+            ? { order: '1' }
+            : { pay: '1' }),
         ...(itemId ? { item: itemId } : {}),
       }
     : { id };
+/** The cards a page opens on (R58, R60, R62). */
+type CardKit = 'appointment' | 'order_status' | 'payment_request';
 
 const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
 
@@ -96,7 +99,7 @@ export function OrgScreen({
   handle: string;
   write?: boolean;
   /** Arrived through a Book or an Order link (R58, R60): that card's form. */
-  book?: 'appointment' | 'order_status' | null;
+  book?: CardKit | null;
   /** One of its items or collections, by address (R61): its sheet, over the page. */
   slug?: string | null;
 }) {
@@ -128,7 +131,7 @@ export function OrgScreen({
   /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
   const message = async (
     orgId: string,
-    kit: 'appointment' | 'order_status' | null = null,
+    kit: CardKit | null = null,
     itemId: string | null = null,
   ) => {
     setStarting(true);
@@ -158,7 +161,9 @@ export function OrgScreen({
         const { conversationId } = await endpoints.messageOrg(org.id);
         void qc.invalidateQueries({ queryKey: qk.inbox });
         const kit =
-          (book === 'appointment' && org.booking) || (book === 'order_status' && org.ordering)
+          (book === 'appointment' && org.booking) ||
+          (book === 'order_status' && org.ordering) ||
+          (book === 'payment_request' && org.payable)
             ? book
             : null;
         // From an item's address, the item it was (R61).
@@ -376,6 +381,17 @@ export function OrgScreen({
                     style={{ marginTop: 6 }}
                     onPress={() => void message(org.id, 'order_status')}
                     testID="org-order"
+                  />
+                ) : null}
+                {org.payable ? (
+                  <Button
+                    label={tr('Pay')}
+                    icon={HandCoins}
+                    variant="secondary"
+                    disabled={starting}
+                    style={{ marginTop: 6 }}
+                    onPress={() => void message(org.id, 'payment_request')}
+                    testID="org-pay"
                   />
                 ) : null}
               </View>

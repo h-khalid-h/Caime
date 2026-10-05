@@ -25,6 +25,7 @@ import {
   type OrderAsk,
   type OrderingSettings,
   openSlots,
+  type PaymentSettings,
   type PlacedOrder,
   placeOrder,
   type Sphere,
@@ -49,6 +50,8 @@ export interface BookingHost {
   ordering: OrderingSettings | null;
   /** Its collections (R61). */
   collections: CatalogCollection[];
+  /** How it's paid (R62), or null. */
+  payments: PaymentSettings | null;
 }
 
 /** Someone's standing with the host, for an item's audience (core `canBook`). */
@@ -99,7 +102,13 @@ type CatalogRow = {
   booking_items: unknown;
   ordering?: unknown;
   collections?: unknown;
+  payments?: unknown;
 };
+
+/** How a host is paid (R62), as kept (a row read without the column has none). */
+export function paymentsOf(row: { payments?: unknown }): PaymentSettings | null {
+  return (row.payments as PaymentSettings | null | undefined) ?? null;
+}
 
 /** How a host takes orders, as kept (a row read without the column has none). */
 export function orderingOf(row: { ordering?: unknown }): OrderingSettings | null {
@@ -113,6 +122,7 @@ export function orgHost(org: CatalogRow): BookingHost {
     hours: bookingOf(org as Pick<Organization, 'booking'>),
     ...catalogOf(org),
     ordering: orderingOf(org),
+    payments: paymentsOf(org),
   };
 }
 
@@ -123,6 +133,7 @@ export function personHost(user: CatalogRow): BookingHost {
     hours: bookingOf(user as Pick<User, 'booking'>),
     ...catalogOf(user),
     ordering: orderingOf(user),
+    payments: paymentsOf(user),
   };
 }
 
@@ -389,6 +400,21 @@ export function catalogFrom(
     })),
     collections,
   ) as { items: BookingItem[]; collections: CatalogCollection[] };
+}
+
+/**
+ * Ways to be paid fit their host (R62): an adult's (a card about money is adults-only, R29), and
+ * an organization's for everyone or its customers, as its items are.
+ */
+export function assertPaymentsFit(
+  host: Pick<BookingHost, 'kind'>,
+  payments: PaymentSettings | null | undefined,
+  adult: boolean,
+): void {
+  if (!payments) return;
+  if (!adult) throw forbidden(tr('Ways to be paid are for people over 18.'));
+  if (host.kind === 'org' && payments.methods.some((m) => Array.isArray(m.audience)))
+    throw forbidden(tr('An organization’s items are public or for its customers.'));
 }
 
 export function assertItemsFit(

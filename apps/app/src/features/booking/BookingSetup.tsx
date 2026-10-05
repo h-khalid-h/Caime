@@ -32,6 +32,14 @@ import {
 } from '@caime/core/catalog';
 import { formatAmount } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
+import {
+  PAYMENT_KIND_LABELS,
+  PAYMENT_KINDS,
+  PAYMENT_METHODS_MAX,
+  type PaymentKind,
+  type PaymentMethod,
+  paymentUrlError,
+} from '@caime/core/payments';
 import type { Sphere } from '@caime/core/taxonomy';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -39,7 +47,7 @@ import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { CalendarCheck, Layers, Minus, Plus, ShoppingBag, Tag } from '@/ui/icons';
+import { CalendarCheck, HandCoins, Layers, Minus, Plus, ShoppingBag, Tag } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -232,6 +240,15 @@ export function BookingSetup({
   const saveItems = async (next: BookingItem[]) => {
     await save({ ...offer, items: next });
   };
+  // Ways to be paid (R62): set here with the rest; none left turns them off.
+  const [way, setWay] = useState<PaymentMethod | null>(null);
+  const methods = offer.payments?.methods ?? [];
+  const savePayments = async (next: PaymentMethod[]) => {
+    await save({
+      ...offer,
+      payments: next.length ? { methods: next, note: offer.payments?.note ?? null } : null,
+    });
+  };
   // Collections (R61): a shelf removed leaves its items in none.
   const [shelf, setShelf] = useState<CatalogCollection | null>(null);
   const saveCollections = async (next: CatalogCollection[]) => {
@@ -338,6 +355,40 @@ export function BookingSetup({
             })
           }
           testID={`${testID}-add-item`}
+        />
+      ) : null}
+      <SectionTitle>{tr('Ways to be paid')}</SectionTitle>
+      {methods.map((m) => (
+        <ListRow
+          key={m.id}
+          icon={HandCoins}
+          title={m.label}
+          subtitle={[tr(PAYMENT_KIND_LABELS[m.kind]), audienceLabel(m.audience, host.kind)].join(
+            ' · ',
+          )}
+          chevron
+          onPress={() => setWay(m)}
+          testID={`${testID}-way-${m.id}`}
+        />
+      ))}
+      {methods.length < PAYMENT_METHODS_MAX ? (
+        <ListRow
+          icon={Plus}
+          title={tr('Add a way to be paid')}
+          subtitle={tr(
+            'A bank account, a payment link of your own, a wallet number, or cash. A Pay card shows them to whoever pays; nothing is paid through Caime.',
+          )}
+          onPress={() =>
+            setWay({
+              id: newId(),
+              kind: 'bank',
+              label: '',
+              details: null,
+              url: null,
+              audience: 'connections',
+            })
+          }
+          testID={`${testID}-add-way`}
         />
       ) : null}
       <SectionTitle>{tr('Collections')}</SectionTitle>
@@ -577,6 +628,29 @@ export function BookingSetup({
           testID={`${testID}-item`}
         />
       ) : null}
+      {way ? (
+        <WayEditor
+          host={host}
+          way={way}
+          isNew={!methods.some((m) => m.id === way.id)}
+          onClose={() => setWay(null)}
+          onSave={async (w) => {
+            await savePayments(
+              methods.some((m) => m.id === w.id)
+                ? methods.map((m) => (m.id === w.id ? w : m))
+                : [...methods, w],
+            );
+            setWay(null);
+            toast(tr('Saved'));
+          }}
+          onRemove={async () => {
+            await savePayments(methods.filter((m) => m.id !== way.id));
+            setWay(null);
+            toast(tr('Removed'));
+          }}
+          testID={`${testID}-way`}
+        />
+      ) : null}
       {shelf ? (
         <CollectionEditor
           host={host}
@@ -618,7 +692,7 @@ function AudiencePicker({
   host: BookingHostInfo;
   audience: BookingAudience;
   onChange: (next: BookingAudience) => void;
-  noun: 'item' | 'collection';
+  noun: 'item' | 'collection' | 'way';
   testID: string;
 }) {
   const toggleSphere = (s: Sphere) => {
@@ -660,7 +734,13 @@ function AudiencePicker({
         {audience === 'public'
           ? noun === 'item'
             ? tr('Listed on your public page with its price; anyone can sign up and book it.')
-            : tr('A page of its own, listed on yours; what’s in it shows to whom each item allows.')
+            : noun === 'way'
+              ? tr(
+                  'Your page says you take it, never its details; a Pay card shows them to the payer.',
+                )
+              : tr(
+                  'A page of its own, listed on yours; what’s in it shows to whom each item allows.',
+                )
           : host.kind === 'org'
             ? tr('Anyone who writes to you on Caime.')
             : tr('Only the people you choose see it.')}
@@ -700,6 +780,148 @@ function AddressField({
       }
       testID={`${testID}-address`}
     />
+  );
+}
+
+/** One way to be paid (R62): what it is, what the payer needs, and who may see it. */
+function WayEditor({
+  host,
+  way,
+  isNew,
+  onClose,
+  onSave,
+  onRemove,
+  testID,
+}: {
+  host: BookingHostInfo;
+  way: PaymentMethod;
+  isNew: boolean;
+  onClose: () => void;
+  onSave: (w: PaymentMethod) => Promise<void>;
+  onRemove: () => Promise<void>;
+  testID: string;
+}) {
+  const [kind, setKind] = useState<PaymentKind>(way.kind);
+  const [label, setLabel] = useState(way.label);
+  const [details, setDetails] = useState(way.details ?? '');
+  const [url, setUrl] = useState(way.url ?? '');
+  const [audience, setAudience] = useState<BookingAudience>(way.audience);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'save' | 'remove' | null>(null);
+  const submit = async () => {
+    const name = label.trim() || tr(PAYMENT_KIND_LABELS[kind]);
+    const link = url.trim();
+    if (kind === 'link') {
+      const why = paymentUrlError(link);
+      if (why) return setError(tr(why));
+    }
+    if ((kind === 'bank' || kind === 'wallet') && !details.trim())
+      return setError(tr('Say what the payer needs: an account or a number.'));
+    setBusy('save');
+    setError(null);
+    try {
+      await onSave({
+        id: way.id,
+        kind,
+        label: name.slice(0, 60),
+        details: kind === 'cash' || kind === 'link' ? null : details.trim() || null,
+        url: kind === 'link' ? link : null,
+        audience,
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={isNew ? tr('A way to be paid') : way.label}
+      subtitle={tr('Nothing is paid through Caime: this is what the payer reads.')}
+      footer={
+        <View style={{ gap: 8 }}>
+          <Button
+            label={tr('Save')}
+            block
+            size="lg"
+            onPress={() => void submit()}
+            loading={busy === 'save'}
+            testID={`${testID}-save`}
+          />
+          {!isNew ? (
+            <Button
+              label={tr('Remove')}
+              variant="ghost"
+              block
+              loading={busy === 'remove'}
+              onPress={() => {
+                setBusy('remove');
+                void onRemove().finally(() => setBusy(null));
+              }}
+              testID={`${testID}-remove`}
+            />
+          ) : null}
+        </View>
+      }
+    >
+      <View style={{ gap: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {PAYMENT_KINDS.map((k) => (
+            <Chip
+              key={k}
+              label={tr(PAYMENT_KIND_LABELS[k])}
+              selected={kind === k}
+              role="radio"
+              onPress={() => setKind(k)}
+              testID={`${testID}-${k}`}
+            />
+          ))}
+        </View>
+        <TextField
+          label={tr('Name')}
+          placeholder={tr(PAYMENT_KIND_LABELS[kind])}
+          value={label}
+          onChangeText={setLabel}
+          maxLength={60}
+          testID={`${testID}-label`}
+        />
+        {kind === 'link' ? (
+          <TextField
+            label={tr('Your payment link')}
+            placeholder="https://"
+            value={url}
+            onChangeText={setUrl}
+            autoCapitalize="none"
+            keyboardType="url"
+            maxLength={500}
+            testID={`${testID}-url`}
+          />
+        ) : kind !== 'cash' ? (
+          <TextField
+            label={kind === 'bank' ? tr('Account or IBAN') : tr('What the payer needs')}
+            value={details}
+            onChangeText={setDetails}
+            maxLength={300}
+            multiline
+            testID={`${testID}-details`}
+          />
+        ) : null}
+        <AudiencePicker
+          host={host}
+          audience={audience}
+          onChange={setAudience}
+          noun="way"
+          testID={testID}
+        />
+        {error ? (
+          <Text variant="bodyStrong" color="danger" testID={`${testID}-error`}>
+            {error}
+          </Text>
+        ) : null}
+      </View>
+    </Sheet>
   );
 }
 

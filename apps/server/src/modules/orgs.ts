@@ -17,6 +17,7 @@ import {
   canManageOrg,
   canRemoveFromOrg,
   handsOverOnLeaving,
+  methodsFor,
   nextOwner,
   normalizeDomain,
   OrgDomainBody,
@@ -50,7 +51,15 @@ import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
-import { bookingOf, catalogOf, itemsFor, itemsOf, orderingOf, orgHost } from '../lib/booking';
+import {
+  bookingOf,
+  catalogOf,
+  itemsFor,
+  itemsOf,
+  orderingOf,
+  orgHost,
+  paymentsOf,
+} from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -193,6 +202,10 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     collections: seat
       ? catalogOf(org).collections
       : visibleCollections(catalogOf(org).collections, { isConnected: true, spheres: [] }),
+    // Pay (R62): offered to a customer it has a way for; the ways themselves only to whoever
+    // sets them, and on a Pay card to its payer.
+    payable: !seat && methodsFor(paymentsOf(org), { isConnected: true, spheres: [] }).length > 0,
+    payments: seat && canManageOrg(seat.role) ? paymentsOf(org) : null,
     retentionDays: org.retention_days,
   };
 }

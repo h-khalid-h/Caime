@@ -461,7 +461,6 @@ export const turkishServer: Catalog = {
   'AI assist didn’t work this time. Try again.': 'AI yardımı bu sefer çalışmadı. Yeniden deneyin.',
   'Webhooks go to https addresses.': 'Webhook’lar https adreslerine gider.',
   'That address is on a private network.': 'Bu adres özel bir ağda.',
-  'Leave passwords out of the address.': 'Parolaları adrese koymayın.',
   '{plan} can’t be bought right now.': '{plan} şu anda satın alınamıyor.',
   '{lead}: Stripe said “{message}”.': '{lead}: Stripe “{message}” dedi.',
   '{plan} is part of this plan already.': '{plan} zaten bu plana dahil.',
@@ -926,4 +925,8 @@ export const turkishServer: Catalog = {
   'They don’t offer that way.': 'Bu yolu sunmuyorlar.',
   offers: 'sunduklar',
   collections: 'koleksiyonlar',
+  'Ways to be paid are for people over 18.': 'Ödeme alma yolları 18 yaşından büyükler içindir.',
+  'In a group, ask to be paid; say you’re paying where it’s two of you.':
+    'Bir grupta ödeme isteyin; ödediğinizi yalnızca ikiniz olduğunuz yerde söyleyin.',
+  'pays by': 'ödeme yolu',
 };

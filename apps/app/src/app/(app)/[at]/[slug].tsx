@@ -18,7 +18,14 @@ export default function HandleItemLink() {
     slug = '',
     book,
     order,
-  } = useLocalSearchParams<{ at: string; slug: string; book?: string; order?: string }>();
+    pay,
+  } = useLocalSearchParams<{
+    at: string;
+    slug: string;
+    book?: string;
+    order?: string;
+    pay?: string;
+  }>();
   const handle = at.startsWith('@') && at.length > 1 ? at.slice(1) : null;
   const q = useQuery({
     queryKey: qk.handle(handle ?? ''),
@@ -28,7 +35,14 @@ export default function HandleItemLink() {
   });
   const found = q.data;
   useEffect(() => {
-    const more = book !== undefined ? { book: '1' } : order !== undefined ? { order: '1' } : {};
+    const more =
+      book !== undefined
+        ? { book: '1' }
+        : order !== undefined
+          ? { order: '1' }
+          : pay !== undefined
+            ? { pay: '1' }
+            : {};
     if (q.isError || handle === null) {
       router.replace({ pathname: '/[at]', params: { at } });
       return;
@@ -40,7 +54,7 @@ export default function HandleItemLink() {
         params: { handle: found.handle, item: slug, ...more },
       });
     else router.replace({ pathname: '/p/[id]', params: { id: found.id, item: slug, ...more } });
-  }, [found, q.isError, handle, at, slug, book, order]);
+  }, [found, q.isError, handle, at, slug, book, order, pay]);
   return (
     <Screen>
       <SkeletonRows />

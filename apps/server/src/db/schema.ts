@@ -8,6 +8,7 @@ import type {
   CatalogCollection,
   CustomKitDef,
   OrderingSettings,
+  PaymentSettings,
 } from '@caime/core';
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
 
@@ -58,6 +59,7 @@ export interface UsersTable {
   /** How it takes orders (R60), or null: core `OrderingSettings`. */
   ordering: Json<OrderingSettings | null> | null;
   collections: JsonDefaulted<CatalogCollection[]>;
+  payments: Json<PaymentSettings | null> | null;
   ai_enabled: Defaulted<boolean>;
   onboarded_at: NullableTimestamp;
   /** When they said their recovery codes are saved (R56); null while the app still asks. */
@@ -744,6 +746,7 @@ export interface OrganizationsTable {
   /** How it takes orders (R60), or null: core `OrderingSettings`. */
   ordering: Json<OrderingSettings | null> | null;
   collections: JsonDefaulted<CatalogCollection[]>;
+  payments: Json<PaymentSettings | null> | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retention_days: number | null;
   /** Closed: who is proving its domain to take it back (R42), and the record they must add. */
