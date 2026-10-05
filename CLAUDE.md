@@ -39,7 +39,7 @@ pnpm dev:server              # API on :8787 (DATABASE_URL; see apps/server/.env.
 pnpm dev:app                 # Expo dev server; press w for web (talks to :8787)
 pnpm dev:phone               # Expo Go on a phone against the live Caime (docs/DEPLOY.md, Expo Go)
 pnpm build                   # web export (apps/app/dist) + server bundle (apps/server/dist)
-pnpm budget                  # initial web JS, gzip, must stay under 450 KB
+pnpm budget                  # initial web JS, gzip, under 450 KB; every later chunk under 100 KB
 pnpm e2e                     # Playwright against the bundle; set E2E_DATABASE_URL
                              #   (default .../caishy_e2e, create it first)
 pnpm start                   # run the bundled server (what the Docker image runs)
@@ -740,8 +740,10 @@ These are rules, not preferences.
   out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
   it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The
   desktop panes and the tabs that show them take them lazily from `features/shell/panes.ts`, so
-  none is in the first download. Measure with `node scripts/bundle-budget.mjs <dist>` after an
-  `expo export --source-maps`, and look at what's in `__common` before splitting anything.
+  none is in the first download (`panes.test.ts` fails on a static import of one). Measure with
+  `node scripts/bundle-budget.mjs <dist>` after an `expo export --source-maps`, which also lists
+  the largest chunks loaded later and fails for any over 100 KB gzip (a language's catalog, the
+  conversation screen), and look at what's in `__common` before splitting anything.
   A part that is a whole tab or pane takes a failure screen (`lazyPart(load, ScreenError)`).
 - A group's topics (`isGroupTopic`: a group with a `parent_id`) have its people in its roles.
   Any change to a group's participants or roles calls `mirrorTopics(trx, groupId, ctx.now())`

@@ -944,8 +944,13 @@ listed there with its owner.
       the source by `messaging.test.ts`); the app's query cache is saved at most every 1.5 s and
       serialised in idle time (`queryClient.ts`, its own persister; the async-storage persister
       package is gone).
-- [ ] Next block: the review's remaining mediums (typed responses on every route; the budget
-      script's blind spots), and the owner's ⛔ items as they come.
+- [x] The budget's blind spots: `pnpm budget` measures the chunks loaded later as well (84, 476
+      KB gzip in all), prints the five largest (the Arabic catalog 69.5 KB, the conversation
+      screen 68.6 KB, French 57.9 KB, private conversations 24.9 KB, the stack 15.5 KB) and fails
+      for any one over 100 KB; `features/shell/panes.test.ts` fails on a static import of a pane
+      anywhere in the app.
+- [ ] Next block: typed responses on every route (the review's last medium), and the owner's ⛔
+      items as they come.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1968,3 +1973,5 @@ listed there with its owner.
 - 2026-10-05 — The review's performance mediums: set queries in the AI actions route, bounded
   background sweeps, the covered index dropped, no tsvector in a message row, cache tokens
   recorded, the query cache serialised in idle time.
+- 2026-10-05 — The budget measures the chunks loaded later (100 KB each) and a test holds the
+  panes to lazy imports.
