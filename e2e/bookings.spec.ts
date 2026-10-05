@@ -197,4 +197,62 @@ test.describe
       expect(customerErrors).toEqual([]);
       await phone.close();
     });
+
+    test('collections and item pages (R61): a shelf, a page for an item, and Order from it', async ({
+      browser,
+    }) => {
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/setup`);
+      await page.getByTestId('org-booking-add-collection').click();
+      await page.getByTestId('org-booking-collection-name').fill('Hair care');
+      await page.getByTestId('org-booking-collection-description').fill('For after the chair.');
+      await page.getByTestId('org-booking-collection-save').click();
+      await expect(visible(page, /0 items · Everyone/)).toBeVisible();
+      // The oil joins the shelf from its own sheet.
+      await visible(page, 'Hair oil').click();
+      await page.locator('[data-testid^="org-booking-item-in-"]').first().click();
+      await page.getByTestId('org-booking-item-description').fill('Argan, 50 ml.');
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, /1 item · Everyone/)).toBeVisible();
+      expect(errors).toEqual([]);
+      await owner.close();
+
+      // A visitor reads the item's own page, as a search engine does.
+      const visitor = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const site = await visitor.newPage();
+      await site.goto(`/o/${handle}/hair-oil`);
+      await expect(site.getByRole('heading', { level: 1 })).toHaveText('Hair oil');
+      await expect(site.getByText('Argan, 50 ml.')).toBeVisible();
+      await expect(site.getByRole('link', { name: 'Hair care' }).first()).toBeVisible();
+      const ld = await site.locator('script[type="application/ld+json"]').textContent();
+      expect(ld).toContain('"@type":"Product"');
+      await site.getByRole('link', { name: 'Hair care' }).first().click();
+      await expect(site.getByRole('heading', { level: 1 })).toHaveText('Hair care');
+      await visitor.close();
+
+      // Signed in, the same address is the organization's page with the item over it; Order
+      // opens the card's form with it chosen.
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/o/${handle}/hair-oil`);
+      const sheet = c.getByTestId('item-sheet');
+      await expect(sheet).toBeInViewport({ ratio: 1 });
+      await expect(sheet).toContainText('Hair care');
+      await c.screenshot({ path: 'e2e/screenshots/phone-item-sheet.png', animations: 'disabled' });
+      await c.getByTestId('item-take').click();
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?order=1&item=/);
+      const picker = c.getByTestId('order-picker');
+      await expect(picker).toBeVisible();
+      await expect(picker).toContainText('Hair care');
+      await expect(picker.locator('[data-testid^="order-count-"]').first()).toHaveText('1');
+      expect(customerErrors).toEqual([]);
+      await phone.close();
+    });
   });

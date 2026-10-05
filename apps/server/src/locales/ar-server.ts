@@ -144,7 +144,6 @@ export const arServer: Catalog = {
   money: 'المال',
   'Never held or moved by Caime. A split records who owes whom; nothing else.':
     'لا يحتفظ به Caime ولا يحرّكه أبدًا. التقسيم يسجّل من يدين لمن؛ لا أكثر.',
-  price: 'السعر',
   'Free for people, always. Organizations start free and can buy Business.':
     'مجاني للأفراد، دائمًا. تبدأ المؤسسات مجانًا ويمكنها شراء Business.',
   'runs on': 'يعمل على',
@@ -951,4 +950,5 @@ export const arServer: Catalog = {
   'Up to {n} of that in one order.': 'حتى {n} من هذا في الطلب الواحد.',
   'They don’t offer that way.': 'لا يقدّمون هذه الطريقة.',
   offers: 'يقدّم',
+  collections: 'المجموعات',
 };

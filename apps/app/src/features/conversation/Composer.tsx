@@ -25,7 +25,7 @@ import { loadPrivate, useOpened, useThisDevice, whyNotWritten } from '@/features
 import { StartOverSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
 import { iconNamed, KIT_ICONS } from '@/features/kits/icons';
-import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
+import { type KitChoice, KitForm, type KitStart, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
 import type { Recorded } from '@/features/voice/Recorder';
@@ -89,6 +89,8 @@ export interface ComposerProps {
   where: { conversationId: string; private: boolean };
   /** Opened on this card's form (a Book link, R58). */
   openKit?: KitChoice | null;
+  /** What that form starts with (R61): the item chosen. */
+  kitStart?: KitStart | null;
 }
 
 const MIN_H = 44;
@@ -108,6 +110,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     placeholder,
     where,
     openKit,
+    kitStart,
   },
   ref,
 ) {
@@ -125,6 +128,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
   const [kit, setKit] = useState<KitChoice | null>(openKit ?? null);
+  // What the form opened with starts with (R61, R62); a form opened from "+" starts empty.
+  const [start, setStart] = useState<KitStart | null>(openKit ? (kitStart ?? null) : null);
   const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
   const [rewrite, setRewrite] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -747,9 +752,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         conversation={conversation}
         kit={kit}
         custom={custom}
+        start={start}
         onClose={() => {
           setKit(null);
           setCustom(null);
+          setStart(null);
         }}
       />
       {aiReady ? (

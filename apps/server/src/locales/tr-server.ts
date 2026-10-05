@@ -168,7 +168,6 @@ export const turkishServer: Catalog = {
   money: 'para',
   'Never held or moved by Caime. A split records who owes whom; nothing else.':
     'Caime asla tutmaz ve aktarmaz. Bir bölüşme kimin kime borçlu olduğunu kaydeder; o kadar.',
-  price: 'fiyat',
   'Free for people, always. Organizations start free and can buy Business.':
     'Kişiler için her zaman ücretsiz. Kuruluşlar ücretsiz başlar ve Business satın alabilir.',
   'runs on': 'çalıştığı yer',
@@ -926,4 +925,5 @@ export const turkishServer: Catalog = {
   'Up to {n} of that in one order.': 'Bir siparişte bundan en fazla {n}.',
   'They don’t offer that way.': 'Bu yolu sunmuyorlar.',
   offers: 'sunduklar',
+  collections: 'koleksiyonlar',
 };

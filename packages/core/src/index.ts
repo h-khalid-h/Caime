@@ -9,6 +9,7 @@ export * from './billing';
 export * from './booking';
 export * from './business';
 export * from './calls';
+export * from './catalog';
 export * from './custom-kits';
 export * from './e2ee';
 export * from './errors';

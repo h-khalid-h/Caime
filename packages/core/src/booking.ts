@@ -5,6 +5,7 @@
  * here touches a clock or a store. Times are the host's own, in its time zone; a slot is an
  * instant, so a booker anywhere sees it in theirs.
  */
+import { msg, tr } from './i18n';
 import type { Sphere } from './taxonomy';
 import { addDays, zonedParts, zonedTimeToUtc } from './time';
 
@@ -151,6 +152,12 @@ export interface BookingItem {
   /** Team members' ids (an organization's); null for anyone on the team, or a person's own. */
   providers: string[] | null;
   askTopic: boolean;
+  /** Its address under the host's (R61): `/o/<handle>/<slug>` for a public item. */
+  slug: string;
+  /** A line or two about it, shown on its page and under its name in a picker. */
+  description: string | null;
+  /** The collection it's in (R61), or none. */
+  collectionId: string | null;
 }
 
 /** What a card keeps of the item it booked (`payload.booking`), fixed at the time of booking. */
@@ -308,14 +315,27 @@ export function canBook(
   return audience.some((s) => viewer.spheres.includes(s));
 }
 
-/** The items this viewer may book, in the host's order. */
+/**
+ * The items this viewer may book, in the host's order: the item's audience allows them, and its
+ * collection's too (R61), when it's in one.
+ */
 export function bookableItems(
   items: readonly BookingItem[],
   viewer: { isSelf?: boolean; isConnected: boolean; spheres: readonly Sphere[] },
-  opts: { adult: boolean } = { adult: true },
+  opts: {
+    adult: boolean;
+    collections?: ReadonlyArray<{ id: string; audience: BookingAudience }>;
+  } = { adult: true },
 ): BookingItem[] {
+  const shelf = new Map((opts.collections ?? []).map((c) => [c.id, c.audience]));
+  const shelfAllows = (i: BookingItem) => {
+    const audience = i.collectionId ? shelf.get(i.collectionId) : undefined;
+    return audience === undefined || canBook(audience, viewer);
+  };
   // A paid item is a card about money: adults only (R29, R38).
-  return items.filter((i) => canBook(i.audience, viewer) && (opts.adult || i.price === null));
+  return items.filter(
+    (i) => canBook(i.audience, viewer) && shelfAllows(i) && (opts.adult || i.price === null),
+  );
 }
 
 /** The whole booking's price: the item's, times the quantity. */
@@ -330,7 +350,17 @@ export function bookingPrice(
   };
 }
 
-const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** A week's days, short, as keys (Sunday first, as JavaScript counts): shown through `tr`. */
+export const DAY_SHORT = [
+  msg('Sun'),
+  msg('Mon'),
+  msg('Tue'),
+  msg('Wed'),
+  msg('Thu'),
+  msg('Fri'),
+  msg('Sat'),
+];
+const day = (n: number | undefined) => tr(DAY_SHORT[n ?? 0] ?? 'Sun');
 
 /** "Sun–Thu 9:00–17:00, Sat 9:00–13:00 · 30 min": how a page says the hours. */
 export function describeHours(hours: BookingHours): string {
@@ -347,10 +377,10 @@ export function describeHours(hours: BookingHours): string {
       while (j + 1 < days.length && days[j + 1] === (days[j] ?? 0) + 1) j++;
       parts.push(
         j - i >= 2
-          ? `${DAY_SHORT[days[i] ?? 0]}–${DAY_SHORT[days[j] ?? 0]}`
+          ? `${day(days[i])}–${day(days[j])}`
           : days
               .slice(i, j + 1)
-              .map((x) => DAY_SHORT[x])
+              .map((x) => day(x))
               .join(', '),
       );
       i = j + 1;
@@ -361,5 +391,32 @@ export function describeHours(hours: BookingHours): string {
   const ranges = [...byRange].map(
     ([range, days]) => `${runs(days)} ${range.split('–').map(trim).join('–')}`,
   );
-  return `${ranges.join(', ')} · ${hours.slotMinutes} min`;
+  return `${ranges.join(', ')} · ${tr('{m} min', { m: hours.slotMinutes })}`;
+}
+
+// Grouping by collection (R61) lives here, beside the items, so a picker that only groups
+// doesn't pull the catalog's address rules (catalog.ts) into every chunk.
+/** The items of a collection, or those in none, in the host's order. */
+export function itemsIn<I extends Pick<BookingItem, 'collectionId'>>(
+  items: readonly I[],
+  collectionId: string | null,
+): I[] {
+  return items.filter((i) => (i.collectionId ?? null) === collectionId);
+}
+
+/**
+ * The catalog grouped for a picker or a page: each collection with its items (empty ones
+ * left out), then whatever is in none, under a null heading.
+ */
+export function grouped<
+  I extends Pick<BookingItem, 'collectionId'>,
+  C extends { id: string; name: string },
+>(items: readonly I[], collections: readonly C[]): Array<{ collection: C | null; items: I[] }> {
+  const known = new Set(collections.map((c) => c.id));
+  const out: Array<{ collection: C | null; items: I[] }> = collections
+    .map((c) => ({ collection: c as C | null, items: itemsIn(items, c.id) }))
+    .filter((g) => g.items.length > 0);
+  const loose = items.filter((i) => !i.collectionId || !known.has(i.collectionId));
+  if (loose.length) out.push({ collection: null, items: loose });
+  return out;
 }

@@ -1,5 +1,5 @@
 import type { OrgMemberView, OrgView } from '@caime/core/api';
-import { describeHours } from '@caime/core/booking';
+import { describeHours, isOrdered } from '@caime/core/booking';
 import { tr, trn } from '@caime/core/i18n';
 import {
   canChangeOrgRole,
@@ -50,6 +50,7 @@ import {
   UserPlus,
   Wrench,
 } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
@@ -65,16 +66,39 @@ import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine } from './planLine';
 import { setupNextLine } from './setupSteps';
 
+/**
+ * Where a Book or an Order lands (R58, R60, R61): the conversation, on that card's form, with
+ * the item chosen when one was; `c/[id]` reads it. Kept in each screen's chunk, not the startup
+ * one (paths.ts is in it).
+ */
+const cardParams = (
+  id: string,
+  kit: 'appointment' | 'order_status' | null,
+  itemId: string | null = null,
+) =>
+  kit
+    ? {
+        id,
+        ...(kit === 'appointment' ? { book: '1' } : { order: '1' }),
+        ...(itemId ? { item: itemId } : {}),
+      }
+    : { id };
+
+const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
+
 /** An organization (PRD §36): who it is, whether that's verified, and its team. */
 export function OrgScreen({
   handle,
   write = false,
   book = null,
+  slug = null,
 }: {
   handle: string;
   write?: boolean;
   /** Arrived through a Book or an Order link (R58, R60): that card's form. */
   book?: 'appointment' | 'order_status' | null;
+  /** One of its items or collections, by address (R61): its sheet, over the page. */
+  slug?: string | null;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -102,21 +126,17 @@ export function OrgScreen({
   const waiting = teams?.find((x) => x.org.id === org?.id);
 
   /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
-  const message = async (orgId: string, kit: 'appointment' | 'order_status' | null = null) => {
+  const message = async (
+    orgId: string,
+    kit: 'appointment' | 'order_status' | null = null,
+    itemId: string | null = null,
+  ) => {
     setStarting(true);
     try {
       const { conversationId } = await endpoints.messageOrg(orgId);
       void qc.invalidateQueries({ queryKey: qk.inbox });
-      // Book (R58): the conversation opens on the appointment card's form.
-      router.push({
-        pathname: '/c/[id]',
-        params:
-          kit === 'appointment'
-            ? { id: conversationId, book: '1' }
-            : kit === 'order_status'
-              ? { id: conversationId, order: '1' }
-              : { id: conversationId },
-      });
+      // Book (R58): the conversation opens on the card's form, with the item chosen (R61).
+      router.push({ pathname: '/c/[id]', params: cardParams(conversationId, kit, itemId) });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -137,22 +157,20 @@ export function OrgScreen({
       try {
         const { conversationId } = await endpoints.messageOrg(org.id);
         void qc.invalidateQueries({ queryKey: qk.inbox });
-        router.replace({
-          pathname: '/c/[id]',
-          params:
-            book === 'appointment' && org.booking
-              ? { id: conversationId, book: '1' }
-              : book === 'order_status' && org.ordering
-                ? { id: conversationId, order: '1' }
-                : { id: conversationId },
-        });
+        const kit =
+          (book === 'appointment' && org.booking) || (book === 'order_status' && org.ordering)
+            ? book
+            : null;
+        // From an item's address, the item it was (R61).
+        const itemId = slug ? (org.bookingItems.find((i) => i.slug === slug)?.id ?? null) : null;
+        router.replace({ pathname: '/c/[id]', params: cardParams(conversationId, kit, itemId) });
       } catch (e) {
         toast((e as Error).message, { tone: 'danger' });
       } finally {
         setStarting(false);
       }
     })();
-  }, [write, book, org, canWrite, qc]);
+  }, [write, book, slug, org, canWrite, qc]);
 
   const put = (o: OrgView) => {
     qc.setQueryData(qk.org(handle), { org: o });
@@ -854,6 +872,25 @@ export function OrgScreen({
       >
         <View />
       </Sheet>
+      {/* One of its items or collections, by address (R61). */}
+      {slug && !book ? (
+        <ItemSheet
+          slug={slug}
+          hostPath={`/o/${org.handle}`}
+          items={org.bookingItems.filter((i) =>
+            isOrdered(i) ? Boolean(org.ordering) : Boolean(org.booking),
+          )}
+          collections={org.collections}
+          locale={locale}
+          onPick={(next) => router.setParams({ item: next })}
+          onTake={
+            canWrite
+              ? (i) => void message(org.id, isOrdered(i) ? 'order_status' : 'appointment', i.id)
+              : null
+          }
+          onClose={() => router.setParams({ item: undefined })}
+        />
+      ) : null}
       {manager ? (
         <OrgDetailsSheet
           key={`${org.id}:${editing}`}

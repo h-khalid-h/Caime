@@ -6,14 +6,30 @@
  * for an organization, who on the team does it. One component for both, so a clinic and a
  * consultant set up the same thing the same way.
  */
-import type { BookingHours, BookingItem, BookingUnit, OrderingSettings } from '@caime/core/booking';
+import type { BookingResponse } from '@caime/core/api';
+import type {
+  BookingAudience,
+  BookingHours,
+  BookingItem,
+  BookingUnit,
+  OrderingSettings,
+} from '@caime/core/booking';
 import {
   BOOKING_CAPACITY_MAX,
   BOOKING_DAYS_MAX,
   BOOKING_ITEMS_MAX,
+  DAY_SHORT,
   describeHours,
   SLOT_MINUTES,
 } from '@caime/core/booking';
+import {
+  type CatalogCollection,
+  COLLECTIONS_MAX,
+  grouped,
+  SLUG_MAX,
+  slugError,
+  slugify,
+} from '@caime/core/catalog';
 import { formatAmount } from '@caime/core/format';
 import { msg, tr, trn } from '@caime/core/i18n';
 import type { Sphere } from '@caime/core/taxonomy';
@@ -23,7 +39,7 @@ import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { CalendarCheck, Minus, Plus, ShoppingBag, Tag } from '@/ui/icons';
+import { CalendarCheck, Layers, Minus, Plus, ShoppingBag, Tag } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -31,18 +47,17 @@ import { TextField } from '@/ui/TextField';
 import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const LEADS: Array<{ value: number; label: string }> = [
   { value: 0, label: msg('Any time') },
-  { value: 60, label: '1 hour ahead' },
-  { value: 120, label: '2 hours ahead' },
+  { value: 60, label: msg('An hour ahead') },
+  { value: 120, label: msg('2 hours ahead') },
   { value: 1440, label: msg('A day ahead') },
 ];
 const HORIZONS: Array<{ value: number; label: string }> = [
   { value: 7, label: msg('A week') },
-  { value: 14, label: '2 weeks' },
+  { value: 14, label: msg('2 weeks') },
   { value: 30, label: msg('A month') },
-  { value: 60, label: '2 months' },
+  { value: 60, label: msg('2 months') },
 ];
 /** A person's audiences beyond everyone and their connections: the spheres a rate is for. */
 const PERSON_SPHERES: Array<{ sphere: Sphere; label: string }> = [
@@ -125,25 +140,18 @@ function Stepper({
 
 export function BookingSetup({
   host,
-  hours,
-  items,
-  ordering,
+  offer,
   save,
   testID = 'booking',
 }: {
   host: BookingHostInfo;
-  hours: BookingHours | null;
-  items: BookingItem[];
-  /** How the host takes orders (R60), or null for none. */
-  ordering: OrderingSettings | null;
-  /** Saves all three; throws with a message the person can read. */
-  save: (
-    hours: BookingHours | null,
-    items: BookingItem[],
-    ordering: OrderingSettings | null,
-  ) => Promise<void>;
+  /** What the host offers: hours, catalog, orders (R60) and collections (R61), as saved. */
+  offer: BookingResponse;
+  /** Saves it whole; throws with a message the person can read. */
+  save: (next: BookingResponse) => Promise<void>;
   testID?: string;
 }) {
+  const { booking: hours, items, ordering, collections } = offer;
   const { timeZone, locale } = useUserClock();
   const [open, setOpen] = useState(false);
   const [days, setDays] = useState<number[]>([]);
@@ -169,7 +177,7 @@ export function BookingSetup({
     setBusy(true);
     setError(null);
     try {
-      await save(hours, items, next);
+      await save({ ...offer, ordering: next });
       setOrdersOpen(false);
       toast(next ? tr('Orders are on') : tr('Orders are off'));
     } catch (e) {
@@ -195,7 +203,7 @@ export function BookingSetup({
     setBusy(true);
     setError(null);
     try {
-      await save(next, items, ordering);
+      await save({ ...offer, booking: next });
       setOpen(false);
       toast(
         next
@@ -222,7 +230,19 @@ export function BookingSetup({
     });
   };
   const saveItems = async (next: BookingItem[]) => {
-    await save(hours, next, ordering);
+    await save({ ...offer, items: next });
+  };
+  // Collections (R61): a shelf removed leaves its items in none.
+  const [shelf, setShelf] = useState<CatalogCollection | null>(null);
+  const saveCollections = async (next: CatalogCollection[]) => {
+    const kept = new Set(next.map((c) => c.id));
+    await save({
+      ...offer,
+      collections: next,
+      items: items.map((i) =>
+        i.collectionId && !kept.has(i.collectionId) ? { ...i, collectionId: null } : i,
+      ),
+    });
   };
 
   return (
@@ -264,16 +284,30 @@ export function BookingSetup({
         onPress={editOrders}
         testID={`${testID}-orders`}
       />
-      {items.map((item) => (
-        <ListRow
-          key={item.id}
-          icon={Tag}
-          title={item.name}
-          subtitle={itemLine(item, locale, host)}
-          chevron
-          onPress={() => setEditing(item)}
-          testID={`${testID}-item-${item.id}`}
-        />
+      {grouped(items, collections).map((g) => (
+        <View key={g.collection?.id ?? 'loose'}>
+          {g.collection && collections.length ? (
+            <Text
+              variant="overline"
+              color="textTertiary"
+              style={{ paddingHorizontal: 16, paddingTop: 8 }}
+              accessibilityRole="header"
+            >
+              {g.collection.name}
+            </Text>
+          ) : null}
+          {g.items.map((item) => (
+            <ListRow
+              key={item.id}
+              icon={Tag}
+              title={item.name}
+              subtitle={itemLine(item, locale, host)}
+              chevron
+              onPress={() => setEditing(item)}
+              testID={`${testID}-item-${item.id}`}
+            />
+          ))}
+        </View>
       ))}
       {items.length < BOOKING_ITEMS_MAX ? (
         <ListRow
@@ -298,9 +332,46 @@ export function BookingSetup({
               audience: host.kind === 'org' ? 'connections' : 'connections',
               providers: null,
               askTopic: false,
+              slug: '',
+              description: null,
+              collectionId: null,
             })
           }
           testID={`${testID}-add-item`}
+        />
+      ) : null}
+      <SectionTitle>{tr('Collections')}</SectionTitle>
+      {collections.map((c) => (
+        <ListRow
+          key={c.id}
+          icon={Layers}
+          title={c.name}
+          subtitle={[
+            trn(items.filter((i) => i.collectionId === c.id).length, '{n} item', '{n} items'),
+            audienceLabel(c.audience, host.kind),
+          ].join(' · ')}
+          chevron
+          onPress={() => setShelf(c)}
+          testID={`${testID}-collection-${c.id}`}
+        />
+      ))}
+      {collections.length < COLLECTIONS_MAX ? (
+        <ListRow
+          icon={Plus}
+          title={tr('Add a collection')}
+          subtitle={tr(
+            'Group what you offer: treatments, products, rooms. A public one has a page of its own.',
+          )}
+          onPress={() =>
+            setShelf({
+              id: newId(),
+              slug: '',
+              name: '',
+              description: null,
+              audience: 'public',
+            })
+          }
+          testID={`${testID}-add-collection`}
         />
       ) : null}
       <Sheet
@@ -342,10 +413,10 @@ export function BookingSetup({
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Days')}</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {DAYS.map((d, i) => (
+              {DAY_SHORT.map((d, i) => (
                 <Chip
                   key={d}
-                  label={d}
+                  label={tr(d)}
                   selected={days.includes(i)}
                   onPress={() =>
                     setDays((all) => (all.includes(i) ? all.filter((x) => x !== i) : [...all, i]))
@@ -484,9 +555,10 @@ export function BookingSetup({
         </View>
       </Sheet>
       {editing ? (
-        <ItemSheet
+        <ItemEditor
           host={host}
           item={editing}
+          collections={collections}
           isNew={!items.some((i) => i.id === editing.id)}
           onClose={() => setEditing(null)}
           onSave={async (item) => {
@@ -505,13 +577,246 @@ export function BookingSetup({
           testID={`${testID}-item`}
         />
       ) : null}
+      {shelf ? (
+        <CollectionEditor
+          host={host}
+          collection={shelf}
+          isNew={!collections.some((c) => c.id === shelf.id)}
+          onClose={() => setShelf(null)}
+          onSave={async (c) => {
+            await saveCollections(
+              collections.some((x) => x.id === c.id)
+                ? collections.map((x) => (x.id === c.id ? c : x))
+                : [...collections, c],
+            );
+            setShelf(null);
+            toast(tr('Saved'));
+          }}
+          onRemove={async () => {
+            await saveCollections(collections.filter((x) => x.id !== shelf.id));
+            setShelf(null);
+            toast(tr('Removed'));
+          }}
+          testID={`${testID}-collection`}
+        />
+      ) : null}
     </>
   );
 }
 
-function ItemSheet({
+/**
+ * Who sees or books something (R58, R61): everyone, connections (an organization's customers),
+ * or, for a person, the spheres they choose. One picker for items and collections.
+ */
+function AudiencePicker({
+  host,
+  audience,
+  onChange,
+  noun,
+  testID,
+}: {
+  host: BookingHostInfo;
+  audience: BookingAudience;
+  onChange: (next: BookingAudience) => void;
+  noun: 'item' | 'collection';
+  testID: string;
+}) {
+  const toggleSphere = (s: Sphere) => {
+    const list = Array.isArray(audience) ? audience : [];
+    const next = list.includes(s) ? list.filter((x) => x !== s) : [...list, s];
+    onChange(next.length ? next : 'connections');
+  };
+  return (
+    <View style={{ gap: 6 }}>
+      <Text variant="label">{noun === 'item' ? tr('Who may book it') : tr('Who sees it')}</Text>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        <Chip
+          label={tr('Everyone')}
+          selected={audience === 'public'}
+          role="radio"
+          onPress={() => onChange('public')}
+          testID={`${testID}-public`}
+        />
+        <Chip
+          label={host.kind === 'org' ? tr('Customers') : tr('Connections')}
+          selected={audience === 'connections'}
+          role="radio"
+          onPress={() => onChange('connections')}
+          testID={`${testID}-connections`}
+        />
+        {host.kind === 'person'
+          ? PERSON_SPHERES.map((p) => (
+              <Chip
+                key={p.sphere}
+                label={tr(p.label)}
+                selected={Array.isArray(audience) && audience.includes(p.sphere)}
+                onPress={() => toggleSphere(p.sphere)}
+                testID={`${testID}-${p.sphere}`}
+              />
+            ))
+          : null}
+      </View>
+      <Text variant="caption" color="textTertiary">
+        {audience === 'public'
+          ? noun === 'item'
+            ? tr('Listed on your public page with its price; anyone can sign up and book it.')
+            : tr('A page of its own, listed on yours; what’s in it shows to whom each item allows.')
+          : host.kind === 'org'
+            ? tr('Anyone who writes to you on Caime.')
+            : tr('Only the people you choose see it.')}
+      </Text>
+    </View>
+  );
+}
+
+/** The address under the host's (R61): kept as typed when it's fine, else made from the name. */
+function AddressField({
+  slug,
+  name,
+  onChange,
+  testID,
+}: {
+  slug: string;
+  name: string;
+  onChange: (slug: string) => void;
+  testID: string;
+}) {
+  const shown = slug || slugify(name);
+  const why = shown ? slugError(shown) : null;
+  return (
+    <TextField
+      label={tr('Address')}
+      placeholder={slugify(name) || 'haircut'}
+      value={slug}
+      onChangeText={(v) => onChange(v.toLowerCase().replace(/\s+/g, '-'))}
+      autoCapitalize="none"
+      maxLength={SLUG_MAX}
+      hint={
+        why === 'reserved'
+          ? tr('That address is one of Caime’s own words.')
+          : why
+            ? tr('Use letters and digits, joined by hyphens.')
+            : tr('The end of its link, when it’s public: …/{slug}', { slug: shown || '…' })
+      }
+      testID={`${testID}-address`}
+    />
+  );
+}
+
+function CollectionEditor({
+  host,
+  collection,
+  isNew,
+  onClose,
+  onSave,
+  onRemove,
+  testID,
+}: {
+  host: BookingHostInfo;
+  collection: CatalogCollection;
+  isNew: boolean;
+  onClose: () => void;
+  onSave: (c: CatalogCollection) => Promise<void>;
+  onRemove: () => Promise<void>;
+  testID: string;
+}) {
+  const [name, setName] = useState(collection.name);
+  const [description, setDescription] = useState(collection.description ?? '');
+  const [slug, setSlug] = useState(collection.slug);
+  const [audience, setAudience] = useState<BookingAudience>(collection.audience);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'save' | 'remove' | null>(null);
+  const submit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return setError(tr('Name it.'));
+    setBusy('save');
+    setError(null);
+    try {
+      await onSave({
+        ...collection,
+        name: trimmed,
+        description: description.trim() || null,
+        slug: slug.trim() || slugify(trimmed),
+        audience,
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={isNew ? tr('A collection') : collection.name}
+      subtitle={tr('Items join it from their own page.')}
+      footer={
+        <View style={{ gap: 8 }}>
+          <Button
+            label={tr('Save')}
+            block
+            size="lg"
+            onPress={() => void submit()}
+            loading={busy === 'save'}
+            testID={`${testID}-save`}
+          />
+          {!isNew ? (
+            <Button
+              label={tr('Remove')}
+              variant="ghost"
+              block
+              loading={busy === 'remove'}
+              onPress={() => {
+                setBusy('remove');
+                void onRemove().finally(() => setBusy(null));
+              }}
+              testID={`${testID}-remove`}
+            />
+          ) : null}
+        </View>
+      }
+    >
+      <View style={{ gap: 16 }}>
+        <TextField
+          label={tr('Name')}
+          placeholder={tr('Treatments')}
+          value={name}
+          onChangeText={setName}
+          autoFocus={isNew}
+          maxLength={60}
+          testID={`${testID}-name`}
+        />
+        <TextField
+          label={tr('A line about it (optional)')}
+          value={description}
+          onChangeText={setDescription}
+          maxLength={300}
+          multiline
+          testID={`${testID}-description`}
+        />
+        <AddressField slug={slug} name={name} onChange={setSlug} testID={testID} />
+        <AudiencePicker
+          host={host}
+          audience={audience}
+          onChange={setAudience}
+          noun="collection"
+          testID={testID}
+        />
+        {error ? (
+          <Text variant="bodyStrong" color="danger" testID={`${testID}-error`}>
+            {error}
+          </Text>
+        ) : null}
+      </View>
+    </Sheet>
+  );
+}
+
+function ItemEditor({
   host,
   item,
+  collections,
   isNew,
   onClose,
   onSave,
@@ -520,6 +825,7 @@ function ItemSheet({
 }: {
   host: BookingHostInfo;
   item: BookingItem;
+  collections: CatalogCollection[];
   isNew: boolean;
   onClose: () => void;
   onSave: (item: BookingItem) => Promise<void>;
@@ -537,15 +843,13 @@ function ItemSheet({
   const [audience, setAudience] = useState<BookingItem['audience']>(item.audience);
   const [providers, setProviders] = useState<string[] | null>(item.providers);
   const [askTopic, setAskTopic] = useState(item.askTopic);
+  // Its page (R61): a line about it, its address, its collection.
+  const [description, setDescription] = useState(item.description ?? '');
+  const [slug, setSlug] = useState(item.slug);
+  const [collectionId, setCollectionId] = useState<string | null>(item.collectionId);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'save' | 'remove' | null>(null);
 
-  const toggleSphere = (s: Sphere) =>
-    setAudience((a) => {
-      const list = Array.isArray(a) ? a : [];
-      const next = list.includes(s) ? list.filter((x) => x !== s) : [...list, s];
-      return next.length ? next : 'connections';
-    });
   const submit = async () => {
     const trimmed = name.trim();
     if (!trimmed) return setError(tr('Name it.'));
@@ -574,6 +878,9 @@ function ItemSheet({
         // Something ordered names nobody to do it.
         providers: host.kind === 'org' && unit !== 'each' && providers?.length ? providers : null,
         askTopic,
+        slug: slug.trim() || slugify(trimmed),
+        description: description.trim() || null,
+        collectionId,
       });
     } catch (e) {
       setError((e as Error).message);
@@ -627,6 +934,37 @@ function ItemSheet({
           autoFocus={isNew}
           testID={`${testID}-name`}
         />
+        <TextField
+          label={tr('A line about it (optional)')}
+          value={description}
+          onChangeText={setDescription}
+          maxLength={300}
+          multiline
+          testID={`${testID}-description`}
+        />
+        {collections.length ? (
+          <View style={{ gap: 6 }}>
+            <Text variant="label">{tr('Collection')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Chip
+                label={tr('None')}
+                selected={collectionId === null}
+                role="radio"
+                onPress={() => setCollectionId(null)}
+              />
+              {collections.map((c) => (
+                <Chip
+                  key={c.id}
+                  label={c.name}
+                  selected={collectionId === c.id}
+                  role="radio"
+                  onPress={() => setCollectionId(c.id)}
+                  testID={`${testID}-in-${c.id}`}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
         <View style={{ gap: 6 }}>
           <Text variant="label">{tr('Price')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -747,41 +1085,13 @@ function ItemSheet({
           onChange={setMaxQuantity}
           testID={`${testID}-max`}
         />
-        <View style={{ gap: 6 }}>
-          <Text variant="label">{tr('Who may book it')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <Chip
-              label={tr('Everyone')}
-              selected={audience === 'public'}
-              role="radio"
-              onPress={() => setAudience('public')}
-              testID={`${testID}-public`}
-            />
-            <Chip
-              label={host.kind === 'org' ? tr('Customers') : tr('Connections')}
-              selected={audience === 'connections'}
-              role="radio"
-              onPress={() => setAudience('connections')}
-            />
-            {host.kind === 'person'
-              ? PERSON_SPHERES.map((p) => (
-                  <Chip
-                    key={p.sphere}
-                    label={tr(p.label)}
-                    selected={Array.isArray(audience) && audience.includes(p.sphere)}
-                    onPress={() => toggleSphere(p.sphere)}
-                  />
-                ))
-              : null}
-          </View>
-          <Text variant="caption" color="textTertiary">
-            {audience === 'public'
-              ? tr('Listed on your public page with its price; anyone can sign up and book it.')
-              : host.kind === 'org'
-                ? tr('Anyone who writes to you on Caime.')
-                : tr('Only the people you choose see it.')}
-          </Text>
-        </View>
+        <AudiencePicker
+          host={host}
+          audience={audience}
+          onChange={setAudience}
+          noun="item"
+          testID={testID}
+        />
         {host.kind === 'org' && unit !== 'each' && host.team?.length ? (
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Who does it')}</Text>
@@ -817,6 +1127,7 @@ function ItemSheet({
             </Text>
           </View>
         ) : null}
+        <AddressField slug={slug} name={name} onChange={setSlug} testID={testID} />
         <Chip
           label={tr('They write what it’s for')}
           selected={askTopic}

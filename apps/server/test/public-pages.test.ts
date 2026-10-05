@@ -347,7 +347,9 @@ describe('the readable web (R44)', () => {
     });
     const org = await visit('/o/nile.dental');
     expect(org.body).toContain('>Book Nile Dental</a>');
-    expect(org.body).toContain('Cleaning <span class="small">45 min · EGP');
+    expect(org.body).toContain(
+      '<a href="/o/nile.dental/cleaning">Cleaning</a> <span class="small">45 min · EGP',
+    );
     expect(org.body).not.toContain('Consultation');
     expect(org.body).toContain('%2Fo%2Fnile.dental%3Fbook');
     await noor.req('PUT', '/v1/me/booking', {
@@ -359,12 +361,133 @@ describe('the readable web (R44)', () => {
     });
     const person = await visit('/@noor');
     expect(person.body).toContain('>Book Noor Haddad</a>');
-    expect(person.body).toContain('A quick chat <span class="small">30 min · Free</span>');
+    expect(person.body).toContain(
+      '<a href="/@noor/a-quick-chat">A quick chat</a> <span class="small">30 min · Free</span>',
+    );
     expect(person.body).not.toContain('Arabic lesson');
     // Without hours there's nothing to book, whatever the catalog says.
     await noor.req('PUT', '/v1/me/booking', { booking: null, items: [item({ id: 'chat' })] });
     expect((await visit('/@noor')).body).not.toContain('>Book Noor Haddad</a>');
     await noor.req('PUT', `/v1/orgs/${orgId}/booking`, { booking: null, items: [] });
+  });
+
+  it('a public item and a public collection each have a page of their own (R61)', async () => {
+    const hours = {
+      timeZone: 'Africa/Cairo',
+      slotMinutes: 30,
+      days: [1, 2, 3].map((weekday) => ({ weekday, start: '09:00', end: '12:00' })),
+      leadMinutes: 60,
+      horizonDays: 14,
+    };
+    const item = (patch: Record<string, unknown>) => ({
+      id: 'x',
+      name: 'X',
+      price: null,
+      unit: 'minutes',
+      minutes: 30,
+      capacity: 1,
+      maxQuantity: 1,
+      audience: 'public',
+      providers: null,
+      askTopic: false,
+      ...patch,
+    });
+    const saved = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: hours,
+      ordering: { fulfilment: ['pickup'], note: null },
+      collections: [
+        { id: 'care', name: 'Care at home', audience: 'public', description: 'For after a visit.' },
+        { id: 'staff', name: 'For the team', audience: 'connections' },
+      ],
+      items: [
+        item({
+          id: 'whitening',
+          name: 'Teeth whitening',
+          minutes: 60,
+          price: { value: 1500, currency: 'EGP' },
+          description: 'An hour in the chair, a brighter smile.',
+        }),
+        item({
+          id: 'brush',
+          name: 'Soft toothbrush',
+          unit: 'each',
+          minutes: null,
+          maxQuantity: 5,
+          price: { value: 90, currency: 'EGP' },
+          collectionId: 'care',
+        }),
+        item({
+          id: 'hidden',
+          name: 'Staff floss',
+          unit: 'each',
+          minutes: null,
+          collectionId: 'staff',
+        }),
+      ],
+    });
+    expect(saved.statusCode).toBe(200);
+    // Addresses are made from the names, kept, and given back.
+    expect(saved.json().items.map((i: { slug: string }) => i.slug)).toEqual([
+      'teeth-whitening',
+      'soft-toothbrush',
+      'staff-floss',
+    ]);
+    expect(saved.json().collections.map((c: { slug: string }) => c.slug)).toEqual([
+      'care-at-home',
+      'for-the-team',
+    ]);
+
+    const page = await visit('/o/nile.dental/teeth-whitening');
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toContain('<title>Teeth whitening · Nile Dental · Caime</title>');
+    expect(page.body).toContain('<meta name="robots" content="index,follow">');
+    expect(page.body).toContain('<h1>Teeth whitening</h1>');
+    expect(page.body).toContain('An hour in the chair, a brighter smile.');
+    expect(page.body).toContain('"@type":"Service"');
+    expect(page.body).toContain('"price":"1500","priceCurrency":"EGP"');
+    expect(page.body).toContain('"@type":"BreadcrumbList"');
+    // Its Book lands on the card's form with this item, through sign-up.
+    expect(page.body).toContain('%2Fo%2Fnile.dental%2Fteeth-whitening%3Fbook');
+    expect(page.body).toContain('<meta name="caime-page" content="item">');
+    // A visitor gets the page, not the app.
+    expect(page.body).not.toMatch(/<script\b[^>]*\bsrc=/);
+
+    const shelf = await visit('/o/nile.dental/care-at-home');
+    expect(shelf.body).toContain('<h1>Care at home</h1>');
+    expect(shelf.body).toContain('"@type":"OfferCatalog"');
+    expect(shelf.body).toContain('<a href="/o/nile.dental/soft-toothbrush">Soft toothbrush</a>');
+    expect(shelf.body).toContain('>Order from Nile Dental</a>');
+    const product = await visit('/o/nile.dental/soft-toothbrush');
+    expect(product.body).toContain('"@type":"Product"');
+    expect(product.body).toContain('href="/o/nile.dental/care-at-home">Care at home</a>');
+    expect(product.body).toContain('%2Fo%2Fnile.dental%2Fsoft-toothbrush%3Forder');
+
+    // The organization's page links its public shelf and items; nothing of the team's.
+    const org = await visit('/o/nile.dental');
+    expect(org.body).toContain('<a href="/o/nile.dental/care-at-home">Care at home</a>');
+    expect(org.body).not.toContain('Staff floss');
+    expect(org.body).not.toContain('For the team');
+    // What isn't public is no page: under an organization it's the app's, never a crawler's.
+    for (const path of ['/o/nile.dental/staff-floss', '/o/nile.dental/for-the-team'])
+      expect((await visit(path)).body).toContain('<meta name="robots" content="noindex">');
+    expect((await visit('/o/nile.dental/setup')).body).toContain('content="app"');
+
+    await sql`update organizations set verified_at = now() where handle = 'nile.dental'`.execute(
+      t.ctx.db,
+    );
+    const sitemap = (await t.app.inject({ url: '/sitemap.xml' })).body;
+    expect(sitemap).toContain('<loc>https://caime.example/o/nile.dental/teeth-whitening</loc>');
+    expect(sitemap).toContain('<loc>https://caime.example/o/nile.dental/care-at-home</loc>');
+    expect(sitemap).not.toContain('staff-floss');
+    await sql`update organizations set verified_at = null where handle = 'nile.dental'`.execute(
+      t.ctx.db,
+    );
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: null,
+      items: [],
+      collections: [],
+      ordering: null,
+    });
   });
 
   it('the app’s own screens ask not to be indexed; robots and the sitemap say what is', async () => {

@@ -8,7 +8,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useRequests } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import type { RelationshipDraft } from '@/features/relationships/RelationshipPicker';
+import type { RelationshipDraft } from '@/features/relationships/form';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';

@@ -650,3 +650,20 @@ with its reason, so it isn't proposed again without new facts.
   the public pages with "Order from", the profile and the organization's page offer Order, and
   an `?order` link lands on the card's form. Later layers: stock that runs out, an Orders view
   for the team beside Bookings, the AI agent taking an order, options on an item (sizes, extras).
+- **R61 — Collections, and a page for each thing offered.** The owner's next idea
+  (2026-10-05): an organization keeps several collections (bookings, products, services), and a
+  public item or collection has its own address (`/o/<handle>/<item>`) so search and answer
+  engines find it. Refined: a collection is a shelf over the one catalog, never a second
+  catalog, so a clinic's "Treatments" and "Products" are still booked and ordered through the
+  same cards; it's a person's too (`/@<handle>/<item>`), as bookings are. A collection has a
+  name, a line, an address and an audience, the same audiences as an item (everyone,
+  connections or customers, a person's spheres), and an item in it is seen only by whom both
+  allow. One address space per host: an item's and a collection's never collide, made from the
+  name in any script (Arabic stays Arabic, as people search in it), and never one of the
+  host's own words (`setup`, `inbox`, `book`). A public one is a page of its own, readable
+  without the app: its words, price and length, a Book or an Order that lands on the card's
+  form with the item already chosen, `Product` or `Service` with its `Offer` in JSON-LD (a
+  collection is an `OfferCatalog`), breadcrumbs back to the host, and a line in the sitemap for
+  a verified organization (people are never listed, as before). Signed in, the same address is
+  the host's page with the item's sheet over it. What isn't public is no page: under an
+  organization it is the app's, never a crawler's.

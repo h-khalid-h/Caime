@@ -358,6 +358,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       'o.booking',
       'o.booking_items',
       'o.ordering',
+      'o.collections',
     ])
     .where('t.conversation_id', '=', conversationId)
     // Still its to answer: the customer's latest, nobody on the team answering, not handed over.
@@ -456,6 +457,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     id: thread.org_id,
     booking: thread.booking,
     booking_items: thread.booking_items,
+    collections: thread.collections,
   });
   const items = itemsFor(host, {
     isConnected: true,

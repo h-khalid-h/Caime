@@ -126,7 +126,6 @@ import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
-import type { BookingHours, BookingItem, OrderingSettings } from '@caime/core/booking';
 
 /** Whose slots: an organization's or a person's (R58). */
 export interface BookingHostRef {
@@ -620,19 +619,12 @@ export const endpoints = {
   orgCalendar: (orgId: string, from: string, to: string) =>
     api.get<OrgCalendarView>(`/orgs/${orgId}/calendar${q({ from, to })}`),
 
-  setOrgBooking: (
-    orgId: string,
-    booking: BookingHours | null,
-    items: BookingItem[],
-    ordering: OrderingSettings | null,
-  ) => api.put<BookingResponse>(`/orgs/${orgId}/booking`, { booking, items, ordering }),
+  /** What a host offers (R58, R60, R61), saved whole: its hours, catalog, orders, collections. */
+  setOrgBooking: (orgId: string, offer: BookingResponse) =>
+    api.put<BookingResponse>(`/orgs/${orgId}/booking`, offer),
   // Bookings for people too (R58): my hours and catalog, and anyone's open slots.
   myBooking: () => api.get<BookingResponse>('/me/booking'),
-  setMyBooking: (
-    booking: BookingHours | null,
-    items: BookingItem[],
-    ordering: OrderingSettings | null,
-  ) => api.put<BookingResponse>('/me/booking', { booking, items, ordering }),
+  setMyBooking: (offer: BookingResponse) => api.put<BookingResponse>('/me/booking', offer),
   slots: (host: BookingHostRef, from: string, to: string, item?: string, quantity?: number) =>
     api.get<SlotsView>(
       `/${host.kind === 'org' ? 'orgs' : 'people'}/${host.id}/slots${q({ from, to, item, quantity })}`,

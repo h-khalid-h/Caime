@@ -1,5 +1,5 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
-import { type BookingItem, isBooked, isOrdered } from '@caime/core/booking';
+import { type BookingItem, grouped, isBooked, isOrdered } from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
@@ -39,6 +39,14 @@ import { SlotPicker } from './SlotPicker';
 const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
 
 export type KitChoice = CardKitId | 'poll' | 'location';
+
+/**
+ * What a card's form opens with when something sent the person to it (R61): the item an
+ * address or a sheet chose. Nothing is sent until they send it.
+ */
+export interface KitStart {
+  itemId?: string;
+}
 
 /**
  * The kits this conversation offers, most specific to the relationship first (core kits.ts). In
@@ -149,10 +157,13 @@ export function KitForm({
   conversation,
   kit,
   custom = null,
+  start = null,
   onClose,
 }: {
   conversation: ConversationView;
   kit: KitChoice | null;
+  /** What the form starts with (R61). */
+  start?: KitStart | null;
   /** Or one of the organization's own kinds of card, made by one of its apps (PRD §74). */
   custom?: CustomKitOfferView | null;
   onClose: () => void;
@@ -218,6 +229,7 @@ export function KitForm({
           ? {
               ref: { kind: 'org' as const, id: org.id },
               items: org.bookingItems.filter(fits),
+              collections: org.collections,
               ways: org.ordering.fulfilment,
               note: org.ordering.note,
             }
@@ -225,6 +237,7 @@ export function KitForm({
       return {
         ref: { kind: 'org' as const, id: conversation.business.org.id },
         items: (org?.bookingItems ?? []).filter(fits),
+        collections: org?.collections ?? [],
         ways: [],
         note: null,
       };
@@ -234,6 +247,7 @@ export function KitForm({
       return {
         ref: { kind: 'person' as const, id: conversation.other.userId },
         items: p.ordering.items,
+        collections: p.collections,
         ways: p.ordering.settings.fulfilment,
         note: p.ordering.settings.note,
       };
@@ -241,6 +255,7 @@ export function KitForm({
       return {
         ref: { kind: 'person' as const, id: conversation.other.userId },
         items: p.booking.items,
+        collections: p.collections,
         ways: [],
         note: null,
       };
@@ -249,13 +264,16 @@ export function KitForm({
       return {
         ref: { kind: 'person' as const, id: me.id },
         items: mine.items.filter(fits),
+        collections: mine.collections,
         ways: mine.ordering?.fulfilment ?? [],
         note: mine.ordering?.note ?? null,
       };
     return null;
   }, [catalog, ordering, conversation, orgQ.data, otherQ.data, mineQ.data, direct, me.id]);
   // What's in the order (R60): an item's id and how many; none to begin with.
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [cart, setCart] = useState<Record<string, number>>(
+    ordering && start?.itemId ? { [start.itemId]: 1 } : {},
+  );
   const [way, setWay] = useState<'pickup' | 'delivery' | null>(null);
   const orderTotal = useMemo(() => {
     if (!host || !ordering) return null;
@@ -265,7 +283,7 @@ export function KitForm({
     const value = priced.reduce((sum, i) => sum + (i.price?.value ?? 0) * (cart[i.id] ?? 0), 0);
     return formatAmount(Math.round(value * 100) / 100, priced[0]?.price?.currency ?? null, locale);
   }, [host, ordering, cart, locale]);
-  const [itemId, setItemId] = useState<string | null>(null);
+  const [itemId, setItemId] = useState<string | null>(appointment ? (start?.itemId ?? null) : null);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??
     (host && host.items.length === 1 ? (host.items[0] ?? null) : null);
@@ -551,50 +569,67 @@ export function KitForm({
                   {host.note}
                 </Text>
               ) : null}
-              {host.items.map((i) => {
-                const n = cart[i.id] ?? 0;
-                return (
-                  <View
-                    key={i.id}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-                    testID={`order-item-${i.id}`}
+              {grouped(host.items, host.collections).flatMap((g) => [
+                g.collection ? (
+                  <Text
+                    key={`shelf-${g.collection.id}`}
+                    variant="overline"
+                    color="textTertiary"
+                    accessibilityRole="header"
                   >
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text variant="bodyStrong" auto>
-                        {i.name}
-                      </Text>
-                      <Text variant="caption" color="textTertiary">
-                        {i.price
-                          ? formatAmount(i.price.value, i.price.currency, locale)
-                          : tr('Free')}
-                      </Text>
-                    </View>
-                    <IconButton
-                      icon={Minus}
-                      label={tr('Fewer')}
-                      disabled={n <= 0}
-                      onPress={() => setCart((c) => ({ ...c, [i.id]: Math.max(0, n - 1) }))}
-                      testID={`order-less-${i.id}`}
-                    />
-                    <Text
-                      variant="bodyStrong"
-                      style={{ minWidth: 24, textAlign: 'center' }}
-                      testID={`order-count-${i.id}`}
+                    {g.collection.name}
+                  </Text>
+                ) : null,
+                ...g.items.map((i) => {
+                  const n = cart[i.id] ?? 0;
+                  return (
+                    <View
+                      key={i.id}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                      testID={`order-item-${i.id}`}
                     >
-                      {n}
-                    </Text>
-                    <IconButton
-                      icon={Plus}
-                      label={tr('More')}
-                      disabled={n >= i.maxQuantity}
-                      onPress={() =>
-                        setCart((c) => ({ ...c, [i.id]: Math.min(i.maxQuantity, n + 1) }))
-                      }
-                      testID={`order-more-${i.id}`}
-                    />
-                  </View>
-                );
-              })}
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text variant="bodyStrong" auto>
+                          {i.name}
+                        </Text>
+                        {i.description ? (
+                          <Text variant="caption" color="textSecondary" auto numberOfLines={2}>
+                            {i.description}
+                          </Text>
+                        ) : null}
+                        <Text variant="caption" color="textTertiary">
+                          {i.price
+                            ? formatAmount(i.price.value, i.price.currency, locale)
+                            : tr('Free')}
+                        </Text>
+                      </View>
+                      <IconButton
+                        icon={Minus}
+                        label={tr('Fewer')}
+                        disabled={n <= 0}
+                        onPress={() => setCart((c) => ({ ...c, [i.id]: Math.max(0, n - 1) }))}
+                        testID={`order-less-${i.id}`}
+                      />
+                      <Text
+                        variant="bodyStrong"
+                        style={{ minWidth: 24, textAlign: 'center' }}
+                        testID={`order-count-${i.id}`}
+                      >
+                        {n}
+                      </Text>
+                      <IconButton
+                        icon={Plus}
+                        label={tr('More')}
+                        disabled={n >= i.maxQuantity}
+                        onPress={() =>
+                          setCart((c) => ({ ...c, [i.id]: Math.min(i.maxQuantity, n + 1) }))
+                        }
+                        testID={`order-more-${i.id}`}
+                      />
+                    </View>
+                  );
+                }),
+              ])}
               {host.ways.length > 1 ? (
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                   {host.ways.map((w) => (
@@ -667,26 +702,40 @@ export function KitForm({
               <View key={field.key} style={{ gap: 10 }}>
                 <View style={{ gap: 6 }}>
                   <Text variant="label">{tr(field.label)}</Text>
-                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                    {host.items.map((i) => (
-                      <Chip
-                        key={i.id}
-                        label={
-                          i.price
-                            ? `${i.name} · ${formatAmount(i.price.value, i.price.currency, locale)}`
-                            : i.name
-                        }
-                        selected={item?.id === i.id}
-                        role="radio"
-                        onPress={() => {
-                          setItemId(i.id);
-                          setQuantity(1);
-                          setSlot(null);
-                        }}
-                        testID={`book-item-${i.id}`}
-                      />
-                    ))}
-                  </View>
+                  {grouped(host.items, host.collections).map((g) => (
+                    <View key={g.collection?.id ?? 'loose'} style={{ gap: 6 }}>
+                      {g.collection ? (
+                        <Text variant="overline" color="textTertiary" accessibilityRole="header">
+                          {g.collection.name}
+                        </Text>
+                      ) : null}
+                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                        {g.items.map((i) => (
+                          <Chip
+                            key={i.id}
+                            label={
+                              i.price
+                                ? `${i.name} · ${formatAmount(i.price.value, i.price.currency, locale)}`
+                                : i.name
+                            }
+                            selected={item?.id === i.id}
+                            role="radio"
+                            onPress={() => {
+                              setItemId(i.id);
+                              setQuantity(1);
+                              setSlot(null);
+                            }}
+                            testID={`book-item-${i.id}`}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                  {item?.description ? (
+                    <Text variant="caption" color="textSecondary" auto>
+                      {item.description}
+                    </Text>
+                  ) : null}
                   {item ? (
                     <Text variant="caption" color="textTertiary" testID="book-item-line">
                       {[

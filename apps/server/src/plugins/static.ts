@@ -159,6 +159,8 @@ export async function registerWeb(app: FastifyInstance, ctx: AppContext): Promis
       page.kind === 'site' ||
       ((page.kind === 'person' ||
         page.kind === 'org' ||
+        page.kind === 'item' ||
+        page.kind === 'collection' ||
         page.kind === 'invite' ||
         page.kind === 'landing') &&
         !req.cookies?.[SESSION_COOKIE]);

@@ -59,6 +59,7 @@ export { default as Keyboard } from 'lucide-react-native/icons/keyboard';
 export { default as Landmark } from 'lucide-react-native/icons/landmark';
 export { default as Languages } from 'lucide-react-native/icons/languages';
 export { default as Laptop } from 'lucide-react-native/icons/laptop';
+export { default as Layers } from 'lucide-react-native/icons/layers';
 export { default as LayoutGrid } from 'lucide-react-native/icons/layout-grid';
 export { default as LifeBuoy } from 'lucide-react-native/icons/life-buoy';
 export { default as Link } from 'lucide-react-native/icons/link';

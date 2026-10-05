@@ -48,7 +48,25 @@ export function deepLinkPath(url: string): string | null {
 
 /** The handle a path opens (a person's or an organization's), to say whose link this is. */
 export function handleIn(path: string | null | undefined): string | null {
-  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)(?:\?(?:write|book|order))?$/i)?.[1] ?? null;
+  return path?.match(HOST_LINK)?.[1] ?? null;
+}
+
+/**
+ * A host's page, or one of its items' or collections' (R61, `/o/<handle>/<slug>`; a slug is
+ * letters of any script, percent-encoded on the way), with its way in (`?write`, `?book`,
+ * `?order`).
+ */
+const HOST_LINK = /^\/(?:@|o\/)([a-z0-9._]+)(?:\/([\w%-]{1,200}))?(?:\?(write|book|order))?$/i;
+
+/** The item's or collection's address in a link to one (R61), decoded, or null. */
+export function itemIn(path: string | null | undefined): string | null {
+  const slug = path?.match(HOST_LINK)?.[2];
+  if (!slug) return null;
+  try {
+    return decodeURIComponent(slug).toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -56,12 +74,14 @@ export function handleIn(path: string | null | undefined): string | null {
  * the appointment card's form once the person is in the conversation. Null for any other path.
  */
 export function bookIn(path: string | null | undefined): string | null {
-  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)\?book$/i)?.[1] ?? null;
+  const m = path?.match(HOST_LINK);
+  return m?.[3] === 'book' ? (m[1] ?? null) : null;
 }
 
 /** A link that orders (`/@handle?order`, `/o/<handle>?order`, R60), as `bookIn` books. */
 export function orderIn(path: string | null | undefined): string | null {
-  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)\?order$/i)?.[1] ?? null;
+  const m = path?.match(HOST_LINK);
+  return m?.[3] === 'order' ? (m[1] ?? null) : null;
 }
 
 /**

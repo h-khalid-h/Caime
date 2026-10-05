@@ -6,12 +6,7 @@ import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import {
-  type FormState,
-  initialForm,
-  RelationshipForm,
-  toDraft,
-} from '@/features/relationships/RelationshipPicker';
+import { type FormState, initialForm, toDraft } from '@/features/relationships/form';
 import { copyText } from '@/lib/clipboard';
 import { shareLink } from '@/lib/share';
 import { useMe } from '@/state/session';
@@ -20,11 +15,18 @@ import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
 import { Copy, Link, Trash } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+// The form itself loads with the sheet's first paint; the picker's module stays out of the
+// startup chunk, which every lazy sheet sharing it statically would put it in.
+const RelationshipForm = lazyPart(() =>
+  import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipForm),
+);
 
 /**
  * An invite link (R1): whoever opens it signs up in half a minute and lands in the conversation,

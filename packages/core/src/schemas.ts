@@ -17,6 +17,7 @@ import {
   ORDER_LINES_MAX,
 } from './booking';
 import { CALL_KINDS } from './calls';
+import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
 import { msg } from './i18n';
@@ -1183,6 +1184,38 @@ export const BookingHoursBody = z
   .strict();
 export type BookingHoursInput = z.infer<typeof BookingHoursBody>;
 
+/** Who sees or books something of a host's (R58, R61): everyone, connections, or spheres. */
+const CatalogAudience = z.union([
+  z.literal('public'),
+  z.literal('connections'),
+  z.array(SphereSchema).min(1).max(SPHERES.length),
+]);
+const CatalogId = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, msg('That isn’t an item id.'));
+/** An address under a host's (R61): letters and digits of any script, joined by hyphens. */
+const SlugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(SLUG_MAX)
+  .refine((s) => slugError(s) !== 'shape' && slugError(s) !== 'empty', {
+    message: msg('Use letters and digits, joined by hyphens.'),
+  })
+  .refine((s) => slugError(s) !== 'reserved', {
+    message: msg('That address is one of Caime’s own words.'),
+  });
+
+/** A collection of a host's items (R61). */
+export const CollectionBody = z
+  .object({
+    id: CatalogId,
+    name: z.string().trim().min(1, msg('Name it.')).max(60),
+    slug: SlugSchema.optional(),
+    description: z.string().trim().max(300).nullable().default(null),
+    audience: CatalogAudience,
+  })
+  .strict();
+export type CollectionInput = z.infer<typeof CollectionBody>;
+
 /** One thing a host can be booked for (R58). */
 export const BookingItemBody = z
   .object({
@@ -1199,13 +1232,13 @@ export const BookingItemBody = z
     minutes: SlotMinutesSchema.nullable(),
     capacity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
     maxQuantity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
-    audience: z.union([
-      z.literal('public'),
-      z.literal('connections'),
-      z.array(SphereSchema).min(1).max(SPHERES.length),
-    ]),
+    audience: CatalogAudience,
     providers: z.array(z.string().uuid()).max(100).nullable(),
     askTopic: z.boolean(),
+    // R61: left out, an address is made from the name; a line about it; its collection.
+    slug: SlugSchema.optional(),
+    description: z.string().trim().max(300).nullable().default(null),
+    collectionId: CatalogId.nullable().default(null),
   })
   .strict()
   .refine((i) => (i.unit === 'minutes' ? i.minutes !== null : i.minutes === null), {
@@ -1250,8 +1283,33 @@ export const BookingBody = z
         message: msg('Each item once.'),
       })
       .default([]),
+    /** Collections (R61): left out, they stay as they are. */
+    collections: z
+      .array(CollectionBody)
+      .max(COLLECTIONS_MAX)
+      .refine((cs) => new Set(cs.map((c) => c.id)).size === cs.length, {
+        message: msg('Each collection once.'),
+      })
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((b, ctx) => {
+    // One address space for a host: an item's and a collection's never the same.
+    const slugs = [...(b.collections ?? []), ...b.items]
+      .map((x) => x.slug)
+      .filter((x): x is string => Boolean(x));
+    if (new Set(slugs).size !== slugs.length)
+      ctx.addIssue({ code: 'custom', message: msg('Each address once.'), path: ['items'] });
+    if (b.collections) {
+      const ids = new Set(b.collections.map((c) => c.id));
+      if (b.items.some((i) => i.collectionId && !ids.has(i.collectionId)))
+        ctx.addIssue({
+          code: 'custom',
+          message: msg('That collection isn’t there.'),
+          path: ['items'],
+        });
+    }
+  });
 export type BookingInput = z.infer<typeof BookingBody>;
 
 export const CreateOrgBody = z

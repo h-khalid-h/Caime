@@ -29,6 +29,7 @@ import {
   UpdateOrgBody,
   uuidv7,
   verificationRecord,
+  visibleCollections,
 } from '@caime/core';
 import type {
   ErasedResponse,
@@ -49,7 +50,7 @@ import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
-import { bookingOf, itemsFor, itemsOf, orderingOf, orgHost } from '../lib/booking';
+import { bookingOf, catalogOf, itemsFor, itemsOf, orderingOf, orgHost } from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -188,6 +189,10 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
           adult: await adult(ctx, [viewerId]),
         }),
     ordering: orderingOf(org),
+    // Its shelves (R61): every one for the team; for anyone else, those they may see.
+    collections: seat
+      ? catalogOf(org).collections
+      : visibleCollections(catalogOf(org).collections, { isConnected: true, spheres: [] }),
     retentionDays: org.retention_days,
   };
 }

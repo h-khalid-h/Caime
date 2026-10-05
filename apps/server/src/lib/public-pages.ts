@@ -7,8 +7,9 @@
  * the viewer; a person's page exists only while they can be found by handle, and never under
  * 18); every other path is the app's and asks not to be indexed.
  */
-import type { BookingItem, OrgRef } from '@caime/core';
+import type { BookingItem, CatalogCollection, OrgRef } from '@caime/core';
 import {
+  bySlug,
   canSee,
   formatAmount,
   handleError,
@@ -26,6 +27,7 @@ import {
 } from '@caime/core/i18n';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
+import { catalogOf } from './booking';
 import { orgRef } from './business';
 import { orgsOf } from './orgs';
 import {
@@ -69,6 +71,8 @@ export interface PublicPerson {
   organizations: OrgRef[];
   /** What anyone may book (R58): the public items of their catalog, while they take bookings. */
   items: PublicItem[];
+  /** Their public collections (R61) that hold something public. */
+  collections: PublicCollection[];
 }
 export interface PublicOrg {
   kind: 'org';
@@ -79,27 +83,63 @@ export interface PublicOrg {
   foundedYear: number | null;
   updatedAt: Date;
   items: PublicItem[];
+  collections: PublicCollection[];
 }
 /** A catalog item as a visitor reads it: nothing of who does it. */
-export type PublicItem = Pick<BookingItem, 'id' | 'name' | 'price' | 'unit' | 'minutes'>;
+export type PublicItem = Pick<
+  BookingItem,
+  'id' | 'name' | 'price' | 'unit' | 'minutes' | 'slug' | 'description' | 'collectionId'
+>;
+export type PublicCollection = Pick<CatalogCollection, 'id' | 'slug' | 'name' | 'description'>;
 
 /**
- * What anyone may book or order (R58, R60): the public items, the booked ones while the host
- * keeps hours, the ordered ones while it takes orders.
+ * What anyone may book or order (R58, R60): the public items in no collection or a public one
+ * (R61), the booked ones while the host keeps hours, the ordered ones while it takes orders;
+ * and the public collections that hold any of them.
  */
-function publicItems(row: {
+function publicCatalog(row: {
   booking: unknown;
   booking_items: unknown;
   ordering?: unknown;
-}): PublicItem[] {
-  if (!Array.isArray(row.booking_items)) return [];
-  return (row.booking_items as BookingItem[])
+  collections?: unknown;
+}): { items: PublicItem[]; collections: PublicCollection[] } {
+  const catalog = catalogOf(row);
+  const open = new Set(catalog.collections.filter((c) => c.audience === 'public').map((c) => c.id));
+  const items = catalog.items
     .filter(
       (i) =>
         i.audience === 'public' &&
+        (i.collectionId === null || open.has(i.collectionId)) &&
         (i.unit === 'each' ? Boolean(row.ordering) : Boolean(row.booking)),
     )
-    .map((i) => ({ id: i.id, name: i.name, price: i.price, unit: i.unit, minutes: i.minutes }));
+    .map((i) => ({
+      id: i.id,
+      name: i.name,
+      price: i.price,
+      unit: i.unit,
+      minutes: i.minutes,
+      slug: i.slug,
+      description: i.description,
+      collectionId: i.collectionId,
+    }));
+  const held = new Set(items.map((i) => i.collectionId));
+  const collections = catalog.collections
+    .filter((c) => open.has(c.id) && held.has(c.id))
+    .map((c) => ({ id: c.id, slug: c.slug, name: c.name, description: c.description }));
+  return { items, collections };
+}
+
+/** One of a host's public items or collections (R61), on a page of its own. */
+export interface PublicItemPage {
+  kind: 'item';
+  host: PublicPerson | PublicOrg;
+  item: PublicItem;
+}
+export interface PublicCollectionPage {
+  kind: 'collection';
+  host: PublicPerson | PublicOrg;
+  collection: PublicCollection;
+  items: PublicItem[];
 }
 /** An invite link's page (R1): who invites, the context they chose to show, their line. */
 export interface PublicInvite {
@@ -116,6 +156,8 @@ export type PublicPage =
   | { kind: 'site'; page: MarketingPage }
   | PublicPerson
   | PublicOrg
+  | PublicItemPage
+  | PublicCollectionPage
   | PublicInvite
   | { kind: 'missing' }
   | { kind: 'app' }
@@ -145,7 +187,7 @@ export async function publicOrg(db: Q, handle: string): Promise<PublicOrg | null
     country: o.country,
     foundedYear: o.founded_year,
     updatedAt: o.updated_at,
-    items: publicItems(o),
+    ...publicCatalog(o),
   };
 }
 
@@ -187,7 +229,7 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     bio: see('bio') ? u.bio : null,
     headline: identity?.headline ?? null,
     organizations,
-    items: publicItems(u),
+    ...publicCatalog(u),
   };
 }
 
@@ -233,9 +275,11 @@ export async function publicPageFor(db: Q, path: string, now: Date): Promise<Pub
     return { kind: 'site', page: site as MarketingPage };
   const invite = /^\/i\/([^/?#]+)$/.exec(path);
   if (invite) return (await publicInvite(db, invite[1] ?? '', now)) ?? { kind: 'missing' };
-  const at = /^\/@([^/?#]+)$/.exec(path);
-  const org = /^\/o\/([^/?#]+)$/.exec(path);
-  const raw = decodeURIComponent((at ?? org)?.[1] ?? '');
+  const at = /^\/@([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
+  const org = /^\/o\/([^/?#]+)(?:\/([^/?#]+))?$/.exec(path);
+  const raw = safeDecode((at ?? org)?.[1] ?? '');
+  // An item's or a collection's address under the host's (R61).
+  const slug = (at ?? org)?.[2] ? safeDecode((at ?? org)?.[2] ?? '') : null;
   if (!raw) {
     const entry = /^\/([a-z-]+)$/.exec(path)?.[1];
     if (entry && (ENTRY_SCREENS as readonly string[]).includes(entry))
@@ -247,9 +291,43 @@ export async function publicPageFor(db: Q, path: string, now: Date): Promise<Pub
   // One namespace: @handle may be an organization's; /o/ is only ever an organization's. For
   // @handle both are looked up at once (one of them misses, cheaply), so a person's page, the
   // common one, doesn't wait a round trip on the organization's miss first.
-  if (org) return (await publicOrg(db, handle)) ?? { kind: 'missing' };
+  if (org) {
+    const o = await publicOrg(db, handle);
+    if (!o) return slug ? { kind: 'app' } : { kind: 'missing' };
+    return slug ? (shelfPage(o, slug) ?? { kind: 'app' }) : o;
+  }
   const [o, person] = await Promise.all([publicOrg(db, handle), publicPerson(db, handle, now)]);
-  return o ?? person ?? { kind: 'missing' };
+  const host = o ?? person;
+  if (!host) return { kind: 'missing' };
+  return slug ? (shelfPage(host, slug) ?? { kind: 'missing' }) : host;
+}
+
+/** `%D9%82…` as the letters it is; junk as nothing. */
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * What an address under a host is (R61): a public item or a public collection, or nothing. Under
+ * an organization, anything else is the app's own screen (`/o/<handle>/setup`), never a 404.
+ */
+function shelfPage(
+  host: PublicPerson | PublicOrg,
+  slug: string,
+): PublicItemPage | PublicCollectionPage | null {
+  const found = bySlug(host.items, host.collections, slug);
+  if (!found) return null;
+  if (found.kind === 'item') return { kind: 'item', host, item: found.item };
+  return {
+    kind: 'collection',
+    host,
+    collection: found.collection,
+    items: host.items.filter((i) => i.collectionId === found.collection.id),
+  };
 }
 
 function entryTitle(screen: EntryScreen): string {
@@ -476,7 +554,7 @@ export function renderPublic(
     <div><dt class="mono">${esc(tr('handle'))}</dt><dd>@${esc(page.handle)}</dd></div>
     ${page.headline ? `<div><dt class="mono">${esc(tr('headline'))}</dt><dd>${esc(page.headline)}</dd></div>` : ''}
     ${page.organizations.length ? `<div><dt class="mono">${esc(tr('with'))}</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
-    ${itemRows(page.items)}
+    ${itemRows(page)}
   </dl>
   <p class="cta">${bookLink(page.items, `/@${page.handle}`, page.displayName)}<a href="${wayIn('sign-up', path)}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
@@ -530,9 +608,96 @@ export function renderPublic(
     }</dd></div>
     ${page.foundedYear ? `<div><dt class="mono">${esc(tr('since'))}</dt><dd>${page.foundedYear}</dd></div>` : ''}
     ${page.website ? `<div><dt class="mono">${esc(tr('website'))}</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
-    ${itemRows(page.items)}
+    ${itemRows(page)}
   </dl>
   <p class="cta">${bookLink(page.items, `/o/${o.handle}`, o.name)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+</main>`,
+      };
+    }
+    case 'item': {
+      const { host, item } = page;
+      const name = hostName(host);
+      const shelf = host.collections.find((c) => c.id === item.collectionId) ?? null;
+      const description = clip(
+        item.description ?? `${item.name} · ${itemLine(item)} · ${name}`,
+        200,
+      );
+      const image = host.kind === 'org' ? host.org.avatarUrl : host.avatarUrl;
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${item.name} · ${name} · ${SITE_NAME}`,
+          description,
+          image: image ? `${publicUrl}${image}` : null,
+          index: true,
+          ld: {
+            ...itemLd(host, item, url, publicUrl),
+            breadcrumb: breadcrumbLd([
+              { name, url: `${publicUrl}${hostPath(host)}` },
+              ...(shelf
+                ? [{ name: shelf.name, url: `${publicUrl}${shelfPath(host, shelf.slug)}` }]
+                : []),
+              { name: item.name, url },
+            ]),
+          },
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono"><a href="${esc(hostPath(host))}">${esc(name)}</a>${shelf ? ` · <a href="${esc(shelfPath(host, shelf.slug))}">${esc(shelf.name)}</a>` : ''}</span></header>
+  <h1>${esc(item.name)}</h1>
+  ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
+  <dl class="spec">
+    <div><dt class="mono">${esc(tr('from'))}</dt><dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
+    <div><dt class="mono">${esc(item.unit === 'each' ? tr('price') : tr('booking'))}</dt><dd>${esc(itemLine(item))}</dd></div>
+  </dl>
+  <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit === 'each' ? orderPath(path) : bookPath(path))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+</main>`,
+      };
+    }
+    case 'collection': {
+      const { host, collection, items } = page;
+      const name = hostName(host);
+      const image = host.kind === 'org' ? host.org.avatarUrl : host.avatarUrl;
+      return {
+        status: 200,
+        lang: currentTranslator().language,
+        head: meta({
+          title: `${collection.name} · ${name} · ${SITE_NAME}`,
+          description: clip(collection.description ?? items.map((i) => i.name).join(', '), 200),
+          image: image ? `${publicUrl}${image}` : null,
+          index: true,
+          ld: {
+            '@context': 'https://schema.org',
+            '@type': 'OfferCatalog',
+            name: collection.name,
+            url,
+            ...(collection.description ? { description: collection.description } : {}),
+            // Each offer with what it offers, as schema.org's catalog of offers reads.
+            itemListElement: items.map((i) => {
+              const {
+                '@context': _,
+                offers,
+                ...offered
+              } = itemLd(host, i, `${publicUrl}${shelfPath(host, i.slug)}`, publicUrl);
+              return { ...offers, itemOffered: offered };
+            }),
+            breadcrumb: breadcrumbLd([
+              { name, url: `${publicUrl}${hostPath(host)}` },
+              { name: collection.name, url },
+            ]),
+          },
+        }),
+        body: `
+<main class="pub pub-sheet" ${langAttrs()}>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono"><a href="${esc(hostPath(host))}">${esc(name)}</a></span></header>
+  <h1>${esc(collection.name)}</h1>
+  ${collection.description ? `<p class="lead">${esc(collection.description)}</p>` : ''}
+  <dl class="spec">
+    <div><dt class="mono">${esc(tr('from'))}</dt><dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
+    ${itemRows({ ...host, collections: [] }, items)}
+  </dl>
+  <p class="cta">${bookLink(items, hostPath(host), name)}</p>
 </main>`,
       };
     }
@@ -633,32 +798,98 @@ export const bookPath = (pagePath: string) => `${pagePath}?book`;
 /** A link that orders (R60): the page's path with `?order`, which opens the Order card's form. */
 export const orderPath = (pagePath: string) => `${pagePath}?order`;
 
-/** "Haircut — 45 min · EGP 200": the public items as spec rows (R58), one line each. */
-function itemRows(items: PublicItem[]): string {
+/** "45 min · EGP 200": what an item is, in a line (R58). */
+function itemLine(i: PublicItem): string {
+  return [
+    i.unit === 'minutes' && i.minutes
+      ? tr('{m} min', { m: i.minutes })
+      : i.unit === 'days'
+        ? tr('per day')
+        : null,
+    i.price
+      ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
+      : tr('Free'),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** The host's own path: `/o/<handle>` or `/@<handle>`. */
+export const hostPath = (host: PublicPerson | PublicOrg) =>
+  host.kind === 'org' ? `/o/${host.org.handle}` : `/@${host.handle}`;
+const hostName = (host: PublicPerson | PublicOrg) =>
+  host.kind === 'org' ? host.org.name : host.displayName;
+/** An item's or a collection's page (R61), under the host's. */
+export const shelfPath = (host: PublicPerson | PublicOrg, slug: string) =>
+  `${hostPath(host)}/${encodeURIComponent(slug)}`;
+
+/**
+ * The public items as spec rows (R58), each a link to its own page (R61), and the collections
+ * they're on, each with its page.
+ */
+function itemRows(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
   if (items.length === 0) return '';
-  const line = (i: PublicItem) =>
-    [
-      i.unit === 'minutes' && i.minutes
-        ? tr('{m} min', { m: i.minutes })
-        : i.unit === 'days'
-          ? tr('per day')
-          : null,
-      i.price
-        ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
-        : tr('Free'),
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  return `<div><dt class="mono">${esc(tr('offers'))}</dt><dd>${items
-    .map((i) => `${esc(i.name)} <span class="small">${esc(line(i))}</span>`)
+  const shelves = host.collections.length
+    ? `<div><dt class="mono">${esc(tr('collections'))}</dt><dd>${host.collections
+        .map((c) => `<a href="${esc(shelfPath(host, c.slug))}">${esc(c.name)}</a>`)
+        .join(' · ')}</dd></div>`
+    : '';
+  return `${shelves}<div><dt class="mono">${esc(tr('offers'))}</dt><dd>${items
+    .map(
+      (i) =>
+        `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i))}</span>`,
+    )
     .join('<br>')}</dd></div>`;
+}
+
+/** What an item is to an answer engine (R61): a product sold or a service booked, its offer. */
+function itemLd(host: PublicPerson | PublicOrg, item: PublicItem, url: string, publicUrl: string) {
+  const seller =
+    host.kind === 'org'
+      ? { '@type': 'Organization', name: host.org.name, url: `${publicUrl}${hostPath(host)}` }
+      : { '@type': 'Person', name: host.displayName, url: `${publicUrl}${hostPath(host)}` };
+  return {
+    '@context': 'https://schema.org',
+    '@type': item.unit === 'each' ? 'Product' : 'Service',
+    name: item.name,
+    url,
+    ...(item.description ? { description: item.description } : {}),
+    ...(item.unit === 'each' ? { brand: seller } : { provider: seller }),
+    offers: {
+      '@type': 'Offer',
+      url,
+      price: String(item.price?.value ?? 0),
+      priceCurrency: item.price?.currency ?? 'USD',
+      availability: 'https://schema.org/InStock',
+      seller,
+    },
+  };
+}
+
+/** The way back up, for a crawler: the host, then the collection, then the page. */
+function breadcrumbLd(trail: Array<{ name: string; url: string }>) {
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((t, n) => ({
+      '@type': 'ListItem',
+      position: n + 1,
+      name: t.name,
+      item: t.url,
+    })),
+  };
 }
 
 /**
  * The calls to action, first, for what's public: Book when anything is booked in time, Order
  * when anything is ordered by the piece (R60).
  */
-function bookLink(items: PublicItem[], pagePath: string, name: string): string {
+function bookLink(items: PublicItem[], pagePath: string, name: string, own = false): string {
+  // One item on its own page (R61): its own verb, without a name to repeat.
+  if (own && items.length === 1) {
+    const verb = items[0]?.unit === 'each' ? tr('Order') : tr('Book');
+    const to = items[0]?.unit === 'each' ? orderPath(pagePath) : bookPath(pagePath);
+    return `<a href="${wayIn('sign-up', to)}">${esc(verb)}</a> `;
+  }
   const out: string[] = [];
   if (items.some((i) => i.unit !== 'each'))
     out.push(
@@ -809,7 +1040,7 @@ export function robotsTxt(publicUrl: string): string {
 export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]): Promise<string> {
   const orgs = await db
     .selectFrom('organizations')
-    .select(['handle', 'updated_at'])
+    .select(['handle', 'updated_at', 'booking', 'booking_items', 'ordering', 'collections'])
     .where('archived_at', 'is', null)
     .where('verified_at', 'is not', null)
     .orderBy('created_at')
@@ -823,7 +1054,19 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     entry(`${publicUrl}/`),
     ...MARKETING_PAGES.map((p) => entry(`${publicUrl}/${p}`)),
     ...pagesHere.map((p) => entry(`${publicUrl}/${p}`)),
-    ...orgs.map((o) => entry(`${publicUrl}/o/${o.handle}`, o.updated_at)),
+    // Each organization's page, then its public collections and items (R61); a sitemap holds
+    // 50,000 addresses at most.
+    ...orgs
+      .flatMap((o) => {
+        const shelf = publicCatalog(o);
+        const at = (slug: string) => `${publicUrl}/o/${o.handle}/${encodeURIComponent(slug)}`;
+        return [
+          entry(`${publicUrl}/o/${o.handle}`, o.updated_at),
+          ...shelf.collections.map((c) => entry(at(c.slug), o.updated_at)),
+          ...shelf.items.map((i) => entry(at(i.slug), o.updated_at)),
+        ];
+      })
+      .slice(0, 50_000 - MARKETING_PAGES.length - pagesHere.length - 1),
     '</urlset>',
     '',
   ].join('\n');

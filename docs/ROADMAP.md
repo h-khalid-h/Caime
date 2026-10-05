@@ -1025,6 +1025,20 @@ listed there with its owner.
       and server), `e2e/bookings.spec.ts`.
 - [ ] Later layers of R60: stock that runs out, an Orders view for the team, the AI agent taking
       an order, options on an item (sizes, extras).
+- [x] R61: collections and a page for each thing offered. `CatalogCollection` (core
+      `catalog.ts`: addresses with `slugify`/`withSlugs`/`bySlug`, `RESERVED_SLUGS`) on
+      `users.collections` and `organizations.collections` (migration 0055); an item gains its
+      address, a line and its collection, and is seen only where its collection's audience allows
+      too (`bookableItems`). Public items and collections have pages (`/o/<handle>/<slug>`,
+      `/@<handle>/<slug>`) with JSON-LD, breadcrumbs and sitemap lines; signed in, the address
+      opens the host's page with `ItemSheet` over it, and Book or Order lands on the form with the
+      item chosen (`?item`). The setup groups items by collection and edits collections and
+      addresses; the card pickers group by collection. Found on the way: `RelationshipPicker` sat
+      in the startup chunk because two lazy sheets imported it statically (2 KB gzip back), and
+      the setup's day and lead labels were never translated. `catalog.test.ts`,
+      `public-pages.test.ts`, `paths.test.ts`, `e2e/bookings.spec.ts`.
+- [ ] Later layers of R61: an item's photo (on its page and in Open Graph), a collection's
+      order on the host's page, person pages' items in a sitemap only if a person opts in.
 - [x] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
       site's switch and alternates (`tr_TR`), the catalog tests over four languages, the agent's
       hand-over line, voice-note hints; `e2e/turkish.spec.ts`. A native speaker's review is owed,
@@ -2064,3 +2078,6 @@ listed there with its owner.
   site. Three sign-in strings had shown a literal `\u2019` to everyone; the suggestion line put
   English's "a"/"an" into Arabic and French. Both fixed. A piece sold now allows ten an order
   by default.
+- 2026-10-05 — R61: collections and a page for each public item and collection, with JSON-LD
+  and sitemap lines; Book and Order from an item land on the card with it chosen. The startup
+  chunk lost 2 KB gzip (the relationship picker loads with its sheets).

@@ -7,21 +7,23 @@ import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import {
-  type FormState,
-  initialForm,
-  RelationshipForm,
-  toDraft,
-} from '@/features/relationships/RelationshipPicker';
+import { type FormState, initialForm, toDraft } from '@/features/relationships/form';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
 import { Lock } from '@/ui/icons';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+// The form itself loads with the sheet's first paint; the picker's module stays out of the
+// startup chunk, which every lazy sheet sharing it statically would put it in.
+const RelationshipForm = lazyPart(() =>
+  import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipForm),
+);
 
 /**
  * Send a connection request, in one sheet. Two separate things, kept separate on purpose: how

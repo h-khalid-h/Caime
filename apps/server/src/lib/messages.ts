@@ -279,6 +279,7 @@ async function catalogHostFor(
     booking: unknown;
     booking_items: unknown;
     ordering: unknown;
+    collections: unknown;
   },
   itemIds: string[],
 ): Promise<{ host: BookingHost; booker: Booker } | null> {
@@ -288,7 +289,7 @@ async function catalogHostFor(
     const org = mask
       ? await ctx.db
           .selectFrom('organizations')
-          .select(['id', 'booking', 'booking_items', 'ordering'])
+          .select(['id', 'booking', 'booking_items', 'ordering', 'collections'])
           .where('id', '=', mask.orgId)
           .executeTakeFirst()
       : null;
@@ -303,7 +304,7 @@ async function catalogHostFor(
   const other = otherId
     ? await ctx.db
         .selectFrom('users')
-        .select(['id', 'booking', 'booking_items', 'ordering'])
+        .select(['id', 'booking', 'booking_items', 'ordering', 'collections'])
         .where('id', '=', otherId)
         .executeTakeFirst()
     : null;
@@ -659,6 +660,7 @@ export async function sendMessage(
       'booking',
       'booking_items',
       'ordering',
+      'collections',
     ])
     .where('id', '=', senderId)
     .executeTakeFirstOrThrow();

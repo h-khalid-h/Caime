@@ -25,46 +25,12 @@ import { sphereIcon } from '@/ui/SphereIcon';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+import { type FormState, initialForm, type RelationshipDraft, toDraft } from './form';
 
 /** How many of the places someone knows people from are offered at once for "Where?". */
 const PLACES = 6;
 
-export interface RelationshipDraft {
-  sphere: Sphere;
-  role: string | null;
-  roleLabel: string | null;
-  orgName: string | null;
-  shared: boolean;
-}
-
-export interface FormState {
-  sphere: Sphere | null;
-  role: string | null;
-  roleLabel: string;
-  orgName: string;
-  shared: boolean;
-}
-
-export function initialForm(current?: Partial<RelationshipDraft> | null): FormState {
-  return {
-    sphere: current?.sphere ?? null,
-    role: current?.role ?? null,
-    roleLabel: current?.roleLabel ?? '',
-    orgName: current?.orgName ?? '',
-    shared: current?.shared ?? false,
-  };
-}
-
-export function toDraft(f: FormState): RelationshipDraft | null {
-  if (!f.sphere) return null;
-  return {
-    sphere: f.sphere,
-    role: f.roleLabel.trim() ? null : f.role,
-    roleLabel: f.roleLabel.trim() || null,
-    orgName: SPHERE_DEFS[f.sphere].asksOrganization ? f.orgName.trim() || null : null,
-    shared: f.shared,
-  };
-}
+export { type FormState, initialForm, type RelationshipDraft, toDraft } from './form';
 
 /**
  * "How do you know …?": a sphere, then (optionally) a role and where. Three taps at most

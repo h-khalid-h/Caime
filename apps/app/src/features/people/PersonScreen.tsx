@@ -56,14 +56,36 @@ const RelationshipPicker = lazyPart(() =>
   import('@/features/relationships/RelationshipPicker').then((m) => m.RelationshipPicker),
 );
 const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.ConnectSheet));
+/**
+ * Where a Book or an Order lands (R58, R60, R61): the conversation, on that card's form, with
+ * the item chosen when one was; `c/[id]` reads it. Kept in each screen's chunk, not the startup
+ * one (paths.ts is in it).
+ */
+const cardParams = (
+  id: string,
+  kit: 'appointment' | 'order_status' | null,
+  itemId: string | null = null,
+) =>
+  kit
+    ? {
+        id,
+        ...(kit === 'appointment' ? { book: '1' } : { order: '1' }),
+        ...(itemId ? { item: itemId } : {}),
+      }
+    : { id };
+
+const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
 
 export function PersonScreen({
   id,
   book = null,
+  slug = null,
 }: {
   id: string;
   /** Arrived through a Book or an Order link (R58, R60): that card's form, once. */
   book?: 'appointment' | 'order_status' | null;
+  /** One of their items or collections, by address (R61): its sheet, over the page. */
+  slug?: string | null;
 }) {
   const t = useTheme();
   const me = useMe();
@@ -90,6 +112,7 @@ export function PersonScreen({
       view: PersonProfileView,
       replace = false,
       kit: 'appointment' | 'order_status' = 'appointment',
+      itemId: string | null = null,
     ) => {
       const general = view.conversations.find((c) => c.isGeneral);
       try {
@@ -97,10 +120,7 @@ export function PersonScreen({
           general?.id ?? (await endpoints.openDirect(view.person.id)).conversation.id;
         const to = {
           pathname: '/c/[id]' as const,
-          params:
-            kit === 'order_status'
-              ? { id: conversationId, order: '1' }
-              : { id: conversationId, book: '1' },
+          params: cardParams(conversationId, kit, itemId),
         };
         if (replace) router.replace(to);
         else router.navigate(to);
@@ -114,8 +134,11 @@ export function PersonScreen({
     if (!book || !p || booked.current || p.person.id === me.id) return;
     if (book === 'appointment' ? !p.booking : !p.ordering) return;
     booked.current = true;
-    void bookWith(p, true, book);
-  }, [book, p, me.id, bookWith]);
+    // From an item's address (R61), the item it was.
+    const all = [...(p.booking?.items ?? []), ...(p.ordering?.items ?? [])];
+    const itemId = slug ? (all.find((i) => i.slug === slug)?.id ?? null) : null;
+    void bookWith(p, true, book, itemId);
+  }, [book, slug, p, me.id, bookWith]);
 
   const refresh = () => {
     for (const key of [
@@ -597,6 +620,24 @@ export function PersonScreen({
           current={picker.current}
           onClose={() => setPicker({ open: false, current: null })}
           person={person}
+        />
+      ) : null}
+      {/* One of their items or collections, by address (R61). */}
+      {slug && !book ? (
+        <ItemSheet
+          slug={slug}
+          hostPath={`/@${person.handle}`}
+          items={[...(p.booking?.items ?? []), ...(p.ordering?.items ?? [])]}
+          collections={p.collections}
+          locale={locale}
+          onPick={(next) => router.setParams({ item: next })}
+          onTake={
+            self
+              ? null
+              : (i) =>
+                  void bookWith(p, false, i.unit === 'each' ? 'order_status' : 'appointment', i.id)
+          }
+          onClose={() => router.setParams({ item: undefined })}
         />
       ) : null}
       {connecting ? (

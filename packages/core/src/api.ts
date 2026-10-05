@@ -12,6 +12,7 @@ import type { AutomationWhen } from './automations';
 import type { AppointmentBooking, BookingHours, BookingItem, OrderingSettings } from './booking';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
+import type { CatalogCollection } from './catalog';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
 import type { KitField } from './kits';
@@ -244,6 +245,8 @@ export interface PersonProfileView {
   booking: { hours: BookingHours; items: BookingItem[] } | null;
   /** They take orders (R60): how, and what this viewer may order of them, or null. */
   ordering: { settings: OrderingSettings; items: BookingItem[] } | null;
+  /** The collections this viewer may see (R61), for grouping what they may book or order. */
+  collections: CatalogCollection[];
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];
@@ -977,6 +980,8 @@ export interface OrgView extends OrgSummaryView {
   bookingItems: BookingItem[];
   /** How it takes orders (R60), for everyone; null where it takes none. */
   ordering: OrderingSettings | null;
+  /** Its collections this viewer may see (R61); every one for its team. */
+  collections: CatalogCollection[];
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
 }
@@ -2216,6 +2221,8 @@ export interface BookingResponse {
   items: BookingItem[];
   /** How the host takes orders (R60), or null for none. */
   ordering: OrderingSettings | null;
+  /** Its collections (R61). */
+  collections: CatalogCollection[];
 }
 export interface OrgUpdateResponse {
   update: OrgUpdateView;

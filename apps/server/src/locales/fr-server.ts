@@ -173,7 +173,6 @@ export const frServer: Catalog = {
   money: 'argent',
   'Never held or moved by Caime. A split records who owes whom; nothing else.':
     'Jamais détenu ni déplacé par Caime. Un partage note qui doit quoi à qui ; rien d’autre.',
-  price: 'prix',
   'Free for people, always. Organizations start free and can buy Business.':
     'Gratuit pour les particuliers, toujours. Les organisations commencent gratuitement et peuvent acheter Business.',
   'runs on': 'fonctionne sur',
@@ -988,4 +987,5 @@ export const frServer: Catalog = {
   'Up to {n} of that in one order.': 'Jusqu’à {n} par commande.',
   'They don’t offer that way.': 'Ce mode n’est pas proposé.',
   offers: 'propose',
+  collections: 'collections',
 };

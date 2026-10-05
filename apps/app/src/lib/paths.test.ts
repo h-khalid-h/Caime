@@ -12,6 +12,7 @@ import {
   handleIn,
   inviteIn,
   isAuthorizeLink,
+  itemIn,
   orderIn,
   ownLinkPath,
 } from './paths';
@@ -152,5 +153,20 @@ describe('a link that books (R58)', () => {
     expect(orderIn('/o/swibba?order')).toBe('swibba');
     expect(orderIn('/o/swibba?book')).toBeNull();
     expect(handleIn('/@noor?order')).toBe('noor');
+  });
+
+  it('reads an item’s or a collection’s address under a host (R61)', () => {
+    expect(handleIn('/o/nile.dental/teeth-whitening')).toBe('nile.dental');
+    expect(itemIn('/o/nile.dental/teeth-whitening')).toBe('teeth-whitening');
+    expect(itemIn('/o/nile.dental/teeth-whitening?book')).toBe('teeth-whitening');
+    expect(bookIn('/o/nile.dental/teeth-whitening?book')).toBe('nile.dental');
+    expect(orderIn('/@noor/honey-jar?order')).toBe('noor');
+    expect(itemIn('/@noor/%D9%82%D8%B5-%D8%A7%D9%84%D8%B4%D8%B9%D8%B1')).toBe('قص-الشعر');
+    expect(itemIn('/o/nile.dental')).toBeNull();
+    expect(itemIn('/o/nile.dental/a/b')).toBeNull();
+    expect(itemIn('/o/nile.dental/%E0%A4%A')).toBeNull();
+    expect(appPath('/o/nile.dental/teeth-whitening?book')).toBe(
+      '/o/nile.dental/teeth-whitening?book',
+    );
   });
 });

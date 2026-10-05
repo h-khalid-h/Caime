@@ -25,11 +25,14 @@ export function OrgBooking({ org }: { org: OrgView }) {
         currency: org.currency,
         team: (org.members ?? []).map((m) => ({ id: m.userId, name: m.person.displayName })),
       }}
-      hours={org.booking}
-      items={org.bookingItems}
-      ordering={org.ordering}
-      save={async (booking, items, ordering) => {
-        await endpoints.setOrgBooking(org.id, booking, items, ordering);
+      offer={{
+        booking: org.booking,
+        items: org.bookingItems,
+        ordering: org.ordering,
+        collections: org.collections,
+      }}
+      save={async (next) => {
+        await endpoints.setOrgBooking(org.id, next);
         void qc.invalidateQueries({ queryKey: qk.org(org.handle) });
         void qc.invalidateQueries({ queryKey: qk.allSlots });
       }}

@@ -43,7 +43,13 @@ function onPublicPage(): boolean {
   const path = window.location.pathname;
   if (handleIn(path) === null && inviteIn(path) === null) return false;
   const kind = document.querySelector('meta[name="caime-page"]')?.getAttribute('content');
-  return kind === 'person' || kind === 'org' || kind === 'invite';
+  return (
+    kind === 'person' ||
+    kind === 'org' ||
+    kind === 'item' ||
+    kind === 'collection' ||
+    kind === 'invite'
+  );
 }
 
 export default function RootLayout() {

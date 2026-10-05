@@ -310,6 +310,18 @@ These are rules, not preferences.
   `isOrdered` split the catalog everywhere (setup, profile `booking` vs `ordering`, the agent's
   catalog lines, public pages' Book and Order). `?order` links (`orderIn`) land on the form as
   `?book` does.
+- Collections and item pages (R61): a host's `collections` (core `CatalogCollection`) group its
+  one catalog; an item carries `slug`, `description` and `collectionId`, and is seen only where
+  both its audience and its collection's allow (`bookableItems` with `collections`). Read a
+  catalog through `catalogOf` (`lib/booking.ts`), which gives every older item its address
+  (`withSlugs`), and save through `catalogFrom`; one address space per host, never a
+  `RESERVED_SLUGS` word (a new screen under `/o/<handle>/` adds its name there). Public pages are
+  `kind: 'item' | 'collection'` from `shelfPage` (`lib/public-pages.ts`), with JSON-LD
+  (`itemLd`, `OfferCatalog`) and sitemap lines for verified organizations. In the app the
+  address routes (`o/[handle]/[slug]`, `[at]/[slug]`) redirect to the host's route with `?item`,
+  which opens `features/booking/ItemSheet.tsx` (lazy); never render a screen from a second
+  route (it moves into `__common`). Book or Order from it lands on `/c/<id>?book=1&item=<id>`,
+  read into `KitStart` for `KitForm`. The whole offer is saved as one `BookingResponse`.
 - The brief before a meeting (R58, `lib/briefs.ts`): an agreed meeting or appointment queues
   `card.brief` (`queueBrief`, from the kit move route; one per card and start, so a moved card
   finds its old job pointless) an hour before, for the people whose own relationship to the

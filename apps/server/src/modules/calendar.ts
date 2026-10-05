@@ -35,8 +35,9 @@ import {
   assertItemsFit,
   type Booker,
   type BookingHost,
+  catalogFrom,
+  catalogOf,
   itemsFor,
-  itemsOf,
   openSlotsFor,
   orderingOf,
   orgHost,
@@ -205,12 +206,20 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!canManageOrg(seat.role))
       throw forbidden(tr('Only the organization’s owner and admins can.'));
     const team = await humanTeam(ctx.db, id);
-    assertItemsFit(orgHost(org), body.items, new Set(team.map((u) => u.id)), true);
+    const kept = catalogFrom(body, catalogOf(org).collections);
+    assertItemsFit(
+      orgHost(org),
+      kept.items,
+      new Set(team.map((u) => u.id)),
+      true,
+      kept.collections,
+    );
     await ctx.db
       .updateTable('organizations')
       .set({
         booking: body.booking ? JSON.stringify(body.booking) : null,
-        booking_items: JSON.stringify(body.items),
+        booking_items: JSON.stringify(kept.items),
+        collections: JSON.stringify(kept.collections),
         // Left out, ordering stays as it was (R60).
         ...(body.ordering !== undefined
           ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
@@ -228,7 +237,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     return {
       booking: body.booking,
-      items: body.items,
+      ...kept,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(org),
     };
   });
@@ -307,12 +316,12 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['booking', 'booking_items', 'ordering'])
+      .select(['booking', 'booking_items', 'ordering', 'collections'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     return {
       booking: (me.booking as BookingResponse['booking']) ?? null,
-      items: itemsOf(me),
+      ...catalogOf(me),
       ordering: orderingOf(me),
     };
   });
@@ -322,15 +331,25 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(BookingBody, req.body);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['id', 'booking', 'booking_items', 'ordering', 'birth_date', 'time_zone'])
+      .select([
+        'id',
+        'booking',
+        'booking_items',
+        'ordering',
+        'collections',
+        'birth_date',
+        'time_zone',
+      ])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    assertItemsFit(personHost(me), body.items, new Set(), !minorOf(me, ctx.now()));
+    const kept = catalogFrom(body, catalogOf(me).collections);
+    assertItemsFit(personHost(me), kept.items, new Set(), !minorOf(me, ctx.now()));
     await ctx.db
       .updateTable('users')
       .set({
         booking: body.booking ? JSON.stringify(body.booking) : null,
-        booking_items: JSON.stringify(body.items),
+        booking_items: JSON.stringify(kept.items),
+        collections: JSON.stringify(kept.collections),
         ...(body.ordering !== undefined
           ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
           : {}),
@@ -346,7 +365,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     return {
       booking: body.booking,
-      items: body.items,
+      ...kept,
       ordering: body.ordering !== undefined ? body.ordering : orderingOf(me),
     };
   });
@@ -358,7 +377,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const user = await ctx.db
       .selectFrom('users')
-      .select(['id', 'booking', 'booking_items', 'kind'])
+      .select(['id', 'booking', 'booking_items', 'collections', 'kind'])
       .where('id', '=', id)
       .where('deleted_at', 'is', null)
       .where('suspended_at', 'is', null)

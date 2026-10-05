@@ -3178,4 +3178,37 @@ export const fr: Catalog = {
   How: 'Comment',
   'Something ordered has nobody named to do it.': 'Ce qui se commande n’a personne de désigné.',
   'Each way once.': 'Chaque mode une seule fois.',
+  'Not here any more': 'Plus ici',
+  'It may have been taken off, or it isn’t offered to you.':
+    'Il a peut-être été retiré, ou il ne vous est pas proposé.',
+  'Nothing here you can take yet.': 'Rien ici pour vous pour l’instant.',
+  'Link to share': 'Lien à partager',
+  price: 'prix',
+  booking: 'réservation',
+  collection: 'collection',
+  'An hour ahead': 'Une heure avant',
+  '2 hours ahead': '2 heures avant',
+  '2 weeks': '2 semaines',
+  '2 months': '2 mois',
+  '{n} items': { one: '{n} élément', other: '{n} éléments' },
+  'Add a collection': 'Ajouter une collection',
+  'Group what you offer: treatments, products, rooms. A public one has a page of its own.':
+    'Regroupez ce que vous proposez : soins, produits, chambres. Une collection publique a sa propre page.',
+  'A page of its own, listed on yours; what’s in it shows to whom each item allows.':
+    'Sa propre page, listée sur la vôtre ; son contenu s’affiche pour qui chaque élément le permet.',
+  Address: 'Adresse',
+  'That address is one of Caime’s own words.': 'Cette adresse est un mot réservé de Caime.',
+  'Use letters and digits, joined by hyphens.':
+    'Utilisez des lettres et des chiffres, reliés par des tirets.',
+  'The end of its link, when it’s public: …/{slug}':
+    'La fin de son lien, s’il est public : …/{slug}',
+  'A collection': 'Une collection',
+  'Items join it from their own page.': 'Les éléments la rejoignent depuis leur propre fiche.',
+  Treatments: 'Soins',
+  'A line about it (optional)': 'Une ligne à son sujet (facultatif)',
+  Collection: 'Collection',
+  None: 'Aucune',
+  'Each collection once.': 'Chaque collection une seule fois.',
+  'Each address once.': 'Chaque adresse une seule fois.',
+  'That collection isn’t there.': 'Cette collection n’existe pas.',
 };

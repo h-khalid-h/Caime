@@ -13,10 +13,13 @@ import {
   type BookingAskInput,
   type BookingHours,
   type BookingItem,
+  type BookingItemInput,
   type Busy,
   bookableItems,
   bookingPrice,
   bookingSpan,
+  type CatalogCollection,
+  type CollectionInput,
   canBook,
   isBooked,
   type OrderAsk,
@@ -26,6 +29,7 @@ import {
   placeOrder,
   type Sphere,
   tr,
+  withSlugs,
   zonedParts,
 } from '@caime/core';
 import type { AppContext } from '../context';
@@ -43,6 +47,8 @@ export interface BookingHost {
   items: BookingItem[];
   /** How it takes orders (R60), or null. */
   ordering: OrderingSettings | null;
+  /** Its collections (R61). */
+  collections: CatalogCollection[];
 }
 
 /** Someone's standing with the host, for an item's audience (core `canBook`). */
@@ -60,12 +66,40 @@ export function bookingOf(
   return (row.booking as BookingHours | null) ?? null;
 }
 
-/** The catalog as kept (an older row has none). */
-export function itemsOf(row: { booking_items?: unknown }): BookingItem[] {
-  return Array.isArray(row.booking_items) ? (row.booking_items as BookingItem[]) : [];
+/**
+ * The catalog and its collections as kept, each with its address (R61): an item kept before
+ * addresses gets one from its name, the same one every time, since the order is the host's.
+ */
+export function catalogOf(row: { booking_items?: unknown; collections?: unknown }): {
+  items: BookingItem[];
+  collections: CatalogCollection[];
+} {
+  const items = (Array.isArray(row.booking_items) ? row.booking_items : []) as BookingItem[];
+  const collections = (
+    Array.isArray(row.collections) ? row.collections : []
+  ) as CatalogCollection[];
+  return withSlugs(
+    items.map((i) => ({
+      ...i,
+      description: i.description ?? null,
+      collectionId: i.collectionId ?? null,
+    })),
+    collections.map((c) => ({ ...c, description: c.description ?? null })),
+  );
 }
 
-type CatalogRow = { id: string; booking: unknown; booking_items: unknown; ordering?: unknown };
+/** The catalog as kept (an older row has none). */
+export function itemsOf(row: { booking_items?: unknown; collections?: unknown }): BookingItem[] {
+  return catalogOf(row).items;
+}
+
+type CatalogRow = {
+  id: string;
+  booking: unknown;
+  booking_items: unknown;
+  ordering?: unknown;
+  collections?: unknown;
+};
 
 /** How a host takes orders, as kept (a row read without the column has none). */
 export function orderingOf(row: { ordering?: unknown }): OrderingSettings | null {
@@ -77,7 +111,7 @@ export function orgHost(org: CatalogRow): BookingHost {
     kind: 'org',
     id: org.id,
     hours: bookingOf(org as Pick<Organization, 'booking'>),
-    items: itemsOf(org),
+    ...catalogOf(org),
     ordering: orderingOf(org),
   };
 }
@@ -87,7 +121,7 @@ export function personHost(user: CatalogRow): BookingHost {
     kind: 'person',
     id: user.id,
     hours: bookingOf(user as Pick<User, 'booking'>),
-    items: itemsOf(user),
+    ...catalogOf(user),
     ordering: orderingOf(user),
   };
 }
@@ -112,7 +146,10 @@ export function orderFor(host: BookingHost, booker: Booker, ask: OrderAsk): Plac
 
 /** The items this booker may take from the host's catalog. */
 export function itemsFor(host: BookingHost, booker: Booker): BookingItem[] {
-  return bookableItems(host.items, booker, { adult: booker.adult });
+  return bookableItems(host.items, booker, {
+    adult: booker.adult,
+    collections: host.collections,
+  });
 }
 
 interface Held {
@@ -335,12 +372,35 @@ export async function pickProvider(
 }
 
 /** A person's own catalog names nobody; an organization's names its team. */
+/**
+ * What a save keeps (R61): the catalog as sent, its collections as sent (else as they were),
+ * an item in a collection no longer there in none, and every address unique.
+ */
+export function catalogFrom(
+  body: { items: BookingItemInput[]; collections?: CollectionInput[] },
+  kept: CatalogCollection[],
+): { items: BookingItem[]; collections: CatalogCollection[] } {
+  const collections = body.collections ?? kept;
+  const ids = new Set(collections.map((c) => c.id));
+  return withSlugs(
+    body.items.map((i) => ({
+      ...i,
+      collectionId: i.collectionId && ids.has(i.collectionId) ? i.collectionId : null,
+    })),
+    collections,
+  ) as { items: BookingItem[]; collections: CatalogCollection[] };
+}
+
 export function assertItemsFit(
   host: BookingHost,
   items: BookingItem[],
   teamIds: Set<string>,
   adult: boolean,
+  collections: CatalogCollection[] = [],
 ): void {
+  // An organization's shelves are for everyone or its customers, as its items are.
+  if (host.kind === 'org' && collections.some((c) => Array.isArray(c.audience)))
+    throw forbidden(tr('An organization’s items are public or for its customers.'));
   for (const item of items) {
     if (host.kind === 'person') {
       if (item.providers) throw forbidden(tr('Your own bookings are yours to do.'));

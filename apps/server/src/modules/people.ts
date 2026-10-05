@@ -3,7 +3,15 @@
  */
 
 import type { ConnectionStateView, PersonProfileView } from '@caime/core';
-import { ADULT_AGE, canSee, isBooked, isOrdered, resolvePolicy, rhythmOf } from '@caime/core';
+import {
+  ADULT_AGE,
+  canSee,
+  isBooked,
+  isOrdered,
+  resolvePolicy,
+  rhythmOf,
+  visibleCollections,
+} from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -427,11 +435,19 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       host.ordering && !relation.blocked && ordered.length > 0
         ? { settings: host.ordering, items: ordered }
         : null;
+    // Its shelves (R61): those this viewer may see that hold something they may take.
+    const shown = new Set(allowed.map((i) => i.collectionId));
+    const collections = visibleCollections(host.collections, {
+      isSelf: relation.isSelf,
+      isConnected: relation.isConnected,
+      spheres: relation.ownerSpheresForViewer,
+    }).filter((c) => shown.has(c.id));
     return {
       person: personView(user, relation, now, identity),
       organizations,
       booking,
       ordering,
+      collections: booking || ordering ? collections : [],
       // What it is: to those their rules allow, and to anyone in the conversation it was made in.
       busy: busy
         ? {

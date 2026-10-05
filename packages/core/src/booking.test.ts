@@ -220,6 +220,9 @@ describe('catalog items (R58)', () => {
       audience,
       providers: null,
       askTopic: false,
+      slug: id,
+      description: null,
+      collectionId: null,
     });
     const items = [
       item('a', 'public', { value: 200, currency: 'EGP' }),
@@ -247,6 +250,9 @@ describe('orders from the catalog (R60)', () => {
     audience: 'public',
     providers: null,
     askTopic: false,
+    slug: id,
+    description: null,
+    collectionId: null,
     ...patch,
   });
   const menu = [

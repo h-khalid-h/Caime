@@ -31,12 +31,10 @@ export function MyBookings() {
         <View testID="my-bookings">
           <BookingSetup
             host={{ kind: 'person', name: me.displayName, currency: me.currency }}
-            hours={q.data.booking}
-            items={q.data.items}
-            ordering={q.data.ordering}
-            save={async (booking, items, ordering) => {
-              await endpoints.setMyBooking(booking, items, ordering);
-              qc.setQueryData(qk.myBooking, { booking, items, ordering });
+            offer={q.data}
+            save={async (next) => {
+              const saved = await endpoints.setMyBooking(next);
+              qc.setQueryData(qk.myBooking, saved);
               void qc.invalidateQueries({ queryKey: qk.me });
               void qc.invalidateQueries({ queryKey: qk.allSlots });
             }}

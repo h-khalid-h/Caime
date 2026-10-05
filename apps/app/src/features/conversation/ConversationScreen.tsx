@@ -34,7 +34,7 @@ import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useKnownPrivate } from '@/features/e2ee/hooks';
 import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
-import type { KitChoice } from '@/features/kits/KitForm';
+import type { KitChoice, KitStart } from '@/features/kits/KitForm';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { leftConversation } from '@/realtime/apply';
@@ -92,11 +92,14 @@ export function ConversationScreen({
   id,
   focusSeq,
   openKit = null,
+  kitStart = null,
 }: {
   id: string;
   focusSeq?: number;
   /** Opened on a card's form: a Book or an Order link (R58, R60). */
   openKit?: KitChoice | null;
+  /** What that form starts with: the item chosen (R61). */
+  kitStart?: KitStart | null;
 }) {
   const t = useTheme();
   const me = useMe();
@@ -791,6 +794,7 @@ export function ConversationScreen({
           conversation={conversation}
           where={where}
           openKit={openKit}
+          kitStart={kitStart}
           replyTo={replyTo}
           onClearReply={() => setReplyTo(null)}
           editing={editing}
