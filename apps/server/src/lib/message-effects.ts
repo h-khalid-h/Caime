@@ -34,6 +34,7 @@ import {
 } from './relations';
 import { spaceConversationTitle, spaceRefs } from './spaces';
 import { createSuggestion } from './suggest';
+import { queueTranscription } from './transcribe';
 import { identityShownTo } from './users';
 
 const BURST_WINDOW_MS = 10 * 60_000;
@@ -63,6 +64,8 @@ export async function afterMessage(
         .executeTakeFirst()
     : undefined;
   if (!sender) return;
+  // A voice note is sent for its words (PRD §46), when this Caime and the sender allow it.
+  if (message.kind === 'voice') await queueTranscription(ctx, message);
   const replyToSender = message.reply_to_id
     ? (
         await ctx.db

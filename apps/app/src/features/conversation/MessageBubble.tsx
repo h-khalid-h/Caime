@@ -1,10 +1,11 @@
 import { palette } from '@caime/brand/tokens';
 import type { MessageView } from '@caime/core/api';
-import { formatBytes, formatClock, systemText } from '@caime/core/format';
+import { AI_LABEL } from '@caime/core/assist';
+import { formatBytes, formatClock, formatDuration, systemText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { memo, type ReactNode, useEffect, useRef, useState } from 'react';
+import { lazy, memo, type ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
@@ -19,6 +20,7 @@ import {
 import { KitCard } from '@/features/kits/KitCard';
 import { LocationBody } from '@/features/location/LocationBody';
 import { stickerById } from '@/features/stickers/pack';
+import { durationOf, transcriptOf } from '@/features/voice/transcript';
 import { linkify, openLink, opensWithEnter } from '@/lib/links';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -39,6 +41,11 @@ import {
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { PollBody } from './PollBody';
+
+/** The player loads with the first voice note shown, never before (the audio module). */
+const VoiceNote = lazy(() =>
+  import('@/features/voice/parts').then((m) => ({ default: m.VoiceNote })),
+);
 
 export type Delivery = 'queued' | 'sending' | 'failed' | 'sent' | 'delivered' | 'read';
 
@@ -368,6 +375,38 @@ export const MessageBubble = memo(function MessageBubble({
         {bodyText}
       </View>
     );
+  } else if (m.kind === 'voice' && m.files.length) {
+    // The note plays; its words, when Caime has heard them (PRD §46), read under it as what the
+    // sender said, labelled as Caime's hearing.
+    const audio = m.files[0]!;
+    const heard = transcriptOf(m.payload);
+    content = (
+      <View style={{ gap: 6 }}>
+        <Suspense
+          fallback={
+            <Text variant="caption" color={meta}>
+              {formatDuration(durationOf(m.payload, audio.durationMs) ?? 0)}
+            </Text>
+          }
+        >
+          <VoiceNote
+            url={audio.url}
+            durationMs={durationOf(m.payload, audio.durationMs)}
+            fg={fg}
+            meta={meta}
+            mine={mine}
+          />
+        </Suspense>
+        {text ? (
+          <View style={{ gap: 2 }} testID="voice-transcript">
+            <Text variant="caption" color={meta}>
+              {heard ? tr('Transcript · {label}', { label: tr(AI_LABEL) }) : tr('Transcript')}
+            </Text>
+            {bodyText}
+          </View>
+        ) : null}
+      </View>
+    );
   } else if (m.kind === 'file' && m.files.length) {
     content = (
       <View style={{ gap: 6 }}>
@@ -542,7 +581,8 @@ export const MessageBubble = memo(function MessageBubble({
           maxWidth: '82%',
           flexDirection: mine ? 'row-reverse' : 'row',
           alignItems: 'center',
-          gap: 6,
+          // The hover actions sit beside, over the margin, never in the row (see below).
+          position: 'relative',
         }}
       >
         <Pressable
@@ -597,7 +637,16 @@ export const MessageBubble = memo(function MessageBubble({
           )}
         </Pressable>
         {hover && !deleted && onReply ? (
-          <View style={{ flexDirection: mine ? 'row-reverse' : 'row', gap: 2 }}>
+          <View
+            style={{
+              position: 'absolute',
+              top: '50%',
+              transform: [{ translateY: -14 }],
+              ...(mine ? { end: '100%', marginEnd: 6 } : { start: '100%', marginStart: 6 }),
+              flexDirection: mine ? 'row-reverse' : 'row',
+              gap: 2,
+            }}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={tr('Reply')}

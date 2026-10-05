@@ -17,6 +17,8 @@ export async function runAi<T>(
   feature: string,
   userId: string,
   work: () => Promise<AiResult<T>>,
+  /** Who answered: Anthropic for the model features, the speech provider for a transcript. */
+  provider = 'anthropic',
 ): Promise<T> {
   const started = Date.now();
   const record = (outcome: string, usage: AiUsage | null) => {
@@ -33,8 +35,8 @@ export async function runAi<T>(
           id: uuidv7(),
           user_id: userId,
           feature,
-          provider: 'anthropic',
-          model: usage?.model ?? ctx.ai?.model ?? null,
+          provider,
+          model: usage?.model ?? (provider === 'anthropic' ? (ctx.ai?.model ?? null) : null),
           input_tokens: usage?.inputTokens ?? null,
           output_tokens: usage?.outputTokens ?? null,
           latency_ms: Date.now() - started,

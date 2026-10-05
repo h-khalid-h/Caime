@@ -100,6 +100,7 @@ Content-Security-Policy, and links in notifications. Everything below is optiona
 | `SMTP_URL` | — | Where mail goes out (`smtps://user:pass@host:465`, or `smtp://` with STARTTLS): the code that confirms an address and the link that resets a password (R48). Without it nothing is sent, and the app says to use a recovery code. |
 | `EMAIL_FROM` | `Caime <hello@cai.me>` | The sender. |
 | `ANTHROPIC_API_KEY` | — | AI assist (rewrite, translate, catch me up, find follow-ups). Without it the AI settings don't appear and Caime uses its heuristics (R17). Each person still turns it on for themselves. |
+| `SPEECH_PROVIDER`, `SPEECH_API_KEY`, `SPEECH_MODEL` | — | Voice notes into words (PRD §46, docs/SPEECH.md): `openai` or `elevenlabs`, its key, and the model (the provider's default when unset). Off without the first two; each person's AI assist switch still decides for their own notes. ⛔ Set after the owner's bake-off on real clips. |
 | `ANTHROPIC_MODEL` | `claude-opus-5` | The Claude model AI assist uses: finding follow-ups and organizations' agents always, and the light features unless the next is set. |
 | `ANTHROPIC_MODEL_LIGHT` | — | A smaller model for rewrite, translate and catch me up (short, frequent, forgiving; `docs/RESOURCES.md`). Unset, they use `ANTHROPIC_MODEL`. |
 | `ANTHROPIC_BASE_URL` | — | Another Messages API endpoint, such as a gateway. |

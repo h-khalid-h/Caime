@@ -133,6 +133,7 @@ sub-processor does. **[lawyer]** the wording.
 | Anthropic, PBC | Provides the AI behind AI assist and organizations’ AI agents (Claude). | What the Organization told its agent and the latest messages of a customer’s conversation with it, without the customer’s name. Nothing from a private conversation, ever. | When the Organization turns its agent on |
 | Google, Mozilla, Apple or Microsoft (your browser’s push service) | Delivers notifications to a browser when Caime isn’t open. | A notification encrypted for that browser alone. | When a person allows notifications |
 | Expo (650 Industries, Inc.) | Delivers notifications to the phone apps through Apple’s and Google’s push services. | What a notification says (a name, a preview) and the device’s push address. | Phone apps |
+| The speech-to-text provider the operator sets (`SPEECH_PROVIDER`: OpenAI, LLC or ElevenLabs, Inc.; docs/SPEECH.md) | Turns voice notes into words, for search and reading. | The audio of a voice note whose sender has AI assist on, and nothing else about anyone. Nothing from a private conversation, ever. | When configured, and only for a sender with AI assist on |
 | Cloudflare, Inc. | Relays calls that can’t connect directly between two devices. | Both devices’ network addresses, and the call’s media still encrypted end to end. | When configured, during a call |
 | The email provider the operator sets (SMTP) | Sends Caime’s mail: a confirmation code, a password reset link. | An email address and the message, which carries no conversation. | When configured |
 

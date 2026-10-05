@@ -169,6 +169,20 @@ createServer(async (req, res) => {
     res.writeHead(204);
     return res.end();
   }
+  // The speech-to-text stand-in (docs/SPEECH.md): the audio is a voice note recorded against a
+  // fake microphone, so the words are fixed; what matters is that the note came and went back.
+  if (req.method === 'POST' && req.url?.startsWith('/v1/audio/transcriptions')) {
+    let bytes = 0;
+    for await (const chunk of req) bytes += chunk.length;
+    calls.push('transcribe');
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(
+      JSON.stringify({
+        text: bytes > 100 ? 'Hi Noor, the contract is signed.' : '',
+        language: 'en',
+      }),
+    );
+  }
   let raw = '';
   for await (const chunk of req) raw += chunk;
   if (req.method !== 'POST' || !req.url?.startsWith('/v1/messages')) {

@@ -30,6 +30,8 @@ import { startWorkers } from './lib/jobs';
 import { requestForLog } from './lib/log';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
+import { speechFor } from './lib/speech';
+import { registerTranscribeJob } from './lib/transcribe';
 import { registerUpdateJobs } from './lib/updates';
 import { accountRoutes } from './modules/account';
 import { actionRoutes } from './modules/actions';
@@ -133,6 +135,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     limiter: new RateLimiter(),
     metrics: createMetrics(database.pool),
     ai: createAiAssist(config),
+    speech: speechFor(config),
     mail: options.mail ?? createMailer(config, app.log),
     dns: {
       resolveTxt: (hostname) => {
@@ -298,6 +301,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerBackupJob();
   registerUpdateJobs();
   registerAgentJob();
+  registerTranscribeJob();
   registerCallSweep();
   registerGroupCallSweep();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};

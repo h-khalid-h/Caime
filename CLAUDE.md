@@ -117,7 +117,11 @@ These are rules, not preferences.
   API and point `ANTHROPIC_BASE_URL` at it; E2E runs `e2e/anthropic-stub.mjs` as a second
   Playwright web server, whose `GET /requests` lists which features called it.
 - On the web, a pressable inside another ends the outer one's hover (React Native Web's
-  `contain`), so anything shown on hover belongs beside the thing hovered, not inside it.
+  `contain`), so anything shown on hover belongs beside the thing hovered, not inside it, and
+  it takes no room there (a bubble's Reply and React are `position: absolute` over the margin):
+  React Native Web cancels a press whose pointer comes up on a different element than it went
+  down on, so a layout that changes when the pointer arrives makes the first press on anything
+  inside it miss (the voice note's play button found this; the fix is in `MessageBubble`).
 - Hold the socket in E2E with `page.routeWebSocket` to test what happens before it connects.
 - Write live changes into the query cache with `patchCache` (`state/cache.ts`), never a bare
   `setQueryData`: a bare write marks the data fresh, and a restored copy then never refetches.
@@ -635,6 +639,19 @@ These are rules, not preferences.
   reads message bodies for meaning (effects, AI, attention) may leave those alone. The app shows
   "Imported ·" from that field and offers the sheet (`features/import/`, imported statically by
   the conversation route: split out, it cost 0.8 KB of `__common`) only where topics are.
+- Speech to text (PRD §46, docs/SPEECH.md): one interface in `lib/speech.ts` (`SpeechToText`,
+  `speechFor(config)`), a provider chosen by `SPEECH_PROVIDER` with its key, each adapter one
+  multipart call over fetch (never an SDK). `lib/transcribe.ts` owns the rules: `afterMessage`
+  queues a voice note (`speech.transcribe`, deduped by message), the job sends it only when the
+  sender has AI assist on, is an adult and has an assist left today, the note isn't sealed and
+  is under ten minutes, runs it through `runAi(…, provider)` so the `ai_runs` row names the
+  provider, and keeps the words as the message's `body` (so search, previews, exports and
+  erasure treat them as written words) with `payload.transcript = { language, by, at }`. A new
+  provider is an adapter in `speech.ts`, a name in `SPEECH_PROVIDER_NAMES` (the processors list
+  reads it) and a candidate in `scripts/speech-bakeoff.mjs`. The app records with expo-audio in
+  `features/voice/Recorder.tsx` and plays in `VoiceNote.tsx`, both loaded lazily (the audio
+  module stays out of the startup chunk); the E2E stand-in answers `/v1/audio/transcriptions`
+  with fixed words. Recording a call (R52) uses this interface when it comes, never a second one.
 - Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`) and, only when
   they understood nothing of a query that `looksLikeSentence`, asks the model to fill the same
   structure (`understandWithAi` in `modules/search.ts`, `ai.understandSearch`), for a person with

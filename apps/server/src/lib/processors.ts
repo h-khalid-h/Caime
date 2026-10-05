@@ -2,8 +2,10 @@
  * Who processes data for this Caime (R54): core's one list, told by this server's configuration
  * which of the configurable ones are in use, and who hosts it (HOSTING_PROVIDER).
  */
+
 import { HOSTING, SUB_PROCESSORS, type SubProcessor } from '@caime/core/processors';
 import type { Config } from '../config';
+import { SPEECH_PROVIDER_NAMES } from './speech';
 
 /** The SMTP host, as a name for the mail provider ("smtp.postmarkapp.com"). */
 function mailHost(url: string | undefined): string | null {
@@ -25,6 +27,8 @@ export function processorsFor(config: Config): SubProcessor[] {
       continue;
     }
     if (p.id === 'cloudflare' && config.CLOUDFLARE_TURN_KEY_ID) list.push(p);
+    if (p.id === 'speech' && config.SPEECH_PROVIDER && config.SPEECH_API_KEY)
+      list.push({ ...p, name: SPEECH_PROVIDER_NAMES[config.SPEECH_PROVIDER] });
     // The phone apps push through Expo once they exist, whether or not a token raises the limit.
     if (p.id === 'expo') list.push(p);
     const mail = p.id === 'mail' ? mailHost(config.SMTP_URL) : null;

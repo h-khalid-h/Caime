@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   forwardRef,
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -26,6 +28,7 @@ import { iconNamed, KIT_ICONS } from '@/features/kits/icons';
 import { type KitChoice, KitForm, kitsOffered } from '@/features/kits/KitForm';
 import { STICKER_PACK } from '@/features/stickers/pack';
 import { StickerPicker } from '@/features/stickers/StickerPicker';
+import type { Recorded } from '@/features/voice/Recorder';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { realtime } from '@/realtime/client';
 import { applyEditToInbox, upsertMessage } from '@/state/cache';
@@ -41,6 +44,7 @@ import { IconButton } from '@/ui/IconButton';
 import {
   FileText,
   ImageIcon,
+  Mic,
   Paperclip,
   Pencil,
   Plus,
@@ -55,6 +59,11 @@ import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+/** The recorder loads when the microphone is pressed, never before (the audio module). */
+const Recorder = lazy(() =>
+  import('@/features/voice/parts').then((m) => ({ default: m.Recorder })),
+);
 
 export interface ComposerHandle {
   focus: () => void;
@@ -115,6 +124,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [kit, setKit] = useState<KitChoice | null>(null);
   const [custom, setCustom] = useState<CustomKitOfferView | null>(null);
   const [rewrite, setRewrite] = useState(false);
+  const [recording, setRecording] = useState(false);
   const aiReady = useAiReady(conversation);
   const me = useMe();
   const kits = kitsOffered(conversation, me.minor);
@@ -300,6 +310,27 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     qc,
   ]);
 
+  /** A voice note (PRD §46): uploaded with its length, sent as its own kind, no caption. */
+  const sendVoice = async (file: Recorded) => {
+    setRecording(false);
+    setUploading(tr('Voice note'));
+    try {
+      const uploaded = await uploadFile(file, { durationMs: file.durationMs });
+      useOutbox.getState().enqueue(id, {
+        kind: 'voice',
+        body: null,
+        fileIds: [uploaded.id],
+        payload: { durationMs: file.durationMs },
+        replyToId: replyTo?.id ?? null,
+      });
+      onClearReply();
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const sendFiles = async (files: LocalFile[], kind: 'media' | 'file') => {
     setUploading(files.length === 1 ? files[0]!.name : `${files.length} files`);
     try {
@@ -478,151 +509,175 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           })}
         </View>
       ) : null}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          gap: 4,
-          paddingHorizontal: 6,
-          paddingVertical: 6,
-        }}
-      >
-        {privately ? null : (
-          // Photos, files and cards aren't sealed yet: a private conversation is text for now.
-          <IconButton
-            icon={Plus}
-            label={tr('Share a photo, a file or a card')}
-            filled
-            onPress={() => setAttach(true)}
-            disabled={Boolean(editing)}
-          />
-        )}
+      {recording ? (
+        <Suspense
+          fallback={
+            <View style={{ padding: 12 }}>
+              <Text variant="caption" color="textSecondary">
+                {tr('Starting…')}
+              </Text>
+            </View>
+          }
+        >
+          <Recorder onDone={(f) => void sendVoice(f)} onCancel={() => setRecording(false)} />
+        </Suspense>
+      ) : (
         <View
           style={{
-            flex: 1,
-            minHeight: MIN_H,
-            borderRadius: 22,
-            backgroundColor: t.c.surfaceMuted,
-            paddingHorizontal: 14,
-            justifyContent: 'center',
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            gap: 4,
+            paddingHorizontal: 6,
+            paddingVertical: 6,
           }}
         >
-          <TextInput
-            ref={input}
-            testID="composer-input"
-            accessibilityLabel={
-              editing
-                ? tr('Edit message')
-                : tr('Message {listTitle}', {
-                    listTitle: listTitle({
-                      title: conversation.title,
-                      topic: conversation.topic,
-                      other: conversation.other && {
-                        displayName: conversation.other.person.displayName,
-                      },
-                    }),
-                  })
-            }
-            placeholder={editing ? tr('Edit message') : (placeholder ?? tr('Message'))}
-            placeholderTextColor={t.c.textTertiary}
-            value={value}
-            onChangeText={onChange}
-            selection={placeCaret}
-            onSelectionChange={(e) => {
-              setCaret(e.nativeEvent.selection.end);
-              if (placeCaret) setPlaceCaret(undefined);
+          {privately ? null : (
+            // Photos, files and cards aren't sealed yet: a private conversation is text for now.
+            <IconButton
+              icon={Plus}
+              label={tr('Share a photo, a file or a card')}
+              filled
+              onPress={() => setAttach(true)}
+              disabled={Boolean(editing)}
+            />
+          )}
+          <View
+            style={{
+              flex: 1,
+              minHeight: MIN_H,
+              borderRadius: 22,
+              backgroundColor: t.c.surfaceMuted,
+              paddingHorizontal: 14,
+              justifyContent: 'center',
             }}
-            multiline
-            onContentSizeChange={(e) =>
-              setHeight(Math.min(MAX_H, Math.max(MIN_H - 12, e.nativeEvent.contentSize.height)))
-            }
-            onKeyPress={(e) => {
-              if (Platform.OS !== 'web') return;
-              const ne = e.nativeEvent as unknown as {
-                key: string;
-                shiftKey?: boolean;
-                altKey?: boolean;
-                ctrlKey?: boolean;
-                metaKey?: boolean;
-                isComposing?: boolean;
-              };
-              const plain = !ne.shiftKey && !ne.altKey && !ne.ctrlKey && !ne.metaKey;
-              // Choosing someone to mention: ↑ ↓ move, Enter or Tab picks, Esc puts it away.
-              if (options.length && typing && !ne.isComposing) {
-                const at = options.findIndex((p) => p.userId === chosen?.userId);
-                if (ne.key === 'ArrowDown' || ne.key === 'ArrowUp') {
-                  e.preventDefault();
-                  const step = ne.key === 'ArrowDown' ? 1 : -1;
-                  setActive((at + step + options.length) % options.length);
-                  return;
+          >
+            <TextInput
+              ref={input}
+              testID="composer-input"
+              accessibilityLabel={
+                editing
+                  ? tr('Edit message')
+                  : tr('Message {listTitle}', {
+                      listTitle: listTitle({
+                        title: conversation.title,
+                        topic: conversation.topic,
+                        other: conversation.other && {
+                          displayName: conversation.other.person.displayName,
+                        },
+                      }),
+                    })
+              }
+              placeholder={editing ? tr('Edit message') : (placeholder ?? tr('Message'))}
+              placeholderTextColor={t.c.textTertiary}
+              value={value}
+              onChangeText={onChange}
+              selection={placeCaret}
+              onSelectionChange={(e) => {
+                setCaret(e.nativeEvent.selection.end);
+                if (placeCaret) setPlaceCaret(undefined);
+              }}
+              multiline
+              onContentSizeChange={(e) =>
+                setHeight(Math.min(MAX_H, Math.max(MIN_H - 12, e.nativeEvent.contentSize.height)))
+              }
+              onKeyPress={(e) => {
+                if (Platform.OS !== 'web') return;
+                const ne = e.nativeEvent as unknown as {
+                  key: string;
+                  shiftKey?: boolean;
+                  altKey?: boolean;
+                  ctrlKey?: boolean;
+                  metaKey?: boolean;
+                  isComposing?: boolean;
+                };
+                const plain = !ne.shiftKey && !ne.altKey && !ne.ctrlKey && !ne.metaKey;
+                // Choosing someone to mention: ↑ ↓ move, Enter or Tab picks, Esc puts it away.
+                if (options.length && typing && !ne.isComposing) {
+                  const at = options.findIndex((p) => p.userId === chosen?.userId);
+                  if (ne.key === 'ArrowDown' || ne.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const step = ne.key === 'ArrowDown' ? 1 : -1;
+                    setActive((at + step + options.length) % options.length);
+                    return;
+                  }
+                  if ((ne.key === 'Enter' || ne.key === 'Tab') && plain && chosen) {
+                    e.preventDefault();
+                    pickMention(chosen);
+                    return;
+                  }
+                  if (ne.key === 'Escape') {
+                    e.preventDefault();
+                    setSettled(typing.start);
+                    return;
+                  }
                 }
-                if ((ne.key === 'Enter' || ne.key === 'Tab') && plain && chosen) {
+                if (ne.key === 'Enter' && enterSends && !ne.shiftKey && !ne.isComposing) {
                   e.preventDefault();
-                  pickMention(chosen);
-                  return;
+                  void send();
+                }
+                if (ne.key === 'ArrowUp' && plain && !value && !editing && onEditLast) {
+                  e.preventDefault();
+                  onEditLast();
                 }
                 if (ne.key === 'Escape') {
-                  e.preventDefault();
-                  setSettled(typing.start);
-                  return;
+                  if (editing) {
+                    setEditText(null);
+                    onDoneEditing();
+                  } else if (replyTo) onClearReply();
                 }
-              }
-              if (ne.key === 'Enter' && enterSends && !ne.shiftKey && !ne.isComposing) {
-                e.preventDefault();
-                void send();
-              }
-              if (ne.key === 'ArrowUp' && plain && !value && !editing && onEditLast) {
-                e.preventDefault();
-                onEditLast();
-              }
-              if (ne.key === 'Escape') {
-                if (editing) {
-                  setEditText(null);
-                  onDoneEditing();
-                } else if (replyTo) onClearReply();
-              }
-            }}
-            style={[
-              {
-                color: t.c.text,
-                fontFamily: fontFamily('body', 400),
-                fontSize: 16,
-                lineHeight: 22,
-                paddingTop: 10,
-                paddingBottom: 10,
-                height: Platform.OS === 'web' ? Math.max(MIN_H - 12, height) : undefined,
-                maxHeight: MAX_H,
-              },
-              { outlineStyle: 'none' } as object,
-            ]}
-          />
+              }}
+              style={[
+                {
+                  color: t.c.text,
+                  fontFamily: fontFamily('body', 400),
+                  fontSize: 16,
+                  lineHeight: 22,
+                  paddingTop: 10,
+                  paddingBottom: 10,
+                  height: Platform.OS === 'web' ? Math.max(MIN_H - 12, height) : undefined,
+                  maxHeight: MAX_H,
+                },
+                { outlineStyle: 'none' } as object,
+              ]}
+            />
+          </View>
+          {canSend && aiReady ? (
+            <IconButton
+              icon={WandSparkles}
+              label={tr('Rewrite with Caime')}
+              onPress={() => setRewrite(true)}
+              testID="composer-rewrite"
+            />
+          ) : null}
+          {canSend ? (
+            <IconButton
+              icon={SendHorizontal}
+              label={editing ? tr('Save') : tr('Send')}
+              tone="primary"
+              onPress={() => void send()}
+              testID="composer-send"
+            />
+          ) : privately ? null : (
+            <>
+              <IconButton
+                icon={Mic}
+                label={tr('Record a voice note')}
+                filled
+                onPress={() => setRecording(true)}
+                disabled={Boolean(editing)}
+                testID="composer-voice"
+              />
+              <IconButton
+                icon={Sticker}
+                label={tr('Stickers')}
+                filled
+                onPress={() => setStickers(true)}
+                disabled={Boolean(editing)}
+              />
+            </>
+          )}
         </View>
-        {canSend && aiReady ? (
-          <IconButton
-            icon={WandSparkles}
-            label={tr('Rewrite with Caime')}
-            onPress={() => setRewrite(true)}
-            testID="composer-rewrite"
-          />
-        ) : null}
-        {canSend ? (
-          <IconButton
-            icon={SendHorizontal}
-            label={editing ? tr('Save') : tr('Send')}
-            tone="primary"
-            onPress={() => void send()}
-            testID="composer-send"
-          />
-        ) : privately ? null : (
-          <IconButton
-            icon={Sticker}
-            label={tr('Stickers')}
-            filled
-            onPress={() => setStickers(true)}
-            disabled={Boolean(editing)}
-          />
-        )}
-      </View>
+      )}
       <StickerPicker
         open={stickers}
         onClose={() => setStickers(false)}

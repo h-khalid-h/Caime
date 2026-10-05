@@ -10,6 +10,7 @@ import type { Mailer } from './lib/email';
 import type { Metrics } from './lib/metrics';
 import type { TxtResolver } from './lib/orgs';
 import type { RateLimiter } from './lib/rate-limit';
+import type { SpeechToText } from './lib/speech';
 
 export interface AppContext {
   config: Config;
@@ -21,6 +22,8 @@ export interface AppContext {
   metrics: Metrics;
   /** AI assist, when the operator configured a provider (R17). */
   ai: AiAssist | null;
+  /** Speech to text for voice notes (docs/SPEECH.md), or null: nothing is transcribed. */
+  speech: SpeechToText | null;
   /** DNS TXT lookups for domain verification (tests stand in for them). */
   dns: TxtResolver;
   /** Mail out (R48), when the operator set SMTP_URL; null says so to the routes. */

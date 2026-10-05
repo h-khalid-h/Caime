@@ -80,7 +80,8 @@ context.</li>
 private conversation, what messages say is encrypted end to end: Caime can&rsquo;t read it.</li>
 <li>No ads, no selling your data, and no tracking you across other sites or apps.</li>
 <li>AI assist is off until you turn it on, and nothing from a private conversation is ever sent
-to it.</li>
+to it. With it on, your voice notes are turned into words too, shown under the note and
+searchable, by the speech-to-text provider named below when this Caime has one.</li>
 <li>You can download your data, and delete your account, whenever you like.</li>
 </ul>
 </section>

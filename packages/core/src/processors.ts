@@ -72,6 +72,14 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
     when: 'configured',
   },
   {
+    id: 'speech',
+    name: 'The speech-to-text provider the operator sets',
+    does: 'Turns voice notes into words, for search and reading.',
+    receives:
+      'The audio of a voice note whose sender has AI assist on, and nothing else about anyone. Nothing from a private conversation, ever.',
+    when: 'configured',
+  },
+  {
     id: 'mail',
     name: 'The email provider the operator sets (SMTP)',
     does: 'Sends Caime’s mail: a confirmation code, a password reset link.',

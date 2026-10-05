@@ -33,7 +33,8 @@ export function webCsp(publicUrl: string, inlineScriptHash: string | null = null
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    `connect-src 'self' ${ws}`,
+    // blob: so a voice note the browser recorded can be read for upload (its own object URL).
+    `connect-src 'self' blob: ${ws}`,
     "media-src 'self' blob:",
     "worker-src 'self'",
     "manifest-src 'self'",

@@ -108,6 +108,10 @@ export default defineConfig({
             LOG_LEVEL: 'warn',
             ANTHROPIC_API_KEY: 'e2e-stub',
             ANTHROPIC_BASE_URL: AI_STUB,
+            // Voice notes into words (docs/SPEECH.md), answered by the same stand-in.
+            SPEECH_PROVIDER: 'openai',
+            SPEECH_API_KEY: 'e2e-stub',
+            SPEECH_BASE_URL: AI_STUB,
             ADMIN_TOKEN,
             METRICS_TOKEN,
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,

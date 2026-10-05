@@ -202,7 +202,15 @@ Legend: `[x]` done and verified · `[~]` in progress or partial (note says what 
 ## M6 — Expansion
 
 - [~] Files, images (metadata stripped, thumbnails), resumable uploads, ranges done; voice notes
-      store and play; transcription ⛔ needs a speech-to-text provider
+      recorded in the composer (expo-audio on every platform), uploaded with their length, played
+      from the bubble, and read into words (PRD §46, docs/SPEECH.md): the `speech.transcribe`
+      job sends a non-private note of a sender with AI assist on (an adult, one assist of their
+      day, ten minutes at most) to the provider behind `lib/speech.ts` and keeps the words as the
+      message's body, searched and erased as words are, shown under the note as "Transcript ·
+      Suggested by Caime" (`speech.test.ts` against a stand-in, `e2e/voice.spec.ts` against the
+      fake microphone). ⛔ The key on production waits for the owner's bake-off
+      (`scripts/speech-bakeoff.mjs`) on real Egyptian and Gulf clips: OpenAI first, ElevenLabs
+      the challenger
 - [x] Organizations: a business, shop, clinic, school, nonprofit or public service with a
       profile anyone can find and a team. Its handle shares one namespace with people's, so
       nobody can pose as it. It verifies its domain with one DNS TXT record
@@ -807,8 +815,10 @@ plan hadn't reached, in the order people will ask for them.
       colour with its raw state as its name (now "Online", "Busy", "Away", translated) and an
       invalid autocomplete token on the sign-up handle. 24 screens, nothing found after. A
       screen-reader pass on a phone still waits on a phone.
-- [ ] ⛔ Voice notes transcribed and searchable, call summaries with decisions and actions
-      (PRD §46–47): a speech-to-text provider, the owner's choice (R52).
+- [~] Voice notes transcribed and searchable (PRD §46): built behind one speech-to-text
+      interface with two providers (docs/SPEECH.md; the decision, the rules and the bake-off the
+      owner runs before a key goes on production). ⛔ Call summaries with decisions and actions
+      (PRD §47, R52) wait for the consent flow and minute allowances, on the same interface.
 
 ## Log
 
@@ -1752,3 +1762,16 @@ plan hadn't reached, in the order people will ask for them.
   on closing and Caime's own rights in the terms; the Article 28(3) clauses, health-data
   warranty, 48-hour breach notice, sub-processor notice and objection, end-of-processing and
   liability in the DPA), the rest marked ⛔ for the owner and a licensed lawyer.
+- 2026-10-04 — Speech to text, decided and built (docs/SPEECH.md): one interface
+  (`lib/speech.ts`), OpenAI's transcription model first and ElevenLabs Scribe as the challenger,
+  chosen by configuration; the owner's bake-off (`scripts/speech-bakeoff.mjs`, scored by
+  `speech-wer.mjs` with Arabic normalized) decides on real clips before a key goes on
+  production. Voice notes end to end: recorded in the composer, played in the bubble, read into
+  words by the `speech.transcribe` job for a sender with AI assist on, the words the message's
+  body. The provider joins the processors list, the privacy page and the DPA draft.
+  `speech.test.ts`, `speech-wer.test.ts`, `e2e/voice.spec.ts`.
+- 2026-10-05 — Found by the voice note's E2E and fixed: on the web, a bubble's hover actions
+  (Reply, React) took room in the bubble's row, so the pointer arriving made a long bubble
+  reflow a line, and a press that began on something inside it (the play button, a file row)
+  ended on something else and was cancelled; the first click missed. They now sit beside the
+  bubble over the margin, taking no room (`MessageBubble`).

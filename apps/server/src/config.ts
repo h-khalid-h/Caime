@@ -61,6 +61,16 @@ const Env = z.object({
   ANTHROPIC_MODEL_LIGHT: z.string().optional(),
   /** Another Messages API endpoint (a gateway, or the local stub the tests run). */
   ANTHROPIC_BASE_URL: z.string().url().optional(),
+  /**
+   * Speech to text for voice notes (PRD §46; docs/SPEECH.md): which provider, its key, and the
+   * model (each provider's default when unset). Off without both the provider and the key; each
+   * person's own AI assist switch still decides for their notes.
+   */
+  SPEECH_PROVIDER: z.enum(['openai', 'elevenlabs']).optional(),
+  SPEECH_API_KEY: z.string().optional(),
+  SPEECH_MODEL: z.string().optional(),
+  /** Another endpoint for it (a gateway, or the local stand-in the tests run). */
+  SPEECH_BASE_URL: z.string().url().optional(),
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
   /**
