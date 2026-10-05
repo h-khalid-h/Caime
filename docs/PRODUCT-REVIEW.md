@@ -713,3 +713,36 @@ with its reason, so it isn't proposed again without new facts.
   admins see whether it's connected and taking cards; an adult only. Off until the operator sets
   Connect up on Caime's Stripe account (docs/DEPLOY.md), so nothing changes before then. Later:
   refunds from the card, a receipt from a paid card, other providers behind the same card.
+- **R66 — Attention is the home; intelligence stays quiet (design brainstorm of 2026-10-05).**
+  The owner's two generated boards and the written direction that came with them were checked
+  against the product as it is and the decisions already taken. Adopted:
+  - **An Attention home.** Today the first screen is Chats with an Attention filter. It becomes
+    a screen of its own: a greeting, "{n} things need you" (whom, what, why, when: four lines,
+    nothing more), "Waiting on others", "Coming up", and "Nothing needs you right now" as a
+    state worth reaching. It reads what exists: the inbox's sections, the waiting tasks, the
+    calendar. Related items group under their space or person ("Venue · 4 things, 2 need you").
+  - **The conversation's open strip.** "1 open · Friday" above the composer: what the two of
+    you owe each other in this conversation, from the tasks already kept. The side panel keeps
+    its order: relationship, right now, open, commitments, coming up, shared.
+  - **Actions say what they are.** "You promised", "Asked of you", "Waiting for", "Coming up",
+    "Done", in place of "To do", "Asked me", "Waiting", "Calendar": the same filters, coordination's
+    words rather than a task manager's.
+  - **The relationship says what it changes.** Under "How you know Alex", the lines it actually
+    drives: priority in Attention, the hours and rules that apply, the commitments surfaced,
+    "Only you see this". Read from the policy the label resolves to, never invented.
+  - **Uncertainty is said.** "I couldn't find a reply" is never turned into "it didn't happen":
+    waiting items that have aged say so and offer "Still waiting · Resolved · Not relevant".
+  Not adopted, with the reason:
+  - **The name "Cai".** R34 decided the assistance layer has no human name; the brainstorm's
+    own rule ("intelligence should be quiet", "no AI label") argues the same way. What the
+    boards call Cai stays "Caime" where it must be named ("Ask Caime", "Catch me up").
+  - **The boards' visual system.** They were generated: a blue-violet accent, an asterisk mark
+    and a "Cai" colour are not Caime's. The brand stays as BRAND.md has it (the plum ink, the
+    pink heart, the characters on two intensities, B2). The boards' calm spacing, fewer
+    borders and fewer badges are taken; their colours, mark and copy are not.
+  - **"What to build first".** The core loop it names (person, conversation, ask, commitment,
+    attention, action) has been built and verified since M3; this changes the screens that
+    show it, not the engine.
+  Open: the brainstorm says another app is named Caime on Google Play. A search on 2026-10-05
+  found none under that name, but a search isn't clearance: a trademark and store-name check is
+  the owner's before the store builds.

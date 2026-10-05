@@ -1066,6 +1066,11 @@ listed there with its owner.
       the Connect webhook endpoint added, `STRIPE_CONNECT_CLIENT_ID` and
       `STRIPE_CONNECT_WEBHOOK_SECRET` set in EasyPanel. Needs the owner of the live Stripe account
       (docs/DEPLOY.md). Until then nothing offers it.
+- [ ] R66: the Attention home (its own first screen: needs you, waiting on others, coming up,
+      nothing needs you; grouped by space or person), the conversation's open strip, Actions'
+      words (You promised, Asked of you, Waiting for, Coming up, Done), the relationship's
+      "what this changes" lines, and aged waiting items that ask instead of assuming.
+- [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
       split's shares paid with Pay.
 - [x] R63: an item's photo: `BookingItem.photoFileId`, set only to an image its saver uploaded
@@ -2133,6 +2138,9 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-05 — R66: the design brainstorm checked (Attention home, quiet intelligence, the
+  relationship's effects adopted; the name "Cai" and the boards' colours not, per R34 and
+  BRAND.md).
 - 2026-10-05 — R65: an organization's own checkout through its own Stripe account (Connect),
   verified against stand-ins on the server and end to end; off in production until the owner
   turns Connect on for the live account.
