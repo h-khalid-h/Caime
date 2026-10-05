@@ -6,7 +6,6 @@
  */
 
 import type {
-  ConversationView,
   OrgSpaceView,
   SpaceConversationView,
   SpaceKind,
@@ -32,6 +31,12 @@ import {
   UpdateSpaceBody,
   uuidv7,
 } from '@caime/core';
+import type {
+  ConversationResponse,
+  OkResponse,
+  SpaceResponse,
+  SpacesResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -615,12 +620,12 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     offerWhoTheyKnowIn(ctx, spaceId, newcomers);
   const memberParam = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
 
-  app.get('/spaces', async (req): Promise<{ spaces: SpaceSummaryView[] }> => {
+  app.get('/spaces', async (req): Promise<SpacesResponse> => {
     const auth = requireAuth(req);
     return { spaces: await summaries(ctx, auth.userId) };
   });
 
-  app.post('/spaces', async (req, reply): Promise<{ space: SpaceView }> => {
+  app.post('/spaces', async (req, reply): Promise<SpaceResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateSpaceBody, req.body);
     ctx.limiter.hit(`space:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
@@ -694,14 +699,14 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { space: await spaceView(ctx, auth.userId, spaceId) };
   });
 
-  app.get('/spaces/:id', async (req): Promise<{ space: SpaceView }> => {
+  app.get('/spaces/:id', async (req): Promise<SpaceResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await spaceSeat(ctx.db, auth.userId, id);
     return { space: await spaceView(ctx, auth.userId, id) };
   });
 
-  app.patch('/spaces/:id', async (req): Promise<{ space: SpaceView }> => {
+  app.patch('/spaces/:id', async (req): Promise<SpaceResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(UpdateSpaceBody, req.body);
@@ -738,7 +743,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { space: await spaceView(ctx, auth.userId, id) };
   });
 
-  app.post('/spaces/:id/members', async (req) => {
+  app.post('/spaces/:id/members', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(MembersBody, req.body);
@@ -754,7 +759,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/spaces/:id/members/:userId', async (req) => {
+  app.delete('/spaces/:id/members/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, userId } = parse(memberParam, req.params);
     const { seat } = await spaceSeat(ctx.db, auth.userId, id);
@@ -772,7 +777,7 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.patch('/spaces/:id/members/:userId', async (req) => {
+  app.patch('/spaces/:id/members/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, userId } = parse(memberParam, req.params);
     const { role } = parse(SpaceRoleBody, req.body);
@@ -793,24 +798,21 @@ export async function spaceRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.post(
-    '/spaces/:id/conversations',
-    async (req, reply): Promise<{ conversation: ConversationView }> => {
-      const auth = requireAuth(req);
-      const { id } = parse(idParam, req.params);
-      const body = parse(CreateSpaceConversationBody, req.body);
-      await spaceSeat(ctx.db, auth.userId, id);
-      ctx.limiter.hit(`space-convo:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
-      const conversationId = await createSpaceConversation(ctx, auth.userId, id, body);
-      reply.status(201);
-      const m = await membership(ctx, auth.userId, conversationId);
-      return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
-    },
-  );
+  app.post('/spaces/:id/conversations', async (req, reply): Promise<ConversationResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    const body = parse(CreateSpaceConversationBody, req.body);
+    await spaceSeat(ctx.db, auth.userId, id);
+    ctx.limiter.hit(`space-convo:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
+    const conversationId = await createSpaceConversation(ctx, auth.userId, id, body);
+    reply.status(201);
+    const m = await membership(ctx, auth.userId, conversationId);
+    return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
+  });
 
   app.post(
     '/spaces/:id/conversations/:conversationId/join',
-    async (req): Promise<{ conversation: ConversationView }> => {
+    async (req): Promise<ConversationResponse> => {
       const auth = requireAuth(req);
       const { id, conversationId } = parse(
         z.object({ id: z.string().uuid(), conversationId: z.string().uuid() }),

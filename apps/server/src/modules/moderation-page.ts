@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { AppContext } from '../context';
 import { PERMISSIONS_POLICY } from '../lib/public-pages';
 import { webCsp } from '../plugins/static';
@@ -11,17 +11,21 @@ import { webCsp } from '../plugins/static';
  */
 export async function moderationPageRoutes(app: FastifyInstance, ctx: AppContext) {
   const csp = webCsp(ctx.config.PUBLIC_URL);
-  app.get('/admin/reports', async (_req, reply) =>
-    reply
-      .header('cache-control', 'no-store')
-      .header('content-security-policy', csp)
-      .header('permissions-policy', PERMISSIONS_POLICY)
-      .header('x-robots-tag', 'noindex')
-      .type('text/html; charset=utf-8')
-      .send(PAGE),
+  app.get(
+    '/admin/reports',
+    async (_req, reply): Promise<FastifyReply> =>
+      reply
+        .header('cache-control', 'no-store')
+        .header('content-security-policy', csp)
+        .header('permissions-policy', PERMISSIONS_POLICY)
+        .header('x-robots-tag', 'noindex')
+        .type('text/html; charset=utf-8')
+        .send(PAGE),
   );
-  app.get('/admin/reports.js', async (_req, reply) =>
-    reply.header('cache-control', 'no-store').type('text/javascript; charset=utf-8').send(SCRIPT),
+  app.get(
+    '/admin/reports.js',
+    async (_req, reply): Promise<FastifyReply> =>
+      reply.header('cache-control', 'no-store').type('text/javascript; charset=utf-8').send(SCRIPT),
   );
 }
 

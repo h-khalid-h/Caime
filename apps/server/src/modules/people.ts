@@ -2,7 +2,7 @@
  * Finding people and the relationship profile (PRD §25 "People", §50, §54, §67).
  */
 
-import type { ConnectionStateView, PeopleSearchResult, PersonProfileView } from '@caime/core';
+import type { ConnectionStateView, PersonProfileView } from '@caime/core';
 import { ADULT_AGE, canSee, resolvePolicy, rhythmOf } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -26,6 +26,7 @@ import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
 
+import type { PeopleSearchResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -48,7 +49,7 @@ export function connectionState(b: Awaited<ReturnType<typeof between>>): Connect
 }
 
 export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/people/search', async (req): Promise<{ results: PeopleSearchResult[] }> => {
+  app.get('/people/search', async (req): Promise<PeopleSearchResponse> => {
     const auth = requireAuth(req);
     const { q, limit } = parse(
       z.object({

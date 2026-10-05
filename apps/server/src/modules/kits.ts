@@ -5,15 +5,20 @@
  * and every check on one, is core's custom-kits.ts.
  */
 import {
-  type AppKitView,
   CUSTOM_KIT_LIMITS,
-  type CustomKitOfferView,
   customTitle,
   isCustomCard,
   mergeCustomFields,
   parseCustomKit,
   uuidv7,
 } from '@caime/core';
+import type {
+  AppKitResponse,
+  AppKitsResponse,
+  CustomKitsResponse,
+  MessageResponse,
+  OkResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
@@ -42,7 +47,7 @@ function appOf(req: FastifyRequest) {
 }
 
 export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/kits', async (req): Promise<{ kits: AppKitView[] }> => {
+  app.get('/kits', async (req): Promise<AppKitsResponse> => {
     const { app: me } = appOf(req);
     const rows = await ctx.db
       .selectFrom('app_kits')
@@ -55,7 +60,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // Made, or replaced whole. Cards already sent keep the kit they were sent with.
-  app.put('/kits/:key', async (req, reply): Promise<{ kit: AppKitView }> => {
+  app.put('/kits/:key', async (req, reply): Promise<AppKitResponse> => {
     const { auth, app: me } = appOf(req);
     const { key } = parse(keyParam, req.params);
     const parsed = parseCustomKit(key, req.body);
@@ -118,7 +123,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
     return { kit: appKitView(row.row) };
   });
 
-  app.delete('/kits/:key', async (req) => {
+  app.delete('/kits/:key', async (req): Promise<OkResponse> => {
     const { auth, app: me } = appOf(req);
     const { key } = parse(keyParam, req.params);
     const gone = await ctx.db
@@ -141,7 +146,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
    * The kinds of card someone on the organization's team may send in a customer's conversation:
    * its apps' own, while they're connected, and none about money when the customer is under 18.
    */
-  app.get('/conversations/:id/kits', async (req): Promise<{ kits: CustomKitOfferView[] }> => {
+  app.get('/conversations/:id/kits', async (req): Promise<CustomKitsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await membership(ctx, auth.userId, id);
@@ -185,7 +190,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
    * number): the fields it names, checked against the card's own kit. Where the card stands
    * changes only by a move.
    */
-  app.patch('/messages/:id/kit', async (req) => {
+  app.patch('/messages/:id/kit', async (req): Promise<MessageResponse> => {
     const { auth, app: me } = appOf(req);
     const { id } = parse(idParam, req.params);
     const { fields } = parse(z.object({ fields: z.record(z.string(), z.unknown()) }), req.body);
@@ -231,6 +236,6 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
-    return { message: view };
+    return { message: view! };
   });
 }

@@ -5,13 +5,22 @@ import {
   defaultWorkweek,
   Handle,
   IdentityBody,
-  type PersonInsightsView,
   type PlanUsageView,
   PrivacyBody,
   safeLocale,
   UpdateMeBody,
   uuidv7,
 } from '@caime/core';
+import type {
+  HandleAvailabilityResponse,
+  IdentitiesResponse,
+  IdResponse,
+  MeResponse,
+  OkResponse,
+  PersonInsightsResponse,
+  PrivacyResponse,
+  UserResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -58,7 +67,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
   const load = (id: string) =>
     ctx.db.selectFrom('users').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
 
-  app.get('/me', async (req) => {
+  app.get('/me', async (req): Promise<MeResponse> => {
     const auth = requireAuth(req);
     const user = await load(auth.userId);
     // A token sees who it acts for, not their email, privacy or plan (PRD §74).
@@ -78,7 +87,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
 
   /** Your plan, and what you've used of it today. */
   /** How your relationships are going (R47), for you only; Pro. */
-  app.get('/me/insights', async (req): Promise<{ insights: PersonInsightsView }> => {
+  app.get('/me/insights', async (req): Promise<PersonInsightsResponse> => {
     const auth = requireAuth(req);
     await assertPersonInsights(ctx, auth.userId);
     const { days } = parse(InsightsQuery, req.query);
@@ -95,7 +104,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     return planUsage(ctx, auth.userId);
   });
 
-  app.patch('/me', async (req) => {
+  app.patch('/me', async (req): Promise<UserResponse> => {
     const auth = requireAuth(req);
     const body = parse(UpdateMeBody, req.body);
     const current = await load(auth.userId);
@@ -208,7 +217,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     return { user: meView(user, ctx.now()) };
   });
 
-  app.put('/me/privacy', async (req) => {
+  app.put('/me/privacy', async (req): Promise<PrivacyResponse> => {
     const auth = requireAuth(req);
     const body = parse(PrivacyBody, req.body);
     const user = await load(auth.userId);
@@ -237,7 +246,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
    * Public, so sign-up can check a handle as it's typed. Handles are public identifiers, but the
    * endpoint is rate-limited per address so it can't be used to list accounts.
    */
-  app.get('/me/handle-available', async (req) => {
+  app.get('/me/handle-available', async (req): Promise<HandleAvailabilityResponse> => {
     ctx.limiter.hit(`handle:ip:${req.ip}`, ctx.config.isTest ? 10_000 : 60, 60_000);
     const { handle } = parse(z.object({ handle: z.string().max(60) }), req.query);
     const parsed = Handle.safeParse(handle);
@@ -271,7 +280,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Identities (PRD §35): how I appear to different people ---------------------------------
 
-  app.get('/me/identities', async (req) => {
+  app.get('/me/identities', async (req): Promise<IdentitiesResponse> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('identities')
@@ -292,7 +301,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/me/identities', async (req, reply) => {
+  app.post('/me/identities', async (req, reply): Promise<IdResponse> => {
     const auth = requireAuth(req);
     const body = parse(IdentityBody, req.body);
     const count = await ctx.db
@@ -326,7 +335,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     return { id };
   });
 
-  app.patch('/me/identities/:id', async (req) => {
+  app.patch('/me/identities/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(IdentityBody.partial(), req.body);
@@ -359,7 +368,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/me/identities/:id', async (req) => {
+  app.delete('/me/identities/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const existing = await ctx.db

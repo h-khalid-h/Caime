@@ -2,6 +2,7 @@
  * Block and report (PRD §55). Blocking is silent: the blocked person just stops reaching you.
  */
 import { ReportBody, uuidv7 } from '@caime/core';
+import type { BlocksResponse, OkResponse, ReportedResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/blocks', async (req) => {
+  app.get('/blocks', async (req): Promise<BlocksResponse> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('blocks')
@@ -47,7 +48,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/blocks', async (req) => {
+  app.post('/blocks', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { userId } = parse(z.object({ userId: z.string().uuid() }), req.body);
     if (userId === auth.userId) throw badRequest(tr('You can’t block yourself.'));
@@ -110,7 +111,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/blocks/:userId', async (req) => {
+  app.delete('/blocks/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { userId } = parse(z.object({ userId: z.string().uuid() }), req.params);
     await ctx.db
@@ -125,7 +126,7 @@ export async function safetyRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.post('/reports', async (req, reply) => {
+  app.post('/reports', async (req, reply): Promise<ReportedResponse> => {
     const auth = requireAuth(req);
     const body = parse(ReportBody, req.body);
     if (!body.userId && !body.messageId && !body.conversationId && !body.orgId)

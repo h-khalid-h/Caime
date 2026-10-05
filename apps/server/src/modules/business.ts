@@ -21,6 +21,7 @@ import {
   tr,
   uuidv7,
 } from '@caime/core';
+import type { OkResponse, OrgConversationResponse, ThreadResponse } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -62,7 +63,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
    * Block an organization (PRD §55): its team and its apps can no longer write to you, and your
    * conversation with it closes (resolved for the team, archived for you) until you unblock it.
    */
-  app.post('/orgs/:id/block', async (req) => {
+  app.post('/orgs/:id/block', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);
@@ -121,7 +122,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/orgs/:id/block', async (req) => {
+  app.delete('/orgs/:id/block', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await ctx.db
@@ -146,7 +147,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** A customer's conversation with an organization: theirs if it exists, else a new one. */
-  app.post('/orgs/:id/conversations', async (req, reply) => {
+  app.post('/orgs/:id/conversations', async (req, reply): Promise<OrgConversationResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
@@ -547,7 +548,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
       `${customerName ?? tr('A customer')} · ${org.name}`;
   }
 
-  app.post('/business/:conversationId/assign', async (req) => {
+  app.post('/business/:conversationId/assign', async (req): Promise<ThreadResponse> => {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { userId } = parse(AssignThreadBody, req.body);
@@ -592,7 +593,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     return changed(auth.userId, thread, userId ? 'assigned' : 'unassigned');
   });
 
-  app.post('/business/:conversationId/resolve', async (req) => {
+  app.post('/business/:conversationId/resolve', async (req): Promise<ThreadResponse> => {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { thread } = await teamThread(auth.userId, conversationId);
@@ -612,7 +613,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     return changed(auth.userId, thread, 'resolved');
   });
 
-  app.post('/business/:conversationId/reopen', async (req) => {
+  app.post('/business/:conversationId/reopen', async (req): Promise<ThreadResponse> => {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { thread } = await teamThread(auth.userId, conversationId);
@@ -626,7 +627,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Escalating asks the owners and admins to look (PRD §38, "requires attention"). */
-  app.post('/business/:conversationId/escalate', async (req) => {
+  app.post('/business/:conversationId/escalate', async (req): Promise<ThreadResponse> => {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { note } = parse(EscalateThreadBody, req.body ?? {});
@@ -669,7 +670,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     return changed(auth.userId, thread, 'escalated');
   });
 
-  app.delete('/business/:conversationId/escalation', async (req) => {
+  app.delete('/business/:conversationId/escalation', async (req): Promise<ThreadResponse> => {
     const auth = requireAuth(req);
     const { conversationId } = parse(threadParam, req.params);
     const { thread } = await teamThread(auth.userId, conversationId);

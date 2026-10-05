@@ -10,12 +10,22 @@ import {
   isReservedHandle,
   ORG_PLANS,
   PERSON_PLANS,
-  type ProductMetricsView,
   ReportStatusBody,
   ReportsQuery,
   type ReportView,
   SuspensionBody,
 } from '@caime/core';
+import type {
+  AdminPersonResponse,
+  BackupResponse,
+  BackupsResponse,
+  OkResponse,
+  OrgPlanResponse,
+  PlanUsageResponse,
+  ProductMetricsResponse,
+  ReportResponse,
+  ReportsResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
@@ -66,7 +76,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   /** The database's backups (docs/DEPLOY.md): the last that succeeded, and the ones on disk. */
   // --- Reports (R49): what people reported, reviewed and acted on by the operator --------------
 
-  app.get('/admin/reports', async (req): Promise<{ reports: ReportView[] }> => {
+  app.get('/admin/reports', async (req): Promise<ReportsResponse> => {
     const by = operator(req);
     const { status, limit } = parse(ReportsQuery, req.query);
     const reports = await reportViews(ctx, { status, limit });
@@ -87,7 +97,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   };
 
   /** Moving a report along: reviewing, actioned, dismissed (or back to open). */
-  app.patch('/admin/reports/:id', async (req): Promise<{ report: ReportView }> => {
+  app.patch('/admin/reports/:id', async (req): Promise<ReportResponse> => {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const { status } = parse(ReportStatusBody, req.body);
@@ -103,7 +113,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The reported message, gone for everyone, exactly as its sender's own delete would do. */
-  app.post('/admin/reports/:id/remove-message', async (req): Promise<{ report: ReportView }> => {
+  app.post('/admin/reports/:id/remove-message', async (req): Promise<ReportResponse> => {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
@@ -127,7 +137,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The reported update, taken back, exactly as its organization would do. */
-  app.post('/admin/reports/:id/remove-update', async (req): Promise<{ report: ReportView }> => {
+  app.post('/admin/reports/:id/remove-update', async (req): Promise<ReportResponse> => {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
@@ -138,7 +148,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** An account suspended, or the suspension lifted (R49): every way in closes; nothing goes. */
-  app.put('/admin/people/:handle/suspension', async (req): Promise<{ ok: true }> => {
+  app.put('/admin/people/:handle/suspension', async (req): Promise<OkResponse> => {
     const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const body = parse(SuspensionBody, req.body);
@@ -158,7 +168,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
    * facts, never its content. Who's signed in where, which devices read private conversations,
    * what tokens and apps act for them, and the ways back in. Looking is written down too.
    */
-  app.get('/admin/people/:handle', async (req) => {
+  app.get('/admin/people/:handle', async (req): Promise<AdminPersonResponse> => {
     const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const person = await ctx.db
@@ -257,7 +267,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Every way in ended for someone whose account may be in the wrong hands. */
-  app.delete('/admin/people/:handle/sessions', async (req): Promise<{ ok: true }> => {
+  app.delete('/admin/people/:handle/sessions', async (req): Promise<OkResponse> => {
     const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const person = await personByHandle(handle);
@@ -276,7 +286,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
    * account's own address, as the sign-in screen would send it, never to an address the
    * operator names (that would make the operator a way into any account).
    */
-  app.post('/admin/people/:handle/reset', async (req): Promise<{ ok: true }> => {
+  app.post('/admin/people/:handle/reset', async (req): Promise<OkResponse> => {
     const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     if (!ctx.mail) throw mailUnavailable();
@@ -292,7 +302,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The reported person suspended, from the report: it's actioned. */
-  app.post('/admin/reports/:id/suspend', async (req): Promise<{ report: ReportView }> => {
+  app.post('/admin/reports/:id/suspend', async (req): Promise<ReportResponse> => {
     const by = operator(req);
     const { id } = parse(reportParam, req.params);
     const report = await oneReport(id);
@@ -302,7 +312,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     return { report: await oneReport(id) };
   });
 
-  app.get('/admin/backups', async (req) => {
+  app.get('/admin/backups', async (req): Promise<BackupsResponse> => {
     const by = operator(req);
     await audit(ctx.db, {
       actorId: null,
@@ -319,7 +329,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** A backup now, before a risky change or to try the restore drill. */
-  app.post('/admin/backups', async (req) => {
+  app.post('/admin/backups', async (req): Promise<BackupResponse> => {
     const by = operator(req);
     const made = await runBackup(ctx);
     if (!made) throw conflict('backup_running', tr('Another instance is backing up right now.'));
@@ -332,7 +342,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The product's health (PRD §82–83): aggregates only, over the last `days`. */
-  app.get('/admin/metrics', async (req): Promise<{ metrics: ProductMetricsView }> => {
+  app.get('/admin/metrics', async (req): Promise<ProductMetricsResponse> => {
     operator(req);
     const { days } = parse(
       z.object({ days: z.coerce.number().int().min(1).max(365).default(28) }),
@@ -341,7 +351,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     return { metrics: await productMetrics(ctx, days) };
   });
 
-  app.put('/admin/people/:handle/plan', async (req) => {
+  app.put('/admin/people/:handle/plan', async (req): Promise<PlanUsageResponse> => {
     const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const { plan } = parse(z.object({ plan: z.enum(PERSON_PLANS) }), req.body);
@@ -377,7 +387,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     return { plan: await planUsage(ctx, person.id) };
   });
 
-  app.put('/admin/orgs/:handle/plan', async (req) => {
+  app.put('/admin/orgs/:handle/plan', async (req): Promise<OrgPlanResponse> => {
     const by = operator(req);
     const { handle } = parse(handleParam, req.params);
     const { plan } = parse(z.object({ plan: z.enum(ORG_PLANS) }), req.body);
@@ -476,7 +486,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
    * from everyone (unless an open organization continues it). Only ever a closed one: an open
    * organization is its owner's to close.
    */
-  app.delete('/admin/orgs/:id', async (req): Promise<{ ok: true }> => {
+  app.delete('/admin/orgs/:id', async (req): Promise<OkResponse> => {
     const by = operator(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const org = await ctx.db

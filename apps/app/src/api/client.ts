@@ -1,10 +1,11 @@
+import type { ErrorCode } from '@caime/core/errors';
 import { API_URL, isWeb } from '@/lib/config';
 import { useLanguage } from '@/lib/languageState';
 
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
-    public readonly code: string,
+    public readonly code: ErrorCode,
     message: string,
     public readonly details?: {
       fields?: Array<{ path: string; message: string }>;
@@ -111,7 +112,7 @@ export async function request<T>(
   }
   const text = await res.text();
   let data:
-    | { error?: { code?: string; message?: string; details?: ApiError['details'] } }
+    | { error?: { code?: ErrorCode; message?: string; details?: ApiError['details'] } }
     | undefined;
   try {
     data = text ? JSON.parse(text) : undefined;
@@ -128,7 +129,7 @@ export async function request<T>(
     if (res.status === 403 && e.code === 'suspended' && path !== '/auth/login') onUnauthorized?.();
     throw new ApiError(
       res.status,
-      e.code ?? 'error',
+      e.code ?? 'internal',
       e.message ?? 'Something went wrong.',
       e.details,
     );

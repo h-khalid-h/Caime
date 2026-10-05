@@ -3,8 +3,13 @@
  * customers?" for notifications, inbox priority, privacy, tone and follow-up.
  */
 
-import type { PolicyView } from '@caime/core';
 import { defaultWorkweek, describePolicy, PolicyBody, resolvePolicy, uuidv7 } from '@caime/core';
+import type {
+  EffectivePolicyResponse,
+  OkResponse,
+  PoliciesResponse,
+  PolicyCreatedResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql, type Transaction } from 'kysely';
@@ -43,7 +48,7 @@ async function assertOwnConnection(ctx: AppContext, userId: string, scope: Scope
 }
 
 export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/policies', async (req): Promise<{ policies: PolicyView[] }> => {
+  app.get('/policies', async (req): Promise<PoliciesResponse> => {
     const auth = requireAuth(req);
     const policies = await loadPolicies(ctx.db, auth.userId);
     return {
@@ -63,7 +68,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/policies', async (req, reply) => {
+  app.post('/policies', async (req, reply): Promise<PolicyCreatedResponse> => {
     const auth = requireAuth(req);
     const body = parse(PolicyBody, req.body);
     await assertOwnConnection(ctx, auth.userId, body.scope);
@@ -109,7 +114,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     return result;
   });
 
-  app.patch('/policies/:id', async (req) => {
+  app.patch('/policies/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(PolicyBody.partial(), req.body);
@@ -155,7 +160,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/policies/:id', async (req) => {
+  app.delete('/policies/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const res = await ctx.db
@@ -168,7 +173,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.post('/policies/reset', async (req) => {
+  app.post('/policies/reset', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
@@ -193,7 +198,7 @@ export async function policyRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** How Caime treats one person right now, with the rules it came from (R7 explainability). */
-  app.get('/policies/for/:userId', async (req) => {
+  app.get('/policies/for/:userId', async (req): Promise<EffectivePolicyResponse> => {
     const auth = requireAuth(req);
     const { userId } = parse(z.object({ userId: z.string().uuid() }), req.params);
     const [policies, rels, b] = await Promise.all([

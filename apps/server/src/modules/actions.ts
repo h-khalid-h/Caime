@@ -12,6 +12,7 @@ import {
   UpdateTaskBody,
   uuidv4,
 } from '@caime/core';
+import type { DecisionsResponse, IdResponse, OkResponse, TaskResponse } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -268,7 +269,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { tasks: await taskViews(ctx, rows, me), counts };
   });
 
-  app.post('/tasks', async (req, reply) => {
+  app.post('/tasks', async (req, reply): Promise<TaskResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateTaskBody, req.body);
     const me = auth.userId;
@@ -283,7 +284,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
             .executeTakeFirst()
         : Promise.resolve(undefined);
     const again = await sameTask();
-    if (again) return { task: (await taskViews(ctx, [again], me))[0] };
+    if (again) return { task: (await taskViews(ctx, [again], me))[0]! };
     const assignee = body.assigneeId ?? me;
     if (assignee !== me) {
       const b = await between(ctx.db, me, assignee);
@@ -354,7 +355,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     } catch (err) {
       // The same send arriving twice at once: the other one made it.
       const won = (err as { code?: string }).code === '23505' ? await sameTask() : undefined;
-      if (won) return { task: (await taskViews(ctx, [won], me))[0] };
+      if (won) return { task: (await taskViews(ctx, [won], me))[0]! };
       throw err;
     }
     if (task.shared) {
@@ -418,10 +419,10 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('id', '=', task.id)
       .executeTakeFirstOrThrow();
-    return { task: (await taskViews(ctx, [fresh], me))[0] };
+    return { task: (await taskViews(ctx, [fresh], me))[0]! };
   });
 
-  app.patch('/tasks/:id', async (req) => {
+  app.patch('/tasks/:id', async (req): Promise<TaskResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(UpdateTaskBody, req.body);
@@ -493,10 +494,10 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       });
     }
     await syncRequestCard(ctx, updated);
-    return { task: (await taskViews(ctx, [updated], me))[0] };
+    return { task: (await taskViews(ctx, [updated], me))[0]! };
   });
 
-  app.delete('/tasks/:id', async (req) => {
+  app.delete('/tasks/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const t = await visibleTask(ctx, auth.userId, id);
@@ -512,7 +513,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Decisions (PRD §30) ------------------------------------------------------------------
 
-  app.get('/decisions', async (req): Promise<{ decisions: DecisionView[] }> => {
+  app.get('/decisions', async (req): Promise<DecisionsResponse> => {
     const auth = requireAuth(req);
     const q = parse(
       z.object({
@@ -565,7 +566,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/decisions', async (req, reply) => {
+  app.post('/decisions', async (req, reply): Promise<IdResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateDecisionBody, req.body);
     await membership(ctx, auth.userId, body.conversationId);
@@ -594,7 +595,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { id: d.id };
   });
 
-  app.patch('/decisions/:id', async (req) => {
+  app.patch('/decisions/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(

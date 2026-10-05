@@ -6,8 +6,9 @@
  * that nobody else can see are removed from storage.
  */
 
+import type { OkResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -32,7 +33,7 @@ import { sendSystem } from './conversations';
 export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
   const storage = storageFor(ctx.config);
 
-  app.get('/me/export', async (req, reply) => {
+  app.get('/me/export', async (req, reply): Promise<FastifyReply> => {
     const auth = requireAuth(req);
     ctx.limiter.hit(`export:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
     const me = auth.userId;
@@ -53,7 +54,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       .send(JSON.stringify(archive, null, 2));
   });
 
-  app.delete('/me', async (req, reply) => {
+  app.delete('/me', async (req, reply): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { password } = parse(
       z.object({ password: z.string().min(1, 'Enter your password.').max(200) }),

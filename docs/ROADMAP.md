@@ -949,8 +949,15 @@ listed there with its owner.
       screen 68.6 KB, French 57.9 KB, private conversations 24.9 KB, the stack 15.5 KB) and fails
       for any one over 100 KB; `features/shell/panes.test.ts` fails on a static import of a pane
       anywhere in the app.
-- [ ] Next block: typed responses on every route (the review's last medium), and the owner's ⛔
-      items as they come.
+- [x] Typed responses on every route (the review's last medium): the contract gains a
+      `…Response` section (`packages/core/src/api.ts`), every HTTP route annotates its answer
+      with one (288 of 289; the WebSocket upgrade has none), the app's endpoints read the same
+      names (no inline shape left), and a refusal's codes are one list (`ERROR_CODES`,
+      `packages/core/src/errors.ts`, typed on `AppError` and `ApiError`; the app's three own
+      codes for a private conversation it may not write in yet are in it too). `errors.test.ts`.
+- [ ] Next block: the owner's ⛔ items as they come (TRUST_PROXY, local-currency payment, the
+      npm account, a development build for a phone, store builds, the penetration test), and
+      whatever the next review finds.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1975,3 +1982,5 @@ listed there with its owner.
   recorded, the query cache serialised in idle time.
 - 2026-10-05 — The budget measures the chunks loaded later (100 KB each) and a test holds the
   panes to lazy imports.
+- 2026-10-05 — Every route's answer has a name in the contract, the app reads the same names, and
+  error codes are one list in core.

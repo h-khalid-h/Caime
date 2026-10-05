@@ -14,6 +14,7 @@ import {
   TryOrgAgentBody,
   uuidv7,
 } from '@caime/core';
+import type { OkResponse, OrgAgentResponse, OrgAgentSetResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -67,18 +68,15 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   }
 
-  app.get(
-    '/orgs/:id/agent',
-    async (req): Promise<{ available: boolean; agent: OrgAgentView | null }> => {
-      const auth = requireAuth(req);
-      const { id } = parse(orgParam, req.params);
-      await manager(auth.userId, id);
-      return { available: ctx.ai !== null, agent: await viewOf(id) };
-    },
-  );
+  app.get('/orgs/:id/agent', async (req): Promise<OrgAgentResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(orgParam, req.params);
+    await manager(auth.userId, id);
+    return { available: ctx.ai !== null, agent: await viewOf(id) };
+  });
 
   /** Set it up, or change it: its name, what it knows, answering or paused. */
-  app.put('/orgs/:id/agent', async (req): Promise<{ agent: OrgAgentView }> => {
+  app.put('/orgs/:id/agent', async (req): Promise<OrgAgentSetResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(orgParam, req.params);
     const body = parse(SetOrgAgentBody, req.body);
@@ -165,7 +163,7 @@ export async function agentRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Removed: it leaves the team at once; what it wrote stays, under its name. */
-  app.delete('/orgs/:id/agent', async (req) => {
+  app.delete('/orgs/:id/agent', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(orgParam, req.params);
     await manager(auth.userId, id);

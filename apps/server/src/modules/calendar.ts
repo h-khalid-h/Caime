@@ -6,7 +6,6 @@
  * ends the old one. Only a signed-in person over 18 makes one (no token reaches these routes).
  */
 import {
-  type BookingHours,
   BookingHoursBody,
   buildIcs,
   type CalendarFeedView,
@@ -19,8 +18,14 @@ import {
   type TaskView,
   zonedParts,
 } from '@caime/core';
+import type {
+  BookingResponse,
+  CalendarFeedCreatedResponse,
+  CalendarFeedResponse,
+  OkResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
@@ -174,7 +179,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // Bookable hours (R51): set by the organization's owner or admins; null takes bookings off.
-  app.put('/orgs/:id/booking', async (req): Promise<{ booking: BookingHours | null }> => {
+  app.put('/orgs/:id/booking', async (req): Promise<BookingResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(z.object({ booking: BookingHoursBody.nullable() }).strict(), req.body);
@@ -212,7 +217,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.get('/calendar/feed', async (req): Promise<{ feed: CalendarFeedView }> => {
+  app.get('/calendar/feed', async (req): Promise<CalendarFeedResponse> => {
     const auth = requireAuth(req);
     const row = await ctx.db
       .selectFrom('calendar_feeds')
@@ -223,7 +228,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // A new address, shown this once; any old one stops working.
-  app.post('/calendar/feed', async (req): Promise<{ feed: CalendarFeedView; url: string }> => {
+  app.post('/calendar/feed', async (req): Promise<CalendarFeedCreatedResponse> => {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
@@ -255,7 +260,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     return { feed: feedView(row), url: `${base}/v1/calendar/${token}.ics` };
   });
 
-  app.delete('/calendar/feed', async (req) => {
+  app.delete('/calendar/feed', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const gone = await ctx.db
       .deleteFrom('calendar_feeds')
@@ -267,7 +272,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // What the calendar app reads. The address is the only credential: no session, no token.
-  app.get('/calendar/:file', async (req, reply) => {
+  app.get('/calendar/:file', async (req, reply): Promise<FastifyReply> => {
     const { file } = parse(z.object({ file: z.string().max(80) }), req.params);
     const token = FILE.exec(file)?.[1];
     if (!token) throw notFound(tr('That calendar'));

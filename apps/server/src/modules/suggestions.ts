@@ -10,6 +10,7 @@ import {
   type RelationshipInputT,
   TopicBody,
 } from '@caime/core';
+import type { OkResponse, SuggestionAcceptedResponse, SuggestionsResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -44,7 +45,7 @@ export function suggestionView(s: Suggestion): SuggestionView {
 }
 
 export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/suggestions', async (req): Promise<{ suggestions: SuggestionView[] }> => {
+  app.get('/suggestions', async (req): Promise<SuggestionsResponse> => {
     const auth = requireAuth(req);
     const q = parse(
       z.object({
@@ -103,7 +104,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { suggestions: rows.map(suggestionView) };
   });
 
-  app.post('/suggestions/:id/accept', async (req) => {
+  app.post('/suggestions/:id/accept', async (req): Promise<SuggestionAcceptedResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const edits = parse(AcceptSuggestionBody, req.body ?? {});
@@ -137,7 +138,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
    * and the suggestion is offered again. A decision stays, as one recorded by hand does; a
    * topic has people in it; a label is changed from the person's profile.
    */
-  app.post('/suggestions/:id/undo', async (req): Promise<{ ok: true }> => {
+  app.post('/suggestions/:id/undo', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const s = await ctx.db
@@ -176,7 +177,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.post('/suggestions/:id/dismiss', async (req) => {
+  app.post('/suggestions/:id/dismiss', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const res = await ctx.db
@@ -204,7 +205,7 @@ export async function acceptSuggestion(
   userId: string,
   id: string,
   edits: AcceptSuggestionEdits,
-): Promise<{ accepted: { type: string; id: string; view?: unknown } }> {
+): Promise<SuggestionAcceptedResponse> {
   const auth = { userId };
   const s = await ctx.db
     .selectFrom('suggestions')

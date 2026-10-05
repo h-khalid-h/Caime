@@ -15,6 +15,7 @@ import {
   parseSearchQuery,
   SearchOutcomeBody,
 } from '@caime/core';
+import type { OkResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -541,7 +542,7 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
    * How long finding something took (PRD §83, information retrieval), from the app's search: a
    * time and whether anything was opened. Kept without anyone's id, and nothing searched for.
    */
-  app.post('/search/outcome', async (req) => {
+  app.post('/search/outcome', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const body = parse(SearchOutcomeBody, req.body);
     ctx.limiter.hit(`search-outcome:${auth.userId}`, ctx.config.isTest ? 1000 : 120, 3_600_000);
@@ -549,7 +550,7 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.get('/search', async (req) => {
+  app.get('/search', async (req): Promise<SearchResponse> => {
     const auth = requireAuth(req);
     const { q, limit, understand } = parse(
       z.object({

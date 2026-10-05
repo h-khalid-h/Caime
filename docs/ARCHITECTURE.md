@@ -137,7 +137,13 @@ The primary object is the **connection**, not the chat (PRD §4).
 ## API conventions
 
 - REST under `/v1`, JSON bodies validated with zod schemas from `@caime/core`.
-- Errors are `{ "error": { "code", "message", "details"? } }` with a stable `code`.
+- Errors are `{ "error": { "code", "message", "details"? } }` with a stable `code` from one
+  list, `ERROR_CODES` in `packages/core/src/errors.ts` (`ErrorCode`): the server's `AppError`
+  and the app's `ApiError` both carry that type, so a new refusal adds its code there first.
+- Every route's answer is a named type in `packages/core/src/api.ts` (a `…View` is a thing, a
+  `…Response` is what a route wraps it in): the route is annotated `Promise<ThatResponse>` and
+  the app's endpoint reads `api.get<ThatResponse>`, so a shape that changes fails to compile on
+  both sides.
 - Lists use opaque cursors; message history pages by `seq`.
 - Every retried write carries `clientId`.
 - Rate limits per IP and per account on authentication, requests, messages and search.

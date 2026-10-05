@@ -13,6 +13,7 @@ import {
   tr,
   uuidv7,
 } from '@caime/core';
+import type { GroupCallMaybeResponse, GroupCallResponse, OkResponse } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { type Kysely, sql, type Transaction } from 'kysely';
 import { z } from 'zod';
@@ -101,7 +102,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   }
 
   /** The call ringing for me, or the one I'm in: a page opened mid-call finds it. */
-  app.get('/group-calls/live', async (req): Promise<{ call: GroupCallView | null }> => {
+  app.get('/group-calls/live', async (req): Promise<GroupCallMaybeResponse> => {
     const auth = requireAuth(req);
     const call =
       (await joinedGroupCallOf(ctx, auth.userId)) ?? (await ringingGroupCallFor(ctx, auth.userId));
@@ -109,7 +110,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The call on in a conversation now, for the banner that offers to join it. */
-  app.get('/conversations/:id/group-call', async (req): Promise<{ call: GroupCallView | null }> => {
+  app.get('/conversations/:id/group-call', async (req): Promise<GroupCallMaybeResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     await membership(ctx, auth.userId, id);
@@ -118,133 +119,130 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Start a call: everyone else who can take part is rung, and it's on until they've answered. */
-  app.post(
-    '/conversations/:id/group-calls',
-    async (req, reply): Promise<{ call: GroupCallView }> => {
-      const auth = requireAuth(req);
-      const { id } = parse(callParam, req.params);
-      const body = parse(StartCallBody, req.body);
-      const { conversation } = await membership(ctx, auth.userId, id);
-      if (conversation.kind !== 'group')
-        throw badRequest(tr('Group calls are for group conversations.'));
-      ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
+  app.post('/conversations/:id/group-calls', async (req, reply): Promise<GroupCallResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(callParam, req.params);
+    const body = parse(StartCallBody, req.body);
+    const { conversation } = await membership(ctx, auth.userId, id);
+    if (conversation.kind !== 'group')
+      throw badRequest(tr('Group calls are for group conversations.'));
+    ctx.limiter.hit(`call:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 10 * 60_000);
 
-      const now = ctx.now();
-      let call: Call;
-      let rung: { id: string; display_name: string }[] = [];
-      try {
-        call = await ctx.db.transaction().execute(async (trx) => {
-          // One call at a time: checked, and started, under this person's lock. Who can take
-          // part is read under it too, so a block or a removal just before counts.
-          await lockCallEntry(trx, auth.userId);
-          const people = await callable(id, trx);
-          if (!people.some((p) => p.id === auth.userId))
-            throw forbidden(tr('You can call once you’ve joined the conversation.'));
-          if (people.length > GROUP_CALL_MAX)
-            throw badRequest(
-              tr('Calls are for groups of up to {GROUP_CALL_MAX} people.', { GROUP_CALL_MAX }),
-            );
-          if (await inACall(ctx, auth.userId, undefined, trx)) throw busy();
-          if (await liveGroupCallIn(ctx, id, trx)) throw callOn();
-          // Everyone who can take part is rung, except anyone kept apart from whoever calls.
-          const apart = await keptApartFrom(
-            ctx,
-            trx,
-            auth.userId,
-            people.map((p) => p.id),
+    const now = ctx.now();
+    let call: Call;
+    let rung: { id: string; display_name: string }[] = [];
+    try {
+      call = await ctx.db.transaction().execute(async (trx) => {
+        // One call at a time: checked, and started, under this person's lock. Who can take
+        // part is read under it too, so a block or a removal just before counts.
+        await lockCallEntry(trx, auth.userId);
+        const people = await callable(id, trx);
+        if (!people.some((p) => p.id === auth.userId))
+          throw forbidden(tr('You can call once you’ve joined the conversation.'));
+        if (people.length > GROUP_CALL_MAX)
+          throw badRequest(
+            tr('Calls are for groups of up to {GROUP_CALL_MAX} people.', { GROUP_CALL_MAX }),
           );
-          rung = people.filter((p) => p.id !== auth.userId && !apart.has(p.id));
-          if (!rung.length) throw badRequest(tr('There’s nobody to call here.'));
-          const row = await trx
-            .insertInto('calls')
-            .values({
-              id: uuidv7(),
-              conversation_id: id,
-              caller_id: auth.userId,
-              callee_id: null,
-              kind: body.kind,
-              state: 'ringing',
-              caller_device: body.deviceId,
-              created_at: now,
+        if (await inACall(ctx, auth.userId, undefined, trx)) throw busy();
+        if (await liveGroupCallIn(ctx, id, trx)) throw callOn();
+        // Everyone who can take part is rung, except anyone kept apart from whoever calls.
+        const apart = await keptApartFrom(
+          ctx,
+          trx,
+          auth.userId,
+          people.map((p) => p.id),
+        );
+        rung = people.filter((p) => p.id !== auth.userId && !apart.has(p.id));
+        if (!rung.length) throw badRequest(tr('There’s nobody to call here.'));
+        const row = await trx
+          .insertInto('calls')
+          .values({
+            id: uuidv7(),
+            conversation_id: id,
+            caller_id: auth.userId,
+            callee_id: null,
+            kind: body.kind,
+            state: 'ringing',
+            caller_device: body.deviceId,
+            created_at: now,
+            seen_at: now,
+            caller_seen_at: now,
+            is_group: true,
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('call_members')
+          .values([
+            {
+              call_id: row.id,
+              user_id: auth.userId,
+              state: 'joined',
+              device: body.deviceId,
+              rung_at: now,
+              joined_at: now,
               seen_at: now,
-              caller_seen_at: now,
-              is_group: true,
-            })
-            .returningAll()
-            .executeTakeFirstOrThrow();
-          await trx
-            .insertInto('call_members')
-            .values([
-              {
-                call_id: row.id,
-                user_id: auth.userId,
-                state: 'joined',
-                device: body.deviceId,
-                rung_at: now,
-                joined_at: now,
-                seen_at: now,
-              },
-              ...rung.map((p) => ({
-                call_id: row.id,
-                user_id: p.id,
-                state: 'ringing' as const,
-                rung_at: now,
-              })),
-            ])
-            .execute();
-          return row;
-        });
-      } catch (err) {
-        // Two people started one at once: the other's is the call (one per conversation).
-        if ((err as { code?: string }).code === '23505') throw callOn();
-        throw err;
-      }
-      await publishGroupCall(
-        ctx,
-        call,
-        rung.map((p) => p.id),
-      );
-      // A group someone has muted doesn't ring their phone; it still rings in the app.
-      const muted = new Set(
-        (
-          await ctx.db
-            .selectFrom('participants')
-            .select('user_id')
-            .where('conversation_id', '=', id)
-            .where('muted_until', '>', now)
-            .execute()
-        ).map((p) => p.user_id),
-      );
-      // A topic by its group's name with its own ("Book club · Middlemarch").
-      const where = (await shownTitle(ctx.db, id)) ?? 'the group';
-      for (const p of rung)
-        await notify(ctx, {
-          userId: p.id,
-          kind: 'call',
-          level: 'urgency',
-          // By the name each of them knows the caller by.
-          title: (
-            (name) => () =>
-              tr('{name} is calling {where}', { name: name ?? tr('Someone'), where })
-          )(await nameShownTo(ctx, p.id, auth.userId)),
-          body: () => (body.kind === 'video' ? tr('Group video call') : tr('Group voice call')),
-          data: { conversationId: id, callId: call.id },
-          groupKey: `call:${call.id}`,
-          delivery: muted.has(p.id) ? 'silent' : 'push',
-          // It's news only while it rings; and the phone apps can't answer a call yet.
-          ttlSeconds: CALL_RING_SECONDS,
-          pushTo: 'web',
-        });
-      reply.status(201);
-      return { call: await groupCallView(ctx, call, auth.userId, { outsider: false }) };
-    },
-  );
+            },
+            ...rung.map((p) => ({
+              call_id: row.id,
+              user_id: p.id,
+              state: 'ringing' as const,
+              rung_at: now,
+            })),
+          ])
+          .execute();
+        return row;
+      });
+    } catch (err) {
+      // Two people started one at once: the other's is the call (one per conversation).
+      if ((err as { code?: string }).code === '23505') throw callOn();
+      throw err;
+    }
+    await publishGroupCall(
+      ctx,
+      call,
+      rung.map((p) => p.id),
+    );
+    // A group someone has muted doesn't ring their phone; it still rings in the app.
+    const muted = new Set(
+      (
+        await ctx.db
+          .selectFrom('participants')
+          .select('user_id')
+          .where('conversation_id', '=', id)
+          .where('muted_until', '>', now)
+          .execute()
+      ).map((p) => p.user_id),
+    );
+    // A topic by its group's name with its own ("Book club · Middlemarch").
+    const where = (await shownTitle(ctx.db, id)) ?? 'the group';
+    for (const p of rung)
+      await notify(ctx, {
+        userId: p.id,
+        kind: 'call',
+        level: 'urgency',
+        // By the name each of them knows the caller by.
+        title: (
+          (name) => () =>
+            tr('{name} is calling {where}', { name: name ?? tr('Someone'), where })
+        )(await nameShownTo(ctx, p.id, auth.userId)),
+        body: () => (body.kind === 'video' ? tr('Group video call') : tr('Group voice call')),
+        data: { conversationId: id, callId: call.id },
+        groupKey: `call:${call.id}`,
+        delivery: muted.has(p.id) ? 'silent' : 'push',
+        // It's news only while it rings; and the phone apps can't answer a call yet.
+        ttlSeconds: CALL_RING_SECONDS,
+        pushTo: 'web',
+      });
+    reply.status(201);
+    return { call: await groupCallView(ctx, call, auth.userId, { outsider: false }) };
+  });
 
   /**
    * Joined, on this device: from the ring, or later from the conversation while it's on. The
    * second person in makes it a call. Joining again from another device moves them to it.
    */
-  app.post('/group-calls/:id/join', async (req): Promise<{ call: GroupCallView }> => {
+  app.post('/group-calls/:id/join', async (req): Promise<GroupCallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
@@ -333,7 +331,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Turned down: it stops ringing for them, and a call nobody else is rung for ends. */
-  app.post('/group-calls/:id/decline', async (req): Promise<{ call: GroupCallView }> => {
+  app.post('/group-calls/:id/decline', async (req): Promise<GroupCallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     paced(auth.userId, id);
@@ -359,7 +357,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
    * Left, from the device in the call (a tab left behind can't take them out of it on the one
    * they moved to): it goes on for the others, and ends when fewer than two are left in it.
    */
-  app.post('/group-calls/:id/leave', async (req): Promise<{ call: GroupCallView }> => {
+  app.post('/group-calls/:id/leave', async (req): Promise<GroupCallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
@@ -385,7 +383,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
    * An offer, an answer or a candidate from one joined device to another, and only to it: no
    * device that isn't in the call can send or be sent one.
    */
-  app.post('/group-calls/:id/signal', async (req) => {
+  app.post('/group-calls/:id/signal', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const body = parse(GroupCallSignalBody, req.body);
@@ -435,7 +433,7 @@ export async function groupCallRoutes(app: FastifyInstance, ctx: AppContext) {
    * Still here, from the device in the call: one that stops saying so is taken out of it. It
    * answers with how the call stands, for a device that missed an event.
    */
-  app.post('/group-calls/:id/alive', async (req): Promise<{ call: GroupCallView }> => {
+  app.post('/group-calls/:id/alive', async (req): Promise<GroupCallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);

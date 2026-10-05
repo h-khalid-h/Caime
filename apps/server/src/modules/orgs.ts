@@ -6,10 +6,8 @@
 
 import type {
   OrgExportView,
-  OrgInsightsView,
   OrgMemberView,
   OrgReclaimView,
-  OrgSpaceView,
   OrgSummaryView,
   OrgView,
 } from '@caime/core';
@@ -32,6 +30,14 @@ import {
   uuidv7,
   verificationRecord,
 } from '@caime/core';
+import type {
+  ErasedResponse,
+  OkResponse,
+  OrgInsightsResponse,
+  OrgResponse,
+  OrgSpacesResponse,
+  OrgsResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -198,7 +204,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   const idParam = z.object({ id: z.string().uuid() });
   const memberParam = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
 
-  app.post('/orgs', async (req, reply): Promise<{ org: OrgView }> => {
+  app.post('/orgs', async (req, reply): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateOrgBody, req.body);
     ctx.limiter.hit(`org:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
@@ -233,7 +239,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The organizations you're on the team of. */
-  app.get('/orgs', async (req): Promise<{ orgs: OrgSummaryView[] }> => {
+  app.get('/orgs', async (req): Promise<OrgsResponse> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('org_members as m')
@@ -253,7 +259,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Find an organization to reach it: by name or @handle, verified ones first. */
-  app.get('/orgs/search', async (req): Promise<{ orgs: OrgSummaryView[] }> => {
+  app.get('/orgs/search', async (req): Promise<OrgsResponse> => {
     const auth = requireAuth(req);
     const { q } = parse(z.object({ q: z.string().trim().min(1).max(100) }), req.query);
     ctx.limiter.hit(`org-search:${auth.userId}`, ctx.config.isTest ? 1000 : 60, 60_000);
@@ -281,7 +287,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.get('/orgs/by-handle/:handle', async (req): Promise<{ org: OrgView }> => {
+  app.get('/orgs/by-handle/:handle', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { handle } = parse(z.object({ handle: z.string().min(1).max(60) }), req.params);
     const org = await ctx.db
@@ -294,7 +300,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { org: await orgView(ctx, auth.userId, org) };
   });
 
-  app.get('/orgs/:id', async (req): Promise<{ org: OrgView }> => {
+  app.get('/orgs/:id', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
@@ -351,29 +357,26 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return data;
   });
 
-  app.delete(
-    '/orgs/:id/conversations/:conversationId',
-    async (req): Promise<{ erased: number }> => {
-      const auth = requireAuth(req);
-      const { id, conversationId } = parse(
-        z.object({ id: z.string().uuid(), conversationId: z.string().uuid() }),
-        req.params,
-      );
-      await orgById(ctx.db, id);
-      await managerSeat(ctx, auth.userId, id);
-      const result = await eraseBusinessConversation(ctx, id, conversationId, auth.userId);
-      if (result === null) throw notFound(tr('That conversation'));
-      await audit(ctx.db, {
-        actorId: auth.userId,
-        action: 'org.conversation_erased',
-        target: conversationId,
-        metadata: { orgId: id, erased: result.erased },
-      });
-      return result;
-    },
-  );
+  app.delete('/orgs/:id/conversations/:conversationId', async (req): Promise<ErasedResponse> => {
+    const auth = requireAuth(req);
+    const { id, conversationId } = parse(
+      z.object({ id: z.string().uuid(), conversationId: z.string().uuid() }),
+      req.params,
+    );
+    await orgById(ctx.db, id);
+    await managerSeat(ctx, auth.userId, id);
+    const result = await eraseBusinessConversation(ctx, id, conversationId, auth.userId);
+    if (result === null) throw notFound(tr('That conversation'));
+    await audit(ctx.db, {
+      actorId: auth.userId,
+      action: 'org.conversation_erased',
+      target: conversationId,
+      metadata: { orgId: id, erased: result.erased },
+    });
+    return result;
+  });
 
-  app.patch('/orgs/:id', async (req): Promise<{ org: OrgView }> => {
+  app.patch('/orgs/:id', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(UpdateOrgBody, req.body);
@@ -427,7 +430,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   /**
    * The organization's spaces (R43): the ones you're in, and, running it, all of them to join.
    */
-  app.get('/orgs/:id/spaces', async (req): Promise<{ spaces: OrgSpaceView[] }> => {
+  app.get('/orgs/:id/spaces', async (req): Promise<OrgSpacesResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);
@@ -437,7 +440,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Its owner or an admin joins one of its spaces, as an admin of it: they run the place. */
-  app.post('/orgs/:id/spaces/:spaceId/join', async (req): Promise<{ ok: true }> => {
+  app.post('/orgs/:id/spaces/:spaceId/join', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, spaceId } = parse(
       z.object({ id: z.string().uuid(), spaceId: z.string().uuid() }),
@@ -466,7 +469,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** How its inbox is doing, for its owner and admins on a plan with insights (PRD §71). */
-  app.get('/orgs/:id/insights', async (req): Promise<{ insights: OrgInsightsView }> => {
+  app.get('/orgs/:id/insights', async (req): Promise<OrgInsightsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const { days } = parse(
@@ -484,7 +487,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { insights: await orgInsights(ctx, id, days) };
   });
 
-  app.post('/orgs/:id/members', async (req) => {
+  app.post('/orgs/:id/members', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(OrgMembersBody, req.body);
@@ -544,7 +547,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/orgs/:id/members/:userId', async (req) => {
+  app.delete('/orgs/:id/members/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, userId } = parse(memberParam, req.params);
     await orgById(ctx.db, id);
@@ -614,7 +617,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.patch('/orgs/:id/members/:userId', async (req) => {
+  app.patch('/orgs/:id/members/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, userId } = parse(memberParam, req.params);
     const body = parse(OrgMemberBody, req.body);
@@ -639,7 +642,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The domain to verify, and a new token for its TXT record. Changing it unverifies. */
-  app.put('/orgs/:id/domain', async (req): Promise<{ org: OrgView }> => {
+  app.put('/orgs/:id/domain', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const body = parse(OrgDomainBody, req.body);
@@ -666,7 +669,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Look for the TXT record now. */
-  app.post('/orgs/:id/domain/check', async (req): Promise<{ org: OrgView }> => {
+  app.post('/orgs/:id/domain/check', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
@@ -713,7 +716,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
    * customers keep their conversations read-only. Verified, its handle waits for whoever proves
    * its domain again; else it's held a year, then free.
    */
-  app.post('/orgs/:id/close', async (req): Promise<{ ok: true }> => {
+  app.post('/orgs/:id/close', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
@@ -774,7 +777,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
    * was, with everything its customers were sent; their blocks of it carry over. Nothing of the
    * old team, its apps or its followers comes back.
    */
-  app.post('/orgs/:id/reclaim/check', async (req, reply): Promise<{ org: OrgView }> => {
+  app.post('/orgs/:id/reclaim/check', async (req, reply): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     ctx.limiter.hit(`org-verify:${id}`, ctx.config.isTest ? 1000 : 10, 60_000);
@@ -850,7 +853,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, newId)) };
   });
 
-  app.delete('/orgs/:id/domain', async (req): Promise<{ org: OrgView }> => {
+  app.delete('/orgs/:id/domain', async (req): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await orgById(ctx.db, id);

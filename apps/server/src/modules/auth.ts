@@ -3,7 +3,7 @@ import { randomInt, timingSafeEqual } from 'node:crypto';
  * Accounts and sessions (PRD §35, §55; PRODUCT-REVIEW R24, R29; ADR-7).
  */
 
-import type { AuthResponse, DeviceSessionView, SessionResponse } from '@caime/core';
+import type { AuthResponse, SessionResponse } from '@caime/core';
 import {
   ChangePasswordBody,
   defaultPrivacy,
@@ -20,6 +20,13 @@ import {
   safeLocale,
   uuidv7,
 } from '@caime/core';
+import type {
+  OkResponse,
+  RecoverResponse,
+  RecoveryCodesResponse,
+  SessionsResponse,
+  UserResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
@@ -307,7 +314,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { user: meView(user, ctx.now()), token };
   });
 
-  app.post('/auth/logout', async (req, reply) => {
+  app.post('/auth/logout', async (req, reply): Promise<OkResponse> => {
     const auth = req.auth;
     if (auth) {
       await endSessions(ctx, { userId: auth.userId, ids: [auth.sessionId] });
@@ -336,7 +343,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { user: meView(user, ctx.now()), session: { id: auth.sessionId, kind: auth.kind } };
   });
 
-  app.get('/auth/sessions', async (req): Promise<{ sessions: DeviceSessionView[] }> => {
+  app.get('/auth/sessions', async (req): Promise<SessionsResponse> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('sessions')
@@ -359,7 +366,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.delete('/auth/sessions/:id', async (req) => {
+  app.delete('/auth/sessions/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const ended = await endSessions(ctx, { userId: auth.userId, ids: [id] });
@@ -373,7 +380,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.post('/auth/password', async (req) => {
+  app.post('/auth/password', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     passwordTry(ctx, auth.userId);
     const body = parse(ChangePasswordBody, req.body);
@@ -400,7 +407,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.post('/auth/recovery-codes', async (req) => {
+  app.post('/auth/recovery-codes', async (req): Promise<RecoveryCodesResponse> => {
     const auth = requireAuth(req);
     passwordTry(ctx, auth.userId);
     const { password } = parse(z.object({ password: z.string().min(1) }), req.body);
@@ -424,7 +431,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   // --- Email (R48) ------------------------------------------------------------------------------
 
   /** Another code to the address, for someone who didn't get the first. */
-  app.post('/auth/email/send', async (req) => {
+  app.post('/auth/email/send', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     if (!ctx.mail) throw mailUnavailable();
     ctx.limiter.hit(`email-code:${auth.userId}`, ctx.config.isTest ? 1000 : 5, 3_600_000);
@@ -440,7 +447,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The six digits, back: the address is theirs. */
-  app.post('/auth/email/verify', async (req) => {
+  app.post('/auth/email/verify', async (req): Promise<UserResponse> => {
     const auth = requireAuth(req);
     const body = parse(EmailCodeBody, req.body);
     // Six digits: a few tries a minute is a person reading the mail, not a search.
@@ -488,7 +495,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
    * A forgotten password: a link to the address, if it's an account's. The answer is the same
    * either way, so nobody learns which addresses are here.
    */
-  app.post('/auth/reset', async (req) => {
+  app.post('/auth/reset', async (req): Promise<OkResponse> => {
     const { ip } = clientInfo(req);
     ctx.limiter.hit(`reset:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     if (!ctx.mail) throw mailUnavailable();
@@ -509,7 +516,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** The link, back, with a new password: signed in here, signed out everywhere else. */
-  app.post('/auth/reset/confirm', async (req, reply) => {
+  app.post('/auth/reset/confirm', async (req, reply): Promise<AuthResponse> => {
     const { ip } = clientInfo(req);
     ctx.limiter.hit(`reset-confirm:ip:${ip}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
     const body = parse(ResetConfirmBody, req.body);
@@ -553,7 +560,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return { user: meView(user, ctx.now()), token };
   });
 
-  app.post('/auth/recover', async (req, reply) => {
+  app.post('/auth/recover', async (req, reply): Promise<RecoverResponse> => {
     const { ip } = clientInfo(req);
     ctx.limiter.hit(`recover:ip:${ip}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
     const body = parse(RecoverBody, req.body);

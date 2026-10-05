@@ -3,12 +3,10 @@
  */
 
 import type {
-  AlbumPhotoView,
   AssetsResponse,
   ConversationBusinessView,
   ConversationView,
   MessagesPage,
-  MessageView,
 } from '@caime/core';
 import {
   applyChecklistOp,
@@ -69,6 +67,16 @@ const privateGroupFull = () =>
     ),
   );
 
+import type {
+  AlbumResponse,
+  ConversationIdResponse,
+  ConversationResponse,
+  MessageIdsResponse,
+  MessageResponse,
+  MessagesResponse,
+  OkResponse,
+  PersonConversationsResponse,
+} from '@caime/core/api';
 import type { Conversation, Participant } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { dropSaved, tellSaved } from '../lib/automations';
@@ -587,7 +595,7 @@ async function createGroupTopic(
 }
 
 export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.post('/conversations', async (req, reply) => {
+  app.post('/conversations', async (req, reply): Promise<ConversationResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateConversationBody, req.body);
     if (body.kind === 'direct') {
@@ -717,7 +725,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   });
 
   /** Start a topic (PRD §58): in a one-to-one, a group, or a space's General. */
-  app.post('/conversations/:id/topics', async (req, reply) => {
+  app.post('/conversations/:id/topics', async (req, reply): Promise<ConversationIdResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { title } = parse(TopicBody, req.body);
@@ -728,14 +736,14 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { conversationId };
   });
 
-  app.get('/conversations/:id', async (req): Promise<{ conversation: ConversationView }> => {
+  app.get('/conversations/:id', async (req): Promise<ConversationResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { conversation, me } = await membership(ctx, auth.userId, id);
     return { conversation: await conversationView(ctx, auth.userId, conversation, me) };
   });
 
-  app.patch('/conversations/:id', async (req) => {
+  app.patch('/conversations/:id', async (req): Promise<ConversationResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(UpdateConversationBody, req.body);
@@ -854,7 +862,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
   });
 
-  app.post('/conversations/:id/request', async (req) => {
+  app.post('/conversations/:id/request', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { decision } = parse(z.object({ decision: z.enum(['accept', 'decline']) }), req.body);
@@ -885,7 +893,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       );
   }
 
-  app.post('/conversations/:id/members', async (req) => {
+  app.post('/conversations/:id/members', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(MembersBody, req.body);
@@ -975,7 +983,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.delete('/conversations/:id/members/:userId', async (req) => {
+  app.delete('/conversations/:id/members/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, userId } = parse(
       z.object({ id: z.string().uuid(), userId: z.string().uuid() }),
@@ -1074,7 +1082,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   });
 
   /** Make someone in a group an admin, or a member again: its owner does (PRD §56). */
-  app.patch('/conversations/:id/members/:userId', async (req) => {
+  app.patch('/conversations/:id/members/:userId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, userId } = parse(
       z.object({ id: z.string().uuid(), userId: z.string().uuid() }),
@@ -1130,7 +1138,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/conversations/:id/receipts', async (req) => {
+  app.post('/conversations/:id/receipts', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(ReceiptsBody, req.body);
@@ -1242,7 +1250,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/conversations/:id/typing', async (req) => {
+  app.post('/conversations/:id/typing', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     await membership(ctx, auth.userId, id);
@@ -1257,7 +1265,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   });
 
   /** "Doesn't need me" (R8): questions up to now stop counting toward Needs you. */
-  app.post('/conversations/:id/dismiss', async (req) => {
+  app.post('/conversations/:id/dismiss', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { conversation } = await membership(ctx, auth.userId, id);
@@ -1333,7 +1341,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     };
   });
 
-  app.post('/conversations/:id/messages', async (req, reply) => {
+  app.post('/conversations/:id/messages', async (req, reply): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(SendMessageBody, req.body);
@@ -1364,10 +1372,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       const { analysis, message } = result;
       ctx.defer('after-message', () => afterMessage(ctx, message, analysis));
     }
-    return { message: view };
+    return { message: view! };
   });
 
-  app.patch('/messages/:id', async (req) => {
+  app.patch('/messages/:id', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(EditMessageBody, req.body);
@@ -1442,12 +1450,12 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
       { type: 'message.updated', data: { ...view, clientId: null } },
     );
-    return { message: view };
+    return { message: view! };
   });
 
   // Moving a kit card along (PRD §41): approve, accept, mark paid. Who may make which move is the
   // kit's flow in core (kit-cards.ts); the move is applied only if nobody moved the card first.
-  app.post('/messages/:id/kit', async (req) => {
+  app.post('/messages/:id/kit', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { to } = parse(z.object({ to: z.string().min(1).max(40) }), req.body);
@@ -1546,7 +1554,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         data: { conversationId: m.conversation_id, messageId: id },
       });
     }
-    return { message: view };
+    return { message: view! };
   });
 
   /**
@@ -1598,7 +1606,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { message: view! };
   }
 
-  app.post('/messages/:id/location', async (req) => {
+  app.post('/messages/:id/location', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const point = parse(LiveLocationUpdate, req.body);
@@ -1613,7 +1621,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     }));
   });
 
-  app.post('/messages/:id/location/stop', async (req) => {
+  app.post('/messages/:id/location/stop', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     return moveLiveLocation(id, auth.userId, (card, at) => ({
@@ -1622,7 +1630,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     }));
   });
 
-  app.post('/messages/:id/checklist', async (req) => {
+  app.post('/messages/:id/checklist', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const op = parse(ChecklistOpBody, req.body);
@@ -1692,7 +1700,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         data: { conversationId: found.conversation_id, messageId: id },
       });
     }
-    return { message: view };
+    return { message: view! };
   });
 
   /**
@@ -1700,7 +1708,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
    * person who owes a share, or whoever paid, marks it settled between them; Caime moves nothing.
    * Changes are applied one at a time (the card's row is locked), as a checklist's are.
    */
-  app.post('/messages/:id/split', async (req) => {
+  app.post('/messages/:id/split', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const op = parse(SplitOpBody, req.body);
@@ -1767,7 +1775,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         };
       });
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
-    if (!changed) return { message: view };
+    if (!changed) return { message: view! };
     const members = (await participantsOf(ctx.db, found.conversation_id)).map((p) => p.user_id);
     await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
     // Someone saying they've settled up is news for whoever paid; the payer's own marks aren't.
@@ -1796,7 +1804,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         data: { conversationId: found.conversation_id, messageId: id },
       });
     }
-    return { message: view };
+    return { message: view! };
   });
 
   // --- Shared albums (PRD §41): photos people in the conversation add to one card -------------
@@ -1830,7 +1838,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { view, members };
   }
 
-  app.get('/messages/:id/album', async (req): Promise<{ photos: AlbumPhotoView[] }> => {
+  app.get('/messages/:id/album', async (req): Promise<AlbumResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     await albumCard(id, auth.userId);
@@ -1863,7 +1871,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     };
   });
 
-  app.post('/messages/:id/album', async (req) => {
+  app.post('/messages/:id/album', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { fileIds } = parse(
@@ -1951,10 +1959,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
         });
       }
     }
-    return { message: view };
+    return { message: view! };
   });
 
-  app.delete('/messages/:id/album/:fileId', async (req) => {
+  app.delete('/messages/:id/album/:fileId', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id, fileId } = parse(
       z.object({ id: z.string().uuid(), fileId: z.string().uuid() }),
@@ -2000,10 +2008,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     });
     await tellSaved(ctx, savers);
     const { view } = await albumChanged(id, m.conversation_id, auth.userId);
-    return { message: view };
+    return { message: view! };
   });
 
-  app.delete('/messages/:id', async (req) => {
+  app.delete('/messages/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { forEveryone } = parse(
@@ -2049,7 +2057,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   // --- Pinned messages (PRD §22, §56) ------------------------------------------------------
 
   /** What a conversation keeps at its top, newest pin first. */
-  app.get('/conversations/:id/pins', async (req): Promise<{ messages: MessageView[] }> => {
+  app.get('/conversations/:id/pins', async (req): Promise<MessagesResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     await membership(ctx, auth.userId, id);
@@ -2124,7 +2132,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return m;
   }
 
-  app.post('/messages/:id/pin', async (req) => {
+  app.post('/messages/:id/pin', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const m = await pinnable(auth.userId, id);
@@ -2172,7 +2180,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.delete('/messages/:id/pin', async (req) => {
+  app.delete('/messages/:id/pin', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const m = await pinnable(auth.userId, id);
@@ -2186,7 +2194,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/messages/:id/reactions', async (req) => {
+  app.post('/messages/:id/reactions', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { emoji } = parse(ReactionBody, req.body);
@@ -2219,7 +2227,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.delete('/messages/:id/reactions/:emoji', async (req) => {
+  app.delete('/messages/:id/reactions/:emoji', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, emoji } = parse(
       z.object({ id: z.string().uuid(), emoji: z.string().min(1).max(16) }),
@@ -2254,7 +2262,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/messages/:id/vote', async (req) => {
+  app.post('/messages/:id/vote', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { optionIds } = parse(VoteBody, req.body);
@@ -2289,10 +2297,10 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id),
       { type: 'poll.updated', data: { messageId: id, conversationId: m.conversation_id } },
     );
-    return { message: view };
+    return { message: view! };
   });
 
-  app.post('/messages/:id/forward', async (req) => {
+  app.post('/messages/:id/forward', async (req): Promise<MessageIdsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(ForwardBody, req.body);
@@ -2455,7 +2463,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
   });
 
   /** Every conversation I'm in with one person, general first. */
-  app.get('/people/:id/conversations', async (req) => {
+  app.get('/people/:id/conversations', async (req): Promise<PersonConversationsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { key } = pairKey(auth.userId, id);

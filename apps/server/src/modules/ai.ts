@@ -30,7 +30,6 @@ import {
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Conversation, Message } from '../db/schema';

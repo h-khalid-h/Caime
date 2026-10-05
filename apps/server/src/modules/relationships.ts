@@ -22,6 +22,7 @@ import {
   secondarySpheres,
   uuidv7,
 } from '@caime/core';
+import type { OkResponse, RelationshipResponse, SpheresResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { type Kysely, sql, type Transaction } from 'kysely';
@@ -315,7 +316,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     };
   });
 
-  app.post('/relationships/custom-roles', async (req, reply) => {
+  app.post('/relationships/custom-roles', async (req, reply): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const body = parse(CustomRoleBody, req.body);
     const id = uuidv7();
@@ -328,7 +329,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/relationships', async (req, reply) => {
+  app.post('/relationships', async (req, reply): Promise<RelationshipResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateRelationshipBody, req.body);
     if (body.userId === auth.userId) throw badRequest(tr('That’s you.'));
@@ -349,7 +350,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     return { relationship: relationshipView(row) };
   });
 
-  app.patch('/relationships/:id', async (req) => {
+  app.patch('/relationships/:id', async (req): Promise<RelationshipResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(ChangeRelationshipBody, req.body);
@@ -513,7 +514,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
   transition('archive', ['active', 'ended'], 'archived', 'archived');
   transition('restore', ['ended', 'archived'], 'active', 'restored');
 
-  app.post('/relationships/:id/primary', async (req) => {
+  app.post('/relationships/:id/primary', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const current = await owned(ctx.db, auth.userId, id);
@@ -535,7 +536,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/relationships/merge', async (req) => {
+  app.post('/relationships/merge', async (req): Promise<RelationshipResponse> => {
     const auth = requireAuth(req);
     const body = parse(MergeRelationshipsBody, req.body);
     const keep = await owned(ctx.db, auth.userId, body.keepId);
@@ -606,11 +607,14 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
   });
 
   // Keep the list of spheres and roles addressable for clients that cache the taxonomy.
-  app.get('/relationships/spheres', async () => ({
-    spheres: SPHERES.map((s) => ({
-      id: s,
-      label: SPHERE_DEFS[s].label,
-      roles: ROLES[s].map((r) => ({ id: r.id, label: r.label })),
-    })),
-  }));
+  app.get(
+    '/relationships/spheres',
+    async (): Promise<SpheresResponse> => ({
+      spheres: SPHERES.map((s) => ({
+        id: s,
+        label: SPHERE_DEFS[s].label,
+        roles: ROLES[s].map((r) => ({ id: r.id, label: r.label })),
+      })),
+    }),
+  );
 }

@@ -14,6 +14,7 @@ import {
   RegisterRecoveryBody,
   RestoreDeviceBody,
 } from '@caime/core';
+import type { DeviceRemovedResponse, DeviceResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -52,7 +53,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
    * first of the person's devices vouches for itself; a later one waits for one of theirs to
    * approve it, unless they start over here (every other device of theirs is retired).
    */
-  app.post('/e2ee/devices', async (req, reply): Promise<{ device: MyDeviceView }> => {
+  app.post('/e2ee/devices', async (req, reply): Promise<DeviceResponse> => {
     const auth = signedIn(req);
     const body = parse(RegisterDeviceBody, req.body);
     ctx.limiter.hit(`e2ee-device:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
@@ -182,7 +183,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
    * One of my devices approves another of mine that's waiting: its signature over the new one's
    * introduction. Only a device already approved (or the first) approves.
    */
-  app.post('/e2ee/devices/:id/approve', async (req): Promise<{ device: MyDeviceView }> => {
+  app.post('/e2ee/devices/:id/approve', async (req): Promise<DeviceResponse> => {
     const auth = signedIn(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(ApproveDeviceBody, req.body);
@@ -222,7 +223,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
    * their devices that's approved, so their chain vouches for it, and sealed for from now on.
    * Never signed in. One at a time: a new key replaces the last.
    */
-  app.post('/e2ee/recovery', async (req, reply): Promise<{ device: MyDeviceView }> => {
+  app.post('/e2ee/recovery', async (req, reply): Promise<DeviceResponse> => {
     const auth = signedIn(req);
     const body = parse(RegisterRecoveryBody, req.body);
     ctx.limiter.hit(`e2ee-recovery:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 3_600_000);
@@ -283,7 +284,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
    * signature over its introduction (made where the key was typed), so its chain holds up to the
    * same first device as before.
    */
-  app.post('/e2ee/devices/:id/restore', async (req): Promise<{ device: MyDeviceView }> => {
+  app.post('/e2ee/devices/:id/restore', async (req): Promise<DeviceResponse> => {
     const auth = signedIn(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(RestoreDeviceBody, req.body);
@@ -318,7 +319,7 @@ export async function e2eeRoutes(app: FastifyInstance, ctx: AppContext) {
    * Removed: nothing more is sealed for it, and it's signed out, so it can't simply register
    * again (what it had stays on it until then). Removing the recovery device retires the key.
    */
-  app.delete('/e2ee/devices/:id', async (req): Promise<{ ok: true; signedOut: boolean }> => {
+  app.delete('/e2ee/devices/:id', async (req): Promise<DeviceRemovedResponse> => {
     const auth = signedIn(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const gone = await ctx.db

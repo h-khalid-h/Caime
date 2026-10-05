@@ -59,8 +59,11 @@ These are rules, not preferences.
    and becomes a fact only on explicit accept (R12). No silent writes by heuristics or models.
 4. **Shared logic lives in core.** If client and server both need a rule (attention, policy,
    intelligence, privacy, field validation, previews), it goes in `packages/core` with tests.
-5. **One contract.** Response shapes live in `packages/core/src/api.ts`; server views are
-   annotated with them and the app reads them. Change the contract, and both sides must compile.
+5. **One contract.** Response shapes live in `packages/core/src/api.ts`: a `…View` is a thing, a
+   `…Response` is what a route answers with, every HTTP route is annotated `Promise<…Response>`
+   and the app's endpoints read the same names (never an inline `<{ … }>`). A refusal's `code` is
+   one of `ERROR_CODES` (`packages/core/src/errors.ts`), typed on `AppError` and `ApiError`: a
+   new refusal adds its code there first. Change the contract, and both sides must compile.
 6. **Writes are idempotent.** Retried client writes carry `clientId` (ADR-8); messages are ordered
    by `seq` (ADR-9). The sender's own echo carries its `clientId`; others get null.
 7. **Migrations are append-only** once pushed. Never edit a committed migration; add a new one.

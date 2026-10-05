@@ -8,6 +8,7 @@
 import type { DeviceView, MessageView, MyDeviceView } from '@caime/core/api';
 import type { PrivatePayload, SealedMessage } from '@caime/core/e2ee';
 import { newRecoveryKey, parseRecoveryKey, recoveryDevice } from '@caime/core/e2ee-recovery';
+import type { ErrorCode } from '@caime/core/errors';
 import { msg, tr } from '@caime/core/i18n';
 import { uuidv7 } from '@caime/core/ids';
 import { ApiError } from '@/api/client';
@@ -303,7 +304,7 @@ export function devicesChanged(userId: string): void {
 }
 
 /** Why a private message can't be sent from here: said as it is, never sent some other way. */
-const refused = (code: string, message: string, details?: Record<string, unknown>) =>
+const refused = (code: ErrorCode, message: string, details?: Record<string, unknown>) =>
   new ApiError(409, code, message, details);
 const WAITING = msg(
   'This device can’t write in private conversations until you approve it on another device where you’re signed in to Caime.',

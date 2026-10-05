@@ -7,6 +7,7 @@
 import { createHash } from 'node:crypto';
 import { type Readable, Transform } from 'node:stream';
 import { canSee, uuidv7 } from '@caime/core';
+import type { FileResponse, UploadChunkResponse, UploadStartResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
@@ -182,7 +183,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     done(null, payload),
   );
 
-  app.post('/files', async (req, reply) => {
+  app.post('/files', async (req, reply): Promise<FileResponse> => {
     const auth = requireAuth(req);
     ctx.limiter.hit(`upload:${auth.userId}`, ctx.config.isTest ? 10_000 : 300, 3_600_000);
     const part = await req.file({ limits: { fileSize: MAX_BYTES } });
@@ -269,7 +270,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Resumable uploads (tus-style): create, append chunks at an offset, resume after a drop ---
 
-  app.post('/uploads', async (req, reply) => {
+  app.post('/uploads', async (req, reply): Promise<UploadStartResponse> => {
     const auth = requireAuth(req);
     const body = parse(
       z.object({
@@ -318,73 +319,81 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     return reply.send();
   });
 
-  app.patch('/uploads/:id', { bodyLimit: 16 * 1024 * 1024 }, async (req) => {
-    const auth = requireAuth(req);
-    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const offset = Number(req.headers['upload-offset']);
-    // One chunk at a time: the row is locked while the chunk is appended and the offset moves,
-    // so two chunks sent at once (a retry racing its original) never interleave their bytes;
-    // the second waits, finds the offset moved, and is told where to resume.
-    const { f, written } = await ctx.db.transaction().execute(async (trx) => {
-      const f = await trx
-        .selectFrom('files')
-        .selectAll()
+  app.patch(
+    '/uploads/:id',
+    { bodyLimit: 16 * 1024 * 1024 },
+    async (req): Promise<UploadChunkResponse> => {
+      const auth = requireAuth(req);
+      const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+      const offset = Number(req.headers['upload-offset']);
+      // One chunk at a time: the row is locked while the chunk is appended and the offset moves,
+      // so two chunks sent at once (a retry racing its original) never interleave their bytes;
+      // the second waits, finds the offset moved, and is told where to resume.
+      const { f, written } = await ctx.db.transaction().execute(async (trx) => {
+        const f = await trx
+          .selectFrom('files')
+          .selectAll()
+          .where('id', '=', id)
+          .where('owner_id', '=', auth.userId)
+          .forUpdate()
+          .executeTakeFirst();
+        if (!f) throw notFound(tr('That upload'));
+        if (f.status !== 'uploading')
+          throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
+        if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
+          throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
+            offset: Number(f.upload_offset),
+          });
+        }
+        const written = await storage.append(f.storage_key, req.body as Readable);
+        if (written > Number(f.size)) {
+          await storage.remove(f.storage_key);
+          await trx.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
+          throw badRequest(tr('More bytes than declared.'));
+        }
+        await trx
+          .updateTable('files')
+          .set({ upload_offset: written })
+          .where('id', '=', id)
+          .execute();
+        return { f, written };
+      });
+      if (written < Number(f.size)) return { id, offset: written, complete: false };
+      const done = await finalize(
+        ctx,
+        storage,
+        id,
+        f.storage_key,
+        f.mime,
+        f.name,
+        f.duration_ms,
+      ).catch(async (err) => {
+        await ctx.db.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
+        throw err;
+      });
+      const updated = await ctx.db
+        .updateTable('files')
+        .set({
+          storage_key: done.key,
+          mime: done.sniffed.mime,
+          kind: done.sniffed.kind,
+          size: done.size,
+          width: done.width,
+          height: done.height,
+          thumb_key: done.thumbKey,
+          upload_offset: done.size,
+          status: 'ready',
+        })
         .where('id', '=', id)
-        .where('owner_id', '=', auth.userId)
-        .forUpdate()
-        .executeTakeFirst();
-      if (!f) throw notFound(tr('That upload'));
-      if (f.status !== 'uploading')
-        throw new AppError(409, 'upload_complete', tr('This upload is already complete.'));
-      if (!Number.isInteger(offset) || offset !== Number(f.upload_offset)) {
-        throw new AppError(409, 'offset_mismatch', tr('Resume from the server’s offset.'), {
-          offset: Number(f.upload_offset),
-        });
-      }
-      const written = await storage.append(f.storage_key, req.body as Readable);
-      if (written > Number(f.size)) {
-        await storage.remove(f.storage_key);
-        await trx.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
-        throw badRequest(tr('More bytes than declared.'));
-      }
-      await trx.updateTable('files').set({ upload_offset: written }).where('id', '=', id).execute();
-      return { f, written };
-    });
-    if (written < Number(f.size)) return { id, offset: written, complete: false };
-    const done = await finalize(
-      ctx,
-      storage,
-      id,
-      f.storage_key,
-      f.mime,
-      f.name,
-      f.duration_ms,
-    ).catch(async (err) => {
-      await ctx.db.updateTable('files').set({ status: 'failed' }).where('id', '=', id).execute();
-      throw err;
-    });
-    const updated = await ctx.db
-      .updateTable('files')
-      .set({
-        storage_key: done.key,
-        mime: done.sniffed.mime,
-        kind: done.sniffed.kind,
-        size: done.size,
-        width: done.width,
-        height: done.height,
-        thumb_key: done.thumbKey,
-        upload_offset: done.size,
-        status: 'ready',
-      })
-      .where('id', '=', id)
-      .returningAll()
-      .executeTakeFirstOrThrow();
-    return { id, offset: done.size, complete: true, file: fileView(updated) };
-  });
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      return { id, offset: done.size, complete: true, file: fileView(updated) };
+    },
+  );
 
   // --- Reading ---------------------------------------------------------------------------------
 
-  app.get('/files/:id', async (req, reply) => {
+  app.get('/files/:id', async (req, reply): Promise<FastifyReply> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     if (!(await canReadFile(ctx, auth.userId, id))) throw notFound(tr('That file'));
@@ -414,7 +423,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     return streamFile(req, reply, storage, f, sniffedInline && !download);
   });
 
-  app.get('/files/:id/thumb', async (req, reply) => {
+  app.get('/files/:id/thumb', async (req, reply): Promise<FastifyReply> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     if (!(await canReadFile(ctx, auth.userId, id))) throw notFound(tr('That file'));
@@ -435,7 +444,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** An organization's logo: on its public page (R44), so anyone may see it. */
-  app.get('/orgs/:id/avatar', async (req, reply) => {
+  app.get('/orgs/:id/avatar', async (req, reply): Promise<FastifyReply> => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const org = await ctx.db
       .selectFrom('organizations')
@@ -465,7 +474,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
    * A person's photo, as their privacy shows it to the viewer; to nobody signed in, only a
    * photo shown to everyone by someone who can be found by handle (their public page, R44).
    */
-  app.get('/users/:id/avatar', async (req, reply) => {
+  app.get('/users/:id/avatar', async (req, reply): Promise<FastifyReply> => {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const user = await ctx.db
       .selectFrom('users')

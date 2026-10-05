@@ -3,7 +3,12 @@
  * the permissions it needs and how long it lasts, shown once, and revoked at any time. Only a
  * signed-in person reaches these routes: no token can make or list tokens.
  */
-import { CreatePersonalTokenBody, type PersonalTokenView, uuidv7 } from '@caime/core';
+import { CreatePersonalTokenBody, uuidv7 } from '@caime/core';
+import type {
+  OkResponse,
+  PersonalTokenCreatedResponse,
+  PersonalTokensResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -20,7 +25,7 @@ const DAY_MS = 86_400_000;
 const MAX_TOKENS = 20;
 
 export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/me/tokens', async (req): Promise<{ tokens: PersonalTokenView[] }> => {
+  app.get('/me/tokens', async (req): Promise<PersonalTokensResponse> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('personal_tokens')
@@ -32,7 +37,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
     return { tokens: rows.map(personalTokenView) };
   });
 
-  app.post('/me/tokens', async (req, reply) => {
+  app.post('/me/tokens', async (req, reply): Promise<PersonalTokenCreatedResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreatePersonalTokenBody, req.body);
     const me = await ctx.db
@@ -73,7 +78,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
     return { token, view: personalTokenView(row) };
   });
 
-  app.delete('/me/tokens/:id', async (req) => {
+  app.delete('/me/tokens/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const done = await ctx.db

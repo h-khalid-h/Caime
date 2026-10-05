@@ -5,6 +5,7 @@
 
 import type { MemoryView } from '@caime/core';
 import { CreateContextBody, formatDue, joinNames, UpdateContextBody, uuidv7 } from '@caime/core';
+import type { ContextResponse, ContextsResponse, IdResponse, OkResponse } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -22,7 +23,7 @@ import { taskViews } from './actions';
 import { membership } from './conversations';
 
 export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.post('/contexts', async (req, reply) => {
+  app.post('/contexts', async (req, reply): Promise<IdResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateContextBody, req.body);
     // Giving a conversation its context is changing it: either person in a one-to-one, a group's
@@ -64,7 +65,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     return { id };
   });
 
-  app.patch('/contexts/:id', async (req) => {
+  app.patch('/contexts/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(UpdateContextBody, req.body);
@@ -100,7 +101,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.get('/contexts', async (req) => {
+  app.get('/contexts', async (req): Promise<ContextsResponse> => {
     const auth = requireAuth(req);
     const { q } = parse(z.object({ q: z.string().trim().max(120).optional() }), req.query);
     const rows = await ctx.db
@@ -148,7 +149,7 @@ export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.get('/contexts/:id', async (req) => {
+  app.get('/contexts/:id', async (req): Promise<ContextResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     if (!(await contextVisible(ctx.db, auth.userId, id))) throw notFound(tr('That context'));

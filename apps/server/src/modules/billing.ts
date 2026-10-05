@@ -10,6 +10,7 @@ import {
   canManageOrg,
   PLAN_NAMES,
 } from '@caime/core';
+import type { UrlResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -93,7 +94,7 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Buy Pro, or Business for an organization: the page on Stripe to pay on. */
-  app.post('/billing/checkout', async (req): Promise<{ url: string }> => {
+  app.post('/billing/checkout', async (req): Promise<UrlResponse> => {
     const auth = requireAuth(req);
     const body = parse(CheckoutBody, req.body);
     paced(auth.userId);
@@ -113,7 +114,7 @@ export async function billingRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Manage what's paid (card, invoices, cancelling) in Stripe's portal. */
-  app.post('/billing/portal', async (req): Promise<{ url: string }> => {
+  app.post('/billing/portal', async (req): Promise<UrlResponse> => {
     const auth = requireAuth(req);
     const body = parse(BillingPortalBody, req.body ?? {});
     paced(auth.userId);

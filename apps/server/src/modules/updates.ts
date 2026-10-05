@@ -4,8 +4,14 @@
  * organization's updates on its page, as they can the page; following is a choice of their own
  * that nobody else sees, and ends when they block it.
  */
-import type { FollowingView, OrgUpdatesView, OrgUpdateView } from '@caime/core';
+import type { OrgUpdatesView, OrgUpdateView } from '@caime/core';
 import { canManageOrg, EditUpdateBody, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caime/core';
+import type {
+  FollowingResponse,
+  FollowResponse,
+  OkResponse,
+  OrgUpdateResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
@@ -130,7 +136,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/orgs/:id/updates', async (req, reply): Promise<{ update: OrgUpdateView }> => {
+  app.post('/orgs/:id/updates', async (req, reply): Promise<OrgUpdateResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const org = await orgById(ctx.db, id);
@@ -183,7 +189,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     return { update: updateView(row, ref, await postedByOf(by)) };
   });
 
-  app.patch('/orgs/:id/updates/:updateId', async (req): Promise<{ update: OrgUpdateView }> => {
+  app.patch('/orgs/:id/updates/:updateId', async (req): Promise<OrgUpdateResponse> => {
     const auth = requireAuth(req);
     const { id, updateId } = parse(updateParam, req.params);
     const org = await orgById(ctx.db, id);
@@ -221,7 +227,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     return { update: updateView(row, orgRef(org), await postedByOf(by)) };
   });
 
-  app.delete('/orgs/:id/updates/:updateId', async (req) => {
+  app.delete('/orgs/:id/updates/:updateId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, updateId } = parse(updateParam, req.params);
     await orgById(ctx.db, id);
@@ -234,7 +240,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Follow (or change whether each update is a notification), from its page. */
-  app.put('/orgs/:id/follow', async (req): Promise<{ following: { notify: boolean } }> => {
+  app.put('/orgs/:id/follow', async (req): Promise<FollowResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     const { notify } = parse(FollowOrgBody, req.body ?? {});
@@ -271,7 +277,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
     return { following: { notify: row.notify } };
   });
 
-  app.delete('/orgs/:id/follow', async (req) => {
+  app.delete('/orgs/:id/follow', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await ctx.db
@@ -284,7 +290,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Seen: what it has posted so far isn't new to them any more, notifications included. */
-  app.post('/orgs/:id/updates/read', async (req) => {
+  app.post('/orgs/:id/updates/read', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
     await readUpdates(ctx, auth.userId, id);
@@ -292,7 +298,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Updates: the organizations they follow, newest first. */
-  app.get('/updates', async (req): Promise<{ following: FollowingView[] }> => {
+  app.get('/updates', async (req): Promise<FollowingResponse> => {
     const auth = requireAuth(req);
     return { following: await followingOf(ctx, auth.userId) };
   });

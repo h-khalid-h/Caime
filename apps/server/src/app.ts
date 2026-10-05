@@ -4,6 +4,7 @@
 
 import { Resolver } from 'node:dns/promises';
 import { uuidv7 } from '@caime/core';
+import type { ErrorBody, ErrorCode } from '@caime/core/errors';
 import { tr } from '@caime/core/i18n';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
@@ -100,6 +101,11 @@ const OPEN_TO_ANY_SITE = new Set([
   '/v1/oauth/revoke',
   '/.well-known/oauth-authorization-server',
 ]);
+
+/** A refusal's body, every one the same shape and a code from the one list. */
+const errorBody = (code: ErrorCode, message: string, details?: unknown): ErrorBody => ({
+  error: { code, message, ...(details === undefined ? {} : { details }) },
+});
 
 export async function buildApp(config: Config, options: BuildOptions = {}): Promise<BuiltApp> {
   const app = Fastify({
@@ -201,21 +207,15 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
           ?.retryAfterSeconds;
         if (retry) reply.header('retry-after', String(retry));
       }
-      return reply
-        .status(err.status)
-        .send({ error: { code: err.code, message: err.message, details: err.details } });
+      return reply.status(err.status).send(errorBody(err.code, err.message, err.details));
     }
     const status = err.statusCode;
     if (status && status >= 400 && status < 500) {
-      return reply
-        .status(status)
-        .send({ error: { code: 'invalid_request', message: err.message } });
+      return reply.status(status).send(errorBody('invalid_request', err.message));
     }
     req.log.error({ err }, 'unhandled error');
     if (config.isTest) console.error('unhandled error', err);
-    return reply
-      .status(500)
-      .send({ error: { code: 'internal', message: tr('Something went wrong on our side.') } });
+    return reply.status(500).send(errorBody('internal', tr('Something went wrong on our side.')));
   });
   let web: WebApp | null = null;
   app.setNotFoundHandler((req, reply) => {

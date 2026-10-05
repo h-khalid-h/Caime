@@ -16,6 +16,7 @@ import { onNotification } from '../lib/notify';
 /** How long a push service gets before Caime moves on without it. */
 const PUSH_TIMEOUT_MS = 10_000;
 
+import type { OkResponse, PushKeyResponse } from '@caime/core/api';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -217,7 +218,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { notifications: rows.map(notificationView), unread: unread.n };
   });
 
-  app.post('/notifications/read', async (req) => {
+  app.post('/notifications/read', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const body = parse(
       z.object({
@@ -245,7 +246,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.post('/notifications/:id/dismiss', async (req) => {
+  app.post('/notifications/:id/dismiss', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     await ctx.db
@@ -257,9 +258,12 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.get('/push/vapid', async () => ({ publicKey: (await ensureKeys()).publicKey }));
+  app.get(
+    '/push/vapid',
+    async (): Promise<PushKeyResponse> => ({ publicKey: (await ensureKeys()).publicKey }),
+  );
 
-  app.post('/push/subscriptions', async (req, reply) => {
+  app.post('/push/subscriptions', async (req, reply): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const body = parse(PushSubscriptionBody, req.body);
     // A push endpoint is an address the browser chose that Caime will POST to on every
@@ -292,7 +296,7 @@ export async function notificationRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
-  app.delete('/push/subscriptions', async (req) => {
+  app.delete('/push/subscriptions', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { endpoint } = parse(z.object({ endpoint: z.string().min(1) }), req.body);
     await ctx.db

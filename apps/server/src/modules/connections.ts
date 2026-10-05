@@ -2,7 +2,7 @@
  * Connections and connection requests (PRD §5.2, §11, §52; PRODUCT-REVIEW R4, R14, R29).
  */
 
-import type { ConnectionRequestView, ConnectionView } from '@caime/core';
+import type { ConnectionView } from '@caime/core';
 import {
   AcceptRequestBody,
   ConnectionRequestBody,
@@ -13,6 +13,13 @@ import {
   UpdateConnectionBody,
   uuidv7,
 } from '@caime/core';
+import type {
+  ConnectionRequestsResponse,
+  ConnectionsResponse,
+  ConnectResponse,
+  OkResponse,
+  RequestAcceptedResponse,
+} from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { Transaction } from 'kysely';
 import { z } from 'zod';
@@ -147,7 +154,7 @@ async function afterConnected(
 export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
   // --- Requests ------------------------------------------------------------------------------
 
-  app.post('/connections/requests', async (req, reply) => {
+  app.post('/connections/requests', async (req, reply): Promise<ConnectResponse> => {
     const auth = requireAuth(req);
     const body = parse(ConnectionRequestBody, req.body);
     if (body.toUserId === auth.userId) throw badRequest(tr('That’s you.'));
@@ -256,7 +263,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { status: 'requested', requestId: id };
   });
 
-  app.get('/connections/requests', async (req): Promise<{ requests: ConnectionRequestView[] }> => {
+  app.get('/connections/requests', async (req): Promise<ConnectionRequestsResponse> => {
     const auth = requireAuth(req);
     const { direction } = parse(
       z.object({ direction: z.enum(['incoming', 'outgoing']).default('incoming') }),
@@ -303,7 +310,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { requests };
   });
 
-  app.post('/connections/requests/:id/accept', async (req) => {
+  app.post('/connections/requests/:id/accept', async (req): Promise<RequestAcceptedResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(AcceptRequestBody, req.body ?? {});
@@ -313,7 +320,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/connections/requests/:id/decline', async (req) => {
+  app.post('/connections/requests/:id/decline', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const res = await ctx.db
@@ -333,7 +340,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/connections/requests/:id', async (req) => {
+  app.delete('/connections/requests/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const res = await ctx.db
@@ -354,7 +361,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Connections ---------------------------------------------------------------------------
 
-  app.get('/connections', async (req): Promise<{ connections: ConnectionView[] }> => {
+  app.get('/connections', async (req): Promise<ConnectionsResponse> => {
     const auth = requireAuth(req);
     const { sphere, q } = parse(
       z.object({ sphere: z.string().optional(), q: z.string().trim().max(100).optional() }),
@@ -471,7 +478,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.patch('/connections/:id', async (req) => {
+  app.patch('/connections/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(UpdateConnectionBody, req.body);
@@ -513,7 +520,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Not the same person after all (PRD §51): the merged account stands on its own again. */
-  app.post('/connections/:id/separate', async (req) => {
+  app.post('/connections/:id/separate', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const side = await ctx.db
@@ -532,7 +539,7 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/connections/:id', async (req) => {
+  app.delete('/connections/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const conn = await ctx.db

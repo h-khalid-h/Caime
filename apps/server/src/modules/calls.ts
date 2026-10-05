@@ -1,20 +1,14 @@
-/**
- * Calls (PRD §47): ring someone in a direct conversation, answer or decline on one device,
- * pass the WebRTC offer, answer and candidates between the two devices in the call, and hang
- * up. The work is in lib/calls.ts; the media never reaches the server.
- */
-import type { GroupCallView } from '@caime/core';
 import {
   CALL_RING_SECONDS,
   CallDeviceBody,
   type CallHistoryResponse,
   CallSignalBody,
-  type CallView,
   type IceConfigView,
   StartCallBody,
   tr,
   uuidv7,
 } from '@caime/core';
+import type { CallResponse, LiveCallsResponse, OkResponse } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -103,23 +97,20 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
    * and the group call I'm in or that rings for me. A page opened mid-call finds it, and a
    * socket that connects asks once (`/group-calls/live` still answers the group call alone).
    */
-  app.get(
-    '/calls/live',
-    async (req): Promise<{ call: CallView | null; groupCall: GroupCallView | null }> => {
-      const auth = requireAuth(req);
-      const [call, group] = await Promise.all([
-        liveCallOf(ctx, auth.userId),
-        joinedGroupCallOf(ctx, auth.userId).then((g) => g ?? ringingGroupCallFor(ctx, auth.userId)),
-      ]);
-      const [view, groupView] = await Promise.all([
-        call ? callView(ctx, call, auth.userId) : null,
-        group ? groupCallView(ctx, group, auth.userId) : null,
-      ]);
-      return { call: view, groupCall: groupView };
-    },
-  );
+  app.get('/calls/live', async (req): Promise<LiveCallsResponse> => {
+    const auth = requireAuth(req);
+    const [call, group] = await Promise.all([
+      liveCallOf(ctx, auth.userId),
+      joinedGroupCallOf(ctx, auth.userId).then((g) => g ?? ringingGroupCallFor(ctx, auth.userId)),
+    ]);
+    const [view, groupView] = await Promise.all([
+      call ? callView(ctx, call, auth.userId) : null,
+      group ? groupCallView(ctx, group, auth.userId) : null,
+    ]);
+    return { call: view, groupCall: groupView };
+  });
 
-  app.post('/conversations/:id/calls', async (req, reply): Promise<{ call: CallView }> => {
+  app.post('/conversations/:id/calls', async (req, reply): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const body = parse(StartCallBody, req.body);
@@ -217,7 +208,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Answered on this device: the others stop ringing, and signals go only to this one. */
-  app.post('/calls/:id/accept', async (req): Promise<{ call: CallView }> => {
+  app.post('/calls/:id/accept', async (req): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);
@@ -255,7 +246,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
     return { call: await callView(ctx, answered, auth.userId) };
   });
 
-  app.post('/calls/:id/decline', async (req): Promise<{ call: CallView }> => {
+  app.post('/calls/:id/decline', async (req): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const call = await mine(auth.userId, id);
@@ -266,7 +257,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Hang up: before it's answered the caller calls it off; after, either side ends it. */
-  app.post('/calls/:id/end', async (req): Promise<{ call: CallView }> => {
+  app.post('/calls/:id/end', async (req): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const body = parse(EndCallBody, req.body ?? {});
@@ -288,7 +279,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
    * An offer, an answer or a candidate for the other device in the call. Only the two devices
    * in it may send, and each reaches only the other, so no other tab or person can join.
    */
-  app.post('/calls/:id/signal', async (req) => {
+  app.post('/calls/:id/signal', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const body = parse(CallSignalBody, req.body);
@@ -330,7 +321,7 @@ export async function callRoutes(app: FastifyInstance, ctx: AppContext) {
    * Still here, from the device in the call: a call either side stops saying this about is
    * ended by the sweep. It answers with how the call stands, for a device that missed an event.
    */
-  app.post('/calls/:id/alive', async (req): Promise<{ call: CallView }> => {
+  app.post('/calls/:id/alive', async (req): Promise<CallResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(callParam, req.params);
     const { deviceId } = parse(CallDeviceBody, req.body);

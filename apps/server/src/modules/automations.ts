@@ -6,7 +6,6 @@
 import {
   AutomationBody,
   AutomationPatch,
-  type AutomationView,
   collectionName,
   MoveSavedBody,
   RenameCollectionBody,
@@ -19,6 +18,13 @@ import {
   uuidv7,
   wordsFrom,
 } from '@caime/core';
+import type {
+  AutomationsResponse,
+  CollectionRenamedResponse,
+  IdResponse,
+  OkResponse,
+  SavedResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -81,7 +87,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // --- Automations --------------------------------------------------------------------------
 
-  app.get('/automations', async (req): Promise<{ automations: AutomationView[] }> => {
+  app.get('/automations', async (req): Promise<AutomationsResponse> => {
     const auth = requireAuth(req);
     const rows = await ctx.db
       .selectFrom('automations')
@@ -93,7 +99,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     return { automations: rows.map(automationView) };
   });
 
-  app.post('/automations', async (req, reply) => {
+  app.post('/automations', async (req, reply): Promise<IdResponse> => {
     const auth = requireAuth(req);
     const body = parse(AutomationBody, req.body);
     const id = uuidv7();
@@ -128,7 +134,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     return { id };
   });
 
-  app.patch('/automations/:id', async (req) => {
+  app.patch('/automations/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(AutomationPatch, req.body);
@@ -153,7 +159,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/automations/:id', async (req) => {
+  app.delete('/automations/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const res = await ctx.db
@@ -329,7 +335,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.post('/messages/:id/save', async (req, reply) => {
+  app.post('/messages/:id/save', async (req, reply): Promise<SavedResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const body = parse(SaveBody, req.body ?? {});
@@ -429,7 +435,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Moved to another collection; already there, the two are one. */
-  app.patch('/saved/:id', async (req) => {
+  app.patch('/saved/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const { collection: to } = parse(MoveSavedBody, req.body);
@@ -459,7 +465,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true };
   });
 
-  app.delete('/saved/:id', async (req) => {
+  app.delete('/saved/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const res = await ctx.db
@@ -473,7 +479,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** A collection renamed, its automations with it; into one that exists, the two become one. */
-  app.post('/saved/collections/rename', async (req) => {
+  app.post('/saved/collections/rename', async (req): Promise<CollectionRenamedResponse> => {
     const auth = requireAuth(req);
     const body = parse(RenameCollectionBody, req.body);
     const from = collectionName(body.from);
@@ -510,7 +516,7 @@ export async function automationRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Everything in a collection unsaved; never one an automation saves to. */
-  app.delete('/saved/collections', async (req) => {
+  app.delete('/saved/collections', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { name } = parse(z.object({ name: z.string().trim().min(1).max(60) }), req.query);
     const collection = collectionName(name);

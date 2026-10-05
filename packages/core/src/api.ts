@@ -17,7 +17,7 @@ import type { PublicJwk, SealedMessage } from './e2ee';
 import type { KitField } from './kits';
 import type { OrgKind, OrgRole } from './orgs';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
-import type { NotificationLevel, RelationshipPolicy } from './policy';
+import type { EffectivePolicy, NotificationLevel, RelationshipPolicy } from './policy';
 import type { PrivacySettings } from './privacy';
 import type { Preferences } from './schemas';
 import type { ParsedQuery } from './search';
@@ -1883,4 +1883,431 @@ export interface CallSignalView {
 export interface IceConfigView {
   iceServers: Array<{ urls: string[]; username?: string; credential?: string }>;
   relay: boolean;
+}
+
+// --- Responses (convention 5) ---------------------------------------------------------------
+// Every route's answer has a name here: the server annotates the route with it and the app
+// reads it, so a shape that changes fails to compile on both sides. A `…View` is a thing; a
+// `…Response` is what a route wraps it in.
+
+export interface OkResponse {
+  ok: true;
+}
+export interface IdResponse {
+  id: string;
+}
+export interface UrlResponse {
+  url: string;
+}
+export interface HealthResponse {
+  ok: boolean;
+}
+
+export interface UserResponse {
+  user: MeView;
+}
+/** `GET /me` to a token acting as a person (PRD §74): who it acts for, nothing more. */
+export interface GrantUserView {
+  id: string;
+  handle: string;
+  displayName: string;
+  avatarUrl: string | null;
+  timeZone: string;
+  locale: string;
+}
+export type MeResponse = UserResponse | { user: GrantUserView };
+export interface PrivacyResponse {
+  privacy: MeView['privacy'];
+}
+export interface HandleAvailabilityResponse {
+  available: boolean;
+  reason: string | null;
+  suggestion: string | null;
+  /** A closed organization's, verified: proving its domain again takes it back (R42). */
+  closedOrg?: ClosedOrgView;
+}
+/** How I appear to different people (PRD §35). */
+export interface IdentityView {
+  id: string;
+  kind: string;
+  displayName: string;
+  headline: string | null;
+  orgName: string | null;
+  isDefault: boolean;
+}
+export interface IdentitiesResponse {
+  identities: IdentityView[];
+}
+export interface SessionsResponse {
+  sessions: DeviceSessionView[];
+}
+export interface RecoveryCodesResponse {
+  recoveryCodes: string[];
+}
+export interface RecoverResponse extends AuthResponse {
+  recoveryCodesLeft: number;
+}
+export interface PersonInsightsResponse {
+  insights: PersonInsightsView;
+}
+
+export interface PeopleSearchResponse {
+  results: PeopleSearchResult[];
+}
+export interface RelationshipResponse {
+  relationship: RelationshipView;
+}
+export interface SpheresResponse {
+  spheres: Array<{ id: Sphere; label: string; roles: Array<{ id: string; label: string }> }>;
+}
+export interface ConnectionsResponse {
+  connections: ConnectionView[];
+}
+export interface ConnectionRequestsResponse {
+  requests: ConnectionRequestView[];
+}
+/** Asking to connect: connected at once when they had asked me, else a request to them. */
+export interface ConnectResponse {
+  status: 'connected' | 'requested';
+  requestId?: string;
+  connectionId?: string;
+  conversationId?: string;
+  relationship?: RelationshipView | null;
+}
+export interface RequestAcceptedResponse {
+  status: 'connected';
+  connectionId: string;
+  conversationId: string;
+  relationship: RelationshipView | null;
+}
+export interface InvitesResponse {
+  invites: InviteView[];
+}
+export interface InviteResponse {
+  invite: InviteView;
+}
+export interface InviteOpenResponse {
+  invite: InviteOpenView;
+}
+export interface BlocksResponse {
+  blocked: Array<{ id: string; displayName: string; handle: string; since: string }>;
+  orgs: Array<{ id: string; name: string; handle: string; since: string }>;
+}
+export interface ReportedResponse {
+  ok: true;
+  message: string;
+}
+
+export interface ConversationResponse {
+  conversation: ConversationView;
+}
+export interface ConversationIdResponse {
+  conversationId: string;
+}
+export interface MessageResponse {
+  message: MessageView;
+}
+export interface MessagesResponse {
+  messages: MessageView[];
+}
+export interface MessageIdsResponse {
+  messageIds: string[];
+}
+export interface AlbumResponse {
+  photos: AlbumPhotoView[];
+}
+export interface CustomKitsResponse {
+  kits: CustomKitOfferView[];
+}
+export interface PersonConversationsResponse {
+  conversations: Array<{
+    id: string;
+    title: string | null;
+    isGeneral: boolean;
+    lastMessageAt: string | null;
+  }>;
+}
+export interface FileResponse {
+  file: FileView;
+}
+export interface UploadStartResponse {
+  id: string;
+  offset: number;
+}
+export interface UploadChunkResponse {
+  id: string;
+  offset: number;
+  complete: boolean;
+  file?: FileView;
+}
+
+export interface TaskResponse {
+  task: TaskView;
+}
+export interface DecisionsResponse {
+  decisions: DecisionView[];
+}
+export interface SuggestionsResponse {
+  suggestions: SuggestionView[];
+}
+export interface SuggestionAcceptedResponse {
+  accepted: { type: string; id: string; view?: unknown };
+}
+export interface ContextView {
+  id: string;
+  kind: string;
+  title: string;
+  purpose: string | null;
+  status: string;
+  deadlineAt: string | null;
+  externalRef: string | null;
+}
+export interface ContextsResponse {
+  contexts: ContextView[];
+}
+export interface ContextResponse {
+  context: ContextView;
+  conversations: Array<{
+    id: string;
+    title: string | null;
+    kind: ConversationKind;
+    lastMessageAt: string | null;
+  }>;
+  counts: { files: number; decisions: number; openActions: number };
+}
+export interface CalendarFeedResponse {
+  feed: CalendarFeedView;
+}
+export interface CalendarFeedCreatedResponse extends CalendarFeedResponse {
+  url: string;
+}
+
+export interface PoliciesResponse {
+  policies: PolicyView[];
+}
+export interface PolicyCreatedResponse {
+  id: string;
+  existing?: true;
+}
+export interface EffectivePolicyResponse {
+  policy: EffectivePolicy;
+  description: string;
+  /** What applies to them without a rule of their own. */
+  inherited: EffectivePolicy;
+}
+export interface AutomationsResponse {
+  automations: AutomationView[];
+}
+export interface SavedResponse {
+  id: string;
+  collection: string;
+  existing?: true;
+}
+export interface CollectionRenamedResponse {
+  ok: true;
+  collection: string;
+}
+export interface PushKeyResponse {
+  publicKey: string;
+}
+
+export interface SpacesResponse {
+  spaces: SpaceSummaryView[];
+}
+export interface SpaceResponse {
+  space: SpaceView;
+}
+export interface OrgsResponse {
+  orgs: OrgSummaryView[];
+}
+export interface OrgResponse {
+  org: OrgView;
+}
+export interface OrgSpacesResponse {
+  spaces: OrgSpaceView[];
+}
+export interface OrgPlanResponse {
+  plan: OrgPlanView;
+}
+export interface PlanUsageResponse {
+  plan: PlanUsageView;
+}
+export interface ErasedResponse {
+  erased: number;
+}
+export interface OrgConversationResponse {
+  conversationId: string;
+  created: boolean;
+}
+export interface ThreadResponse {
+  thread: BusinessThreadView;
+}
+export interface OrgAgentResponse {
+  available: boolean;
+  agent: OrgAgentView | null;
+}
+export interface OrgAgentSetResponse {
+  agent: OrgAgentView;
+}
+export interface OrgAppsResponse {
+  apps: OrgAppView[];
+}
+export interface OrgAppResponse {
+  app: OrgAppView;
+}
+export interface OrgInsightsResponse {
+  insights: OrgInsightsView;
+}
+export interface DeliveriesResponse {
+  deliveries: WebhookDeliveryView[];
+}
+export interface DeliveryResponse {
+  delivery: WebhookDeliveryView;
+}
+export interface DeliveryQueuedResponse {
+  deliveryId: string;
+}
+export interface BookingResponse {
+  booking: BookingHours | null;
+}
+export interface OrgUpdateResponse {
+  update: OrgUpdateView;
+}
+export interface FollowResponse {
+  following: { notify: boolean };
+}
+export interface FollowingResponse {
+  following: FollowingView[];
+}
+export interface AppKitsResponse {
+  kits: AppKitView[];
+}
+export interface AppKitResponse {
+  kit: AppKitView;
+}
+
+export interface PersonalTokensResponse {
+  tokens: PersonalTokenView[];
+}
+export interface PersonalTokenCreatedResponse {
+  token: string;
+  view: PersonalTokenView;
+}
+export interface OAuthAppsResponse {
+  apps: OAuthAppView[];
+}
+export interface OAuthAppCreatedResponse {
+  app: OAuthAppView;
+  clientSecret: string | null;
+}
+export interface OAuthRedirectResponse {
+  redirect: string;
+}
+export interface ConnectedAppsResponse {
+  apps: ConnectedAppView[];
+}
+/** RFC 6749 §5.1: the token endpoint's answer, in the RFC's own names. */
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+}
+/** RFC 6749 §5.2: a token or revocation endpoint's refusal, in the RFC's own names. */
+export interface OAuthErrorResponse {
+  error: string;
+  error_description: string;
+}
+/** RFC 8414: where an app finds the endpoints. */
+export interface OAuthServerMetadata {
+  issuer: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+  revocation_endpoint: string;
+  response_types_supported: string[];
+  grant_types_supported: string[];
+  code_challenge_methods_supported: string[];
+  token_endpoint_auth_methods_supported: string[];
+  revocation_endpoint_auth_methods_supported: string[];
+  scopes_supported: string[];
+}
+
+export interface CallResponse {
+  call: CallView;
+}
+export interface GroupCallResponse {
+  call: GroupCallView;
+}
+export interface GroupCallMaybeResponse {
+  call: GroupCallView | null;
+}
+export interface LiveCallsResponse {
+  call: CallView | null;
+  groupCall?: GroupCallView | null;
+}
+export interface DeviceResponse {
+  device: MyDeviceView;
+}
+export interface MyDevicesResponse {
+  devices: MyDeviceView[];
+  chain: DeviceView[];
+}
+export interface DeviceRemovedResponse {
+  ok: true;
+  signedOut: boolean;
+}
+
+export interface ReportsResponse {
+  reports: ReportView[];
+}
+export interface ReportResponse {
+  report: ReportView;
+}
+export interface ProductMetricsResponse {
+  metrics: ProductMetricsView;
+}
+/** A database dump (docs/DEPLOY.md): on the volume, and copied off the host when a bucket is set. */
+export interface BackupView {
+  file: string;
+  bytes: number;
+  at: string;
+  copy?: string | null;
+}
+export interface BackupsResponse {
+  enabled: boolean;
+  dir: string;
+  keepDays: number;
+  last: BackupView | null;
+  files: BackupView[];
+}
+export interface BackupResponse {
+  backup: BackupView;
+}
+/** What the operator sees of someone locked out: facts, never content or an address. */
+export interface AdminPersonResponse {
+  person: {
+    id: string;
+    handle: string;
+    displayName: string;
+    plan: string;
+    createdAt: string;
+    lastActiveAt: string | null;
+    emailConfirmed: boolean;
+    suspended: boolean;
+    suspendedReason: string | null;
+    sessions: Array<{
+      id: string;
+      kind: string;
+      platform: string | null;
+      deviceName: string | null;
+      createdAt: string;
+      lastSeenAt: string;
+    }>;
+    privateDevices: number;
+    personalTokens: number;
+    appGrants: number;
+    recoveryCodesLeft: number;
+    organizations: Array<{ handle: string; role: string }>;
+  };
 }

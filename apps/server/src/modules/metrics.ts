@@ -2,13 +2,13 @@
  * GET /metrics (PRD §81): the server's counts and timings in Prometheus's text format, for the
  * operator's scraper, behind METRICS_TOKEN. Without the token it doesn't exist.
  */
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { requireOperator } from '../lib/operator';
 
 export async function metricsRoutes(app: FastifyInstance, ctx: AppContext) {
-  app.get('/metrics', async (req, reply) => {
+  app.get('/metrics', async (req, reply): Promise<FastifyReply> => {
     requireOperator(ctx, req, ctx.config.METRICS_TOKEN);
     // The queue as it is now: a stuck worker shows as jobs that wait and age.
     const q = await ctx.db

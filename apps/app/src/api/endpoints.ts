@@ -11,84 +11,115 @@ import type {
   AiRewriteView,
   AiStatusView,
   AiTranslationView,
-  AlbumPhotoView,
+  AlbumResponse,
   AssetsResponse,
   AssetView,
   AuthResponse,
-  AutomationView,
+  AutomationsResponse,
+  BookingResponse,
   BusinessInboxView,
   BusinessSummaryView,
-  BusinessThreadView,
-  CalendarFeedView,
+  CalendarFeedCreatedResponse,
+  CalendarFeedResponse,
   CalendarView,
   CallHistoryResponse,
-  CallView,
-  ClosedOrgView,
-  ConnectedAppView,
-  ConnectionRequestView,
-  ConnectionView,
+  CallResponse,
+  CollectionRenamedResponse,
+  ConnectedAppsResponse,
+  ConnectionRequestsResponse,
+  ConnectionsResponse,
+  ConnectResponse,
   ConversationDevicesView,
-  ConversationView,
+  ConversationIdResponse,
+  ConversationResponse,
   CountriesView,
   CurrenciesView,
-  CustomKitOfferView,
-  DecisionView,
-  DeviceSessionView,
-  DeviceView,
-  FollowingView,
-  GroupCallView,
+  CustomKitsResponse,
+  DecisionsResponse,
+  DeliveriesResponse,
+  DeliveryQueuedResponse,
+  DeviceRemovedResponse,
+  DeviceResponse,
+  EffectivePolicyResponse,
+  ErasedResponse,
+  FollowingResponse,
+  FollowResponse,
+  GroupCallMaybeResponse,
+  GroupCallResponse,
+  HandleAvailabilityResponse,
   HandleView,
   IceConfigView,
+  IdResponse,
   ImportChatView,
   InboxAllResponse,
   InboxResponse,
   InviteAcceptView,
-  InviteOpenView,
-  InviteView,
+  InviteOpenResponse,
+  InviteResponse,
+  InvitesResponse,
+  LiveCallsResponse,
   MemoryView,
+  MessageIdsResponse,
+  MessageResponse,
   MessagesPage,
-  MessageView,
-  MeView,
-  MyDeviceView,
+  MessagesResponse,
+  MyDevicesResponse,
   NotificationsResponse,
-  OAuthAppView,
+  OAuthAppCreatedResponse,
+  OAuthAppsResponse,
   OAuthConsentView,
-  OrgAgentView,
+  OAuthRedirectResponse,
+  OkResponse,
+  OrgAgentResponse,
+  OrgAgentSetResponse,
+  OrgAppResponse,
   OrgAppSecretsView,
-  OrgAppView,
+  OrgAppsResponse,
   OrgCalendarView,
+  OrgConversationResponse,
   OrgDoorView,
   OrgExportView,
-  OrgInsightsView,
+  OrgInsightsResponse,
   OrgReclaimView,
-  OrgSpaceView,
-  OrgSummaryView,
+  OrgResponse,
+  OrgSpacesResponse,
+  OrgsResponse,
+  OrgUpdateResponse,
   OrgUpdatesView,
-  OrgUpdateView,
-  OrgView,
-  PeopleSearchResult,
-  PersonalTokenView,
-  PersonInsightsView,
+  PeopleSearchResponse,
+  PersonalTokenCreatedResponse,
+  PersonalTokensResponse,
+  PersonInsightsResponse,
   PersonProfileView,
   PlanUsageView,
-  PolicyView,
+  PoliciesResponse,
+  PolicyCreatedResponse,
+  PrivacyResponse,
+  PushKeyResponse,
+  RecoveryCodesResponse,
   RelationshipHistoryView,
-  RelationshipView,
+  RelationshipResponse,
+  RequestAcceptedResponse,
   SavedCollectionsResponse,
   SavedItemsResponse,
+  SavedResponse,
   SearchResponse,
   SessionResponse,
+  SessionsResponse,
   SlotsView,
-  SpaceSummaryView,
-  SpaceView,
+  SpaceResponse,
+  SpacesResponse,
   StartThreadResult,
+  SuggestionAcceptedResponse,
   SuggestionsAcceptedView,
-  SuggestionView,
+  SuggestionsResponse,
+  TaskResponse,
   TasksResponse,
-  TaskView,
   TaxonomyResponse,
+  ThreadResponse,
   TimeZonesView,
-  WebhookDeliveryView,
+  UrlResponse,
+  UserResponse,
 } from '@caime/core/api';
 import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
@@ -100,12 +131,10 @@ import type { CallKind } from '@caime/core/calls';
 import type { PublicJwk, SealedMessage } from '@caime/core/e2ee';
 import type { ChecklistOp, SplitOp } from '@caime/core/kit-cards';
 import type { OrgKind } from '@caime/core/orgs';
-import type { EffectivePolicy } from '@caime/core/policy';
 import type { SpaceKind } from '@caime/core/spaces';
 import type { Sphere } from '@caime/core/taxonomy';
 import { api, request } from './client';
 
-type Ok = { ok: true };
 const q = (params: Record<string, string | number | boolean | null | undefined>) => {
   const s = Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -161,22 +190,22 @@ export const endpoints = {
     client: 'web' | 'native';
     deviceName?: string;
   }) => api.post<AuthResponse>('/auth/login', body),
-  logout: () => api.post<Ok>('/auth/logout'),
+  logout: () => api.post<OkResponse>('/auth/logout'),
   session: () => api.get<SessionResponse>('/auth/session'),
-  sessions: () => api.get<{ sessions: DeviceSessionView[] }>('/auth/sessions'),
-  revokeSession: (id: string) => api.del<Ok>(`/auth/sessions/${id}`),
+  sessions: () => api.get<SessionsResponse>('/auth/sessions'),
+  revokeSession: (id: string) => api.del<OkResponse>(`/auth/sessions/${id}`),
   changePassword: (currentPassword: string, newPassword: string) =>
-    api.post<Ok>('/auth/password', { currentPassword, newPassword }),
+    api.post<OkResponse>('/auth/password', { currentPassword, newPassword }),
   /** New recovery codes in place of the old, once the password says it's them. */
   newRecoveryCodes: (password: string) =>
-    api.post<{ recoveryCodes: string[] }>('/auth/recovery-codes', { password }),
+    api.post<RecoveryCodesResponse>('/auth/recovery-codes', { password }),
   /** A forgotten password (R48): a link to the address, the same answer either way. */
-  requestReset: (email: string) => api.post<{ ok: true }>('/auth/reset', { email }),
+  requestReset: (email: string) => api.post<OkResponse>('/auth/reset', { email }),
   confirmReset: (body: { token: string; newPassword: string; client: 'web' | 'native' }) =>
-    api.post<{ user: MeView; token: string | null }>('/auth/reset/confirm', body),
+    api.post<AuthResponse>('/auth/reset/confirm', body),
   /** The code that confirms an address, and another one when the first didn't come. */
-  verifyEmail: (code: string) => api.post<{ user: MeView }>('/auth/email/verify', { code }),
-  resendEmailCode: () => api.post<{ ok: true }>('/auth/email/send'),
+  verifyEmail: (code: string) => api.post<UserResponse>('/auth/email/verify', { code }),
+  resendEmailCode: () => api.post<OkResponse>('/auth/email/send'),
   recover: (body: {
     identifier: string;
     code: string;
@@ -184,21 +213,19 @@ export const endpoints = {
     client: 'web' | 'native';
   }) => api.post<AuthResponse>('/auth/recover', body),
 
-  me: () => api.get<{ user: MeView }>('/me'),
+  me: () => api.get<UserResponse>('/me'),
   myPlan: () => api.get<PlanUsageView>('/me/plan'),
   /** How your relationships are going (R47, Pro), for you only. */
-  myInsights: (days: 30 | 90 | 365) =>
-    api.get<{ insights: PersonInsightsView }>(`/me/insights?days=${days}`),
+  myInsights: (days: 30 | 90 | 365) => api.get<PersonInsightsResponse>(`/me/insights?days=${days}`),
   billing: () => api.get<BillingView>('/billing'),
   orgBilling: (orgId: string) => api.get<BillingView>(`/orgs/${orgId}/billing`),
   checkout: (body: { plan: BilledPlan; interval: BillingInterval; orgId?: string }) =>
-    api.post<{ url: string }>('/billing/checkout', body),
+    api.post<UrlResponse>('/billing/checkout', body),
   billingPortal: (orgId?: string) =>
-    api.post<{ url: string }>('/billing/portal', orgId ? { orgId } : {}),
-  deleteAccount: (password: string) => request<Ok>('DELETE', '/me', { body: { password } }),
-  updateMe: (patch: Record<string, unknown>) => api.patch<{ user: MeView }>('/me', patch),
-  updatePrivacy: (body: Record<string, unknown>) =>
-    api.put<{ privacy: MeView['privacy'] }>('/me/privacy', body),
+    api.post<UrlResponse>('/billing/portal', orgId ? { orgId } : {}),
+  deleteAccount: (password: string) => request<OkResponse>('DELETE', '/me', { body: { password } }),
+  updateMe: (patch: Record<string, unknown>) => api.patch<UserResponse>('/me', patch),
+  updatePrivacy: (body: Record<string, unknown>) => api.put<PrivacyResponse>('/me/privacy', body),
   /** Every country named in `locale`'s language, and the one the device suggests (lib/geo.ts). */
   countries: (locale: string, timeZone?: string) =>
     api.get<CountriesView>(`/countries${q({ locale, timeZone })}`),
@@ -208,78 +235,64 @@ export const endpoints = {
   /** Every currency a country uses, named in `locale`'s language. */
   currencies: (locale: string) => api.get<CurrenciesView>(`/currencies${q({ locale })}`),
   handleAvailable: (handle: string) =>
-    api.get<{
-      available: boolean;
-      reason: string | null;
-      suggestion: string | null;
-      /** A closed organization's, verified: proving its domain again takes it back (R42). */
-      closedOrg?: ClosedOrgView;
-    }>(`/me/handle-available${q({ handle })}`),
+    api.get<HandleAvailabilityResponse>(`/me/handle-available${q({ handle })}`),
 
   // People and relationships
-  searchPeople: (term: string) =>
-    api.get<{ results: PeopleSearchResult[] }>(`/people/search${q({ q: term })}`),
+  searchPeople: (term: string) => api.get<PeopleSearchResponse>(`/people/search${q({ q: term })}`),
   person: (id: string) => api.get<PersonProfileView>(`/people/${id}`),
   relationshipHistory: (id: string) =>
     api.get<RelationshipHistoryView>(`/people/${id}/relationships`),
   taxonomy: () => api.get<TaxonomyResponse>('/relationships/taxonomy'),
   addCustomRole: (sphere: Sphere, label: string) =>
-    api.post<Ok>('/relationships/custom-roles', { sphere, label }),
+    api.post<OkResponse>('/relationships/custom-roles', { sphere, label }),
   classify: (userId: string, rel: RelationshipInput) =>
-    api.post<{ relationship: RelationshipView }>('/relationships', { userId, ...rel }),
+    api.post<RelationshipResponse>('/relationships', { userId, ...rel }),
   changeRelationship: (id: string, patch: Partial<RelationshipInput>) =>
-    api.patch<{ relationship: RelationshipView }>(`/relationships/${id}`, patch),
-  endRelationship: (id: string) =>
-    api.post<{ relationship: RelationshipView }>(`/relationships/${id}/end`),
-  makePrimary: (id: string) => api.post<Ok>(`/relationships/${id}/primary`),
+    api.patch<RelationshipResponse>(`/relationships/${id}`, patch),
+  endRelationship: (id: string) => api.post<RelationshipResponse>(`/relationships/${id}/end`),
+  makePrimary: (id: string) => api.post<OkResponse>(`/relationships/${id}/primary`),
 
   connections: (params: { sphere?: string; q?: string } = {}) =>
-    api.get<{ connections: ConnectionView[] }>(`/connections${q(params)}`),
+    api.get<ConnectionsResponse>(`/connections${q(params)}`),
   requests: (direction: 'incoming' | 'outgoing') =>
-    api.get<{ requests: ConnectionRequestView[] }>(`/connections/requests${q({ direction })}`),
+    api.get<ConnectionRequestsResponse>(`/connections/requests${q({ direction })}`),
   requestConnection: (body: {
     toUserId: string;
     note?: string | null;
     context?: { sphere?: Sphere | null; orgName?: string | null };
     relationship?: RelationshipInput;
-  }) =>
-    api.post<{ status: string; requestId?: string; conversationId?: string }>(
-      '/connections/requests',
-      body,
-    ),
+  }) => api.post<ConnectResponse>('/connections/requests', body),
   acceptRequest: (id: string, relationship?: RelationshipInput) =>
-    api.post<{
-      status: 'connected';
-      connectionId: string;
-      conversationId: string;
-      relationship: RelationshipView | null;
-    }>(`/connections/requests/${id}/accept`, relationship ? { relationship } : {}),
-  declineRequest: (id: string) => api.post<Ok>(`/connections/requests/${id}/decline`),
+    api.post<RequestAcceptedResponse>(
+      `/connections/requests/${id}/accept`,
+      relationship ? { relationship } : {},
+    ),
+  declineRequest: (id: string) => api.post<OkResponse>(`/connections/requests/${id}/decline`),
   /** Invite links (R1): mine, a new one, one taken back, one opened and one joined through. */
-  invites: () => api.get<{ invites: InviteView[] }>('/invites'),
+  invites: () => api.get<InvitesResponse>('/invites'),
   makeInvite: (body: {
     relationship?: RelationshipInput;
     showContext?: boolean;
     note?: string | null;
-  }) => api.post<{ invite: InviteView }>('/invites', body),
-  revokeInvite: (id: string) => api.del<Ok>(`/invites/${id}`),
+  }) => api.post<InviteResponse>('/invites', body),
+  revokeInvite: (id: string) => api.del<OkResponse>(`/invites/${id}`),
   openInvite: (token: string) =>
-    api.get<{ invite: InviteOpenView }>(`/invites/${encodeURIComponent(token)}`),
+    api.get<InviteOpenResponse>(`/invites/${encodeURIComponent(token)}`),
   acceptInvite: (token: string) =>
     api.post<InviteAcceptView>(`/invites/${encodeURIComponent(token)}/accept`),
-  cancelRequest: (id: string) => api.del<Ok>(`/connections/requests/${id}`),
+  cancelRequest: (id: string) => api.del<OkResponse>(`/connections/requests/${id}`),
   updateConnection: (id: string, patch: Record<string, unknown>) =>
-    api.patch<Ok>(`/connections/${id}`, patch),
-  removeConnection: (id: string) => api.del<Ok>(`/connections/${id}`),
+    api.patch<OkResponse>(`/connections/${id}`, patch),
+  removeConnection: (id: string) => api.del<OkResponse>(`/connections/${id}`),
   /** Not the same person after all (PRD §51): a merged account stands on its own again. */
-  separateConnection: (id: string) => api.post<Ok>(`/connections/${id}/separate`),
+  separateConnection: (id: string) => api.post<OkResponse>(`/connections/${id}/separate`),
 
   // Conversations
   inbox: () => api.get<InboxResponse>('/inbox'),
   inboxAll: () => api.get<InboxAllResponse>('/inbox?view=all'),
-  conversation: (id: string) => api.get<{ conversation: ConversationView }>(`/conversations/${id}`),
+  conversation: (id: string) => api.get<ConversationResponse>(`/conversations/${id}`),
   openDirect: (userId: string, title?: string, opts: { private?: boolean } = {}) =>
-    api.post<{ conversation: ConversationView }>('/conversations', {
+    api.post<ConversationResponse>('/conversations', {
       kind: 'direct',
       userId,
       title,
@@ -291,7 +304,7 @@ export const endpoints = {
     purpose?: string,
     opts: { private?: boolean } = {},
   ) =>
-    api.post<{ conversation: ConversationView }>('/conversations', {
+    api.post<ConversationResponse>('/conversations', {
       kind: 'group',
       title,
       memberIds,
@@ -299,20 +312,20 @@ export const endpoints = {
       ...(opts.private ? { private: true } : {}),
     }),
   updateConversation: (id: string, patch: Record<string, unknown>) =>
-    api.patch<{ conversation: ConversationView }>(`/conversations/${id}`, patch),
+    api.patch<ConversationResponse>(`/conversations/${id}`, patch),
   // Running a group (PRD §56): who's in it, and who runs it.
   addToGroup: (id: string, userIds: string[]) =>
-    api.post<Ok>(`/conversations/${id}/members`, { userIds }),
+    api.post<OkResponse>(`/conversations/${id}/members`, { userIds }),
   removeFromGroup: (id: string, userId: string) =>
-    api.del<Ok>(`/conversations/${id}/members/${userId}`),
+    api.del<OkResponse>(`/conversations/${id}/members/${userId}`),
   setGroupRole: (id: string, userId: string, role: 'admin' | 'member') =>
-    api.patch<Ok>(`/conversations/${id}/members/${userId}`, { role }),
+    api.patch<OkResponse>(`/conversations/${id}/members/${userId}`, { role }),
   answerRequest: (id: string, decision: 'accept' | 'decline') =>
-    api.post<Ok>(`/conversations/${id}/request`, { decision }),
+    api.post<OkResponse>(`/conversations/${id}/request`, { decision }),
   messages: (id: string, params: { before?: number; after?: number; limit?: number } = {}) =>
     api.get<MessagesPage>(`/conversations/${id}/messages${q(params)}`),
   send: (conversationId: string, body: SendBody) =>
-    api.post<{ message: MessageView }>(`/conversations/${conversationId}/messages`, body),
+    api.post<MessageResponse>(`/conversations/${conversationId}/messages`, body),
   /** A topic of a one-to-one or a group (PRD §58): the conversation it is. */
   /** A chat brought over from WhatsApp (R45): lands as a topic with that person. */
   importChat: (body: {
@@ -322,47 +335,46 @@ export const endpoints = {
     messages: Array<{ at: string; mine: boolean; text: string }>;
   }) => api.post<ImportChatView>('/conversations/import', body),
   startTopic: (conversationId: string, title: string) =>
-    api.post<{ conversationId: string }>(`/conversations/${conversationId}/topics`, { title }),
+    api.post<ConversationIdResponse>(`/conversations/${conversationId}/topics`, { title }),
   /** A new text, and who it mentions (in a group), or a private message sealed again. */
   editMessage: (id: string, body: string | { sealed: SealedMessage }, mentions?: string[]) =>
-    api.patch<{ message: MessageView }>(
+    api.patch<MessageResponse>(
       `/messages/${id}`,
       typeof body === 'string' ? { body, ...(mentions ? { mentions } : {}) } : body,
     ),
   deleteMessage: (id: string, forEveryone: boolean) =>
-    api.del<Ok>(`/messages/${id}${q({ forEveryone })}`),
+    api.del<OkResponse>(`/messages/${id}${q({ forEveryone })}`),
   forward: (id: string, conversationIds: string[], clientId: string) =>
-    api.post<{ messageIds: string[] }>(`/messages/${id}/forward`, { conversationIds, clientId }),
-  react: (id: string, emoji: string) => api.post<Ok>(`/messages/${id}/reactions`, { emoji }),
+    api.post<MessageIdsResponse>(`/messages/${id}/forward`, { conversationIds, clientId }),
+  react: (id: string, emoji: string) =>
+    api.post<OkResponse>(`/messages/${id}/reactions`, { emoji }),
   unreact: (id: string, emoji: string) =>
-    api.del<Ok>(`/messages/${id}/reactions/${encodeURIComponent(emoji)}`),
+    api.del<OkResponse>(`/messages/${id}/reactions/${encodeURIComponent(emoji)}`),
   vote: (id: string, optionIds: string[]) =>
-    api.post<{ message: MessageView }>(`/messages/${id}/vote`, { optionIds }),
+    api.post<MessageResponse>(`/messages/${id}/vote`, { optionIds }),
   /** Move a kit card along: approve, accept, mark paid (core kit-cards.ts says who may). */
   /** Where this Caime keeps its policies and help, as its operator set them. */
   about: () => api.get<AboutView>('/about'),
-  moveKit: (id: string, to: string) =>
-    api.post<{ message: MessageView }>(`/messages/${id}/kit`, { to }),
+  moveKit: (id: string, to: string) => api.post<MessageResponse>(`/messages/${id}/kit`, { to }),
   /** The organization's own kinds of card its team may send here (PRD §74). */
   customKits: (conversationId: string) =>
-    api.get<{ kits: CustomKitOfferView[] }>(`/conversations/${conversationId}/kits`),
+    api.get<CustomKitsResponse>(`/conversations/${conversationId}/kits`),
   checklist: (id: string, op: ChecklistOp) =>
-    api.post<{ message: MessageView }>(`/messages/${id}/checklist`, op),
-  split: (id: string, op: SplitOp) =>
-    api.post<{ message: MessageView }>(`/messages/${id}/split`, op),
-  album: (id: string) => api.get<{ photos: AlbumPhotoView[] }>(`/messages/${id}/album`),
+    api.post<MessageResponse>(`/messages/${id}/checklist`, op),
+  split: (id: string, op: SplitOp) => api.post<MessageResponse>(`/messages/${id}/split`, op),
+  album: (id: string) => api.get<AlbumResponse>(`/messages/${id}/album`),
   addToAlbum: (id: string, fileIds: string[]) =>
-    api.post<{ message: MessageView }>(`/messages/${id}/album`, { fileIds }),
+    api.post<MessageResponse>(`/messages/${id}/album`, { fileIds }),
   removeFromAlbum: (id: string, fileId: string) =>
-    api.del<{ message: MessageView }>(`/messages/${id}/album/${fileId}`),
+    api.del<MessageResponse>(`/messages/${id}/album/${fileId}`),
   receipts: (id: string, body: { read?: number; delivered?: number }) =>
-    api.post<Ok>(`/conversations/${id}/receipts`, body),
-  dismissAttention: (id: string) => api.post<Ok>(`/conversations/${id}/dismiss`),
+    api.post<OkResponse>(`/conversations/${id}/receipts`, body),
+  dismissAttention: (id: string) => api.post<OkResponse>(`/conversations/${id}/dismiss`),
   memory: (id: string) => api.get<MemoryView>(`/conversations/${id}/memory`),
 
   // Spaces (PRD §40)
-  spaces: () => api.get<{ spaces: SpaceSummaryView[] }>('/spaces'),
-  space: (id: string) => api.get<{ space: SpaceView }>(`/spaces/${id}`),
+  spaces: () => api.get<SpacesResponse>('/spaces'),
+  space: (id: string) => api.get<SpaceResponse>(`/spaces/${id}`),
   createSpace: (body: {
     name: string;
     kind: SpaceKind;
@@ -370,37 +382,37 @@ export const endpoints = {
     memberIds: string[];
     /** An organization's space (R43), started by its owner or an admin. */
     orgId?: string;
-  }) => api.post<{ space: SpaceView }>('/spaces', body),
+  }) => api.post<SpaceResponse>('/spaces', body),
   updateSpace: (id: string, body: { name?: string; kind?: SpaceKind; purpose?: string | null }) =>
-    api.patch<{ space: SpaceView }>(`/spaces/${id}`, body),
-  addToSpace: (id: string, userIds: string[]) => api.post<Ok>(`/spaces/${id}/members`, { userIds }),
-  removeFromSpace: (id: string, userId: string) => api.del<Ok>(`/spaces/${id}/members/${userId}`),
+    api.patch<SpaceResponse>(`/spaces/${id}`, body),
+  addToSpace: (id: string, userIds: string[]) =>
+    api.post<OkResponse>(`/spaces/${id}/members`, { userIds }),
+  removeFromSpace: (id: string, userId: string) =>
+    api.del<OkResponse>(`/spaces/${id}/members/${userId}`),
   setSpaceRole: (id: string, userId: string, role: 'admin' | 'member') =>
-    api.patch<Ok>(`/spaces/${id}/members/${userId}`, { role }),
+    api.patch<OkResponse>(`/spaces/${id}/members/${userId}`, { role }),
   createSpaceConversation: (id: string, body: { title: string; everyone: boolean }) =>
-    api.post<{ conversation: ConversationView }>(`/spaces/${id}/conversations`, body),
+    api.post<ConversationResponse>(`/spaces/${id}/conversations`, body),
   joinSpaceConversation: (id: string, conversationId: string) =>
-    api.post<{ conversation: ConversationView }>(
-      `/spaces/${id}/conversations/${conversationId}/join`,
-    ),
+    api.post<ConversationResponse>(`/spaces/${id}/conversations/${conversationId}/join`),
 
   // Organizations (PRD §36)
-  orgs: () => api.get<{ orgs: OrgSummaryView[] }>('/orgs'),
-  searchOrgs: (term: string) =>
-    api.get<{ orgs: OrgSummaryView[] }>(`/orgs/search${q({ q: term })}`),
+  orgs: () => api.get<OrgsResponse>('/orgs'),
+  searchOrgs: (term: string) => api.get<OrgsResponse>(`/orgs/search${q({ q: term })}`),
   /** What an @handle link opens: a person or an organization (one namespace). */
   openHandle: (handle: string) => api.get<HandleView>(`/handles/${encodeURIComponent(handle)}`),
   /** The organization's spaces (R43): yours, and running it, all of them. */
-  orgSpaces: (id: string) => api.get<{ spaces: OrgSpaceView[] }>(`/orgs/${id}/spaces`),
+  orgSpaces: (id: string) => api.get<OrgSpacesResponse>(`/orgs/${id}/spaces`),
   orgDoor: (id: string) => api.get<OrgDoorView>(`/orgs/${id}/door`),
   /** The organization's own conversations (R54): its owner's or admins' to take. */
   orgExport: (id: string) => api.get<OrgExportView>(`/orgs/${id}/export`),
   /** Erase a customer's conversation at their request (R54): every message in it goes. */
   eraseThread: (orgId: string, conversationId: string) =>
-    api.del<{ erased: number }>(`/orgs/${orgId}/conversations/${conversationId}`),
-  joinOrgSpace: (id: string, spaceId: string) => api.post<Ok>(`/orgs/${id}/spaces/${spaceId}/join`),
+    api.del<ErasedResponse>(`/orgs/${orgId}/conversations/${conversationId}`),
+  joinOrgSpace: (id: string, spaceId: string) =>
+    api.post<OkResponse>(`/orgs/${id}/spaces/${spaceId}/join`),
   orgByHandle: (handle: string) =>
-    api.get<{ org: OrgView }>(`/orgs/by-handle/${encodeURIComponent(handle)}`),
+    api.get<OrgResponse>(`/orgs/by-handle/${encodeURIComponent(handle)}`),
   createOrg: (body: {
     name: string;
     handle: string;
@@ -410,60 +422,60 @@ export const endpoints = {
     foundedYear?: number | null;
     about?: string;
     website?: string;
-  }) => api.post<{ org: OrgView }>('/orgs', body),
+  }) => api.post<OrgResponse>('/orgs', body),
   updateOrg: (id: string, body: Record<string, unknown>) =>
-    api.patch<{ org: OrgView }>(`/orgs/${id}`, body),
-  addToOrg: (id: string, userIds: string[]) => api.post<Ok>(`/orgs/${id}/members`, { userIds }),
-  removeFromOrg: (id: string, userId: string) => api.del<Ok>(`/orgs/${id}/members/${userId}`),
+    api.patch<OrgResponse>(`/orgs/${id}`, body),
+  addToOrg: (id: string, userIds: string[]) =>
+    api.post<OkResponse>(`/orgs/${id}/members`, { userIds }),
+  removeFromOrg: (id: string, userId: string) =>
+    api.del<OkResponse>(`/orgs/${id}/members/${userId}`),
   updateOrgMember: (
     id: string,
     userId: string,
     body: { role?: 'admin' | 'agent'; title?: string | null },
-  ) => api.patch<Ok>(`/orgs/${id}/members/${userId}`, body),
+  ) => api.patch<OkResponse>(`/orgs/${id}/members/${userId}`, body),
   setOrgDomain: (id: string, domain: string) =>
-    request<{ org: OrgView }>('PUT', `/orgs/${id}/domain`, { body: { domain } }),
-  checkOrgDomain: (id: string) => api.post<{ org: OrgView }>(`/orgs/${id}/domain/check`),
-  removeOrgDomain: (id: string) => api.del<{ org: OrgView }>(`/orgs/${id}/domain`),
+    request<OrgResponse>('PUT', `/orgs/${id}/domain`, { body: { domain } }),
+  checkOrgDomain: (id: string) => api.post<OrgResponse>(`/orgs/${id}/domain/check`),
+  removeOrgDomain: (id: string) => api.del<OrgResponse>(`/orgs/${id}/domain`),
   /** Its owner closes it (R42). */
-  closeOrg: (id: string) => api.post<Ok>(`/orgs/${id}/close`),
+  closeOrg: (id: string) => api.post<OkResponse>(`/orgs/${id}/close`),
   /** Taking a closed organization back (R42): the record to add at its domain, then check. */
   reclaimOrg: (id: string) => api.post<OrgReclaimView>(`/orgs/${id}/reclaim`),
-  checkReclaim: (id: string) => api.post<{ org: OrgView }>(`/orgs/${id}/reclaim/check`),
+  checkReclaim: (id: string) => api.post<OrgResponse>(`/orgs/${id}/reclaim/check`),
 
   // Business inbox (PRD §38): a customer's one conversation with an organization, as its team works it
-  messageOrg: (orgId: string) =>
-    api.post<{ conversationId: string; created: boolean }>(`/orgs/${orgId}/conversations`),
+  messageOrg: (orgId: string) => api.post<OrgConversationResponse>(`/orgs/${orgId}/conversations`),
   // Personal access tokens (PRD §74): made and revoked only while signed in
-  tokens: () => api.get<{ tokens: PersonalTokenView[] }>('/me/tokens'),
+  tokens: () => api.get<PersonalTokensResponse>('/me/tokens'),
   createToken: (body: { name: string; scopes: string[]; days: 30 | 90 | 365 | null }) =>
-    api.post<{ token: string; view: PersonalTokenView }>('/me/tokens', body),
-  revokeToken: (id: string) => api.del<Ok>(`/me/tokens/${id}`),
+    api.post<PersonalTokenCreatedResponse>('/me/tokens', body),
+  revokeToken: (id: string) => api.del<OkResponse>(`/me/tokens/${id}`),
   // OAuth (PRD §74): apps a developer registers, and apps someone lets act for them
-  oauthApps: () => api.get<{ apps: OAuthAppView[] }>('/me/oauth-apps'),
+  oauthApps: () => api.get<OAuthAppsResponse>('/me/oauth-apps'),
   createOAuthApp: (body: {
     name: string;
     website?: string;
     redirectUris: string[];
     confidential: boolean;
-  }) => api.post<{ app: OAuthAppView; clientSecret: string | null }>('/me/oauth-apps', body),
-  removeOAuthApp: (id: string) => api.del<Ok>(`/me/oauth-apps/${id}`),
+  }) => api.post<OAuthAppCreatedResponse>('/me/oauth-apps', body),
+  removeOAuthApp: (id: string) => api.del<OkResponse>(`/me/oauth-apps/${id}`),
   oauthConsent: (params: Record<string, string>) =>
     api.get<OAuthConsentView>(`/oauth/authorize?${new URLSearchParams(params).toString()}`),
   oauthDecide: (params: Record<string, string>, decision: 'allow' | 'deny') =>
-    api.post<{ redirect: string }>('/oauth/authorize', { ...params, decision }),
-  connectedApps: () => api.get<{ apps: ConnectedAppView[] }>('/me/connected-apps'),
-  removeConnectedApp: (grantId: string) => api.del<Ok>(`/me/connected-apps/${grantId}`),
+    api.post<OAuthRedirectResponse>('/oauth/authorize', { ...params, decision }),
+  connectedApps: () => api.get<ConnectedAppsResponse>('/me/connected-apps'),
+  removeConnectedApp: (grantId: string) => api.del<OkResponse>(`/me/connected-apps/${grantId}`),
   // Calls (PRD §47): the server rings and relays; the media goes device to device
   callIce: () => api.get<IceConfigView>('/calls/ice'),
-  liveCall: () =>
-    api.get<{ call: CallView | null; groupCall?: GroupCallView | null }>('/calls/live'),
+  liveCall: () => api.get<LiveCallsResponse>('/calls/live'),
   startCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
-    api.post<{ call: CallView }>(`/conversations/${conversationId}/calls`, body),
+    api.post<CallResponse>(`/conversations/${conversationId}/calls`, body),
   acceptCall: (id: string, deviceId: string) =>
-    api.post<{ call: CallView }>(`/calls/${id}/accept`, { deviceId }),
-  declineCall: (id: string) => api.post<{ call: CallView }>(`/calls/${id}/decline`, {}),
+    api.post<CallResponse>(`/calls/${id}/accept`, { deviceId }),
+  declineCall: (id: string) => api.post<CallResponse>(`/calls/${id}/decline`, {}),
   endCall: (id: string, body: { deviceId: string; failed?: boolean }) =>
-    api.post<{ call: CallView }>(`/calls/${id}/end`, body),
+    api.post<CallResponse>(`/calls/${id}/end`, body),
   signalCall: (
     id: string,
     body: {
@@ -472,9 +484,9 @@ export const endpoints = {
       sdp?: string;
       candidate?: RTCIceCandidateInit;
     },
-  ) => api.post<Ok>(`/calls/${id}/signal`, body),
+  ) => api.post<OkResponse>(`/calls/${id}/signal`, body),
   callAlive: (id: string, deviceId: string) =>
-    api.post<{ call: CallView }>(`/calls/${id}/alive`, { deviceId }),
+    api.post<CallResponse>(`/calls/${id}/alive`, { deviceId }),
   // Private conversations (R18): this device's public keys, and everyone's to seal for
   registerDevice: (body: {
     id: string;
@@ -484,19 +496,19 @@ export const endpoints = {
     name?: string;
     startOver?: boolean;
     resume?: boolean;
-  }) => api.post<{ device: MyDeviceView }>('/e2ee/devices', body),
+  }) => api.post<DeviceResponse>('/e2ee/devices', body),
   registerRecovery: (body: {
     id: string;
     encryptionKey: PublicJwk;
     signingKey: PublicJwk;
     introduction: string;
-  }) => api.post<{ device: MyDeviceView }>('/e2ee/recovery', body),
+  }) => api.post<DeviceResponse>('/e2ee/recovery', body),
   restoreDevice: (id: string, body: { introduction: string }) =>
-    api.post<{ device: MyDeviceView }>(`/e2ee/devices/${id}/restore`, body),
-  myDevices: () => api.get<{ devices: MyDeviceView[]; chain: DeviceView[] }>('/e2ee/devices'),
+    api.post<DeviceResponse>(`/e2ee/devices/${id}/restore`, body),
+  myDevices: () => api.get<MyDevicesResponse>('/e2ee/devices'),
   approveDevice: (id: string, body: { introduction: string }) =>
-    api.post<{ device: MyDeviceView }>(`/e2ee/devices/${id}/approve`, body),
-  removeDevice: (id: string) => api.del<{ ok: true; signedOut: boolean }>(`/e2ee/devices/${id}`),
+    api.post<DeviceResponse>(`/e2ee/devices/${id}/approve`, body),
+  removeDevice: (id: string) => api.del<DeviceRemovedResponse>(`/e2ee/devices/${id}`),
   conversationDevices: (conversationId: string, ids: string[] = []) =>
     api.get<ConversationDevicesView>(
       `/conversations/${conversationId}/devices${q({ ids: ids.length ? ids.join(',') : undefined })}`,
@@ -506,17 +518,16 @@ export const endpoints = {
       `/calls/history${q({ ...params, missed: params.missed ? '1' : undefined })}`,
     ),
   // Group calls: every device in one connects to every other
-  liveGroupCall: () => api.get<{ call: GroupCallView | null }>('/group-calls/live'),
+  liveGroupCall: () => api.get<GroupCallMaybeResponse>('/group-calls/live'),
   groupCallIn: (conversationId: string) =>
-    api.get<{ call: GroupCallView | null }>(`/conversations/${conversationId}/group-call`),
+    api.get<GroupCallMaybeResponse>(`/conversations/${conversationId}/group-call`),
   startGroupCall: (conversationId: string, body: { kind: CallKind; deviceId: string }) =>
-    api.post<{ call: GroupCallView }>(`/conversations/${conversationId}/group-calls`, body),
+    api.post<GroupCallResponse>(`/conversations/${conversationId}/group-calls`, body),
   joinGroupCall: (id: string, deviceId: string) =>
-    api.post<{ call: GroupCallView }>(`/group-calls/${id}/join`, { deviceId }),
-  declineGroupCall: (id: string) =>
-    api.post<{ call: GroupCallView }>(`/group-calls/${id}/decline`, {}),
+    api.post<GroupCallResponse>(`/group-calls/${id}/join`, { deviceId }),
+  declineGroupCall: (id: string) => api.post<GroupCallResponse>(`/group-calls/${id}/decline`, {}),
   leaveGroupCall: (id: string, deviceId: string) =>
-    api.post<{ call: GroupCallView }>(`/group-calls/${id}/leave`, { deviceId }),
+    api.post<GroupCallResponse>(`/group-calls/${id}/leave`, { deviceId }),
   signalGroupCall: (
     id: string,
     body: {
@@ -527,14 +538,14 @@ export const endpoints = {
       sdp?: string;
       candidate?: RTCIceCandidateInit;
     },
-  ) => api.post<Ok>(`/group-calls/${id}/signal`, body),
+  ) => api.post<OkResponse>(`/group-calls/${id}/signal`, body),
   groupCallAlive: (id: string, deviceId: string) =>
-    api.post<{ call: GroupCallView }>(`/group-calls/${id}/alive`, { deviceId }),
+    api.post<GroupCallResponse>(`/group-calls/${id}/alive`, { deviceId }),
   // Live location (R29): the sharer's device moves it; only they stop it
   moveLocation: (messageId: string, point: { lat: number; lng: number; accuracy?: number }) =>
-    api.post<{ message: MessageView }>(`/messages/${messageId}/location`, point),
+    api.post<MessageResponse>(`/messages/${messageId}/location`, point),
   stopLocation: (messageId: string) =>
-    api.post<{ message: MessageView }>(`/messages/${messageId}/location/stop`),
+    api.post<MessageResponse>(`/messages/${messageId}/location/stop`),
   /** Someone on the team writes to a person first: a message request to them (R14). */
   startThread: (orgId: string, body: { handle: string; body: string; clientId: string }) =>
     api.post<StartThreadResult>(`/orgs/${orgId}/threads`, body),
@@ -542,31 +553,27 @@ export const endpoints = {
     api.get<BusinessInboxView>(`/orgs/${orgId}/inbox${q({ view })}`),
   businessSummary: () => api.get<BusinessSummaryView>('/business/summary'),
   assignThread: (conversationId: string, userId: string | null) =>
-    api.post<{ thread: BusinessThreadView }>(`/business/${conversationId}/assign`, { userId }),
+    api.post<ThreadResponse>(`/business/${conversationId}/assign`, { userId }),
   resolveThread: (conversationId: string) =>
-    api.post<{ thread: BusinessThreadView }>(`/business/${conversationId}/resolve`),
+    api.post<ThreadResponse>(`/business/${conversationId}/resolve`),
   reopenThread: (conversationId: string) =>
-    api.post<{ thread: BusinessThreadView }>(`/business/${conversationId}/reopen`),
+    api.post<ThreadResponse>(`/business/${conversationId}/reopen`),
   escalateThread: (conversationId: string, note?: string) =>
-    api.post<{ thread: BusinessThreadView }>(
-      `/business/${conversationId}/escalate`,
-      note ? { note } : {},
-    ),
+    api.post<ThreadResponse>(`/business/${conversationId}/escalate`, note ? { note } : {}),
   deescalateThread: (conversationId: string) =>
-    api.del<{ thread: BusinessThreadView }>(`/business/${conversationId}/escalation`),
+    api.del<ThreadResponse>(`/business/${conversationId}/escalation`),
 
   // Apps (PRD §73–75): an organization's integrations, managed by its owner and admins
   // An organization's AI agent (PRD §74–75), for its owner and admins
-  orgAgent: (orgId: string) =>
-    api.get<{ available: boolean; agent: OrgAgentView | null }>(`/orgs/${orgId}/agent`),
+  orgAgent: (orgId: string) => api.get<OrgAgentResponse>(`/orgs/${orgId}/agent`),
   setOrgAgent: (orgId: string, body: { name: string; knowledge: string; paused: boolean }) =>
-    api.put<{ agent: OrgAgentView }>(`/orgs/${orgId}/agent`, body),
-  removeOrgAgent: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/agent`),
+    api.put<OrgAgentSetResponse>(`/orgs/${orgId}/agent`, body),
+  removeOrgAgent: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/agent`),
   tryOrgAgent: (orgId: string, body: { name: string; knowledge: string; question: string }) =>
     api.post<AgentTryView>(`/orgs/${orgId}/agent/try`, body),
-  orgApps: (orgId: string) => api.get<{ apps: OrgAppView[] }>(`/orgs/${orgId}/apps`),
+  orgApps: (orgId: string) => api.get<OrgAppsResponse>(`/orgs/${orgId}/apps`),
   orgInsights: (orgId: string, days: 7 | 30) =>
-    api.get<{ insights: OrgInsightsView }>(`/orgs/${orgId}/insights?days=${days}`),
+    api.get<OrgInsightsResponse>(`/orgs/${orgId}/insights?days=${days}`),
   createOrgApp: (
     orgId: string,
     body: { name: string; scopes: ApiScope[]; webhookUrl?: string | null; events: WebhookEvent[] },
@@ -580,16 +587,17 @@ export const endpoints = {
       webhookUrl: string | null;
       events: WebhookEvent[];
     }>,
-  ) => api.patch<{ app: OrgAppView }>(`/orgs/${orgId}/apps/${appId}`, body),
+  ) => api.patch<OrgAppResponse>(`/orgs/${orgId}/apps/${appId}`, body),
   replaceAppToken: (orgId: string, appId: string) =>
     api.post<OrgAppSecretsView>(`/orgs/${orgId}/apps/${appId}/token`),
   replaceAppSecret: (orgId: string, appId: string) =>
     api.post<OrgAppSecretsView>(`/orgs/${orgId}/apps/${appId}/secret`),
   pingApp: (orgId: string, appId: string) =>
-    api.post<{ deliveryId: string }>(`/orgs/${orgId}/apps/${appId}/ping`),
+    api.post<DeliveryQueuedResponse>(`/orgs/${orgId}/apps/${appId}/ping`),
   appDeliveries: (orgId: string, appId: string) =>
-    api.get<{ deliveries: WebhookDeliveryView[] }>(`/orgs/${orgId}/apps/${appId}/deliveries`),
-  removeOrgApp: (orgId: string, appId: string) => api.del<Ok>(`/orgs/${orgId}/apps/${appId}`),
+    api.get<DeliveriesResponse>(`/orgs/${orgId}/apps/${appId}/deliveries`),
+  removeOrgApp: (orgId: string, appId: string) =>
+    api.del<OkResponse>(`/orgs/${orgId}/apps/${appId}`),
 
   // AI assist: every answer is a suggestion, used only when the person taps it (R17)
   ai: () => api.get<AiStatusView>('/ai'),
@@ -605,7 +613,7 @@ export const endpoints = {
     api.get<OrgCalendarView>(`/orgs/${orgId}/calendar${q({ from, to })}`),
 
   setOrgBooking: (orgId: string, booking: BookingHours | null) =>
-    api.put<{ booking: BookingHours | null }>(`/orgs/${orgId}/booking`, { booking }),
+    api.put<BookingResponse>(`/orgs/${orgId}/booking`, { booking }),
   orgSlots: (orgId: string, from: string, to: string) =>
     api.get<SlotsView>(`/orgs/${orgId}/slots${q({ from, to })}`),
 
@@ -622,36 +630,36 @@ export const endpoints = {
     conversationId?: string;
     messageId?: string;
     clientId?: string;
-  }) => api.post<{ task: TaskView }>('/tasks', body),
+  }) => api.post<TaskResponse>('/tasks', body),
   updateTask: (id: string, patch: Record<string, unknown>) =>
-    api.patch<{ task: TaskView }>(`/tasks/${id}`, patch),
-  deleteTask: (id: string) => api.del<Ok>(`/tasks/${id}`),
-  calendarFeed: () => api.get<{ feed: CalendarFeedView }>('/calendar/feed'),
+    api.patch<TaskResponse>(`/tasks/${id}`, patch),
+  deleteTask: (id: string) => api.del<OkResponse>(`/tasks/${id}`),
+  calendarFeed: () => api.get<CalendarFeedResponse>('/calendar/feed'),
   /** A new address, shown this once; any old one stops working. */
-  newCalendarFeed: () => api.post<{ feed: CalendarFeedView; url: string }>('/calendar/feed', {}),
-  stopCalendarFeed: () => api.del<Ok>('/calendar/feed'),
+  newCalendarFeed: () => api.post<CalendarFeedCreatedResponse>('/calendar/feed', {}),
+  stopCalendarFeed: () => api.del<OkResponse>('/calendar/feed'),
   decisions: (params: { conversationId?: string } = {}) =>
-    api.get<{ decisions: DecisionView[] }>(`/decisions${q(params)}`),
+    api.get<DecisionsResponse>(`/decisions${q(params)}`),
   createDecision: (body: { conversationId: string; title: string; messageId?: string }) =>
-    api.post<{ id: string }>('/decisions', body),
+    api.post<IdResponse>('/decisions', body),
   /** What's been shared in a conversation, of these kinds: newest first, a page at a time. */
   assets: (conversationId: string, kinds: readonly AssetView['kind'][], before?: string) =>
     api.get<AssetsResponse>(
       `/conversations/${conversationId}/assets${q({ kind: kinds.join(','), before })}`,
     ),
   pins: (conversationId: string) =>
-    api.get<{ messages: MessageView[] }>(`/conversations/${conversationId}/pins`),
-  pin: (messageId: string) => api.post<Ok>(`/messages/${messageId}/pin`),
-  unpin: (messageId: string) => api.del<Ok>(`/messages/${messageId}/pin`),
+    api.get<MessagesResponse>(`/conversations/${conversationId}/pins`),
+  pin: (messageId: string) => api.post<OkResponse>(`/messages/${messageId}/pin`),
+  unpin: (messageId: string) => api.del<OkResponse>(`/messages/${messageId}/pin`),
   suggestions: (params: { conversationId?: string; subjectUserId?: string; kind?: string } = {}) =>
-    api.get<{ suggestions: SuggestionView[] }>(`/suggestions${q(params)}`),
+    api.get<SuggestionsResponse>(`/suggestions${q(params)}`),
   acceptSuggestion: (id: string, body: Record<string, unknown> = {}) =>
-    api.post<{ accepted: { type: string; id: string } }>(`/suggestions/${id}/accept`, body),
-  dismissSuggestion: (id: string) => api.post<Ok>(`/suggestions/${id}/dismiss`),
+    api.post<SuggestionAcceptedResponse>(`/suggestions/${id}/accept`, body),
+  dismissSuggestion: (id: string) => api.post<OkResponse>(`/suggestions/${id}/dismiss`),
   /** Several steps, one approval (R37), and a step taken back. */
   acceptSuggestions: (ids: string[]) =>
     api.post<SuggestionsAcceptedView>('/suggestions/accept', { ids }),
-  undoSuggestion: (id: string) => api.post<Ok>(`/suggestions/${id}/undo`),
+  undoSuggestion: (id: string) => api.post<OkResponse>(`/suggestions/${id}/undo`),
 
   // Search, notifications, policies, safety
   /** `understand`: the person has finished typing (a pause, Enter), so a sentence may go to the model. */
@@ -659,34 +667,31 @@ export const endpoints = {
     api.get<SearchResponse>(`/search${q({ q: term, understand: understand ? '1' : undefined })}`),
   /** How a search ended: found or not, and how long it took. Never what was searched for. */
   searchOutcome: (outcome: { found: boolean; ms: number }) =>
-    api.post<Ok>('/search/outcome', outcome),
+    api.post<OkResponse>('/search/outcome', outcome),
   notifications: () => api.get<NotificationsResponse>('/notifications'),
   markNotificationsRead: (body: { ids?: string[]; all?: boolean }) =>
-    api.post<Ok>('/notifications/read', body),
-  policies: () => api.get<{ policies: PolicyView[] }>('/policies'),
+    api.post<OkResponse>('/notifications/read', body),
+  policies: () => api.get<PoliciesResponse>('/policies'),
   /** A rule of one's own (PRD §68): for a kind of relationship, a role in it, or one person. */
   createPolicy: (body: {
     name?: string | null;
     scope: { sphere?: Sphere | null; role?: string | null; connectionId?: string | null };
     settings: Record<string, unknown>;
-  }) => api.post<{ id: string; existing?: boolean }>('/policies', body),
+  }) => api.post<PolicyCreatedResponse>('/policies', body),
   updatePolicy: (id: string, body: Record<string, unknown>) =>
-    api.patch<Ok>(`/policies/${id}`, body),
-  deletePolicy: (id: string) => api.del<Ok>(`/policies/${id}`),
+    api.patch<OkResponse>(`/policies/${id}`, body),
+  deletePolicy: (id: string) => api.del<OkResponse>(`/policies/${id}`),
   /** How Caime treats one person now, in words, and what they'd get without a rule of their own. */
-  policyFor: (userId: string) =>
-    api.get<{ policy: EffectivePolicy; description: string; inherited: EffectivePolicy }>(
-      `/policies/for/${userId}`,
-    ),
-  resetPolicies: () => api.post<Ok>('/policies/reset'),
+  policyFor: (userId: string) => api.get<EffectivePolicyResponse>(`/policies/for/${userId}`),
+  resetPolicies: () => api.post<OkResponse>('/policies/reset'),
   /** Automations (PRD §69): what Caime keeps of what arrives, set up by the person it's for. */
-  automations: () => api.get<{ automations: AutomationView[] }>('/automations'),
+  automations: () => api.get<AutomationsResponse>('/automations'),
   createAutomation: (body: {
     name?: string | null;
     when: Partial<AutomationWhen> & Pick<AutomationWhen, 'kinds'>;
     collection: string;
     enabled?: boolean;
-  }) => api.post<{ id: string }>('/automations', body),
+  }) => api.post<IdResponse>('/automations', body),
   updateAutomation: (
     id: string,
     body: Partial<{
@@ -695,52 +700,47 @@ export const endpoints = {
       collection: string;
       enabled: boolean;
     }>,
-  ) => api.patch<Ok>(`/automations/${id}`, body),
-  deleteAutomation: (id: string) => api.del<Ok>(`/automations/${id}`),
+  ) => api.patch<OkResponse>(`/automations/${id}`, body),
+  deleteAutomation: (id: string) => api.del<OkResponse>(`/automations/${id}`),
   /** What's saved, by collection, and one collection (or all) a page at a time. */
   saved: () => api.get<SavedCollectionsResponse>('/saved'),
   savedItems: (collection?: string, before?: string) =>
     api.get<SavedItemsResponse>(`/saved/items${q({ collection, before })}`),
   saveMessage: (messageId: string, body: { collection?: string; assetId?: string } = {}) =>
-    api.post<{ id: string; collection: string; existing?: boolean }>(
-      `/messages/${messageId}/save`,
-      body,
-    ),
-  moveSaved: (id: string, collection: string) => api.patch<Ok>(`/saved/${id}`, { collection }),
-  unsave: (id: string) => api.del<Ok>(`/saved/${id}`),
+    api.post<SavedResponse>(`/messages/${messageId}/save`, body),
+  moveSaved: (id: string, collection: string) =>
+    api.patch<OkResponse>(`/saved/${id}`, { collection }),
+  unsave: (id: string) => api.del<OkResponse>(`/saved/${id}`),
   renameCollection: (from: string, to: string) =>
-    api.post<Ok & { collection: string }>('/saved/collections/rename', { from, to }),
-  deleteCollection: (name: string) => api.del<Ok>(`/saved/collections${q({ name })}`),
-  block: (userId: string) => api.post<Ok>('/blocks', { userId }),
-  unblock: (userId: string) => api.del<Ok>(`/blocks/${userId}`),
-  blockOrg: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/block`),
-  unblockOrg: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/block`),
+    api.post<CollectionRenamedResponse>('/saved/collections/rename', { from, to }),
+  deleteCollection: (name: string) => api.del<OkResponse>(`/saved/collections${q({ name })}`),
+  block: (userId: string) => api.post<OkResponse>('/blocks', { userId }),
+  unblock: (userId: string) => api.del<OkResponse>(`/blocks/${userId}`),
+  blockOrg: (orgId: string) => api.post<OkResponse>(`/orgs/${orgId}/block`),
+  unblockOrg: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/block`),
 
   // Organizations' updates (PRD §59)
   orgUpdates: (orgId: string, before?: string) =>
     api.get<OrgUpdatesView>(`/orgs/${orgId}/updates${q({ before })}`),
   /** With the poster's own id for it, so sending it again after a lost answer posts it once. */
   postUpdate: (orgId: string, body: string, clientId: string) =>
-    api.post<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates`, { body, clientId }),
+    api.post<OrgUpdateResponse>(`/orgs/${orgId}/updates`, { body, clientId }),
   editUpdate: (orgId: string, id: string, body: string) =>
-    api.patch<{ update: OrgUpdateView }>(`/orgs/${orgId}/updates/${id}`, { body }),
-  removeUpdate: (orgId: string, id: string) => api.del<Ok>(`/orgs/${orgId}/updates/${id}`),
+    api.patch<OrgUpdateResponse>(`/orgs/${orgId}/updates/${id}`, { body }),
+  removeUpdate: (orgId: string, id: string) => api.del<OkResponse>(`/orgs/${orgId}/updates/${id}`),
   follow: (orgId: string, notify?: boolean) =>
-    api.put<{ following: { notify: boolean } }>(
-      `/orgs/${orgId}/follow`,
-      notify === undefined ? {} : { notify },
-    ),
-  unfollow: (orgId: string) => api.del<Ok>(`/orgs/${orgId}/follow`),
-  readUpdates: (orgId: string) => api.post<Ok>(`/orgs/${orgId}/updates/read`),
-  following: () => api.get<{ following: FollowingView[] }>('/updates'),
+    api.put<FollowResponse>(`/orgs/${orgId}/follow`, notify === undefined ? {} : { notify }),
+  unfollow: (orgId: string) => api.del<OkResponse>(`/orgs/${orgId}/follow`),
+  readUpdates: (orgId: string) => api.post<OkResponse>(`/orgs/${orgId}/updates/read`),
+  following: () => api.get<FollowingResponse>('/updates'),
 
   // Notifications in this browser (web push)
-  pushKey: () => api.get<{ publicKey: string }>('/push/vapid'),
+  pushKey: () => api.get<PushKeyResponse>('/push/vapid'),
   subscribePush: (body: {
     kind: 'webpush';
     subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
-  }) => api.post<Ok>('/push/subscriptions', body),
-  unsubscribePush: (endpoint: string) => api.del<Ok>('/push/subscriptions', { endpoint }),
+  }) => api.post<OkResponse>('/push/subscriptions', body),
+  unsubscribePush: (endpoint: string) => api.del<OkResponse>('/push/subscriptions', { endpoint }),
   report: (body: {
     userId?: string;
     messageId?: string;
@@ -750,5 +750,5 @@ export const endpoints = {
     updateId?: string;
     reason: 'spam' | 'scam' | 'harassment' | 'impersonation' | 'inappropriate' | 'other';
     details?: string;
-  }) => api.post<Ok>('/reports', body),
+  }) => api.post<OkResponse>('/reports', body),
 };

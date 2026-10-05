@@ -17,6 +17,14 @@ import {
   type WebhookDeliveryView,
   type WebhookEvent,
 } from '@caime/core';
+import type {
+  DeliveriesResponse,
+  DeliveryQueuedResponse,
+  DeliveryResponse,
+  OkResponse,
+  OrgAppResponse,
+  OrgAppsResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -118,7 +126,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
    * was down reads what it missed. Newest first; with `after`, the ones since that delivery,
    * oldest first, so a reader walks forward from the last id it handled.
    */
-  app.get('/apps/me/deliveries', async (req): Promise<{ deliveries: WebhookDeliveryView[] }> => {
+  app.get('/apps/me/deliveries', async (req): Promise<DeliveriesResponse> => {
     const me = appOnly(requireAuth(req));
     const q = parse(
       z.object({
@@ -138,23 +146,20 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** A failed delivery, tried again with the whole schedule: for an endpoint that was down. */
-  app.post(
-    '/apps/me/deliveries/:id/retry',
-    async (req): Promise<{ delivery: WebhookDeliveryView }> => {
-      const me = appOnly(requireAuth(req));
-      const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-      if (!(await requeueDelivery(ctx, me.id, id)))
-        throw notFound(tr('A failed delivery of this app by that id'));
-      const row = await ctx.db
-        .selectFrom('webhook_deliveries')
-        .selectAll()
-        .where('id', '=', id)
-        .executeTakeFirstOrThrow();
-      return { delivery: deliveryView(row) };
-    },
-  );
+  app.post('/apps/me/deliveries/:id/retry', async (req): Promise<DeliveryResponse> => {
+    const me = appOnly(requireAuth(req));
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    if (!(await requeueDelivery(ctx, me.id, id)))
+      throw notFound(tr('A failed delivery of this app by that id'));
+    const row = await ctx.db
+      .selectFrom('webhook_deliveries')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow();
+    return { delivery: deliveryView(row) };
+  });
 
-  app.get('/orgs/:id/apps', async (req): Promise<{ apps: OrgAppView[] }> => {
+  app.get('/orgs/:id/apps', async (req): Promise<OrgAppsResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(orgParam, req.params);
     await manager(auth.userId, id);
@@ -239,7 +244,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  app.patch('/orgs/:id/apps/:appId', async (req): Promise<{ app: OrgAppView }> => {
+  app.patch('/orgs/:id/apps/:appId', async (req): Promise<OrgAppResponse> => {
     const auth = requireAuth(req);
     const { id, appId } = parse(appParam, req.params);
     const body = parse(UpdateOrgAppBody, req.body);
@@ -309,7 +314,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** A test delivery, to see the address answers and the signature checks out. */
-  app.post('/orgs/:id/apps/:appId/ping', async (req) => {
+  app.post('/orgs/:id/apps/:appId/ping', async (req): Promise<DeliveryQueuedResponse> => {
     const auth = requireAuth(req);
     const { id, appId } = parse(appParam, req.params);
     await manager(auth.userId, id);
@@ -318,26 +323,23 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
     return { deliveryId: await queueDelivery(ctx, appId, id, 'ping', { appId }) };
   });
 
-  app.get(
-    '/orgs/:id/apps/:appId/deliveries',
-    async (req): Promise<{ deliveries: WebhookDeliveryView[] }> => {
-      const auth = requireAuth(req);
-      const { id, appId } = parse(appParam, req.params);
-      await manager(auth.userId, id);
-      await appOf(id, appId);
-      const rows = await ctx.db
-        .selectFrom('webhook_deliveries')
-        .selectAll()
-        .where('app_id', '=', appId)
-        .orderBy('created_at', 'desc')
-        .limit(20)
-        .execute();
-      return { deliveries: rows.map(deliveryView) };
-    },
-  );
+  app.get('/orgs/:id/apps/:appId/deliveries', async (req): Promise<DeliveriesResponse> => {
+    const auth = requireAuth(req);
+    const { id, appId } = parse(appParam, req.params);
+    await manager(auth.userId, id);
+    await appOf(id, appId);
+    const rows = await ctx.db
+      .selectFrom('webhook_deliveries')
+      .selectAll()
+      .where('app_id', '=', appId)
+      .orderBy('created_at', 'desc')
+      .limit(20)
+      .execute();
+    return { deliveries: rows.map(deliveryView) };
+  });
 
   /** Removed: its token and webhook stop at once, and its bot leaves the team. */
-  app.delete('/orgs/:id/apps/:appId', async (req) => {
+  app.delete('/orgs/:id/apps/:appId', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id, appId } = parse(appParam, req.params);
     await manager(auth.userId, id);
