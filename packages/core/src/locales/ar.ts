@@ -598,7 +598,7 @@ export const ar: Catalog = {
   'Forgot your password?': 'نسيت كلمة مرورك؟',
   'Caime sends a link to your email. Open it within the hour to set a new one.':
     'يرسل Caime رابطًا إلى بريدك. افتحه خلال ساعة لتضع كلمة مرور جديدة.',
-  'If that address is an account\\u2019s, a link is on its way.':
+  'If that address is an account’s, a link is on its way.':
     'إن كان ذلك العنوان لحساب، فالرابط في طريقه.',
   'Nothing came? Check the address and your spam folder, or use one of your recovery codes instead.':
     'لم يصل شيء؟ تحقق من العنوان ومن مجلد الرسائل غير المرغوبة، أو استخدم أحد رموز الاستعادة بدلًا من ذلك.',
@@ -614,13 +614,12 @@ export const ar: Catalog = {
   'Set new password': 'ضع كلمة مرور جديدة',
   'No codes left? For your safety Caime can’t reset an account without one. If you signed in on another device, you can make new codes there under You → Security.':
     'لم يبقَ رموز؟ حفاظًا على أمانك لا يستطيع Caime إعادة ضبط حساب من دون رمز. إن كان دخولك مسجّلًا على جهاز آخر، يمكنك إنشاء رموز جديدة هناك من أنت ← الأمان.',
-  'This link isn\\u2019t whole': 'هذا الرابط غير مكتمل',
+  'This link isn’t whole': 'هذا الرابط غير مكتمل',
   'Open the one in the email, or ask for a new one.': 'افتح الذي في البريد، أو اطلب رابطًا جديدًا.',
   'Ask for a new link': 'اطلب رابطًا جديدًا',
   'new password': 'كلمة مرور جديدة',
   'Set a new password': 'ضع كلمة مرور جديدة',
-  'You\\u2019ll be signed in here, and out everywhere else.':
-    'ستُسجَّل دخولك هنا، وخروجك من كل مكان آخر.',
+  'You’ll be signed in here, and out everywhere else.': 'ستُسجَّل دخولك هنا، وخروجك من كل مكان آخر.',
   'sign in': 'تسجيل الدخول',
   'Welcome back': 'أهلًا بعودتك',
   'Sign in with your email or @handle.': 'سجّل الدخول ببريدك أو @معرّفك.',
@@ -2455,7 +2454,7 @@ export const ar: Catalog = {
   '{name} may be someone from your community{at}': 'قد يكون {name} شخصًا من مجتمعك{at}',
   '{name} may be someone from {orgName}': 'قد يكون {name} شخصًا من {orgName}',
   'an organization': 'مؤسسة',
-  '{name} may be {an} {label}{at}': 'قد يكون {name} {an} {label}{at}',
+  '{name} may be {an} {label}{at}': 'قد يكون {name} {label}{at}',
   'an automated account (bot)': 'حسابًا آليًا (بوت)',
   'an AI agent': 'وكيل ذكاء اصطناعي',
   Bot: 'بوت',
@@ -3054,7 +3053,6 @@ export const ar: Catalog = {
     'من تسمح لهم يحجزون من المواعيد المتاحة، وأنت تؤكد كل حجز.',
   'Set bookable hours and people book from the open slots in them.':
     'حدّد ساعات الحجز ويحجز الناس من المواعيد المتاحة فيها.',
-  'Add something to book': 'أضف شيئًا يُحجز',
   '{n} items in your catalog': {
     zero: 'لا عناصر في قائمتك',
     one: 'عنصر واحد في قائمتك',
@@ -3134,4 +3132,35 @@ export const ar: Catalog = {
   'One booking can’t take more than the item has.':
     'لا يمكن للحجز الواحد أن يأخذ أكثر مما في العنصر.',
   'Each item once.': 'كل عنصر مرة واحدة.',
+
+  // Orders from the catalog (R60)
+  'By the piece': 'بالقطعة',
+  'Orders are on': 'الطلبات مفعّلة',
+  'Orders are off': 'الطلبات معطّلة',
+  'Orders: {ways}': 'الطلبات: {ways}',
+  Pickup: 'استلام',
+  'What you sell by the piece is ordered on an Order card; you confirm each one.':
+    'ما تبيعه بالقطعة يُطلب على بطاقة طلب، وأنت تؤكد كل طلب.',
+  'Sell by the piece: a dish, a cake, a bag of coffee. Turn orders on to take them.':
+    'بِع بالقطعة: طبق، كعكة، كيس قهوة. فعّل الطلبات لتستقبلها.',
+  'Add something to book or order': 'أضف شيئًا يُحجز أو يُطلب',
+  Orders: 'الطلبات',
+  'An order is a card you confirm; nothing is paid through Caime.':
+    'الطلب بطاقة تؤكدها أنت؛ لا يُدفع شيء عبر Caime.',
+  'Pick how orders are had.': 'اختر طريقة تسليم الطلبات.',
+  'Turn orders off': 'عطّل الطلبات',
+  'How they’re had': 'طريقة التسليم',
+  'A line customers read first (optional)': 'سطر يقرؤه العملاء أولًا (اختياري)',
+  'Ready in about 20 minutes': 'جاهز خلال 20 دقيقة تقريبًا',
+  'The piece': 'القطعة',
+  'Ordered on an Order card, never a time: a dish, a cake, a bag of coffee.':
+    'يُطلب على بطاقة طلب، بلا موعد: طبق، كعكة، كيس قهوة.',
+  'In one order, up to': 'في الطلب الواحد، حتى',
+  'Pick something to order.': 'اختر شيئًا لتطلبه.',
+  'Pick what you’d like.': 'اختر ما تريد.',
+  'Order from {name}': 'اطلب من {name}',
+  Ready: 'جاهز',
+  How: 'الطريقة',
+  'Something ordered has nobody named to do it.': 'ما يُطلب لا يُسمّى له أحد يقوم به.',
+  'Each way once.': 'كل طريقة مرة واحدة.',
 };

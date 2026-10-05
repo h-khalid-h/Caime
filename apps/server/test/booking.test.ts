@@ -384,3 +384,161 @@ describe('the catalog (R58)', () => {
     expect(chat.json().message.payload.booking.name).toBe('A quick chat');
   });
 });
+
+describe('orders from the catalog (R60)', () => {
+  const SHAWARMA = {
+    id: 'shawarma',
+    name: 'Shawarma',
+    price: { value: 85, currency: 'EGP' },
+    unit: 'each',
+    minutes: null,
+    capacity: 1,
+    maxQuantity: 5,
+    audience: 'public',
+    providers: null,
+    askTopic: false,
+  };
+  const order = (
+    who: Client,
+    conversationId: string,
+    ask: unknown,
+    fields: Record<string, unknown> = {},
+  ) =>
+    who.req('POST', `/v1/conversations/${conversationId}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: { kit: 'order_status', fields, ...(ask ? { order: ask } : {}) },
+    });
+
+  it('a host takes orders: items by the piece, how they’re had, kept with the catalog', async () => {
+    const before = (await noor.get(`/v1/orgs/${orgId}`)).org;
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: HOURS,
+      items: [...before.bookingItems, SHAWARMA],
+      ordering: { fulfilment: ['pickup', 'delivery'], note: 'Ready in 20 minutes' },
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json().ordering).toEqual({
+      fulfilment: ['pickup', 'delivery'],
+      note: 'Ready in 20 minutes',
+    });
+    // Left out, ordering stays; an ordered item names nobody to do it.
+    const again = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: HOURS,
+      items: [...before.bookingItems, SHAWARMA],
+    });
+    expect(again.json().ordering).toMatchObject({ fulfilment: ['pickup', 'delivery'] });
+    expect(
+      (
+        await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+          booking: HOURS,
+          items: [{ ...SHAWARMA, providers: [omar.user.id] }],
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect((await lina.get(`/v1/orgs/${orgId}`)).org.ordering).toMatchObject({
+      note: 'Ready in 20 minutes',
+    });
+    // No slots for something ordered by the piece.
+    expect((await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=shawarma`)).slots).toEqual([]);
+  });
+
+  it('an order is fixed on the card: its lines, its total, a number, how it’s had', async () => {
+    const placed = await order(lina, convo, {
+      lines: [{ itemId: 'shawarma', quantity: 2 }],
+      fulfilment: 'delivery',
+    });
+    expect(placed.statusCode, placed.body).toBe(201);
+    const card = placed.json().message.payload;
+    expect(card.order).toEqual({
+      lines: [
+        {
+          itemId: 'shawarma',
+          name: 'Shawarma',
+          quantity: 2,
+          price: { value: 170, currency: 'EGP' },
+        },
+      ],
+      total: { value: 170, currency: 'EGP' },
+      fulfilment: 'delivery',
+    });
+    expect(card.fields.summary).toBe('2 × Shawarma');
+    expect(card.fields.amount).toEqual({ value: 170, currency: 'EGP' });
+    expect(card.fields.reference).toMatch(/^[A-Z2-9]{6}$/);
+    expect(card.state).toBe('placed');
+    // The team confirms; it's ready to collect, then collected.
+    const id = placed.json().message.id;
+    await omar.post(`/v1/messages/${id}/kit`, { to: 'confirmed' });
+    expect((await omar.post(`/v1/messages/${id}/kit`, { to: 'ready' })).message.payload.state).toBe(
+      'ready',
+    );
+    expect(
+      (await lina.post(`/v1/messages/${id}/kit`, { to: 'delivered' })).message.payload.state,
+    ).toBe('delivered');
+  });
+
+  it('refuses a booked item, too many, a way not offered; by hand it needs a number', async () => {
+    const no = async (ask: unknown, fields?: Record<string, unknown>) => {
+      const r = await order(lina, convo, ask, fields);
+      return [r.statusCode, r.json().error?.code];
+    };
+    expect(await no({ lines: [{ itemId: 'cleaning', quantity: 1 }] })).toEqual([
+      403,
+      'not_bookable',
+    ]);
+    expect(await no({ lines: [{ itemId: 'shawarma', quantity: 6 }] })).toEqual([
+      403,
+      'not_bookable',
+    ]);
+    expect(await no({ lines: [{ itemId: 'nope', quantity: 1 }] })).toEqual([403, 'not_bookable']);
+    expect(await no(null)).toEqual([400, 'invalid_request']);
+    const byHand = await order(lina, convo, null, { reference: 'INV-7', summary: 'Two coffees' });
+    expect(byHand.statusCode).toBe(201);
+    // Ordering off: nothing to order.
+    await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: HOURS,
+      items: (await noor.get(`/v1/orgs/${orgId}`)).org.bookingItems,
+      ordering: null,
+    });
+    expect(await no({ lines: [{ itemId: 'shawarma', quantity: 1 }] })).toEqual([
+      403,
+      'not_bookable',
+    ]);
+  });
+
+  it('a person takes orders too, and the profile says what this viewer may order', async () => {
+    const CAKE = {
+      ...SHAWARMA,
+      id: 'cake',
+      name: 'Orange cake',
+      audience: ['friend'],
+      maxQuantity: 2,
+    };
+    const mine = await noor.get('/v1/me/booking');
+    const set = await noor.req('PUT', '/v1/me/booking', {
+      booking: mine.booking,
+      items: [...mine.items, CAKE],
+      ordering: { fulfilment: ['pickup'], note: null },
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(
+      (await omar.get(`/v1/people/${noor.user.id}`)).ordering.items.map(
+        (i: { id: string }) => i.id,
+      ),
+    ).toEqual(['cake']);
+    expect((await lina.get(`/v1/people/${noor.user.id}`)).ordering).toBeNull();
+    const direct = (await omar.post('/v1/conversations', { kind: 'direct', userId: noor.user.id }))
+      .conversation.id;
+    const placed = await order(omar, direct, { lines: [{ itemId: 'cake', quantity: 2 }] });
+    expect(placed.statusCode, placed.body).toBe(201);
+    expect(placed.json().message.payload.order.fulfilment).toBe('pickup');
+    expect(
+      (
+        await order(omar, direct, {
+          lines: [{ itemId: 'cake', quantity: 1 }],
+          fulfilment: 'delivery',
+        })
+      ).statusCode,
+    ).toBe(403);
+  });
+});

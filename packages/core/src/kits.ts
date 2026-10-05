@@ -130,11 +130,12 @@ export const KITS: Record<KitId, KitDef> = {
     // It says what it cost: like every card about money, never where someone under 18 is.
     adultsOnly: true,
     fields: [
-      { key: 'reference', label: msg('Order number'), type: 'text', required: true },
+      // Optional (R60): an order placed from a catalog gets its number from the server.
+      { key: 'reference', label: msg('Order number'), type: 'text' },
       { key: 'summary', label: msg('What was ordered'), type: 'text' },
       { key: 'amount', label: msg('Total'), type: 'amount' },
     ],
-    states: ['placed', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+    states: ['placed', 'confirmed', 'ready', 'shipped', 'delivered', 'cancelled'],
   },
   delivery: {
     id: 'delivery',

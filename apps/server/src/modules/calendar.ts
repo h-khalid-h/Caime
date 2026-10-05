@@ -38,6 +38,7 @@ import {
   itemsFor,
   itemsOf,
   openSlotsFor,
+  orderingOf,
   orgHost,
   personHost,
 } from '../lib/booking';
@@ -210,6 +211,10 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .set({
         booking: body.booking ? JSON.stringify(body.booking) : null,
         booking_items: JSON.stringify(body.items),
+        // Left out, ordering stays as it was (R60).
+        ...(body.ordering !== undefined
+          ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
+          : {}),
         updated_at: ctx.now(),
       })
       .where('id', '=', id)
@@ -221,7 +226,11 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       ip: req.ip,
       metadata: { items: body.items.length },
     });
-    return { booking: body.booking, items: body.items };
+    return {
+      booking: body.booking,
+      items: body.items,
+      ordering: body.ordering !== undefined ? body.ordering : orderingOf(org),
+    };
   });
 
   const SlotsQuery = WindowQuery.extend({
@@ -298,10 +307,14 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = requireAuth(req);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['booking', 'booking_items'])
+      .select(['booking', 'booking_items', 'ordering'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    return { booking: (me.booking as BookingResponse['booking']) ?? null, items: itemsOf(me) };
+    return {
+      booking: (me.booking as BookingResponse['booking']) ?? null,
+      items: itemsOf(me),
+      ordering: orderingOf(me),
+    };
   });
 
   app.put('/me/booking', async (req): Promise<BookingResponse> => {
@@ -309,7 +322,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(BookingBody, req.body);
     const me = await ctx.db
       .selectFrom('users')
-      .select(['id', 'booking', 'booking_items', 'birth_date', 'time_zone'])
+      .select(['id', 'booking', 'booking_items', 'ordering', 'birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     assertItemsFit(personHost(me), body.items, new Set(), !minorOf(me, ctx.now()));
@@ -318,6 +331,9 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .set({
         booking: body.booking ? JSON.stringify(body.booking) : null,
         booking_items: JSON.stringify(body.items),
+        ...(body.ordering !== undefined
+          ? { ordering: body.ordering ? JSON.stringify(body.ordering) : null }
+          : {}),
         updated_at: ctx.now(),
       })
       .where('id', '=', auth.userId)
@@ -328,7 +344,11 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       ip: req.ip,
       metadata: { items: body.items.length },
     });
-    return { booking: body.booking, items: body.items };
+    return {
+      booking: body.booking,
+      items: body.items,
+      ordering: body.ordering !== undefined ? body.ordering : orderingOf(me),
+    };
   });
 
   // A person's open slots (R58), for whoever their items let book: a connection, a sphere, or

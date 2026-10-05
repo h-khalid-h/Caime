@@ -630,3 +630,23 @@ with its reason, so it isn't proposed again without new facts.
   (`locales/tr.ts`) and the server's (`tr-server.ts`); nothing else names it. Written for a
   reader of either gender in "siz", sentence case, with Turkish punctuation; a native speaker's
   review is owed, as for the others.
+- **R60 — Orders are the catalog too.** The owner's next idea (2026-10-05): ordering beside
+  bookings, in settings and on a card. Checked against what exists: Caime already had an "Order"
+  card (`order_status`), a record of an order placed elsewhere with its number, what was ordered
+  and the total. A second card also called "Order" would split one idea in two, so the card
+  stays one and grows the way the appointment card did in R58: when the host takes orders, its
+  form is a picker over the host's catalog, and when it doesn't, it's written by hand as before.
+  The catalog stays one too: an item is booked by the minute, by the day, or ordered by the
+  piece (`unit: 'each'`: a dish, a cake, a bag of coffee), with the same price, audience and
+  per-booking limit ("in one order, up to"); something ordered has no time to hold and names
+  nobody to do it. A host turns orders on with ordering settings beside its hours (how they're
+  had, pickup or delivery or both, and a line customers read first). The customer picks
+  quantities, the server checks every line against the catalog and the audience, and fixes the
+  card: the lines with each price then, the total where one currency allows it, the way it's
+  had, and a six-character order number a person can read out; the card reads as any order
+  does (number, what was ordered, total) and moves placed → confirmed → ready to collect or
+  shipped → collected or delivered. A price stays a record, never a payment (R38); the card is
+  adults-only as every card about money is (R29). Public items sold by the piece are listed on
+  the public pages with "Order from", the profile and the organization's page offer Order, and
+  an `?order` link lands on the card's form. Later layers: stock that runs out, an Orders view
+  for the team beside Bookings, the AI agent taking an order, options on an item (sizes, extras).

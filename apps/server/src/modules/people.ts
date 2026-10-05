@@ -3,7 +3,7 @@
  */
 
 import type { ConnectionStateView, PersonProfileView } from '@caime/core';
-import { ADULT_AGE, canSee, resolvePolicy, rhythmOf } from '@caime/core';
+import { ADULT_AGE, canSee, isBooked, isOrdered, resolvePolicy, rhythmOf } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -408,24 +408,30 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
     const host = personHost(user);
-    const bookable = host.hours
-      ? itemsFor(host, {
-          isSelf: relation.isSelf,
-          isConnected: relation.isConnected,
-          spheres: relation.ownerSpheresForViewer,
-          adult: !minorOf(viewer, now),
-        })
-      : [];
+    // What may be booked (in time) and what ordered (by the piece, R60): one catalog.
+    const allowed = itemsFor(host, {
+      isSelf: relation.isSelf,
+      isConnected: relation.isConnected,
+      spheres: relation.ownerSpheresForViewer,
+      adult: !minorOf(viewer, now),
+    });
+    const booked = allowed.filter(isBooked);
+    const ordered = allowed.filter(isOrdered);
     const booking =
       host.hours &&
       !relation.blocked &&
-      (bookable.length > 0 || (host.items.length === 0 && relation.isConnected))
-        ? { hours: host.hours, items: bookable }
+      (booked.length > 0 || (!host.items.some(isBooked) && relation.isConnected))
+        ? { hours: host.hours, items: booked }
+        : null;
+    const ordering =
+      host.ordering && !relation.blocked && ordered.length > 0
+        ? { settings: host.ordering, items: ordered }
         : null;
     return {
       person: personView(user, relation, now, identity),
       organizations,
       booking,
+      ordering,
       // What it is: to those their rules allow, and to anyone in the conversation it was made in.
       busy: busy
         ? {

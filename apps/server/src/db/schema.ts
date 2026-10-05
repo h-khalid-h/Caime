@@ -2,7 +2,7 @@
  * Kysely table types for the SQL in ./migrations. Keep in step with the migrations: a column
  * added there is added here in the same commit.
  */
-import type { BookingHours, BookingItem, CustomKitDef } from '@caime/core';
+import type { BookingHours, BookingItem, CustomKitDef, OrderingSettings } from '@caime/core';
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
@@ -49,6 +49,8 @@ export interface UsersTable {
   /** Their bookable hours and catalog (R58), as an organization's. */
   booking: Json<BookingHours | null> | null;
   booking_items: JsonDefaulted<BookingItem[]>;
+  /** How it takes orders (R60), or null: core `OrderingSettings`. */
+  ordering: Json<OrderingSettings | null> | null;
   ai_enabled: Defaulted<boolean>;
   onboarded_at: NullableTimestamp;
   /** When they said their recovery codes are saved (R56); null while the app still asks. */
@@ -732,6 +734,8 @@ export interface OrganizationsTable {
   booking: Json<BookingHours | null> | null;
   /** What can be booked in them (R58): core `BookingItem[]`. */
   booking_items: JsonDefaulted<BookingItem[]>;
+  /** How it takes orders (R60), or null: core `OrderingSettings`. */
+  ordering: Json<OrderingSettings | null> | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retention_days: number | null;
   /** Closed: who is proving its domain to take it back (R42), and the record they must add. */

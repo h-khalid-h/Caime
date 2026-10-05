@@ -27,8 +27,9 @@ export function OrgBooking({ org }: { org: OrgView }) {
       }}
       hours={org.booking}
       items={org.bookingItems}
-      save={async (booking, items) => {
-        await endpoints.setOrgBooking(org.id, booking, items);
+      ordering={org.ordering}
+      save={async (booking, items, ordering) => {
+        await endpoints.setOrgBooking(org.id, booking, items, ordering);
         void qc.invalidateQueries({ queryKey: qk.org(org.handle) });
         void qc.invalidateQueries({ queryKey: qk.allSlots });
       }}

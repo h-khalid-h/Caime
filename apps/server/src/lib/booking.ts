@@ -18,7 +18,12 @@ import {
   bookingPrice,
   bookingSpan,
   canBook,
+  isBooked,
+  type OrderAsk,
+  type OrderingSettings,
   openSlots,
+  type PlacedOrder,
+  placeOrder,
   type Sphere,
   tr,
   zonedParts,
@@ -36,6 +41,8 @@ export interface BookingHost {
   id: string;
   hours: BookingHours | null;
   items: BookingItem[];
+  /** How it takes orders (R60), or null. */
+  ordering: OrderingSettings | null;
 }
 
 /** Someone's standing with the host, for an item's audience (core `canBook`). */
@@ -58,12 +65,49 @@ export function itemsOf(row: { booking_items?: unknown }): BookingItem[] {
   return Array.isArray(row.booking_items) ? (row.booking_items as BookingItem[]) : [];
 }
 
-export function orgHost(org: Pick<Organization, 'id' | 'booking' | 'booking_items'>): BookingHost {
-  return { kind: 'org', id: org.id, hours: bookingOf(org), items: itemsOf(org) };
+type CatalogRow = { id: string; booking: unknown; booking_items: unknown; ordering?: unknown };
+
+/** How a host takes orders, as kept (a row read without the column has none). */
+export function orderingOf(row: { ordering?: unknown }): OrderingSettings | null {
+  return (row.ordering as OrderingSettings | null | undefined) ?? null;
 }
 
-export function personHost(user: Pick<User, 'id' | 'booking' | 'booking_items'>): BookingHost {
-  return { kind: 'person', id: user.id, hours: bookingOf(user), items: itemsOf(user) };
+export function orgHost(org: CatalogRow): BookingHost {
+  return {
+    kind: 'org',
+    id: org.id,
+    hours: bookingOf(org as Pick<Organization, 'booking'>),
+    items: itemsOf(org),
+    ordering: orderingOf(org),
+  };
+}
+
+export function personHost(user: CatalogRow): BookingHost {
+  return {
+    kind: 'person',
+    id: user.id,
+    hours: bookingOf(user as Pick<User, 'booking'>),
+    items: itemsOf(user),
+    ordering: orderingOf(user),
+  };
+}
+
+/**
+ * An order checked against the host's catalog and fixed as the card keeps it (R60): items sold
+ * by the piece this booker may order, within each item's quantity, a way the host offers.
+ */
+export function orderFor(host: BookingHost, booker: Booker, ask: OrderAsk): PlacedOrder {
+  const allowed = itemsFor(host, booker);
+  const placed = placeOrder(host.ordering, allowed, ask);
+  if (placed.ok) return placed.order;
+  const why = {
+    off: () => tr('Orders aren’t taken here.'),
+    item: () => tr('That isn’t something you can order here.'),
+    quantity: () => tr('Up to {n} of that in one order.', { n: placed.max ?? 1 }),
+    fulfilment: () => tr('They don’t offer that way.'),
+    empty: () => tr('Pick something to order.'),
+  }[placed.reason];
+  throw new AppError(403, 'not_bookable', why());
 }
 
 /** The items this booker may take from the host's catalog. */
@@ -205,7 +249,7 @@ export async function bookingFor(
 ): Promise<AppointmentBooking> {
   const hours = host.hours;
   const item = host.items.find((i) => i.id === ask.itemId);
-  if (!hours || !item || !canBook(item.audience, booker))
+  if (!hours || !item || !isBooked(item) || !canBook(item.audience, booker))
     throw new AppError(403, 'not_bookable', tr('That isn’t something you can book here.'));
   if (item.price && !booker.adult)
     throw new AppError(403, 'not_bookable', tr('Paid bookings are for people over 18.'));
@@ -334,7 +378,8 @@ export function slotLine(at: Date, timeZone: string): string {
 }
 
 /** "<id> · Haircut · 45 min · EGP 200": the catalog as the agent reads it, one item per line. */
-export function catalogLines(items: BookingItem[]): string | null {
+export function catalogLines(all: BookingItem[]): string | null {
+  const items = all.filter(isBooked);
   if (items.length === 0) return null;
   return items
     .map((i) =>

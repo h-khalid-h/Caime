@@ -29,16 +29,19 @@ import {
 } from '@caime/core/i18n';
 import { ar } from '@caime/core/locales/ar';
 import { fr } from '@caime/core/locales/fr';
+import { turkish } from '@caime/core/locales/tr';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AppContext } from '../context';
 import { arServer } from '../locales/ar-server';
 import { frServer } from '../locales/fr-server';
+import { turkishServer } from '../locales/tr-server';
 
 // The app's catalog, and beside it the public site's (server-only copy the app never downloads).
 const translators: Record<InterfaceLanguage, Translator> = {
   en: english,
   ar: makeTranslator('ar', { ...ar, ...arServer }),
   fr: makeTranslator('fr', { ...fr, ...frServer }),
+  tr: makeTranslator('tr', { ...turkish, ...turkishServer }),
 };
 
 const scope = new AsyncLocalStorage<Translator>();

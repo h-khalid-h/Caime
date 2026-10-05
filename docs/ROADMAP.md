@@ -1013,8 +1013,22 @@ listed there with its owner.
       unanswered, files, how much was said; read in full from the card ("Before it",
       `GET /messages/:id/brief`), with a bounded AI summary only for a reader with assist on and
       an allowance left (`runAi`, 'brief'). `briefs.test.ts`.
-- [ ] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
-      site's switch and alternates, the catalog tests over four languages.
+- [x] R60: orders from the catalog. An item is booked or ordered by the piece (`unit: 'each'`);
+      a host turns orders on with ordering settings (pickup, delivery, a note; `ordering` on
+      `users` and `organizations`, migration 0054, the booking routes take it and keep it when
+      left out). The existing Order card is the one card: with a catalog its form picks
+      quantities, and the server checks and fixes the lines, prices, total, the way it's had and
+      an order number (`placeOrder`, `orderFor`; `not_bookable` on a refusal); without one it's
+      written by hand and needs its number. The card gains "Ready to collect" and "Collected".
+      Public pages list items sold by the piece with "Order from", profiles and the
+      organization's page offer Order, `?order` links land on the form. `booking.test.ts` (core
+      and server), `e2e/bookings.spec.ts`.
+- [ ] Later layers of R60: stock that runs out, an Orders view for the team, the AI agent taking
+      an order, options on an item (sizes, extras).
+- [x] R59: Turkish as the fourth language (`tr`): core and server catalogs, the setting, the
+      site's switch and alternates (`tr_TR`), the catalog tests over four languages, the agent's
+      hand-over line, voice-note hints; `e2e/turkish.spec.ts`. A native speaker's review is owed,
+      as for Arabic and French.
 - [ ] Later layers of R58: a recurring card (each occurrence its own brief), a resource shared
       by several items (one set of chairs for two services), a customer choosing who does it
       where an organization allows it, group meetings' briefs.
@@ -2043,3 +2057,10 @@ listed there with its owner.
   price, a length in minutes or days, a capacity and an audience; slots per item; who does it
   decided at confirmation and kept from the customer; Book on the public pages and profiles;
   the agent reads the catalog; and the brief before an agreed meeting, an hour ahead.
+- 2026-10-05 — R60: orders from the catalog: items sold by the piece, ordering settings, the
+  Order card's picker with quantities and the server-fixed lines, total and number; Order on
+  profiles, the organization's page and the public pages.
+- 2026-10-05 — R59: Turkish as the fourth language, in the app, the server's words and the
+  site. Three sign-in strings had shown a literal `\u2019` to everyone; the suggestion line put
+  English's "a"/"an" into Arabic and French. Both fixed. A piece sold now allows ten an order
+  by default.

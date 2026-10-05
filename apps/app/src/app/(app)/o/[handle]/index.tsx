@@ -5,12 +5,18 @@ export default function Organization() {
   // `?write` is the organization's door (R53): a customer who comes in through it lands in the
   // conversation, as an invite's guest does.
   // `?book` (R58) lands on the appointment card's form there.
-  const { handle, write, book } = useLocalSearchParams<{
+  const { handle, write, book, order } = useLocalSearchParams<{
     handle: string;
     write?: string;
     book?: string;
+    order?: string;
   }>();
   return (
-    <OrgScreen handle={handle} write={write !== undefined} book={book !== undefined} key={handle} />
+    <OrgScreen
+      handle={handle}
+      write={write !== undefined}
+      book={book !== undefined ? 'appointment' : order !== undefined ? 'order_status' : null}
+      key={handle}
+    />
   );
 }

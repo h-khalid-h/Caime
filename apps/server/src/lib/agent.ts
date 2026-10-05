@@ -16,6 +16,7 @@
 import {
   AGENT_CALLS_PER_CONVERSATION,
   AGENT_REPLIES_PER_CONVERSATION,
+  isBooked,
   ORG_ALLOWANCES,
   SendMessageBody,
   tr,
@@ -217,10 +218,12 @@ export function todayForAgent(now: Date, timeZone = 'UTC'): string {
 }
 
 /** What it tells the customer when it passes a conversation on without asking the model. */
-function passedOn(orgName: string, language: 'ar' | 'fr' | 'en'): string {
+function passedOn(orgName: string, language: 'ar' | 'fr' | 'tr' | 'en'): string {
   if (language === 'ar') return `حوّلت محادثتك إلى فريق ${orgName}، وسيرد عليك أحدهم هنا.`;
   if (language === 'fr')
     return `J’ai transmis votre demande à l’équipe de ${orgName}. Quelqu’un vous répondra ici.`;
+  if (language === 'tr')
+    return `Talebinizi ${orgName} ekibine ilettim. Biri size buradan yanıt verecek.`;
   return `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
 }
 
@@ -354,6 +357,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       'o.archived_at',
       'o.booking',
       'o.booking_items',
+      'o.ordering',
     ])
     .where('t.conversation_id', '=', conversationId)
     // Still its to answer: the customer's latest, nobody on the team answering, not handed over.
@@ -430,7 +434,9 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
         ? 'ar'
         : customer.locale.startsWith('fr')
           ? 'fr'
-          : 'en';
+          : customer.locale.startsWith('tr')
+            ? 'tr'
+            : 'en';
     await postAs(ctx, agent.bot_user_id, conversationId, passedOn(thread.org_name, language)).catch(
       (err) => ctx.log.warn({ err, conversationId }, 'ai agent could not post'),
     );
@@ -460,7 +466,7 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
     ctx,
     host,
     { from: ctx.now(), to: new Date(ctx.now().getTime() + AGENT_SLOT_DAYS * DAY_MS) },
-    { item: items[0] ?? null, limit: AGENT_SLOTS },
+    { item: items.find(isBooked) ?? null, limit: AGENT_SLOTS },
   );
   const slots = open
     ? open.slots.map((d) => `${d.toISOString()} · ${slotLine(d, open.hours.timeZone)}`).join('\n')
@@ -505,7 +511,8 @@ export async function agentReply(ctx: AppContext, payload: Record<string, unknow
       at && !Number.isNaN(at.getTime()) && open?.slots.some((d) => d.getTime() === at.getTime());
     // From the catalog, the item it named, else the one whose slots it offered; the server
     // checks the slot for that item as for any booking, and a refusal hands over.
-    const item = items.find((i) => i.id === reply.bookItem) ?? items[0] ?? null;
+    const item =
+      items.find((i) => i.id === reply.bookItem && isBooked(i)) ?? items.find(isBooked) ?? null;
     let booked = false;
     if (stillOpen && at) {
       booked = await postAs(ctx, agent.bot_user_id, conversationId, {

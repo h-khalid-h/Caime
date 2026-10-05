@@ -8,7 +8,11 @@ import {
   bookingSpan,
   canBook,
   describeHours,
+  isBooked,
+  isOrdered,
   openSlots,
+  orderSummary,
+  placeOrder,
 } from './booking';
 import type { Sphere } from './taxonomy';
 
@@ -228,5 +232,101 @@ describe('catalog items (R58)', () => {
     expect(bookableItems(items, friend, { adult: false }).map((i) => i.id)).toEqual(['b', 'c']);
     expect(bookingPrice(items[0] as BookingItem, 3)).toEqual({ value: 600, currency: 'EGP' });
     expect(bookingPrice(items[1] as BookingItem, 3)).toBeNull();
+  });
+});
+
+describe('orders from the catalog (R60)', () => {
+  const item = (id: string, patch: Partial<BookingItem> = {}): BookingItem => ({
+    id,
+    name: id,
+    price: { value: 50, currency: 'EGP' },
+    unit: 'each',
+    minutes: null,
+    capacity: 1,
+    maxQuantity: 5,
+    audience: 'public',
+    providers: null,
+    askTopic: false,
+    ...patch,
+  });
+  const menu = [
+    item('shawarma', { price: { value: 85.5, currency: 'EGP' } }),
+    item('fries', { maxQuantity: 2 }),
+    item('water', { price: null }),
+    item('haircut', { unit: 'minutes', minutes: 45 }),
+  ];
+  const settings = {
+    fulfilment: ['pickup', 'delivery'] as Array<'pickup' | 'delivery'>,
+    note: null,
+  };
+
+  it('fixes the lines and the total, merging repeats; the first way is the default', () => {
+    const placed = placeOrder(settings, menu, {
+      lines: [
+        { itemId: 'shawarma', quantity: 2 },
+        { itemId: 'fries', quantity: 1 },
+        { itemId: 'water', quantity: 3 },
+        { itemId: 'shawarma', quantity: 1 },
+      ],
+    });
+    if (!placed.ok) throw new Error(placed.reason);
+    expect(placed.order.lines).toEqual([
+      {
+        itemId: 'shawarma',
+        name: 'shawarma',
+        quantity: 3,
+        price: { value: 256.5, currency: 'EGP' },
+      },
+      { itemId: 'fries', name: 'fries', quantity: 1, price: { value: 50, currency: 'EGP' } },
+      { itemId: 'water', name: 'water', quantity: 3, price: null },
+    ]);
+    expect(placed.order.total).toEqual({ value: 306.5, currency: 'EGP' });
+    expect(placed.order.fulfilment).toBe('pickup');
+    expect(orderSummary(placed.order)).toBe('3 × shawarma, 1 × fries, 3 × water');
+  });
+
+  it('refuses what isn’t ordered by the piece, too many, a way not offered, or ordering off', () => {
+    const one = (itemId: string, quantity = 1) => ({ lines: [{ itemId, quantity }] });
+    expect(placeOrder(null, menu, one('fries'))).toMatchObject({ ok: false, reason: 'off' });
+    expect(placeOrder(settings, menu, one('haircut'))).toMatchObject({ ok: false, reason: 'item' });
+    expect(placeOrder(settings, menu, one('nope'))).toMatchObject({ ok: false, reason: 'item' });
+    expect(placeOrder(settings, menu, one('fries', 3))).toMatchObject({
+      ok: false,
+      reason: 'quantity',
+      max: 2,
+    });
+    expect(
+      placeOrder({ fulfilment: ['pickup'], note: null }, menu, {
+        ...one('fries'),
+        fulfilment: 'delivery',
+      }),
+    ).toMatchObject({ ok: false, reason: 'fulfilment' });
+    // Two currencies: each line keeps its price, with no total.
+    const mixed = placeOrder(
+      settings,
+      [...menu, item('beans', { price: { value: 4, currency: 'USD' } })],
+      {
+        lines: [
+          { itemId: 'fries', quantity: 1 },
+          { itemId: 'beans', quantity: 1 },
+        ],
+      },
+    );
+    expect(mixed.ok && mixed.order.total).toBeNull();
+  });
+
+  it('an item ordered by the piece has no slots', () => {
+    const now = new Date('2026-10-01T05:00:00Z');
+    expect(
+      openSlots(cairo, {
+        from: now,
+        to: new Date('2026-10-02T00:00:00Z'),
+        now,
+        busy: [],
+        item: menu[0],
+      }),
+    ).toEqual([]);
+    expect(isOrdered(menu[0] as BookingItem)).toBe(true);
+    expect(isBooked(menu[3] as BookingItem)).toBe(true);
   });
 });

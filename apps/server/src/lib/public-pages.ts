@@ -44,7 +44,12 @@ import { avatarUrl, minorOf, privacyOf } from './users';
 type Q = Kysely<Database>;
 
 /** Open Graph's locale for each interface language. */
-const OG_LOCALE: Record<InterfaceLanguage, string> = { en: 'en_US', ar: 'ar_AR', fr: 'fr_FR' };
+const OG_LOCALE: Record<InterfaceLanguage, string> = {
+  en: 'en_US',
+  ar: 'ar_AR',
+  fr: 'fr_FR',
+  tr: 'tr_TR',
+};
 
 export const NOBODY = {
   isSelf: false,
@@ -78,10 +83,22 @@ export interface PublicOrg {
 /** A catalog item as a visitor reads it: nothing of who does it. */
 export type PublicItem = Pick<BookingItem, 'id' | 'name' | 'price' | 'unit' | 'minutes'>;
 
-function publicItems(row: { booking: unknown; booking_items: unknown }): PublicItem[] {
-  if (!row.booking || !Array.isArray(row.booking_items)) return [];
+/**
+ * What anyone may book or order (R58, R60): the public items, the booked ones while the host
+ * keeps hours, the ordered ones while it takes orders.
+ */
+function publicItems(row: {
+  booking: unknown;
+  booking_items: unknown;
+  ordering?: unknown;
+}): PublicItem[] {
+  if (!Array.isArray(row.booking_items)) return [];
   return (row.booking_items as BookingItem[])
-    .filter((i) => i.audience === 'public')
+    .filter(
+      (i) =>
+        i.audience === 'public' &&
+        (i.unit === 'each' ? Boolean(row.ordering) : Boolean(row.booking)),
+    )
     .map((i) => ({ id: i.id, name: i.name, price: i.price, unit: i.unit, minutes: i.minutes }));
 }
 /** An invite link's page (R1): who invites, the context they chose to show, their line. */
@@ -461,7 +478,7 @@ export function renderPublic(
     ${page.organizations.length ? `<div><dt class="mono">${esc(tr('with'))}</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
     ${itemRows(page.items)}
   </dl>
-  <p class="cta">${bookLink(page.items, bookPath(`/@${page.handle}`), page.displayName)}<a href="${wayIn('sign-up', path)}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(page.items, `/@${page.handle}`, page.displayName)}<a href="${wayIn('sign-up', path)}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -515,7 +532,7 @@ export function renderPublic(
     ${page.website ? `<div><dt class="mono">${esc(tr('website'))}</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
     ${itemRows(page.items)}
   </dl>
-  <p class="cta">${bookLink(page.items, bookPath(`/o/${o.handle}`), o.name)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
+  <p class="cta">${bookLink(page.items, `/o/${o.handle}`, o.name)}<a href="${wayIn('sign-up', doorPath(o.handle))}"${page.items.length ? ' class="quiet"' : ''}>${esc(tr('Message {name} on {site}', { name: o.name, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', doorPath(o.handle))}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
       };
     }
@@ -613,26 +630,45 @@ const wayIn = (to: 'sign-up' | 'sign-in', path: string) =>
 export const doorPath = (handle: string) => `/o/${handle}?write`;
 /** A link that books (R58): the page's path with `?book`, which the app opens on the card's form. */
 export const bookPath = (pagePath: string) => `${pagePath}?book`;
+/** A link that orders (R60): the page's path with `?order`, which opens the Order card's form. */
+export const orderPath = (pagePath: string) => `${pagePath}?order`;
 
 /** "Haircut — 45 min · EGP 200": the public items as spec rows (R58), one line each. */
 function itemRows(items: PublicItem[]): string {
   if (items.length === 0) return '';
   const line = (i: PublicItem) =>
     [
-      i.unit === 'minutes' && i.minutes ? tr('{m} min', { m: i.minutes }) : tr('per day'),
+      i.unit === 'minutes' && i.minutes
+        ? tr('{m} min', { m: i.minutes })
+        : i.unit === 'days'
+          ? tr('per day')
+          : null,
       i.price
         ? formatAmount(i.price.value, i.price.currency, currentTranslator().language)
         : tr('Free'),
-    ].join(' · ');
-  return `<div><dt class="mono">${esc(tr('book'))}</dt><dd>${items
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  return `<div><dt class="mono">${esc(tr('offers'))}</dt><dd>${items
     .map((i) => `${esc(i.name)} <span class="small">${esc(line(i))}</span>`)
     .join('<br>')}</dd></div>`;
 }
 
-/** The Book call to action, first, when anything is public to book. */
-function bookLink(items: PublicItem[], path: string, name: string): string {
-  if (items.length === 0) return '';
-  return `<a href="${wayIn('sign-up', path)}">${esc(tr('Book {name}', { name }))}</a> `;
+/**
+ * The calls to action, first, for what's public: Book when anything is booked in time, Order
+ * when anything is ordered by the piece (R60).
+ */
+function bookLink(items: PublicItem[], pagePath: string, name: string): string {
+  const out: string[] = [];
+  if (items.some((i) => i.unit !== 'each'))
+    out.push(
+      `<a href="${wayIn('sign-up', bookPath(pagePath))}">${esc(tr('Book {name}', { name }))}</a> `,
+    );
+  if (items.some((i) => i.unit === 'each'))
+    out.push(
+      `<a href="${wayIn('sign-up', orderPath(pagePath))}"${out.length ? ' class="quiet"' : ''}>${esc(tr('Order from {name}', { name }))}</a> `,
+    );
+  return out.join('');
 }
 
 const PUBLIC_STYLE = `

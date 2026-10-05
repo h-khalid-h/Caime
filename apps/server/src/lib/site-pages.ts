@@ -63,6 +63,7 @@ const LANGUAGE_NAMES: Record<InterfaceLanguage, string> = {
   en: 'English',
   ar: 'العربية',
   fr: 'Français',
+  tr: 'Türkçe',
 };
 
 /** What the pages say about who runs this Caime, and what it charges. */

@@ -35,6 +35,7 @@ import {
   MessageCircle,
   Pencil,
   Shield,
+  ShoppingBag,
   UserPlus,
   Users,
 } from '@/ui/icons';
@@ -56,7 +57,14 @@ const RelationshipPicker = lazyPart(() =>
 );
 const ConnectSheet = lazyPart(() => import('./ConnectSheet').then((m) => m.ConnectSheet));
 
-export function PersonScreen({ id, book = false }: { id: string; book?: boolean }) {
+export function PersonScreen({
+  id,
+  book = null,
+}: {
+  id: string;
+  /** Arrived through a Book or an Order link (R58, R60): that card's form, once. */
+  book?: 'appointment' | 'order_status' | null;
+}) {
   const t = useTheme();
   const me = useMe();
   const qc = useQueryClient();
@@ -77,22 +85,36 @@ export function PersonScreen({ id, book = false }: { id: string; book?: boolean 
   // Book them (R58): their open slots, in the conversation with them (a message request, for a
   // stranger who may book a public item). A Book link does it on arrival, once.
   const booked = useRef(false);
-  const bookWith = useCallback(async (view: PersonProfileView, replace = false) => {
-    const general = view.conversations.find((c) => c.isGeneral);
-    try {
-      const conversationId =
-        general?.id ?? (await endpoints.openDirect(view.person.id)).conversation.id;
-      const to = { pathname: '/c/[id]' as const, params: { id: conversationId, book: '1' } };
-      if (replace) router.replace(to);
-      else router.navigate(to);
-    } catch (e) {
-      toast((e as Error).message, { tone: 'danger' });
-    }
-  }, []);
+  const bookWith = useCallback(
+    async (
+      view: PersonProfileView,
+      replace = false,
+      kit: 'appointment' | 'order_status' = 'appointment',
+    ) => {
+      const general = view.conversations.find((c) => c.isGeneral);
+      try {
+        const conversationId =
+          general?.id ?? (await endpoints.openDirect(view.person.id)).conversation.id;
+        const to = {
+          pathname: '/c/[id]' as const,
+          params:
+            kit === 'order_status'
+              ? { id: conversationId, order: '1' }
+              : { id: conversationId, book: '1' },
+        };
+        if (replace) router.replace(to);
+        else router.navigate(to);
+      } catch (e) {
+        toast((e as Error).message, { tone: 'danger' });
+      }
+    },
+    [],
+  );
   useEffect(() => {
-    if (!book || !p?.booking || booked.current || p.person.id === me.id) return;
+    if (!book || !p || booked.current || p.person.id === me.id) return;
+    if (book === 'appointment' ? !p.booking : !p.ordering) return;
     booked.current = true;
-    void bookWith(p, true);
+    void bookWith(p, true, book);
   }, [book, p, me.id, bookWith]);
 
   const refresh = () => {
@@ -156,6 +178,18 @@ export function PersonScreen({ id, book = false }: { id: string; book?: boolean 
         block
         onPress={() => void bookWith(p)}
         testID="person-book"
+      />
+    ) : null;
+  const orderAction =
+    !self && p.ordering ? (
+      <Button
+        label={tr('Order from {name}', { name })}
+        icon={ShoppingBag}
+        variant="secondary"
+        size="lg"
+        block
+        onPress={() => void bookWith(p, false, 'order_status')}
+        testID="person-order"
       />
     ) : null;
   const primaryAction = self ? null : state === 'connected' ? (
@@ -324,6 +358,7 @@ export function PersonScreen({ id, book = false }: { id: string; book?: boolean 
 
         {primaryAction}
         {bookAction}
+        {orderAction}
         {state === 'connected' && privateSupported && !self ? (
           <Button
             label={tr('Private conversation')}

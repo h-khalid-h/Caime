@@ -942,7 +942,13 @@ export const arServer: Catalog = {
   'An organization’s items are public or for its customers.': 'عناصر المنظمة عامة أو لعملائها.',
   'Only people on the team can be providers.': 'أعضاء الفريق وحدهم يمكن أن يقوموا بالحجوزات.',
   'per day': 'لليوم',
-  book: 'احجز',
   'Only the team says who does a booking.': 'الفريق وحده يحدد من يقوم بالحجز.',
   'That isn’t a booking from the catalog.': 'هذا ليس حجزًا من القائمة.',
+
+  // Orders from the catalog (R60)
+  'Orders aren’t taken here.': 'لا تُستقبل الطلبات هنا.',
+  'That isn’t something you can order here.': 'هذا ليس مما يمكنك طلبه هنا.',
+  'Up to {n} of that in one order.': 'حتى {n} من هذا في الطلب الواحد.',
+  'They don’t offer that way.': 'لا يقدّمون هذه الطريقة.',
+  offers: 'يقدّم',
 };

@@ -1,5 +1,5 @@
 /**
- * Every English string the interface is written in has its Arabic (R54) and its French (R55):
+ * Every English string the interface is written in has its Arabic (R54) its French (R55) and its Turkish (R59):
  * this fails for a new `tr('…')` without an entry in `locales/ar.ts` or `locales/fr.ts`, and
  * for an entry nothing uses any more. `node scripts/i18n-keys.mjs missing <lang>` lists them.
  */
@@ -7,10 +7,12 @@ import { describe, expect, it } from 'vitest';
 import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { ar } from './locales/ar';
 import { fr } from './locales/fr';
+import { turkish } from './locales/tr';
 
 describe.each([
   ['Arabic (R54)', ar],
   ['French (R55)', fr],
+  ['Turkish (R59)', turkish],
 ])('the %s catalog', (_name, ar) => {
   // What only the server says is the server's catalog (apps/server/test/server-i18n.test.ts).
   const keys = keysFor(collectKeys(), false) as Map<string, { text: string; plural: boolean }>;
@@ -44,7 +46,12 @@ describe.each([
       const forms = typeof value === 'string' ? [value] : Object.values(value);
       for (const form of forms)
         for (const w of wanted)
-          if (!form.includes(w) && !(w === '{n}' && typeof value !== 'string'))
+          if (
+            !form.includes(w) &&
+            !(w === '{n}' && typeof value !== 'string') &&
+            // English's article ("a" or "an"), which other languages leave out.
+            w !== '{an}'
+          )
             bad.push(`${key} → ${form}`);
     }
     expect(bad).toEqual([]);

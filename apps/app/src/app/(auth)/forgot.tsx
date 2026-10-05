@@ -42,7 +42,7 @@ export default function Forgot() {
       {sent ? (
         <View style={{ gap: 12 }} testID="forgot-sent">
           <Text variant="bodyStrong">
-            {tr('If that address is an account\\u2019s, a link is on its way.')}
+            {tr('If that address is an account’s, a link is on its way.')}
           </Text>
           <Text variant="body" color="textSecondary">
             {tr(

@@ -33,9 +33,10 @@ export function MyBookings() {
             host={{ kind: 'person', name: me.displayName, currency: me.currency }}
             hours={q.data.booking}
             items={q.data.items}
-            save={async (booking, items) => {
-              await endpoints.setMyBooking(booking, items);
-              qc.setQueryData(qk.myBooking, { booking, items });
+            ordering={q.data.ordering}
+            save={async (booking, items, ordering) => {
+              await endpoints.setMyBooking(booking, items, ordering);
+              qc.setQueryData(qk.myBooking, { booking, items, ordering });
               void qc.invalidateQueries({ queryKey: qk.me });
               void qc.invalidateQueries({ queryKey: qk.allSlots });
             }}

@@ -608,7 +608,7 @@ export const fr: Catalog = {
   'Forgot your password?': 'Mot de passe oublié ?',
   'Caime sends a link to your email. Open it within the hour to set a new one.':
     'Caime envoie un lien à votre e-mail. Ouvrez-le dans l’heure pour en définir un nouveau.',
-  'If that address is an account\\u2019s, a link is on its way.':
+  'If that address is an account’s, a link is on its way.':
     'Si cette adresse correspond à un compte, un lien est en route.',
   'Nothing came? Check the address and your spam folder, or use one of your recovery codes instead.':
     'Rien reçu ? Vérifiez l’adresse et vos indésirables, ou utilisez plutôt un de vos codes de récupération.',
@@ -626,13 +626,13 @@ export const fr: Catalog = {
   'Set new password': 'Définir le nouveau mot de passe',
   'No codes left? For your safety Caime can’t reset an account without one. If you signed in on another device, you can make new codes there under You → Security.':
     'Plus de codes ? Pour votre sécurité, Caime ne peut pas réinitialiser un compte sans. Si vous êtes connecté sur un autre appareil, vous pouvez y créer de nouveaux codes dans Vous → Sécurité.',
-  'This link isn\\u2019t whole': 'Ce lien est incomplet',
+  'This link isn’t whole': 'Ce lien est incomplet',
   'Open the one in the email, or ask for a new one.':
     'Ouvrez celui de l’e-mail, ou demandez-en un nouveau.',
   'Ask for a new link': 'Demander un nouveau lien',
   'new password': 'nouveau mot de passe',
   'Set a new password': 'Définir un nouveau mot de passe',
-  'You\\u2019ll be signed in here, and out everywhere else.':
+  'You’ll be signed in here, and out everywhere else.':
     'Vous serez connecté ici, et déconnecté partout ailleurs.',
   'Too many tries. Wait a few minutes and try again.':
     'Trop de tentatives. Attendez quelques minutes et réessayez.',
@@ -2962,7 +2962,7 @@ export const fr: Catalog = {
     '{name} est peut-être quelqu’un de votre communauté{at}',
   '{name} may be someone from {orgName}': '{name} est peut-être quelqu’un de {orgName}',
   'an organization': 'une organisation',
-  '{name} may be {an} {label}{at}': '{name} est peut-être {an} {label}{at}',
+  '{name} may be {an} {label}{at}': '{name} : peut-être {label}{at}',
   'an automated account (bot)': 'un compte automatique (bot)',
   'an AI agent': 'un agent IA',
   Bot: 'Bot',
@@ -3075,7 +3075,6 @@ export const fr: Catalog = {
     'Les personnes que vous autorisez réservent parmi les créneaux libres ; vous confirmez chaque réservation.',
   'Set bookable hours and people book from the open slots in them.':
     'Fixez des heures réservables et les gens réservent parmi les créneaux libres.',
-  'Add something to book': 'Ajouter quelque chose à réserver',
   '{n} items in your catalog': {
     one: '{n} élément dans votre catalogue',
     other: '{n} éléments dans votre catalogue',
@@ -3148,4 +3147,35 @@ export const fr: Catalog = {
   'One booking can’t take more than the item has.':
     'Une réservation ne peut pas prendre plus que ce que l’élément a.',
   'Each item once.': 'Chaque élément une seule fois.',
+
+  // Orders from the catalog (R60)
+  'By the piece': 'À la pièce',
+  'Orders are on': 'Les commandes sont activées',
+  'Orders are off': 'Les commandes sont désactivées',
+  'Orders: {ways}': 'Commandes : {ways}',
+  Pickup: 'À emporter',
+  'What you sell by the piece is ordered on an Order card; you confirm each one.':
+    'Ce que vous vendez à la pièce se commande sur une carte Commande ; vous confirmez chaque commande.',
+  'Sell by the piece: a dish, a cake, a bag of coffee. Turn orders on to take them.':
+    'Vendez à la pièce : un plat, un gâteau, un sachet de café. Activez les commandes pour les recevoir.',
+  'Add something to book or order': 'Ajouter quelque chose à réserver ou à commander',
+  Orders: 'Commandes',
+  'An order is a card you confirm; nothing is paid through Caime.':
+    'Une commande est une carte que vous confirmez ; rien ne se paie par Caime.',
+  'Pick how orders are had.': 'Choisissez comment les commandes sont remises.',
+  'Turn orders off': 'Désactiver les commandes',
+  'How they’re had': 'Comment elles sont remises',
+  'A line customers read first (optional)': 'Une ligne que les clients lisent d’abord (facultatif)',
+  'Ready in about 20 minutes': 'Prêt dans environ 20 minutes',
+  'The piece': 'La pièce',
+  'Ordered on an Order card, never a time: a dish, a cake, a bag of coffee.':
+    'Commandé sur une carte Commande, jamais un créneau : un plat, un gâteau, un sachet de café.',
+  'In one order, up to': 'Par commande, jusqu’à',
+  'Pick something to order.': 'Choisissez quelque chose à commander.',
+  'Pick what you’d like.': 'Choisissez ce que vous voulez.',
+  'Order from {name}': 'Commander chez {name}',
+  Ready: 'Prêt',
+  How: 'Comment',
+  'Something ordered has nobody named to do it.': 'Ce qui se commande n’a personne de désigné.',
+  'Each way once.': 'Chaque mode une seule fois.',
 };

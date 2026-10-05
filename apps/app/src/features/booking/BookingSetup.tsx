@@ -6,7 +6,7 @@
  * for an organization, who on the team does it. One component for both, so a clinic and a
  * consultant set up the same thing the same way.
  */
-import type { BookingHours, BookingItem, BookingUnit } from '@caime/core/booking';
+import type { BookingHours, BookingItem, BookingUnit, OrderingSettings } from '@caime/core/booking';
 import {
   BOOKING_CAPACITY_MAX,
   BOOKING_DAYS_MAX,
@@ -23,7 +23,7 @@ import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { CalendarCheck, Minus, Plus, Tag } from '@/ui/icons';
+import { CalendarCheck, Minus, Plus, ShoppingBag, Tag } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
@@ -64,7 +64,11 @@ export interface BookingHostInfo {
 /** "Haircut · 45 min · EGP 200 · Everyone": an item in one line. */
 export function itemLine(item: BookingItem, locale: string, host: BookingHostInfo): string {
   return [
-    item.unit === 'minutes' ? tr('{m} min', { m: item.minutes ?? 0 }) : tr('Per day'),
+    item.unit === 'minutes'
+      ? tr('{m} min', { m: item.minutes ?? 0 })
+      : item.unit === 'days'
+        ? tr('Per day')
+        : tr('By the piece'),
     item.price ? formatAmount(item.price.value, item.price.currency, locale) : tr('Free'),
     audienceLabel(item.audience, host.kind),
   ].join(' · ');
@@ -123,14 +127,21 @@ export function BookingSetup({
   host,
   hours,
   items,
+  ordering,
   save,
   testID = 'booking',
 }: {
   host: BookingHostInfo;
   hours: BookingHours | null;
   items: BookingItem[];
-  /** Saves both; throws with a message the person can read. */
-  save: (hours: BookingHours | null, items: BookingItem[]) => Promise<void>;
+  /** How the host takes orders (R60), or null for none. */
+  ordering: OrderingSettings | null;
+  /** Saves all three; throws with a message the person can read. */
+  save: (
+    hours: BookingHours | null,
+    items: BookingItem[],
+    ordering: OrderingSettings | null,
+  ) => Promise<void>;
   testID?: string;
 }) {
   const { timeZone, locale } = useUserClock();
@@ -144,6 +155,29 @@ export function BookingSetup({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<BookingItem | null>(null);
+  // Ordering (R60): how orders are had, and a line customers read first.
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const [ways, setWays] = useState<Array<'pickup' | 'delivery'>>(['pickup']);
+  const [note, setNote] = useState('');
+  const editOrders = () => {
+    setWays(ordering?.fulfilment ?? ['pickup']);
+    setNote(ordering?.note ?? '');
+    setError(null);
+    setOrdersOpen(true);
+  };
+  const saveOrdering = async (next: OrderingSettings | null) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await save(hours, items, next);
+      setOrdersOpen(false);
+      toast(next ? tr('Orders are on') : tr('Orders are off'));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const edit = () => {
     const b = hours;
@@ -161,7 +195,7 @@ export function BookingSetup({
     setBusy(true);
     setError(null);
     try {
-      await save(next, items);
+      await save(next, items, ordering);
       setOpen(false);
       toast(
         next
@@ -188,7 +222,7 @@ export function BookingSetup({
     });
   };
   const saveItems = async (next: BookingItem[]) => {
-    await save(hours, next);
+    await save(hours, next, ordering);
   };
 
   return (
@@ -210,6 +244,26 @@ export function BookingSetup({
         onPress={edit}
         testID={`${testID}-hours`}
       />
+      <ListRow
+        icon={ShoppingBag}
+        title={
+          ordering
+            ? tr('Orders: {ways}', {
+                ways: ordering.fulfilment
+                  .map((w) => (w === 'pickup' ? tr('Pickup') : tr('Delivery')))
+                  .join(', '),
+              })
+            : tr('Orders are off')
+        }
+        subtitle={
+          ordering
+            ? tr('What you sell by the piece is ordered on an Order card; you confirm each one.')
+            : tr('Sell by the piece: a dish, a cake, a bag of coffee. Turn orders on to take them.')
+        }
+        chevron
+        onPress={editOrders}
+        testID={`${testID}-orders`}
+      />
       {items.map((item) => (
         <ListRow
           key={item.id}
@@ -224,7 +278,7 @@ export function BookingSetup({
       {items.length < BOOKING_ITEMS_MAX ? (
         <ListRow
           icon={Plus}
-          title={tr('Add something to book')}
+          title={tr('Add something to book or order')}
           subtitle={
             items.length
               ? trn(items.length, '{n} item in your catalog', '{n} items in your catalog')
@@ -367,6 +421,68 @@ export function BookingSetup({
           ) : null}
         </View>
       </Sheet>
+      <Sheet
+        open={ordersOpen}
+        onClose={() => setOrdersOpen(false)}
+        title={tr('Orders')}
+        subtitle={tr('An order is a card you confirm; nothing is paid through Caime.')}
+        footer={
+          <View style={{ gap: 8 }}>
+            <Button
+              label={tr('Save')}
+              block
+              size="lg"
+              loading={busy}
+              onPress={() => {
+                if (!ways.length) return setError(tr('Pick how orders are had.'));
+                void saveOrdering({ fulfilment: ways, note: note.trim() || null });
+              }}
+              testID={`${testID}-orders-save`}
+            />
+            {ordering ? (
+              <Button
+                label={tr('Turn orders off')}
+                variant="ghost"
+                block
+                onPress={() => void saveOrdering(null)}
+                testID={`${testID}-orders-off`}
+              />
+            ) : null}
+          </View>
+        }
+      >
+        <View style={{ gap: 16 }}>
+          <View style={{ gap: 6 }}>
+            <Text variant="label">{tr('How they’re had')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              {(['pickup', 'delivery'] as const).map((w) => (
+                <Chip
+                  key={w}
+                  label={w === 'pickup' ? tr('Pickup') : tr('Delivery')}
+                  selected={ways.includes(w)}
+                  onPress={() =>
+                    setWays((all) => (all.includes(w) ? all.filter((x) => x !== w) : [...all, w]))
+                  }
+                  testID={`${testID}-orders-${w}`}
+                />
+              ))}
+            </View>
+          </View>
+          <TextField
+            label={tr('A line customers read first (optional)')}
+            placeholder={tr('Ready in about 20 minutes')}
+            value={note}
+            onChangeText={setNote}
+            maxLength={300}
+            testID={`${testID}-orders-note`}
+          />
+          {error ? (
+            <Text variant="bodyStrong" color="danger">
+              {error}
+            </Text>
+          ) : null}
+        </View>
+      </Sheet>
       {editing ? (
         <ItemSheet
           host={host}
@@ -450,9 +566,13 @@ function ItemSheet({
         unit,
         minutes: unit === 'minutes' ? (minutes ?? 30) : null,
         capacity,
-        maxQuantity: Math.min(maxQuantity, unit === 'minutes' ? capacity : BOOKING_DAYS_MAX),
+        maxQuantity: Math.min(
+          maxQuantity,
+          unit === 'minutes' ? capacity : unit === 'days' ? BOOKING_DAYS_MAX : BOOKING_CAPACITY_MAX,
+        ),
         audience,
-        providers: host.kind === 'org' && providers?.length ? providers : null,
+        // Something ordered names nobody to do it.
+        providers: host.kind === 'org' && unit !== 'each' && providers?.length ? providers : null,
         askTopic,
       });
     } catch (e) {
@@ -558,6 +678,18 @@ function ItemSheet({
               onPress={() => setUnit('days')}
               testID={`${testID}-days`}
             />
+            <Chip
+              label={tr('The piece')}
+              selected={unit === 'each'}
+              role="radio"
+              onPress={() => {
+                setUnit('each');
+                setProviders(null);
+                // A shop sells more than one at a time: ten an order unless set otherwise.
+                if (maxQuantity === 1) setMaxQuantity(10);
+              }}
+              testID={`${testID}-each`}
+            />
           </View>
           {unit === 'minutes' ? (
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -572,30 +704,46 @@ function ItemSheet({
                 />
               ))}
             </View>
-          ) : (
+          ) : unit === 'days' ? (
             <Text variant="caption" color="textTertiary">
               {tr('A stay: one booking takes whole days from the day it starts.')}
             </Text>
+          ) : (
+            <Text variant="caption" color="textTertiary">
+              {tr('Ordered on an Order card, never a time: a dish, a cake, a bag of coffee.')}
+            </Text>
           )}
         </View>
-        <Stepper
-          label={unit === 'days' ? tr('Rooms, or places, at once') : tr('How many at once')}
-          value={capacity}
-          min={1}
-          max={BOOKING_CAPACITY_MAX}
-          onChange={(n) => {
-            setCapacity(n);
-            if (unit === 'minutes' && maxQuantity > n) setMaxQuantity(n);
-          }}
-          testID={`${testID}-capacity`}
-        />
+        {unit !== 'each' ? (
+          <Stepper
+            label={unit === 'days' ? tr('Rooms, or places, at once') : tr('How many at once')}
+            value={capacity}
+            min={1}
+            max={BOOKING_CAPACITY_MAX}
+            onChange={(n) => {
+              setCapacity(n);
+              if (unit === 'minutes' && maxQuantity > n) setMaxQuantity(n);
+            }}
+            testID={`${testID}-capacity`}
+          />
+        ) : null}
         <Stepper
           label={
-            unit === 'days' ? tr('Days in one booking, up to') : tr('Places in one booking, up to')
+            unit === 'days'
+              ? tr('Days in one booking, up to')
+              : unit === 'each'
+                ? tr('In one order, up to')
+                : tr('Places in one booking, up to')
           }
           value={maxQuantity}
           min={1}
-          max={unit === 'minutes' ? capacity : BOOKING_DAYS_MAX}
+          max={
+            unit === 'minutes'
+              ? capacity
+              : unit === 'days'
+                ? BOOKING_DAYS_MAX
+                : BOOKING_CAPACITY_MAX
+          }
           onChange={setMaxQuantity}
           testID={`${testID}-max`}
         />
@@ -634,7 +782,7 @@ function ItemSheet({
                 : tr('Only the people you choose see it.')}
           </Text>
         </View>
-        {host.kind === 'org' && host.team?.length ? (
+        {host.kind === 'org' && unit !== 'each' && host.team?.length ? (
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Who does it')}</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>

@@ -34,6 +34,7 @@ import { ConnectionBanner } from '@/features/common/ConnectionBanner';
 import { useKnownPrivate } from '@/features/e2ee/hooks';
 import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/parts';
 import { privateSupported } from '@/features/e2ee/support';
+import type { KitChoice } from '@/features/kits/KitForm';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { leftConversation } from '@/realtime/apply';
@@ -90,11 +91,12 @@ const RelationshipPicker = lazyPart(() =>
 export function ConversationScreen({
   id,
   focusSeq,
-  book = false,
+  openKit = null,
 }: {
   id: string;
   focusSeq?: number;
-  book?: boolean;
+  /** Opened on a card's form: a Book or an Order link (R58, R60). */
+  openKit?: KitChoice | null;
 }) {
   const t = useTheme();
   const me = useMe();
@@ -788,7 +790,7 @@ export function ConversationScreen({
           key={id}
           conversation={conversation}
           where={where}
-          openKit={book ? 'appointment' : null}
+          openKit={openKit}
           replyTo={replyTo}
           onClearReply={() => setReplyTo(null)}
           editing={editing}

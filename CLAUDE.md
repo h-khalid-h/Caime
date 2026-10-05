@@ -298,6 +298,18 @@ These are rules, not preferences.
   `Composer.openKit`); the profile's and the organization's Book buttons do the same. The agent
   gets `<catalog>` lines (`catalogLines`) and its slots are the first item's; `book` carries
   `bookItem`. The E2E stand-in and `agentSays` answer `bookItem: null`.
+- Orders (R60) are the same catalog: an item with `unit: 'each'` is ordered by the piece (no
+  slots, no providers), and a host's `ordering` (core `OrderingSettings`: `fulfilment`, `note`;
+  null is off) is set with the hours through the same body (`ordering` left out keeps it). The
+  Order card is the existing `order_status` kit, never a second one: `payload.order = { lines,
+  fulfilment }` is fixed by `sendMessage` through `orderFor` (core `placeOrder`) as `PlacedOrder`
+  and fills the card's own `summary`, `amount` and `reference` (`orderNumber`), so it reads as
+  any order; without a catalog the card needs its number. `catalogHostFor` in `lib/messages.ts`
+  finds whose catalog a booking or an order is from, once, for both. The app's form
+  (`KitForm`) finds the host as for appointments and shows `order-picker`; `isBooked` and
+  `isOrdered` split the catalog everywhere (setup, profile `booking` vs `ordering`, the agent's
+  catalog lines, public pages' Book and Order). `?order` links (`orderIn`) land on the form as
+  `?book` does.
 - The brief before a meeting (R58, `lib/briefs.ts`): an agreed meeting or appointment queues
   `card.brief` (`queueBrief`, from the kit move route; one per card and start, so a moved card
   finds its old job pointless) an hour before, for the people whose own relationship to the
@@ -313,7 +325,9 @@ These are rules, not preferences.
   where it's used, wrapped in `tr('…')` (variables as `{name}`), `trn(n, 'one thing', '{n}
   things')` for a count, or `msg('…')` in a table of options that's translated where it's shown
   (`tr(item.label)`, or `trAll(items)`); the English is the key into `locales/ar.ts` and
-  `locales/fr.ts` (R55: French is the third language, for the Maghreb and Lebanon), and
+  `locales/fr.ts` (R55: French is the third language, for the Maghreb and Lebanon) and
+  `locales/tr.ts` (R59: Turkish, exported as `turkish` since `tr` is the function; the server's
+  is `turkishServer`), and
   `i18n-catalog.test.ts` fails, for every language in `INTERFACE_LANGUAGES`, for a string
   without its translation or an entry nothing says (`node scripts/i18n-keys.mjs missing <lang>`
   lists them). A new language is a code in `INTERFACE_LANGUAGES` and the preference's enum, a
@@ -322,7 +336,7 @@ These are rules, not preferences.
   language (the setting, the site's switch, the `hreflang` alternates and the Open Graph locale
   read the list). Never `tr()` a value that's data (a
   header, a protocol line, an id): English in, English out, but the catalog test will ask for
-  its Arabic. The language is `prefs.language` (`auto`, `en`, `ar`), loaded by `lib/i18n.ts`
+  its Arabic. The language is `prefs.language` (`auto` or a code in `INTERFACE_LANGUAGES`), loaded by `lib/i18n.ts`
   before the first screen and on every change (the root remounts on `useLanguage.generation`);
   the catalog is a dynamic import, so it never joins the startup chunk. The server writes for
   whoever reads (`apps/server/src/lib/i18n.ts`): core's `tr` asks a provider, and the server's
@@ -393,8 +407,8 @@ These are rules, not preferences.
   `<main>` and `Rendered.lang` on the shell's `<html>`, `meta({ alternates: true })` writes the
   hreflang links (the English is canonical) and `og:locale`, and the response says
   `Vary: Accept-Language`. A string only the server says (a site page's, a notification's, a
-  refusal's) is the server's: its Arabic and French live in `apps/server/src/locales/ar-server.ts`
-  and `fr-server.ts` (merged into the server's translator in `lib/i18n.ts`), never in core's
+  refusal's) is the server's: its Arabic, French and Turkish live in `apps/server/src/locales/ar-server.ts`
+  `fr-server.ts` and `tr-server.ts` (merged into the server's translator in `lib/i18n.ts`), never in core's
   `locales/ar.ts` or `fr.ts`, which the app downloads; `scripts/i18n-keys.mjs` tells them apart
   by file (`isServerKey`: every file of the key is under `apps/server/src`; every page but the
   app follows the language in `plugins/static.ts`), `server-i18n.test.ts` fails for a missing or

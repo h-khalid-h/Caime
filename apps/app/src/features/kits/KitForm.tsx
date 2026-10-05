@@ -1,5 +1,5 @@
 import type { ConversationView, CustomKitOfferView } from '@caime/core/api';
-import type { BookingItem } from '@caime/core/booking';
+import { type BookingItem, isBooked, isOrdered } from '@caime/core/booking';
 import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
@@ -183,43 +183,88 @@ export function KitForm({
   // are written as for any card. The host is the organization, or the other person if they take
   // bookings I may make, else me, filling my own diary for them.
   const appointment = kit === 'appointment';
+  // An order (R60) is taken from the same catalog: the items sold by the piece, by the host
+  // that takes orders.
+  const ordering = kit === 'order_status';
+  const catalog = appointment || ordering;
   const direct = conversation.kind === 'direct' && !conversation.business;
   // Read afresh when the form opens: a copy of the organization or the profile kept from before
   // the hours were set would say there's nothing to book.
-  const orgHandle = appointment && conversation.business ? conversation.business.org.handle : '';
+  const orgHandle = catalog && conversation.business ? conversation.business.org.handle : '';
   const orgQ = useQuery({
     queryKey: qk.org(orgHandle),
     queryFn: () => endpoints.orgByHandle(orgHandle),
     enabled: Boolean(orgHandle),
     staleTime: 0,
   });
-  const otherId = appointment && direct ? (conversation.other?.userId ?? '') : '';
+  const otherId = catalog && direct ? (conversation.other?.userId ?? '') : '';
   const otherQ = useQuery({
     queryKey: qk.person(otherId),
     queryFn: () => endpoints.person(otherId),
     enabled: Boolean(otherId),
     staleTime: 0,
   });
-  const mineQ = useMyBooking(appointment && direct && otherQ.data?.booking === null);
+  const theirsOffered = ordering ? otherQ.data?.ordering : otherQ.data?.booking;
+  const mineQ = useMyBooking(catalog && direct && otherQ.isSuccess && !theirsOffered);
   const host = useMemo(() => {
-    if (!appointment) return null;
+    if (!catalog) return null;
+    const fits = (i: BookingItem) => (ordering ? isOrdered(i) : isBooked(i));
     // An organization's slots are asked for at once (the server says if it takes none); its
     // catalog arrives with its view.
-    if (conversation.business)
+    if (conversation.business) {
+      const org = orgQ.data?.org;
+      if (ordering)
+        return org?.ordering
+          ? {
+              ref: { kind: 'org' as const, id: org.id },
+              items: org.bookingItems.filter(fits),
+              ways: org.ordering.fulfilment,
+              note: org.ordering.note,
+            }
+          : null;
       return {
         ref: { kind: 'org' as const, id: conversation.business.org.id },
-        items: orgQ.data?.org.bookingItems ?? [],
+        items: (org?.bookingItems ?? []).filter(fits),
+        ways: [],
+        note: null,
       };
-    const theirs = otherQ.data?.booking;
-    if (theirs && conversation.other)
+    }
+    const p = otherQ.data;
+    if (conversation.other && ordering && p?.ordering)
       return {
         ref: { kind: 'person' as const, id: conversation.other.userId },
-        items: theirs.items,
+        items: p.ordering.items,
+        ways: p.ordering.settings.fulfilment,
+        note: p.ordering.settings.note,
       };
-    if (direct && mineQ.data?.booking)
-      return { ref: { kind: 'person' as const, id: me.id }, items: mineQ.data.items };
+    if (conversation.other && !ordering && p?.booking)
+      return {
+        ref: { kind: 'person' as const, id: conversation.other.userId },
+        items: p.booking.items,
+        ways: [],
+        note: null,
+      };
+    const mine = mineQ.data;
+    if (direct && mine && (ordering ? mine.ordering : mine.booking))
+      return {
+        ref: { kind: 'person' as const, id: me.id },
+        items: mine.items.filter(fits),
+        ways: mine.ordering?.fulfilment ?? [],
+        note: mine.ordering?.note ?? null,
+      };
     return null;
-  }, [appointment, conversation, orgQ.data, otherQ.data, mineQ.data, direct, me.id]);
+  }, [catalog, ordering, conversation, orgQ.data, otherQ.data, mineQ.data, direct, me.id]);
+  // What's in the order (R60): an item's id and how many; none to begin with.
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [way, setWay] = useState<'pickup' | 'delivery' | null>(null);
+  const orderTotal = useMemo(() => {
+    if (!host || !ordering) return null;
+    const priced = host.items.filter((i) => (cart[i.id] ?? 0) > 0 && i.price);
+    const currencies = new Set(priced.map((i) => i.price?.currency));
+    if (!priced.length || currencies.size !== 1) return null;
+    const value = priced.reduce((sum, i) => sum + (i.price?.value ?? 0) * (cart[i.id] ?? 0), 0);
+    return formatAmount(Math.round(value * 100) / 100, priced[0]?.price?.currency ?? null, locale);
+  }, [host, ordering, cart, locale]);
   const [itemId, setItemId] = useState<string | null>(null);
   const item: BookingItem | null =
     host?.items.find((i) => i.id === itemId) ??
@@ -235,7 +280,7 @@ export function KitForm({
   }, []);
   // With a catalog, the slots are an item's: nothing to pick from until one is chosen.
   const slotsQ = useSlots(
-    host && (item || host.items.length === 0) ? host.ref : null,
+    appointment && host && (item || host.items.length === 0) ? host.ref : null,
     slotWindow.from,
     slotWindow.to,
     item?.id ?? null,
@@ -267,6 +312,8 @@ export function KitForm({
     setSlot(null);
     setItemId(null);
     setQuantity(1);
+    setCart({});
+    setWay(null);
     onClose();
   };
 
@@ -327,7 +374,10 @@ export function KitForm({
       };
     } else {
       const fields: Record<string, unknown> = {};
+      const picking = Boolean(ordering && host?.items.length);
       for (const field of def.fields) {
+        // From the catalog (R60), the server writes the number, what was ordered and the total.
+        if (picking && ['reference', 'summary', 'amount'].includes(field.key)) continue;
         if (field.type === 'items') {
           const lines = options.map((o) => o.trim()).filter(Boolean);
           if (lines.length) fields[field.key] = lines;
@@ -349,7 +399,11 @@ export function KitForm({
           return setError(`${tr(field.label)}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
       }
-      if (host?.items.length && !item) return setError(tr('Pick what it’s for.'));
+      if (appointment && host?.items.length && !item) return setError(tr('Pick what it’s for.'));
+      const lines = Object.entries(cart)
+        .filter(([, n]) => n > 0)
+        .map(([itemId, quantity]) => ({ itemId, quantity }));
+      if (picking && !lines.length) return setError(tr('Pick something to order.'));
       if (slots?.slots.length) {
         if (!slot) return setError('Pick a time.');
         fields.start = { at: slot, hasTime: true };
@@ -363,7 +417,8 @@ export function KitForm({
           : {
               kit,
               fields: checked.fields,
-              ...(item ? { booking: { itemId: item.id, quantity } } : {}),
+              ...(appointment && item ? { booking: { itemId: item.id, quantity } } : {}),
+              ...(picking ? { order: { lines, fulfilment: way ?? host?.ways[0] ?? null } } : {}),
             },
       };
     }
@@ -489,8 +544,83 @@ export function KitForm({
         </View>
       ) : def ? (
         <View style={{ gap: 12 }}>
+          {ordering && host?.items.length ? (
+            <View style={{ gap: 10 }} testID="order-picker">
+              {host.note ? (
+                <Text variant="caption" color="textSecondary" auto>
+                  {host.note}
+                </Text>
+              ) : null}
+              {host.items.map((i) => {
+                const n = cart[i.id] ?? 0;
+                return (
+                  <View
+                    key={i.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                    testID={`order-item-${i.id}`}
+                  >
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text variant="bodyStrong" auto>
+                        {i.name}
+                      </Text>
+                      <Text variant="caption" color="textTertiary">
+                        {i.price
+                          ? formatAmount(i.price.value, i.price.currency, locale)
+                          : tr('Free')}
+                      </Text>
+                    </View>
+                    <IconButton
+                      icon={Minus}
+                      label={tr('Fewer')}
+                      disabled={n <= 0}
+                      onPress={() => setCart((c) => ({ ...c, [i.id]: Math.max(0, n - 1) }))}
+                      testID={`order-less-${i.id}`}
+                    />
+                    <Text
+                      variant="bodyStrong"
+                      style={{ minWidth: 24, textAlign: 'center' }}
+                      testID={`order-count-${i.id}`}
+                    >
+                      {n}
+                    </Text>
+                    <IconButton
+                      icon={Plus}
+                      label={tr('More')}
+                      disabled={n >= i.maxQuantity}
+                      onPress={() =>
+                        setCart((c) => ({ ...c, [i.id]: Math.min(i.maxQuantity, n + 1) }))
+                      }
+                      testID={`order-more-${i.id}`}
+                    />
+                  </View>
+                );
+              })}
+              {host.ways.length > 1 ? (
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                  {host.ways.map((w) => (
+                    <Chip
+                      key={w}
+                      label={w === 'pickup' ? tr('Pickup') : tr('Delivery')}
+                      selected={(way ?? host.ways[0]) === w}
+                      role="radio"
+                      onPress={() => setWay(w)}
+                      testID={`order-way-${w}`}
+                    />
+                  ))}
+                </View>
+              ) : null}
+              <Text variant="caption" color="textSecondary" testID="order-total">
+                {orderTotal
+                  ? tr('{price}, not paid through Caime', { price: orderTotal })
+                  : tr('Pick what you’d like.')}
+              </Text>
+            </View>
+          ) : null}
           {def.fields.map((field, i) =>
-            field.type === 'items' ? (
+            ordering &&
+            host?.items.length &&
+            ['reference', 'summary', 'amount'].includes(field.key) ? null : field.type ===
+              'items' ? (
               <View key={field.key} style={{ gap: 8 }}>
                 <Text variant="label">{tr(field.label)}</Text>
                 {options.map((o, j) => (

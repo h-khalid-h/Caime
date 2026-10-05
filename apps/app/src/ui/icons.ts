@@ -97,6 +97,7 @@ export { default as Shapes } from 'lucide-react-native/icons/shapes';
 export { default as Share } from 'lucide-react-native/icons/share';
 export { default as Shield } from 'lucide-react-native/icons/shield';
 export { default as ShieldCheck } from 'lucide-react-native/icons/shield-check';
+export { default as ShoppingBag } from 'lucide-react-native/icons/shopping-bag';
 export { default as Smartphone } from 'lucide-react-native/icons/smartphone';
 export { default as Sparkles } from 'lucide-react-native/icons/sparkles';
 export { default as Square } from 'lucide-react-native/icons/square';

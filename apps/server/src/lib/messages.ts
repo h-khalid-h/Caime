@@ -17,6 +17,9 @@ import {
   LocationPayload,
   type MessageView,
   type Mode,
+  OrderAskBody,
+  orderSummary,
+  type PlacedOrder,
   prepareKitFields,
   type SealedMessage,
   type SendMessageBodyT,
@@ -31,7 +34,14 @@ import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { assertCanWrite } from './blocks';
-import { type BookingHost, bookingFor, orgHost, personHost } from './booking';
+import {
+  type Booker,
+  type BookingHost,
+  bookingFor,
+  orderFor,
+  orgHost,
+  personHost,
+} from './booking';
 import { customerMask, maskFor, maskMessage, recordBusinessMessage } from './business';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
@@ -244,6 +254,71 @@ export async function messageViews(
     const mask = masks.get(v.conversationId);
     return mask ? maskMessage(v, mask) : v;
   });
+}
+
+/** A short order number a person can read out: six letters and digits, no look-alikes. */
+export function orderNumber(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+}
+
+/**
+ * Whose catalog a card is booked or ordered from (R58, R60), and the sender's standing with
+ * them: the organization in a business conversation; in a direct one, the other person when
+ * every item asked is theirs, else the sender's own.
+ */
+async function catalogHostFor(
+  ctx: AppContext,
+  conversation: { id: string; kind: string },
+  members: Array<{ user_id: string }>,
+  sender: {
+    id: string;
+    birth_date: string | null;
+    time_zone: string;
+    booking: unknown;
+    booking_items: unknown;
+    ordering: unknown;
+  },
+  itemIds: string[],
+): Promise<{ host: BookingHost; booker: Booker } | null> {
+  const adult = !minorOf(sender, ctx.now());
+  if (conversation.kind === 'business') {
+    const mask = await customerMask(ctx.db, conversation.id);
+    const org = mask
+      ? await ctx.db
+          .selectFrom('organizations')
+          .select(['id', 'booking', 'booking_items', 'ordering'])
+          .where('id', '=', mask.orgId)
+          .executeTakeFirst()
+      : null;
+    if (!org || !mask) return null;
+    return {
+      host: orgHost(org),
+      booker: { isSelf: sender.id !== mask.customerId, isConnected: true, spheres: [], adult },
+    };
+  }
+  if (conversation.kind !== 'direct') return null;
+  const otherId = members.find((p) => p.user_id !== sender.id)?.user_id;
+  const other = otherId
+    ? await ctx.db
+        .selectFrom('users')
+        .select(['id', 'booking', 'booking_items', 'ordering'])
+        .where('id', '=', otherId)
+        .executeTakeFirst()
+    : null;
+  const theirs = other ? personHost(other) : null;
+  if (theirs && other && itemIds.every((id) => theirs.items.some((i) => i.id === id))) {
+    const relation = await viewerRelation(ctx.db, other.id, sender.id);
+    return {
+      host: theirs,
+      booker: { isConnected: relation.isConnected, spheres: relation.ownerSpheresForViewer, adult },
+    };
+  }
+  return {
+    host: personHost(sender),
+    booker: { isSelf: true, isConnected: true, spheres: [], adult },
+  };
 }
 
 export async function participantsOf(
@@ -575,7 +650,16 @@ export async function sendMessage(
 
   const sender = await ctx.db
     .selectFrom('users')
-    .select(['id', 'time_zone', 'locale', 'workweek', 'birth_date', 'booking', 'booking_items'])
+    .select([
+      'id',
+      'time_zone',
+      'locale',
+      'workweek',
+      'birth_date',
+      'booking',
+      'booking_items',
+      'ordering',
+    ])
     .where('id', '=', senderId)
     .executeTakeFirstOrThrow();
   // Under-18 accounts don't share where they are (R29).
@@ -602,7 +686,12 @@ export async function sendMessage(
     });
     kitMode = 'track';
   } else if (body.kind === 'kit' && !opts.trusted) {
-    const raw = (body.payload ?? {}) as { kit?: unknown; fields?: unknown; booking?: unknown };
+    const raw = (body.payload ?? {}) as {
+      kit?: unknown;
+      fields?: unknown;
+      booking?: unknown;
+      order?: unknown;
+    };
     const card = prepareKitFields(raw.kit, raw.fields);
     if (!card.ok) throw badRequest(card.error);
     // A business conversation is one-to-one: a customer and the organization (R15).
@@ -657,59 +746,44 @@ export async function sendMessage(
       if (!shares.length) throw badRequest(tr('There’s nobody here to split it with.'));
       card.fields.shares = shares;
     }
-    // Booked from a catalog (R58): the host's item, checked and fixed as the card keeps it. The
-    // host is the organization, or the other person if the item is theirs, else the sender
-    // (filling their own diary for someone).
+    // From a catalog (R58, R60): an appointment books one of the host's items, an order takes
+    // some of them; each is checked and fixed as the card keeps it. The host is the
+    // organization, or the other person if the items are theirs, else the sender (filling their
+    // own diary, or writing down an order taken for someone).
     let booking: Record<string, unknown> | null = null;
+    let order: PlacedOrder | null = null;
     const ask =
       card.kit === 'appointment' && raw.booking ? BookingAskBody.parse(raw.booking) : null;
-    if (ask) {
-      const start = (card.fields.start as { at: string }).at;
-      const adult = !minorOf(sender, ctx.now());
-      let host: BookingHost | null = null;
-      let booker: Parameters<typeof bookingFor>[2] | null = null;
-      if (conversation.kind === 'business') {
-        const mask = await customerMask(ctx.db, conversationId);
-        const org = mask
-          ? await ctx.db
-              .selectFrom('organizations')
-              .select(['id', 'booking', 'booking_items'])
-              .where('id', '=', mask.orgId)
-              .executeTakeFirst()
-          : null;
-        if (org) {
-          host = orgHost(org);
-          booker = { isSelf: senderId !== mask?.customerId, isConnected: true, spheres: [], adult };
-        }
-      } else if (conversation.kind === 'direct') {
-        const otherId = members.find((p) => p.user_id !== senderId)?.user_id;
-        const other = otherId
-          ? await ctx.db
-              .selectFrom('users')
-              .select(['id', 'booking', 'booking_items'])
-              .where('id', '=', otherId)
-              .executeTakeFirst()
-          : null;
-        if (other && personHost(other).items.some((i) => i.id === ask.itemId)) {
-          host = personHost(other);
-          const relation = await viewerRelation(ctx.db, other.id, senderId);
-          booker = {
-            isConnected: relation.isConnected,
-            spheres: relation.ownerSpheresForViewer,
-            adult,
-          };
-        } else {
-          host = personHost(sender);
-          booker = { isSelf: true, isConnected: true, spheres: [], adult };
-        }
-      }
-      if (!host || !booker)
+    const orderAsk =
+      card.kit === 'order_status' && raw.order ? OrderAskBody.parse(raw.order) : null;
+    if (ask || orderAsk) {
+      const wanted = ask ? [ask.itemId] : (orderAsk?.lines ?? []).map((l) => l.itemId);
+      const found = await catalogHostFor(ctx, conversation, members, sender, wanted);
+      if (!found)
         throw new AppError(403, 'not_bookable', tr('That isn’t something you can book here.'));
-      booking = (await bookingFor(ctx, host, booker, ask, new Date(start))) as unknown as Record<
-        string,
-        unknown
-      >;
+      if (ask) {
+        const start = (card.fields.start as { at: string }).at;
+        booking = (await bookingFor(
+          ctx,
+          found.host,
+          found.booker,
+          ask,
+          new Date(start),
+        )) as unknown as Record<string, unknown>;
+      }
+      if (orderAsk) {
+        order = orderFor(found.host, found.booker, orderAsk);
+        // The card reads as any order does: its number, what was ordered, the total.
+        card.fields.summary = orderSummary(order).slice(0, 200);
+        if (order.total) card.fields.amount = order.total;
+        else delete card.fields.amount;
+        if (typeof card.fields.reference !== 'string' || !card.fields.reference)
+          card.fields.reference = orderNumber();
+      }
     }
+    // An order written down by hand says which it is.
+    if (card.kit === 'order_status' && !order && !card.fields.reference)
+      throw badRequest(tr('{label} is needed.', { label: tr('Order number') }));
     payload = {
       kit: card.kit,
       label: card.def.name,
@@ -718,6 +792,7 @@ export async function sendMessage(
       state: card.def.states[0],
       history: [],
       ...(booking ? { booking } : {}),
+      ...(order ? { order } : {}),
     };
     kitMode = KIT_MODES[card.kit];
   }

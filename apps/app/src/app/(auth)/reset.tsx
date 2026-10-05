@@ -45,7 +45,7 @@ export default function Reset() {
   if (!token)
     return (
       <AuthLayout
-        title={tr('This link isn\\u2019t whole')}
+        title={tr('This link isn’t whole')}
         subtitle={tr('Open the one in the email, or ask for a new one.')}
       >
         <Button label={tr('Ask for a new link')} onPress={() => router.replace('/forgot')} />
@@ -55,7 +55,7 @@ export default function Reset() {
     <AuthLayout
       kicker={tr('new password')}
       title={tr('Set a new password')}
-      subtitle={tr('You\\u2019ll be signed in here, and out everywhere else.')}
+      subtitle={tr('You’ll be signed in here, and out everywhere else.')}
     >
       <View style={{ gap: 14 }}>
         <TextField

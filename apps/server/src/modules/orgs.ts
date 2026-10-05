@@ -49,7 +49,7 @@ import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
 import { endBillingOf } from '../lib/billing';
 import { orgBlocked } from '../lib/blocks';
-import { bookingOf, itemsFor, itemsOf, orgHost } from '../lib/booking';
+import { bookingOf, itemsFor, itemsOf, orderingOf, orgHost } from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
@@ -187,6 +187,7 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
           spheres: [],
           adult: await adult(ctx, [viewerId]),
         }),
+    ordering: orderingOf(org),
     retentionDays: org.retention_days,
   };
 }

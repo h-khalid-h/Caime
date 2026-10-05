@@ -10,7 +10,12 @@ import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { REWRITE_STYLES } from './assist';
 import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
-import { BOOKING_CAPACITY_MAX, BOOKING_DAYS_MAX, BOOKING_ITEMS_MAX } from './booking';
+import {
+  BOOKING_CAPACITY_MAX,
+  BOOKING_DAYS_MAX,
+  BOOKING_ITEMS_MAX,
+  ORDER_LINES_MAX,
+} from './booking';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
@@ -451,12 +456,12 @@ export const Preferences = z
     /** Suggestions follow what this person keeps taking and passing on (M11); on by default. */
     learnFromChoices: z.boolean().optional(),
     /** The interface language (R54): the device's, or one chosen. */
-    language: z.enum(['auto', 'en', 'ar', 'fr']).optional(),
+    language: z.enum(['auto', 'en', 'ar', 'fr', 'tr']).optional(),
     /**
      * The language the app last showed this person (what `auto` came to on their device), so the
      * server writes to them in it; the last device to open wins when two differ.
      */
-    interfaceLanguage: z.enum(['en', 'ar', 'fr']).optional(),
+    interfaceLanguage: z.enum(['en', 'ar', 'fr', 'tr']).optional(),
   })
   .strict();
 
@@ -803,11 +808,30 @@ export const BookingAskBody = z
   .strict();
 export type BookingAskInput = z.infer<typeof BookingAskBody>;
 
+/** What a customer asks of the catalog on an Order card (R60). */
+export const OrderAskBody = z
+  .object({
+    lines: z
+      .array(
+        z
+          .object({
+            itemId: z.string().min(1).max(40),
+            quantity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(ORDER_LINES_MAX),
+    fulfilment: z.enum(['pickup', 'delivery']).nullable().optional(),
+  })
+  .strict();
+
 const KitPayload = z.object({
   kit: z.string().max(40),
   fields: z.record(z.string(), z.unknown()),
   state: z.string().max(40).optional(),
   booking: BookingAskBody.optional(),
+  order: OrderAskBody.optional(),
 });
 
 /** A private conversation's message as its sender's device sealed it (checked for shape only). */
@@ -1171,7 +1195,7 @@ export const BookingItemBody = z
       })
       .strict()
       .nullable(),
-    unit: z.enum(['minutes', 'days']),
+    unit: z.enum(['minutes', 'days', 'each']),
     minutes: SlotMinutesSchema.nullable(),
     capacity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
     maxQuantity: z.number().int().min(1).max(BOOKING_CAPACITY_MAX),
@@ -1188,16 +1212,36 @@ export const BookingItemBody = z
     message: msg('An appointment has a length in minutes; a stay has none.'),
   })
   .refine(
-    (i) => (i.unit === 'minutes' ? i.maxQuantity <= i.capacity : i.maxQuantity <= BOOKING_DAYS_MAX),
-    {
-      message: msg('One booking can’t take more than the item has.'),
-    },
-  );
+    (i) =>
+      i.unit === 'minutes'
+        ? i.maxQuantity <= i.capacity
+        : i.unit === 'days'
+          ? i.maxQuantity <= BOOKING_DAYS_MAX
+          : true,
+    { message: msg('One booking can’t take more than the item has.') },
+  )
+  .refine((i) => i.unit !== 'each' || i.providers === null, {
+    message: msg('Something ordered has nobody named to do it.'),
+  });
 export type BookingItemInput = z.infer<typeof BookingItemBody>;
+
+/** How a host takes orders (R60), or null for none. */
+export const OrderingBody = z
+  .object({
+    fulfilment: z
+      .array(z.enum(['pickup', 'delivery']))
+      .min(1)
+      .max(2)
+      .refine((f) => new Set(f).size === f.length, { message: msg('Each way once.') }),
+    note: z.string().trim().max(300).nullable(),
+  })
+  .strict();
 
 /** A host's bookings (R58): hours, or null for none, and the catalog. */
 export const BookingBody = z
   .object({
+    /** Ordering (R60): left out, it stays as it is. */
+    ordering: OrderingBody.nullable().optional(),
     booking: BookingHoursBody.nullable(),
     items: z
       .array(BookingItemBody)

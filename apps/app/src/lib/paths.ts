@@ -48,7 +48,7 @@ export function deepLinkPath(url: string): string | null {
 
 /** The handle a path opens (a person's or an organization's), to say whose link this is. */
 export function handleIn(path: string | null | undefined): string | null {
-  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)(?:\?(?:write|book))?$/i)?.[1] ?? null;
+  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)(?:\?(?:write|book|order))?$/i)?.[1] ?? null;
 }
 
 /**
@@ -57,6 +57,11 @@ export function handleIn(path: string | null | undefined): string | null {
  */
 export function bookIn(path: string | null | undefined): string | null {
   return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)\?book$/i)?.[1] ?? null;
+}
+
+/** A link that orders (`/@handle?order`, `/o/<handle>?order`, R60), as `bookIn` books. */
+export function orderIn(path: string | null | undefined): string | null {
+  return path?.match(/^\/(?:@|o\/)([a-z0-9._]+)\?order$/i)?.[1] ?? null;
 }
 
 /**

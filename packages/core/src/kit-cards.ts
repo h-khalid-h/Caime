@@ -3,7 +3,7 @@
  * and how it reads. The server validates and moves cards with these functions and the app
  * renders them with the same ones, so a card reads the same on every device.
  */
-import type { AppointmentBooking } from './booking';
+import type { AppointmentBooking, PlacedOrder } from './booking';
 import { formatAmount, formatWhenAt, minorUnits, roundAmount } from './format';
 import { msg, tr, trn } from './i18n';
 import type { Mode } from './intelligence';
@@ -87,7 +87,13 @@ export const KIT_FLOWS: Record<CardKitId, Record<string, KitMove[]>> = {
   },
   order_status: {
     placed: [m('confirmed', 'Confirm', 'anyone'), m('cancelled', 'Cancel', 'anyone')],
-    confirmed: [m('shipped', 'Shipped', 'anyone'), m('cancelled', 'Cancel', 'anyone')],
+    // Ready to collect (R60), or on its way: whichever the order is.
+    confirmed: [
+      m('ready', 'Ready to collect', 'anyone'),
+      m('shipped', 'Shipped', 'anyone'),
+      m('cancelled', 'Cancel', 'anyone'),
+    ],
+    ready: [m('delivered', 'Collected', 'anyone')],
     shipped: [m('delivered', 'Delivered', 'anyone')],
   },
   delivery: {
@@ -173,6 +179,7 @@ const STATE_LABELS: Record<string, string> = {
   overdue: msg('Overdue'),
   paid: msg('Paid'),
   placed: msg('Placed'),
+  ready: msg('Ready'),
   proposed: msg('Proposed'),
   rejected: msg('Rejected'),
   requested: msg('Requested'),
@@ -191,6 +198,7 @@ const POSITIVE = new Set([
   'resolved',
   'fulfilled',
   'confirmed',
+  'ready',
 ]);
 const NEGATIVE = new Set([
   'rejected',
@@ -568,6 +576,20 @@ export function kitDetails(
     opts,
     new Set(['title', 'items', ...(IN_HEADLINE[kit] ?? [])]),
   );
+}
+
+/** What an order placed from a catalog says beyond its summary and total (R60): how it's had. */
+export function orderDetails(
+  order: PlacedOrder | null | undefined,
+): Array<{ key: string; label: string; value: string }> {
+  if (!order?.fulfilment) return [];
+  return [
+    {
+      key: 'fulfilment',
+      label: tr('How'),
+      value: order.fulfilment === 'pickup' ? tr('Pickup') : tr('Delivery'),
+    },
+  ];
 }
 
 /**

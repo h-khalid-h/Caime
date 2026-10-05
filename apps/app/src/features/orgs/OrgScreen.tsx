@@ -46,6 +46,7 @@ import {
   Pencil,
   Settings,
   Share,
+  ShoppingBag,
   UserPlus,
   Wrench,
 } from '@/ui/icons';
@@ -68,11 +69,12 @@ import { setupNextLine } from './setupSteps';
 export function OrgScreen({
   handle,
   write = false,
-  book = false,
+  book = null,
 }: {
   handle: string;
   write?: boolean;
-  book?: boolean;
+  /** Arrived through a Book or an Order link (R58, R60): that card's form. */
+  book?: 'appointment' | 'order_status' | null;
 }) {
   const t = useTheme();
   const qc = useQueryClient();
@@ -100,7 +102,7 @@ export function OrgScreen({
   const waiting = teams?.find((x) => x.org.id === org?.id);
 
   /** A customer's one conversation with it: theirs if it exists, else a new one (PRD §38). */
-  const message = async (orgId: string, booking = false) => {
+  const message = async (orgId: string, kit: 'appointment' | 'order_status' | null = null) => {
     setStarting(true);
     try {
       const { conversationId } = await endpoints.messageOrg(orgId);
@@ -108,7 +110,12 @@ export function OrgScreen({
       // Book (R58): the conversation opens on the appointment card's form.
       router.push({
         pathname: '/c/[id]',
-        params: booking ? { id: conversationId, book: '1' } : { id: conversationId },
+        params:
+          kit === 'appointment'
+            ? { id: conversationId, book: '1' }
+            : kit === 'order_status'
+              ? { id: conversationId, order: '1' }
+              : { id: conversationId },
       });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
@@ -132,7 +139,12 @@ export function OrgScreen({
         void qc.invalidateQueries({ queryKey: qk.inbox });
         router.replace({
           pathname: '/c/[id]',
-          params: book && org.booking ? { id: conversationId, book: '1' } : { id: conversationId },
+          params:
+            book === 'appointment' && org.booking
+              ? { id: conversationId, book: '1' }
+              : book === 'order_status' && org.ordering
+                ? { id: conversationId, order: '1' }
+                : { id: conversationId },
         });
       } catch (e) {
         toast((e as Error).message, { tone: 'danger' });
@@ -333,8 +345,19 @@ export function OrgScreen({
                     variant="secondary"
                     disabled={starting}
                     style={{ marginTop: 6 }}
-                    onPress={() => void message(org.id, true)}
+                    onPress={() => void message(org.id, 'appointment')}
                     testID="org-book"
+                  />
+                ) : null}
+                {org.ordering ? (
+                  <Button
+                    label={tr('Order')}
+                    icon={ShoppingBag}
+                    variant="secondary"
+                    disabled={starting}
+                    style={{ marginTop: 6 }}
+                    onPress={() => void message(org.id, 'order_status')}
+                    testID="org-order"
                   />
                 ) : null}
               </View>

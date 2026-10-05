@@ -2,6 +2,7 @@
  * Bookings as a catalog, for organizations and people (R58): a salon sets hours and a paid
  * item, a visitor finds "Book" on its public page, signs up and books two places from the open
  * slots; the owner sets their own bookable item and a connection books it from their profile.
+ * Orders (R60): the salon sells by the piece and the customer orders two on an Order card.
  */
 import { type BrowserContext, expect, test } from '@playwright/test';
 import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
@@ -145,5 +146,55 @@ test.describe
       expect(customerErrors).toEqual([]);
       await phone.close();
       void orgId;
+    });
+
+    test('orders from the catalog (R60): the owner sells by the piece, a customer orders two', async ({
+      browser,
+    }) => {
+      const owner = await browser.newContext({
+        viewport: { width: 1280, height: 800 },
+        storageState: ownerState,
+      });
+      const { page, errors } = await newPerson(owner);
+      await page.goto(`/o/${handle}/setup`);
+      await page.getByTestId('org-booking-orders').click();
+      await page.getByTestId('org-booking-orders-delivery').click();
+      await page.getByTestId('org-booking-orders-note').fill('Ready in about 20 minutes');
+      await page.getByTestId('org-booking-orders-save').click();
+      await expect(visible(page, 'Orders: Pickup, Delivery')).toBeVisible();
+      await page.getByTestId('org-booking-add-item').click();
+      await page.getByTestId('org-booking-item-name').fill('Hair oil');
+      await page.getByTestId('org-booking-item-paid').click();
+      await page.getByTestId('org-booking-item-price').fill('120');
+      await page.getByTestId('org-booking-item-each').click();
+      await page.getByTestId('org-booking-item-public').click();
+      await page.getByTestId('org-booking-item-save').click();
+      await expect(visible(page, /By the piece · .*120.* · Everyone/)).toBeVisible();
+      expect(errors).toEqual([]);
+      await owner.close();
+
+      const phone = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: customerState,
+      });
+      const { page: c, errors: customerErrors } = await newPerson(phone);
+      await c.goto(`/o/${handle}`);
+      await c.getByTestId('org-order').click();
+      await c.waitForURL(/\/c\/[0-9a-f-]+\?order=1$/);
+      const picker = c.getByTestId('order-picker');
+      await expect(picker).toBeVisible();
+      await expect(picker).toContainText('Ready in about 20 minutes');
+      await picker.locator('[data-testid^="order-more-"]').first().click();
+      await picker.locator('[data-testid^="order-more-"]').first().click();
+      await c.getByTestId('order-way-delivery').click();
+      await expect(c.getByTestId('order-total')).toContainText('240');
+      await c.getByTestId('kit-send').click();
+      const card = c.getByTestId('kit-order_status').first();
+      await expect(card).toContainText('2 × Hair oil');
+      await expect(card).toContainText('240');
+      await expect(card).toContainText('Delivery');
+      await c.screenshot({ path: 'e2e/screenshots/phone-order-card.png', animations: 'disabled' });
+      expect(customerErrors).toEqual([]);
+      await phone.close();
     });
   });

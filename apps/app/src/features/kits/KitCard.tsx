@@ -1,5 +1,5 @@
 import type { ConversationView, MessageView } from '@caime/core/api';
-import type { AppointmentBooking } from '@caime/core/booking';
+import type { AppointmentBooking, PlacedOrder } from '@caime/core/booking';
 import { customDetails, customMoves, customState, isCustomCard } from '@caime/core/custom-kits';
 import { formatDue } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -10,6 +10,7 @@ import {
   kitMoves,
   kitStateLabel,
   kitStateTone,
+  orderDetails,
 } from '@caime/core/kit-cards';
 import { KITS } from '@caime/core/kits';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +41,8 @@ interface CardPayload {
   dueAt?: string | null;
   /** What an appointment booked from a catalog (R58). */
   booking?: AppointmentBooking | null;
+  /** What an order took from a catalog (R60). */
+  order?: PlacedOrder | null;
 }
 
 /** The brief before a meeting (R58), loaded when asked for. */
@@ -137,6 +140,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       details={[
         ...kitDetails(kit, p.fields ?? {}, clock),
         ...(kit === 'appointment' ? bookingDetails(p.booking, clock.locale) : []),
+        ...(kit === 'order_status' ? orderDetails(p.order) : []),
       ]}
       before={ahead ? { messageId: m.id, title: p.title ?? tr(KITS[kit].name) } : null}
       // In a conversation with an organization, the team is one side: anyone on it moves a card

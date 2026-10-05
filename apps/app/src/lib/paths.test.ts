@@ -12,6 +12,7 @@ import {
   handleIn,
   inviteIn,
   isAuthorizeLink,
+  orderIn,
   ownLinkPath,
 } from './paths';
 
@@ -148,5 +149,8 @@ describe('a link that books (R58)', () => {
     expect(bookIn('/@noor')).toBeNull();
     expect(handleIn('/@noor?book')).toBe('noor');
     expect(appPath('/o/nile.dental?book')).toBe('/o/nile.dental?book');
+    expect(orderIn('/o/swibba?order')).toBe('swibba');
+    expect(orderIn('/o/swibba?book')).toBeNull();
+    expect(handleIn('/@noor?order')).toBe('noor');
   });
 });

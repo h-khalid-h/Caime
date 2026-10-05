@@ -9,7 +9,7 @@ import type { AgentAction } from './agents';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
-import type { AppointmentBooking, BookingHours, BookingItem } from './booking';
+import type { AppointmentBooking, BookingHours, BookingItem, OrderingSettings } from './booking';
 import type { BusinessView, ThreadState } from './business';
 import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState } from './calls';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
@@ -242,6 +242,8 @@ export interface PersonProfileView {
   busy: { until: string; title: string | null } | null;
   /** They take bookings (R58): their hours and the items this viewer may book, or null. */
   booking: { hours: BookingHours; items: BookingItem[] } | null;
+  /** They take orders (R60): how, and what this viewer may order of them, or null. */
+  ordering: { settings: OrderingSettings; items: BookingItem[] } | null;
   connection: ConnectionStateView;
   blockedByMe: boolean;
   relationships: RelationshipView[];
@@ -973,6 +975,8 @@ export interface OrgView extends OrgSummaryView {
   booking: BookingHours | null;
   /** What can be booked (R58): the items this viewer may book; every one for its team. */
   bookingItems: BookingItem[];
+  /** How it takes orders (R60), for everyone; null where it takes none. */
+  ordering: OrderingSettings | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
 }
@@ -2210,6 +2214,8 @@ export interface DeliveryQueuedResponse {
 export interface BookingResponse {
   booking: BookingHours | null;
   items: BookingItem[];
+  /** How the host takes orders (R60), or null for none. */
+  ordering: OrderingSettings | null;
 }
 export interface OrgUpdateResponse {
   update: OrgUpdateView;

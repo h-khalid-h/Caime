@@ -978,7 +978,14 @@ export const frServer: Catalog = {
   'Only people on the team can be providers.':
     'Seules les personnes de l’équipe peuvent s’en charger.',
   'per day': 'par jour',
-  book: 'réserver',
   'Only the team says who does a booking.': 'Seule l’équipe dit qui se charge d’une réservation.',
   'That isn’t a booking from the catalog.': 'Ce n’est pas une réservation du catalogue.',
+
+  // Orders from the catalog (R60)
+  'Orders aren’t taken here.': 'Les commandes ne sont pas prises ici.',
+  'That isn’t something you can order here.':
+    'Ce n’est pas quelque chose que vous pouvez commander ici.',
+  'Up to {n} of that in one order.': 'Jusqu’à {n} par commande.',
+  'They don’t offer that way.': 'Ce mode n’est pas proposé.',
+  offers: 'propose',
 };

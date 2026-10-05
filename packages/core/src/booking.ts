@@ -41,8 +41,88 @@ export interface BookingHours {
   horizonDays: number;
 }
 
-/** Minutes (an appointment, a lesson) or days (a room, a rental). */
-export type BookingUnit = 'minutes' | 'days';
+/**
+ * Minutes (an appointment, a lesson), days (a room, a rental), or each: ordered by the piece
+ * (R60: a dish, a cake, a bag of coffee), taken on an Order card, never a slot.
+ */
+export type BookingUnit = 'minutes' | 'days' | 'each';
+
+/** How a host takes orders (R60): how they reach the customer, and a line they read first. */
+export interface OrderingSettings {
+  fulfilment: Array<'pickup' | 'delivery'>;
+  note: string | null;
+}
+
+/** One line of an order as asked: an item of the catalog and how many. */
+export interface OrderAsk {
+  lines: Array<{ itemId: string; quantity: number }>;
+  fulfilment?: 'pickup' | 'delivery' | null;
+}
+
+/** What an Order card keeps of what was ordered (`payload.order`), fixed when it was placed. */
+export interface PlacedOrder {
+  lines: Array<{
+    itemId: string;
+    name: string;
+    quantity: number;
+    /** The line's price (each times the quantity), as it was then. */
+    price: { value: number; currency: string } | null;
+  }>;
+  /** The whole order's, where every priced line is in one currency; else null. */
+  total: { value: number; currency: string } | null;
+  fulfilment: 'pickup' | 'delivery' | null;
+}
+
+/** An order holds at most this many lines. */
+export const ORDER_LINES_MAX = 30;
+
+/** Booked in time (an appointment, a stay), or ordered by the piece. */
+export const isOrdered = (item: Pick<BookingItem, 'unit'>) => item.unit === 'each';
+export const isBooked = (item: Pick<BookingItem, 'unit'>) => item.unit !== 'each';
+
+/**
+ * Checks an order against the host's catalog and fixes it as the card keeps it: every line an
+ * item sold by the piece this booker may order, its quantity within the item's, the fulfilment
+ * one the host offers. An error is the reader's sentence, through `tr` by the caller.
+ */
+export function placeOrder(
+  settings: OrderingSettings | null,
+  items: readonly BookingItem[],
+  ask: OrderAsk,
+):
+  | { ok: true; order: PlacedOrder }
+  | { ok: false; reason: 'off' | 'item' | 'quantity' | 'fulfilment' | 'empty'; max?: number } {
+  if (!settings) return { ok: false, reason: 'off' };
+  const merged = new Map<string, number>();
+  for (const l of ask.lines) merged.set(l.itemId, (merged.get(l.itemId) ?? 0) + l.quantity);
+  if (merged.size === 0) return { ok: false, reason: 'empty' };
+  const lines: PlacedOrder['lines'] = [];
+  for (const [itemId, quantity] of merged) {
+    const item = items.find((i) => i.id === itemId);
+    if (!item || !isOrdered(item)) return { ok: false, reason: 'item' };
+    if (quantity < 1 || quantity > item.maxQuantity)
+      return { ok: false, reason: 'quantity', max: item.maxQuantity };
+    lines.push({ itemId, name: item.name, quantity, price: bookingPrice(item, quantity) });
+  }
+  const fulfilment = ask.fulfilment ?? settings.fulfilment[0] ?? null;
+  if (fulfilment && !settings.fulfilment.includes(fulfilment))
+    return { ok: false, reason: 'fulfilment' };
+  const priced = lines.flatMap((l) => (l.price ? [l.price] : []));
+  const currencies = new Set(priced.map((p) => p.currency));
+  const total =
+    priced.length && currencies.size === 1
+      ? {
+          value: Math.round(priced.reduce((sum, p) => sum + p.value, 0) * 100) / 100,
+          currency: priced[0]?.currency ?? '',
+        }
+      : null;
+  return { ok: true, order: { lines, total, fulfilment } };
+}
+
+/** "2 × Shawarma, 1 × Fries": an order in one line, for the card's summary. */
+export function orderSummary(order: Pick<PlacedOrder, 'lines'>): string {
+  return order.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ');
+}
 
 /**
  * Who may book an item: anyone (a visitor signs up for it), anyone connected (or any customer
@@ -153,6 +233,8 @@ function roomFor(busy: Busy[], start: number, end: number, want: number, capacit
 export function openSlots(hours: BookingHours, opts: SlotQuery): Date[] {
   const limit = opts.limit ?? 200;
   const item = opts.item ?? null;
+  // Ordered by the piece (R60): no time to hold.
+  if (item?.unit === 'each') return [];
   const want = Math.max(1, opts.quantity ?? 1);
   const capacity = item?.capacity ?? 1;
   const earliest = Math.max(opts.from.getTime(), opts.now.getTime() + hours.leadMinutes * 60_000);

@@ -6,14 +6,17 @@
  */
 import { ar } from '@caime/core/locales/ar';
 import { fr } from '@caime/core/locales/fr';
+import { turkish } from '@caime/core/locales/tr';
 import { describe, expect, it } from 'vitest';
 import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { arServer } from '../src/locales/ar-server';
 import { frServer } from '../src/locales/fr-server';
+import { turkishServer } from '../src/locales/tr-server';
 
 describe.each([
   ['Arabic (R54)', arServer, ar],
   ['French (R55)', frServer, fr],
+  ['Turkish (R59)', turkishServer, turkish],
 ])('the server’s %s catalog', (_name, arSite, ar) => {
   const keys = keysFor(collectKeys(), true) as Map<string, { text: string; plural: boolean }>;
 
