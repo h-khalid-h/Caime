@@ -231,7 +231,8 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
     <CardBody
       m={m}
       Icon={KIT_ICONS[kit]}
-      label={p.label ?? tr(KITS[kit].name)}
+      // The label kept on the card is the kit's name as a key: shown in the reader's language.
+      label={tr(p.label ?? KITS[kit].name)}
       state={tr(kitStateLabel(state))}
       tone={kitStateTone(state)}
       title={p.title ?? ''}

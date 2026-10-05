@@ -2098,3 +2098,6 @@ listed there with its owner.
 - 2026-10-05 — R62: ways to be paid and the Pay card (ask or pay, payer and payee, the payee's
   ways fixed on the card); Pay from priced orders and bookings, profiles and public pages.
   Settings' Bookings is now What you offer. Card buttons and form labels translated at last.
+- 2026-10-05 — Harmony pass over cards: kit names in the "+" menu, the form's title, the card's
+  label and a sticker's screen-reader name read in the reader's language; checked across the
+  bookings, Arabic, French, Turkish, conversation and accessibility specs (66 passed).

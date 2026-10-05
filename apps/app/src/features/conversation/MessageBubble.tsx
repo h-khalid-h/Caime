@@ -619,7 +619,7 @@ export const MessageBubble = memo(function MessageBubble({
                 name={sticker.character}
                 expression={sticker.expression}
                 size={132}
-                label={sticker.label}
+                label={tr(sticker.label)}
               />
               <Text
                 variant="caption"

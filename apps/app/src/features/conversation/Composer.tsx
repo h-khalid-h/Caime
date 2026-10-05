@@ -732,8 +732,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                 <ListRow
                   key={k.id}
                   icon={KIT_ICONS[k.id as KitChoice]}
-                  title={k.name}
-                  subtitle={k.description}
+                  // Caime's own kits are named by keys; an organization's own as it wrote them.
+                  title={tr(k.name)}
+                  subtitle={tr(k.description)}
                   testID={`kit-option-${k.id}`}
                   onPress={() => {
                     setAttach(false);

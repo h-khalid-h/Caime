@@ -493,8 +493,8 @@ export function KitForm({
     <Sheet
       open={def !== null}
       onClose={close}
-      title={def?.name}
-      subtitle={def?.description}
+      title={custom ? def?.name : def ? tr(def.name) : undefined}
+      subtitle={custom ? def?.description : def ? tr(def.description) : undefined}
       footer={
         <Button
           label={tr('Send')}
