@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReduceMotion } from '@/lib/motion';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from './IconButton';
 import { X } from './icons';
@@ -41,6 +42,8 @@ export function Sheet({
 }: SheetProps) {
   const t = useTheme();
   const { phone, height } = useLayout();
+  // Less to move for whoever asked, in Appearance or on the device.
+  const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const Body = scroll ? ScrollView : View;
   const layer = useId();
@@ -67,7 +70,7 @@ export function Sheet({
     <Modal
       visible={open}
       transparent
-      animationType={phone ? 'slide' : 'fade'}
+      animationType={reduceMotion ? 'none' : phone ? 'slide' : 'fade'}
       onRequestClose={onClose}
       statusBarTranslucent
     >

@@ -300,8 +300,10 @@ These are rules, not preferences.
   `AppError` message is `tr('…')` where it's thrown (`badRequest(tr('…'))`, `notFound(tr('That
   message'))`, which reads "{what} wasn't found."), built inside the request and never kept in a
   module constant (a constant is a function, `TOPIC_PEOPLE()`), and a sentence assembled from
-  parts translates each part; the app shows `err.message` as it came. A zod message
-  (`lib/validate.ts`, `first.message`) is still English. A
+  parts translates each part; the app shows `err.message` as it came. A schema's own field
+  message is `msg('…')` in core's `schemas.ts` (collected into the catalogs) and `validate.ts`
+  runs `tr` over every issue's message, so a refused field reads in the app's language; zod's
+  own words (a developer's) pass through as they are. A
   table's labels (roles, kit states, kit names) are English keys: show them through `tr`.
   A string the server writes into a view for a screen (a rule's `describePolicy` summary, a
   schedule's day names) is in the request's language already, so it goes through `tr` in core
@@ -505,7 +507,14 @@ These are rules, not preferences.
   when, lives on that one screen.
 - A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
-  and its Undo can't be pressed. Anything else that must show over a sheet goes inside it.
+  and its Undo can't be pressed. Anything else that must show over a sheet goes inside it. Toasts
+  sit at the bottom, where a thumb reaches Undo: the screen's host is `ScreenToasts`, which
+  stands them off the phone's tab bar (`TAB_BAR_HEIGHT`); nothing draws a toast at the top.
+  Anything that moves for effect asks `useReduceMotion()` (`lib/motion.ts`: the person's setting
+  or the device's) before it animates; a `Sheet` and the skeletons do. The `mono` text variant
+  drops its letter-spacing when the text holds Arabic (joins break otherwise). A message that
+  arrives in an open conversation is announced to a screen reader through the live region in
+  `ConversationScreen` (`new-message-announcer`), never by focus or a toast.
 - E2E: a phone sheet slides up, so wait with `toBeInViewport({ ratio: 1 })` and screenshot with
   `animations: 'disabled'`. Photos to upload come from `photo()` in `e2e/helpers.ts`, through
   `page.waitForEvent('filechooser')`.

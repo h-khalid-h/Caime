@@ -8,6 +8,7 @@ import type { IconComponent } from '@/ui/Button';
 import { LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
+import { TAB_BAR_HEIGHT } from '@/ui/tabBarHeight';
 import { useBadges } from './useBadges';
 
 /** The four places, in the bar. You is your picture at the top of each (YouButton). */
@@ -22,7 +23,7 @@ const TABS: Record<
   actions: { label: msg('Actions'), icon: ListChecks, badge: 'actions' },
 };
 
-const HEIGHT = 62;
+const HEIGHT = TAB_BAR_HEIGHT;
 
 /** Floating over the page's own colour, with the soft shadow overlays have (BRAND.md). */
 function lifted(shadow: string): ViewStyle {

@@ -98,8 +98,12 @@ function ToastView({ item }: { item: ToastItem }) {
   );
 }
 
-/** Without `layer`, the screen's; a sheet passes its own and shows them while it's on top. */
-export function ToastHost({ layer }: { layer?: string }) {
+/**
+ * Without `layer`, the screen's; a sheet passes its own and shows them while it's on top. Toasts
+ * sit at the bottom, where a thumb is and where Undo can be reached, above the phone's tab bar
+ * (`above`, the screen's host passes it) and off the header they used to cover.
+ */
+export function ToastHost({ layer, above = 0 }: { layer?: string; above?: number }) {
   const items = useToasts((s) => s.items);
   const top = useToastLayers((s) => s.open[s.open.length - 1]);
   const insets = useSafeAreaInsets();
@@ -111,7 +115,7 @@ export function ToastHost({ layer }: { layer?: string }) {
         position: 'absolute',
         start: 16,
         end: 16,
-        top: insets.top + 12,
+        bottom: insets.bottom + above + 12,
         gap: 8,
       }}
     >

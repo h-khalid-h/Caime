@@ -169,7 +169,7 @@ export function NavRail() {
       <View style={{ flex: 1 }} />
       <RailItem
         icon={Bell}
-        label={tr('Alerts')}
+        label={tr('Notifications')}
         href="/notifications"
         active={section === 'notifications'}
         count={badges.notifications}

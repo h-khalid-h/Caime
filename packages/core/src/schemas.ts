@@ -13,6 +13,7 @@ import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
 import { CALL_KINDS } from './calls';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
+import { msg } from './i18n';
 import { IMPORT_MAX_MESSAGES, IMPORT_MAX_TEXT } from './imports';
 import { latestFoundedYear, ORG_KINDS, UPDATE_MAX } from './orgs';
 import { AI_TONES, NOTIFY_MODES, PRIORITIES, PRIVACY_PRESETS } from './policy';
@@ -225,22 +226,27 @@ function readsAsProduct(text: string): boolean {
   return read[text.length] === 2;
 }
 
-export const Email = z.string().trim().toLowerCase().email('Enter a valid email address.').max(254);
+export const Email = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email(msg('Enter a valid email address.'))
+  .max(254);
 
 export const Password = z
   .string()
   .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`)
-  .max(200, 'That password is too long.')
-  .refine((p) => new Set(p).size >= 5, 'Use a less repetitive password.');
+  .max(200, msg('That password is too long.'))
+  .refine((p) => new Set(p).size >= 5, msg('Use a less repetitive password.'));
 
-export const DisplayName = z.string().trim().min(1, 'Enter your name.').max(80);
+export const DisplayName = z.string().trim().min(1, msg('Enter your name.')).max(80);
 
 const TimeZone = z.string().min(1).max(64);
 /** A day of the calendar as it's kept, 'YYYY-MM-DD' (whether it's a real one is checked where it's used). */
-const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a date like 1990-05-17.');
+const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, msg('Enter a date like 1990-05-17.'));
 /** A country or territory by its ISO 3166-1 code (the server checks it's one: lib/geo.ts). */
-const Country = z.string().regex(/^[A-Z]{2}$/, 'Choose a country.');
-const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM.');
+const Country = z.string().regex(/^[A-Z]{2}$/, msg('Choose a country.'));
+const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, msg('Use HH:MM.'));
 export const ScheduleSchema = z.object({
   days: z.array(z.number().int().min(0).max(6)).max(7),
   start: HHMM,
@@ -279,8 +285,8 @@ export const SearchOutcomeBody = z
 /** A personal access token: what it's for, what it may do, and for how long (days; null: until revoked). */
 export const CreatePersonalTokenBody = z
   .object({
-    name: z.string().trim().min(1, 'Name it for what will use it.').max(60),
-    scopes: z.array(z.enum(PERSONAL_SCOPES)).min(1, 'Choose what it may do.').max(10),
+    name: z.string().trim().min(1, msg('Name it for what will use it.')).max(60),
+    scopes: z.array(z.enum(PERSONAL_SCOPES)).min(1, msg('Choose what it may do.')).max(10),
     days: z.union([z.literal(30), z.literal(90), z.literal(365), z.null()]).default(90),
   })
   .strict();
@@ -288,7 +294,7 @@ export const CreatePersonalTokenBody = z
 /** A third-party app a developer registers: where people come back to after allowing it. */
 export const CreateOAuthAppBody = z
   .object({
-    name: z.string().trim().min(1, 'Name your app.').max(60),
+    name: z.string().trim().min(1, msg('Name your app.')).max(60),
     website: z.string().trim().url().max(300).optional(),
     redirectUris: z
       .array(
@@ -301,14 +307,14 @@ export const CreateOAuthAppBody = z
             if (error) ctx.addIssue({ code: 'custom', message: error });
           }),
       )
-      .min(1, 'Add where people come back to after allowing it.')
+      .min(1, msg('Add where people come back to after allowing it.'))
       .max(5),
     confidential: z.boolean().default(false),
   })
   .strict();
 
 /** The device a call rings or runs on: each tab or app picks one when it starts. */
-const CallDevice = z.string().regex(/^[\w-]{8,64}$/, 'Which device is this?');
+const CallDevice = z.string().regex(/^[\w-]{8,64}$/, msg('Which device is this?'));
 
 /** Call someone in a direct conversation (PRD §47). */
 export const StartCallBody = z.object({ kind: z.enum(CALL_KINDS), deviceId: CallDevice }).strict();
@@ -334,7 +340,7 @@ export const CallSignalBody = z
   })
   .strict()
   .refine((b) => (b.kind === 'candidate' ? Boolean(b.candidate) : Boolean(b.sdp)), {
-    message: 'Send an SDP with an offer or answer, and a candidate with a candidate.',
+    message: msg('Send an SDP with an offer or answer, and a candidate with a candidate.'),
   });
 
 /** How this device reaches one other device in a group call: `to`, of the person `toUser`. */
@@ -357,17 +363,17 @@ export const GroupCallSignalBody = z
   })
   .strict()
   .refine((b) => (b.kind === 'candidate' ? Boolean(b.candidate) : Boolean(b.sdp)), {
-    message: 'Send an SDP with an offer or answer, and a candidate with a candidate.',
+    message: msg('Send an SDP with an offer or answer, and a candidate with a candidate.'),
   });
 
 /** An organization's AI agent: its name and what it answers from (PRD §75). */
 export const SetOrgAgentBody = z
   .object({
-    name: z.string().trim().min(1, 'Name it.').max(AGENT_NAME_MAX),
+    name: z.string().trim().min(1, msg('Name it.')).max(AGENT_NAME_MAX),
     knowledge: z
       .string()
       .trim()
-      .min(20, 'Tell it what customers ask about: hours, services, prices, how to book.')
+      .min(20, msg('Tell it what customers ask about: hours, services, prices, how to book.'))
       .max(AGENT_KNOWLEDGE_MAX),
     paused: z.boolean().default(false),
   })
@@ -378,7 +384,7 @@ export const TryOrgAgentBody = z
   .object({
     name: z.string().trim().min(1).max(AGENT_NAME_MAX),
     knowledge: z.string().trim().min(1).max(AGENT_KNOWLEDGE_MAX),
-    question: z.string().trim().min(1, 'Ask it something a customer would.').max(1000),
+    question: z.string().trim().min(1, msg('Ask it something a customer would.')).max(1000),
   })
   .strict();
 
@@ -389,13 +395,13 @@ export const OAuthAuthorizeRequest = z.object({
   redirect_uri: z.string().min(1).max(500),
   scope: z.string().max(500).default(''),
   state: z.string().max(500).optional(),
-  code_challenge: z.string().regex(/^[\w-]{43,128}$/, 'A PKCE code challenge is needed.'),
+  code_challenge: z.string().regex(/^[\w-]{43,128}$/, msg('A PKCE code challenge is needed.')),
   code_challenge_method: z.literal('S256'),
 });
 
 export const LoginBody = z.object({
-  identifier: z.string().trim().min(1, 'Enter your email or handle.').max(254),
-  password: z.string().min(1, 'Enter your password.').max(200),
+  identifier: z.string().trim().min(1, msg('Enter your email or handle.')).max(254),
+  password: z.string().min(1, msg('Enter your password.')).max(200),
   client: z.enum(['web', 'native']).default('web'),
   deviceName: z.string().max(80).optional(),
 });
@@ -411,7 +417,7 @@ export const EmailCodeBody = z.object({
     .string()
     .trim()
     .transform((v) => v.replace(/\s+/g, ''))
-    .pipe(z.string().regex(/^\d{6}$/, 'Enter the six digits from the email.')),
+    .pipe(z.string().regex(/^\d{6}$/, msg('Enter the six digits from the email.'))),
 });
 
 export const ResetRequestBody = z.object({ email: Email });
@@ -461,7 +467,7 @@ export const UpdateMeBody = z
     pronouns: z.string().trim().max(40).nullable().optional(),
     statusText: z.string().trim().max(80).nullable().optional(),
     // One whole emoji, as the app's picker gives it (emoji.ts).
-    statusEmoji: z.string().max(16).refine(isEmoji, 'Choose an emoji.').nullable().optional(),
+    statusEmoji: z.string().max(16).refine(isEmoji, msg('Choose an emoji.')).nullable().optional(),
     presence: z.enum(['auto', 'available', 'busy', 'away', 'invisible']).optional(),
     timeZone: TimeZone.optional(),
     locale: z.string().max(35).optional(),
@@ -615,7 +621,7 @@ export const AutomationWhenSchema = z
     kinds: z.array(z.enum(SAVE_KINDS)).min(1).max(SAVE_KINDS.length),
     words: z.array(z.string().trim().min(1).max(WORD_MAX)).max(WORDS_MAX).optional(),
   })
-  .refine((w) => !w.role || w.sphere, 'A role needs a kind of relationship.');
+  .refine((w) => !w.role || w.sphere, msg('A role needs a kind of relationship.'));
 
 export const AutomationBody = z.object({
   name: z.string().trim().max(60).nullable().optional(),
@@ -685,16 +691,18 @@ export const CreateConversationBody = z.discriminatedUnion('kind', [
   }),
   z.object({
     kind: z.literal('group'),
-    title: z.string().trim().min(1, 'Name the group.').max(80),
+    title: z.string().trim().min(1, msg('Name the group.')).max(80),
     purpose: z.string().trim().max(200).optional(),
-    memberIds: z.array(z.string().uuid()).min(1, 'Add at least one person.').max(255),
+    memberIds: z.array(z.string().uuid()).min(1, msg('Add at least one person.')).max(255),
     /** End to end encrypted (R18). */
     private: z.boolean().optional(),
   }),
 ]);
 
 /** A topic started from a conversation (PRD §58): its subject, as its name. */
-export const TopicBody = z.object({ title: z.string().trim().min(1, 'Name the topic.').max(80) });
+export const TopicBody = z.object({
+  title: z.string().trim().min(1, msg('Name the topic.')).max(80),
+});
 
 /**
  * A chat brought over from WhatsApp (R45): read on the device (`@caime/core/whatsapp`), sent as
@@ -715,7 +723,7 @@ export const ImportChatBody = z.object({
         text: z.string().min(1).max(IMPORT_MAX_TEXT),
       }),
     )
-    .min(1, 'Nothing to import.')
+    .min(1, msg('Nothing to import.'))
     .max(IMPORT_MAX_MESSAGES),
 });
 
@@ -751,9 +759,12 @@ export const LocationPayload = z
       .optional(),
   })
   .strict()
-  .refine((p) => (p.lat === undefined) === (p.lng === undefined), 'A place needs both coordinates.')
-  .refine((p) => p.lat !== undefined || Boolean(p.label), 'Choose a place.')
-  .refine((p) => !p.live || p.lat !== undefined, 'A live location starts where you are.');
+  .refine(
+    (p) => (p.lat === undefined) === (p.lng === undefined),
+    msg('A place needs both coordinates.'),
+  )
+  .refine((p) => p.lat !== undefined || Boolean(p.label), msg('Choose a place.'))
+  .refine((p) => !p.live || p.lat !== undefined, msg('A live location starts where you are.'));
 export type LocationPayloadT = z.infer<typeof LocationPayload>;
 
 /** Where a live location's sharer is now; only the latest point is kept. */
@@ -777,7 +788,7 @@ export const PollPayload = z.object({
   question: z.string().trim().min(1).max(300),
   options: z
     .array(z.object({ id: z.string().max(20), text: z.string().trim().min(1).max(100) }))
-    .min(2, 'Add at least two options.')
+    .min(2, msg('Add at least two options.'))
     .max(12),
   multiple: z.boolean().default(false),
 });
@@ -789,11 +800,11 @@ const KitPayload = z.object({
 
 /** A private conversation's message as its sender's device sealed it (checked for shape only). */
 export const SealedSchema = z.custom<SealedMessage>((v) => isSealed(v), {
-  message: 'That message isn’t sealed properly.',
+  message: msg('That message isn’t sealed properly.'),
 });
 
 const Signature = z.custom<string>((v) => isSignature(v), {
-  message: 'That signature isn’t right.',
+  message: msg('That signature isn’t right.'),
 });
 
 /**
@@ -805,9 +816,11 @@ export const RegisterDeviceBody = z
   .object({
     id: z.string().uuid(),
     encryptionKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
-      message: 'That key isn’t right.',
+      message: msg('That key isn’t right.'),
     }),
-    signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), { message: 'That key isn’t right.' }),
+    signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
+      message: msg('That key isn’t right.'),
+    }),
     introduction: Signature,
     name: z.string().trim().max(80).optional(),
     startOver: z.boolean().optional(),
@@ -824,9 +837,11 @@ export const RegisterRecoveryBody = z
   .object({
     id: z.string().uuid(),
     encryptionKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
-      message: 'That key isn’t right.',
+      message: msg('That key isn’t right.'),
     }),
-    signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), { message: 'That key isn’t right.' }),
+    signingKey: z.custom<PublicJwk>((v) => isPublicKey(v), {
+      message: msg('That key isn’t right.'),
+    }),
     introduction: Signature,
   })
   .strict();
@@ -862,27 +877,30 @@ export const SendMessageBody = z
     };
     switch (m.kind) {
       case 'text':
-        need(Boolean(m.body?.trim()) || Boolean(m.sealed), 'Write a message.');
+        need(Boolean(m.body?.trim()) || Boolean(m.sealed), msg('Write a message.'));
         break;
       case 'media':
       case 'file':
       case 'voice':
-        need(Boolean(m.fileIds?.length), 'Attach a file.');
+        need(Boolean(m.fileIds?.length), msg('Attach a file.'));
         break;
       case 'sticker':
-        need(StickerPayload.safeParse(m.payload).success, 'Choose a sticker.');
+        need(StickerPayload.safeParse(m.payload).success, msg('Choose a sticker.'));
         break;
       case 'location':
-        need(LocationPayload.safeParse(m.payload).success, 'Choose a location.');
+        need(LocationPayload.safeParse(m.payload).success, msg('Choose a location.'));
         break;
       case 'contact':
-        need(ContactPayload.safeParse(m.payload).success, 'Choose a contact.');
+        need(ContactPayload.safeParse(m.payload).success, msg('Choose a contact.'));
         break;
       case 'poll':
-        need(PollPayload.safeParse(m.payload).success, 'Add a question and at least two options.');
+        need(
+          PollPayload.safeParse(m.payload).success,
+          msg('Add a question and at least two options.'),
+        );
         break;
       case 'kit':
-        need(KitPayload.safeParse(m.payload).success, 'That card is incomplete.');
+        need(KitPayload.safeParse(m.payload).success, msg('That card is incomplete.'));
         break;
     }
   });
@@ -916,7 +934,7 @@ export const MembersBody = z.object({ userIds: z.array(z.string().uuid()).min(1)
 // --- Actions, decisions, contexts --------------------------------------------------------------
 
 export const CreateTaskBody = z.object({
-  title: z.string().trim().min(1, 'What needs doing?').max(200),
+  title: z.string().trim().min(1, msg('What needs doing?')).max(200),
   notes: z.string().trim().max(4000).nullable().optional(),
   dueAt: z.string().datetime().nullable().optional(),
   dueHasTime: z.boolean().optional(),
@@ -1027,7 +1045,7 @@ export const AiTranslateBody = z
   .strict();
 
 /** Spaces (PRD §40). */
-const SpaceName = z.string().trim().min(1, 'Give the space a name.').max(80);
+const SpaceName = z.string().trim().min(1, msg('Give the space a name.')).max(80);
 const SpacePurpose = z.string().trim().max(280).nullable();
 
 export const CreateSpaceBody = z
@@ -1048,13 +1066,13 @@ export const UpdateSpaceBody = z
     purpose: SpacePurpose.optional(),
   })
   .strict()
-  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+  .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));
 
 export const SpaceRoleBody = z.object({ role: z.enum(['admin', 'member']) }).strict();
 
 export const CreateSpaceConversationBody = z
   .object({
-    title: z.string().trim().min(1, 'Name the conversation.').max(80),
+    title: z.string().trim().min(1, msg('Name the conversation.')).max(80),
     purpose: z.string().trim().max(280).nullable().optional(),
     /** Everyone in the space, or just you until others join. */
     everyone: z.boolean().default(false),
@@ -1062,20 +1080,20 @@ export const CreateSpaceConversationBody = z
   .strict();
 
 /** Organizations (PRD §36). */
-const OrgName = z.string().trim().min(1, 'Give the organization a name.').max(100);
+const OrgName = z.string().trim().min(1, msg('Give the organization a name.')).max(100);
 const OrgAbout = z.string().trim().max(500).nullable();
 /** The year an organization began: from the year 1000 to this one. */
 const FoundedYear = z
   .number()
   .int()
-  .min(1000, 'Enter the year it began.')
-  .refine((y) => y <= latestFoundedYear(), 'That year hasn’t come yet.');
+  .min(1000, msg('Enter the year it began.'))
+  .refine((y) => y <= latestFoundedYear(), msg('That year hasn’t come yet.'));
 const OrgWebsite = z
   .string()
   .trim()
   .max(200)
   .url('Enter a web address like https://datac.com')
-  .refine((u) => /^https?:\/\//i.test(u), 'Enter a web address like https://datac.com')
+  .refine((u) => /^https?:\/\//i.test(u), msg('Enter a web address like https://datac.com'))
   .nullable();
 
 /** An organization's bookable hours (R51), or null to take bookings off. */
@@ -1094,7 +1112,7 @@ export const BookingHoursBody = z
             return false;
           }
         },
-        { message: 'That isn’t a time zone.' },
+        { message: msg('That isn’t a time zone.') },
       ),
     slotMinutes: z.union([
       z.literal(15),
@@ -1114,12 +1132,12 @@ export const BookingHoursBody = z
             end: HHMM,
           })
           .strict()
-          .refine((d) => d.start < d.end, { message: 'A day ends after it starts.' }),
+          .refine((d) => d.start < d.end, { message: msg('A day ends after it starts.') }),
       )
       .min(1)
       .max(7)
       .refine((days) => new Set(days.map((d) => d.weekday)).size === days.length, {
-        message: 'One range for each day.',
+        message: msg('One range for each day.'),
       }),
     leadMinutes: z.number().int().min(0).max(10_080),
     horizonDays: z.number().int().min(1).max(90),
@@ -1154,7 +1172,7 @@ export const UpdateOrgBody = z
     retentionDays: z.number().int().min(1).max(3650).nullable().optional(),
   })
   .strict()
-  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+  .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));
 
 export const OrgMembersBody = z
   .object({
@@ -1169,7 +1187,7 @@ export const OrgMemberBody = z
     title: z.string().trim().max(80).nullable().optional(),
   })
   .strict()
-  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+  .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));
 
 export const OrgDomainBody = z.object({ domain: z.string().trim().min(3).max(260) }).strict();
 
@@ -1197,7 +1215,7 @@ const WebhookUrl = z
   .trim()
   .url('Enter the full address, starting with https://')
   .max(500)
-  .refine((u) => /^https?:\/\//i.test(u), 'Enter the full address, starting with https://');
+  .refine((u) => /^https?:\/\//i.test(u), msg('Enter the full address, starting with https://'));
 
 export const CreateOrgAppBody = z
   .object({
@@ -1216,7 +1234,7 @@ export const UpdateOrgAppBody = z
     events: z.array(z.enum(WEBHOOK_EVENTS)).max(WEBHOOK_EVENTS.length).optional(),
   })
   .strict()
-  .refine((b) => Object.keys(b).length > 0, 'Nothing to change.');
+  .refine((b) => Object.keys(b).length > 0, msg('Nothing to change.'));
 
 /** One change to a checklist card (core kit-cards.ts applies it). */
 export const ChecklistOpBody = z.discriminatedUnion('op', [
@@ -1243,7 +1261,7 @@ export const CheckoutBody = z
   })
   .strict()
   .refine((b) => (b.plan === 'business') === Boolean(b.orgId), {
-    message: 'Pro is for you; Business is for an organization.',
+    message: msg('Pro is for you; Business is for an organization.'),
   });
 
 /** Manage what you pay, or what an organization you run pays, in Stripe's portal. */

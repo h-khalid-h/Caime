@@ -17,6 +17,7 @@ import {
 } from '@/api/queryClient';
 import { IconMark } from '@/brand/Wordmark';
 import { ScreenError } from '@/features/common/ScreenError';
+import { ScreenToasts } from '@/features/shell/ScreenToasts';
 import { isWeb } from '@/lib/config';
 import { loadLanguage, useLanguage } from '@/lib/i18n';
 import { keepAppForOffline } from '@/lib/offline';
@@ -27,7 +28,6 @@ import { useSession } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { FONT_FILES } from '@/theme/fontFiles';
 import { ThemeProvider, useTheme } from '@/theme/theme';
-import { ToastHost } from '@/ui/Toast';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -96,7 +96,7 @@ export default function RootLayout() {
         >
           <ThemeProvider>
             {ready ? <RootStack key={generation} signedIn={status === 'signedIn'} /> : <Boot />}
-            <ToastHost />
+            <ScreenToasts />
             <ThemedStatusBar />
           </ThemeProvider>
         </PersistQueryClientProvider>

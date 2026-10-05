@@ -1,6 +1,6 @@
 import type { MessageView } from '@caime/core/api';
 import { GROUP_CALL_MAX } from '@caime/core/calls';
-import { contextLine, formatDue, retentionText } from '@caime/core/format';
+import { contextLine, formatDue, messagePreview, retentionText } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { canRemoveOthersMessages } from '@caime/core/permissions';
 import { canPin } from '@caime/core/pins';
@@ -141,6 +141,31 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
   const offerCatchUp = aiReady && unreadAtOpen.current >= CATCH_UP_AFTER && catchUpDone !== id;
 
   const messages = useMemo(() => flatMessages(msgs.data), [msgs.data]);
+  // A message arriving while the conversation is open is said to a screen reader (a list growing
+  // says nothing by itself): who, and the preview, in a live region nobody sees. Only what came
+  // after the screen opened, never the history.
+  const [announce, setAnnounce] = useState('');
+  const announcedUpTo = useRef<number | null>(null);
+  useEffect(() => {
+    const newest = messages[messages.length - 1];
+    if (!newest) return;
+    if (announcedUpTo.current === null) {
+      announcedUpTo.current = newest.seq;
+      return;
+    }
+    if (newest.seq <= announcedUpTo.current || newest.senderId === me.id) return;
+    announcedUpTo.current = newest.seq;
+    const who = conversation?.participants.find((p) => p.userId === newest.senderId)?.person
+      .displayName;
+    const preview = messagePreview({
+      kind: newest.kind,
+      body: newest.body,
+      payload: newest.payload,
+      deleted: false,
+      sealed: newest.sealed,
+    });
+    setAnnounce(who ? `${who}: ${preview}` : preview);
+  }, [messages, me.id, conversation]);
   const [focus, setFocus] = useState<number | null>(focusSeq ?? null);
   const [marked, setMarked] = useState<number | null>(null);
   const rows = useMemo(
@@ -588,6 +613,13 @@ export function ConversationScreen({ id, focusSeq }: { id: string; focusSeq?: nu
           onDismiss={() => setCatchUpDone(id)}
         />
       ) : null}
+      <Text
+        accessibilityLiveRegion="polite"
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 }}
+        testID="new-message-announcer"
+      >
+        {announce}
+      </Text>
       <FlatList
         ref={list}
         inverted

@@ -893,8 +893,16 @@ listed there with its owner.
       made by password when the fresh ones are gone; the one untranslated onboarding line through
       `tr`. `core-flow.spec.ts` walks it; the linked paths in `around-the-conversation.spec.ts`
       and `door.spec.ts` skip to their step.
+- [x] The remaining UX mediums: toasts at the bottom, above the phone's tab bar, where a thumb
+      reaches Undo (`ScreenToasts`, `ToastHost above`); reduced motion read from the device as
+      well as the preference (`useReduceMotion`, `lib/motion.ts`: a `Sheet` stops sliding, a
+      skeleton stops pulsing); a mono label in Arabic keeps its letters joined (no letter-spacing
+      where the text has Arabic); the rail's Alerts is Notifications, as the screen is; a message
+      arriving in an open conversation is read to a screen reader (`new-message-announcer`); and
+      a form's own field messages go through `msg()` in core's schemas and `tr` in `validate.ts`,
+      so a refused field reads in the app's language too.
 - [ ] Next block: the remaining hand-written role checks; the intelligence dates and the edit
-      path; the remaining UX mediums; zod's field messages through `tr`.
+      path; the organization page's setup apart from its daily work.
 - [x] R55: French as the third language, for the Maghreb and Lebanon: every string of the app
       and core (2,543, 27 with plurals) and of the public site (267) in French, chosen in
       Language and region, loaded as its own chunk, the site's switch and `hreflang` alternates
@@ -1898,3 +1906,6 @@ listed there with its owner.
 - 2026-10-05 — R56, the first five minutes: onboarding is two steps and a link goes straight
   to its step; the recovery codes wait on Chats until saved, remembered by the account
   (migration 0050); the untranslated work-week line through `tr`.
+- 2026-10-05 — The remaining UX mediums: toasts in thumb reach, reduced motion read from the
+  device, Arabic mono joined, Notifications named once, new messages announced to a screen
+  reader, and a form's field messages in the app's language (`msg()` in the schemas).

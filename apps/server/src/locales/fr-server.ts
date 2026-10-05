@@ -476,8 +476,7 @@ export const frServer: Catalog = {
     'L’assistance IA est occupée. Réessayez dans un instant.',
   'AI assist didn’t work this time. Try again.':
     'L’assistance IA n’a pas fonctionné cette fois. Réessayez.',
-  'Enter the full address, starting with https://':
-    'Saisissez l’adresse complète, en commençant par https://',
+
   'Webhooks go to https addresses.': 'Les webhooks vont vers des adresses https.',
   'That address is on a private network.': 'Cette adresse est sur un réseau privé.',
   'Leave passwords out of the address.': 'Ne mettez pas de mot de passe dans l’adresse.',
@@ -528,7 +527,7 @@ export const frServer: Catalog = {
     'Seule une personne, depuis son propre appareil, écrit dans une conversation privée.',
   'Messages in a private conversation are text, sealed on your device.':
     'Les messages d’une conversation privée sont du texte, scellé sur votre appareil.',
-  'That message isn’t sealed properly.': 'Ce message n’est pas correctement scellé.',
+
   'Only private conversations take sealed messages.':
     'Seules les conversations privées acceptent des messages scellés.',
   'This organization closed, so nothing more is written here. Find it again to start a new conversation.':
@@ -822,7 +821,7 @@ export const frServer: Catalog = {
   'Only private conversations are sealed.': 'Seules les conversations privées sont scellées.',
   'That photo couldn’t be read, so it wasn’t sent. Try another.':
     'Cette photo n’a pas pu être lue, elle n’a donc pas été envoyée. Essayez-en une autre.',
-  'Attach a file.': 'Joignez un fichier.',
+
   'That file is over 100 MB.': 'Ce fichier dépasse 100 Mo.',
   'That upload': 'Ce téléversement',
   'This upload is already complete.': 'Ce téléversement est déjà terminé.',

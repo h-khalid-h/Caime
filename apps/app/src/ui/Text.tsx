@@ -69,7 +69,8 @@ export function Text({
               : undefined,
           fontSize: spec.size,
           lineHeight: spec.lineHeight,
-          letterSpacing: spec.letterSpacing,
+          // Spaced-out letters break Arabic's joins: a mono label in Arabic keeps its letters together.
+          letterSpacing: spec.family === 'mono' && hasRtl(children) ? 0 : spec.letterSpacing,
           textTransform: spec.uppercase ? 'uppercase' : undefined,
           color: resolved,
           textAlign: align ?? (contentDir === 'rtl' ? 'right' : undefined),

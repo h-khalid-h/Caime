@@ -395,10 +395,10 @@ test.describe
       await expect(visible(page, 'Review the venue floor plan')).toBeVisible();
       await expect(visible(page, 'Alex Chen asked you')).toBeVisible();
 
-      // And it's in Alerts, which reads it.
-      await page.getByRole('link', { name: /^Alerts, \d+$/ }).click();
+      // And it's in Notifications, which reads it.
+      await page.getByRole('link', { name: /^Notifications, \d+$/ }).click();
       await expect(visible(page, 'Alex Chen asked you')).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Alerts', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Notifications', exact: true })).toBeVisible();
       await page.screenshot({ path: 'e2e/screenshots/desktop-alerts.png' });
       expect(errors).toEqual([]);
     });

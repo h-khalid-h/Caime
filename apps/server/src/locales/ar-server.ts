@@ -485,7 +485,7 @@ export const arServer: Catalog = {
   'AI assist is busy. Try again in a moment.': 'مساعد الذكاء الاصطناعي مشغول. حاول مجددًا بعد قليل.',
   'AI assist didn’t work this time. Try again.':
     'لم يعمل مساعد الذكاء الاصطناعي هذه المرة. حاول مجددًا.',
-  'Enter the full address, starting with https://': 'أدخل العنوان كاملًا، بدءًا بـ https://',
+
   'Webhooks go to https addresses.': 'تذهب الويب هوك إلى عناوين https فقط.',
   'That address is on a private network.': 'ذلك العنوان على شبكة خاصة.',
   'Leave passwords out of the address.': 'لا تضع كلمات مرور في العنوان.',
@@ -531,7 +531,7 @@ export const arServer: Catalog = {
     'لا يكتب في محادثة خاصة إلا شخص، من جهازه هو.',
   'Messages in a private conversation are text, sealed on your device.':
     'الرسائل في محادثة خاصة نصوص، مختومة على جهازك.',
-  'That message isn’t sealed properly.': 'تلك الرسالة غير مختومة كما ينبغي.',
+
   'Only private conversations take sealed messages.':
     'المحادثات الخاصة وحدها تقبل الرسائل المختومة.',
   'This organization closed, so nothing more is written here. Find it again to start a new conversation.':
@@ -795,7 +795,7 @@ export const arServer: Catalog = {
   'Only private conversations are sealed.': 'المحادثات الخاصة وحدها مختومة.',
   'That photo couldn’t be read, so it wasn’t sent. Try another.':
     'تعذّرت قراءة تلك الصورة، فلم تُرسل. جرّب صورة أخرى.',
-  'Attach a file.': 'أرفق ملفًا.',
+
   'That file is over 100 MB.': 'ذلك الملف أكبر من 100 ميغابايت.',
   'That upload': 'ذلك الرفع',
   'This upload is already complete.': 'اكتمل هذا الرفع بالفعل.',

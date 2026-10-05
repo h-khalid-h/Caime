@@ -1,7 +1,7 @@
 import { tr } from '@caime/core/i18n';
 import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
-import { usePrefs } from '@/theme/prefs';
+import { useReduceMotion } from '@/lib/motion';
 import { useTheme } from '@/theme/theme';
 
 function Bar({ width, height = 12 }: { width: number | `${number}%`; height?: number }) {
@@ -15,7 +15,7 @@ const ROWS = Array.from({ length: 12 }, (_, i) => i);
 
 /** Placeholder rows while the first page loads (only ever shown without a cache). */
 export function SkeletonRows({ count = 6 }: { count?: number }) {
-  const reduce = usePrefs((p) => p.reduceMotion);
+  const reduce = useReduceMotion();
   const pulse = useRef(new Animated.Value(0.55)).current;
   useEffect(() => {
     if (reduce) return;

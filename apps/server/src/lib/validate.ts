@@ -6,7 +6,12 @@ import { badRequest } from './errors';
 export function parse<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
   const result = schema.safeParse(input);
   if (!result.success) {
-    const fields = result.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message }));
+    // A schema's own words (`msg('…')` in core) in the request's language; zod's own stay as
+    // they are (a developer's, never a form's: the app checks fields before it sends).
+    const fields = result.error.issues.map((i) => ({
+      path: i.path.join('.'),
+      message: tr(i.message),
+    }));
     const first = fields[0];
     throw badRequest(
       first ? `${first.path ? `${first.path}: ` : ''}${first.message}` : tr('Invalid request.'),
