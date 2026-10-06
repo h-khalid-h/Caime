@@ -36,7 +36,7 @@ import { applyEditToInbox, upsertMessage } from '@/state/cache';
 import { useDrafts } from '@/state/drafts';
 import { useOutbox } from '@/state/outbox';
 import { useMe } from '@/state/session';
-import { fontFamily } from '@/theme/fonts';
+import { fontFace } from '@/theme/fonts';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -650,7 +650,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               style={[
                 {
                   color: t.c.text,
-                  fontFamily: fontFamily('body', 400),
+                  ...fontFace('body', 400),
                   fontSize: 16,
                   lineHeight: 22,
                   paddingTop: 10,

@@ -151,7 +151,7 @@ function pathOf(data) {
  * every push shows something, if only for a moment. Other browsers let the open app show it.
  */
 const webkit = (() => {
-  const ua = (self.navigator && self.navigator.userAgent) || '';
+  const ua = self.navigator?.userAgent || '';
   return (
     /AppleWebKit/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS|SamsungBrowser/.test(ua)
   );

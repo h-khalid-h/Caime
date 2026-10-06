@@ -662,11 +662,9 @@ export const fr: Catalog = {
   'Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.':
     'Définit vos réglages par défaut, comme votre semaine de travail et la devise des montants. Jamais montré à personne.',
   'Create account': 'Créer le compte',
-  'By creating an account, you agree to the': 'En créant un compte, vous acceptez les',
-  terms: 'conditions',
-  '. The': '. La',
-  'privacy policy': 'politique de confidentialité',
-  'says what Caime keeps, and why.': 'dit ce que Caime conserve, et pourquoi.',
+  'By creating an account, you agree to the <terms>terms</terms>. The <privacy>privacy policy</privacy> says what Caime keeps, and why.':
+    'En créant un compte, vous acceptez les <terms>conditions</terms>. La <privacy>politique de confidentialité</privacy> dit ce que Caime conserve, et pourquoi.',
+  Connection: 'Relation',
   'Already have an account?': 'Vous avez déjà un compte ?',
   'Create an account or sign in to see @{linkHandle}':
     'Créez un compte ou connectez-vous pour voir @{linkHandle}',

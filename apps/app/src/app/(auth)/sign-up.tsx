@@ -7,6 +7,7 @@ import {
   normalizeHandle,
   passwordError,
 } from '@caime/core/rules';
+import { tagged } from '@caime/core/tagged';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { type TextInput, View } from 'react-native';
@@ -309,10 +310,22 @@ export default function SignUp() {
         testID="signup-submit"
       />
       <Text variant="caption" color="textSecondary" align="center">
-        {tr('By creating an account, you agree to the')}{' '}
-        <PageLink name="terms">{tr('terms')}</PageLink>
-        {tr('. The')} <PageLink name="privacy">{tr('privacy policy')}</PageLink>{' '}
-        {tr('says what Caime keeps, and why.')}
+        {tagged(
+          tr(
+            'By creating an account, you agree to the <terms>terms</terms>. The <privacy>privacy policy</privacy> says what Caime keeps, and why.',
+          ),
+        ).map((part, i) =>
+          typeof part === 'string' ? (
+            part
+          ) : part.tag === 'terms' || part.tag === 'privacy' ? (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a sentence's parts keep their order.
+            <PageLink key={i} name={part.tag}>
+              {part.text}
+            </PageLink>
+          ) : (
+            part.text
+          ),
+        )}
       </Text>
       <Pressable
         accessibilityRole="link"

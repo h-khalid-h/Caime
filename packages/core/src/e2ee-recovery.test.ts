@@ -50,7 +50,7 @@ describe('the recovery key (R41)', () => {
     ['noble', 'noble'],
   ] as const)
     it(`registered from ${madeOn}, restored on ${restoredOn}: reads what was sealed for it, and vouches for the new device`, async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: each backend's keys go only to that backend.
+      // Each backend's keys go only to that backend: they pass between them untyped.
       const backends = { web, noble } as Record<string, any>;
       const maker = backends[madeOn] as typeof web;
       const restorer = backends[restoredOn] as typeof web;

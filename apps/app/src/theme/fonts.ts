@@ -1,14 +1,19 @@
 import type { TypeStyle } from '@caime/brand/tokens';
-import { Platform } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 
-/** The system's monospace, one name on each platform; its weight is a style, not a file. */
-const MONO = Platform.select({
-  ios: 'Menlo',
-  android: 'monospace',
-  default: 'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-});
+/** How a face is asked for: its family, and its weight where the family's name doesn't carry it. */
+export interface FontFace {
+  fontFamily: string;
+  fontWeight?: TextStyle['fontWeight'];
+}
 
-/** Each weight is its own font file, so the family name carries the weight. */
+/** The system's monospace; its weight is a style, not a file. */
+const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
+
+/**
+ * On a phone each weight is its own file loaded through expo-font (`fontFiles.ts`), so the family
+ * name carries the weight; the web asks for one family per typeface (`fonts.web.ts`).
+ */
 const FAMILIES = {
   heading: {
     400: 'Nunito_600SemiBold',
@@ -28,7 +33,8 @@ const FAMILIES = {
   },
 } as const;
 
-export function fontFamily(family: TypeStyle['family'], weight: TypeStyle['weight']): string {
-  if (family === 'mono') return MONO;
-  return FAMILIES[family][weight];
+export function fontFace(family: TypeStyle['family'], weight: TypeStyle['weight']): FontFace {
+  if (family === 'mono')
+    return { fontFamily: MONO, fontWeight: String(weight) as TextStyle['fontWeight'] };
+  return { fontFamily: FAMILIES[family][weight] };
 }

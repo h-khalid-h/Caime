@@ -20,13 +20,12 @@ interface Device {
 async function device(on: Name, id: string, userId: string): Promise<Device> {
   const b = BACKENDS[on];
   const keys = await b.newDeviceKeys();
-  // biome-ignore lint/suspicious/noExplicitAny: each backend's keys go only to that backend.
+  // Each backend's keys go only to that backend: they pass between them untyped.
   return { on, keys, pub: { id, userId, ...(await b.publicKeys(keys as any)) } };
 }
 const sealWith = (from: Device, input: Omit<Parameters<typeof web.seal>[0], 'from'>) =>
   BACKENDS[from.on].seal({
     ...input,
-    // biome-ignore lint/suspicious/noExplicitAny: as above.
     from: { id: from.pub.id, userId: from.pub.userId, keys: from.keys as any },
   });
 const openWith = (
@@ -38,7 +37,6 @@ const openWith = (
   BACKENDS[me.on].open({
     conversationId,
     sealed,
-    // biome-ignore lint/suspicious/noExplicitAny: as above.
     me: { id: me.pub.id, keys: me.keys as any },
     sender,
   });
@@ -154,7 +152,6 @@ describe('the phones’ encryption is the browser’s, byte for byte (R18)', () 
     const intro = async (d: Device, by: Device | null): Promise<IntroducedDevice> => ({
       ...d.pub,
       introducedBy: by ? by.pub.id : null,
-      // biome-ignore lint/suspicious/noExplicitAny: as above.
       introduction: await BACKENDS[(by ?? d).on].introduce({ keys: (by ?? d).keys as any }, d.pub),
     });
     // The browser starts the chain, the phone joins it, and the phone approves the tablet.

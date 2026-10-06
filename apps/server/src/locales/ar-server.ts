@@ -22,7 +22,6 @@ export const arServer: Catalog = {
   about: 'عن Caime',
   Help: 'المساعدة',
   Example: 'مثال',
-  Connection: 'التواصل',
   'Who someone is to you comes first.': 'أولًا: من يكون الشخص بالنسبة لك.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
     'التواصل في Caime شخصان وكيف يعرف كلٌّ منهما الآخر، كما يصفه كل طرف، وخاصًّا به وحده. وكل ما سواه في Caime يتفرّع منه.',
@@ -203,7 +202,6 @@ export const arServer: Catalog = {
   'For people': 'للأفراد',
   Personal: 'شخصي',
   ', always': '، دائمًا',
-  'ai assist': 'مساعد الذكاء الاصطناعي',
   '{n} actions a day, once you turn it on': '{n} إجراء في اليوم، متى شغّلته',
   files: 'الملفات',
   automations: 'الأتمتة',
@@ -214,7 +212,6 @@ export const arServer: Catalog = {
   'how your relationships are going, from your own messages, for you only':
     'كيف تسير علاقاتك، من رسائلك أنت، لك وحدك',
   team: 'الفريق',
-  'ai agent': 'وكيل الذكاء الاصطناعي',
   'how fast the team answers, who is waiting, what is open':
     'سرعة إجابة الفريق، ومن ينتظر، وما هو مفتوح',
   Enterprise: 'Enterprise',
@@ -273,7 +270,7 @@ export const arServer: Catalog = {
   'the server': 'الخادم',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
     'سياسة أمان محتوى على كل صفحة، ولا نصوص برمجية من طرف ثالث، ولا إعلانات، ولا تتبع عبر المواقع، ونسخة احتياطية تُفحص بعد كل تفريغ.',
-  ai: 'الذكاء الاصطناعي',
+  AI: 'الذكاء الاصطناعي',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
     'معطّل حتى يفعّله شخص بالغ، ولا يعمل على محادثة خاصة أبدًا، وكل ما يستنتجه اقتراح لك أن تقبله أو ترفضه.',
   'Read the privacy policy': 'اقرأ سياسة الخصوصية',
@@ -307,7 +304,7 @@ export const arServer: Catalog = {
   'personal tokens': 'الرموز الشخصية',
   'A person makes a token for their own scripts ({scopes}). It never reaches the account itself.':
     'يصنع الشخص رمز وصول لنصوصه البرمجية ({scopes}). ولا يبلغ الحساب نفسه أبدًا.',
-  oauth: 'OAuth',
+  OAuth: 'OAuth',
   'Third-party apps ask people for consent (OAuth 2.0; errors as RFC 6749 and 7009 say), hold only what they were given, and can be revoked any time from Settings.':
     'تطلب تطبيقات الطرف الثالث موافقة الأفراد (OAuth 2.0؛ والأخطاء وفق RFC 6749 و7009)، ولا تحمل إلا ما أُعطيت، ويمكن إلغاؤها في أي وقت من الإعدادات.',
   'the guide': 'الدليل',

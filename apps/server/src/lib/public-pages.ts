@@ -7,6 +7,9 @@
  * the viewer; a person's page exists only while they can be found by handle, and never under
  * 18); every other path is the app's and asks not to be indexed.
  */
+
+import { type Character, characterSvg, type Expression } from '@caime/brand/characters';
+import { HEART_PATH, WORDMARK } from '@caime/brand/generated/wordmark';
 import type { BookingItem, CatalogCollection, OrgRef, PaymentKind } from '@caime/core';
 import {
   bySlug,
@@ -28,17 +31,21 @@ import {
   dirOf,
   INTERFACE_LANGUAGES,
   type InterfaceLanguage,
+  sentence,
   tr,
 } from '@caime/core/i18n';
+import { tagged } from '@caime/core/tagged';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema';
 import { catalogOf, paymentsOf } from './booking';
 import { orgRef } from './business';
 import { orgsOf } from './orgs';
+import { FACE, px, THEME_VARS, type } from './page-style';
 import {
   esc,
   explorerStyle,
   LANDING_DESCRIPTION,
+  label,
   langAttrs,
   PROMISE,
   renderLanding,
@@ -367,62 +374,127 @@ function entryTitle(screen: EntryScreen): string {
       : tr('Create your account');
 }
 
-/** A field as the app draws one, waiting for the app: its label and an empty box. */
-const field = (label: string, type = 'text') =>
-  `<label class="field"><span>${esc(label)}</span><input type="${type}" disabled aria-disabled="true"></label>`;
+/** A field as the app draws one, waiting for the app: its label, an empty box and its hint. */
+const field = (label: string, type = 'text', hint?: string) =>
+  `<label class="field"><span>${esc(label)}</span><input type="${type}" disabled aria-disabled="true">${hint ? `<span class="hint">${esc(hint)}</span>` : ''}</label>`;
 
 /**
  * The entry screens as the app paints them, in HTML the browser paints first (R44): the same
  * words (`tr`, in the request's language), the same shape, so the swap is invisible. The
  * buttons that are links work before the app does; a form waits for it.
  */
+/** A sentence with its links marked (core `tagged`), written as HTML: each tag a link to its path. */
+function linked(sentence: string, hrefs: Record<string, string>): string {
+  return tagged(sentence)
+    .map((p) =>
+      typeof p === 'string'
+        ? esc(p)
+        : hrefs[p.tag]
+          ? `<a href="${hrefs[p.tag]}">${esc(p.text)}</a>`
+          : esc(p.text),
+    )
+    .join('');
+}
+
+/** The wordmark as the app's `Wordmark` draws it: brand's paths, in the scheme's colour. */
+function wordmark(height: number): string {
+  const width = Math.round((WORDMARK.width / WORDMARK.height) * height);
+  return `<svg class="mark" role="img" aria-label="${esc(tr('Caime'))}" width="${width}" height="${height}" viewBox="${WORDMARK.viewBox}"><path class="mark-letters" d="${WORDMARK.letters}"/><path class="mark-heart" d="${HEART_PATH}" transform="${WORDMARK.heartTransform}"/></svg>`;
+}
+
+/** A Caime Friend as the app's `Character` draws one (brand's own drawing), for the eye alone. */
+const friend = (name: Character, size: number, expression: Expression) =>
+  `<span class="friend" aria-hidden="true">${characterSvg(name, { size, expression, accents: true, detail: size >= 48 })}</span>`;
+
+/** The app's `BrandPanel`: the desktop's other half beside every entry screen. */
+function brandPanel(): string {
+  return `<aside class="brand-panel">
+    <div class="friends">${friend('momo', 104, 'excited')}${friend('caishy', 176, 'happy')}${friend('niko', 104, 'wink')}</div>
+    <div class="brand-words">${wordmark(46)}
+      <p class="mono">${esc(tr('messaging that understands your relationships'))}</p>
+      <p class="title">${esc(tr('Family, friends and work, each in its place.'))}</p>
+      <p class="lead">${esc(tr('The right conversations find you, and the rest wait politely. How you label someone is only ever yours.'))}</p>
+    </div>
+  </aside>`;
+}
+
+/** `AuthLayout`'s top row: the way back and, on a phone, the wordmark. */
+const bar = () =>
+  `<div class="bar"><a class="back" href="/welcome" aria-label="${esc(tr('Back'))}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></a><span class="bar-mark">${wordmark(24)}</span></div>`;
+
+/** `AuthLayout`'s heading: the kicker, the title and what it's for. */
+const head = (kicker: string, title: string, lead: string) =>
+  `<div class="head"><p class="mono">${esc(sentence(kicker))}</p><h1>${esc(title)}</h1><p class="lead">${esc(lead)}</p></div>`;
+
+/**
+ * Each entry screen as the app draws it, before the app runs (CLAUDE.md, the entry screens): the
+ * same words in the same places on a phone and beside the brand panel on a desktop, so nothing
+ * moves when the app takes over.
+ */
 function entryBody(screen: EntryScreen): string {
   const dir = currentTranslator().dir;
   const spec = `<dl class="spec">
-    <div><dt class="mono">connection</dt><dd>${esc(tr('Say who someone is to you, once. Everything fits from then on.'))}</dd></div>
-    <div><dt class="mono">attention</dt><dd>${esc(tr('“3 need you”, never “47 unread”. It says why.'))}</dd></div>
-    <div><dt class="mono">privacy</dt><dd>${esc(tr('Each side of your life sees what you chose. Only you see your labels.'))}</dd></div>
+    <div>${label(tr('Connection'))}<dd>${esc(tr('Say who someone is to you, once. Everything fits from then on.'))}</dd></div>
+    <div>${label(tr('Attention'))}<dd>${esc(tr('“3 need you”, never “47 unread”. It says why.'))}</dd></div>
+    <div>${label(tr('Privacy'))}<dd>${esc(tr('Each side of your life sees what you chose. Only you see your labels.'))}</dd></div>
   </dl>`;
-  if (screen === 'welcome')
+  if (screen === 'welcome') {
+    const actions = `<div class="actions">
+      <p class="cta"><a href="/sign-up">${esc(tr('Create your account'))}</a><a href="/sign-in" class="quiet">${esc(tr('I already have an account'))}</a></p>
+      <p class="note">${esc(tr('Free for people. Private by design: how you label someone is only ever yours.'))}</p>
+    </div>`;
     return `
-<main class="pub pub-entry" dir="${dir}" aria-busy="true">
-  <p class="mono">${esc(tr('welcome'))}</p>
-  <h1>${esc(tr('Welcome to Caime'))}</h1>
-  <p class="lead">${esc(tr('One place for everyone you talk to, and it knows the difference between your mum, your manager and your plumber.'))}</p>
-  ${spec}
-  <p class="cta"><a href="/sign-up">${esc(tr('Create your account'))}</a><a href="/sign-in" class="quiet">${esc(tr('I already have an account'))}</a></p>
-  <p class="small">${esc(tr('Free for people. Private by design: how you label someone is only ever yours.'))}</p>
+<main class="pub-entry welcome" dir="${dir}" aria-busy="true">
+  ${brandPanel()}
+  <section class="pane phone">
+    <div class="hero">${friend('caishy', 176, 'happy')}${wordmark(44)}
+      <div class="words"><h1 class="title">${esc(tr('Messaging that understands your relationships.'))}</h1>
+        <p class="lead">${esc(tr('Family, friends and work, each in its place. The right conversations find you.'))}</p>
+        ${spec}
+      </div>
+    </div>
+    ${actions}
+  </section>
+  <section class="pane desk">
+    <div class="head"><p class="mono">${esc(sentence(tr('welcome')))}</p><h1>${esc(tr('Welcome to Caime'))}</h1>
+      <p class="lead">${esc(tr('One place for everyone you talk to, and it knows the difference between your mum, your manager and your plumber.'))}</p>
+      ${spec}
+    </div>
+    ${actions}
+  </section>
 </main>`;
-  if (screen === 'sign-in')
-    return `
-<main class="pub pub-entry" dir="${dir}" aria-busy="true">
-  <p class="mono">${esc(tr('sign in'))}</p>
-  <h1>${esc(tr('Welcome back'))}</h1>
-  <p class="lead">${esc(tr('Sign in with your email or @handle.'))}</p>
-  <form class="form" aria-disabled="true">
-    ${field(tr('Email or handle'))}
-    ${field(tr('Password'), 'password')}
-    <button type="button" disabled>${esc(tr('Sign in'))}</button>
-  </form>
-  <p class="small"><a href="/recover">${esc(tr('Forgot your password?'))}</a></p>
-  <p class="small">${esc(tr('New here?'))} <a href="/sign-up">${esc(tr('Create an account'))}</a></p>
-</main>`;
+  }
+  const form =
+    screen === 'sign-in'
+      ? `${head(tr('sign in'), tr('Welcome back'), tr('Sign in with your email or @handle.'))}
+    <form class="form" aria-disabled="true">
+      <div class="fields">${field(tr('Email or handle'))}${field(tr('Password'), 'password')}</div>
+      <button type="button" disabled>${esc(tr('Sign in'))}</button>
+    </form>
+    <div class="links">
+      <p class="small"><a href="/forgot">${esc(tr('Forgot your password?'))}</a></p>
+      <p class="small">${esc(tr('New here?'))} <a href="/sign-up">${esc(tr('Create an account'))}</a></p>
+    </div>`
+      : `${head(tr('new account'), tr('Create your account'), tr('It takes a minute. You can change all of it later.'))}
+    <form class="form" aria-disabled="true">
+      <div class="fields">
+        ${field(tr('Your name'), 'text', tr('How people see you. Use any name you like.'))}
+        ${field(tr('Handle'), 'text', tr('People can find you by it. Letters, numbers, dots or underscores.'))}
+        ${field(tr('Email'), 'email', tr('For signing in. Hidden from others unless you choose otherwise.'))}
+        ${field(tr('Password'), 'password', tr('At least 10 characters. A short sentence works well.'))}
+        ${field(tr('Date of birth'), 'text', tr('Only to keep younger people safer, from the day you turn 18. Never shown to anyone.'))}
+        ${field(tr('Where you live'), 'text', tr('Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.'))}
+      </div>
+      <button type="button" disabled>${esc(tr('Create account'))}</button>
+    </form>
+    <p class="terms">${linked(tr('By creating an account, you agree to the <terms>terms</terms>. The <privacy>privacy policy</privacy> says what Caime keeps, and why.'), { terms: '/terms', privacy: '/privacy' })}</p>
+    <p class="small">${esc(tr('Already have an account?'))} <a href="/sign-in">${esc(tr('Sign in'))}</a></p>`;
   return `
-<main class="pub pub-entry" dir="${dir}" aria-busy="true">
-  <p class="mono">${esc(tr('new account'))}</p>
-  <h1>${esc(tr('Create your account'))}</h1>
-  <p class="lead">${esc(tr('It takes a minute. You can change all of it later.'))}</p>
-  <form class="form" aria-disabled="true">
-    ${field(tr('Your name'))}
-    ${field(tr('Handle'))}
-    ${field(tr('Email'), 'email')}
-    ${field(tr('Password'), 'password')}
-    ${field(tr('Date of birth'))}
-    ${field(tr('Where you live'))}
-    <button type="button" disabled>${esc(tr('Create account'))}</button>
-  </form>
-  <p class="small">${esc(tr('By creating an account, you agree to the'))} <a href="/terms">${esc(tr('terms'))}</a>${esc(tr('. The'))} <a href="/privacy">${esc(tr('privacy policy'))}</a> ${esc(tr('says what Caime keeps, and why.'))}</p>
-  <p class="small">${esc(tr('Already have an account?'))} <a href="/sign-in">${esc(tr('Sign in'))}</a></p>
+<main class="pub-entry" dir="${dir}" aria-busy="true">
+  ${brandPanel()}
+  <section class="pane"><div class="scroll"><div class="col">${bar()}
+    ${form}
+  </div></div></section>
 </main>`;
 }
 
@@ -586,9 +658,9 @@ export function renderPublic(
   <h1>${esc(page.displayName)}</h1>
   ${page.bio ? `<p class="lead">${esc(page.bio)}</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">${esc(tr('handle'))}</dt><dd>@${esc(page.handle)}</dd></div>
-    ${page.headline ? `<div><dt class="mono">${esc(tr('headline'))}</dt><dd>${esc(page.headline)}</dd></div>` : ''}
-    ${page.organizations.length ? `<div><dt class="mono">${esc(tr('with'))}</dt><dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
+    <div>${label(tr('handle'))}<dd>@${esc(page.handle)}</dd></div>
+    ${page.headline ? `<div>${label(tr('headline'))}<dd>${esc(page.headline)}</dd></div>` : ''}
+    ${page.organizations.length ? `<div>${label(tr('with'))}<dd>${page.organizations.map((o) => `<a href="/o/${esc(o.handle)}">${esc(o.name)}</a>`).join(', ')}</dd></div>` : ''}
     ${itemRows(page)}
     ${payRow(page)}
   </dl>
@@ -636,14 +708,14 @@ export function renderPublic(
   <h1>${esc(o.name)}</h1>
   ${page.about ? `<p class="lead">${esc(page.about)}</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">${esc(tr('handle'))}</dt><dd>@${esc(o.handle)}</dd></div>
-    <div><dt class="mono">${esc(tr('verified'))}</dt><dd>${
+    <div>${label(tr('handle'))}<dd>@${esc(o.handle)}</dd></div>
+    <div>${label(tr('verified'))}<dd>${
       o.verified && o.verifiedDomain
         ? esc(tr('{domain}, proved with a DNS record', { domain: o.verifiedDomain }))
         : esc(tr('Not yet'))
     }</dd></div>
-    ${page.foundedYear ? `<div><dt class="mono">${esc(tr('since'))}</dt><dd>${page.foundedYear}</dd></div>` : ''}
-    ${page.website ? `<div><dt class="mono">${esc(tr('website'))}</dt><dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
+    ${page.foundedYear ? `<div>${label(tr('since'))}<dd>${page.foundedYear}</dd></div>` : ''}
+    ${page.website ? `<div>${label(tr('website'))}<dd><a href="${esc(page.website)}" rel="noopener">${esc(page.website.replace(/^https?:\/\//, ''))}</a></dd></div>` : ''}
     ${itemRows(page)}
     ${payRow(page)}
   </dl>
@@ -687,8 +759,8 @@ export function renderPublic(
   <h1>${esc(item.name)}</h1>
   ${item.description ? `<p class="lead">${esc(item.description)}</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">${esc(tr('from'))}</dt><dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
-    <div><dt class="mono">${esc(item.unit === 'each' ? tr('price') : tr('booking'))}</dt><dd>${esc(itemLine(item))}</dd></div>
+    <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
+    <div>${label(item.unit === 'each' ? tr('price') : tr('booking'))}<dd>${esc(itemLine(item))}</dd></div>
   </dl>
   <p class="cta">${bookLink([item], path, name, true)}<a href="${wayIn('sign-in', item.unit === 'each' ? orderPath(path) : bookPath(path))}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
@@ -733,7 +805,7 @@ export function renderPublic(
   <h1>${esc(collection.name)}</h1>
   ${collection.description ? `<p class="lead">${esc(collection.description)}</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">${esc(tr('from'))}</dt><dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
+    <div>${label(tr('from'))}<dd><a href="${esc(hostPath(host))}">${esc(name)}</a></dd></div>
     ${itemRows({ ...host, collections: [] }, items)}
   </dl>
   <p class="cta">${bookLink(items, hostPath(host), name)}</p>
@@ -777,10 +849,10 @@ export function renderPublic(
   <h1>${esc(tr('{name} invited you', { name: page.displayName }))}</h1>
   ${page.note ? `<p class="lead">“${esc(page.note)}”</p>` : ''}
   <dl class="spec">
-    <div><dt class="mono">${esc(tr('from'))}</dt><dd>${esc(page.displayName)}</dd></div>
-    ${page.context ? `<div><dt class="mono">${esc(tr('about'))}</dt><dd>${esc(page.context)}</dd></div>` : ''}
-    <div><dt class="mono">${esc(tr('to join'))}</dt><dd>${esc(tr('Sign up in half a minute and you’re connected with {name}, no app to install.', { name: page.displayName }))}</dd></div>
-    <div><dt class="mono">${SITE_NAME.toLowerCase()}</dt><dd>${esc(tr(PROMISE))}</dd></div>
+    <div>${label(tr('from'))}<dd>${esc(page.displayName)}</dd></div>
+    ${page.context ? `<div>${label(tr('about'))}<dd>${esc(page.context)}</dd></div>` : ''}
+    <div>${label(tr('to join'))}<dd>${esc(tr('Sign up in half a minute and you’re connected with {name}, no app to install.', { name: page.displayName }))}</dd></div>
+    <div>${label(SITE_NAME)}<dd>${esc(tr(PROMISE))}</dd></div>
   </dl>
   <p class="cta"><a href="${wayIn('sign-up', path)}">${esc(tr('Join {name} on {site}', { name: page.displayName, site: SITE_NAME }))}</a> <a href="${wayIn('sign-in', path)}" class="quiet">${esc(tr('Sign in'))}</a></p>
 </main>`,
@@ -842,7 +914,7 @@ export const payPath = (pagePath: string) => `${pagePath}?pay`;
 /** "Bank transfer, Cash": how anyone may pay a host, as a spec row; never an account. */
 function payRow(host: PublicPerson | PublicOrg): string {
   if (!host.pays.length) return '';
-  return `<div><dt class="mono">${esc(tr('pays by'))}</dt><dd>${esc(
+  return `<div>${label(tr('pays by'))}<dd>${esc(
     host.pays.map((k) => tr(PAYMENT_KIND_LABELS[k])).join(', '),
   )}</dd></div>`;
 }
@@ -894,11 +966,11 @@ export const shelfPath = (host: PublicPerson | PublicOrg, slug: string) =>
 function itemRows(host: PublicPerson | PublicOrg, items: PublicItem[] = host.items): string {
   if (items.length === 0) return '';
   const shelves = host.collections.length
-    ? `<div><dt class="mono">${esc(tr('collections'))}</dt><dd>${host.collections
+    ? `<div>${label(tr('collections'))}<dd>${host.collections
         .map((c) => `<a href="${esc(shelfPath(host, c.slug))}">${esc(c.name)}</a>`)
         .join(' · ')}</dd></div>`
     : '';
-  return `${shelves}<div><dt class="mono">${esc(tr('offers'))}</dt><dd>${items
+  return `${shelves}<div>${label(tr('offers'))}<dd>${items
     .map(
       (i) =>
         `<a href="${esc(shelfPath(host, i.slug))}">${esc(i.name)}</a> <span class="small">${esc(itemLine(i))}</span>`,
@@ -967,101 +1039,101 @@ function bookLink(items: PublicItem[], pagePath: string, name: string, own = fal
   return out.join('');
 }
 
-// Caime's own faces for a visitor's page, under the names its CSS uses: the shell's rules name
-// the same files as expo-font does (`Inter_400Regular`), so `Inter` alone found none and every
-// public page drew in the system's font. Only the weights these pages use; each file is fetched
-// once, cached a year, and is the one the app loads after.
-const LATIN =
-  'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
-const LATIN_EXT =
-  'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF';
-export const PUBLIC_FACES = (
-  [
-    ['Inter', 'inter', [400, 600, 700]],
-    ['Nunito', 'nunito', [800]],
-  ] as const
-)
-  .flatMap(([family, file, weights]) =>
-    weights.flatMap((weight) =>
-      (
-        [
-          ['latin', LATIN],
-          ['latin-ext', LATIN_EXT],
-        ] as const
-      ).map(
-        ([cut, range]) =>
-          `@font-face{font-family:${family};font-weight:${weight};font-display:swap;src:url(/fonts/${file}-${cut}-${weight}-normal.woff2) format('woff2');unicode-range:${range}}`,
-      ),
-    ),
-  )
-  .join('\n');
-
 const PUBLIC_STYLE = `
 <style id="pub-style">
-${PUBLIC_FACES}
 #root:empty{display:none}
 #root:not(:empty)~#static{display:none}html[data-visitor] #root{display:none!important}html[data-visitor] #static{display:block!important}html[data-visitor] body{overflow:auto!important}
 body:has(#root:empty){overflow:auto}
-#static{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#23193a;background:#f7f7fa;min-height:100%}
+${THEME_VARS}
+body{margin:0}
+#static{font-family:${FACE.body};color:var(--text);background:var(--canvas);min-height:100%}
 .pub{max-width:640px;margin:0 auto;padding:48px 20px 64px;line-height:1.5}
-.pub h1{font-size:2rem;line-height:1.15;margin:0 0 8px;color:#3b2e5b}
-.pub .lead{font-size:1.15rem;color:#5b4f75;margin:0 0 20px}
+.pub h1{font-size:2rem;line-height:1.15;margin:0 0 8px;color:var(--ink)}
+.pub .lead{font-size:1.15rem;color:var(--text-secondary);margin:0 0 20px}
 .pub ul{padding-inline-start:20px}.pub li{margin:8px 0}
-.pub .cta a{display:inline-block;background:#3b2e5b;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;font-weight:600;margin:12px 8px 0 0}
-.pub .cta a.quiet{background:transparent;color:#3b2e5b;border:1px solid #3b2e5b}
-.pub .small{color:#5b4f75;font-size:.9rem}.pub a{color:#3b2e5b}
+.pub .cta a{display:inline-block;background:var(--primary);color:var(--on-primary);text-decoration:none;border-radius:${px.radius('pill')};padding:12px 22px;font-weight:600;margin:12px 8px 0 0}
+.pub .cta a.quiet{background:var(--surface-muted);color:var(--text)}
+.pub .small{color:var(--text-secondary);font-size:.9rem}.pub a{color:var(--link)}
 .pub img.face{border-radius:50%}.pub img.mark{border-radius:28px}.pub img.photo{border-radius:20px;max-width:100%;height:auto;object-fit:cover}
-@media (prefers-color-scheme:dark){#static{background:#16121f;color:#ece7f5}.pub h1,.pub a,.pub .cta a.quiet{color:#ece7f5}.pub .lead,.pub .small{color:#b9afcf}.pub .cta a{background:#ece7f5;color:#3b2e5b}.pub .cta a.quiet{background:transparent;border-color:#ece7f5}}
-.pub{--ink:#3b2e5b;--text:#2b2340;--text2:#5e5673;--text3:#6f6885;--line:#eceaf1;--muted:#f1f0f5;--surface:#fff;--accent:#ff8fb1;--accent-soft:#ffd6e7;--plum:#5b40a0}
-@media (prefers-color-scheme:dark){.pub{--ink:#f5f2fa;--text:#f5f2fa;--text2:#b7afc9;--text3:#9c94b0;--line:#2c2836;--muted:#25222e;--surface:#17151e;--accent:#ff8fb1;--accent-soft:#4a2c3f;--plum:#6a57a8}}
-.pub-sheet{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}.pub-sheet h1{font-size:2rem;font-weight:800;margin:14px 0 6px;color:var(--ink)}.pub-sheet .masthead{margin-bottom:8px}.pub-sheet .wordmark{text-decoration:none}.pub-sheet .spec{margin:14px 0 6px}
-.pub-home{max-width:840px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
-.pub .mono{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:.82rem;letter-spacing:0;color:var(--text3);font-weight:600}
-.pub dt.mono::first-letter,.pub-entry p.mono::first-letter{text-transform:uppercase}
-.pub-entry{max-width:420px;padding:28px 20px 40px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
-.pub-entry h1{font-family:Nunito,Inter,system-ui,sans-serif;font-size:1.9rem;font-weight:800;line-height:1.15;margin:4px 0 6px;color:var(--ink)}
-.pub-entry .lead{font-size:1rem;color:var(--text2);margin:0 0 14px}
-.pub-entry .spec{margin:6px 0 10px}.pub-entry .spec>div{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line)}.pub-entry .spec dd{margin:0;color:var(--text2);font-size:.95rem}
-.pub-entry .form{display:flex;flex-direction:column;gap:12px;margin:6px 0 14px}
-.pub-entry .field{display:flex;flex-direction:column;gap:6px;font-size:.9rem;color:var(--text2)}
-.pub-entry .field input{height:48px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:0 14px;font:inherit;color:var(--text)}
-.pub-entry button,.pub-entry .cta a{display:block;width:100%;box-sizing:border-box;height:52px;line-height:52px;text-align:center;border:0;border-radius:16px;background:var(--ink);color:#fff;font:inherit;font-weight:600;font-size:1rem;margin:10px 0 0;padding:0;text-decoration:none}
-.pub-entry .cta a.quiet{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.pub-entry .small{font-size:.9rem;color:var(--text3);text-align:center;margin:10px 0 0}.pub-entry .small a{color:var(--ink)}
-.pub-entry[dir=rtl]{text-align:right}
-.pub-home h1,.pub-home h3,.pub-home .wordmark,.pub-sheet .wordmark{font-family:Nunito,Inter,system-ui,sans-serif}
-.pub-home .masthead,.pub-sheet .masthead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.pub-sheet{font-family:${FACE.body};color:var(--text)}.pub-sheet h1{font-size:2rem;font-weight:800;margin:14px 0 6px;color:var(--ink)}.pub-sheet .masthead{margin-bottom:8px}.pub-sheet .wordmark{text-decoration:none}.pub-sheet .spec{margin:14px 0 6px}
+.pub-home{max-width:840px;font-family:${FACE.body};color:var(--text)}
+.pub .mono{${type('mono')};color:var(--text-tertiary)}.pub-home h2.mono{${type('overline')}}
+.pub-entry{display:flex;min-height:100vh;font-family:${FACE.body};color:var(--text);background:var(--canvas)}
+.pub-entry p,.pub-entry h1,.pub-entry dl{margin:0}
+.pub-entry .mono{${type('mono')};color:var(--text-tertiary)}
+.pub-entry .lead{${type('body')};color:var(--text-secondary)}
+.pub-entry .mark-letters{fill:var(--wordmark)}.pub-entry .mark-heart{fill:var(--accent)}.pub-entry .friend{display:inline-flex}
+.pub-entry .pane{flex:1;display:flex;flex-direction:column;min-width:0}
+.pub-entry .scroll{flex:1;display:flex;flex-direction:column;padding:8px 20px 20px}.pub-entry .col{width:100%;max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.pub-entry .bar{display:flex;align-items:center;min-height:48px;margin-inline-start:-8px}
+.pub-entry .back{display:grid;place-items:center;width:${px.touch};height:${px.touch};color:var(--text-secondary)}
+.pub-entry .bar-mark{flex:1;display:flex;justify-content:center;margin-inline-end:44px}
+.pub-entry .head{display:flex;flex-direction:column;gap:6px}
+.pub-entry h1{${type('display')};color:var(--text)}
+.pub-entry .spec{border-top:1px solid var(--border)}.pub-entry .spec>div{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--border)}.pub-entry .spec dt{width:96px;flex:none;padding-top:2px}.pub-entry .spec dd{flex:1;margin:0;${type('caption')};color:var(--text-secondary)}
+.pub-entry .form{display:flex;flex-direction:column;gap:20px}.pub-entry .fields{display:flex;flex-direction:column;gap:14px}.pub-entry .field .hint{${type('caption')};color:var(--text-tertiary)}.pub-entry .links{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pub-entry .field{display:flex;flex-direction:column;gap:6px;${type('captionStrong')};color:var(--text-secondary)}
+.pub-entry .field input{box-sizing:border-box;height:${px.height('field')};border:1px solid var(--border);border-radius:${px.radius('md')};background:var(--surface);padding:0 14px;${type('message')};color:var(--text)}
+.pub-entry button,.pub-entry .cta a{display:block;width:100%;box-sizing:border-box;height:${px.height('lg')};text-align:center;border:0;border-radius:${px.radius('pill')};background:var(--primary);color:var(--on-primary);${type('label')};line-height:${px.height('lg')};margin:0;padding:0 20px;text-decoration:none}
+.pub-entry .cta{display:flex;flex-direction:column;gap:12px}
+.pub-entry .cta a.quiet{background:var(--surface-muted);color:var(--text)}
+.pub-entry .note{${type('caption')};color:var(--text-tertiary);text-align:center;margin-top:4px}
+.pub-entry .small{${type('body')};color:var(--text-secondary);text-align:center;padding:8px}.pub-entry .small a{${type('bodyStrong')};color:var(--link);text-decoration:none}
+.pub-entry .terms{${type('caption')};color:var(--text-secondary);text-align:center}.pub-entry .terms a{${type('captionStrong')};color:var(--link);text-decoration:none}
+.pub-entry .brand-panel{display:none}
+.pub-entry.welcome .phone{padding:0 24px 16px;box-sizing:border-box}
+.pub-entry.welcome .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.pub-entry.welcome .words{display:flex;flex-direction:column;gap:8px;max-width:360px;width:100%;text-align:center}
+.pub-entry.welcome .words .spec{margin-top:10px;text-align:start}
+.pub-entry.welcome .title{${type('title')};color:var(--text)}
+.pub-entry.welcome .actions{display:flex;flex-direction:column;gap:12px;width:100%;max-width:420px;margin:0 auto}
+.pub-entry.welcome .desk{display:none}
+@media (min-width:${px.desktop}){
+.pub-entry{background:var(--surface)}
+.pub-entry .brand-panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:28px;background:var(--accent-soft)}
+.pub-entry .friends{display:flex;align-items:flex-end;gap:4px}
+.pub-entry .brand-words{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:440px;text-align:center}
+.pub-entry .brand-words .title{${type('title')};color:var(--text)}
+.pub-entry .pane{background:var(--surface)}.pub-entry .scroll{justify-content:center}
+.pub-entry .bar-mark{display:none}
+.pub-entry.welcome .phone{display:none}
+.pub-entry.welcome .desk{display:flex;flex-direction:column;justify-content:center;padding:48px;gap:28px}
+.pub-entry.welcome .desk>.head{width:100%;max-width:420px;margin:0 auto;gap:8px}.pub-entry.welcome .desk .spec{margin-top:10px}
+}
+@media (min-width:${px.desktop}) and (prefers-color-scheme:dark){.pub-entry .brand-panel{background:var(--surface-raised)}}
+.pub-home h1,.pub-home h3,.pub-home .wordmark,.pub-sheet .wordmark{font-family:${FACE.heading}}
+.pub-home .masthead,.pub-sheet .masthead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border)}
 .pub-home .wordmark,.pub-sheet .wordmark{font-weight:800;font-size:1.35rem;color:var(--ink);text-decoration:none}
 .pub-home .hero{padding:36px 0 28px}
 .pub-home h1{font-size:2.4rem;line-height:1.1;font-weight:800;letter-spacing:-.01em;margin:0 0 14px;max-width:16ch}
 .pub-home .lead{font-size:1.05rem;max-width:58ch}
-.pub-home h2.mono{margin:0 0 10px;padding-top:26px;border-top:1px solid var(--line)}
+.pub-home h2.mono{margin:0 0 10px;padding-top:26px;border-top:1px solid var(--border)}
 .pub-home .spec,.pub-sheet .spec{margin:0;display:grid;grid-template-columns:1fr;gap:0}
-.pub-home .spec>div,.pub-sheet .spec>div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pub-home .spec>div,.pub-sheet .spec>div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid var(--border)}
 .pub-home .spec dt,.pub-sheet .spec dt{margin:0;padding-top:3px}.pub-home .spec dd,.pub-sheet .spec dd{margin:0;font-size:.95rem;line-height:1.5}
 .pub-home .layers{margin-top:8px}
 .pub-home .layers input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .pub-home .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
-.pub-home .tabs label{display:inline-flex;align-items:baseline;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-size:.92rem;font-weight:600;color:var(--text2);background:var(--surface)}
-.pub-home .tabs label .mono{color:var(--text3)}
-.pub-home .panel{display:none;border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--surface)}
+.pub-home .tabs label{display:inline-flex;align-items:baseline;gap:6px;padding:8px 12px;border:1px solid var(--border);border-radius:999px;cursor:pointer;font-size:.92rem;font-weight:600;color:var(--text-secondary);background:var(--surface)}
+.pub-home .tabs label .mono{color:var(--text-tertiary)}
+.pub-home .panel{display:none;border:1px solid var(--border);border-radius:12px;padding:18px;background:var(--surface)}
 .pub-home .panel h3{font-size:1.25rem;line-height:1.25;margin:6px 0 8px;font-weight:800;color:var(--ink)}
 .pub-home .panel>p{margin:0 0 6px}.pub-home .panel>p.mono{margin:0}
-.pub-home .sample{margin-top:14px;padding:14px;border-radius:10px;background:var(--muted);display:grid;gap:8px;font-size:.92rem}
+.pub-home .sample{margin-top:14px;padding:14px;border-radius:10px;background:var(--surface-muted);display:grid;gap:8px;font-size:.92rem}
 .pub-home .sample .row{display:flex;gap:10px;align-items:flex-start}
-.pub-home .sample .dot{width:28px;height:28px;border-radius:50%;background:var(--accent);flex:none}.pub-home .sample .dot-2{background:var(--plum)}.pub-home .sample .dot-3{background:var(--ink)}
-.pub-home .sample .tag{font-family:Inter,system-ui,sans-serif;font-size:.74rem;font-weight:600;letter-spacing:0;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--text);flex:none}
-.pub-home .sample .tag-2{background:var(--surface);border:1px solid var(--line)}.pub-home .sample .tag-3{background:var(--surface);border:1px dashed var(--line)}
-.pub-home .sample .bubble{max-width:80%;padding:8px 12px;border-radius:16px;background:var(--surface)}.pub-home .sample .bubble.me{background:var(--plum);color:#fff;margin-inline-start:auto;border-end-end-radius:6px}.pub-home .sample .bubble.them{border-end-start-radius:6px}
+.pub-home .sample .dot{width:28px;height:28px;border-radius:50%;background:var(--accent);flex:none}.pub-home .sample .dot-2{background:var(--mine)}.pub-home .sample .dot-3{background:var(--ink)}
+.pub-home .sample .tag{font-family:${FACE.body};font-size:.74rem;font-weight:600;letter-spacing:0;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--text);flex:none}
+.pub-home .sample .tag-2{background:var(--surface);border:1px solid var(--border)}.pub-home .sample .tag-3{background:var(--surface);border:1px dashed var(--border)}
+.pub-home .sample .bubble{max-width:80%;padding:8px 12px;border-radius:16px;background:var(--surface)}.pub-home .sample .bubble.me{background:var(--mine);color:var(--on-mine);margin-inline-start:auto;border-end-end-radius:6px}.pub-home .sample .bubble.them{border-end-start-radius:6px}
 ${explorerStyle()}
 @media (min-width:720px){.pub-home .layers{display:grid;grid-template-columns:200px 1fr;column-gap:20px;align-items:start}.pub-home .layers h2{grid-column:1/-1}.pub-home .tabs{flex-direction:column;align-items:stretch;margin:6px 0 0}.pub-home .tabs label{border-radius:10px}}
-.pub-home .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line)}
+.pub-home .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--border)}
 @media (max-width:560px){.pub-home h1{font-size:1.9rem}.pub-home .spec>div,.pub-sheet .spec>div{grid-template-columns:1fr;gap:2px}.pub-home .spec dt,.pub-sheet .spec dt{padding-top:0}}
 @media (prefers-reduced-motion:no-preference){.pub-home .tabs label{transition:border-color .15s ease-out,background .15s ease-out}}
-.pub-home .masthead{align-items:baseline}.pub-home .sitenav{display:flex;gap:4px 14px;flex-wrap:wrap;margin-inline-start:auto}.pub-home .sitenav a{color:var(--text3);text-decoration:none;padding:2px 0}.pub-home .sitenav a[aria-current]{color:var(--ink);border-bottom:1px solid var(--ink)}.pub-home .sitenav a:hover{color:var(--ink)}
+.pub-home .masthead{align-items:baseline}.pub-home .sitenav{display:flex;gap:4px 14px;flex-wrap:wrap;margin-inline-start:auto}.pub-home .sitenav a{color:var(--text-tertiary);text-decoration:none;padding:2px 0}.pub-home .sitenav a[aria-current]{color:var(--ink);border-bottom:1px solid var(--ink)}.pub-home .sitenav a:hover{color:var(--ink)}
 .pub-site .layers{margin-top:26px}.pub-site .hero+.layers{margin-top:0}.pub-home .sheet+.hero,.pub-home .layers+.hero{padding-top:20px}
-.pub-home code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.85em;background:var(--muted);padding:1px 5px;border-radius:5px}
-.pub-home .plans{display:grid;grid-template-columns:1fr;gap:14px}.pub-home .plan{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface)}.pub-home .plan h3{margin:0;font-size:1.2rem;font-weight:800;color:var(--ink);font-family:Nunito,Inter,system-ui,sans-serif}.pub-home .plan .price{margin:2px 0 8px;color:var(--text2)}.pub-home .plan .price strong{color:var(--ink);font-size:1.15rem}.pub-home .plan .spec>div{grid-template-columns:110px 1fr;gap:10px;padding:8px 0}.pub-home .plan .spec>div:last-child{border-bottom:0}.pub-home .plan .small{margin:8px 0 0}
+.pub-home code{font-family:${FACE.mono};font-size:.85em;background:var(--surface-muted);padding:1px 5px;border-radius:5px}
+.pub-home .plans{display:grid;grid-template-columns:1fr;gap:14px}.pub-home .plan{border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--surface)}.pub-home .plan h3{margin:0;font-size:1.2rem;font-weight:800;color:var(--ink);font-family:${FACE.heading}}.pub-home .plan .price{margin:2px 0 8px;color:var(--text-secondary)}.pub-home .plan .price strong{color:var(--ink);font-size:1.15rem}.pub-home .plan .spec>div{grid-template-columns:110px 1fr;gap:10px;padding:8px 0}.pub-home .plan .spec>div:last-child{border-bottom:0}.pub-home .plan .small{margin:8px 0 0}
 @media (min-width:720px){.pub-home .plans{grid-template-columns:1fr 1fr}.pub-home .plans-3{grid-template-columns:1fr 1fr 1fr}.pub-home .plan .spec>div{grid-template-columns:1fr;gap:2px}}
 @media (max-width:560px){.pub-home .sitenav{margin-inline-start:0;width:100%}}
 .pub-home[dir=rtl] h1{letter-spacing:0}

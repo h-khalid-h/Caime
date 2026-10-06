@@ -1,4 +1,4 @@
-import { currentTranslator } from '@caime/core/i18n';
+import { sentence } from '@caime/core/i18n';
 import type { ReactNode } from 'react';
 import { View, type ViewProps } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -17,10 +17,6 @@ export interface SpecRow {
  * Caime states facts about a person, an organization or itself, wherever a card would list
  * them. Rows that are null or false are left out, so a caller lists what may be there.
  */
-/** A label as a heading reads (R69): its first letter a capital, in the reader's language. */
-export const sentence = (label: string) =>
-  label.charAt(0).toLocaleUpperCase(currentTranslator().language) + label.slice(1);
-
 export function Spec({
   rows,
   dense = false,

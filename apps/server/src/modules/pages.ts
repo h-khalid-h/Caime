@@ -7,6 +7,7 @@
 import { SITE_PAGES, type SitePage } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
+import { shellFaces } from '../lib/page-style';
 import { renderPage } from '../lib/pages';
 import { processorsFor } from '../lib/processors';
 import { PERMISSIONS_POLICY } from '../lib/public-pages';
@@ -16,6 +17,8 @@ export const PAGE_CSP = [
   "default-src 'none'",
   "style-src 'unsafe-inline'",
   "img-src 'self'",
+  // Caime's own faces (public/fonts), declared by the shell.
+  "font-src 'self'",
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",
@@ -70,8 +73,10 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     return false;
   };
+  const faces = shellFaces(config.WEB_DIR);
   for (const name of SITE_PAGES) {
     const html = renderPage(name, {
+      faces,
       processors: processorsFor(config),
       legalName: config.LEGAL_NAME,
       legalAddress: config.LEGAL_ADDRESS ?? null,

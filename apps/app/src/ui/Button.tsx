@@ -1,3 +1,4 @@
+import { controlHeight } from '@caime/brand/tokens';
 import type { ComponentType } from 'react';
 import { ActivityIndicator, View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -21,8 +22,6 @@ export interface ButtonProps {
   style?: ViewStyle;
   testID?: string;
 }
-
-const HEIGHT = { sm: 36, md: 44, lg: 52 } as const;
 
 export function Button({
   label,
@@ -61,8 +60,8 @@ export function Button({
       focusRadius={radius}
       style={({ pressed, hovered }) => [
         {
-          height: HEIGHT[size],
-          minWidth: HEIGHT[size],
+          height: controlHeight[size],
+          minWidth: controlHeight[size],
           paddingHorizontal: size === 'sm' ? 14 : 20,
           borderRadius: radius,
           backgroundColor: pressed || hovered ? palette.hover : palette.bg,

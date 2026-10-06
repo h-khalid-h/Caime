@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { AppContext } from '../context';
+import { FACE, shellFaces, THEME_VARS } from '../lib/page-style';
 import { PERMISSIONS_POLICY } from '../lib/public-pages';
 import { webCsp } from '../plugins/static';
 
@@ -11,6 +12,7 @@ import { webCsp } from '../plugins/static';
  */
 export async function moderationPageRoutes(app: FastifyInstance, ctx: AppContext) {
   const csp = webCsp(ctx.config.PUBLIC_URL);
+  const page = PAGE.replace('<!-- faces -->', shellFaces(ctx.config.WEB_DIR));
   app.get(
     '/admin/reports',
     async (_req, reply): Promise<FastifyReply> =>
@@ -20,7 +22,7 @@ export async function moderationPageRoutes(app: FastifyInstance, ctx: AppContext
         .header('permissions-policy', PERMISSIONS_POLICY)
         .header('x-robots-tag', 'noindex')
         .type('text/html; charset=utf-8')
-        .send(PAGE),
+        .send(page),
   );
   app.get(
     '/admin/reports.js',
@@ -36,22 +38,23 @@ const PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Reports · Caime</title>
+<!-- faces -->
 <style>
 :root{color-scheme:light dark}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#faf8fc;color:#23193a;line-height:1.45}
-@media (prefers-color-scheme:dark){body{background:#120f1a;color:#ece7f6}.card{background:#1c1826!important;border-color:#2c2638!important}input,select{background:#1c1826;color:#ece7f6;border-color:#2c2638!important}}
+${THEME_VARS}
+body{margin:0;font-family:${FACE.body};background:var(--canvas);color:var(--text);line-height:1.45}
 main{max-width:760px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:1.4rem;margin:0 0 12px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 16px}
-input,select,button{font:inherit;padding:8px 10px;border:1px solid #d9d2e6;border-radius:8px}
+input,select,button{font:inherit;padding:8px 10px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface);color:var(--text)}
 input{flex:1;min-width:220px}
-button{cursor:pointer;background:#3b2e5b;color:#fff;border-color:#3b2e5b}
-button.quiet{background:transparent;color:inherit;border-color:#d9d2e6}
-button.danger{background:#c4262e;border-color:#c4262e}
-.card{background:#fff;border:1px solid #e6e0f0;border-radius:12px;padding:14px 16px;margin:10px 0}
+button{cursor:pointer;background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+button.quiet{background:transparent;color:inherit;border-color:var(--border-strong)}
+button.danger{background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:10px 0}
 .meta{font-size:.85rem;opacity:.75}
-blockquote{margin:8px 0;padding:8px 12px;border-inline-start:3px solid #d9d2e6;white-space:pre-wrap;word-break:break-word}
-.status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;background:#efe9f8;color:#3b2e5b}
+blockquote{margin:8px 0;padding:8px 12px;border-inline-start:3px solid var(--border-strong);white-space:pre-wrap;word-break:break-word}
+.status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;background:var(--surface-muted);color:var(--ink)}
 .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .empty{opacity:.7;padding:24px 0}
 #note{min-height:1.4em;font-size:.9rem}

@@ -18,9 +18,7 @@ import { qk } from '@/api/keys';
 import { AutomationSheet } from '@/features/settings/AutomationSheet';
 import { RuleFor } from '@/features/settings/RuleFor';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
-import { savePrefs } from '@/features/settings/savePrefs';
 import { useMe } from '@/state/session';
-import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Bookmark, Clock } from '@/ui/icons';
@@ -140,7 +138,6 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
 }
 
 export default function Automations() {
-  const prefs = usePrefs();
   const t = useTheme();
   const qc = useQueryClient();
   const _me = useMe();

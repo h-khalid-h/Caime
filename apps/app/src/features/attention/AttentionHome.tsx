@@ -242,7 +242,7 @@ export function AttentionHome() {
     : null;
   const nothing = needs.length === 0 && waiting.length === 0 && comingUp.length === 0;
   // Nobody to talk to yet: the first thing is to find someone, not that nothing needs you.
-  const alone = inbox.data !== undefined && inbox.data.sections.every((s) => s.items.length === 0);
+  const alone = inbox.data?.sections.every((s) => s.items.length === 0);
 
   const openConversation = useCallback((item: InboxItemView) => {
     router.navigate({ pathname: '/c/[id]', params: { id: item.id } });

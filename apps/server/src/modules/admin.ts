@@ -158,7 +158,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person || person.kind !== 'human') throw notFound(tr('That person'));
+    if (person?.kind !== 'human') throw notFound(tr('That person'));
     await setSuspended(ctx, person.id, body.suspended, body.reason ?? null, by);
     return { ok: true };
   });
@@ -188,7 +188,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('handle', '=', handle.toLowerCase().replace(/^@/, ''))
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
-    if (!person || person.kind !== 'human') throw notFound(tr('That person'));
+    if (person?.kind !== 'human') throw notFound(tr('That person'));
     const now = ctx.now();
     const [sessions, devices, tokens, grants, codes, orgs] = await Promise.all([
       ctx.db

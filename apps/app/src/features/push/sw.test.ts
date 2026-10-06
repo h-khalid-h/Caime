@@ -454,12 +454,12 @@ describe('the service worker', () => {
     expect(opened).toEqual([]);
 
     tabs = [tab({ url: 'https://elsewhere.example/' })];
-    for (const [data, path] of [
+    const cases = [
       [{ handle: 'nile.dental' }, '/o/nile.dental'],
       [{ userId: 'u1' }, '/p/u1'],
       [{}, '/notifications'],
-    ] as const)
-      await fire('notificationclick', { notification: { close, data } });
-    expect(opened).toEqual(['/o/nile.dental', '/p/u1', '/notifications']);
+    ] as const;
+    for (const [data] of cases) await fire('notificationclick', { notification: { close, data } });
+    expect(opened).toEqual(cases.map(([, path]) => path));
   });
 });

@@ -64,7 +64,7 @@ async function cardOf(ctx: AppContext, messageId: string): Promise<CardRow | nul
     .select(['id', 'conversation_id', 'payload', 'kind', 'deleted_at'])
     .where('id', '=', messageId)
     .executeTakeFirst();
-  if (!row || row.kind !== 'kit' || row.deleted_at) return null;
+  if (row?.kind !== 'kit' || row.deleted_at) return null;
   const payload = (row.payload ?? {}) as CardRow['payload'];
   if (payload.kit !== 'meeting' && payload.kit !== 'appointment') return null;
   return { id: row.id, conversation_id: row.conversation_id, payload };
@@ -103,7 +103,7 @@ async function readersOf(ctx: AppContext, card: CardRow): Promise<string[]> {
     .select(['kind', 'privacy_class'])
     .where('id', '=', card.conversation_id)
     .executeTakeFirst();
-  if (!conversation || conversation.privacy_class !== 'standard') return [];
+  if (conversation?.privacy_class !== 'standard') return [];
   if (conversation.kind !== 'direct' && conversation.kind !== 'business') return [];
   const people = await ctx.db
     .selectFrom('participants as p')

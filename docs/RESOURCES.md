@@ -129,6 +129,10 @@ into the app's shell on request from constants and the plans, with no query (a p
 organization's page queries once), and is sent with `public, max-age=600`. The pricing page asks
 Stripe for its prices through billing's ten-minute cache, so at most one request to Stripe every
 ten minutes for every visitor together, and none when billing isn't connected. A visitor
-downloads the shell's HTML and CSS and no script. Its fonts are the app's own files, the weights
-the pages use (Inter 400, 600 and 700, Nunito 800: 87 KB in their Latin cuts), cached for a year
-and the very files the app loads once someone signs up.
+downloads the shell's HTML and CSS and no script. Its fonts are the app's own files, declared once
+in the shell (Inter 400, 600 and 700 and Nunito 800 on the landing page: 87 KB in their Latin
+cuts), cached for a year and the very files the app loads once someone signs up. The theme's
+variables cost the landing page 0.3 KB gzip (7.4 to 7.7 KB). An entry screen's twin carries the
+app's brand panel, wordmark and characters as inline SVG so nothing moves when the app takes
+over: 3.5 KB gzip more each (`/welcome` 5.4 to 8.9 KB, `/sign-in` 5.2 to 8.7 KB, measured against
+the live pages on 2026-10-06).

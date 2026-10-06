@@ -132,6 +132,15 @@ export function currentTranslator(): Translator {
   return provider?.() ?? current;
 }
 
+/**
+ * A label as a heading reads (R69): its first letter a capital, in the reader's language
+ * ("handle" → "Handle"; Turkish "işler" → "İşler"). A label's key may be lowercase; whatever
+ * draws it, the app's `Spec` or a server's page, writes it through this.
+ */
+export function sentence(label: string): string {
+  return label.charAt(0).toLocaleUpperCase(currentTranslator().language) + label.slice(1);
+}
+
 export function tr(text: string, vars?: Vars): string {
   return currentTranslator().tr(text, vars);
 }

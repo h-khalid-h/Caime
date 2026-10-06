@@ -44,7 +44,6 @@ export const turkishServer: Catalog = {
   About: 'Hakkında',
   Help: 'Yardım',
   Example: 'Örnek',
-  Connection: 'Bağlantı',
   'Who someone is to you comes first.': 'Birinin sizin için kim olduğu her şeyden önce gelir.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
     'Bağlantı, iki kişi ve birbirlerini nereden tanıdıklarıdır; bunu her taraf kendisi söyler ve her tarafa özel kalır. Caime’deki her şey bağlantıya dayanır.',
@@ -231,7 +230,6 @@ export const turkishServer: Catalog = {
   'For people': 'Kişiler için',
   Personal: 'Kişisel',
   ', always': ', her zaman',
-  'ai assist': 'ai yardımı',
   '{n} actions a day, once you turn it on': 'açtığınızda günde {n} eylem',
   files: 'dosyalar',
   automations: 'otomasyonlar',
@@ -242,7 +240,6 @@ export const turkishServer: Catalog = {
   'how your relationships are going, from your own messages, for you only':
     'ilişkileriniz nasıl gidiyor: kendi mesajlarınızdan, yalnızca size özel',
   team: 'ekip',
-  'ai agent': 'ai temsilcisi',
   'how fast the team answers, who is waiting, what is open':
     'ekip ne kadar hızlı yanıt veriyor, kim bekliyor, ne açık',
   Enterprise: 'Enterprise',
@@ -301,7 +298,7 @@ export const turkishServer: Catalog = {
   'the server': 'sunucu',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
     'Her sayfada içerik güvenlik politikası; üçüncü taraf betik yok, reklam yok, siteler arası izleme yok; her yedek alındıktan sonra kontrol edilir.',
-  ai: 'ai',
+  AI: 'AI',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
     'Bir yetişkin açana kadar kapalıdır, özel konuşmalarda asla çalışmaz ve çıkardığı her şey, kabul edip etmemek size kalmış bir öneridir.',
   'Read the privacy policy': 'Gizlilik politikasını okuyun',
@@ -335,7 +332,7 @@ export const turkishServer: Catalog = {
   'personal tokens': 'kişisel belirteçler',
   'A person makes a token for their own scripts ({scopes}). It never reaches the account itself.':
     'Kişi, kendi betikleri için bir belirteç oluşturur ({scopes}). Bu belirteç hesabın kendisine asla erişemez.',
-  oauth: 'oauth',
+  OAuth: 'OAuth',
   'Third-party apps ask people for consent (OAuth 2.0; errors as RFC 6749 and 7009 say), hold only what they were given, and can be revoked any time from Settings.':
     'Üçüncü taraf uygulamalar kişilerden onay ister (OAuth 2.0; hatalar RFC 6749 ve 7009’a uygun), yalnızca kendilerine verilene erişir ve Ayarlar’dan her an iptal edilebilir.',
   'the guide': 'kılavuz',

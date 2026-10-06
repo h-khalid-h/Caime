@@ -77,7 +77,7 @@ describe('invite links (R1)', () => {
     // The same sheet as a person's page: a masthead, and the facts as mono-labelled rows.
     expect(page.body).toContain('<main class="pub pub-sheet" lang="en" dir="ltr">');
     expect(page.body).toContain('<span class="mono">an invitation</span>');
-    expect(page.body).toContain('<dt class="mono">from</dt><dd>Noor Haddad</dd>');
+    expect(page.body).toContain('<dt class="mono">From</dt><dd>Noor Haddad</dd>');
     expect(page.body).toContain('Work · DATA C');
     expect(page.body).toContain('Come find me here.');
     expect(page.body).toContain(`href="/sign-up?link=${encodeURIComponent(`/i/${token}`)}"`);

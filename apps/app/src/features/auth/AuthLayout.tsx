@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { sentence, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -9,7 +9,6 @@ import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
-import { sentence } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 
 /** The brand panel beside auth forms on large screens (BRAND.md: expressive intensity). */

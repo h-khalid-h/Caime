@@ -188,6 +188,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.128.0
         version: 0.128.0(zod@4.6.5)
+      '@caime/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@caime/core':
         specifier: workspace:*
         version: link:../../packages/core

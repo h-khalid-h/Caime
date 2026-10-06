@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { sentence, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { Character } from '@/brand/Character';
@@ -80,7 +80,7 @@ export default function Welcome() {
           >
             <View style={{ maxWidth: 420, width: '100%', alignSelf: 'center', gap: 8 }}>
               <Text variant="mono" color="textTertiary">
-                {tr('welcome')}
+                {sentence(tr('welcome'))}
               </Text>
               <Text variant="display" accessibilityRole="header">
                 {tr('Welcome to Caime')}
@@ -129,12 +129,12 @@ function SpecLines() {
       testID="welcome-spec"
       rows={[
         {
-          label: 'connection',
+          label: tr('Connection'),
           value: tr('Say who someone is to you, once. Everything fits from then on.'),
         },
-        { label: 'attention', value: tr('“3 need you”, never “47 unread”. It says why.') },
+        { label: tr('Attention'), value: tr('“3 need you”, never “47 unread”. It says why.') },
         {
-          label: 'privacy',
+          label: tr('Privacy'),
           value: tr('Each side of your life sees what you chose. Only you see your labels.'),
         },
       ]}

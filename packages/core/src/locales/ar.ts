@@ -647,11 +647,9 @@ export const ar: Catalog = {
   'Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.':
     'يحدد إعداداتك الافتراضية، كأسبوع عملك وعملة المبالغ. لا يُعرض لأحد أبدًا.',
   'Create account': 'إنشاء الحساب',
-  'By creating an account, you agree to the': 'بإنشاء حساب، توافق على',
-  terms: 'الشروط',
-  '. The': '. وتوضّح',
-  'privacy policy': 'سياسة الخصوصية',
-  'says what Caime keeps, and why.': 'ما يحتفظ به Caime ولماذا.',
+  'By creating an account, you agree to the <terms>terms</terms>. The <privacy>privacy policy</privacy> says what Caime keeps, and why.':
+    'بإنشاء حساب، توافق على <terms>الشروط</terms>. وتوضّح <privacy>سياسة الخصوصية</privacy> ما يحتفظ به Caime ولماذا.',
+  Connection: 'التواصل',
   'Already have an account?': 'لديك حساب بالفعل؟',
   'Create an account or sign in to see @{linkHandle}':
     'أنشئ حسابًا أو سجّل الدخول لترى @{linkHandle}',

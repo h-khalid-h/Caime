@@ -34,7 +34,7 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
         expect(res.headers['content-type']).toBe('text/html; charset=utf-8');
         // Nothing runs, nothing is loaded from anywhere, and it's never framed.
         expect(res.headers['content-security-policy']).toBe(
-          "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         );
         expect(res.headers['x-content-type-options']).toBe('nosniff');
         for (const s of [...says, 'DATA C OÜ', 'href="mailto:hello@cai.me"'])
@@ -106,6 +106,7 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
   it('says how calls connect and how long records are kept, as this Caime does', async () => {
     const facts: PageFacts = {
       processors: [],
+      faces: '',
       legalName: 'Nile',
       legalAddress: null,
       governingLaw: null,

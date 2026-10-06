@@ -1,7 +1,7 @@
 import type { ThemeColors, TypeStyleName } from '@caime/brand/tokens';
 import { textDirection } from '@caime/core/format';
 import { Text as RNText, type TextProps as RNTextProps, type TextStyle } from 'react-native';
-import { fontFamily } from '@/theme/fonts';
+import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 
 export interface TextProps extends RNTextProps {
@@ -61,12 +61,7 @@ export function Text({
       {...rest}
       style={[
         {
-          fontFamily: fontFamily(spec.family, weight ?? spec.weight),
-          // A system face carries its weight as a style; ours carry it in the file's name.
-          fontWeight:
-            spec.family === 'mono'
-              ? (String(weight ?? spec.weight) as TextStyle['fontWeight'])
-              : undefined,
+          ...fontFace(spec.family, weight ?? spec.weight),
           fontSize: spec.size,
           lineHeight: spec.lineHeight,
           // Spaced-out letters break Arabic's joins: a mono label in Arabic keeps its letters together.

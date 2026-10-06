@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
+    "@caime/brand": "workspace:*",
     "@caime/core": "workspace:*",
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",

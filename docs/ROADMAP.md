@@ -2186,6 +2186,15 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-06 — The web's faces declared once (Inter and Nunito by weight) for the app and every
+  server page; the server's pages drawn from the tokens (`lib/page-style.ts`: theme variables,
+  type, radii, control heights; no colour of their own, tested); the entry screens' twins made
+  the app's screens on a phone and a desktop (brand panel, wordmark, characters, the welcome's two
+  layouts), held by `e2e/entry-twins.spec.ts`, which measures every line in both. Found on the
+  way and fixed: the welcome's labels untranslated, the terms line built from fragments (now one
+  tagged key, `tagged`), "Forgot your password?" in the twin going to `/recover`, the 8 px frame
+  on every visitor page, French and Turkish "ia"/"ai" in lowercase, and 23 lint warnings (dead
+  code in automations among them). Initial web JS 449.8 KB gzip.
 - 2026-10-06 — Production checked as a visitor (`f674455`, R67–R69 live, five pages, no console
   errors). Found and fixed: every visitor page drew in the system's font (its CSS named `Inter`
   and `Nunito`, which the shell declares only under expo-font's names), and the sign-in screens'

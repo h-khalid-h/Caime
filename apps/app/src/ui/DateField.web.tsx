@@ -5,7 +5,7 @@
  */
 import { createElement, useId, useState } from 'react';
 import { View } from 'react-native';
-import { fontFamily } from '@/theme/fonts';
+import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import type { DateFieldProps } from './dates';
 import { Text } from './Text';
@@ -59,7 +59,7 @@ export function DateField({
           color: value ? t.c.text : t.c.textTertiary,
           paddingLeft: ring ? 13 : 14,
           paddingRight: ring ? 13 : 14,
-          fontFamily: fontFamily(body.family, body.weight),
+          ...fontFace(body.family, body.weight),
           fontSize: 16,
           // The border is the focus ring; the calendar button follows the theme.
           outline: 'none',

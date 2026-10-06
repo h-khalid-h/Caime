@@ -401,7 +401,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('deleted_at', 'is', null)
       .where('suspended_at', 'is', null)
       .executeTakeFirst();
-    if (!user || user.kind !== 'human') throw notFound(tr('That person'));
+    if (user?.kind !== 'human') throw notFound(tr('That person'));
     const relation = await viewerRelation(ctx.db, id, auth.userId);
     if (relation.blocked) throw notFound(tr('That person'));
     return slotsView(

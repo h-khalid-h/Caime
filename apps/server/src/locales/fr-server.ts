@@ -47,7 +47,6 @@ export const frServer: Catalog = {
   About: 'À propos',
   Help: 'Aide',
   Example: 'Exemple',
-  Connection: 'Contact',
   'Who someone is to you comes first.': 'D’abord, qui est chaque personne pour vous.',
   'A connection is two people and how they know each other, said by each side, private to each. Everything else in Caime hangs off it.':
     'Un contact, c’est deux personnes et la façon dont elles se connaissent, décrite par chacune et visible d’elle seule. Tout le reste de Caime en découle.',
@@ -233,7 +232,6 @@ export const frServer: Catalog = {
   'For people': 'Pour les particuliers',
   Personal: 'Personal',
   ', always': ', toujours',
-  'ai assist': 'assistance ia',
   '{n} actions a day, once you turn it on': '{n} actions par jour, une fois activée',
   files: 'fichiers',
   automations: 'automatisations',
@@ -244,7 +242,6 @@ export const frServer: Catalog = {
   'how your relationships are going, from your own messages, for you only':
     'comment vont vos relations, d’après vos propres messages, pour vous uniquement',
   team: 'équipe',
-  'ai agent': 'agent ia',
   'how fast the team answers, who is waiting, what is open':
     'la rapidité de réponse de l’équipe, qui attend, ce qui est ouvert',
   Enterprise: 'Enterprise',
@@ -303,7 +300,7 @@ export const frServer: Catalog = {
   'the server': 'le serveur',
   'A content security policy on every page, no third-party scripts, no ads, no tracking across sites, and a backup checked after every dump.':
     'Une politique de sécurité du contenu sur chaque page, aucun script tiers, aucune publicité, aucun suivi entre sites, et chaque sauvegarde vérifiée dès sa création.',
-  ai: 'ia',
+  AI: 'IA',
   'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.':
     'Désactivée tant qu’un adulte ne l’active pas, jamais sur une conversation privée, et tout ce qu’elle déduit est une suggestion que vous acceptez ou non.',
   'Read the privacy policy': 'Lire la politique de confidentialité',
@@ -337,7 +334,7 @@ export const frServer: Catalog = {
   'personal tokens': 'jetons personnels',
   'A person makes a token for their own scripts ({scopes}). It never reaches the account itself.':
     'Une personne crée un jeton pour ses propres scripts ({scopes}). Il n’atteint jamais le compte lui-même.',
-  oauth: 'oauth',
+  OAuth: 'OAuth',
   'Third-party apps ask people for consent (OAuth 2.0; errors as RFC 6749 and 7009 say), hold only what they were given, and can be revoked any time from Settings.':
     'Les applications tierces demandent le consentement des personnes (OAuth 2.0 ; erreurs selon les RFC 6749 et 7009), ne détiennent que ce qu’on leur a donné, et peuvent être révoquées à tout moment depuis les Réglages.',
   'the guide': 'le guide',

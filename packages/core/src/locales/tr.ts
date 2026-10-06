@@ -630,11 +630,9 @@ export const turkish: Catalog = {
   'Sets your defaults, like your work week and the currency of amounts. Never shown to anyone.':
     'Çalışma haftanız ve tutarların para birimi gibi varsayılanlarınızı belirler. Kimseye gösterilmez.',
   'Create account': 'Hesap oluştur',
-  'By creating an account, you agree to the': 'Hesap oluşturarak şunları kabul etmiş olursunuz:',
-  terms: 'kullanım koşulları',
-  '. The': '. ',
-  'privacy policy': 'Gizlilik politikası',
-  'says what Caime keeps, and why.': 'Caime’nin neyi neden sakladığını açıklar.',
+  'By creating an account, you agree to the <terms>terms</terms>. The <privacy>privacy policy</privacy> says what Caime keeps, and why.':
+    'Hesap oluşturarak <terms>kullanım koşullarını</terms> kabul etmiş olursunuz. <privacy>Gizlilik politikası</privacy>, Caime’nin neyi neden sakladığını açıklar.',
+  Connection: 'Bağlantı',
   'Already have an account?': 'Zaten hesabınız var mı?',
   'Create an account or sign in to see @{linkHandle}':
     '@{linkHandle} profilini görmek için hesap oluşturun ya da oturum açın',

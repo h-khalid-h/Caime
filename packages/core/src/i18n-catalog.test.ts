@@ -8,6 +8,7 @@ import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
 import { ar } from './locales/ar';
 import { fr } from './locales/fr';
 import { turkish } from './locales/tr';
+import { tagsOf } from './tagged';
 
 describe.each([
   ['Arabic (R54)', ar],
@@ -54,6 +55,17 @@ describe.each([
           )
             bad.push(`${key} → ${form}`);
     }
+    expect(bad).toEqual([]);
+  });
+
+  it('keeps the tags of a sentence with links in it, in its own order', () => {
+    const bad = Object.entries(ar)
+      .filter(([key, value]) => typeof value === 'string' && key.includes('</'))
+      .filter(
+        ([key, value]) =>
+          [...tagsOf(key)].sort().join() !== [...tagsOf(value as string)].sort().join(),
+      )
+      .map(([key]) => key);
     expect(bad).toEqual([]);
   });
 });

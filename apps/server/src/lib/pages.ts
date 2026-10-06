@@ -12,6 +12,7 @@
 
 import type { SitePage } from '@caime/core/api';
 import type { SubProcessor } from '@caime/core/processors';
+import { FACE, THEME_VARS, type } from './page-style';
 import { KEPT_DAYS } from './retention';
 
 export type PageName = SitePage;
@@ -35,6 +36,8 @@ export interface PageFacts {
    * Cloudflare's (CLOUDFLARE_TURN_KEY_ID).
    */
   relay: 'own' | 'cloudflare' | 'none';
+  /** The shell's font declarations (`shellFaces`), so these pages draw in Caime's faces too. */
+  faces: string;
 }
 
 /** When each page last changed in what it says. */
@@ -638,27 +641,27 @@ export function renderPage(name: PageName, facts: PageFacts): string {
 <title>${TITLES[name]} · Caime</title>
 <meta name="description" content="Caime's ${TITLES[name].toLowerCase()}">
 <meta name="color-scheme" content="light dark">
+${f.faces}
 <style>
-:root{--bg:#F7F7FA;--ink:#1F1830;--soft:#5B5270;--line:#ECEAF1;--brand:#3B2E5B;--link:#5A3FA0}
-@media (prefers-color-scheme:dark){:root{--bg:#0F0D14;--ink:#F2EEF8;--soft:#B7AEC8;--line:#2A2438;--brand:#D9CCF5;--link:#C6B4F2}}
+${THEME_VARS}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;background:var(--canvas);color:var(--text);font:17px/1.6 ${FACE.body}}
 header,main,footer{max-width:720px;margin:0 auto;padding:0 20px}
-header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;padding-top:24px;padding-bottom:14px;border-bottom:1px solid var(--line)}
-.brand{font-weight:800;font-size:22px;color:var(--brand);text-decoration:none}
-.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:13px;letter-spacing:.03em;color:var(--soft);font-weight:500}
-header .mono{margin-right:auto}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;padding-top:24px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.brand{font-family:${FACE.heading};font-weight:800;font-size:22px;color:var(--ink);text-decoration:none}
+.mono{${type('mono')};color:var(--text-secondary)}
+header .mono{margin-inline-end:auto}
 nav{display:flex;gap:16px}
-nav a{color:var(--soft);text-decoration:none}
-nav a[aria-current]{color:var(--ink);font-weight:600}
+nav a{color:var(--text-secondary);text-decoration:none}
+nav a[aria-current]{color:var(--text);font-weight:600}
 a{color:var(--link)}
-h1{font-size:32px;line-height:1.2;margin:32px 0 4px}
+h1{font-family:${FACE.heading};font-weight:800;color:var(--ink);font-size:32px;line-height:1.2;margin:32px 0 4px}
 h2{font-size:21px;margin:32px 0 8px}
 .updated{margin-top:0}
-.short{border:1px solid var(--line);border-radius:12px;padding:4px 20px;margin:24px 0}
-ul{padding-left:22px}
+.short{border:1px solid var(--border);border-radius:12px;padding:4px 20px;margin:24px 0}
+ul{padding-inline-start:22px}
 li{margin:6px 0}
-footer{color:var(--soft);font-size:15px;padding-top:32px;padding-bottom:40px}
+footer{color:var(--text-secondary);font-size:15px;padding-top:32px;padding-bottom:40px}
 </style>
 </head>
 <body>

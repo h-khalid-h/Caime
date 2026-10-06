@@ -417,7 +417,9 @@ test.describe
         data: { clientId: randomUUID(), body: 'Floor plan attached soon' },
       });
       const inbox = await (await noorContext.request.get('/v1/inbox')).json();
-      const order: string[] = inbox.sections.flatMap((s: any) => s.items.map((i: any) => i.id));
+      const order: string[] = inbox.sections.flatMap((s: { items: { id: string }[] }) =>
+        s.items.map((i) => i.id),
+      );
       expect(order).toEqual(expect.arrayContaining([convo, topicId]));
 
       // Alt+↓ and Alt+↑ walk the inbox in its order, even from the message box.

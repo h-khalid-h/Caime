@@ -1,10 +1,10 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { bubbleThemes, themes } from '@caime/brand/tokens';
 import { BUSINESS_VIEW_LABELS, BUSINESS_VIEWS } from '@caime/core/business';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PUBLIC_FACES } from '../src/lib/public-pages';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -73,14 +73,42 @@ describe('the readable web (R44)', () => {
     expect(signedIn.body).not.toContain('<div id="static">');
   });
 
-  it('draws in Caime’s own faces, from files the app ships', async () => {
-    const files = [...PUBLIC_FACES.matchAll(/url\(\/fonts\/([^)]+)\)/g)].map((m) => m[1]);
-    expect(files).toHaveLength(8);
-    for (const f of files)
-      expect(existsSync(new URL(`../../app/public/fonts/${f}`, import.meta.url)), f).toBe(true);
-    const page = await visit('/');
-    expect(page.body).toContain('@font-face{font-family:Inter;font-weight:400;');
-    expect(page.body).toContain('@font-face{font-family:Nunito;font-weight:800;');
+  it('asks only for the faces the app’s shell declares', async () => {
+    // A family the shell doesn't declare draws in the system's font: every public page did, once.
+    const shell = readFileSync(new URL('../../app/public/index.html', import.meta.url), 'utf8');
+    const declared = new Set([...shell.matchAll(/font-family:\s*'([^']+)'/g)].map((m) => m[1]));
+    const asked = new Set(
+      [...(await visit('/')).body.matchAll(/font-family:([^;}]+)/g)].map((m) =>
+        (m[1] ?? '').split(',')[0]?.trim().replace(/['"]/g, ''),
+      ),
+    );
+    expect(asked.size).toBeGreaterThan(1);
+    for (const family of asked)
+      expect(declared.has(family) || ['system-ui', 'ui-monospace'].includes(family!), family).toBe(
+        true,
+      );
+  });
+
+  it('names only the theme’s colours, as the app does', async () => {
+    const tokens = new Set(
+      [
+        ...Object.values(themes.light),
+        ...Object.values(themes.dark),
+        ...Object.values(bubbleThemes.plum.light),
+        ...Object.values(bubbleThemes.plum.dark),
+      ].map((c) => c.toLowerCase()),
+    );
+    for (const path of ['/', '/sign-in', '/privacy']) {
+      const page = (await visit(path)).body;
+      const styles = [...page.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+        .map((m) => m[1])
+        .join('');
+      const raw = [...styles.matchAll(/#[0-9a-fA-F]{3,8}\b/g)].map((m) => m[0].toLowerCase());
+      expect(
+        raw.filter((c) => !tokens.has(c)),
+        path,
+      ).toEqual([]);
+    }
   });
 
   it('a person’s page shows what they show to everyone, while they can be found by handle', async () => {
@@ -92,9 +120,9 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('"@type":"Person"');
     expect(r.body).toContain('"memberOf":[{"@type":"Organization","name":"Nile Dental"');
     // Facts as a spec sheet: mono labels, one row each.
-    expect(r.body).toContain('<dt class="mono">handle</dt><dd>@noor</dd>');
+    expect(r.body).toContain('<dt class="mono">Handle</dt><dd>@noor</dd>');
     expect(r.body).toContain(
-      '<dt class="mono">with</dt><dd><a href="/o/nile.dental">Nile Dental</a></dd>',
+      '<dt class="mono">With</dt><dd><a href="/o/nile.dental">Nile Dental</a></dd>',
     );
     // A visitor gets the page alone: no scripts to boot an app that would stand aside anyway;
     // the JSON-LD stays. Signed in, the app comes with it.
@@ -132,7 +160,7 @@ describe('the readable web (R44)', () => {
     expect(r.statusCode).toBe(200);
     expect(r.body).toContain('<meta name="robots" content="noindex">');
     const page = r.body.split('<div id="static">')[1] ?? '';
-    expect(page).toContain('class="pub pub-entry" dir="ltr"');
+    expect(page).toContain('class="pub-entry" dir="ltr"');
     expect(page).toContain('<h1>Create your account</h1>');
     expect(page).toContain('It takes a minute. You can change all of it later.');
     expect(page).toContain('<a href="/sign-in">Sign in</a>');
@@ -150,13 +178,13 @@ describe('the readable web (R44)', () => {
     );
     const signIn = await visit('/sign-in');
     expect(signIn.body).toContain('<h1>Welcome back</h1>');
-    expect(signIn.body).toContain('<a href="/recover">Forgot your password?</a>');
+    expect(signIn.body).toContain('<a href="/forgot">Forgot your password?</a>');
     const welcome = await visit('/welcome');
     expect(welcome.body).toContain('<a href="/sign-up">Create your account</a>');
-    expect(welcome.body).toContain('<dt class="mono">connection</dt>');
+    expect(welcome.body).toContain('<dt class="mono">Connection</dt>');
     // In Arabic, right to left, from the browser's own language.
     const arabic = await visit('/sign-in', { 'accept-language': 'ar-EG,ar;q=0.9,en;q=0.8' });
-    expect(arabic.body).toContain('class="pub pub-entry" dir="rtl"');
+    expect(arabic.body).toContain('class="pub-entry" dir="rtl"');
     expect(arabic.body).not.toContain('<h1>Welcome back</h1>');
     expect(arabic.body).toMatch(/<h1>[^<]*[\u0600-\u06FF][^<]*<\/h1>/);
     // Signed in, these screens only send the person on: the app alone, nothing to paint first.
@@ -213,10 +241,10 @@ describe('the readable web (R44)', () => {
     }
     // What the pages say is what the code does: the plans' numbers, the encryption's, the API's.
     const pricing = (await visit('/pricing')).body;
-    expect(pricing).toContain('<dt class="mono">team</dt><dd>3 people</dd>');
-    expect(pricing).toContain('<dt class="mono">team</dt><dd>100 people</dd>');
-    expect(pricing).toContain('<dt class="mono">ai assist</dt><dd>200 actions a day</dd>');
-    expect(pricing).toContain('<dt class="mono">files</dt><dd>100 GB</dd>');
+    expect(pricing).toContain('<dt class="mono">Team</dt><dd>3 people</dd>');
+    expect(pricing).toContain('<dt class="mono">Team</dt><dd>100 people</dd>');
+    expect(pricing).toContain('<dt class="mono">AI assist</dt><dd>200 actions a day</dd>');
+    expect(pricing).toContain('<dt class="mono">Files</dt><dd>100 GB</dd>');
     // Billing isn't connected here: the price is in the app, never made up.
     expect(pricing).toContain('price shown in the app');
     expect(pricing).not.toMatch(/€\d/);
@@ -270,7 +298,7 @@ describe('the readable web (R44)', () => {
     expect(asked.body).not.toContain('entry-abc.js');
     // The ways into the app carry it too, and the entry screens honour it.
     expect(asked.body).toContain('<a href="/sign-up?lang=ar">ابدأ مجانًا</a>');
-    expect((await visit('/sign-in?lang=ar')).body).toContain('class="pub pub-entry" dir="rtl"');
+    expect((await visit('/sign-in?lang=ar')).body).toContain('class="pub-entry" dir="rtl"');
     expect((await visit('/business')).body).toContain('<a href="/sign-up">Start free</a>');
     // The numbers are the code's still, in Arabic sentences.
     expect((await visit('/security?lang=ar')).body).toContain('حتى 64 شخصًا، و20 جهازًا');
@@ -520,7 +548,7 @@ describe('the readable web (R44)', () => {
       },
     });
     const org = await visit('/o/nile.dental');
-    expect(org.body).toContain('<dt class="mono">pays by</dt><dd>Cash</dd>');
+    expect(org.body).toContain('<dt class="mono">Pays by</dt><dd>Cash</dd>');
     expect(org.body).not.toContain('EG38');
     expect(org.body).not.toContain('Bank transfer');
     expect(org.body).toContain('>Pay Nile Dental</a>');

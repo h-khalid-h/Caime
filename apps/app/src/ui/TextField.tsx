@@ -1,7 +1,8 @@
+import { controlHeight } from '@caime/brand/tokens';
 import { tr } from '@caime/core/i18n';
 import { forwardRef, useState } from 'react';
 import { TextInput, type TextInputProps, View, type ViewStyle } from 'react-native';
-import { fontFamily } from '@/theme/fonts';
+import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
 import { Eye, EyeOff } from './icons';
@@ -40,7 +41,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          minHeight: 48,
+          minHeight: controlHeight.field,
           borderRadius: t.radii.md,
           borderWidth: focused || error ? 2 : 1,
           borderColor: border,
@@ -70,7 +71,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
               flex: 1,
               minHeight: 46,
               color: t.c.text,
-              fontFamily: fontFamily(body.family, body.weight),
+              ...fontFace(body.family, body.weight),
               fontSize: 16,
               paddingVertical: 10,
             },

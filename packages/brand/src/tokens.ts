@@ -131,6 +131,12 @@ export const themes: Record<ColorScheme, ThemeColors> = {
   },
 };
 
+/** The wordmark's letters: the brand's ink, and white on the dark canvas (its heart is the pink). */
+export const wordmarkColour: Record<ColorScheme, string> = {
+  light: themes.light.ink,
+  dark: '#FFFFFF',
+};
+
 export type BubbleTheme = 'plum' | 'pink' | 'lavender' | 'sky' | 'mint' | 'sunshine';
 
 export interface BubbleColors {
@@ -335,6 +341,9 @@ export const typeScale: Record<TypeStyleName, TypeStyle> = {
   /** A spec sheet's label ("Handle", "Since"): quiet, beside its value. Never running text. */
   mono: { family: 'body', weight: 500, size: 13, lineHeight: 18 },
 };
+
+/** How tall the things a finger presses are: a button by its size, and a text field. */
+export const controlHeight = { sm: 36, md: 44, lg: 52, field: 48 } as const;
 
 export const radii = {
   xs: 6,

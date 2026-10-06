@@ -4,7 +4,7 @@
  */
 import { createElement, useId, useState } from 'react';
 import { View } from 'react-native';
-import { fontFamily } from '@/theme/fonts';
+import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import { Text } from './Text';
 import { TIME_OF_DAY, type TimeFieldProps } from './times';
@@ -48,7 +48,7 @@ export function TimeField({ label, value, onChange, hint, error, testID }: TimeF
           color: t.c.text,
           paddingLeft: ring ? 13 : 14,
           paddingRight: ring ? 13 : 14,
-          fontFamily: fontFamily(body.family, body.weight),
+          ...fontFace(body.family, body.weight),
           fontSize: 16,
           outline: 'none',
           colorScheme: t.scheme,

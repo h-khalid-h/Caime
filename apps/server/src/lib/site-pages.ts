@@ -24,6 +24,7 @@ import {
   languageFor,
   languageInSearch,
   msg,
+  sentence,
   tr,
   trn,
 } from '@caime/core/i18n';
@@ -41,6 +42,9 @@ export const esc = (s: string) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
   );
+
+/** A spec sheet's label (`.spec`'s `dt`), as the app's `Spec` writes it: sentence case. */
+export const label = (text: string) => `<dt class="mono">${esc(sentence(text))}</dt>`;
 
 /**
  * The language a page of the site is read in: `?lang=` when it names one (the masthead's switch
@@ -149,9 +153,7 @@ export function footer(facts: Pick<SiteFacts, 'contactEmail'> | null): string {
 /** A spec sheet: mono labels, their values (already HTML). */
 export const spec = (rows: Array<[string, string] | null | false>) =>
   `<dl class="spec">
-    ${rows
-      .flatMap((r) => (r ? [`<div><dt class="mono">${esc(r[0])}</dt><dd>${r[1]}</dd></div>`] : []))
-      .join('\n    ')}
+    ${rows.flatMap((r) => (r ? [`<div>${label(r[0])}<dd>${r[1]}</dd></div>`] : [])).join('\n    ')}
   </dl>`;
 
 export interface ExplorerItem {
@@ -731,7 +733,7 @@ ${main}
         `<strong>${esc(tr('Free'))}</strong>${esc(tr(', always'))}`,
         [
           [
-            tr('ai assist'),
+            tr('AI assist'),
             esc(tr('{n} actions a day, once you turn it on', { n: n(p.personal.aiPerDay) })),
           ],
           [tr('files'), esc(gb(p.personal.storageBytes))],
@@ -743,7 +745,7 @@ ${main}
         ],
       )}
       ${plan('pro', tr('Pro'), priceLine(facts.prices, 'pro'), [
-        [tr('ai assist'), esc(aDay(p.pro.aiPerDay, 'actions'))],
+        [tr('AI assist'), esc(aDay(p.pro.aiPerDay, 'actions'))],
         [tr('files'), esc(gb(p.pro.storageBytes))],
         [tr('automations'), n(p.pro.automations)],
         [
@@ -760,13 +762,13 @@ ${main}
         [tr('team'), esc(people(o.free.teamSize))],
         [tr('apps'), n(o.free.apps)],
         [tr('writing first'), esc(aDay(o.free.startsPerDay, 'conversations'))],
-        [tr('ai agent'), esc(aDay(o.free.agentRepliesPerDay, 'answers'))],
+        [tr('AI agent'), esc(aDay(o.free.agentRepliesPerDay, 'answers'))],
       ])}
       ${plan('business', tr('Business'), priceLine(facts.prices, 'business'), [
         [tr('team'), esc(people(o.business.teamSize))],
         [tr('apps'), n(o.business.apps)],
         [tr('writing first'), esc(aDay(o.business.startsPerDay, 'conversations'))],
-        [tr('ai agent'), esc(aDay(o.business.agentRepliesPerDay, 'answers'))],
+        [tr('AI agent'), esc(aDay(o.business.agentRepliesPerDay, 'answers'))],
         [tr('insights'), esc(tr('how fast the team answers, who is waiting, what is open'))],
       ])}
       ${plan(
@@ -777,7 +779,7 @@ ${main}
           [tr('team'), esc(people(o.enterprise.teamSize))],
           [tr('apps'), n(o.enterprise.apps)],
           [tr('writing first'), esc(aDay(o.enterprise.startsPerDay, 'conversations'))],
-          [tr('ai agent'), esc(aDay(o.enterprise.agentRepliesPerDay, 'answers'))],
+          [tr('AI agent'), esc(aDay(o.enterprise.agentRepliesPerDay, 'answers'))],
           [tr('insights'), esc(tr('included'))],
         ],
       )}
@@ -943,7 +945,7 @@ ${main}
         esc(tr('Never held or moved by Caime. A split records who owes whom; nothing else.')),
       ],
       [
-        tr('ai'),
+        tr('AI'),
         esc(
           tr(
             'Off until an adult turns it on, never on a private conversation, and everything it infers is a suggestion you accept or don’t.',
@@ -1062,7 +1064,7 @@ ${main}
         ),
       ],
       [
-        tr('oauth'),
+        tr('OAuth'),
         esc(
           tr(
             'Third-party apps ask people for consent (OAuth 2.0; errors as RFC 6749 and 7009 say), hold only what they were given, and can be revoked any time from Settings.',

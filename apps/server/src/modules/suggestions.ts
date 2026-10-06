@@ -148,7 +148,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (!s || s.status !== 'accepted') throw notFound(tr('That suggestion'));
+    if (s?.status !== 'accepted') throw notFound(tr('That suggestion'));
     const ref = s.result_ref as { type?: string; id?: string; title?: string } | null;
     if (!['task', 'reminder', 'waiting'].includes(s.kind) || ref?.type !== 'task' || !ref.id)
       throw new AppError(400, 'not_undoable', tr('This step can’t be taken back here.'));
@@ -160,7 +160,7 @@ export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('source', '=', 'suggestion')
       .executeTakeFirst();
     // Renamed, done or otherwise touched since, it's the person's own now, and stays.
-    if (!task || task.status !== 'open' || (ref.title !== undefined && task.title !== ref.title))
+    if (task?.status !== 'open' || (ref.title !== undefined && task.title !== ref.title))
       throw new AppError(400, 'not_undoable', tr('That step was changed since: it stays.'));
     await ctx.db.transaction().execute(async (trx) => {
       await trx.deleteFrom('tasks').where('id', '=', task.id).execute();

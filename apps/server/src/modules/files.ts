@@ -555,7 +555,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('deleted_at', 'is', null)
         .where('suspended_at', 'is', null)
         .executeTakeFirst();
-      if (!user || user.kind !== 'human') throw missing();
+      if (user?.kind !== 'human') throw missing();
       const host = personHost(user);
       const item = host.items.find((i) => i.id === itemId);
       if (!item?.photoFileId) throw missing();
@@ -582,7 +582,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('id', '=', fileId)
       .executeTakeFirst();
-    if (!f || f.kind !== 'image') throw missing();
+    if (f?.kind !== 'image') throw missing();
     const key = f.thumb_key ?? f.storage_key;
     const size = (await storage.size(key)) ?? Number(f.size);
     reply.header('cache-control', 'private, max-age=3600');

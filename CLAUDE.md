@@ -142,12 +142,25 @@ These are rules, not preferences.
 - A sheet whose content depends on the state that closes it should keep the last content while
   it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
 - Web fonts: on the web the faces are WOFF2 in `apps/app/public/fonts` (Fontsource's Latin
-  cuts, copied from `@fontsource/inter` and `@fontsource/nunito`; OFL beside them), declared in
-  `index.html` under the very names `theme/fonts.ts` uses, so `fontFiles.web.ts` gives expo-font
-  nothing to load; phones load the TTFs from `fontFiles.ts`. A new weight needs both, and
-  `fonts` is a reserved handle. The server's pages (the site, profiles, the entry twins) name the
-  same files as `Inter` and `Nunito` through `PUBLIC_FACES` (`lib/public-pages.ts`, the weights
-  they use alone, each held to a file by a test): a new weight in their CSS joins that list.
+  cuts, copied from `@fontsource/inter` and `@fontsource/nunito`; OFL beside them), declared
+  once in `index.html` (`caime-fonts`) as the brand's two families by weight, `Inter` and
+  `Nunito`: the app on the web asks for the family and the weight (`theme/fonts.web.ts`,
+  `fontFace`), phones a file per weight through expo-font (`theme/fonts.ts`, `fontFiles.ts`), and
+  the server's pages name the same families (a page written outside the shell, the privacy
+  policy or the operator's reports, takes the shell's own block through `shellFaces`). A new
+  weight needs a face in `index.html` and a TTF for phones (`fonts.test.ts` holds the type scale
+  to the declared faces), and `fonts` is a reserved handle.
+- The server's own pages draw from the tokens, as the app does (R69): `lib/page-style.ts` writes
+  the theme as CSS variables for both schemes (`THEME_VARS`, `--text-secondary` and friends),
+  a style of the type scale as declarations (`type('mono')`), and radii, control heights, the
+  touch size and the desktop breakpoint (`px`). A page's CSS names those, never a colour or a
+  size of its own (`public-pages.test.ts` fails on a colour that isn't a token); a value both
+  sides need is a token in brand (`controlHeight`, `wordmarkColour`). A label (`dt`) is written
+  by `label()` (`site-pages.ts`) through core's `sentence`, the same capital the app's `Spec`
+  gives it; a key that starts with an acronym is written as it reads (`'AI assist'`). A sentence
+  with a link in it is one key with the link's words tagged (`<terms>terms</terms>`), cut by
+  core's `tagged` for the app's links and the server's anchors (`linked`), and a translation
+  keeps its tags (`i18n-catalog.test.ts`).
 - The web page's head is `apps/app/public/index.html` (Expo's template, with Caime's icon links);
   the icons beside it are made by `pnpm --filter @caime/brand assets`, never by hand, and any new
   file at the web root is also a reserved handle (`paths.test.ts` checks).
@@ -462,8 +475,11 @@ These are rules, not preferences.
   mounts. Their scripts are appended by one fixed inline bootstrap after the first frame
   (`bootstrapScripts`), allowed by its sha256 in the policy for those pages alone (`webCsp`'s
   second argument): change the bootstrap's text and the hash follows, since it's computed from
-  the served inline; add a word to an entry screen in the app and add it to its static twin, or
-  the swap shows. Signed in, these paths serve the bare app (they only send the person on).
+  the served inline. A twin is its screen on a phone and on a desktop (the `BrandPanel` beside
+  it; the welcome's two layouts switched at the app's breakpoint), with brand's own wordmark and
+  characters (`characterSvg`): `e2e/entry-twins.spec.ts` measures where each line sits in the
+  twin and in the app and fails on any that moved, so a change to an entry screen changes its
+  twin. Signed in, these paths serve the bare app (they only send the person on).
   Measure with Lighthouse's mobile preset against the local production bundle (docs/RESOURCES.md).
 - The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, quiet labels
   (`.mono`, Inter semibold since R69, no monospace), spec-sheet rows (`.spec`) and the landing

@@ -5,7 +5,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { apiSignUp, CLIENT, newPerson, visible } from './helpers';
+import { apiSignUp, CLIENT, newPerson } from './helpers';
 
 const suffix = Math.random().toString(36).slice(2, 7);
 
@@ -14,7 +14,7 @@ test('the first screen is what needs you, and the rest of the day around it', as
 }) => {
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const desktop = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-  const hassan = await apiSignUp(phone, 'Hassan Khalid', `hassan.home.${suffix}`);
+  await apiSignUp(phone, 'Hassan Khalid', `hassan.home.${suffix}`);
   const sarah = await apiSignUp(desktop, 'Sarah Smith', `sarah.home.${suffix}`);
   const asked = await phone.request.post('/v1/connections/requests', {
     headers: CLIENT,
