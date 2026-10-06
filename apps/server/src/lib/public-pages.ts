@@ -972,7 +972,7 @@ const PUBLIC_STYLE = `
 #root:empty{display:none}
 #root:not(:empty)~#static{display:none}html[data-visitor] #root{display:none!important}html[data-visitor] #static{display:block!important}html[data-visitor] body{overflow:auto!important}
 body:has(#root:empty){overflow:auto}
-#static{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#23193a;background:#faf8fc;min-height:100%}
+#static{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#23193a;background:#f7f7fa;min-height:100%}
 .pub{max-width:640px;margin:0 auto;padding:48px 20px 64px;line-height:1.5}
 .pub h1{font-size:2rem;line-height:1.15;margin:0 0 8px;color:#3b2e5b}
 .pub .lead{font-size:1.15rem;color:#5b4f75;margin:0 0 20px}
@@ -982,11 +982,11 @@ body:has(#root:empty){overflow:auto}
 .pub .small{color:#5b4f75;font-size:.9rem}.pub a{color:#3b2e5b}
 .pub img.face{border-radius:50%}.pub img.mark{border-radius:28px}.pub img.photo{border-radius:20px;max-width:100%;height:auto;object-fit:cover}
 @media (prefers-color-scheme:dark){#static{background:#16121f;color:#ece7f5}.pub h1,.pub a,.pub .cta a.quiet{color:#ece7f5}.pub .lead,.pub .small{color:#b9afcf}.pub .cta a{background:#ece7f5;color:#3b2e5b}.pub .cta a.quiet{background:transparent;border-color:#ece7f5}}
-.pub{--ink:#3b2e5b;--text:#2b2340;--text2:#5e5673;--text3:#6f6885;--line:#e7e2ef;--muted:#f3f0f8;--surface:#fff;--accent:#ff8fb1;--accent-soft:#ffd6e7;--plum:#5b40a0}
-@media (prefers-color-scheme:dark){.pub{--ink:#f5f2fa;--text:#f5f2fa;--text2:#b7afc9;--text3:#9c94b0;--line:#342d46;--muted:#2a2438;--surface:#1a1625;--accent:#ff8fb1;--accent-soft:#4a2c3f;--plum:#6a57a8}}
+.pub{--ink:#3b2e5b;--text:#2b2340;--text2:#5e5673;--text3:#6f6885;--line:#eceaf1;--muted:#f1f0f5;--surface:#fff;--accent:#ff8fb1;--accent-soft:#ffd6e7;--plum:#5b40a0}
+@media (prefers-color-scheme:dark){.pub{--ink:#f5f2fa;--text:#f5f2fa;--text2:#b7afc9;--text3:#9c94b0;--line:#2c2836;--muted:#25222e;--surface:#17151e;--accent:#ff8fb1;--accent-soft:#4a2c3f;--plum:#6a57a8}}
 .pub-sheet{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}.pub-sheet h1{font-size:2rem;font-weight:800;margin:14px 0 6px;color:var(--ink)}.pub-sheet .masthead{margin-bottom:8px}.pub-sheet .wordmark{text-decoration:none}.pub-sheet .spec{margin:14px 0 6px}
 .pub-home{max-width:840px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
-.pub .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:.78rem;letter-spacing:.03em;color:var(--text3);font-weight:500}
+.pub .mono{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:.82rem;letter-spacing:0;color:var(--text3);font-weight:600}
 .pub-entry{max-width:420px;padding:28px 20px 40px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
 .pub-entry h1{font-family:Nunito,Inter,system-ui,sans-serif;font-size:1.9rem;font-weight:800;line-height:1.15;margin:4px 0 6px;color:var(--ink)}
 .pub-entry .lead{font-size:1rem;color:var(--text2);margin:0 0 14px}
@@ -1019,7 +1019,7 @@ body:has(#root:empty){overflow:auto}
 .pub-home .sample{margin-top:14px;padding:14px;border-radius:10px;background:var(--muted);display:grid;gap:8px;font-size:.92rem}
 .pub-home .sample .row{display:flex;gap:10px;align-items:flex-start}
 .pub-home .sample .dot{width:28px;height:28px;border-radius:50%;background:var(--accent);flex:none}.pub-home .sample .dot-2{background:var(--plum)}.pub-home .sample .dot-3{background:var(--ink)}
-.pub-home .sample .tag{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem;letter-spacing:.03em;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--text);flex:none}
+.pub-home .sample .tag{font-family:Inter,system-ui,sans-serif;font-size:.74rem;font-weight:600;letter-spacing:0;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--text);flex:none}
 .pub-home .sample .tag-2{background:var(--surface);border:1px solid var(--line)}.pub-home .sample .tag-3{background:var(--surface);border:1px dashed var(--line)}
 .pub-home .sample .bubble{max-width:80%;padding:8px 12px;border-radius:16px;background:var(--surface)}.pub-home .sample .bubble.me{background:var(--plum);color:#fff;margin-inline-start:auto;border-end-end-radius:6px}.pub-home .sample .bubble.them{border-end-start-radius:6px}
 ${explorerStyle()}

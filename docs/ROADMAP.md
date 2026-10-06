@@ -1107,6 +1107,11 @@ listed there with its owner.
       learning switch, moved from Automations. `cai.test.ts`, `e2e/cai.spec.ts`; `pnpm check`
       (server 661), the whole E2E suite (86 passed, then the new spec with the accessibility and
       R67 specs after `ListRow` kept a row's id); initial web JS 449.8 KB gzip.
+- [x] R69: the 2026 look. Inter for the interface (tight titles, semibold headings), quiet sans
+      section and spec labels in place of the monospace, Nunito for brand moments only, neutral
+      cooler surfaces with lighter lines (contrast tested), larger radii, roomier rows, headers
+      and settings, the Attention home's greeting on its own lines; the public pages follow.
+      Every E2E screenshot retaken; initial web JS unchanged at 449.8 KB gzip.
 - [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of each script.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
@@ -2177,6 +2182,8 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-06 — R69: the look brought up to date at its source (type, labels, surfaces, radii,
+  rhythm), so every screen follows; checked on the retaken screenshots.
 - 2026-10-06 — R68 built: OpenAI's dots evaluated; Cai keeps a wait and comes back with a
   follow-up ready to send (sent only on a tap), an opt-in morning brief, and Settings · Cai, where
   everything Cai keeps or has learned can be stopped or forgotten.

@@ -83,6 +83,14 @@ async function heardSoon(type: string, count: number, state?: string) {
     await new Promise((r) => setTimeout(r, 20));
   return events(type, state);
 }
+/** Until what was already said has all arrived: nothing new for a moment (a loaded machine is slow). */
+async function settled() {
+  await t.ctx.flush();
+  for (let n = -1, i = 0; n !== heard.length && i < 40; i++) {
+    n = heard.length;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
 const lines = async (c: Client, conversationId = trip) =>
   ((await c.get(`/v1/conversations/${conversationId}/messages`)).messages as any[]).filter(
     (m) => m.kind === 'system' && m.payload.event === 'call',
@@ -870,6 +878,8 @@ describe('group calls (PRD §47)', () => {
     const id = (await start(noor)).json().call.id;
     await join(sam, id, 'sam-phone-1');
     await join(sam, id, 'sam-laptop-1');
+    // The joins' own updates first, so only what leaving says is counted.
+    await settled();
     heard.length = 0;
     // The tab left behind closes: Sam is still in it on his laptop, and nobody hears a thing.
     const behind = await leave(sam, id, 'sam-phone-1');

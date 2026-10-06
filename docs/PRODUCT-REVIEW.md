@@ -833,3 +833,18 @@ with its reason, so it isn't proposed again without new facts.
     tap), voice calls with Cai, and Cai in Slack or Teams (Caime is the place the conversation
     is). Revisit "Cai in a conversation" ("Catch me up" opening Cai on it) and a weekly
     relationship digest as the next layer.
+- **R69 — The 2026 look (owner, 2026-10-06: "looks outdated next to Dots").** Checked against the
+  screenshots every E2E run takes. What dated Caime was the system: a typewriter monospace on
+  every section label and spec row, rounded Nunito on every title, label and button, a lavender
+  tint on every surface with hairlines between, small radii and tight rhythm, and a greeting
+  wrapped beside its own buttons. Fixed at the source, so every screen follows at once and the
+  web bundle doesn't grow: the interface is Inter set tight at size (titles 26/32 at −0.6,
+  headings 600), section and spec labels are a quiet semibold sans in sentence case, Nunito is
+  kept for brand moments and the wordmark; the canvas and surfaces are a neutral, cooler grey
+  with lighter lines (contrast still tested); radii go up a step (cards 20, sheets 24, bubbles
+  20); rows are 56 tall, headers and settings pages breathe; the Attention home puts who you
+  are and what's around in a bar and the day on its own lines. The public site and pages follow
+  (no monospace labels, the same canvas). Not changed: the palette's hues, the characters, the
+  bubble colours, the layout of screens that already worked. Next, screen by screen where a
+  screenshot still looks dense: the conversation's suggestion card, the person page's facts.
+

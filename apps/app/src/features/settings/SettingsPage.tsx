@@ -28,9 +28,9 @@ export function SettingsPage({ title, children }: { title: string; children: Rea
       />
       <ScrollView
         contentContainerStyle={{
-          padding: 16,
-          gap: 16,
-          paddingBottom: 48,
+          padding: 20,
+          gap: 24,
+          paddingBottom: 56,
           maxWidth: 680,
           width: '100%',
           alignSelf: 'center',
@@ -53,12 +53,12 @@ export function Group({
 }) {
   const t = useTheme();
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: 8 }}>
       {title ? (
         <Text
           variant="overline"
-          color="textTertiary"
-          style={{ paddingHorizontal: 4 }}
+          color="textSecondary"
+          style={{ paddingHorizontal: 6 }}
           accessibilityRole="header"
         >
           {title}

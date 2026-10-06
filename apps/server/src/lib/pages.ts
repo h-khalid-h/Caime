@@ -639,8 +639,8 @@ export function renderPage(name: PageName, facts: PageFacts): string {
 <meta name="description" content="Caime's ${TITLES[name].toLowerCase()}">
 <meta name="color-scheme" content="light dark">
 <style>
-:root{--bg:#FAF8FC;--ink:#1F1830;--soft:#5B5270;--line:#E6E0EE;--brand:#3B2E5B;--link:#5A3FA0}
-@media (prefers-color-scheme:dark){:root{--bg:#120F1A;--ink:#F2EEF8;--soft:#B7AEC8;--line:#2A2438;--brand:#D9CCF5;--link:#C6B4F2}}
+:root{--bg:#F7F7FA;--ink:#1F1830;--soft:#5B5270;--line:#ECEAF1;--brand:#3B2E5B;--link:#5A3FA0}
+@media (prefers-color-scheme:dark){:root{--bg:#0F0D14;--ink:#F2EEF8;--soft:#B7AEC8;--line:#2A2438;--brand:#D9CCF5;--link:#C6B4F2}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header,main,footer{max-width:720px;margin:0 auto;padding:0 20px}

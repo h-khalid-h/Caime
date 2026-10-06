@@ -7,7 +7,7 @@
     "icon": "./assets/brand/icon.png",
     "scheme": "caime",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#FAF8FC",
+    "backgroundColor": "#F7F7FA",
     "ios": {
       "bundleIdentifier": "me.cai.app",
       "supportsTablet": true,
@@ -34,7 +34,7 @@
       "shortName": "Caime",
       "description": "Messaging that understands your relationships.",
       "themeColor": "#3B2E5B",
-      "backgroundColor": "#FAF8FC"
+      "backgroundColor": "#F7F7FA"
     },
     "plugins": [
       [
@@ -53,7 +53,7 @@
           "image": "./assets/brand/splash.png",
           "imageWidth": 180,
           "dark": {
-            "backgroundColor": "#120F1A",
+            "backgroundColor": "#0F0D14",
             "image": "./assets/brand/splash.png"
           }
         }

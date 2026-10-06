@@ -44,11 +44,11 @@ export function PageHeader({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingTop: 8,
+        paddingHorizontal: 20,
+        paddingTop: 12,
         paddingBottom: 8,
         gap: 8,
-        minHeight: 56,
+        minHeight: 60,
       }}
     >
       {left}

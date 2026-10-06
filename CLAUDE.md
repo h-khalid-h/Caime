@@ -246,11 +246,15 @@ These are rules, not preferences.
   to the inbox opened last (`state/business.ts`, in memory), else the first. On a phone the
   Chats list's `TeamInboxes` rows are the same step. Nothing about an organization's inbox is
   ever reached only through one organization's page.
-- The app's `mono` text variant (`typeScale.mono`, the system monospace by platform in
-  `theme/fonts.ts`, weight as a style) is for spec-sheet labels only: never running text, never
-  uppercase. `overline` is the same style under the name of what it heads (a section's label:
-  "Needs you", "Coming up", a settings group), so nothing in the app is uppercase any more; a
-  badge's digits use `captionStrong`, never `overline`. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
+- The interface is Inter, set tight at size (R69: `typeScale` in `@caime/brand/tokens`);
+  Nunito is for brand moments only (`display`: welcome, empty states, the auth screens' heading)
+  and the wordmark. The `mono` text variant keeps its name but is Inter now: a spec sheet's
+  label, quiet beside its value, never running text, never uppercase; nothing in the interface
+  is set in a monospace any more (the system monospace is for codes and keys only). `overline`
+  is a section's label ("Needs you", "Coming up", a settings group) in sentence case, semibold;
+  a badge's digits use `captionStrong`, never `overline`. Spacing and shape come from the tokens
+  and the primitives (`ListRow` 56 tall, `PageHeader`, `SettingsPage`, `radii`), never from a
+  screen's own numbers where a primitive has them. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
   null row is left out): an organization's page (`org-spec`), a person's "and you" block
   (`person-profile`), Welcome's three lines, a space's head (`space-spec`), About
   (`about-spec`), and the auth screens' `kicker` (`AuthLayout`): a new screen that lists facts
@@ -457,8 +461,8 @@ These are rules, not preferences.
   the served inline; add a word to an entry screen in the app and add it to its static twin, or
   the swap shows. Signed in, these paths serve the bare app (they only send the person on).
   Measure with Lighthouse's mobile preset against the local production bundle (docs/RESOURCES.md).
-- The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, mono labels
-  (`.mono`, the system monospace, no font file), spec-sheet rows (`.spec`) and the landing
+- The public pages (`lib/public-pages.ts`; the invite and the 404 too) are Caime's own: sentence case, quiet labels
+  (`.mono`, Inter semibold since R69, no monospace), spec-sheet rows (`.spec`) and the landing
   page's layer explorer (`LAYERS`: radio inputs and CSS, no script, so a visitor's page stays a
   page). New public copy follows BRAND.md's voice; a new layer adds its id to the explorer's
   CSS list too.

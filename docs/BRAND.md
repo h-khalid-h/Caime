@@ -47,7 +47,7 @@ on, or the nearest to it; roles derived from the palette are listed further down
 | --- | --- |
 | Wordmark | "Caime" in heavy rounded lettering, Dark Purple; a Caime Pink heart floats over the dotless *i* (™ on marketing surfaces) |
 | Logo variations | Dark (white wordmark on Dark Purple) · Light (pink wordmark on Light Pink) · Icon mark (a pink heart with a face) · App icon (Caishy's face on a pink tile) · "C" monogram tile |
-| Typography | Nunito (rounded) for headlines and UI · Inter for body text |
+| Typography | Inter for the interface, set tight at size · Nunito (rounded) for brand moments and the wordmark (R69) |
 | Characters | Caishy *The Dreamer* · Momo *The Cheerful* · Panda *The Loyal* · Lumi *The Creative* · Pico *The Curious* · Niko *The Brave* · Zuzu *The Wise* |
 | Caishy (v3) | White face and body, big dark-brown eyes with two highlights, pink blush, a tiny "ω" mouth, a Caime Pink hood with cat ears (Light Pink inside) and a small face emblem on the forehead, a pink heart on the chest, pink paw pads, a small lavender backpack |
 | Expressions (v3) | happy, wink, excited, curious, sad, surprised, sleepy, angry (cute), shy |
@@ -178,13 +178,14 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 
 | Style | Family | Size / line | Weight |
 | --- | --- | --- | --- |
-| Display | Nunito | 34 / 40 | 800 |
-| Title | Nunito | 24 / 30 | 800 |
-| Headline | Nunito | 19 / 24 | 700 |
-| Label | Nunito | 15 / 20 | 700 |
-| Body | Inter | 15 / 21 | 400 |
-| Message | Inter | 16 / 22 | 400 |
-| Caption | Inter | 13 / 17 | 500 |
+| Display | Nunito | 34 / 40 | 800 (brand moments: welcome, empty states) |
+| Title | Inter | 26 / 32 | 700, tracking −0.6 |
+| Headline | Inter | 18 / 24 | 600, tracking −0.3 |
+| Label | Inter | 15 / 20 | 600 |
+| Body | Inter | 15 / 22 | 400 |
+| Message | Inter | 16 / 23 | 400 |
+| Caption | Inter | 13 / 18 | 500 |
+| Section label | Inter | 13 / 18 | 600, sentence case, never uppercase, never monospace |
 | Overline | the system monospace | 12 / 16 | 500, sentence case, never uppercase: a section's label ("Needs you", "Coming up", a settings group), the same style as Mono |
 | Mono | the system monospace | 12 / 16 | 500, sentence case: labels on spec-sheet surfaces (the public pages; in the app, `Spec` rows on a person's and an organization's page, Welcome's lines, the auth screens' kicker), never running text |
 

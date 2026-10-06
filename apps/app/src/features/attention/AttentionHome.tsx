@@ -41,8 +41,8 @@ const DAY_MS = 86_400_000;
 
 function SectionHead({ label, count, testID }: { label: string; count?: number; testID?: string }) {
   return (
-    <View style={{ paddingHorizontal: 22, paddingTop: 20, paddingBottom: 6 }} testID={testID}>
-      <Text variant="overline" color="textTertiary" accessibilityRole="header">
+    <View style={{ paddingHorizontal: 22, paddingTop: 24, paddingBottom: 8 }} testID={testID}>
+      <Text variant="overline" color="textSecondary" accessibilityRole="header">
         {count ? `${label} · ${count}` : label}
       </Text>
     </View>
@@ -333,29 +333,18 @@ export function AttentionHome() {
         }
         testID="attention-home"
       >
+        {/* A bar for who you are and what's around (R69), then the day, on its own lines. */}
         <View
           style={{
             flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 10,
+            alignItems: 'center',
+            gap: 8,
             paddingHorizontal: 16,
-            paddingTop: desktop ? 28 : 8,
-            paddingBottom: 4,
+            paddingTop: desktop ? 24 : 8,
           }}
         >
           {desktop ? null : <YouButton />}
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="title" accessibilityRole="header" auto>
-              {greeting}
-            </Text>
-            <Text
-              variant="body"
-              color={needs.length ? 'accentStrong' : 'textSecondary'}
-              testID="home-summary"
-            >
-              {loading ? ' ' : homeSummary(needs.length)}
-            </Text>
-          </View>
+          <View style={{ flex: 1 }} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={tr('Ask Cai')}
@@ -374,6 +363,23 @@ export function AttentionHome() {
               onPress={() => router.push('/notifications')}
             />
           )}
+        </View>
+        <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 6 }}>
+          <Text
+            variant="title"
+            accessibilityRole="header"
+            auto
+            style={desktop ? { fontSize: 32, lineHeight: 38, letterSpacing: -0.8 } : undefined}
+          >
+            {greeting}
+          </Text>
+          <Text
+            variant="body"
+            color={needs.length ? 'accentStrong' : 'textSecondary'}
+            testID="home-summary"
+          >
+            {loading ? ' ' : homeSummary(needs.length)}
+          </Text>
         </View>
         <RecoveryCodesCard />
         <TeamInboxes />

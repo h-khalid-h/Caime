@@ -52,12 +52,12 @@ export function ListRow({
       testID={id}
       style={[
         {
-          minHeight: 52,
+          minHeight: 56,
           paddingHorizontal: 16,
-          paddingVertical: 10,
+          paddingVertical: 12,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: 14,
           backgroundColor: selected
             ? t.c.surfacePressed
             : pressed

@@ -62,14 +62,14 @@ export interface ThemeColors {
 
 export const themes: Record<ColorScheme, ThemeColors> = {
   light: {
-    canvas: '#FAF8FC',
+    canvas: '#F7F7FA',
     surface: '#FFFFFF',
     surfaceRaised: '#FFFFFF',
-    surfaceMuted: '#F3F0F8',
-    surfaceHover: '#F7F5FA',
-    surfacePressed: '#EEEAF5',
-    border: '#E7E2EF',
-    borderStrong: '#D5CEE2',
+    surfaceMuted: '#F1F0F5',
+    surfaceHover: '#F5F4F8',
+    surfacePressed: '#ECEAF2',
+    border: '#ECEAF1',
+    borderStrong: '#D9D6E1',
     text: '#2B2340',
     textSecondary: '#5E5673',
     textTertiary: '#6F6885',
@@ -90,20 +90,20 @@ export const themes: Record<ColorScheme, ThemeColors> = {
     warningSoft: '#FFF3D1',
     danger: '#C4262E',
     dangerSoft: '#FDE7E8',
-    bubbleOther: '#F3F0F8',
+    bubbleOther: '#F1F0F5',
     onBubbleOther: '#2B2340',
     scrim: 'rgba(18, 13, 28, 0.45)',
     shadow: 'rgba(59, 46, 91, 0.10)',
   },
   dark: {
-    canvas: '#120F1A',
-    surface: '#1A1625',
-    surfaceRaised: '#211C2F',
-    surfaceMuted: '#2A2438',
-    surfaceHover: '#231E31',
-    surfacePressed: '#2D2740',
-    border: '#342D46',
-    borderStrong: '#4A4262',
+    canvas: '#0F0D14',
+    surface: '#17151E',
+    surfaceRaised: '#1E1B27',
+    surfaceMuted: '#25222E',
+    surfaceHover: '#201D29',
+    surfacePressed: '#2A2634',
+    border: '#2C2836',
+    borderStrong: '#433D51',
     text: '#F5F2FA',
     textSecondary: '#B7AFC9',
     textTertiary: '#9C94B0',
@@ -124,7 +124,7 @@ export const themes: Record<ColorScheme, ThemeColors> = {
     warningSoft: '#352A12',
     danger: '#FF8A8F',
     dangerSoft: '#3A1519',
-    bubbleOther: '#2A2438',
+    bubbleOther: '#25222E',
     onBubbleOther: '#F5F2FA',
     scrim: 'rgba(0, 0, 0, 0.6)',
     shadow: 'rgba(0, 0, 0, 0.4)',
@@ -289,7 +289,7 @@ export function avatarColors(seed: string): { bg: string; fg: string } {
 export const fonts = {
   heading: 'Nunito',
   body: 'Inter',
-  /** The system's monospace (no file of its own): labels on spec-sheet surfaces. */
+  /** The system's monospace (no file of its own): codes and keys, never a label (R69). */
   mono: 'monospace',
 } as const;
 
@@ -316,33 +316,34 @@ export interface TypeStyle {
 }
 
 export const typeScale: Record<TypeStyleName, TypeStyle> = {
-  display: { family: 'heading', weight: 800, size: 34, lineHeight: 40, letterSpacing: -0.4 },
-  title: { family: 'heading', weight: 800, size: 24, lineHeight: 30, letterSpacing: -0.2 },
-  headline: { family: 'heading', weight: 700, size: 19, lineHeight: 24 },
-  label: { family: 'heading', weight: 700, size: 15, lineHeight: 20 },
-  body: { family: 'body', weight: 400, size: 15, lineHeight: 21 },
-  bodyStrong: { family: 'body', weight: 600, size: 15, lineHeight: 21 },
-  message: { family: 'body', weight: 400, size: 16, lineHeight: 22 },
-  caption: { family: 'body', weight: 500, size: 13, lineHeight: 17 },
-  captionStrong: { family: 'body', weight: 600, size: 13, lineHeight: 17 },
+  /** Brand moments only (a welcome, an empty state): the rounded face, as the wordmark is. */
+  display: { family: 'heading', weight: 800, size: 34, lineHeight: 40, letterSpacing: -0.6 },
+  // The interface itself is Inter, set tight at size (R69): titles, headings, labels.
+  title: { family: 'body', weight: 700, size: 26, lineHeight: 32, letterSpacing: -0.6 },
+  headline: { family: 'body', weight: 600, size: 18, lineHeight: 24, letterSpacing: -0.3 },
+  label: { family: 'body', weight: 600, size: 15, lineHeight: 20, letterSpacing: -0.1 },
+  body: { family: 'body', weight: 400, size: 15, lineHeight: 22 },
+  bodyStrong: { family: 'body', weight: 600, size: 15, lineHeight: 22, letterSpacing: -0.1 },
+  message: { family: 'body', weight: 400, size: 16, lineHeight: 23 },
+  caption: { family: 'body', weight: 500, size: 13, lineHeight: 18 },
+  captionStrong: { family: 'body', weight: 600, size: 13, lineHeight: 18 },
   /**
-   * A section's label ("Needs you", "Coming up", a settings group): the spec sheet's mono, in
-   * sentence case, never uppercase (BRAND.md). The same style as `mono`, named for what it
-   * heads.
+   * A section's label ("Needs you", "Coming up", a settings group): sentence case, semibold,
+   * quiet; never uppercase (BRAND.md).
    */
-  overline: { family: 'mono', weight: 500, size: 12, lineHeight: 16, letterSpacing: 0.3 },
-  /** A spec sheet's label: mono, sentence case, quiet. Never for running text. */
-  mono: { family: 'mono', weight: 500, size: 12, lineHeight: 16, letterSpacing: 0.3 },
+  overline: { family: 'body', weight: 600, size: 13, lineHeight: 18 },
+  /** A spec sheet's label ("Handle", "Since"): quiet, beside its value. Never running text. */
+  mono: { family: 'body', weight: 500, size: 13, lineHeight: 18 },
 };
 
 export const radii = {
   xs: 6,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 28,
-  bubble: 18,
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
+  bubble: 20,
   bubbleTail: 6,
   pill: 999,
 } as const;
