@@ -66,10 +66,9 @@ export function Group({
       ) : null}
       <View
         style={{
+          // On the canvas, a group is its own surface: no outline (R69).
           backgroundColor: t.c.surface,
           borderRadius: t.radii.lg,
-          borderWidth: 1,
-          borderColor: t.c.border,
           overflow: 'hidden',
         }}
       >

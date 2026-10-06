@@ -845,6 +845,8 @@ with its reason, so it isn't proposed again without new facts.
   20); rows are 56 tall, headers and settings pages breathe; the Attention home puts who you
   are and what's around in a bar and the day on its own lines. The public site and pages follow
   (no monospace labels, the same canvas). Not changed: the palette's hues, the characters, the
-  bubble colours, the layout of screens that already worked. Next, screen by screen where a
-  screenshot still looks dense: the conversation's suggestion card, the person page's facts.
+  bubble colours, the layout of screens that already worked. Second pass (same day): labels
+  that were lowercase for the monospace now read as headings, settings groups lose their
+  outline, and a person's page puts its secondary actions in one row. The suggestion card was
+  looked at again and kept: it already reads as one clear decision.
 

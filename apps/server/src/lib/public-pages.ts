@@ -987,6 +987,7 @@ body:has(#root:empty){overflow:auto}
 .pub-sheet{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}.pub-sheet h1{font-size:2rem;font-weight:800;margin:14px 0 6px;color:var(--ink)}.pub-sheet .masthead{margin-bottom:8px}.pub-sheet .wordmark{text-decoration:none}.pub-sheet .spec{margin:14px 0 6px}
 .pub-home{max-width:840px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
 .pub .mono{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:.82rem;letter-spacing:0;color:var(--text3);font-weight:600}
+.pub dt.mono::first-letter{text-transform:uppercase}
 .pub-entry{max-width:420px;padding:28px 20px 40px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
 .pub-entry h1{font-family:Nunito,Inter,system-ui,sans-serif;font-size:1.9rem;font-weight:800;line-height:1.15;margin:4px 0 6px;color:var(--ink)}
 .pub-entry .lead{font-size:1rem;color:var(--text2);margin:0 0 14px}

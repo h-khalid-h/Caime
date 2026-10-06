@@ -1111,7 +1111,11 @@ listed there with its owner.
       section and spec labels in place of the monospace, Nunito for brand moments only, neutral
       cooler surfaces with lighter lines (contrast tested), larger radii, roomier rows, headers
       and settings, the Attention home's greeting on its own lines; the public pages follow.
-      Every E2E screenshot retaken; initial web JS unchanged at 449.8 KB gzip.
+      Every E2E screenshot retaken; initial web JS unchanged at 449.8 KB gzip. Second pass, screen
+      by screen: a fact's label reads as a heading ("Handle", "Based in": `Spec` and the public
+      pages' `dt` sentence-case it in the reader's language), settings groups lose their outline
+      on the canvas, and a person's page gathers Book, Order, Pay and Private conversation in
+      one row of compact buttons under Message.
 - [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of each script.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).

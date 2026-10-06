@@ -206,8 +206,8 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         label={tr('Book {name}', { name })}
         icon={CalendarCheck}
         variant={state === 'connected' ? 'secondary' : 'primary'}
-        size="lg"
-        block
+        size={state === 'connected' ? 'md' : 'lg'}
+        block={state !== 'connected'}
         onPress={() => void bookWith(p)}
         testID="person-book"
       />
@@ -218,8 +218,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         label={tr('Order from {name}', { name })}
         icon={ShoppingBag}
         variant="secondary"
-        size="lg"
-        block
+        size="md"
         onPress={() => void bookWith(p, false, 'order_status')}
         testID="person-order"
       />
@@ -231,8 +230,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         label={tr('Pay {name}', { name })}
         icon={HandCoins}
         variant="secondary"
-        size="lg"
-        block
+        size="md"
         onPress={() => void bookWith(p, false, 'payment_request')}
         testID="person-pay"
       />
@@ -402,26 +400,28 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
         </View>
 
         {primaryAction}
-        {bookAction}
-        {orderAction}
-        {payAction}
-        {state === 'connected' && privateSupported && !self ? (
-          <Button
-            label={tr('Private conversation')}
-            icon={Lock}
-            variant="secondary"
-            block
-            onPress={() =>
-              void endpoints
-                .openDirect(person.id, undefined, { private: true })
-                .then(({ conversation }) =>
-                  router.navigate({ pathname: '/c/[id]', params: { id: conversation.id } }),
-                )
-                .catch((e) => toast((e as Error).message, { tone: 'danger' }))
-            }
-            testID="person-private"
-          />
-        ) : null}
+        {/* What else can be done with them, side by side under the main thing (R69). */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {bookAction}
+          {orderAction}
+          {payAction}
+          {state === 'connected' && privateSupported && !self ? (
+            <Button
+              label={tr('Private conversation')}
+              icon={Lock}
+              variant="secondary"
+              onPress={() =>
+                void endpoints
+                  .openDirect(person.id, undefined, { private: true })
+                  .then(({ conversation }) =>
+                    router.navigate({ pathname: '/c/[id]', params: { id: conversation.id } }),
+                  )
+                  .catch((e) => toast((e as Error).message, { tone: 'danger' }))
+              }
+              testID="person-private"
+            />
+          ) : null}
+        </View>
 
         {state === 'connected' && !self ? <PersonOffer person={person} /> : null}
 

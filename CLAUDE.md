@@ -254,7 +254,9 @@ These are rules, not preferences.
   is a section's label ("Needs you", "Coming up", a settings group) in sentence case, semibold;
   a badge's digits use `captionStrong`, never `overline`. Spacing and shape come from the tokens
   and the primitives (`ListRow` 56 tall, `PageHeader`, `SettingsPage`, `radii`), never from a
-  screen's own numbers where a primitive has them. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
+  screen's own numbers where a primitive has them. A fact's label may be a lowercase key
+  (`tr('handle')`): `Spec` sentence-cases it as it draws it, in the reader's language, and the
+  public pages' `dt.mono` does the same in CSS. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
   null row is left out): an organization's page (`org-spec`), a person's "and you" block
   (`person-profile`), Welcome's three lines, a space's head (`space-spec`), About
   (`about-spec`), and the auth screens' `kicker` (`AuthLayout`): a new screen that lists facts
