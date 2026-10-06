@@ -198,6 +198,52 @@ async function ico(svg: string, sizes: number[], file: string) {
   await writeFile(file, Buffer.concat([header, ...images]));
 }
 
+/**
+ * The card a shared link shows (Open Graph, 1200 x 630, R70): the desktop brand panel's three
+ * friends under the wordmark on the soft pink, with no words to translate, since it's shown in
+ * every language. Drawn at twice the size and brought down, so every edge stays sharp.
+ */
+async function socialCard(w: Awaited<ReturnType<typeof buildWordmark>>, file: string) {
+  const [width, height, scale] = [1200, 630, 2];
+  const draw = (svg: string, size: number) =>
+    sharp(Buffer.from(svg), { density: 600 })
+      .resize(size * scale, size * scale)
+      .png()
+      .toBuffer();
+  const mark = await sharp(Buffer.from(wordmarkSvg(w, INK)), { density: 600 })
+    .resize({ height: 132 * scale })
+    .png()
+    .toBuffer();
+  const { width: markWidth = 0 } = await sharp(mark).metadata();
+  const friends = [
+    { name: 'momo', size: 196, expression: 'excited' },
+    { name: 'caishy', size: 300, expression: 'happy' },
+    { name: 'niko', size: 196, expression: 'wink' },
+  ] as const;
+  const gap = 12;
+  const rowWidth = friends.reduce((n, f) => n + f.size, 0) + gap * (friends.length - 1);
+  let left = (width - rowWidth) / 2;
+  const base = 560;
+  const layers = [
+    { input: mark, top: 70 * scale, left: Math.round((width * scale - markWidth) / 2) },
+  ];
+  for (const f of friends) {
+    layers.push({
+      input: await draw(characterSvg(f.name, { expression: f.expression, detail: true }), f.size),
+      top: (base - f.size) * scale,
+      left: Math.round(left * scale),
+    });
+    left += f.size + gap;
+  }
+  const large = await sharp({
+    create: { width: width * scale, height: height * scale, channels: 4, background: '#FFD6E7' },
+  })
+    .composite(layers)
+    .png()
+    .toBuffer();
+  await sharp(large).resize(width, height).png({ compressionLevel: 9 }).toFile(file);
+}
+
 async function main() {
   await mkdir(appAssets, { recursive: true });
   await mkdir(generated, { recursive: true });
@@ -245,6 +291,7 @@ async function main() {
   await png(appIconSvg(), 512, join(webPublic, 'icon-512.png'));
   await png(maskableIconSvg(), 512, join(webPublic, 'icon-maskable-512.png'));
   await png(iconMarkSvg({ monochrome: true }), 96, join(webPublic, 'notification-icon.png'));
+  await socialCard(w, join(webPublic, 'og-card.png'));
 
   // Review sheet: wordmarks on light and dark, the icon mark and the app icon.
   const wordmarkPng = await sharp(Buffer.from(wordmarkSvg(w, INK)), { density: 300 })

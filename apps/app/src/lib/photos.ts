@@ -1,7 +1,7 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import type { LocalFile } from '@/api/upload';
-import { PHOTO_MAX_EDGE, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
+import { PHOTO_MAX_EDGE, PHOTO_QUALITY, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
 
 export type PickOptions = ImagePicker.ImagePickerOptions;
 export type PickResult = ImagePicker.ImagePickerResult;
@@ -33,7 +33,7 @@ export async function photoToUpload(
     try {
       const saved = await image.saveAsync({
         format: format === 'png' ? SaveFormat.PNG : SaveFormat.JPEG,
-        compress: 0.85,
+        compress: PHOTO_QUALITY,
       });
       return { uri: saved.uri, name: shrunkName(name, format), mime: `image/${format}` };
     } finally {

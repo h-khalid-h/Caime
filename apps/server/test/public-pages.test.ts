@@ -54,6 +54,12 @@ describe('the readable web (R44)', () => {
     expect(r.body).toContain('<meta name="robots" content="index,follow">');
     expect(r.body).toContain('<link rel="canonical" href="https://caime.example/">');
     expect(r.body).toContain('<meta property="og:title"');
+    // Caime's own card when the page has no picture: wide, sharp, the size the networks ask for.
+    expect(r.body).toContain(
+      '<meta property="og:image" content="https://caime.example/og-card.png">',
+    );
+    expect(r.body).toContain('<meta property="og:image:width" content="1200">');
+    expect(r.body).toContain('<meta name="twitter:card" content="summary_large_image">');
     expect(r.body).toContain('"@type":"SoftwareApplication"');
     expect(r.body).toContain('<div id="static">');
     expect(r.body).toContain('Connect in three taps.');

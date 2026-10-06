@@ -364,7 +364,10 @@ export interface FileView {
   height: number | null;
   durationMs: number | null;
   url: string;
+  /** Drawn small: a tile, a face, a logo (480 px at most). */
   thumbUrl: string | null;
+  /** Drawn large: a photo in a message, a sheet, a page (1280 px at most, R70). */
+  previewUrl: string | null;
 }
 
 /** Something shared in a conversation, from its asset index (PRD §26). */

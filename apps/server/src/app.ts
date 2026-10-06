@@ -34,6 +34,7 @@ import { startWorkers } from './lib/jobs';
 import { requestForLog } from './lib/log';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
+import { registerPreviewJob, startPreviewBackfill } from './lib/renditions';
 import { speechFor } from './lib/speech';
 import { registerSystemJobs } from './lib/system-accounts';
 import { registerTranscribeJob } from './lib/transcribe';
@@ -319,7 +320,13 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerTranscribeJob();
   registerCallSweep();
   registerGroupCallSweep();
+  registerPreviewJob();
   const stopWorkers = config.WORKERS ? startWorkers(ctx) : () => {};
+  // Older images get the preview new ones are given (R70): queued once, whichever instance.
+  if (config.WORKERS)
+    void startPreviewBackfill(ctx).catch((err) =>
+      ctx.log.warn({ err }, 'preview backfill not queued'),
+    );
 
   app.addHook('onClose', async () => {
     stopWorkers();

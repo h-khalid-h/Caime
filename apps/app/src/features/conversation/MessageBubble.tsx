@@ -3,6 +3,7 @@ import type { MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatBytes, formatClock, formatDuration, systemText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { imageFor } from '@caime/core/renditions';
 import { CAI_ID } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -356,7 +357,9 @@ export const MessageBubble = memo(function MessageBubble({
               >
                 <Image
                   source={{
-                    uri: mediaUrl(f.thumbUrl ?? f.url) ?? undefined,
+                    uri:
+                      mediaUrl(imageFor(f, Math.max(w, single ? Math.min(320, w / ratio) : w))) ??
+                      undefined,
                     headers: mediaHeaders(),
                   }}
                   style={{

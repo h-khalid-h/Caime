@@ -1,10 +1,13 @@
 /**
- * How big a photo goes out from a device (docs/RESOURCES.md): a phone's 12-megapixel shot is
- * 3 to 5 MB, and a conversation never shows more than about 2,000 pixels of it, so it's
- * shrunk on the device before it's uploaded, saving the person's data and the server's
- * work. The server still caps at 4,096 and strips every hidden detail. Pure, so it's tested.
+ * How big a photo goes out from a device (docs/RESOURCES.md, R70): a phone's 12-megapixel shot
+ * is 4,032 pixels across, more than any screen shows; a conversation draws a 1,280-pixel preview
+ * the server makes, and the photo itself is opened full screen or zoomed (a QHD desktop shows
+ * 2,560 across, a phone zoomed twice about 2,340), so it's shrunk on the device to 3,072 before
+ * it's uploaded. The server still caps at 4,096 and strips every hidden detail. Pure, so tested.
  */
-export const PHOTO_MAX_EDGE = 2048;
+export const PHOTO_MAX_EDGE = 3072;
+/** The JPEG quality a shrunk photo is saved at: no blocks in skies or skin, even zoomed. */
+export const PHOTO_QUALITY = 0.9;
 /** A profile photo or a logo shows at 104 px at most; 1,024 leaves room for sharp screens. */
 export const AVATAR_MAX_EDGE = 1024;
 /** Formats that go as they are: animation, vectors, and what a browser can't re-encode. */

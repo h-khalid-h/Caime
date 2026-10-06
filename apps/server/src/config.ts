@@ -52,7 +52,7 @@ const Env = z.object({
   EMAIL_FROM: z.string().default('Caime <hello@cai.me>'),
   /** AI assist (Anthropic). Off without a key; each person still turns it on for themselves. */
   ANTHROPIC_API_KEY: z.string().optional(),
-  ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
   /**
    * A smaller model for the light features (rewrite, translate, catch me up), which are short,
    * frequent and forgiving; unset, they use ANTHROPIC_MODEL. Finding follow-ups and the

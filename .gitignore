@@ -23,3 +23,6 @@ test-results/
 e2e/screenshots/
 # native bundle exports (expo export --platform ios|android)
 apps/app/dist-native/
+
+# Worktrees made by agents working beside this checkout.
+.claude/worktrees/

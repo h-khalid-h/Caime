@@ -20,6 +20,7 @@ import { orgSeat } from '../lib/orgs';
 import { assertStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
+import { makeRenditions } from '../lib/renditions';
 import { sniffFile } from '../lib/sniff';
 import { type Storage, storageFor } from '../lib/storage';
 import { minorOf, privacyOf } from '../lib/users';
@@ -48,6 +49,7 @@ async function finalize(
   let width: number | null = null;
   let height: number | null = null;
   let thumbKey: string | null = null;
+  let previewKey: string | null = null;
   let cleaned = false;
   if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {
     try {
@@ -73,16 +75,11 @@ async function finalize(
       width = meta.width ?? null;
       height = meta.height ?? null;
       // Made beside the upload, then kept where files are kept.
-      const thumbTemp = `${tempKey}.thumb`;
-      await sharp(storage.path(tempKey))
-        .resize({ width: 480, height: 480, fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 72 })
-        .toFile(storage.path(thumbTemp));
-      thumbKey = `thumbs/${id}.webp`;
-      await storage.moveFrom(thumbTemp, thumbKey);
+      ({ thumbKey, previewKey } = await makeRenditions(storage, tempKey, id, width, height));
     } catch (err) {
       ctx.log.warn({ err }, 'image processing failed');
       thumbKey = null;
+      previewKey = null;
       // A photo whose hidden details (where it was taken among them) couldn't be taken out is
       // never kept as it came.
       if (REENCODE.has(sniffed.mime) && !cleaned) {
@@ -94,7 +91,24 @@ async function finalize(
   }
   await storage.moveFrom(tempKey, key);
   const size = (await storage.size(key)) ?? 0;
-  return { key, size, sniffed, width, height, thumbKey, durationMs };
+  return { key, size, sniffed, width, height, thumbKey, previewKey, durationMs };
+}
+
+/** The file to send for an image drawn large: its preview, else the cleaned original. */
+async function largeOf(
+  storage: Storage,
+  f: {
+    preview_key: string | null;
+    storage_key: string;
+    mime: string;
+    name: string;
+    size: string | number;
+  },
+) {
+  if (!f.preview_key)
+    return { name: f.name, mime: f.mime, size: f.size, storage_key: f.storage_key };
+  const size = (await storage.size(f.preview_key)) ?? 0;
+  return { name: `${f.name}.webp`, mime: 'image/webp', size, storage_key: f.preview_key };
 }
 
 function contentDisposition(name: string, inline: boolean): string {
@@ -262,6 +276,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
         duration_ms: done.durationMs,
         sha256: hash.digest('hex'),
         thumb_key: done.thumbKey,
+        preview_key: done.previewKey,
         status: 'ready',
         created_at: ctx.now(),
       })
@@ -383,6 +398,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
           width: done.width,
           height: done.height,
           thumb_key: done.thumbKey,
+          preview_key: done.previewKey,
           upload_offset: done.size,
           status: 'ready',
         })
@@ -443,6 +459,23 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       { name: `${f.name}.webp`, mime: 'image/webp', size, storage_key: f.thumb_key },
       true,
     );
+  });
+
+  /**
+   * What's drawn large (R70): the preview, or for an older image the backfill hasn't reached yet,
+   * the cleaned original, never the thumbnail stretched.
+   */
+  app.get('/files/:id/preview', async (req, reply): Promise<FastifyReply> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    if (!(await canReadFile(ctx, auth.userId, id))) throw notFound(tr('That file'));
+    const f = await ctx.db
+      .selectFrom('files')
+      .select(['preview_key', 'thumb_key', 'storage_key', 'mime', 'name', 'size'])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!f?.thumb_key) throw notFound(tr('That photo'));
+    return streamFile(req, reply, storage, await largeOf(storage, f), true);
   });
 
   /** An organization's logo: on its public page (R44), so anyone may see it. */
@@ -583,14 +616,12 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', fileId)
       .executeTakeFirst();
     if (f?.kind !== 'image') throw missing();
-    const key = f.thumb_key ?? f.storage_key;
-    const size = (await storage.size(key)) ?? Number(f.size);
     reply.header('cache-control', 'private, max-age=3600');
     return streamFile(
       req,
       reply,
       storage,
-      { name: 'item.webp', mime: f.thumb_key ? 'image/webp' : f.mime, size, storage_key: key },
+      { ...(await largeOf(storage, f)), name: 'item.webp' },
       true,
     );
   };

@@ -2186,6 +2186,13 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-06 — R70, sharp at every size: an image keeps a 1,280-px preview beside its 480-px
+  thumbnail (`lib/renditions.ts`, migration 0061, `/files/:id/preview`), core's `imageFor` picks
+  by the points drawn, so a photo in a message, an item's sheet and page and a link's card are
+  sharp on a 3x screen; older images get theirs from a once-only backfill; deleting an account
+  takes the preview too (the bucket test caught it). Photos go up at 3,072 px, JPEG 0.9. A shared
+  link to Caime shows a 1200 x 630 card made with the icons instead of the 180-px icon. The AI's
+  default model is the latest. Checked: full suite, the conversation and bookings E2E (54 + 13).
 - 2026-10-06 — Room in the startup chunk: icons imported where they're used, not through the
   `ui/icons.ts` barrel that put all 127 in the first download (initial web JS 449.8 to 447.4 KB
   gzip; a test keeps it so). CI's red run on `4facc89` was `calls.test.ts` reading bus events

@@ -553,8 +553,13 @@ export function renderPublic(
       `<meta property="og:title" content="${esc(o.title)}">`,
       `<meta property="og:description" content="${esc(o.description)}">`,
       `<meta property="og:url" content="${esc(url)}">`,
-      `<meta property="og:image" content="${esc(o.image ?? `${publicUrl}/apple-touch-icon.png`)}">`,
-      `<meta name="twitter:card" content="${o.image && page.kind !== 'landing' && page.kind !== 'site' ? 'summary' : 'summary_large_image'}">`,
+      // A page with no picture of its own shows Caime's card (R70: 1200 x 630, made with the
+      // icons); a face or a logo is square, an item's photo wide.
+      `<meta property="og:image" content="${esc(o.image ?? `${publicUrl}/og-card.png`)}">`,
+      o.image
+        ? ''
+        : `<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="${SITE_NAME}">`,
+      `<meta name="twitter:card" content="${o.image && page.kind !== 'item' ? 'summary' : 'summary_large_image'}">`,
       `<meta name="twitter:title" content="${esc(o.title)}">`,
       `<meta name="twitter:description" content="${esc(o.description)}">`,
       o.ld

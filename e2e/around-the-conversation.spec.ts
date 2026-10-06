@@ -2137,8 +2137,8 @@ test.describe
       await expect(mine).toContainText('2 photos');
 
       // A big photo is shrunk on the device before it goes (docs/RESOURCES.md): the server
-      // receives 2,048 pixels on the long edge, never the 3,000 that were picked.
-      const big = photo(3000, 1000, [40, 40, 90], [220, 220, 255]);
+      // receives 3,072 pixels on the long edge, never the 4,000 that were picked.
+      const big = photo(4000, 1000, [40, 40, 90], [220, 220, 255]);
       await addFrom(page, mine, [['panorama.png', big]]);
       await expect(theirs).toContainText('3 photos');
       const { messages } = await (
@@ -2153,7 +2153,7 @@ test.describe
       const panorama = album.photos.find((p: { file: { name: string } }) =>
         p.file.name.startsWith('panorama'),
       ).file;
-      expect([panorama.width, panorama.height]).toEqual([2048, 683]);
+      expect([panorama.width, panorama.height]).toEqual([3072, 768]);
 
       // Noor closes it: nobody adds more, and what's in it stays.
       await mine.getByRole('button', { name: 'Close the album' }).click();

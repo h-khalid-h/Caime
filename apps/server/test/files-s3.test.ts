@@ -146,8 +146,10 @@ describe('files in a bucket (docs/DEPLOY.md, "Scaling")', () => {
     const keys = objectKeys();
     expect(keys.some((k) => /^files\/\d{4}\/\d{2}\/[0-9a-f-]{36}$/.test(k))).toBe(true);
     expect(keys).toContain(`thumbs/${file.id}.webp`);
-    // Signed, streamed unsigned-payload puts: the stand-in checked each.
-    expect(seen.filter((s) => s.startsWith('PUT '))).toHaveLength(2);
+    expect(keys).toContain(`previews/${file.id}.webp`);
+    // Signed, streamed unsigned-payload puts (the photo, its thumbnail, its preview): the
+    // stand-in checked each.
+    expect(seen.filter((s) => s.startsWith('PUT '))).toHaveLength(3);
     // The photo went in without its metadata.
     const kept = [...objects.entries()].find(([k]) => /\/files\/\d{4}\//.test(k))![1];
     const meta = await sharp(kept.body).metadata();

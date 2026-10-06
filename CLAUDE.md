@@ -94,6 +94,13 @@ These are rules, not preferences.
     `CONTRIBUTING.md`: a pull request against `main`, CI green, reviewed against these
     conventions by the reviewer (this session, or the owner), who alone merges. Only the reviewer
     and the owner push to `main`.
+16. **Sharp at every size** (R70). An image is drawn from the rendition made for its size on a 3x
+    screen, through core's `imageFor` (`renditions.ts`: the 480-px thumbnail up to 160 points,
+    the 1280-px preview above it, the cleaned original for a viewer that zooms), never a smaller
+    one stretched; a new place that draws an image passes the points it draws at. Brand images
+    are made by `pnpm --filter @caime/brand assets` at the size they're shown (the icons, the
+    1200 x 630 social card), never scaled up, and a page names only the fonts the shell
+    declares.
 
 ## Working notes
 
@@ -837,6 +844,12 @@ These are rules, not preferences.
   is due and wakes on `enqueue`'s NOTIFY (`ctx.bus.onNotify`, any plain channel on the one
   listening connection); it never polls by the second. A periodic task's `everyMs` is the
   idle floor, so nothing new sweeps more often than it must.
+- Renditions (R70): `lib/renditions.ts` makes an image's thumbnail and preview at upload
+  (`makeRenditions`; a picture no bigger than the thumbnail is its own preview), and the
+  `files.previews` job gives older images theirs a batch at a time, through a `tmp/` copy, queued
+  once at start when any is missing (`files_preview_missing`, a partial index). `/files/:id/preview`
+  and an item's photo route send the preview, else the cleaned original. A new rendition joins
+  `RENDITION_EDGES` in core and the backfill.
 - A picked photo goes through `photoToUpload` (`lib/photos.ts`, `photos.web.ts`) before
   `uploadFile`: shrunk on the device to `PHOTO_MAX_EDGE` (`lib/photoSize.ts`, pure and
   tested), or `AVATAR_MAX_EDGE` for a face or a logo; videos, GIFs and HEIC go as they are, and

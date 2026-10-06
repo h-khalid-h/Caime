@@ -1100,7 +1100,7 @@ function ItemEditor({
     try {
       const file = await uploadFile(await photoToUpload(res.assets[0], 'item.jpg'));
       setPhotoFileId(file.id);
-      setPhotoPreview(file.thumbUrl ?? file.url);
+      setPhotoPreview(file.previewUrl ?? file.url);
     } catch (e) {
       setError((e as Error).message);
     } finally {

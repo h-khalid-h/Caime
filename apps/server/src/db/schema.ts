@@ -407,6 +407,8 @@ export interface FilesTable {
   duration_ms: number | null;
   sha256: string | null;
   thumb_key: string | null;
+  /** The rendition for what's drawn large (R70); the thumbnail's key when the image is small. */
+  preview_key: string | null;
   status: Defaulted<'uploading' | 'ready' | 'failed'>;
   upload_offset: BigIntCol;
   created_at: Generated<Date>;

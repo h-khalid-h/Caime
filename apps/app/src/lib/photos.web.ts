@@ -1,6 +1,6 @@
 import type { ImagePickerAsset, ImagePickerOptions, ImagePickerResult } from 'expo-image-picker';
 import type { LocalFile } from '@/api/upload';
-import { PHOTO_MAX_EDGE, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
+import { PHOTO_MAX_EDGE, PHOTO_QUALITY, shrinkTo, shrunkFormat, shrunkName } from './photoSize';
 
 export type PickOptions = ImagePickerOptions;
 export type PickResult = ImagePickerResult;
@@ -104,7 +104,7 @@ export async function photoToUpload(
     const format = shrunkFormat(mime);
     const type = `image/${format}`;
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, type, format === 'jpeg' ? 0.85 : undefined),
+      canvas.toBlob(resolve, type, format === 'jpeg' ? PHOTO_QUALITY : undefined),
     );
     if (!blob) return asIs;
     const shrunk = new File([blob], shrunkName(name, format), { type });

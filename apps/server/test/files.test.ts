@@ -1,6 +1,8 @@
 import { uuidv4 } from '@caime/core';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runDueJobs } from '../src/lib/jobs';
+import { startPreviewBackfill } from '../src/lib/renditions';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -78,6 +80,59 @@ describe('uploads', () => {
     expect(meta.exif).toBeUndefined();
     const thumb = await download(hassan, f.thumbUrl);
     expect((await sharp(thumb.rawPayload).metadata()).width).toBe(480);
+  });
+
+  it('keeps a preview for what is drawn large, sharp on a 3x screen (R70)', async () => {
+    const big = await sharp({
+      create: { width: 3000, height: 2000, channels: 3, background: '#7dd3fc' },
+    })
+      .jpeg()
+      .toBuffer();
+    const f = await upload(hassan, 'wide.jpg', 'image/jpeg', big);
+    expect(f.previewUrl).toBe(`/v1/files/${f.id}/preview`);
+    const preview = await download(hassan, f.previewUrl);
+    expect(preview.headers['content-type']).toBe('image/webp');
+    expect((await sharp(preview.rawPayload).metadata()).width).toBe(1280);
+    expect((await sharp((await download(hassan, f.thumbUrl)).rawPayload).metadata()).width).toBe(
+      480,
+    );
+    // Someone who can't see the file can't see its preview either.
+    expect((await outsider.req('GET', f.previewUrl)).statusCode).toBe(404);
+    // A picture no bigger than the thumbnail is its own preview.
+    const small = await sharp({
+      create: { width: 300, height: 200, channels: 3, background: '#a7f3d0' },
+    })
+      .jpeg()
+      .toBuffer();
+    const g = await upload(hassan, 'small.jpg', 'image/jpeg', small);
+    expect((await sharp((await download(hassan, g.previewUrl)).rawPayload).metadata()).width).toBe(
+      300,
+    );
+  });
+
+  it('gives an image kept before previews its own, a batch at a time (R70)', async () => {
+    const big = await sharp({
+      create: { width: 2400, height: 1800, channels: 3, background: '#ffd166' },
+    })
+      .jpeg()
+      .toBuffer();
+    const f = await upload(hassan, 'older.jpg', 'image/jpeg', big);
+    await t.ctx.db.updateTable('files').set({ preview_key: null }).where('id', '=', f.id).execute();
+    // Until then, what's drawn large is the original, never the thumbnail stretched.
+    expect((await sharp((await download(hassan, f.previewUrl)).rawPayload).metadata()).width).toBe(
+      2400,
+    );
+    await startPreviewBackfill(t.ctx);
+    await runDueJobs(t.ctx);
+    const row = await t.ctx.db
+      .selectFrom('files')
+      .select('preview_key')
+      .where('id', '=', f.id)
+      .executeTakeFirstOrThrow();
+    expect(row.preview_key).toBe(`previews/${f.id}.webp`);
+    expect((await sharp((await download(hassan, f.previewUrl)).rawPayload).metadata()).width).toBe(
+      1280,
+    );
   });
 
   it('never keeps a photo as it came when its details can’t be taken out', async () => {

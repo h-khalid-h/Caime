@@ -76,7 +76,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       ctx.db.selectFrom('connection_sides').select('other_id').where('owner_id', '=', me).execute(),
       ctx.db
         .selectFrom('files as f')
-        .select(['f.id', 'f.storage_key', 'f.thumb_key'])
+        .select(['f.id', 'f.storage_key', 'f.thumb_key', 'f.preview_key'])
         .where('f.owner_id', '=', me)
         .where((eb) =>
           eb.not(
@@ -155,6 +155,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     for (const f of orphanFiles) {
       await storage.remove(f.storage_key).catch(dropped(f.storage_key));
       if (f.thumb_key) await storage.remove(f.thumb_key).catch(dropped(f.thumb_key));
+      // Every rendition goes with it (R70); a small image's preview is its thumbnail.
+      if (f.preview_key && f.preview_key !== f.thumb_key)
+        await storage.remove(f.preview_key).catch(dropped(f.preview_key));
     }
     if (others.length)
       await ctx.bus.publish(

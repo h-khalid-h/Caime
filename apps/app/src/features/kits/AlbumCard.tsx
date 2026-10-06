@@ -1,6 +1,7 @@
 import type { AlbumPhotoView, AlbumView, FileView, MessageView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import { kitMoves, kitStateLabel } from '@caime/core/kit-cards';
+import { imageFor } from '@caime/core/renditions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import Images from 'lucide-react-native/icons/images';
@@ -42,7 +43,7 @@ function Photo({ f, size, label }: { f: FileView; size: number; label: string })
       onPress={() => openLink(mediaUrl(f.url) ?? '')}
     >
       <Image
-        source={{ uri: mediaUrl(f.thumbUrl ?? f.url) ?? undefined, headers: mediaHeaders() }}
+        source={{ uri: mediaUrl(imageFor(f, size)) ?? undefined, headers: mediaHeaders() }}
         style={{ width: size, height: size, borderRadius: 10, backgroundColor: t.c.surfaceMuted }}
         contentFit="cover"
         transition={150}
@@ -221,7 +222,7 @@ export function AlbumCard({ m, mine }: { m: MessageView; mine: boolean }) {
             <View key={f.id}>
               <Image
                 source={{
-                  uri: mediaUrl(f.thumbUrl ?? f.url) ?? undefined,
+                  uri: mediaUrl(imageFor(f, TILE)) ?? undefined,
                   headers: mediaHeaders(),
                 }}
                 style={{

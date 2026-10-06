@@ -850,3 +850,18 @@ with its reason, so it isn't proposed again without new facts.
   outline, and a person's page puts its secondary actions in one row. The suggestion card was
   looked at again and kept: it already reads as one clear decision.
 
+- **R70 — High quality at every size, and intelligence in every language (owner, 2026-10-06:
+  "always ensure high quality and high resolution across the entire product; same for
+  intelligence").** A standing rule, applied first where Caime fell short. *Resolution*: a photo
+  in a message (up to 240 x 320 points), an item's sheet and page, and a link's card were drawn
+  from a 480-px thumbnail, soft on any 2x or 3x screen. An image now keeps two renditions beside
+  its cleaned original: the thumbnail (480 px) for what's drawn up to 160 points, and a preview
+  (1280 px, the widest anything is drawn: 390 points at 3x, and a 1200-px card) for the rest;
+  core's `imageFor` picks by the points drawn, so nothing is ever a smaller image stretched, and
+  older images get their preview from a backfill. A shared link to Caime showed the 180-px icon;
+  it now shows a 1200 x 630 card made with the icons (the friends under the wordmark, no words,
+  so it reads in every language). *Intelligence*: the default model is the latest, and the
+  message intelligence reads French and Turkish (promises, requests, decisions, questions,
+  dates, amounts), measured by the golden set per language like English and Arabic. *Cost*: a
+  preview is made once per photo at upload (one more resize) and fetched only where a photo is
+  drawn large; tiles and faces still load the thumbnail.

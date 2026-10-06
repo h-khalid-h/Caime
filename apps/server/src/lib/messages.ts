@@ -87,6 +87,7 @@ export function fileView(f: {
     durationMs: f.duration_ms,
     url: fileUrl(f.id),
     thumbUrl: f.thumb_key ? `${fileUrl(f.id)}/thumb` : null,
+    previewUrl: f.thumb_key ? `${fileUrl(f.id)}/preview` : null,
   };
 }
 
