@@ -46,7 +46,7 @@ export default function Recover() {
 
   return (
     <AuthLayout
-      kicker="recovery"
+      kicker={tr('recovery')}
       title={tr('Use a recovery code')}
       subtitle={tr('You saved ten codes when you created your account. Each one works once.')}
     >

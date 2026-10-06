@@ -615,6 +615,8 @@ export const ar: Catalog = {
     'افتح الرابط الذي في البريد، أو اطلب رابطًا جديدًا.',
   'Ask for a new link': 'اطلب رابطًا جديدًا',
   'new password': 'كلمة مرور جديدة',
+  password: 'كلمة المرور',
+  recovery: 'الاستعادة',
   'Set a new password': 'ضع كلمة مرور جديدة',
   'You’ll be signed in here, and out everywhere else.': 'سيُسجَّل دخولك هنا، وخروجك من كل مكان آخر.',
   'sign in': 'تسجيل الدخول',

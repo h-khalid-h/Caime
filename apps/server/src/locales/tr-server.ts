@@ -286,7 +286,6 @@ export const turkishServer: Catalog = {
   'your devices': 'cihazlarınız',
   'A new device reads nothing until you say it’s yours on one you already have. Your security code is your first device’s, so it stays the same as you add devices and changes only when you start over.':
     'Yeni bir cihaz, zaten kullandığınız bir cihazdan onu onaylayana kadar hiçbir şey okuyamaz. Güvenlik kodunuz ilk cihazınıza aittir; bu yüzden cihaz ekledikçe değişmez, yalnızca sıfırdan başladığınızda değişir.',
-  recovery: 'kurtarma',
   'A recovery key you hold, shown once, brings your private conversations back when every device is gone. Caime keeps nothing of it.':
     'Yalnızca sizde olan ve bir kez gösterilen kurtarma anahtarı, tüm cihazlarınızı kaybettiğinizde özel konuşmalarınızı geri getirir. Caime ondan hiçbir iz saklamaz.',
   'what isn’t hidden': 'gizlenmeyenler',

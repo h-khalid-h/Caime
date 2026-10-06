@@ -967,8 +967,38 @@ function bookLink(items: PublicItem[], pagePath: string, name: string, own = fal
   return out.join('');
 }
 
+// Caime's own faces for a visitor's page, under the names its CSS uses: the shell's rules name
+// the same files as expo-font does (`Inter_400Regular`), so `Inter` alone found none and every
+// public page drew in the system's font. Only the weights these pages use; each file is fetched
+// once, cached a year, and is the one the app loads after.
+const LATIN =
+  'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
+const LATIN_EXT =
+  'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF';
+export const PUBLIC_FACES = (
+  [
+    ['Inter', 'inter', [400, 600, 700]],
+    ['Nunito', 'nunito', [800]],
+  ] as const
+)
+  .flatMap(([family, file, weights]) =>
+    weights.flatMap((weight) =>
+      (
+        [
+          ['latin', LATIN],
+          ['latin-ext', LATIN_EXT],
+        ] as const
+      ).map(
+        ([cut, range]) =>
+          `@font-face{font-family:${family};font-weight:${weight};font-display:swap;src:url(/fonts/${file}-${cut}-${weight}-normal.woff2) format('woff2');unicode-range:${range}}`,
+      ),
+    ),
+  )
+  .join('\n');
+
 const PUBLIC_STYLE = `
 <style id="pub-style">
+${PUBLIC_FACES}
 #root:empty{display:none}
 #root:not(:empty)~#static{display:none}html[data-visitor] #root{display:none!important}html[data-visitor] #static{display:block!important}html[data-visitor] body{overflow:auto!important}
 body:has(#root:empty){overflow:auto}
@@ -987,7 +1017,7 @@ body:has(#root:empty){overflow:auto}
 .pub-sheet{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}.pub-sheet h1{font-size:2rem;font-weight:800;margin:14px 0 6px;color:var(--ink)}.pub-sheet .masthead{margin-bottom:8px}.pub-sheet .wordmark{text-decoration:none}.pub-sheet .spec{margin:14px 0 6px}
 .pub-home{max-width:840px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
 .pub .mono{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:.82rem;letter-spacing:0;color:var(--text3);font-weight:600}
-.pub dt.mono::first-letter{text-transform:uppercase}
+.pub dt.mono::first-letter,.pub-entry p.mono::first-letter{text-transform:uppercase}
 .pub-entry{max-width:420px;padding:28px 20px 40px;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text)}
 .pub-entry h1{font-family:Nunito,Inter,system-ui,sans-serif;font-size:1.9rem;font-weight:800;line-height:1.15;margin:4px 0 6px;color:var(--ink)}
 .pub-entry .lead{font-size:1rem;color:var(--text2);margin:0 0 14px}

@@ -1,9 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BUSINESS_VIEW_LABELS, BUSINESS_VIEWS } from '@caime/core/business';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PUBLIC_FACES } from '../src/lib/public-pages';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -70,6 +71,16 @@ describe('the readable web (R44)', () => {
     const signedIn = await visit('/', { cookie: `caime_session=${noor.token}` });
     expect(signedIn.body).toContain('<meta name="robots" content="noindex">');
     expect(signedIn.body).not.toContain('<div id="static">');
+  });
+
+  it('draws in Caime’s own faces, from files the app ships', async () => {
+    const files = [...PUBLIC_FACES.matchAll(/url\(\/fonts\/([^)]+)\)/g)].map((m) => m[1]);
+    expect(files).toHaveLength(8);
+    for (const f of files)
+      expect(existsSync(new URL(`../../app/public/fonts/${f}`, import.meta.url)), f).toBe(true);
+    const page = await visit('/');
+    expect(page.body).toContain('@font-face{font-family:Inter;font-weight:400;');
+    expect(page.body).toContain('@font-face{font-family:Nunito;font-weight:800;');
   });
 
   it('a person’s page shows what they show to everyone, while they can be found by handle', async () => {

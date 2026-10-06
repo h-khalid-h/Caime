@@ -34,7 +34,7 @@ export default function Forgot() {
   };
   return (
     <AuthLayout
-      kicker="password"
+      kicker={tr('password')}
       title={tr('Forgot your password?')}
       subtitle={tr('Caime sends a link to your email. Open it within the hour to set a new one.')}
       back

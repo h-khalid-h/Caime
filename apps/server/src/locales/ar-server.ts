@@ -258,7 +258,6 @@ export const arServer: Catalog = {
   'your devices': 'أجهزتك',
   'A new device reads nothing until you say it’s yours on one you already have. Your security code is your first device’s, so it stays the same as you add devices and changes only when you start over.':
     'لا يقرأ الجهاز الجديد شيئًا حتى تؤكد من أحد أجهزتك الحالية أنه لك. ورمز أمانك هو رمز جهازك الأول، فيبقى ثابتًا مهما أضفت من أجهزة، ولا يتغير إلا حين تبدأ من جديد.',
-  recovery: 'الاستعادة',
   'A recovery key you hold, shown once, brings your private conversations back when every device is gone. Caime keeps nothing of it.':
     'مفتاح استعادة تحمله أنت، يُعرض مرة واحدة، يعيد محادثاتك الخاصة حين تفقد كل أجهزتك. ولا يحتفظ Caime بشيء منه.',
   'what isn’t hidden': 'ما ليس مخفيًا',

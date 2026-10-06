@@ -2186,6 +2186,11 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-06 — Production checked as a visitor (`f674455`, R67–R69 live, five pages, no console
+  errors). Found and fixed: every visitor page drew in the system's font (its CSS named `Inter`
+  and `Nunito`, which the shell declares only under expo-font's names), and the sign-in screens'
+  labels were lowercase or untranslated ("password", "recovery"). Public pages, door, core flow
+  and accessibility specs pass (10); initial web JS 449.9 KB gzip.
 - 2026-10-06 — R69: the look brought up to date at its source (type, labels, surfaces, radii,
   rhythm), so every screen follows; checked on the retaken screenshots.
 - 2026-10-06 — R68 built: OpenAI's dots evaluated; Cai keeps a wait and comes back with a

@@ -596,6 +596,8 @@ export const turkish: Catalog = {
   'Open the one in the email, or ask for a new one.': 'E-postadakini açın ya da yenisini isteyin.',
   'Ask for a new link': 'Yeni bağlantı iste',
   'new password': 'yeni parola',
+  password: 'parola',
+  recovery: 'kurtarma',
   'Set a new password': 'Yeni bir parola belirleyin',
   'Too many tries. Wait a few minutes and try again.':
     'Çok fazla deneme. Birkaç dakika bekleyip yeniden deneyin.',

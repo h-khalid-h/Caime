@@ -288,7 +288,6 @@ export const frServer: Catalog = {
   'your devices': 'vos appareils',
   'A new device reads nothing until you say it’s yours on one you already have. Your security code is your first device’s, so it stays the same as you add devices and changes only when you start over.':
     'Un nouvel appareil ne lit rien tant que vous ne dites pas qu’il est à vous depuis un appareil que vous avez déjà. Votre code de sécurité est celui de votre premier appareil, il reste donc le même quand vous en ajoutez et ne change que si vous recommencez à zéro.',
-  recovery: 'récupération',
   'A recovery key you hold, shown once, brings your private conversations back when every device is gone. Caime keeps nothing of it.':
     'Une clé de récupération que vous détenez, affichée une seule fois, restaure vos conversations privées quand vous n’avez plus aucun appareil. Caime n’en garde rien.',
   'what isn’t hidden': 'ce qui n’est pas caché',

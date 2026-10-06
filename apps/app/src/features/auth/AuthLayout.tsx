@@ -9,6 +9,7 @@ import { IconButton } from '@/ui/IconButton';
 import { ArrowLeft } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
+import { sentence } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 
 /** The brand panel beside auth forms on large screens (BRAND.md: expressive intensity). */
@@ -98,7 +99,7 @@ export function AuthLayout({
           <View style={{ gap: 6 }}>
             {kicker ? (
               <Text variant="mono" color="textTertiary" testID="auth-kicker">
-                {kicker}
+                {sentence(kicker)}
               </Text>
             ) : null}
             <Text variant="display" accessibilityRole="header">

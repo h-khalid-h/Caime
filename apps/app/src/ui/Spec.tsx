@@ -18,7 +18,7 @@ export interface SpecRow {
  * them. Rows that are null or false are left out, so a caller lists what may be there.
  */
 /** A label as a heading reads (R69): its first letter a capital, in the reader's language. */
-const sentence = (label: string) =>
+export const sentence = (label: string) =>
   label.charAt(0).toLocaleUpperCase(currentTranslator().language) + label.slice(1);
 
 export function Spec({

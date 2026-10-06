@@ -145,7 +145,9 @@ These are rules, not preferences.
   cuts, copied from `@fontsource/inter` and `@fontsource/nunito`; OFL beside them), declared in
   `index.html` under the very names `theme/fonts.ts` uses, so `fontFiles.web.ts` gives expo-font
   nothing to load; phones load the TTFs from `fontFiles.ts`. A new weight needs both, and
-  `fonts` is a reserved handle.
+  `fonts` is a reserved handle. The server's pages (the site, profiles, the entry twins) name the
+  same files as `Inter` and `Nunito` through `PUBLIC_FACES` (`lib/public-pages.ts`, the weights
+  they use alone, each held to a file by a test): a new weight in their CSS joins that list.
 - The web page's head is `apps/app/public/index.html` (Expo's template, with Caime's icon links);
   the icons beside it are made by `pnpm --filter @caime/brand assets`, never by hand, and any new
   file at the web root is also a reserved handle (`paths.test.ts` checks).

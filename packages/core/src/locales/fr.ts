@@ -626,6 +626,8 @@ export const fr: Catalog = {
     'Ouvrez celui de l’e-mail, ou demandez-en un nouveau.',
   'Ask for a new link': 'Demander un nouveau lien',
   'new password': 'nouveau mot de passe',
+  password: 'mot de passe',
+  recovery: 'récupération',
   'Set a new password': 'Définir un nouveau mot de passe',
   'You’ll be signed in here, and out everywhere else.':
     'Votre session s’ouvrira ici et se fermera partout ailleurs.',
