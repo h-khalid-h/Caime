@@ -103,6 +103,17 @@ migration; their ids are constants, so nothing looks them up. On devices the ava
 and the two marks cost 0.4 KB of the first download (449.6 KB gzip, measured 2026-10-05); the
 friends' scripts are the server's, never downloaded.
 
+## Cai keeps going (R68)
+
+A follow-up costs nothing until its time: the reminders sweep that already runs every half
+minute picks it up with the same query, and the offer is two or three queries and one message,
+no model. Sending it is one message, as any send. The brief is one job a day per person who asked
+for it (each run queues the next; nothing polls), three queries and one message, no model.
+Settings · Cai is two queries (the follow-ups, and the last decisions per kind in one windowed
+query). Forgetting writes one field. The settings screen and the offer's buttons load with
+their own routes; what the first download gained (Attention's "Write to", the brief's preference,
+three endpoints) is 0.2 KB: 449.8 KB gzip, measured 2026-10-06.
+
 ## Recording (R52, not built)
 
 When it comes, each recorded minute costs the speech-to-text provider's price per minute, paid

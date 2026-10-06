@@ -108,6 +108,7 @@ export async function taskViews(ctx: AppContext, rows: Task[], me: string): Prom
       dueAt: t.due_at?.toISOString() ?? null,
       dueHasTime: t.due_has_time,
       remindAt: t.remind_at?.toISOString() ?? null,
+      caiFollowUp: t.cai_follow_up,
       conversationId: t.conversation_id,
       messageId: t.message_id,
       source: m
@@ -493,7 +494,8 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
       body.title !== undefined ||
       body.notes !== undefined ||
       body.dueAt !== undefined ||
-      body.remindAt !== undefined;
+      body.remindAt !== undefined ||
+      body.caiFollowUp !== undefined;
     if (editsContent && !isOwner) throw forbidden(tr('Only the person who asked can change this.'));
     if (body.status) {
       const assigneeOnly = ['accepted', 'declined'].includes(body.status);
@@ -512,6 +514,10 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(body.dueAt !== undefined ? { due_at: body.dueAt } : {}),
         ...(body.dueHasTime !== undefined ? { due_has_time: body.dueHasTime } : {}),
         ...(body.remindAt !== undefined ? { remind_at: body.remindAt, reminded_at: null } : {}),
+        // Only a wait on someone else is Cai's to follow up (R68).
+        ...(body.caiFollowUp !== undefined
+          ? { cai_follow_up: body.caiFollowUp && Boolean(t.assignee_id) && t.assignee_id !== me }
+          : {}),
         ...(body.status !== undefined ? { status: body.status } : {}),
         ...(done
           ? { completed_at: ctx.now(), completed_by: me }

@@ -21,6 +21,7 @@ import type {
   BriefView,
   BusinessInboxView,
   BusinessSummaryView,
+  CaiResponse,
   CalendarFeedCreatedResponse,
   CalendarFeedResponse,
   CalendarView,
@@ -47,6 +48,7 @@ import type {
   ErasedResponse,
   FollowingResponse,
   FollowResponse,
+  FollowUpSentResponse,
   GroupCallMaybeResponse,
   GroupCallResponse,
   HandleAvailabilityResponse,
@@ -129,6 +131,7 @@ import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
 import type { BilledPlan, BillingInterval, BillingView } from '@caime/core/billing';
+import type { SuggestionKind } from '@caime/core/intelligence';
 
 /** Whose slots: an organization's or a person's (R58). */
 export interface BookingHostRef {
@@ -670,6 +673,13 @@ export const endpoints = {
   updateTask: (id: string, patch: Record<string, unknown>) =>
     api.patch<TaskResponse>(`/tasks/${id}`, patch),
   deleteTask: (id: string) => api.del<OkResponse>(`/tasks/${id}`),
+  /** Settings · Cai (R68): what it follows up and what it has learned. */
+  cai: () => api.get<CaiResponse>('/cai'),
+  /** Forget what Cai learned of one kind, or of everything. */
+  caiForget: (kind?: SuggestionKind) => api.post<CaiResponse>('/cai/forget', kind ? { kind } : {}),
+  /** Send the follow-up Cai offered, as yours (R68). */
+  sendFollowUp: (offerId: string) =>
+    api.post<FollowUpSentResponse>(`/messages/${offerId}/follow-up`, {}),
   calendarFeed: () => api.get<CalendarFeedResponse>('/calendar/feed'),
   /** A new address, shown this once; any old one stops working. */
   newCalendarFeed: () => api.post<CalendarFeedCreatedResponse>('/calendar/feed', {}),

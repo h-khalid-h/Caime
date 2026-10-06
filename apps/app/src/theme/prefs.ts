@@ -24,6 +24,8 @@ export interface PrefValues {
   language: LanguageChoice;
   /** Suggestions follow what you keep taking and passing on (M11). */
   learnFromChoices: boolean;
+  /** Cai's morning brief (R68): the hour it comes, or null for none. */
+  caiBrief: string | null;
 }
 
 interface PrefsState extends PrefValues {
@@ -39,6 +41,7 @@ export const DEFAULT_PREFS: PrefValues = {
   holdWhileBusy: false,
   language: 'auto',
   learnFromChoices: true,
+  caiBrief: null,
 };
 
 export const usePrefs = create<PrefsState>()(

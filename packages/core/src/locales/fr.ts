@@ -322,7 +322,6 @@ export const fr: Catalog = {
     'Quand on n’a pas répondu à une de vos questions ou demandes.',
   'If {whom} haven’t answered in {inWords}': 'Si {whom} n’ont pas répondu sous {inWords}',
   'Add a reminder': 'Ajouter un rappel',
-  'What you take': 'Ce que vous acceptez',
   'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.':
     'Un type de suggestion que vous acceptez souvent est proposé en premier ; un type que vous écartez souvent est mis à part, avec le compte à côté. Rien n’est caché, et la raison est indiquée. Désactivé, toutes les suggestions sont traitées de la même façon.',
   'Learn from what I accept': 'Apprendre de ce que j’accepte',
@@ -3309,7 +3308,6 @@ export const fr: Catalog = {
   'I haven’t seen anything from {name} about “{title}” since {when}. Still waiting?':
     'Je n’ai rien vu de {name} au sujet de « {title} » depuis {when}. Toujours en attente ?',
   'Still waiting': 'Toujours en attente',
-  'I’ll ask again in three days.': 'Je redemanderai dans trois jours.',
   'It’s done': 'C’est fait',
   'Marked done.': 'Marqué comme fait.',
   'Not needed any more': 'Plus nécessaire',
@@ -3375,4 +3373,42 @@ export const fr: Catalog = {
   'Seven characters, each with a few tips': 'Sept personnages, chacun avec quelques astuces',
   'Caime’s assistant': 'L’assistant de Caime',
   'Caime Friend': 'Ami de Caime',
+  'Offered first': 'Proposé en premier',
+  'Set apart': 'Mis à part',
+  'Still learning': 'Encore en apprentissage',
+  'Forgotten.': 'Oublié.',
+  'Cai won’t follow that up.': 'Cai ne relancera pas cela.',
+  'Cai never acts in your name without your tap, and shows nobody what it knows.':
+    'Cai n’agit jamais en votre nom sans votre accord, et ne montre à personne ce qu’il sait.',
+  Chat: 'Discuter',
+  'Morning brief': 'Point du matin',
+  'Once a day, in Cai’s chat: what’s on today and what’s open. Worked out by the rules, at no cost.':
+    'Une fois par jour, dans la discussion avec Cai : ce qui est prévu aujourd’hui et ce qui reste ouvert. Établi par les règles, sans frais.',
+  'Brief me every morning': 'Un point chaque matin',
+  At: 'À',
+  'Follow-ups Cai keeps': 'Relances suivies par Cai',
+  'Say “Still waiting” on Attention, and Cai comes back with a follow-up ready to send. It sends nothing until you tap.':
+    'Choisissez « Toujours en attente » dans Attention, et Cai revient avec une relance prête à envoyer. Rien ne part sans votre accord.',
+  'Next {when}': 'Prochaine : {when}',
+  'Offered in Cai’s chat': 'Proposée dans la discussion avec Cai',
+  'Nothing yet.': 'Rien pour l’instant.',
+  'What Cai has learned': 'Ce que Cai a appris',
+  Forget: 'Oublier',
+  'Forget everything Cai has learned': 'Oublier tout ce que Cai a appris',
+  'Sent to {name}': 'Envoyé à {name}',
+  'Send to {name}': 'Envoyer à {name}',
+  'Change it first': 'Modifier d’abord',
+  'Hi {name}, any news on “{title}”?': 'Bonjour {name}, des nouvelles pour « {title} » ?',
+  'I’ll check in three days, with a follow-up ready to send.':
+    'Je reviens dans trois jours, avec une relance prête à envoyer.',
+  'Your morning brief, follow-ups, what it has learned':
+    'Votre point du matin, les relances, ce qu’il a appris',
+  'Things to do': 'Choses à faire',
+  Reminders: 'Rappels',
+  'What you wait for': 'Ce que vous attendez',
+  'How you know someone': 'Comment vous connaissez quelqu’un',
+  'Possible duplicates': 'Doublons possibles',
+  Contexts: 'Contextes',
+  '{n} taken': { one: '{n} accepté', other: '{n} acceptés' },
+  '{n} passed on': { one: '{n} écarté', other: '{n} écartés' },
 };

@@ -1048,4 +1048,24 @@ export const turkishServer: Catalog = {
     one: 'Yapacağınızı söylediğiniz bir şey var:',
     other: 'Yapacağınızı söylediğiniz {n} şey var:',
   },
+  '{name} hasn’t answered about “{title}” yet. Shall I send this?':
+    '{name} henüz “{title}” hakkında yanıt vermedi. Bunu göndereyim mi?',
+  'That follow-up': 'Bu takip',
+  'That wait': 'Bu bekleme',
+  'That’s no longer open.': 'Bu artık açık değil.',
+  'Today:': 'Bugün:',
+  'Nothing is planned for today.': 'Bugün için planlanmış bir şey yok.',
+  'Ask me about any of it.': 'Bunlardan herhangi birini bana sorabilirsiniz.',
+  '{n} things are asked of you.': {
+    one: 'Sizden bir şey isteniyor.',
+    other: 'Sizden {n} şey isteniyor.',
+  },
+  'You’re waiting on {n} things.': {
+    one: 'Beklediğiniz bir şey var.',
+    other: 'Beklediğiniz {n} şey var.',
+  },
+  'You said you’d do {n} things.': {
+    one: 'Yapacağınızı söylediğiniz bir şey var.',
+    other: 'Yapacağınızı söylediğiniz {n} şey var.',
+  },
 };

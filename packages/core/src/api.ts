@@ -15,7 +15,9 @@ import type { CallKind, CallOutcome, CallResult, CallState, GroupCallMemberState
 import type { CatalogCollection } from './catalog';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
+import type { SuggestionKind } from './intelligence';
 import type { KitField } from './kits';
+import type { Lean } from './learning';
 import type { OrgKind, OrgRole } from './orgs';
 import type { PaymentSettings } from './payments';
 import type { OrgAllowance, OrgPlan, PersonAllowance } from './plans';
@@ -631,6 +633,8 @@ export interface TaskView {
   dueAt: string | null;
   dueHasTime: boolean;
   remindAt: string | null;
+  /** Its owner handed it to Cai (R68): Cai offers a follow-up at the remind time. */
+  caiFollowUp: boolean;
   conversationId: string | null;
   messageId: string | null;
   source: { preview: string; senderId: string | null; createdAt: string } | null;
@@ -664,6 +668,38 @@ export interface AttentionHomeResponse {
   comingUp: CalendarItemView[];
   /** A wait with no news for three days or more, not asked about since: still waiting? */
   ask: { taskId: string; since: string } | null;
+}
+
+/** A wait Cai follows up for its owner (R68). */
+export interface CaiFollowUpView {
+  taskId: string;
+  title: string;
+  /** Whom it waits on, as the owner sees them. */
+  who: string;
+  /** When Cai next offers a follow-up; null once offered and not sent. */
+  at: string | null;
+}
+
+/** What Cai learned from one kind of suggestion (R68, M11): the counts, and what they teach. */
+export interface CaiLearnedView {
+  kind: SuggestionKind;
+  accepted: number;
+  dismissed: number;
+  lean: Lean | null;
+}
+
+/** Settings · Cai (R68): what it keeps doing for you, and what it has learned, to forget. */
+export interface CaiResponse {
+  followUps: CaiFollowUpView[];
+  learned: CaiLearnedView[];
+  /** Learning from choices is on (`learnFromChoices`). */
+  learning: boolean;
+}
+
+/** A follow-up Cai offered, sent by its owner's tap (R68). */
+export interface FollowUpSentResponse {
+  conversationId: string;
+  messageId: string;
 }
 
 export interface DecisionView {

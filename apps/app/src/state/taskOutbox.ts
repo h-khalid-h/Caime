@@ -389,6 +389,7 @@ export function pendingTaskView(
     dueAt: op.body.dueAt ?? null,
     dueHasTime: op.body.dueHasTime ?? false,
     remindAt: null,
+    caiFollowUp: false,
     conversationId: op.body.conversationId ?? null,
     messageId: op.body.messageId ?? null,
     source: null,

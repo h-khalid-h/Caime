@@ -102,9 +102,12 @@ export function ConversationScreen({
   openKit = null,
   kitStart = null,
   checkout = null,
+  say = null,
 }: {
   id: string;
   focusSeq?: number;
+  /** Words to start the composer with, to change before sending (Cai's follow-up, R68). */
+  say?: string | null;
   /** Back from paying a Pay card by card (R65): that card, to ask Stripe about. */
   checkout?: string | null;
   /** Opened on a card's form: a Book or an Order link (R58, R60). */
@@ -146,6 +149,15 @@ export function ConversationScreen({
   );
 
   useEffect(() => setPanel(wide), [wide]);
+
+  // Cai's follow-up to change first (R68): into the composer once, then off the address.
+  const said = useRef(false);
+  useEffect(() => {
+    if (!say || said.current || !composer.current) return;
+    said.current = true;
+    composer.current.insert(say);
+    router.setParams({ say: undefined });
+  });
 
   // Back from the organization's Stripe page (R65): what Stripe says now, once, on the card.
   const checked = useRef(false);

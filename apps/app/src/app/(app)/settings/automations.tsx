@@ -251,33 +251,6 @@ export default function Automations() {
           style={reminders.length ? { borderTopWidth: 1, borderTopColor: t.c.border } : undefined}
         />
       </Group>
-      <Group
-        title={tr('What you take')}
-        footer={tr(
-          'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.',
-        )}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-          }}
-        >
-          <Text variant="bodyStrong" style={{ flex: 1 }}>
-            {tr('Learn from what I accept')}
-          </Text>
-          <Switch
-            value={prefs.learnFromChoices}
-            onValueChange={(v) => savePrefs({ learnFromChoices: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Learn from what I accept')}
-            testID="learn-from-choices"
-          />
-        </View>
-      </Group>
       {editing ? (
         <AutomationSheet
           key={editing === 'new' ? 'new' : editing.id}

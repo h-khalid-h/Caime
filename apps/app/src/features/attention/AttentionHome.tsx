@@ -117,6 +117,7 @@ function waitingLine(task: TaskView, now: Date, timeZone: string, locale: string
  */
 function CaiAsk({ task, since }: { task: TaskView; since: string }) {
   const t = useTheme();
+  const name = firstName(task.assignee.displayName);
   const qc = useQueryClient();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
@@ -160,15 +161,37 @@ function CaiAsk({ task, since }: { task: TaskView; since: string }) {
         })}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {task.conversationId ? (
+          // A follow-up now, in the composer to change before it goes (R68).
+          <Button
+            label={tr('Write to {name}', { name })}
+            size="sm"
+            onPress={() =>
+              router.navigate({
+                pathname: '/c/[id]',
+                params: {
+                  id: task.conversationId ?? '',
+                  say: tr('Hi {name}, any news on “{title}”?', { name, title: task.title }),
+                },
+              })
+            }
+            testID="cai-ask-write"
+          />
+        ) : null}
         <Button
           label={tr('Still waiting')}
           size="sm"
+          variant={task.conversationId ? 'secondary' : 'primary'}
           loading={busy === 'wait'}
           onPress={() =>
+            // Cai keeps it (R68): in three days, a follow-up ready to send, in its chat.
             void answer(
               'wait',
-              { remindAt: new Date(now.getTime() + 3 * DAY_MS).toISOString() },
-              tr('I’ll ask again in three days.'),
+              {
+                remindAt: new Date(now.getTime() + 3 * DAY_MS).toISOString(),
+                caiFollowUp: true,
+              },
+              tr('I’ll check in three days, with a follow-up ready to send.'),
             )
           }
           testID="cai-ask-waiting"

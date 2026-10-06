@@ -14,11 +14,13 @@ export async function leanFor(
 ): Promise<Learned | null> {
   const user = await ctx.db
     .selectFrom('users')
-    .select('preferences')
+    .select(['preferences', 'learning_reset'])
     .where('id', '=', userId)
     .executeTakeFirst();
   const prefs = (user?.preferences ?? {}) as { learnFromChoices?: boolean };
   if (prefs.learnFromChoices === false) return null;
+  // What was forgotten (R68) teaches nothing.
+  const since = learnedSince(user?.learning_reset, kind);
   const recent = (limit: number, subject: string | null) =>
     ctx.db
       .selectFrom('suggestions')
@@ -26,6 +28,7 @@ export async function leanFor(
       .where('user_id', '=', userId)
       .where('kind', '=', kind)
       .where('status', 'in', ['accepted', 'dismissed'])
+      .$if(since !== null, (qb) => qb.where('resolved_at', '>', since!))
       .$if(subject !== null, (qb) => qb.where('subject_user_id', '=', subject!))
       .orderBy('resolved_at', 'desc')
       .limit(limit)
@@ -39,4 +42,18 @@ export async function leanFor(
     subjectUserId ? recent(LEARN_WINDOW.person, subjectUserId) : Promise.resolve(null),
   ]);
   return leanFrom(ofPerson ? count(ofPerson) : null, count(ofKind));
+}
+
+/**
+ * Since when a kind's decisions teach anything (R68): after the later of the time that kind was
+ * forgotten and the time everything was ('*'); null when nothing was.
+ */
+export function learnedSince(
+  reset: Record<string, string> | null | undefined,
+  kind: string,
+): Date | null {
+  const times = [reset?.[kind], reset?.['*']]
+    .map((at) => (at ? Date.parse(at) : Number.NaN))
+    .filter((t) => Number.isFinite(t));
+  return times.length ? new Date(Math.max(...times)) : null;
 }

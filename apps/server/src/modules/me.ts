@@ -26,6 +26,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
+import { scheduleBrief } from '../lib/cai';
 import { badRequest, notFound } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
 import {
@@ -145,6 +146,11 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     // What's written to them follows their language from the next notification (R54).
     if (body.preferences !== undefined || body.locale !== undefined) forgetLanguageOf(auth.userId);
+    // Cai's morning brief (R68): the next one queued once the choice is saved.
+    const briefChanged =
+      body.preferences?.caiBrief !== undefined &&
+      body.preferences.caiBrief !==
+        (current.preferences as { caiBrief?: string | null } | null)?.caiBrief;
     if (body.aiEnabled !== undefined) patch.ai_enabled = body.aiEnabled;
     if (body.avatarFileId !== undefined) {
       if (body.avatarFileId) {
@@ -214,6 +220,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     const user = await load(auth.userId);
     await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
     if (weekMoved) await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
+    if (briefChanged) await scheduleBrief(ctx, auth.userId);
     return { user: meView(user, ctx.now()) };
   });
 

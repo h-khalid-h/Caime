@@ -27,6 +27,7 @@ import {
   LogOut,
   Palette,
   Shield,
+  Sparkles,
   UserRound,
   Zap,
 } from '@/ui/icons';
@@ -84,6 +85,13 @@ const ITEMS: Array<{
     icon: Bookmark,
     title: msg('Saved'),
     subtitle: msg('What you and your automations kept'),
+  },
+  {
+    href: '/settings/cai',
+    path: '/settings/cai',
+    icon: Sparkles,
+    title: msg('Cai'),
+    subtitle: msg('Your morning brief, follow-ups, what it has learned'),
   },
   {
     href: '/settings/automations',

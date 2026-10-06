@@ -592,6 +592,17 @@ These are rules, not preferences.
   one of them, or as an organization's agent, is `postAs` (`lib/post-as.ts`). What picks people
   (`kind = 'human'`) already leaves them out; a new path that could give one a task, a call, a
   card or a connection refuses it with `systemAccountOf`. Model output reads "Suggested by Cai".
+- Cai keeps going (R68, `lib/cai.ts`, `modules/cai.ts`): a wait handed to Cai is
+  `tasks.cai_follow_up`, offered by `offerFollowUp` from the reminders sweep in place of a bare
+  reminder (the offer is Cai's text message with `payload.followUp`, drawn by
+  `features/cai/FollowUpOffer.tsx` under it), and sent only by `sendFollowUp` on its owner's tap
+  (client id `follow-up:<offer id>`, so twice is once). The morning brief is
+  `preferences.caiBrief` (HH:MM or null): `PATCH /me` queues the next `cai.brief` job when it
+  changes, each run queues the next, and a job whose hour no longer matches does nothing. What
+  Cai learned is forgotten through `users.learning_reset` (a kind, or '*'), which `leanFor` and
+  `caiSettings` both honour: anything new that learns from choices reads it too. Settings · Cai
+  (`settings/cai.tsx`) is the one place for what Cai keeps or knows; the learning switch lives
+  there. A conversation opened with `?say=` puts the words in the composer once.
 - An organization's AI agent is `lib/agent.ts`: a customer's message reaches it through
   `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
   which queues the `agent.reply` job three seconds out. The job checks the thread is still its

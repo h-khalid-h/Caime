@@ -60,6 +60,7 @@ function adoptPreferences(user: MeView): void {
     holdWhileBusy: p.holdWhileBusy ?? usePrefs.getState().holdWhileBusy,
     language: p.language ?? usePrefs.getState().language,
     learnFromChoices: p.learnFromChoices ?? usePrefs.getState().learnFromChoices,
+    caiBrief: p.caiBrief !== undefined ? p.caiBrief : usePrefs.getState().caiBrief,
   });
 }
 

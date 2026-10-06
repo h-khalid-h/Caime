@@ -457,6 +457,12 @@ export const Preferences = z
     holdWhileBusy: z.boolean().optional(),
     /** Suggestions follow what this person keeps taking and passing on (M11); on by default. */
     learnFromChoices: z.boolean().optional(),
+    /** Cai's morning brief (R68): the hour it comes, in their own time, or off. */
+    caiBrief: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .nullable()
+      .optional(),
     /** The interface language (R54): the device's, or one chosen. */
     language: z.enum(['auto', 'en', 'ar', 'fr', 'tr']).optional(),
     /**
@@ -994,6 +1000,26 @@ export const UpdateTaskBody = z
     dueHasTime: z.boolean().optional(),
     remindAt: z.string().datetime().nullable().optional(),
     status: z.enum(['open', 'accepted', 'declined', 'done', 'cancelled']).optional(),
+    /** Hand a wait to Cai, or take it back (R68). */
+    caiFollowUp: z.boolean().optional(),
+  })
+  .strict();
+
+/** Forget what Cai learned from someone's choices (R68): of one kind, or all of it. */
+export const CaiForgetBody = z
+  .object({
+    kind: z
+      .enum([
+        'task',
+        'reminder',
+        'waiting',
+        'decision',
+        'topic',
+        'relationship',
+        'duplicate',
+        'context',
+      ])
+      .optional(),
   })
   .strict();
 

@@ -805,3 +805,31 @@ with its reason, so it isn't proposed again without new facts.
     allowance, the light model at low effort, at most 1,024 tokens out.
   - Later: Cai's digests arrive in its chat; "Catch me up" from a conversation opens Cai's
     chat on it; public pages for `@cai` and each friend for answer engines, with sticker sets.
+- **R68 — Cai keeps going: OpenAI's dots, evaluated for Caime (2026-10-06).** Dots (DevDay,
+  2026-09-29) are always-on agents, one per person on ChatGPT's Pro and Business Premium plans: a
+  cloud computer and browser each, 4,000 app plugins, reachable in ChatGPT, Slack and Teams,
+  learning preferences, proactive read-only research, approvals for consequential actions. Their
+  open criticisms: memory nobody can see, correct or delete (only the whole dot), disconnecting
+  an app doesn't forget what was learned, unclear long-run cost, and a launch history of an
+  agent acting beyond its brief. What carries over to a relationship-first messenger, and what
+  doesn't:
+  - **Adopted, in Caime's shape.** *Persistence*: a wait handed to Cai ("Still waiting" on
+    Attention) comes back at its time as a follow-up ready to send, in Cai's chat, and Cai keeps
+    watching until it's answered or stopped. *Proactive updates*: an opt-in morning brief in
+    Cai's chat (today, what's asked of you, what you wait on, what you promised), by the rules,
+    free. *Approvals*: nothing Cai prepares goes anywhere until its person taps Send, and
+    "Change it first" opens the conversation with the words in the composer.
+  - **Done better than dots.** *Memory you can see and forget*: Settings · Cai lists every
+    follow-up it keeps (each with Stop) and what it learned from your choices, a kind at a time,
+    with the counts and what they do ("Offered first", "Set apart"), each forgettable, or all of
+    it; forgetting is real (`users.learning_reset`: those decisions teach nothing again). *Cost*:
+    the follow-up, the brief and the four questions Cai answers are rules, at no cost; the model
+    is only for the rest, inside the person's allowance. *Scope*: Cai works where Caime's value
+    is (who waits on whom, what was promised), not across 4,000 apps; it never writes first unless
+    asked (the brief), never in anyone's name, and never reads a private conversation.
+  - **Not adopted.** A cloud computer and browser per person (cost and risk with nothing a
+    relationship needs), third-party plugins acting as the person (apps already act only through
+    scoped tokens and OAuth, R39), Cai sending on its own after an approval rule (every send is a
+    tap), voice calls with Cai, and Cai in Slack or Teams (Caime is the place the conversation
+    is). Revisit "Cai in a conversation" ("Catch me up" opening Cai on it) and a weekly
+    relationship digest as the next layer.

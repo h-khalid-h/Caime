@@ -3,6 +3,7 @@ import type { MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatBytes, formatClock, formatDuration, systemText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import { CAI_ID } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { lazy, memo, type ReactNode, Suspense, useEffect, useRef, useState } from 'react';
@@ -10,6 +11,7 @@ import { Platform, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { Character } from '@/brand/Character';
 import { type Translation, useTranslations } from '@/features/assist/translations';
+import { FollowUpOffer, type FollowUpPayload } from '@/features/cai/FollowUpOffer';
 import {
   readAs,
   suspiciousLink,
@@ -542,6 +544,9 @@ export const MessageBubble = memo(function MessageBubble({
     </View>
   );
 
+  // Cai's offer of a follow-up (R68), sent or changed only by the reader's tap.
+  const followUp = (m.payload as { followUp?: FollowUpPayload } | null)?.followUp;
+
   const accessibleText = [
     mine ? 'You' : (senderName ?? ''),
     forMe ? 'mentions you' : '',
@@ -688,6 +693,9 @@ export const MessageBubble = memo(function MessageBubble({
           </View>
         ) : null}
       </View>
+      {followUp && m.senderId === CAI_ID ? (
+        <FollowUpOffer messageId={m.id} offer={followUp} />
+      ) : null}
       {m.reactions.length ? (
         <View
           style={{

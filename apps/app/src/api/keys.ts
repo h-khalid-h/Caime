@@ -97,6 +97,7 @@ export const qk = {
   allTasks: ['tasks'] as const,
   /** The Attention home's own part (R66): waiting, coming up, the one question. */
   attentionHome: ['attention-home'] as const,
+  cai: ['cai'] as const,
   /** Every conversation's view, for what changes in all of them at once (its open line). */
   allConversationViews: ['conversation'] as const,
   allMemory: ['memory'] as const,

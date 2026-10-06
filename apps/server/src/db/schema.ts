@@ -61,6 +61,8 @@ export interface UsersTable {
   collections: JsonDefaulted<CatalogCollection[]>;
   payments: Json<PaymentSettings | null> | null;
   ai_enabled: Defaulted<boolean>;
+  /** What Cai learned, forgotten (R68): a suggestion kind, or '*', and since when. */
+  learning_reset: JsonDefaulted<Record<string, string>>;
   onboarded_at: NullableTimestamp;
   /** When they said their recovery codes are saved (R56); null while the app still asks. */
   recovery_codes_seen_at: NullableTimestamp;
@@ -495,6 +497,8 @@ export interface TasksTable {
   completed_by: string | null;
   /** The device's own id for a task made offline, so a retry is the same task. */
   client_id: string | null;
+  /** Its owner handed it to Cai (R68): at its remind time Cai offers a follow-up to send. */
+  cai_follow_up: Defaulted<boolean>;
   search: ColumnType<string, never, never>;
 }
 

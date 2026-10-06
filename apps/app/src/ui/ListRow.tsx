@@ -47,8 +47,9 @@ export function ListRow({
   radio,
 }: ListRowProps) {
   const t = useTheme();
-  const content = (hovered: boolean, pressed: boolean) => (
+  const content = (hovered: boolean, pressed: boolean, id?: string) => (
     <View
+      testID={id}
       style={[
         {
           minHeight: 52,
@@ -97,7 +98,8 @@ export function ListRow({
       {chevron ? <ChevronRight size={18} color={t.c.textTertiary} /> : null}
     </View>
   );
-  if (!onPress) return content(false, false);
+  // A row that only shows something keeps its id, as a pressable one does.
+  if (!onPress) return content(false, false, testID);
   return (
     <Pressable
       testID={testID}

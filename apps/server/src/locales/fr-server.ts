@@ -1100,4 +1100,24 @@ export const frServer: Catalog = {
     one: 'Vous avez promis une chose :',
     other: 'Vous avez promis {n} choses :',
   },
+  '{name} hasn’t answered about “{title}” yet. Shall I send this?':
+    '{name} n’a pas encore répondu pour « {title} ». J’envoie ceci ?',
+  'That follow-up': 'Cette relance',
+  'That wait': 'Cette attente',
+  'That’s no longer open.': 'Ce n’est plus ouvert.',
+  'Today:': 'Aujourd’hui :',
+  'Nothing is planned for today.': 'Rien de prévu aujourd’hui.',
+  'Ask me about any of it.': 'Posez-moi vos questions sur tout cela.',
+  '{n} things are asked of you.': {
+    one: 'Une chose vous est demandée.',
+    other: '{n} choses vous sont demandées.',
+  },
+  'You’re waiting on {n} things.': {
+    one: 'Vous attendez une chose.',
+    other: 'Vous attendez {n} choses.',
+  },
+  'You said you’d do {n} things.': {
+    one: 'Vous avez promis une chose.',
+    other: 'Vous avez promis {n} choses.',
+  },
 };

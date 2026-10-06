@@ -22,6 +22,7 @@ function snapshot(): Record<string, unknown> {
     holdWhileBusy: p.holdWhileBusy,
     language: p.language,
     learnFromChoices: p.learnFromChoices,
+    caiBrief: p.caiBrief,
   };
   if (p.enterToSend !== null) preferences.enterToSend = p.enterToSend;
   // The language this device shows (what `auto` came to), so the server writes to this person

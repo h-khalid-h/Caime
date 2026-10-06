@@ -1095,6 +1095,18 @@ listed there with its owner.
 - [ ] ⛔ R67 @caime: the owner creates the organization in production, the operator gives it the
       reserved handle (`/v1/admin/orgs/:handle/handle`), it proves caime.datac.com's domain and turns
       on its agent; then About offers "Message Caime".
+- [x] R68: Cai keeps going (OpenAI's dots evaluated). A wait handed to Cai ("Still waiting" on
+      Attention, `tasks.cai_follow_up`) comes back at its remind time as an offer in Cai's chat
+      with a follow-up ready to send (`offerFollowUp`, from the reminders sweep), sent as the
+      person's own message only on their tap and once (`POST /messages/:id/follow-up`), then
+      watched again in three days; "Write to {name}" and "Change it first" open the conversation
+      with the words in the composer (`?say`). An opt-in morning brief in Cai's chat
+      (`preferences.caiBrief`, one `cai.brief` job a day where the person is, rules only).
+      Settings · Cai: the brief, the follow-ups Cai keeps (Stop), what it learned per kind with
+      Forget or Forget everything (`users.learning_reset`, honoured by `leanFor`), and the
+      learning switch, moved from Automations. `cai.test.ts`, `e2e/cai.spec.ts`; `pnpm check`
+      (server 661), the whole E2E suite (86 passed, then the new spec with the accessibility and
+      R67 specs after `ListRow` kept a row's id); initial web JS 449.8 KB gzip.
 - [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of each script.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
@@ -2165,6 +2177,9 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-06 — R68 built: OpenAI's dots evaluated; Cai keeps a wait and comes back with a
+  follow-up ready to send (sent only on a tap), an opt-in morning brief, and Settings · Cai, where
+  everything Cai keeps or has learned can be stopped or forgotten.
 - 2026-10-05 — R67 built: Cai and the seven Caime Friends are accounts anyone can chat with;
   Cai answers what's open by the rules and the rest with AI assist; the friends from their
   scripts. "Suggested by Cai" across the app; team inboxes on Attention.

@@ -172,13 +172,13 @@ async function hello(ctx: AppContext, userId: string, account: SystemAccount, id
   await postAs(ctx, account.id, id, [line, more(ctx, me)].filter(Boolean).join(' '));
 }
 
-const person = (ctx: AppContext, userId: string) =>
+export const person = (ctx: AppContext, userId: string) =>
   ctx.db
     .selectFrom('users')
     .select(['id', 'display_name', 'birth_date', 'time_zone', 'locale', 'ai_enabled'])
     .where('id', '=', userId)
     .executeTakeFirstOrThrow();
-type Person = Awaited<ReturnType<typeof person>>;
+export type Person = Awaited<ReturnType<typeof person>>;
 
 /** What else Cai can do for this person: with AI assist on, anything; never for a minor. */
 function more(ctx: AppContext, me: Person): string {
@@ -311,7 +311,7 @@ async function transcriptOf(ctx: AppContext, conversationId: string, personId: s
     .join('\n');
 }
 
-interface Open {
+export interface Open {
   waiting: string[];
   asked: string[];
   mine: string[];
@@ -323,12 +323,13 @@ interface Open {
  * What's open for someone, in their words: three queries whatever they have (convention 14).
  * The model's copy leaves out anything from a private conversation (R18).
  */
-async function openFor(
+export async function openFor(
   ctx: AppContext,
   me: Person,
-  opts: { forModel?: boolean } = {},
+  opts: { forModel?: boolean; until?: Date } = {},
 ): Promise<Open> {
   const now = ctx.now();
+  const until = opts.until ?? new Date(now.getTime() + WEEK_MS);
   const locale = safeLocale(me.locale);
   const zone = me.time_zone;
   const open = ctx.db
@@ -372,7 +373,7 @@ async function openFor(
       .executeTakeFirstOrThrow(),
     cardsAhead(ctx, me.id, {
       from: now,
-      until: new Date(now.getTime() + WEEK_MS),
+      until,
       limit: SHOWN,
       agreedOnly: true,
     }),
@@ -389,7 +390,7 @@ async function openFor(
         r.assignee_id === me.id &&
         r.due_at &&
         r.due_at.getTime() >= now.getTime() &&
-        r.due_at.getTime() < now.getTime() + WEEK_MS,
+        r.due_at.getTime() < until.getTime(),
     )
     .map((r) => ({ at: r.due_at!, hasTime: r.due_has_time, title: r.title }));
   const coming = [...soon, ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title }))]

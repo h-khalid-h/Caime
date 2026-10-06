@@ -5,6 +5,7 @@
 import { previewText, resolvePolicy, tr } from '@caime/core';
 import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
+import { offerFollowUp } from '../lib/cai';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
 import { participantsOf } from '../lib/messages';
 import {
@@ -131,9 +132,18 @@ export function registerWorkers(): void {
             .orderBy('remind_at')
             .limit(SWEEP_BATCH),
         )
-        .returning(['id', 'owner_id', 'title', 'conversation_id', 'due_at'])
+        .returning(['id', 'owner_id', 'assignee_id', 'title', 'conversation_id', 'cai_follow_up'])
         .execute();
       for (const t of due) {
+        // Handed to Cai (R68): its offer of a follow-up, in place of a bare reminder.
+        if (
+          t.cai_follow_up &&
+          (await offerFollowUp(ctx, t).catch((err) => {
+            ctx.log.warn({ err, taskId: t.id }, 'cai follow-up not offered');
+            return false;
+          }))
+        )
+          continue;
         await notify(ctx, {
           userId: t.owner_id,
           kind: 'reminder',
