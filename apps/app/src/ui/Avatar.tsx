@@ -1,11 +1,15 @@
+import type { Character as CharacterName } from '@caime/brand/characters';
 import { avatarColors } from '@caime/brand/tokens';
 import type { PresenceState } from '@caime/core/api';
 import { initials } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
+import { systemHandleOf } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
+import { Character } from '@/brand/Character';
+import { IconMark } from '@/brand/Wordmark';
 import { useTheme } from '@/theme/theme';
 import { Text } from './Text';
 
@@ -36,6 +40,7 @@ export const Avatar = memo(function Avatar({
 }: AvatarProps) {
   const t = useTheme();
   const colors = avatarColors(id);
+  const own = systemHandleOf(id);
   const src = mediaUrl(url);
   const dot = Math.max(10, Math.round(size * 0.28));
   const presenceColor =
@@ -61,7 +66,12 @@ export const Avatar = memo(function Avatar({
           borderColor: ring ?? 'transparent',
         }}
       >
-        {src ? (
+        {own === 'cai' ? (
+          // Cai is Caime itself, so it wears the icon mark; a friend is its own drawing (R67).
+          <IconMark size={Math.round(size * 0.72)} />
+        ) : own ? (
+          <Character name={own as CharacterName} size={Math.round(size * 0.92)} accents={false} />
+        ) : src ? (
           <Image
             source={{ uri: src, headers: mediaHeaders() }}
             style={{ width: '100%', height: '100%' }}

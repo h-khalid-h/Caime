@@ -948,7 +948,7 @@ export const fr: Catalog = {
   'Share a photo, a file or a card': 'Partager une photo, un fichier ou une carte',
   'Edit message': 'Modifier le message',
   'Message {listTitle}': 'Écrire à {listTitle}',
-  'Rewrite with Caime': 'Reformuler avec Caime',
+  'Rewrite with Cai': 'Reformuler avec Cai',
   'Record a voice note': 'Enregistrer une note vocale',
   Stickers: 'Stickers',
   Share: 'Partager',
@@ -2405,7 +2405,7 @@ export const fr: Catalog = {
     'Un message d’une conversation client est supprimé pour tout le monde',
   'A customer conversation is erased at their request':
     'Une conversation client est effacée à sa demande',
-  'Suggested by Caime': 'Proposé par Caime',
+  'Suggested by Cai': 'Proposé par Cai',
   'More formal': 'Plus formel',
   'Due soon': 'Échéance proche',
   'Mentioned you': 'Vous a mentionné',
@@ -3353,4 +3353,26 @@ export const fr: Catalog = {
   },
   'What {name} asks of you, and what you promise, is kept in Attention.':
     'Ce que {name} vous demande, et ce que vous promettez, est gardé dans Attention.',
+  'This is Cai, Caime’s own AI assistant, not a person.':
+    'C’est Cai, l’assistant IA de Caime, et non une personne.',
+  'This is one of Caime’s characters. It answers from a script: not a person, and not an AI.':
+    'C’est l’un des personnages de Caime. Ses réponses suivent un script : ni une personne, ni une IA.',
+  'Caime Friends': 'Les amis de Caime',
+  'Caime’s assistant. Knows what’s waiting, what you said you’d do and what’s next.':
+    'L’assistant de Caime. Il sait ce qui attend, ce que vous avez promis et ce qui arrive.',
+  'The Dreamer. Welcome, and stickers.': 'Le rêve. L’accueil, et les stickers.',
+  'The Cheerful. Here when nothing needs you.': 'La gaieté. Là quand rien n’a besoin de vous.',
+  'The Loyal. Waiting and follow-ups.': 'La fidélité. L’attente et les relances.',
+  'The Creative. Groups, topics and spaces.': 'La créativité. Groupes, sujets et espaces.',
+  'The Curious. Search and finding people.':
+    'La curiosité. La recherche, et trouver des personnes.',
+  'The Brave. First steps.': 'Le courage. Les premiers pas.',
+  'The Wise. What was decided, remembered.': 'La sagesse. Ce qui a été décidé, retenu.',
+  'Ask Cai': 'Demander à Cai',
+  'Chat with Cai': 'Discuter avec Cai',
+  'What’s waiting, what’s asked of you, what’s next':
+    'Ce qui attend, ce qu’on vous demande, ce qui arrive',
+  'Seven characters, each with a few tips': 'Sept personnages, chacun avec quelques astuces',
+  'Caime’s assistant': 'L’assistant de Caime',
+  'Caime Friend': 'Ami de Caime',
 };

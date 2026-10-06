@@ -243,7 +243,10 @@ the messengers they use, and only where it serves Caime's promise (relationships
 
 Rules: characters appear only in expressive moments (B2), never on organization, business,
 security or money surfaces, and never speak for a person. They are not AI: model output is
-labelled "Suggested by Caime" with the sparkle icon (R16, R17).
+labelled "Suggested by Cai" with the sparkle icon (R16, R17, R66). Each also has an account
+anyone can write to (@caishy, @momo, …, R67): it answers from a short script about its own job,
+a tip at a time and now and then with its sticker, never with a model, never first and never with
+a notification. Cai, Caime's assistant (@cai), wears the icon mark, not a character.
 
 **Caishy Friends stickers** (free pack, "A little cuteness goes a long way."): built on the v3
 expressions and poses — hi (waving), thanks (holding a heart), love (shy), yay (excited), ok

@@ -8,6 +8,7 @@ import {
   CreateDecisionBody,
   CreateTaskBody,
   formatDue,
+  systemAccountOf,
   tr,
   UpdateTaskBody,
   uuidv4,
@@ -342,6 +343,8 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     const again = await sameTask();
     if (again) return { task: (await taskViews(ctx, [again], me))[0]! };
     const assignee = body.assigneeId ?? me;
+    // Cai and the Caime Friends do nothing anyone waits on (R67).
+    if (systemAccountOf(assignee)) throw forbidden(tr('You can ask people you’re connected with.'));
     if (assignee !== me) {
       const b = await between(ctx.db, me, assignee);
       if (b.blockedByMe || b.blockedMe) throw forbidden(tr('You can’t assign this person.'));

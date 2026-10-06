@@ -67,7 +67,7 @@ export async function runAi<T>(
     record(err.reason, err.usage);
     ctx.log.warn({ feature, reason: err.reason, detail: err.message }, 'ai assist failed');
     if (err.reason === 'declined')
-      throw new AppError(422, 'ai_declined', tr('Caime can’t help with this one.'));
+      throw new AppError(422, 'ai_declined', tr('Cai can’t help with this one.'));
     if (err.reason === 'busy')
       throw new AppError(503, 'ai_busy', tr('AI assist is busy. Try again in a moment.'));
     throw new AppError(502, 'ai_failed', tr('AI assist didn’t work this time. Try again.'));

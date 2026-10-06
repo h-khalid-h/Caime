@@ -17,6 +17,7 @@ import {
   PRIVATE_GROUP_MAX,
   ReceiptsBody,
   SpaceRoleBody,
+  systemAccountOf,
   TopicBody,
   tr,
   UpdateConversationBody,
@@ -58,6 +59,7 @@ import { leaveGroupCallsIn } from '../lib/group-calls';
 import { assertCanMessage, participantsOf } from '../lib/messages';
 import { between, pairKey, readReceiptsVisibleTo } from '../lib/relations';
 import { spaceChanged } from '../lib/spaces';
+import { openSystemConversation } from '../lib/system-accounts';
 import { assertCanStartTopic, createTopicConversation } from '../lib/topics';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -70,6 +72,16 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
       if (body.userId === auth.userId) throw badRequest(tr('That’s you.'));
       const b = await between(ctx.db, auth.userId, body.userId);
       if (b.blockedByMe || b.blockedMe) throw forbidden(tr('You can’t message this person.'));
+      // Cai or a Caime Friend (R67): one conversation each, opened by the person and greeted once.
+      const account = systemAccountOf(body.userId);
+      if (account) {
+        if (body.title || body.private)
+          throw badRequest(tr('{name} talks in one conversation.', { name: account.name }));
+        const result = await openSystemConversation(ctx, auth.userId, account);
+        if (result.created) reply.status(201);
+        const m = await membership(ctx, auth.userId, result.id);
+        return { conversation: await conversationView(ctx, auth.userId, m.conversation, m.me) };
+      }
       if (body.title || body.private) {
         if (!b.connected)
           throw forbidden(

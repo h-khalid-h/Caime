@@ -903,7 +903,7 @@ export const turkish: Catalog = {
   'Share a photo, a file or a card': 'Fotoğraf, dosya veya kart paylaş',
   'Edit message': 'Mesajı düzenle',
   'Message {listTitle}': 'Mesaj: {listTitle}',
-  'Rewrite with Caime': 'Caime ile yeniden yaz',
+  'Rewrite with Cai': 'Cai ile yeniden yaz',
   'Record a voice note': 'Sesli not kaydet',
   Stickers: 'Çıkartmalar',
   Share: 'Paylaş',
@@ -2300,7 +2300,7 @@ export const turkish: Catalog = {
     'Bir müşteri konuşmasındaki bir mesaj herkes için kaldırılır',
   'A customer conversation is erased at their request':
     'Bir müşteri konuşması isteği üzerine silinir',
-  'Suggested by Caime': 'Caime’nin önerisi',
+  'Suggested by Cai': 'Cai’nin önerisi',
   'More formal': 'Daha resmî',
   'Due soon': 'Son tarihi yakın',
   'Mentioned you': 'Sizden bahsetti',
@@ -3231,4 +3231,24 @@ export const turkish: Catalog = {
   },
   'What {name} asks of you, and what you promise, is kept in Attention.':
     '{name} kişisinin sizden istedikleri ve verdiğiniz sözler Öncelikli’de tutulur.',
+  'This is Cai, Caime’s own AI assistant, not a person.':
+    'Bu, Caime’in yapay zekâ asistanı Cai; bir kişi değil.',
+  'This is one of Caime’s characters. It answers from a script: not a person, and not an AI.':
+    'Bu, Caime’in karakterlerinden biri. Hazır bir metinden yanıt verir: ne bir kişi ne de yapay zekâ.',
+  'Caime Friends': 'Caime Arkadaşları',
+  'Caime’s assistant. Knows what’s waiting, what you said you’d do and what’s next.':
+    'Caime’in asistanı. Neyin beklediğini, ne yapacağınızı söylediğinizi ve sırada ne olduğunu bilir.',
+  'The Dreamer. Welcome, and stickers.': 'Hayalperest. Karşılama ve çıkartmalar.',
+  'The Cheerful. Here when nothing needs you.': 'Neşeli. Sizi bekleyen bir şey olmadığında burada.',
+  'The Loyal. Waiting and follow-ups.': 'Sadık. Beklemeler ve takipler.',
+  'The Creative. Groups, topics and spaces.': 'Yaratıcı. Gruplar, konular ve alanlar.',
+  'The Curious. Search and finding people.': 'Meraklı. Arama ve kişileri bulma.',
+  'The Brave. First steps.': 'Cesur. İlk adımlar.',
+  'The Wise. What was decided, remembered.': 'Bilge. Kararlaştırılanlar, hatırlanır.',
+  'Ask Cai': 'Cai’ye sorun',
+  'Chat with Cai': 'Cai ile sohbet edin',
+  'What’s waiting, what’s asked of you, what’s next': 'Bekleyenler, sizden istenenler, sıradakiler',
+  'Seven characters, each with a few tips': 'Yedi karakter, her birinin birkaç ipucu var',
+  'Caime’s assistant': 'Caime’in asistanı',
+  'Caime Friend': 'Caime Arkadaşı',
 };

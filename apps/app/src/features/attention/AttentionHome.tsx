@@ -8,6 +8,7 @@ import type { CalendarItemView, InboxItemView, TaskView } from '@caime/core/api'
 import { formatListTime, formatWhen } from '@caime/core/format';
 import { firstName, greetingKey, type HomeEntry, homeEntries, homeSummary } from '@caime/core/home';
 import { tr, trn } from '@caime/core/i18n';
+import { CAI_ID } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -16,7 +17,9 @@ import { endpoints } from '@/api/endpoints';
 import { useAttentionHome, useInbox } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { RecoveryCodesCard } from '@/features/account/RecoveryCodesCard';
+import { TeamInboxes } from '@/features/business/TeamInboxes';
 import { ConversationRow } from '@/features/inbox/ConversationRow';
+import { openDirectWith } from '@/features/inbox/openChat';
 import { useBadges } from '@/features/shell/useBadges';
 import { YouButton } from '@/features/shell/YouButton';
 import { useNow, useUserClock } from '@/lib/time';
@@ -330,6 +333,15 @@ export function AttentionHome() {
               {loading ? ' ' : homeSummary(needs.length)}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr('Ask Cai')}
+            onPress={() => void openDirectWith(CAI_ID)}
+            hitSlop={6}
+            testID="ask-cai"
+          >
+            <Avatar id={CAI_ID} name="Cai" size={36} />
+          </Pressable>
           {desktop ? null : (
             <IconButton
               icon={Bell}
@@ -341,6 +353,7 @@ export function AttentionHome() {
           )}
         </View>
         <RecoveryCodesCard />
+        <TeamInboxes />
         {loading ? (
           <SkeletonRows />
         ) : alone && nothing ? (

@@ -580,6 +580,18 @@ These are rules, not preferences.
   `apps/app/src/app/(app)/oauth/authorize.tsx`; a signed-out visitor's authorize link survives
   sign-in through `state/pendingLink.ts` (`appPath` allows 1,000 characters and colons in the
   query for it).
+- Caime's own accounts (R67): Cai (kind `assistant`) and the seven Caime Friends (`character`)
+  are users with fixed ids (core `system-ids.ts`, the light module the app's `Avatar` reads to
+  draw the heart mark or the friend; their words in `system-accounts.ts`; seeded by migration
+  0059). A conversation with one opens through `POST /conversations` like anyone's
+  (`openSystemConversation`, greeted once); `effectsOf` sends what's written to one to the
+  `system.reply` job and does nothing else (no notification, suggestion, topic or follow-up),
+  and the inbox never lets that chat need you. Cai answers `caiIntent`'s four questions from
+  three queries, and the rest through `runAi('cai')` (adults with assist on, the allowance,
+  nothing from a private conversation); the friends say `SCRIPTS` (server strings). Posting as
+  one of them, or as an organization's agent, is `postAs` (`lib/post-as.ts`). What picks people
+  (`kind = 'human'`) already leaves them out; a new path that could give one a task, a call, a
+  card or a connection refuses it with `systemAccountOf`. Model output reads "Suggested by Cai".
 - An organization's AI agent is `lib/agent.ts`: a customer's message reaches it through
   `onCustomerMessage` (registered by `registerAgentJob`, so `lib/business.ts` never imports it),
   which queues the `agent.reply` job three seconds out. The job checks the thread is still its

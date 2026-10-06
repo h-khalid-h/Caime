@@ -10,6 +10,7 @@ import {
   classifyAttention,
   currentPriority,
   inboxSections,
+  isSystemKind,
   resolvePolicy,
   systemText,
   tr,
@@ -255,9 +256,11 @@ export async function buildInbox(
           (m.reply_to_id !== null && m.reply_to_sender === userId)),
     );
     const myLast = r.my_last_seq ? Number(r.my_last_seq) : 0;
+    // Cai and the Caime Friends never need you, and you never wait on them (R67).
+    const caimes = isSystemKind(other?.kind);
     const lastIsMine = last !== undefined && last.sender_id === userId && last.kind !== 'system';
     const awaitingReply =
-      lastIsMine && (last.is_question || last.is_request)
+      !caimes && lastIsMine && (last.is_question || last.is_request)
         ? { at: last.created_at.toISOString() }
         : null;
     const followUpDue = Boolean(
@@ -279,7 +282,7 @@ export async function buildInbox(
       unreadMentions: r.unread_mentions,
       lastActivityAt: (r.last_message_at ?? r.created_at).toISOString(),
       pendingInbound:
-        inbound && Number(inbound.seq) > myLast
+        !caimes && inbound && Number(inbound.seq) > myLast
           ? {
               isQuestion: inbound.is_question,
               isRequest: inbound.is_request,

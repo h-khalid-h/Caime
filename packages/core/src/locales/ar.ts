@@ -913,7 +913,7 @@ export const ar: Catalog = {
   'Share a photo, a file or a card': 'شارك صورة أو ملفًا أو بطاقة',
   'Edit message': 'تحرير الرسالة',
   'Message {listTitle}': 'رسالة إلى {listTitle}',
-  'Rewrite with Caime': 'إعادة الصياغة مع Caime',
+  'Rewrite with Cai': 'إعادة الصياغة مع Cai',
   Stickers: 'الملصقات',
   Share: 'مشاركة',
   Photos: 'الصور',
@@ -2144,7 +2144,7 @@ export const ar: Catalog = {
   'Books an appointment for your team to confirm': 'يحجز موعدًا ليؤكده فريقك',
   'Post, change and take back the organization’s updates': 'نشر تحديثات المؤسسة وتغييرها وسحبها',
   'Make its own cards, send them and move them on': 'إنشاء بطاقاته الخاصة وإرسالها ونقلها',
-  'Suggested by Caime': 'اقتراح من Caime',
+  'Suggested by Cai': 'اقتراح من Cai',
   'More formal': 'أكثر رسمية',
   'Needs you': 'يحتاجك',
   'Due soon': 'موعده قريب',
@@ -3372,4 +3372,24 @@ export const ar: Catalog = {
   },
   'What {name} asks of you, and what you promise, is kept in Attention.':
     'طلبات {name} منك ووعودك تُحفظ في «الاهتمام».',
+  'This is Cai, Caime’s own AI assistant, not a person.':
+    'هذا Cai، مساعد Caime بالذكاء الاصطناعي، وليس شخصًا.',
+  'This is one of Caime’s characters. It answers from a script: not a person, and not an AI.':
+    'هذه إحدى شخصيات Caime. ردودها من نص مكتوب مسبقًا: لا شخص ولا ذكاء اصطناعي.',
+  'Caime Friends': 'أصدقاء Caime',
+  'Caime’s assistant. Knows what’s waiting, what you said you’d do and what’s next.':
+    'مساعد Caime. يعرف ما ينتظر، وما وعدت به، وما هو قادم.',
+  'The Dreamer. Welcome, and stickers.': 'الحلم. الترحيب والملصقات.',
+  'The Cheerful. Here when nothing needs you.': 'البهجة. حين لا شيء يحتاج إليك.',
+  'The Loyal. Waiting and follow-ups.': 'الوفاء. الانتظار والمتابعات.',
+  'The Creative. Groups, topics and spaces.': 'الإبداع. المجموعات والموضوعات والمساحات.',
+  'The Curious. Search and finding people.': 'الفضول. البحث والعثور على الأشخاص.',
+  'The Brave. First steps.': 'الشجاعة. الخطوات الأولى.',
+  'The Wise. What was decided, remembered.': 'الحكمة. ما تقرّر، محفوظًا.',
+  'Ask Cai': 'اسأل Cai',
+  'Chat with Cai': 'تحدّث مع Cai',
+  'What’s waiting, what’s asked of you, what’s next': 'ما ينتظر، وما يُطلب منك، وما هو قادم',
+  'Seven characters, each with a few tips': 'سبع شخصيات، لكلٍّ منها بضع نصائح',
+  'Caime’s assistant': 'مساعد Caime',
+  'Caime Friend': 'من أصدقاء Caime',
 };

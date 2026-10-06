@@ -89,6 +89,20 @@ AI agent's prompt grows by at most eight lines of slots over fourteen days, read
 with the same cached knowledge prefix, so a booking costs the model one short turn more than an
 answer; the card itself is sent by the server, not written by the model.
 
+## Cai and the Caime Friends (R67)
+
+Nothing runs until someone writes to one. A message to one queues one job (deduplicated by
+message, answered once for a burst) and skips everything else a message costs (notifications,
+suggestions, topics, follow-ups, automations). A friend's answer is a count and a script: two
+queries and one or two inserts, no model. Cai's four rule questions read what's open in three
+queries (tasks with a filtered count, and the week's agreed cards), no model. Anything else goes
+to the model only for an adult with AI assist on, inside their daily allowance: the light model
+at low effort, at most 1,024 tokens out, reading at most 12 messages (each clipped to 600
+characters) and at most 20 lines of open items. The accounts are eight rows seeded once by a
+migration; their ids are constants, so nothing looks them up. On devices the avatar's id check
+and the two marks cost 0.4 KB of the first download (449.6 KB gzip, measured 2026-10-05); the
+friends' scripts are the server's, never downloaded.
+
 ## Recording (R52, not built)
 
 When it comes, each recorded minute costs the speech-to-text provider's price per minute, paid

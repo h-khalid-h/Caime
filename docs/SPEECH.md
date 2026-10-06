@@ -76,5 +76,5 @@ mixed with English mid-sentence, on a phone's microphone.
   kept, a long note isn't sent, busy is retried.
 - App: a voice note is recorded in the composer (expo-audio on every platform), uploaded with its
   length, sent as `kind: voice`; the bubble plays it and shows the transcript under it labelled
-  "Transcript · Suggested by Caime" when it has come.
+  "Transcript · Suggested by Cai" when it has come.
 - Not yet: the key on production (the bake-off first), speaker turns, R52.

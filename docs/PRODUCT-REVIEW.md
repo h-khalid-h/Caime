@@ -756,3 +756,52 @@ with its reason, so it isn't proposed again without new facts.
   Open: the brainstorm says another app is named Caime on Google Play. A search on 2026-10-05
   found none under that name, but a search isn't clearance: a trademark and store-name check is
   the owner's before the store builds.
+- **R67 — Caime's own accounts: @cai, @caime and the Caime Friends (owner's idea, 2026-10-05),
+  with the harmony review of R63–R66.** Checked against PRD §75 (an AI never passes for a
+  person), BRAND.md (characters are not AI; never on money, security or business surfaces),
+  R29 (under 18), convention 14 (every AI token is paid for), and what the market does: Meta AI
+  sits in WhatsApp as a chat, Snapchat has My AI, LINE and KakaoTalk have official accounts and
+  character friends, Telegram has bots. Caime's edge is not having an assistant chat (everyone
+  will) but what it knows: your relationships, your promises, who waits on whom, answered by
+  rules first, instantly and for free, and never from a private conversation.
+  - **@cai is a chat like any other.** One system account (kind `assistant`, the heart mark,
+    "AI" on everything it writes) that anyone can open from the "+" sheet, the Attention home or
+    `@cai`. Rules answer first, in the reader's language and at no cost: what's waiting on
+    others, what's asked of you, what you said you'd do, what's coming up. Anything else goes
+    to the model, only for an adult with AI assist on and an allowance left, with a bounded
+    transcript of the Cai chat and a short list of the reader's own open items (titles and
+    names they already see; nothing from a private conversation, ever). Without assist it says
+    what it can do and how to turn the rest on. It never starts a conversation, never joins a
+    group (mentioning Cai in a group waits for a consent model of its own), never counts as a
+    person (people lists, insights, calls, labels, duplicates), and its chat never "needs you".
+    Its messages are the reader's own data: exported, erased, disappearing as they choose.
+  - **@caime is the organization Caime runs on Caime.** No new code makes it: the owner creates
+    the organization, the operator gives it the reserved handle (`/v1/admin/orgs/:handle/handle`),
+    it proves its domain like any other, its AI agent is the Caime Support Agent and its updates
+    are what's new. Once it exists, About offers "Message Caime" (a row to add then). It's the
+    business product used on itself. ⛔ Creating it in production is the owner's.
+  - **The Caime Friends are accounts, and they are not AI.** The seven characters (kind
+    `character`) each keep their BRAND.md job and talk about it: Niko first steps, Pico search,
+    Lumi creating, Zuzu memory, Panda follow-ups, Momo celebrations, Caishy welcome and
+    stickers. Each answers from a short script in every interface language, a tip at a time,
+    with a sticker now and then; no model, so nothing to pay for, nothing to moderate, nothing a
+    child shouldn't read. They never write first, never count as people, and never appear on
+    business or money surfaces. Not adopted: free-form AI companions in their voices. BRAND.md
+    says they aren't AI, companion chatbots for minors are regulated and risky, and every token
+    spent on chit-chat is paid for with nothing gained.
+  - **Harmony of R63–R66, fixed with it.** (1) The intelligence's visible name is Cai
+    everywhere: "Suggested by Cai" replaces "Suggested by Caime". (2) The Attention home carries
+    an organization's waiting customers (the Business inbox's rows), so a clinic's day starts
+    in one place. (3) "Ask Cai" is on the home. (4) Chats keeps its Attention view, where
+    message requests and quiet conversations live. (5) Calls, private conversations and
+    relationship labels are offered only between people.
+  - **As built (2026-10-05).** Fixed ids (core `system-ids.ts`, seeded by migration 0059); one
+    conversation each, opened through the ordinary direct route and greeted once in the reader's
+    language; words and stickers only (no cards, files, voice, topics, tasks, requests or calls);
+    an answer a moment after the person's latest message (`system.reply`, a burst answered once),
+    told to nobody by notification. Cai's rules read four questions in English, Arabic, French
+    and Turkish (`caiIntent`, held to whole questions so "what to do in Paris today" goes to the
+    model) from three queries; its model call is `runAi('cai')` under the person's daily
+    allowance, the light model at low effort, at most 1,024 tokens out.
+  - Later: Cai's digests arrive in its chat; "Catch me up" from a conversation opens Cai's
+    chat on it; public pages for `@cai` and each friend for answer engines, with sticker sets.

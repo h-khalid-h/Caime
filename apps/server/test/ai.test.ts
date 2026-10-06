@@ -126,7 +126,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     // Quotes the model added are taken off; the label always travels with it.
     expect(r).toEqual({
       suggestion: 'Could you send me the signed contract by Friday?',
-      label: 'Suggested by Caime',
+      label: 'Suggested by Cai',
     });
     const sent = last();
     expect(sent.path).toMatch(/^\/v1\/messages/);
@@ -155,7 +155,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
       translation: 'Did the contract arrive?',
       to: 'en',
       language: 'English',
-      label: 'Suggested by Caime',
+      label: 'Suggested by Cai',
     });
     expect(last().body.system).toContain('into English');
     expect(last().body.messages[0].content).toContain('هل وصل العقد؟');
@@ -185,7 +185,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     expect(r).toEqual({
       summary:
         'Lina booked the venue visit for Thursday at 11am and asked you to bring the floor plan.',
-      label: 'Suggested by Caime',
+      label: 'Suggested by Cai',
       newCount: 2,
     });
     const sent = last().body;
@@ -225,7 +225,7 @@ describe('AI assist (PRD §45, R17, R18)', () => {
     const findActions = async () => {
       replies.push(message(JSON.stringify(found)));
       const r = await noor.post(`/v1/conversations/${c}/ai/actions`, {});
-      expect(r.label).toBe('Suggested by Caime');
+      expect(r.label).toBe('Suggested by Cai');
       return Object.fromEntries(r.found.map((s: any) => [s.kind, s]));
     };
     const heuristic = (await noor.get(`/v1/suggestions?conversationId=${c}`)).suggestions;
@@ -548,7 +548,7 @@ describe('natural-language search (R17, PRD §25)', () => {
       '/v1/search?q=anything%20Sam%20promised%20to%20send%20me&understand=1',
     );
     expect(res.understoodBy).toBe('ai');
-    expect(res.label).toBe('Suggested by Caime');
+    expect(res.label).toBe('Suggested by Cai');
     expect(res.interpretation).toBe('What Sam promised you');
     expect(res.query).toMatchObject({ scope: 'waiting', person: 'Sam' });
     // The model saw the words typed and nothing else, on the light model.

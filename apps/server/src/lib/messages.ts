@@ -30,6 +30,7 @@ import {
   type SendMessageBodyT,
   messagePreview as sharedPreview,
   shareOut,
+  systemAccountOf,
   uuidv7,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
@@ -189,7 +190,10 @@ export async function messageViews(
   ]);
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(senders.filter((u) => u.kind !== 'human').map((u) => u.id));
-  const agentSenders = new Set(senders.filter((u) => u.kind === 'agent').map((u) => u.id));
+  // Cai is an AI as an organization's agent is (R67); a Caime Friend says a script.
+  const agentSenders = new Set(
+    senders.filter((u) => u.kind === 'agent' || u.kind === 'assistant').map((u) => u.id),
+  );
   const views = rows.map((m): MessageView => {
     const deleted = m.deleted_at !== null;
     const byEmoji = new Map<string, string[]>();
@@ -696,6 +700,10 @@ export async function sendMessage(
     if (other) {
       if (await isBlockedEitherWay(ctx.db, senderId, other.user_id))
         throw forbidden(tr('You can’t message this person.'));
+      // Cai and the Caime Friends read words and stickers (R67): no cards, files or voice.
+      const caimes = systemAccountOf(other.user_id);
+      if (caimes && body.kind !== 'text' && body.kind !== 'sticker')
+        throw badRequest(tr('{name} reads words and stickers.', { name: caimes.name }));
       // Replying accepts their request, even one declined before.
       if (me.request_state === 'pending' || me.request_state === 'declined') acceptRequest = true;
       // Declined, it reads to the sender as still unanswered, as a connection request does.

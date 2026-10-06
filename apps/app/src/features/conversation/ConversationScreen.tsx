@@ -4,6 +4,7 @@ import { contextLine, formatDue, messagePreview, retentionText } from '@caime/co
 import { tr, trn } from '@caime/core/i18n';
 import { canRemoveOthersMessages } from '@caime/core/permissions';
 import { canPin } from '@caime/core/pins';
+import { isSystemKind } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -280,6 +281,8 @@ export function ConversationScreen({
   }, [newest, conversation, id, qc]);
 
   const other = conversation?.other;
+  // Cai or a Caime Friend (R67): no calls, no labels, and what it is in place of a presence.
+  const caimes = isSystemKind(other?.person.kind);
   // With an organization (R15): the customer sees who it is; its team sees the customer.
   const business = conversation?.business ?? null;
   const org = business?.org ?? null;
@@ -371,9 +374,11 @@ export function ConversationScreen({
         : thread && org
           ? tr('Customer of {name}', { name: org.name })
           : other
-            ? (presence ?? other.person.presence) === 'online'
-              ? [tr('Online'), other.relationship?.label].filter(Boolean).join(' · ')
-              : (other.relationship?.label ?? `@${other.person.handle}`)
+            ? caimes
+              ? other.person.trust.label
+              : (presence ?? other.person.presence) === 'online'
+                ? [tr('Online'), other.relationship?.label].filter(Boolean).join(' · ')
+                : (other.relationship?.label ?? `@${other.person.handle}`)
             : conversation
               ? [
                   ofGroup,
@@ -396,7 +401,11 @@ export function ConversationScreen({
       }
       right={
         <View style={{ flexDirection: 'row', gap: 6 }}>
-          {other && conversation?.kind === 'direct' && !conversation.request && callsSupported ? (
+          {other &&
+          conversation?.kind === 'direct' &&
+          !conversation.request &&
+          !caimes &&
+          callsSupported ? (
             // Calls (PRD §47): between two people who can already write to each other.
             <>
               <IconButton

@@ -458,7 +458,7 @@ export const turkishServer: Catalog = {
   'Follow up on “{text}”?': '“{text}” için hatırlatma yapılsın mı?',
   'Follow up?': 'Hatırlatma yapılsın mı?',
   Reminder: 'Hatırlatma',
-  'Caime can’t help with this one.': 'Caime bu konuda yardımcı olamıyor.',
+  'Cai can’t help with this one.': 'Cai bu konuda yardımcı olamıyor.',
   'AI assist is busy. Try again in a moment.': 'AI yardımı meşgul. Birazdan yeniden deneyin.',
   'AI assist didn’t work this time. Try again.': 'AI yardımı bu kez çalışmadı. Yeniden deneyin.',
   'Webhooks go to https addresses.': 'Webhook adresleri https olmalıdır.',
@@ -959,4 +959,93 @@ export const turkishServer: Catalog = {
   'Only a person pays by card.': 'Kartla yalnızca bir kişi ödeyebilir.',
   'Paying by card can’t start right now': 'Kartla ödeme şu anda başlatılamıyor',
   Waiting: 'Bekleniyor',
+  'Hi, I’m Caishy! Write me anything and I’ll share a little tip.':
+    'Merhaba, ben Caishy! Bana bir şey yazın, size küçük bir ipucu vereyim.',
+  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
+    'Boş mesaj kutusunun yanındaki düğmeden çıkartma gönderin. Caishy ve Arkadaşları paketi ücretsiz.',
+  'Press and hold a message, or point at it on a computer, to react, reply or save it.':
+    'Tepki vermek, yanıtlamak ya da kaydetmek için bir mesaja basılı tutun veya bilgisayarda üzerine gelin.',
+  'Your picture at the top opens you and your settings.':
+    'Üstteki fotoğrafınız sizi ve ayarlarınızı açar.',
+  'Yay, you found me! I’m Momo. When nothing needs you, I’m the one cheering.':
+    'Yaşasın, beni buldunuz! Ben Momo. Sizi bekleyen bir şey olmadığında kutlamayı ben yaparım.',
+  'When Attention says nothing needs you, that’s Caime working. Enjoy it!':
+    '“Öncelikli” sizi bekleyen bir şey olmadığını söylüyorsa Caime işini yapıyor demektir. Tadını çıkarın!',
+  'Mark something done in Actions, and whoever was waiting hears it.':
+    '“Eylemler”de bir şeyi tamamlandı olarak işaretleyin, bekleyen kişi bundan haberdar olur.',
+  'Quiet hours keep your evenings yours: Settings, then Notifications.':
+    'Sessiz saatler akşamlarınızı size bırakır: Ayarlar, sonra Bildirimler.',
+  'I’m Panda. I stay by your side while you wait for someone.':
+    'Ben Panda. Birini beklerken yanınızdayım.',
+  'Ask someone for something, and it waits under “Waiting for” in Actions until they answer.':
+    'Birinden bir şey isteyin; yanıt gelene kadar “Eylemler”de “Beklenenler” altında durur.',
+  'When a wait goes quiet for three days, Attention asks whether it’s still open.':
+    'Bir bekleme üç gün sessiz kalırsa “Öncelikli” hâlâ açık olup olmadığını sorar.',
+  'How you know someone can offer a follow-up when a question goes unanswered.':
+    'Birini nereden tanıdığınız, bir soru yanıtsız kaldığında takip önerebilir.',
+  'Hello, I’m Lumi! I love making new things: groups, topics and spaces.':
+    'Merhaba, ben Lumi! Yeni şeyler yapmayı severim: gruplar, konular ve alanlar.',
+  'A space gathers the people, conversations and plans of one project.':
+    'Bir alan, tek bir projenin kişilerini, sohbetlerini ve planlarını bir araya getirir.',
+  'A topic keeps one conversation about one thing, without starting over.':
+    'Bir konu, baştan başlamadan tek bir şey hakkındaki sohbeti bir arada tutar.',
+  'The + in Chats starts a conversation, a group or a space.':
+    '“Sohbetler”deki + bir sohbet, grup ya da alan başlatır.',
+  'Hi! I’m Pico, and I’m curious about everything.': 'Merhaba! Ben Pico, her şeyi merak ederim.',
+  'Search understands sentences, like “what did Alex ask me last week”.':
+    'Arama cümleleri anlar, örneğin “Alex geçen hafta benden ne istedi”.',
+  'Search for someone’s name to find your conversations, files and promises with them.':
+    'Biriyle olan sohbetlerinizi, dosyalarınızı ve sözlerinizi bulmak için adını arayın.',
+  'Find people by their @handle in People.': '“Kişiler”de insanları @kullanıcı adlarıyla bulun.',
+  'I’m Niko. First steps are my favourite thing!': 'Ben Niko. İlk adımlar en sevdiğim şey!',
+  'Connect with someone from People: their @handle, a link or a QR code.':
+    '“Kişiler”den biriyle bağlantı kurun: @kullanıcı adı, bir bağlantı ya da QR kodu.',
+  'Tell Caime how you know someone. Only you see it, and it decides what reaches you when.':
+    'Caime’e birini nereden tanıdığınızı söyleyin. Bunu yalnızca siz görürsünüz ve size neyin ne zaman ulaşacağını o belirler.',
+  'Say hi first. Most good conversations start that way.':
+    'İlk selamı siz verin. İyi sohbetlerin çoğu böyle başlar.',
+  'I’m Zuzu. I remember what was decided, so you don’t have to.':
+    'Ben Zuzu. Neyin kararlaştırıldığını hatırlarım, sizin hatırlamanıza gerek kalmaz.',
+  'What was decided and what’s still open in a conversation are in its details.':
+    'Bir sohbette neyin kararlaştırıldığı ve neyin hâlâ açık olduğu ayrıntılarındadır.',
+  'Save a message to find it again in Saved.':
+    'Bir mesajı kaydedin, “Kaydedilenler”de yeniden bulun.',
+  'A person’s page remembers what’s open between the two of you.':
+    'Bir kişinin sayfası ikiniz arasında açık olanları hatırlar.',
+  'That’s all my tips. For anything else, write to @cai.':
+    'İpuçlarım bu kadar. Başka her şey için @cai’ye yazın.',
+  'Hi {name}, I’m Cai. Ask me what you’re waiting on, what’s asked of you, what you said you’d do or what’s coming up.':
+    'Merhaba {name}, ben Cai. Neyi beklediğinizi, sizden ne istendiğini, ne söz verdiğinizi ya da sırada ne olduğunu bana sorun.',
+  'With AI assist on, you can ask me anything else too.':
+    'AI yardımı açıkken bana başka her şeyi de sorabilirsiniz.',
+  'Turn on AI assist in Settings, and you can ask me anything else too.':
+    'Ayarlar’dan AI yardımını açın, bana başka her şeyi de sorabilirsiniz.',
+  'I can answer that with AI assist on: Settings, then AI assist.':
+    'AI yardımı açıkken bunu yanıtlayabilirim: Ayarlar, sonra AI yardımı.',
+  'That one’s beyond me.': 'Bu benim sınırlarımı aşıyor.',
+  'I can always tell you what you’re waiting on, what’s asked of you, what you said you’d do and what’s coming up this week. Just ask, in your own words.':
+    'Neyi beklediğinizi, sizden ne istendiğini, ne söz verdiğinizi ve bu hafta sırada ne olduğunu her zaman söyleyebilirim. Kendi sözlerinizle sormanız yeterli.',
+  'You’re not waiting on anyone right now.': 'Şu an kimseyi beklemiyorsunuz.',
+  'Nobody is waiting on you right now.': 'Şu an sizi bekleyen kimse yok.',
+  'Nothing you said you’d do is open.': 'Yapacağınızı söylediğiniz açık bir şey yok.',
+  'Coming up this week:': 'Bu hafta sırada:',
+  'Nothing is coming up this week.': 'Bu hafta sırada bir şey yok.',
+  '{name} reads words and stickers.': '{name} yalnızca yazı ve çıkartma okur.',
+  '{name} talks in one conversation.': '{name} ile tek bir sohbet olur.',
+  'And {n} more in Actions.': {
+    one: 'Ve “Eylemler”de bir tane daha.',
+    other: 'Ve “Eylemler”de {n} tane daha.',
+  },
+  'You’re waiting on {n} things:': {
+    one: 'Beklediğiniz bir şey var:',
+    other: 'Beklediğiniz {n} şey var:',
+  },
+  '{n} things are asked of you:': {
+    one: 'Sizden bir şey isteniyor:',
+    other: 'Sizden {n} şey isteniyor:',
+  },
+  'You said you’d do {n} things:': {
+    one: 'Yapacağınızı söylediğiniz bir şey var:',
+    other: 'Yapacağınızı söylediğiniz {n} şey var:',
+  },
 };

@@ -1912,7 +1912,7 @@ test.describe
       expect(Number((await banner.textContent())?.split(' ')[0])).toBeGreaterThanOrEqual(11);
       await page.getByTestId('catch-up-banner').click();
       const summary = page.getByTestId('assist-summary').filter({ visible: true });
-      await expect(summary).toContainText('Suggested by Caime');
+      await expect(summary).toContainText('Suggested by Cai');
       await expect(summary).toContainText(
         /Caught up on \d+ messages\. The latest is from Alex Chen\./,
       );
@@ -1921,7 +1921,7 @@ test.describe
       await page.getByTestId('assist-find').filter({ visible: true }).click();
       await expect(visible(page, '1 follow-up to review')).toBeVisible();
       const offer = page.getByLabel('Suggestion: Send the final logo files');
-      await expect(offer).toContainText('Suggested by Caime');
+      await expect(offer).toContainText('Suggested by Cai');
       await expect(offer).toContainText('Alex wrote “The printer needs the final logo files');
 
       // The hover buttons beside a message open its actions (they used to vanish under the pointer).
@@ -1929,7 +1929,7 @@ test.describe
       await page.getByRole('button', { name: 'React', exact: true }).click();
       await page.getByTestId('message-translate').click();
       const translation = page.getByTestId('message-translation');
-      await expect(translation).toContainText('English · Suggested by Caime');
+      await expect(translation).toContainText('English · Suggested by Cai');
       await expect(translation).toContainText('Did the contract arrive?');
       await translation.scrollIntoViewIfNeeded();
       await page.screenshot({ path: 'e2e/screenshots/desktop-ai-assist.png' });
@@ -1990,7 +1990,7 @@ test.describe
       await page.getByTestId('search-input').fill('anything Alex promised me');
       // The model's reading, said to be its, and the results it leads to.
       await expect(page.getByTestId('search-understood')).toHaveText(
-        'What Alex promised you · Suggested by Caime',
+        'What Alex promised you · Suggested by Cai',
       );
       const calls = (await (await page.request.get(AI_STUB_REQUESTS)).json()) as {
         calls: string[];

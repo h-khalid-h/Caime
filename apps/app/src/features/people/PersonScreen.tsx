@@ -1,6 +1,7 @@
 import type { PersonProfileView, RelationshipView } from '@caime/core/api';
 import { formatClock, formatDue, formatListTime, RHYTHM_TEXT } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import { systemHandleOf } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -50,6 +51,7 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { PersonRule } from './PersonRule';
 import { RelationshipHistory } from './RelationshipHistory';
+import { SystemProfile } from './SystemProfile';
 
 /** One line of who someone is to you (PRD §67): what it is, and what there is of it. */
 /** How they know them, and asking to connect: each in its sheet, loaded the first time it opens. */
@@ -79,17 +81,20 @@ type CardKit = 'appointment' | 'order_status' | 'payment_request';
 
 const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
 
-export function PersonScreen({
-  id,
-  book = null,
-  slug = null,
-}: {
+interface PersonScreenProps {
   id: string;
   /** Arrived through a Book or an Order link (R58, R60): that card's form, once. */
   book?: CardKit | null;
   /** One of their items or collections, by address (R61): its sheet, over the page. */
   slug?: string | null;
-}) {
+}
+
+/** A person's page; Cai's or a Caime Friend's is its own (R67). */
+export function PersonScreen(props: PersonScreenProps) {
+  return systemHandleOf(props.id) ? <SystemProfile id={props.id} /> : <PersonPage {...props} />;
+}
+
+function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
   const t = useTheme();
   const me = useMe();
   const qc = useQueryClient();

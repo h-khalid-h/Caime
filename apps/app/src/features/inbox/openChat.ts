@@ -9,8 +9,13 @@ export async function openChatWith(c: Pick<ConnectionView, 'conversationId' | 'p
     router.navigate({ pathname: '/c/[id]', params: { id: c.conversationId } });
     return;
   }
+  await openDirectWith(c.person.id);
+}
+
+/** The conversation with someone, made when there's none: Cai and the Caime Friends too (R67). */
+export async function openDirectWith(userId: string) {
   try {
-    const { conversation } = await endpoints.openDirect(c.person.id);
+    const { conversation } = await endpoints.openDirect(userId);
     router.navigate({ pathname: '/c/[id]', params: { id: conversation.id } });
   } catch (e) {
     toast((e as Error).message, { tone: 'danger' });

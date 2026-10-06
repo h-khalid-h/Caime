@@ -66,7 +66,7 @@ test.describe
       await expect(note.getByRole('button', { name: 'Pause' })).toBeVisible({ timeout: 10_000 });
       await expect(
         page.getByTestId('voice-transcript').filter({ visible: true }).first(),
-      ).toContainText('Transcript · Suggested by Caime');
+      ).toContainText('Transcript · Suggested by Cai');
       const calls = (await (await noorCtx.request.get(`${AI_STUB}/requests`)).json()) as {
         calls: string[];
       };

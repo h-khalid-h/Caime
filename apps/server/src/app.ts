@@ -34,6 +34,7 @@ import { requestForLog } from './lib/log';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
 import { speechFor } from './lib/speech';
+import { registerSystemJobs } from './lib/system-accounts';
 import { registerTranscribeJob } from './lib/transcribe';
 import { registerUpdateJobs } from './lib/updates';
 import { accountRoutes } from './modules/account';
@@ -309,6 +310,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerBackupJob();
   registerUpdateJobs();
   registerAgentJob();
+  registerSystemJobs();
   registerBriefJob();
   registerTranscribeJob();
   registerCallSweep();

@@ -19,6 +19,8 @@ import {
   PAYMENT_KIND_LABELS,
   SPHERE_DEFS,
   type Sphere,
+  type SystemKind,
+  systemAccountOf,
 } from '@caime/core';
 import { MARKETING_PAGES, type MarketingPage } from '@caime/core/api';
 import {
@@ -78,6 +80,8 @@ export interface PublicPerson {
   collections: PublicCollection[];
   /** The kinds of ways anyone may pay them (R62): never the details. */
   pays: PaymentKind[];
+  /** Cai or a Caime Friend (R67): Caime's own, said so, with what it's for as its bio. */
+  system: SystemKind | null;
 }
 export interface PublicOrg {
   kind: 'org';
@@ -224,9 +228,10 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     .where('handle', '=', handle)
     .where('deleted_at', 'is', null)
     .where('suspended_at', 'is', null)
-    .where('kind', '=', 'human')
+    .where('kind', 'in', ['human', 'assistant', 'character'])
     .executeTakeFirst();
   if (!u || minorOf(u, now)) return null;
+  const own = systemAccountOf(u.id);
   const privacy = privacyOf(u, now);
   if (!privacy.discoverByHandle) return null;
   const see = (field: Parameters<typeof canSee>[1]) => canSee(privacy, field, NOBODY);
@@ -248,11 +253,12 @@ export async function publicPerson(db: Q, handle: string, now: Date): Promise<Pu
     handle: u.handle,
     displayName: u.display_name,
     avatarUrl: see('profilePhoto') ? avatarUrl(u) : null,
-    bio: see('bio') ? u.bio : null,
+    bio: own ? tr(own.about) : see('bio') ? u.bio : null,
     headline: identity?.headline ?? null,
     organizations,
     ...publicCatalog(u),
     pays: publicPays(u),
+    system: own?.kind ?? null,
   };
 }
 
@@ -549,7 +555,13 @@ export function renderPublic(
           index: true,
           ld: {
             '@context': 'https://schema.org',
-            '@type': 'Person',
+            // Cai is software; a Caime Friend is a character: neither is a person (R67).
+            '@type':
+              page.system === 'assistant'
+                ? 'SoftwareApplication'
+                : page.system === 'character'
+                  ? 'Thing'
+                  : 'Person',
             name: page.displayName,
             identifier: `@${page.handle}`,
             url,
@@ -569,7 +581,7 @@ export function renderPublic(
         }),
         body: `
 <main class="pub pub-sheet" ${langAttrs()}>
-  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(tr('a person on {site}', { site: SITE_NAME }))}</span></header>
+  <header class="masthead"><a class="wordmark" href="/">${SITE_NAME}</a><span class="mono">${esc(page.system === 'assistant' ? tr('Caime’s assistant') : page.system === 'character' ? tr('Caime Friend') : tr('a person on {site}', { site: SITE_NAME }))}</span></header>
   ${page.avatarUrl ? `<img class="face" src="${esc(page.avatarUrl)}" alt="" width="96" height="96">` : ''}
   <h1>${esc(page.displayName)}</h1>
   ${page.bio ? `<p class="lead">${esc(page.bio)}</p>` : ''}

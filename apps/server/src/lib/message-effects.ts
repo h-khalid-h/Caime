@@ -14,6 +14,7 @@ import {
   type SpaceRef,
   type Sphere,
   suggestFromAnalysis,
+  systemAccountOf,
   tr,
   trn,
 } from '@caime/core';
@@ -69,6 +70,28 @@ export function afterMessage(
   return run;
 }
 
+/** Cai's and the Caime Friends' answers (R67, `lib/system-accounts.ts` registers the job). */
+export const SYSTEM_REPLY_JOB = 'system.reply';
+
+/** Someone wrote to one of Caime's own: it answers in a moment (a message in parts, once). */
+async function queueSystemReply(ctx: AppContext, message: Message, accountId: string) {
+  await enqueue(
+    ctx,
+    SYSTEM_REPLY_JOB,
+    {
+      conversationId: message.conversation_id,
+      seq: Number(message.seq),
+      accountId,
+      personId: message.sender_id,
+    },
+    {
+      runAt: new Date(ctx.now().getTime() + 800),
+      dedupeKey: `system:${message.conversation_id}:${message.seq}`,
+      maxAttempts: 1,
+    },
+  );
+}
+
 async function effectsOf(ctx: AppContext, message: Message, read: Analysis | null): Promise<void> {
   // Forwarded words are someone else's (R45 reads imports the same way): nothing in them is the
   // forwarder's promise, request or decision. Entities stayed on the message; suggestions don't.
@@ -92,6 +115,15 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
         .executeTakeFirst()
     : undefined;
   if (!sender) return;
+  // Cai or a Caime Friend (R67): what's written to one is answered by it, and nothing else
+  // happens; what it writes tells nobody (it never needs anyone) and promises nothing.
+  if (conversation.kind === 'direct') {
+    const caimes = members.find((m) => systemAccountOf(m.user_id));
+    if (caimes) {
+      if (caimes.user_id !== sender.id) await queueSystemReply(ctx, message, caimes.user_id);
+      return;
+    }
+  }
   // A voice note is sent for its words (PRD §46), when this Caime and the sender allow it.
   if (message.kind === 'voice') await queueTranscription(ctx, message);
   const replyToSender = message.reply_to_id

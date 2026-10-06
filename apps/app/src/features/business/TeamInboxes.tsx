@@ -10,9 +10,9 @@ import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
 /**
- * At the top of Chats for anyone on an organization's team: its inbox, and how many customers
- * are waiting on someone who could be you (R7). The customers' conversations live there, not
- * among your own.
+ * At the top of Attention and Chats for anyone on an organization's team: its inbox, and how
+ * many customers are waiting on someone who could be you (R7, R67). The customers' conversations
+ * live there, not among your own.
  */
 export function TeamInboxes() {
   const t = useTheme();

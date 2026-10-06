@@ -13,7 +13,7 @@ export interface TrustInput {
   emailVerified: boolean;
   /** Verified member of a verified organization, e.g. "DATA C". */
   verifiedOrgName: string | null;
-  kind: 'human' | 'bot' | 'agent';
+  kind: 'human' | 'bot' | 'agent' | 'assistant' | 'character';
 }
 
 export interface Trust {
@@ -25,6 +25,21 @@ export interface Trust {
 }
 
 export function trustFor(input: TrustInput): Trust {
+  // Caime's own (R67): verified by being Caime's, and never a person.
+  if (input.kind === 'assistant')
+    return {
+      level: 'org_verified',
+      label: tr('Caime’s assistant'),
+      detail: tr('This is Cai, Caime’s own AI assistant, not a person.'),
+    };
+  if (input.kind === 'character')
+    return {
+      level: 'org_verified',
+      label: tr('Caime Friend'),
+      detail: tr(
+        'This is one of Caime’s characters. It answers from a script: not a person, and not an AI.',
+      ),
+    };
   if (input.kind !== 'human') {
     const what = input.kind === 'bot' ? tr('an automated account (bot)') : tr('an AI agent');
     return {

@@ -478,7 +478,7 @@ export const arServer: Catalog = {
   'Waiting on {n}.': 'في انتظار {n}.',
   'Last decision: {title}.': 'آخر قرار: {title}.',
   'Next date: {date}.': 'الموعد القادم: {date}.',
-  'Caime can’t help with this one.': 'لا يستطيع Caime المساعدة في هذا.',
+  'Cai can’t help with this one.': 'لا يستطيع Cai المساعدة في هذا.',
   'AI assist is busy. Try again in a moment.': 'مساعد الذكاء الاصطناعي مشغول. حاول مجددًا بعد قليل.',
   'AI assist didn’t work this time. Try again.':
     'لم يعمل مساعد الذكاء الاصطناعي هذه المرة. حاول مجددًا.',
@@ -970,4 +970,107 @@ export const arServer: Catalog = {
   'Only a person pays by card.': 'الدفع بالبطاقة لشخص فقط، لا لتطبيق.',
   'Paying by card can’t start right now': 'تعذّر بدء الدفع بالبطاقة الآن',
   Waiting: 'في الانتظار',
+  'Hi, I’m Caishy! Write me anything and I’ll share a little tip.':
+    'مرحبًا، أنا Caishy! اكتب لي أي شيء وسأشاركك نصيحة صغيرة.',
+  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
+    'أرسل ملصقًا من الزر بجوار مربع الرسالة حين يكون فارغًا. حزمة أصدقاء كايشي مجانية.',
+  'Press and hold a message, or point at it on a computer, to react, reply or save it.':
+    'اضغط مطولًا على رسالة، أو مرّر المؤشر فوقها على الحاسوب، لتتفاعل معها أو تردّ عليها أو تحفظها.',
+  'Your picture at the top opens you and your settings.': 'صورتك في الأعلى تفتح صفحتك وإعداداتك.',
+  'Yay, you found me! I’m Momo. When nothing needs you, I’m the one cheering.':
+    'رائع، وجدتني! أنا Momo. حين لا شيء يحتاج إليك، يحين وقت الاحتفال.',
+  'When Attention says nothing needs you, that’s Caime working. Enjoy it!':
+    'حين يقول «الاهتمام» إن لا شيء يحتاج إليك، فهذا Caime يؤدي عمله. استمتع بذلك!',
+  'Mark something done in Actions, and whoever was waiting hears it.':
+    'علّم أمرًا على أنه تمّ في «الإجراءات»، فيعلم به من كان ينتظره.',
+  'Quiet hours keep your evenings yours: Settings, then Notifications.':
+    'ساعات الهدوء تُبقي أمسياتك لك: الإعدادات، ثم الإشعارات.',
+  'I’m Panda. I stay by your side while you wait for someone.':
+    'أنا Panda. أبقى بجانبك وأنت تنتظر أحدًا.',
+  'Ask someone for something, and it waits under “Waiting for” in Actions until they answer.':
+    'اطلب شيئًا من أحد، فيبقى تحت «بانتظار» في «الإجراءات» حتى يأتي الرد.',
+  'When a wait goes quiet for three days, Attention asks whether it’s still open.':
+    'حين يمرّ على انتظارٍ ثلاثة أيام بلا جديد، يسأل «الاهتمام» إن كان لا يزال قائمًا.',
+  'How you know someone can offer a follow-up when a question goes unanswered.':
+    'طريقة معرفتك بشخص ما قد تقترح متابعة حين يبقى سؤال بلا رد.',
+  'Hello, I’m Lumi! I love making new things: groups, topics and spaces.':
+    'مرحبًا، أنا Lumi! أحب صنع أشياء جديدة: المجموعات والموضوعات والمساحات.',
+  'A space gathers the people, conversations and plans of one project.':
+    'تجمع المساحة أشخاص مشروع واحد ومحادثاته وخططه.',
+  'A topic keeps one conversation about one thing, without starting over.':
+    'يُبقي الموضوع محادثةً واحدة حول شيء واحد، دون البدء من جديد.',
+  'The + in Chats starts a conversation, a group or a space.':
+    'زر + في «الدردشات» يبدأ محادثة أو مجموعة أو مساحة.',
+  'Hi! I’m Pico, and I’m curious about everything.': 'مرحبًا! أنا Pico، وكل شيء يثير فضولي.',
+  'Search understands sentences, like “what did Alex ask me last week”.':
+    'يفهم البحث الجمل، مثل «ماذا طلب مني أليكس الأسبوع الماضي».',
+  'Search for someone’s name to find your conversations, files and promises with them.':
+    'ابحث عن اسم شخص لتجد محادثاتكما وملفاتكما ووعودكما.',
+  'Find people by their @handle in People.': 'اعثر على الأشخاص عبر @المعرّف في «الأشخاص».',
+  'I’m Niko. First steps are my favourite thing!': 'أنا Niko. الخطوات الأولى أحبّ شيء إليّ!',
+  'Connect with someone from People: their @handle, a link or a QR code.':
+    'تواصل مع أحد من «الأشخاص»: عبر المعرّف أو رابط أو رمز QR.',
+  'Tell Caime how you know someone. Only you see it, and it decides what reaches you when.':
+    'أخبر Caime كيف تعرف كل شخص. لا يرى ذلك أحد سواك، وبه يتحدد ما يصلك ومتى.',
+  'Say hi first. Most good conversations start that way.':
+    'ابدأ بالتحية. معظم المحادثات الجيدة تبدأ هكذا.',
+  'I’m Zuzu. I remember what was decided, so you don’t have to.':
+    'أنا Zuzu. أتذكّر ما تقرّر، فلا داعي لأن تتذكّره أنت.',
+  'What was decided and what’s still open in a conversation are in its details.':
+    'ما تقرّر وما لا يزال مفتوحًا في محادثة تجده في تفاصيلها.',
+  'Save a message to find it again in Saved.': 'احفظ رسالة لتجدها مجددًا في «المحفوظات».',
+  'A person’s page remembers what’s open between the two of you.':
+    'صفحة كل شخص تتذكّر ما هو مفتوح بينكما.',
+  'That’s all my tips. For anything else, write to @cai.':
+    'هذه كل نصائحي. لأي شيء آخر، اكتب إلى @cai.',
+  'Hi {name}, I’m Cai. Ask me what you’re waiting on, what’s asked of you, what you said you’d do or what’s coming up.':
+    'مرحبًا {name}، أنا Cai. اسألني عمّا تنتظره، وما يُطلب منك، وما وعدت به، أو ما هو قادم.',
+  'With AI assist on, you can ask me anything else too.':
+    'ومع تشغيل مساعدة الذكاء الاصطناعي، يمكنك أن تسألني عن أي شيء آخر أيضًا.',
+  'Turn on AI assist in Settings, and you can ask me anything else too.':
+    'شغّل مساعدة الذكاء الاصطناعي من الإعدادات، وسيمكنك سؤالي عن أي شيء آخر أيضًا.',
+  'I can answer that with AI assist on: Settings, then AI assist.':
+    'أستطيع الإجابة عن ذلك مع تشغيل مساعدة الذكاء الاصطناعي: الإعدادات، ثم مساعدة الذكاء الاصطناعي.',
+  'That one’s beyond me.': 'هذا يفوق ما أستطيعه.',
+  'I can always tell you what you’re waiting on, what’s asked of you, what you said you’d do and what’s coming up this week. Just ask, in your own words.':
+    'يمكنني دائمًا أن أخبرك بما تنتظره، وما يُطلب منك، وما وعدت به، وما هو قادم هذا الأسبوع. اسأل فقط، بكلماتك.',
+  'You’re not waiting on anyone right now.': 'لا تنتظر أحدًا الآن.',
+  'Nobody is waiting on you right now.': 'لا أحد ينتظرك الآن.',
+  'Nothing you said you’d do is open.': 'لا شيء مما وعدت به مفتوح.',
+  'Coming up this week:': 'قادم هذا الأسبوع:',
+  'Nothing is coming up this week.': 'لا شيء قادم هذا الأسبوع.',
+  '{name} reads words and stickers.': 'مع {name}، الكلمات والملصقات فقط.',
+  '{name} talks in one conversation.': 'لـ{name} محادثة واحدة فقط.',
+  'And {n} more in Actions.': {
+    zero: 'ولا أمر آخر في «الإجراءات».',
+    one: 'وأمر آخر في «الإجراءات».',
+    two: 'وأمران آخران في «الإجراءات».',
+    few: 'و{n} أمور أخرى في «الإجراءات».',
+    many: 'و{n} أمرًا آخر في «الإجراءات».',
+    other: 'و{n} أمر آخر في «الإجراءات».',
+  },
+  'You’re waiting on {n} things:': {
+    zero: 'لا تنتظر أي أمر:',
+    one: 'تنتظر أمرًا واحدًا:',
+    two: 'تنتظر أمرين:',
+    few: 'تنتظر {n} أمور:',
+    many: 'تنتظر {n} أمرًا:',
+    other: 'تنتظر {n} أمر:',
+  },
+  '{n} things are asked of you:': {
+    zero: 'لا شيء مطلوب منك:',
+    one: 'أمر واحد مطلوب منك:',
+    two: 'أمران مطلوبان منك:',
+    few: '{n} أمور مطلوبة منك:',
+    many: '{n} أمرًا مطلوبًا منك:',
+    other: '{n} أمر مطلوب منك:',
+  },
+  'You said you’d do {n} things:': {
+    zero: 'لم تعد بشيء:',
+    one: 'وعدت بأمر واحد:',
+    two: 'وعدت بأمرين:',
+    few: 'وعدت بـ{n} أمور:',
+    many: 'وعدت بـ{n} أمرًا:',
+    other: 'وعدت بـ{n} أمر:',
+  },
 };

@@ -1,4 +1,5 @@
 import { tr } from '@caime/core/i18n';
+import { CAI_ID, CAISHY_ID } from '@caime/core/system-ids';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -10,7 +11,7 @@ import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
-import { openChatWith } from './openChat';
+import { openChatWith, openDirectWith } from './openChat';
 
 export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const connections = useConnections();
@@ -65,6 +66,27 @@ export function NewChatSheet({ open, onClose }: { open: boolean; onClose: () => 
           }}
           chevron
           testID="new-space-from-chats"
+        />
+        <ListRow
+          left={<Avatar id={CAI_ID} name="Cai" size={40} />}
+          title={tr('Chat with Cai')}
+          subtitle={tr('What’s waiting, what’s asked of you, what’s next')}
+          onPress={() => {
+            onClose();
+            void openDirectWith(CAI_ID);
+          }}
+          testID="new-chat-cai"
+        />
+        <ListRow
+          left={<Avatar id={CAISHY_ID} name="Caishy" size={40} />}
+          title={tr('Caime Friends')}
+          subtitle={tr('Seven characters, each with a few tips')}
+          onPress={() => {
+            onClose();
+            router.push({ pathname: '/p/[id]', params: { id: CAISHY_ID } });
+          }}
+          chevron
+          testID="new-chat-friends"
         />
         {list.map((c) => (
           <ListRow

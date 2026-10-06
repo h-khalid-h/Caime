@@ -44,9 +44,9 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
   {
     id: 'anthropic',
     name: 'Anthropic, PBC',
-    does: 'Provides the AI behind AI assist and organizations’ AI agents (Claude).',
+    does: 'Provides the AI behind AI assist, Cai and organizations’ AI agents (Claude).',
     receives:
-      'For AI assist, only when you tap it, what that action needs (your draft, a message to translate, or up to the last 200 messages of the conversation with who sent each and when; never photos, files or voice); for an organization’s agent, what the organization told it and the latest messages of your conversation with it, without your name. Nothing from a private conversation, ever.',
+      'For AI assist, only when you tap it, what that action needs (your draft, a message to translate, or up to the last 200 messages of the conversation with who sent each and when; never photos, files or voice); for Cai, only with AI assist on and only for what its rules can’t answer, the last 12 messages of your chat with it and a short list of your open items (their titles and the names you see), without your name; for an organization’s agent, what the organization told it and the latest messages of your conversation with it, without your name. Nothing from a private conversation, ever.',
     when: 'used',
   },
   {

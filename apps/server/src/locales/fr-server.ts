@@ -467,7 +467,7 @@ export const frServer: Catalog = {
   'Follow up on “{text}”?': 'Relancer « {text} » ?',
   'Follow up?': 'Relancer ?',
   Reminder: 'Rappel',
-  'Caime can’t help with this one.': 'Caime ne peut pas vous aider sur ce point.',
+  'Cai can’t help with this one.': 'Cai ne peut pas vous aider sur ce point.',
   'AI assist is busy. Try again in a moment.':
     'L’assistance IA est occupée. Réessayez dans un instant.',
   'AI assist didn’t work this time. Try again.':
@@ -1009,4 +1009,95 @@ export const frServer: Catalog = {
   'Paying by card can’t start right now':
     'Le paiement par carte ne peut pas démarrer pour le moment',
   Waiting: 'En attente',
+  'Hi, I’m Caishy! Write me anything and I’ll share a little tip.':
+    'Coucou, c’est Caishy ! Écrivez-moi ce que vous voulez, et je vous donnerai une petite astuce.',
+  'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
+    'Envoyez un sticker avec le bouton à côté de la zone de message, quand elle est vide. Le pack Les amis de Caishy est gratuit.',
+  'Press and hold a message, or point at it on a computer, to react, reply or save it.':
+    'Appuyez longuement sur un message, ou survolez-le sur ordinateur, pour réagir, répondre ou l’enregistrer.',
+  'Your picture at the top opens you and your settings.':
+    'Votre photo, en haut, ouvre votre profil et vos réglages.',
+  'Yay, you found me! I’m Momo. When nothing needs you, I’m the one cheering.':
+    'Youpi, me voilà ! C’est Momo. Quand rien n’a besoin de vous, c’est la fête.',
+  'When Attention says nothing needs you, that’s Caime working. Enjoy it!':
+    'Quand Attention dit que rien n’a besoin de vous, c’est Caime qui travaille. Profitez-en !',
+  'Mark something done in Actions, and whoever was waiting hears it.':
+    'Marquez quelque chose comme fait dans Actions, et qui l’attendait en est informé.',
+  'Quiet hours keep your evenings yours: Settings, then Notifications.':
+    'Les heures de silence vous rendent vos soirées : Réglages, puis Notifications.',
+  'I’m Panda. I stay by your side while you wait for someone.':
+    'C’est Panda. Je reste à vos côtés pendant que vous attendez quelqu’un.',
+  'Ask someone for something, and it waits under “Waiting for” in Actions until they answer.':
+    'Demandez quelque chose à quelqu’un : cela reste sous « En attente de » dans Actions jusqu’à sa réponse.',
+  'When a wait goes quiet for three days, Attention asks whether it’s still open.':
+    'Quand une attente reste sans nouvelles trois jours, Attention demande si elle est toujours d’actualité.',
+  'How you know someone can offer a follow-up when a question goes unanswered.':
+    'La façon dont vous connaissez quelqu’un peut proposer une relance quand une question reste sans réponse.',
+  'Hello, I’m Lumi! I love making new things: groups, topics and spaces.':
+    'Bonjour, c’est Lumi ! J’adore créer : des groupes, des sujets et des espaces.',
+  'A space gathers the people, conversations and plans of one project.':
+    'Un espace rassemble les personnes, les conversations et les plans d’un même projet.',
+  'A topic keeps one conversation about one thing, without starting over.':
+    'Un sujet garde une conversation sur une seule chose, sans tout recommencer.',
+  'The + in Chats starts a conversation, a group or a space.':
+    'Le + dans Discussions lance une conversation, un groupe ou un espace.',
+  'Hi! I’m Pico, and I’m curious about everything.': 'Salut ! C’est Pico, et tout m’intéresse.',
+  'Search understands sentences, like “what did Alex ask me last week”.':
+    'La recherche comprend les phrases, comme « qu’est-ce qu’Alex m’a demandé la semaine dernière ».',
+  'Search for someone’s name to find your conversations, files and promises with them.':
+    'Cherchez le nom de quelqu’un pour retrouver vos conversations, fichiers et promesses avec cette personne.',
+  'Find people by their @handle in People.':
+    'Trouvez des personnes par leur @identifiant dans Personnes.',
+  'I’m Niko. First steps are my favourite thing!':
+    'C’est Niko. Les premiers pas, c’est ce que je préfère !',
+  'Connect with someone from People: their @handle, a link or a QR code.':
+    'Connectez-vous à quelqu’un depuis Personnes : son @identifiant, un lien ou un code QR.',
+  'Tell Caime how you know someone. Only you see it, and it decides what reaches you when.':
+    'Dites à Caime comment vous connaissez quelqu’un. Personne d’autre ne le voit, et cela décide de ce qui vous parvient, et quand.',
+  'Say hi first. Most good conversations start that way.':
+    'Dites bonjour en premier. La plupart des bonnes conversations commencent ainsi.',
+  'I’m Zuzu. I remember what was decided, so you don’t have to.':
+    'C’est Zuzu. Je me souviens de ce qui a été décidé, pour que vous n’ayez pas à le faire.',
+  'What was decided and what’s still open in a conversation are in its details.':
+    'Ce qui a été décidé et ce qui reste ouvert dans une conversation se trouvent dans ses détails.',
+  'Save a message to find it again in Saved.':
+    'Enregistrez un message pour le retrouver dans Enregistrés.',
+  'A person’s page remembers what’s open between the two of you.':
+    'La page d’une personne se souvient de ce qui reste ouvert entre vous deux.',
+  'That’s all my tips. For anything else, write to @cai.':
+    'C’est tout pour mes astuces. Pour le reste, écrivez à @cai.',
+  'Hi {name}, I’m Cai. Ask me what you’re waiting on, what’s asked of you, what you said you’d do or what’s coming up.':
+    'Bonjour {name}, c’est Cai. Demandez-moi ce que vous attendez, ce qu’on vous demande, ce que vous avez promis ou ce qui arrive.',
+  'With AI assist on, you can ask me anything else too.':
+    'Avec l’assistance IA activée, vous pouvez aussi me demander tout le reste.',
+  'Turn on AI assist in Settings, and you can ask me anything else too.':
+    'Activez l’assistance IA dans Réglages, et vous pourrez aussi me demander tout le reste.',
+  'I can answer that with AI assist on: Settings, then AI assist.':
+    'Je peux répondre à cela avec l’assistance IA activée : Réglages, puis Assistance IA.',
+  'That one’s beyond me.': 'Ça me dépasse.',
+  'I can always tell you what you’re waiting on, what’s asked of you, what you said you’d do and what’s coming up this week. Just ask, in your own words.':
+    'Je peux toujours vous dire ce que vous attendez, ce qu’on vous demande, ce que vous avez promis et ce qui arrive cette semaine. Demandez simplement, avec vos mots.',
+  'You’re not waiting on anyone right now.': 'Vous n’attendez personne pour l’instant.',
+  'Nobody is waiting on you right now.': 'Personne ne vous attend pour l’instant.',
+  'Nothing you said you’d do is open.': 'Rien de ce que vous avez promis n’est en suspens.',
+  'Coming up this week:': 'Cette semaine :',
+  'Nothing is coming up this week.': 'Rien de prévu cette semaine.',
+  '{name} reads words and stickers.': 'Avec {name}, des mots et des stickers seulement.',
+  '{name} talks in one conversation.': '{name} n’a qu’une conversation.',
+  'And {n} more in Actions.': {
+    one: 'Et une de plus dans Actions.',
+    other: 'Et {n} de plus dans Actions.',
+  },
+  'You’re waiting on {n} things:': {
+    one: 'Vous attendez une chose :',
+    other: 'Vous attendez {n} choses :',
+  },
+  '{n} things are asked of you:': {
+    one: 'Une chose vous est demandée :',
+    other: '{n} choses vous sont demandées :',
+  },
+  'You said you’d do {n} things:': {
+    one: 'Vous avez promis une chose :',
+    other: 'Vous avez promis {n} choses :',
+  },
 };

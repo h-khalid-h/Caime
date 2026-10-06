@@ -18,9 +18,7 @@ import {
   AGENT_REPLIES_PER_CONVERSATION,
   isBooked,
   ORG_ALLOWANCES,
-  SendMessageBody,
   tr,
-  uuidv4,
   uuidv7,
 } from '@caime/core';
 import { sql } from 'kysely';
@@ -31,10 +29,10 @@ import { catalogLines, itemsFor, openSlotsFor, orgHost, slotLine } from './booki
 import { onCustomerMessage, publishThread, threadViews } from './business';
 import { recordEvent } from './events';
 import { enqueue, registerJob } from './jobs';
-import { afterMessage } from './message-effects';
-import { messagePreview, messageViews, participantsOf, sendMessage } from './messages';
+import { messagePreview } from './messages';
 import { notify } from './notify';
 import { agentRepliesToday } from './plans';
+import { postAs } from './post-as';
 import { minorOf } from './users';
 
 /** How long it waits after a customer writes, so a message sent in three parts is read whole. */
@@ -225,34 +223,6 @@ function passedOn(orgName: string, language: 'ar' | 'fr' | 'tr' | 'en'): string 
   if (language === 'tr')
     return `Talebinizi ${orgName} ekibine ilettim. Biri size buradan yanıt verecek.`;
   return `I’ve passed this to the team at ${orgName}. Someone will answer here.`;
-}
-
-/** Post as the agent, as any message is: stored, sent live, notified, recorded on the thread. */
-async function postAs(
-  ctx: AppContext,
-  senderId: string,
-  conversationId: string,
-  what: string | { kind: 'kit'; payload: unknown },
-) {
-  const result = await sendMessage(
-    ctx,
-    senderId,
-    conversationId,
-    SendMessageBody.parse({
-      clientId: `agent:${uuidv4()}`,
-      ...(typeof what === 'string' ? { body: what } : what),
-    }),
-  );
-  if (!result.created) return;
-  const [view] = await messageViews(ctx.db, [result.message], senderId);
-  await ctx.bus.publish(
-    (await participantsOf(ctx.db, conversationId))
-      .map((p) => p.user_id)
-      .filter((u) => u !== senderId),
-    { type: 'message.created', data: { ...view, clientId: null } },
-  );
-  const { message, analysis } = result;
-  ctx.defer('after-message', () => afterMessage(ctx, message, analysis));
 }
 
 /** The thread moved without a person: the team hears it, and so do the organization's apps. */

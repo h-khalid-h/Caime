@@ -2,6 +2,7 @@ import type { ConversationView, CustomKitOfferView, MessageView } from '@caime/c
 import { listTitle } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
+import { isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import {
@@ -121,6 +122,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // End to end encrypted (R18): text only, sealed on this device; its words are opened here, and
   // what's being written stays on this device (never mirrored to the account, nor kept).
   const privately = where.private;
+  const caimes = isSystemKind(conversation.other?.person.kind);
   const stored = useDrafts((s) => (privately ? s.local[id] : s.drafts[id]));
   const [text, setText] = useState(
     () => stored ?? (privately ? '' : (conversation.me.draft ?? '')),
@@ -549,8 +551,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             paddingVertical: 6,
           }}
         >
-          {privately ? null : (
+          {privately || caimes ? null : (
             // Photos, files and cards aren't sealed yet: a private conversation is text for now.
+            // Cai and the Caime Friends read words and stickers (R67).
             <IconButton
               icon={Plus}
               label={tr('Share a photo, a file or a card')}
@@ -662,7 +665,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           {canSend && aiReady ? (
             <IconButton
               icon={WandSparkles}
-              label={tr('Rewrite with Caime')}
+              label={tr('Rewrite with Cai')}
               onPress={() => setRewrite(true)}
               testID="composer-rewrite"
             />
@@ -677,14 +680,16 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             />
           ) : privately ? null : (
             <>
-              <IconButton
-                icon={Mic}
-                label={tr('Record a voice note')}
-                filled
-                onPress={() => setRecording(true)}
-                disabled={Boolean(editing)}
-                testID="composer-voice"
-              />
+              {caimes ? null : (
+                <IconButton
+                  icon={Mic}
+                  label={tr('Record a voice note')}
+                  filled
+                  onPress={() => setRecording(true)}
+                  disabled={Boolean(editing)}
+                  testID="composer-voice"
+                />
+              )}
               <IconButton
                 icon={Sticker}
                 label={tr('Stickers')}

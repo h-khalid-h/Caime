@@ -29,7 +29,8 @@ import type { Trust } from './trust';
 
 // --- People ---------------------------------------------------------------------------------
 
-export type UserKind = 'human' | 'bot' | 'agent';
+/** A person, an app's bot, an organization's agent, Cai (R67) or a Caime Friend. */
+export type UserKind = 'human' | 'bot' | 'agent' | 'assistant' | 'character';
 export type Plan = 'personal' | 'pro' | 'business' | 'enterprise';
 /** What the account owner chose. */
 export type PresenceSetting = 'auto' | 'available' | 'busy' | 'away' | 'invisible';
@@ -1422,7 +1423,7 @@ export interface AiStatusView {
   eligible: boolean;
 }
 
-/** Everything a model wrote carries `label` ("Suggested by Caime") and waits for a tap (R17). */
+/** Everything a model wrote carries `label` ("Suggested by Cai") and waits for a tap (R17). */
 export interface AiRewriteView {
   suggestion: string;
   label: string;

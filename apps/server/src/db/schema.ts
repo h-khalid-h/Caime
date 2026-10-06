@@ -32,7 +32,7 @@ export interface UsersTable {
   handle: string;
   password_hash: string;
   display_name: string;
-  kind: Defaulted<'human' | 'bot' | 'agent'>;
+  kind: Defaulted<'human' | 'bot' | 'agent' | 'assistant' | 'character'>;
   /** 'YYYY-MM-DD'; every person has one (0034), an app or an agent doesn't. */
   birth_date: string | null;
   locale: Defaulted<string>;

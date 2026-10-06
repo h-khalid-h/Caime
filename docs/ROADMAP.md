@@ -1079,6 +1079,24 @@ listed there with its owner.
       `e2e/attention.spec.ts`, the Arabic tour; the whole E2E suite on the new home.
 - [ ] Later in R66: "Catch me up" and "Ask Cai" as Cai's explicit moments in a conversation and
       in Search, Cai's settings (how proactive, ask when unsure), digests.
+- [x] R67: Caime's own accounts. @cai (kind `assistant`) and the seven Caime Friends (kind
+      `character`) are users with fixed ids (migration 0059), opened through the ordinary direct
+      route, greeted once in the reader's language, words and stickers only. Cai answers what you
+      wait on, what's asked of you, what you said you'd do and what's coming up by the rules
+      (`caiIntent` in four languages, three queries, no model) and anything else with the model
+      (`runAi('cai')`, the person's allowance, adults with AI assist on, nothing private); the
+      friends answer from their scripts with their stickers. Nobody is notified, the chat never
+      needs you, and Cai counts as AI on every message. Entry points: "Ask Cai" on Attention, the
+      "+" sheet's Chat with Cai and Caime Friends, `@cai` and each friend's page (and a public page
+      for visitors: what it is, JSON-LD that never says Person). With it: "Suggested by Cai",
+      "Rewrite with Cai", an organization's waiting customers on Attention.
+      `system-accounts.test.ts` (core and server), `e2e/system-accounts.spec.ts`; the whole E2E
+      suite (86 passed); initial web JS 449.6 KB gzip.
+- [ ] ⛔ R67 @caime: the owner creates the organization in production, the operator gives it the
+      reserved handle (`/v1/admin/orgs/:handle/handle`), it proves caime.datac.com's domain and turns
+      on its agent; then About offers "Message Caime".
+- [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
+      in its chat, public pages for @cai and the friends (answer engines), more of each script.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
       split's shares paid with Pay.
@@ -2147,6 +2165,9 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-05 — R67 built: Cai and the seven Caime Friends are accounts anyone can chat with;
+  Cai answers what's open by the rules and the rest with AI assist; the friends from their
+  scripts. "Suggested by Cai" across the app; team inboxes on Attention.
 - 2026-10-05 — R66 built: Attention is the first screen, Cai asks about a wait gone quiet in the
   first person, a conversation shows what's open, Actions use coordination's words, and a
   person's page says what how you know them changes. Initial web JS 449.2 KB gzip.
