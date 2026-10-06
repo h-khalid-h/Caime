@@ -15,6 +15,8 @@ overrides:
   decode-uri-component: file:./vendor/decode-uri-component
   # GHSA-w5hq-g745-h8pq: xcode (iOS prebuild tooling) only calls uuid.v4, which 11.x keeps in CJS.
   xcode>uuid: ^11.1.1
+  # GHSA-68fv-2mgg-jv7q: source-map-js < 1.2.2 (postcss in Expo's metro config): the patch release.
+  source-map-js: ^1.2.2
 
 # Advisories without a fixed release yet, both in Expo's command line (the web export and the dev
 # server): neither package is in the server image (`pnpm deploy --prod` of the server alone) or
