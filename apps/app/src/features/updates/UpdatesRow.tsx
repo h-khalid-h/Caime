@@ -1,10 +1,11 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import Building from 'lucide-react-native/icons/building';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { View } from 'react-native';
 import { useFollowing } from '@/api/hooks';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
-import { Building, ChevronRight } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 

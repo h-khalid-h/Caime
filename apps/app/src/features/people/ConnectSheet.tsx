@@ -3,6 +3,7 @@ import { tr } from '@caime/core/i18n';
 import { relationshipLabel, SPHERE_DEFS } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import Lock from 'lucide-react-native/icons/lock';
 import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -11,7 +12,6 @@ import { type FormState, initialForm, toDraft } from '@/features/relationships/f
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
-import { Lock } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';

@@ -5,7 +5,7 @@ import type { BusMessage } from '../src/lib/bus';
 import { sweepCalls } from '../src/lib/calls';
 import { settleGroupCall, sweepGroupCalls } from '../src/lib/group-calls';
 import { type NotifyInput, onNotification } from '../src/lib/notify';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { busSettled, type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
 let noor: Client;
@@ -84,13 +84,7 @@ async function heardSoon(type: string, count: number, state?: string) {
   return events(type, state);
 }
 /** Until what was already said has all arrived: nothing new for a moment (a loaded machine is slow). */
-async function settled() {
-  await t.ctx.flush();
-  for (let n = -1, i = 0; n !== heard.length && i < 40; i++) {
-    n = heard.length;
-    await new Promise((r) => setTimeout(r, 150));
-  }
-}
+const settled = () => busSettled(t, heard);
 const lines = async (c: Client, conversationId = trip) =>
   ((await c.get(`/v1/conversations/${conversationId}/messages`)).messages as any[]).filter(
     (m) => m.kind === 'system' && m.payload.event === 'call',
@@ -124,7 +118,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.close();
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await busSettled(t, heard);
   heard.length = 0;
   pushed.length = 0;
 });
@@ -267,6 +262,7 @@ describe('group calls (PRD §47)', () => {
 
   it('the second person in makes it a call; signals pass only between devices in it', async () => {
     const id = (await start(noor)).json().call.id;
+    await busSettled(t, heard);
     heard.length = 0;
     const joined = await join(sam, id, 'sam-phone-1');
     expect(joined.statusCode).toBe(200);
@@ -280,6 +276,7 @@ describe('group calls (PRD §47)', () => {
     expect((await aboutCall(sam, id))[0].read).toBe(true);
     expect((await aboutCall(omar, id))[0].read).toBe(false);
 
+    await busSettled(t, heard);
     heard.length = 0;
     expect((await signal(noor, id, 'noor-tab-1', 'sam-phone-1')).statusCode).toBe(200);
     expect(await heardSoon('groupcall.signal', 1)).toEqual([
@@ -356,6 +353,7 @@ describe('group calls (PRD §47)', () => {
   it('turned down or missed, it stops ringing for them; missed, they hear so once', async () => {
     const id = (await start(noor, trip, 'voice')).json().call.id;
     await join(sam, id, 'sam-phone-1');
+    await busSettled(t, heard);
     heard.length = 0;
     const turnedDown = await decline(lina, id);
     // Lina sees her own answer; nobody else hears who turned it down.
@@ -373,6 +371,7 @@ describe('group calls (PRD §47)', () => {
     await sleep(150);
     expect(events('groupcall.updated')).toHaveLength(1);
     // Turning it down again changes nothing, and nobody hears of it.
+    await busSettled(t, heard);
     heard.length = 0;
     const rev = turnedDown.json().call.rev;
     expect((await decline(lina, id)).json().call.rev).toBe(rev);
@@ -386,6 +385,7 @@ describe('group calls (PRD §47)', () => {
     // Past its 45 seconds it doesn't ring, even before the sweep says he missed it.
     expect((await omar.get('/v1/group-calls/live')).call).toBeNull();
     // Two sweeps at once (two workers) tell him once; and only him.
+    await busSettled(t, heard);
     heard.length = 0;
     await Promise.all([sweepGroupCalls(t.ctx), sweepGroupCalls(t.ctx)]);
     await sleep(150);
@@ -435,6 +435,7 @@ describe('group calls (PRD §47)', () => {
     await alive(sam, id, 'sam-phone-1');
     expect((await leave(omar, id)).json().call).toMatchObject({ state: 'active', rev: 3 });
     expect(await lines(sam)).toHaveLength(0);
+    await busSettled(t, heard);
     heard.length = 0;
     const ended = await leave(noor, id);
     expect(ended.json().call).toMatchObject({ state: 'ended', outcome: 'completed' });
@@ -636,6 +637,7 @@ describe('group calls (PRD §47)', () => {
     const id = (await start(noor)).json().call.id;
     await join(sam, id, 'sam-phone-1');
     await join(omar, id);
+    await busSettled(t, heard);
     heard.length = 0;
     await noor.del(`/v1/conversations/${trip}/members/${omar.user.id}`);
     const now = (await noor.get('/v1/group-calls/live')).call;
@@ -898,6 +900,7 @@ describe('group calls (PRD §47)', () => {
     // Omar joins with the same device id as Sam's (he could read it): it takes nothing from Sam.
     expect((await join(omar, id, 'sam-phone-1')).statusCode).toBe(200);
     expect((await alive(sam, id, 'sam-phone-1')).statusCode).toBe(200);
+    await busSettled(t, heard);
     heard.length = 0;
     await signal(noor, id, 'noor-tab-1', 'sam-phone-1', offer, sam.user.id);
     await signal(noor, id, 'noor-tab-1', 'sam-phone-1', offer, omar.user.id);
@@ -917,6 +920,7 @@ describe('group calls (PRD §47)', () => {
     const id = (await start(ivy, club)).json().call.id;
     await join(sam, id, 'sam-phone-1');
     await join(omar, id);
+    await busSettled(t, heard);
     heard.length = 0;
     const gone = await ivy.req('DELETE', '/v1/me', { password: 'correct horse battery' });
     expect(gone.statusCode).toBeLessThan(300);
@@ -1094,6 +1098,7 @@ describe('group calls (PRD §47)', () => {
     // suite's load a late one once counted as the decline's).
     await t.ctx.flush();
     await sleep(100);
+    await busSettled(t, heard);
     heard.length = 0;
     // Omar says no: the call's revision stays, and only Omar hears it.
     await decline(omar, call.id);
@@ -1108,6 +1113,7 @@ describe('group calls (PRD §47)', () => {
     // A ring stopped by a block is nobody else's either: Lina, only rung, blocks Sam, who's in it.
     const next = (await start(noor)).json().call.id;
     await join(sam, next, 'sam-phone-1');
+    await busSettled(t, heard);
     heard.length = 0;
     await lina.post('/v1/blocks', { userId: sam.user.id });
     await sleep(150);

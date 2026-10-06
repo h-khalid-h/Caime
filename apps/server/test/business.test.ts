@@ -1,7 +1,7 @@
 import { uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { busSettled, type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
 let noor: Client; // owner
@@ -188,6 +188,7 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     expect((toTeam!.event.data as any).senderId).toBe(omar.user.id);
 
     // Typing and reading reach her as the organization, too.
+    await busSettled(t, heard);
     heard.length = 0;
     await sara.post(`/v1/conversations/${convo}/typing`);
     await sara.post(`/v1/conversations/${convo}/receipts`, { read: 2 });

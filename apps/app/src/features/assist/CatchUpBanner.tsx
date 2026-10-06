@@ -1,9 +1,10 @@
 import { tr } from '@caime/core/i18n';
+import Sparkles from 'lucide-react-native/icons/sparkles';
+import X from 'lucide-react-native/icons/x';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
-import { Sparkles, X } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 
 /** Opened a conversation with a lot unread: offer to catch up instead of scrolling. */

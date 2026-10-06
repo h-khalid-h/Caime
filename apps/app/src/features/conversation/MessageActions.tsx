@@ -2,6 +2,18 @@ import type { MessageView } from '@caime/core/api';
 import { previewText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
+import Bookmark from 'lucide-react-native/icons/bookmark';
+import Copy from 'lucide-react-native/icons/copy';
+import CornerUpLeft from 'lucide-react-native/icons/corner-up-left';
+import Flag from 'lucide-react-native/icons/flag';
+import Forward from 'lucide-react-native/icons/forward';
+import Languages from 'lucide-react-native/icons/languages';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Pin from 'lucide-react-native/icons/pin';
+import PinOff from 'lucide-react-native/icons/pin-off';
+import Star from 'lucide-react-native/icons/star';
+import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -16,20 +28,6 @@ import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { MORE_REACTIONS, QUICK_REACTIONS } from '@/ui/emoji';
-import {
-  Bookmark,
-  Copy,
-  CornerUpLeft,
-  Flag,
-  Forward,
-  Languages,
-  ListChecks,
-  Pencil,
-  Pin,
-  PinOff,
-  Star,
-  Trash,
-} from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';

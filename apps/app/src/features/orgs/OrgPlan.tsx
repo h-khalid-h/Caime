@@ -1,6 +1,7 @@
 import type { OrgPlanView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { nextOrgPlan, PLAN_NAMES } from '@caime/core/plans';
+import Gauge from 'lucide-react-native/icons/gauge';
 import { View } from 'react-native';
 import { useOrgBilling } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -9,7 +10,6 @@ import { openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { Gauge } from '@/ui/icons';
 import { Meter } from '@/ui/Meter';
 import { Text } from '@/ui/Text';
 import { nextOrgPlanLine } from './planLine';

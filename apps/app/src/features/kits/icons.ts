@@ -1,21 +1,19 @@
 import type { CardKitId } from '@caime/core/kit-cards';
+import BadgeCheck from 'lucide-react-native/icons/badge-check';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
+import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
+import ClipboardList from 'lucide-react-native/icons/clipboard-list';
+import FileCheck from 'lucide-react-native/icons/file-check';
+import HandCoins from 'lucide-react-native/icons/hand-coins';
+import Images from 'lucide-react-native/icons/images';
+import LifeBuoy from 'lucide-react-native/icons/life-buoy';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import MapPin from 'lucide-react-native/icons/map-pin';
+import Package from 'lucide-react-native/icons/package';
+import Receipt from 'lucide-react-native/icons/receipt';
+import Truck from 'lucide-react-native/icons/truck';
 import type { IconComponent } from '@/ui/Button';
-import {
-  BadgeCheck,
-  CalendarCheck,
-  CalendarClock,
-  ChartBar,
-  ClipboardList,
-  FileCheck,
-  HandCoins,
-  Images,
-  LifeBuoy,
-  ListChecks,
-  MapPin,
-  Package,
-  Receipt,
-  Truck,
-} from '@/ui/icons';
 
 /** Each kit's icon (the registry's Lucide names, mapped to the icons the bundle carries). */
 export const KIT_ICONS: Record<CardKitId | 'poll' | 'location', IconComponent> = {

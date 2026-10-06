@@ -1,6 +1,8 @@
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import Check from 'lucide-react-native/icons/check';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import { useState } from 'react';
 import { Linking, Platform, ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -10,7 +12,6 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { Check, KeyRound } from '@/ui/icons';
 import { Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';

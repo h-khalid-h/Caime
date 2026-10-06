@@ -1,21 +1,19 @@
 import { tr } from '@caime/core/i18n';
+import Mic from 'lucide-react-native/icons/mic';
+import MicOff from 'lucide-react-native/icons/mic-off';
+import Phone from 'lucide-react-native/icons/phone';
+import PhoneOff from 'lucide-react-native/icons/phone-off';
+import ScreenShare from 'lucide-react-native/icons/screen-share';
+import ScreenShareOff from 'lucide-react-native/icons/screen-share-off';
+import Video from 'lucide-react-native/icons/video';
+import VideoOff from 'lucide-react-native/icons/video-off';
+import Volume2 from 'lucide-react-native/icons/volume-2';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCall } from '@/state/calls';
 import { useSession } from '@/state/session';
 import { Avatar } from '@/ui/Avatar';
-import {
-  Mic,
-  MicOff,
-  Phone,
-  PhoneOff,
-  ScreenShare,
-  ScreenShareOff,
-  Video,
-  VideoOff,
-  Volume2,
-} from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { useCallAudio } from './callAudio';
 import {

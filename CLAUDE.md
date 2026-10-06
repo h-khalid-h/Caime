@@ -77,7 +77,9 @@ These are rules, not preferences.
    which reads contrast-checked tokens; no raw hex in components beyond white text on fills.
 10. **The web bundle is a budget.** The app imports core and brand by subpath
     (`@caime/core/format`), never the package root (it would pull in zod), and icons one file
-    each through `src/ui/icons.ts`. `pnpm budget` fails CI above 450 KB.
+    each where they're used (`lucide-react-native/icons/<name>`), never the package root and
+    never through a module that re-exports them: a barrel put all 127 in the startup chunk
+    (`iconImports.test.ts`). `pnpm budget` fails CI above 450 KB.
 11. **Nothing trusts device input.** Locales go through `safeLocale`, time zones fall back to UTC,
     and formatting never throws: a bad value from one device must not break a screen.
 12. **Say what was not done.** ROADMAP ticks mean verified end to end. Anything needing external

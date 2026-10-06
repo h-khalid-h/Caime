@@ -1,13 +1,14 @@
 import { AI_LABEL } from '@caime/core/assist';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import Sparkles from 'lucide-react-native/icons/sparkles';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { ListChecks, Sparkles } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { catchUp, useCatchUps } from './catchUp';

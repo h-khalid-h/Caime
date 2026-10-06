@@ -9,6 +9,8 @@ import {
 } from '@caime/core/rules';
 import { tagged } from '@caime/core/tagged';
 import { router } from 'expo-router';
+import AtSign from 'lucide-react-native/icons/at-sign';
+import Check from 'lucide-react-native/icons/check';
 import { useEffect, useRef, useState } from 'react';
 import { type TextInput, View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -26,7 +28,6 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { DateField } from '@/ui/DateField';
 import { dayOf, yearsBefore } from '@/ui/dates';
-import { AtSign, Check } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';

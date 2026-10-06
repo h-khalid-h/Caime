@@ -1,6 +1,8 @@
 import { tr } from '@caime/core/i18n';
 import { ORG_ROLE_LABELS, orgKindName } from '@caime/core/orgs';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Plus from 'lucide-react-native/icons/plus';
 import { ScrollView, View } from 'react-native';
 import { useOrgs } from '@/api/hooks';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
@@ -8,7 +10,6 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, Plus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';

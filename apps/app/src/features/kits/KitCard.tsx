@@ -16,6 +16,8 @@ import {
 import { KITS } from '@caime/core/kits';
 import { PAYMENT_KIND_LABELS, type PayTo, senderPays } from '@caime/core/payments';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Copy from 'lucide-react-native/icons/copy';
+import ListChecks from 'lucide-react-native/icons/list-checks';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -30,7 +32,6 @@ import { useTheme } from '@/theme/theme';
 import { Button, type IconComponent } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { Copy, ListChecks } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';

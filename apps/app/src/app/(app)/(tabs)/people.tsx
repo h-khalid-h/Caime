@@ -1,9 +1,9 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import UserPlus from 'lucide-react-native/icons/user-plus';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
 import { PeopleList } from '@/features/shell/panes';
 import { Button } from '@/ui/Button';
-import { UserPlus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 
 export default function People() {

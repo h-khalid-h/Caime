@@ -1,6 +1,25 @@
 import { msg, tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Bell from 'lucide-react-native/icons/bell';
+import Bookmark from 'lucide-react-native/icons/bookmark';
+import Building from 'lucide-react-native/icons/building';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
+import Gauge from 'lucide-react-native/icons/gauge';
+import Globe from 'lucide-react-native/icons/globe';
+import Info from 'lucide-react-native/icons/info';
+import KeyRound from 'lucide-react-native/icons/key-round';
+import Keyboard from 'lucide-react-native/icons/keyboard';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import Lock from 'lucide-react-native/icons/lock';
+import LogOut from 'lucide-react-native/icons/log-out';
+import Palette from 'lucide-react-native/icons/palette';
+import Shield from 'lucide-react-native/icons/shield';
+import Sparkles from 'lucide-react-native/icons/sparkles';
+import UserRound from 'lucide-react-native/icons/user-round';
+import Zap from 'lucide-react-native/icons/zap';
 import { Platform, ScrollView, View } from 'react-native';
 import { useOrgs } from '@/api/hooks';
 import { useShortcutsSheet } from '@/features/shell/shortcuts';
@@ -10,27 +29,6 @@ import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArrowLeft,
-  Bell,
-  Bookmark,
-  Building,
-  CalendarCheck,
-  ChartBar,
-  Gauge,
-  Globe,
-  Info,
-  Keyboard,
-  KeyRound,
-  LayoutGrid,
-  Lock,
-  LogOut,
-  Palette,
-  Shield,
-  Sparkles,
-  UserRound,
-  Zap,
-} from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { PageHeader, Screen } from '@/ui/Screen';

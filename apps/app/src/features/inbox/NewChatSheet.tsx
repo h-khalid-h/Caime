@@ -1,12 +1,15 @@
 import { tr } from '@caime/core/i18n';
 import { CAI_ID, CAISHY_ID } from '@caime/core/system-ids';
 import { router } from 'expo-router';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import Search from 'lucide-react-native/icons/search';
+import UserPlus from 'lucide-react-native/icons/user-plus';
+import Users from 'lucide-react-native/icons/users';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
-import { LayoutGrid, Search, UserPlus, Users } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';

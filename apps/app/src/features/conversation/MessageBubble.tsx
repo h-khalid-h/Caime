@@ -6,6 +6,18 @@ import { tr } from '@caime/core/i18n';
 import { CAI_ID } from '@caime/core/system-ids';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import AtSign from 'lucide-react-native/icons/at-sign';
+import Check from 'lucide-react-native/icons/check';
+import CheckCheck from 'lucide-react-native/icons/check-check';
+import CircleAlert from 'lucide-react-native/icons/circle-alert';
+import Clock from 'lucide-react-native/icons/clock';
+import CornerUpLeft from 'lucide-react-native/icons/corner-up-left';
+import Smile from 'lucide-react-native/icons/face-slightly-smiling';
+import FileText from 'lucide-react-native/icons/file-text';
+import Forward from 'lucide-react-native/icons/forward';
+import Languages from 'lucide-react-native/icons/languages';
+import Pin from 'lucide-react-native/icons/pin';
+import UserRound from 'lucide-react-native/icons/user-round';
 import { lazy, memo, type ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
@@ -26,20 +38,6 @@ import { durationOf, transcriptOf } from '@/features/voice/transcript';
 import { linkify, openLink, opensWithEnter } from '@/lib/links';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
-import {
-  AtSign,
-  Check,
-  CheckCheck,
-  CircleAlert,
-  Clock,
-  CornerUpLeft,
-  FileText,
-  Forward,
-  Languages,
-  Pin,
-  Smile,
-  UserRound,
-} from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { PollBody } from './PollBody';

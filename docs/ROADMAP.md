@@ -2186,6 +2186,11 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-06 — Room in the startup chunk: icons imported where they're used, not through the
+  `ui/icons.ts` barrel that put all 127 in the first download (initial web JS 449.8 to 447.4 KB
+  gzip; a test keeps it so). CI's red run on `4facc89` was `calls.test.ts` reading bus events
+  before they'd arrived; the wait the group calls' tests had (`busSettled`) is now the helpers'
+  and every test that clears what it heard waits for the bus first.
 - 2026-10-06 — The web's faces declared once (Inter and Nunito by weight) for the app and every
   server page; the server's pages drawn from the tokens (`lib/page-style.ts`: theme variables,
   type, radii, control heights; no colour of their own, tested); the entry screens' twins made

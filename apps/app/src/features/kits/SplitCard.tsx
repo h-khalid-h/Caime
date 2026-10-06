@@ -9,6 +9,9 @@ import {
   splitState,
 } from '@caime/core/kit-cards';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import HandCoins from 'lucide-react-native/icons/hand-coins';
+import Square from 'lucide-react-native/icons/square';
+import SquareCheck from 'lucide-react-native/icons/square-check';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -17,7 +20,6 @@ import { upsertMessage } from '@/state/cache';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Chip } from '@/ui/Chip';
-import { HandCoins, Square, SquareCheck } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';

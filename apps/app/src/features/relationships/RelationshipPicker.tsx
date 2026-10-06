@@ -9,6 +9,7 @@ import {
   secondarySpheres,
 } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
+import Lock from 'lucide-react-native/icons/lock';
 import { useEffect, useRef, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -18,7 +19,6 @@ import { wordsMatch } from '@/features/geo/find';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { Lock } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { sphereIcon } from '@/ui/SphereIcon';

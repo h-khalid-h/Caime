@@ -1,4 +1,5 @@
 import { tr } from '@caime/core/i18n';
+import X from 'lucide-react-native/icons/x';
 import { type ReactNode, useEffect, useId } from 'react';
 import {
   KeyboardAvoidingView,
@@ -12,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReduceMotion } from '@/lib/motion';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from './IconButton';
-import { X } from './icons';
 import { useLayout } from './layout';
 import { Text } from './Text';
 import { ToastHost, useToastLayers } from './Toast';

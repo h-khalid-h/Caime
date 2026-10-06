@@ -6,12 +6,14 @@
  */
 import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
 import { tr } from '@caime/core/i18n';
+import Check from 'lucide-react-native/icons/check';
+import Folder from 'lucide-react-native/icons/folder';
+import Plus from 'lucide-react-native/icons/plus';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { wordsMatch } from '@/features/geo/find';
 import { useTheme } from '@/theme/theme';
-import { Check, Folder, Plus } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';

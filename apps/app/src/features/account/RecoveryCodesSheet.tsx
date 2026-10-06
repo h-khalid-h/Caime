@@ -1,12 +1,13 @@
 import type { MeView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import Check from 'lucide-react-native/icons/check';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { copyText } from '@/lib/clipboard';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Check, KeyRound } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';

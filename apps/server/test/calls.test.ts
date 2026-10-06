@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BusMessage } from '../src/lib/bus';
 import { endCall, iceConfig, sweepCalls } from '../src/lib/calls';
 import { type NotifyInput, onNotification } from '../src/lib/notify';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { busSettled, type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
 let noor: Client;
@@ -54,7 +54,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.close();
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await busSettled(t, heard);
   heard.length = 0;
 });
 
@@ -104,11 +105,9 @@ describe('calls (PRD §47)', () => {
     const answered = await sam.req('POST', `/v1/calls/${id}/accept`, { deviceId: 'sam-phone-1' });
     expect(answered.json().call).toMatchObject({ state: 'active', calleeDevice: 'sam-phone-1' });
     // Both sides hear it, so Sam's other devices stop ringing.
-    expect(
-      events('call.updated')
-        .map((m) => m.userIds)
-        .sort(),
-    ).toEqual([[noor.user.id], [sam.user.id]].sort());
+    expect((await heardSoon('call.updated', 2)).map((m) => m.userIds).sort()).toEqual(
+      [[noor.user.id], [sam.user.id]].sort(),
+    );
     expect(
       (await sam.req('POST', `/v1/calls/${id}/accept`, { deviceId: 'sam-laptop-1' })).statusCode,
     ).toBe(409);
@@ -131,6 +130,7 @@ describe('calls (PRD §47)', () => {
         },
       },
     ]);
+    await busSettled(t, heard);
     heard.length = 0;
     await signal(sam, id, 'sam-phone-1', { kind: 'answer', sdp: 'v=0 answer' });
     await signal(sam, id, 'sam-phone-1', {
@@ -298,6 +298,7 @@ describe('calls (PRD §47)', () => {
       ttlSeconds: 45,
       pushTo: 'web',
     });
+    await busSettled(t, heard);
     heard.length = 0;
     await sam.post(`/v1/calls/${answered}/accept`, { deviceId: 'sam-phone-1' });
     expect((await ring(answered)).read).toBe(true);
@@ -374,6 +375,7 @@ describe('calls (PRD §47)', () => {
     const talking = (await call(noor, convo)).json().call.id;
     await sam.post(`/v1/calls/${talking}/accept`, { deviceId: 'sam-phone-1' });
     await sam.patch('/v1/me', { presence: 'invisible' });
+    await busSettled(t, heard);
     heard.length = 0;
     // A moment later, so the call Omar starts is the newer one.
     t.clock.advance(1000);

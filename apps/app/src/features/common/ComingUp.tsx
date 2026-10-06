@@ -6,10 +6,10 @@
 import type { UpcomingView } from '@caime/core/api';
 import { formatWhenAt } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import { View } from 'react-native';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
-import { CalendarClock } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 

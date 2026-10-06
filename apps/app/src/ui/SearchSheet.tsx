@@ -4,11 +4,12 @@
  */
 
 import { tr } from '@caime/core/i18n';
+import Check from 'lucide-react-native/icons/check';
+import Search from 'lucide-react-native/icons/search';
 import { type ReactNode, useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
-import { Check, Search } from './icons';
 import { ListRow } from './ListRow';
 import { useLayout } from './layout';
 import { Sheet } from './Sheet';

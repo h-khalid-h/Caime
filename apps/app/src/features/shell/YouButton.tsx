@@ -1,6 +1,10 @@
 import type { MeView, PresenceSetting, PresenceState } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { type Href, router } from 'expo-router';
+import Bell from 'lucide-react-native/icons/bell';
+import Smile from 'lucide-react-native/icons/face-slightly-smiling';
+import Lock from 'lucide-react-native/icons/lock';
+import Settings from 'lucide-react-native/icons/settings';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { create } from 'zustand';
@@ -10,7 +14,6 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Card } from '@/ui/Card';
-import { Bell, Lock, Settings, Smile } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';

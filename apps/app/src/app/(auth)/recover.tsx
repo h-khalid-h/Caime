@@ -1,5 +1,6 @@
 import { tr } from '@caime/core/i18n';
 import { passwordError } from '@caime/core/rules';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -8,7 +9,6 @@ import { AuthLayout } from '@/features/auth/AuthLayout';
 import { deviceInfo } from '@/features/auth/device';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
-import { KeyRound } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';

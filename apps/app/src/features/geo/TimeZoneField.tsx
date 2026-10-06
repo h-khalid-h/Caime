@@ -5,13 +5,13 @@
 
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { ChevronDown } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import type { SearchItem } from '@/ui/SearchSheet';

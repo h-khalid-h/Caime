@@ -4,6 +4,8 @@ import { latestFoundedYear, ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@ca
 import { handleError, handleFromName, normalizeHandle } from '@caime/core/rules';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import AtSign from 'lucide-react-native/icons/at-sign';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -16,7 +18,6 @@ import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, AtSign } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';

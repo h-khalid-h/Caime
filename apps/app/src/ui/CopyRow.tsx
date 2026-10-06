@@ -1,9 +1,9 @@
 import { tr } from '@caime/core/i18n';
+import Copy from 'lucide-react-native/icons/copy';
 import { View } from 'react-native';
 import { copyText } from '@/lib/clipboard';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from './IconButton';
-import { Copy } from './icons';
 import { Text } from './Text';
 import { toast } from './Toast';
 

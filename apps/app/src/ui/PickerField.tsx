@@ -3,10 +3,11 @@
  * placeholder, with a chevron, opening whatever the caller renders after it (a SearchSheet).
  * One look for every such field, so the country and year fields share it.
  */
+
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
-import { ChevronDown } from './icons';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 

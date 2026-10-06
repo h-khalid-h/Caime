@@ -1,10 +1,10 @@
 import { tr } from '@caime/core/i18n';
 import { type ErrorBoundaryProps, router } from 'expo-router';
+import CircleAlert from 'lucide-react-native/icons/circle-alert';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Guide } from '@/ui/Guide';
-import { CircleAlert } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 
 /** What a screen shows if it breaks: an apology, a retry, and a way home. Never a blank page. */

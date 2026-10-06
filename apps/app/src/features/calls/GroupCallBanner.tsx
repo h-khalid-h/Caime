@@ -1,11 +1,12 @@
 import { tr } from '@caime/core/i18n';
+import Phone from 'lucide-react-native/icons/phone';
+import Video from 'lucide-react-native/icons/video';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useGroupCall } from '@/state/groupCall';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Phone, Video } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { checkGroupCallIn, groupCallsSupported, joinGroupCall } from './calls';
 

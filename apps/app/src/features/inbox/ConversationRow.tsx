@@ -1,6 +1,11 @@
 import type { InboxItemView } from '@caime/core/api';
 import { formatListTime, joinNames, listTitle } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import BadgeCheck from 'lucide-react-native/icons/badge-check';
+import BellOff from 'lucide-react-native/icons/bell-off';
+import Briefcase from 'lucide-react-native/icons/briefcase';
+import Pin from 'lucide-react-native/icons/pin';
+import Users from 'lucide-react-native/icons/users';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { OrgMark } from '@/features/orgs/kinds';
@@ -9,7 +14,6 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
 import { Chip, RelationshipChip } from '@/ui/Chip';
-import { BadgeCheck, BellOff, Briefcase, Pin, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 

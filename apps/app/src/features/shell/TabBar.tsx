@@ -1,11 +1,16 @@
 import { msg, tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import Focus from 'lucide-react-native/icons/focus';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Search from 'lucide-react-native/icons/search';
+import Users from 'lucide-react-native/icons/users';
 import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
-import { Focus, LayoutGrid, ListChecks, MessageCircle, Search, Users } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';

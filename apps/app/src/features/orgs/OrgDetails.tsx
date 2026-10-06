@@ -7,6 +7,7 @@
 import type { OrgView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { latestFoundedYear, ORG_KIND_LABELS, ORG_KINDS, type OrgKind } from '@caime/core/orgs';
+import Camera from 'lucide-react-native/icons/camera';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -18,7 +19,6 @@ import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
-import { Camera } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';

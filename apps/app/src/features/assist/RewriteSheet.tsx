@@ -1,12 +1,12 @@
 import { AI_LABEL, REWRITE_LABELS, REWRITE_STYLES, type RewriteStyle } from '@caime/core/assist';
 import { tr } from '@caime/core/i18n';
+import Sparkles from 'lucide-react-native/icons/sparkles';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { Sparkles } from '@/ui/icons';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 

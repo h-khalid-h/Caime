@@ -6,6 +6,8 @@
 import type { OrgView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
+import Download from 'lucide-react-native/icons/download';
+import Share from 'lucide-react-native/icons/share';
 import { View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { endpoints } from '@/api/endpoints';
@@ -16,7 +18,6 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { CopyRow } from '@/ui/CopyRow';
-import { Download, Share } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 

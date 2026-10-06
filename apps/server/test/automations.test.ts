@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runAutomations } from '../src/lib/automations';
 import type { BusMessage } from '../src/lib/bus';
-import { type Client, createTestApp, signup, type TestApp } from './helpers';
+import { busSettled, type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
 let noor: Client; // keeps what her customers send
@@ -558,6 +558,7 @@ describe('every device catches up with what’s saved', () => {
       await ada.post('/v1/automations', { when: { kinds: ['document'] }, collection: 'Files' });
       // (Making it says so too: heard, then set aside.)
       expect(await told('automations.changed', ada.user.id)).toBe(true);
+      await busSettled(t, heard);
       heard.length = 0;
       // Kept: what's saved and the automation's count, on each of her devices.
       await sendFile(ben, direct, 'notes.pdf');
@@ -585,6 +586,7 @@ describe('every device catches up with what’s saved', () => {
         .executeTakeFirstOrThrow();
       await ada.post(`/v1/messages/${card.id}/save`, { collection: 'Trip', assetId: asset.id });
       expect(await items(ada, 'Trip')).toHaveLength(1);
+      await busSettled(t, heard);
       heard.length = 0;
       await ben.del(`/v1/messages/${card.id}/album/${pic.id}`);
       expect(await told('saved.changed', ada.user.id)).toBe(true);
@@ -604,6 +606,7 @@ describe('every device catches up with what’s saved', () => {
         })
       ).message;
       await ada.post(`/v1/messages/${said.id}/save`, { collection: 'Reading' });
+      await busSettled(t, heard);
       heard.length = 0;
       await ada.del(`/v1/conversations/${group}/members/${ada.user.id}`);
       expect(await told('saved.changed', ada.user.id)).toBe(true);

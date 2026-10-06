@@ -7,8 +7,8 @@
 
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';

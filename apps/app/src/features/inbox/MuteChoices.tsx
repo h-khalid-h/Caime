@@ -6,9 +6,10 @@
  */
 
 import { tr } from '@caime/core/i18n';
+import BellOff from 'lucide-react-native/icons/bell-off';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import { type Chosen, instantOf, todayWhere } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
-import { BellOff, CalendarClock } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { formatTime } from '@/ui/times';

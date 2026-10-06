@@ -1,5 +1,7 @@
 import type { TaskView } from '@caime/core/api';
 import { msg, tr } from '@caime/core/i18n';
+import CircleCheck from 'lucide-react-native/icons/circle-check';
+import Plus from 'lucide-react-native/icons/plus';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import type { TaskViewFilter } from '@/api/endpoints';
@@ -18,7 +20,6 @@ import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { CircleCheck, Plus } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { PageHeader, Screen } from '@/ui/Screen';

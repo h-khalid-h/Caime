@@ -1,9 +1,10 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import Plus from 'lucide-react-native/icons/plus';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
 import { SpacesList } from '@/features/shell/panes';
 import { Button } from '@/ui/Button';
-import { LayoutGrid, Plus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 
 export default function Spaces() {

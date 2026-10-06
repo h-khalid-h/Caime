@@ -5,6 +5,17 @@ import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/c
 import { isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
+import FileText from 'lucide-react-native/icons/file-text';
+import ImageIcon from 'lucide-react-native/icons/image';
+import Mic from 'lucide-react-native/icons/mic';
+import Paperclip from 'lucide-react-native/icons/paperclip';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Plus from 'lucide-react-native/icons/plus';
+import Reply from 'lucide-react-native/icons/reply';
+import SendHorizontal from 'lucide-react-native/icons/send-horizontal';
+import Sticker from 'lucide-react-native/icons/sticker';
+import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
+import X from 'lucide-react-native/icons/x';
 import {
   forwardRef,
   lazy,
@@ -42,19 +53,6 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
-import {
-  FileText,
-  ImageIcon,
-  Mic,
-  Paperclip,
-  Pencil,
-  Plus,
-  Reply,
-  SendHorizontal,
-  Sticker,
-  WandSparkles,
-  X,
-} from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';

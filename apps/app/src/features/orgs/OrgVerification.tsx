@@ -4,6 +4,7 @@
  */
 import type { OrgView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -11,7 +12,6 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { CopyRow } from '@/ui/CopyRow';
-import { BadgeCheck } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';

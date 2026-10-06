@@ -1,10 +1,10 @@
 import { tr, trn } from '@caime/core/i18n';
+import WifiOff from 'lucide-react-native/icons/wifi-off';
 import { View } from 'react-native';
 import { useLive } from '@/state/live';
 import { useOutbox } from '@/state/outbox';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
-import { WifiOff } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 
 /** "2 messages and 1 action": what's waiting to go. */

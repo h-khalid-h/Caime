@@ -1,5 +1,7 @@
 import { msg, tr } from '@caime/core/i18n';
 import { displayNameError, handleError, normalizeHandle } from '@caime/core/rules';
+import AtSign from 'lucide-react-native/icons/at-sign';
+import Camera from 'lucide-react-native/icons/camera';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -16,7 +18,6 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { formatDay } from '@/ui/dates';
 import { EmojiSheet } from '@/ui/EmojiSheet';
-import { AtSign, Camera } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';

@@ -1,6 +1,9 @@
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
+import Globe from 'lucide-react-native/icons/globe';
+import Info from 'lucide-react-native/icons/info';
+import Lock from 'lucide-react-native/icons/lock';
 import { Platform, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
@@ -9,7 +12,6 @@ import { Wordmark } from '@/brand/Wordmark';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
-import { Globe, Info, Lock } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';

@@ -1,13 +1,13 @@
 import { replyTimeText } from '@caime/core/business';
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
+import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Card } from '@/ui/Card';
-import { ChartBar } from '@/ui/icons';
 import { Segmented } from '@/ui/Segmented';
 import { Text } from '@/ui/Text';
 

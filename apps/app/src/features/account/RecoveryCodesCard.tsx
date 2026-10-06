@@ -1,10 +1,10 @@
 import { tr } from '@caime/core/i18n';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { KeyRound } from '@/ui/icons';
 import { lazyPart, useOpened } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 

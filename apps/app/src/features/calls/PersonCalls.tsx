@@ -1,9 +1,9 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import Phone from 'lucide-react-native/icons/phone';
 import { View } from 'react-native';
 import { useCallHistory } from '@/api/hooks';
 import { Card, Divider } from '@/ui/Card';
-import { Phone } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { CallRows } from './history';
 

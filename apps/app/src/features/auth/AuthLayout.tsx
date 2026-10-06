@@ -1,12 +1,12 @@
 import { sentence, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Wordmark } from '@/brand/Wordmark';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
 import { Text } from '@/ui/Text';

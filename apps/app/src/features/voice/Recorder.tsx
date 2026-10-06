@@ -7,13 +7,15 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
+import Mic from 'lucide-react-native/icons/mic';
+import Square from 'lucide-react-native/icons/square';
+import Trash from 'lucide-react-native/icons/trash';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import type { LocalFile } from '@/api/upload';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
-import { Mic, Square, Trash } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 

@@ -1,10 +1,10 @@
 import type { MessageView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
+import Check from 'lucide-react-native/icons/check';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { upsertMessage } from '@/state/cache';
-import { Check } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';

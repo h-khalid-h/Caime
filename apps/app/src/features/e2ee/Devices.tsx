@@ -1,11 +1,12 @@
 import { formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import KeyRound from 'lucide-react-native/icons/key-round';
+import Lock from 'lucide-react-native/icons/lock';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { KeyRound, Lock } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { toast } from '@/ui/Toast';
 import { useMyDevices } from './codes';

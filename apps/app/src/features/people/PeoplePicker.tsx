@@ -1,11 +1,11 @@
 import { tr } from '@caime/core/i18n';
 import type { Sphere } from '@caime/core/taxonomy';
+import Check from 'lucide-react-native/icons/check';
 import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
-import { Check } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Text } from '@/ui/Text';
 

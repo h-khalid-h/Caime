@@ -4,6 +4,15 @@ import { msg, tr, trn } from '@caime/core/i18n';
 import { looksLikeSentence, parseSearchQuery } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Building from 'lucide-react-native/icons/building';
+import FileText from 'lucide-react-native/icons/file-text';
+import Hash from 'lucide-react-native/icons/hash';
+import Link from 'lucide-react-native/icons/link';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import SearchIcon from 'lucide-react-native/icons/search';
+import Star from 'lucide-react-native/icons/star';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
 import { NetworkError } from '@/api/client';
@@ -17,17 +26,6 @@ import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
 import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArrowLeft,
-  Building,
-  FileText,
-  Hash,
-  Link,
-  ListChecks,
-  MessageCircle,
-  Search as SearchIcon,
-  Star,
-} from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';

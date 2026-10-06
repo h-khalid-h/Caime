@@ -1,10 +1,10 @@
 import type { Character as CharacterName, Expression } from '@caime/brand/characters';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
-import { MessageCircle } from '@/ui/icons';
 
 /** The desktop detail pane before something is chosen. */
 export function DetailPlaceholder({

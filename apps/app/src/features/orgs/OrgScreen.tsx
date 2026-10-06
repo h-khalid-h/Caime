@@ -13,6 +13,23 @@ import { handsOverOnLeaving, minorMayWriteToOrg } from '@caime/core/permissions'
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import ArchiveIcon from 'lucide-react-native/icons/archive';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Ban from 'lucide-react-native/icons/ban';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import Flag from 'lucide-react-native/icons/flag';
+import Globe from 'lucide-react-native/icons/globe';
+import HandCoins from 'lucide-react-native/icons/hand-coins';
+import Inbox from 'lucide-react-native/icons/inbox';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import LogOut from 'lucide-react-native/icons/log-out';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Settings from 'lucide-react-native/icons/settings';
+import Share from 'lucide-react-native/icons/share';
+import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
+import UserPlus from 'lucide-react-native/icons/user-plus';
+import Wrench from 'lucide-react-native/icons/wrench';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -33,25 +50,6 @@ import { Card } from '@/ui/Card';
 import { ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArchiveIcon,
-  ArrowLeft,
-  Ban,
-  CalendarCheck,
-  Flag,
-  Globe,
-  HandCoins,
-  Inbox,
-  LayoutGrid,
-  LogOut,
-  MessageCircle,
-  Pencil,
-  Settings,
-  Share,
-  ShoppingBag,
-  UserPlus,
-  Wrench,
-} from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';

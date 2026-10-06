@@ -42,6 +42,14 @@ import {
   paymentUrlError,
 } from '@caime/core/payments';
 import type { Sphere } from '@caime/core/taxonomy';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import HandCoins from 'lucide-react-native/icons/hand-coins';
+import ImageIcon from 'lucide-react-native/icons/image';
+import Layers from 'lucide-react-native/icons/layers';
+import Minus from 'lucide-react-native/icons/minus';
+import Plus from 'lucide-react-native/icons/plus';
+import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
+import Tag from 'lucide-react-native/icons/tag';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { uploadFile } from '@/api/upload';
@@ -50,16 +58,6 @@ import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import {
-  CalendarCheck,
-  HandCoins,
-  ImageIcon,
-  Layers,
-  Minus,
-  Plus,
-  ShoppingBag,
-  Tag,
-} from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';

@@ -1,12 +1,14 @@
 import type { ConversationView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import CircleAlert from 'lucide-react-native/icons/circle-alert';
+import Lock from 'lucide-react-native/icons/lock';
+import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { CircleAlert, Lock, ShieldCheck } from '@/ui/icons';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';

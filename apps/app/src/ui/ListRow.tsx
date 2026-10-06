@@ -1,8 +1,8 @@
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
-import { ChevronRight } from './icons';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 

@@ -1,11 +1,12 @@
 import { controlHeight } from '@caime/brand/tokens';
 import { tr } from '@caime/core/i18n';
+import Eye from 'lucide-react-native/icons/eye';
+import EyeOff from 'lucide-react-native/icons/eye-off';
 import { forwardRef, useState } from 'react';
 import { TextInput, type TextInputProps, View, type ViewStyle } from 'react-native';
 import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
-import { Eye, EyeOff } from './icons';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 

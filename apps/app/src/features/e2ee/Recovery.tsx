@@ -5,6 +5,7 @@
  */
 import { formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Group } from '@/features/settings/SettingsPage';
@@ -13,7 +14,6 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { KeyRound } from '@/ui/icons';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';

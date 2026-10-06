@@ -88,6 +88,19 @@ export interface Client {
 
 let counter = 0;
 
+/**
+ * The bus delivers through Postgres (ADR-5), after the request that published has answered:
+ * wait until what was sent has all arrived (nothing new for a while), so a test reads only its
+ * own events, and an event a step sent isn't heard by the next.
+ */
+export async function busSettled(t: TestApp, heard: readonly unknown[]): Promise<void> {
+  await t.ctx.flush();
+  for (let n = -1, i = 0; n !== heard.length && i < 40; i++) {
+    n = heard.length;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+
 export async function signup(
   t: TestApp,
   patch: Partial<{

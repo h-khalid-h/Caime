@@ -7,6 +7,10 @@ import {
   checklistState,
 } from '@caime/core/kit-cards';
 import { useQueryClient } from '@tanstack/react-query';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import Square from 'lucide-react-native/icons/square';
+import SquareCheck from 'lucide-react-native/icons/square-check';
+import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -15,7 +19,6 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Chip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { ListChecks, Square, SquareCheck, X } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';

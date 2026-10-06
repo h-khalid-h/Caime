@@ -8,11 +8,12 @@ import { type BookingItem, isOrdered, itemPhotoPath } from '@caime/core/booking'
 import type { CatalogCollection } from '@caime/core/catalog';
 import { formatAmount } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
 import { View } from 'react-native';
 import { WEB_URL } from '@/lib/config';
 import { Button } from '@/ui/Button';
 import { CopyRow } from '@/ui/CopyRow';
-import { CalendarCheck, ShoppingBag } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Spec } from '@/ui/Spec';

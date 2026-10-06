@@ -4,6 +4,19 @@ import { tr, trn } from '@caime/core/i18n';
 import { systemHandleOf } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import BadgeCheck from 'lucide-react-native/icons/badge-check';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import Flag from 'lucide-react-native/icons/flag';
+import HandCoins from 'lucide-react-native/icons/hand-coins';
+import Hash from 'lucide-react-native/icons/hash';
+import Lock from 'lucide-react-native/icons/lock';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Shield from 'lucide-react-native/icons/shield';
+import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
+import UserPlus from 'lucide-react-native/icons/user-plus';
+import Users from 'lucide-react-native/icons/users';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -26,21 +39,6 @@ import { Card, Divider } from '@/ui/Card';
 import { RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArrowLeft,
-  BadgeCheck,
-  CalendarCheck,
-  Flag,
-  HandCoins,
-  Hash,
-  Lock,
-  MessageCircle,
-  Pencil,
-  Shield,
-  ShoppingBag,
-  UserPlus,
-  Users,
-} from '@/ui/icons';
 import { lazyPart, useOpened } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';

@@ -1,12 +1,12 @@
 import { tr } from '@caime/core/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useEffect, useState } from 'react';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
-import { UserPlus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';

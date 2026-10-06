@@ -8,6 +8,7 @@ import type { OrgView } from '@caime/core/api';
 import { retentionText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { ownsOrg } from '@caime/core/orgs';
+import Download from 'lucide-react-native/icons/download';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -17,7 +18,6 @@ import { openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { Download } from '@/ui/icons';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 

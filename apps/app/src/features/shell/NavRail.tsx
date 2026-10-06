@@ -1,5 +1,13 @@
 import { msg, tr } from '@caime/core/i18n';
 import { type Href, router } from 'expo-router';
+import Bell from 'lucide-react-native/icons/bell';
+import Briefcase from 'lucide-react-native/icons/briefcase';
+import Focus from 'lucide-react-native/icons/focus';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Search from 'lucide-react-native/icons/search';
+import Users from 'lucide-react-native/icons/users';
 import { View } from 'react-native';
 import { useBusinessSummary } from '@/api/hooks';
 import { IconMark } from '@/brand/Wordmark';
@@ -8,16 +16,6 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
-import {
-  Bell,
-  Briefcase,
-  Focus,
-  LayoutGrid,
-  ListChecks,
-  MessageCircle,
-  Search,
-  Users,
-} from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { type Section, useSection } from './sections';

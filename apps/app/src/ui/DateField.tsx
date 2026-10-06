@@ -6,13 +6,13 @@
 
 import { tr } from '@caime/core/i18n';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import Calendar from 'lucide-react-native/icons/calendar';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
 import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
 import { type DateFieldProps, dateOf, dayOf, formatDay } from './dates';
-import { Calendar } from './icons';
 import { Pressable } from './Pressable';
 import { Sheet } from './Sheet';
 import { Text } from './Text';

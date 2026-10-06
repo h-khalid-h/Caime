@@ -4,6 +4,17 @@ import { tr } from '@caime/core/i18n';
 import { canChangeDisappearing } from '@caime/core/permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import Calendar from 'lucide-react-native/icons/calendar';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import CircleCheck from 'lucide-react-native/icons/circle-check';
+import FileText from 'lucide-react-native/icons/file-text';
+import Hash from 'lucide-react-native/icons/hash';
+import ImageIcon from 'lucide-react-native/icons/image';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import Link from 'lucide-react-native/icons/link';
+import Lock from 'lucide-react-native/icons/lock';
+import Star from 'lucide-react-native/icons/star';
+import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { mediaUrl } from '@/api/client';
@@ -25,19 +36,6 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import {
-  Calendar,
-  ChevronRight,
-  CircleCheck,
-  FileText,
-  Hash,
-  ImageIcon,
-  LayoutGrid,
-  Link,
-  Lock,
-  Star,
-  X,
-} from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';

@@ -7,6 +7,16 @@ import { canPin } from '@caime/core/pins';
 import { isSystemKind } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import ListChecks from 'lucide-react-native/icons/list-checks';
+import Lock from 'lucide-react-native/icons/lock';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import PanelRight from 'lucide-react-native/icons/panel-right';
+import Phone from 'lucide-react-native/icons/phone';
+import Tag from 'lucide-react-native/icons/tag';
+import Users from 'lucide-react-native/icons/users';
+import Video from 'lucide-react-native/icons/video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -54,18 +64,6 @@ import { Avatar } from '@/ui/Avatar';
 import { Chip, RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArrowLeft,
-  ChevronDown,
-  ListChecks,
-  Lock,
-  MessageCircle,
-  PanelRight,
-  Phone,
-  Tag,
-  Users,
-  Video,
-} from '@/ui/icons';
 import { lazyPart, useOpened } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';

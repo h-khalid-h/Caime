@@ -8,6 +8,9 @@ import {
 import { formatListTime } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
 import { router, usePathname } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Inbox from 'lucide-react-native/icons/inbox';
+import SquarePen from 'lucide-react-native/icons/square-pen';
 import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import { useBusinessSummary, useOrg, useOrgInbox } from '@/api/hooks';
@@ -21,7 +24,6 @@ import { Badge } from '@/ui/Badge';
 import { Chip, ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, Inbox, SquarePen } from '@/ui/icons';
 import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';

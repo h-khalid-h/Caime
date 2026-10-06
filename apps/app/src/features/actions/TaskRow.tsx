@@ -2,11 +2,13 @@ import type { TaskView } from '@caime/core/api';
 import { formatDue, overdueAt } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
+import Check from 'lucide-react-native/icons/check';
+import Clock from 'lucide-react-native/icons/clock';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { IconButton } from '@/ui/IconButton';
-import { CalendarClock, Check, Clock } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 

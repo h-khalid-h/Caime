@@ -1,12 +1,12 @@
 import { type BubbleTheme, bubbleThemes } from '@caime/brand/tokens';
 import { msg, tr } from '@caime/core/i18n';
+import Check from 'lucide-react-native/icons/check';
 import { Platform, Switch, View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
-import { Check } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 

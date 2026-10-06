@@ -1,6 +1,9 @@
 import type { OAuthAppView } from '@caime/core/api';
 import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import Plus from 'lucide-react-native/icons/plus';
+import Trash from 'lucide-react-native/icons/trash';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -10,7 +13,6 @@ import { WEB_URL } from '@/lib/config';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { CopyRow } from '@/ui/CopyRow';
-import { LayoutGrid, Plus, Trash } from '@/ui/icons';
 import { ListRow } from '@/ui/ListRow';
 import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';

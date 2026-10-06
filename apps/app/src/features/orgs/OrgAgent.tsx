@@ -7,6 +7,8 @@ import {
 import type { AgentTryView, OrgView } from '@caime/core/api';
 import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Sparkles from 'lucide-react-native/icons/sparkles';
+import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ApiError } from '@/api/client';
@@ -14,7 +16,6 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Sparkles, Trash } from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';

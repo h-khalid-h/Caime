@@ -1,6 +1,8 @@
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useEffect } from 'react';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
@@ -8,7 +10,6 @@ import { qk } from '@/api/keys';
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import { ArrowLeft, UserPlus } from '@/ui/icons';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { SkeletonRows } from '@/ui/Skeleton';

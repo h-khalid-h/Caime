@@ -1,8 +1,9 @@
 import { formatDuration } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
+import Pause from 'lucide-react-native/icons/pause';
+import Play from 'lucide-react-native/icons/play';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
-import { Pause, Play } from '@/ui/icons';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 

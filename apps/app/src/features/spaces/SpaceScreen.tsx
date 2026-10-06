@@ -12,6 +12,14 @@ import {
 } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Hash from 'lucide-react-native/icons/hash';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import LogOut from 'lucide-react-native/icons/log-out';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Plus from 'lucide-react-native/icons/plus';
+import Settings from 'lucide-react-native/icons/settings';
+import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -27,16 +35,6 @@ import { Button } from '@/ui/Button';
 import { Chip, RelationshipChip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
-import {
-  ArrowLeft,
-  Hash,
-  LayoutGrid,
-  LogOut,
-  MessageCircle,
-  Plus,
-  Settings,
-  UserPlus,
-} from '@/ui/icons';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';

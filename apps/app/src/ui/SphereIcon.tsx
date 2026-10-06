@@ -1,19 +1,17 @@
 import type { Sphere } from '@caime/core/taxonomy';
+import BadgeCheck from 'lucide-react-native/icons/badge-check';
+import Briefcase from 'lucide-react-native/icons/briefcase';
+import Building from 'lucide-react-native/icons/building';
+import CircleDot from 'lucide-react-native/icons/circle-dot';
+import Smile from 'lucide-react-native/icons/face-slightly-smiling';
+import Globe from 'lucide-react-native/icons/globe';
+import Hand from 'lucide-react-native/icons/hand';
+import Handshake from 'lucide-react-native/icons/handshake';
+import Heart from 'lucide-react-native/icons/heart';
+import Truck from 'lucide-react-native/icons/truck';
+import Users from 'lucide-react-native/icons/users';
+import Wrench from 'lucide-react-native/icons/wrench';
 import type { IconComponent } from './Button';
-import {
-  BadgeCheck,
-  Briefcase,
-  Building,
-  CircleDot,
-  Globe,
-  Hand,
-  Handshake,
-  Heart,
-  Smile,
-  Truck,
-  Users,
-  Wrench,
-} from './icons';
 
 const BY_NAME: Record<string, IconComponent> = {
   heart: Heart,
