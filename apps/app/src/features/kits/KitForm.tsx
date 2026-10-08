@@ -4,12 +4,10 @@ import { prepareCustomFields } from '@caime/core/custom-kits';
 import { formatAmount, roundAmount } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
-import { extractAmounts } from '@caime/core/intelligence';
 import { CARD_KITS, type CardKitId, isCardKit, prepareKitFields } from '@caime/core/kit-cards';
 import { KITS, type KitDef, type KitField, kitsFor } from '@caime/core/kits';
 import { SPACE_KIND_DEFS } from '@caime/core/spaces';
 import { zonedParts } from '@caime/core/time';
-import { firstFutureWhen, parseWhen } from '@caime/core/when';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Calendar from 'lucide-react-native/icons/calendar';
 import MapPin from 'lucide-react-native/icons/map-pin';
@@ -24,6 +22,7 @@ import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
+import { loadReaders, type Readers, useReaders } from '@/lib/useReaders';
 import { applyMessageToInbox, upsertMessage } from '@/state/cache';
 import { useLiveShares } from '@/state/liveShares';
 import { useMe } from '@/state/session';
@@ -93,6 +92,7 @@ type Picked = { chosen: Chosen; shown: string };
  * look ahead (a meeting, a due date); an organization's own may say when something was, too.
  */
 function readField(
+  readers: Readers | null,
   field: KitField,
   text: string,
   clock: Clock,
@@ -115,7 +115,11 @@ function readField(
               },
               shown: raw,
             };
-      const when = anyTense ? parseWhen(raw, clock)[0] : firstFutureWhen(raw, clock);
+      // Read once the readers are here (they load as the form opens).
+      if (!readers) return {};
+      const when = anyTense
+        ? readers.parseWhen(raw, clock)[0]
+        : readers.firstFutureWhen(raw, clock);
       if (!when) return { shown: tr('Say a day, and a time if there is one: “Friday 3pm”') };
       const at = new Date(when.at);
       const shown = new Intl.DateTimeFormat(clock.locale, {
@@ -137,7 +141,7 @@ function readField(
       // Typed on the number keypad in the person's own way, in the currency beside it; or
       // written with its currency ("EGP 1,200"), which says which.
       const typed = parseNumber(raw, clock.locale);
-      const found = typed === null ? extractAmounts(raw)[0] : undefined;
+      const found = typed === null ? readers?.extractAmounts(raw)[0] : undefined;
       const value = typed ?? found?.value;
       if (!value || !Number.isFinite(value))
         return {
@@ -183,6 +187,7 @@ export function KitForm({
   const me = useMe();
   const { timeZone, locale } = useUserClock();
   const clock: Clock = { now: new Date(), timeZone, locale, workweek: me.workweek };
+  const readers = useReaders();
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [picked, setPicked] = useState<Record<string, number | string>>({});
   const [options, setOptions] = useState<string[]>(['', '']);
@@ -440,7 +445,14 @@ export function KitForm({
               ? (texts.title ?? '')
               : item.name
             : (texts[field.key] ?? '');
-        const read = readField(field, text, clock, Boolean(custom), extraFor(field));
+        const read = readField(
+          readers ?? (await loadReaders()),
+          field,
+          text,
+          clock,
+          Boolean(custom),
+          extraFor(field),
+        );
         if (text.trim() && read.value === undefined)
           return setError(`${tr(field.label)}: ${read.shown ?? 'that doesn’t look right.'}`);
         if (read.value !== undefined) fields[field.key] = read.value;
@@ -878,8 +890,14 @@ export function KitForm({
                   ) : undefined
                 }
                 hint={
-                  readField(field, texts[field.key] ?? '', clock, Boolean(custom), extraFor(field))
-                    .shown
+                  readField(
+                    readers,
+                    field,
+                    texts[field.key] ?? '',
+                    clock,
+                    Boolean(custom),
+                    extraFor(field),
+                  ).shown
                 }
               />
             ),

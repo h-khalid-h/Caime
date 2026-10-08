@@ -6,11 +6,19 @@
  *
  * Heuristic by design (R17): deterministic, explainable, testable, and the same on every device.
  * English and Arabic as it's written in messages: Egyptian, Gulf and Levantine phrasing and MSA.
+ * French and Turkish are read in their own modules (`intelligence-fr.ts`, `intelligence-tr.ts`),
+ * for a sentence `latinLanguage` says is theirs; anything unclear is read as English.
  */
 
-import { asciiDigits } from './digits';
+import { type Amount, extractAmounts } from './amounts';
 import { tr } from './i18n';
+import { FR_PAID, FR_PAY, FR_PLAN, FR_TRACK, readFrench } from './intelligence-fr';
+import { firstDateIn, removeRanges } from './intelligence-shared';
+import { readTurkish, TR_PAID, TR_PAY, TR_PLAN, TR_TRACK } from './intelligence-tr';
+import { latinLanguage } from './latin-language';
 import { parseWhen, type WhenMatch, type WhenOptions } from './when';
+
+export { type Amount, extractAmounts } from './amounts';
 
 export const MODES = [
   'talk',
@@ -24,13 +32,6 @@ export const MODES = [
   'track',
 ] as const;
 export type Mode = (typeof MODES)[number];
-
-export interface Amount {
-  text: string;
-  index: number;
-  value: number;
-  currency: string | null;
-}
 
 export interface LinkEntity {
   url: string;
@@ -146,7 +147,6 @@ const IMPERATIVE_VERBS = new Set([
 // Arabic, as people write it: Egyptian (هبعتلك, ممكن), Gulf (راح أرسل, تقدر, أبغى) and
 // Levantine (رح ابعتلك, فيك, بدي) alongside MSA (سأرسل, أرجو). A trigger is a whole word.
 const AR_EDGE = '(?=$|[\\s،,.!؟?])';
-const AR_LETTER = '؀-ۿ';
 const AR_COMMIT = new RegExp(
   `(^|[\\s،,.!؟?])(${[
     // Egyptian: ه/ح + verb, with an attached "you"
@@ -382,18 +382,6 @@ export function maskQuoted(text: string): string {
   return out;
 }
 
-function removeRanges(text: string, offset: number, dates: WhenMatch[]): string {
-  let out = text;
-  const inside = dates
-    .filter((d) => d.index >= offset && d.index < offset + text.length)
-    .sort((a, b) => b.index - a.index);
-  for (const d of inside) {
-    const start = d.index - offset;
-    out = out.slice(0, start) + out.slice(start + d.text.length);
-  }
-  return out;
-}
-
 function tidy(clause: string): string {
   return clause
     .replace(/[.!?؟,;:]+$/u, '')
@@ -471,179 +459,6 @@ function toAction(
   return { title, object, handover: HANDOVER_VERBS.test(verb), when, quote };
 }
 
-function firstDateIn(dates: WhenMatch[], index: number, length: number): WhenMatch | null {
-  return dates.find((d) => d.index >= index && d.index < index + length && !d.past) ?? null;
-}
-
-function parseNumber(raw: string, suffix?: string): number {
-  let s = raw.replace(/\s/g, '');
-  const lastComma = s.lastIndexOf(',');
-  const lastDot = s.lastIndexOf('.');
-  if (lastComma >= 0 && lastDot >= 0) {
-    const decimal = lastComma > lastDot ? ',' : '.';
-    s = decimal === ',' ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
-  } else if (lastComma >= 0 || lastDot >= 0) {
-    const sep = lastComma >= 0 ? ',' : '.';
-    const after = s.length - Math.max(lastComma, lastDot) - 1;
-    const groups = s.split(sep).length - 1;
-    s = after === 3 || groups > 1 ? s.split(sep).join('') : s.replace(sep, '.');
-  }
-  let n = Number(s);
-  if (suffix === 'k' || suffix === 'K') n *= 1000;
-  if (suffix === 'm' || suffix === 'M') n *= 1_000_000;
-  return n;
-}
-
-const CURRENCY_ALIASES: Record<string, string> = {
-  $: 'USD',
-  us$: 'USD',
-  usd: 'USD',
-  dollar: 'USD',
-  dollars: 'USD',
-  bucks: 'USD',
-  '€': 'EUR',
-  eur: 'EUR',
-  euro: 'EUR',
-  euros: 'EUR',
-  '£': 'GBP',
-  gbp: 'GBP',
-  'e£': 'EGP',
-  egp: 'EGP',
-  le: 'EGP',
-  'ج.م': 'EGP',
-  جنيه: 'EGP',
-  جنية: 'EGP',
-  aed: 'AED',
-  درهم: 'AED',
-  sar: 'SAR',
-  ريال: 'SAR',
-  qar: 'QAR',
-  kwd: 'KWD',
-  jod: 'JOD',
-  chf: 'CHF',
-  cad: 'CAD',
-  aud: 'AUD',
-  inr: 'INR',
-  '₹': 'INR',
-  jpy: 'JPY',
-  '¥': 'JPY',
-  cny: 'CNY',
-  دولار: 'USD',
-  يورو: 'EUR',
-  'ر.س': 'SAR',
-  'د.إ': 'AED',
-  'د.ا': 'AED',
-  'ر.ق': 'QAR',
-  'د.ك': 'KWD',
-  'د.أ': 'JOD',
-  'د.ب': 'BHD',
-  'ر.ع': 'OMR',
-  bhd: 'BHD',
-  omr: 'OMR',
-  mad: 'MAD',
-  ils: 'ILS',
-  شيكل: 'ILS',
-  شيقل: 'ILS',
-};
-/** A currency word with the country after it: "ريال قطري" is QAR, "دينار" alone says nothing. */
-const AR_CURRENCY_OF: Array<[RegExp, string | null]> = [
-  [/^ريال\s+(?:قطري|قطرى)$/u, 'QAR'],
-  [/^ريال\s+(?:عماني|عمانى|عُماني)$/u, 'OMR'],
-  [/^ريال\s+(?:يمني|يمنى)$/u, 'YER'],
-  [/^ريال(?:\s+سعودي|\s+سعودى)?$/u, 'SAR'],
-  [/^درهم\s+(?:مغربي|مغربى)$/u, 'MAD'],
-  [/^درهم(?:\s+إماراتي|\s+اماراتي|\s+إماراتى)?$/u, 'AED'],
-  [/^دينار\s+(?:كويتي|كويتى)$/u, 'KWD'],
-  [/^دينار\s+(?:أردني|اردني|أردنى)$/u, 'JOD'],
-  [/^دينار\s+(?:بحريني|بحرينى)$/u, 'BHD'],
-  [/^دينار\s+(?:عراقي|عراقى)$/u, 'IQD'],
-  [/^دينار\s+(?:تونسي|تونسى)$/u, 'TND'],
-  [/^دينار\s+(?:جزائري|جزائرى)$/u, 'DZD'],
-  [/^دينار\s+(?:ليبي|ليبى)$/u, 'LYD'],
-  [/^دينار$/u, null],
-  [/^جنيه\s+(?:استرليني|إسترليني|استرلينى)$/u, 'GBP'],
-  [/^جنيه\s+(?:سوداني|سودانى)$/u, 'SDG'],
-  [/^(?:جنيه|جنية)(?:\s+مصري|\s+مصرى)?$/u, 'EGP'],
-  [/^دولار(?:\s+أمريكي|\s+امريكي|\s+أميركي)?$/u, 'USD'],
-  [/^ليرة\s+(?:لبنانية|لبنانيه)$/u, 'LBP'],
-  [/^ليرة\s+(?:سورية|سوريه)$/u, 'SYP'],
-  [/^ليرة\s+(?:تركية|تركيه)$/u, 'TRY'],
-  [/^ليرة$/u, null],
-];
-const AR_CURRENCY_WORDS =
-  '(?:ريال|درهم|دينار|جنيه|جنية|دولار|ليرة)(?:\\s+[؀-ۿ]+)?|يورو|شيكل|شيقل|ر\\.س|د\\.إ|د\\.ا|ر\\.ق|د\\.ك|د\\.أ|د\\.ب|ر\\.ع|ج\\.م';
-/** "ألف", "٥ آلاف", "مليون": the multiplier between a number and its currency. */
-const AR_MULTIPLIERS: Array<[RegExp, number]> = [
-  [/^(?:ألف|الف|آلاف|الاف|تلاف)$/u, 1000],
-  [/^(?:مليون|ملايين)$/u, 1_000_000],
-];
-
-function arabicCurrency(words: string): string | null {
-  const w = words.replace(/\s+/g, ' ').trim();
-  for (const [re, code] of AR_CURRENCY_OF) if (re.test(w)) return code;
-  return currencyCode(w);
-}
-
-function currencyCode(raw: string | undefined): string | null {
-  if (!raw) return null;
-  return CURRENCY_ALIASES[raw.toLowerCase()] ?? raw.toUpperCase();
-}
-
-// ---------------------------------------------------------------------------------------------
-
-export function extractAmounts(input: string): Amount[] {
-  const out: Amount[] = [];
-  // Arabic-Indic digits read as digits; the matched text is still the writer's own.
-  const text = asciiDigits(input);
-  const num = '(\\d{1,3}(?:[,.\\s]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
-  const before = new RegExp(
-    `(US\\$|E£|\\$|€|£|¥|₹|\\b(?:USD|EUR|GBP|EGP|AED|SAR|QAR|KWD|JOD|CHF|CAD|AUD|INR|JPY|CNY)\\b)\\s?${num}\\s?([kKmM])?(?![\\w])`,
-    'g',
-  );
-  for (const m of text.matchAll(before)) {
-    out.push({
-      text: input.slice(m.index ?? 0, (m.index ?? 0) + m[0].length).trim(),
-      index: m.index ?? 0,
-      value: parseNumber(m[2]!, m[3]),
-      currency: currencyCode(m[1]),
-    });
-  }
-  const after = new RegExp(
-    `${num}\\s?([kKmM])?\\s?(USD|EUR|GBP|EGP|AED|SAR|dollars?|bucks|euros?|pounds?|LE|€|£)(?![A-Za-z])`,
-    'g',
-  );
-  for (const m of text.matchAll(after)) {
-    const index = m.index ?? 0;
-    if (out.some((a) => index >= a.index && index < a.index + a.text.length)) continue;
-    const cur = m[3]!;
-    out.push({
-      text: input.slice(index, index + m[0].length).trim(),
-      index,
-      value: parseNumber(m[1]!, m[2]),
-      currency: /pounds?/i.test(cur) ? 'GBP' : currencyCode(cur),
-    });
-  }
-  // "٥ آلاف ريال", "250 ر.س", "2 مليون دينار كويتي": a number, maybe a multiplier, then the
-  // currency as Arabic says it, the country word after it deciding which.
-  const arabic = new RegExp(
-    `${num}\\s?(?:([kKmM])|((?:ألف|الف|آلاف|الاف|تلاف|مليون|ملايين)\\s+))?(${AR_CURRENCY_WORDS})(?=$|[^${AR_LETTER}])`,
-    'gu',
-  );
-  for (const m of text.matchAll(arabic)) {
-    const index = m.index ?? 0;
-    if (out.some((a) => index >= a.index && index < a.index + a.text.length)) continue;
-    const times = m[3] ? (AR_MULTIPLIERS.find(([re]) => re.test(m[3]!.trim()))?.[1] ?? 1) : 1;
-    const matched = input.slice(index, index + m[0].length);
-    out.push({
-      text: matched.trim(),
-      index,
-      value: parseNumber(m[1]!, m[2]) * times,
-      currency: arabicCurrency(m[4]!),
-    });
-  }
-  return out.sort((a, b) => a.index - b.index);
-}
-
 export function extractLinks(text: string): LinkEntity[] {
   const out: LinkEntity[] = [];
   for (const m of text.matchAll(/\bhttps?:\/\/[^\s<>"'`]+|\bwww\.[^\s<>"'`]+/gi)) {
@@ -690,11 +505,25 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
   let isQuestion = false;
   let isConfirmation = false;
 
+  const languages = new Set<string>();
   for (const s of sentences(maskQuoted(text))) {
     // The sentence as written, for the quote a suggestion carries (quoted words included).
     const said = text.slice(s.index, s.index + s.text.length).trim();
     const endsWithQuestion = /[?؟]\s*$/u.test(s.text);
-    const english = /[A-Za-z]/.test(s.text) && !/[؀-ۿ]/.test(s.text);
+    const latin = /[A-Za-z]/.test(s.text) && !/[؀-ۿ]/.test(s.text);
+    const lang = latin ? latinLanguage(s.text) : 'ar';
+    languages.add(lang);
+    if (lang === 'fr' || lang === 'tr') {
+      const read = lang === 'fr' ? readFrench : readTurkish;
+      const r = read({ text: s.text, index: s.index, said, dates });
+      if (r.asks) isQuestion = true;
+      if (r.confirms) isConfirmation = true;
+      decision ??= r.decision;
+      commitment ??= r.commitment;
+      request ??= r.request;
+      continue;
+    }
+    const english = latin;
     const startsQuestion = english
       ? EN_QUESTION_START.test(s.text) && !EN_NOT_A_QUESTION.test(s.text)
       : AR_QUESTION_START.test(s.text) && !AR_NOT_A_QUESTION.test(s.text);
@@ -782,16 +611,31 @@ export function analyzeMessage(input: string, options: WhenOptions): Analysis {
   const isRequest = request !== null;
   const isCommitment = commitment !== null;
   const isDecision = decision !== null;
-  const pay = EN_PAY.test(text) || AR_PAY.test(text);
-  const track = EN_TRACK.test(text) || refs.some((r) => /^1Z/.test(r));
+  // French and Turkish words count only in a message that has a sentence in the language.
+  const fr = languages.has('fr');
+  const tk = languages.has('tr');
+  const pay =
+    EN_PAY.test(text) ||
+    AR_PAY.test(text) ||
+    (fr && FR_PAY.test(text)) ||
+    (tk && TR_PAY.test(text));
+  const paid =
+    /\b(paid|invoice|payment|refund|transfer)\b/i.test(text) ||
+    (fr && FR_PAID.test(text)) ||
+    (tk && TR_PAID.test(text));
+  const track =
+    EN_TRACK.test(text) ||
+    refs.some((r) => /^1Z/.test(r)) ||
+    (fr && FR_TRACK.test(text)) ||
+    (tk && TR_TRACK.test(text));
+  const plan = EN_PLAN.test(text) || (fr && FR_PLAN.test(text)) || (tk && TR_PLAN.test(text));
   let mode: Mode = 'talk';
   if (isDecision) mode = 'decide';
   else if (isRequest) mode = 'request';
   else if (isQuestion) mode = 'ask';
-  else if (pay && (amounts.length > 0 || /\b(paid|invoice|payment|refund|transfer)\b/i.test(text)))
-    mode = 'pay';
+  else if (pay && (amounts.length > 0 || paid)) mode = 'pay';
   else if (track) mode = 'track';
-  else if (EN_PLAN.test(text) && dates.length > 0) mode = 'plan';
+  else if (plan && dates.length > 0) mode = 'plan';
   else if (isConfirmation) mode = 'confirm';
   else if (links.length > 0) mode = 'share';
 

@@ -7,6 +7,7 @@
  * Avoids regex lookbehind so it runs on every JavaScript engine the app targets.
  */
 import { asciiDigits } from './digits';
+import { latinScores } from './latin-language';
 import {
   addDays,
   daysInMonth,
@@ -141,6 +142,121 @@ const DAY_PARTS: Record<string, number> = { morning: 9, afternoon: 15, evening: 
 /** Locales that write month before day. */
 const MONTH_FIRST = /^(en-US|en-PH|en-CA|en-FM|en-MH|en-GU|es-US|en-AS|en-UM|en-PR|en-VI)$/i;
 
+// French and Turkish. \b stops at "é" and "ı", so a word's edges are any non-letter (or the
+// text's edge), the "before" part captured as group 1.
+const L_BEFORE = '(^|[^\\p{L}\\p{N}_])';
+const L_AFTER = '(?=$|[^\\p{L}\\p{N}_])';
+
+const FR_MONTHS: Record<string, number> = {
+  janvier: 1,
+  janv: 1,
+  février: 2,
+  fevrier: 2,
+  févr: 2,
+  fév: 2,
+  fev: 2,
+  mars: 3,
+  avril: 4,
+  avr: 4,
+  mai: 5,
+  juin: 6,
+  juillet: 7,
+  juil: 7,
+  août: 8,
+  aout: 8,
+  septembre: 9,
+  sept: 9,
+  octobre: 10,
+  oct: 10,
+  novembre: 11,
+  nov: 11,
+  décembre: 12,
+  decembre: 12,
+  déc: 12,
+  dec: 12,
+};
+const FR_MONTH_NAMES = Object.keys(FR_MONTHS)
+  .sort((a, b) => b.length - a.length)
+  .join('|');
+const FR_WEEKDAYS: Record<string, number> = {
+  dimanche: 0,
+  lundi: 1,
+  mardi: 2,
+  mercredi: 3,
+  jeudi: 4,
+  vendredi: 5,
+  samedi: 6,
+};
+const FR_PARTS: Record<string, number> = { matin: 9, midi: 12, soir: 19 };
+const FR_PART_WORDS = 'matin|midi|apr[eè]s[- ]midi|apr[eè]m|soir';
+const FR_NUMBER_WORDS: Record<string, number> = {
+  un: 1,
+  une: 1,
+  deux: 2,
+  trois: 3,
+  quatre: 4,
+  cinq: 5,
+  six: 6,
+  sept: 7,
+  // "dans huit jours" is a week and "dans quinze jours" two, as French counts them.
+  huit: 7,
+  dix: 10,
+  quinze: 14,
+  quelques: 3,
+};
+/** A meal or an evening before "à 8h" makes it the evening's. */
+const FR_EVENING_BEFORE =
+  /(?:dîner|diner|dîne|apéro|apero|soirée|soiree|ciné|cine|resto|verre|fête|fete)\s*(?:\S+\s+){0,3}$/u;
+
+const TR_MONTHS: Record<string, number> = {
+  ocak: 1,
+  şubat: 2,
+  mart: 3,
+  nisan: 4,
+  mayıs: 5,
+  haziran: 6,
+  temmuz: 7,
+  ağustos: 8,
+  eylül: 9,
+  ekim: 10,
+  kasım: 11,
+  aralık: 12,
+};
+const TR_WEEKDAYS: Record<string, number> = {
+  pazartesi: 1,
+  salı: 2,
+  sali: 2,
+  çarşamba: 3,
+  carsamba: 3,
+  perşembe: 4,
+  persembe: 4,
+  cumartesi: 6,
+  cuma: 5,
+  pazar: 0,
+};
+const TR_PARTS: Record<string, number> = {
+  sabah: 9,
+  öğlen: 12,
+  'öğleden sonra': 15,
+  akşam: 19,
+  gece: 21,
+};
+const TR_PART_WORDS = 'sabah|öğleden\\s+sonra|öğlen|akşam|gece';
+const TR_NUMBER_WORDS: Record<string, number> = {
+  bir: 1,
+  iki: 2,
+  üç: 3,
+  dört: 4,
+  beş: 5,
+  altı: 6,
+  yedi: 7,
+  sekiz: 8,
+  dokuz: 9,
+  on: 10,
+  birkaç: 3,
+};
+const TR_EVENING_BEFORE = /(?:akşam|yemeğ|yemek|parti|sinema|maç|içki)\S*\s*(?:\S+\s+){0,3}$/u;
+
 function normaliseDigits(text: string): string {
   return asciiDigits(text);
 }
@@ -179,7 +295,8 @@ const AR_EDGE_AFTER = `(?=$|[^${ARABIC_LETTERS}A-Za-z0-9_])`;
 
 export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
   const text = normaliseDigits(input);
-  const lower = text.toLowerCase();
+  // "İ" lowercases to two characters, which would move every index after it.
+  const lower = text.replace(/İ/g, 'i').toLowerCase();
   const tz = options.timeZone;
   const nowParts = zonedParts(options.now, tz);
   const today: LocalDate = { year: nowParts.year, month: nowParts.month, day: nowParts.day };
@@ -200,6 +317,45 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     return d;
   };
   const add = (p: Piece) => pieces.push(p);
+  // What French and Turkish share with English, said once for both.
+  const weekdayIn = (weekday: number, cue?: 'this' | 'next' | 'last'): number => {
+    let d = daysUntil(weekday);
+    if (d === 0 && cue !== 'this') d = 7;
+    if (cue === 'last') d = d === 7 ? -7 : d - 7;
+    if (cue === 'next') {
+      const daysToWeekEnd = (firstDay - nowParts.weekday + 7) % 7 || 7;
+      if (d < daysToWeekEnd) d += 7;
+    }
+    return d;
+  };
+  const nextWeek = (): LocalDate => plusDays(daysUntil(firstDay) || 7);
+  const monthsAhead = (n: number, day: number): LocalDate => {
+    const total = today.month - 1 + n;
+    const year = today.year + Math.floor(total / 12);
+    const month = (total % 12) + 1;
+    return { year, month, day: Math.min(day, daysInMonth(year, month)) };
+  };
+  const endOfMonth = (): LocalDate => ({
+    year: today.year,
+    month: today.month,
+    day: daysInMonth(today.year, today.month),
+  });
+  const weekend = (next: boolean): LocalDate => {
+    let d = 0;
+    while (d < 7 && workweek.includes((nowParts.weekday + d) % 7)) d++;
+    if (next && d === 0) d = 7;
+    return plusDays(d);
+  };
+  /** A day of the month: this month while it's ahead, else next month's. */
+  const dayOfMonth = (day: number): LocalDate | null => {
+    if (day < 1 || day > 31) return null;
+    const date = day < today.day ? monthsAhead(1, day) : { ...today, day };
+    return date.day === day && isValidDate(date) ? date : null;
+  };
+  const later = (ms: number): LocalDate & { hour: number; minute: number } => {
+    const t = zonedParts(new Date(options.now.getTime() + ms), tz);
+    return { year: t.year, month: t.month, day: t.day, hour: t.hour, minute: t.minute };
+  };
 
   // --- English relative days --------------------------------------------------------------
   for (const m of scan(
@@ -566,6 +722,323 @@ export function parseWhen(input: string, options: WhenOptions): WhenMatch[] {
     else if (/^(الضهر|الظهر)$/.test(part) && hour < 12 && hour <= 4) hour += 12;
     else if (!part && hour >= 1 && hour <= 7) hour += 12;
     add({ index: m.index, end: m.index + m[0].length, time: { hour, minute } });
+  }
+
+  // --- French ----------------------------------------------------------------------------------
+  const edged = (source: string) => new RegExp(`${L_BEFORE}(${source})${L_AFTER}`, 'u');
+  /** The piece a French or Turkish match makes, past its edge character. */
+  const at = (m: RegExpExecArray) => {
+    const index = m.index + m[1]!.length;
+    return { index, end: index + m[2]!.length };
+  };
+  const partHour = (part: string | undefined): number | undefined =>
+    part ? (/^apr/.test(part) ? 15 : FR_PARTS[part]) : undefined;
+  // A bare "15h" or "midi" could be English's ("2h", a MIDI file): only in French words.
+  const scores = latinScores(text);
+  const french = scores.fr > scores.en;
+  for (const m of scan(
+    edged(
+      `(apr[eè]s[- ]demain|aujourd['’]hui|demain|ce\\s+soir|ce\\s+matin|cet\\s+apr[eè]s[- ]midi|cet\\s+apr[eè]m)(?:\\s+(${FR_PART_WORDS}))?`,
+    ),
+    lower,
+  )) {
+    const word = m[3]!;
+    const offset = /^apr/.test(word) ? 2 : /^demain/.test(word) ? 1 : 0;
+    // "ce soir" is around eight, "demain soir" seven, as in English.
+    const hour = m[4]
+      ? partHour(m[4])
+      : /^ce\s+soir/.test(word)
+        ? 20
+        : /^ce\s+matin/.test(word)
+          ? 9
+          : /^cet\s/.test(word)
+            ? 15
+            : undefined;
+    add({
+      ...at(m),
+      date: plusDays(offset),
+      time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      // "demain midi" is noon; a morning or an evening only suggests an hour.
+      softTime: hour !== undefined && hour !== 12,
+    });
+  }
+  // The recent past: said of what was, never a due date.
+  for (const m of scan(
+    edged(
+      `(avant[- ]hier|hier|la\\s+semaine\\s+derni[eè]re|le\\s+mois\\s+dernier)(?:\\s+(${FR_PART_WORDS}))?`,
+    ),
+    lower,
+  )) {
+    const word = m[3]!;
+    const date = /^avant/.test(word)
+      ? plusDays(-2)
+      : /semaine/.test(word)
+        ? plusDays(-7)
+        : /mois/.test(word)
+          ? monthsAhead(-1, today.day)
+          : plusDays(-1);
+    const hour = partHour(m[4]);
+    add({
+      ...at(m),
+      date,
+      time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      softTime: hour !== undefined,
+    });
+  }
+  // "lundi", "ce jeudi", "vendredi prochain", "d'ici mardi", "lundi dernier"
+  for (const m of scan(
+    edged(
+      `(?:(ce|d['’]ici|avant|pour|jusqu['’][aà]|d[eè]s)\\s+)?(dimanche|lundi|mardi|mercredi|jeudi|vendredi|samedi)(?:\\s+(prochain|dernier|pass[eé]))?(?:\\s+(${FR_PART_WORDS}))?`,
+    ),
+    lower,
+  )) {
+    const cue = m[3] === 'ce' ? 'this' : m[5] === 'prochain' ? 'next' : m[5] ? 'last' : undefined;
+    const hour = partHour(m[6]);
+    add({
+      ...at(m),
+      date: plusDays(weekdayIn(FR_WEEKDAYS[m[4]!]!, cue)),
+      time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      softTime: hour !== undefined && hour !== 12,
+    });
+  }
+  // Weeks, months, weekends and their ends
+  for (const m of scan(
+    edged(
+      `(?:(?:d['’]ici|avant)\\s+)?(?:(?:la|le)\\s+)?((?:(?:en|[aà]\\s+la|d['’]ici\\s+la|avant\\s+la)\\s+)?fin\\s+(?:de\\s+la\\s+|du\\s+|de\\s+)(?:semaine|mois|journ[eé]e)|semaine\\s+(?:prochaine|pro)|cette\\s+semaine|mois\\s+prochain|ce\\s+mois[- ]ci|(?:ce|le)\\s+(?:week-?end|we)(?:\\s+prochain)?)`,
+    ),
+    lower,
+  )) {
+    const w = m[3]!;
+    let date: LocalDate;
+    let time: Piece['time'];
+    if (/fin\s/.test(w)) {
+      time = { hour: 17, minute: 0 };
+      date = /semaine/.test(w)
+        ? plusDays(endOfWeekOffset())
+        : /mois/.test(w)
+          ? endOfMonth()
+          : today;
+    } else if (/semaine\s+pro/.test(w)) date = nextWeek();
+    else if (/semaine/.test(w)) date = plusDays(endOfWeekOffset());
+    else if (/mois\s+prochain/.test(w)) date = monthsAhead(1, 1);
+    else if (/mois/.test(w)) date = endOfMonth();
+    else date = weekend(/prochain/.test(w));
+    add({ ...at(m), date, time });
+  }
+  // "dans 3 jours", "dans deux semaines", "dans 2h", "dans quinze jours"
+  for (const m of scan(
+    edged(
+      `dans\\s+(?:(\\d+)|(une|un|deux|trois|quatre|cinq|six|sept|huit|dix|quinze|quelques))\\s*(minutes?|mins?|heures?|h|jours?|semaines?|mois)`,
+    ),
+    lower,
+  )) {
+    const n = m[3] ? Number(m[3]) : (FR_NUMBER_WORDS[m[4]!] ?? 1);
+    const unit = m[5]!;
+    if (/^(min|h)/.test(unit)) {
+      const t = later(/^min/.test(unit) ? n * 60000 : n * 3600000);
+      add({ ...at(m), date: t, time: { hour: t.hour, minute: t.minute } });
+    } else if (/^jour/.test(unit)) add({ ...at(m), date: plusDays(n) });
+    else if (/^semaine/.test(unit)) add({ ...at(m), date: plusDays(n * 7) });
+    else add({ ...at(m), date: monthsAhead(n, today.day) });
+  }
+  // "le 12 mars", "12 mars 2027", "1er avril", "jusqu'au 3 juin"
+  for (const m of scan(
+    edged(
+      `(?:(?:le|au|du|d['’]ici\\s+le|avant\\s+le|jusqu['’]au)\\s+)?(1er|\\d{1,2})\\s+(${FR_MONTH_NAMES})\\.?(?:\\s+(\\d{4}))?`,
+    ),
+    lower,
+  )) {
+    const month = FR_MONTHS[m[4]!];
+    if (!month) continue;
+    const date = resolveYear(
+      month,
+      m[3] === '1er' ? 1 : Number(m[3]),
+      m[5] ? Number(m[5]) : undefined,
+    );
+    if (isValidDate(date)) add({ ...at(m), date });
+  }
+  // "le 12" alone: this month while it's ahead, when nothing after it makes it a count.
+  for (const m of scan(
+    edged(
+      `(?:le|au|jusqu['’]au|d['’]ici\\s+le|avant\\s+le)\\s+(1er|\\d{1,2})(?=\\s*(?:$|[,.;!?)]|(?:[aà]|vers|d[eè]s|avant|apr[eè]s|et|ou|pour|au|chez|si|stp|svp|merci)(?:\\s|$)))`,
+    ),
+    lower,
+  )) {
+    const date = dayOfMonth(m[3] === '1er' ? 1 : Number(m[3]));
+    if (date) add({ ...at(m), date });
+  }
+  // "à 15h", "15h30", "vers 9 h", "8h du soir". French writes the day's hours, so a written hour
+  // is the one it says, unless an evening says otherwise or it's 1 to 5, when nobody meets.
+  for (const m of scan(
+    edged(
+      `(?:([aà]|vers|d[eè]s|avant|apr[eè]s)\\s+)?(\\d{1,2})\\s?(?:h|heures?)(?:\\s?([0-5]\\d))?(?:\\s+(du\\s+matin|du\\s+soir|de\\s+l['’]apr[eè]s[- ]midi|de\\s+l['’]apr[eè]m))?`,
+    ),
+    lower,
+  )) {
+    const cue = m[3];
+    const start = m.index + m[1]!.length;
+    // "pendant 2h", "il y a 3h", "ça prend 1h": a length of time, not an hour of the day.
+    if (
+      (!cue && !m[5] && !french) ||
+      (!cue &&
+        /(?:^|[^\p{L}])(?:pendant|en|in|sous|depuis|prend|prends|prendre|dure|durée|faut|reste|environ|y\s+a|de|d['’]|plus|moins|toutes\s+les|tous\s+les)\s*$/u.test(
+          lower.slice(0, start),
+        ))
+    )
+      continue;
+    let hour = Number(m[4]);
+    const minute = m[5] ? Number(m[5]) : 0;
+    if (hour > 23) continue;
+    const said = m[6];
+    if (said && !/matin/.test(said) && hour < 12) hour += 12;
+    else if (
+      !said &&
+      hour < 12 &&
+      (FR_EVENING_BEFORE.test(lower.slice(0, start)) || (hour >= 1 && hour <= 5))
+    )
+      hour += 12;
+    add({ ...at(m), time: { hour, minute } });
+  }
+  for (const m of scan(edged(`(?:([aà]|vers|avant|d[eè]s)\\s+)?(midi|minuit)`), lower)) {
+    // "l'après-midi" is an afternoon, not noon; a bare "midi" only among French words.
+    if (m[1] === '-' || /apr[eè]s\s$/.test(lower.slice(0, m.index + m[1]!.length))) continue;
+    if (!m[3] && !french) continue;
+    add({ ...at(m), time: { hour: m[4] === 'minuit' ? 0 : 12, minute: 0 } });
+  }
+
+  // --- Turkish ---------------------------------------------------------------------------------
+  const trHour = (part: string | undefined) =>
+    part ? TR_PARTS[part.replace(/\s+/g, ' ')] : undefined;
+  for (const m of scan(
+    edged(
+      `(yarından\\s+sonra|öbür\\s+gün|bugün|yarın(?:a|dan)?|bu\\s+akşam|bu\\s+sabah|bu\\s+öğleden\\s+sonra|bu\\s+öğlen|bu\\s+gece)(?:\\s+(${TR_PART_WORDS})(?:[ıi]n[ae]?|[ıi])?)?(?:\\s+kadar)?`,
+    ),
+    lower,
+  )) {
+    const word = m[3]!;
+    const tonight = /^bu\s+(.+)$/.exec(word)?.[1];
+    const offset = tonight || /^bugün/.test(word) ? 0 : /sonra$|^öbür/.test(word) ? 2 : 1;
+    // "bu akşam" is around eight, "yarın akşam" seven, as in English.
+    const hour = m[4] ? trHour(m[4]) : tonight === 'akşam' ? 20 : trHour(tonight);
+    add({
+      ...at(m),
+      date: plusDays(offset),
+      time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      softTime: hour !== undefined && hour !== 12,
+    });
+  }
+  for (const m of scan(
+    edged(
+      `(evvelsi\\s+gün|önceki\\s+gün|dün(?:kü)?|geçen\\s+hafta(?:ki)?)(?:\\s+(${TR_PART_WORDS})(?:[ıi])?)?`,
+    ),
+    lower,
+  )) {
+    const word = m[3]!;
+    const hour = trHour(m[4]);
+    add({
+      ...at(m),
+      date: plusDays(/^dün/.test(word) ? -1 : /hafta/.test(word) ? -7 : -2),
+      time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      softTime: hour !== undefined,
+    });
+  }
+  // "cuma", "haftaya salı", "pazartesiye kadar", "perşembe günü", "geçen cuma". "Pazar" is also
+  // a market: it's Sunday only with a cue, "günü" or a part of the day.
+  for (const m of scan(
+    edged(
+      `(?:(bu|gelecek|önümüzdeki|haftaya|geçen|geçtiğimiz)\\s+)?(pazartesi|salı|sali|çarşamba|carsamba|perşembe|persembe|cumartesi|cuma|pazar)(?:['’]?(?:y[ae]|y[ıi]|[ae]|[ıi]|d[ae]n|d[ae]))?(\\s+günü(?:ne)?)?(?:\\s+(${TR_PART_WORDS})(?:[ıi])?)?(?:\\s+(?:kadar|önce))?`,
+    ),
+    lower,
+  )) {
+    const cueWord = m[3];
+    const name = m[4]!;
+    if (name === 'pazar' && !cueWord && !m[5] && !m[6]) continue;
+    // "haftaya salı" is next week's; "gelecek salı" is the coming one.
+    const cue =
+      cueWord === 'bu'
+        ? 'this'
+        : cueWord === 'haftaya'
+          ? 'next'
+          : cueWord === 'geçen' || cueWord === 'geçtiğimiz'
+            ? 'last'
+            : undefined;
+    const hour = trHour(m[6]);
+    add({
+      ...at(m),
+      date: plusDays(weekdayIn(TR_WEEKDAYS[name]!, cue)),
+      time: hour !== undefined ? { hour, minute: 0 } : undefined,
+      softTime: hour !== undefined && hour !== 12,
+    });
+  }
+  for (const m of scan(
+    edged(
+      `((?:bu\\s+)?hafta\\s*sonu(?:na|nda)?|(?:bu\\s+)?ay\\s+sonu(?:na|nda)?|gün\\s+sonu(?:na|nda)?|mesai\\s+bitimine|(?:gelecek|önümüzdeki)\\s+(?:hafta|ay)(?:ya|ye|ki)?|haftaya|bu\\s+hafta(?:\\s+içinde)?|bu\\s+ay(?:\\s+içinde)?)(?:\\s+kadar)?`,
+    ),
+    lower,
+  )) {
+    const w = m[3]!;
+    let date: LocalDate;
+    let time: Piece['time'];
+    if (/hafta\s*sonu/.test(w)) date = weekend(false);
+    else if (/sonu|mesai/.test(w)) {
+      time = { hour: 17, minute: 0 };
+      date = /ay\s/.test(w) ? endOfMonth() : today;
+    } else if (/^(?:gelecek|önümüzdeki)\s+ay/.test(w)) date = monthsAhead(1, 1);
+    else if (/^(?:gelecek|önümüzdeki)\s+hafta|^haftaya/.test(w)) date = nextWeek();
+    else if (/^bu\s+hafta/.test(w)) date = plusDays(endOfWeekOffset());
+    else date = endOfMonth();
+    add({ ...at(m), date, time });
+  }
+  // "3 gün sonra", "iki hafta içinde", "yarım saat sonra"
+  for (const m of scan(
+    edged(
+      `(?:(\\d+)|(birkaç|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on|yarım))\\s+(dakika|dk|saat|gün|hafta|ay)\\s+(?:sonra|içinde|içerisinde)`,
+    ),
+    lower,
+  )) {
+    const n = m[3] ? Number(m[3]) : m[4] === 'yarım' ? 0.5 : (TR_NUMBER_WORDS[m[4]!] ?? 1);
+    const unit = m[5]!;
+    if (unit === 'dakika' || unit === 'dk' || unit === 'saat') {
+      const t = later(unit === 'saat' ? n * 3600000 : n * 60000);
+      add({ ...at(m), date: t, time: { hour: t.hour, minute: t.minute } });
+    } else if (unit === 'gün') add({ ...at(m), date: plusDays(Math.round(n)) });
+    else if (unit === 'hafta') add({ ...at(m), date: plusDays(Math.round(n * 7)) });
+    else add({ ...at(m), date: monthsAhead(Math.max(1, Math.round(n)), today.day) });
+  }
+  // "12 Mart", "12 Mart 2027", "3 Kasım'a kadar"
+  for (const m of scan(
+    edged(
+      `(\\d{1,2})\\s+(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)(?:\\s+(\\d{4}))?(?:['’]\\p{L}{1,4})?(?:\\s+kadar)?`,
+    ),
+    lower,
+  )) {
+    const month = TR_MONTHS[m[4]!];
+    if (!month) continue;
+    const date = resolveYear(month, Number(m[3]), m[5] ? Number(m[5]) : undefined);
+    if (isValidDate(date)) add({ ...at(m), date });
+  }
+  // "saat 3'te", "saat 15:00'te", "15.30'da", "akşam 8'de": an hour needs "saat", its ending or
+  // a part of the day beside it, or it's only a number ("3'te 1" is a third).
+  for (const m of scan(
+    edged(
+      `(?:(${TR_PART_WORDS})\\s+)?(saat\\s+)?(\\d{1,2})(?:[:.]([0-5]\\d))?(['’]?(?:d[ae]|t[ae]))?(?!\\s*(?:\\d|bir(?:\\s|$)))`,
+    ),
+    lower,
+  )) {
+    const part = m[3]?.replace(/\s+/g, ' ');
+    if (!part && !m[4] && !m[7]) continue;
+    let hour = Number(m[5]);
+    const minute = m[6] ? Number(m[6]) : 0;
+    if (hour > 23) continue;
+    const before = lower.slice(0, m.index + m[1]!.length);
+    if (part === 'gece' && hour === 12) hour = 0;
+    else if (part && part !== 'sabah' && hour < 12 && (part !== 'öğlen' || hour <= 5)) hour += 12;
+    else if (!part && hour < 12 && ((hour >= 1 && hour <= 7) || TR_EVENING_BEFORE.test(before)))
+      hour += 12;
+    add({ ...at(m), time: { hour, minute } });
+  }
+  for (const m of scan(edged(`(öğlen(?:de)?|öğleyin|gece\\s+yarısı(?:nda)?)`), lower)) {
+    add({ ...at(m), time: { hour: /^öğle/.test(m[3]!) ? 12 : 0, minute: 0 } });
   }
 
   // --- Combine date and time pieces that sit next to each other ------------------------------

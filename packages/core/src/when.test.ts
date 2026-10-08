@@ -162,6 +162,152 @@ describe('parseWhen — the recent past, days of the month, evenings', () => {
   });
 });
 
+// The same Wednesday: 16:00 in Paris, 17:00 in Istanbul (Monday-first workweeks).
+const paris = { now: ny.now, timeZone: 'Europe/Paris', locale: 'fr-FR' };
+const istanbul = { now: ny.now, timeZone: 'Europe/Istanbul', locale: 'tr-TR' };
+
+describe('parseWhen — French', () => {
+  it('days, and the parts of them', () => {
+    expect(one("aujourd'hui", paris).date).toBe('2026-09-23');
+    expect(one("Je t'envoie le contrat demain", paris)).toMatchObject({
+      date: '2026-09-24',
+      text: 'demain',
+    });
+    expect(one('après-demain', paris).date).toBe('2026-09-25');
+    expect(one('ce soir', paris)).toMatchObject({ date: '2026-09-23', time: '20:00' });
+    expect(one('demain matin', paris)).toMatchObject({ date: '2026-09-24', time: '09:00' });
+    expect(one('demain soir à 20h', paris)).toMatchObject({ date: '2026-09-24', time: '20:00' });
+    expect(one('demain midi', paris)).toMatchObject({ date: '2026-09-24', time: '12:00' });
+  });
+
+  it('weekdays go forward; prochain means next week', () => {
+    expect(one('lundi', paris).date).toBe('2026-09-28');
+    expect(one('ce vendredi', paris).date).toBe('2026-09-25');
+    expect(one('vendredi prochain', paris).date).toBe('2026-10-02');
+    expect(one("d'ici jeudi", paris)).toMatchObject({ date: '2026-09-24', text: "d'ici jeudi" });
+  });
+
+  it('weeks, months and their ends; in N days', () => {
+    expect(one('la semaine prochaine', paris).date).toBe('2026-09-28');
+    expect(one('le mois prochain', paris).date).toBe('2026-10-01');
+    expect(one('ce week-end', paris).date).toBe('2026-09-26');
+    expect(one('fin de semaine', paris)).toMatchObject({ date: '2026-09-25', time: '17:00' });
+    expect(one('fin du mois', paris)).toMatchObject({ date: '2026-09-30', time: '17:00' });
+    expect(one('dans 3 jours', paris).date).toBe('2026-09-26');
+    expect(one('dans deux semaines', paris).date).toBe('2026-10-07');
+    expect(one('dans 2h', paris)).toMatchObject({ date: '2026-09-23', time: '18:00' });
+    // French counts a fortnight as fifteen days.
+    expect(one('dans quinze jours', paris).date).toBe('2026-10-07');
+  });
+
+  it('days of the month, with and without their month', () => {
+    expect(one('le 12', paris).date).toBe('2026-10-12');
+    expect(one('le 30', paris).date).toBe('2026-09-30');
+    expect(one('le 12 mars', paris).date).toBe('2027-03-12');
+    expect(one('12 mars 2027', paris).date).toBe('2027-03-12');
+    expect(one('1er novembre', paris).date).toBe('2026-11-01');
+    expect(one('le 3 à 14h', paris)).toMatchObject({ date: '2026-10-03', time: '14:00' });
+  });
+
+  it('hours as French writes them', () => {
+    expect(one('à 15h', paris)).toMatchObject({ date: '2026-09-24', time: '15:00' });
+    expect(one('vers 18h30', paris)).toMatchObject({ date: '2026-09-23', time: '18:30' });
+    expect(one('rendez-vous demain 15 h', paris)).toMatchObject({
+      date: '2026-09-24',
+      time: '15:00',
+    });
+    expect(one('à midi', paris).time).toBe('12:00');
+    expect(one('à minuit', paris).time).toBe('00:00');
+    expect(one('dîner à 8h', paris).time).toBe('20:00');
+    expect(one('8h du soir', paris).time).toBe('20:00');
+  });
+
+  it('the recent past is past', () => {
+    expect(one('hier', paris)).toMatchObject({ date: '2026-09-22', past: true });
+    expect(one('avant-hier', paris).date).toBe('2026-09-21');
+    expect(one('lundi dernier', paris)).toMatchObject({ date: '2026-09-21', past: true });
+    expect(one('la semaine dernière', paris)).toMatchObject({ date: '2026-09-16', past: true });
+    expect(firstFutureWhen("Je l'ai envoyé lundi dernier", paris)).toBeUndefined();
+  });
+
+  it('a length of time, a floor or a sound file is no date', () => {
+    expect(parseWhen('ça prend 2h', paris)).toEqual([]);
+    expect(parseWhen('le 3e étage', paris)).toEqual([]);
+    expect(parseWhen("dans l'après-midi", paris)).toEqual([]);
+    expect(parseWhen('Send me the midi file', ny)).toEqual([]);
+    expect(parseWhen('The call takes 2h', ny)).toEqual([]);
+  });
+});
+
+describe('parseWhen — Turkish', () => {
+  it('days, and the parts of them', () => {
+    expect(one('bugün', istanbul).date).toBe('2026-09-23');
+    expect(one('Yarın sözleşmeyi göndereceğim', istanbul)).toMatchObject({
+      date: '2026-09-24',
+      text: 'Yarın',
+    });
+    expect(one('yarına kadar', istanbul)).toMatchObject({
+      date: '2026-09-24',
+      text: 'yarına kadar',
+    });
+    expect(one('öbür gün', istanbul).date).toBe('2026-09-25');
+    expect(one('yarından sonra', istanbul).date).toBe('2026-09-25');
+    expect(one('bu akşam', istanbul)).toMatchObject({ date: '2026-09-23', time: '20:00' });
+    expect(one('yarın sabah', istanbul)).toMatchObject({ date: '2026-09-24', time: '09:00' });
+    expect(one("yarın akşam 8'de", istanbul)).toMatchObject({
+      date: '2026-09-24',
+      time: '20:00',
+    });
+  });
+
+  it('weekdays, with their endings and cues', () => {
+    expect(one('cuma', istanbul).date).toBe('2026-09-25');
+    expect(one('cumaya kadar', istanbul).date).toBe('2026-09-25');
+    expect(one('Perşembe günü', istanbul).date).toBe('2026-09-24');
+    expect(one('haftaya salı', istanbul).date).toBe('2026-09-29');
+    expect(one('gelecek cuma', istanbul).date).toBe('2026-09-25');
+    expect(one('bu pazar', istanbul).date).toBe('2026-09-27');
+    // "Pazar" alone is as often the market.
+    expect(parseWhen('pazara gittim', istanbul)).toEqual([]);
+  });
+
+  it('weeks, months, weekends; in N days', () => {
+    expect(one('haftaya', istanbul).date).toBe('2026-09-28');
+    expect(one('gelecek hafta', istanbul).date).toBe('2026-09-28');
+    expect(one('gelecek ay', istanbul).date).toBe('2026-10-01');
+    expect(one('hafta sonu', istanbul).date).toBe('2026-09-26');
+    expect(one('ay sonu', istanbul)).toMatchObject({ date: '2026-09-30', time: '17:00' });
+    expect(one('3 gün sonra', istanbul).date).toBe('2026-09-26');
+    expect(one('iki hafta sonra', istanbul).date).toBe('2026-10-07');
+    expect(one('2 saat sonra', istanbul)).toMatchObject({ date: '2026-09-23', time: '19:00' });
+  });
+
+  it('dates and hours', () => {
+    expect(one('12 Mart', istanbul).date).toBe('2027-03-12');
+    expect(one('12 Mart 2027', istanbul).date).toBe('2027-03-12');
+    expect(one("3 Kasım'a kadar", istanbul).date).toBe('2026-11-03');
+    expect(one("saat 3'te", istanbul).time).toBe('15:00');
+    expect(one("saat 15:00'te", istanbul).time).toBe('15:00');
+    expect(one("15.30'da", istanbul).time).toBe('15:30');
+    expect(one("akşam 8'de", istanbul).time).toBe('20:00');
+    expect(one('öğlen', istanbul).time).toBe('12:00');
+  });
+
+  it('the recent past is past', () => {
+    expect(one('dün', istanbul)).toMatchObject({ date: '2026-09-22', past: true });
+    expect(one('evvelsi gün', istanbul).date).toBe('2026-09-21');
+    expect(one('geçen hafta', istanbul)).toMatchObject({ date: '2026-09-16', past: true });
+    expect(one('geçen pazartesi', istanbul)).toMatchObject({ date: '2026-09-21', past: true });
+    expect(one('dün akşam', istanbul)).toMatchObject({ date: '2026-09-22', time: '19:00' });
+  });
+
+  it('a third, a world or a bare number is no date', () => {
+    expect(parseWhen("3'te 1", istanbul)).toEqual([]);
+    expect(parseWhen('dünya', istanbul)).toEqual([]);
+    expect(parseWhen('fiyat 15.30', istanbul)).toEqual([]);
+  });
+});
+
 describe('firstFutureWhen', () => {
   it('skips past references', () => {
     expect(firstFutureWhen('we met Sep 20, next meeting Oct 2', ny)?.date).toBe('2026-10-02');

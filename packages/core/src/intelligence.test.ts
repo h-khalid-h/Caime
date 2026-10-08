@@ -285,6 +285,235 @@ describe('Arabic', () => {
   });
 });
 
+// Wednesday 16:00 in Paris, 17:00 in Istanbul.
+const paris = { now: opts.now, timeZone: 'Europe/Paris', locale: 'fr-FR' };
+const istanbul = { now: opts.now, timeZone: 'Europe/Istanbul', locale: 'tr-TR' };
+
+describe('French', () => {
+  it.each([
+    ["Je t'envoie le contrat demain", 'Envoyer le contrat', 'Contrat', 'demain'],
+    ['Je vais vous envoyer le devis vendredi', 'Envoyer le devis', 'Devis', 'vendredi'],
+    ["J'enverrai les photos ce soir", 'Envoyer les photos', 'Photos', 'ce soir'],
+    ['On va réserver la salle pour jeudi', 'Réserver la salle', 'Salle', 'pour jeudi'],
+    ["J'vais faire le virement lundi", 'Faire le virement', 'Virement', 'lundi'],
+    ["Je m'occupe de la réservation", "S'occuper de la réservation", 'Réservation', null],
+  ])('a promise: %s', (text, title, object, dueText) => {
+    const a = analyzeMessage(text, paris);
+    expect(a.commitment).toMatchObject({ title, object });
+    expect(suggestFromAnalysis(a, me)[0]).toMatchObject({ kind: 'reminder', title, dueText });
+  });
+
+  it('their promise of a thing handed over waits on the thing; one that points is vague', () => {
+    const [sent] = suggestFromAnalysis(
+      analyzeMessage("Je t'envoie le contrat demain", paris),
+      sarah,
+    );
+    expect(sent).toMatchObject({ kind: 'waiting', title: 'Contrat', vague: false });
+    const pointed = analyzeMessage("Je vais te l'envoyer jeudi", paris);
+    expect(pointed.commitment).toMatchObject({ title: "Te l'envoyer", object: null });
+    expect(suggestFromAnalysis(pointed, sarah)[0]).toMatchObject({ vague: true, dueText: 'jeudi' });
+    expect(analyzeMessage("Je m'en occupe", paris).commitment?.title).toBe("S'en occuper");
+  });
+
+  it.each([
+    "Je ne vais pas l'envoyer",
+    'Je vais pas pouvoir venir',
+    "J'enverrai pas le contrat",
+    'Je vais bien, merci',
+    'Je vais essayer de passer',
+    'Je vous envoie ci-joint le devis',
+    "Je te confirme que c'est bon",
+    "Paul va t'envoyer le contrat",
+  ])('no promise: %s', (text) => {
+    expect(analyzeMessage(text, paris).isCommitment).toBe(false);
+  });
+
+  it.each([
+    ["Tu peux m'envoyer le contrat demain ?", 'Envoyer le contrat', 'Contrat', 'demain'],
+    ['Merci de signer le formulaire', 'Signer le formulaire', 'Formulaire', null],
+    ["Envoie-moi l'adresse stp", "Envoyer l'adresse", 'Adresse', null],
+    ['Il faut que tu appelles le plombier', 'Appeler le plombier', 'Plombier', null],
+    ["N'oubliez pas de réserver la salle", 'Réserver la salle', 'Salle', null],
+    ['Rappelle-moi ce soir', 'Me rappeler', null, 'ce soir'],
+  ])('an ask: %s', (text, title, object, dueText) => {
+    const a = analyzeMessage(text, paris);
+    expect(a.request).toMatchObject({ title, object });
+    expect(suggestFromAnalysis(a, sarah)[0]).toMatchObject({ kind: 'task', title, dueText });
+  });
+
+  it.each([
+    'Tu peux pas savoir comme je suis contente',
+    'Merci de ta réponse',
+    'Tu peux venir quand tu veux',
+    'Passe une bonne soirée',
+    "S'il te plaît non",
+  ])('no ask: %s', (text) => {
+    expect(analyzeMessage(text, paris).isRequest).toBe(false);
+  });
+
+  it.each([
+    ['On a décidé de partir avec le fournisseur B.', 'Partir avec le fournisseur B'],
+    ["Bon, on part sur l'option 2", "On part sur l'option 2"],
+    ["C'est validé", "C'est validé"],
+  ])('a decision: %s', (text, title) => {
+    const a = analyzeMessage(text, paris);
+    expect(a.mode).toBe('decide');
+    expect(a.decision?.title).toBe(title);
+  });
+
+  it.each([
+    "Ce n'est pas encore validé",
+    "Si on part sur l'option 2, il faut prévenir Paul",
+    'On a validé ?',
+  ])('no decision: %s', (text) => {
+    expect(analyzeMessage(text, paris).isDecision).toBe(false);
+  });
+
+  it.each([
+    'Est-ce que la réunion est confirmée',
+    'Peux-tu regarder le devis',
+    'Où est le dossier',
+  ])('a question without its mark: %s', (text) => {
+    expect(analyzeMessage(text, paris).isQuestion).toBe(true);
+  });
+  it.each(['Qui vivra verra', 'Quelle chance', 'Pourquoi pas'])('no question: %s', (text) => {
+    expect(analyzeMessage(text, paris).isQuestion).toBe(false);
+  });
+
+  it('a yes, money, a parcel and a plan', () => {
+    for (const yes of ["D'accord", 'Ça marche', "C'est noté, merci"])
+      expect(analyzeMessage(yes, paris)).toMatchObject({ isConfirmation: true, mode: 'confirm' });
+    const paid = analyzeMessage("J'ai payé la facture : 1 250,50 €", paris);
+    expect(paid.mode).toBe('pay');
+    expect(paid.amounts[0]).toMatchObject({ value: 1250.5, currency: 'EUR' });
+    expect(analyzeMessage('Le colis a été expédié', paris).mode).toBe('track');
+    expect(analyzeMessage('Réunion lundi à 15h', paris).mode).toBe('plan');
+  });
+});
+
+describe('Turkish', () => {
+  it.each([
+    ['Yarın sözleşmeyi göndereceğim', 'Sözleşmeyi göndereceğim', 'Sözleşmeyi', 'Yarın'],
+    ['Faturayı cuma günü yollayacağım', 'Faturayı yollayacağım', 'Faturayı', 'cuma günü'],
+    ['Raporu bu akşam hazırlayacağım', 'Raporu hazırlayacağım', 'Raporu', 'bu akşam'],
+    ['Akşam seni ararım', 'Seni ararım', null, null],
+  ])('a promise: %s', (text, title, object, dueText) => {
+    const a = analyzeMessage(text, istanbul);
+    expect(a.commitment).toMatchObject({ title, object });
+    expect(suggestFromAnalysis(a, me)[0]).toMatchObject({ kind: 'reminder', title, dueText });
+  });
+
+  it('their promise of a thing handed over waits on the thing', () => {
+    const [s] = suggestFromAnalysis(
+      analyzeMessage('Yarın sözleşmeyi göndereceğim', istanbul),
+      sarah,
+    );
+    expect(s).toMatchObject({ kind: 'waiting', title: 'Sözleşmeyi', vague: false });
+    const handled = analyzeMessage('Ben hallederim', istanbul);
+    expect(handled.commitment).toMatchObject({ title: 'Hallederim', object: null });
+  });
+
+  it.each([
+    'Yarın göndermeyeceğim',
+    'Bu hafta gönderemeyeceğim',
+    'Göndermicem',
+    'Ahmet yarın gönderecek',
+    'Bakarız',
+    'Teşekkür ederim',
+    'Göndereceğim mi?',
+  ])('no promise: %s', (text) => {
+    expect(analyzeMessage(text, istanbul).isCommitment).toBe(false);
+  });
+
+  it.each([
+    ['Sözleşmeyi yarın gönderebilir misin?', 'Sözleşmeyi gönder', 'Sözleşmeyi', 'yarın'],
+    ['Lütfen faturayı cumaya kadar gönderin', 'Faturayı gönderin', 'Faturayı', 'cumaya kadar'],
+    ['Bana dosyayı atar mısın', 'Dosyayı at', 'Dosyayı', null],
+    ['Pasaportları getirmeyi unutma', 'Pasaportları getir', 'Pasaportları', null],
+    ['Raporu kontrol eder misiniz', 'Raporu kontrol et', 'Raporu', null],
+    ['Faturayı gönder', 'Faturayı gönder', 'Faturayı', null],
+  ])('an ask: %s', (text, title, object, dueText) => {
+    const a = analyzeMessage(text, istanbul);
+    expect(a.request).toMatchObject({ title, object });
+    expect(suggestFromAnalysis(a, sarah)[0]).toMatchObject({ kind: 'task', title, dueText });
+  });
+
+  it.each([
+    'İnanabilir misin?',
+    'Kahve ister misin?',
+    'Rica ederim',
+    'Bir ara görüşelim',
+    'Bakar mısın?',
+  ])('no ask: %s', (text) => {
+    expect(analyzeMessage(text, istanbul).isRequest).toBe(false);
+  });
+
+  it.each([
+    ['Tamam, ikinci teklifle devam ediyoruz', 'İkinci teklifle devam ediyoruz'],
+    ['Fiyatta anlaştık', 'Fiyatta anlaştık'],
+    ['Karar verdik: B planı', 'B planı'],
+  ])('a decision: %s', (text, title) => {
+    const a = analyzeMessage(text, istanbul);
+    expect(a.mode).toBe('decide');
+    expect(a.decision?.title).toBe(title);
+  });
+
+  it.each(['Henüz karar vermedik', 'Belki ikinci teklifle devam ediyoruz', 'Bütçe onaylandı mı?'])(
+    'no decision: %s',
+    (text) => {
+      expect(analyzeMessage(text, istanbul).isDecision).toBe(false);
+    },
+  );
+
+  it.each(['Toplantı ne zaman', 'Geldin mi', 'Fiyatı ne kadar'])(
+    'a question without its mark: %s',
+    (text) => {
+      expect(analyzeMessage(text, istanbul).isQuestion).toBe(true);
+    },
+  );
+  it.each(['Ne güzel', 'Kim bilir', 'Ne zaman istersen'])('no question: %s', (text) => {
+    expect(analyzeMessage(text, istanbul).isQuestion).toBe(false);
+  });
+
+  it('a yes, money and a parcel', () => {
+    for (const yes of ['Tamam', 'Olur', 'Tamamdır', 'Süper, teşekkürler'])
+      expect(analyzeMessage(yes, istanbul)).toMatchObject({
+        isConfirmation: true,
+        mode: 'confirm',
+      });
+    const paid = analyzeMessage('Faturayı ödedim, 1.250,00 TL', istanbul);
+    expect(paid.mode).toBe('pay');
+    expect(paid.amounts[0]).toMatchObject({ value: 1250, currency: 'TRY' });
+    expect(analyzeMessage('Kargoya verildi', istanbul).mode).toBe('track');
+  });
+});
+
+describe('amounts in French and Turkish', () => {
+  it.each([
+    ['1 250,50 €', 1250.5, 'EUR'],
+    ['3 mille euros', 3000, 'EUR'],
+    ["1,5 million d'euros", 1_500_000, 'EUR'],
+    ['200 dirhams marocains', 200, 'MAD'],
+    ['250 TL', 250, 'TRY'],
+    ['₺250', 250, 'TRY'],
+    ['5 bin TL', 5000, 'TRY'],
+    ['2 milyon TL', 2_000_000, 'TRY'],
+    ['500 Türk lirası', 500, 'TRY'],
+    ['Kirası 5 bin lira', 5000, 'TRY'],
+  ])('%s', (text, value, currency) => {
+    const [a] = extractAmounts(text);
+    expect(a).toMatchObject({ value, currency });
+    expect(text).toContain(a!.text);
+  });
+
+  it('a word that names several currencies says none', () => {
+    expect(extractAmounts('50 balles')[0]).toMatchObject({ value: 50, currency: null });
+    expect(extractAmounts('30 dinars')[0]).toMatchObject({ value: 30, currency: null });
+    // "Lira" alone is Turkey's only among Turkish words.
+    expect(extractAmounts('It cost 100 lira')[0]).toMatchObject({ value: 100, currency: null });
+  });
+});
+
 describe('topics', () => {
   it('detects a topic that keeps coming up', () => {
     const recent = [

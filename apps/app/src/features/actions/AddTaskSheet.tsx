@@ -1,6 +1,5 @@
 import { formatDue } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
-import { firstFutureWhen } from '@caime/core/when';
 import { onlineManager } from '@tanstack/react-query';
 import Calendar from 'lucide-react-native/icons/calendar';
 import X from 'lucide-react-native/icons/x';
@@ -8,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { type Chosen, instantOf } from '@/features/when/when';
 import { useUserClock } from '@/lib/time';
+import { useReaders } from '@/lib/useReaders';
 import { useMe } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { Button } from '@/ui/Button';
@@ -34,12 +34,18 @@ export function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => 
   // A day picked by hand wins over one written in the title.
   const [picked, setPicked] = useState<Chosen | null>(null);
   const [choosing, setChoosing] = useState(false);
+  const readers = useReaders();
   const when = useMemo(
     () =>
       title.trim()
-        ? firstFutureWhen(title, { now: new Date(), timeZone, locale, workweek: me.workweek })
+        ? readers?.firstFutureWhen(title, {
+            now: new Date(),
+            timeZone,
+            locale,
+            workweek: me.workweek,
+          })
         : undefined,
-    [title, timeZone, locale, me.workweek],
+    [readers, title, timeZone, locale, me.workweek],
   );
   const due = picked
     ? { at: instantOf(picked, timeZone).toISOString(), hasTime: Boolean(picked.time) }
