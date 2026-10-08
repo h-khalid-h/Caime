@@ -53,6 +53,13 @@ function answer(body) {
     const text = between(content, '<text>', '</text>');
     return reply(text === 'هل وصل العقد؟' ? 'Did the contract arrive?' : text);
   }
+  if (system.includes('one of the Caime Friends')) {
+    // A Caime Friend (R71): in its own name, about what it was asked.
+    calls.push('friend');
+    const name = /You are (\S+), one of the Caime Friends/.exec(system)?.[1] ?? 'A friend';
+    const asked = [...content.matchAll(/\] Person: (.*)$/gm)].at(-1)?.[1]?.trim() ?? '';
+    return reply(`${name} here! About “${asked}”, let’s see.`);
+  }
   if (system.includes('You are Cai, the assistant inside Caime')) {
     // Cai (R67): it says what it was asked and how many open things it was told of.
     calls.push('cai');

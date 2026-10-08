@@ -101,6 +101,14 @@ These are rules, not preferences.
     are made by `pnpm --filter @caime/brand assets` at the size they're shown (the icons, the
     1200 x 630 social card), never scaled up, and a page names only the fonts the shell
     declares.
+17. **Intelligence in every interface language** (R70, R71). Whatever Caime understands of
+    people's words (promises, requests, decisions, questions, dates, amounts, what's asked of Cai
+    and the friends) it understands in every language of `INTERFACE_LANGUAGES`, by rules first,
+    measured per language by the golden set (`intelligence-golden.test.ts`: floors per label and
+    language, only ever raised, with lines written apart from the rules), and it answers in the
+    language it was written in. The model is asked only for what the rules don't answer, for
+    whoever may use it, on the latest model by default. A new language brings its readers and
+    their golden lines with its catalog.
 
 ## Working notes
 
@@ -619,9 +627,15 @@ These are rules, not preferences.
   0059). A conversation with one opens through `POST /conversations` like anyone's
   (`openSystemConversation`, greeted once); `effectsOf` sends what's written to one to the
   `system.reply` job and does nothing else (no notification, suggestion, topic or follow-up),
-  and the inbox never lets that chat need you. Cai answers `caiIntent`'s four questions from
-  three queries, and the rest through `runAi('cai')` (adults with assist on, the allowance,
-  nothing from a private conversation); the friends say `SCRIPTS` (server strings). Posting as
+  and the inbox never lets that chat need you. What's written to one is read by core `chatIntent` (`chat-intent.ts`: a greeting, a
+  greeting of peace answered in kind, "how can you help", thanks, and the four questions about
+  one's own open things, which Cai and every friend answer from three queries) and answered in the
+  language it was written in (`writtenIn`, else the account's, through `inLanguage`); the rest goes
+  through `runAi('cai')`, or for a friend `runAi('friend')` in its own character (R71: `FRIENDS`
+  in `lib/system-accounts.ts` holds its lines, tips, sticker, persona for the model and `reads`,
+  the parts of what's open that are its to know), for adults with assist on, within the
+  allowance, nothing from a private conversation. Without the model a friend tells its tips in
+  turn (`tipFor`), never a sticker alone; every message of theirs counts as AI (`aiAgent`). Posting as
   one of them, or as an organization's agent, is `postAs` (`lib/post-as.ts`). What picks people
   (`kind = 'human'`) already leaves them out; a new path that could give one a task, a call, a
   card or a connection refuses it with `systemAccountOf`. Model output reads "Suggested by Cai".
@@ -891,6 +905,13 @@ These are rules, not preferences.
   digits of any script go through `asciiDigits` (the matched text stays the writer's), and a
   currency word with its country goes in `AR_CURRENCY_OF`; a bare word that names several
   currencies ("دينار", "ليرة") says `null`, never a guess.
+- French and Turkish are read by their own modules (`intelligence-fr.ts`, `intelligence-tr.ts`,
+  their dates in `when.ts`) for a sentence `latinLanguage` (`latin-language.ts`) says is theirs;
+  anything unclear is read as English. A new phrase joins its language's list with a golden line
+  and the near-miss it must not catch. Amounts are `amounts.ts` (re-exported by `intelligence.ts`).
+  The app reads typed dates and amounts only through `lib/useReaders` (`readers.test.ts` fails on
+  a static import): imported by two routes they sat in `__common`, and every language's dates
+  took the startup chunk 2.9 KB over budget.
 - On a phone, the realtime socket rests 30 s after the app goes to the background (`rest()` in
   `realtime/client.ts`) and comes back with a catch-up on `active`; a call or a live location
   share keeps it. Anything new that must hear the socket while the app is put away adds its
@@ -987,7 +1008,7 @@ These are rules, not preferences.
 
 Read the whole diff before running anything. Check the refusals in `CONTRIBUTING.md` first (they
 end a review), then run `pnpm check`, the budget and the E2E on the branch, then read it against
-conventions 1–14 and the product review. Verify every number and every "verified" claim against
+conventions 1–17 and the product review. Verify every number and every "verified" claim against
 output, not the description. Accept with small fixes named, request changes naming file and rule,
 or refuse with one reason and a roadmap line if the idea is worth keeping. Never merge on a red
 check, a contributor's own approval or a bot's.

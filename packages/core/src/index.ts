@@ -10,6 +10,7 @@ export * from './booking';
 export * from './business';
 export * from './calls';
 export * from './catalog';
+export * from './chat-intent';
 export * from './checkout';
 export * from './custom-kits';
 export * from './e2ee';

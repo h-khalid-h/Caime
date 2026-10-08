@@ -1,7 +1,8 @@
 /**
- * Caime's own accounts (R67): Cai answers what's open by the rules and anything else with the
- * model only when the person may use AI assist; a Caime Friend answers from its script; neither
- * notifies, needs anyone, takes a card, a task or a request, or opens twice.
+ * Caime's own accounts (R67, R71): Cai and each Caime Friend answer small talk and what's open by
+ * the rules, in the language it was written in, and anything else with the model only when the
+ * person may use AI assist (a friend in its own character, reading only what's its to know);
+ * none notifies, needs anyone, takes a card, a task or a request, or opens twice.
  */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -9,7 +10,7 @@ import { CAI_ID, SYSTEM_ACCOUNTS, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runDueJobs } from '../src/lib/jobs';
 import { publicPageFor, renderPublic } from '../src/lib/public-pages';
-import { characterReply } from '../src/lib/system-accounts';
+import { personaOf, tipFor } from '../src/lib/system-accounts';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 const requests: any[] = [];
@@ -20,7 +21,11 @@ let hassan: Client;
 let sarah: Client;
 let teen: Client;
 let cai: string;
-const MOMO = SYSTEM_ACCOUNTS.find((a) => a.handle === 'momo')!.id;
+const friend = (handle: string) => SYSTEM_ACCOUNTS.find((a) => a.handle === handle)!.id;
+const MOMO = friend('momo');
+const PANDA = friend('panda');
+const LUMI = friend('lumi');
+const ZUZU = friend('zuzu');
 
 const open = (c: Client, userId: string) => c.post('/v1/conversations', { kind: 'direct', userId });
 const send = (c: Client, conversationId: string, body: string) =>
@@ -209,36 +214,129 @@ describe('their public pages (R67)', () => {
   });
 });
 
-describe('the Caime Friends (R67)', () => {
-  it('say hello with a sticker, then a tip at a time from their script', async () => {
-    const id = (await open(hassan, MOMO)).conversation.id;
-    let said = await messages(hassan, id);
+describe('the Caime Friends (R67, R71)', () => {
+  it('say hello with a sticker, and answer small talk in the language it was written in', async () => {
+    const id = (await open(sarah, MOMO)).conversation.id;
+    let said = await messages(sarah, id);
     expect(said.map((m) => m.kind)).toEqual(['sticker', 'text']);
     expect(said[0].payload).toEqual({ pack: 'caishy-friends', sticker: 'momo.excited' });
-    expect(said[1]).toMatchObject({ automated: true, aiAgent: false });
-    await send(hassan, id, 'hi Momo');
-    said = await answered(hassan, id);
-    expect(said.at(-1).body).toBe(
-      'When Attention says nothing needs you, that’s Caime working. Enjoy it!',
-    );
+    expect(said[1]).toMatchObject({ automated: true, aiAgent: true });
     const before = requests.length;
-    for (const words of ['and?', 'more', 'tell me more']) {
-      await send(hassan, id, words);
-      said = await answered(hassan, id);
-    }
-    expect(said.at(-1).body).toBe('That’s all my tips. For anything else, write to @cai.');
+    await send(sarah, id, 'hi Momo');
+    said = await answered(sarah, id);
+    expect(said.slice(-2).map((m) => m.kind)).toEqual(['sticker', 'text']);
+    expect(said.at(-1).body).toBe(
+      'Yay, you found me! I’m Momo. When nothing needs you, I’m the one cheering.',
+    );
+    // Sarah's account is in English: what she writes in Arabic is answered in Arabic.
+    await send(sarah, id, 'السلام عليكم');
+    said = await answered(sarah, id);
+    expect(said.at(-1).body).toBe(
+      'وعليكم السلام! رائع، وجدتني! أنا Momo. حين لا شيء يحتاج إليك، يحين وقت الاحتفال.',
+    );
+    await send(sarah, id, 'انت ممكن تساعدنى اذاى');
+    said = await answered(sarah, id);
+    expect(said.at(-1).body).toBe(
+      'أحتفل معك حين لا يبقى شيء بانتظارك. اسألني ما الذي يحتاج إليك، أو ما القادم. شغّل مساعدة الذكاء الاصطناعي من الإعدادات، وسيمكنك سؤالي عن أي شيء آخر أيضًا.',
+    );
+    await send(sarah, id, 'merci beaucoup !');
+    said = await answered(sarah, id);
+    expect(said.slice(-2).map((m) => m.kind)).toEqual(['sticker', 'text']);
+    expect(said.at(-1).body).toBe('Youpi ! Avec grand plaisir !');
+    // A sticker is answered with its own, and nothing here asked the model.
+    await sarah.post(`/v1/conversations/${id}/messages`, {
+      clientId: uuidv4(),
+      kind: 'sticker',
+      payload: { pack: 'caishy-friends', sticker: 'caishy.happy' },
+    });
+    said = await answered(sarah, id);
+    expect(said.at(-1)).toMatchObject({ kind: 'sticker', senderId: MOMO });
     expect(requests).toHaveLength(before);
   });
 
-  it('script: every friend has its tips, then points at Cai', () => {
+  it('answer what’s open by the rules, and without the model share their tips in turn', async () => {
+    const id = (await open(sarah, PANDA)).conversation.id;
+    const before = requests.length;
+    await send(sarah, id, 'What am I waiting for?');
+    let said = await answered(sarah, id);
+    expect(said.at(-1).body).toBe('You’re waiting on one thing:\n• Hassan Khalid · Book the venue');
+    const bodies: string[] = [];
+    for (const words of ['tell me something', 'and?', 'more', 'go on']) {
+      await send(sarah, id, words);
+      said = await answered(sarah, id);
+      // Words every time: never a sticker on its own.
+      expect(said.at(-1).kind).toBe('text');
+      bodies.push(said.at(-1).body);
+    }
+    // Her second, third, fourth and fifth messages: the tips in turn, round again, and on each
+    // round's first what AI assist would add.
+    expect(bodies).toEqual([
+      'When a wait goes quiet for three days, Attention asks whether it’s still open.',
+      'How you know someone can offer a follow-up when a question goes unanswered.',
+      'Ask someone for something, and it waits under “Waiting for” in Actions until they answer. Turn on AI assist in Settings, and you can ask me anything else too.',
+      'When a wait goes quiet for three days, Attention asks whether it’s still open.',
+    ]);
+    expect(requests).toHaveLength(before);
+  });
+
+  it('answer anything else in their own character, reading only what’s theirs to know', async () => {
+    // Hassan has AI assist on (above).
+    const id = (await open(hassan, MOMO)).conversation.id;
+    replies.push('Yay! A picnic by the river sounds perfect.');
+    await send(hassan, id, 'Any idea for the weekend?');
+    const said = await answered(hassan, id);
+    expect(said.at(-1)).toMatchObject({
+      body: 'Yay! A picnic by the river sounds perfect.',
+      senderId: MOMO,
+      aiAgent: true,
+    });
+    const asked = requests.at(-1);
+    const system = JSON.stringify(asked.system);
+    expect(system).toContain('You are Momo, one of the Caime Friends');
+    expect(system).toContain('the Cheerful');
+    expect(system).toContain('Panda (@panda) knows waiting and follow-ups');
+    const content = asked.messages[0].content as string;
+    // What's asked of him is Momo's to know; what he waits on is Panda's.
+    expect(content).toContain('• Sarah Smith · Book the venue');
+    expect(content).not.toContain('Access approval');
+    expect(content).toMatch(/\[\d+\] Momo: /);
+    expect(content).toMatch(/\[\d+\] Person: Any idea for the weekend\?/);
+    expect(content).not.toContain('Hassan Khalid');
+    // A friend with nothing of theirs to know reads nothing open, and asks nothing to find out.
+    const lumi = (await open(hassan, LUMI)).conversation.id;
+    replies.push('Ooh, a topic for the picnic, maybe?');
+    await send(hassan, lumi, 'How do I plan a picnic with friends?');
+    expect((await answered(hassan, lumi)).at(-1).body).toBe('Ooh, a topic for the picnic, maybe?');
+    expect(requests.at(-1).messages[0].content).toContain('(nothing open)');
+    // A failure answers in words, with what it helps with.
+    await send(hassan, lumi, 'And a poem?');
+    expect((await answered(hassan, lumi)).at(-1).body).toMatch(
+      /I help you make things together: groups, topics and spaces\./,
+    );
+  });
+
+  it('never ask the model for someone under 18', async () => {
+    const id = (await open(teen, ZUZU)).conversation.id;
+    const before = requests.length;
+    await send(teen, id, 'Tell me a story');
+    const said = await answered(teen, id);
+    expect(said.at(-1).body).toBe(
+      'What was decided and what’s still open in a conversation are in its details.',
+    );
+    expect(requests).toHaveLength(before);
+  });
+
+  it('each knows its own tips in turn, and who else knows what', () => {
     for (const a of SYSTEM_ACCOUNTS.filter((x) => x.kind === 'character')) {
-      const handle = a.handle as Parameters<typeof characterReply>[0];
-      expect(characterReply(handle, 1)).toMatchObject({ sticker: null });
-      expect(characterReply(handle, 1).text).toBeTruthy();
-      expect(characterReply(handle, 4).text).toMatch(/@cai/);
-      expect(characterReply(handle, 4).sticker).toMatch(new RegExp(`^${handle}\\.`));
-      expect(characterReply(handle, 5)).toMatchObject({ text: null });
-      expect(characterReply(handle, 7).text).toMatch(/@cai/);
+      const handle = a.handle as Parameters<typeof tipFor>[0];
+      expect(tipFor(handle, 1)).toMatchObject({ first: true });
+      expect(tipFor(handle, 2)).toMatchObject({ first: false });
+      expect(tipFor(handle, 4)).toEqual(tipFor(handle, 1));
+      const persona = personaOf(handle);
+      expect(persona.name).toBe(a.name);
+      expect(persona.facts).toHaveLength(3);
+      expect(persona.others).toHaveLength(6);
+      expect(persona.others.join(' ')).not.toContain(`@${handle})`);
     }
   });
 });

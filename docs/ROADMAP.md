@@ -1116,8 +1116,23 @@ listed there with its owner.
       pages' `dt` sentence-case it in the reader's language), settings groups lose their outline
       on the canvas, and a person's page gathers Book, Order, Pay and Private conversation in
       one row of compact buttons under Message.
+- [x] R70, intelligence in every language: the message intelligence reads French and Turkish
+      (promises, requests, decisions, questions, dates, amounts) in readers of their own
+      (`intelligence-fr.ts`, `intelligence-tr.ts`, `latin-language.ts` choosing per sentence),
+      measured by the golden set per language with floors at what was measured, 32 lines of it
+      written apart from the rules (29 of 32 read right before the review's fixes: a French
+      present-tense visit, a Turkish aorist, a habit taken for a promise). The app reads typed
+      dates and amounts through `lib/useReaders`, out of the startup chunk.
+- [x] R71: every Caime Friend thinks for itself. Rules first in four languages and as people type
+      (`chatIntent`: greetings, a greeting of peace answered in kind, "how can you help",
+      thanks, the four open-things questions, which any friend answers), answered in the
+      language written (`writtenIn`); anything else in the friend's own character through the
+      model (`runAi('friend')`, Cai's gates), reading only its own part of what's open; without
+      the model its tips in turn, never a sticker alone; every friend's message counts as AI.
+      `chat-intent.test.ts`, `system-accounts.test.ts`, `e2e/system-accounts.spec.ts` (the
+      owner's Arabic messages, answered in Arabic).
 - [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
-      in its chat, public pages for @cai and the friends (answer engines), more of each script.
+      in its chat, public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
 - [ ] Later layers of R62: a receipt from a paid card, refunds from a card paid by card, a
       split's shares paid with Pay.

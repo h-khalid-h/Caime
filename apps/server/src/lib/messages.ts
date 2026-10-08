@@ -192,8 +192,11 @@ export async function messageViews(
   // Bots and agents say so wherever their messages go (R16).
   const automatedSenders = new Set(senders.filter((u) => u.kind !== 'human').map((u) => u.id));
   // Cai is an AI as an organization's agent is (R67); a Caime Friend says a script.
+  // An organization's agent, Cai and the Caime Friends answer with a model (R71): said on each.
   const agentSenders = new Set(
-    senders.filter((u) => u.kind === 'agent' || u.kind === 'assistant').map((u) => u.id),
+    senders
+      .filter((u) => u.kind === 'agent' || u.kind === 'assistant' || u.kind === 'character')
+      .map((u) => u.id),
   );
   const views = rows.map((m): MessageView => {
     const deleted = m.deleted_at !== null;

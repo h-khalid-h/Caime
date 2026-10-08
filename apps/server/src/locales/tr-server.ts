@@ -955,8 +955,6 @@ export const turkishServer: Catalog = {
   'Only a person pays by card.': 'Kartla yalnızca bir kişi ödeyebilir.',
   'Paying by card can’t start right now': 'Kartla ödeme şu anda başlatılamıyor',
   Waiting: 'Bekleniyor',
-  'Hi, I’m Caishy! Write me anything and I’ll share a little tip.':
-    'Merhaba, ben Caishy! Bana bir şey yazın, size küçük bir ipucu vereyim.',
   'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
     'Boş mesaj kutusunun yanındaki düğmeden çıkartma gönderin. Caishy ve Arkadaşları paketi ücretsiz.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
@@ -1008,8 +1006,33 @@ export const turkishServer: Catalog = {
     'Bir mesajı kaydedin, “Kaydedilenler”de yeniden bulun.',
   'A person’s page remembers what’s open between the two of you.':
     'Bir kişinin sayfası ikiniz arasında açık olanları hatırlar.',
-  'That’s all my tips. For anything else, write to @cai.':
-    'İpuçlarım bu kadar. Başka her şey için @cai’ye yazın.',
+  'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
+    'Merhaba, ben Caishy! Bana Caime hakkında her şeyi sorun ya da sadece merhaba deyin.',
+  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
+    'Herkesi Caime’e ben karşılarım ve Caishy Friends çıkartmalarına göz kulak olurum. Buradaki her şeyin nasıl çalıştığını bana sorun.',
+  'Aww, any time!': 'Ne demek, her zaman!',
+  'I cheer you on when you’re all caught up. Ask me what needs you, or what’s coming up.':
+    'Her şeyi hallettiğinizde sizi ben alkışlarım. Bana sizi neyin beklediğini ya da sırada ne olduğunu sorun.',
+  'Yay! Happy to help!': 'Yaşasın! Yardım etmek ne güzel!',
+  'I keep an eye on what you’re waiting for from others. Ask me what you’re waiting on.':
+    'Başkalarından beklediklerinize göz kulak olurum. Bana neyi beklediğinizi sorun.',
+  'Always here for you.': 'Her zaman yanınızdayım.',
+  'I help you make things together: groups, topics and spaces. Ask me which one fits.':
+    'Birlikte bir şeyler kurmanıza yardım ederim: gruplar, konular ve alanlar. Hangisinin uygun olduğunu bana sorun.',
+  'My pleasure! Go make something lovely.': 'Rica ederim! Haydi, güzel bir şey yaratın.',
+  'I know how to find things: messages, files, promises and people. Ask me how to search for something.':
+    'Bir şeyleri bulmayı bilirim: mesajlar, dosyalar, sözler ve kişiler. Bir şeyi nasıl arayacağınızı bana sorun.',
+  'Any time! What else are you curious about?':
+    'Ne zaman isterseniz! Başka neyi merak ediyorsunuz?',
+  'I help with first steps: connecting with people, invites and saying hi first. Ask me where to begin.':
+    'İlk adımlarda yardım ederim: insanlarla bağlantı kurmak, davetler ve ilk selamı vermek. Nereden başlayacağınızı bana sorun.',
+  'You’ve got this!': 'Başaracaksınız!',
+  'I remember what was decided and what you said you’d do. Ask me what you promised.':
+    'Neye karar verildiğini ve ne yapacağınızı söylediğinizi hatırlarım. Bana ne söz verdiğinizi sorun.',
+  'Glad I could help.': 'Yardımcı olabildiysem ne mutlu.',
+  'And peace be upon you!': 'Aleyküm selam!',
+  'Hi {name}!': 'Merhaba {name}!',
+  'Any time!': 'Her zaman!',
   'Hi {name}, I’m Cai. Ask me what you’re waiting on, what’s asked of you, what you said you’d do or what’s coming up.':
     'Merhaba {name}, ben Cai. Neyi beklediğinizi, sizden ne istendiğini, ne söz verdiğinizi ya da sırada ne olduğunu bana sorun.',
   'With AI assist on, you can ask me anything else too.':

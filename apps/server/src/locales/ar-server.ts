@@ -966,8 +966,6 @@ export const arServer: Catalog = {
   'Only a person pays by card.': 'الدفع بالبطاقة لشخص فقط، لا لتطبيق.',
   'Paying by card can’t start right now': 'تعذّر بدء الدفع بالبطاقة الآن',
   Waiting: 'في الانتظار',
-  'Hi, I’m Caishy! Write me anything and I’ll share a little tip.':
-    'مرحبًا، أنا Caishy! اكتب لي أي شيء وسأشاركك نصيحة صغيرة.',
   'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
     'أرسل ملصقًا من الزر بجوار مربع الرسالة حين يكون فارغًا. حزمة أصدقاء كايشي مجانية.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
@@ -1017,8 +1015,32 @@ export const arServer: Catalog = {
   'Save a message to find it again in Saved.': 'احفظ رسالة لتجدها مجددًا في «المحفوظات».',
   'A person’s page remembers what’s open between the two of you.':
     'صفحة كل شخص تتذكّر ما هو مفتوح بينكما.',
-  'That’s all my tips. For anything else, write to @cai.':
-    'هذه كل نصائحي. لأي شيء آخر، اكتب إلى @cai.',
+  'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
+    'مرحبًا، أنا Caishy! اسألني أي شيء عن Caime، أو قل مرحبًا فقط.',
+  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
+    'أرحّب بالجميع في Caime وأعتني بملصقات Caishy Friends. اسألني كيف يعمل أي شيء هنا.',
+  'Aww, any time!': 'بكل سرور، في أي وقت!',
+  'I cheer you on when you’re all caught up. Ask me what needs you, or what’s coming up.':
+    'أحتفل معك حين لا يبقى شيء بانتظارك. اسألني ما الذي يحتاج إليك، أو ما القادم.',
+  'Yay! Happy to help!': 'رائع! يسعدني أن أساعد!',
+  'I keep an eye on what you’re waiting for from others. Ask me what you’re waiting on.':
+    'أتابع ما تنتظره من الآخرين. اسألني ماذا تنتظر.',
+  'Always here for you.': 'أنا هنا دائمًا من أجلك.',
+  'I help you make things together: groups, topics and spaces. Ask me which one fits.':
+    'أساعدك على صنع الأشياء مع الآخرين: المجموعات والموضوعات والمساحات. اسألني أيّها يناسب.',
+  'My pleasure! Go make something lovely.': 'بكل سرور! هيا، اصنع شيئًا جميلًا.',
+  'I know how to find things: messages, files, promises and people. Ask me how to search for something.':
+    'أعرف كيف أجد الأشياء: الرسائل والملفات والوعود والأشخاص. اسألني كيف تبحث عن شيء.',
+  'Any time! What else are you curious about?': 'في أي وقت! ما الذي يثير فضولك أيضًا؟',
+  'I help with first steps: connecting with people, invites and saying hi first. Ask me where to begin.':
+    'أساعد في الخطوات الأولى: التواصل مع الناس، والدعوات، والمبادرة بالتحية. اسألني من أين تبدأ.',
+  'You’ve got this!': 'الأمر بين يديك!',
+  'I remember what was decided and what you said you’d do. Ask me what you promised.':
+    'أتذكّر ما تقرّر وما قلت إنك ستفعله. اسألني بماذا وعدت.',
+  'Glad I could help.': 'يسعدني أنني ساعدت.',
+  'And peace be upon you!': 'وعليكم السلام!',
+  'Hi {name}!': 'مرحبًا {name}!',
+  'Any time!': 'في أي وقت!',
   'Hi {name}, I’m Cai. Ask me what you’re waiting on, what’s asked of you, what you said you’d do or what’s coming up.':
     'مرحبًا {name}، أنا Cai. اسألني عمّا تنتظره، وما يُطلب منك، وما وعدت به، أو ما هو قادم.',
   'With AI assist on, you can ask me anything else too.':

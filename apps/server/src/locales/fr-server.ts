@@ -1005,8 +1005,6 @@ export const frServer: Catalog = {
   'Paying by card can’t start right now':
     'Le paiement par carte ne peut pas démarrer pour le moment',
   Waiting: 'En attente',
-  'Hi, I’m Caishy! Write me anything and I’ll share a little tip.':
-    'Coucou, c’est Caishy ! Écrivez-moi ce que vous voulez, et je vous donnerai une petite astuce.',
   'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
     'Envoyez un sticker avec le bouton à côté de la zone de message, quand elle est vide. Le pack Les amis de Caishy est gratuit.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
@@ -1060,8 +1058,33 @@ export const frServer: Catalog = {
     'Enregistrez un message pour le retrouver dans Enregistrés.',
   'A person’s page remembers what’s open between the two of you.':
     'La page d’une personne se souvient de ce qui reste ouvert entre vous deux.',
-  'That’s all my tips. For anything else, write to @cai.':
-    'C’est tout pour mes astuces. Pour le reste, écrivez à @cai.',
+  'Hi, I’m Caishy! Ask me anything about Caime, or just say hi.':
+    'Coucou, c’est Caishy ! Posez-moi n’importe quelle question sur Caime, ou dites simplement bonjour.',
+  'I welcome people to Caime and keep the Caishy Friends stickers. Ask me how anything here works.':
+    'J’accueille chacun dans Caime et je garde les stickers Caishy Friends. Demandez-moi comment marche tout ce qui est ici.',
+  'Aww, any time!': 'Oh, avec plaisir !',
+  'I cheer you on when you’re all caught up. Ask me what needs you, or what’s coming up.':
+    'Je vous encourage quand vous êtes à jour. Demandez-moi ce qui a besoin de vous, ou ce qui arrive.',
+  'Yay! Happy to help!': 'Youpi ! Avec grand plaisir !',
+  'I keep an eye on what you’re waiting for from others. Ask me what you’re waiting on.':
+    'Je garde un œil sur ce que vous attendez des autres. Demandez-moi ce que vous attendez.',
+  'Always here for you.': 'Toujours là pour vous.',
+  'I help you make things together: groups, topics and spaces. Ask me which one fits.':
+    'Je vous aide à créer ensemble : groupes, sujets et espaces. Demandez-moi lequel convient.',
+  'My pleasure! Go make something lovely.': 'Avec plaisir ! Allez créer quelque chose de beau.',
+  'I know how to find things: messages, files, promises and people. Ask me how to search for something.':
+    'Je sais trouver les choses : messages, fichiers, promesses et personnes. Demandez-moi comment chercher quelque chose.',
+  'Any time! What else are you curious about?':
+    'Quand vous voulez ! Qu’est-ce qui vous intrigue d’autre ?',
+  'I help with first steps: connecting with people, invites and saying hi first. Ask me where to begin.':
+    'J’aide pour les premiers pas : se connecter aux gens, les invitations, dire bonjour en premier. Demandez-moi par où commencer.',
+  'You’ve got this!': 'Vous allez y arriver !',
+  'I remember what was decided and what you said you’d do. Ask me what you promised.':
+    'Je me souviens de ce qui a été décidé et de ce que vous avez dit que vous feriez. Demandez-moi ce que vous avez promis.',
+  'Glad I could help.': 'Un plaisir d’avoir pu aider.',
+  'And peace be upon you!': 'Wa alaykoum salam !',
+  'Hi {name}!': 'Bonjour {name} !',
+  'Any time!': 'Quand vous voulez !',
   'Hi {name}, I’m Cai. Ask me what you’re waiting on, what’s asked of you, what you said you’d do or what’s coming up.':
     'Bonjour {name}, c’est Cai. Demandez-moi ce que vous attendez, ce qu’on vous demande, ce que vous avez promis ou ce qui arrive.',
   'With AI assist on, you can ask me anything else too.':

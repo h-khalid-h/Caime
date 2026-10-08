@@ -865,3 +865,21 @@ with its reason, so it isn't proposed again without new facts.
   dates, amounts), measured by the golden set per language like English and Arabic. *Cost*: a
   preview is made once per photo at upload (one more resize) and fetched only where a photo is
   drawn large; tiles and faces still load the thumbnail.
+- **R71 — Every Caime Friend thinks for itself (owner, 2026-10-07: "all characters shall have
+  their own intelligence like Cai").** Caishy answered "السلام عليكم" and "انت ممكن تساعدنى
+  اذاى" with stickers and, in English, "That's all my tips": a script that had run out and never
+  read what was written. Each friend now understands what's written to it as Cai does, by the
+  rules first (core `chatIntent`, the same for Cai and the friends, in all four languages and as
+  people type them: a greeting, a greeting of peace answered in kind, "how can you help me",
+  thanks, and the four questions about one's own open things, which any friend answers from three
+  queries), in the language it was written in (`writtenIn`: an English account that writes in
+  Arabic is answered in Arabic). Anything else goes to the model under Cai's gates (an adult, AI
+  assist on, an assist left today, nothing from a private conversation), in the friend's own
+  character: its trait and voice from BRAND.md, what it knows best, its tips as the facts it may
+  tell, who else knows what, and, as its only other context, the part of what's open that is its
+  to know (Panda what you wait for, Momo what's asked of you and what's coming, Zuzu what you said
+  you'd do; the others nothing, and no query to find out). Without the model a friend tells its
+  tips in turn, with what AI assist would add at each round's start, and never a sticker alone: a
+  sticker answers a sticker, a greeting and thanks. Every friend's message counts as AI, as Cai's
+  do. *Cost*: the rules cost nothing; a model answer is one low-effort call of at most 512 output
+  tokens, counted in the person's daily allowance like Cai's (`runAi('friend')`).

@@ -3,8 +3,9 @@
  * Friends, the brand's characters, each talking about its own job (BRAND.md). They are users of
  * kinds of their own with fixed ids (seeded by migration 0059), opened as a direct conversation
  * like anyone's; they never write first, never ring and never count as people. What they say is
- * the server's (`lib/system-accounts.ts`): the characters from scripts, never a model. Pure, no
- * zod: the app takes it by subpath.
+ * the server's (`lib/system-accounts.ts`, R71): each understands what's written to it by the rules
+ * (`chat-intent.ts`) and, for whoever may use AI assist, answers the rest in its own character.
+ * Pure, no zod: the app takes it by subpath.
  */
 import { msg } from './i18n';
 import { CAI_ID, type SystemKind } from './system-ids';
@@ -97,42 +98,4 @@ export function systemAccountOf(id: string | null | undefined): SystemAccount | 
 
 export function isCharacterHandle(handle: string): handle is CharacterHandle {
   return (CHARACTER_HANDLES as readonly string[]).includes(handle);
-}
-
-/** What Cai can answer by the rules alone, at no cost and in an instant. */
-export type CaiIntent = 'waiting' | 'asked' | 'mine' | 'coming' | 'help';
-
-/**
- * Each a question about one's own open things, said as people say it; anything wider (what to do
- * in Paris today) is the model's, so a list never answers a sentence it wasn't asked.
- */
-const INTENTS: Array<[CaiIntent, RegExp]> = [
-  [
-    'asked',
-    /\b(who(['’]?s| is) waiting (for|on) me|what(['’]?s| is| was| have i been) asked of me|what do i owe|what do (people|others) (want|need) from me)\b|من ينتظرني|ماذا (طُ?لب|يطلبون) مني|ما المطلوب مني|qui m['’]attend|qu['’]est-ce qu['’]on (m['’]a demandé|attend de moi)|beni kim bekliyor|benden ne (isteniyor|istendi|bekleniyor)/i,
-  ],
-  [
-    'waiting',
-    /\b(what am i waiting (for|on)|who am i waiting (for|on)|who owes me|what(['’]?s| is) (still )?pending)\b|ماذا أنتظر|ما الذي أنتظره|من أنتظر|qu['’]est-ce que j['’]attends|j['’]attends quoi|qui me doit|ne bekliyorum|kimi bekliyorum/i,
-  ],
-  [
-    'mine',
-    /\b(my (tasks|actions|to-?dos?|to-?do list)|what (did|have) i promised?|what did i say i(['’]?d| would)|what do i (have|need) to do)\b|ما هي مهامي|مهامي|بماذا وعدت|ماذا علي أن أفعل|mes tâches|qu['’]ai-je promis|j['’]ai promis quoi|qu['’]est-ce que je dois faire|görevlerim|ne söz verdim|ne yapmam gerekiyor/i,
-  ],
-  [
-    'coming',
-    /\b(what(['’]?s| is) (coming up|next|on my (calendar|schedule))|my (calendar|schedule|week|agenda)|what do i have (today|tomorrow|this week))\b|ماذا لدي (اليوم|غدًا|غدا|هذا الأسبوع)|ما القادم|جدولي|qu['’]est-ce que j['’]ai (aujourd['’]hui|demain|cette semaine)|mon agenda|qu['’]est-ce qui arrive|bugün ne var|yarın ne var|bu hafta ne var|takvimim/i,
-  ],
-  [
-    'help',
-    /^\s*(help|hi|hello|hey|what can you do\??|مرحبا|مساعدة|ماذا تستطيع|bonjour|salut|aide|merhaba|yardım)\s*[!.?؟]*\s*$/i,
-  ],
-];
-
-/** The rule-answered question a message to Cai asks, if it's one; null sends it to the model. */
-export function caiIntent(text: string): CaiIntent | null {
-  const t = text.trim();
-  if (!t) return null;
-  for (const [intent, re] of INTENTS) if (re.test(t)) return intent;
-  return null;
 }

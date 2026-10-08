@@ -1,7 +1,8 @@
 /**
- * Caime's own accounts (R67): Cai is a conversation like anyone's, opened from Attention, that
+ * Caime's own accounts (R67, R71): Cai is a conversation like anyone's, opened from Attention, that
  * answers what's open by the rules and anything else with AI assist on; a Caime Friend is met
- * from the "+" sheet and answers from its script, with its sticker.
+ * from the "+" sheet, says hello with its sticker, answers small talk in the language it's
+ * written in and, with AI assist on, anything else in its own character.
  */
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
@@ -75,13 +76,20 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await page.getByTestId('person-message').filter({ visible: true }).click();
   await page.waitForURL(/\/c\//);
   await expect(visible(page, /^Hi, I’m Caishy!/)).toBeVisible();
-  await page.getByTestId('composer-input').filter({ visible: true }).fill('hello Caishy');
-  await page.getByTestId('composer-send').filter({ visible: true }).click();
+  const box = page.getByTestId('composer-input').filter({ visible: true });
+  const send = () => page.getByTestId('composer-send').filter({ visible: true }).click();
+  // Hassan's app is in English: what he writes in Arabic is answered in Arabic.
+  await box.fill('السلام عليكم');
+  await send();
+  await expect(visible(page, /^وعليكم السلام! مرحبًا، أنا Caishy!/)).toBeVisible();
+  await box.fill('انت ممكن تساعدنى اذاى');
+  await send();
+  await expect(visible(page, /^أرحّب بالجميع في Caime/)).toBeVisible();
+  // AI assist is on (above): anything else, in its own character.
+  await box.fill('Plan a picnic for Saturday');
+  await send();
   await expect(
-    visible(
-      page,
-      'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.',
-    ),
+    visible(page, 'Caishy here! About “Plan a picnic for Saturday”, let’s see.'),
   ).toBeVisible();
   await page.screenshot({ path: 'e2e/screenshots/phone-caishy.png', animations: 'disabled' });
   expect(errors).toEqual([]);

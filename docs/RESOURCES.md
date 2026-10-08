@@ -89,19 +89,23 @@ AI agent's prompt grows by at most eight lines of slots over fourteen days, read
 with the same cached knowledge prefix, so a booking costs the model one short turn more than an
 answer; the card itself is sent by the server, not written by the model.
 
-## Cai and the Caime Friends (R67)
+## Cai and the Caime Friends (R67, R71)
 
 Nothing runs until someone writes to one. A message to one queues one job (deduplicated by
 message, answered once for a burst) and skips everything else a message costs (notifications,
-suggestions, topics, follow-ups, automations). A friend's answer is a count and a script: two
-queries and one or two inserts, no model. Cai's four rule questions read what's open in three
-queries (tasks with a filtered count, and the week's agreed cards), no model. Anything else goes
-to the model only for an adult with AI assist on, inside their daily allowance: the light model
-at low effort, at most 1,024 tokens out, reading at most 12 messages (each clipped to 600
-characters) and at most 20 lines of open items. The accounts are eight rows seeded once by a
-migration; their ids are constants, so nothing looks them up. On devices the avatar's id check
-and the two marks cost 0.4 KB of the first download (449.6 KB gzip, measured 2026-10-05); the
-friends' scripts are the server's, never downloaded.
+suggestions, topics, follow-ups, automations). What's written is read by the rules first (core
+`chatIntent`, a few regular expressions, no query): a greeting, "how can you help", thanks or a
+sticker is answered from the account's own lines with one or two inserts; the four questions
+about one's own open things read what's open in three queries (tasks with a filtered count, and
+the week's agreed cards), no model, from Cai or any friend. A friend without the model tells a
+tip: one count and one insert. Anything else goes to the model only for an adult with AI assist
+on, inside their daily allowance: the light model at low effort, Cai at most 1,024 tokens out and
+a friend 512, reading at most 12 messages (each clipped to 600 characters) and at most 20 lines
+of open items; a friend reads only its own part of them (Panda, Momo, Zuzu), and the four others
+read none and run no query for it (R71). The accounts are eight rows seeded once by a migration;
+their ids are constants, so nothing looks them up. On devices the avatar's id check and the two
+marks cost 0.4 KB of the first download (449.6 KB gzip, measured 2026-10-05); the friends' lines
+and characters are the server's, never downloaded.
 
 ## Cai keeps going (R68)
 
