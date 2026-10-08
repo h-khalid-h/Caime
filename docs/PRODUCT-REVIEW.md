@@ -862,7 +862,9 @@ with its reason, so it isn't proposed again without new facts.
   it now shows a 1200 x 630 card made with the icons (the friends under the wordmark, no words,
   so it reads in every language). *Intelligence*: the default model is the latest, and the
   message intelligence reads French and Turkish (promises, requests, decisions, questions,
-  dates, amounts), measured by the golden set per language like English and Arabic. *Cost*: a
+  dates, amounts), measured by the golden set per language like English and Arabic, and search
+  reads every language's shapes too ("صور من سارة", "photos de la semaine dernière", "Sarah'dan
+  fotoğraflar", relationships by their names in the reader's language). *Cost*: a
   preview is made once per photo at upload (one more resize) and fetched only where a photo is
   drawn large; tiles and faces still load the thumbnail.
 - **R71 — Every Caime Friend thinks for itself (owner, 2026-10-07: "all characters shall have

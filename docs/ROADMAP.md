@@ -1123,6 +1123,12 @@ listed there with its owner.
       written apart from the rules (29 of 32 read right before the review's fixes: a French
       present-tense visit, a Turkish aorist, a habit taken for a promise). The app reads typed
       dates and amounts through `lib/useReaders`, out of the startup chunk.
+- [x] Search in every interface language (convention 17): the rules read files from someone,
+      what was asked of you or by you, waits, what someone said, decisions, tasks, conversations
+      and times in Arabic (Egyptian and the Levant's words too), French and Turkish
+      (`search-languages.test.ts`, 44 cases); relationships by their names in the reader's
+      language, "my" included; the interpretations that were English only ("PDFs from Sarah",
+      "“X” from Y") are keys in every catalog.
 - [x] R71: every Caime Friend thinks for itself. Rules first in four languages and as people type
       (`chatIntent`: greetings, a greeting of peace answered in kind, "how can you help",
       thanks, the four open-things questions, which any friend answers), answered in the
@@ -2201,6 +2207,21 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-08 — Search in every interface language: the rules read files from someone, asks,
+  waits, what someone said, decisions, tasks, conversations and times in Arabic, French and
+  Turkish, relationships by their names in the reader's language; the English-only
+  interpretations are keys in every catalog (`search-languages.test.ts`, 44 cases).
+- 2026-10-08 — R71, every Caime Friend thinks for itself (the owner's screenshot: Caishy
+  answering "السلام عليكم" with stickers and an English "That's all my tips"): rules first in
+  four languages, answered in the language written, the model in each friend's own character
+  with only its own part of what's open, tips in turn without it. Checked: `pnpm check` (server
+  668), the whole E2E suite (93 passed), the owner's Arabic messages answered in Arabic in
+  `phone-caishy.png`.
+- 2026-10-08 — French and Turkish message intelligence (a background agent's work, reviewed):
+  29 of 32 lines written apart from the rules read right; the three misses (a French present
+  visit, a Turkish aorist, a habit) fixed with golden lines. The readers of typed dates and
+  amounts left the startup chunk (`lib/useReaders`): 452.9 KB gzip with them in `__common`,
+  442.9 KB now (447.4 KB before).
 - 2026-10-06 — R70, sharp at every size: an image keeps a 1,280-px preview beside its 480-px
   thumbnail (`lib/renditions.ts`, migration 0061, `/files/:id/preview`), core's `imageFor` picks
   by the points drawn, so a photo in a message, an item's sheet and page and a link's card are

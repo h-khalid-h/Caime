@@ -985,6 +985,11 @@ These are rules, not preferences.
   bookkeeping. A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
   checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;
   `e2e/anthropic-stub.mjs` answers the "search someone typed" prompt from the words).
+  The rules read every interface language: `RULES` and `PERIOD_RULES` in `search.ts` hold each
+  language's shapes (written for Arabic as it's folded: `tolerant` accepts any alef, "ى" or "ة"),
+  a relationship word matches its label in the reader's language too (`relationshipFromWord`:
+  "عملائي", "mes clients", "müşterilerim"), and every interpretation is a key through `tr`. A new
+  shape gets its line in each language, with cases in `search-languages.test.ts`.
 - What a person's choices teach (M11, core `learning.ts`): `createSuggestion` reads their last
   decisions on the kind (`leanFor`, the same person's first, the kind at large with more) and
   keeps the lean with its counts on `payload.learned`; the app places by it (`placeByLean`:

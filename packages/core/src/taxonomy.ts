@@ -448,19 +448,62 @@ export function relationshipFit(aViewOfB: RoleRef, bViewOfA: RoleRef): Fit {
   return 'different';
 }
 
-/** Search words that name a relationship: "managers" → work/manager, "customers" → customer. */
+/**
+ * A word as relationship words are compared: lowercase, and Arabic without its marks, "ال" or
+ * hamza seats ("العملاء" and "عملاء" are one word), so a label matches however it's typed.
+ */
+function wordForm(word: string): string {
+  const w = word.trim().replace(/İ/g, 'i').toLowerCase();
+  if (!/[\u0600-\u06FF]/.test(w)) return w;
+  return w
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/[ءئؤ]/g, '')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .split(/\s+/)
+    .map((x) => x.replace(/^ال/, ''))
+    .join(' ');
+}
+
+/**
+ * The word, and the word without "my" where a language says it in the word's ending: Arabic
+ * "عملائي" (my customers), "عائلتي" (my family); Turkish "müşterilerim", "ailem".
+ */
+function forms(word: string): string[] {
+  const w = wordForm(word);
+  const out = [w];
+  if (/[\u0600-\u06FF]/.test(w)) {
+    if (w.endsWith('تي')) out.push(`${w.slice(0, -2)}ه`);
+    if (w.endsWith('ي')) out.push(w.slice(0, -1));
+  } else {
+    const turkish = /^(.+?(?:ler|lar))(?:ım|im|um|üm)$/u.exec(w) ?? /^(.+?[aeıioöuü])m$/u.exec(w);
+    if (turkish) out.push(turkish[1]!);
+  }
+  return out;
+}
+
+/**
+ * Search words that name a relationship, in English or the reader's language: "managers" →
+ * work/manager, "customers", "عملائي", "mes clients" (its "mes" taken off by search), "müşterilerim"
+ * → customer.
+ */
 export function relationshipFromWord(word: string): { sphere: Sphere; role?: string } | undefined {
-  const w = word.trim().toLowerCase();
-  if (!w) return undefined;
+  const asked = forms(word);
+  if (!asked[0]) return undefined;
+  const named = (label: string, plural: string) =>
+    [label, plural].some((l) => {
+      const english = l.toLowerCase();
+      const shown = wordForm(tr(l));
+      return asked.some((w) => w === english || w === shown);
+    });
   for (const sphere of SPHERES) {
     const def = SPHERE_DEFS[sphere];
-    if (w === def.label.toLowerCase() || w === def.plural.toLowerCase()) return { sphere };
+    if (named(def.label, def.plural)) return { sphere };
   }
   for (const sphere of SPHERES) {
     for (const role of ROLES[sphere]) {
-      if (w === role.label.toLowerCase() || w === role.plural.toLowerCase()) {
-        return { sphere, role: role.id };
-      }
+      if (named(role.label, role.plural)) return { sphere, role: role.id };
     }
   }
   return undefined;
