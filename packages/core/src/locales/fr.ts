@@ -336,6 +336,7 @@ export const fr: Catalog = {
     'Elle cesse immédiatement d’agir en votre nom. Pour la réutiliser, il faudra l’autoriser à nouveau depuis l’application elle-même.',
   'What it already did stays as it is, marked as sent through it.':
     'Ce qu’elle a déjà fait reste tel quel, marqué comme envoyé par elle.',
+  'Your conversation with it': 'Votre conversation avec elle',
   'Your calendar': 'Votre calendrier',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'Une application que vous autorisez n’atteint que ce que vous avez permis, jamais votre mot de passe, votre confidentialité ni votre compte, et ce qu’elle envoie indique qu’il passe par elle. Retirez-la et elle cesse immédiatement.',

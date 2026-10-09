@@ -378,6 +378,8 @@ export interface MessagesTable {
   expires_at: NullableTimestamp;
   created_at: Generated<Date>;
   search: ColumnType<string, never, never>;
+  /** The words and what a card says of itself (title, reference, summary, booking), indexed. */
+  search_all: ColumnType<string, never, never>;
   /** What sent it when its sender didn't type it in Caime: their token's name, or an app's. */
   sent_via: string | null;
   /** In a private conversation (R18): the message as an envelope only its devices can open. */
@@ -1137,7 +1139,7 @@ export type Relationship = Selectable<RelationshipsTable>;
 export type Conversation = Selectable<ConversationsTable>;
 export type Participant = Selectable<ParticipantsTable>;
 /**
- * Every column of a message but `search`, the tsvector only the search query reads: a message
+ * Every column of a message but `search` and `search_all`, the tsvectors only the search query reads: a message
  * is selected with these (`.select(MESSAGE_COLUMNS)`), never `selectAll()`, which shipped the
  * vector with every row read (`messaging.test.ts` holds this list to the table).
  */
@@ -1167,8 +1169,8 @@ export const MESSAGE_COLUMNS = [
   'sealed',
   'pinned_at',
   'pinned_by',
-] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search'>>;
-export type Message = Selectable<Omit<MessagesTable, 'search'>>;
+] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search' | 'search_all'>>;
+export type Message = Selectable<Omit<MessagesTable, 'search' | 'search_all'>>;
 export type Space = Selectable<SpacesTable>;
 export type SpaceMember = Selectable<SpaceMembersTable>;
 export type Organization = Selectable<OrganizationsTable>;

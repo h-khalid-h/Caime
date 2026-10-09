@@ -228,36 +228,35 @@ async function heldBy(
   hours: BookingHours,
   window: { from: Date; to: Date },
 ): Promise<Held[]> {
+  // Every card in the window, never a page of them: a card left out reads as a free slot.
   if (host.kind === 'org') {
-    const booked = await orgBookings(ctx, host.id, { from: window.from, until: window.to });
+    const booked = await orgBookings(
+      ctx,
+      host.id,
+      { from: window.from, until: window.to },
+      { limit: HELD_MAX },
+    );
     return booked.map((b) => {
       const start = new Date(b.at);
       return { start, end: endOf(hours, start, b.booking, null), booking: b.booking };
     });
   }
-  // A person's own diary: every card in their own conversations, and, of an organization's
-  // bookings (a team member is in every one of its conversations), only those they do.
-  const cards = await cardsAhead(ctx, host.id, { from: window.from, until: window.to, limit: 500 });
-  const ids = [...new Set(cards.map((c) => c.conversationId))];
-  const business = new Set(
-    ids.length
-      ? (
-          await ctx.db
-            .selectFrom('business_threads')
-            .select('conversation_id')
-            .where('conversation_id', 'in', ids)
-            .execute()
-        ).map((r) => r.conversation_id)
-      : [],
-  );
-  return cards
-    .filter((c) => !business.has(c.conversationId) || c.booking?.providerId === host.id)
-    .map((c) => ({
-      start: c.at,
-      end: endOf(hours, c.at, c.booking, c.durationMinutes),
-      booking: c.booking,
-    }));
+  // A person's own diary: every card in their own conversations and, of an organization's,
+  // only those they do (`cardsAhead` keeps a team member to what's theirs).
+  const cards = await cardsAhead(ctx, host.id, {
+    from: window.from,
+    until: window.to,
+    limit: HELD_MAX,
+  });
+  return cards.map((c) => ({
+    start: c.at,
+    end: endOf(hours, c.at, c.booking, c.durationMinutes),
+    booking: c.booking,
+  }));
 }
+
+/** More cards than any window holds; a bound on the read, never a page. */
+const HELD_MAX = 10_000;
 
 /**
  * What's busy for one item: its own bookings take their quantity of its capacity; a card not
@@ -289,9 +288,10 @@ function busyFor(
   return { busy, providersBusy };
 }
 
-// A booking's window is looked at a little wider than asked, so a stay or a long card that
-// began before the window still counts in it.
-const BEFORE_MS = 31 * 86_400_000;
+// A booking's window is looked at a little wider than asked, so a card that began before it
+// and is still on counts in it: a day for anything timed, a month for a stay.
+const BEFORE_MS = 86_400_000;
+const BEFORE_STAY_MS = 31 * 86_400_000;
 
 /** The slots open between two instants for an item (or the hours alone), at most `limit`. */
 export async function openSlotsFor(
@@ -304,7 +304,7 @@ export async function openSlotsFor(
   if (!hours) return null;
   const item = opts.item ?? null;
   const held = await heldBy(ctx, host, hours, {
-    from: new Date(window.from.getTime() - BEFORE_MS),
+    from: new Date(window.from.getTime() - (item?.unit === 'days' ? BEFORE_STAY_MS : BEFORE_MS)),
     to: new Date(
       window.to.getTime() + (item?.unit === 'days' ? (opts.quantity ?? 1) * 86_400_000 : 0),
     ),

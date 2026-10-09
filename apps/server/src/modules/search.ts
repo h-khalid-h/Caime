@@ -37,11 +37,18 @@ import { taskViews } from './actions';
 
 const SNIPPET_MARKS = MATCH_START + MATCH_END;
 
+/** A card's start, as prepareKitFields keeps it (an ISO time, compared as text). */
+const CARD_START = sql<string>`m.payload->'fields'->'start'->>'at'`;
+
 const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /**
  * The words typed as a prefix tsquery: `'contr':* & 'invoic':*`, each word quoted so nothing in
  * it reads as an operator; empty when the text holds no word (punctuation alone).
+ */
+/**
+ * What's typed, as prefixes of the lexemes `search_all` holds (migration 0065 cuts the text at
+ * the same joiners, so "INV-7731" and "7731" both find the invoice).
  */
 function prefixQuery(text: string): string {
   const words = text
@@ -176,7 +183,29 @@ export async function runSearch(
         .groupBy(sql`lower(org_name)`)
         .limit(5)
         .execute();
-      results.organizations = orgs.map((o) => ({ name: o.org_name, people: o.people }));
+      // And the organizations written to (a clinic, a shop): their conversation opens.
+      const written = await ctx.db
+        .selectFrom('business_threads as t')
+        .innerJoin('organizations as o', 'o.id', 't.org_id')
+        .select(['o.name', 'o.handle', 't.conversation_id'])
+        .where('t.customer_id', '=', me)
+        .where('o.name', 'ilike', like(text))
+        .orderBy('t.updated_at', 'desc')
+        .limit(5)
+        .execute();
+      results.organizations = [
+        ...written.map((w) => ({
+          name: w.name,
+          people: 0,
+          handle: w.handle,
+          conversationId: w.conversation_id,
+        })),
+        ...orgs
+          .filter(
+            (o) => !written.some((w) => w.name.toLowerCase() === (o.org_name ?? '').toLowerCase()),
+          )
+          .map((o) => ({ name: o.org_name, people: o.people })),
+      ];
     }
   }
 
@@ -185,10 +214,21 @@ export async function runSearch(
     else {
       const rows = await ctx.db
         .selectFrom('messages as m')
+        // A time ("last week", "in March") is when it was written, or, for a card, when it's for.
         .$if(Boolean(parsed.period), (qb) =>
-          qb
-            .where('m.created_at', '>=', new Date(parsed.period!.since))
-            .where('m.created_at', '<', new Date(parsed.period!.until)),
+          qb.where((eb) =>
+            eb.or([
+              eb.and([
+                eb('m.created_at', '>=', new Date(parsed.period!.since)),
+                eb('m.created_at', '<', new Date(parsed.period!.until)),
+              ]),
+              eb.and([
+                eb('m.kind', '=', 'kit'),
+                eb(CARD_START, '>=', new Date(parsed.period!.since).toISOString()),
+                eb(CARD_START, '<', new Date(parsed.period!.until).toISOString()),
+              ]),
+            ]),
+          ),
         )
         .innerJoin('participants as p', (j) =>
           j.onRef('p.conversation_id', '=', 'm.conversation_id').on('p.user_id', '=', me),
@@ -207,10 +247,11 @@ export async function runSearch(
           text
             ? // Matches are marked with two private-use characters, removed from the text first so
               // nothing a person typed can be mistaken for a marker (core format.ts snippetParts).
-              sql<string>`ts_headline('simple', translate(coalesce(m.body, ''), ${SNIPPET_MARKS}, ''), websearch_to_tsquery('simple', ${text}), ${`StartSel=${MATCH_START},StopSel=${MATCH_END},MaxWords=18,MinWords=6`})`.as(
+              // A card has no words: its title and reference stand in.
+              sql<string>`ts_headline('simple', translate(coalesce(m.body, concat_ws(' · ', m.payload->>'title', m.payload->'fields'->>'reference', m.payload->'fields'->>'summary')), ${SNIPPET_MARKS}, ''), websearch_to_tsquery('simple', ${text}), ${`StartSel=${MATCH_START},StopSel=${MATCH_END},MaxWords=18,MinWords=6`})`.as(
                 'snippet',
               )
-            : sql<string>`left(coalesce(m.body, ''), 140)`.as('snippet'),
+            : sql<string>`left(coalesce(m.body, m.payload->>'title', ''), 140)`.as('snippet'),
         ])
         .where('p.left_at', 'is', null)
         .where('m.deleted_at', 'is', null)
@@ -221,8 +262,8 @@ export async function runSearch(
         .$if(Boolean(text), (qb) =>
           qb.where((eb) =>
             text.length >= 3 && prefixQuery(text)
-              ? sql<boolean>`m.search @@ to_tsquery('simple', ${prefixQuery(text)})`
-              : eb('m.body', 'ilike', like(text)),
+              ? sql<boolean>`m.search_all @@ to_tsquery('simple', ${prefixQuery(text)})`
+              : eb(sql`coalesce(m.body, m.payload->>'title')`, 'ilike', like(text)),
           ),
         )
         .$if(Boolean(personIds?.length), (qb) =>

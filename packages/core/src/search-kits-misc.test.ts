@@ -68,9 +68,26 @@ describe('search (PRD §25 examples)', () => {
       label: 'March',
     });
     expect(at('files from Sarah in March').person).toBe('Sarah');
+    // A bare month is the nearest one: a card is found by when it's for (R51), so "November"
+    // in September is the one ahead; "April" is as far either way, and the past one is meant.
+    expect(at('budget in November').period).toMatchObject({
+      since: '2026-11-01',
+      until: '2026-12-01',
+    });
+    expect(at('budget in April').period).toMatchObject({ since: '2026-04-01' });
+    expect(at('budget in September').period).toMatchObject({ since: '2026-09-01' });
+    expect(
+      parseSearchQuery('budget in November', { now: new Date('2026-12-05T10:00:00Z') }).period,
+    ).toMatchObject({ since: '2026-11-01' });
+    expect(
+      parseSearchQuery('budget in January', { now: new Date('2026-12-05T10:00:00Z') }).period,
+    ).toMatchObject({ since: '2027-01-01' });
+    expect(at('budget in November 2025').period).toMatchObject({ since: '2025-11-01' });
     expect(at('this month').period).toMatchObject({ since: '2026-09-01', until: '2026-09-24' });
     expect(at('last Friday').period).toMatchObject({ since: '2026-09-18', until: '2026-09-19' });
     expect(at('invoices 2025').period).toMatchObject({ since: '2025-01-01', until: '2026-01-01' });
+    // Four digits that aren't a year are a number to find.
+    expect(at('INV 7731')).toMatchObject({ text: 'INV 7731', period: null });
     // A period is the rules' understanding: no model for it.
     expect(isPlainText(at('photos from last week'))).toBe(false);
     expect(isPlainText(at('contract yesterday'))).toBe(false);

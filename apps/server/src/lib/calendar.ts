@@ -226,6 +226,8 @@ export async function orgBookings(
   ctx: AppContext,
   orgId: string,
   window: Window,
+  /** A view takes a page; the slots take every card in the window (nothing read as free). */
+  opts: { limit?: number } = {},
 ): Promise<OrgBookingView[]> {
   const start = sql<string>`m.payload->'fields'->'start'->>'at'`;
   const rows = await ctx.db
@@ -241,7 +243,7 @@ export async function orgBookings(
     .where(start, '>=', window.from.toISOString())
     .where(start, '<=', window.until.toISOString())
     .orderBy(start, 'asc')
-    .limit(MAX_ITEMS)
+    .limit(opts.limit ?? MAX_ITEMS)
     .execute();
   const out: OrgBookingView[] = [];
   for (const row of rows) {

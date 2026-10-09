@@ -312,6 +312,7 @@ export const turkish: Catalog = {
     'Sizin adınıza işlem yapmayı hemen bırakır. Yeniden kullanmak isterseniz uygulamanın kendisinden yeniden izin vermeniz gerekir.',
   'What it already did stays as it is, marked as sent through it.':
     'Daha önce yaptıkları olduğu gibi kalır; onun aracılığıyla gönderildiği belirtilir.',
+  'Your conversation with it': 'Onunla konuşmanız',
   'Your calendar': 'Takviminiz',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'İzin verdiğiniz bir uygulama yalnızca izin verdiklerinize ulaşır; parolanıza, gizlilik ayarlarınıza veya hesabınıza asla. Gönderdiklerinde onun aracılığıyla geldiği yazar. Kaldırdığınız uygulama hemen durur.',

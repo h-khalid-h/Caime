@@ -73,6 +73,9 @@ afterAll(async () => {
   await t.close();
 });
 
+/** A snippet without its match marks (core format.ts, snippetParts). */
+const plain = (s: string) => s.replace(/[\uE000\uE001]/g, '');
+
 describe('the business inbox (PRD §37–38, R15)', () => {
   it('a customer starts one conversation with an organization, from outside its team', async () => {
     const first = await lina.req('POST', `/v1/orgs/${orgId}/conversations`);
@@ -211,6 +214,29 @@ describe('the business inbox (PRD §37–38, R15)', () => {
     const fromOmar = await lina.get(`/v1/search?q=${encodeURIComponent('from:@omar')}`);
     expect(teamNamed(JSON.stringify(fromOmar.results.messages ?? []))).toBe(false);
     expect(teamNamed(JSON.stringify(found))).toBe(false);
+    // The organization itself, by name: its conversation opens from the result.
+    const byName = await lina.get('/v1/search?q=data');
+    expect(byName.results.organizations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'DATA C', conversationId: convo, handle: 'datac.biz' }),
+      ]),
+    );
+    // A card by what it says of itself: an invoice's reference, with no words at all.
+    const invoice = await omar.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'invoice',
+        fields: { reference: 'INV-7731', amount: { value: 250, currency: 'EGP' } },
+      },
+    });
+    const byRef = await lina.get('/v1/search?q=INV-7731');
+    expect(byRef.results.messages.map((m: { id: string }) => m.id)).toContain(invoice.message.id);
+    expect(plain(byRef.results.messages[0].snippet)).toContain('INV-7731');
+    // The number alone finds it too.
+    expect(
+      (await lina.get('/v1/search?q=7731')).results.messages.map((m: { id: string }) => m.id),
+    ).toContain(invoice.message.id);
     const memory = await lina.get(`/v1/conversations/${convo}/memory`);
     expect(memory.peopleLine).toBe('DATA C');
     expect(teamNamed(JSON.stringify(memory))).toBe(false);

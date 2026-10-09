@@ -339,6 +339,7 @@ export const ar: Catalog = {
     'يتوقف عن التصرف نيابةً عنك فورًا. لاستخدامه مجددًا، تسمح له من التطبيق نفسه.',
   'What it already did stays as it is, marked as sent through it.':
     'ما فعله من قبل يبقى كما هو، معلَّمًا بأنه أُرسل عبره.',
+  'Your conversation with it': 'محادثتك معها',
   'Your calendar': 'تقويمك',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'التطبيق الذي سمحت له لا يصل إلا إلى ما أذنت به، لا إلى كلمة مرورك ولا خصوصيتك ولا حسابك، وما يرسله يُكتب عليه أنه جاء عبره. أزِله ويتوقف فورًا.',

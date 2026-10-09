@@ -1250,10 +1250,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
       `assertCanWrite` and a limit, asks parsed, the Connect return tied to its session, http(s)
       websites and openable schemes, the brief without hidden messages, reclaims per person,
       re-encoded images only). Arbitrary payloads on text messages (L9) wait for Block 6.
-- [ ] Block 2, integration Hs: the provider filter in `cardsAhead` (H2); an organization's files
+- [x] Block 2, integration Hs: the provider filter in `cardsAhead` (H2); an organization's files
       spared when its owner's account goes (H3); listings cleared of a closed or left
-      organization (H4); cards and organizations in search (H5); slots from every overlapping
-      card (H6).
+      organization (H4, with block 1); cards and organizations in search (H5: `search_all`,
+      a bare month the nearest one, a year bounded); slots from every overlapping card (H6).
 - [ ] Block 3, words: `msg()` on the nine label tables; the friend's "not an AI" line; every
       fragment and bare literal a whole key; the catalogs; the collector flagging mixed literals.
 - [ ] Block 4, Apps and Developer in harmony: one publisher-and-icon helper for consent,
@@ -2406,6 +2406,15 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   and feed carry the whole organization's appointments; free slots are read from a capped list;
   nine core label tables aren't in any catalog; the country sets the work week and the currency
   and nothing else; a single choice is built six ways.
+- 2026-10-09 — Review block 2 (integration): on a team, your calendar is yours (the bookings you
+  do, the threads assigned to you), everywhere the calendar is read; deleting an account spares
+  an organization's logo, its items' photos and an app's icon; search finds a card by what it
+  says of itself (`messages.search_all`, generated: title, reference, summary, what was booked,
+  the parser's joiners cut so "INV-7731" and "7731" both find it), by when it's for ("budget in
+  November": a bare month is now the nearest one, a year 1900–2099), and an organization through
+  the conversation you write in; a busy host's slots come from every card overlapping the window
+  (600 cards the day before no longer hide one). Cases in booking, business, calendar and core's
+  search tests.
 - 2026-10-09 — Review block 1 (privacy and money): one task-visibility rule for every reader (a
   private wait never reaches the person it's about, nor their model), one Checkout Session ever
   payable per card (settled, reused, expired, never replaced while paid), slots and providers

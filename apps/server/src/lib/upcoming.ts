@@ -3,6 +3,10 @@
  * read from their cards, for their calendar feed, a conversation's details and a space's page.
  * Only where they may still read it: a conversation they're in and let in (no request pending
  * or declined), never a private one, never a card deleted, or deleted by them for themselves.
+ * In a business conversation a team member (in every one of the organization's, R15) has only
+ * the cards that are theirs to do: a booking naming them, or a card made by hand in a thread
+ * assigned to them; the customer has them all. Every reader (the calendar, the feed, Attention,
+ * Cai, busy times, slots) gets the same answer from here.
  */
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
 import { sql } from 'kysely';
@@ -59,7 +63,17 @@ export async function cardsAhead(
         .on('p.left_at', 'is', null),
     )
     .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
-    .select(['m.id', 'm.conversation_id', 'm.seq', 'm.payload', 'm.created_at', 'm.edited_at'])
+    .leftJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
+    .select([
+      'm.id',
+      'm.conversation_id',
+      'm.seq',
+      'm.payload',
+      'm.created_at',
+      'm.edited_at',
+      't.customer_id',
+      't.assignee_id',
+    ])
     .where('m.kind', '=', 'kit')
     .where('m.deleted_at', 'is', null)
     .where(sql`m.payload->>'kit'`, 'in', ['meeting', 'appointment'])
@@ -115,6 +129,10 @@ export async function cardsAhead(
     const kit = payload.kit;
     const at = payload.fields?.start?.at ? new Date(payload.fields.start.at) : null;
     if (!kit || !at || Number.isNaN(at.getTime()) || at < opts.from || at > opts.until) continue;
+    // On the team of this thread's organization: only what's theirs to do.
+    const onTeam = row.customer_id !== null && row.customer_id !== userId;
+    const booking = payload.booking && typeof payload.booking === 'object' ? payload.booking : null;
+    if (onTeam && !(booking ? booking.providerId === userId : row.assignee_id === userId)) continue;
     const minutes = Number(payload.fields?.durationMinutes);
     const moved = payload.history?.at(-1)?.at;
     ahead.push({
@@ -129,7 +147,7 @@ export async function cardsAhead(
       place: typeof payload.fields?.place === 'string' ? payload.fields.place : null,
       agreed: payload.state === AGREED[kit],
       updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
-      booking: payload.booking && typeof payload.booking === 'object' ? payload.booking : null,
+      booking,
     });
   }
   return ahead.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, opts.limit);

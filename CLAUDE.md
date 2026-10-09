@@ -318,7 +318,11 @@ These are rules, not preferences.
 - The calendar (R51) reads what the feed reads: `lib/calendar.ts` (`calendarItems` for a person,
   with `overdueTasks` shared with `modules/calendar.ts`'s feed and `cardsAhead`; `orgBookings`
   for an organization's team) behind `GET /v1/calendar?from&to` and `GET /v1/orgs/:id/calendar`
-  (a window of up to a year). Nothing on it changes a date: a card is moved in its
+  (a window of up to a year). On an organization's team, someone's own calendar carries only
+  the bookings they do (`providerId`) or, for a card with no booking, the threads assigned to
+  them (`cardsAhead` reads both from the business thread), so the feed, Attention's coming up,
+  Cai, `busyNow` and the brief all answer for them alone. Nothing on it changes a date: a card
+  is moved in its
   conversation. The app shows it as the Actions tab's Calendar segment and the Business inbox's
   Bookings view (both loaded when shown), keyed by an hourly window so the query is one an hour,
   and `realtime/apply.ts` invalidates `['calendar']` and `['org-calendar']` on a kit message
@@ -341,7 +345,9 @@ These are rules, not preferences.
   cuts the hours with core `openSlots` (the item's length on the grid, full at its capacity,
   a stay checked a night at a time, a named provider free) and takes out what holds a slot: an
   organization's appointment cards (`orgBookings`), a person's own cards (`cardsAhead`, less an
-  organization's unless they do them). A booking from the catalog arrives as `payload.booking
+  organization's unless they do them): every card overlapping the window (`heldBy`, up to
+  `HELD_MAX`, never a page of the earliest; the look-back is a day, 31 for a stay), since a
+  card left out reads as an open slot. A booking from the catalog arrives as `payload.booking
   = { itemId, quantity }` and `sendMessage` fixes it through `bookingFor` (the audience with core
   `canBook`, adults for a paid item, the quantity, the slot open now: `not_bookable` 403,
   `slot_taken` 409) as `AppointmentBooking` (name, length, quantity, price then, `endAt`,
@@ -1047,7 +1053,9 @@ These are rules, not preferences.
   with fixed words. Recording a call (R52) uses this interface when it comes, never a second one.
 - Natural-language search (R17): `GET /search` runs the rules (`parseSearchQuery`; a time at the
   end, "last week", "in March", "2025", is `query.period`, the days to search, split off first by
-  `splitPeriod` and filtered on the server, never read as a person) and, only when they
+  `splitPeriod` and filtered on the server, never read as a person; a bare month is the nearest
+  one, `nearestYearOf`: "November" in September is the one ahead, since a card is found by when
+  it's for; a year is 1900 to 2099, any other four digits a number to find) and, only when they
   understood nothing of a query that `looksLikeSentence` and the app said the typing is done
   (`understand=1`: a second's pause or Enter in `search.tsx`; the rules answer every keystroke
   without it), asks the model to fill the same
@@ -1060,6 +1068,13 @@ These are rules, not preferences.
   bookkeeping. A new field the model may fill joins `SearchUnderstanding`, `fromUnderstanding`'s
   checks, the prompt in `lib/ai.ts` and both stand-ins (`test/ai.test.ts` queues a reply;
   `e2e/anthropic-stub.mjs` answers the "search someone typed" prompt from the words).
+  Words are matched against `messages.search_all` (migration 0065: the body with a card's
+  title, reference, summary and what was booked, the joiners the parser keeps inside a token
+  cut to spaces, so "INV-7731" and "7731" both find the invoice; `prefixQuery` splits what's
+  typed the same way), a period matches when a message was written or, for a card, when it's
+  for (`CARD_START`), a card's snippet is its title and reference, and an organization is found
+  through the business threads the searcher writes in (`handle`, `conversationId`; the app
+  opens the conversation). A new thing a card says of itself joins the index's expression.
   The rules read every interface language: `RULES` and `PERIOD_RULES` in `search.ts` hold each
   language's shapes (written for Arabic as it's folded: `tolerant` accepts any alef, "ى" or "ة"),
   a relationship word matches its label in the reader's language too (`relationshipFromWord`:

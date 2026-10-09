@@ -224,11 +224,20 @@ export default function Search() {
             <SectionTitle>{tr('Organizations')}</SectionTitle>
             {r.organizations.map((o) => (
               <ListRow
-                key={o.name ?? ''}
+                key={o.conversationId ?? o.name ?? ''}
                 icon={Building}
                 title={o.name ?? ''}
-                subtitle={trn(o.people, '{n} person', '{n} people')}
-                onPress={() => setTerm(o.name ?? '')}
+                subtitle={
+                  o.conversationId
+                    ? tr('Your conversation with it')
+                    : trn(o.people, '{n} person', '{n} people')
+                }
+                chevron={Boolean(o.conversationId)}
+                onPress={() =>
+                  o.conversationId
+                    ? router.navigate(`/c/${o.conversationId}`)
+                    : setTerm(o.name ?? '')
+                }
               />
             ))}
           </>

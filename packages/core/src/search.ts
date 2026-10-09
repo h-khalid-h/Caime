@@ -247,7 +247,9 @@ const PERIOD_RULES: Array<[RegExp, (m: RegExpExecArray) => Period | null]> = [
   ],
   [
     new RegExp(
-      `${P}(?:(?:in|of|en|de|من|في)\\s+)?(\\d{4})(?:'?(?:te|de|ta|da|ten|den|tan|dan))?${END}`,
+      // A year as people write one (1900 to 2099): any other four digits are a number, a
+      // reference's or an invoice's, searched as words.
+      `${P}(?:(?:in|of|en|de|من|في)\\s+)?((?:19|20)\\d{2})(?:'?(?:te|de|ta|da|ten|den|tan|dan))?${END}`,
       'u',
     ),
     (m) => ({ kind: 'year', year: Number(m[1]) }),
@@ -282,7 +284,8 @@ const utcDay = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d));
 
 /**
  * The days a phrase at the end of a query names, by the calendar ("last week" is Monday to
- * Sunday before this week's; "March" is the last March), and the query without it. Days, not
+ * Sunday before this week's; "March" is the nearest March, the one just passed or the one
+ * ahead), and the query without it. Days, not
  * instants: the search is by day, in UTC, which is near enough for "last week". Every interface
  * language names them ("la semaine dernière", "geçen hafta", "الأسبوع الماضي").
  */
@@ -333,12 +336,25 @@ function daysOf(p: Period, now: Date): { since: Date; until: Date } {
       return { since: utcDay(y, mo, d - back), until: utcDay(y, mo, d - back + 1) };
     }
     case 'month': {
-      const year = p.year ?? (p.month <= mo ? y : y - 1);
+      const year = p.year ?? nearestYearOf(p.month, y, mo);
       return { since: utcDay(year, p.month, 1), until: utcDay(year, p.month + 1, 1) };
     }
     case 'year':
       return { since: utcDay(p.year, 0, 1), until: utcDay(p.year + 1, 0, 1) };
   }
+}
+
+/**
+ * The year a bare month names: the nearest one, since a search finds cards by when they're for
+ * (R51) as well as words by when they were written. "November" in September is the November
+ * ahead, in December the one just passed; a month as far either way is the past one, where the
+ * written record is. A year written beside it is exact.
+ */
+function nearestYearOf(month: number, y: number, mo: number): number {
+  const back = (mo - month + 12) % 12;
+  const ahead = (month - mo + 12) % 12;
+  if (ahead < back) return month > mo ? y : y + 1;
+  return month <= mo ? y : y - 1;
 }
 
 /** A rule's source, tolerant of how Arabic is typed: any alef, "ى" or "ي", "ة" or "ه". */

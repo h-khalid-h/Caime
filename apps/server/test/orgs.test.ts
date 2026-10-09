@@ -249,6 +249,29 @@ describe('organizations (PRD §36, R15)', () => {
     expect(bad.json().error.message).toBe('Enter a domain like datac.com.');
   });
 
+  it('its logo stays when the account that uploaded it is deleted and the organization handed on', async () => {
+    const founder = await signup(t, { displayName: 'Founder Gone' });
+    const heir = await signup(t, { displayName: 'Heir Here' });
+    const r = await founder.post('/v1/connections/requests', { toUserId: heir.user.id });
+    await heir.post(`/v1/connections/requests/${r.requestId}/accept`, {});
+    const made = (
+      await founder.post('/v1/orgs', {
+        name: 'Founder’s Place',
+        handle: 'founders.place',
+        kind: 'shop',
+        country: 'EG',
+      })
+    ).org.id;
+    await founder.post(`/v1/orgs/${made}/members`, { userIds: [heir.user.id] });
+    await founder.patch(`/v1/orgs/${made}/members/${heir.user.id}`, { role: 'admin' });
+    const logo = await uploadImage(founder, 'founder-logo.jpg');
+    await founder.patch(`/v1/orgs/${made}`, { avatarFileId: logo.id });
+    await founder.req('DELETE', '/v1/me', { password: 'correct horse battery' });
+    const org = (await heir.get(`/v1/orgs/${made}`)).org;
+    expect(org.avatarUrl).toBe(`/v1/orgs/${made}/avatar?v=${logo.id.slice(-8)}`);
+    expect((await customer.req('GET', `/v1/orgs/${made}/avatar`)).statusCode).toBe(200);
+  });
+
   it('its logo: an image of the owner’s or an admin’s own upload, shown to everyone', async () => {
     const before = (await customer.get('/v1/orgs/by-handle/datac')).org;
     expect(before.avatarUrl).toBeNull();

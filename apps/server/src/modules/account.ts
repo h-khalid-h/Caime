@@ -100,6 +100,15 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
             ),
           ),
         )
+        // An organization's logo, its catalog's photos and an app's icon stay with what they
+        // belong to (an organization handed on, an app that lives on under its organization).
+        .where(
+          sql<boolean>`not exists (select 1 from organizations o where o.avatar_file_id = f.id)`,
+        )
+        .where(
+          sql<boolean>`not exists (select 1 from organizations o, jsonb_array_elements(o.booking_items) i where i->>'photoFileId' = f.id::text)`,
+        )
+        .where(sql<boolean>`not exists (select 1 from oauth_clients a where a.icon_file_id = f.id)`)
         .execute(),
     ]);
     // What it pays for ends first: nothing is charged to an account that's gone (Stripe away for

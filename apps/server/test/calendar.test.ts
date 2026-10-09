@@ -57,6 +57,9 @@ afterAll(async () => {
   await t.close();
 });
 
+/** A snippet without its match marks (core format.ts, snippetParts). */
+const plain = (s: string) => s.replace(/[\uE000\uE001]/g, '');
+
 describe('a calendar feed (PRD §72)', () => {
   it('is an address shown once, read with no sign-in, ended by a new one or by stopping it', async () => {
     expect((await ana.get('/v1/calendar/feed')).feed).toEqual({
@@ -328,6 +331,10 @@ describe('a calendar feed (PRD §72)', () => {
         conversationId: withBen,
       },
     ]);
+    // "In November" finds the card by when it's for, not when it was written.
+    const dated = await ana.get(`/v1/search?q=${encodeURIComponent('budget in November')}`);
+    expect(dated.results.messages.map((m: { id: string }) => m.id)).toContain(meeting.id);
+    expect(plain(dated.results.messages[0].snippet)).toContain('Budget review');
     await ben.post(`/v1/messages/${meeting.id}/kit`, { to: 'accepted' });
     const task = (
       await ana.post('/v1/tasks', {

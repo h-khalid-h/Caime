@@ -1,4 +1,4 @@
-import { uuidv4 } from '@caime/core';
+import { uuidv4, uuidv7 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
@@ -569,5 +569,80 @@ describe('what a booker may see or say (review 2026-10-09)', () => {
     expect(
       (await lina.req('GET', `/v1/people/${noor.user.id}/slots?${window}&item=chat`)).statusCode,
     ).toBe(200);
+  });
+});
+
+describe('whose a booking is (review 2026-10-09)', () => {
+  it('a team member’s own calendar carries only the bookings they do; the customer every one of theirs', async () => {
+    // A cleaning names no providers, so anyone on the team may be given it.
+    const open = await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=cleaning`);
+    const at = open.slots.at(-1) as string;
+    const booked = (
+      await lina.post(`/v1/conversations/${convo}/messages`, {
+        clientId: uuidv4(),
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: { title: 'Cleaning', start: { at, hasTime: true } },
+          booking: { itemId: 'cleaning' },
+        },
+      })
+    ).message;
+    await omar.post(`/v1/messages/${booked.id}/kit`, { to: 'confirmed' });
+    await omar.post(`/v1/messages/${booked.id}/booking/provider`, { userId: omar.user.id });
+    const ids = async (c: Client) =>
+      (await c.get(`/v1/calendar?${window}`)).items.map((i: { id: string }) => i.id);
+    expect(await ids(omar)).toContain(booked.id);
+    expect(await ids(lina)).toContain(booked.id);
+    expect(await ids(noor)).not.toContain(booked.id);
+    // Handed to Noor, it moves with it.
+    await omar.post(`/v1/messages/${booked.id}/booking/provider`, { userId: noor.user.id });
+    expect(await ids(noor)).toContain(booked.id);
+    expect(await ids(omar)).not.toContain(booked.id);
+  });
+
+  it('a busy host’s slots come from every card in the window, never a page of them', async () => {
+    const open = await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=cleaning`);
+    const taken = open.slots.at(-1) as string;
+    expect(taken).toBeTruthy();
+    // Six hundred cards the day before, and one on that slot: a page of the earliest would
+    // have left the slot out, and it would have read as open.
+    const last = await t.ctx.db
+      .selectFrom('messages')
+      .select((eb) => eb.fn.max('seq').as('seq'))
+      .where('conversation_id', '=', convo)
+      .executeTakeFirstOrThrow();
+    let seq = Number(last.seq ?? 0);
+    const card = (startAt: string) => ({
+      id: uuidv7(),
+      conversation_id: convo,
+      seq: ++seq,
+      sender_id: omar.user.id,
+      kind: 'kit' as const,
+      payload: JSON.stringify({
+        kit: 'appointment',
+        state: 'confirmed',
+        title: 'Walk-in',
+        fields: { title: 'Walk-in', start: { at: startAt, hasTime: true } },
+      }),
+      created_at: t.ctx.now(),
+    });
+    const dayBefore = new Date(Date.parse(taken) - 20 * 3_600_000).toISOString();
+    const rows = [...Array(600)].map(() => card(dayBefore)).concat([card(taken)]);
+    for (let i = 0; i < rows.length; i += 200)
+      await t.ctx.db
+        .insertInto('messages')
+        .values(rows.slice(i, i + 200))
+        .execute();
+    const after = await lina.get(`/v1/orgs/${orgId}/slots?${window}&item=cleaning`);
+    expect(after.slots).not.toContain(taken);
+    await t.ctx.db
+      .deleteFrom('messages')
+      .where(
+        'id',
+        'in',
+        rows.map((r) => r.id),
+      )
+      .execute();
   });
 });

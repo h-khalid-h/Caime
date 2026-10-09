@@ -1651,7 +1651,14 @@ export interface SearchAssetHit {
 
 export interface SearchResults {
   people?: Array<{ person: PersonView; relationship: RelationshipView | null }>;
-  organizations?: Array<{ name: string | null; people: number }>;
+  /** By name: one from the searcher's relationships (how many people there), or one written to
+   * (its handle and the conversation, which opens). */
+  organizations?: Array<{
+    name: string | null;
+    people: number;
+    handle?: string;
+    conversationId?: string;
+  }>;
   messages?: SearchMessageHit[];
   files?: SearchAssetHit[];
   tasks?: TaskView[];

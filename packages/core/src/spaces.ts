@@ -101,8 +101,7 @@ export function nextOwner<R extends string>(
   const staying = members
     .filter((m) => m.userId !== leaving)
     .sort(
-      (a, b) =>
-        Date.parse(a.joinedAt) - Date.parse(b.joinedAt) || a.userId.localeCompare(b.userId),
+      (a, b) => Date.parse(a.joinedAt) - Date.parse(b.joinedAt) || a.userId.localeCompare(b.userId),
     );
   return (staying.find((m) => m.role === 'admin') ?? staying[0])?.userId ?? null;
 }
