@@ -149,7 +149,7 @@ export default function Authorize() {
               </View>
               <Text variant="caption" color="textSecondary">
                 {tr(
-                  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Connected apps.{You}',
+                  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}',
                   { name: c.app.name, You: c.allowedBefore ? tr(' You let it in before.') : '' },
                 )}
               </Text>

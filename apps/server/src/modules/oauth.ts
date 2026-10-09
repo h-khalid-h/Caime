@@ -2,14 +2,17 @@
  * OAuth for third-party apps (PRD §74). A developer registers an app with the addresses people
  * return to; someone the app sends to Caime sees who made it and what it asks to do, and lets
  * it in or not; the app trades the code it gets back, with its PKCE verifier, for tokens that act
- * as that person, within what they allowed. They see and end it under Connected apps.
+ * as that person, within what they allowed. They see and end it under Apps · Connected (R74).
  *
  * The token and revocation endpoints answer as RFC 6749 and RFC 7009 say, so any OAuth library
  * works with them: `{ "error": "invalid_grant" }` rather than Caime's own error shape.
  */
 import {
+  appIconPath,
   CreateOAuthAppBody,
+  canManageOrg,
   isPersonalScope,
+  ListOAuthAppBody,
   OAUTH_REFRESH_PREFIX,
   type OAuthAppView,
   OAuthAuthorizeRequest,
@@ -21,7 +24,9 @@ import {
 } from '@caime/core';
 import type {
   ConnectedAppsResponse,
+  ConnectedAppView,
   OAuthAppCreatedResponse,
+  OAuthAppResponse,
   OAuthAppsResponse,
   OAuthErrorResponse,
   OAuthRedirectResponse,
@@ -35,6 +40,13 @@ import { type Selectable, sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { OAuthClientsTable } from '../db/schema';
+import {
+  builtinApps,
+  builtinConnectedView,
+  countConnected,
+  listingState,
+  listingView,
+} from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import { hashToken } from '../lib/crypto';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
@@ -49,6 +61,7 @@ import {
   revokeGrant,
   secretMatches,
 } from '../lib/oauth';
+import { orgSeat } from '../lib/orgs';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -64,7 +77,20 @@ function appView(c: Selectable<OAuthClientsTable>): OAuthAppView {
     redirectUris: c.redirect_uris,
     confidential: c.secret_hash !== null,
     createdAt: c.created_at.toISOString(),
+    listing: listingView(c),
   };
+}
+
+/** The origin Connect may send people to: one the app already returns to, or its website. */
+function ownOrigins(c: Pick<Selectable<OAuthClientsTable>, 'redirect_uris' | 'website'>) {
+  const origins = new Set<string>();
+  for (const u of [...c.redirect_uris, c.website]) {
+    if (!u) continue;
+    try {
+      origins.add(new URL(u).origin);
+    } catch {}
+  }
+  return origins;
 }
 
 /** An OAuth error, in the shape the specifications give (never Caime's own). */
@@ -150,6 +176,87 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     reply.status(201);
     // The secret, this once: only its hash is kept.
     return { app: appView(row), clientSecret: secret };
+  });
+
+  /**
+   * What an app says of itself in Discover (R74), and whether it asks to be there. Listing it
+   * needs a tagline, a category and where Connect sends people (an https address at an origin
+   * the app already returns to, or its website's, so a listing never sends anyone elsewhere);
+   * the icon is an image its owner uploaded; the organization is one they manage. Any change
+   * to what's shown puts a listed app back in the operator's queue.
+   */
+  app.patch('/me/oauth-apps/:id', async (req): Promise<OAuthAppResponse> => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(ListOAuthAppBody, req.body);
+    const row = await ctx.db.transaction().execute(async (trx) => {
+      const c = await trx
+        .selectFrom('oauth_clients')
+        .selectAll()
+        .where('id', '=', id)
+        .where('owner_id', '=', auth.userId)
+        .where('revoked_at', 'is', null)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!c) throw notFound(tr('That app'));
+      const next = {
+        tagline: body.tagline === undefined ? c.tagline : body.tagline || null,
+        description: body.description === undefined ? c.description : body.description || null,
+        category: body.category === undefined ? c.category : body.category,
+        login_url: body.loginUrl === undefined ? c.login_url : body.loginUrl,
+        icon_file_id: body.iconFileId === undefined ? c.icon_file_id : body.iconFileId,
+        org_id: body.orgId === undefined ? c.org_id : body.orgId,
+      };
+      if (next.icon_file_id && next.icon_file_id !== c.icon_file_id) {
+        const mine = await trx
+          .selectFrom('files')
+          .select('id')
+          .where('id', '=', next.icon_file_id)
+          .where('owner_id', '=', auth.userId)
+          .where('kind', '=', 'image')
+          .where('status', '=', 'ready')
+          .executeTakeFirst();
+        if (!mine) throw badRequest(tr('Choose an image you uploaded.'));
+      }
+      if (next.org_id && next.org_id !== c.org_id) {
+        const seat = await orgSeat(trx, auth.userId, next.org_id);
+        if (!canManageOrg(seat?.role))
+          throw forbidden(tr('Only an organization’s owner or admins publish apps under it.'));
+      }
+      if (next.login_url && !ownOrigins(c).has(new URL(next.login_url).origin))
+        throw badRequest(
+          tr(
+            'Connect must send people to the app’s own address: one it returns to, or its website.',
+          ),
+        );
+      const listed = body.listed ?? listingState(c) !== 'none';
+      if (listed && !(next.tagline && next.category && next.login_url))
+        throw badRequest(tr('A listing needs a tagline, a category and where Connect goes.'));
+      const shownChanged = (Object.keys(next) as Array<keyof typeof next>).some(
+        (k) => next[k] !== c[k],
+      );
+      const marks = !listed
+        ? { listed_at: null, reviewed_at: null, declined_reason: null }
+        : !c.listed_at || (shownChanged && (c.reviewed_at || c.declined_reason))
+          ? // Asked anew: the operator looks at what's shown now.
+            { listed_at: ctx.now(), reviewed_at: null, declined_reason: null }
+          : {};
+      const updated = await trx
+        .updateTable('oauth_clients')
+        .set({ ...next, ...marks })
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      const action =
+        !listed && c.listed_at
+          ? 'oauth.listing_withdrawn'
+          : 'listed_at' in marks
+            ? 'oauth.listing_asked'
+            : 'oauth.app_updated';
+      await audit(trx, { actorId: auth.userId, action, target: id });
+      return updated;
+    });
+    return { app: appView(row) };
   });
 
   app.delete('/me/oauth-apps/:id', async (req): Promise<OkResponse> => {
@@ -251,27 +358,32 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     // One grant per app and person, and allowing again only adds to it: an app asking for one
     // more thing (or another install of it asking for less) never loses what it was allowed.
     // The person takes it all back by removing the app. One statement, so two at once agree.
-    const { id: grantId } = await ctx.db
-      .insertInto('oauth_grants')
-      .values({
-        id: uuidv7(),
-        client_id: client.id,
-        user_id: auth.userId,
-        scopes,
-        created_at: ctx.now(),
-      })
-      .onConflict((oc) =>
-        oc
-          .columns(['client_id', 'user_id'])
-          .where('revoked_at', 'is', null)
-          .doUpdateSet({
-            scopes: sql<string[]>`array(
+    // A first grant counts one more connected for Discover (R74), in the grant's own transaction.
+    const grantId = await ctx.db.transaction().execute(async (trx) => {
+      const { id, inserted } = await trx
+        .insertInto('oauth_grants')
+        .values({
+          id: uuidv7(),
+          client_id: client.id,
+          user_id: auth.userId,
+          scopes,
+          created_at: ctx.now(),
+        })
+        .onConflict((oc) =>
+          oc
+            .columns(['client_id', 'user_id'])
+            .where('revoked_at', 'is', null)
+            .doUpdateSet({
+              scopes: sql<string[]>`array(
               select s from unnest(oauth_grants.scopes || excluded.scopes) with ordinality as t(s, i)
               group by s order by min(i))`,
-          }),
-      )
-      .returning('id')
-      .executeTakeFirstOrThrow();
+            }),
+        )
+        .returning(['id', sql<boolean>`(xmax = 0)`.as('inserted')])
+        .executeTakeFirstOrThrow();
+      if (inserted) await countConnected(trx, client.id, 1);
+      return id;
+    });
     const code = newCode();
     await ctx.db
       .insertInto('oauth_codes')
@@ -508,8 +620,10 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         'g.scopes',
         'g.created_at',
         'g.last_used_at',
+        'c.id as client_id',
         'c.name',
         'c.website',
+        'c.icon_file_id',
         'u.display_name as owner',
       ])
       .where('g.user_id', '=', auth.userId)
@@ -517,17 +631,26 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('c.revoked_at', 'is', null)
       .orderBy('g.created_at', 'desc')
       .execute();
-    return {
-      apps: rows.map((r) => ({
+    // Caime's own that are on (the calendar address) are rows of the same kind (R74).
+    const own = (await builtinApps(ctx, auth.userId))
+      .map(builtinConnectedView)
+      .filter((a): a is ConnectedAppView => a !== null);
+    const apps: ConnectedAppView[] = [
+      ...own,
+      ...rows.map((r) => ({
+        kind: 'oauth' as const,
+        appId: r.client_id,
         grantId: r.id,
         name: r.name,
         website: r.website,
         owner: r.owner,
+        iconUrl: appIconPath(r.client_id, r.icon_file_id),
         scopes: r.scopes,
         createdAt: r.created_at.toISOString(),
         lastUsedAt: r.last_used_at?.toISOString() ?? null,
       })),
-    };
+    ];
+    return { apps };
   });
 
   app.delete('/me/connected-apps/:id', async (req): Promise<OkResponse> => {

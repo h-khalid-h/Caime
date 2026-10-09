@@ -1139,4 +1139,12 @@ export const frServer: Catalog = {
     one: 'Vous avez promis une chose.',
     other: 'Vous avez promis {n} choses.',
   },
+  'Say why, so the developer can change it and ask again.':
+    'Dites pourquoi, pour que le développeur puisse modifier et redemander.',
+  'Only an organization’s owner or admins publish apps under it.':
+    'Seuls le propriétaire ou les admins d’une organisation publient des applications sous son nom.',
+  'Connect must send people to the app’s own address: one it returns to, or its website.':
+    'Connecter doit envoyer les gens à l’adresse de l’application elle-même : une où elle revient, ou son site web.',
+  'A listing needs a tagline, a category and where Connect goes.':
+    'Une fiche a besoin d’une accroche, d’une catégorie et d’où mène Connecter.',
 };

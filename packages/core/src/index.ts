@@ -1,6 +1,7 @@
 export * from './access';
 export * from './agents';
 export * from './api';
+export * from './app-directory';
 export * from './apps';
 export * from './arabic-variety';
 export * from './assist';

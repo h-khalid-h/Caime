@@ -5,6 +5,7 @@
  * the same 404 as a route that was never there.
  */
 import {
+  AppListingReviewBody,
   Handle,
   type HandleView,
   isReservedHandle,
@@ -17,6 +18,8 @@ import {
 } from '@caime/core';
 import type {
   AdminPersonResponse,
+  AppListingReviewResponse,
+  AppListingsResponse,
   BackupResponse,
   BackupsResponse,
   OkResponse,
@@ -31,6 +34,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { listingById, listingReviewView, waitingListings } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
@@ -538,5 +542,46 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!org) throw notFound(tr('That organization'));
     await giveHandle(req, by, { of: 'organization', ...org }, wanted);
     return { kind: 'org', id: org.id, handle: wanted };
+  });
+
+  // --- Apps asking to be listed (R74): looked at once, let into Discover or declined ----------
+
+  app.get('/admin/listings', async (req): Promise<AppListingsResponse> => {
+    const by = operator(req);
+    const rows = await waitingListings(ctx);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.listings_viewed',
+      metadata: { count: rows.length, operator: by },
+    });
+    return { listings: rows.map(listingReviewView) };
+  });
+
+  app.post('/admin/listings/:id', async (req): Promise<AppListingReviewResponse> => {
+    const by = operator(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(AppListingReviewBody, req.body);
+    const before = await listingById(ctx, id);
+    if (!before?.listed_at || before.revoked_at) throw notFound(tr('That app'));
+    if (body.decision === 'decline' && !body.reason?.trim())
+      throw badRequest(tr('Say why, so the developer can change it and ask again.'));
+    await ctx.db
+      .updateTable('oauth_clients')
+      .set({
+        reviewed_at: ctx.now(),
+        declined_reason: body.decision === 'decline' ? (body.reason?.trim() ?? null) : null,
+      })
+      .where('id', '=', id)
+      .execute();
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'oauth.listing_reviewed',
+      target: id,
+      ip: req.ip,
+      metadata: { decision: body.decision, operator: by },
+    });
+    const after = await listingById(ctx, id);
+    if (!after) throw notFound(tr('That app'));
+    return { listing: listingReviewView(after) };
   });
 }

@@ -45,6 +45,9 @@ export function CalendarFeed() {
       setUrl(made.url);
       setConfirming(null);
       qc.setQueryData(qk.calendarFeed, { feed: made.feed });
+      // On, it's a connected app (R74): Connected lists it, Discover says so.
+      void qc.invalidateQueries({ queryKey: qk.connectedApps });
+      void qc.invalidateQueries({ queryKey: qk.allDirectory });
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
     } finally {
@@ -58,6 +61,8 @@ export function CalendarFeed() {
       setUrl(null);
       setConfirming(null);
       void qc.invalidateQueries({ queryKey: qk.calendarFeed });
+      void qc.invalidateQueries({ queryKey: qk.connectedApps });
+      void qc.invalidateQueries({ queryKey: qk.allDirectory });
       toast(tr('Your calendar won’t read Caime any more'));
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });

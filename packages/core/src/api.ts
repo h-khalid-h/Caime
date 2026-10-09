@@ -6,6 +6,7 @@
  */
 import type { z } from 'zod';
 import type { AgentAction } from './agents';
+import type { AppCategory, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
@@ -1832,6 +1833,68 @@ export interface OAuthAppView {
   /** It keeps a secret on a server; otherwise it proves itself with PKCE alone. */
   confidential: boolean;
   createdAt: string;
+  /** Its listing in Discover (R74): what it says of itself, and where it stands. */
+  listing: AppListingView;
+}
+
+/** What an app says of itself in Discover (R74), as its developer set it. */
+export interface AppListingView {
+  state: ListingState;
+  tagline: string | null;
+  description: string | null;
+  category: AppCategory | null;
+  iconFileId: string | null;
+  /** Where Connect sends someone: the app's own sign-in, which asks Caime for a grant. */
+  loginUrl: string | null;
+  /** The organization it's published under, whose verification Discover shows. */
+  orgId: string | null;
+  /** Why the operator declined, when they did. */
+  declinedReason: string | null;
+}
+
+/** An app in Discover (R74): a listed one, or one of Caime's own. */
+export interface DirectoryAppView {
+  /** An OAuth client's id, or a built-in's name (`calendar`). */
+  id: string;
+  kind: 'oauth' | 'builtin';
+  name: string;
+  tagline: string | null;
+  description: string | null;
+  category: AppCategory;
+  iconUrl: string | null;
+  website: string | null;
+  publisher: { name: string; handle: string | null; verified: boolean };
+  connectedCount: number;
+  /** Where Connect sends someone (an OAuth app's own sign-in); a built-in connects in Caime. */
+  connectUrl: string | null;
+  /** The viewer connected it: a live grant, or the built-in is on. */
+  connected: boolean;
+}
+
+export interface DirectoryResponse {
+  apps: DirectoryAppView[];
+  nextBefore: string | null;
+}
+export interface DirectoryAppResponse {
+  app: DirectoryAppView;
+}
+
+/** A listing waiting for the operator (R74): the app and who made it. */
+export interface AppListingReviewView {
+  id: string;
+  name: string;
+  website: string | null;
+  listing: AppListingView;
+  iconUrl: string | null;
+  owner: { displayName: string; handle: string };
+  org: { name: string; handle: string; verified: boolean } | null;
+  askedAt: string;
+}
+export interface AppListingsResponse {
+  listings: AppListingReviewView[];
+}
+export interface AppListingReviewResponse {
+  listing: AppListingReviewView;
 }
 
 /** What someone is asked when an app wants to act for them. */
@@ -1843,12 +1906,21 @@ export interface OAuthConsentView {
   allowedBefore: boolean;
 }
 
-/** An app someone let act for them, and what it may do. */
+/**
+ * Something that acts for someone or reads their data (R74): an app they let in (a grant), or
+ * one of Caime's own built-ins that's on (the calendar address), each the same kind of row.
+ */
 export interface ConnectedAppView {
-  grantId: string;
+  kind: 'oauth' | 'builtin';
+  /** The directory's id for it (`DirectoryAppView.id`). */
+  appId: string;
+  /** The grant, for an app someone let in; a built-in has none. */
+  grantId: string | null;
   name: string;
   website: string | null;
+  /** Who made it: the developer, or Caime. */
   owner: string;
+  iconUrl: string | null;
   scopes: string[];
   createdAt: string;
   lastUsedAt: string | null;
@@ -2344,6 +2416,9 @@ export interface PersonalTokenCreatedResponse {
 }
 export interface OAuthAppsResponse {
   apps: OAuthAppView[];
+}
+export interface OAuthAppResponse {
+  app: OAuthAppView;
 }
 export interface OAuthAppCreatedResponse {
   app: OAuthAppView;

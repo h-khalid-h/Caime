@@ -947,7 +947,7 @@ with its reason, so it isn't proposed again without new facts.
   a Connect button that starts the app's own sign-in (its login-initiation URL, RFC 8414's
   `initiate_login_uri`) so the grant is the app's as always and Caime never holds a token it
   didn't issue. A developer lists an app from Developer (listed, with the directory fields; a
-  listing is reviewed by the operator before it shows: `/admin/apps`, as reports are) and
+  listing is reviewed by the operator before it shows: `/admin/listings`, as reports are) and
   unlists it any time. Built-in apps are directory rows too (`kind: 'builtin'`, the calendar
   first), connected and disconnected through their own routes, so a new built-in (a mail
   connector, a Google Calendar sync) joins the one list. Adults only, as grants are. *Cost*: two

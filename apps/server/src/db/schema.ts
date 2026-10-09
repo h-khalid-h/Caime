@@ -1004,6 +1004,17 @@ export interface OAuthClientsTable {
   secret_hash: Buffer | null;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
+  /** Its listing in Discover (R74). */
+  tagline: Generated<string | null>;
+  description: Generated<string | null>;
+  category: Generated<string | null>;
+  icon_file_id: Generated<string | null>;
+  org_id: Generated<string | null>;
+  login_url: Generated<string | null>;
+  listed_at: Generated<Date | null>;
+  reviewed_at: Generated<Date | null>;
+  declined_reason: Generated<string | null>;
+  connected_count: Generated<number>;
 }
 
 export interface OAuthGrantsTable {

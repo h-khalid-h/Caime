@@ -627,4 +627,38 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
   };
   app.get('/orgs/:id/items/:itemId/photo', (req, reply) => itemPhoto('orgs', req, reply));
   app.get('/people/:id/items/:itemId/photo', (req, reply) => itemPhoto('people', req, reply));
+
+  /**
+   * An app's icon in Discover (R74): a listed app's for anyone signed in, else its owner's own
+   * (a developer sees their listing before it's let through); drawn at its size through the
+   * same renditions as any image. The address changes with the file (`appIconPath`), so it's
+   * cached as any file is.
+   */
+  app.get('/directory/:id/icon', async (req, reply) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const missing = () => notFound(tr('That app'));
+    const c = await ctx.db
+      .selectFrom('oauth_clients')
+      .select(['owner_id', 'icon_file_id', 'listed_at', 'reviewed_at', 'declined_reason'])
+      .where('id', '=', id)
+      .where('revoked_at', 'is', null)
+      .executeTakeFirst();
+    if (!c?.icon_file_id) throw missing();
+    const listed = c.listed_at && c.reviewed_at && !c.declined_reason;
+    if (!listed && c.owner_id !== auth.userId) throw missing();
+    const f = await ctx.db
+      .selectFrom('files')
+      .selectAll()
+      .where('id', '=', c.icon_file_id)
+      .executeTakeFirst();
+    if (f?.kind !== 'image') throw missing();
+    return streamFile(
+      req,
+      reply,
+      storage,
+      { ...(await largeOf(storage, f)), name: 'icon.webp' },
+      true,
+    );
+  });
 }

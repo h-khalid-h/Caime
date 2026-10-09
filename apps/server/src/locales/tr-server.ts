@@ -1087,4 +1087,12 @@ export const turkishServer: Catalog = {
     one: 'Yapacağınızı söylediğiniz bir şey var.',
     other: 'Yapacağınızı söylediğiniz {n} şey var.',
   },
+  'Say why, so the developer can change it and ask again.':
+    'Nedenini söyle ki geliştirici değiştirip yeniden isteyebilsin.',
+  'Only an organization’s owner or admins publish apps under it.':
+    'Bir kuruluş adına uygulamaları yalnızca sahibi veya yöneticileri yayımlar.',
+  'Connect must send people to the app’s own address: one it returns to, or its website.':
+    'Bağla, insanları uygulamanın kendi adresine göndermeli: döndüğü bir adres ya da web sitesi.',
+  'A listing needs a tagline, a category and where Connect goes.':
+    'Bir listeleme için slogan, kategori ve Bağla’nın gideceği yer gerekir.',
 };

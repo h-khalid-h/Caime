@@ -41,7 +41,7 @@ export interface PageFacts {
 }
 
 /** When each page last changed in what it says. */
-const UPDATED = '4 October 2026';
+const UPDATED = '9 October 2026';
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) =>
@@ -210,10 +210,10 @@ ${f.processors
   .join('\n')}
 <li>Calls, group calls too, go directly between the devices in them, encrypted.${calls}${relay}</li>
 </ul></li>
-<li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Connected apps) to
+<li><strong>Services you choose.</strong> If you add Your calendar (You &rarr; Apps) to
 Google Calendar, Outlook or Apple Calendar, that service reads your open actions with a due date,
 with who asked you or who you&rsquo;re waiting on, and the meetings and appointments you&rsquo;ve
-agreed, with their titles, notes and places, and so can anyone with its address. Opening a shared place on the map takes you to OpenStreetMap.</li>
+agreed, with their titles, notes and places, and so can anyone with its address. Apps under You &rarr; Apps &rarr; Discover are listed by their developers and looked at once by Caime; Discover shows how many people connected an app, never who, and an app reaches only what you allow it when its own sign-in asks. Opening a shared place on the map takes you to OpenStreetMap.</li>
 </ul>
 <p>Some of these companies are in the United States. Where your data goes there, it&rsquo;s
 protected as data protection law requires, for example by the European Commission&rsquo;s standard
@@ -552,7 +552,7 @@ priority. Quiet hours are there too: whose messages wait for set hours.</li>
 conversation). When you ask someone to do something in a one-to-one, or @mention them in a group,
 Caime offers to track it. See what you were asked (Asked me) and
 what you&rsquo;re waiting on (Waiting) in Actions.</li>
-<li>You &rarr; Connected apps &rarr; Your calendar gives Google Calendar, Outlook or Apple Calendar
+<li>You &rarr; Apps &rarr; Your calendar gives Google Calendar, Outlook or Apple Calendar
 a private address with your open actions with a due date, and the meetings and appointments
 you&rsquo;ve agreed. Anyone with the address sees them, so keep it to yourself. It&rsquo;s for
 people 18 and over.</li>

@@ -14,6 +14,7 @@
 import { callResult, MANAGING_ROLES } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { listingState } from './app-directory';
 import { automationView, visibleSaved } from './automations';
 import { bookingOf, itemsOf } from './booking';
 import { type CustomerMask, maskPayload, masksFor } from './business';
@@ -761,6 +762,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         'secret_hash',
         'created_at',
         'revoked_at',
+        'tagline',
+        'description',
+        'category',
+        'login_url',
+        'org_id',
+        'listed_at',
+        'reviewed_at',
+        'declined_reason',
+        'connected_count',
       ])
       .where('owner_id', '=', me)
       .orderBy('created_at')
@@ -1378,6 +1388,19 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       confidential: a.secret_hash !== null,
       createdAt: a.created_at.toISOString(),
       removedAt: iso(a.revoked_at),
+      // Its listing in Discover (R74): what it says of itself, and where that stands.
+      listing: {
+        state: listingState(a),
+        tagline: a.tagline,
+        description: a.description,
+        category: a.category,
+        loginUrl: a.login_url,
+        orgId: a.org_id,
+        askedAt: iso(a.listed_at),
+        reviewedAt: iso(a.reviewed_at),
+        declinedReason: a.declined_reason,
+        connectedCount: a.connected_count,
+      },
     })),
     connectedApps: connectedApps.map((g) => ({
       name: g.name,

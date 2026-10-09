@@ -20,6 +20,7 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+import { AppListing } from './AppListing';
 import { Group } from './SettingsPage';
 
 type Kind = 'public' | 'confidential';
@@ -321,6 +322,8 @@ export function OAuthApps() {
         {shown ? (
           <View style={{ gap: 12 }}>
             <Addresses app={shown} />
+            <Divider />
+            <AppListing key={shown.id} app={shown} onSaved={setOpen} />
             <View style={{ marginHorizontal: -20 }}>
               <ListRow
                 icon={Trash}

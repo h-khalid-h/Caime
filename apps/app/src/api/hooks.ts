@@ -1,5 +1,6 @@
 /** Query hooks shared by screens, the shell's badges and the desktop panes. */
 import type { AssetView, InboxAllResponse, InboxResponse } from '@caime/core/api';
+import type { AppCategory } from '@caime/core/app-directory';
 import { inboxAllList, inboxSections } from '@caime/core/attention';
 import type { BusinessView } from '@caime/core/business';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -128,6 +129,25 @@ export const useSavedItems = (collection?: string) =>
     queryFn: ({ pageParam }) => endpoints.savedItems(collection, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextBefore ?? undefined,
+  });
+
+/** Discover (R74): the apps someone can connect, the most connected first, a page at a time. */
+export const useDirectory = (search: string, category: AppCategory | null) =>
+  useInfiniteQuery({
+    queryKey: qk.directory(search, category ?? ''),
+    queryFn: ({ pageParam }) =>
+      endpoints.directory({ before: pageParam, q: search || undefined, category }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextBefore ?? undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+
+export const useDirectoryApp = (id: string | null) =>
+  useQuery({
+    queryKey: qk.directoryApp(id ?? ''),
+    queryFn: () => endpoints.directoryApp(id ?? ''),
+    enabled: Boolean(id),
   });
 
 /** Whether this server offers AI assist, and whether this person turned it on. */

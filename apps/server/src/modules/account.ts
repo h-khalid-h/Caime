@@ -23,6 +23,7 @@ import { buildExport } from '../lib/export';
 import { leaveAllGroupCalls } from '../lib/group-calls';
 import { releaseHandle } from '../lib/handles';
 import { participantsOf } from '../lib/messages';
+import { revokeGrantsOf } from '../lib/oauth';
 import { handOverOrgs } from '../lib/orgs';
 import { handOverSpaces } from '../lib/spaces';
 import { storageFor } from '../lib/storage';
@@ -105,6 +106,9 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     await endBillingOf(ctx, { userId: me });
     // Out of any group call, so the others hear it and the call's line is written.
     await leaveAllGroupCalls(ctx, me);
+    // Every app it let in is let go of, so each counts one fewer connected (R74): the rows
+    // would go with the account, but not the counts Discover is ordered by.
+    await revokeGrantsOf(ctx, me);
     // Its devices read nothing more, but their public keys stay (without their names), so those
     // it wrote to privately can still check what it sent them.
     await ctx.db

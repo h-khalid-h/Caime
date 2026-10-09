@@ -640,6 +640,21 @@ These are rules, not preferences.
   checked in the auth plugin before the route runs, as app tokens reach only `API_ROUTES`. A
   route joins the list on purpose, with its permission and a case in `personal-tokens.test.ts`;
   nothing about the account itself ever does. `req.auth.grant` says a token made the request.
+- Apps (R74): Settings · Apps is `app/(app)/settings/apps.tsx` (Connected and Discover in
+  `features/apps/`), never a screen per kind. Connected is `GET /me/connected-apps`
+  (`ConnectedAppView`, `kind`: an OAuth grant, or a built-in that's on); Discover is
+  `GET /directory` (`lib/app-directory.ts`: listed `oauth_clients` by `(connected_count, id)`
+  keyset, 20 a page, the trigram index for `q`, a category) with core's `BUILTIN_APPS` first on
+  the first page, and `GET /directory/:id`. A developer's listing is `PATCH /me/oauth-apps/:id`
+  (`ListOAuthAppBody`: tagline, description, category, `loginUrl` at an origin the app returns
+  to or its website's, an icon that's the owner's own image, an organization they manage,
+  `listed`); asking sets `listed_at`, the operator's `POST /admin/listings/:id` sets
+  `reviewed_at` (with `declined_reason` when declined), and a change to what's shown asks again.
+  `connected_count` moves only inside the grant's transaction (`countConnected` on a first
+  grant, in `revokeGrant`, and `revokeGrantsOf` before an account is deleted), never counted on
+  read. A new built-in is a row in `BUILTIN_APPS` and a case in `builtinApps` (whether it's on
+  for the viewer, how many have it on); its icon is `/directory/:id/icon` (a listed app's to
+  anyone signed in, else its owner's).
 - OAuth apps' tokens (`cao_`) go through the same `PERSON_ROUTES`; `resolveOAuthAccess`
   (`apps/server/src/lib/oauth.ts`) checks the token, its grant, its app and its person are all
   live. `/v1/oauth/token` and `/v1/oauth/revoke` answer RFC 6749/7009 errors

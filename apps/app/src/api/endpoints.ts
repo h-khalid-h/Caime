@@ -44,6 +44,8 @@ import type {
   DeliveryQueuedResponse,
   DeviceRemovedResponse,
   DeviceResponse,
+  DirectoryAppResponse,
+  DirectoryResponse,
   EffectivePolicyResponse,
   ErasedResponse,
   FollowingResponse,
@@ -71,6 +73,7 @@ import type {
   MyDevicesResponse,
   NotificationsResponse,
   OAuthAppCreatedResponse,
+  OAuthAppResponse,
   OAuthAppsResponse,
   OAuthConsentView,
   OAuthRedirectResponse,
@@ -127,6 +130,7 @@ import type {
   UrlResponse,
   UserResponse,
 } from '@caime/core/api';
+import type { AppCategory } from '@caime/core/app-directory';
 import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
@@ -488,12 +492,29 @@ export const endpoints = {
     confidential: boolean;
   }) => api.post<OAuthAppCreatedResponse>('/me/oauth-apps', body),
   removeOAuthApp: (id: string) => api.del<OkResponse>(`/me/oauth-apps/${id}`),
+  /** What the app says of itself in Discover (R74), and whether it asks to be listed. */
+  listOAuthApp: (
+    id: string,
+    body: {
+      tagline?: string | null;
+      description?: string | null;
+      category?: AppCategory | null;
+      loginUrl?: string | null;
+      iconFileId?: string | null;
+      orgId?: string | null;
+      listed?: boolean;
+    },
+  ) => api.patch<OAuthAppResponse>(`/me/oauth-apps/${id}`, body),
   oauthConsent: (params: Record<string, string>) =>
     api.get<OAuthConsentView>(`/oauth/authorize?${new URLSearchParams(params).toString()}`),
   oauthDecide: (params: Record<string, string>, decision: 'allow' | 'deny') =>
     api.post<OAuthRedirectResponse>('/oauth/authorize', { ...params, decision }),
   connectedApps: () => api.get<ConnectedAppsResponse>('/me/connected-apps'),
   removeConnectedApp: (grantId: string) => api.del<OkResponse>(`/me/connected-apps/${grantId}`),
+  // Discover (R74): the apps people can connect, a page at a time
+  directory: (params: { before?: string; q?: string; category?: AppCategory | null }) =>
+    api.get<DirectoryResponse>(`/directory${q(params)}`),
+  directoryApp: (id: string) => api.get<DirectoryAppResponse>(`/directory/${id}`),
   // Calls (PRD §47): the server rings and relays; the media goes device to device
   callIce: () => api.get<IceConfigView>('/calls/ice'),
   liveCall: () => api.get<LiveCallsResponse>('/calls/live'),

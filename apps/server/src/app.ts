@@ -55,6 +55,7 @@ import { callRoutes } from './modules/calls';
 import { checkoutRoutes } from './modules/checkout';
 import { connectionRoutes } from './modules/connections';
 import { conversationRoutes } from './modules/conversations';
+import { directoryRoutes } from './modules/directory';
 import { e2eeRoutes } from './modules/e2ee';
 import { fileRoutes } from './modules/files';
 import { groupCallRoutes } from './modules/group-calls';
@@ -299,6 +300,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await agentRoutes(v1, ctx);
       await tokenRoutes(v1, ctx);
       await oauthRoutes(v1, ctx);
+      await directoryRoutes(v1, ctx);
       await adminRoutes(v1, ctx);
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);

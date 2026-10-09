@@ -137,8 +137,6 @@ export const ar: Catalog = {
   '{name} wants to act for you': '{name} يريد أن يتصرف نيابةً عنك',
   'Made by {displayName} (@{handle}){text}': 'من صنع {displayName} (@{handle}){text}',
   'It will be able to': 'سيكون بإمكانه',
-  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Connected apps.{You}':
-    'لا كلمة مرورك ولا خصوصيتك ولا حسابك أبدًا. ما يرسله يُكتب عليه «عبر {name}». أنهِه متى شئت من أنت ← التطبيقات المتصلة.{You}',
   ' You let it in before.': ' سمحت له من قبل.',
   'Apps act for people over 18, so this one can’t act for you.':
     'التطبيقات تتصرف نيابةً عمّن تجاوزوا 18، فلا يستطيع هذا التصرف نيابةً عنك.',
@@ -341,16 +339,10 @@ export const ar: Catalog = {
     'يتوقف عن التصرف نيابةً عنك فورًا. لاستخدامه مجددًا، تسمح له من التطبيق نفسه.',
   'What it already did stays as it is, marked as sent through it.':
     'ما فعله من قبل يبقى كما هو، معلَّمًا بأنه أُرسل عبره.',
-  'Connected apps': 'التطبيقات المتصلة',
   'Your calendar': 'تقويمك',
-  'Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once.':
-    'كل من لديه العنوان يرى ما فيه: عناوين إجراءاتك ومواعيدها واجتماعاتك. احصل على عنوان جديد ويتوقف القديم فورًا.',
-  'Apps that act for you': 'تطبيقات تتصرف نيابةً عنك',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'التطبيق الذي سمحت له لا يصل إلا إلى ما أذنت به، لا إلى كلمة مرورك ولا خصوصيتك ولا حسابك، وما يرسله يُكتب عليه أنه جاء عبره. أزِله ويتوقف فورًا.',
   'Apps act for people over 18.': 'التطبيقات تتصرف نيابةً عمّن تجاوزوا 18.',
-  'No apps act for you. When one asks, you’ll see who made it and what it wants before you choose.':
-    'لا تطبيقات تتصرف نيابةً عنك. حين يطلب أحدها، ترى من صنعه وماذا يريد قبل أن تختار.',
   'A year': 'سنة',
   'No end': 'بلا نهاية',
   'Your new token': 'رمزك الجديد',
@@ -1977,7 +1969,6 @@ export const ar: Catalog = {
   'How your relationships are going, for you only': 'كيف تسير علاقاتك، لك وحدك',
   'Who sees what, who can find you': 'من يرى ماذا، ومن يستطيع العثور عليك',
   'Devices, password, recovery codes': 'الأجهزة وكلمة المرور ورموز الاستعادة',
-  'Your calendar, and apps you let act for you': 'تقويمك، والتطبيقات التي تتصرف نيابةً عنك',
   'Tokens for your scripts, apps for other people': 'رموز لسكربتاتك، وتطبيقات للآخرين',
   'Version, terms, help': 'الإصدار والشروط والمساعدة',
   '{displayName}, edit profile': '{displayName}، تعديل الملف الشخصي',
@@ -3461,4 +3452,63 @@ export const ar: Catalog = {
   'As you write it, else {variety}': 'كما تكتب، وإلا {variety}',
   'As you write it': 'كما تكتب',
   'Else as where you live: {variety}': 'وإلا فكما في بلدك: {variety}',
+  Connected: 'متصل',
+  Discover: 'اكتشف',
+  'Open {name}': 'افتح {name}',
+  'By {name}': 'من {name}',
+  '{n} people connected it': {
+    zero: 'لم يوصله أحد بعد',
+    one: 'أوصله شخص واحد',
+    two: 'أوصله شخصان',
+    few: 'أوصله {n} أشخاص',
+    many: 'أوصله {n} شخصًا',
+    other: 'أوصله {n} شخص',
+  },
+  'Connect opens the app’s own sign-in, which asks Caime for what it needs: you see who made it and what it wants before you choose, and can end it any time under Connected.':
+    'يفتح زر «اتصال» صفحة تسجيل الدخول الخاصة بالتطبيق، وهي تطلب من Caime ما يحتاجه: ترى من صنعه وما يريده قبل أن تختار، ويمكنك إنهاؤه في أي وقت من «متصل».',
+  Website: 'الموقع',
+  'Nothing is connected yet. Discover your calendar and the apps that work with Caime; when one asks to act for you, you see who made it and what it wants before you choose.':
+    'لا شيء متصل بعد. اكتشف تقويمك والتطبيقات التي تعمل مع Caime؛ وحين يطلب أحدها التصرف نيابةً عنك، ترى من صنعه وما يريده قبل أن تختار.',
+  'Discover apps': 'اكتشف التطبيقات',
+  'Search apps': 'ابحث في التطبيقات',
+  Category: 'الفئة',
+  'Apps are made by developers and looked at once by Caime before they’re listed. Each reaches only what you allow it, never your password, privacy or account.':
+    'التطبيقات يصنعها مطوّرون وتنظر فيها Caime مرة واحدة قبل إدراجها. ولا يصل أي منها إلا إلى ما تسمح به، ولا يصل أبدًا إلى كلمة مرورك أو خصوصيتك أو حسابك.',
+  'No app matches that.': 'لا يطابق ذلك أي تطبيق.',
+  'No apps are listed yet.': 'لا تطبيقات مدرجة بعد.',
+  'Listed in Discover.': 'مدرج في «اكتشف».',
+  'Waiting for Caime’s look: it shows once it’s let through.':
+    'في انتظار نظرة Caime: يظهر بمجرد السماح به.',
+  'Not listed: {reason} Change it and ask again.': 'غير مدرج: {reason} عدّله واطلب مجددًا.',
+  'Not in Discover.': 'ليس في «اكتشف».',
+  'Asked: Caime looks at it once, then it shows in Discover':
+    'تم الطلب: تنظر فيه Caime مرة واحدة ثم يظهر في «اكتشف»',
+  'In Discover': 'في «اكتشف»',
+  'Choose an icon': 'اختر أيقونة',
+  Tagline: 'سطر تعريفي',
+  'Your week in Caime, every Monday': 'أسبوعك في Caime، كل يوم اثنين',
+  Description: 'الوصف',
+  'Where Connect goes': 'إلى أين يذهب «اتصال»',
+  'Your app’s own sign-in, at an https address on a site it returns to or its website. From there it sends people to Caime for what it needs.':
+    'صفحة تسجيل الدخول الخاصة بتطبيقك، على عنوان https في موقع يعود إليه أو في موقعه. ومن هناك يرسل الأشخاص إلى Caime لطلب ما يحتاجه.',
+  'Published by': 'ناشره',
+  'Listed in Discover': 'مدرج في «اكتشف»',
+  'Needs a tagline, a category and where Connect goes. Caime looks once.':
+    'يحتاج إلى سطر تعريفي وفئة ووجهة لزر «اتصال». تنظر فيه Caime مرة واحدة.',
+  'Save the listing': 'احفظ الإدراج',
+  Calendars: 'التقويمات',
+  'Tasks and notes': 'المهام والملاحظات',
+  Money: 'المال',
+  Health: 'الصحة',
+  Travel: 'السفر',
+  'Developer tools': 'أدوات المطورين',
+  'Your due actions and meetings in Google Calendar, Outlook or Apple Calendar':
+    'إجراءاتك المستحقة واجتماعاتك في تقويم Google أو Outlook أو تقويم Apple',
+  'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.':
+    'عنوان خاص يقرؤه تطبيق التقويم لديك: إجراءاتك ذات تاريخ استحقاق، والاجتماعات والمواعيد التي وافقت عليها. لا يتغير شيء في Caime من هناك. وكل من لديه العنوان يراها، فاحتفظ به لنفسك.',
+  'Your calendar and the apps that act for you; discover more':
+    'تقويمك والتطبيقات التي تتصرف نيابةً عنك؛ اكتشف المزيد',
+  'Connect must send people to an https address.': 'يجب أن يرسل «اتصال» الأشخاص إلى عنوان https.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
+    'لا كلمة مرورك ولا خصوصيتك ولا حسابك أبدًا. ما يرسله يُكتب عليه «عبر {name}». أنهِه متى شئت من أنت ← التطبيقات.{You}',
 };

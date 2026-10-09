@@ -6,6 +6,13 @@ import { z } from 'zod';
 import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
+import {
+  APP_CATEGORIES,
+  APP_DESCRIPTION_MAX,
+  APP_TAGLINE_MAX,
+  DIRECTORY_PAGE,
+  DIRECTORY_PAGE_MAX,
+} from './app-directory';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
 import { ARABIC_VARIETIES } from './arabic-variety';
 import { REWRITE_STYLES } from './assist';
@@ -297,6 +304,48 @@ export const CreatePersonalTokenBody = z
     name: z.string().trim().min(1, msg('Name it for what will use it.')).max(60),
     scopes: z.array(z.enum(PERSONAL_SCOPES)).min(1, msg('Choose what it may do.')).max(10),
     days: z.union([z.literal(30), z.literal(90), z.literal(365), z.null()]).default(90),
+  })
+  .strict();
+
+/**
+ * What an app says of itself in Discover (R74), and whether it asks to be listed: a listing
+ * needs a tagline, a category and where Connect sends people; the rest may wait.
+ */
+export const ListOAuthAppBody = z
+  .object({
+    tagline: z.string().trim().max(APP_TAGLINE_MAX).nullable().optional(),
+    description: z.string().trim().max(APP_DESCRIPTION_MAX).nullable().optional(),
+    category: z.enum(APP_CATEGORIES).nullable().optional(),
+    loginUrl: z
+      .string()
+      .trim()
+      .url()
+      .max(300)
+      .refine((u) => u.startsWith('https://'), msg('Connect must send people to an https address.'))
+      .nullable()
+      .optional(),
+    iconFileId: z.string().uuid().nullable().optional(),
+    orgId: z.string().uuid().nullable().optional(),
+    /** Ask for it to be listed (the operator looks once), or take it out of Discover. */
+    listed: z.boolean().optional(),
+  })
+  .strict();
+
+/** A page of Discover: a cursor, a search, a category. */
+export const DirectoryQuery = z.object({
+  before: z
+    .string()
+    .regex(/^\d{1,9}\.[0-9a-f-]{36}$/)
+    .optional(),
+  q: z.string().trim().max(60).optional(),
+  category: z.enum(APP_CATEGORIES).optional(),
+  limit: z.coerce.number().int().min(1).max(DIRECTORY_PAGE_MAX).default(DIRECTORY_PAGE),
+});
+
+export const AppListingReviewBody = z
+  .object({
+    decision: z.enum(['list', 'decline']),
+    reason: z.string().trim().max(300).optional(),
   })
   .strict();
 

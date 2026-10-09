@@ -137,8 +137,6 @@ export const fr: Catalog = {
   '{name} wants to act for you': '{name} veut agir en votre nom',
   'Made by {displayName} (@{handle}){text}': 'Créée par {displayName} (@{handle}){text}',
   'It will be able to': 'Elle pourra',
-  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Connected apps.{You}':
-    'Jamais votre mot de passe, votre confidentialité ni votre compte. Ce qu’elle envoie porte la mention « via {name} ». Mettez-y fin à tout moment dans Vous → Applications connectées.{You}',
   ' You let it in before.': ' Vous l’aviez déjà autorisée.',
   'Apps act for people over 18, so this one can’t act for you.':
     'Les applications agissent pour les plus de 18 ans, donc celle-ci ne peut pas agir pour vous.',
@@ -338,16 +336,10 @@ export const fr: Catalog = {
     'Elle cesse immédiatement d’agir en votre nom. Pour la réutiliser, il faudra l’autoriser à nouveau depuis l’application elle-même.',
   'What it already did stays as it is, marked as sent through it.':
     'Ce qu’elle a déjà fait reste tel quel, marqué comme envoyé par elle.',
-  'Connected apps': 'Applications connectées',
   'Your calendar': 'Votre calendrier',
-  'Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once.':
-    'Quiconque a l’adresse voit ce qu’il contient : les titres et dates de vos actions, et vos réunions. Générez une nouvelle adresse et l’ancienne cesse aussitôt de fonctionner.',
-  'Apps that act for you': 'Applications qui agissent en votre nom',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'Une application que vous autorisez n’atteint que ce que vous avez permis, jamais votre mot de passe, votre confidentialité ni votre compte, et ce qu’elle envoie indique qu’il passe par elle. Retirez-la et elle cesse immédiatement.',
   'Apps act for people over 18.': 'Les applications agissent pour les plus de 18 ans.',
-  'No apps act for you. When one asks, you’ll see who made it and what it wants before you choose.':
-    'Aucune application n’agit en votre nom. Quand l’une le demande, vous verrez qui l’a créée et ce qu’elle veut avant de choisir.',
   'A year': 'Un an',
   'No end': 'Sans fin',
   'Your new token': 'Votre nouveau jeton',
@@ -2185,8 +2177,6 @@ export const fr: Catalog = {
     'Comment vont vos relations, rien que pour vous',
   'Who sees what, who can find you': 'Qui voit quoi, qui peut vous trouver',
   'Devices, password, recovery codes': 'Appareils, mot de passe, codes de récupération',
-  'Your calendar, and apps you let act for you':
-    'Votre calendrier, et les applications autorisées à agir pour vous',
   'Tokens for your scripts, apps for other people':
     'Jetons pour vos scripts, applications pour d’autres',
   'Version, terms, help': 'Version, conditions, aide',
@@ -3431,4 +3421,61 @@ export const fr: Catalog = {
   'As you write it, else {variety}': 'Comme vous l’écrivez, sinon {variety}',
   'As you write it': 'Comme vous l’écrivez',
   'Else as where you live: {variety}': 'Sinon, comme dans votre pays : {variety}',
+  Connected: 'Connectées',
+  Discover: 'Découvrir',
+  'Open {name}': 'Ouvrir {name}',
+  'By {name}': 'Par {name}',
+  '{n} people connected it': {
+    one: '{n} personne l’a connectée',
+    other: '{n} personnes l’ont connectée',
+  },
+  'Connect opens the app’s own sign-in, which asks Caime for what it needs: you see who made it and what it wants before you choose, and can end it any time under Connected.':
+    'Connecter ouvre la connexion de l’application elle-même, qui demande à Caime ce dont elle a besoin : vous voyez qui l’a faite et ce qu’elle veut avant de choisir, et pouvez y mettre fin à tout moment sous Connectées.',
+  Website: 'Site web',
+  'Nothing is connected yet. Discover your calendar and the apps that work with Caime; when one asks to act for you, you see who made it and what it wants before you choose.':
+    'Rien n’est connecté pour l’instant. Découvrez votre calendrier et les applications qui fonctionnent avec Caime ; quand l’une demande à agir pour vous, vous voyez qui l’a faite et ce qu’elle veut avant de choisir.',
+  'Discover apps': 'Découvrir des applications',
+  'Search apps': 'Rechercher des applications',
+  Category: 'Catégorie',
+  'Apps are made by developers and looked at once by Caime before they’re listed. Each reaches only what you allow it, never your password, privacy or account.':
+    'Les applications sont faites par des développeurs et examinées une fois par Caime avant d’être listées. Chacune n’atteint que ce que vous lui permettez, jamais votre mot de passe, votre confidentialité ni votre compte.',
+  'No app matches that.': 'Aucune application ne correspond.',
+  'No apps are listed yet.': 'Aucune application n’est encore listée.',
+  'Listed in Discover.': 'Listée dans Découvrir.',
+  'Waiting for Caime’s look: it shows once it’s let through.':
+    'En attente du regard de Caime : elle apparaît une fois acceptée.',
+  'Not listed: {reason} Change it and ask again.':
+    'Non listée : {reason} Modifiez-la et redemandez.',
+  'Not in Discover.': 'Pas dans Découvrir.',
+  'Asked: Caime looks at it once, then it shows in Discover':
+    'Demandé : Caime l’examine une fois, puis elle apparaît dans Découvrir',
+  'In Discover': 'Dans Découvrir',
+  'Choose an icon': 'Choisir une icône',
+  Tagline: 'Accroche',
+  'Your week in Caime, every Monday': 'Votre semaine dans Caime, chaque lundi',
+  Description: 'Description',
+  'Where Connect goes': 'Où mène Connecter',
+  'Your app’s own sign-in, at an https address on a site it returns to or its website. From there it sends people to Caime for what it needs.':
+    'La connexion de votre application elle-même, à une adresse https sur un site où elle revient ou sur son site web. De là, elle envoie les gens à Caime pour ce dont elle a besoin.',
+  'Published by': 'Publiée par',
+  'Listed in Discover': 'Listée dans Découvrir',
+  'Needs a tagline, a category and where Connect goes. Caime looks once.':
+    'Il faut une accroche, une catégorie et où mène Connecter. Caime regarde une fois.',
+  'Save the listing': 'Enregistrer la fiche',
+  Calendars: 'Calendriers',
+  'Tasks and notes': 'Tâches et notes',
+  Money: 'Argent',
+  Health: 'Santé',
+  Travel: 'Voyage',
+  'Developer tools': 'Outils de développement',
+  'Your due actions and meetings in Google Calendar, Outlook or Apple Calendar':
+    'Vos actions à échéance et vos réunions dans Google Agenda, Outlook ou Calendrier Apple',
+  'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.':
+    'Une adresse privée que votre application de calendrier lit : vos actions à échéance, et les réunions et rendez-vous que vous avez acceptés. Rien ne change dans Caime depuis là. Quiconque a l’adresse les voit : gardez-la pour vous.',
+  'Your calendar and the apps that act for you; discover more':
+    'Votre calendrier et les applications qui agissent pour vous ; découvrez-en d’autres',
+  'Connect must send people to an https address.':
+    'Connecter doit envoyer les gens à une adresse https.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
+    'Jamais votre mot de passe, votre confidentialité ni votre compte. Ce qu’elle envoie porte la mention « via {name} ». Mettez-y fin à tout moment dans Vous → Applications.{You}',
 };

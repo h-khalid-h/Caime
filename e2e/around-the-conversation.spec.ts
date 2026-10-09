@@ -290,7 +290,9 @@ test.describe
       });
       expect(made.ok()).toBe(true);
       const taskId: string = (await made.json()).task.id;
-      await page.goto('/settings/connected');
+      // The calendar is an app in Discover (R74): off, it's there to connect; on, it's in Connected.
+      await page.goto('/settings/apps?tab=discover');
+      await page.getByTestId('discover-calendar').click();
       await page.getByTestId('calendar-feed-make').click();
       const first = (
         await page.getByTestId('calendar-feed-url').filter({ visible: true }).innerText()
@@ -305,10 +307,13 @@ test.describe
       expect(ics.startsWith('BEGIN:VCALENDAR')).toBe(true);
       expect(ics).toContain(`SUMMARY:${title}`);
       await page.screenshot({ path: 'e2e/screenshots/desktop-calendar-feed.png' });
-      // Once away from the page, it isn't shown again: only that it's on.
-      await page.reload();
+      // Once away from the page, it isn't shown again: only that it's on, under Connected.
+      await page.goto('/settings/apps');
       await expect(page.getByTestId('calendar-feed-url')).toHaveCount(0);
       await expect(visible(page, /^On since .* · last read /)).toBeVisible();
+      await page.screenshot({ path: 'e2e/screenshots/desktop-apps-connected.png' });
+      await page.getByTestId('connected-Your calendar').click();
+      await expect(page.getByTestId('calendar-feed-on')).toBeVisible();
       await page.getByTestId('calendar-feed-replace').filter({ visible: true }).click();
       await page.getByTestId('calendar-feed-confirm').filter({ visible: true }).click();
       const second = (
@@ -1573,7 +1578,7 @@ test.describe
         ['about', 'About Caime'],
         ['plan', 'Plan'],
         ['developer', 'Developer'],
-        ['connected', 'Connected apps'],
+        ['apps', 'Apps'],
         ['saved', 'Saved'],
         ['automations', 'Automations'],
         ['appearance', 'Appearance'],
@@ -2297,8 +2302,56 @@ test.describe
         .filter({ visible: true });
       await expect(digestMessage.getByTestId('message-sent-via')).toHaveText('via Weekly digest ·');
 
+      // Noor lists her app: a tagline, a category, where Connect goes; Caime looks once.
+      const mine = await (
+        await noorContext.request.get('/v1/me/oauth-apps', { headers: CLIENT })
+      ).json();
+      const appId: string = mine.apps.find((a: { name: string }) => a.name === 'Weekly digest').id;
+      const listed = await noorContext.request.patch(`/v1/me/oauth-apps/${appId}`, {
+        headers: CLIENT,
+        data: {
+          tagline: 'Your week in Caime, every Monday',
+          category: 'tasks',
+          loginUrl: 'https://digest.example/login',
+          listed: true,
+        },
+      });
+      expect(listed.ok()).toBe(true);
+      expect((await listed.json()).app.listing.state).toBe('waiting');
+      const reviewed = await noorContext.request.post(`/v1/admin/listings/${appId}`, {
+        headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
+        data: { decision: 'list' },
+      });
+      expect(reviewed.ok()).toBe(true);
+      // Alex discovers it, already connected: the row says so, the sheet says how many did, and
+      // its button opens the app's own sign-in in a tab of its own.
+      await app.page.goto('/settings/apps?tab=discover');
+      await expect(app.page.getByTestId('discover-calendar')).toBeVisible();
+      const row = app.page.getByTestId(`discover-${appId}`);
+      await expect(row).toContainText('Weekly digest');
+      await expect(row).toContainText('Connected');
+      await app.page.getByTestId('discover-search').fill('nothing like it');
+      await expect(app.page.getByTestId('discover-none')).toBeVisible();
+      await app.page.getByTestId('discover-search').fill('digest');
+      await expect(row).toBeVisible();
+      await row.click();
+      await expect(app.page.getByTestId('discover-connected-count')).toHaveText(
+        '1 person connected it',
+      );
+      await expect(app.page.getByTestId('discover-connected')).toBeVisible();
+      await app.page.screenshot({
+        path: 'e2e/screenshots/phone-discover.png',
+        animations: 'disabled',
+      });
+      const opened = phone.waitForEvent('page');
+      await app.page.getByTestId('discover-connect').click();
+      const popup = await opened;
+      expect(popup.url()).toBe('https://digest.example/login');
+      await popup.close();
+      await app.page.keyboard.press('Escape');
+
       // Alex finds it among his connected apps and ends it; its token stops at once.
-      await app.page.goto('/settings/connected');
+      await app.page.goto('/settings/apps');
       await expect(app.page.getByTestId('connected-Weekly digest')).toContainText(
         'Made by Noor Haddad',
       );

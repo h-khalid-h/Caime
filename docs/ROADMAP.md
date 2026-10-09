@@ -1196,12 +1196,14 @@ listed there with its owner.
 Everything that reaches Caime from outside, in one place: the apps someone connects and
 discovers, and mail at their own address.
 
-- [ ] R74, Apps: Settings · Apps with Connected (grants and built-ins as one kind of row) and
+- [x] R74, Apps: Settings · Apps with Connected (grants and built-ins as one kind of row) and
       Discover (listed apps, keyset-paged, trigram search, categories, icons, publisher,
-      connect count, Connect through the app's login-initiation URL); a developer lists an app,
-      the operator reviews a listing; the calendar address as the first built-in app. Privacy and
-      help pages reworded; `oauth.test.ts`, `apps-directory.test.ts`, the E2E paths moved from
-      `/settings/connected` to `/settings/apps`.
+      connect count, Connect through the app's own sign-in); a developer lists an app from
+      Developer, the operator reviews a listing (`/v1/admin/listings`); the calendar address as
+      the first built-in app. Privacy and help pages reworded; `app-directory.test.ts` (seven
+      cases, 46 listed apps paged in three), the E2E paths moved from `/settings/connected` to
+      `/settings/apps` with a Discover scenario (listed, reviewed, found, counted, Connect in its
+      own tab).
 - [ ] R75, Caime Mail phase 1: `MAIL_DOMAIN` and the inbound interface (`lib/mail-in.ts`, a
       provider's webhook; a stand-in in tests, `e2e/mail-stub.mjs`), the authenticated From only,
       provisional people (visible to whoever they wrote to, found by nobody, gone with their
@@ -2341,3 +2343,9 @@ discovers, and mail at their own address.
 - 2026-10-05 — R63: an item's photo, on its page (and link previews), its sheet and the order
   picker. CI's red run was the site spec pinning the old Arabic headline; fixed and the full
   E2E suite run (the voice spec, last in the run, passes on its own: its job queue was busy).
+- 2026-10-09 — R74: Settings · Apps. "Connected apps" held the calendar address and the OAuth
+  grants with no way to find an app; now Connected lists both as one kind of row and Discover is
+  a directory (`oauth_clients` listed by `(connected_count, id)` keyset, a trigram search, eight
+  categories, an icon of the owner's own, a publisher that may be a verified organization, a
+  Connect that opens the app's own sign-in), reviewed once by the operator; the count moves only
+  inside the grant's own transaction, so a page costs one query at any size.

@@ -131,8 +131,6 @@ export const turkish: Catalog = {
   '{name} wants to act for you': '{name} sizin adınıza işlem yapmak istiyor',
   'Made by {displayName} (@{handle}){text}': 'Yapan: {displayName} (@{handle}){text}',
   'It will be able to': 'Şunları yapabilecek',
-  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Connected apps.{You}':
-    'Parolanıza, gizlilik ayarlarınıza veya hesabınıza asla erişemez. Gönderdiklerinde “{name} aracılığıyla” yazar. İstediğiniz zaman Siz → Bağlı uygulamalar bölümünden sonlandırabilirsiniz.{You}',
   ' You let it in before.': ' Daha önce izin vermiştiniz.',
   'Apps act for people over 18, so this one can’t act for you.':
     'Uygulamalar 18 yaş üstü kişiler adına işlem yapar; bu yüzden bu uygulama sizin adınıza işlem yapamaz.',
@@ -314,16 +312,10 @@ export const turkish: Catalog = {
     'Sizin adınıza işlem yapmayı hemen bırakır. Yeniden kullanmak isterseniz uygulamanın kendisinden yeniden izin vermeniz gerekir.',
   'What it already did stays as it is, marked as sent through it.':
     'Daha önce yaptıkları olduğu gibi kalır; onun aracılığıyla gönderildiği belirtilir.',
-  'Connected apps': 'Bağlı uygulamalar',
   'Your calendar': 'Takviminiz',
-  'Anyone with the address sees what’s in it: your actions’ titles and dates, and your meetings. Get a new address and the old one stops at once.':
-    'Adrese sahip herkes içindekileri görür: eylemlerinizin başlıkları ve tarihleri ile toplantılarınız. Yeni bir adres alırsanız eskisi hemen geçersiz olur.',
-  'Apps that act for you': 'Sizin adınıza işlem yapan uygulamalar',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'İzin verdiğiniz bir uygulama yalnızca izin verdiklerinize ulaşır; parolanıza, gizlilik ayarlarınıza veya hesabınıza asla. Gönderdiklerinde onun aracılığıyla geldiği yazar. Kaldırdığınız uygulama hemen durur.',
   'Apps act for people over 18.': 'Uygulamalar 18 yaş üstü kişiler adına işlem yapar.',
-  'No apps act for you. When one asks, you’ll see who made it and what it wants before you choose.':
-    'Sizin adınıza işlem yapan uygulama yok. Biri istediğinde, seçmeden önce kimin yaptığını ve ne istediğini göreceksiniz.',
   'A year': 'Bir yıl',
   'No end': 'Süresiz',
   'Your new token': 'Yeni belirteciniz',
@@ -2095,8 +2087,6 @@ export const turkish: Catalog = {
     'İlişkileriniz nasıl gidiyor, yalnızca sizin için',
   'Who sees what, who can find you': 'Kim ne görür, sizi kim bulabilir',
   'Devices, password, recovery codes': 'Cihazlar, parola, kurtarma kodları',
-  'Your calendar, and apps you let act for you':
-    'Takviminiz ve adınıza işlem yapmasına izin verdiğiniz uygulamalar',
   'Tokens for your scripts, apps for other people':
     'Betikleriniz için belirteçler, başkaları için uygulamalar',
   'Version, terms, help': 'Sürüm, koşullar, yardım',
@@ -3306,4 +3296,58 @@ export const turkish: Catalog = {
   'As you write it, else {variety}': 'Yazdığınız gibi, yoksa {variety}',
   'As you write it': 'Yazdığınız gibi',
   'Else as where you live: {variety}': 'Yoksa yaşadığınız yerdeki gibi: {variety}',
+  Connected: 'Bağlı',
+  Discover: 'Keşfet',
+  'Open {name}': '{name} uygulamasını aç',
+  'By {name}': '{name} tarafından',
+  '{n} people connected it': { one: '{n} kişi bağladı', other: '{n} kişi bağladı' },
+  'Connect opens the app’s own sign-in, which asks Caime for what it needs: you see who made it and what it wants before you choose, and can end it any time under Connected.':
+    'Bağla, uygulamanın kendi girişini açar; o da Caime’den gerekeni ister: seçmeden önce kimin yaptığını ve ne istediğini görürsün, Bağlı altından istediğin zaman sonlandırabilirsin.',
+  Website: 'Web sitesi',
+  'Nothing is connected yet. Discover your calendar and the apps that work with Caime; when one asks to act for you, you see who made it and what it wants before you choose.':
+    'Henüz bağlı bir şey yok. Takvimini ve Caime ile çalışan uygulamaları keşfet; biri senin adına hareket etmek istediğinde, seçmeden önce kimin yaptığını ve ne istediğini görürsün.',
+  'Discover apps': 'Uygulamaları keşfet',
+  'Search apps': 'Uygulama ara',
+  Category: 'Kategori',
+  'Apps are made by developers and looked at once by Caime before they’re listed. Each reaches only what you allow it, never your password, privacy or account.':
+    'Uygulamaları geliştiriciler yapar; listelenmeden önce Caime bir kez bakar. Her biri yalnızca izin verdiğine ulaşır; şifrene, gizliliğine veya hesabına asla.',
+  'No app matches that.': 'Buna uyan uygulama yok.',
+  'No apps are listed yet.': 'Henüz listelenmiş uygulama yok.',
+  'Listed in Discover.': 'Keşfet’te listelendi.',
+  'Waiting for Caime’s look: it shows once it’s let through.':
+    'Caime’nin bakmasını bekliyor: onaylanınca görünür.',
+  'Not listed: {reason} Change it and ask again.':
+    'Listelenmedi: {reason} Değiştir ve yeniden iste.',
+  'Not in Discover.': 'Keşfet’te değil.',
+  'Asked: Caime looks at it once, then it shows in Discover':
+    'İstendi: Caime bir kez bakar, sonra Keşfet’te görünür',
+  'In Discover': 'Keşfet’te',
+  'Choose an icon': 'Simge seç',
+  Tagline: 'Slogan',
+  'Your week in Caime, every Monday': 'Caime’deki haftan, her pazartesi',
+  Description: 'Açıklama',
+  'Where Connect goes': 'Bağla nereye gider',
+  'Your app’s own sign-in, at an https address on a site it returns to or its website. From there it sends people to Caime for what it needs.':
+    'Uygulamanın kendi girişi; döndüğü bir sitedeki veya web sitesindeki bir https adresi. Oradan insanları gerekeni istemek için Caime’ye gönderir.',
+  'Published by': 'Yayımlayan',
+  'Listed in Discover': 'Keşfet’te listeli',
+  'Needs a tagline, a category and where Connect goes. Caime looks once.':
+    'Bir slogan, bir kategori ve Bağla’nın gideceği yer gerekir. Caime bir kez bakar.',
+  'Save the listing': 'Listelemeyi kaydet',
+  Calendars: 'Takvimler',
+  'Tasks and notes': 'Görevler ve notlar',
+  Money: 'Para',
+  Health: 'Sağlık',
+  Travel: 'Seyahat',
+  'Developer tools': 'Geliştirici araçları',
+  'Your due actions and meetings in Google Calendar, Outlook or Apple Calendar':
+    'Vadesi gelen eylemlerin ve toplantıların Google Takvim, Outlook veya Apple Takvim’de',
+  'A private address your calendar app reads: your actions with a due date, and the meetings and appointments you agreed to. Nothing changes in Caime from there. Anyone with the address sees them, so keep it to yourself.':
+    'Takvim uygulamanın okuduğu özel bir adres: vadesi olan eylemlerin ve kabul ettiğin toplantılar ile randevular. Oradan Caime’de hiçbir şey değişmez. Adresi olan herkes bunları görür; kendine sakla.',
+  'Your calendar and the apps that act for you; discover more':
+    'Takvimin ve senin adına hareket eden uygulamalar; daha fazlasını keşfet',
+  'Connect must send people to an https address.':
+    'Bağla, insanları bir https adresine göndermeli.',
+  'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
+    'Parolanıza, gizlilik ayarlarınıza veya hesabınıza asla erişemez. Gönderdiklerinde “{name} aracılığıyla” yazar. İstediğiniz zaman Siz → Uygulamalar bölümünden sonlandırabilirsiniz.{You}',
 };

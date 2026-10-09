@@ -1123,4 +1123,12 @@ export const arServer: Catalog = {
     many: 'وعدت بـ{n} أمرًا.',
     other: 'وعدت بـ{n} أمر.',
   },
+  'Say why, so the developer can change it and ask again.':
+    'اذكر السبب، ليتمكن المطوّر من التعديل والطلب مجددًا.',
+  'Only an organization’s owner or admins publish apps under it.':
+    'لا ينشر التطبيقات باسم المنظمة إلا مالكها أو مشرفوها.',
+  'Connect must send people to the app’s own address: one it returns to, or its website.':
+    'يجب أن يرسل «اتصال» الأشخاص إلى عنوان التطبيق نفسه: عنوان يعود إليه، أو موقعه.',
+  'A listing needs a tagline, a category and where Connect goes.':
+    'يحتاج الإدراج إلى سطر تعريفي وفئة ووجهة لزر «اتصال».',
 };

@@ -120,11 +120,12 @@ const ITEMS: Array<{
     subtitle: msg('Devices, password, recovery codes'),
   },
   {
-    href: '/settings/connected',
-    path: '/settings/connected',
+    href: '/settings/apps',
+    path: '/settings/apps',
     icon: LayoutGrid,
-    title: msg('Connected apps'),
-    subtitle: msg('Your calendar, and apps you let act for you'),
+    // One place for what's connected and what can be (R74): the calendar is an app among them.
+    title: msg('Apps'),
+    subtitle: msg('Your calendar and the apps that act for you; discover more'),
   },
   {
     href: '/settings/developer',

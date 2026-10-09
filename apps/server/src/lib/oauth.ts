@@ -15,6 +15,7 @@ import {
 } from '@caime/core';
 import type { AppContext } from '../context';
 import type { PersonGrant } from './access';
+import { countConnected } from './app-directory';
 import { hashToken } from './crypto';
 
 export const CODE_TTL_MS = 10 * 60_000;
@@ -84,20 +85,27 @@ export async function issueTokens(ctx: AppContext, grantId: string, scopes: stri
   };
 }
 
-/** End what a person let an app do, and every token it holds. */
+/**
+ * End what a person let an app do, and every token it holds; the app counts one fewer connected
+ * (R74), in the same transaction as the grant's end, so Discover's order is never counted later.
+ */
 export async function revokeGrant(ctx: AppContext, grantId: string): Promise<void> {
-  await ctx.db
-    .updateTable('oauth_grants')
-    .set({ revoked_at: ctx.now() })
-    .where('id', '=', grantId)
-    .where('revoked_at', 'is', null)
-    .execute();
-  await ctx.db
-    .updateTable('oauth_tokens')
-    .set({ revoked_at: ctx.now() })
-    .where('grant_id', '=', grantId)
-    .where('revoked_at', 'is', null)
-    .execute();
+  await ctx.db.transaction().execute(async (trx) => {
+    const ended = await trx
+      .updateTable('oauth_grants')
+      .set({ revoked_at: ctx.now() })
+      .where('id', '=', grantId)
+      .where('revoked_at', 'is', null)
+      .returning('client_id')
+      .executeTakeFirst();
+    await trx
+      .updateTable('oauth_tokens')
+      .set({ revoked_at: ctx.now() })
+      .where('grant_id', '=', grantId)
+      .where('revoked_at', 'is', null)
+      .execute();
+    if (ended) await countConnected(trx, ended.client_id, -1);
+  });
 }
 
 /** Every app a person let in, let go of: when they recover their account, say. */

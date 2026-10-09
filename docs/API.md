@@ -266,11 +266,24 @@ Each comes with an `error_description` a developer can read.
 - The app gives a token back with `POST /v1/oauth/revoke`, `token=…&client_id=…` (and its
   secret, if it has one), as RFC 7009 says: a refresh token ends the grant, an access token only
   itself. It answers `200` whatever the token was, and only ever ends the app's own.
-- The person removes the app in **You → Connected apps**, where they see what it may do and
+- The person removes the app in **You → Apps**, where they see what it may do and
   when it last acted; its tokens stop at once.
 - Removing the app in **Your apps** ends it for everyone who let it in.
 - Recovering an account with a recovery code ends every app it let in, as it ends its sessions
   and personal tokens: whoever lost it may not be the one who allowed them.
+
+### Listing it in Discover
+
+People find apps under **You → Apps → Discover**. To list yours, open it under **You →
+Developer → Your apps** and fill in the listing: a tagline (80 characters), a description, a
+category, an icon (an image you upload), and **where Connect goes**: your app's own sign-in, an
+https address at a site among your return addresses or your website, which starts step 1 above.
+Optionally the organization it's published under, if you're its owner or admin: a verified one
+shows as such. Turn on **Listed in Discover** and save. Caime looks at it once, then it shows,
+ordered by how many people connected it; declined, you see why, and changing it asks again, as
+any change to what's shown does. Signed in as yourself, `PATCH /v1/me/oauth-apps/:id` takes the
+same fields (`tagline`, `description`, `category`, `loginUrl`, `iconFileId`, `orgId`,
+`listed`); no token reaches it.
 
 ## Your own cards
 
@@ -326,7 +339,7 @@ customer's moves.
 ## Your calendar
 
 Anyone over 18 can have Google Calendar, Outlook or Apple Calendar show their actions with a
-due date and the meetings and appointments they agreed in Caime: **You → Connected apps → Your
+due date and the meetings and appointments they agreed in Caime: **You → Apps → Your
 calendar → Get a calendar address**. The address is shown once, starts
 `https://…/v1/calendar/cal_` and is the only credential: a calendar app reads it with no
 sign-in. Caime keeps only its hash (and never writes the address to its log), so it can't be

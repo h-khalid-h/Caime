@@ -22,6 +22,11 @@ export const qk = {
   oauthApps: ['oauth-apps'] as const,
   orgAgent: (orgId: string) => ['org-agent', orgId] as const,
   connectedApps: ['connected-apps'] as const,
+  /** Discover (R74): a search and a category each page on their own. */
+  directory: (search: string, category: string) => ['directory', search, category] as const,
+  directoryApp: (id: string) => ['directory', 'app', id] as const,
+  /** Every page of Discover and every app's own view: a connection changes them all. */
+  allDirectory: ['directory'] as const,
   /** My invite links (R1). */
   invites: ['invites'] as const,
   invite: (token: string) => ['invite', token] as const,
