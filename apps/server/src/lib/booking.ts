@@ -185,8 +185,15 @@ export async function assertItemPhotos(
     .where('id', 'in', fresh)
     .where('owner_id', '=', userId)
     .where('kind', '=', 'image')
+    // Re-encoded at upload (a JPEG, PNG or WebP): an original would keep its metadata.
+    .where('thumb_key', 'is not', null)
     .execute();
   if (mine.length !== fresh.length) throw badRequest(tr('Choose an image you uploaded.'));
+}
+
+/** The items as anyone off the team sees them: who on the team does one is the team's to know. */
+export function withoutProviders<T extends { providers?: string[] | null }>(items: T[]): T[] {
+  return items.map(({ providers: _providers, ...item }) => item as T);
 }
 
 /** The items this booker may take from the host's catalog. */
@@ -342,6 +349,10 @@ export async function bookingFor(
       'not_bookable',
       tr('Up to {n} in one booking.', { n: item.maxQuantity }),
     );
+  // Who does it is the team's to say (`pickProvider`, the reassign route): a booker names
+  // someone only when the catalog is their own.
+  if (ask.providerId && !booker.isSelf)
+    throw new AppError(403, 'not_bookable', tr('Who does it is for the team to say.'));
   if (ask.providerId && !(item.providers ?? []).includes(ask.providerId))
     throw new AppError(403, 'not_bookable', tr('They don’t do that one.'));
   // The host may book their own slot for someone (a consultant filling their diary): the lead

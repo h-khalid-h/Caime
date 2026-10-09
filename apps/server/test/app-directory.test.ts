@@ -26,6 +26,18 @@ const operator = (method: 'GET' | 'POST', url: string, body?: unknown) =>
     headers: { authorization: `Bearer ${ADMIN}` },
     ...(body ? { payload: body as object } : {}),
   });
+/** The operator's answer on the listing as it stands (the version they looked at). */
+async function review(id: string, decision: 'list' | 'decline', reason?: string) {
+  const queue = (await operator('GET', '/v1/admin/listings')).json() as {
+    listings: Array<{ id: string; listing: { revision: number } }>;
+  };
+  const revision = queue.listings.find((l) => l.id === id)?.listing.revision ?? 0;
+  return operator('POST', `/v1/admin/listings/${id}`, {
+    decision,
+    revision,
+    ...(reason ? { reason } : {}),
+  });
+}
 
 function pkce() {
   const verifier = randomBytes(32).toString('base64url');
@@ -118,6 +130,8 @@ describe('Discover and Connected (R74)', () => {
       loginUrl: null,
       orgId: null,
       declinedReason: null,
+      askedAt: null,
+      revision: 0,
     });
     const bare = await dev.req('PATCH', `/v1/me/oauth-apps/${app.id}`, { listed: true });
     expect(bare.statusCode).toBe(400);
@@ -178,7 +192,7 @@ describe('Discover and Connected (R74)', () => {
         listing: expect.objectContaining({ state: 'waiting' }),
       }),
     ]);
-    const let_ = await operator('POST', `/v1/admin/listings/${app.id}`, { decision: 'list' });
+    const let_ = await review(app.id, 'list');
     expect(let_.statusCode).toBe(200);
     expect(let_.json().listing.listing.state).toBe('listed');
     expect((await operator('GET', '/v1/admin/listings')).json().listings).toEqual([]);
@@ -253,12 +267,9 @@ describe('Discover and Connected (R74)', () => {
       loginUrl: LOGIN,
       listed: true,
     });
-    const mute = await operator('POST', `/v1/admin/listings/${other.id}`, { decision: 'decline' });
+    const mute = await review(other.id, 'decline');
     expect(mute.statusCode).toBe(400);
-    const declined = await operator('POST', `/v1/admin/listings/${other.id}`, {
-      decision: 'decline',
-      reason: 'The tagline says nothing of what it does.',
-    });
+    const declined = await review(other.id, 'decline', 'The tagline says nothing of what it does.');
     expect(declined.json().listing.listing).toMatchObject({
       state: 'declined',
       declinedReason: 'The tagline says nothing of what it does.',
@@ -273,7 +284,7 @@ describe('Discover and Connected (R74)', () => {
       tagline: 'Keeps your week in view',
     });
     expect(again.app.listing.state).toBe('waiting');
-    await operator('POST', `/v1/admin/listings/${other.id}`, { decision: 'list' });
+    await review(other.id, 'list');
     expect((await directory(noor)).apps.map((a) => a.name)).toContain('Other app');
     const same = await dev.patch(`/v1/me/oauth-apps/${other.id}`, {
       tagline: 'Keeps your week in view',
@@ -296,9 +307,34 @@ describe('Discover and Connected (R74)', () => {
     // Removing the app removes its listing with it.
     await dev.del(`/v1/me/oauth-apps/${other.id}`);
     expect((await operator('GET', '/v1/admin/listings')).json().listings).toEqual([]);
-    expect(
-      (await operator('POST', `/v1/admin/listings/${other.id}`, { decision: 'list' })).statusCode,
-    ).toBe(404);
+    expect((await review(other.id, 'list')).statusCode).toBe(404);
+  });
+
+  it('a review lets through only what the operator looked at; the operator sees a pending icon', async () => {
+    const fresh = (await register(dev, 'Versioned app', 'https://versioned.example')).app;
+    const asked = await dev.patch(`/v1/me/oauth-apps/${fresh.id}`, {
+      tagline: 'First words',
+      category: 'work',
+      loginUrl: 'https://versioned.example/login',
+      listed: true,
+    });
+    const seen = asked.app.listing.revision;
+    expect(asked.app.listing.askedAt).toBeTruthy();
+    const changed = await dev.patch(`/v1/me/oauth-apps/${fresh.id}`, { tagline: 'Second words' });
+    expect(changed.app.listing.state).toBe('waiting');
+    expect(changed.app.listing.revision).toBe(seen + 1);
+    const stale = await operator('POST', `/v1/admin/listings/${fresh.id}`, {
+      decision: 'list',
+      revision: seen,
+    });
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json().error.code).toBe('listing_changed');
+    expect((await review(fresh.id, 'list')).statusCode).toBe(200);
+    const icon = await uploadImage(dev);
+    await dev.patch(`/v1/me/oauth-apps/${fresh.id}`, { iconFileId: icon.id });
+    expect((await operator('GET', `/v1/admin/listings/${fresh.id}/icon`)).statusCode).toBe(200);
+    expect((await noor.req('GET', `/v1/admin/listings/${fresh.id}/icon`)).statusCode).toBe(401);
+    await dev.del(`/v1/me/oauth-apps/${fresh.id}`);
   });
 
   it('an icon is the owner’s own image, seen by anyone once listed and by its owner before', async () => {
@@ -316,7 +352,7 @@ describe('Discover and Connected (R74)', () => {
     const own = await dev.req('GET', path);
     expect(own.statusCode).toBe(200);
     expect(own.headers['content-type']).toMatch(/^image\//);
-    await operator('POST', `/v1/admin/listings/${app.id}`, { decision: 'list' });
+    await review(app.id, 'list');
     const seen = await noor.req('GET', path);
     expect(seen.statusCode).toBe(200);
     expect(seen.headers['content-type']).toMatch(/^image\//);
@@ -347,7 +383,7 @@ describe('Discover and Connected (R74)', () => {
     expect(notMine.statusCode).toBe(403);
     const under = await dev.patch(`/v1/me/oauth-apps/${app.id}`, { orgId: studio });
     expect(under.app.listing.orgId).toBe(studio);
-    await operator('POST', `/v1/admin/listings/${app.id}`, { decision: 'list' });
+    await review(app.id, 'list');
     expect((await directory(noor)).apps[1]?.publisher).toEqual({
       name: 'Dana Studio',
       handle: expect.stringMatching(/^studio\./),
@@ -355,7 +391,7 @@ describe('Discover and Connected (R74)', () => {
     });
     const queueAfter = await dev.patch(`/v1/me/oauth-apps/${app.id}`, { orgId: null });
     expect(queueAfter.app.listing.orgId).toBeNull();
-    await operator('POST', `/v1/admin/listings/${app.id}`, { decision: 'list' });
+    await review(app.id, 'list');
   });
 
   it('pages thousands by keyset, searches by name and tagline, narrows by category', async () => {
@@ -374,9 +410,7 @@ describe('Discover and Connected (R74)', () => {
           loginUrl: `${site}/login`,
           listed: true,
         });
-        expect(
-          (await operator('POST', `/v1/admin/listings/${a.id}`, { decision: 'list' })).statusCode,
-        ).toBe(200);
+        expect((await review(a.id, 'list')).statusCode).toBe(200);
         await t.ctx.db
           .updateTable('oauth_clients')
           .set({ connected_count: n * 7 })

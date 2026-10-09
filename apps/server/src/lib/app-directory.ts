@@ -43,6 +43,8 @@ export function listingView(c: ClientRow): AppListingView {
     loginUrl: c.login_url,
     orgId: c.org_id,
     declinedReason: c.declined_reason,
+    askedAt: c.listed_at?.toISOString() ?? null,
+    revision: c.listing_rev,
   };
 }
 
@@ -84,7 +86,9 @@ export function directoryQuery(ctx: AppContext, viewerId: string) {
   return ctx.db
     .selectFrom('oauth_clients as c')
     .innerJoin('users as u', 'u.id', 'c.owner_id')
-    .leftJoin('organizations as o', 'o.id', 'c.org_id')
+    .leftJoin('organizations as o', (join) =>
+      join.onRef('o.id', '=', 'c.org_id').on('o.archived_at', 'is', null),
+    )
     .leftJoin('oauth_grants as g', (join) =>
       join
         .onRef('g.client_id', '=', 'c.id')

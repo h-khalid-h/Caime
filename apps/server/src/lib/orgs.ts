@@ -175,6 +175,18 @@ export async function closeOrg(trx: Q, orgId: string, now: Date): Promise<void> 
     .set({ assignee_id: null, updated_at: now })
     .where('org_id', '=', orgId)
     .execute();
+  // Nobody writes for it any more (R64), and nothing is published under it (R74): a listing
+  // that was shows its developer alone, and the operator looks at it again.
+  await trx
+    .updateTable('business_threads')
+    .set({ customer_org_id: null, updated_at: now })
+    .where('customer_org_id', '=', orgId)
+    .execute();
+  await trx
+    .updateTable('oauth_clients')
+    .set({ org_id: null, reviewed_at: null })
+    .where('org_id', '=', orgId)
+    .execute();
   await trx
     .updateTable('api_tokens')
     .set({ revoked_at: now })

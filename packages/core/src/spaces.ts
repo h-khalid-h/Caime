@@ -96,9 +96,14 @@ export function nextOwner<R extends string>(
   members: ReadonlyArray<{ userId: string; role: R; joinedAt: string }>,
   leaving: string,
 ): string | null {
+  // Longest there first; two who joined at the same instant go by id (uuidv7: made first,
+  // first), so the heir is the same whichever order the rows came in.
   const staying = members
     .filter((m) => m.userId !== leaving)
-    .sort((a, b) => Date.parse(a.joinedAt) - Date.parse(b.joinedAt));
+    .sort(
+      (a, b) =>
+        Date.parse(a.joinedAt) - Date.parse(b.joinedAt) || a.userId.localeCompare(b.userId),
+    );
   return (staying.find((m) => m.role === 'admin') ?? staying[0])?.userId ?? null;
 }
 

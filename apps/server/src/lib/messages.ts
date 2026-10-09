@@ -57,6 +57,7 @@ import { recordEvent } from './events';
 import { customCardFor } from './kits';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { minorOf, privacyOf } from './users';
+import { parse } from './validate';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -393,6 +394,7 @@ async function payToFor(
         .selectFrom('organizations')
         .select(['name', 'payments'])
         .where('id', '=', mask.customerOrgId)
+        .where('archived_at', 'is', null)
         .executeTakeFirst();
       if (!theirs) return null;
       const settings = paymentsOf(theirs);
@@ -834,7 +836,8 @@ export async function sendMessage(
       throw badRequest(
         tr('{name} cards aren’t for conversations with an organization.', { name: card.def.name }),
       );
-    if (card.def.adultsOnly) {
+    // Everyone here is an adult, or a card about money doesn't go (R29, R38).
+    const assertAllAdults = async (refusal: string) => {
       const people = await ctx.db
         .selectFrom('users')
         .select(['birth_date', 'time_zone'])
@@ -844,11 +847,12 @@ export async function sendMessage(
           members.map((p) => p.user_id),
         )
         .execute();
-      if (people.some((u) => minorOf(u, ctx.now())))
-        throw forbidden(
-          tr('{name} cards aren’t available in this conversation.', { name: card.def.name }),
-        );
-    }
+      if (people.some((u) => minorOf(u, ctx.now()))) throw forbidden(refusal);
+    };
+    if (card.def.adultsOnly)
+      await assertAllAdults(
+        tr('{name} cards aren’t available in this conversation.', { name: card.def.name }),
+      );
     if (card.kit === 'split') {
       // Who owes the payer: everyone else here (people, not bots), an equal share each, worked
       // out once and kept on the card (R38: a record, never a transfer).
@@ -879,9 +883,9 @@ export async function sendMessage(
     let order: PlacedOrder | null = null;
     let catalogHost: BookingHost | null = null;
     const ask =
-      card.kit === 'appointment' && raw.booking ? BookingAskBody.parse(raw.booking) : null;
+      card.kit === 'appointment' && raw.booking ? parse(BookingAskBody, raw.booking) : null;
     const orderAsk =
-      card.kit === 'order_status' && raw.order ? OrderAskBody.parse(raw.order) : null;
+      card.kit === 'order_status' && raw.order ? parse(OrderAskBody, raw.order) : null;
     if (ask || orderAsk) {
       const wanted = ask ? [ask.itemId] : (orderAsk?.lines ?? []).map((l) => l.itemId);
       const found = await catalogHostFor(ctx, conversation, members, sender, wanted);
@@ -897,6 +901,8 @@ export async function sendMessage(
           ask,
           new Date(start),
         )) as unknown as Record<string, unknown>;
+        // A priced booking is a card about money whoever books it (the team for a customer too).
+        if (booking.price) await assertAllAdults(tr('Paid bookings are for people over 18.'));
       }
       if (orderAsk) {
         order = orderFor(found.host, found.booker, orderAsk);

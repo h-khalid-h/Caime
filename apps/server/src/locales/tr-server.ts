@@ -1095,4 +1095,10 @@ export const turkishServer: Catalog = {
     'Bağla, insanları uygulamanın kendi adresine göndermeli: döndüğü bir adres ya da web sitesi.',
   'A listing needs a tagline, a category and where Connect goes.':
     'Bir listeleme için slogan, kategori ve Bağla’nın gideceği yer gerekir.',
+  'Who does it is for the team to say.': 'Kimin yapacağını ekip söyler.',
+  'This card has been paid already.': 'Bu kart zaten ödendi.',
+  'The listing changed since it was looked at: look at it again.':
+    'Listeleme bakıldığından beri değişti: yeniden bak.',
+  'Yours to do: {name}': 'Senin yapacağın: {name}',
+  '{org} named you for this booking.': '{org} bu rezervasyon için seni belirledi.',
 };

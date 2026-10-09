@@ -215,6 +215,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
           .where('owner_id', '=', auth.userId)
           .where('kind', '=', 'image')
           .where('status', '=', 'ready')
+          .where('thumb_key', 'is not', null)
           .executeTakeFirst();
         if (!mine) throw badRequest(tr('Choose an image you uploaded.'));
       }
@@ -237,13 +238,18 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       );
       const marks = !listed
         ? { listed_at: null, reviewed_at: null, declined_reason: null }
-        : !c.listed_at || (shownChanged && (c.reviewed_at || c.declined_reason))
-          ? // Asked anew: the operator looks at what's shown now.
+        : !c.listed_at || shownChanged
+          ? // Asked anew, dated: the operator looks at what's shown now, and lets through only
+            // the version they looked at.
             { listed_at: ctx.now(), reviewed_at: null, declined_reason: null }
           : {};
       const updated = await trx
         .updateTable('oauth_clients')
-        .set({ ...next, ...marks })
+        .set({
+          ...next,
+          ...marks,
+          ...(shownChanged ? { listing_rev: sql`listing_rev + 1` } : {}),
+        })
         .where('id', '=', id)
         .returningAll()
         .executeTakeFirstOrThrow();

@@ -13,6 +13,7 @@ import {
   type CalendarView,
   canManageOrg,
   type IcsEvent,
+  isBooked,
   KITS,
   type OrgCalendarView,
   type SlotsView,
@@ -257,12 +258,22 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     quantity: z.coerce.number().int().min(1).max(100).optional(),
   });
 
-  /** The slots for a host, for this booker: of the item asked, else the hours alone. */
-  async function slotsView(host: BookingHost, booker: Booker, query: unknown): Promise<SlotsView> {
+  /**
+   * The slots for a host, for this booker: of the item asked, else the hours alone, which only
+   * whoever the profile shows them to gets (the host, or a connection of a host with no booked
+   * items): a person's free and busy times are theirs (PRD §51).
+   */
+  async function slotsView(
+    host: BookingHost,
+    booker: Booker,
+    query: unknown,
+    hoursAlone: boolean,
+  ): Promise<SlotsView> {
     const q = parse(SlotsQuery, query);
     const window = windowOf({ from: q.from, to: q.to });
     const none: SlotsView = { timeZone: null, slotMinutes: null, item: null, slots: [] };
     if (!host.hours) return none;
+    if (!q.item && !hoursAlone) return none;
     let item: BookingItem | null = null;
     if (q.item) {
       item = itemsFor(host, booker).find((i) => i.id === q.item) ?? null;
@@ -309,8 +320,9 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     // Anyone signed in is a customer to an organization (its "connections" audience); the team
     // books its own slots for customers.
     const seat = await orgSeat(ctx.db, auth.userId, id);
+    const host = orgHost(org);
     return slotsView(
-      orgHost(org),
+      host,
       {
         isSelf: Boolean(seat),
         isConnected: true,
@@ -318,6 +330,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         adult: await adultViewer(auth.userId),
       },
       req.query,
+      Boolean(seat) || !host.items.some(isBooked),
     );
   });
 
@@ -404,8 +417,9 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     if (user?.kind !== 'human') throw notFound(tr('That person'));
     const relation = await viewerRelation(ctx.db, id, auth.userId);
     if (relation.blocked) throw notFound(tr('That person'));
+    const host = personHost(user);
     return slotsView(
-      personHost(user),
+      host,
       {
         isSelf: relation.isSelf,
         isConnected: relation.isConnected,
@@ -413,6 +427,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
         adult: await adultViewer(auth.userId),
       },
       req.query,
+      relation.isSelf || (relation.isConnected && !host.items.some(isBooked)),
     );
   });
 

@@ -11,6 +11,12 @@ import { type BriefView, KITS, type Sphere, tr, trn } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
+import { visibleTasksSql } from './task-visibility';
+
+/** What the reader deleted for themselves stays deleted: never in their brief, nor the model's. */
+const notHiddenBy = (userId: string, idRef: 'messages.id' | 'm.id') =>
+  sql<boolean>`not exists (select 1 from hidden_messages h where h.message_id = ${sql.ref(idRef)} and h.user_id = ${userId})`;
+
 import { languageName } from './ai';
 import { runAi } from './ai-run';
 import { customerMask, maskFor } from './business';
@@ -247,6 +253,7 @@ export async function briefFor(
       .select(['id', 'title', 'due_at'])
       .where('conversation_id', '=', card.conversation_id)
       .where('assignee_id', '=', userId)
+      .where(visibleTasksSql(userId))
       .where('status', 'in', ['open', 'accepted'])
       .orderBy(sql`due_at asc nulls last`)
       .limit(EACH)
@@ -277,6 +284,7 @@ export async function briefFor(
       .where('conversation_id', '=', card.conversation_id)
       .where('is_question', '=', true)
       .where('deleted_at', 'is', null)
+      .where(notHiddenBy(userId, 'messages.id'))
       .where('created_at', '>=', since)
       .where((eb) => eb.or([eb('sender_id', 'is', null), eb('sender_id', '<>', userId)]))
       .orderBy('seq', 'desc')
@@ -289,6 +297,7 @@ export async function briefFor(
       .select(['f.id', 'f.name', 'f.kind'])
       .where('m.conversation_id', '=', card.conversation_id)
       .where('m.deleted_at', 'is', null)
+      .where(notHiddenBy(userId, 'm.id'))
       .where('m.created_at', '>=', since)
       .orderBy('m.seq', 'desc')
       .limit(EACH)
@@ -380,6 +389,7 @@ async function summaryFor(
     .select(MESSAGE_COLUMNS)
     .where('conversation_id', '=', card.conversation_id)
     .where('deleted_at', 'is', null)
+    .where(notHiddenBy(userId, 'messages.id'))
     .where('kind', '<>', 'system')
     .where('created_at', '>=', since)
     .orderBy('seq', 'desc')

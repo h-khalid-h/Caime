@@ -94,4 +94,44 @@ describe('customers under 18 (R29)', () => {
       ).statusCode,
     ).toBe(201);
   });
+  it('a priced booking is a card about money: the team can’t book one for a student', async () => {
+    const HOURS = {
+      timeZone: 'Africa/Cairo',
+      slotMinutes: 30,
+      days: [0, 1, 2, 3, 4].map((weekday) => ({ weekday, start: '09:00', end: '12:00' })),
+      leadMinutes: 60,
+      horizonDays: 14,
+    };
+    const lesson = {
+      id: 'lesson',
+      name: 'Lesson',
+      price: { value: 200, currency: 'EGP' },
+      unit: 'minutes',
+      minutes: 30,
+      capacity: 1,
+      maxQuantity: 1,
+      audience: 'connections',
+      providers: null,
+      askTopic: false,
+    };
+    const set = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: HOURS,
+      items: [lesson, { ...lesson, id: 'chat', name: 'A chat', price: null }],
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    // Thursday 24 September 2026, 10:00 in Cairo.
+    const book = (itemId: string) =>
+      send(noor, studentConvo, {
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: { title: 'Lesson', start: { at: '2026-09-24T07:00:00.000Z', hasTime: true } },
+          booking: { itemId },
+        },
+      });
+    const paid = await book('lesson');
+    expect(paid.statusCode).toBe(403);
+    expect(paid.json().error.message).toBe('Paid bookings are for people over 18.');
+    expect((await book('chat')).statusCode).toBe(201);
+  });
 });

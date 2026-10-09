@@ -8,14 +8,14 @@
  * event's own copy is never trusted.
  */
 import { randomBytes } from 'node:crypto';
-import { type CardCheckout, chargeUnits } from '@caime/core';
+import { type CardCheckout, type CheckoutStatus, chargeUnits, payDirection } from '@caime/core';
 import type { OrgCheckoutView } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { checkoutAccountOf, checkoutAvailable } from './checkout-account';
-import { badRequest, forbidden, notFound } from './errors';
+import { badRequest, conflict, forbidden, notFound } from './errors';
 import { messageViews, participantsOf } from './messages';
 import { STRIPE_VERSION, StripeError, stripe, stripeForm } from './stripe';
 
@@ -108,33 +108,37 @@ export async function connectUrl(
 export async function finishConnect(
   ctx: AppContext,
   input: { state: string; code: string | null },
+  viewerId: string | null,
   isOwner: (userId: string, orgId: string) => Promise<boolean>,
-): Promise<{ handle: string | null; connected: boolean }> {
+): Promise<{ handle: string | null; connected: boolean; orgId: string | null }> {
   const state = await ctx.db
     .deleteFrom('checkout_states')
     .where('token', '=', input.state)
     .returningAll()
     .executeTakeFirst();
-  if (!state) return { handle: null, connected: false };
+  if (!state) return { handle: null, connected: false, orgId: null };
   const org = await ctx.db
     .selectFrom('organizations')
     .select(['handle'])
     .where('id', '=', state.org_id)
     .where('archived_at', 'is', null)
     .executeTakeFirst();
-  if (!org) return { handle: null, connected: false };
+  if (!org) return { handle: null, connected: false, orgId: state.org_id };
+  // The browser that started it is the one that finishes it: nobody links an account to an
+  // organization through someone else's consent.
   if (
     !input.code ||
     state.expires_at.getTime() < ctx.now().getTime() ||
+    state.user_id !== viewerId ||
     !(await isOwner(state.user_id, state.org_id))
   )
-    return { handle: org.handle, connected: false };
+    return { handle: org.handle, connected: false, orgId: state.org_id };
   const token = await connectCall<{ stripe_user_id?: string; livemode?: boolean }>(
     ctx,
     '/oauth/token',
     { grant_type: 'authorization_code', code: input.code },
   );
-  if (!token.stripe_user_id) return { handle: org.handle, connected: false };
+  if (!token.stripe_user_id) return { handle: org.handle, connected: false, orgId: state.org_id };
   const account = await stripe(ctx)!.get<{ charges_enabled?: boolean }>(
     `/v1/accounts/${token.stripe_user_id}`,
   );
@@ -160,7 +164,7 @@ export async function finishConnect(
       }),
     )
     .execute();
-  return { handle: org.handle, connected: true };
+  return { handle: org.handle, connected: true, orgId: state.org_id };
 }
 
 /** Asks Stripe again whether the account takes payments (after its owner finished there). */
@@ -196,6 +200,10 @@ export async function disconnect(ctx: AppContext, orgId: string): Promise<boolea
   return true;
 }
 
+type Trx = Parameters<Parameters<ReturnType<AppContext['db']['transaction']>['execute']>[0]>[0];
+type StripeClient = NonNullable<ReturnType<typeof stripe>>;
+type Updated = NonNullable<Awaited<ReturnType<typeof applySaid>>>;
+
 interface PayCard {
   kit?: string;
   state?: string;
@@ -217,8 +225,103 @@ async function payCard(db: AppContext['db'], messageId: string) {
 }
 
 /**
+ * Whether a Pay card still waits on its payer's card after a move: an ask that's requested or
+ * not received yet. Anything else (paid, sent another way, declined, cancelled, a send card
+ * answered) is over for paying by card, and its session with it.
+ */
+export function stillPayableAfter(fields: Record<string, unknown> | undefined, to: string) {
+  return payDirection(fields ?? {}) === 'ask' && (to === 'requested' || to === 'not_received');
+}
+
+type SessionSaid = { status: CheckoutStatus | 'none'; url: string | null };
+
+/** What Stripe says of a card's session: paid, open, expired, or not this card's at all. */
+async function askSession(
+  s: StripeClient,
+  sessionId: string,
+  messageId: string,
+): Promise<SessionSaid> {
+  const session = await s.get<{
+    status?: string;
+    payment_status?: string;
+    url?: string | null;
+    metadata?: Record<string, string>;
+  }>(`/v1/checkout/sessions/${sessionId}`);
+  // Only a session made for this card counts.
+  if (session.metadata?.caime_message !== messageId) return { status: 'none', url: null };
+  const status: CheckoutStatus =
+    session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
+      ? 'paid'
+      : session.status === 'expired'
+        ? 'expired'
+        : 'open';
+  return { status, url: session.url ?? null };
+}
+
+type Locked = PayCard & {
+  history?: Array<{ state: string; by: string; at: string | Date; via?: string }>;
+};
+
+/** The card's row, locked for the rest of the transaction, with its payload as it is now. */
+async function lockCard(trx: Trx, messageId: string) {
+  const row = await trx
+    .selectFrom('messages')
+    .select(['payload', 'deleted_at'])
+    .where('id', '=', messageId)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!row || row.deleted_at) throw notFound(tr('That message'));
+  return (row.payload ?? {}) as Locked;
+}
+
+/**
+ * Writes what Stripe said of the session into the locked card: paid moves it to paid (by its
+ * payer, once); expired says so. Nothing, when the card's session is another or already says it.
+ */
+async function applySaid(
+  trx: Trx,
+  messageId: string,
+  p: Locked,
+  mark: CardCheckout,
+  status: CheckoutStatus,
+  now: Date,
+) {
+  if (p.checkout?.sessionId !== mark.sessionId || p.checkout.status === status) return null;
+  const paid = status === 'paid' && p.state !== 'paid';
+  const patch = {
+    checkout: { ...p.checkout, status },
+    ...(paid
+      ? {
+          state: 'paid',
+          history: [
+            ...(p.history ?? []),
+            { state: 'paid', by: mark.payerId, at: now, via: 'checkout' },
+          ].slice(-50),
+        }
+      : {}),
+  };
+  return trx
+    .updateTable('messages')
+    .set({ payload: sql`payload || ${JSON.stringify(patch)}::jsonb` })
+    .where('id', '=', messageId)
+    .returning(MESSAGE_COLUMNS)
+    .executeTakeFirstOrThrow();
+}
+
+/** Everyone in the conversation sees the card as it stands now. */
+async function tellUpdated(ctx: AppContext, updated: Updated, viewerId: string) {
+  const members = (await participantsOf(ctx.db, updated.conversation_id)).map((p) => p.user_id);
+  const [view] = await messageViews(ctx.db, [updated], viewerId);
+  if (view)
+    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+}
+
+/**
  * A Checkout Session for this Pay card on its organization's own account, for the payer to pay
- * by card. One open session per card and payer is reused while it lasts.
+ * by card. One session is ever payable: the payer's own open one is reused while it lasts;
+ * another's, or an old one, is ended at Stripe before a new one starts; and a session that was
+ * paid but not yet settled is settled, never replaced. All of it under the card's row lock, so
+ * two openings at once make one session.
  */
 export async function openCheckout(
   ctx: AppContext,
@@ -240,60 +343,85 @@ export async function openCheckout(
   const units =
     amount?.value && amount.currency ? chargeUnits(amount.value, amount.currency) : null;
   if (!units || !amount?.currency) throw badRequest(tr('This card has no amount to pay by card.'));
+  const currency = amount.currency.toLowerCase();
   const s = stripe(ctx, account.accountId)!;
-  // A session they opened and haven't finished is the same one.
-  const open = card.checkout;
-  if (
-    open &&
-    open.status === 'open' &&
-    open.payerId === payerId &&
-    ctx.now().getTime() - Date.parse(open.at) < SESSION_REUSE_MS
-  ) {
-    const was = await s
-      .get<{ status?: string; url?: string | null }>(`/v1/checkout/sessions/${open.sessionId}`)
-      .catch(() => null);
-    if (was?.status === 'open' && was.url) return was.url;
-  }
   const web = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
   const back = `${web}/c/${m.conversation_id}`;
-  const session = await s.post<{ id: string; url: string }>(
-    '/v1/checkout/sessions',
-    {
-      mode: 'payment',
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: amount.currency.toLowerCase(),
-            unit_amount: units,
-            product_data: {
-              name:
-                card.fields?.note?.slice(0, 200) ||
-                tr('Payment to {name}', { name: card.payTo.name ?? '' }),
-            },
+  const name =
+    card.fields?.note?.slice(0, 200) || tr('Payment to {name}', { name: card.payTo.name ?? '' });
+  const outcome = await ctx.db
+    .transaction()
+    .execute(
+      async (
+        trx,
+      ): Promise<{ kind: 'url'; url: string } | { kind: 'paid'; updated: Updated | null }> => {
+        const p = await lockCard(trx, messageId);
+        if (p.state === 'paid' || p.checkout?.status === 'paid')
+          return { kind: 'paid', updated: null };
+        const open = p.checkout;
+        if (open?.status === 'open') {
+          // What Stripe says of it first: a payment made but not settled yet is settled here.
+          let said = await askSession(s, open.sessionId, messageId);
+          if (said.status === 'open') {
+            if (
+              open.payerId === payerId &&
+              ctx.now().getTime() - Date.parse(open.at) < SESSION_REUSE_MS &&
+              said.url
+            )
+              return { kind: 'url', url: said.url };
+            // Someone else's, or old: it ends before a new one starts, so one is ever payable.
+            // A session paid in the meantime can't be ended, and then that payment is what counts.
+            const ended = await s
+              .post(`/v1/checkout/sessions/${open.sessionId}/expire`)
+              .then(() => true)
+              .catch(() => false);
+            if (!ended) said = await askSession(s, open.sessionId, messageId);
+          }
+          if (said.status === 'paid')
+            return {
+              kind: 'paid',
+              updated: await applySaid(trx, messageId, p, open, 'paid', ctx.now()),
+            };
+        }
+        const session = await s.post<{ id: string; url: string }>(
+          '/v1/checkout/sessions',
+          {
+            mode: 'payment',
+            line_items: [
+              {
+                quantity: 1,
+                price_data: {
+                  currency,
+                  unit_amount: units,
+                  product_data: { name },
+                },
+              },
+            ],
+            client_reference_id: messageId,
+            metadata: { caime_message: messageId, caime_payer: payerId },
+            payment_intent_data: { metadata: { caime_message: messageId } },
+            success_url: `${back}?checkout=${messageId}`,
+            cancel_url: back,
           },
-        },
-      ],
-      client_reference_id: messageId,
-      metadata: { caime_message: messageId, caime_payer: payerId },
-      payment_intent_data: { metadata: { caime_message: messageId } },
-      success_url: `${back}?checkout=${messageId}`,
-      cancel_url: back,
-    },
-    `caime-checkout:${messageId}:${payerId}:${ctx.now().getTime()}`,
-  );
-  const mark: CardCheckout = {
-    sessionId: session.id,
-    status: 'open',
-    payerId,
-    at: ctx.now().toISOString(),
-  };
-  await ctx.db
-    .updateTable('messages')
-    .set({ payload: sql`payload || ${JSON.stringify({ checkout: mark })}::jsonb` })
-    .where('id', '=', messageId)
-    .execute();
-  return session.url;
+          `caime-checkout:${messageId}:${payerId}:${ctx.now().getTime()}`,
+        );
+        const mark: CardCheckout = {
+          sessionId: session.id,
+          status: 'open',
+          payerId,
+          at: ctx.now().toISOString(),
+        };
+        await trx
+          .updateTable('messages')
+          .set({ payload: sql`payload || ${JSON.stringify({ checkout: mark })}::jsonb` })
+          .where('id', '=', messageId)
+          .execute();
+        return { kind: 'url', url: session.url };
+      },
+    );
+  if (outcome.kind === 'url') return outcome.url;
+  if (outcome.updated) await tellUpdated(ctx, outcome.updated, payerId);
+  throw conflict('conflict', tr('This card has been paid already.'));
 }
 
 /**
@@ -316,60 +444,48 @@ export async function settleCheckout(
     .executeTakeFirst();
   const s = row ? stripe(ctx, row.account_id) : null;
   if (!s) return 'none';
-  const session = await s.get<{
-    status?: string;
-    payment_status?: string;
-    metadata?: Record<string, string>;
-  }>(`/v1/checkout/sessions/${mark.sessionId}`);
-  // Only a session made for this card counts.
-  if (session.metadata?.caime_message !== messageId) return 'none';
-  const status: CardCheckout['status'] =
-    session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
-      ? 'paid'
-      : session.status === 'expired'
-        ? 'expired'
-        : 'open';
-  if (status === 'open') return 'open';
-  const updated = await ctx.db.transaction().execute(async (trx) => {
-    const now = await trx
-      .selectFrom('messages')
-      .select(['payload', 'deleted_at'])
-      .where('id', '=', messageId)
-      .forUpdate()
-      .executeTakeFirst();
-    const p = (now?.payload ?? {}) as PayCard & {
-      history?: Array<{ state: string; by: string; at: string | Date; via?: string }>;
-    };
-    if (!now || now.deleted_at || p.checkout?.sessionId !== mark.sessionId) return null;
-    if (p.checkout.status === status) return null;
-    const paid = status === 'paid' && p.state !== 'paid';
-    const patch = {
-      checkout: { ...p.checkout, status },
-      ...(paid
-        ? {
-            state: 'paid',
-            history: [
-              ...(p.history ?? []),
-              { state: 'paid', by: mark.payerId, at: ctx.now(), via: 'checkout' },
-            ].slice(-50),
-          }
-        : {}),
-    };
-    return trx
-      .updateTable('messages')
-      .set({ payload: sql`payload || ${JSON.stringify(patch)}::jsonb` })
-      .where('id', '=', messageId)
-      .returningAll()
-      .executeTakeFirstOrThrow();
-  });
-  if (updated) {
-    const members = (await participantsOf(ctx.db, updated.conversation_id)).map((p) => p.user_id);
-    const [view] = await messageViews(ctx.db, [updated], mark.payerId);
-    if (view)
-      await ctx.bus.publish(members, {
-        type: 'message.updated',
-        data: { ...view, clientId: null },
-      });
-  }
+  const said = await askSession(s, mark.sessionId, messageId);
+  if (said.status === 'none' || said.status === 'open') return said.status;
+  const status = said.status;
+  const updated = await ctx.db
+    .transaction()
+    .execute(async (trx) =>
+      applySaid(trx, messageId, await lockCard(trx, messageId), mark, status, ctx.now()),
+    );
+  if (updated) await tellUpdated(ctx, updated, mark.payerId);
   return status;
+}
+
+/**
+ * The card is over for paying by card (received, cancelled, declined, paid another way): its
+ * open session, if any, ends at Stripe and says so on the card, so nobody pays a card that's
+ * settled. Best effort: a session already gone answers an error.
+ */
+export async function expireCheckout(ctx: AppContext, messageId: string): Promise<void> {
+  const { card } = await payCard(ctx.db, messageId);
+  const mark = card.checkout;
+  if (mark?.status !== 'open' || !card.payTo?.orgId) return;
+  const row = await ctx.db
+    .selectFrom('org_checkout')
+    .select('account_id')
+    .where('org_id', '=', card.payTo.orgId)
+    .executeTakeFirst();
+  const s = row ? stripe(ctx, row.account_id) : null;
+  if (!s) return;
+  const ended = await s
+    .post(`/v1/checkout/sessions/${mark.sessionId}/expire`)
+    .then(() => true)
+    .catch(() => false);
+  // Ended, or paid meanwhile: either way the card says what Stripe says.
+  const said = ended
+    ? { status: 'expired' as const }
+    : await askSession(s, mark.sessionId, messageId);
+  if (said.status === 'none' || said.status === 'open') return;
+  const status = said.status;
+  const updated = await ctx.db
+    .transaction()
+    .execute(async (trx) =>
+      applySaid(trx, messageId, await lockCard(trx, messageId), mark, status, ctx.now()),
+    );
+  if (updated) await tellUpdated(ctx, updated, mark.payerId);
 }

@@ -14,6 +14,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { audit } from '../lib/audit';
 import { endBillingOf } from '../lib/billing';
+import { disconnect } from '../lib/checkout';
 import { sendSystem } from '../lib/conversation-views';
 import { handOverGroups } from '../lib/conversations';
 import { verifyPassword } from '../lib/crypto';
@@ -151,6 +152,7 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
     for (const orgId of closed) {
       await endBillingOf(ctx, { orgId });
       await endFollowsOf(ctx, orgId);
+      await disconnect(ctx, orgId);
     }
     await audit(ctx.db, { actorId: null, action: 'account.deleted', target: me });
     // A file that stays behind is said so in the log, never silently kept.

@@ -597,12 +597,15 @@ describe('closing and taking back an organization (R42)', () => {
       record: { name: '_caime-verify.bakery.example', type: 'TXT' },
     });
     expect(started.record.value).toMatch(/^caime-verify=[\w-]{20,}$/);
+    // Someone else starting too has a record of their own: this person's stands.
+    const theirs = await omar.post(`/v1/orgs/${closedId}/reclaim`);
+    expect(theirs.record.value).not.toBe(started.record.value);
     // The old record is still there: it doesn't count (it was made for someone else).
     const stale = await back.req('POST', `/v1/orgs/${closedId}/reclaim/check`);
     expect(stale.statusCode).toBe(422);
     expect(stale.json().error.code).toBe('record_not_found');
-    // Someone else can't check with this person's record.
-    expect((await omar.req('POST', `/v1/orgs/${closedId}/reclaim/check`)).statusCode).toBe(400);
+    // Someone else checks their own record, never this person's: theirs isn't there.
+    expect((await omar.req('POST', `/v1/orgs/${closedId}/reclaim/check`)).statusCode).toBe(422);
     txt.set('_caime-verify.bakery.example', [[started.record.value]]);
     const checked = await back.req('POST', `/v1/orgs/${closedId}/reclaim/check`);
     expect(checked.statusCode).toBe(201);

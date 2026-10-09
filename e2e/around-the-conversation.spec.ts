@@ -2320,7 +2320,7 @@ test.describe
       expect((await listed.json()).app.listing.state).toBe('waiting');
       const reviewed = await noorContext.request.post(`/v1/admin/listings/${appId}`, {
         headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
-        data: { decision: 'list' },
+        data: { decision: 'list', revision: (await listed.json()).app.listing.revision },
       });
       expect(reviewed.ok()).toBe(true);
       // Alex discovers it, already connected: the row says so, the sheet says how many did, and

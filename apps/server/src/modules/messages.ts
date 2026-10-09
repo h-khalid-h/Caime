@@ -58,10 +58,11 @@ import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
 import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
-import { pickProvider } from '../lib/booking';
+import { orgHost, pickProvider } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
 import { queueBrief } from '../lib/briefs';
 import { customerMask, maskFor, maskId } from '../lib/business';
+import { expireCheckout, stillPayableAfter } from '../lib/checkout';
 import { membership, sendSystem } from '../lib/conversation-views';
 import { lockConversation } from '../lib/conversations';
 import { assertSealedForEveryone } from '../lib/e2ee';
@@ -328,6 +329,11 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     // Confirmed by the team (R58): a booking from the catalog with nobody named yet gets the free
     // member with the fewest that day; the customer never sees who (masked).
     const confirmed = await assignOnConfirm(updated, to, business?.orgId ?? null);
+    // A Pay card settled another way (R65): its open card session ends, so nobody pays twice.
+    if (card.kit === 'payment_request' && !stillPayableAfter(card.fields, to))
+      await expireCheckout(ctx, id).catch((e) =>
+        req.log.warn({ err: (e as Error).message }, 'checkout expire'),
+      );
     // Agreed (R58): its people get a brief an hour before.
     if (
       (card.kit === 'meeting' && to === 'accepted') ||
@@ -418,15 +424,30 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     if (!m || m.deleted_at) throw notFound(tr('That message'));
     await membership(ctx, auth.userId, m.conversation_id);
+    await assertCanWrite(ctx, m.conversation_id, auth.userId);
     const business = await customerMask(ctx.db, m.conversation_id);
     const p = (m.payload ?? {}) as { kit?: string; booking?: AppointmentBooking | null };
     if (!business || auth.userId === business.customerId)
       throw forbidden(tr('Only the team says who does a booking.'));
     if (p.kit !== 'appointment' || !p.booking)
       throw badRequest(tr('That isn’t a booking from the catalog.'));
+    ctx.limiter.hit(
+      `kit-move:${auth.userId}:${m.conversation_id}`,
+      ctx.config.isTest ? 10_000 : 10,
+      60_000,
+    );
     const team = await humanTeam(ctx.db, business.orgId);
     const who = userId ? team.find((u) => u.id === userId) : null;
     if (userId && !who) throw forbidden(tr('Only people on the team can be providers.'));
+    // An item that names who does it keeps to them.
+    const org = await ctx.db
+      .selectFrom('organizations')
+      .select(['id', 'booking', 'booking_items', 'ordering', 'collections'])
+      .where('id', '=', business.orgId)
+      .executeTakeFirst();
+    const item = org ? orgHost(org).items.find((i) => i.id === p.booking?.itemId) : undefined;
+    if (who && item?.providers?.length && !item.providers.includes(who.id))
+      throw forbidden(tr('They don’t do that one.'));
     const booking = {
       ...p.booking,
       providerId: who?.id ?? null,
@@ -441,6 +462,17 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
     const [view] = await messageViews(ctx.db, [updated], auth.userId);
     await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
+    // Whoever it's now theirs to do hears so, unless they named themselves.
+    if (who && who.id !== auth.userId)
+      await notify(ctx, {
+        userId: who.id,
+        kind: 'kit',
+        level: 'attention',
+        title: () => tr('Yours to do: {name}', { name: p.booking?.name ?? '' }),
+        body: () => tr('{org} named you for this booking.', { org: business.orgName }),
+        groupKey: `kit:${id}`,
+        data: { conversationId: m.conversation_id, messageId: id },
+      });
     return { message: view! };
   });
 

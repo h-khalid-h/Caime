@@ -542,3 +542,32 @@ describe('orders from the catalog (R60)', () => {
     ).toBe(403);
   });
 });
+
+describe('what a booker may see or say (review 2026-10-09)', () => {
+  it('a customer names nobody on the team, and no item shows team ids to one', async () => {
+    const items = (await lina.get(`/v1/orgs/${orgId}`)).org.bookingItems as Array<
+      Record<string, unknown>
+    >;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.some((i) => 'providers' in i)).toBe(false);
+    const named = await lina.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: { title: 'Consult', start: { at: '2026-10-07T07:00:00.000Z', hasTime: true } },
+        booking: { itemId: 'consult', providerId: omar.user.id },
+      },
+    });
+    expect(named.statusCode).toBe(403);
+    expect(named.json().error.message).toBe('Who does it is for the team to say.');
+  });
+
+  it('a person’s free and busy times are theirs: a stranger gets no hours without an item', async () => {
+    const bare = await lina.get(`/v1/people/${noor.user.id}/slots?${window}`);
+    expect(bare).toEqual({ timeZone: null, slotMinutes: null, item: null, slots: [] });
+    expect(
+      (await lina.req('GET', `/v1/people/${noor.user.id}/slots?${window}&item=chat`)).statusCode,
+    ).toBe(200);
+  });
+});

@@ -15,10 +15,13 @@ export async function checkoutAccountOf(
   orgId: string,
 ): Promise<{ accountId: string } | null> {
   if (!checkoutAvailable(ctx)) return null;
+  // An open organization's only: closed, it takes nothing more (R42).
   const row = await ctx.db
-    .selectFrom('org_checkout')
-    .select(['account_id', 'charges_enabled'])
-    .where('org_id', '=', orgId)
+    .selectFrom('org_checkout as c')
+    .innerJoin('organizations as o', 'o.id', 'c.org_id')
+    .select(['c.account_id', 'c.charges_enabled'])
+    .where('c.org_id', '=', orgId)
+    .where('o.archived_at', 'is', null)
     .executeTakeFirst();
   return row?.charges_enabled ? { accountId: row.account_id } : null;
 }

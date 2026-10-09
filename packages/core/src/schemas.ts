@@ -346,6 +346,8 @@ export const AppListingReviewBody = z
   .object({
     decision: z.enum(['list', 'decline']),
     reason: z.string().trim().max(300).optional(),
+    /** The `revision` the operator looked at: a listing changed since isn't let through. */
+    revision: z.number().int().min(0),
   })
   .strict();
 
@@ -353,7 +355,13 @@ export const AppListingReviewBody = z
 export const CreateOAuthAppBody = z
   .object({
     name: z.string().trim().min(1, msg('Name your app.')).max(60),
-    website: z.string().trim().url().max(300).optional(),
+    website: z
+      .string()
+      .trim()
+      .url()
+      .max(300)
+      .refine((u) => /^https?:\/\//i.test(u), msg('Enter a web address like https://datac.com'))
+      .optional(),
     redirectUris: z
       .array(
         z

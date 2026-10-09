@@ -1093,4 +1093,78 @@ with its reason, so it isn't proposed again without new facts.
   their inbox, waits and calendar and acts within the token's scopes, every call the token's and
   audited as such. Declined: the marketplace and revenue share, adapters for other systems,
   drift auto-PRs, the capability graph, multi-region. *Cost*: one bounded call per provider per
-  hour; the MCP server is a thin package with its own tests.
+  hour; the MCP server is a thin package with its own tests. *Open Connector
+  (openconnector.dev), evaluated 2026-10-09 at the owner's request.* What it is: an
+  "agent-first, self-hostable connector platform" of the same category as the PRD above, three
+  parts: a credential broker (an agent calls a connected app through it with a project key; the
+  OAuth, API-key or basic credential stays in an AES-256-GCM vault and is injected server-side,
+  so the agent gets results, never tokens), an MCP gateway (a named server with an auth config
+  and a tool allowlist, a per-user or per-account `mcp_url`, `tools/list` from the allowlist,
+  `tools/call` resolving the acting user's connection, "fails honestly with an error" without
+  one) and webhook triggers with retries and a delivery history; every routed call is a
+  hash-chained, tamper-evident record. It sells itself as a drop-in for the Composio SDK
+  (wire-compatible MCP, `…/composio/api/v3.1/mcp/servers/generate`), AGPL-3.0 core with paid
+  `ee-*` add-ons (SSO, SCIM, audit retention: "not available for production yet"), a
+  usage-based cloud and a waitlist. Maturity on the day: a GitHub organization with 4 commits,
+  15 stars and "source code is being prepared for public release", six integrations shown
+  (GitHub, Slack, Linear, Notion, Gmail, Google Drive), docs that are a landing page. Not to be
+  confused with OOMOL Lab's `open-connector` (Apache-2.0, about 4,400 stars, "1,000+ providers
+  and 10,000+ prebuilt Actions", a TypeScript SDK, the `oo` CLI, MCP at `/mcp`, an
+  `/openapi.json`, SQLite or Postgres, Docker, Fly.io, Cloudflare), the real comparable in the
+  category, with Composio the incumbent. *What it means for Caime.* It confirms the reading
+  above: brokers between agents and apps are a category of their own, crowded and moving fast,
+  and Caime is a destination in it, not a broker. Three things are Caime's to take. (1) *Be
+  importable*: brokers and agent frameworks ingest an OpenAPI document, and Caime has none,
+  only its contract (`api.ts`) and schemas; an OpenAPI 3.1 document generated from the zod
+  schemas and the route list for the token-reachable routes (`PERSON_ROUTES`, `API_ROUTES`),
+  served beside the OAuth metadata and named in API.md, is what makes Caime a provider in any
+  of them without a line of their code. (2) *The MCP server* (R78 §3) stays: a person runs an
+  agent that reads their waits and calendar through their own token; Caime is the app, the
+  broker is theirs. (3) *A hash chain over the audit log*: each row carrying the previous row's
+  hash (one column, one write), so an organization's export and the operator's trail are
+  tamper-evident as their DPA promises; and when Caime holds a person's third-party credential
+  at last (R75 phase 3, calendar sync), it goes in a vault sealed with a server key, never a
+  column beside the rest. Declined: becoming a broker, Composio compatibility, and AGPL code in
+  the server (its network clause would reach the whole service).
+
+- **R79 — A wide range of apps to connect (owner, 2026-10-09: "ensure that Caime offers a
+  wide range of apps to be connected").** Discover (R74) must not open as an empty directory
+  waiting for developers, and the range must be real: an app in Discover connects today, or it
+  isn't there. Three layers, by what each needs, in this order. *Layer 1, bridges that need
+  nothing from anyone (now).* (a) *Automation platforms as built-in apps*: Zapier, Make, n8n,
+  Pipedream and IFTTT are rows in Discover (`BUILTIN_APPS`, a kind `bridge`), each the door to
+  the thousands of apps on it ("Connect Caime to the apps on Zapier"). Connect is a sheet in
+  Caime, never a redirect to the platform's marketing: what the platform can do with Caime
+  (triggers: a message arrives, a task is due, a card moves, polled from the person's routes;
+  actions: send a message, make a task, post a card), a personal token made for it in one tap,
+  named after the platform and scoped to what the recipe needs (`PERSON_ROUTES`), and the
+  platform's own page to paste it; the row is on while a token named for it lives, and
+  Connected shows it with when it was last used, as any app. Personal webhooks (an address a
+  person's token may register, for push triggers) follow once the polling bridges are in use.
+  (b) *The OpenAPI document* (R78), so those platforms, Pipedream, and any agent framework
+  import Caime's routes rather than hand-write them. (c) *A contacts file*: People takes a vCard
+  or CSV exported from Google Contacts, iCloud or Outlook, finds who's already on Caime by
+  address (those with `discoverByEmail` on, as search does) and offers the rest an invite link
+  (R1), nothing else kept of the file; a bridge for everyone, and the growth loop R75 counts on.
+  The calendar address (done), mail by forwarding (R75 phase 1) and the WhatsApp import (R45)
+  are this layer too. *Layer 2, first-party connectors for Caime's own spine* (each ⛔ an OAuth
+  client registered by the owner with the provider): Google Calendar and Outlook calendar sync
+  both ways (agreed cards and due actions there; their busy times back into slots and "busy"),
+  Gmail and Outlook as mail sources beyond forwarding (R75 phases 2 and 3), live contacts from
+  Google, iCloud and Outlook, and signing in with Google, Apple and Microsoft. Each is one
+  adapter behind one interface (`lib/connectors/<provider>.ts`, a stand-in in tests, its
+  `provider.health` gauge), its tokens in the sealed vault (R78), a row in Discover and the
+  processors list. *Layer 3, breadth through an engine* (evaluated, decided later): a
+  self-hosted connector runtime (OOMOL's `open-connector`, Apache-2.0, 1,000+ providers and
+  10,000+ actions) as an internal service, surfaced in Discover for what Cai and the friends
+  could do in other apps ("put this decision in Notion", "make it a Todoist task"); every
+  provider still needs Caime's own OAuth app registered with it, so the engine saves the
+  actions' code, not the registrations. Decided only once layers 1 and 2 are live and Discover
+  says what people look for and don't find: the directory counts the words searched with no
+  result, words and counts alone, never who. *Layer 4* stays the long tail: developers'
+  listings (R74), made easy by the OpenAPI document and the MCP server. *Cost*: layer 1 is code
+  only and a token's worth of calls when a recipe polls (the person's own routes, rate-limited
+  as any token's); layer 2 a bounded sync job per connected account within each provider's
+  quota; layer 3 a container and a database of its own. *What isn't done*: WhatsApp, Facebook
+  and LinkedIn as live connections (no personal messaging APIs exist; notices by mail, R75, and
+  the WhatsApp import are the bridges there are).

@@ -1131,4 +1131,10 @@ export const arServer: Catalog = {
     'يجب أن يرسل «اتصال» الأشخاص إلى عنوان التطبيق نفسه: عنوان يعود إليه، أو موقعه.',
   'A listing needs a tagline, a category and where Connect goes.':
     'يحتاج الإدراج إلى سطر تعريفي وفئة ووجهة لزر «اتصال».',
+  'Who does it is for the team to say.': 'من يقوم بذلك أمر يقرره الفريق.',
+  'This card has been paid already.': 'دُفعت هذه البطاقة بالفعل.',
+  'The listing changed since it was looked at: look at it again.':
+    'تغيّر الإدراج منذ النظر فيه: انظر فيه مجددًا.',
+  'Yours to do: {name}': 'عليك القيام به: {name}',
+  '{org} named you for this booking.': 'عيّنتك {org} لهذا الحجز.',
 };

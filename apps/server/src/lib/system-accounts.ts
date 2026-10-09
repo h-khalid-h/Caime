@@ -44,6 +44,7 @@ import { SYSTEM_REPLY_JOB } from './message-effects';
 import { messagePreview } from './messages';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
+import { visibleTasksSql } from './task-visibility';
 import { cardsAhead } from './upcoming';
 import { minorOf } from './users';
 
@@ -569,7 +570,8 @@ export async function openFor(
     .selectFrom('tasks as t')
     .leftJoin('conversations as c', 'c.id', 't.conversation_id')
     .where('t.status', 'in', ['open', 'accepted'])
-    .where((eb) => eb.or([eb('t.owner_id', '=', me.id), eb('t.assignee_id', '=', me.id)]))
+    // Their own, and what's asked of them that was shared with them: never a private wait.
+    .where(visibleTasksSql(me.id, 't'))
     .$if(Boolean(opts.forModel), (q) =>
       q.where((eb) =>
         eb.or([eb('c.privacy_class', 'is', null), eb('c.privacy_class', '<>', 'private')]),

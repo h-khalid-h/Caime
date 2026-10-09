@@ -44,6 +44,7 @@ import {
 } from '../lib/messages';
 import { notify } from '../lib/notify';
 import { between } from '../lib/relations';
+import { visibleTasksSql } from '../lib/task-visibility';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -204,15 +205,7 @@ export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     const me = auth.userId;
     const open = ['open', 'accepted'] as const;
-    let query = ctx.db
-      .selectFrom('tasks')
-      .selectAll()
-      .where((eb) =>
-        eb.or([
-          eb('owner_id', '=', me),
-          eb.and([eb('assignee_id', '=', me), eb('shared', '=', true)]),
-        ]),
-      );
+    let query = ctx.db.selectFrom('tasks').selectAll().where(visibleTasksSql(me));
     switch (q.view) {
       case 'todo':
         query = query.where('assignee_id', '=', me).where('status', 'in', open);

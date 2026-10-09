@@ -764,6 +764,13 @@ export interface OrganizationsTable {
   updated_at: Generated<Date>;
 }
 
+export interface OrgReclaimsTable {
+  org_id: string;
+  user_id: string;
+  token: string;
+  created_at: Date;
+}
+
 export interface OrgMembersTable {
   org_id: string;
   user_id: string;
@@ -1015,6 +1022,8 @@ export interface OAuthClientsTable {
   reviewed_at: Generated<Date | null>;
   declined_reason: Generated<string | null>;
   connected_count: Generated<number>;
+  /** Counted up on each change to what Discover shows (R74). */
+  listing_rev: Generated<number>;
 }
 
 export interface OAuthGrantsTable {
@@ -1105,6 +1114,7 @@ export interface Database {
   org_checkout: OrgCheckoutTable;
   checkout_states: CheckoutStatesTable;
   org_members: OrgMembersTable;
+  org_reclaims: OrgReclaimsTable;
   business_threads: BusinessThreadsTable;
   org_apps: OrgAppsTable;
   app_kits: AppKitsTable;

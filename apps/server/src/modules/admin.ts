@@ -565,6 +565,13 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!before?.listed_at || before.revoked_at) throw notFound(tr('That app'));
     if (body.decision === 'decline' && !body.reason?.trim())
       throw badRequest(tr('Say why, so the developer can change it and ask again.'));
+    // Only the version looked at is let through: a change since asks again.
+    if (before.listing_rev !== body.revision)
+      throw new AppError(
+        409,
+        'listing_changed',
+        tr('The listing changed since it was looked at: look at it again.'),
+      );
     await ctx.db
       .updateTable('oauth_clients')
       .set({

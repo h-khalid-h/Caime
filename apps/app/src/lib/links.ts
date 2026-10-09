@@ -65,7 +65,11 @@ export function leaveFor(url: string): void {
   else void Linking.openURL(url).catch(() => {});
 }
 
+/** What a link may open: a page, mail, a call, a calendar; never a script or a file scheme. */
+const OPENABLE = /^(https?|mailto|tel|webcal):/i;
+
 export function openLink(url: string, suspicious = false): void {
+  if (!OPENABLE.test(url.trim())) return;
   // A link to Caime itself (someone's @handle) opens here, not in another tab.
   const own = ownLinkPath(url, WEB_URL);
   if (own) {

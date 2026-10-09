@@ -43,6 +43,34 @@ async function uploadImage(c: Client, name: string) {
   return res.json().file as { id: string };
 }
 
+/** A GIF keeps its bytes as uploaded (no re-encoding, so no renditions): never an item's photo. */
+async function uploadGif(c: Client) {
+  const data = await sharp({
+    create: { width: 64, height: 64, channels: 3, background: '#7a3ff2' },
+  })
+    .gif()
+    .toBuffer();
+  const boundary = `----caime${uuidv4()}`;
+  const payload = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="loop.gif"\r\nContent-Type: image/gif\r\n\r\n`,
+    ),
+    data,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const res = await t.app.inject({
+    method: 'POST',
+    url: '/v1/files',
+    payload,
+    headers: {
+      'content-type': `multipart/form-data; boundary=${boundary}`,
+      authorization: `Bearer ${c.token}`,
+    },
+  });
+  if (res.statusCode !== 201) throw new Error(`${res.statusCode} ${res.body}`);
+  return res.json().file as { id: string; kind: string };
+}
+
 const item = (patch: Record<string, unknown>) => ({
   id: 'x',
   name: 'X',
@@ -135,5 +163,15 @@ describe('an item’s photo (R63)', () => {
     expect(page.body).toMatch(
       /<meta property="og:image" content="https:\/\/caime\.example\/v1\/orgs\/[^"]+\/items\/brush\/photo/,
     );
+  });
+  it('an image kept as uploaded (a GIF, with whatever metadata it carries) is never a photo', async () => {
+    const gif = await uploadGif(noor);
+    expect(gif.kind).toBe('image');
+    const refused = await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+      booking: null,
+      items: [item({ id: 'loop', name: 'Loop', photoFileId: gif.id })],
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.message).toBe('Choose an image you uploaded.');
   });
 });

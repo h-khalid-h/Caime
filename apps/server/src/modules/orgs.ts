@@ -59,8 +59,10 @@ import {
   orderingOf,
   orgHost,
   paymentsOf,
+  withoutProviders,
 } from '../lib/booking';
 import { joinThreads, leaveThreads, orgAvatarUrl } from '../lib/business';
+import { disconnect } from '../lib/checkout';
 import { qrPath } from '../lib/door';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors';
 import { currencyOf, isCountry } from '../lib/geo';
@@ -192,11 +194,13 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     // The team sees the whole catalog; anyone else what they may book (R58).
     bookingItems: seat
       ? itemsOf(org)
-      : itemsFor(orgHost(org), {
-          isConnected: true,
-          spheres: [],
-          adult: await adult(ctx, [viewerId]),
-        }),
+      : withoutProviders(
+          itemsFor(orgHost(org), {
+            isConnected: true,
+            spheres: [],
+            adult: await adult(ctx, [viewerId]),
+          }),
+        ),
     ordering: orderingOf(org),
     // Its shelves (R61): every one for the team; for anyone else, those they may see.
     collections: seat
@@ -612,6 +616,20 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
         .where('user_id', '=', userId)
         .execute();
       await leaveThreads(trx, id, userId, ctx.now());
+      // What leaned on their seat goes with it: writing for it to other organizations (R64), and
+      // publishing apps under it (R74; the operator looks again at one that was listed).
+      await trx
+        .updateTable('business_threads')
+        .set({ customer_org_id: null, updated_at: ctx.now() })
+        .where('customer_org_id', '=', id)
+        .where('customer_id', '=', userId)
+        .execute();
+      await trx
+        .updateTable('oauth_clients')
+        .set({ org_id: null, reviewed_at: null })
+        .where('org_id', '=', id)
+        .where('owner_id', '=', userId)
+        .execute();
       if (heir)
         await trx
           .updateTable('org_members')
@@ -633,6 +651,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     if (people.length === 1) {
       await endBillingOf(ctx, { orgId: id });
       await endFollowsOf(ctx, id);
+      await disconnect(ctx, id);
     }
     await ctx.bus.publish([userId], { type: 'business.updated', data: { orgId: id } });
     await audit(ctx.db, {
@@ -751,6 +770,8 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!ownsOrg(seat?.role)) throw forbidden(tr('Only the organization’s owner closes it.'));
     const members = await team(ctx, id);
     await ctx.db.transaction().execute((trx) => closeOrg(trx, id, ctx.now()));
+    // Closed, it takes no cards (R65): Stripe forgets Caime's access to its account.
+    await disconnect(ctx, id);
     await audit(ctx.db, {
       actorId: auth.userId,
       action: 'org.closed',
@@ -784,11 +805,14 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           'This organization was never verified at a domain, so there’s no way to prove it’s yours.',
         ),
       );
+    // A record of this person's own: another's start never overwrites it.
     const token = newVerifyToken();
     await ctx.db
-      .updateTable('organizations')
-      .set({ reclaim_by: auth.userId, reclaim_token: token, updated_at: ctx.now() })
-      .where('id', '=', id)
+      .insertInto('org_reclaims')
+      .values({ org_id: id, user_id: auth.userId, token, created_at: ctx.now() })
+      .onConflict((oc) =>
+        oc.columns(['org_id', 'user_id']).doUpdateSet({ token, created_at: ctx.now() }),
+      )
       .execute();
     await audit(ctx.db, { actorId: auth.userId, action: 'org.reclaim_started', target: id });
     return {
@@ -807,16 +831,22 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/orgs/:id/reclaim/check', async (req, reply): Promise<OrgResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    ctx.limiter.hit(`org-verify:${id}`, ctx.config.isTest ? 1000 : 10, 60_000);
+    // Tries are each person's own: nobody burns another's.
+    ctx.limiter.hit(`org-reclaim-check:${auth.userId}`, ctx.config.isTest ? 1000 : 10, 60_000);
     const org = await closedOrgById(ctx.db, id);
-    if (!org.domain || org.reclaim_by !== auth.userId || !org.reclaim_token)
-      throw badRequest(tr('Start taking it back first.'));
-    const record = verificationRecord(org.domain, org.reclaim_token);
+    const mine = await ctx.db
+      .selectFrom('org_reclaims')
+      .select('token')
+      .where('org_id', '=', id)
+      .where('user_id', '=', auth.userId)
+      .executeTakeFirst();
+    if (!org.domain || !mine) throw badRequest(tr('Start taking it back first.'));
+    const record = verificationRecord(org.domain, mine.token);
     const [named, apex] = await Promise.all([
       ctx.dns.resolveTxt(record.name).catch(() => [] as string[][]),
       ctx.dns.resolveTxt(org.domain).catch(() => [] as string[][]),
     ]);
-    if (!recordMatches([...named, ...apex], org.reclaim_token))
+    if (!recordMatches([...named, ...apex], mine.token))
       throw new AppError(
         422,
         'record_not_found',

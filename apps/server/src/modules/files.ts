@@ -16,6 +16,7 @@ import type { AppContext } from '../context';
 import { isPublicItem, itemsFor, orgHost, personHost } from '../lib/booking';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
+import { requireOperator } from '../lib/operator';
 import { orgSeat } from '../lib/orgs';
 import { assertStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
@@ -615,7 +616,8 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectAll()
       .where('id', '=', fileId)
       .executeTakeFirst();
-    if (f?.kind !== 'image') throw missing();
+    // A re-encoded image only (its renditions say so): never an original with its metadata.
+    if (f?.kind !== 'image' || !f.thumb_key) throw missing();
     reply.header('cache-control', 'private, max-age=3600');
     return streamFile(
       req,
@@ -634,9 +636,17 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
    * same renditions as any image. The address changes with the file (`appIconPath`), so it's
    * cached as any file is.
    */
-  app.get('/directory/:id/icon', async (req, reply) => {
-    const auth = requireAuth(req);
-    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+  const appIcon = async (
+    req: FastifyRequest,
+    reply: FastifyReply,
+    id: string,
+    allowed: (c: {
+      owner_id: string;
+      listed_at: Date | null;
+      reviewed_at: Date | null;
+      declined_reason: string | null;
+    }) => boolean,
+  ) => {
     const missing = () => notFound(tr('That app'));
     const c = await ctx.db
       .selectFrom('oauth_clients')
@@ -644,15 +654,14 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .where('revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!c?.icon_file_id) throw missing();
-    const listed = c.listed_at && c.reviewed_at && !c.declined_reason;
-    if (!listed && c.owner_id !== auth.userId) throw missing();
+    if (!c?.icon_file_id || !allowed(c)) throw missing();
     const f = await ctx.db
       .selectFrom('files')
       .selectAll()
       .where('id', '=', c.icon_file_id)
       .executeTakeFirst();
-    if (f?.kind !== 'image') throw missing();
+    // A re-encoded image only (its renditions say so): never an original with its metadata.
+    if (f?.kind !== 'image' || !f.thumb_key) throw missing();
     return streamFile(
       req,
       reply,
@@ -660,5 +669,22 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       { ...(await largeOf(storage, f)), name: 'icon.webp' },
       true,
     );
+  };
+  app.get('/directory/:id/icon', async (req, reply) => {
+    const auth = requireAuth(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return appIcon(
+      req,
+      reply,
+      id,
+      (c) =>
+        Boolean(c.listed_at && c.reviewed_at && !c.declined_reason) || c.owner_id === auth.userId,
+    );
+  });
+  /** The operator sees what they're asked to let through, before it's listed. */
+  app.get('/admin/listings/:id/icon', async (req, reply) => {
+    requireOperator(ctx, req, ctx.config.ADMIN_TOKEN, ctx.config.OPERATOR_TOKENS);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    return appIcon(req, reply, id, (c) => c.listed_at !== null);
   });
 }

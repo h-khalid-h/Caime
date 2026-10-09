@@ -110,33 +110,32 @@ export async function checkoutRoutes(app: FastifyInstance, ctx: AppContext) {
       }),
       req.query,
     );
-    let done: { handle: string | null; connected: boolean } = { handle: null, connected: false };
+    let done: { handle: string | null; connected: boolean; orgId: string | null } = {
+      handle: null,
+      connected: false,
+      orgId: null,
+    };
     try {
       done = await finishConnect(
         ctx,
         { state: q.state, code: q.error ? null : (q.code ?? null) },
+        req.auth?.userId ?? null,
         async (userId, orgId) => ownsOrg((await orgSeat(ctx.db, userId, orgId))?.role ?? null),
       );
     } catch (e) {
       req.log.error({ err: (e as Error).message }, 'stripe connect');
     }
-    if (done.connected && done.handle) {
-      const org = await ctx.db
-        .selectFrom('organizations')
-        .select('id')
-        .where('handle', '=', done.handle)
-        .executeTakeFirst();
+    if (done.connected && done.orgId) {
       const by = await ctx.db
         .selectFrom('org_checkout')
         .select('connected_by')
-        .where('org_id', '=', org?.id ?? '')
+        .where('org_id', '=', done.orgId)
         .executeTakeFirst();
-      if (org)
-        await audit(ctx.db, {
-          actorId: by?.connected_by ?? null,
-          action: 'org.checkout_connected',
-          target: org.id,
-        });
+      await audit(ctx.db, {
+        actorId: by?.connected_by ?? null,
+        action: 'org.checkout_connected',
+        target: done.orgId,
+      });
     }
     const web = ctx.config.PUBLIC_URL.replace(/\/+$/, '');
     return reply.redirect(

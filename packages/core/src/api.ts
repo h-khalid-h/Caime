@@ -1850,6 +1850,10 @@ export interface AppListingView {
   orgId: string | null;
   /** Why the operator declined, when they did. */
   declinedReason: string | null;
+  /** When it last asked (a change to what's shown asks again). */
+  askedAt: string | null;
+  /** The version of what's shown; a review names the one it looked at. */
+  revision: number;
 }
 
 /** An app in Discover (R74): a listed one, or one of Caime's own. */

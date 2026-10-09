@@ -51,6 +51,7 @@ export const ERROR_CODES = [
   'invalid_request',
   'invalid_reset',
   'limit',
+  'listing_changed',
   'location_ended',
   'not_accepting_requests',
   'not_bookable',

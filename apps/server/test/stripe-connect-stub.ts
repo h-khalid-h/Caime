@@ -104,6 +104,19 @@ export async function connectStub(): Promise<ConnectStub> {
       sessions.set(id, s);
       return send(200, view(s));
     }
+    const expire = /^\/v1\/checkout\/sessions\/(\w+)\/expire$/.exec(path);
+    if (req.method === 'POST' && expire) {
+      const s = sessions.get(expire[1] ?? '');
+      if (!s || s.account !== as)
+        return send(404, { error: { code: 'resource_missing', message: 'No such session.' } });
+      // As Stripe: only an open session expires; a complete one answers an error.
+      if (s.status !== 'open')
+        return send(400, {
+          error: { type: 'invalid_request_error', message: 'Only open sessions expire.' },
+        });
+      s.status = 'expired';
+      return send(200, view(s));
+    }
     const session = /^\/v1\/checkout\/sessions\/(\w+)$/.exec(path);
     if (req.method === 'GET' && session) {
       const s = sessions.get(session[1] ?? '');

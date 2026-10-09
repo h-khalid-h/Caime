@@ -157,6 +157,11 @@ export function maskPayload(
     out.history = (out.history as Array<Record<string, unknown>>).map((h) =>
       other(h.by) ? { ...h, by: mask.orgId } : h,
     );
+  // Who opened a card's checkout (R65): a team member paying for the organization is the
+  // organization to the customer.
+  const checkout = out.checkout as Record<string, unknown> | undefined;
+  if (checkout && typeof checkout === 'object' && other(checkout.payerId))
+    out.checkout = { ...checkout, payerId: mask.orgId };
   // A card's own lists name who did what: a checklist's items (who added, who ticked).
   const fields = out.fields as Record<string, unknown> | undefined;
   if (fields && Array.isArray(fields.items))

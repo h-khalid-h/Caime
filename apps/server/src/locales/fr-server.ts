@@ -1147,4 +1147,10 @@ export const frServer: Catalog = {
     'Connecter doit envoyer les gens à l’adresse de l’application elle-même : une où elle revient, ou son site web.',
   'A listing needs a tagline, a category and where Connect goes.':
     'Une fiche a besoin d’une accroche, d’une catégorie et d’où mène Connecter.',
+  'Who does it is for the team to say.': 'Qui s’en charge, c’est à l’équipe de le dire.',
+  'This card has been paid already.': 'Cette carte a déjà été payée.',
+  'The listing changed since it was looked at: look at it again.':
+    'La fiche a changé depuis son examen : examinez-la à nouveau.',
+  'Yours to do: {name}': 'À vous de faire : {name}',
+  '{org} named you for this booking.': '{org} vous a désigné pour cette réservation.',
 };

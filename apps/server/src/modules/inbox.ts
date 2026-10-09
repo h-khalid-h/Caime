@@ -30,6 +30,7 @@ import {
   relationshipView,
 } from '../lib/relations';
 import { spaceConversationTitle, spaceRefs } from '../lib/spaces';
+import { visibleTasksSql } from '../lib/task-visibility';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -179,15 +180,16 @@ export async function buildInbox(
         sql<number>`count(*) filter (where assignee_id = ${userId} and owner_id <> ${userId} and shared and status in ('open','accepted'))::int`.as(
           'requests_to_me',
         ),
-        sql<number>`count(*) filter (where assignee_id = ${userId} and status in ('open','accepted') and ${overdueAtSql} < ${now})::int`.as(
+        sql<number>`count(*) filter (where assignee_id = ${userId} and (owner_id = ${userId} or shared) and status in ('open','accepted') and ${overdueAtSql} < ${now})::int`.as(
           'overdue',
         ),
-        sql<number>`count(*) filter (where assignee_id = ${userId} and status in ('open','accepted') and ${overdueAtSql} >= ${now} and due_at < ${new Date(now.getTime() + 86_400_000)})::int`.as(
+        sql<number>`count(*) filter (where assignee_id = ${userId} and (owner_id = ${userId} or shared) and status in ('open','accepted') and ${overdueAtSql} >= ${now} and due_at < ${new Date(now.getTime() + 86_400_000)})::int`.as(
           'due_soon',
         ),
       ])
       .where('conversation_id', 'in', ids)
-      .where((eb) => eb.or([eb('assignee_id', '=', userId), eb('owner_id', '=', userId)]))
+      // Never a private wait someone keeps on this person (lib/task-visibility.ts).
+      .where(visibleTasksSql(userId))
       .groupBy('conversation_id')
       .execute(),
     ctx.db

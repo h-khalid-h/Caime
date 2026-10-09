@@ -1214,6 +1214,21 @@ discovers, and mail at their own address.
       export and erasure, the privacy and help pages and the processor list.
 - [ ] ⛔ R75 in production: the mail domain's MX at the inbound provider, DKIM, SPF and DMARC,
       the provider's credentials and webhook secret (the owner's).
+- [ ] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
+      bridge built-ins in Discover (a sheet that makes a scoped personal token in one tap and
+      says what each can do with Caime; on while the token lives); a contacts file into People
+      (vCard, CSV: who's here by address, invite links for the rest); personal webhooks for
+      push triggers after the polling bridges are in use.
+- [ ] ⛔ R79 layer 2, first-party connectors: Google Calendar and Outlook calendar sync, live
+      contacts, sign-in with Google, Apple and Microsoft, each needing the owner's OAuth client
+      with the provider; built on one connector interface with a stand-in and a health gauge.
+- [ ] R79 layer 3, a self-hosted connector engine for breadth: evaluated against what Discover's
+      no-result searches say people want; decided after layers 1 and 2.
+- [ ] R78, apps as contracts (PRODUCT-REVIEW R78, with Open Connector evaluated): a
+      `provider.health` task and gauges; an OpenAPI 3.1 document generated from the schemas for
+      the token-reachable routes, served and named in API.md; `@caime/mcp` over the SDK's
+      person methods; a hash chain on `audit_log`; a `provides` list on listings for apps that
+      give Caime something (calendar sync, mail), reviewed as the listing is.
 - [ ] R75 phase 2: notices (no-reply senders, bulk mail) under Notices, HTML as sent in a
       sandbox, reply-all with CC, sending as the address from Gmail and Outlook through Caime's
       submission, the agent answering by mail.
@@ -1225,12 +1240,16 @@ discovers, and mail at their own address.
 
 The six-slice review's plan, in its order; a block is ticked when its tests and the E2E pass.
 
-- [ ] Block 1, privacy and money: `visibleTasksWhere` for Cai, the briefs and the inbox (H1);
-      the checkout session settled under the card's lock, never replaced while paid (M1); slots
-      gated by the item's audience (M2); items' providers stripped for customers (M3); the payer
-      masked (M4); priced bookings adults-only (M5); writing as an organization and its checkout
-      checked on every send, `closeOrg` disconnecting (M6); listing review by version, an
-      operator icon (M7); the security Ls.
+- [x] Block 1, privacy and money: `visibleTasksSql` for Cai, the briefs and the inbox (H1);
+      the checkout session settled under the card's lock, never replaced while paid, expired when
+      the card is settled otherwise (M1); slots gated by the item's audience (M2); items'
+      providers stripped for customers and named by nobody else (M3); the payer masked (M4);
+      priced bookings adults-only (M5); a seat ending or a close clearing what leaned on it,
+      `closeOrg` disconnecting the checkout, `checkoutAccountOf` open only (M6); listing review
+      by revision with an operator icon (M7); the security Ls (the provider route under
+      `assertCanWrite` and a limit, asks parsed, the Connect return tied to its session, http(s)
+      websites and openable schemes, the brief without hidden messages, reclaims per person,
+      re-encoded images only). Arbitrary payloads on text messages (L9) wait for Block 6.
 - [ ] Block 2, integration Hs: the provider filter in `cardsAhead` (H2); an organization's files
       spared when its owner's account goes (H3); listings cleared of a closed or left
       organization (H4); cards and organizations in search (H5); slots from every overlapping
@@ -2387,3 +2406,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   and feed carry the whole organization's appointments; free slots are read from a capped list;
   nine core label tables aren't in any catalog; the country sets the work week and the currency
   and nothing else; a single choice is built six ways.
+- 2026-10-09 — Review block 1 (privacy and money): one task-visibility rule for every reader (a
+  private wait never reaches the person it's about, nor their model), one Checkout Session ever
+  payable per card (settled, reused, expired, never replaced while paid), slots and providers
+  kept to whom the profile shows them, priced bookings adults-only, what leans on a seat or an
+  open organization cleared when either ends, listing reviews by revision, reclaims per person,
+  re-encoded images only. `task-visibility.test.ts`; cases in checkout, booking, minors,
+  app-directory, orgs and item-photos.

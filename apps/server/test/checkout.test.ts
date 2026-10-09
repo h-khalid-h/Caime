@@ -41,8 +41,13 @@ const hook = (event: object, secret = SECRET) => {
     },
   });
 };
-const back = (query: string) =>
-  t.app.inject({ method: 'GET', url: `/v1/checkout/stripe/return?${query}` });
+/** Back from Stripe in the owner's own browser (its session), unless said otherwise. */
+const back = (query: string, as: Client | null = noor) =>
+  t.app.inject({
+    method: 'GET',
+    url: `/v1/checkout/stripe/return?${query}`,
+    ...(as ? { headers: { authorization: `Bearer ${as.token}` } } : {}),
+  });
 
 beforeAll(async () => {
   stub = await connectStub();
@@ -95,13 +100,24 @@ describe('connecting the organization’s own account (R65)', () => {
     // A state nobody made goes nowhere in particular.
     const forged = await back(`state=${'x'.repeat(32)}&code=${stub.codeFor('acct_nile')}`);
     expect(forged.headers.location).toBe('https://caime.example/');
-    const done = await back(`state=${state}&code=${stub.codeFor('acct_nile')}`);
+    // Someone else's browser, or none, finishing the owner's consent connects nothing.
+    expect(
+      (await back(`state=${state}&code=${stub.codeFor('acct_nile')}`, omar)).headers.location,
+    ).toBe('https://caime.example/o/nile.dental/setup?checkout=failed');
+    const { url: url2 } = await noor.post(`/v1/orgs/${orgId}/checkout/connect`, {});
+    const state2 = new URL(url2).searchParams.get('state') ?? '';
+    expect(
+      (await back(`state=${state2}&code=${stub.codeFor('acct_nile')}`, null)).headers.location,
+    ).toBe('https://caime.example/o/nile.dental/setup?checkout=failed');
+    const { url: url3 } = await noor.post(`/v1/orgs/${orgId}/checkout/connect`, {});
+    const state3 = new URL(url3).searchParams.get('state') ?? '';
+    const done = await back(`state=${state3}&code=${stub.codeFor('acct_nile')}`);
     expect(done.statusCode).toBe(303);
     expect(done.headers.location).toBe(
       'https://caime.example/o/nile.dental/setup?checkout=connected',
     );
     // A state is used once.
-    expect((await back(`state=${state}&code=${stub.codeFor('acct_nile')}`)).headers.location).toBe(
+    expect((await back(`state=${state3}&code=${stub.codeFor('acct_nile')}`)).headers.location).toBe(
       'https://caime.example/',
     );
     const view = (await noor.get(`/v1/orgs/${orgId}/checkout`)).checkout;
@@ -175,6 +191,41 @@ describe('paying by card (R65)', () => {
     expect(paid.message.payload.checkout.status).toBe('paid');
     // A paid card isn't paid twice.
     expect((await lina.req('POST', `/v1/messages/${card}/checkout`)).statusCode).toBe(403);
+  });
+
+  it('one session is ever payable: a payment not yet settled is settled, never replaced; an old one ends first; a card settled otherwise ends its session', async () => {
+    const sessionFor = (messageId: string, not?: string) =>
+      [...stub.sessions.values()].find(
+        (s) => s.params.get('metadata[caime_message]') === messageId && s.id !== not,
+      )!;
+    const second = (await ask(120)).json().message.id;
+    await lina.post(`/v1/messages/${second}/checkout`, {});
+    const a = sessionFor(second);
+    // Paid on Stripe's page, the tab closed before the return, the webhook not here yet: asking
+    // for a session again settles it rather than replacing it, and nobody pays twice.
+    stub.pay(a.id);
+    const again = await lina.req('POST', `/v1/messages/${second}/checkout`);
+    expect(again.statusCode).toBe(409);
+    expect(again.json().error.message).toBe('This card has been paid already.');
+    expect(
+      (await lina.post(`/v1/messages/${second}/checkout/check`, {})).message.payload.state,
+    ).toBe('paid');
+    // A session of the payer's own from a day ago ends at Stripe before a new one starts.
+    const third = (await ask(60)).json().message.id;
+    const old = (await lina.post(`/v1/messages/${third}/checkout`, {})).url;
+    const b = sessionFor(third);
+    t.clock.advance(21 * 3_600_000);
+    const fresh = (await lina.post(`/v1/messages/${third}/checkout`, {})).url;
+    expect(fresh).not.toBe(old);
+    expect(b.status).toBe('expired');
+    const c = sessionFor(third, b.id);
+    expect(c.status).toBe('open');
+    // Settled another way (sent in cash, say): its session ends, and a card is never paid twice.
+    expect((await lina.req('POST', `/v1/messages/${third}/kit`, { to: 'sent' })).statusCode).toBe(
+      200,
+    );
+    expect(c.status).toBe('expired');
+    expect((await lina.req('POST', `/v1/messages/${third}/checkout`)).statusCode).toBe(403);
   });
 
   it('disconnected, cards aren’t offered and Stripe forgets Caime’s access', async () => {

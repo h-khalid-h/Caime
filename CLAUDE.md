@@ -303,6 +303,18 @@ These are rules, not preferences.
   uses it rather than a card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
+- Whose tasks a person sees is one rule, `visibleTasksSql(me)` (`lib/task-visibility.ts`): their
+  own, and what's asked of them that was shared with them. Every reader of `tasks` for a person
+  (Actions, the inbox's counts, Cai and the friends, the briefs, the calendar) puts it in its
+  `where`; a new reader does the same, never `owner_id = me or assignee_id = me` by hand.
+- A Pay card's checkout (R65): `openCheckout` and `settleCheckout` run under the card's row lock
+  and ask Stripe about the card's session (`askSession`) before anything is written; one session
+  is ever payable (the payer's own is reused, another's or an old one is expired first, a paid
+  one is settled rather than replaced), and the kit move route calls `expireCheckout` when
+  `stillPayableAfter(fields, to)` says the card is over for paying by card. A listing's
+  `listing_rev` counts up with every change to what Discover shows, and a review carries the
+  `revision` it looked at; `closeOrg` and a seat ending clear `business_threads.customer_org_id`
+  and `oauth_clients.org_id`, and whoever closes calls `disconnect` after the transaction.
 - The calendar (R51) reads what the feed reads: `lib/calendar.ts` (`calendarItems` for a person,
   with `overdueTasks` shared with `modules/calendar.ts`'s feed and `cardsAhead`; `orgBookings`
   for an organization's team) behind `GET /v1/calendar?from&to` and `GET /v1/orgs/:id/calendar`
