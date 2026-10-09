@@ -37,7 +37,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
         tr(SPACE_KIND_DEFS[s.kind].label),
         s.org?.name ?? '',
         people,
-        s.unreadCount ? `${s.unreadCount} unread` : '',
+        s.unreadCount ? trn(s.unreadCount, '{n} unread', '{n} unread') : '',
       ]
         .filter(Boolean)
         .join(', ')}

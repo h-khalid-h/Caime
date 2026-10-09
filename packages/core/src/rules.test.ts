@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
-import { emailError, handleError, handleFromName, passwordError } from './rules';
+import { emailError, handleError, handleFromName, PASSWORD_MIN, passwordError } from './rules';
 import { Handle, isReservedHandle, Password, RESERVED_HANDLES } from './schemas';
 
 describe('field rules', () => {
@@ -12,6 +12,12 @@ describe('field rules', () => {
     for (const p of ['short', 'aaaaaaaaaaaa', 'correct horse battery', '1234567890']) {
       expect(passwordError(p) === null).toBe(Password.safeParse(p).success);
     }
+    // The schema's message writes the number out ("Use at least 10 characters."), so the
+    // catalogs can carry it: change PASSWORD_MIN and the message changes with it.
+    expect(PASSWORD_MIN).toBe(10);
+    expect(Password.safeParse('short').error?.issues[0]?.message).toBe(
+      `Use at least ${PASSWORD_MIN} characters.`,
+    );
   });
 
   it('suggest a handle from any name', () => {

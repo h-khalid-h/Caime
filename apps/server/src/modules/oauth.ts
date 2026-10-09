@@ -336,7 +336,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         website: client.website,
         owner: { displayName: client.owner_name, handle: client.owner_handle },
       },
-      scopes: scopes.map((s) => ({ scope: s, label: PERSONAL_SCOPE_LABELS[s] })),
+      // In the request's language: the consent screen shows it as it came.
+      scopes: scopes.map((s) => ({ scope: s, label: tr(PERSONAL_SCOPE_LABELS[s]) })),
       redirectUri: r.redirect_uri,
       allowedBefore: Boolean(before && scopes.every((s) => before.scopes.includes(s))),
     };

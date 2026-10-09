@@ -8,7 +8,7 @@ import {
   type WebhookEvent,
 } from '@caime/core/apps';
 import { formatWhen } from '@caime/core/format';
-import { msg, tr } from '@caime/core/i18n';
+import { msg, tr, trn } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Bot from 'lucide-react-native/icons/bot';
@@ -247,7 +247,15 @@ export function OrgApps({ org }: { org: OrgView }) {
             style={{ padding: 14, paddingTop: apps.length ? 4 : 14 }}
             testID="org-apps-full"
           >
-            {`The ${PLAN_NAMES[org.plan.plan]} plan includes ${org.plan.allowance.apps === 1 ? 'one app' : `${org.plan.allowance.apps} apps`}. ${nextOrgPlanLine(org.plan) ?? ''}`.trim()}
+            {[
+              tr('The {plan} plan includes {apps}.', {
+                plan: PLAN_NAMES[org.plan.plan],
+                apps: trn(org.plan.allowance.apps, 'one app', '{n} apps'),
+              }),
+              nextOrgPlanLine(org.plan),
+            ]
+              .filter(Boolean)
+              .join(' ')}
           </Text>
         ) : null}
       </View>
@@ -386,16 +394,18 @@ export function OrgApps({ org }: { org: OrgView }) {
             {app.kits?.length ? (
               // The kinds of card it made, which the team sends from a customer's conversation.
               <Text variant="caption" color="textSecondary" testID="org-app-kits">
-                Its cards: {app.kits.map((k) => k.name).join(', ')}
+                {tr('Its cards: {cards}', { cards: app.kits.map((k) => k.name).join(', ') })}
               </Text>
             ) : null}
             <Text variant="caption" color="textSecondary">
-              Token {app.tokenPrefix ?? '—'}…
-              {app.lastUsedAt
-                ? tr(' · last used {formatWhen}', {
-                    formatWhen: formatWhen(app.lastUsedAt, now, timeZone, locale),
-                  })
-                : tr(' · not used yet')}
+              {[
+                tr('Token {prefix}…', { prefix: app.tokenPrefix ?? '—' }),
+                app.lastUsedAt
+                  ? tr('last used {when}', {
+                      when: formatWhen(app.lastUsedAt, now, timeZone, locale),
+                    })
+                  : tr('not used yet'),
+              ].join(' · ')}
             </Text>
             <View style={{ marginHorizontal: -20 }}>
               <ListRow

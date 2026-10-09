@@ -49,7 +49,9 @@ export function PinnedBar({
     ? (opened.text ?? opened.note ?? tr('Private message'))
     : messagePreview({ kind: m.kind, body: m.body, payload: m.payload, deleted: false });
   const which =
-    pins.length > 1 ? tr('Pinned, {i} of {length}', { i: i + 1, length: pins.length }) : 'Pinned';
+    pins.length > 1
+      ? tr('Pinned, {i} of {length}', { i: i + 1, length: pins.length })
+      : tr('Pinned');
   return (
     <View
       style={{

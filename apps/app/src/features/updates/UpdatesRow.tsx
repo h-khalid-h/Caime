@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import Building from 'lucide-react-native/icons/building';
 import { View } from 'react-native';
@@ -21,22 +21,32 @@ export function UpdatesRow() {
   const news = following.filter((f) => f.unread);
   const first = news[0];
   // A name alone can be anyone's: one Caime hasn't verified says so (R15).
-  const named = first ? `${first.org.name}${first.org.verified ? '' : ' (not verified)'}` : '';
+  const named = first
+    ? first.org.verified
+      ? first.org.name
+      : tr('{name} (not verified)', { name: first.org.name })
+    : '';
   const line = first
-    ? tr('New from {named}{text}', {
-        named,
-        text: news.length > 1 ? ` and ${news.length - 1} more` : '',
+    ? tr('New from {named}', {
+        named:
+          news.length > 1
+            ? trn(news.length - 1, '{name} and one more', '{name} and {n} more', { name: named })
+            : named,
       })
     : tr('From {following} you follow', {
         following:
-          following.length === 1 ? following[0]?.org.name : `${following.length} organizations`,
+          following.length === 1
+            ? following[0]?.org.name
+            : trn(following.length, '{n} organization', '{n} organizations'),
       });
   return (
     <View style={{ marginHorizontal: 6, marginBottom: 4 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={tr('Updates, {text}', {
-          text: unread ? `${unread} new. ${line}` : `nothing new. ${line}`,
+          text: unread
+            ? trn(unread, '{n} new. {line}', '{n} new. {line}', { line })
+            : tr('nothing new. {line}', { line }),
         })}
         onPress={() => router.navigate('/updates')}
         testID="updates-row"

@@ -302,11 +302,18 @@ export default function Security() {
       >
         <Text variant="body">{tr('This can’t be undone. Deleting your account:')}</Text>
         <Text variant="body" color="textSecondary">
-          • removes your profile, how you label people, your rules, suggestions, actions and
-          devices, and the files only you can see{'\n'}• ends your connections, and Pro if you have
-          it{'\n'}• leaves the messages you sent in other people’s conversations, shown as from a
-          deleted account. Delete any you’d rather not leave first{'\n'}• keeps your handle from
-          everyone for a year, you included, so a link to you can’t open someone else.
+          {[
+            tr(
+              '• removes your profile, how you label people, your rules, suggestions, actions and devices, and the files only you can see',
+            ),
+            tr('• ends your connections, and Pro if you have it'),
+            tr(
+              '• leaves the messages you sent in other people’s conversations, shown as from a deleted account. Delete any you’d rather not leave first',
+            ),
+            tr(
+              '• keeps your handle from everyone for a year, you included, so a link to you can’t open someone else.',
+            ),
+          ].join('\n')}
         </Text>
         <Text variant="body" color="textSecondary">
           {tr(

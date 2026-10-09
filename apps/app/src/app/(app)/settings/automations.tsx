@@ -94,7 +94,7 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
     }
   };
   const status = !a.enabled
-    ? 'Off'
+    ? tr('Off')
     : a.runs
       ? tr('{runs} kept so far', { runs: a.runs })
       : tr('Nothing kept yet');

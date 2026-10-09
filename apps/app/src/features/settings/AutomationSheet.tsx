@@ -1,6 +1,6 @@
 /**
  * Setting up an automation (PRD §69): whose, what and which words, and where to keep it, in the
- * words it'll be listed by ("When a customer sends a file with “invoice”, save it to Customer
+ * words it'll be listed by ("When someone you call “Customer” sends a file with “invoice”, save it to Customer
  * Files"). Nothing is kept until it's saved here.
  */
 import type { AutomationView } from '@caime/core/api';
@@ -31,11 +31,11 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
 const KIND_LABELS: Record<SaveKind, string> = {
-  document: 'Files',
-  photo: 'Photos',
-  video: 'Videos',
+  document: msg('Files'),
+  photo: msg('Photos'),
+  video: msg('Videos'),
   audio: msg('Voice notes'),
-  link: 'Links',
+  link: msg('Links'),
 };
 
 const ANYONE = 'anyone';

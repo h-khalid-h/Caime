@@ -103,7 +103,7 @@ export function CalendarFeed() {
           {tr('On since {formatWhen} · {text}', {
             formatWhen: formatWhen(feed.createdAt ?? '', now, timeZone, locale),
             text: feed.lastReadAt
-              ? `last read ${formatWhen(feed.lastReadAt, now, timeZone, locale)}`
+              ? tr('last read {when}', { when: formatWhen(feed.lastReadAt, now, timeZone, locale) })
               : tr('not read yet'),
           })}
         </Text>

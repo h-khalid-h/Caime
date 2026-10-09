@@ -27,11 +27,11 @@ export type GroupCallMemberState = 'ringing' | 'joined' | 'left' | 'declined' | 
 
 /** "under a minute", "4 min", "1 h 5 min": how long two people talked. */
 export function callDuration(seconds: number): string {
-  if (seconds < 60) return 'under a minute';
+  if (seconds < 60) return tr('under a minute');
   const m = Math.round(seconds / 60);
-  if (m < 60) return `${m} min`;
+  if (m < 60) return tr('{n} min', { n: m });
   const h = Math.floor(m / 60);
-  return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : `${h} h`;
+  return m % 60 ? tr('{h} h {m} min', { h, m: m % 60 }) : tr('{n} h', { n: h });
 }
 
 /**
@@ -46,24 +46,24 @@ export function callText(
   group = false,
 ): string {
   if (group) return groupCallText(kind, outcome, seconds, viewerCalled);
-  const name = kind === 'video' ? tr('Video call') : tr('Voice call');
+  const video = kind === 'video';
+  const name = video ? tr('Video call') : tr('Voice call');
+  const missed = video ? tr('Missed video call') : tr('Missed voice call');
   switch (outcome) {
     case 'completed':
       return `${name} · ${callDuration(seconds)}`;
     case 'failed':
-      return `${name} · couldn’t connect`;
+      return tr('{name} · couldn’t connect', { name });
     case 'declined':
       return viewerCalled
         ? tr('{name} · no answer', { name })
-        : tr('You declined a {toLowerCase}', { toLowerCase: name.toLowerCase() });
+        : video
+          ? tr('You declined a video call')
+          : tr('You declined a voice call');
     case 'cancelled':
-      return viewerCalled
-        ? `${name} · cancelled`
-        : tr('Missed {toLowerCase}', { toLowerCase: name.toLowerCase() });
+      return viewerCalled ? tr('{name} · cancelled', { name }) : missed;
     default:
-      return viewerCalled
-        ? tr('{name} · no answer', { name })
-        : tr('Missed {toLowerCase}', { toLowerCase: name.toLowerCase() });
+      return viewerCalled ? tr('{name} · no answer', { name }) : missed;
   }
 }
 
@@ -77,12 +77,15 @@ function groupCallText(
   seconds: number,
   viewerStarted: boolean,
 ): string {
-  const name = kind === 'video' ? tr('Group video call') : tr('Group voice call');
+  const video = kind === 'video';
+  const name = video ? tr('Group video call') : tr('Group voice call');
   if (outcome === 'completed') return `${name} · ${callDuration(seconds)}`;
-  if (outcome === 'failed') return `${name} · couldn’t connect`;
+  if (outcome === 'failed') return tr('{name} · couldn’t connect', { name });
   if (viewerStarted)
-    return outcome === 'cancelled' ? `${name} · cancelled` : tr('{name} · no answer', { name });
-  return tr('Missed {toLowerCase}', { toLowerCase: name.toLowerCase() });
+    return outcome === 'cancelled'
+      ? tr('{name} · cancelled', { name })
+      : tr('{name} · no answer', { name });
+  return video ? tr('Missed group video call') : tr('Missed group voice call');
 }
 
 /** How a call went for one person, for their call history. */

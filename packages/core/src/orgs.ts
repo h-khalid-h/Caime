@@ -28,11 +28,11 @@ export type OrgKind = (typeof ORG_KINDS)[number];
 export const UPDATE_MAX = 2000;
 
 export const ORG_KIND_LABELS: Record<OrgKind, string> = {
-  business: 'Business',
-  shop: 'Shop',
+  business: msg('Business'),
+  shop: msg('Shop'),
   clinic: msg('Clinic or practice'),
-  school: 'School',
-  nonprofit: 'Nonprofit',
+  school: msg('School'),
+  nonprofit: msg('Nonprofit'),
   public_service: msg('Public service'),
   other: msg('Something else'),
 };
@@ -47,9 +47,9 @@ export type OrgRole = (typeof ORG_ROLES)[number];
 
 /** "Agent" is the data model's word; people read "Team". */
 export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  agent: 'Team',
+  owner: msg('Owner'),
+  admin: msg('Admin'),
+  agent: msg('Team'),
 };
 
 export function canManageOrg(role: OrgRole | null | undefined): boolean {

@@ -138,7 +138,7 @@ export function ThreadBar({
                   icon={UserRound}
                   loading={busy}
                   onPress={() =>
-                    void act(() => endpoints.assignThread(conversation.id, me.id), 'It’s yours')
+                    void act(() => endpoints.assignThread(conversation.id, me.id), tr('It’s yours'))
                   }
                   testID="thread-take"
                 />
@@ -283,7 +283,9 @@ export function ThreadBar({
                 onPress={() =>
                   void act(
                     () => endpoints.assignThread(conversation.id, p.userId),
-                    p.userId === me.id ? 'It’s yours' : `${p.person.displayName} has it`,
+                    p.userId === me.id
+                      ? tr('It’s yours')
+                      : tr('{name} has it', { name: p.person.displayName }),
                   )
                 }
                 testID={`thread-assign-${p.person.handle}`}
@@ -294,7 +296,7 @@ export function ThreadBar({
                 title={tr('Nobody')}
                 subtitle={tr('Back to New for the whole team')}
                 onPress={() =>
-                  void act(() => endpoints.assignThread(conversation.id, null), 'Nobody has it')
+                  void act(() => endpoints.assignThread(conversation.id, null), tr('Nobody has it'))
                 }
               />
             ) : null}

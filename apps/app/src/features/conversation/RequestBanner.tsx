@@ -166,12 +166,17 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <ShieldCheck size={18} color={t.c.textSecondary} />
         <Text variant="label" style={{ flex: 1 }}>
-          {other?.displayName ?? tr('Someone')} wants to message you
+          {tr('{name} wants to message you', { name: other?.displayName ?? tr('Someone') })}
         </Text>
       </View>
       <Text variant="body" color="textSecondary">
-        You’re not connected. {other?.trust.detail ?? ''} They won’t know you’ve seen this unless
-        you reply.
+        {[
+          tr('You’re not connected.'),
+          other?.trust.detail,
+          tr('They won’t know you’ve seen this unless you reply.'),
+        ]
+          .filter(Boolean)
+          .join(' ')}
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Button label={tr('Accept')} onPress={() => answer('accept')} loading={busy === 'accept'} />

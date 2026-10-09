@@ -139,7 +139,7 @@ function OneToOneCallLayer() {
               theyShare
                 ? tr('{other} is sharing their screen', { other: other.displayName.split(' ')[0] })
                 : null,
-              theirs?.muted ? 'Muted' : null,
+              theirs?.muted ? tr('Muted') : null,
             ]
               .filter(Boolean)
               .join(' · ')}

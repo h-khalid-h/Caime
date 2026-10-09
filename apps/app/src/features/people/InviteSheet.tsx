@@ -151,8 +151,11 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
           </View>
         ) : null}
         <Text variant="caption" color="textTertiary">
-          The link works for {daysLeft(made)} days, for anyone who has it. Take it back here any
-          time.
+          {trn(
+            daysLeft(made),
+            'The link works for {n} day, for anyone who has it. Take it back here any time.',
+            'The link works for {n} days, for anyone who has it. Take it back here any time.',
+          )}
         </Text>
       </Sheet>
     );
@@ -197,9 +200,11 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
           <View style={{ flex: 1 }}>
             <Text variant="bodyStrong">{tr('Show them the context')}</Text>
             <Text variant="caption" color="textSecondary">
-              The page they open says “{tr(SPHERE_DEFS[draft.sphere].label)}
-              {draft.orgName ? ` · ${draft.orgName}` : ''}”, not your label, so they know who’s
-              asking.
+              {tr('The page they open says “{label}”, not your label, so they know who’s asking.', {
+                label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName]
+                  .filter(Boolean)
+                  .join(' · '),
+              })}
             </Text>
           </View>
           <Switch

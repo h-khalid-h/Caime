@@ -1,4 +1,4 @@
-import { msg } from './i18n';
+import { msg, tr } from './i18n';
 /**
  * AI agents (PRD §74–75): an organization's support agent answers its customers from what the
  * organization told it, as its own named member of the team. It is an AI and always says so,
@@ -15,7 +15,7 @@ export const AGENT_ACTIONS = ['answer', 'hand_over', 'resolve', 'book'] as const
 export type AgentAction = (typeof AGENT_ACTIONS)[number];
 
 export const AGENT_ACTION_LABELS: Record<AgentAction, string> = {
-  answer: 'Answers',
+  answer: msg('Answers'),
   hand_over: msg('Hands it to your team'),
   resolve: msg('Closes the conversation'),
   book: msg('Books an appointment for your team to confirm'),
@@ -39,4 +39,4 @@ export const AGENT_CALLS_PER_CONVERSATION = 2 * AGENT_REPLIES_PER_CONVERSATION;
 
 /** Its name, unless the organization gives it another. */
 export const defaultAgentName = (orgName: string) =>
-  `${orgName.trim()} Assistant`.slice(0, AGENT_NAME_MAX);
+  tr('{name} Assistant', { name: orgName.trim() }).slice(0, AGENT_NAME_MAX);

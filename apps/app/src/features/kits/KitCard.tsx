@@ -219,7 +219,7 @@ export function KitCard({ m, mine }: { m: MessageView; mine: boolean }) {
         <Text variant="bodyStrong">{p.title ?? tr('Request')}</Text>
         {p.dueAt ? (
           <Text variant="caption" color="textSecondary">
-            Due {formatDue(p.dueAt, now, timeZone, locale)}
+            {tr('Due {when}', { when: formatDue(p.dueAt, now, timeZone, locale) })}
           </Text>
         ) : null}
       </View>

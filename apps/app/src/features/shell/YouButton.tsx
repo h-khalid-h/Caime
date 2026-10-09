@@ -1,5 +1,5 @@
 import type { MeView, PresenceSetting, PresenceState } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { msg, tr } from '@caime/core/i18n';
 import { type Href, router } from 'expo-router';
 import Bell from 'lucide-react-native/icons/bell';
 import Smile from 'lucide-react-native/icons/face-slightly-smiling';
@@ -29,10 +29,10 @@ const DOT: Record<PresenceSetting, PresenceState | null> = {
   invisible: null,
 };
 const SAID: Record<PresenceState, string> = {
-  online: 'Online',
-  busy: 'Busy',
-  away: 'Away',
-  offline: 'Offline',
+  online: msg('Online'),
+  busy: msg('Busy'),
+  away: msg('Away'),
+  offline: msg('Offline'),
 };
 
 /** The dot the people you know see: none when your privacy shows your online status to nobody. */
@@ -61,7 +61,7 @@ export function YouButton() {
       accessibilityRole="button"
       accessibilityLabel={
         dot
-          ? tr('You, {displayName}, {SAID}', { displayName: me.displayName, SAID: SAID[dot] })
+          ? tr('You, {displayName}, {state}', { displayName: me.displayName, state: tr(SAID[dot]) })
           : tr('You, {displayName}', { displayName: me.displayName })
       }
       testID="you-button"

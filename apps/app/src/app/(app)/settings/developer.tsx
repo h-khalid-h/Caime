@@ -115,7 +115,7 @@ function NewToken({ open, onClose }: { open: boolean; onClose: () => void }) {
             {PERSONAL_SCOPES.map((s) => (
               <ListRow
                 key={s}
-                title={PERSONAL_SCOPE_LABELS[s]}
+                title={tr(PERSONAL_SCOPE_LABELS[s])}
                 checked={scopes.includes(s)}
                 onPress={() => setScopes((x) => toggled(x, s))}
                 testID={`token-scope-${s}`}
@@ -171,13 +171,13 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
             {[
               `${token.prefix}…`,
               token.lastUsedAt
-                ? `used ${formatWhen(token.lastUsedAt, now, timeZone, locale)}`
-                : 'never used',
+                ? tr('used {when}', { when: formatWhen(token.lastUsedAt, now, timeZone, locale) })
+                : tr('never used'),
               expired
-                ? 'ended'
+                ? tr('ended')
                 : token.expiresAt
-                  ? `ends ${when(token.expiresAt)}`
-                  : 'until you revoke it',
+                  ? tr('ends {when}', { when: when(token.expiresAt) })
+                  : tr('until you revoke it'),
             ].join(' · ')}
           </Text>
         </View>
@@ -213,7 +213,12 @@ function TokenRow({ token }: { token: PersonalTokenView }) {
         </Text>
       </Sheet>
       <Text variant="caption" color="textTertiary">
-        {token.scopes.map((s) => PERSONAL_SCOPE_LABELS[s as PersonalScope] ?? s).join(' · ')}
+        {token.scopes
+          .map((s) => {
+            const l = PERSONAL_SCOPE_LABELS[s as PersonalScope];
+            return l ? tr(l) : s;
+          })
+          .join(' · ')}
       </Text>
     </View>
   );

@@ -5,7 +5,7 @@
  * who leaves hands it on); this only offers what they allow. Loaded with the details panel.
  */
 import type { ConversationView, ParticipantView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { handsOverOnLeaving } from '@caime/core/permissions';
 import {
   canChangeSpaceRole,
@@ -137,7 +137,7 @@ export function GroupPeople({
           accessibilityRole="header"
           style={{ flex: 1 }}
         >
-          {people.length === 1 ? '1 person' : tr('{length} people', { length: people.length })}
+          {trn(people.length, '{n} person', '{n} people')}
         </Text>
         {manager && !fixed ? (
           <Button
@@ -182,8 +182,10 @@ export function GroupPeople({
             key={p.userId}
             accessibilityRole={manageable ? 'button' : 'link'}
             accessibilityLabel={[
-              self ? `${p.person.displayName} (you)` : p.person.displayName,
-              role === 'member' ? null : SPACE_ROLE_LABELS[role],
+              self
+                ? tr('{displayName} (you)', { displayName: p.person.displayName })
+                : p.person.displayName,
+              role === 'member' ? null : tr(SPACE_ROLE_LABELS[role]),
               p.relationship?.label ?? null,
             ]
               .filter(Boolean)
@@ -203,7 +205,7 @@ export function GroupPeople({
               </Text>
               {role === 'member' ? null : (
                 <Text variant="caption" color="textSecondary">
-                  {SPACE_ROLE_LABELS[role]}
+                  {tr(SPACE_ROLE_LABELS[role])}
                 </Text>
               )}
             </View>
@@ -274,7 +276,7 @@ export function GroupPeople({
                 if (
                   await run(
                     () => endpoints.addToGroup(conversation.id, [...picked]),
-                    tr('Added {n} {person}', { n, person: n === 1 ? 'person' : 'people' }),
+                    trn(n, 'Added {n} person', 'Added {n} people'),
                   )
                 ) {
                   setAdding(false);
@@ -317,7 +319,7 @@ export function GroupPeople({
         open={shown !== undefined}
         onClose={() => setManaging(null)}
         title={sheetPerson?.person.displayName}
-        subtitle={sheetPerson ? SPACE_ROLE_LABELS[theirRole] : undefined}
+        subtitle={sheetPerson ? tr(SPACE_ROLE_LABELS[theirRole]) : undefined}
       >
         {sheetPerson ? (
           <View style={{ marginHorizontal: -20 }}>
@@ -348,8 +350,8 @@ export function GroupPeople({
                     await run(
                       () => endpoints.setGroupRole(conversation.id, who.userId, next),
                       next === 'admin'
-                        ? `${who.person.displayName} is an admin`
-                        : `${who.person.displayName} is a member`,
+                        ? tr('{name} is an admin', { name: who.person.displayName })
+                        : tr('{name} is a member', { name: who.person.displayName }),
                     );
                   })()
                 }

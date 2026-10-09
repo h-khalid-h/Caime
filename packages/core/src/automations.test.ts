@@ -116,7 +116,7 @@ describe('automationMatches', () => {
 describe('describing an automation', () => {
   it('says whose, what and where, as the PRD does', () => {
     expect(describeAutomation({ when: invoices, collection: 'Customer Files' })).toBe(
-      'When a customer sends a file with “invoice”, save it to Customer Files',
+      'When someone you call “Customer” sends a file with “invoice”, save it to Customer Files',
     );
     expect(
       describeAutomation({
@@ -129,15 +129,20 @@ describe('describing an automation', () => {
         when: { ...invoices, words: ['invoice', 'receipt'] },
         collection: 'Receipts',
       }),
-    ).toBe('When a customer sends a file with “invoice” or “receipt”, save it to Receipts');
+    ).toBe(
+      'When someone you call “Customer” sends a file with “invoice” or “receipt”, save it to Receipts',
+    );
   });
 
   it('names who sends it in words', () => {
-    expect(whoSends({ sphere: 'work', role: 'manager' })).toBe('a manager');
+    // The label as the person gave it: no article to agree with it, no gender to guess (R27).
+    expect(whoSends({ sphere: 'work', role: 'manager' })).toBe('someone you call “Manager”');
     expect(whoSends({ sphere: 'work', role: null })).toBe('someone from work');
-    expect(whoSends({ sphere: 'acquaintance', role: null })).toBe('an acquaintance');
-    expect(whoSends({ sphere: 'family', role: null })).toBe('family');
-    expect(whoSends({ sphere: 'customer', role: 'VIP' })).toBe('a customer (VIP)');
+    expect(whoSends({ sphere: 'acquaintance', role: null })).toBe(
+      'someone you call “Acquaintance”',
+    );
+    expect(whoSends({ sphere: 'family', role: null })).toBe('someone in your family');
+    expect(whoSends({ sphere: 'customer', role: 'VIP' })).toBe('someone you call “Customer · VIP”');
   });
 });
 

@@ -120,7 +120,11 @@ export function OrgVerification({ org, refresh }: { org: OrgView; refresh: (o: O
           loading={busy === 'check'}
           testID="org-domain-check"
           onPress={() =>
-            void run('check', () => endpoints.checkOrgDomain(org.id), `${d.name} is verified`)
+            void run(
+              'check',
+              () => endpoints.checkOrgDomain(org.id),
+              tr('{name} is verified', { name: d.name }),
+            )
           }
         />
         <Button

@@ -77,7 +77,7 @@ export const ConversationRow = memo(function ConversationRow({
     title,
     item.relationship?.label,
     reason?.label,
-    unread ? `${item.unreadCount} unread` : null,
+    unread ? trn(item.unreadCount, '{n} unread', '{n} unread') : null,
     preview,
   ]
     .filter(Boolean)

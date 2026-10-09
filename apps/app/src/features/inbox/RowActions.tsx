@@ -81,7 +81,7 @@ export function RowActions({ item, onClose }: { item: InboxItemView | null; onCl
       <ListRow
         icon={Pin}
         title={item.pinned ? tr('Unpin') : tr('Pin to the top')}
-        onPress={() => run({ pinned: !item.pinned }, item.pinned ? 'Unpinned' : 'Pinned')}
+        onPress={() => run({ pinned: !item.pinned }, item.pinned ? tr('Unpinned') : tr('Pinned'))}
       />
       {item.attention !== 'priority' ? (
         <ListRow

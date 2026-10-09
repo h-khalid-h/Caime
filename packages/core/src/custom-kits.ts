@@ -140,7 +140,10 @@ function list(v: unknown, what: string, min: number, max: number): unknown[] {
   if (!Array.isArray(v)) throw new Invalid(tr('{what}: a list, please.', { what }));
   if (v.length < min || v.length > max)
     throw new Invalid(
-      tr('{what}: {min}, please.', { what, min: min === max ? min : `${min} to ${max}` }),
+      tr('{what}: {min}, please.', {
+        what,
+        min: min === max ? min : tr('{min} to {max}', { min, max }),
+      }),
     );
   return v;
 }
@@ -163,23 +166,36 @@ function field(v: unknown, i: number): KitField {
     throw new Invalid(
       tr('{what}: its type is one of {join}.', { what, join: CUSTOM_KIT_FIELD_TYPES.join(', ') }),
     );
-  const out: KitField = { key: f.key, label: words(f.label, `${what}’s label`, 40), type };
+  const out: KitField = {
+    key: f.key,
+    label: words(f.label, tr('{what}’s label', { what }), 40),
+    type,
+  };
   if (f.required === true) out.required = true;
   else if (f.required !== undefined && f.required !== false)
     throw new Invalid(tr('{what}: required is true or false.', { what }));
-  const placeholder = words(f.placeholder, `${what}’s placeholder`, 60, true);
+  const placeholder = words(f.placeholder, tr('{what}’s placeholder', { what }), 60, true);
   if (placeholder) out.placeholder = placeholder;
   if (type === 'options') {
     const seen = new Set<string>();
-    out.choices = list(f.choices, `${what}’s choices`, 2, CUSTOM_KIT_LIMITS.choices).map((c, j) => {
-      const choice = object(c, `${what}’s choice ${j + 1}`);
+    out.choices = list(
+      f.choices,
+      tr('{what}’s choices', { what }),
+      2,
+      CUSTOM_KIT_LIMITS.choices,
+    ).map((c, j) => {
+      const nth = tr('{what}’s choice {i}', { what, i: j + 1 });
+      const choice = object(c, nth);
       const value =
         typeof choice.value === 'number' && Number.isFinite(choice.value)
           ? choice.value
-          : words(choice.value, `${what}’s choice ${j + 1}`, 40);
+          : words(choice.value, nth, 40);
       if (seen.has(String(value))) throw new Invalid(tr('{what}: each choice once.', { what }));
       seen.add(String(value));
-      return { value, label: words(choice.label, `${what}’s choice ${j + 1} label`, 40) };
+      return {
+        value,
+        label: words(choice.label, tr('{what}’s choice {i} label', { what, i: j + 1 }), 40),
+      };
     });
   } else if (f.choices !== undefined)
     throw new Invalid(tr('{what}: only options have choices.', { what }));

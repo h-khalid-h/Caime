@@ -4,7 +4,7 @@
  */
 import type { FollowingView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import Building from 'lucide-react-native/icons/building';
 import { FlatList, RefreshControl, View } from 'react-native';
@@ -33,8 +33,10 @@ function Row({ f }: { f: FollowingView }) {
       // What the row shows, said: a button's label is all a screen reader reads of it.
       accessibilityLabel={[
         f.org.name,
-        f.org.verified ? `verified, ${f.org.verifiedDomain}` : 'not verified yet',
-        f.unread ? `${f.unread} new` : null,
+        f.org.verified
+          ? tr('verified, {domain}', { domain: f.org.verifiedDomain })
+          : tr('not verified yet'),
+        f.unread ? trn(f.unread, '{n} new', '{n} new') : null,
         f.latest ? `${when}, ${f.latest.body.slice(0, 200)}` : tr('Nothing posted yet'),
       ]
         .filter(Boolean)

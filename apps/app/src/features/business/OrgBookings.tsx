@@ -5,7 +5,7 @@
  */
 import type { OrgBookingView, OrgView } from '@caime/core/api';
 import { formatAmount, formatClock, formatDayHeading } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import { useMemo, useState } from 'react';
@@ -125,7 +125,7 @@ export function OrgBookings({
                   item.booking && item.booking.name !== item.title ? item.booking.name : null,
                   item.booking && item.booking.quantity > 1
                     ? item.booking.unit === 'days'
-                      ? tr('{n} days', { n: item.booking.quantity })
+                      ? trn(item.booking.quantity, '{n} day', '{n} days')
                       : tr('For {n}', { n: item.booking.quantity })
                     : null,
                   item.booking?.price

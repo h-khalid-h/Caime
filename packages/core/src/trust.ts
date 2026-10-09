@@ -37,7 +37,7 @@ export function trustFor(input: TrustInput): Trust {
       level: 'org_verified',
       label: tr('Caime Friend'),
       detail: tr(
-        'This is one of Caime’s characters. It answers from a script: not a person, and not an AI.',
+        'This is one of Caime’s friends: not a person. It answers by its rules and, with AI assist on, with a model’s help, in its own character.',
       ),
     };
   if (input.kind !== 'human') {
@@ -45,10 +45,12 @@ export function trustFor(input: TrustInput): Trust {
     return {
       level: input.verifiedOrgName ? 'org_verified' : 'unknown',
       label: input.kind === 'bot' ? tr('Bot') : tr('AI agent'),
-      detail: tr('This is {what}, not a person{text}.', {
-        what,
-        text: input.verifiedOrgName ? `, operated by ${input.verifiedOrgName}` : '',
-      }),
+      detail: input.verifiedOrgName
+        ? tr('This is {what}, not a person, operated by {org}.', {
+            what,
+            org: input.verifiedOrgName,
+          })
+        : tr('This is {what}, not a person.', { what }),
     };
   }
   if (input.verifiedOrgName) {

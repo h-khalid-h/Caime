@@ -66,9 +66,9 @@ export const SPACE_ROLES = ['owner', 'admin', 'member'] as const;
 export type SpaceRole = (typeof SPACE_ROLES)[number];
 
 export const SPACE_ROLE_LABELS: Record<SpaceRole, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  member: 'Member',
+  owner: msg('Owner'),
+  admin: msg('Admin'),
+  member: msg('Member'),
 };
 
 /** Owners and admins rename the space, add people and start its settings. */

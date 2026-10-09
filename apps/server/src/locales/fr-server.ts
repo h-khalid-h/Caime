@@ -44,7 +44,6 @@ export const frServer: Catalog = {
   'security and privacy': 'sécurité et confidentialité',
   Developers: 'Développeurs',
   developers: 'développeurs',
-  About: 'À propos',
   Help: 'Aide',
   Example: 'Exemple',
   'Who someone is to you comes first.': 'D’abord, qui est chaque personne pour vous.',
@@ -225,8 +224,6 @@ export const frServer: Catalog = {
     'Tarifs de {site} : gratuit pour les particuliers, les organisations paient pour leur équipe',
   'What makes Caime Caime is never counted. People use it free; Pro adds AI, storage, automations and insights. Organizations start free for a team of three and buy Business for the rest.':
     'L’essentiel de Caime n’est jamais décompté. Les particuliers l’utilisent gratuitement ; Pro ajoute l’IA, le stockage, les automatisations et les aperçus de vos relations. Les organisations démarrent gratuitement pour une équipe de trois et passent à Business au-delà.',
-  'Free for people. Organizations pay for their team.':
-    'Gratuit pour les particuliers. Les organisations paient pour leur équipe.',
   'What makes Caime Caime is never counted: connections, relationships, what needs you, what you’re waiting for, search and sync are in every plan. Plans differ only in what costs money to run, and in what organizations buy.':
     'L’essentiel de Caime n’est jamais décompté : contacts, relations, ce qui a besoin de vous, ce que vous attendez, recherche et synchronisation sont dans chaque forfait. Les forfaits ne diffèrent que par ce qui a un coût de fonctionnement, et par ce que les organisations achètent.',
   'For people': 'Pour les particuliers',
@@ -369,8 +366,6 @@ export const frServer: Catalog = {
   'A customer': 'Un client',
   Call: 'Appel',
   Answered: 'Décroché',
-  'Missed video call': 'Appel vidéo manqué',
-  'Missed voice call': 'Appel vocal manqué',
   'from {caller}': 'de {caller}',
   'the same name': 'le même nom',
   'one name is part of the other': 'un nom fait partie de l’autre',
@@ -384,10 +379,7 @@ export const frServer: Catalog = {
   '{title} call': 'Appel {title}',
   Joined: 'A rejoint',
   'Turned down': 'Refusé',
-  'Missed group video call': 'Appel vidéo de groupe manqué',
-  'Missed group voice call': 'Appel vocal de groupe manqué',
   'from {starter}': 'de {starter}',
-  'in {title}': 'dans {title}',
   '{name} opened your invite link': '{name} a ouvert votre lien d’invitation',
   'You decide who connects with you: accept to connect.':
     'Vous décidez qui entre en contact avec vous : acceptez pour entrer en contact.',
@@ -948,7 +940,6 @@ export const frServer: Catalog = {
     'Un jeton ne peut pas faire cela : connectez-vous à Caime.',
   'This token needs the “{scope}” permission for that.':
     'Ce jeton a besoin de la permission « {scope} » pour cela.',
-  '{n} apps': { one: '{n} application', other: '{n} applications' },
 
   // Bookings (R58)
   'Coming up: {title}': 'À venir : {title}',
@@ -1004,7 +995,6 @@ export const frServer: Catalog = {
   'Only a person pays by card.': 'Seule une personne peut payer par carte.',
   'Paying by card can’t start right now':
     'Le paiement par carte ne peut pas démarrer pour le moment',
-  Waiting: 'En attente',
   'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
     'Envoyez un sticker avec le bouton à côté de la zone de message, quand elle est vide. Le pack Les amis de Caishy est gratuit.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
@@ -1153,4 +1143,5 @@ export const frServer: Catalog = {
     'La fiche a changé depuis son examen : examinez-la à nouveau.',
   'Yours to do: {name}': 'À vous de faire : {name}',
   '{org} named you for this booking.': '{org} vous a désigné pour cette réservation.',
+  About: 'À propos',
 };

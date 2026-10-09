@@ -338,7 +338,10 @@ export function OrgScreen({
                 size="sm"
                 loading={busy}
                 onPress={() =>
-                  void run(() => endpoints.unblockOrg(org.id), `${org.name} is unblocked`)
+                  void run(
+                    () => endpoints.unblockOrg(org.id),
+                    tr('{name} is unblocked', { name: org.name }),
+                  )
                 }
                 testID="org-unblock"
               />
@@ -623,7 +626,7 @@ export function OrgScreen({
                         ? tr('AI agent · says so in everything it writes')
                         : bot
                           ? tr('Bot · an app’s, labelled automated')
-                          : [m.title, ORG_ROLE_LABELS[m.role]].filter(Boolean).join(' · ')
+                          : [m.title, tr(ORG_ROLE_LABELS[m.role])].filter(Boolean).join(' · ')
                     }
                     onPress={
                       manageable
@@ -709,7 +712,12 @@ export function OrgScreen({
             testID="org-block-confirm"
             onPress={() =>
               void (async () => {
-                if (await run(() => endpoints.blockOrg(org.id), `${org.name} is blocked`)) {
+                if (
+                  await run(
+                    () => endpoints.blockOrg(org.id),
+                    tr('{name} is blocked', { name: org.name }),
+                  )
+                ) {
                   setBlocking(false);
                   void qc.invalidateQueries({ queryKey: qk.inbox });
                 }
@@ -789,7 +797,7 @@ export function OrgScreen({
         open={managing !== null}
         onClose={() => setManaging(null)}
         title={shown?.person.displayName}
-        subtitle={shown ? ORG_ROLE_LABELS[shown.role] : undefined}
+        subtitle={shown ? tr(ORG_ROLE_LABELS[shown.role]) : undefined}
       >
         {shown && org.myRole ? (
           <View style={{ marginHorizontal: -20 }}>
@@ -813,8 +821,8 @@ export function OrgScreen({
                           role: who.role === 'admin' ? 'agent' : 'admin',
                         }),
                       who.role === 'admin'
-                        ? `${who.person.displayName} is on the team`
-                        : `${who.person.displayName} is an admin`,
+                        ? tr('{name} is on the team', { name: who.person.displayName })
+                        : tr('{name} is an admin', { name: who.person.displayName }),
                     );
                   })()
                 }
@@ -832,7 +840,7 @@ export function OrgScreen({
                     setManaging(null);
                     await run(
                       () => endpoints.removeFromOrg(org.id, who.userId),
-                      `${who.person.displayName} is no longer on the team`,
+                      tr('{name} is no longer on the team', { name: who.person.displayName }),
                     );
                   })()
                 }
@@ -851,7 +859,10 @@ export function OrgScreen({
           {
             text:
               org.verified && org.verifiedDomain
-                ? `Its handle waits for whoever verifies ${org.verifiedDomain} again, so ${org.name} can come back.`
+                ? tr(
+                    'Its handle waits for whoever verifies {domain} again, so {name} can come back.',
+                    { domain: org.verifiedDomain, name: org.name },
+                  )
                 : tr('Its handle is held for a year, then free to anyone.'),
           },
         )}
@@ -865,7 +876,12 @@ export function OrgScreen({
             testID="org-close-confirm"
             onPress={() =>
               void (async () => {
-                if (await run(() => endpoints.closeOrg(org.id), `${org.name} closed`)) {
+                if (
+                  await run(
+                    () => endpoints.closeOrg(org.id),
+                    tr('{name} closed', { name: org.name }),
+                  )
+                ) {
                   setClosing(false);
                   router.replace('/orgs');
                 }

@@ -41,7 +41,6 @@ export const turkishServer: Catalog = {
   'security and privacy': 'güvenlik ve gizlilik',
   Developers: 'Geliştiriciler',
   developers: 'geliştiriciler',
-  About: 'Hakkında',
   Help: 'Yardım',
   Example: 'Örnek',
   'Who someone is to you comes first.': 'Birinin sizin için kim olduğu her şeyden önce gelir.',
@@ -223,8 +222,6 @@ export const turkishServer: Catalog = {
     '{site} fiyatlandırması: kişiler için ücretsiz, kuruluşlar ekipleri için öder',
   'What makes Caime Caime is never counted. People use it free; Pro adds AI, storage, automations and insights. Organizations start free for a team of three and buy Business for the rest.':
     'Caime’yi Caime yapan hiçbir şey kotaya girmez. Kişiler ücretsiz kullanır; Pro, AI, depolama, otomasyonlar ve içgörüler ekler. Kuruluşlar üç kişilik ekiple ücretsiz başlar, fazlası için Business planını alır.',
-  'Free for people. Organizations pay for their team.':
-    'Kişiler için ücretsiz. Kuruluşlar ekipleri için öder.',
   'What makes Caime Caime is never counted: connections, relationships, what needs you, what you’re waiting for, search and sync are in every plan. Plans differ only in what costs money to run, and in what organizations buy.':
     'Caime’yi Caime yapan hiçbir şey kotaya girmez: bağlantılar, ilişkiler, sizi bekleyenler, beklediğiniz şeyler, arama ve eşitleme her planda var. Planlar yalnızca çalıştırması para tutan özelliklerde ve kuruluşların satın aldıklarında ayrılır.',
   'For people': 'Kişiler için',
@@ -366,8 +363,6 @@ export const turkishServer: Catalog = {
   'A customer': 'Bir müşteri',
   Call: 'Arama',
   Answered: 'Yanıtlandı',
-  'Missed video call': 'Cevapsız görüntülü arama',
-  'Missed voice call': 'Cevapsız sesli arama',
   'from {caller}': 'Arayan: {caller}',
   'the same name': 'aynı ad',
   'one name is part of the other': 'adlardan biri diğerinin parçası',
@@ -381,10 +376,7 @@ export const turkishServer: Catalog = {
   '{title} call': '{title} araması',
   Joined: 'Katıldınız',
   'Turned down': 'Reddettiniz',
-  'Missed group video call': 'Cevapsız grup görüntülü araması',
-  'Missed group voice call': 'Cevapsız grup sesli araması',
   'from {starter}': 'Başlatan: {starter}',
-  'in {title}': 'Konuşma: {title}',
   '{name} opened your invite link': '{name} davet bağlantınızı açtı',
   'You decide who connects with you: accept to connect.':
     'Kiminle bağlantı kuracağınıza siz karar verirsiniz: bağlanmak için kabul edin.',
@@ -910,7 +902,6 @@ export const turkishServer: Catalog = {
   'A token can’t do this: sign in to Caime.': 'Bir belirteç bunu yapamaz: Caime’de oturum açın.',
   'This token needs the “{scope}” permission for that.':
     'Bu belirtecin bunun için “{scope}” iznine ihtiyacı var.',
-  '{n} apps': { one: '{n} uygulama', other: '{n} uygulama' },
   'Coming up: {title}': 'Yaklaşan: {title}',
   '{n} promises open': { one: '{n} açık söz', other: '{n} açık söz' },
   '{n} questions unanswered': { one: '{n} yanıtsız soru', other: '{n} yanıtsız soru' },
@@ -954,7 +945,6 @@ export const turkishServer: Catalog = {
   'Stripe can’t be asked right now': 'Stripe’a şu anda ulaşılamıyor',
   'Only a person pays by card.': 'Kartla yalnızca bir kişi ödeyebilir.',
   'Paying by card can’t start right now': 'Kartla ödeme şu anda başlatılamıyor',
-  Waiting: 'Bekleniyor',
   'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
     'Boş mesaj kutusunun yanındaki düğmeden çıkartma gönderin. Caishy ve Arkadaşları paketi ücretsiz.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
@@ -1101,4 +1091,5 @@ export const turkishServer: Catalog = {
     'Listeleme bakıldığından beri değişti: yeniden bak.',
   'Yours to do: {name}': 'Senin yapacağın: {name}',
   '{org} named you for this booking.': '{org} bu rezervasyon için seni belirledi.',
+  About: 'Hakkında',
 };

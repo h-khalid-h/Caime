@@ -44,10 +44,11 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
   const me = useSession((s) => s.user?.id ?? '');
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const from = item.message.senderId === me ? 'You' : (item.message.senderName ?? 'Someone');
-  const where = item.conversation.title
-    ? tr(' in {title}', { title: item.conversation.title })
-    : '';
+  const from =
+    item.message.senderId === me ? tr('You') : (item.message.senderName ?? tr('Someone'));
+  const who = item.conversation.title
+    ? tr('{from} in {title}', { from, title: item.conversation.title })
+    : from;
   const when = formatListTime(item.message.createdAt, now, timeZone, locale);
   const remove = async () => {
     try {
@@ -64,7 +65,7 @@ function SavedItem({ item, onRemoved }: { item: SavedItemView; onRemoved: () => 
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8 }}>
         <Text variant="captionStrong" color="textSecondary" style={{ flex: 1 }} numberOfLines={1}>
-          {`${from}${where} · ${when}`}
+          {`${who} · ${when}`}
         </Text>
         <IconButton
           icon={MessageCircle}

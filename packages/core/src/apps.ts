@@ -18,10 +18,10 @@ export const API_SCOPES = [
 export type ApiScope = (typeof API_SCOPES)[number];
 
 export const API_SCOPE_LABELS: Record<ApiScope, string> = {
-  'inbox:read': 'See the inbox',
-  'messages:read': 'Read customers’ conversations',
-  'messages:write': 'Reply to customers (as a bot)',
-  'threads:write': 'Assign, escalate and resolve',
+  'inbox:read': msg('See the inbox'),
+  'messages:read': msg('Read customers’ conversations'),
+  'messages:write': msg('Reply to customers (as a bot)'),
+  'threads:write': msg('Assign, escalate and resolve'),
   updates: msg('Post, change and take back the organization’s updates'),
   kits: msg('Make its own cards, send them and move them on'),
 };

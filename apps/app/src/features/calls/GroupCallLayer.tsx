@@ -1,5 +1,5 @@
 import type { CallPersonView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
 import MicOff from 'lucide-react-native/icons/mic-off';
 import Phone from 'lucide-react-native/icons/phone';
@@ -66,7 +66,7 @@ function Tile({
   return (
     <View
       testID={testID}
-      aria-label={[mine ? 'You' : person.displayName, muted ? 'muted' : null, note]
+      aria-label={[mine ? tr('You') : person.displayName, muted ? tr('muted') : null, note]
         .filter(Boolean)
         .join(', ')}
       style={{
@@ -122,7 +122,7 @@ function Tile({
       >
         {muted ? <MicOff size={14} color="#FFFFFF" /> : null}
         <Text variant="caption" style={{ color: '#FFFFFF', ...OVER_VIDEO }} numberOfLines={1}>
-          {[mine ? 'You' : person.displayName, note].filter(Boolean).join(' · ')}
+          {[mine ? tr('You') : person.displayName, note].filter(Boolean).join(' · ')}
         </Text>
       </View>
     </View>
@@ -132,13 +132,13 @@ function Tile({
 /** How a connection to another device reads on its tile, while it isn't simply on. */
 const linkNote = (p: GroupPeer) =>
   p.link === 'connecting'
-    ? 'Connecting…'
+    ? tr('Connecting…')
     : p.link === 'reconnecting'
-      ? 'Reconnecting…'
+      ? tr('Reconnecting…')
       : p.link === 'failed'
         ? tr('Couldn’t connect')
         : p.theirs?.sharing
-          ? `${first(p.person.displayName)} is sharing their screen`
+          ? tr('{name} is sharing their screen', { name: first(p.person.displayName) })
           : null;
 
 /**
@@ -164,7 +164,7 @@ export function GroupCallLayer() {
   if (!call || !phase || phase === 'starting' || !me) return null;
 
   const video = call.kind === 'video';
-  const where = call.conversationTitle ?? 'the group';
+  const where = call.conversationTitle ?? tr('the group');
   const others = Object.values(peers);
   const joined = call.members.filter((m) => m.state === 'joined');
   const hasCamera = Boolean(local?.getVideoTracks().length);
@@ -176,13 +176,13 @@ export function GroupCallLayer() {
           kindName,
         })
       : phase === 'joining'
-        ? 'Joining…'
+        ? tr('Joining…')
         : phase === 'ended'
           ? (note ?? tr('Call ended'))
           : others.length
             ? elapsed
             : call.state === 'ringing'
-              ? 'Calling…'
+              ? tr('Calling…')
               : tr('Waiting for others…');
   // A shared screen is shown large, with everyone else beside it.
   const spotlight = others.find((p) => p.theirs?.sharing && p.link === 'connected') ?? null;
@@ -226,7 +226,7 @@ export function GroupCallLayer() {
       ref={root}
       role={phase === 'incoming' ? 'alertdialog' : 'dialog'}
       aria-modal
-      aria-label={`${kindName} in ${where}`}
+      aria-label={tr('{kind} in {where}', { kind: kindName, where })}
       testID="group-call-screen"
       style={{
         ...OVER_APP,
@@ -273,12 +273,16 @@ export function GroupCallLayer() {
           <Text variant="body" style={{ color: '#FFFFFFCC' }} testID="group-call-who">
             {joined.length === 1
               ? tr('{first} is in the call', { first: first(joined[0]?.person.displayName ?? '') })
-              : tr('{join}{text} are in the call', {
-                  join: joined
-                    .slice(0, 3)
-                    .map((m) => first(m.person.displayName))
-                    .join(', '),
-                  text: joined.length > 3 ? ` and ${joined.length - 3} more` : '',
+              : tr('{names} are in the call', {
+                  names:
+                    joined.length > 3
+                      ? trn(joined.length - 3, '{names} and one more', '{names} and {n} more', {
+                          names: joined
+                            .slice(0, 3)
+                            .map((m) => first(m.person.displayName))
+                            .join(', '),
+                        })
+                      : joined.map((m) => first(m.person.displayName)).join(', '),
                 })}
           </Text>
         </View>

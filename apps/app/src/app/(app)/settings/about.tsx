@@ -38,13 +38,14 @@ export default function About() {
         style={{ marginHorizontal: 16, marginBottom: 8 }}
         testID="about-spec"
         rows={[
-          { label: 'version', value: Constants.expoConfig?.version ?? '1.0.0' },
+          { label: tr('version'), value: Constants.expoConfig?.version ?? '1.0.0' },
           {
             label: tr('running on'),
-            value: Platform.OS === 'web' ? 'the web' : Platform.OS === 'ios' ? 'iOS' : 'Android',
+            value:
+              Platform.OS === 'web' ? tr('the web') : Platform.OS === 'ios' ? 'iOS' : 'Android',
           },
-          { label: 'for', value: 'people, and the organizations they deal with' },
-          { label: 'price', value: 'Free for people. Organizations pay for their team.' },
+          { label: tr('for'), value: tr('people, and the organizations they deal with') },
+          { label: tr('price'), value: tr('Free for people. Organizations pay for their team.') },
         ]}
       />
       {links?.privacyUrl || links?.termsUrl || links?.helpUrl ? (

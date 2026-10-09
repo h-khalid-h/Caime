@@ -175,7 +175,9 @@ export function WhatsAppImport({
               </Text>
               {chat.messages.length > IMPORT_MAX_MESSAGES ? (
                 <Text variant="caption" color="textSecondary">
-                  The last {IMPORT_MAX_MESSAGES.toLocaleString(locale)} come over.
+                  {tr('The last {n} messages come over.', {
+                    n: IMPORT_MAX_MESSAGES.toLocaleString(locale),
+                  })}
                 </Text>
               ) : null}
             </View>

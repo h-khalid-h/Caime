@@ -43,12 +43,14 @@ export function ComingUpList({
   return (
     <View style={{ gap: 10 }}>
       {items.map((u) => {
-        const asked = u.agreed ? null : u.kit === 'meeting' ? 'Proposed' : 'Requested';
+        const asked = u.agreed ? null : u.kit === 'meeting' ? tr('Proposed') : tr('Requested');
         const line = [
           formatWhenAt(u.at, u.hasTime, now, timeZone, locale),
           u.hasTime && u.durationMinutes ? lengthText(u.durationMinutes) : null,
           u.place,
-          showWhere && u.conversationTitle ? `in ${u.conversationTitle}` : null,
+          showWhere && u.conversationTitle
+            ? tr('in {title}', { title: u.conversationTitle })
+            : null,
         ]
           .filter(Boolean)
           .join(' · ');
@@ -56,7 +58,7 @@ export function ComingUpList({
           <Pressable
             key={u.messageId}
             accessibilityRole="button"
-            accessibilityLabel={`${u.title}, ${line}${asked ? `, ${asked.toLowerCase()}` : ''}`}
+            accessibilityLabel={`${u.title}, ${line}${asked ? `, ${asked}` : ''}`}
             onPress={() => onOpen(u)}
             style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', minHeight: 44 }}
             testID="coming-up-item"

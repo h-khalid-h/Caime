@@ -23,12 +23,12 @@ export type AttentionSection = (typeof ATTENTION_SECTIONS)[number];
 
 export const SECTION_LABELS: Record<AttentionSection, string> = {
   needs_you: msg('Needs you'),
-  important: 'Important',
-  waiting: 'Waiting',
-  recent: 'Recent',
-  quiet: 'Quiet',
-  requests: 'Requests',
-  archived: 'Archived',
+  important: msg('Important'),
+  waiting: msg('Waiting'),
+  recent: msg('Recent'),
+  quiet: msg('Quiet'),
+  requests: msg('Requests'),
+  archived: msg('Archived'),
 };
 
 export type ReasonCode =
@@ -251,7 +251,7 @@ export function attentionHeadline(counts: Partial<Record<AttentionSection, numbe
   const needs = counts.needs_you ?? 0;
   if (needs > 0) return trn(needs, '{n} needs you', '{n} need you');
   const important = counts.important ?? 0;
-  if (important > 0) return important === 1 ? '1 important' : `${important} important`;
+  if (important > 0) return trn(important, '{n} important', '{n} important');
   return tr('You’re all caught up');
 }
 

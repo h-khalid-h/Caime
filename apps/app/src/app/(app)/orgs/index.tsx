@@ -58,7 +58,11 @@ export default function Organizations() {
             <Pressable
               key={o.id}
               accessibilityRole="button"
-              accessibilityLabel={`${o.name}, ${o.myRole ? ORG_ROLE_LABELS[o.myRole] : ''}`}
+              accessibilityLabel={
+                o.myRole
+                  ? tr('{name}, {role}', { name: o.name, role: tr(ORG_ROLE_LABELS[o.myRole]) })
+                  : o.name
+              }
               onPress={() =>
                 router.navigate({ pathname: '/o/[handle]', params: { handle: o.handle } })
               }
@@ -80,7 +84,7 @@ export default function Organizations() {
                   {o.name}
                 </Text>
                 <Text variant="caption" color="textSecondary" numberOfLines={1}>
-                  {[o.myRole ? ORG_ROLE_LABELS[o.myRole] : null, orgKindName(o.kind)]
+                  {[o.myRole ? tr(ORG_ROLE_LABELS[o.myRole]) : null, orgKindName(o.kind)]
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>

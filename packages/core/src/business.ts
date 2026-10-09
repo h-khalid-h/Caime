@@ -15,11 +15,11 @@ export const THREAD_STATES = [
 export type ThreadState = (typeof THREAD_STATES)[number];
 
 export const THREAD_STATE_LABELS: Record<ThreadState, string> = {
-  new: 'New',
+  new: msg('New'),
   customer_waiting: msg('Needs a reply'),
   waiting: msg('Waiting for the customer'),
-  escalated: 'Escalated',
-  resolved: 'Resolved',
+  escalated: msg('Escalated'),
+  resolved: msg('Resolved'),
 };
 
 /**
@@ -37,12 +37,12 @@ export const BUSINESS_VIEWS = [
 export type BusinessView = (typeof BUSINESS_VIEWS)[number];
 
 export const BUSINESS_VIEW_LABELS: Record<BusinessView, string> = {
-  new: 'New',
+  new: msg('New'),
   mine: msg('Assigned to me'),
   customer_waiting: msg('Needs a reply'),
   waiting: msg('Waiting for the customer'),
-  escalated: 'Escalated',
-  resolved: 'Resolved',
+  escalated: msg('Escalated'),
+  resolved: msg('Resolved'),
 };
 
 export interface ThreadFacts {
@@ -96,7 +96,7 @@ export function waitingSince(t: ThreadFacts): string | null {
 /** "4 min", "2 h", "3 days": how long, for a row that has little room. */
 /** A reply time for a person to read: "under a minute", "12 min", "2 h 5 min", "3 days". */
 export function replyTimeText(minutes: number): string {
-  if (minutes < 1) return 'under a minute';
+  if (minutes < 1) return tr('under a minute');
   const m = Math.round(minutes);
   if (m < 60) return tr('{n} min', { n: m });
   const h = Math.floor(m / 60);

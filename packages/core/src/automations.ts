@@ -10,7 +10,7 @@
  * conversation, whose words Caime can't read, nor from a message request not yet accepted.
  */
 
-import { tr } from './i18n';
+import { msg, tr } from './i18n';
 import { findRole, SPHERE_DEFS, type Sphere } from './taxonomy';
 
 /** What an automation keeps: the kinds of what's shared (the asset index's). */
@@ -202,57 +202,63 @@ export function withoutWord(typed: string, word: string): string {
     .join(', ');
 }
 
-const a = (noun: string) => (/^[aeiou]/i.test(noun) ? `an ${noun}` : `a ${noun}`);
-
-/** Who an automation is for, as it reads after "When": "a customer", "a manager", "anyone". */
+/**
+ * Who an automation is for, as it reads after "When": "someone you call “Customer”", "someone
+ * from work", "anyone". The label is named as the person labelled it (no article to agree, no
+ * gender to guess), in the reader's language.
+ */
 export function whoSends(when: Pick<AutomationWhen, 'sphere' | 'role'>): string {
-  if (!when.sphere) return 'anyone';
+  if (!when.sphere) return tr('anyone');
   const role = findRole(when.sphere, when.role);
-  if (role) return a(role.label.toLowerCase());
-  if (when.role) return `${a(SPHERE_DEFS[when.sphere].label.toLowerCase())} (${when.role})`;
+  if (role) return tr('someone you call “{label}”', { label: tr(role.label) });
+  if (when.role)
+    return tr('someone you call “{label}”', {
+      label: `${tr(SPHERE_DEFS[when.sphere].label)} · ${when.role}`,
+    });
   switch (when.sphere) {
     case 'family':
-      return 'family';
+      return tr('someone in your family');
     case 'work':
-      return 'someone from work';
+      return tr('someone from work');
     case 'community':
-      return 'someone from your community';
+      return tr('someone from your community');
     // Someone you said is a public figure, a creator or a public service: never a stranger,
     // who has no relationship to match.
     case 'public':
-      return 'someone public';
+      return tr('someone public');
     case 'other':
-      return 'anyone else';
+      return tr('anyone else');
     default:
-      return a(SPHERE_DEFS[when.sphere].label.toLowerCase());
+      return tr('someone you call “{label}”', { label: tr(SPHERE_DEFS[when.sphere].label) });
   }
 }
 
 const KIND_NOUNS: Record<SaveKind, string> = {
-  document: 'a file',
-  photo: 'a photo',
-  video: 'a video',
-  audio: 'a voice note',
-  link: 'a link',
+  document: msg('a file'),
+  photo: msg('a photo'),
+  video: msg('a video'),
+  audio: msg('a voice note'),
+  link: msg('a link'),
 };
 
 const orList = (items: string[]) =>
   items.length <= 1
     ? (items[0] ?? '')
-    : `${items.slice(0, -1).join(', ')} or ${items[items.length - 1]}`;
+    : tr('{list} or {last}', {
+        list: items.slice(0, -1).join(tr(', ')),
+        last: items[items.length - 1] ?? '',
+      });
 
 /** "When a customer sends a file with “invoice”, save it to Customer Files" */
 export function describeAutomation(x: { when: AutomationWhen; collection: string }): string {
-  const kinds = SAVE_KINDS.filter((k) => x.when.kinds.includes(k)).map((k) => KIND_NOUNS[k]);
-  const words = x.when.words.length
-    ? tr(' with {orList}', { orList: orList(x.when.words.map((w) => `“${w}”`)) })
-    : '';
-  return tr('When {whoSends} sends {orList}{words}, save it to {collection}', {
-    whoSends: whoSends(x.when),
-    orList: orList(kinds),
-    words,
-    collection: x.collection,
-  });
+  const kinds = SAVE_KINDS.filter((k) => x.when.kinds.includes(k)).map((k) => tr(KIND_NOUNS[k]));
+  const vars = { who: whoSends(x.when), what: orList(kinds), collection: x.collection };
+  return x.when.words.length
+    ? tr('When {who} sends {what} with {words}, save it to {collection}', {
+        ...vars,
+        words: orList(x.when.words.map((w) => `“${w}”`)),
+      })
+    : tr('When {who} sends {what}, save it to {collection}', vars);
 }
 
 /** A collection's name as it's kept: its spaces tidied, never empty. */

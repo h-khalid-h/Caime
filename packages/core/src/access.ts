@@ -1,4 +1,4 @@
-import { tr } from './i18n';
+import { msg, tr } from './i18n';
 /**
  * Acting as a person (PRD §73–74): a personal access token someone makes for their own scripts,
  * and third-party apps they let in through OAuth. Either reaches a short list of routes, each
@@ -16,11 +16,11 @@ export const PERSONAL_SCOPES = [
 export type PersonalScope = (typeof PERSONAL_SCOPES)[number];
 
 export const PERSONAL_SCOPE_LABELS: Record<PersonalScope, string> = {
-  'profile:read': 'See your name and handle',
-  'messages:read': 'Read your conversations and search them',
-  'messages:write': 'Send messages as you, marked with what sent them',
-  'actions:read': 'See your actions and what you’re waiting for',
-  'actions:write': 'Add, change and finish your actions',
+  'profile:read': msg('See your name and handle'),
+  'messages:read': msg('Read your conversations and search them'),
+  'messages:write': msg('Send messages as you, marked with what sent them'),
+  'actions:read': msg('See your actions and what you’re waiting for'),
+  'actions:write': msg('Add, change and finish your actions'),
 };
 
 export function isPersonalScope(value: string): value is PersonalScope {

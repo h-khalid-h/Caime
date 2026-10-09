@@ -454,7 +454,11 @@ export function KitForm({
           extraFor(field),
         );
         if (text.trim() && read.value === undefined)
-          return setError(`${tr(field.label)}: ${read.shown ?? 'that doesn’t look right.'}`);
+          return setError(
+            read.shown
+              ? tr('{field}: {problem}', { field: tr(field.label), problem: read.shown })
+              : tr('{field} doesn’t look right.', { field: tr(field.label) }),
+          );
         if (read.value !== undefined) fields[field.key] = read.value;
       }
       if (appointment && host?.items.length && !item) return setError(tr('Pick what it’s for.'));
@@ -549,9 +553,9 @@ export function KitForm({
               onChange={setLiveFor}
               options={[
                 { value: '0', label: tr('Just now') },
-                { value: '15', label: '15 min' },
-                { value: '60', label: '1 hour' },
-                { value: '480', label: '8 hours' },
+                { value: '15', label: tr('15 min') },
+                { value: '60', label: tr('1 hour') },
+                { value: '480', label: tr('8 hours') },
               ]}
             />
           ) : (
@@ -883,7 +887,7 @@ export function KitForm({
                   ) : field.type === 'date' || field.type === 'datetime' ? (
                     <IconButton
                       icon={Calendar}
-                      label={tr('Choose {field}', { field: tr(field.label).toLowerCase() })}
+                      label={tr('Choose {field}', { field: tr(field.label) })}
                       onPress={() => setChoosing(field)}
                       testID={`kit-when-${field.key}`}
                     />

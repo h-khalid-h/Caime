@@ -120,7 +120,7 @@ function MemberRow({
           ? tr('{displayName} (you)', { displayName: m.person.displayName })
           : m.person.displayName
       }
-      subtitle={m.role === 'member' ? null : SPACE_ROLE_LABELS[m.role]}
+      subtitle={m.role === 'member' ? null : tr(SPACE_ROLE_LABELS[m.role])}
       onPress={
         manageable
           ? () => onManage(m)
@@ -470,7 +470,7 @@ export function SpaceScreen({ id }: { id: string }) {
                 if (
                   await run(
                     () => endpoints.addToSpace(space.id, [...picked]),
-                    tr('Added {n} {person}', { n, person: n === 1 ? 'person' : 'people' }),
+                    trn(n, 'Added {n} person', 'Added {n} people'),
                   )
                 ) {
                   setAdding(false);
@@ -494,7 +494,7 @@ export function SpaceScreen({ id }: { id: string }) {
         open={managing !== null}
         onClose={() => setManaging(null)}
         title={shown?.person.displayName}
-        subtitle={shown ? SPACE_ROLE_LABELS[shown.role] : undefined}
+        subtitle={shown ? tr(SPACE_ROLE_LABELS[shown.role]) : undefined}
       >
         {shown ? (
           <View style={{ marginHorizontal: -20 }}>
@@ -529,8 +529,8 @@ export function SpaceScreen({ id }: { id: string }) {
                           who.role === 'admin' ? 'member' : 'admin',
                         ),
                       who.role === 'admin'
-                        ? `${who.person.displayName} is a member`
-                        : `${who.person.displayName} is an admin`,
+                        ? tr('{name} is a member', { name: who.person.displayName })
+                        : tr('{name} is an admin', { name: who.person.displayName }),
                     );
                   })()
                 }
@@ -549,7 +549,7 @@ export function SpaceScreen({ id }: { id: string }) {
                     setManaging(null);
                     await run(
                       () => endpoints.removeFromSpace(space.id, who.userId),
-                      `${who.person.displayName} is no longer in the space`,
+                      tr('{name} is no longer in the space', { name: who.person.displayName }),
                     );
                   })()
                 }

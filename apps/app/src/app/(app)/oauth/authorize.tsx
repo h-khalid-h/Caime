@@ -123,11 +123,16 @@ export default function Authorize() {
                     {tr('{name} wants to act for you', { name: c.app.name })}
                   </Text>
                   <Text variant="caption" color="textSecondary">
-                    {tr('Made by {displayName} (@{handle}){text}', {
-                      displayName: c.app.owner.displayName,
-                      handle: c.app.owner.handle,
-                      text: c.app.website ? ` · ${c.app.website}` : '',
-                    })}
+                    {c.app.website
+                      ? tr('Made by {displayName} (@{handle}) · {website}', {
+                          displayName: c.app.owner.displayName,
+                          handle: c.app.owner.handle,
+                          website: c.app.website,
+                        })
+                      : tr('Made by {displayName} (@{handle})', {
+                          displayName: c.app.owner.displayName,
+                          handle: c.app.owner.handle,
+                        })}
                   </Text>
                 </View>
               </View>

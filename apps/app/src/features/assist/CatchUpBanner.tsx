@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import X from 'lucide-react-native/icons/x';
 import { View } from 'react-native';
@@ -34,7 +34,7 @@ export function CatchUpBanner({
     >
       <Sparkles size={16} color={t.c.accentStrong} />
       <Text variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
-        {tr('{count} new messages', { count })}
+        {trn(count, '{n} new message', '{n} new messages')}
       </Text>
       <Button
         label={tr('Catch me up')}

@@ -1254,8 +1254,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
       spared when its owner's account goes (H3); listings cleared of a closed or left
       organization (H4, with block 1); cards and organizations in search (H5: `search_all`,
       a bare month the nearest one, a year bounded); slots from every overlapping card (H6).
-- [ ] Block 3, words: `msg()` on the nine label tables; the friend's "not an AI" line; every
-      fragment and bare literal a whole key; the catalogs; the collector flagging mixed literals.
+- [x] Block 3, words: `msg()` on the eleven label tables; the friend's line true to R71; every
+      fragment and bare literal a whole key (156 keys, the three catalogs complete, 25 stale
+      entries gone); `bareLiterals` in the collector, held empty by `i18n-literals.test.ts`.
 - [ ] Block 4, Apps and Developer in harmony: one publisher-and-icon helper for consent,
       Connected and Discover; the developer told of a review and shown usage; `OrgApps` listing
       the organization's listings; `afterCardMove` for the move route and Checkout; cards to
@@ -2406,6 +2407,20 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   and feed carry the whole organization's appointments; free slots are read from a capped list;
   nine core label tables aren't in any catalog; the country sets the work week and the currency
   and nothing else; a single choice is built six ways.
+- 2026-10-09 — Review block 3 (words): the eleven label tables in core (scopes, rewrites,
+  organization kinds and roles, space roles, thread states and views, the agent's actions,
+  Attention's sections, the privacy fields) are `msg()` keys and every place that showed one
+  raw shows it through `tr` (the consent screen's permissions in the request's language on the
+  server); a friend's profile says what a friend is (rules, and a model's help with assist on);
+  some sixty screens' fragments and bare words are whole keys (`trn` for every count, no
+  English word as a variable, no `.toLowerCase()` on translated text, a typed name never
+  `tr`'d); an automation reads "When someone you call “Customer” sends a file…" (the label as
+  given, no article to agree, no gender to guess) in every language; the calls' lines, the
+  retention words, the custom kit's refusals and the password rule's message are keys. The
+  collector lists English shown outside `tr` (`node scripts/i18n-keys.mjs bare`:
+  templates with prose, a template as a key, JSX text, words in a field a person reads) and
+  `i18n-literals.test.ts` holds it to seven lines of data. 156 keys translated into Arabic,
+  French and Turkish; 25 stale entries dropped. BRAND.md's friends paragraph says the same.
 - 2026-10-09 — Review block 2 (integration): on a team, your calendar is yours (the bookings you
   do, the threads assigned to you), everywhere the calendar is read; deleting an account spares
   an organization's logo, its items' photos and an app's icon; search finds a card by what it

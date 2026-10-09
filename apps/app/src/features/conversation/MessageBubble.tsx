@@ -553,7 +553,7 @@ export const MessageBubble = memo(function MessageBubble({
     forMe ? 'mentions you' : '',
     m.pinnedAt && !deleted ? 'pinned' : '',
     m.forwarded && !deleted ? 'forwarded' : '',
-    m.automated ? (m.aiAgent ? tr('AI agent') : 'automated') : '',
+    m.automated ? (m.aiAgent ? tr('AI agent') : tr('Automated')) : '',
     m.sentVia ? tr('sent via {sentVia}', { sentVia: m.sentVia }) : '',
     deleted ? tr('Message deleted') : (text ?? opened.note ?? sticker?.label ?? m.kind),
     time,
@@ -634,7 +634,7 @@ export const MessageBubble = memo(function MessageBubble({
                 testID={m.automated ? 'message-automated' : undefined}
               >
                 {/* A bot's sticker says it's a bot's too (R16). */}
-                {m.automated ? `${m.aiAgent ? 'AI agent' : 'Automated'} · ${time}` : time}
+                {m.automated ? `${m.aiAgent ? tr('AI agent') : tr('Automated')} · ${time}` : time}
               </Text>
             </View>
           ) : (

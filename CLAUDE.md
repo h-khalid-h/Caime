@@ -421,7 +421,17 @@ These are rules, not preferences.
   is `turkishServer`), and
   `i18n-catalog.test.ts` fails, for every language in `INTERFACE_LANGUAGES`, for a string
   without its translation or an entry nothing says (`node scripts/i18n-keys.mjs missing <lang>`
-  lists them). A new language is a code in `INTERFACE_LANGUAGES` and the preference's enum, a
+  lists them), and `i18n-literals.test.ts` fails for English shown outside `tr` (`node
+  scripts/i18n-keys.mjs bare`: a template literal with prose in its own text, a template handed
+  to `tr` as its key, JSX text, a string of words as a JSX child or in a field a person reads;
+  the seven lines of data it allows, a header, an id, a rule's own French, are listed in the
+  test, and nothing joins that list that someone reads as the interface's words). A table of
+  labels (`ORG_ROLE_LABELS`, `SECTION_LABELS`, the scopes') is `msg()` on every entry, single
+  words included, so the collector sees them. Who an automation is for is named as the person
+  labelled them, "someone you call “Customer”" (`whoSends`, core `automations.ts`): no article
+  to agree with a noun, no gender to guess, in every language. A number a schema's message
+  states is written out (`msg('Use at least 10 characters.')`) and `rules.test.ts` holds the
+  constant to it. A new language is a code in `INTERFACE_LANGUAGES` and the preference's enum, a
   catalog in core and one for the site on the server, a line in the app's `catalogFor` and
   `LANGUAGE_NAMES`, and a translator in `apps/server/src/lib/i18n.ts`; nothing else names a
   language (the setting, the site's switch, the `hreflang` alternates and the Open Graph locale

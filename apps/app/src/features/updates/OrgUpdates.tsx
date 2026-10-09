@@ -95,13 +95,15 @@ function Update({
   };
   const when = formatListTime(u.createdAt, now, timeZone, locale);
   const by = u.postedBy
-    ? `by ${u.postedBy.displayName}${u.postedBy.automated ? ' (automated)' : ''}`
+    ? u.postedBy.automated
+      ? tr('by {name} (automated)', { name: u.postedBy.displayName })
+      : tr('by {name}', { name: u.postedBy.displayName })
     : null;
   return (
     <View style={{ gap: 6, paddingVertical: 12, paddingHorizontal: 16 }} testID="org-update">
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
-          {[when, u.editedAt ? 'edited' : null, by].filter(Boolean).join(' · ')}
+          {[when, u.editedAt ? tr('edited') : null, by].filter(Boolean).join(' · ')}
         </Text>
         {canPost && editing === null ? (
           <>
@@ -152,7 +154,12 @@ function Update({
             label={tr('Report this update')}
             size={18}
             disabled={busy}
-            onPress={() => report({ orgId: u.org.id, updateId: u.id }, `${u.org.name}’s update`)}
+            onPress={() =>
+              report(
+                { orgId: u.org.id, updateId: u.id },
+                tr('{name}’s update', { name: u.org.name }),
+              )
+            }
             testID="org-update-report"
           />
         ) : null}

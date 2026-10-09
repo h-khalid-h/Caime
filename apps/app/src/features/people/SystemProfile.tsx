@@ -69,7 +69,7 @@ export function SystemProfile({ id }: { id: string }) {
             {account.kind === 'assistant'
               ? tr('This is Cai, Caime’s own AI assistant, not a person.')
               : tr(
-                  'This is one of Caime’s characters. It answers from a script: not a person, and not an AI.',
+                  'This is one of Caime’s friends: not a person. It answers by its rules and, with AI assist on, with a model’s help, in its own character.',
                 )}
           </Text>
         </View>

@@ -7,7 +7,7 @@
  */
 import type { MessageView } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { uuidv4 } from '@caime/core/ids';
 import { useQueryClient } from '@tanstack/react-query';
 import Users from 'lucide-react-native/icons/users';
@@ -66,7 +66,7 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
     try {
       const n = picked.size;
       await endpoints.forward(m.id, [...picked], clientId);
-      toast(n === 1 ? tr('Forwarded') : tr('Forwarded to {n} conversations', { n }));
+      toast(trn(n, 'Forwarded', 'Forwarded to {n} conversations'));
       void qc.invalidateQueries({ queryKey: qk.inbox });
       void qc.invalidateQueries({ queryKey: qk.inboxAll });
       onClose();

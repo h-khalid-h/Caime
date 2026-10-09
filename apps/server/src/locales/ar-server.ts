@@ -18,7 +18,6 @@ export const arServer: Catalog = {
   'security and privacy': 'الأمان والخصوصية',
   Developers: 'المطوّرون',
   developers: 'المطوّرون',
-  About: 'عن Caime',
   about: 'عن Caime',
   Help: 'المساعدة',
   Example: 'مثال',
@@ -196,7 +195,6 @@ export const arServer: Catalog = {
     'أسعار {site}: مجاني للأفراد، والمؤسسات تدفع لفريقها',
   'What makes Caime Caime is never counted. People use it free; Pro adds AI, storage, automations and insights. Organizations start free for a team of three and buy Business for the rest.':
     'جوهر Caime لا يُحسب عليك أبدًا. يستخدمه الأفراد مجانًا، وتضيف Pro الذكاء الاصطناعي والتخزين والأتمتة والرؤى. وتبدأ المؤسسات مجانًا لفريق من ثلاثة أشخاص، وتشترك في Business لما يزيد على ذلك.',
-  'Free for people. Organizations pay for their team.': 'مجاني للأفراد. والمؤسسات تدفع لفريقها.',
   'What makes Caime Caime is never counted: connections, relationships, what needs you, what you’re waiting for, search and sync are in every plan. Plans differ only in what costs money to run, and in what organizations buy.':
     'جوهر Caime لا يُحسب عليك أبدًا: من تتواصل معهم، وعلاقاتك، وما يحتاجك، وما تنتظره، والبحث والمزامنة، كلها في كل خطة. ولا تختلف الخطط إلا فيما يكلّف تشغيله مالًا، وفيما تشتريه المؤسسات.',
   'For people': 'للأفراد',
@@ -362,13 +360,8 @@ export const arServer: Catalog = {
     'أنت من يقرر من يتواصل معك: اقبل ليبدأ التواصل.',
   '{agentName} handed a conversation to the team': 'سلّم {agentName} محادثة إلى الفريق',
   'A customer': 'عميل',
-  'Missed video call': 'مكالمة فيديو فائتة',
-  'Missed voice call': 'مكالمة صوتية فائتة',
   'from {caller}': 'من {caller}',
-  'Missed group video call': 'مكالمة فيديو جماعية فائتة',
-  'Missed group voice call': 'مكالمة صوتية جماعية فائتة',
   'from {starter}': 'من {starter}',
-  'in {title}': 'في {title}',
   automated: 'آلي',
   'Message request': 'طلب مراسلة',
   Group: 'مجموعة',
@@ -899,14 +892,6 @@ export const arServer: Catalog = {
   'This app needs the “{scope}” permission for that.': 'يحتاج هذا التطبيق إلى إذن «{scope}» لذلك.',
   'A token can’t do this: sign in to Caime.': 'لا يمكن فعل هذا برمز وصول: سجّل الدخول إلى Caime.',
   'This token needs the “{scope}” permission for that.': 'يحتاج هذا الرمز إلى إذن «{scope}» لذلك.',
-  '{n} apps': {
-    zero: 'لا تطبيقات',
-    one: 'تطبيق واحد',
-    two: 'تطبيقان',
-    few: '{n} تطبيقات',
-    many: '{n} تطبيقًا',
-    other: '{n} تطبيق',
-  },
 
   // Bookings (R58)
   'Coming up: {title}': 'قريبًا: {title}',
@@ -965,7 +950,6 @@ export const arServer: Catalog = {
   'Stripe can’t be asked right now': 'تعذّر التواصل مع Stripe الآن',
   'Only a person pays by card.': 'الدفع بالبطاقة لشخص فقط، لا لتطبيق.',
   'Paying by card can’t start right now': 'تعذّر بدء الدفع بالبطاقة الآن',
-  Waiting: 'في الانتظار',
   'Send a sticker from the button beside an empty message box. The Caishy Friends pack is free.':
     'أرسل ملصقًا من الزر بجوار مربع الرسالة حين يكون فارغًا. حزمة أصدقاء كايشي مجانية.',
   'Press and hold a message, or point at it on a computer, to react, reply or save it.':
@@ -1137,4 +1121,5 @@ export const arServer: Catalog = {
     'تغيّر الإدراج منذ النظر فيه: انظر فيه مجددًا.',
   'Yours to do: {name}': 'عليك القيام به: {name}',
   '{org} named you for this booking.': 'عيّنتك {org} لهذا الحجز.',
+  About: 'عن Caime',
 };

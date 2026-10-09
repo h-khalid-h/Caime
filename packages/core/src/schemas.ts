@@ -251,7 +251,8 @@ export const Email = z
 
 export const Password = z
   .string()
-  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`)
+  // The number is written out so the catalogs can carry it; rules.test.ts holds PASSWORD_MIN to it.
+  .min(PASSWORD_MIN, msg('Use at least 10 characters.'))
   .max(200, msg('That password is too long.'))
   .refine((p) => new Set(p).size >= 5, msg('Use a less repetitive password.'));
 

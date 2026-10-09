@@ -1,4 +1,4 @@
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import Phone from 'lucide-react-native/icons/phone';
 import Video from 'lucide-react-native/icons/video';
 import { useEffect } from 'react';
@@ -54,8 +54,12 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
               Video: on.kind === 'video' ? tr('Video') : tr('Voice'),
               text:
                 names.length > 2
-                  ? `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
-                  : names.join(tr(' and ')),
+                  ? trn(names.length - 2, '{names} and one more', '{names} and {n} more', {
+                      names: names.slice(0, 2).join(', '),
+                    })
+                  : names.length === 2
+                    ? tr('{a} and {b}', { a: names[0], b: names[1] })
+                    : (names[0] ?? ''),
             })}
       </Text>
       <Button

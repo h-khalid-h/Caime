@@ -103,7 +103,7 @@ describe('automations (PRD §69)', () => {
           words: ['invoice', 'receipt'],
         },
         description:
-          'When a customer sends a file with “invoice” or “receipt”, save it to Customer Files',
+          'When someone you call “Customer” sends a file with “invoice” or “receipt”, save it to Customer Files',
       }),
     ]);
     // Nobody else's.

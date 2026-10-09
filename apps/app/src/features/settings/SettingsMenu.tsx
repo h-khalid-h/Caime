@@ -1,4 +1,4 @@
-import { msg, tr } from '@caime/core/i18n';
+import { msg, tr, trn } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
 import Bell from 'lucide-react-native/icons/bell';
@@ -149,6 +149,8 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
   const pathname = usePathname();
   // The teams you're on, by name: the row says where it goes before it's opened.
   const teams = (useOrgs().data?.orgs ?? []).map((o) => o.name);
+  const named = teams.slice(0, 3).join(', ');
+  const more = teams.length - 3;
   if (!user) return null;
   const content = (
     <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -233,8 +235,9 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
             title={tr('Organizations')}
             subtitle={
               teams.length
-                ? teams.slice(0, 3).join(', ') +
-                  (teams.length > 3 ? ` and ${teams.length - 3} more` : '')
+                ? more > 0
+                  ? trn(more, '{names} and one more', '{names} and {n} more', { names: named })
+                  : named
                 : tr('Your business, clinic or school, verified')
             }
             chevron={!pane}

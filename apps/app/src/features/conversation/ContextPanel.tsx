@@ -165,12 +165,15 @@ function BusinessCard({
         })}
       </Text>
       <Text variant="caption" color="textTertiary" align="center">
-        Team:{' '}
-        {team
-          .map((p) =>
-            p.person.kind === 'human' ? p.person.displayName : `${p.person.displayName} (bot)`,
-          )
-          .join(', ')}
+        {tr('Team: {names}', {
+          names: team
+            .map((p) =>
+              p.person.kind === 'human'
+                ? p.person.displayName
+                : tr('{name} (bot)', { name: p.person.displayName }),
+            )
+            .join(', '),
+        })}
       </Text>
     </View>
   );
@@ -268,7 +271,7 @@ export function ContextPanel({
         ) : conversation.kind === 'direct' ? (
           // The other person deleted their account: nobody to see, and nothing to leave.
           <View style={{ alignItems: 'center', gap: 8, padding: 20 }} testID="deleted-account">
-            <Avatar id={conversation.id} name="Deleted account" size={72} />
+            <Avatar id={conversation.id} name={tr('Deleted account')} size={72} />
             <Text variant="headline" align="center">
               {tr('Deleted account')}
             </Text>
@@ -684,11 +687,14 @@ function Disappearing({ conversation }: { conversation: ConversationView }) {
         <Text variant="body" color="textSecondary" testID="disappearing-shown">
           {[
             ofGroup ? tr('As {ofGroup}', { ofGroup }) : null,
-            days === null ? 'Off' : `after ${retentionText(days)}`,
+            days === null
+              ? tr('Off')
+              : ofGroup
+                ? tr('after {time}', { time: retentionText(days) })
+                : tr('After {retentionText}', { retentionText: retentionText(days) }),
           ]
             .filter(Boolean)
-            .join(': ')
-            .replace(/^after/, 'After')}
+            .join(': ')}
         </Text>
       )}
     </Section>

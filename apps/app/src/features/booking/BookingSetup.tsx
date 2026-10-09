@@ -345,7 +345,7 @@ export function BookingSetup({
           title={tr('Add something to book or order')}
           subtitle={
             items.length
-              ? trn(items.length, '{n} item in your catalog', '{n} items in your catalog')
+              ? trn(items.length, '{n} item in your catalogue', '{n} items in your catalogue')
               : tr(
                   'A haircut, a consultation, a room: its length, price and who may book it. Without one, bookings are for whatever people write.',
                 )
@@ -518,7 +518,9 @@ export function BookingSetup({
               ))}
             </View>
             <Text variant="caption" color="textTertiary">
-              {tr('The grid a day is cut into; each item in your catalog has a length of its own.')}
+              {tr(
+                'The grid a day is cut into; each item in your catalogue has a length of its own.',
+              )}
             </Text>
           </View>
           <View style={{ gap: 6 }}>

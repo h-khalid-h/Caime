@@ -139,9 +139,11 @@ export function ConnectSheet({
           <View style={{ flex: 1 }}>
             <Text variant="bodyStrong">{tr('Show {name} the context', { name })}</Text>
             <Text variant="caption" color="textSecondary">
-              They’ll see “{tr(SPHERE_DEFS[draft.sphere].label)}
-              {draft.orgName ? ` · ${draft.orgName}` : ''}”, not your label, so they know who’s
-              asking.
+              {tr('They’ll see “{label}”, not your label, so they know who’s asking.', {
+                label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName]
+                  .filter(Boolean)
+                  .join(' · '),
+              })}
             </Text>
           </View>
           <Switch

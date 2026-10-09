@@ -43,7 +43,8 @@ export function MuteChoices({
   const morningAt = early
     ? thisMorning.toISOString()
     : instantOf({ date: nextDay, time: MORNING }, timeZone).toISOString();
-  const morning = `${early ? 'Until' : 'Until tomorrow,'} ${formatTime(MORNING, locale)}`;
+  const time = formatTime(MORNING, locale);
+  const morning = early ? tr('Until {time}', { time }) : tr('Until tomorrow, {time}', { time });
   const spans: Array<{ id: string; title: string; until: () => string; said: string }> = [
     {
       id: 'hour',
@@ -61,7 +62,9 @@ export function MuteChoices({
       id: 'morning',
       title: morning,
       until: () => morningAt,
-      said: tr('Muted {toLowerCase}', { toLowerCase: morning.toLowerCase() }),
+      said: early
+        ? tr('Muted until {time}', { time })
+        : tr('Muted until tomorrow, {time}', { time }),
     },
     {
       id: 'week',

@@ -61,7 +61,9 @@ function AppRow({ app }: { app: ConnectedAppView }) {
           <Text variant="caption" color="textSecondary">
             {tr('Let in {when} · {text}', {
               when: when(app.createdAt),
-              text: app.lastUsedAt ? `last used ${when(app.lastUsedAt)}` : tr('not used yet'),
+              text: app.lastUsedAt
+                ? tr('last used {when}', { when: when(app.lastUsedAt) })
+                : tr('not used yet'),
             })}
           </Text>
         </View>
@@ -97,7 +99,12 @@ function AppRow({ app }: { app: ConnectedAppView }) {
         </Text>
       </Sheet>
       <Text variant="caption" color="textTertiary">
-        {app.scopes.map((s) => PERSONAL_SCOPE_LABELS[s as PersonalScope] ?? s).join(' · ')}
+        {app.scopes
+          .map((s) => {
+            const l = PERSONAL_SCOPE_LABELS[s as PersonalScope];
+            return l ? tr(l) : s;
+          })
+          .join(' · ')}
       </Text>
     </View>
   );
@@ -114,7 +121,7 @@ function BuiltinRow({ app, onPress }: { app: ConnectedAppView; onPress: () => vo
       subtitle={tr('On since {formatWhen} · {text}', {
         formatWhen: formatWhen(app.createdAt, now, timeZone, locale),
         text: app.lastUsedAt
-          ? `last read ${formatWhen(app.lastUsedAt, now, timeZone, locale)}`
+          ? tr('last read {when}', { when: formatWhen(app.lastUsedAt, now, timeZone, locale) })
           : tr('not read yet'),
       })}
       chevron

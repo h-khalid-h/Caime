@@ -44,6 +44,7 @@ export function PollBody({
       toast((e as Error).message, { tone: 'danger' });
     }
   };
+  const voted = trn(poll.voters, '{n} person voted', '{n} people voted');
   return (
     <View style={{ gap: 8, minWidth: 220 }}>
       <Text variant="label" color={fg}>
@@ -100,8 +101,7 @@ export function PollBody({
         );
       })}
       <Text variant="caption" color={meta}>
-        {poll.voters} {poll.voters === 1 ? 'person' : 'people'} voted
-        {p.multiple ? tr(' · pick any') : ''}
+        {p.multiple ? tr('{voted} · pick any', { voted }) : voted}
       </Text>
     </View>
   );

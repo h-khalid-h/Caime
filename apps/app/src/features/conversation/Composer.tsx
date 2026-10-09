@@ -1,6 +1,6 @@
 import type { ConversationView, CustomKitOfferView, MessageView } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -350,7 +350,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   };
 
   const sendFiles = async (files: LocalFile[], kind: 'media' | 'file') => {
-    setUploading(files.length === 1 ? files[0]!.name : `${files.length} files`);
+    setUploading(files.length === 1 ? files[0]!.name : trn(files.length, '{n} file', '{n} files'));
     try {
       const uploaded = [];
       for (const f of files) uploaded.push(await uploadFile(f));

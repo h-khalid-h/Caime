@@ -9,8 +9,8 @@ export const REWRITE_STYLES = ['clearer', 'shorter', 'formal', 'friendly'] as co
 export type RewriteStyle = (typeof REWRITE_STYLES)[number];
 
 export const REWRITE_LABELS: Record<RewriteStyle, string> = {
-  clearer: 'Clearer',
-  shorter: 'Shorter',
+  clearer: msg('Clearer'),
+  shorter: msg('Shorter'),
   formal: msg('More formal'),
-  friendly: 'Friendlier',
+  friendly: msg('Friendlier'),
 };

@@ -82,10 +82,11 @@ function pct(n: number): string {
 }
 
 function minutes(m: number | null): string {
-  if (m == null) return 'no answers yet';
-  if (m < 60) return `${Math.max(1, Math.round(m))} min`;
-  if (m < 60 * 24) return `${Math.round((m / 60) * 10) / 10} h`;
-  return tr('{n} days', { n: Math.round((m / (60 * 24)) * 10) / 10 });
+  if (m == null) return tr('no answers yet');
+  if (m < 60) return tr('{n} min', { n: Math.max(1, Math.round(m)) });
+  if (m < 60 * 24) return tr('{n} h', { n: Math.round((m / 60) * 10) / 10 });
+  const n = Math.round((m / (60 * 24)) * 10) / 10;
+  return trn(n, '{n} day', '{n} days');
 }
 
 function replyLine(who: 'mine' | 'theirs', r: ReplyTimesView): string {

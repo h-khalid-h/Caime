@@ -1,5 +1,5 @@
 import type { OrgPlanView } from '@caime/core/api';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { nextOrgPlan, PLAN_NAMES } from '@caime/core/plans';
 import Gauge from 'lucide-react-native/icons/gauge';
 import { View } from 'react-native';
@@ -13,9 +13,6 @@ import { Card } from '@/ui/Card';
 import { Meter } from '@/ui/Meter';
 import { Text } from '@/ui/Text';
 import { nextOrgPlanLine } from './planLine';
-
-const count = (used: number, of: number, what: string) =>
-  `${used} of ${of} ${what}${of === 1 ? '' : 's'}`;
 
 /** An organization's plan, for its owner and admins: what it includes and what's in use. */
 export function OrgPlan({
@@ -51,7 +48,9 @@ export function OrgPlan({
               {tr('{teamSize} of {teamSize2} people · {count}', {
                 teamSize: plan.used.teamSize,
                 teamSize2: plan.allowance.teamSize,
-                count: count(plan.used.apps, plan.allowance.apps, 'app'),
+                count: trn(plan.allowance.apps, '{used} of {n} app', '{used} of {n} apps', {
+                  used: plan.used.apps,
+                }),
               })}
             </Text>
           </View>

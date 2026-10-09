@@ -101,7 +101,10 @@ export function SplitCard({ m, mine }: { m: MessageView; mine: boolean }) {
       <Text variant="bodyStrong">{p.title}</Text>
       {total ? (
         <Text variant="caption" color="textSecondary">
-          {formatAmount(total.value, currency, locale)} paid by {nameOf(m.senderId ?? '')}
+          {tr('{amount} paid by {name}', {
+            amount: formatAmount(total.value, currency, locale),
+            name: nameOf(m.senderId ?? ''),
+          })}
         </Text>
       ) : null}
       <View accessibilityRole="list">

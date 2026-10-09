@@ -479,10 +479,11 @@ export function ConversationScreen({
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={tr('{text}{heading}, details', {
-          text: ofGroup ? `${ofGroup} · ` : '',
-          heading,
-        })}
+        accessibilityLabel={
+          ofGroup
+            ? tr('{group} · {heading}, details', { group: ofGroup, heading })
+            : tr('{heading}, details', { heading })
+        }
         onPress={() => {
           if (desktop) setPanel(true);
           else setDetails(true);

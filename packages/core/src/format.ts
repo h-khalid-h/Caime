@@ -37,13 +37,11 @@ export function contextLine(c: {
   files: number;
   next: string | null;
 }): string {
-  const n = (count: number, one: string, many: string) =>
-    count > 0 ? `${count} ${count === 1 ? one : many}` : null;
   return [
-    n(c.people, 'person', 'people'),
-    n(c.decisions, 'decision', 'decisions'),
-    c.openItems > 0 ? `${c.openItems} open` : null,
-    n(c.files, 'file', 'files'),
+    c.people > 0 ? trn(c.people, '{n} person', '{n} people') : null,
+    c.decisions > 0 ? trn(c.decisions, '{n} decision', '{n} decisions') : null,
+    c.openItems > 0 ? trn(c.openItems, '{n} open', '{n} open') : null,
+    c.files > 0 ? trn(c.files, '{n} file', '{n} files') : null,
     c.next,
   ]
     .filter(Boolean)
@@ -358,9 +356,9 @@ export function snippetParts(snippet: string): Array<{ text: string; match: bool
 
 /** How long messages last: "24 hours", "7 days", "1 year". */
 export function retentionText(days: number): string {
-  if (days === 1) return '24 hours';
-  if (days === 365) return '1 year';
-  return `${days} days`;
+  if (days === 1) return tr('24 hours');
+  if (days === 365) return tr('1 year');
+  return trn(days, '{n} day', '{n} days');
 }
 
 /**

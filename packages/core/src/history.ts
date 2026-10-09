@@ -58,7 +58,7 @@ export function describeRelationshipEvent(e: RelationshipEventLike, name: string
           : tr('Removed the note from {what}', { what });
       return tr('Updated {what}', { what });
     case 'ended':
-      return `${before ? quoted(before) : what} ended`;
+      return tr('{what} ended', { what: before ? quoted(before) : what });
     case 'archived':
       return tr('Archived {what}', { what });
     case 'restored':

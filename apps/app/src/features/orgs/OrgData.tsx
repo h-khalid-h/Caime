@@ -6,7 +6,7 @@
  */
 import type { OrgView } from '@caime/core/api';
 import { retentionText } from '@caime/core/format';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { ownsOrg } from '@caime/core/orgs';
 import Download from 'lucide-react-native/icons/download';
 import { useState } from 'react';
@@ -43,9 +43,7 @@ export function OrgData({ org, refresh }: { org: OrgView; refresh: (o: OrgView) 
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast(
-        tr('Exported {count} conversations', {
-          count: data.conversations.length,
-        }),
+        trn(data.conversations.length, 'Exported {n} conversation', 'Exported {n} conversations'),
       );
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });

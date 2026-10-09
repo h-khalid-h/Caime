@@ -151,6 +151,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     await Promise.all(list.map((x) => endpoints.dismissSuggestion(x.id).catch(() => {})));
     refresh();
   };
+  const label = list.some((x) => x.payload.source === 'ai') ? tr(AI_LABEL) : tr('Suggestions');
   if (list.length > 1 && !oneAtATime)
     return (
       <>
@@ -172,8 +173,10 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Sparkles size={14} color={t.c.accentStrong} />
             <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-              {list.some((x) => x.payload.source === 'ai') ? tr(AI_LABEL) : tr('Suggestions')} ·{' '}
-              {list.length} things here
+              {tr('{label} · {count}', {
+                label,
+                count: trn(list.length, '{n} thing here', '{n} things here'),
+              })}
             </Text>
           </View>
           {list.map((x) => (
@@ -234,6 +237,7 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     await endpoints.dismissSuggestion(s.id).catch(() => {});
     refresh();
   };
+  const oneLabel = s.payload.source === 'ai' ? tr(AI_LABEL) : tr('Suggestion');
   return (
     <>
       <View
@@ -253,8 +257,9 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Sparkles size={14} color={t.c.accentStrong} />
           <Text variant="overline" color="accentStrong" style={{ flex: 1 }}>
-            {s.payload.source === 'ai' ? tr(AI_LABEL) : tr('Suggestion')}
-            {list.length > 1 ? tr(' · 1 of {length}', { length: list.length }) : ''}
+            {list.length > 1
+              ? tr('{label} · 1 of {length}', { label: oneLabel, length: list.length })
+              : oneLabel}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
