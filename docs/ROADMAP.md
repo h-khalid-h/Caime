@@ -1221,6 +1221,37 @@ discovers, and mail at their own address.
       Calendar and Outlook calendar sync as apps in Discover; a verified organization receiving
       at its own domain.
 
+## M15 — Review 2026-10-09 (docs/REVIEW-2026-10-09.md)
+
+The six-slice review's plan, in its order; a block is ticked when its tests and the E2E pass.
+
+- [ ] Block 1, privacy and money: `visibleTasksWhere` for Cai, the briefs and the inbox (H1);
+      the checkout session settled under the card's lock, never replaced while paid (M1); slots
+      gated by the item's audience (M2); items' providers stripped for customers (M3); the payer
+      masked (M4); priced bookings adults-only (M5); writing as an organization and its checkout
+      checked on every send, `closeOrg` disconnecting (M6); listing review by version, an
+      operator icon (M7); the security Ls.
+- [ ] Block 2, integration Hs: the provider filter in `cardsAhead` (H2); an organization's files
+      spared when its owner's account goes (H3); listings cleared of a closed or left
+      organization (H4); cards and organizations in search (H5); slots from every overlapping
+      card (H6).
+- [ ] Block 3, words: `msg()` on the nine label tables; the friend's "not an AI" line; every
+      fragment and bare literal a whole key; the catalogs; the collector flagging mixed literals.
+- [ ] Block 4, Apps and Developer in harmony: one publisher-and-icon helper for consent,
+      Connected and Discover; the developer told of a review and shown usage; `OrgApps` listing
+      the organization's listings; `afterCardMove` for the move route and Checkout; cards to
+      organization apps and `GET /orgs/:id/calendar` in the SDK; the SDK's person methods; the
+      review's Ls on R74.
+- [ ] Block 5, scale: `USER_COLUMNS`/`ORG_COLUMNS`; the booking lock; `card_start_at`; the module
+      rule with its test; the job pool, the early NOTIFY and the brief jitter; one TTL cache;
+      the sitemap cached and paged; the god modules split; `AppListing` lazy.
+- [ ] Block 6, design, a11y, exports, realtime, the ICS length, the calendar bridges, cards
+      that ask.
+- [ ] R76, country-aware UX (PRODUCT-REVIEW R76).
+- [ ] R77, consistent pickers (PRODUCT-REVIEW R77).
+- [ ] Docs drift (BRAND.md friends, type rows, radii, five places; CLAUDE.md's page sizes, axe
+      languages, auth kicker, setup list; `previewUrl` in `API_ROUTES` and API.md).
+
 ## Log
 
 - 2026-09-26 — Session 1: docs written; brand system adopted from the owner's board (vector
@@ -2349,3 +2380,10 @@ discovers, and mail at their own address.
   categories, an icon of the owner's own, a publisher that may be a verified organization, a
   Connect that opens the app's own sign-in), reviewed once by the operator; the count moves only
   inside the grant's own transaction, so a page costs one query at any size.
+- 2026-10-09 — Review: six read-only slices in parallel (country awareness, pickers,
+  cross-integration, architecture and scale, security, UX and words) over `21f2402`; the
+  synthesis and plan are `docs/REVIEW-2026-10-09.md` (M15). Headlines: private waits reach the
+  person they're about through Cai, the briefs and the inbox counts; a team member's calendar
+  and feed carry the whole organization's appointments; free slots are read from a capped list;
+  nine core label tables aren't in any catalog; the country sets the work week and the currency
+  and nothing else; a single choice is built six ways.
