@@ -3,6 +3,7 @@
  * and mirrored to the account (`me.preferences`) so every device agrees (BRAND.md B7).
  */
 import type { BubbleTheme } from '@caime/brand/tokens';
+import type { ArabicVarietyChoice } from '@caime/core/arabic-variety';
 import type { LanguageChoice } from '@caime/core/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -26,6 +27,8 @@ export interface PrefValues {
   learnFromChoices: boolean;
   /** Cai's morning brief (R68): the hour it comes, or null for none. */
   caiBrief: string | null;
+  /** How Cai and the Caime Friends speak Arabic (R72): as you write and live, or one chosen. */
+  arabicVariety: ArabicVarietyChoice;
 }
 
 interface PrefsState extends PrefValues {
@@ -42,6 +45,7 @@ export const DEFAULT_PREFS: PrefValues = {
   language: 'auto',
   learnFromChoices: true,
   caiBrief: null,
+  arabicVariety: 'auto',
 };
 
 export const usePrefs = create<PrefsState>()(

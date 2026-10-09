@@ -12,6 +12,8 @@
  * friend shares its tips in turn. Nothing here notifies: Cai and the friends never need anyone.
  */
 import {
+  type ArabicVariety,
+  arabicVariety,
   type CharacterHandle,
   type ChatIntent,
   chatIntent,
@@ -36,7 +38,7 @@ import { type FriendPersona, languageName } from './ai';
 import { runAi } from './ai-run';
 import { ensureDirectConversation } from './conversations';
 import { AppError } from './errors';
-import { asReader, inLanguage, languageOf } from './i18n';
+import { asReader, inLanguage, readerOf } from './i18n';
 import { registerJob } from './jobs';
 import { SYSTEM_REPLY_JOB } from './message-effects';
 import { messagePreview } from './messages';
@@ -320,21 +322,44 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
     return;
   const text = latest.kind === 'text' ? (latest.body ?? '') : '';
   // Answered in the language it was written in ("السلام عليكم" from an English account is
-  // answered in Arabic), else the account's.
-  const language = writtenIn(text) ?? (await languageOf(ctx, personId));
-  await inLanguage(language, async () => {
-    try {
-      const me = await person(ctx, personId);
-      const said: Said = { kind: latest.kind, text, intent: text ? chatIntent(text) : null };
-      if (isCharacterHandle(account.handle))
-        await friendSays(ctx, account, account.handle, conversationId, me, said, language);
-      else await caiSays(ctx, account, conversationId, me, said, language);
-    } catch (err) {
-      // Blocked meanwhile, or the conversation gone: it just doesn't answer.
-      if (!(err instanceof AppError)) throw err;
-      ctx.log.debug({ code: err.code, account: account.handle }, 'system reply not sent');
-    }
-  });
+  // answered in Arabic), else the account's; in Arabic, in theirs (R72): the one they chose,
+  // else the one they wrote in, else the one where they live.
+  const reader = await readerOf(ctx, personId);
+  const language = writtenIn(text) ?? reader.language;
+  const variety = arabicVariety({ choice: reader.choice, written: text, country: reader.country });
+  const voice: Voice = {
+    language,
+    variety,
+    chosen: reader.choice !== 'auto',
+    country: reader.country,
+  };
+  await inLanguage(
+    language,
+    async () => {
+      try {
+        const me = await person(ctx, personId);
+        const said: Said = { kind: latest.kind, text, intent: text ? chatIntent(text) : null };
+        if (isCharacterHandle(account.handle))
+          await friendSays(ctx, account, account.handle, conversationId, me, said, voice);
+        else await caiSays(ctx, account, conversationId, me, said, voice);
+      } catch (err) {
+        // Blocked meanwhile, or the conversation gone: it just doesn't answer.
+        if (!(err instanceof AppError)) throw err;
+        ctx.log.debug({ code: err.code, account: account.handle }, 'system reply not sent');
+      }
+    },
+    variety,
+  );
+}
+
+/** How a reply is spoken: its language, its Arabic, and where the person lives, for the model. */
+interface Voice {
+  language: string;
+  variety: ArabicVariety;
+  /** They chose it, rather than it being read from their words or where they live. */
+  chosen: boolean;
+  /** Where they live (ISO 3166-1): told only to their own Cai and friends' model. */
+  country: string | null;
 }
 
 /** The message being answered: its kind, its words and what the rules read in them. */
@@ -359,7 +384,7 @@ async function friendSays(
   conversationId: string,
   me: Person,
   said: Said,
-  language: string,
+  voice: Voice,
 ) {
   const friend = FRIENDS[handle];
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
@@ -400,7 +425,7 @@ async function friendSays(
           friend: personaOf(handle),
           transcript,
           context: open ? contextLines(open, friend.reads) : '',
-          language: languageName(language),
+          ...spoken(voice),
           today: todayForAgent(ctx.now(), me.time_zone),
         }),
       );
@@ -416,7 +441,7 @@ async function caiSays(
   conversationId: string,
   me: Person,
   said: Said,
-  language: string,
+  voice: Voice,
 ) {
   const say = (line: string) => postAs(ctx, account.id, conversationId, line);
   if (isOwnQuestion(said.intent)) return say(await ruleAnswer(ctx, me, said.intent));
@@ -455,7 +480,7 @@ async function caiSays(
         ai.caiChat({
           transcript,
           context: contextLines(open),
-          language: languageName(language),
+          ...spoken(voice),
           today: todayForAgent(ctx.now(), me.time_zone),
         }),
       );
@@ -464,6 +489,13 @@ async function caiSays(
   );
   return say(answer);
 }
+
+/** What the model is told of how to speak: the language, their Arabic, where they live. */
+const spoken = (voice: Voice) => ({
+  language: languageName(voice.language),
+  arabic: { variety: voice.variety, chosen: voice.chosen },
+  country: voice.country,
+});
 
 /**
  * A model's answer within the person's allowance, cut to a message's length; out of assists,

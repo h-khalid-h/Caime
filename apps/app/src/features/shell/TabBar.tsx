@@ -1,25 +1,28 @@
 import { msg, tr, trn } from '@caime/core/i18n';
-import { router } from 'expo-router';
-import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import { router, usePathname } from 'expo-router';
 import Focus from 'lucide-react-native/icons/focus';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Search from 'lucide-react-native/icons/search';
 import Users from 'lucide-react-native/icons/users';
+import { useEffect } from 'react';
 import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardOpen } from '@/lib/keyboard';
+import { usePhoneBar } from '@/state/phoneBar';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from '@/ui/Button';
 import { Pressable } from '@/ui/Pressable';
 import { lifted } from '@/ui/shadow';
 import { Text } from '@/ui/Text';
-import { TAB_BAR_HEIGHT } from '@/ui/tabBarHeight';
+import { TAB_BAR_GAP, TAB_BAR_HEIGHT, TAB_BAR_TOP } from '@/ui/tabBarHeight';
+import { litPlace, PLACES, type Place, phoneBarShown, placeAt, placePath } from './phoneBar';
 import { useBadges } from './useBadges';
 
 /** The five places, in the bar. You is your picture at the top of each (YouButton). */
 const TABS: Record<
-  string,
+  Place,
   { label: string; icon: IconComponent; badge?: 'attention' | 'people' | 'actions' }
 > = {
   // The first screen (R66): what needs you is counted here, not on Chats.
@@ -34,10 +37,49 @@ const TABS: Record<
 const HEIGHT = TAB_BAR_HEIGHT;
 
 /**
- * The phone's bar: the five places in a floating pill, the one you're in lit behind its name,
- * and Search in a circle of its own beside them, in a thumb's reach from anywhere.
+ * Goes to a place's root from wherever someone is: what was opened over the places closes, so
+ * a person's page to Spaces is one tap, and Back from Spaces doesn't lead through it again.
  */
-export function TabBar({ state, navigation }: BottomTabBarProps) {
+function goTo(place: Place) {
+  if (router.canDismiss()) router.dismissAll();
+  router.navigate(placePath(place));
+}
+
+/**
+ * The phone's bar: the five places in a floating pill, the one you're in lit behind its name,
+ * and Search in a circle of its own beside them, in a thumb's reach. It's on every screen a
+ * person moves between places from (a place, someone's page, a space, settings), not only the
+ * five, and steps aside where it would sit on what they're doing (`phoneBarShown`: a
+ * conversation's composer, a form that makes something) and, where the keyboard pushes the screen
+ * up (Android), while they type. Hidden, it stays mounted, so its counts keep listening rather
+ * than asking again each time it's back.
+ */
+export function TabBar() {
+  const pathname = usePathname();
+  const typing = useKeyboardOpen();
+  const at = placeAt(pathname);
+  const last = usePhoneBar((s) => s.last);
+  const shown = phoneBarShown(pathname) && !typing;
+  useEffect(() => {
+    if (at) usePhoneBar.setState({ last: at });
+  }, [at]);
+  useEffect(() => {
+    usePhoneBar.setState({ shown });
+  }, [shown]);
+  useEffect(() => () => usePhoneBar.setState({ shown: false }), []);
+  return <Bar shown={shown} place={litPlace(pathname, last)} searching={pathname === '/search'} />;
+}
+
+function Bar({
+  shown,
+  place: litOne,
+  searching,
+}: {
+  shown: boolean;
+  /** The place lit: the one open, or the one someone came from. */
+  place: Place | null;
+  searching: boolean;
+}) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const badges = useBadges();
@@ -56,12 +98,13 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View
       style={{
+        display: shown ? 'flex' : 'none',
         flexDirection: 'row',
         alignItems: 'center',
         gap: narrow ? 6 : 10,
         paddingHorizontal: narrow ? 8 : 12,
-        paddingTop: 6,
-        paddingBottom: Math.max(insets.bottom, 10),
+        paddingTop: TAB_BAR_TOP,
+        paddingBottom: Math.max(insets.bottom, TAB_BAR_GAP),
         backgroundColor: t.c.canvas,
       }}
     >
@@ -72,16 +115,15 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
           { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 5 },
         ]}
       >
-        {state.routes.map((route, index) => {
-          const tab = TABS[route.name];
-          if (!tab) return null;
-          const focused = state.index === index;
+        {PLACES.map((place) => {
+          const tab = TABS[place];
+          const focused = place === litOne;
           const count = tab.badge ? badges[tab.badge] : 0;
           const color = focused ? (dark ? t.c.accent : t.c.ink) : t.c.textTertiary;
           const Icon = tab.icon;
           return (
             <Pressable
-              key={route.key}
+              key={place}
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={
@@ -91,18 +133,10 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                     })
                   : tr(tab.label)
               }
-              testID={`tab-${route.name}`}
+              testID={`tab-${place}`}
               haptic
               focusRadius={(HEIGHT - 12) / 2}
-              onPress={() => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-                if (!focused && !event.defaultPrevented)
-                  navigation.navigate(route.name, route.params);
-              }}
+              onPress={() => goTo(place)}
               style={{
                 flex: 1,
                 height: HEIGHT - 12,
@@ -162,13 +196,24 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={tr('Search')}
+        accessibilityState={{ selected: searching }}
         testID="tab-search"
         haptic
         focusRadius={HEIGHT / 2}
-        onPress={() => router.push('/search')}
-        style={[float, { width: HEIGHT, alignItems: 'center', justifyContent: 'center' }]}
+        onPress={() => {
+          if (!searching) router.push('/search');
+        }}
+        style={[
+          float,
+          {
+            width: HEIGHT,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: searching ? lit : t.c.surface,
+          },
+        ]}
       >
-        <Search size={24} color={dark ? t.c.text : t.c.ink} strokeWidth={2.2} />
+        <Search size={24} color={dark ? t.c.text : t.c.ink} strokeWidth={searching ? 2.6 : 2.2} />
       </Pressable>
     </View>
   );

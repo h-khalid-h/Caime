@@ -78,13 +78,14 @@ test('Cai and the Caime Friends answer like anyone you write to', async ({ brows
   await expect(visible(page, /^Hi, I’m Caishy!/)).toBeVisible();
   const box = page.getByTestId('composer-input').filter({ visible: true });
   const send = () => page.getByTestId('composer-send').filter({ visible: true }).click();
-  // Hassan's app is in English: what he writes in Arabic is answered in Arabic.
+  // Hassan's app is in English: what he writes in Arabic is answered in Arabic, and since he
+  // lives in Egypt, in Egyptian Arabic (R72), as he writes it too.
   await box.fill('السلام عليكم');
   await send();
-  await expect(visible(page, /^وعليكم السلام! مرحبًا، أنا Caishy!/)).toBeVisible();
+  await expect(visible(page, /^وعليكم السلام! أهلًا، أنا Caishy!/)).toBeVisible();
   await box.fill('انت ممكن تساعدنى اذاى');
   await send();
-  await expect(visible(page, /^أرحّب بالجميع في Caime/)).toBeVisible();
+  await expect(visible(page, /^أنا اللي بستقبل الناس في Caime/)).toBeVisible();
   // AI assist is on (above): anything else, in its own character.
   await box.fill('Plan a picnic for Saturday');
   await send();

@@ -71,6 +71,38 @@ test('the first screen is what needs you, and the rest of the day around it', as
   await expect(effects).toContainText('Notifications from Sarah: ');
   await expect(effects).toContainText('is kept in Attention.');
 
+  // The bar of places stays on a page opened from a place, with that place lit, so another
+  // place is one tap rather than Back and a tab.
+  await page.goto('/people');
+  await page.getByText('Sarah Smith').filter({ visible: true }).first().click();
+  await page.waitForURL(/\/(p\/|@)/);
+  await expect(page.getByTestId('person-effects').filter({ visible: true })).toBeVisible();
+  await expect(page.getByTestId('tab-people')).toBeVisible();
+  await expect(page.getByTestId('tab-people')).toHaveAttribute('aria-selected', 'true');
+  await page.screenshot({
+    path: 'e2e/screenshots/phone-bar-on-a-page.png',
+    animations: 'disabled',
+  });
+  await page.getByTestId('tab-spaces').click();
+  await page.waitForURL(/\/spaces$/);
+  await expect(page.getByTestId('tab-spaces')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('tab-people')).toHaveAttribute('aria-selected', 'false');
+  // It steps aside in a conversation, where the composer is, and comes back after.
+  await page.getByTestId('tab-chats').click();
+  await page.waitForURL(/\/chats$/);
+  // Attention (open beneath, in the places' order) shows the same row: Chats' is the last.
+  await page.getByTestId(`conversation-${conversationId}`).last().click();
+  await page.waitForURL(/\/c\//);
+  await expect(page.getByTestId('tab-chats')).toBeHidden();
+  await page.goBack();
+  await page.waitForURL(/\/chats$/);
+  await expect(page.getByTestId('tab-chats')).toBeVisible();
+  // Search is lit while it's open, and the bar stays under the keyboard as someone types.
+  await page.getByTestId('tab-search').click();
+  await page.waitForURL(/\/search$/);
+  await expect(page.getByTestId('tab-search')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('tab-chats')).toBeVisible();
+
   // Actions in coordination's words.
   await page.goto('/actions');
   await expect(page.getByRole('tab', { name: /^Waiting for, 1$/ })).toBeVisible();

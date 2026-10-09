@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
+import { usePhoneBar } from '@/state/phoneBar';
 import { useTheme } from '@/theme/theme';
 import { Text } from './Text';
 
@@ -17,9 +18,11 @@ export function Screen({
   surface?: boolean;
 }) {
   const t = useTheme();
+  // The phone's bar of places, when it's under the screen, keeps the home indicator's room.
+  const bar = usePhoneBar((s) => s.shown);
   return (
     <SafeAreaView
-      edges={edges}
+      edges={bar ? edges.filter((e) => e !== 'bottom') : edges}
       style={[{ flex: 1, backgroundColor: surface ? t.c.surface : t.c.canvas }, style]}
     >
       {children}

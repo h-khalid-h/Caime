@@ -54,6 +54,22 @@ test('a wait handed to Cai comes back as a follow-up, sent by a tap', async ({ b
     .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
     .toMatchObject({ caiBrief: '08:00' });
   await page.screenshot({ path: 'e2e/screenshots/phone-settings-cai.png', animations: 'disabled' });
+  // How Cai speaks Arabic with him (R72): as he writes it, else as where he lives, Egypt; or
+  // the one he picks.
+  const arabic = page.getByTestId('cai-arabic').filter({ visible: true });
+  await expect(arabic).toContainText('As you write it, else Egyptian Arabic');
+  await arabic.click();
+  const levantine = page.getByRole('radio', { name: 'Levantine Arabic' });
+  await expect(levantine).toBeInViewport({ ratio: 1 });
+  await page.screenshot({ path: 'e2e/screenshots/phone-cai-arabic.png', animations: 'disabled' });
+  await levantine.click();
+  await expect(arabic).toContainText('Levantine Arabic');
+  await expect
+    .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
+    .toMatchObject({ arabicVariety: 'levantine' });
+  await arabic.click();
+  await page.getByRole('radio', { name: /^As you write it/ }).click();
+  await expect(arabic).toContainText('As you write it, else Egyptian Arabic');
 
   // The offer, in Cai's chat once the sweep has run.
   await page.getByTestId('cai-chat').filter({ visible: true }).click();

@@ -2,6 +2,7 @@ export * from './access';
 export * from './agents';
 export * from './api';
 export * from './apps';
+export * from './arabic-variety';
 export * from './assist';
 export * from './attention';
 export * from './automations';

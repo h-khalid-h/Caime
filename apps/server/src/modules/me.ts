@@ -145,7 +145,9 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
       patch.preferences = JSON.stringify({ ...(current.preferences ?? {}), ...body.preferences });
     }
     // What's written to them follows their language from the next notification (R54).
-    if (body.preferences !== undefined || body.locale !== undefined) forgetLanguageOf(auth.userId);
+    // What's written to them, and how Cai speaks Arabic with them (R72), follow at once.
+    if (body.preferences !== undefined || body.locale !== undefined || body.country !== undefined)
+      forgetLanguageOf(auth.userId);
     // Cai's morning brief (R68): the next one queued once the choice is saved.
     const briefChanged =
       body.preferences?.caiBrief !== undefined &&

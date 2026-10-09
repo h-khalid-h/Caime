@@ -11,6 +11,7 @@ import { NavRail } from '@/features/shell/NavRail';
 import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
 import { KeyboardShortcuts } from '@/features/shell/shortcuts';
+import { TabBar } from '@/features/shell/TabBar';
 import { useLanguage } from '@/lib/languageState';
 import { takeLink } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
@@ -20,7 +21,10 @@ import { useLayout } from '@/ui/layout';
 
 export const ErrorBoundary = ScreenError;
 
-/** Signed in. Phones get a stack over bottom tabs; desktops get rail, list and detail side by side. */
+/**
+ * Signed in. Phones get a stack with the bar of places under it (on every screen it helps on,
+ * not only the five); desktops get rail, list and detail side by side.
+ */
 export default function AppLayout() {
   const user = useSession((s) => s.user);
   const pathname = usePathname();
@@ -83,10 +87,17 @@ export default function AppLayout() {
     );
   return (
     <>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.canvas } }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-      </Stack>
+      <View style={{ flex: 1, backgroundColor: t.c.canvas }}>
+        <View style={{ flex: 1 }}>
+          <Stack
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.c.canvas } }}
+          >
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+          </Stack>
+        </View>
+        {focused ? null : <TabBar />}
+      </View>
       <KeyboardShortcuts />
       <LiveLocationSharer />
       <CallLayer />

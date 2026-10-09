@@ -1137,6 +1137,21 @@ listed there with its owner.
       the model its tips in turn, never a sticker alone; every friend's message counts as AI.
       `chat-intent.test.ts`, `system-accounts.test.ts`, `e2e/system-accounts.spec.ts` (the
       owner's Arabic messages, answered in Arabic).
+- [x] R72, the bar: the phone's bar of places stays on every screen opened from a place, the
+      place someone came from lit, a tab goes to its root from anywhere, and it steps aside in a
+      conversation, a creation flow, onboarding, an app's consent and an invite (and, on
+      Android, while typing); 16 points off the edge without a home indicator.
+      `phoneBar.test.ts`, `e2e/attention.spec.ts` (a person's page, Spaces in one tap, the
+      conversation, Search lit), the whole E2E suite.
+- [x] R72, spoken like you: Cai and the Caime Friends answer in the Arabic someone chose, writes
+      or lives in (core `arabicVariety`), by the rules in Egyptian, Gulf and Levantine Arabic and
+      through the model in those and four more, told the country they live in; an
+      organization's agent mirrors only the Arabic written; Settings · Cai's "How Cai speaks
+      Arabic". `arabic-variety.test.ts`, `voices.test.ts`, `system-accounts.test.ts`,
+      `e2e/system-accounts.spec.ts` (Egyptian for someone in Egypt), `e2e/cai.spec.ts`.
+- [ ] Later in R72: Cai's lines in Iraqi, Maghrebi, Sudanese and Yemeni Arabic by the rules (the
+      model speaks them already), each read by a native speaker first; the same care for French
+      (Maghreb, Lebanon, Canada) and Turkish where it differs by place.
 - [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
@@ -2207,6 +2222,16 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-08 — R72 (the owner: the bar "higher and visible whenever it makes sense"; "in
+  Egypt and speaks Arabic … Egyptian Arabic"): the phone's bar is under every screen opened from
+  a place and steps aside where it would cover what someone's doing; Cai and the friends speak
+  the Arabic someone chose, writes or lives in, by the rules (Egyptian, Gulf, Levantine) and the
+  model (and four more, told the country). The full E2E run caught the bar coming back as a
+  field lost the focus and swallowing the Confirm press below it; it now moves for the keyboard
+  only on Android. Checked: `pnpm check` (server 679 alone: a one-off vitest run beside the
+  full one drops every `caime_t_*` database at its start, so never run two), the whole E2E
+  suite with the bar, then the Attention, Cai and Friends specs with the Arabic, the
+  screenshots.
 - 2026-10-08 — Search in every interface language: the rules read files from someone, asks,
   waits, what someone said, decisions, tasks, conversations and times in Arabic, French and
   Turkish, relationships by their names in the reader's language; the English-only

@@ -95,7 +95,9 @@ searchable, by the speech-to-text provider named below when this Caime has one.<
 the country you live in, and your password, kept only as a salted hash, never the password
 itself. Your date of birth is only to check you&rsquo;re old enough and for the protections that
 apply under 18; your country only sets your defaults (the days your work notifications wait for,
-the currency of amounts). Neither is shown to anyone. Caime also keeps your device&rsquo;s
+the currency of amounts, the Arabic Cai and the Caime Friends speak with you), and with AI assist
+on, their AI is told the country too, so what it suggests fits where you are. Neither is shown to
+anyone. Caime also keeps your device&rsquo;s
 language and time zone, so times and quiet hours are right, and, if you joined from someone&rsquo;s
 link, whose it was: that&rsquo;s only counted, and never shown to anyone.</li>
 <li><strong>Your profile.</strong> What you choose to show: a photo, About you, pronouns, a status

@@ -89,7 +89,7 @@ AI agent's prompt grows by at most eight lines of slots over fourteen days, read
 with the same cached knowledge prefix, so a booking costs the model one short turn more than an
 answer; the card itself is sent by the server, not written by the model.
 
-## Cai and the Caime Friends (R67, R71)
+## Cai and the Caime Friends (R67, R71, R72)
 
 Nothing runs until someone writes to one. A message to one queues one job (deduplicated by
 message, answered once for a burst) and skips everything else a message costs (notifications,
@@ -105,7 +105,12 @@ of open items; a friend reads only its own part of them (Panda, Momo, Zuzu), and
 read none and run no query for it (R71). The accounts are eight rows seeded once by a migration;
 their ids are constants, so nothing looks them up. On devices the avatar's id check and the two
 marks cost 0.4 KB of the first download (449.6 KB gzip, measured 2026-10-05); the friends' lines
-and characters are the server's, never downloaded.
+and characters are the server's, never downloaded. Speaking someone's Arabic (R72) adds no query:
+the reader cache that already held their language holds their choice and country too (the same
+row, one more column), what they write is read for a dialect by a word list in memory, and the
+Egyptian, Gulf and Levantine lines are three overlays of 71 entries made into translators once at
+start. The model is told it in one sentence of 173 characters at most (variety and country), so
+a model answer costs what it did.
 
 ## Cai keeps going (R68)
 

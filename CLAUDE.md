@@ -514,6 +514,11 @@ These are rules, not preferences.
   `avatar_file_id` too. The app draws an organization only through `OrgMark` (its logo, else
   its kind's icon), and picks the year it began with `YearField`, never a text field.
 - DNS in server tests: set `t.ctx.dns` to a stub resolver (see `orgs.test.ts`).
+- Server tests make a database each (`caime_t_<hex>`), and `test/global-setup.ts` drops every
+  `caime_t_*` with force when a run starts: never start a one-off `vitest run` while another
+  run (or `pnpm check`) is going, or the other run's files fail with "database … does not exist"
+  and 500s from sign-up. The E2E server is `apps/server/dist/server.js`: a server change needs
+  `pnpm --filter @caime/server build` before the E2E sees it, not only the web export.
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
 - The first screen is Attention (R66, `features/attention/AttentionHome.tsx`, the `/` route;
@@ -639,6 +644,17 @@ These are rules, not preferences.
   one of them, or as an organization's agent, is `postAs` (`lib/post-as.ts`). What picks people
   (`kind = 'human'`) already leaves them out; a new path that could give one a task, a call, a
   card or a connection refuses it with `systemAccountOf`. Model output reads "Suggested by Cai".
+- How Cai and the friends speak Arabic (R72) is core `arabicVariety` (`arabic-variety.ts`): what
+  the person chose (`preferences.arabicVariety`, Settings · Cai), else what they write in
+  (`writtenVariety`: words only one variety says; a shared or Standard word is in no list), else
+  where they live (`varietyOfCountry`), else Standard Arabic. The interface stays in Standard
+  Arabic; their rule lines are overlays (`locales/ar-egyptian.ts`, `ar-gulf.ts`,
+  `ar-levantine.ts`, `VOICES` in `lib/i18n.ts`) that `asReader` and `inLanguage(…, variety)`
+  apply, and `voices.test.ts` holds each to every line `system-accounts.ts` and `cai.ts` say: a
+  new line joins each overlay, a refusal or a name joins its `NOT_SPOKEN`. The model is told the
+  variety and the country (`voiceLines` in `lib/ai.ts`) for the person's own Cai and friends
+  only; an organization's agent mirrors the Arabic a customer writes and is never told where
+  they live. A brief or a catch-up is for reading and stays standard.
 - Cai keeps going (R68, `lib/cai.ts`, `modules/cai.ts`): a wait handed to Cai is
   `tasks.cai_follow_up`, offered by `offerFollowUp` from the reminders sweep in place of a bare
   reminder (the offer is Cai's text message with `payload.followUp`, drawn by
@@ -700,11 +716,22 @@ These are rules, not preferences.
   with `features/settings/RuleFor` (reminders under Automations, quiet hours under Notifications
   and priorities: "Add quiet hours" beside "Add a rule"); everything about who reaches you, and
   when, lives on that one screen.
+- The phone's bar of places (R72, `features/shell/TabBar.tsx`) is the signed-in layout's, under
+  the stack, not the tabs' (they draw none): it stays on every screen opened from a place (a
+  person, a space, an organization, settings) with the place someone came from lit, and a tab
+  goes to its place's root from anywhere (`dismissAll`, then navigate). It steps aside where
+  `phoneBarShown` (`phoneBar.ts`) says (a conversation, a creation flow, onboarding, an app's
+  consent, an invite) and, on Android only, while the keyboard is up (`lib/keyboard.ts`): a new
+  screen with its own end or a composer at the bottom adds its path to `HIDDEN` with a case in
+  `phoneBar.test.ts`. What stands off it reads `usePhoneBar` (`Screen` drops its bottom edge,
+  `ScreenToasts` sits above it, `tabBarRoom`). Nothing moves the layout on focus or blur on the
+  web: the bar did once, and the press on the button under the field that lost the focus was lost.
 - A `Sheet` is a modal: a layer above the app on the web, its own window on phones. Toasts show in
   the topmost open sheet (`ToastHost layer`), since one drawn on the screen beneath it is hidden
   and its Undo can't be pressed. Anything else that must show over a sheet goes inside it. Toasts
   sit at the bottom, where a thumb reaches Undo: the screen's host is `ScreenToasts`, which
-  stands them off the phone's tab bar (`TAB_BAR_HEIGHT`); nothing draws a toast at the top.
+  stands them off the phone's bar (`tabBarRoom` while it's shown); nothing draws a toast at the
+  top.
   Anything that moves for effect asks `useReduceMotion()` (`lib/motion.ts`: the person's setting
   or the device's) before it animates; a `Sheet` and the skeletons do. The `mono` text variant
   drops its letter-spacing when the text holds Arabic (joins break otherwise). A message that

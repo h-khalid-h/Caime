@@ -7,6 +7,7 @@ import { PERSONAL_SCOPES, redirectUriError } from './access';
 import { AGENT_KNOWLEDGE_MAX, AGENT_NAME_MAX } from './agents';
 import { MARKETING_PAGES, SITE_PAGES } from './api';
 import { API_SCOPES, WEBHOOK_EVENTS } from './apps';
+import { ARABIC_VARIETIES } from './arabic-variety';
 import { REWRITE_STYLES } from './assist';
 import { COLLECTION_MAX, SAVE_KINDS, WORD_MAX, WORDS_MAX } from './automations';
 import { BILLED_PLANS, BILLING_INTERVALS } from './billing';
@@ -463,6 +464,11 @@ export const Preferences = z
       .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
       .nullable()
       .optional(),
+    /**
+     * How Cai and the Caime Friends speak Arabic (R72): as this person writes and where they
+     * live (`auto`), or the one chosen. The interface stays in Standard Arabic.
+     */
+    arabicVariety: z.enum(['auto', ...ARABIC_VARIETIES]).optional(),
     /** The interface language (R54): the device's, or one chosen. */
     language: z.enum(['auto', 'en', 'ar', 'fr', 'tr']).optional(),
     /**

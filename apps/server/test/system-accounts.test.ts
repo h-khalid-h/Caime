@@ -8,6 +8,8 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { CAI_ID, SYSTEM_ACCOUNTS, uuidv4 } from '@caime/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { briefText } from '../src/lib/cai';
+import { asReader } from '../src/lib/i18n';
 import { runDueJobs } from '../src/lib/jobs';
 import { publicPageFor, renderPublic } from '../src/lib/public-pages';
 import { personaOf, tipFor } from '../src/lib/system-accounts';
@@ -234,10 +236,11 @@ describe('the Caime Friends (R67, R71)', () => {
     expect(said.at(-1).body).toBe(
       'وعليكم السلام! رائع، وجدتني! أنا Momo. حين لا شيء يحتاج إليك، يحين وقت الاحتفال.',
     );
+    // Asked in Egyptian Arabic, it answers in Egyptian Arabic (R72), wherever she lives.
     await send(sarah, id, 'انت ممكن تساعدنى اذاى');
     said = await answered(sarah, id);
     expect(said.at(-1).body).toBe(
-      'أحتفل معك حين لا يبقى شيء بانتظارك. اسألني ما الذي يحتاج إليك، أو ما القادم. شغّل مساعدة الذكاء الاصطناعي من الإعدادات، وسيمكنك سؤالي عن أي شيء آخر أيضًا.',
+      'بشجعك لما تخلّص كل اللي عليك. اسألني إيه اللي محتاجك، أو إيه اللي جاي. شغّل مساعدة الذكاء الاصطناعي من الإعدادات، وتقدر تسألني في أي حاجة تانية كمان.',
     );
     await send(sarah, id, 'merci beaucoup !');
     said = await answered(sarah, id);
@@ -338,5 +341,54 @@ describe('the Caime Friends (R67, R71)', () => {
       expect(persona.others).toHaveLength(6);
       expect(persona.others.join(' ')).not.toContain(`@${handle})`);
     }
+  });
+});
+
+describe('their Arabic (R72)', () => {
+  it('is Egyptian for someone in Egypt, theirs when they write another, or the one they chose', async () => {
+    const mona = await signup(t, { displayName: 'Mona Adel', locale: 'ar-EG' });
+    const id = (await open(mona, PANDA)).conversation.id;
+    // Panda says hello in Egyptian Arabic: she lives in Egypt.
+    let said = await messages(mona, id);
+    expect(said.at(-1).body).toBe('أنا Panda. بفضل جنبك طول ما بتستنى حد.');
+    // Asked in Standard Arabic, it still answers as people in Egypt speak.
+    await send(mona, id, 'ماذا أنتظر؟');
+    said = await answered(mona, id);
+    expect(said.at(-1).body).toBe('مش بتستنى حد دلوقتي.');
+    // Her choice wins over where she lives and what she writes.
+    await mona.patch('/v1/me', { preferences: { arabicVariety: 'levantine' } });
+    await send(mona, id, 'انا مستني ايه؟');
+    said = await answered(mona, id);
+    expect(said.at(-1).body).toBe('ما عم تستنى حدا هلق.');
+    await mona.patch('/v1/me', { preferences: { arabicVariety: 'standard' } });
+    await send(mona, id, 'ماذا أنتظر؟');
+    said = await answered(mona, id);
+    expect(said.at(-1).body).toBe('لا تنتظر أحدًا الآن.');
+    // Cai's brief speaks hers too; the interface's own words stay standard.
+    await mona.patch('/v1/me', { preferences: { arabicVariety: 'auto' } });
+    const { text } = await asReader(t.ctx, mona.user.id, () => briefText(t.ctx, mona.user.id));
+    expect(text).toContain('مفيش حاجة متخططة للنهارده.');
+    expect(text).toContain('اسألني عن أي حاجة فيهم.');
+  });
+
+  it('tells the model her Arabic and where she lives, only for her own Cai and friends', async () => {
+    const mona = await signup(t, { displayName: 'Mona Fawzy', locale: 'ar-EG' });
+    await mona.patch('/v1/me', { aiEnabled: true });
+    const chat = (await open(mona, CAI_ID)).conversation.id;
+    replies.push('أكيد! ممكن تروحي الأزهر بارك.');
+    await send(mona, chat, 'اقترح عليّ مكان أخرج فيه النهارده');
+    expect((await answered(mona, chat)).at(-1).body).toBe('أكيد! ممكن تروحي الأزهر بارك.');
+    let system = JSON.stringify(requests.at(-1).system);
+    expect(system).toContain(
+      "When you write Arabic, write Egyptian Arabic as it's spoken day to day",
+    );
+    expect(system).toContain('They live in Egypt.');
+    // Written in another variety, that's what it mirrors; chosen, it's that one.
+    await mona.patch('/v1/me', { preferences: { arabicVariety: 'gulf' } });
+    replies.push('أبشر!');
+    await send(mona, chat, 'شو رأيك بمطعم؟');
+    await answered(mona, chat);
+    system = JSON.stringify(requests.at(-1).system);
+    expect(system).toContain("When you write Arabic, write Gulf Arabic: it's what they chose.");
   });
 });

@@ -885,3 +885,28 @@ with its reason, so it isn't proposed again without new facts.
   sticker answers a sticker, a greeting and thanks. Every friend's message counts as AI, as Cai's
   do. *Cost*: the rules cost nothing; a model answer is one low-effort call of at most 512 output
   tokens, counted in the person's daily allowance like Cai's (`runAi('friend')`).
+- **R72 — Closer: the places a tap away, spoken like you, where you are (owner, 2026-10-08: "the
+  navigation bar on mobile should be positioned higher and remain visible whenever it makes
+  sense", "if a user is in Egypt and speaks Arabic, it should provide response in Egyptian
+  Arabic", "closer, more personalized and user-friendly").** *The bar.* On a phone the bar of
+  places belonged to the five places alone: a person's page, a space, an organization or
+  Settings covered it, so going from someone's page to Spaces took Back, Back and a tab. It's now
+  the signed-in layout's, under whatever is open, with the place someone came from lit, and a
+  tab goes to its place's root from anywhere. It steps aside only where it would sit on what
+  someone's doing: a conversation (its composer), a form that makes something (a group, a space,
+  an organization), onboarding, an app's consent, an invite; and, on Android, whose screen makes
+  room for the keyboard, while they type (iOS and browsers lay the keyboard over it; moving it
+  there shifted the screen under the finger and lost the press). It stands clear of the screen's
+  edge (16 points where there's no home indicator). *Spoken like you.* Caime's interface reads in
+  Modern Standard Arabic, the written standard every Arabic reader shares and the register of
+  security and money surfaces; but Cai and the Caime Friends talk with people, and people talk in
+  their own Arabic. They now answer in the variety someone chose (Settings · Cai, "How Cai speaks
+  Arabic"), else the one they write in (core `writtenVariety`: words only one variety says, so
+  Standard Arabic, a shared greeting or a mix decide nothing), else the one where they live (the
+  sign-up's "Where you live", which already set their defaults), else the standard: by the rules
+  in Egyptian, Gulf and Levantine Arabic (their lines as overlays of the standard catalog), and
+  through the model in those and Iraqi, Maghrebi, Sudanese and Yemeni Arabic, told the country
+  they live in too so what it suggests fits where they are. An organization's AI agent mirrors the
+  Arabic a customer writes and is never told where they live (their country is never shown to
+  anyone). The brief before a meeting and a catch-up stay in the standard: they're for reading,
+  not talk. *Cost*: no query, no request and no model call more (`docs/RESOURCES.md`).
