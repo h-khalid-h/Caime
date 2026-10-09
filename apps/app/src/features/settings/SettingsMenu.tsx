@@ -1,7 +1,6 @@
 import { msg, tr } from '@caime/core/i18n';
 import { PLAN_NAMES } from '@caime/core/plans';
 import { type Href, router, usePathname } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Bell from 'lucide-react-native/icons/bell';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import Building from 'lucide-react-native/icons/building';
@@ -28,6 +27,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
+import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
@@ -156,7 +156,7 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
         left={
           pane ? undefined : (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
               testID="you-back"

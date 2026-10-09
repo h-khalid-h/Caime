@@ -4,7 +4,6 @@ import { tr, trn } from '@caime/core/i18n';
 import { systemHandleOf } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import Flag from 'lucide-react-native/icons/flag';
@@ -37,6 +36,7 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
 import { RelationshipChip } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart, useOpened } from '@/ui/Lazy';
@@ -172,7 +172,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
 
   const back = !desktop ? (
     <IconButton
-      icon={ArrowLeft}
+      icon={Back}
       label={tr('Back')}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
     />

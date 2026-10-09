@@ -4,6 +4,7 @@ import Eye from 'lucide-react-native/icons/eye';
 import EyeOff from 'lucide-react-native/icons/eye-off';
 import { forwardRef, useState } from 'react';
 import { TextInput, type TextInputProps, View, type ViewStyle } from 'react-native';
+import { useRtl } from '@/lib/direction';
 import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
@@ -27,6 +28,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   ref,
 ) {
   const t = useTheme();
+  // What's typed starts where the label does: at the right in a layout that runs right to left
+  // (a browser would start a Latin word at the left of an Arabic form otherwise).
+  const rtl = useRtl();
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(false);
   const border = error ? t.c.danger : focused ? t.c.focus : t.c.border;
@@ -67,6 +71,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
             setFocused(false);
             onBlur?.(e);
           }}
+          textAlign={input.textAlign ?? (rtl ? 'right' : undefined)}
           style={[
             {
               flex: 1,

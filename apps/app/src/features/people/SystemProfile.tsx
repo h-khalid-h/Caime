@@ -1,13 +1,13 @@
 import { tr } from '@caime/core/i18n';
 import { SYSTEM_ACCOUNTS, systemAccountOf } from '@caime/core/system-accounts';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { openDirectWith } from '@/features/inbox/openChat';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
+import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
@@ -35,7 +35,7 @@ export function SystemProfile({ id }: { id: string }) {
         left={
           desktop ? null : (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
             />

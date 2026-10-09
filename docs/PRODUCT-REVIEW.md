@@ -910,3 +910,111 @@ with its reason, so it isn't proposed again without new facts.
   Arabic a customer writes and is never told where they live (their country is never shown to
   anyone). The brief before a meeting and a catch-up stay in the standard: they're for reading,
   not talk. *Cost*: no query, no request and no model call more (`docs/RESOURCES.md`).
+- **R73 — Arabic reads as Caime (owner, 2026-10-09: "the Arabic font and alignment across the
+  entire UX is not the best for the Caime use case. Ensure the same for all languages").** The
+  interface shipped Inter and Nunito in Latin cuts only, so Arabic fell back to whatever face
+  each device had (a traditional Naskh on a Mac, something else on each Android), with the Latin
+  styles' negative tracking squeezing letters that join and Latin line heights clipping marks;
+  and the web's layout was half mirrored: the document ran right to left, so rows flipped, but
+  react-native-web turns `start` and `end` by its own context, which nothing set, so every
+  logical margin, inset and corner stayed left to right, chevrons and back arrows pointed the
+  wrong way, and the interface's Latin words ("English", a handle, a time) sat at the left of
+  Arabic rows. Now: the faces paired with the brand's, Noto Sans Arabic under Inter's name and
+  Baloo Bhaijaan 2 under Nunito's, declared by the letters they draw (`unicode-range`) so the
+  browser picks them for Arabic and nobody else downloads them, and bundled for phones, where
+  `Text` picks them for any text holding Arabic; no tracking and lines 1.18× taller for Arabic,
+  in the app and on every server page alike; the layout's direction told to react-native-web at
+  the root and inside every sheet; Back and chevrons mirrored; the interface's words at the
+  layout's start whatever their letters, what someone wrote by its own direction; fields
+  starting where their labels do. Turkish and French were checked too: the Latin-extended cuts
+  (ğ, ı, ş, œ) ship for every weight on the web and in the phones' TTFs, and `fonts.test.ts`
+  now holds every style of the type scale to a Latin, a Latin-extended and an Arabic face.
+  *Cost*: 265 KB of Arabic WOFF2 fetched only by Arabic readers, 1.3 MB of TTF in the phone
+  binary; nothing on the server.
+- **R74 — Apps: Connected and Discover, and the calendar as the first of them (owner,
+  2026-10-09: "Change 'Connected apps' in settings to 'Apps' … 'Connected' and 'Discover' tabs …
+  the current Calendar shall be refined to be treated as one of these apps … scalable to 5k
+  apps").** Settings held two unrelated things under "Connected apps": the calendar address and
+  the OAuth grants, each listed without end, and nothing let anyone find an app from inside
+  Caime: an app could only send its own people to the consent screen. Now Settings · Apps is one
+  screen with two tabs. *Connected* is everything that acts for you or reads your data, each as
+  the same kind of row whatever it is: an OAuth app (a grant), a built-in like Your calendar (its
+  address), later a connector (R75). *Discover* is a directory of listed apps, paged by keyset
+  (`before`, 20 a page, as updates and assets are), searched by trigram on name and tagline,
+  filtered by category, each with an icon (an image file as an organization's logo is), a
+  tagline, a description, a publisher (a person, or a verified organization, whose check it
+  shows), how many people connected it (a counter kept on the row, never counted on read), and
+  a Connect button that starts the app's own sign-in (its login-initiation URL, RFC 8414's
+  `initiate_login_uri`) so the grant is the app's as always and Caime never holds a token it
+  didn't issue. A developer lists an app from Developer (listed, with the directory fields; a
+  listing is reviewed by the operator before it shows: `/admin/apps`, as reports are) and
+  unlists it any time. Built-in apps are directory rows too (`kind: 'builtin'`, the calendar
+  first), connected and disconnected through their own routes, so a new built-in (a mail
+  connector, a Google Calendar sync) joins the one list. Adults only, as grants are. *Cost*: two
+  columns' worth of indexes (trigram on name and tagline, a partial index on listed rows), one
+  query a page; the counter is updated inside the grant's own transaction.
+- **R75 — Caime Mail: your handle is also an address (owner, 2026-10-09; validated and refined
+  here, built in phases).** The proposal: every handle is `handle@<mail domain>`; mail to it is a
+  message in a conversation whose sender appears as a person on Caime; a reply goes out as mail
+  with delivery and read receipts; a thread's messages stay together; a stranger's first mail is
+  a message request; and senders become Caime's own people in time, finding their history waiting
+  when they sign in. Then every platform keyed by email (Gmail, Outlook, iCloud, Facebook,
+  LinkedIn) connected, to unify communication, calendars, tasks and notifications.
+  *What holds, and why it's worth building.* It fits the product's spine: a correspondent is a
+  relationship, so everything Caime does for a message (what was promised, asked, decided or
+  dated; attention; the brief; search in every language) applies to mail the moment it lands,
+  which no mail client does; a clinic's address lands in the Business inbox the agent already
+  answers; and it's a growth loop that costs nothing to run (every correspondent is a person
+  one tap from claiming an account that already holds their history). *What's refined.*
+  (1) *Who a sender is*: the authenticated From alone (DMARC pass: SPF or DKIM aligned with the
+  From domain; never Reply-To, Sender or a display name), as the owner asked. Mail that fails
+  alignment is never attributed to a person: it lands as an unverified notice the reader can
+  open but not reply to as a person, and the provider's spam verdict drops the rest. (2) *A
+  sender is a provisional person, not an account*: a row the person they wrote to can see
+  (name and address from the mail, a mark "reached by email, not on Caime yet"), nobody else
+  can find (not by search, email or handle; no public page; left out of suggestions and
+  duplicates), that goes when every conversation it's in goes or after a year with no mail
+  either way, and that becomes an account only by claiming it: signing up or in with that
+  address sends the usual code, and verifying it sets the password, offers to keep or change
+  the handle, and completes the two onboarding steps; the history is already there. (3) *A
+  stranger's first mail is a request*, as a stranger's message is; but mail keeps coming
+  whether or not it's answered, so a pending request holds every message from that address
+  (nothing is lost, nothing more is notified until it's answered), and declining mutes the
+  address rather than refusing mail. (4) *Delivery, honestly*: a reply says sent (the provider
+  took it), delivered (the receiving server took it) and bounced, as the server learns them;
+  it never says read by a tracking pixel. A pixel tracks someone who never agreed to it, which
+  Caime's privacy page promises nobody, and it lies (Apple's Mail Privacy Protection fetches
+  every pixel, Gmail fetches them through a proxy), so a "read" would be wrong as often as
+  right. Read becomes true the way it's true for every other message: when the sender claims
+  their account and reads it on Caime, which is the loop the proposal wants. (5) *Threads are
+  topics*: a mail thread (its References chain, else its normalised subject) is a topic in the
+  conversation with that person, named by the subject, so a person's mail reads as their chats
+  do and the general conversation stays one line per person. (6) *Organizations* get an address
+  too: mail to an organization's handle is a customer thread in its Business inbox, with the
+  customer the provisional person, and the agent answers it by mail as it answers in chat.
+  (7) *Under 18* (R29): a minor's address takes mail only from addresses of people they're
+  connected with; anything else is dropped without a bounce, since a bounce says the address
+  exists. (8) *Notices* (a no-reply sender, a List-Unsubscribe header, bulk precedence): never a
+  person and never a request; a notice thread per sender, under Notices, muted by default,
+  which is how LinkedIn's and Facebook's mail reaches Caime at all, since neither has a
+  messaging API for a person's own account. *What's pushed back on.* Reading someone's whole
+  Gmail or Outlook mailbox through OAuth is a different product (a mail client), gated by
+  Google's restricted-scope assessment and Microsoft's publisher verification, and it would put
+  everything someone has ever received on Caime's servers; it isn't in these phases. What is:
+  forwarding (a filter in Gmail or Outlook sends chosen mail to the Caime address, no OAuth),
+  sending as the Caime address from those clients through Caime's own submission (phase 2),
+  signing in with Google, Apple or Microsoft to claim an account in one tap, and calendar sync
+  with Google Calendar and Outlook as apps in Discover (R74), where it belongs. *Phases.*
+  Phase 1 (R75): addresses for adults and organizations, inbound through a provider's webhook
+  behind one interface (`lib/mail-in.ts`, as speech has, so the provider is a setting),
+  provisional people, requests, threads as topics, attachments through the files pipeline,
+  replies out with sent, delivered and bounced, claiming, the privacy and help pages, export and
+  erasure, tests with a stand-in and an E2E stub. Phase 2: notices, HTML as sent in a sandbox,
+  reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
+  sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
+  receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound
+  provider, DKIM, SPF and DMARC for the domain, the provider's credentials and webhook secret
+  in the environment. *Cost*: a message in is a message (parsed, stored, read by the rules);
+  a reply out is one provider call (under a cent); attachments are files under the same caps;
+  no model call unless assist asks. The privacy page, the processor list (`mail` carries
+  conversation words from this release) and the DPA say so.

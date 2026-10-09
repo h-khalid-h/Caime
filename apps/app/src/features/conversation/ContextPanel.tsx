@@ -5,7 +5,6 @@ import { canChangeDisappearing } from '@caime/core/permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Calendar from 'lucide-react-native/icons/calendar';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import FileText from 'lucide-react-native/icons/file-text';
 import Hash from 'lucide-react-native/icons/hash';
@@ -35,6 +34,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
+import { Chevron } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
@@ -420,7 +420,7 @@ export function ContextPanel({
                   <Text variant="captionStrong" color="link" style={{ flex: 1 }}>
                     {tr('Photos, files and links')}
                   </Text>
-                  <ChevronRight size={16} color={t.c.textTertiary} />
+                  <Chevron size={16} color={t.c.textTertiary} />
                 </Pressable>
               </Section>
             ) : null}
@@ -524,7 +524,7 @@ function Topics({
           <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
             {topic.title}
           </Text>
-          <ChevronRight size={16} color={t.c.textTertiary} />
+          <Chevron size={16} color={t.c.textTertiary} />
         </Pressable>
       ))}
       <Pressable

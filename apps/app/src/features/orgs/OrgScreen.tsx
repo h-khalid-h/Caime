@@ -14,7 +14,6 @@ import { PLAN_NAMES } from '@caime/core/plans';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import ArchiveIcon from 'lucide-react-native/icons/archive';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Ban from 'lucide-react-native/icons/ban';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import Flag from 'lucide-react-native/icons/flag';
@@ -48,6 +47,7 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { ChoiceChips } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
@@ -208,7 +208,7 @@ export function OrgScreen({
 
   const back = (
     <IconButton
-      icon={ArrowLeft}
+      icon={Back}
       label={tr('Back')}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/orgs'))}
     />

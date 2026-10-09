@@ -28,6 +28,7 @@ import { useSession } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { FONT_FILES } from '@/theme/fontFiles';
 import { ThemeProvider, useTheme } from '@/theme/theme';
+import { Direction } from '@/ui/Direction';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -101,8 +102,10 @@ export default function RootLayout() {
           }}
         >
           <ThemeProvider>
-            {ready ? <RootStack key={generation} signedIn={status === 'signedIn'} /> : <Boot />}
-            <ScreenToasts />
+            <Direction>
+              {ready ? <RootStack key={generation} signedIn={status === 'signedIn'} /> : <Boot />}
+              <ScreenToasts />
+            </Direction>
             <ThemedStatusBar />
           </ThemeProvider>
         </PersistQueryClientProvider>

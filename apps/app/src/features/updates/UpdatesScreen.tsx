@@ -6,7 +6,6 @@ import type { FollowingView } from '@caime/core/api';
 import { formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Building from 'lucide-react-native/icons/building';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { useFollowing } from '@/api/hooks';
@@ -15,6 +14,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { Pressable } from '@/ui/Pressable';
@@ -106,7 +106,7 @@ export function UpdatesScreen() {
       <TopBar
         left={
           <IconButton
-            icon={ArrowLeft}
+            icon={Back}
             label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           />

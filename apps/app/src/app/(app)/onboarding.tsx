@@ -9,6 +9,7 @@ import { useOrg, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { Character } from '@/brand/Character';
 import { handleLink } from '@/lib/config';
+import { useRtl } from '@/lib/direction';
 import { doorIn, handleIn, inviteIn, isAuthorizeLink } from '@/lib/paths';
 import { shareLink } from '@/lib/share';
 import { peekLink, takeLink } from '@/state/pendingLink';
@@ -43,6 +44,7 @@ function workweekText(days: number[]): string {
 
 export default function Onboarding() {
   const t = useTheme();
+  const rtl = useRtl();
   const me = useMe();
   const policies = usePolicies();
   const [busy, setBusy] = useState(false);
@@ -160,7 +162,12 @@ export default function Onboarding() {
                   }}
                 >
                   <RelationshipChip label={p.label} sphere={p.sphere} size="md" />
-                  <Text variant="caption" color="textSecondary" style={{ flex: 1 }} align="right">
+                  <Text
+                    variant="caption"
+                    color="textSecondary"
+                    style={{ flex: 1 }}
+                    align={rtl ? 'left' : 'right'}
+                  >
                     {p.description}
                   </Text>
                 </View>

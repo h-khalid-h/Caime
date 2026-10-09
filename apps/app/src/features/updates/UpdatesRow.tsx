@@ -1,11 +1,11 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import Building from 'lucide-react-native/icons/building';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { View } from 'react-native';
 import { useFollowing } from '@/api/hooks';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
+import { Chevron } from '@/ui/directional';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
@@ -73,7 +73,7 @@ export function UpdatesRow() {
           </Text>
         </View>
         {unread ? <Badge count={unread} muted /> : null}
-        <ChevronRight size={18} color={t.c.textTertiary} />
+        <Chevron size={18} color={t.c.textTertiary} />
       </Pressable>
     </View>
   );

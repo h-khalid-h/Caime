@@ -481,7 +481,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       {offered && Platform.OS !== 'ios' ? (
         <Text
           accessibilityLiveRegion="polite"
-          style={{ position: 'absolute', left: -10_000, width: 1, height: 1, overflow: 'hidden' }}
+          // Clipped to a point rather than moved off a side: a side is scrollable in a layout
+          // that runs the other way.
+          style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 }}
         >
           {offered}
         </Text>

@@ -47,7 +47,7 @@ on, or the nearest to it; roles derived from the palette are listed further down
 | --- | --- |
 | Wordmark | "Caime" in heavy rounded lettering, Dark Purple; a Caime Pink heart floats over the dotless *i* (™ on marketing surfaces) |
 | Logo variations | Dark (white wordmark on Dark Purple) · Light (pink wordmark on Light Pink) · Icon mark (a pink heart with a face) · App icon (Caishy's face on a pink tile) · "C" monogram tile |
-| Typography | Inter for the interface, set tight at size · Nunito (rounded) for brand moments and the wordmark (R69) |
+| Typography | Inter for the interface, set tight at size · Nunito (rounded) for brand moments and the wordmark (R69) · Arabic in the faces paired with them, Noto Sans Arabic and Baloo Bhaijaan 2, under the same names (R73) |
 | Characters | Caishy *The Dreamer* · Momo *The Cheerful* · Panda *The Loyal* · Lumi *The Creative* · Pico *The Curious* · Niko *The Brave* · Zuzu *The Wise* |
 | Caishy (v3) | White face and body, big dark-brown eyes with two highlights, pink blush, a tiny "ω" mouth, a Caime Pink hood with cat ears (Light Pink inside) and a small face emblem on the forehead, a pink heart on the chest, pink paw pads, a small lavender backpack |
 | Expressions (v3) | happy, wink, excited, curious, sad, surprised, sleepy, angry (cute), shy |
@@ -188,6 +188,15 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 | Section label | Inter | 13 / 18 | 600, sentence case, never uppercase, never monospace |
 | Overline | the system monospace | 12 / 16 | 500, sentence case, never uppercase: a section's label ("Needs you", "Coming up", a settings group), the same style as Mono |
 | Mono | the system monospace | 12 / 16 | 500, sentence case: labels on spec-sheet surfaces (the public pages; in the app, `Spec` rows on a person's and an organization's page, Welcome's lines, the auth screens' kicker), never running text |
+
+Arabic (R73) is drawn in the faces paired with these, declared under the same two names so
+nothing chooses by language: **Noto Sans Arabic** for every Inter style (neutral, open, the
+same weights 400–700) and **Baloo Bhaijaan 2** for Display (rounded, as Nunito is; its 800 stands
+for Nunito's 900). Its letters join, so no style's tracking applies to it, and its ascenders,
+marks and descenders reach further, so every line is 1.18× taller (body 15/22 reads 15/26, title
+26/32 reads 26/38). A layout in Arabic runs right to left as a whole: rows, margins, corners,
+chevrons and back arrows mirror, the interface's words sit at the start (the right) whatever
+letters they're in, and what someone wrote keeps its own direction inside its bubble.
 
 ## Shape, space, motion
 

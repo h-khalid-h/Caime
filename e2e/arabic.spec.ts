@@ -23,6 +23,65 @@ test.describe
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
       await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
       await expect(visible(page, 'اللغة والمنطقة')).toBeVisible();
+      // The Arabic face (R73) is the one paired with Inter, declared under its name and fetched
+      // only now that Arabic is drawn; the interface's Latin words sit at the layout's start, the
+      // right ("English" in the languages list), as the Arabic ones do.
+      await expect
+        .poll(() => page.evaluate(() => document.fonts.check('16px Inter', 'عربي')))
+        .toBe(true);
+      const english = page.getByRole('radio', { name: 'English' });
+      const gap = await english.evaluate((el) => {
+        const text = [...el.querySelectorAll('*')].find(
+          (n) => n.childNodes.length === 1 && n.textContent === 'English',
+        );
+        if (!text) throw new Error('no label');
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        return el.getBoundingClientRect().right - range.getBoundingClientRect().right;
+      });
+      expect(gap).toBeGreaterThan(8);
+      expect(gap).toBeLessThan(28);
+      // A brand moment (the desktop welcome's heading) draws Nunito's Arabic, the paired rounded
+      // face: the face declared under Nunito's name for Arabic letters is fetched once it's drawn.
+      const visitor = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const welcome = await visitor.newPage();
+      await welcome.goto('/welcome?lang=ar');
+      await expect(welcome.locator('html')).toHaveAttribute('dir', 'rtl');
+      await expect(welcome.locator('#root').getByText('أهلًا بك في Caime')).toBeVisible();
+      await expect
+        .poll(() =>
+          welcome.evaluate(() =>
+            [...document.fonts].some(
+              (f) =>
+                f.family === 'Nunito' &&
+                f.unicodeRange.startsWith('U+600') &&
+                f.status === 'loaded',
+            ),
+          ),
+        )
+        .toBe(true);
+      await visitor.close();
+      // Every chevron and back arrow points the other way: mirrored, not moved.
+      await page.goto('/you');
+      await expect(visible(page, 'اللغة والمنطقة')).toBeVisible();
+      const mirrored = await page.evaluate(() =>
+        [...document.querySelectorAll('svg')]
+          .filter((svg) => {
+            let el: Element | null = svg;
+            // The mirror is on the icon or a box right around it.
+            for (let i = 0; i < 2 && el; i++, el = el.parentElement)
+              if (getComputedStyle(el).transform === 'matrix(-1, 0, 0, 1, 0, 0)') return true;
+            return false;
+          })
+          .map((svg) => {
+            const box = svg.getBoundingClientRect();
+            const drawn = svg.querySelector('path,polyline,line')?.getBoundingClientRect();
+            // Still drawn inside its own viewport: a transform applied twice flipped it out once.
+            return drawn ? drawn.left >= box.left - 1 && drawn.right <= box.right + 1 : false;
+          }),
+      );
+      expect(mirrored.length).toBeGreaterThan(3);
+      expect(mirrored.every(Boolean)).toBe(true);
       // The choice is the account's too, so other devices follow.
       await expect
         .poll(async () => (await page.request.get('/v1/me').then((r) => r.json())).user.preferences)
@@ -125,6 +184,8 @@ test.describe
         await page.goto(path);
         await expect(visible(page, settled)).toBeVisible();
         await page.waitForLoadState('networkidle');
+        // The pointer rests where it last clicked, which hovers whatever is there now.
+        await page.mouse.move(0, 0);
         await page.screenshot({
           path: `e2e/screenshots/phone-arabic-${name}.png`,
           animations: 'disabled',

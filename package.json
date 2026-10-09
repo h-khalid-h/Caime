@@ -19,6 +19,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "start": "node --enable-source-maps apps/server/dist/server.js",
     "budget": "node scripts/bundle-budget.mjs",
+    "fonts": "node scripts/web-fonts.mjs",
     "e2e": "playwright test"
   },
   "devDependencies": {

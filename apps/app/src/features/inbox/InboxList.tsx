@@ -4,7 +4,6 @@ import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
 import Bell from 'lucide-react-native/icons/bell';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -25,6 +24,7 @@ import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
+import { Chevron } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart, useOpened } from '@/ui/Lazy';
@@ -237,7 +237,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
           const count = 'items' in section ? section.items.length : 0;
           if (folded) {
             const isOpen = Boolean(open[section.section]);
-            const Icon = isOpen ? ChevronDown : ChevronRight;
+            const Icon = isOpen ? ChevronDown : Chevron;
             return (
               <Pressable
                 accessibilityRole="button"

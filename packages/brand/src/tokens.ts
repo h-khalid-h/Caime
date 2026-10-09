@@ -321,6 +321,13 @@ export interface TypeStyle {
   uppercase?: boolean;
 }
 
+/**
+ * Arabic (R73): its letters join, so a style's tracking is never applied to it, and its
+ * ascenders, marks and descenders reach further than Latin's, so a line is taller by this much
+ * (body 15/22 reads as 15/26, title 26/32 as 26/38), on every screen and the server's pages alike.
+ */
+export const arabicType = { lineHeightFactor: 1.18, letterSpacing: 0 } as const;
+
 export const typeScale: Record<TypeStyleName, TypeStyle> = {
   /** Brand moments only (a welcome, an empty state): the rounded face, as the wordmark is. */
   display: { family: 'heading', weight: 800, size: 34, lineHeight: 40, letterSpacing: -0.6 },

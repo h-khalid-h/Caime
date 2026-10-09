@@ -4,7 +4,6 @@ import { tr } from '@caime/core/i18n';
 import { nextPersonPlan, PERSON_ALLOWANCES, PLAN_NAMES } from '@caime/core/plans';
 import { router } from 'expo-router';
 import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import HardDrive from 'lucide-react-native/icons/hard-drive';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Zap from 'lucide-react-native/icons/zap';
@@ -18,6 +17,7 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
+import { Chevron } from '@/ui/directional';
 import { Meter } from '@/ui/Meter';
 import { Pressable } from '@/ui/Pressable';
 import { SkeletonRows } from '@/ui/Skeleton';
@@ -168,7 +168,7 @@ export default function PlanSettings() {
               )}
             </Text>
           </View>
-          <ChevronRight size={18} color={t.c.textTertiary} />
+          <Chevron size={18} color={t.c.textTertiary} />
         </Pressable>
       </Group>
 

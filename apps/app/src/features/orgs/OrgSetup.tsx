@@ -8,11 +8,11 @@ import { tr } from '@caime/core/i18n';
 import { canManageOrg } from '@caime/core/orgs';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import { ScrollView, View } from 'react-native';
 import { useOrg } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { Card } from '@/ui/Card';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -39,7 +39,7 @@ export function OrgSetupScreen({ handle }: { handle: string }) {
   };
   const back = (
     <IconButton
-      icon={ArrowLeft}
+      icon={Back}
       label={tr('Back')}
       onPress={() =>
         router.canGoBack()

@@ -2,7 +2,6 @@ import type { ConnectionView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
 import { router, usePathname } from 'expo-router';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import Phone from 'lucide-react-native/icons/phone';
 import Search from 'lucide-react-native/icons/search';
 import UserPlus from 'lucide-react-native/icons/user-plus';
@@ -17,6 +16,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { ChoiceChips, RelationshipChip } from '@/ui/Chip';
+import { Chevron } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -243,7 +243,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
               ? '1 person wants to connect'
               : tr('{incoming} people want to connect', { incoming })}
           </Text>
-          <ChevronRight size={18} color={t.c.accentStrong} />
+          <Chevron size={18} color={t.c.accentStrong} />
         </Pressable>
       ) : null}
       <DuplicateOffers all={all} />

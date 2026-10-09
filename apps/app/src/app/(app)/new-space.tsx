@@ -3,7 +3,6 @@ import { canManageOrg } from '@caime/core/orgs';
 import { SPACE_KIND_DEFS, SPACE_KINDS, type SpaceKind } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -15,6 +14,7 @@ import { SPACE_ICONS } from '@/features/spaces/kinds';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
@@ -86,7 +86,7 @@ export default function NewSpace() {
       <TopBar
         left={
           <IconButton
-            icon={ArrowLeft}
+            icon={Back}
             label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/spaces'))}
           />

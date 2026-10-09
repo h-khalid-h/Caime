@@ -8,7 +8,6 @@ import {
 import { formatListTime } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
 import { router, usePathname } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Inbox from 'lucide-react-native/icons/inbox';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import { useEffect, useState } from 'react';
@@ -22,6 +21,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
 import { Chip, ChoiceChips } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
@@ -337,7 +337,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
       left={
         desktop ? undefined : (
           <IconButton
-            icon={ArrowLeft}
+            icon={Back}
             label={tr('Back')}
             onPress={() =>
               router.canGoBack()

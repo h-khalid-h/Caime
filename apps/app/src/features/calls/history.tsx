@@ -7,7 +7,7 @@
 
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
@@ -24,7 +24,7 @@ export function CallHistory({ withId, withName }: { withId?: string; withName?: 
         left={
           !desktop || withId ? (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />

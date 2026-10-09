@@ -2,7 +2,6 @@ import type { PeopleSearchResult } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Search from 'lucide-react-native/icons/search';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useEffect, useState } from 'react';
@@ -18,6 +17,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
@@ -145,7 +145,7 @@ export default function Connect() {
       <TopBar
         left={
           <IconButton
-            icon={ArrowLeft}
+            icon={Back}
             label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
           />

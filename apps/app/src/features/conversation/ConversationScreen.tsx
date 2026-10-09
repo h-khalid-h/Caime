@@ -7,7 +7,6 @@ import { canPin } from '@caime/core/pins';
 import { isSystemKind } from '@caime/core/system-ids';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import Lock from 'lucide-react-native/icons/lock';
@@ -62,6 +61,7 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Chip, RelationshipChip } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart, useOpened } from '@/ui/Lazy';
@@ -337,7 +337,7 @@ export function ConversationScreen({
     return (
       <Screen>
         <TopBar
-          left={<IconButton icon={ArrowLeft} label={tr('Back')} onPress={() => router.back()} />}
+          left={<IconButton icon={Back} label={tr('Back')} onPress={() => router.back()} />}
           title={tr('Conversation')}
         />
         <EmptyState
@@ -403,7 +403,7 @@ export function ConversationScreen({
       left={
         !desktop ? (
           <IconButton
-            icon={ArrowLeft}
+            icon={Back}
             label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           />

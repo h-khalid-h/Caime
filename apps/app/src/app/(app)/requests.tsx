@@ -3,7 +3,6 @@ import { formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -16,6 +15,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
@@ -125,7 +125,7 @@ export default function Requests() {
       <TopBar
         left={
           <IconButton
-            icon={ArrowLeft}
+            icon={Back}
             label={tr('Back')}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/people'))}
           />

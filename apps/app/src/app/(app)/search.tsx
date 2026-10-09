@@ -4,7 +4,6 @@ import { msg, tr, trn } from '@caime/core/i18n';
 import { looksLikeSentence, parseSearchQuery } from '@caime/core/search';
 import { onlineManager, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Building from 'lucide-react-native/icons/building';
 import FileText from 'lucide-react-native/icons/file-text';
 import Hash from 'lucide-react-native/icons/hash';
@@ -24,6 +23,7 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { Guide } from '@/ui/Guide';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
@@ -118,7 +118,7 @@ export default function Search() {
         left={
           !desktop ? (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />

@@ -1,11 +1,11 @@
 import { sentence, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { Character } from '@/brand/Character';
 import { Wordmark } from '@/brand/Wordmark';
 import { useTheme } from '@/theme/theme';
+import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
@@ -84,7 +84,7 @@ export function AuthLayout({
           >
             {back ? (
               <IconButton
-                icon={ArrowLeft}
+                icon={Back}
                 label={tr('Back')}
                 onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
               />

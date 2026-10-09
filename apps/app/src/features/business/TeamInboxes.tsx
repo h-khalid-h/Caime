@@ -1,11 +1,11 @@
 import { tr, trn } from '@caime/core/i18n';
 import { router } from 'expo-router';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { View } from 'react-native';
 import { useBusinessSummary } from '@/api/hooks';
 import { OrgMark } from '@/features/orgs/kinds';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
+import { Chevron } from '@/ui/directional';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 
@@ -62,7 +62,7 @@ export function TeamInboxes() {
             </Text>
           </View>
           <Badge count={waiting} />
-          <ChevronRight size={18} color={t.c.textTertiary} />
+          <Chevron size={18} color={t.c.textTertiary} />
         </Pressable>
       ))}
     </View>

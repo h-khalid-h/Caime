@@ -3,7 +3,6 @@ import { formatListTime } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Bell from 'lucide-react-native/icons/bell';
 import Zap from 'lucide-react-native/icons/zap';
 import { useEffect } from 'react';
@@ -15,6 +14,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -60,7 +60,7 @@ export default function Notifications() {
         left={
           !desktop ? (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />

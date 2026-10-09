@@ -1,10 +1,10 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Check from 'lucide-react-native/icons/check';
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useTheme } from '@/theme/theme';
+import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
@@ -19,7 +19,7 @@ export function SettingsPage({ title, children }: { title: string; children: Rea
         left={
           !desktop ? (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/you'))}
             />

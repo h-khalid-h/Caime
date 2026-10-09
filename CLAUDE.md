@@ -158,15 +158,23 @@ These are rules, not preferences.
   never a `shadowColor` of its own.
 - A sheet whose content depends on the state that closes it should keep the last content while
   it fades (see the member sheet in `SpaceScreen`), or it fades out empty.
-- Web fonts: on the web the faces are WOFF2 in `apps/app/public/fonts` (Fontsource's Latin
-  cuts, copied from `@fontsource/inter` and `@fontsource/nunito`; OFL beside them), declared
-  once in `index.html` (`caime-fonts`) as the brand's two families by weight, `Inter` and
-  `Nunito`: the app on the web asks for the family and the weight (`theme/fonts.web.ts`,
-  `fontFace`), phones a file per weight through expo-font (`theme/fonts.ts`, `fontFiles.ts`), and
+- Fonts: on the web the faces are WOFF2 in `apps/app/public/fonts`, written there with the
+  shell's `caime-fonts` block in `index.html` by `pnpm fonts` (`scripts/web-fonts.mjs`, from
+  Fontsource's cuts; OFL beside them), never by hand: the brand's two families by weight, `Inter`
+  and `Nunito`, Latin and its extension (Turkish, œ), and Arabic (R73) under the same two names
+  by `unicode-range`, Noto Sans Arabic for Inter's styles and Baloo Bhaijaan 2 for Nunito's, so
+  the browser draws Arabic letters with the paired face and only an Arabic reader downloads it.
+  The app on the web asks for the family and the weight (`theme/fonts.web.ts`, `fontFace`), and
   the server's pages name the same families (a page written outside the shell, the privacy
-  policy or the operator's reports, takes the shell's own block through `shellFaces`). A new
-  weight needs a face in `index.html` and a TTF for phones (`fonts.test.ts` holds the type scale
-  to the declared faces), and `fonts` is a reserved handle.
+  policy or the operator's reports, takes the shell's own block through `shellFaces`). Phones
+  load a file per weight through expo-font (`theme/fonts.ts`, `fontFiles.ts`), the Arabic faces
+  too, and `fontFace(family, weight, 'arabic')` picks the paired one, since a phone can't pick
+  by the letters: the `Text` primitive passes it for any text holding Arabic. A new weight or
+  face is a line in `FACES` there and a TTF for phones (`fonts.test.ts` holds every style of
+  the type scale to a Latin, a Latin-extended and an Arabic face), and `fonts` is a reserved
+  handle. Arabic takes no tracking and a taller line (`arabicType` in brand's tokens: ×1.18),
+  applied by `Text` and, on the server's pages, by `type()` through `--line` and `--track`,
+  which `THEME_VARS` sets under `[dir=rtl]`.
 - The server's own pages draw from the tokens, as the app does (R69): `lib/page-style.ts` writes
   the theme as CSS variables for both schemes (`THEME_VARS`, `--text-secondary` and friends),
   a style of the type scale as declarations (`type('mono')`), and radii, control heights, the
@@ -456,6 +464,19 @@ These are rules, not preferences.
   (`state/prefsPending.ts`), `adoptPreferences` adopts nothing: every save echoes back as
   `me.updated`, whose refresh would otherwise put the account's older choice back on the device
   before the newer one was sent (it did, once in a few runs).
+- Direction (R73): the web's layout runs right to left through `ui/Direction` (a View with
+  `dir`, which is what react-native-web turns `start` and `end` by; the document's `dir` only
+  mirrors rows and text), at the root and inside a `Sheet` (its Modal mounts outside the root);
+  a phone's is `I18nManager`'s, applied at the next launch. Anything with a side asks `useRtl()`
+  (`lib/direction.ts`), never the language or `I18nManager` itself: a back arrow is `Back` and a
+  row's chevron `Chevron` from `ui/directional`, mirrored (`scaleX: -1`), never the lucide arrow;
+  a trailing alignment is `align={rtl ? 'left' : 'right'}`; something hidden for a screen reader
+  is clipped to a point, never moved off a side (a side is scrollable the other way). `Text`
+  aligns the interface's words to the layout's start whatever letters they're in ("English" in
+  the languages list sits at the right in Arabic) and user-written text (`auto`) by its own
+  direction; `TextField` starts what's typed where its label is. Styles name `start`/`end`,
+  `paddingStart`, `marginEnd`, `borderStartWidth`; a physical side is only for a fill
+  (`left: 0, right: 0`) or a pair of equals.
 - The public site (`lib/site-pages.ts`, R50): `/business`, `/pricing`, `/security`,
   `/developers` and `/about` (`MARKETING_PAGES` in core `api.ts`, each a reserved handle) are
   rendered in the app's shell like the landing page (`renderLanding`, in the same file), for

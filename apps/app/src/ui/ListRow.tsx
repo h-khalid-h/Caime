@@ -1,7 +1,7 @@
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
+import { Chevron } from '@/ui/directional';
 import type { IconComponent } from './Button';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
@@ -95,7 +95,7 @@ export function ListRow({
         ) : null}
       </View>
       {right}
-      {chevron ? <ChevronRight size={18} color={t.c.textTertiary} /> : null}
+      {chevron ? <Chevron size={18} color={t.c.textTertiary} /> : null}
     </View>
   );
   // A row that only shows something keeps its id, as a pressable one does.

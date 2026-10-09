@@ -13,7 +13,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Bell from 'lucide-react-native/icons/bell';
 import Calendar from 'lucide-react-native/icons/calendar';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import Clock from 'lucide-react-native/icons/clock';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import Sparkles from 'lucide-react-native/icons/sparkles';
@@ -34,6 +33,7 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
+import { Chevron } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -464,7 +464,7 @@ export function AttentionHome() {
                     <Text variant="captionStrong" color="link">
                       {tr('All you’re waiting for')}
                     </Text>
-                    <ChevronRight size={14} color={t.c.link} />
+                    <Chevron size={14} color={t.c.link} />
                   </Pressable>
                 ) : null}
               </>

@@ -44,12 +44,24 @@ importers:
       '@config-plugins/react-native-webrtc':
         specifier: ^15.0.2
         version: 15.0.2(expo@57.0.25)
+      '@expo-google-fonts/baloo-bhaijaan-2':
+        specifier: 0.4.2
+        version: 0.4.2
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/noto-sans-arabic':
+        specifier: 0.4.3
+        version: 0.4.3
       '@expo-google-fonts/nunito':
         specifier: ^0.4.2
         version: 0.4.2
+      '@fontsource/baloo-bhaijaan-2':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-arabic':
+        specifier: 5.3.0
+        version: 5.3.0
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))
@@ -946,11 +958,17 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@expo-google-fonts/baloo-bhaijaan-2@0.4.2':
+    resolution: {integrity: sha512-joARJUdbUZDBaMxi6aEe8hzfZuWM6o6cPJI7zsdFpdA9hoJDue5H+9q2Az+oKZjMHB4HqK931GANqNMOfk56jw==}
+
   '@expo-google-fonts/inter@0.4.2':
     resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
 
   '@expo-google-fonts/material-symbols@0.4.48':
     resolution: {integrity: sha512-aZztj44PyA/sj3TXSwwpLJwqMlTUJ49okbZJYURzEcuERxMQB0KbX7RrLBi8WJnuWz5HFOLlTRxORrJfNnUPNQ==}
+
+  '@expo-google-fonts/noto-sans-arabic@0.4.3':
+    resolution: {integrity: sha512-YvtxyuegxPegu2g5urXJ+gQxRp8i798nQswTmEjwXOWR/fqy0Gvey6h5IoNRBrc43SxRxPezqCiR9ivpfPAXSg==}
 
   '@expo-google-fonts/nunito@0.4.2':
     resolution: {integrity: sha512-1KCWphw/I2ugqfs9iRHUCkPTnomNgGPtF4AvqVquoEKxr0EL+mcLNLgeixsslbaSFevRR6/KJAE3sc8g0VaY0Q==}
@@ -1188,8 +1206,14 @@ packages:
   '@fastify/websocket@11.3.1':
     resolution: {integrity: sha512-3117Fteg0MC9zRl0ilNAQelRb+PNDvNuWe0yJ+jnLthaPPZnlml+GraGpesNUEQvLl8+3C+W4aKZz10XmQ10Mg==}
 
+  '@fontsource/baloo-bhaijaan-2@5.3.0':
+    resolution: {integrity: sha512-XW/B74qBKG8g+k7qOeif74by3YarbCVimDZOTjWuam+2kxilAP4blrCB/pcLLFzlWqTOw/RqETolzXT1ETmirw==}
+
   '@fontsource/inter@5.3.0':
     resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
+
+  '@fontsource/noto-sans-arabic@5.3.0':
+    resolution: {integrity: sha512-i3t6GR0LOReyJVEk+YfYCnxv53wuIelg7Y9NGNvOq4Diq/EP0YszaGXkQwfQNigLjfO4POrLaPGM0sNliGYk7A==}
 
   '@fontsource/nunito@5.3.0':
     resolution: {integrity: sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==}
@@ -5036,9 +5060,13 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@expo-google-fonts/baloo-bhaijaan-2@0.4.2': {}
+
   '@expo-google-fonts/inter@0.4.2': {}
 
   '@expo-google-fonts/material-symbols@0.4.48': {}
+
+  '@expo-google-fonts/noto-sans-arabic@0.4.3': {}
 
   '@expo-google-fonts/nunito@0.4.2': {}
 
@@ -5501,7 +5529,11 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@fontsource/baloo-bhaijaan-2@5.3.0': {}
+
   '@fontsource/inter@5.3.0': {}
+
+  '@fontsource/noto-sans-arabic@5.3.0': {}
 
   '@fontsource/nunito@5.3.0': {}
 

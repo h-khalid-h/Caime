@@ -12,7 +12,6 @@ import {
 } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Hash from 'lucide-react-native/icons/hash';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import LogOut from 'lucide-react-native/icons/log-out';
@@ -33,6 +32,7 @@ import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
 import { Chip, RelationshipChip } from '@/ui/Chip';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
@@ -179,7 +179,7 @@ export function SpaceScreen({ id }: { id: string }) {
 
   const back = (
     <IconButton
-      icon={ArrowLeft}
+      icon={Back}
       label={tr('Back')}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/spaces'))}
     />

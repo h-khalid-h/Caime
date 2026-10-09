@@ -1152,6 +1152,18 @@ listed there with its owner.
 - [ ] Later in R72: Cai's lines in Iraqi, Maghrebi, Sudanese and Yemeni Arabic by the rules (the
       model speaks them already), each read by a native speaker first; the same care for French
       (Maghreb, Lebanon, Canada) and Turkish where it differs by place.
+- [x] R73, Arabic reads as Caime: the paired faces (Noto Sans Arabic, Baloo Bhaijaan 2) under
+      Inter's and Nunito's names by `unicode-range` on the web (`pnpm fonts` writes the shell's
+      block) and through expo-font on phones; no tracking and lines ×1.18 for Arabic in `Text`
+      and the server pages' `type()`; the layout's direction told to react-native-web (`ui/
+      Direction`) at the root and in sheets; `Back` and `Chevron` mirrored; the interface's words
+      at the layout's start, user text by its own; fields start at their labels. `fonts.test.ts`
+      holds every style to Latin, Latin-extended and Arabic faces; `e2e/arabic.spec.ts` checks
+      the faces load, a Latin label sits at the right and the chevrons are mirrored; the Arabic
+      screenshots retaken.
+- [ ] Later in R73: phones seen in Arabic on a device (the layout flips at the next launch after
+      the change, as `I18nManager` works; a relaunch could be offered); Hebrew and Persian would
+      take the same path with their own paired faces.
 - [ ] Later in R67: Cai in a conversation ("Catch me up" opening Cai's chat on it), Cai's digests
       in its chat, public pages for @cai and the friends (answer engines), more of what each friend knows.
 - [ ] ⛔ A trademark and store-name clearance for "Caime" before the store builds (the owner's).
@@ -1178,6 +1190,34 @@ listed there with its owner.
 - [ ] Later layers of R58: a recurring card (each occurrence its own brief), a resource shared
       by several items (one set of chairs for two services), a customer choosing who does it
       where an organization allows it, group meetings' briefs.
+
+## M14 — Apps and Mail (R74, R75)
+
+Everything that reaches Caime from outside, in one place: the apps someone connects and
+discovers, and mail at their own address.
+
+- [ ] R74, Apps: Settings · Apps with Connected (grants and built-ins as one kind of row) and
+      Discover (listed apps, keyset-paged, trigram search, categories, icons, publisher,
+      connect count, Connect through the app's login-initiation URL); a developer lists an app,
+      the operator reviews a listing; the calendar address as the first built-in app. Privacy and
+      help pages reworded; `oauth.test.ts`, `apps-directory.test.ts`, the E2E paths moved from
+      `/settings/connected` to `/settings/apps`.
+- [ ] R75, Caime Mail phase 1: `MAIL_DOMAIN` and the inbound interface (`lib/mail-in.ts`, a
+      provider's webhook; a stand-in in tests, `e2e/mail-stub.mjs`), the authenticated From only,
+      provisional people (visible to whoever they wrote to, found by nobody, gone with their
+      conversations or after a year), a stranger's mail as a request that keeps every message,
+      threads as topics named by the subject, attachments through files, replies out with sent,
+      delivered and bounced, claiming an account by signing up or in with the address, the
+      Business inbox for an organization's address, under-18 addresses closed to strangers,
+      export and erasure, the privacy and help pages and the processor list.
+- [ ] ⛔ R75 in production: the mail domain's MX at the inbound provider, DKIM, SPF and DMARC,
+      the provider's credentials and webhook secret (the owner's).
+- [ ] R75 phase 2: notices (no-reply senders, bulk mail) under Notices, HTML as sent in a
+      sandbox, reply-all with CC, sending as the address from Gmail and Outlook through Caime's
+      submission, the agent answering by mail.
+- [ ] R75 phase 3: sign in with Google, Apple and Microsoft (claiming in one tap); Google
+      Calendar and Outlook calendar sync as apps in Discover; a verified organization receiving
+      at its own domain.
 
 ## Log
 
@@ -2222,6 +2262,11 @@ listed there with its owner.
 - 2026-10-05 — The six catalogs reviewed as a native speaker would (Arabic, French, Turkish; app
   and site), and the code that put English words into translated sentences fixed. Language,
   accessibility, bookings and core-flow specs pass; the Arabic screens read right to left.
+- 2026-10-09 — R73 (the owner: "the Arabic font and alignment across the entire UX is not the
+  best"): the paired Arabic faces on web and phones, Arabic metrics, react-native-web told the
+  layout's direction (it had mirrored rows and nothing else), mirrored arrows and chevrons, the
+  interface's words aligned to the layout's start. Checked: app and server tests, the Arabic,
+  accessibility, entry-twin and core-flow specs, the retaken Arabic screenshots.
 - 2026-10-08 — R72 (the owner: the bar "higher and visible whenever it makes sense"; "in
   Egypt and speaks Arabic … Egyptian Arabic"): the phone's bar is under every screen opened from
   a place and steps aside where it would cover what someone's doing; Cai and the friends speak

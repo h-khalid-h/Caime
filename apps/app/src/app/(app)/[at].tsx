@@ -1,13 +1,13 @@
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useEffect } from 'react';
 import { ApiError } from '@/api/client';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Button } from '@/ui/Button';
+import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -62,7 +62,7 @@ export default function HandleLink() {
         left={
           desktop ? undefined : (
             <IconButton
-              icon={ArrowLeft}
+              icon={Back}
               label={tr('Back')}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             />

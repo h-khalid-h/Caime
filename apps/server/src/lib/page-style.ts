@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
+  arabicType,
   breakpoints,
   bubbleThemes,
   controlHeight,
@@ -64,18 +65,26 @@ function scheme(name: 'light' | 'dark'): string {
   ].join(';');
 }
 
-/** Every colour a page names, for the scheme the device asks for. */
-export const THEME_VARS = `:root{${scheme('light')}}@media (prefers-color-scheme:dark){:root{${scheme('dark')}}}`;
+/**
+ * Every colour a page names, for the scheme the device asks for; and, where the page runs right
+ * to left (Arabic, R73), the type scale's line height and tracking as Arabic takes them
+ * (`arabicType`), which `type()` writes against these two variables.
+ */
+export const THEME_VARS = `:root{${scheme('light')}}@media (prefers-color-scheme:dark){:root{${scheme('dark')}}}[dir=rtl]{--line:${arabicType.lineHeightFactor};--track:${arabicType.letterSpacing}}`;
 
-/** A style of the type scale, as declarations: family, weight, size, line height, spacing. */
+/**
+ * A style of the type scale, as declarations: family, weight, size, line height, spacing. The
+ * line height and tracking are scaled by `--line` and `--track` (1 and 1 unless the page runs
+ * right to left), so one rule in `THEME_VARS` sets Arabic's metrics on every page.
+ */
 export function type(name: TypeStyleName): string {
   const s = typeScale[name];
   return [
     `font-family:${FACE[s.family]}`,
     `font-weight:${s.weight}`,
     `font-size:${s.size}px`,
-    `line-height:${s.lineHeight}px`,
-    `letter-spacing:${s.letterSpacing ?? 0}px`,
+    `line-height:calc(${s.lineHeight}px * var(--line,1))`,
+    `letter-spacing:calc(${s.letterSpacing ?? 0}px * var(--track,1))`,
   ].join(';');
 }
 
