@@ -1168,3 +1168,50 @@ with its reason, so it isn't proposed again without new facts.
   quota; layer 3 a container and a database of its own. *What isn't done*: WhatsApp, Facebook
   and LinkedIn as live connections (no personal messaging APIs exist; notices by mail, R75, and
   the WhatsApp import are the bridges there are).
+- **R80 — The marketplace is a page on the web, and the rules of listing are written down
+  (owner, 2026-10-10: Slack's App Marketplace, and cai.me/marketplace).** Slack's marketplace
+  was read as a model (its developer guidelines, docs.slack.dev/slack-marketplace, 2026-10-10;
+  the marketplace page itself renders only in a browser). What makes it work is not the tab in
+  the client but the public page: every listed app has an address anyone can open, search
+  engines index, and a developer links to ("Find your next customer": 2,500+ apps, a million
+  developers; Zapier's connected users far likelier to pay), with a written bar for what gets
+  in and what gets taken down. Discover (R74) is the tab; it has no page. *Adopted.* (1) *One
+  directory, two doors*: `/marketplace` joins the site's pages (`MARKETING_PAGES`, a reserved
+  handle, rendered by `site-pages.ts` for everyone, never booting the app, in every interface
+  language with hreflang), listing exactly what Discover lists (the same `directoryQuery`,
+  listed apps by how many connected them, the built-ins and the bridges of R79 first, a
+  category page each); an app gets a page, `/marketplace/<slug>` (a slug from its name, unique
+  among listed apps, held like a handle), with JSON-LD (`SoftwareApplication`) and a sitemap
+  line, and its Connect sends a visitor to sign in and back to the sheet. Discover's sheet
+  links the page, the page links Discover. (2) *A listing says more*: beside R74's tagline,
+  description, category, icon, Connect address and organization, up to five screenshots (8:5,
+  the developer's own images through the renditions of R70), a pricing model declared from a
+  fixed set (free; paid; paid with a free trial; free and paid plans; included with a
+  subscription: Caime never takes the money, R62), the languages it works in, a public support
+  address (mail or a page) and a privacy policy address, both required to list, and, when the
+  app puts a person's words through a model, what model, what's kept and for how long, and
+  where: shown on the page as the processors list is, never a checkbox. (3) *The bar, written
+  where developers read it* (`/developers`, API.md): least privilege (a scope is justified by
+  how the app uses it today, never a future feature; broad reads get a closer look), a working
+  Connect the operator follows to the end before listing, reachable support and privacy pages
+  (a broken one delists), nothing that exports or backs up conversations wholesale (a person's
+  own export is Caime's), nothing destructive in bulk, nothing that replicates the client, no
+  payments through Caime, no training a model on what it reads, no shared third-party accounts,
+  and apps act for people over 18 (R29). A substantial change asks again (`listing_rev`, R74
+  review); an app left broken or unmaintained is delisted with a note the developer sees
+  (Block 4's notification). Every listed app wears "Reviewed by Caime" (the operator looked:
+  the review view gets that checklist), a verified organization's "Verified", Caime's own
+  "Built by Caime". (4) *What's declined*: ratings and reviews (Slack has none either; they
+  invite gaming and say less than "how many connected it, and are they still"), a usage floor
+  (Slack delists under ten workspaces; a clinic's one app is welcome here), and paid listings
+  or placement (the order is who connected it, then who's newest). (5) *The short domain*:
+  cai.me is parked today (it bounces to a registrar's lander page, 2026-10-10), so it is the
+  owner's to acquire; once it is Caime's, every link already builds from one base
+  (`PUBLIC_URL`, `WEB_URL`), so it becomes the public address (an organization's door
+  `cai.me/o/nile.dental` on a sign, a person's `cai.me/@sara`, the marketplace
+  `cai.me/marketplace`) with the old host answering 301 to it and the canonical tags following,
+  or a redirect host alone; one canonical, never two. ⛔ until the domain, its DNS at EasyPanel
+  and its certificate exist. *Cost*: a site page cached ten minutes like the others, app pages
+  the same, screenshots through the file pipeline; the operator's time per listing is the
+  checklist, no new process. *What isn't done*: a billing marketplace (no), and nothing of
+  layers 2 and 3 of R79 changes: the page only shows what connects today.

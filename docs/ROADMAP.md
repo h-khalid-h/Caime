@@ -1229,6 +1229,15 @@ discovers, and mail at their own address.
       the token-reachable routes, served and named in API.md; `@caime/mcp` over the SDK's
       person methods; a hash chain on `audit_log`; a `provides` list on listings for apps that
       give Caime something (calendar sync, mail), reviewed as the listing is.
+- [ ] R80, the marketplace page (PRODUCT-REVIEW R80, Slack's marketplace read as the model):
+      `/marketplace` on the site with a page per listed app (`/marketplace/<slug>`, JSON-LD,
+      sitemap, Connect through sign-in), categories, the built-ins and bridges first; a listing
+      with screenshots, a declared pricing model, languages, support and privacy addresses and
+      an AI disclosure; the written bar on `/developers` and in API.md; "Reviewed by Caime" with
+      the operator's checklist; delisting with a note. After Block 4 and R79 layer 1.
+- [ ] ⛔ R80, cai.me as the public address: parked today (a registrar's lander, 2026-10-10), so
+      the owner acquires it; then DNS and the certificate at EasyPanel, `PUBLIC_URL` and
+      `WEB_URL` moved, the old host answering 301, one canonical.
 - [ ] R75 phase 2: notices (no-reply senders, bulk mail) under Notices, HTML as sent in a
       sandbox, reply-all with CC, sending as the address from Gmail and Outlook through Caime's
       submission, the agent answering by mail.
@@ -2407,6 +2416,11 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   and feed carry the whole organization's appointments; free slots are read from a capped list;
   nine core label tables aren't in any catalog; the country sets the work week and the currency
   and nothing else; a single choice is built six ways.
+- 2026-10-10 — R80 written (the owner: Slack's App Marketplace and cai.me/marketplace): the
+  marketplace as a public page with a page per app, what a listing says, the written bar for
+  listing and delisting, what's declined (ratings, a usage floor, paid placement), and the short
+  domain as the public address once it's Caime's (cai.me is parked today). Roadmap lines under
+  M14, after Block 4 and R79 layer 1.
 - 2026-10-09 — Review block 3 (words): the eleven label tables in core (scopes, rewrites,
   organization kinds and roles, space roles, thread states and views, the agent's actions,
   Attention's sections, the privacy fields) are `msg()` keys and every place that showed one
