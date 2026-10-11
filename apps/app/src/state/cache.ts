@@ -74,10 +74,20 @@ function applyLive(qc: QueryClient, conversationId: string, change: () => void):
 }
 
 export function upsertMessage(qc: QueryClient, m: MessageView): void {
-  applyLive(qc, m.conversationId, () => upsertNow(qc, m));
+  applyLive(qc, m.conversationId, () => upsertNow(qc, m, false));
 }
 
-function upsertNow(qc: QueryClient, m: MessageView): void {
+/**
+ * The answer to a send. The sender's own echo, and whatever happened to the message since (its
+ * words heard, a card moved), come through the socket, and the answer was written before them:
+ * read under load after the socket's events, it would put the message back as it was sent. So
+ * it adds the message where the socket hasn't, and never replaces what the socket brought.
+ */
+export function addSentMessage(qc: QueryClient, m: MessageView): void {
+  applyLive(qc, m.conversationId, () => upsertNow(qc, m, true));
+}
+
+function upsertNow(qc: QueryClient, m: MessageView, keepShown: boolean): void {
   patchCache<MessagePages>(qc, qk.messages(m.conversationId), (data) => {
     if (!data || data.pages.length === 0) return data;
     let found = false;
@@ -85,9 +95,13 @@ function upsertNow(qc: QueryClient, m: MessageView): void {
       const i = p.messages.findIndex((x) => x.id === m.id);
       if (i === -1) return p;
       found = true;
-      const messages = p.messages.slice();
+      const shown = p.messages[i] as MessageView;
       // Keep a clientId we already know: other devices' echoes arrive without it.
-      messages[i] = { ...m, clientId: m.clientId ?? messages[i]?.clientId ?? null };
+      if (keepShown && (shown.clientId || !m.clientId)) return p;
+      const messages = p.messages.slice();
+      messages[i] = keepShown
+        ? { ...shown, clientId: m.clientId }
+        : { ...m, clientId: m.clientId ?? shown.clientId ?? null };
       return { ...p, messages };
     });
     if (found) return { ...data, pages };

@@ -13,7 +13,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { ApiError, NetworkError } from '@/api/client';
 import { endpoints, type SendBody } from '@/api/endpoints';
 import { queryClient } from '@/api/queryClient';
-import { applyMessageToInbox, upsertMessage } from './cache';
+import { addSentMessage, applyMessageToInbox } from './cache';
 
 export interface OutboxItem {
   clientId: string;
@@ -73,7 +73,7 @@ async function sendOne(item: OutboxItem): Promise<'sent' | 'offline' | 'failed'>
           item.replyToSealed,
         )
       : await endpoints.send(item.conversationId, item.body);
-    upsertMessage(queryClient, message);
+    addSentMessage(queryClient, message);
     applyMessageToInbox(queryClient, message, { mine: true, reading: true });
     useOutbox.getState().resolve(item.clientId);
     return 'sent';

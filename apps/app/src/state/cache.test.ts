@@ -3,6 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { qk } from '@/api/keys';
 import {
+  addSentMessage,
   flatMessages,
   type MessagePages,
   patchPinned,
@@ -86,6 +87,44 @@ describe('live messages and loading pages', () => {
     // Still due for its refetch, which brings 3; its age is still the fetch's.
     expect(state?.isInvalidated).toBe(true);
     expect(state?.dataUpdatedAt).toBe(fetchedAt);
+  });
+});
+
+describe('the answer to a send', () => {
+  // A voice note as sent: no words yet.
+  const sent = { ...msg(3, ''), clientId: 'c3', reactions: [] } as unknown as MessageView;
+  const loaded = () => {
+    const qc = new QueryClient();
+    qc.setQueryData<MessagePages>(qk.messages(id), {
+      pages: [page(1, 2)],
+      pageParams: [undefined],
+    });
+    return qc;
+  };
+  const third = (qc: QueryClient) =>
+    flatMessages(qc.getQueryData<MessagePages>(qk.messages(id))).find((m) => m.id === 'm3');
+
+  it('adds the message where the socket hasn’t', () => {
+    const qc = loaded();
+    addSentMessage(qc, sent);
+    expect(seqs(qc)).toEqual([1, 2, 3]);
+    expect(third(qc)).toMatchObject({ body: '', clientId: 'c3' });
+  });
+
+  it('never takes away what the socket brought since: the echo, then the words heard', () => {
+    const qc = loaded();
+    upsertMessage(qc, sent); // the sender's own echo, with its client id
+    updateMessage(qc, { ...sent, body: 'Hi Noor, the contract is signed.', clientId: null }, 'me');
+    addSentMessage(qc, sent); // the answer, read last under load
+    expect(seqs(qc)).toEqual([1, 2, 3]);
+    expect(third(qc)).toMatchObject({ body: 'Hi Noor, the contract is signed.', clientId: 'c3' });
+  });
+
+  it('gives a copy another device’s echo brought the client id the answer knows', () => {
+    const qc = loaded();
+    upsertMessage(qc, { ...sent, clientId: null });
+    addSentMessage(qc, sent);
+    expect(third(qc)).toMatchObject({ clientId: 'c3' });
   });
 });
 

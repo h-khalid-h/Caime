@@ -2550,3 +2550,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   own layout sizes), the setup list with `OrgCheckout`, the auth kicker as a mono line, axe in
   all four languages; the preview route in `API_ROUTES`, `docs/API.md` and the SDK
   (`preview(id)`), with its case in `sdk.test.ts`.
+- 2026-10-11 — A send's answer never takes away what the socket brought since (`addSentMessage`,
+  `state/cache.ts`): the voice E2E lost a note's words under load, two runs in six; a probe
+  logging the socket's frames and the client's cache showed the transcript's `message.updated`
+  27 ms after the echo, and the send's own answer, a copy made before either, read after them
+  and putting the message back as sent. The outbox and the card form add their answer where the
+  socket hasn't and never replace what it brought; `cache.test.ts` holds the three cases.

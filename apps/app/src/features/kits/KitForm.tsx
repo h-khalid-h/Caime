@@ -23,7 +23,7 @@ import { type Chosen, instantOf } from '@/features/when/when';
 import { wordsMatch } from '@/lib/find';
 import { useUserClock } from '@/lib/time';
 import { loadReaders, type Readers, useReaders } from '@/lib/useReaders';
-import { applyMessageToInbox, upsertMessage } from '@/state/cache';
+import { addSentMessage, applyMessageToInbox } from '@/state/cache';
 import { useLiveShares } from '@/state/liveShares';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -507,7 +507,7 @@ export function KitForm({
         ...body,
         ...(start?.replyToId ? { replyToId: start.replyToId } : {}),
       });
-      upsertMessage(qc, message);
+      addSentMessage(qc, message);
       applyMessageToInbox(qc, message, { mine: true, reading: true });
       const live = (message.payload as { live?: { until: string } }).live;
       if (message.kind === 'location' && live)

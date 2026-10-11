@@ -1182,7 +1182,10 @@ These are rules, not preferences.
 - A `message.updated` event is the message as whoever changed it sees it (their poll votes,
   their reactions). The app applies it with `updateMessage` (`state/cache.ts`): only to a
   message it already shows, never adding one, and with the viewer's own parts worked out again.
-  `upsertMessage` is for `message.created` and the app's own answers.
+  `upsertMessage` is for `message.created` and the app's own answers to a change it made; the
+  answer to a send is `addSentMessage`: the echo and whatever happened to the message since (its
+  words heard) come through the socket, and the answer, written before them and read after them
+  under load, adds the message where the socket hasn't and never replaces what it brought.
 - A chat brought over from WhatsApp (R45) is read on the device by `@caime/core/whatsapp`
   (pure: no zod, so the app takes it by subpath; every export shape gets a case in
   `whatsapp.test.ts`) and lands through `POST /conversations/import` (`modules/imports.ts`),
