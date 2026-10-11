@@ -130,11 +130,17 @@ export async function offerFollowUp(ctx: AppContext, t: Followed): Promise<boole
       name: firstName(other.display_name),
       title: t.title,
     });
-    await postAs(ctx, CAI_ID, chat, {
-      kind: 'text',
-      body: `${line()}\n\n${draft}`,
-      payload: { followUp: { taskId: t.id, conversationId: to, to: other.display_name, draft } },
-    });
+    await postAs(
+      ctx,
+      CAI_ID,
+      chat,
+      {
+        kind: 'text',
+        body: `${line()}\n\n${draft}`,
+        payload: { followUp: { taskId: t.id, conversationId: to, to: other.display_name, draft } },
+      },
+      { serverPayload: true },
+    );
   });
   await notify(ctx, {
     userId: t.owner_id,

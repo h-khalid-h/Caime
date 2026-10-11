@@ -143,7 +143,7 @@ export function OrgAgent({ org }: { org: OrgView }) {
       <View
         style={{
           marginHorizontal: 16,
-          borderRadius: 16,
+          borderRadius: t.radii.lg,
           borderWidth: 1,
           borderColor: t.c.border,
           backgroundColor: t.c.surface,
@@ -274,7 +274,12 @@ export function OrgAgent({ org }: { org: OrgView }) {
             />
             {tried ? (
               <View
-                style={{ gap: 4, padding: 12, borderRadius: 12, backgroundColor: t.c.surfaceMuted }}
+                style={{
+                  gap: 4,
+                  padding: 12,
+                  borderRadius: t.radii.sm,
+                  backgroundColor: t.c.surfaceMuted,
+                }}
                 testID="org-agent-tried"
               >
                 <Text variant="captionStrong" color="textSecondary">

@@ -2302,25 +2302,30 @@ test.describe
         .filter({ visible: true });
       await expect(digestMessage.getByTestId('message-sent-via')).toHaveText('via Weekly digest ·');
 
-      // Noor lists her app: a tagline, a category, where Connect goes; Caime looks once.
+      // Noor lists her app on the form (review 2026-10-09): a tagline, a category, where Connect
+      // goes, listed; the form says Caime looks once. Then Caime does.
+      await page.goto('/settings/developer');
+      await page.getByTestId('oauth-app-Weekly digest').click();
+      await page.getByTestId('listing-tagline').fill('Your week in Caime, every Monday');
+      await page.getByTestId('listing-category-tasks').click();
+      await page.getByTestId('listing-login').fill('https://digest.example/login');
+      await page.getByTestId('listing-listed').click();
+      await page.getByTestId('listing-save').click();
+      await expect(page.getByTestId('listing-state')).toContainText('Waiting for Caime’s look');
+      await page.keyboard.press('Escape');
       const mine = await (
         await noorContext.request.get('/v1/me/oauth-apps', { headers: CLIENT })
       ).json();
-      const appId: string = mine.apps.find((a: { name: string }) => a.name === 'Weekly digest').id;
-      const listed = await noorContext.request.patch(`/v1/me/oauth-apps/${appId}`, {
-        headers: CLIENT,
-        data: {
-          tagline: 'Your week in Caime, every Monday',
-          category: 'tasks',
-          loginUrl: 'https://digest.example/login',
-          listed: true,
-        },
+      const digestApp = mine.apps.find((a: { name: string }) => a.name === 'Weekly digest');
+      const appId: string = digestApp.id;
+      expect(digestApp.listing).toMatchObject({
+        state: 'waiting',
+        tagline: 'Your week in Caime, every Monday',
+        category: 'tasks',
       });
-      expect(listed.ok()).toBe(true);
-      expect((await listed.json()).app.listing.state).toBe('waiting');
       const reviewed = await noorContext.request.post(`/v1/admin/listings/${appId}`, {
         headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
-        data: { decision: 'list', revision: (await listed.json()).app.listing.revision },
+        data: { decision: 'list', revision: digestApp.listing.revision },
       });
       expect(reviewed.ok()).toBe(true);
       // Alex discovers it, already connected: the row says so, the sheet says how many did, and

@@ -1,3 +1,4 @@
+import { radii } from '@caime/brand/tokens';
 import { tr } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
 import MicOff from 'lucide-react-native/icons/mic-off';
@@ -182,7 +183,7 @@ function OneToOneCallLayer() {
             end: 16,
             width: 112,
             height: 156,
-            borderRadius: 16,
+            borderRadius: radii.lg,
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: '#FFFFFF33',

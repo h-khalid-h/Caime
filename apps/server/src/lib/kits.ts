@@ -234,14 +234,26 @@ export async function tellCardApp(
 }
 
 /**
- * When a meeting or an appointment is for (`messages.card_start_at`): written with the card,
- * so a window over cards is an index read. Null for any other message (a custom card may carry
- * a field named `start` of its own; it isn't one of these).
+ * When a card is for (`messages.card_start_at`): a meeting's or an appointment's start, a Pay
+ * card's or an invoice's due day (review 2026-10-09 M14; midnight UTC of the day, as the field
+ * keeps it). Written with the card, so a window over cards is an index read, and search finds a
+ * card by when it's for. Null for any other message (a custom card may carry a field named
+ * `start` or `due` of its own; it isn't one of these).
  */
 export function cardStartAt(payload: unknown): Date | null {
-  const card = payload as { kit?: unknown; fields?: { start?: { at?: unknown } } } | null;
-  if (!card || (card.kit !== 'meeting' && card.kit !== 'appointment')) return null;
-  const at = card.fields?.start?.at;
+  const card = payload as {
+    kit?: unknown;
+    fields?: { start?: { at?: unknown }; due?: unknown };
+  } | null;
+  if (!card) return null;
+  const at =
+    card.kit === 'meeting' || card.kit === 'appointment'
+      ? card.fields?.start?.at
+      : card.kit === 'payment_request' || card.kit === 'invoice'
+        ? typeof card.fields?.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(card.fields.due)
+          ? `${card.fields.due}T00:00:00Z`
+          : undefined
+        : undefined;
   if (typeof at !== 'string') return null;
   const date = new Date(at);
   return Number.isNaN(date.getTime()) ? null : date;

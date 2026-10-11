@@ -180,7 +180,7 @@ export default function Search() {
                   style={{
                     paddingHorizontal: 10,
                     paddingVertical: 6,
-                    borderRadius: 12,
+                    borderRadius: t.radii.sm,
                     backgroundColor: t.c.surfaceMuted,
                     overflow: 'hidden',
                   }}

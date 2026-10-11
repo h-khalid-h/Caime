@@ -50,7 +50,7 @@ function RailItem({
             style={{
               width: 48,
               height: 36,
-              borderRadius: 14,
+              borderRadius: t.radii.md,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: active ? t.c.accentSoft : hovered ? t.c.surfaceHover : 'transparent',

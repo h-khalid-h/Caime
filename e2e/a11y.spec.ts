@@ -1,8 +1,8 @@
 /**
  * The accessibility pass: axe (WCAG 2.1 A and AA) over the primary screens, signed in on a
- * phone and a desktop, in English and in Arabic, and over the pages a visitor gets. A serious
- * or critical violation fails; everything found is written to the report, so a regression
- * shows where it is.
+ * phone and a desktop, in every interface language (English, Arabic right to left, French and
+ * Turkish), and over the pages a visitor gets. A serious or critical violation fails; everything
+ * found is written to the report, so a regression shows where it is.
  */
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
@@ -38,8 +38,10 @@ function report(found: Found[]) {
   return found.filter((f) => f.impact === 'serious' || f.impact === 'critical');
 }
 
-test('the signed-in screens, phone and desktop, English and Arabic', async ({ browser }) => {
-  test.setTimeout(300_000);
+test('the signed-in screens, phone and desktop, in every interface language', async ({
+  browser,
+}) => {
+  test.setTimeout(480_000);
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const other = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const noor = await apiSignUp(phone, 'Noor Access', `noor.a11y.${suffix}`);
@@ -90,23 +92,35 @@ test('the signed-in screens, phone and desktop, English and Arabic', async ({ br
     [`/@tariq.a11y.${suffix}`, 'phone person'],
     ['/people', 'phone people'],
     ['/actions', 'phone actions'],
+    ['/actions?view=calendar', 'phone calendar'],
     ['/you', 'phone you'],
     [`/o/nile.a11y.${suffix}`, 'phone organization'],
     [`/o/nile.a11y.${suffix}/setup`, 'phone organization setup'],
+    [`/o/nile.a11y.${suffix}/inbox?view=bookings`, 'phone business inbox'],
+    ['/settings/apps', 'phone apps'],
+    ['/settings/cai', 'phone cai'],
+    ['/notifications', 'phone notifications'],
     ['/settings/region', 'phone settings'],
   ];
   for (const [path, name] of screens) {
     await page.goto(path);
     await audit(page, name, found);
   }
-  // Arabic, right to left: the same screens read the other way.
-  await page.goto('/settings/region');
-  await page.getByRole('radio', { name: 'العربية' }).click();
-  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  for (const [path, name] of screens.slice(0, 3)) {
-    await page.goto(path);
-    await audit(page, `${name} (ar)`, found);
-  }
+  // Arabic, right to left: every screen reads the other way; French and Turkish the first few,
+  // since a longer word or a different plural is what a language changes on a screen.
+  const inLanguage = async (name: string, dir: 'ltr' | 'rtl', count: number, tag: string) => {
+    await page.goto('/settings/region');
+    await page.getByRole('radio', { name }).click();
+    await expect(page.locator('html')).toHaveAttribute('dir', dir);
+    for (const [path, screen] of screens.slice(0, count)) {
+      await page.goto(path);
+      await audit(page, `${screen} (${tag})`, found);
+    }
+  };
+  await inLanguage('العربية', 'rtl', screens.length, 'ar');
+  await inLanguage('Français', 'ltr', 4, 'fr');
+  await inLanguage('Türkçe', 'ltr', 4, 'tr');
+  await inLanguage('English', 'ltr', 0, 'en');
   // The keyboard reaches a message's actions (R20): focus shows them beside the bubble, Enter
   // opens them all.
   await page.goto(`/c/${convo}`);

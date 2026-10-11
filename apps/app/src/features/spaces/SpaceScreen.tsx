@@ -14,7 +14,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Hash from 'lucide-react-native/icons/hash';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
-import LogOut from 'lucide-react-native/icons/log-out';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Plus from 'lucide-react-native/icons/plus';
 import Settings from 'lucide-react-native/icons/settings';
@@ -32,7 +31,7 @@ import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
 import { Chip, RelationshipChip } from '@/ui/Chip';
-import { Back } from '@/ui/directional';
+import { Back, Leave } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
@@ -302,7 +301,7 @@ export function SpaceScreen({ id }: { id: string }) {
               style={{
                 marginHorizontal: 16,
                 padding: 14,
-                borderRadius: 16,
+                borderRadius: t.radii.lg,
                 borderWidth: 1,
                 borderColor: t.c.border,
                 backgroundColor: t.c.surface,
@@ -339,7 +338,7 @@ export function SpaceScreen({ id }: { id: string }) {
         <View
           style={{
             marginHorizontal: 16,
-            borderRadius: 16,
+            borderRadius: t.radii.lg,
             borderWidth: 1,
             borderColor: t.c.border,
             backgroundColor: t.c.surface,
@@ -370,7 +369,7 @@ export function SpaceScreen({ id }: { id: string }) {
         <View
           style={{
             marginHorizontal: 16,
-            borderRadius: 16,
+            borderRadius: t.radii.lg,
             borderWidth: 1,
             borderColor: t.c.border,
             backgroundColor: t.c.surface,
@@ -538,7 +537,7 @@ export function SpaceScreen({ id }: { id: string }) {
             ) : null}
             {canRemoveFromSpace(space.myRole, shown.role) ? (
               <ListRow
-                icon={LogOut}
+                icon={Leave}
                 title={tr('Remove from the space')}
                 subtitle={tr('They leave its conversations too')}
                 destructive
@@ -626,7 +625,7 @@ export function SpaceScreen({ id }: { id: string }) {
         )}
         <View style={{ marginHorizontal: -20, marginTop: 8 }}>
           <ListRow
-            icon={LogOut}
+            icon={Leave}
             title={tr('Leave the space')}
             subtitle={tr('You leave its conversations too')}
             destructive

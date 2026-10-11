@@ -54,7 +54,7 @@ function Row({ f }: { f: FollowingView }) {
             paddingHorizontal: 16,
             paddingVertical: 12,
             marginHorizontal: 6,
-            borderRadius: 14,
+            borderRadius: t.radii.md,
             backgroundColor: pressed
               ? t.c.surfacePressed
               : hovered

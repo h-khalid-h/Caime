@@ -12,6 +12,7 @@ import {
   type CalendarFeedView,
   type CalendarView,
   canManageOrg,
+  formatAmount,
   type IcsEvent,
   isBooked,
   KITS,
@@ -50,14 +51,14 @@ import {
 } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
 import { briefFor } from '../lib/briefs';
-import { calendarItems, orgBookings, overdueTasks } from '../lib/calendar';
+import { calendarItems, minutesOf, orgBookings, overdueTasks } from '../lib/calendar';
 import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
 import { viewerRelation } from '../lib/relations';
 import { forgetSitemaps } from '../lib/sitemap-cache';
 import { taskViews } from '../lib/tasks';
-import { cardsAhead } from '../lib/upcoming';
+import { cardsAhead, dueCards } from '../lib/upcoming';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
@@ -69,7 +70,6 @@ const AHEAD_MS = 2 * 365 * DAY_MS;
 const MAX_EVENTS = 500;
 /** A timed action is a half-hour mark on the calendar; a meeting without a length, an hour. */
 const TASK_MINUTES = 30;
-const MEETING_MINUTES = 60;
 /** Calendar apps read every hour or so; the last read is kept to the nearest ten minutes. */
 const READ_EVERY_MS = 10 * 60_000;
 const FILE = /^(cal_[A-Za-z0-9_-]{43})\.ics$/;
@@ -144,7 +144,8 @@ export async function calendarEvents(
     agreedOnly: true,
   })) {
     const url = where(card.conversationId);
-    const minutes = card.durationMinutes ?? MEETING_MINUTES;
+    // As long as the app's calendar says (M16): as booked, as the field says, else an hour.
+    const minutes = minutesOf(card);
     events.push({
       uid: `${card.kit}-${card.messageId}@caime`,
       summary: card.title,
@@ -156,6 +157,21 @@ export async function calendarEvents(
         : { date: localDate(card.at, timeZone) }),
       updated: card.updated,
       busy: true,
+    });
+  }
+  // What's owed by a day (M14): a Pay card or an invoice on its due day, all day, holding nothing.
+  for (const card of await dueCards(ctx, userId, { from, until, limit: MAX_EVENTS })) {
+    const url = where(card.conversationId);
+    const what = card.amount
+      ? `${card.title}: ${formatAmount(card.amount.value, card.amount.currency)}`
+      : card.title;
+    events.push({
+      uid: `${card.kit}-${card.messageId}@caime`,
+      summary: what,
+      description: `${KITS[card.kit].name}, due in Caime: ${url}`,
+      url,
+      date: localDate(card.at, 'UTC'),
+      updated: card.updated,
     });
   }
   return events;
@@ -241,6 +257,11 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .execute();
     forgetSitemaps();
+    // The team's other devices and screens show the offer as saved (M15).
+    await ctx.bus.publish(
+      team.map((u) => u.id),
+      { type: 'booking.changed', data: { orgId: id } },
+    );
     await audit(ctx.db, {
       actorId: auth.userId,
       action: body.booking ? 'org.booking_set' : 'org.booking_off',
@@ -392,6 +413,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .execute();
     forgetSitemaps();
+    await ctx.bus.publish([auth.userId], { type: 'booking.changed', data: { orgId: null } });
     await audit(ctx.db, {
       actorId: auth.userId,
       action: body.booking ? 'account.booking_set' : 'account.booking_off',
@@ -482,6 +504,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     await audit(ctx.db, { actorId: auth.userId, action: 'calendar.feed_created', ip: req.ip });
     builtinCountsChanged(ctx);
+    await ctx.bus.publish([auth.userId], { type: 'apps.changed', data: { app: 'calendar' } });
     const base = ctx.config.PUBLIC_URL.replace(/\/$/, '');
     return { feed: feedView(row), url: `${base}/v1/calendar/${token}.ics` };
   });
@@ -495,6 +518,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     if (Number(gone.numDeletedRows) > 0) {
       await audit(ctx.db, { actorId: auth.userId, action: 'calendar.feed_stopped', ip: req.ip });
       builtinCountsChanged(ctx);
+      await ctx.bus.publish([auth.userId], { type: 'apps.changed', data: { app: 'calendar' } });
     }
     return { ok: true };
   });

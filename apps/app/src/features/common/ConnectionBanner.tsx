@@ -36,7 +36,7 @@ export function ConnectionBanner() {
         marginBottom: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: 12,
+        borderRadius: t.radii.sm,
         backgroundColor: offline ? t.c.warningSoft : t.c.surfaceMuted,
       }}
     >

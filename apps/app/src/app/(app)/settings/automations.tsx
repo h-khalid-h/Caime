@@ -110,7 +110,7 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
-          minHeight: 52,
+          minHeight: 56,
           paddingStart: 16,
           paddingEnd: 12,
           paddingVertical: 10,

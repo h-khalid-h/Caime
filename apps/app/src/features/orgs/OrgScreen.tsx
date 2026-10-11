@@ -21,7 +21,6 @@ import Globe from 'lucide-react-native/icons/globe';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import Inbox from 'lucide-react-native/icons/inbox';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
-import LogOut from 'lucide-react-native/icons/log-out';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Settings from 'lucide-react-native/icons/settings';
@@ -47,7 +46,7 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { ChoiceChips } from '@/ui/Chip';
-import { Back } from '@/ui/directional';
+import { Back, Leave } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
@@ -589,7 +588,7 @@ export function OrgScreen({
             <View
               style={{
                 marginHorizontal: 16,
-                borderRadius: 16,
+                borderRadius: t.radii.lg,
                 borderWidth: 1,
                 borderColor: t.c.border,
                 backgroundColor: t.c.surface,
@@ -647,7 +646,7 @@ export function OrgScreen({
             <View style={{ marginHorizontal: 16, marginTop: 16 }}>
               <Card padded={false}>
                 <ListRow
-                  icon={LogOut}
+                  icon={Leave}
                   title={tr('Leave {name}', { name: org.name })}
                   destructive
                   onPress={() => setLeaving(true)}
@@ -830,7 +829,7 @@ export function OrgScreen({
             ) : null}
             {canRemoveFromOrg(org.myRole, shown.role) ? (
               <ListRow
-                icon={LogOut}
+                icon={Leave}
                 title={tr('Remove from the team')}
                 destructive
                 testID="org-remove"

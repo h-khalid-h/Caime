@@ -17,7 +17,6 @@ import {
 } from '@caime/core/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import LogOut from 'lucide-react-native/icons/log-out';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Settings from 'lucide-react-native/icons/settings';
@@ -34,6 +33,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
+import { Leave } from '@/ui/directional';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
@@ -240,7 +240,7 @@ export function GroupPeople({
           testID="group-leave"
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 6 }}
         >
-          <LogOut size={14} color={t.c.danger} />
+          <Leave size={14} color={t.c.danger} />
           <Text variant="captionStrong" color="danger">
             {tr('Leave the group')}
           </Text>

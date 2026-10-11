@@ -402,6 +402,82 @@ describe('a calendar feed (PRD §72)', () => {
     expect((await ana.get(`/v1/orgs/${org.id}/calendar?${window}`)).items).toEqual([]);
   });
 
+  it('shows what’s owed by a day (M14): a Pay card or an invoice on its due day, until it’s paid; a card that asks is a request until answered', async () => {
+    const from = '2027-02-01T00:00:00Z';
+    const to = '2027-03-01T00:00:00Z';
+    const window = `from=${from}&to=${to}`;
+    const ask = await card(ana, withBen, 'payment_request', {
+      direction: 'ask',
+      amount: { value: 250, currency: 'EGP' },
+      note: 'Rope share',
+      due: '2027-02-10',
+    });
+    const invoice = await card(ben, withBen, 'invoice', {
+      reference: 'INV-7731',
+      amount: { value: 1200, currency: 'GBP' },
+      due: '2027-02-20',
+    });
+    // Both sides see each on its day, all day, with what it's for; the payer's side too.
+    const bens = await ben.get(`/v1/calendar?${window}`);
+    expect(bens.items).toMatchObject([
+      {
+        kind: 'payment_request',
+        id: ask.id,
+        at: '2027-02-10T00:00:00.000Z',
+        hasTime: false,
+        endAt: null,
+        amount: { value: 250, currency: 'EGP' },
+        state: 'open',
+        with: { displayName: 'Ana Calendar' },
+      },
+      {
+        kind: 'invoice',
+        id: invoice.id,
+        at: '2027-02-20T00:00:00.000Z',
+        amount: { value: 1200, currency: 'GBP' },
+        state: 'open',
+      },
+    ]);
+    // A window that starts later in the day still has that day's.
+    const later = await ana.get(`/v1/calendar?from=2027-02-10T15:00:00Z&to=${to}`);
+    expect(later.items.map((i: { id: string }) => i.id)).toEqual([ask.id, invoice.id]);
+    // "In February" finds the invoice by when it's due.
+    const found = await ana.get(`/v1/search?q=${encodeURIComponent('7731 in February')}`);
+    expect(found.results.messages.map((m: { id: string }) => m.id)).toContain(invoice.id);
+    // The feed has each on its day, holding no time.
+    const url = (await ben.post('/v1/calendar/feed', {})).url;
+    const owed = event(await lines(url), `invoice-${invoice.id}@caime`);
+    expect(owed).toContain('DTSTART;VALUE=DATE:20270220');
+    expect(owed?.find((l) => l.startsWith('SUMMARY:'))).toContain('1\\,200');
+    expect(owed).not.toContain('TRANSP:OPAQUE');
+    expect(event(await lines(url), `payment_request-${ask.id}@caime`)).toContain(
+      'DTSTART;VALUE=DATE:20270210',
+    );
+    // A card that asks is a request (M14): the inbox says so until the move that answers it.
+    const asks = (await ben.get(`/v1/conversations/${withBen}/messages`)).messages.find(
+      (m: { id: string }) => m.id === ask.id,
+    );
+    expect(asks.isRequest).toBe(true);
+    const told = (await ana.get(`/v1/conversations/${withBen}/messages`)).messages.find(
+      (m: { id: string }) => m.id === invoice.id,
+    );
+    expect(told.isRequest).toBe(true);
+    const inbox = await ben.get('/v1/inbox?view=all');
+    expect(inbox.conversations.find((i: { id: string }) => i.id === withBen)?.section).toBe(
+      'needs_you',
+    );
+    // Ben says he paid: it no longer asks him, and it's still owed until Ana says it arrived.
+    const sent = await ben.post(`/v1/messages/${ask.id}/kit`, { to: 'sent' });
+    expect(sent.message.isRequest).toBe(false);
+    expect(
+      (await ben.get(`/v1/calendar?${window}`)).items.map((i: { id: string }) => i.id),
+    ).toEqual([ask.id, invoice.id]);
+    await ana.post(`/v1/messages/${ask.id}/kit`, { to: 'paid' });
+    await ben.post(`/v1/messages/${invoice.id}/kit`, { to: 'paid' });
+    expect((await ben.get(`/v1/calendar?${window}`)).items).toEqual([]);
+    expect(event(await lines(url), `invoice-${invoice.id}@caime`)).toBeNull();
+  });
+
   it('ends when the account is recovered: whoever had it may have made it', async () => {
     const eve = await signup(t, { displayName: 'Eve Recovered' });
     const { url } = await eve.post('/v1/calendar/feed');

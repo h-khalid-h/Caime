@@ -77,7 +77,7 @@ export default function Privacy() {
   return (
     <SettingsPage title={tr('Privacy')}>
       {me.minor ? (
-        <View style={{ padding: 14, borderRadius: 16, backgroundColor: t.c.successSoft }}>
+        <View style={{ padding: 14, borderRadius: t.radii.lg, backgroundColor: t.c.successSoft }}>
           <Text variant="bodyStrong" color="success">
             {tr('Extra protection is on')}
           </Text>
@@ -272,6 +272,7 @@ function AudienceSheet({
       </View>
       {some ? (
         <View
+          accessibilityRole="toolbar"
           accessibilityLabel={tr('Who sees it')}
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}
         >

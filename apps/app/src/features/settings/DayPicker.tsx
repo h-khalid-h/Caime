@@ -42,7 +42,7 @@ export function DayPicker({
               minWidth: 44,
               minHeight: 44,
               paddingHorizontal: 12,
-              borderRadius: 12,
+              borderRadius: t.radii.sm,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: on ? t.c.primary : t.c.surfaceMuted,

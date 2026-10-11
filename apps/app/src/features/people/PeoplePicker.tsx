@@ -67,7 +67,7 @@ export function PeoplePicker({
     <View
       style={{
         backgroundColor: t.c.surface,
-        borderRadius: 16,
+        borderRadius: t.radii.lg,
         borderWidth: 1,
         borderColor: t.c.border,
         overflow: 'hidden',
@@ -106,7 +106,7 @@ export function PickMark({ on }: { on: boolean }) {
       style={{
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: t.radii.sm,
         borderWidth: 2,
         borderColor: on ? t.c.primary : t.c.borderStrong,
         backgroundColor: on ? t.c.primary : 'transparent',

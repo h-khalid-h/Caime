@@ -23,6 +23,7 @@ let hassan: Client;
 let sarah: Client;
 let teen: Client;
 let cai: string;
+let convo: string;
 const friend = (handle: string) => SYSTEM_ACCOUNTS.find((a) => a.handle === handle)!.id;
 const MOMO = friend('momo');
 const PANDA = friend('panda');
@@ -77,8 +78,7 @@ beforeAll(async () => {
   sarah = await signup(t, { displayName: 'Sarah Smith' });
   teen = await signup(t, { displayName: 'Rami Young', birthDate: '2011-12-31' });
   const r = await hassan.post('/v1/connections/requests', { toUserId: sarah.user.id });
-  const convo = (await sarah.post(`/v1/connections/requests/${r.requestId}/accept`, {}))
-    .conversationId;
+  convo = (await sarah.post(`/v1/connections/requests/${r.requestId}/accept`, {})).conversationId;
   await hassan.post('/v1/tasks', {
     title: 'Access approval',
     assigneeId: sarah.user.id,
@@ -129,6 +129,31 @@ describe('Cai (R67)', () => {
     expect(notes.filter((n) => n.conversationId === cai)).toEqual([]);
     const inbox = (await hassan.get('/v1/inbox?view=all')).conversations as any[];
     expect(inbox.find((i) => i.id === cai).section).not.toBe('needs_you');
+  });
+
+  it('counts what’s owed by a day among what’s coming up (M14, M17), as the calendar does', async () => {
+    const invoice = await sarah.post(`/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'kit',
+      payload: {
+        kit: 'invoice',
+        fields: {
+          reference: 'INV-7731',
+          amount: { value: 1200, currency: 'EGP' },
+          due: '2026-09-25',
+        },
+      },
+    });
+    await send(hassan, cai, 'what is coming up?');
+    const said = (await answered(hassan, cai)).at(-1).body as string;
+    expect(said).toContain('Coming up this week:');
+    expect(said).toContain('INV-7731');
+    expect(said).toContain('1,200');
+    // Paid, it's no longer coming up.
+    await hassan.post(`/v1/messages/${invoice.message.id}/kit`, { to: 'paid' });
+    await send(hassan, cai, 'what is coming up?');
+    expect((await answered(hassan, cai)).at(-1).body).toBe('Nothing is coming up this week.');
+    expect(requests).toHaveLength(0);
   });
 
   it('asks the model only with AI assist on, and reads it nothing private', async () => {

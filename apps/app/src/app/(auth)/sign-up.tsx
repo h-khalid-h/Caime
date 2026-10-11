@@ -165,6 +165,8 @@ export default function SignUp() {
     availability && availability.handle === h ? (
       availability.available ? (
         <View
+          accessible
+          accessibilityRole="text"
           accessibilityLabel={tr('Available')}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
         >

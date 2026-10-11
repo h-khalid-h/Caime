@@ -78,3 +78,43 @@ export const AGREED_STATES: Record<'meeting' | 'appointment', string> = {
   meeting: 'accepted',
   appointment: 'confirmed',
 };
+
+/**
+ * The states in which a card asks something of whoever received it (review 2026-10-09 M14): a
+ * yes or no, a time, a review, a confirmation, an invoice or a request to be paid. A card in one
+ * of them is a request, as a message that asks is (`is_request`): the inbox says "Asked you to do
+ * something", and the ask ends with the move that answers it. A Pay card that pays
+ * (`direction: 'send'`) asks nothing: it tells.
+ */
+export const ASKING_STATES: Record<string, readonly string[]> = {
+  approval: ['pending'],
+  meeting: ['proposed'],
+  document_review: ['requested', 'in_review'],
+  order_status: ['placed'],
+  invoice: ['sent', 'overdue'],
+  purchase_order: ['sent'],
+  payment_request: ['requested'],
+  support_ticket: ['open'],
+  appointment: ['requested'],
+};
+
+/** Whether a card, as its payload stands, asks something of whoever received it. */
+export function cardAsks(payload: unknown): boolean {
+  const card = payload as {
+    kit?: unknown;
+    state?: unknown;
+    fields?: { direction?: unknown } | null;
+  } | null;
+  if (!card || typeof card.kit !== 'string' || typeof card.state !== 'string') return false;
+  if (card.kit === 'payment_request' && card.fields?.direction === 'send') return false;
+  return ASKING_STATES[card.kit]?.includes(card.state) ?? false;
+}
+
+/**
+ * A card with a due date that is still owed (M14): a Pay card asked, said paid but not yet
+ * received, or not received; an invoice sent or overdue. The calendar shows it on its day.
+ */
+export const DUE_STATES: Record<'payment_request' | 'invoice', readonly string[]> = {
+  payment_request: ['requested', 'sent', 'not_received'],
+  invoice: ['sent', 'overdue'],
+};

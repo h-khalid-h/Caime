@@ -102,7 +102,7 @@ export const ConversationRow = memo(function ConversationRow({
             paddingHorizontal: 16,
             paddingVertical: 10,
             marginHorizontal: 6,
-            borderRadius: 14,
+            borderRadius: t.radii.md,
             backgroundColor: selected
               ? t.c.surfacePressed
               : pressed
@@ -127,7 +127,7 @@ export const ConversationRow = memo(function ConversationRow({
               style={{
                 width: 52,
                 height: 52,
-                borderRadius: 16,
+                borderRadius: t.radii.lg,
                 backgroundColor: t.c.surfaceMuted,
                 alignItems: 'center',
                 justifyContent: 'center',

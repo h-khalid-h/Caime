@@ -16,7 +16,7 @@ import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { listingState } from './app-directory';
 import { automationView, visibleSaved } from './automations';
-import { bookingOf, itemsOf } from './booking';
+import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { type CustomerMask, maskPayload, masksFor } from './business';
 import { relationshipView } from './relations';
 import { meView } from './users';
@@ -370,6 +370,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         't.relationship_snapshot',
         't.due_at',
         't.remind_at',
+        't.cai_follow_up',
         't.conversation_id',
         't.message_id',
         't.created_at',
@@ -863,8 +864,13 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     note: 'Everything Caime keeps about you and by you: what you sent and set, what it worked out for you, and what it recorded of your use, for as long as it keeps each, as the app shows it to you. Other people’s words aren’t in it (their messages, their items and notes, quotes of them), nor reports others made about you, nor secrets, which Caime keeps only as hashes or never shows. Files are listed; each downloads from its link while you are signed in.',
     account: {
       ...meView(user, now),
-      // Their bookable hours and catalog (R58), as set.
-      booking: { hours: bookingOf(user), items: itemsOf(user) },
+      // What they offer (R58–R62), as set: hours, catalog, collections, ordering, ways to be paid.
+      booking: { hours: bookingOf(user), items: catalogOf(user).items },
+      collections: catalogOf(user).collections,
+      ordering: orderingOf(user),
+      payments: paymentsOf(user),
+      // What they told Cai to forget (R68): a kind and when, or everything ('*').
+      caiForgot: user.learning_reset,
       lastActiveAt: iso(user.last_active_at),
       // Only counted, and never shown to anyone else; a person's link doesn't say whose.
       joinedThrough: invitedByOrg
@@ -1107,6 +1113,8 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
         shared: t.shared,
         dueAt: iso(t.due_at),
         remindAt: iso(t.remind_at),
+        // A wait handed to Cai (R68): Cai follows up at its remind time, if its owner says so.
+        caiFollowUp: yours ? t.cai_follow_up : null,
         conversationId: t.conversation_id,
         messageId: t.message_id,
         createdAt: t.created_at.toISOString(),

@@ -98,7 +98,7 @@ function ThreadRow({
         paddingHorizontal: 12,
         paddingVertical: 10,
         marginHorizontal: 6,
-        borderRadius: 14,
+        borderRadius: t.radii.md,
         backgroundColor:
           active || pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : 'transparent',
       })}
@@ -172,13 +172,22 @@ function ThreadRow({
  * longest wait first. On desktop it's the shell's list pane (`pane`), and a conversation opens
  * beside it through its own route, as Chats does; on phones it's a screen of its own.
  */
-export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean }) {
+export function BusinessInbox({
+  handle,
+  pane,
+  initialView,
+}: {
+  handle: string;
+  pane?: boolean;
+  /** The view to open on (`?view=bookings` from someone's own calendar, M17). */
+  initialView?: 'bookings' | 'orders';
+}) {
   const { desktop } = useLayout();
   const pathname = usePathname();
   const open = pathname.startsWith('/c/') ? pathname.slice(3) : null;
   const org = useOrg(handle);
   const summary = org.data?.org;
-  const [view, setView] = useState<InboxView>('customer_waiting');
+  const [view, setView] = useState<InboxView>(initialView ?? 'customer_waiting');
   const [writing, setWriting] = useState(false);
   const cards = view === 'bookings' || view === 'orders';
   const inbox = useOrgInbox(

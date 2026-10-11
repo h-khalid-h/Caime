@@ -1076,7 +1076,8 @@ export interface SlotsView {
  * conversation, never from a message request they haven't accepted.
  */
 export interface CalendarItemView {
-  kind: 'meeting' | 'appointment' | 'task';
+  /** A dated card (a meeting, an appointment, a Pay card or an invoice with a due date), or a task. */
+  kind: 'meeting' | 'appointment' | 'payment_request' | 'invoice' | 'task';
   /** The card's message id, or the task's id. */
   id: string;
   title: string;
@@ -1085,6 +1086,8 @@ export interface CalendarItemView {
   /** A meeting's or an appointment's end, when it has a time. */
   endAt: string | null;
   place: string | null;
+  /** What a Pay card or an invoice is for (review 2026-10-09 M14), on its due day. */
+  amount: { value: number; currency: string } | null;
   conversationId: string | null;
   /** The person it's with: a direct conversation's other side, whom a task waits on or who asked. */
   with: PersonView | null;
@@ -1094,7 +1097,10 @@ export interface CalendarItemView {
   org: OrgRef | null;
   /** A group's or a space's conversation, when it isn't with one person. */
   conversationTitle: string | null;
-  /** Agreed (accepted, confirmed) or only asked; an action: open, waiting on someone, overdue. */
+  /**
+   * A meeting or an appointment: agreed (accepted, confirmed) or only asked. A Pay card or an
+   * invoice: open until its day, overdue past it. An action: open, waiting on someone, overdue.
+   */
   state: 'agreed' | 'asked' | 'open' | 'waiting' | 'overdue';
 }
 
@@ -1156,10 +1162,39 @@ export interface OrgExportView {
     retentionDays: number | null;
     createdAt: string;
   };
+  /** What it offers (R58–R62), as set: hours, catalog, collections, ordering, ways to be paid. */
+  offer: {
+    hours: BookingHours | null;
+    items: BookingItem[];
+    collections: CatalogCollection[];
+    ordering: OrderingSettings | null;
+    payments: PaymentSettings | null;
+  };
+  /** Its own checkout account (R65), if it connected one: the provider's id, never a key. */
+  checkout: {
+    provider: string;
+    accountId: string;
+    livemode: boolean;
+    chargesEnabled: boolean;
+    connectedAt: string;
+  } | null;
+  /** The apps published under it in Discover (R74), with where each listing stands. */
+  listings: Array<{
+    name: string;
+    state: ListingState;
+    tagline: string | null;
+    category: string | null;
+    askedAt: string | null;
+    reviewedAt: string | null;
+    declinedReason: string | null;
+    developer: { displayName: string; handle: string };
+  }>;
   team: Array<{ userId: string; displayName: string; role: string; since: string }>;
   conversations: Array<{
     conversationId: string;
     customer: { userId: string; displayName: string; handle: string } | null;
+    /** The organization the customer writes for (R64), when they do. */
+    customerOrg: { id: string; name: string; handle: string } | null;
     state: 'open' | 'resolved';
     startedByTeam: boolean;
     createdAt: string;
@@ -1184,6 +1219,8 @@ export interface OrgBookingView {
   messageId: string;
   conversationId: string;
   customer: { id: string; displayName: string } | null;
+  /** The organization the customer books for (R64), when they write for one. */
+  customerOrg: OrgRef | null;
   title: string;
   at: string;
   hasTime: boolean;
@@ -1812,7 +1849,14 @@ export type RealtimeSignalType =
   | 'pins.changed'
   /** What someone saved changed: by hand, on another device, or by an automation of theirs. */
   | 'saved.changed'
-  | 'automations.changed';
+  | 'automations.changed'
+  /**
+   * What's connected or listed for someone changed (review 2026-10-09 M15): an app granted or
+   * ended, the calendar feed made or stopped, a listing of theirs changed or reviewed.
+   */
+  | 'apps.changed'
+  /** A host's offer (hours, catalog, ordering, ways to be paid) was saved: `{ orgId }` or `{ orgId: null }` for their own. */
+  | 'booking.changed';
 
 export type RealtimeEvent =
   | RealtimeDataEvent

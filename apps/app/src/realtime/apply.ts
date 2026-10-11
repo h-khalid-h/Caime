@@ -182,9 +182,10 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
         deletedAt: new Date().toISOString(),
       }));
       invalidate(qk.inbox, 'inbox');
-      // What it shared, and what was read from it, go with it.
+      // What it shared, and what was read from it, go with it; a dated card leaves the calendar.
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
+      calendarChanged();
       return;
     case 'pins.changed':
       if (typeof event.data.conversationId === 'string')
@@ -196,6 +197,7 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       invalidate(qk.memory(event.data.conversationId));
       invalidate(qk.assets(event.data.conversationId));
       invalidate(qk.pins(event.data.conversationId));
+      calendarChanged();
       return;
     case 'message.sent':
       useOutbox.getState().resolve(event.data.clientId);
@@ -334,6 +336,21 @@ export function applyEvent(qc: QueryClient, event: RealtimeEvent, me: string): v
       return;
     case 'updates.changed':
       invalidate(['updates'], 'updates');
+      return;
+    case 'apps.changed':
+      // An app let in or out, the calendar feed, a listing changed or reviewed (M15): Connected,
+      // Developer, Discover and an organization's listings read again.
+      invalidate(qk.connectedApps);
+      invalidate(qk.oauthApps);
+      invalidate(qk.calendarFeed);
+      invalidate(qk.allDirectory, 'directory');
+      invalidate(qk.allOrgListings, 'org-listings');
+      return;
+    case 'booking.changed':
+      // A host's offer saved (hours, catalog, ordering, ways to be paid) on another device.
+      if (event.data.orgId === null) invalidate(qk.myBooking);
+      else invalidate(qk.allOrgs, 'orgs');
+      invalidate(qk.allSlots, 'slots');
       return;
     case 'suggestion.created':
     case 'suggestion.resolved':

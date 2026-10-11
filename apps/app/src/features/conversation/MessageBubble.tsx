@@ -12,10 +12,8 @@ import Check from 'lucide-react-native/icons/check';
 import CheckCheck from 'lucide-react-native/icons/check-check';
 import CircleAlert from 'lucide-react-native/icons/circle-alert';
 import Clock from 'lucide-react-native/icons/clock';
-import CornerUpLeft from 'lucide-react-native/icons/corner-up-left';
 import Smile from 'lucide-react-native/icons/face-slightly-smiling';
 import FileText from 'lucide-react-native/icons/file-text';
-import Forward from 'lucide-react-native/icons/forward';
 import Languages from 'lucide-react-native/icons/languages';
 import Pin from 'lucide-react-native/icons/pin';
 import UserRound from 'lucide-react-native/icons/user-round';
@@ -39,6 +37,7 @@ import { durationOf, transcriptOf } from '@/features/voice/transcript';
 import { linkify, openLink, opensWithEnter } from '@/lib/links';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
+import { Forward, ReplyArrow } from '@/ui/directional';
 import { Pressable } from '@/ui/Pressable';
 import { Text } from '@/ui/Text';
 import { PollBody } from './PollBody';
@@ -239,7 +238,7 @@ export const MessageBubble = memo(function MessageBubble({
       <View
         style={{
           backgroundColor: t.c.surfaceMuted,
-          borderRadius: 12,
+          borderRadius: t.radii.sm,
           paddingHorizontal: 12,
           paddingVertical: 6,
         }}
@@ -365,7 +364,7 @@ export const MessageBubble = memo(function MessageBubble({
                   style={{
                     width: w,
                     height: single ? Math.min(320, w / ratio) : w,
-                    borderRadius: 12,
+                    borderRadius: t.radii.sm,
                     backgroundColor: t.c.surfaceMuted,
                   }}
                   contentFit="cover"
@@ -490,15 +489,24 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {m.forwarded ? <Forward size={11} color={meta} /> : null}
       {m.pinnedAt && !deleted ? (
-        <Pin size={11} color={meta} accessibilityLabel={tr('Pinned')} testID="message-pinned" />
+        <View
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={tr('Pinned')}
+          testID="message-pinned"
+        >
+          <Pin size={11} color={meta} />
+        </View>
       ) : null}
       {forMe ? (
-        <AtSign
-          size={11}
-          color={card ? t.c.accentStrong : meta}
+        <View
+          accessible
+          accessibilityRole="image"
           accessibilityLabel={tr('Mentions you')}
           testID="message-mentions-me"
-        />
+        >
+          <AtSign size={11} color={card ? t.c.accentStrong : meta} />
+        </View>
       ) : null}
       {m.automated ? (
         // A bot's message always says so (R16), and an AI agent's that it's an AI (PRD §75),
@@ -676,9 +684,9 @@ export const MessageBubble = memo(function MessageBubble({
               onHoverIn={hoverIn}
               onHoverOut={hoverOut}
               hitSlop={6}
-              style={{ padding: 6, borderRadius: 16, backgroundColor: t.c.surface }}
+              style={{ padding: 6, borderRadius: t.radii.lg, backgroundColor: t.c.surface }}
             >
-              <CornerUpLeft size={16} color={t.c.textSecondary} />
+              <ReplyArrow size={16} color={t.c.textSecondary} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -687,7 +695,7 @@ export const MessageBubble = memo(function MessageBubble({
               onHoverIn={hoverIn}
               onHoverOut={hoverOut}
               hitSlop={6}
-              style={{ padding: 6, borderRadius: 16, backgroundColor: t.c.surface }}
+              style={{ padding: 6, borderRadius: t.radii.lg, backgroundColor: t.c.surface }}
             >
               <Smile size={16} color={t.c.textSecondary} />
             </Pressable>
@@ -721,7 +729,7 @@ export const MessageBubble = memo(function MessageBubble({
                 gap: 3,
                 paddingHorizontal: 7,
                 height: 24,
-                borderRadius: 12,
+                borderRadius: t.radii.sm,
                 backgroundColor: re.mine ? t.c.accentSoft : t.c.surface,
                 borderWidth: 1,
                 borderColor: re.mine ? t.c.accent : t.c.border,

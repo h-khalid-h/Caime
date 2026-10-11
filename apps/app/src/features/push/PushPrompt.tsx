@@ -39,7 +39,7 @@ export function PushPrompt() {
         marginBottom: 8,
         padding: 14,
         gap: 10,
-        borderRadius: 16,
+        borderRadius: t.radii.lg,
         backgroundColor: t.c.accentSoft,
       }}
       testID="push-prompt"

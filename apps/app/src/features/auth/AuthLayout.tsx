@@ -11,8 +11,12 @@ import { useLayout } from '@/ui/layout';
 import { Screen } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 
-/** The brand panel beside auth forms on large screens (BRAND.md: expressive intensity). */
-export function BrandPanel() {
+/**
+ * The brand panel beside auth forms on large screens (BRAND.md: expressive intensity). Beside a
+ * security screen (a password reset, a recovery code) the characters stay away (B2): the
+ * wordmark and the lines alone.
+ */
+export function BrandPanel({ characters = true }: { characters?: boolean }) {
   const t = useTheme();
   return (
     <View
@@ -25,11 +29,13 @@ export function BrandPanel() {
         gap: 28,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
-        <Character name="momo" size={104} expression="excited" />
-        <Character name="caishy" size={176} expression="happy" />
-        <Character name="niko" size={104} expression="wink" />
-      </View>
+      {characters ? (
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
+          <Character name="momo" size={104} expression="excited" />
+          <Character name="caishy" size={176} expression="happy" />
+          <Character name="niko" size={104} expression="wink" />
+        </View>
+      ) : null}
       <View style={{ alignItems: 'center', gap: 12, maxWidth: 440 }}>
         <Wordmark height={46} />
         <Text variant="mono" color="textTertiary" align="center">
@@ -54,6 +60,7 @@ export function AuthLayout({
   subtitle,
   children,
   back = true,
+  security = false,
 }: {
   /** What this screen is, in a word or two, as a spec sheet labels it (mono, above the title). */
   kicker?: string;
@@ -61,6 +68,8 @@ export function AuthLayout({
   subtitle?: string;
   children: ReactNode;
   back?: boolean;
+  /** A password or a recovery screen: no characters beside it (BRAND.md B2). */
+  security?: boolean;
 }) {
   const { desktop } = useLayout();
   const t = useTheme();
@@ -119,7 +128,7 @@ export function AuthLayout({
   return (
     <Screen edges={['top', 'bottom']} surface>
       <View style={{ flex: 1, flexDirection: 'row' }}>
-        <BrandPanel />
+        <BrandPanel characters={!security} />
         <View style={{ flex: 1, backgroundColor: t.c.surface }}>{form}</View>
       </View>
     </Screen>

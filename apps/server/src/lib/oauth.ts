@@ -6,6 +6,7 @@
  */
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
+  MANAGING_ROLES,
   OAUTH_ACCESS_PREFIX,
   OAUTH_ACCESS_SECONDS,
   OAUTH_REFRESH_DAYS,
@@ -90,13 +91,13 @@ export async function issueTokens(ctx: AppContext, grantId: string, scopes: stri
  * (R74), in the same transaction as the grant's end, so Discover's order is never counted later.
  */
 export async function revokeGrant(ctx: AppContext, grantId: string): Promise<void> {
-  await ctx.db.transaction().execute(async (trx) => {
+  const ended = await ctx.db.transaction().execute(async (trx) => {
     const ended = await trx
       .updateTable('oauth_grants')
       .set({ revoked_at: ctx.now() })
       .where('id', '=', grantId)
       .where('revoked_at', 'is', null)
-      .returning('client_id')
+      .returning(['client_id', 'user_id'])
       .executeTakeFirst();
     await trx
       .updateTable('oauth_tokens')
@@ -105,7 +106,33 @@ export async function revokeGrant(ctx: AppContext, grantId: string): Promise<voi
       .where('revoked_at', 'is', null)
       .execute();
     if (ended) await countConnected(trx, ended.client_id, -1);
+    return ended;
   });
+  // Their Connected list shows it gone (M15), on every device.
+  if (ended)
+    await ctx.bus.publish([ended.user_id], {
+      type: 'apps.changed',
+      data: { appId: ended.client_id },
+    });
+}
+
+/**
+ * Who sees a listing as it stands (M15): its developer, and the owner and admins of the
+ * organization it's published under, whose setup screen lists it.
+ */
+export async function listingWatchers(
+  ctx: AppContext,
+  client: { owner_id: string; org_id: string | null },
+): Promise<string[]> {
+  if (!client.org_id) return [client.owner_id];
+  const managers = await ctx.db
+    .selectFrom('org_members')
+    .select('user_id')
+    .where('org_id', '=', client.org_id)
+    .where('left_at', 'is', null)
+    .where('role', 'in', [...MANAGING_ROLES])
+    .execute();
+  return [...new Set([client.owner_id, ...managers.map((m) => m.user_id)])];
 }
 
 /** Every app a person let in, let go of: when they recover their account, say. */

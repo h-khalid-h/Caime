@@ -37,7 +37,7 @@ export function StickerPicker({
             focusRadius={16}
             style={({ hovered, pressed }) => ({
               padding: 6,
-              borderRadius: 16,
+              borderRadius: t.radii.lg,
               backgroundColor: hovered || pressed ? t.c.surfaceHover : 'transparent',
             })}
           >

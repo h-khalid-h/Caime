@@ -12,8 +12,10 @@ import type { Kysely, RawBuilder, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database } from '../db/schema';
+import { listingState } from './app-directory';
 import { emitWebhook } from './apps';
 import { tellSaved } from './automations';
+import { bookingOf, catalogOf, orderingOf, paymentsOf } from './booking';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { forgetNotificationsOf, tellForgotten } from './notify';
 
@@ -164,12 +166,25 @@ export async function buildOrgExport(
   now: Date,
 ): Promise<OrgExportView> {
   const db = ctx.db;
+  // The catalog is the point here (columns.test.ts): what it offers is its own to take.
   const org = await db
     .selectFrom('organizations')
-    .select(['id', 'name', 'handle', 'kind', 'retention_days', 'created_at'])
+    .select([
+      'id',
+      'name',
+      'handle',
+      'kind',
+      'retention_days',
+      'created_at',
+      'booking',
+      'booking_items',
+      'collections',
+      'ordering',
+      'payments',
+    ])
     .where('id', '=', orgId)
     .executeTakeFirstOrThrow();
-  const [team, threads] = await Promise.all([
+  const [team, threads, checkout, listings] = await Promise.all([
     db
       .selectFrom('org_members as m')
       .innerJoin('users as u', 'u.id', 'm.user_id')
@@ -181,6 +196,7 @@ export async function buildOrgExport(
       .selectFrom('business_threads as t')
       .innerJoin('conversations as c', 'c.id', 't.conversation_id')
       .leftJoin('users as u', 'u.id', 't.customer_id')
+      .leftJoin('organizations as fo', 'fo.id', 't.customer_org_id')
       .select([
         't.conversation_id',
         't.customer_id',
@@ -190,9 +206,36 @@ export async function buildOrgExport(
         'c.created_at',
         'u.display_name as customer_name',
         'u.handle as customer_handle',
+        'fo.id as for_org_id',
+        'fo.name as for_org_name',
+        'fo.handle as for_org_handle',
       ])
       .where('t.org_id', '=', orgId)
       .orderBy('c.created_at')
+      .execute(),
+    // Its own checkout account (R65): the provider's id, never a key (Caime holds none).
+    db
+      .selectFrom('org_checkout')
+      .select(['provider', 'account_id', 'livemode', 'charges_enabled', 'connected_at'])
+      .where('org_id', '=', orgId)
+      .executeTakeFirst(),
+    // The apps published under it (R74), and where each listing stands.
+    db
+      .selectFrom('oauth_clients as a')
+      .innerJoin('users as d', 'd.id', 'a.owner_id')
+      .select([
+        'a.name',
+        'a.tagline',
+        'a.category',
+        'a.listed_at',
+        'a.reviewed_at',
+        'a.declined_reason',
+        'd.display_name as developer_name',
+        'd.handle as developer_handle',
+      ])
+      .where('a.org_id', '=', orgId)
+      .where('a.revoked_at', 'is', null)
+      .orderBy('a.created_at')
       .execute(),
   ]);
   const roleOf = new Map(team.map((m) => [m.user_id, m]));
@@ -240,6 +283,10 @@ export async function buildOrgExport(
         t.customer_id && t.customer_name && t.customer_handle
           ? { userId: t.customer_id, displayName: t.customer_name, handle: t.customer_handle }
           : null,
+      customerOrg:
+        t.for_org_id && t.for_org_name && t.for_org_handle
+          ? { id: t.for_org_id, name: t.for_org_name, handle: t.for_org_handle }
+          : null,
       state: t.resolved_at ? 'resolved' : 'open',
       startedByTeam: t.started_by_team,
       createdAt: t.created_at.toISOString(),
@@ -286,6 +333,32 @@ export async function buildOrgExport(
       retentionDays: org.retention_days,
       createdAt: org.created_at.toISOString(),
     },
+    offer: {
+      hours: bookingOf(org),
+      items: catalogOf(org).items,
+      collections: catalogOf(org).collections,
+      ordering: orderingOf(org),
+      payments: paymentsOf(org),
+    },
+    checkout: checkout
+      ? {
+          provider: checkout.provider,
+          accountId: checkout.account_id,
+          livemode: checkout.livemode,
+          chargesEnabled: checkout.charges_enabled,
+          connectedAt: checkout.connected_at.toISOString(),
+        }
+      : null,
+    listings: listings.map((a) => ({
+      name: a.name,
+      state: listingState(a),
+      tagline: a.tagline,
+      category: a.category,
+      askedAt: a.listed_at?.toISOString() ?? null,
+      reviewedAt: a.reviewed_at?.toISOString() ?? null,
+      declinedReason: a.declined_reason,
+      developer: { displayName: a.developer_name, handle: a.developer_handle },
+    })),
     team: team
       .filter((m) => m.kind === 'human')
       .map((m) => ({

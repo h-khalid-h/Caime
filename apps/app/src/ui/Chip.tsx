@@ -192,6 +192,8 @@ export function RelationshipChip({
   const h = size === 'sm' ? 22 : 30;
   return (
     <View
+      accessible
+      accessibilityRole="text"
       accessibilityLabel={tr('Your label: {label}', { label })}
       style={{
         height: h,

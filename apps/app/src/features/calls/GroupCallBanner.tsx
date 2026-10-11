@@ -42,7 +42,7 @@ export function GroupCallBanner({ conversationId }: { conversationId: string }) 
         marginBottom: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: 12,
+        borderRadius: t.radii.sm,
         backgroundColor: t.c.successSoft,
       }}
     >

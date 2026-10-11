@@ -85,7 +85,7 @@ export function RelationshipForm({
           width: '31.5%',
           minHeight: 46,
           paddingHorizontal: 10,
-          borderRadius: 14,
+          borderRadius: t.radii.md,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,

@@ -11,7 +11,6 @@ import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import Lock from 'lucide-react-native/icons/lock';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
-import PanelRight from 'lucide-react-native/icons/panel-right';
 import Phone from 'lucide-react-native/icons/phone';
 import Tag from 'lucide-react-native/icons/tag';
 import Users from 'lucide-react-native/icons/users';
@@ -61,7 +60,7 @@ import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Chip, RelationshipChip } from '@/ui/Chip';
-import { Back } from '@/ui/directional';
+import { Back, Panel } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart, useOpened } from '@/ui/Lazy';
@@ -469,7 +468,7 @@ export function ConversationScreen({
           ) : null}
           {desktop ? (
             <IconButton
-              icon={PanelRight}
+              icon={Panel}
               label={panel ? tr('Hide details') : tr('Show details')}
               onPress={() => setPanel((p) => !p)}
             />
@@ -507,7 +506,7 @@ export function ConversationScreen({
             style={{
               width: 38,
               height: 38,
-              borderRadius: 12,
+              borderRadius: t.radii.sm,
               backgroundColor: t.c.surfaceMuted,
               alignItems: 'center',
               justifyContent: 'center',
@@ -842,7 +841,7 @@ export function ConversationScreen({
             marginBottom: 4,
             paddingHorizontal: 10,
             paddingVertical: 6,
-            borderRadius: 12,
+            borderRadius: t.radii.sm,
             backgroundColor: t.c.surfaceMuted,
           }}
           testID="conversation-open"

@@ -13,7 +13,6 @@ import KeyRound from 'lucide-react-native/icons/key-round';
 import Keyboard from 'lucide-react-native/icons/keyboard';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import Lock from 'lucide-react-native/icons/lock';
-import LogOut from 'lucide-react-native/icons/log-out';
 import Palette from 'lucide-react-native/icons/palette';
 import Shield from 'lucide-react-native/icons/shield';
 import Sparkles from 'lucide-react-native/icons/sparkles';
@@ -27,7 +26,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import type { IconComponent } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
-import { Back } from '@/ui/directional';
+import { Back, Leave } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
@@ -258,7 +257,7 @@ export function SettingsMenu({ pane }: { pane?: boolean }) {
         ) : null}
         <Card padded={false}>
           <ListRow
-            icon={LogOut}
+            icon={Leave}
             title={tr('Sign out')}
             destructive
             onPress={() => void useSession.getState().signOut()}

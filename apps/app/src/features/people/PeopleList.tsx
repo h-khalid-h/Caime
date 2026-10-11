@@ -59,7 +59,7 @@ function PersonRow({
             paddingHorizontal: 16,
             paddingVertical: 9,
             marginHorizontal: 6,
-            borderRadius: 14,
+            borderRadius: t.radii.md,
             backgroundColor:
               selected || pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : 'transparent',
           }}
@@ -227,7 +227,7 @@ export function PeopleList({ pane }: { pane?: boolean }) {
             marginHorizontal: 16,
             marginBottom: 10,
             padding: 14,
-            borderRadius: 16,
+            borderRadius: t.radii.lg,
             backgroundColor: t.c.accentSoft,
             flexDirection: 'row',
             alignItems: 'center',

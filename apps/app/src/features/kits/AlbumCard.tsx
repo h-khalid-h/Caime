@@ -72,6 +72,7 @@ function AlbumSheet({
     queryFn: () => endpoints.album(m.id),
     enabled: open,
   });
+  const t = useTheme();
   const change = async (write: () => Promise<{ message: MessageView }>) => {
     try {
       upsertMessage(qc, (await write()).message);
@@ -123,7 +124,7 @@ function AlbumSheet({
                   style={{
                     width: 32,
                     height: 32,
-                    borderRadius: 16,
+                    borderRadius: t.radii.lg,
                     backgroundColor: 'rgba(0,0,0,0.55)',
                   }}
                   label={tr('Take photo {i} out of the album', { i: i + 1 })}

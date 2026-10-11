@@ -36,6 +36,7 @@ import { Button } from '@/ui/Button';
 import { Chevron } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
+import { SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
 import { Screen } from '@/ui/Screen';
@@ -44,16 +45,6 @@ import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
 const DAY_MS = 86_400_000;
-
-function SectionHead({ label, count, testID }: { label: string; count?: number; testID?: string }) {
-  return (
-    <View style={{ paddingHorizontal: 22, paddingTop: 24, paddingBottom: 8 }} testID={testID}>
-      <Text variant="overline" color="textSecondary" accessibilityRole="header">
-        {count ? `${label} · ${count}` : label}
-      </Text>
-    </View>
-  );
-}
 
 /** A line of the home that opens something: a mark, two lines of words, and when. */
 function HomeRow({
@@ -71,7 +62,8 @@ function HomeRow({
   onPress: () => void;
   testID?: string;
 }) {
-  const hover = useTheme().c.surfaceHover;
+  const t = useTheme();
+  const hover = t.c.surfaceHover;
   return (
     <Pressable
       accessibilityRole="button"
@@ -84,7 +76,7 @@ function HomeRow({
         marginHorizontal: 6,
         paddingHorizontal: 12,
         paddingVertical: 10,
-        borderRadius: 14,
+        borderRadius: t.radii.md,
         opacity: pressed ? 0.85 : 1,
         backgroundColor: hovered ? hover : 'transparent',
       })}
@@ -148,7 +140,7 @@ function CaiAsk({ task, since }: { task: TaskView; since: string }) {
         marginTop: 16,
         padding: 14,
         gap: 10,
-        borderRadius: 16,
+        borderRadius: t.radii.lg,
         backgroundColor: t.c.surfaceMuted,
       }}
       testID="cai-ask"
@@ -283,7 +275,7 @@ export function AttentionHome() {
               style={{
                 width: 44,
                 height: 44,
-                borderRadius: 14,
+                borderRadius: t.radii.md,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: t.c.accentSoft,
@@ -419,18 +411,16 @@ export function AttentionHome() {
           <>
             {needs.length ? (
               <>
-                <SectionHead label={tr('Needs you')} testID="home-needs" />
+                <SectionTitle testID="home-needs">{tr('Needs you')}</SectionTitle>
                 {entries.map(entryRow)}
               </>
             ) : null}
             {asked && home.data?.ask ? <CaiAsk task={asked} since={home.data.ask.since} /> : null}
             {waiting.length ? (
               <>
-                <SectionHead
-                  label={tr('Waiting on others')}
-                  count={home.data?.waitingCount}
-                  testID="home-waiting"
-                />
+                <SectionTitle count={home.data?.waitingCount} testID="home-waiting">
+                  {tr('Waiting on others')}
+                </SectionTitle>
                 {waiting.map((task) => (
                   <HomeRow
                     key={task.id}
@@ -471,7 +461,7 @@ export function AttentionHome() {
             ) : null}
             {comingUp.length ? (
               <>
-                <SectionHead label={tr('Coming up')} testID="home-coming" />
+                <SectionTitle testID="home-coming">{tr('Coming up')}</SectionTitle>
                 {comingUp.map((item) => (
                   <HomeRow
                     key={`${item.kind}:${item.id}`}
@@ -480,7 +470,7 @@ export function AttentionHome() {
                         style={{
                           width: 44,
                           height: 44,
-                          borderRadius: 14,
+                          borderRadius: t.radii.md,
                           alignItems: 'center',
                           justifyContent: 'center',
                           backgroundColor: t.c.surfaceMuted,

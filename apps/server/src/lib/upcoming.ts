@@ -1,23 +1,93 @@
 /**
  * What's coming up (PRD §41, §72): the meetings and appointments in someone's conversations,
- * read from their cards, for their calendar feed, a conversation's details and a space's page.
- * Only where they may still read it: a conversation they're in and let in (no request pending
- * or declined), never a private one, never a card deleted, or deleted by them for themselves.
- * In a business conversation a team member (in every one of the organization's, R15) has only
- * the cards that are theirs to do: a booking naming them, or a card made by hand in a thread
- * assigned to them; the customer has them all. Every reader (the calendar, the feed, Attention,
- * Cai, busy times, slots) gets the same answer from here.
+ * read from their cards, for their calendar feed, a conversation's details and a space's page;
+ * and what's owed by a day (review 2026-10-09 M14), a Pay card's or an invoice's due date, for
+ * the calendar and Cai. Only where they may still read it: a conversation they're in and let in
+ * (no request pending or declined), never a private one, never a card deleted, or deleted by
+ * them for themselves. In a business conversation a team member (in every one of the
+ * organization's, R15) has only the cards that are theirs to do: a booking naming them, or a
+ * card made by hand in a thread assigned to them; the customer has them all. Every reader (the
+ * calendar, the feed, Attention, Cai, busy times, slots) gets the same answer from here.
  */
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
-import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
+import { AGREED_STATES as AGREED, DUE_STATES } from '@caime/core/kit-states';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 
 export type CardKit = 'meeting' | 'appointment';
+export type DueKit = 'payment_request' | 'invoice';
 
-/** A card is agreed once accepted (a meeting) or confirmed (an appointment). */
 /** Asked, and not yet answered. */
 const ASKED: Record<CardKit, string> = { meeting: 'proposed', appointment: 'requested' };
+
+/**
+ * The cards this person may read, by when they're for, in a window: the one query every reader
+ * builds on. A team member's view of a business conversation is settled from the thread's
+ * customer and assignee, and a booking's provider, once the rows are read (`theirsToDo`).
+ */
+function visibleCards(
+  ctx: Pick<AppContext, 'db'>,
+  userId: string,
+  opts: { from: Date; until: Date; limit: number; conversationIds?: string[] },
+) {
+  return (
+    ctx.db
+      .selectFrom('messages as m')
+      .innerJoin('participants as p', (j) =>
+        j
+          .onRef('p.conversation_id', '=', 'm.conversation_id')
+          .on('p.user_id', '=', userId)
+          .on('p.left_at', 'is', null),
+      )
+      .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+      .leftJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
+      .select([
+        'm.id',
+        'm.conversation_id',
+        'm.seq',
+        'm.payload',
+        'm.created_at',
+        'm.edited_at',
+        't.customer_id',
+        't.assignee_id',
+      ])
+      .where('m.kind', '=', 'kit')
+      .where('m.deleted_at', 'is', null)
+      .$if(Boolean(opts.conversationIds), (qb) =>
+        qb.where('m.conversation_id', 'in', opts.conversationIds ?? []),
+      )
+      .where('c.privacy_class', '=', 'standard')
+      .where((eb) =>
+        eb.or([eb('p.request_state', 'is', null), eb('p.request_state', '=', 'accepted')]),
+      )
+      .where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom('hidden_messages as h')
+              .select('h.message_id')
+              .whereRef('h.message_id', '=', 'm.id')
+              .where('h.user_id', '=', userId),
+          ),
+        ),
+      )
+      // When it is, as it's kept (always an ISO time, so compared as text): only what's in the
+      // window, soonest first, however long ago each was planned.
+      .where('m.card_start_at', '>=', opts.from)
+      .where('m.card_start_at', '<=', opts.until)
+      .orderBy('m.card_start_at', 'asc')
+      .limit(opts.limit)
+  );
+}
+
+/** On the team of this thread's organization: only what's theirs to do. */
+function theirsToDo(
+  row: { customer_id: string | null; assignee_id: string | null },
+  userId: string,
+  booking: AppointmentBooking | null,
+): boolean {
+  const onTeam = row.customer_id !== null && row.customer_id !== userId;
+  return !onTeam || (booking ? booking.providerId === userId : row.assignee_id === userId);
+}
 
 export interface CardAhead {
   messageId: string;
@@ -51,36 +121,8 @@ export async function cardsAhead(
 ): Promise<CardAhead[]> {
   if (opts.conversationIds && opts.conversationIds.length === 0) return [];
   const states = (kit: CardKit) => (opts.agreedOnly ? [AGREED[kit]] : [AGREED[kit], ASKED[kit]]);
-  const rows = await ctx.db
-    .selectFrom('messages as m')
-    .innerJoin('participants as p', (j) =>
-      j
-        .onRef('p.conversation_id', '=', 'm.conversation_id')
-        .on('p.user_id', '=', userId)
-        .on('p.left_at', 'is', null),
-    )
-    .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
-    .leftJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
-    .select([
-      'm.id',
-      'm.conversation_id',
-      'm.seq',
-      'm.payload',
-      'm.created_at',
-      'm.edited_at',
-      't.customer_id',
-      't.assignee_id',
-    ])
-    .where('m.kind', '=', 'kit')
-    .where('m.deleted_at', 'is', null)
+  const rows = await visibleCards(ctx, userId, opts)
     .where(sql`m.payload->>'kit'`, 'in', ['meeting', 'appointment'])
-    .$if(Boolean(opts.conversationIds), (qb) =>
-      qb.where('m.conversation_id', 'in', opts.conversationIds ?? []),
-    )
-    .where('c.privacy_class', '=', 'standard')
-    .where((eb) =>
-      eb.or([eb('p.request_state', 'is', null), eb('p.request_state', '=', 'accepted')]),
-    )
     .where((eb) =>
       eb.or(
         (['meeting', 'appointment'] as const).map((kit) =>
@@ -91,22 +133,6 @@ export async function cardsAhead(
         ),
       ),
     )
-    .where(({ not, exists, selectFrom }) =>
-      not(
-        exists(
-          selectFrom('hidden_messages as h')
-            .select('h.message_id')
-            .whereRef('h.message_id', '=', 'm.id')
-            .where('h.user_id', '=', userId),
-        ),
-      ),
-    )
-    // When it is, as it's kept (always an ISO time, so compared as text): only what's in the
-    // window, soonest first, however long ago each was planned.
-    .where('m.card_start_at', '>=', opts.from)
-    .where('m.card_start_at', '<=', opts.until)
-    .orderBy('m.card_start_at', 'asc')
-    .limit(opts.limit)
     .execute();
   const ahead: CardAhead[] = [];
   for (const row of rows) {
@@ -126,10 +152,8 @@ export async function cardsAhead(
     const kit = payload.kit;
     const at = payload.fields?.start?.at ? new Date(payload.fields.start.at) : null;
     if (!kit || !at || Number.isNaN(at.getTime()) || at < opts.from || at > opts.until) continue;
-    // On the team of this thread's organization: only what's theirs to do.
-    const onTeam = row.customer_id !== null && row.customer_id !== userId;
     const booking = payload.booking && typeof payload.booking === 'object' ? payload.booking : null;
-    if (onTeam && !(booking ? booking.providerId === userId : row.assignee_id === userId)) continue;
+    if (!theirsToDo(row, userId, booking)) continue;
     const minutes = Number(payload.fields?.durationMinutes);
     const moved = payload.history?.at(-1)?.at;
     ahead.push({
@@ -148,6 +172,81 @@ export async function cardsAhead(
     });
   }
   return ahead.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, opts.limit);
+}
+
+/** What's owed by a day: a Pay card or an invoice with a due date, still open (M14). */
+export interface CardDue {
+  messageId: string;
+  conversationId: string;
+  seq: number;
+  kit: DueKit;
+  title: string;
+  /** Midnight UTC of its due day, as `card_start_at` keeps it. */
+  at: Date;
+  amount: { value: number; currency: string } | null;
+  state: string;
+  /** Said overdue (an invoice marked so). */
+  overdue: boolean;
+  updated: Date;
+}
+
+/**
+ * The Pay cards and invoices due in a window that are still owed (asked, sent but not received,
+ * overdue), for the calendar, the feed and Cai; never for busy times or the slots, which a due
+ * day doesn't hold. The same visibility as `cardsAhead`.
+ */
+export async function dueCards(
+  ctx: Pick<AppContext, 'db'>,
+  userId: string,
+  opts: { from: Date; until: Date; limit: number; conversationIds?: string[] },
+): Promise<CardDue[]> {
+  if (opts.conversationIds && opts.conversationIds.length === 0) return [];
+  const rows = await visibleCards(ctx, userId, opts)
+    .where((eb) =>
+      eb.or(
+        (Object.keys(DUE_STATES) as DueKit[]).map((kit) =>
+          eb.and([
+            eb(sql`m.payload->>'kit'`, '=', kit),
+            eb(sql`m.payload->>'state'`, 'in', [...DUE_STATES[kit]]),
+          ]),
+        ),
+      ),
+    )
+    .execute();
+  const due: CardDue[] = [];
+  for (const row of rows) {
+    const payload = (row.payload ?? {}) as {
+      kit?: DueKit;
+      title?: string;
+      state?: string;
+      fields?: { due?: unknown; amount?: { value?: unknown; currency?: unknown } };
+      history?: Array<{ at?: string }>;
+    };
+    const kit = payload.kit;
+    const day = payload.fields?.due;
+    const at = typeof day === 'string' ? new Date(`${day}T00:00:00Z`) : null;
+    if (!kit || !at || Number.isNaN(at.getTime()) || at < opts.from || at > opts.until) continue;
+    if (!theirsToDo(row, userId, null)) continue;
+    const a = payload.fields?.amount;
+    const amount =
+      a && typeof a.value === 'number' && typeof a.currency === 'string'
+        ? { value: a.value, currency: a.currency }
+        : null;
+    const moved = payload.history?.at(-1)?.at;
+    due.push({
+      messageId: row.id,
+      conversationId: row.conversation_id,
+      seq: Number(row.seq),
+      kit,
+      title: payload.title || (kit === 'invoice' ? 'Invoice' : 'Pay'),
+      at,
+      amount,
+      state: payload.state ?? '',
+      overdue: payload.state === 'overdue',
+      updated: moved ? new Date(moved) : (row.edited_at ?? row.created_at),
+    });
+  }
+  return due.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, opts.limit);
 }
 
 export function upcomingView(card: CardAhead): UpcomingView {

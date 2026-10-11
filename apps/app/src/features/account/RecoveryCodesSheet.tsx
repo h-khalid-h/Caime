@@ -100,6 +100,8 @@ export function RecoveryCodesSheet({
         <View style={{ gap: 14 }}>
           <View
             style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}
+            accessible
+            accessibilityRole="text"
             accessibilityLabel={tr('Recovery codes: {join}', { join: shown.join(', ') })}
           >
             {shown.map((c) => (

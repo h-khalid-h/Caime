@@ -56,6 +56,7 @@ import {
   allowedNow,
   CODE_TTL_MS,
   issueTokens,
+  listingWatchers,
   newClientId,
   newClientSecret,
   newCode,
@@ -265,6 +266,11 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       await audit(trx, { actorId: auth.userId, action, target: id });
       return updated;
     });
+    // Developer, Discover and the organization's setup screen show the listing as it stands (M15).
+    await ctx.bus.publish(await listingWatchers(ctx, row), {
+      type: 'apps.changed',
+      data: { appId: row.id },
+    });
     return { app: appView(row) };
   });
 
@@ -403,6 +409,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       if (inserted) await countConnected(trx, client.id, 1);
       return id;
     });
+    // Connected and Discover show it (M15).
+    await ctx.bus.publish([auth.userId], { type: 'apps.changed', data: { appId: client.id } });
     const code = newCode();
     await ctx.db
       .insertInto('oauth_codes')

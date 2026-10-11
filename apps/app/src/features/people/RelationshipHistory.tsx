@@ -22,8 +22,10 @@ export function RelationshipHistory({ personId, name }: { personId: string; name
   const shown = all ? events : events.slice(0, FIRST);
   return (
     <Card>
-      <View style={{ gap: 10 }} accessibilityLabel={tr('History')}>
-        <Text variant="label">{tr('History')}</Text>
+      <View style={{ gap: 10 }}>
+        <Text variant="label" accessibilityRole="header">
+          {tr('History')}
+        </Text>
         {shown.map((e) => (
           <View key={e.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'baseline' }}>
             <Text variant="body" style={{ flex: 1 }}>

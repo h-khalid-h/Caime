@@ -35,6 +35,7 @@ import {
   uuidv7,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
+import { cardAsks } from '@caime/core/kit-states';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -516,6 +517,11 @@ export interface SendOptions {
   sentVia?: string | null;
   /** The server's own cards (task requests) are sent as built, not as a client's kit card. */
   trusted?: boolean;
+  /**
+   * The payload is the server's own (Cai's follow-up offer, a forwarded message's copy), so a
+   * text message may carry one; a client's text carries none (review 2026-10-09 L9).
+   */
+  serverPayload?: boolean;
   /** The app whose token sends it: it sends only its own kinds of card (PRD §74). */
   app?: { id: string; orgId: string; scopes: string[] } | null;
 }
@@ -798,6 +804,14 @@ export async function sendMessage(
   // Kit cards (PRD §41): the sender picks the kit and fills its fields; the server decides what
   // the card says and where it starts, and only POST /messages/:id/kit moves it on.
   let payload = body.payload ?? {};
+  // A text message says its words; what Caime keeps on one (a transcript, an import, Cai's
+  // offer) is the server's to write, never a client's (L9).
+  if (
+    body.kind === 'text' &&
+    !opts.serverPayload &&
+    (typeof payload !== 'object' || payload === null || Object.keys(payload).length > 0)
+  )
+    throw badRequest(tr('A text message carries no payload.'));
   let kitMode: Mode | null = null;
   // A booking from the catalog, checked again under the host's lock as the card is written.
   let slotAsk: { host: BookingHost; booker: Booker; ask: BookingAskInput; start: Date } | null =
@@ -1052,7 +1066,8 @@ export async function sendMessage(
           sealed: body.sealed ? JSON.stringify(body.sealed) : null,
           urgent: body.urgent ?? false,
           is_question: analysis?.isQuestion ?? body.kind === 'poll',
-          is_request: analysis?.isRequest ?? false,
+          // A card that asks (a proposal, a request, an invoice) is a request as a sentence is (M14).
+          is_request: (analysis?.isRequest ?? false) || cardAsks(payload),
           expires_at: expiresAt(ctx.now(), kept),
           created_at: ctx.now(),
         })

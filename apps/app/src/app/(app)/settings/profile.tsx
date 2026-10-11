@@ -234,7 +234,7 @@ export default function Profile() {
                 style={{
                   width: 56,
                   height: 48,
-                  borderRadius: 12,
+                  borderRadius: t.radii.sm,
                   borderWidth: 1,
                   borderColor: t.c.border,
                   backgroundColor: t.c.surface,

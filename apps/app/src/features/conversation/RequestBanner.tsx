@@ -29,7 +29,12 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
     if (conversation.request === 'outgoing')
       return (
         <View
-          style={{ margin: 12, padding: 12, borderRadius: 14, backgroundColor: t.c.surfaceMuted }}
+          style={{
+            margin: 12,
+            padding: 12,
+            borderRadius: t.radii.md,
+            backgroundColor: t.c.surfaceMuted,
+          }}
           testID="request-outgoing"
         >
           <Text variant="caption" color="textSecondary" align="center">
@@ -86,7 +91,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
         style={{
           margin: 12,
           padding: 16,
-          borderRadius: 16,
+          borderRadius: t.radii.lg,
           backgroundColor: t.c.surface,
           borderWidth: 1,
           borderColor: t.c.border,
@@ -156,7 +161,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
       style={{
         margin: 12,
         padding: 16,
-        borderRadius: 16,
+        borderRadius: t.radii.lg,
         backgroundColor: t.c.surface,
         borderWidth: 1,
         borderColor: t.c.border,

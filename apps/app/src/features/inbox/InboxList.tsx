@@ -178,7 +178,7 @@ export function InboxList({ pane }: { pane?: boolean }) {
             marginBottom: 4,
             paddingHorizontal: 12,
             paddingVertical: playful ? 6 : 10,
-            borderRadius: 16,
+            borderRadius: t.radii.lg,
             backgroundColor: t.c.successSoft,
           }}
         >

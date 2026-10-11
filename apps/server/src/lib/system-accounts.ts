@@ -18,6 +18,7 @@ import {
   type ChatIntent,
   chatIntent,
   firstName,
+  formatAmount,
   formatDue,
   formatWhenAt,
   greetsWithPeace,
@@ -30,6 +31,7 @@ import {
   tr,
   trn,
   writtenIn,
+  zonedParts,
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
@@ -45,7 +47,7 @@ import { messagePreview } from './messages';
 import { assertAiAllowance } from './plans';
 import { postAs } from './post-as';
 import { visibleTasksSql } from './task-visibility';
-import { cardsAhead } from './upcoming';
+import { cardsAhead, dueCards } from './upcoming';
 import { minorOf } from './users';
 
 const SHOWN = 5;
@@ -577,7 +579,7 @@ export async function openFor(
         eb.or([eb('c.privacy_class', 'is', null), eb('c.privacy_class', '<>', 'private')]),
       ),
     );
-  const [rows, counts, cards] = await Promise.all([
+  const [rows, counts, cards, owed] = await Promise.all([
     open
       .leftJoin('users as a', 'a.id', 't.assignee_id')
       .leftJoin('users as o', 'o.id', 't.owner_id')
@@ -612,6 +614,8 @@ export async function openFor(
       limit: SHOWN,
       agreedOnly: true,
     }),
+    // What's owed by a day in the window (M14), today's included: the cards the calendar shows.
+    dueCards(ctx, me.id, { from: dueDayOf(now, zone), until, limit: SHOWN }),
   ]);
   const due = (at: Date | null, hasTime: boolean) =>
     at ? ` · ${formatDue(at.toISOString(), now, zone, locale, hasTime)}` : '';
@@ -628,7 +632,17 @@ export async function openFor(
         r.due_at.getTime() < until.getTime(),
     )
     .map((r) => ({ at: r.due_at!, hasTime: r.due_has_time, title: r.title }));
-  const coming = [...soon, ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title }))]
+  const coming = [
+    ...soon,
+    ...cards.map((c) => ({ at: c.at, hasTime: c.hasTime, title: c.title })),
+    ...owed.map((c) => ({
+      at: c.at,
+      hasTime: false,
+      title: c.amount
+        ? `${c.title}: ${formatAmount(c.amount.value, c.amount.currency, locale)}`
+        : c.title,
+    })),
+  ]
     .sort((a, b) => a.at.getTime() - b.at.getTime())
     .slice(0, SHOWN)
     .map((c) => line(formatWhenAt(c.at.toISOString(), c.hasTime, now, zone, locale), c.title));
@@ -643,6 +657,12 @@ export async function openFor(
     coming,
     counts,
   };
+}
+
+/** A due day is kept as midnight UTC of its date: today's, in the person's own zone. */
+function dueDayOf(now: Date, zone: string): Date {
+  const p = zonedParts(now, zone);
+  return new Date(Date.UTC(p.year, p.month - 1, p.day));
 }
 
 /** What Cai says to a question the rules understood, from what's open. */

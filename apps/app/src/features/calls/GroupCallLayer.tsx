@@ -1,3 +1,4 @@
+import { radii } from '@caime/brand/tokens';
 import type { CallPersonView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
 import Mic from 'lucide-react-native/icons/mic';
@@ -72,7 +73,7 @@ function Tile({
       style={{
         flex: 1,
         margin: 4,
-        borderRadius: 16,
+        borderRadius: radii.lg,
         overflow: 'hidden',
         backgroundColor: '#FFFFFF14',
         alignItems: 'center',

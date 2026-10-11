@@ -117,6 +117,7 @@ export const qk = {
   allSpaces: ['space'] as const,
   allPeople: ['person'] as const,
   allOrgs: ['org'] as const,
+  allOrgListings: ['org-listings'] as const,
   allOrgInboxes: ['org-inbox'] as const,
   allUpdates: ['updates'] as const,
   allCalendars: ['calendar'] as const,

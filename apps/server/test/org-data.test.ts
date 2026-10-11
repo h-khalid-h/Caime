@@ -89,6 +89,17 @@ describe('the export', () => {
       ['customer', 'My tooth hurts since Monday.', null],
       ['team', 'Come in tomorrow at 10.', 'Omar Farouk'],
     ]);
+    // What it offers, its checkout and its listings (M13): none yet, said so.
+    expect(data.offer).toEqual({
+      hours: null,
+      items: [],
+      collections: [],
+      ordering: null,
+      payments: null,
+    });
+    expect(data.checkout).toBeNull();
+    expect(data.listings).toEqual([]);
+    expect(lina1.customerOrg).toBeNull();
     // Nothing of the team's own conversations, connections or relationships is in it.
     const text = JSON.stringify(data);
     expect(text).not.toMatch(/relationships|connections|password|email/);
@@ -108,6 +119,84 @@ describe('the export', () => {
 });
 
 describe('erasing a customer’s conversation at their request', () => {
+  it('has what it offers, its checkout account, the apps published under it and whom a customer writes for (M13)', async () => {
+    // Rami's own organization writes to the clinic (R64).
+    const ramiCo = (
+      await rami.post('/v1/orgs', {
+        country: 'EG',
+        name: 'Rami Co',
+        handle: 'rami.co',
+        kind: 'other',
+      })
+    ).org;
+    const forOrg = (await rami.post(`/v1/orgs/${orgId}/conversations`, { asOrgId: ramiCo.id }))
+      .conversationId;
+    expect(forOrg).not.toBe(ramiConvo);
+    // The clinic's offer (R58–R62), as set.
+    expect(
+      (
+        await noor.req('PUT', `/v1/orgs/${orgId}/booking`, {
+          booking: null,
+          items: [],
+          ordering: { fulfilment: ['pickup'], note: 'Collect at reception.' },
+          payments: { methods: [{ id: 'cash', kind: 'cash', label: 'Cash', audience: 'public' }] },
+        })
+      ).statusCode,
+    ).toBe(200);
+    // Its own checkout account (R65), as the connection leaves it.
+    await t.ctx.db
+      .insertInto('org_checkout')
+      .values({
+        org_id: orgId,
+        account_id: 'acct_nile',
+        livemode: false,
+        charges_enabled: true,
+        connected_by: noor.user.id,
+      })
+      .execute();
+    // An app its admin publishes under it (R74).
+    const app = (
+      await omar.post('/v1/me/oauth-apps', {
+        name: 'Nile reminders',
+        redirectUris: ['https://nile.example/callback'],
+      })
+    ).app;
+    expect((await omar.req('PATCH', `/v1/me/oauth-apps/${app.id}`, { orgId })).statusCode).toBe(
+      200,
+    );
+    const data = (await noor.req('GET', `/v1/orgs/${orgId}/export`)).json();
+    expect(data.offer).toMatchObject({
+      ordering: { fulfilment: ['pickup'], note: 'Collect at reception.' },
+      payments: { methods: [expect.objectContaining({ id: 'cash' })] },
+    });
+    expect(data.checkout).toEqual({
+      provider: 'stripe',
+      accountId: 'acct_nile',
+      livemode: false,
+      chargesEnabled: true,
+      connectedAt: expect.any(String),
+    });
+    expect(data.listings).toEqual([
+      {
+        name: 'Nile reminders',
+        state: 'none',
+        tagline: null,
+        category: null,
+        askedAt: null,
+        reviewedAt: null,
+        declinedReason: null,
+        developer: { displayName: 'Omar Farouk', handle: 'omar' },
+      },
+    ]);
+    const written = data.conversations.find(
+      (c: { conversationId: string }) => c.conversationId === forOrg,
+    );
+    expect(written.customer).toMatchObject({ handle: 'rami' });
+    expect(written.customerOrg).toEqual({ id: ramiCo.id, name: 'Rami Co', handle: 'rami.co' });
+    // Nothing of a key: the account's id is the provider's, the secret never was Caime's.
+    expect(JSON.stringify(data)).not.toMatch(/sk_|whsec_|secret/);
+  });
+
   it('empties every message, forgets what showed them, tells the customer in a line, and marks the thread', async () => {
     const before = await messagesOf(linaConvo);
     expect(before.filter((m) => m.body)).toHaveLength(2);

@@ -183,6 +183,7 @@ export default function Saved() {
       {list.length ? (
         <View
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+          accessibilityRole="radiogroup"
           accessibilityLabel={tr('Collections')}
         >
           <Chip

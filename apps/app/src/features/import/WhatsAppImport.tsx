@@ -143,7 +143,7 @@ export function WhatsAppImport({
             <View
               style={{
                 backgroundColor: t.c.surfaceMuted,
-                borderRadius: 12,
+                borderRadius: t.radii.sm,
                 padding: 12,
                 gap: 4,
               }}

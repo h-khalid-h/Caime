@@ -176,7 +176,7 @@ export default function Appearance() {
                   alignItems: 'center',
                   gap: 6,
                   padding: 12,
-                  borderRadius: 16,
+                  borderRadius: t.radii.lg,
                   borderWidth: 2,
                   borderColor: selected ? t.c.primary : t.c.border,
                   backgroundColor: selected ? t.c.surfaceMuted : t.c.surface,

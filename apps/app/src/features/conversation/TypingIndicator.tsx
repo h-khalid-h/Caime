@@ -48,7 +48,7 @@ export function TypingIndicator({ names }: { names: string[] }) {
           flexDirection: 'row',
           gap: 3,
           backgroundColor: t.c.bubbleOther,
-          borderRadius: 12,
+          borderRadius: t.radii.sm,
           paddingHorizontal: 10,
           paddingVertical: 8,
         }}

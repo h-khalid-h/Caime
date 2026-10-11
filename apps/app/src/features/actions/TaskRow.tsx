@@ -76,7 +76,7 @@ export const TaskRow = memo(function TaskRow({
         style={{
           width: 24,
           height: 24,
-          borderRadius: 12,
+          borderRadius: t.radii.sm,
           borderWidth: 2,
           borderColor: done ? t.c.success : overdue ? t.c.warning : t.c.borderStrong,
           backgroundColor: done ? t.c.success : 'transparent',

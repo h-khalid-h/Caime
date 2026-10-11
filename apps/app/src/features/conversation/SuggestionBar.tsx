@@ -156,13 +156,14 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
     return (
       <>
         <View
+          accessibilityRole="summary"
           accessibilityLabel={tr('Suggestions: {length} things here', { length: list.length })}
           testID="suggestions-card"
           style={{
             marginHorizontal: 12,
             marginBottom: 8,
             padding: 12,
-            borderRadius: 16,
+            borderRadius: t.radii.lg,
             backgroundColor: t.c.surface,
             borderWidth: 1,
             borderColor: t.c.border,
@@ -241,12 +242,13 @@ export function SuggestionBar({ conversationId }: { conversationId: string }) {
   return (
     <>
       <View
+        accessibilityRole="summary"
         accessibilityLabel={tr('Suggestion: {title}', { title: s.title })}
         style={{
           marginHorizontal: 12,
           marginBottom: 8,
           padding: 12,
-          borderRadius: 16,
+          borderRadius: t.radii.lg,
           backgroundColor: t.c.surface,
           borderWidth: 1,
           borderColor: t.c.border,

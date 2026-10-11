@@ -45,6 +45,7 @@ export default function Reset() {
   if (!token)
     return (
       <AuthLayout
+        security
         title={tr('This link isn’t whole')}
         subtitle={tr('Open the one in the email, or ask for a new one.')}
       >
@@ -53,6 +54,7 @@ export default function Reset() {
     );
   return (
     <AuthLayout
+      security
       kicker={tr('new password')}
       title={tr('Set a new password')}
       subtitle={tr('You’ll be signed in here, and out everywhere else.')}

@@ -83,7 +83,7 @@ export function CollectionPicker({
         alignItems: 'center',
         gap: 12,
         paddingHorizontal: 14,
-        minHeight: 52,
+        minHeight: 56,
         borderTopWidth: o.first ? 0 : 1,
         borderTopColor: t.c.border,
         backgroundColor: o.selected ? t.c.accentSoft : hovered ? t.c.surfaceHover : 'transparent',
@@ -120,7 +120,7 @@ export function CollectionPicker({
         style={{
           borderWidth: 1,
           borderColor: t.c.border,
-          borderRadius: 14,
+          borderRadius: t.radii.md,
           overflow: 'hidden',
           backgroundColor: t.c.surface,
         }}

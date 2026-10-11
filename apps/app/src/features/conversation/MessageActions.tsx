@@ -4,9 +4,7 @@ import { tr } from '@caime/core/i18n';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import Copy from 'lucide-react-native/icons/copy';
-import CornerUpLeft from 'lucide-react-native/icons/corner-up-left';
 import Flag from 'lucide-react-native/icons/flag';
-import Forward from 'lucide-react-native/icons/forward';
 import Languages from 'lucide-react-native/icons/languages';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import Pencil from 'lucide-react-native/icons/pencil';
@@ -27,6 +25,7 @@ import { patchMessage, removeMessage } from '@/state/cache';
 import { useTaskOutbox } from '@/state/taskOutbox';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { Forward, ReplyArrow } from '@/ui/directional';
 import { MORE_REACTIONS, QUICK_REACTIONS } from '@/ui/emoji';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
@@ -254,7 +253,7 @@ export function MessageActions({
       ) : null}
       <View style={{ marginHorizontal: -20 }}>
         {!deleted ? (
-          <ListRow icon={CornerUpLeft} title={tr('Reply')} onPress={close(() => onReply(m))} />
+          <ListRow icon={ReplyArrow} title={tr('Reply')} onPress={close(() => onReply(m))} />
         ) : null}
         {shown && !deleted ? (
           <ListRow

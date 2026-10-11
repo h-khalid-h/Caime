@@ -60,7 +60,7 @@ export function OrgOrders({
               paddingHorizontal: 16,
               paddingVertical: 10,
               marginHorizontal: 6,
-              borderRadius: 14,
+              borderRadius: t.radii.md,
               backgroundColor: pressed
                 ? t.c.surfacePressed
                 : hovered

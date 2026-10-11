@@ -3770,4 +3770,11 @@ export const ar: Catalog = {
     'يذكر «اكتشف» {name} ناشرًا لها، موثّقة كما هي. ويدير كلًّا منها مطوّرها من إعدادات «المطوّر» الخاصة به؛ وانتهاء المقعد يسترد الاسم.',
   'Someone moves a card on in a customer conversation (its own, or one of Caime’s)':
     'ينقل أحدهم بطاقة في محادثة عميل (بطاقته، أو إحدى بطاقات Caime)',
+  'Your own calendar': 'تقويمك الخاص',
+  'The bookings you do, with your meetings and actions':
+    'الحجوزات التي تقوم بها، مع اجتماعاتك وإجراءاتك',
+  '{name} bookings': 'حجوزات {name}',
+  'The appointments its customers asked for or confirmed': 'المواعيد التي طلبها عملاؤها أو أُكِّدت',
+  'In your calendar app': 'في تطبيق التقويم لديك',
+  'A feed of this calendar, from Settings · Apps': 'تغذية لهذا التقويم، من الإعدادات · التطبيقات',
 };

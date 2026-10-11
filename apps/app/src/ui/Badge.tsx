@@ -18,6 +18,8 @@ export function Badge({
   const label = mention && count <= 0 ? '@' : count > 99 ? '99+' : String(count);
   return (
     <View
+      accessible
+      accessibilityRole="image"
       accessibilityLabel={tr('{count} unread', { count })}
       style={{
         minWidth: 22,

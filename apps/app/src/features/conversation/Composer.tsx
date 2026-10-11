@@ -11,8 +11,6 @@ import Mic from 'lucide-react-native/icons/mic';
 import Paperclip from 'lucide-react-native/icons/paperclip';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Plus from 'lucide-react-native/icons/plus';
-import Reply from 'lucide-react-native/icons/reply';
-import SendHorizontal from 'lucide-react-native/icons/send-horizontal';
 import Sticker from 'lucide-react-native/icons/sticker';
 import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
 import X from 'lucide-react-native/icons/x';
@@ -52,6 +50,7 @@ import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
+import { Reply, Send } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
@@ -672,7 +671,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           ) : null}
           {canSend ? (
             <IconButton
-              icon={SendHorizontal}
+              icon={Send}
               label={editing ? tr('Save') : tr('Send')}
               tone="primary"
               onPress={() => void send()}

@@ -15,6 +15,7 @@ import {
   type MessageView,
 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
+import { cardAsks } from '@caime/core/kit-states';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
 import { queueBrief } from './briefs';
@@ -39,8 +40,13 @@ export async function afterCardMove(
     (card.kit === 'appointment' && to === 'confirmed')
   )
     await queueBrief(ctx, m.id);
+  // A card asks until the move that answers it (M14): answered, it no longer needs anyone.
+  const asks = cardAsks(m.payload);
+  if (asks !== m.is_request)
+    await ctx.db.updateTable('messages').set({ is_request: asks }).where('id', '=', m.id).execute();
+  const moved: Message = asks === m.is_request ? m : { ...m, is_request: asks };
   const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
-  const [view] = await messageViews(ctx.db, [m], actorId);
+  const [view] = await messageViews(ctx.db, [moved], actorId);
   if (!view) throw new Error('A moved card has no view');
   await recordEvent(ctx.db, 'kit.moved', actorId, { messageId: m.id, kit: card.kit, to });
   await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });

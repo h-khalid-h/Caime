@@ -1125,4 +1125,5 @@ export const arServer: Catalog = {
   '{name} is listed in Discover': '{name} مدرج الآن في «اكتشف»',
   '{name} wasn’t listed': 'لم يُدرج {name}',
   'Anyone on Caime can find and connect it now.': 'يمكن لأي شخص على Caime إيجاده وربطه الآن.',
+  'A text message carries no payload.': 'الرسالة النصية لا تحمل حمولة.',
 };

@@ -7,12 +7,15 @@ import type { OrgBookingView, OrgView } from '@caime/core/api';
 import { formatAmount, formatClock, formatDayHeading } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useOrgCalendar } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { OrgMark } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -85,12 +88,14 @@ export function OrgBookings({
       sections={sections}
       keyExtractor={(x) => x.messageId}
       renderItem={({ item }) => {
-        const name = item.customer?.displayName ?? tr('Deleted account');
+        // Booked for an organization (R64, M17): the organization first, then who wrote.
+        const person = item.customer?.displayName ?? tr('Deleted account');
+        const name = item.customerOrg ? `${item.customerOrg.name} · ${person}` : person;
         const when = item.hasTime ? formatClock(item.at, timeZone, locale) : tr('All day');
         return (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${name}, ${item.title}, ${when}, ${item.state}`}
+            accessibilityLabel={`${name}, ${item.title}, ${when}, ${item.state === 'confirmed' ? tr('Confirmed') : tr('Asked')}`}
             onPress={() => open(item.conversationId)}
             focusRadius={12}
             testID={`booking-${item.messageId}`}
@@ -101,7 +106,7 @@ export function OrgBookings({
               paddingHorizontal: 16,
               paddingVertical: 10,
               marginHorizontal: 6,
-              borderRadius: 14,
+              borderRadius: t.radii.md,
               backgroundColor: pressed
                 ? t.c.surfacePressed
                 : hovered
@@ -112,7 +117,9 @@ export function OrgBookings({
             <Text variant="mono" color="textTertiary" style={{ width: 72 }}>
               {when}
             </Text>
-            {item.customer ? (
+            {item.customerOrg ? (
+              <OrgMark kind={item.customerOrg.kind} url={item.customerOrg.avatarUrl} size={32} />
+            ) : item.customer ? (
               <Avatar id={item.customer.id} name={item.customer.displayName} url={null} size={32} />
             ) : null}
             <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -188,6 +195,17 @@ export function OrgBookings({
       }
       contentContainerStyle={{ paddingBottom: 24 }}
       testID="org-bookings"
+      ListHeaderComponent={
+        // The team member's own calendar (M17): what they do here is on it, with the rest.
+        <ListRow
+          icon={CalendarClock}
+          title={tr('Your own calendar')}
+          subtitle={tr('The bookings you do, with your meetings and actions')}
+          chevron
+          onPress={() => router.navigate({ pathname: '/actions', params: { view: 'calendar' } })}
+          testID="bookings-own-calendar"
+        />
+      }
       ListFooterComponent={
         <Sheet
           open={assigning !== null}

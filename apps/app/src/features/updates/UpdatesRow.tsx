@@ -56,7 +56,7 @@ export function UpdatesRow() {
           gap: 12,
           paddingHorizontal: 12,
           paddingVertical: 10,
-          borderRadius: 14,
+          borderRadius: t.radii.md,
           backgroundColor: pressed
             ? t.c.surfacePressed
             : hovered
@@ -68,7 +68,7 @@ export function UpdatesRow() {
           style={{
             width: 46,
             height: 46,
-            borderRadius: 14,
+            borderRadius: t.radii.md,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: t.c.accentSoft,

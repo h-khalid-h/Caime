@@ -1290,8 +1290,23 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
       splits (M28: `public-pages.ts`, `lib/messages.ts`, `modules/messages.ts`, `BookingSetup`,
       `KitForm`, `OrgScreen`), the sitemap paged past 50,000 addresses, Attention's two
       `taskViews` calls, the friend's tip count, the import cycle.
-- [ ] Block 6, design, a11y, exports, realtime, the ICS length, the calendar bridges, cards
-      that ask.
+- [x] Block 6, design, a11y, exports, realtime, the ICS length, the calendar bridges, cards
+      that ask: a person's export carries their offer (collections, ordering, ways to be paid),
+      what Cai forgot and which waits Cai follows up, an organization's its offer, its checkout
+      account, its listings and whom a customer writes for (M13); a card that asks is a request
+      until the move that answers it (`ASKING_STATES`, `cardAsks`, `afterCardMove`), and a Pay
+      card or an invoice is on its due day in the app's calendar, the feed and Cai's coming-up
+      list (`dueCards` beside `cardsAhead`, `card_start_at` for due days, migration 0067) (M14);
+      `apps.changed` on a grant, the feed, a listing change or review, `booking.changed` on an
+      offer saved, the calendar refreshed on a delete or a hide (M15); the ICS takes the app's
+      `minutesOf` (M16); Bookings names the customer's organization, Cai reads the calendar's
+      cards, and the three calendar entrances bridge each other (M17). Design and a11y: the
+      pointing icons mirrored through `ui/directional`, raw radii onto the tokens (45 sites), the
+      choice rows 56 tall, no characters beside reset, recover and forgot, Attention's section
+      heads on `SectionTitle`, every labelled View with a role and icon labels on roleful Views,
+      axe over the newer screens in all four languages, the listing form driven in E2E; a text
+      message takes no client payload (L9). Not done: an E2E of Cai's question on Attention (a
+      wait quiet three days needs a clock the E2E can move).
 - [ ] R76, country-aware UX (PRODUCT-REVIEW R76).
 - [ ] R77, consistent pickers (PRODUCT-REVIEW R77).
 - [ ] Docs drift (BRAND.md friends, type rows, radii, five places; CLAUDE.md's page sizes, axe
@@ -2479,3 +2494,11 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   `lib/relationships.ts`, `lib/space-members.ts`, `lib/connections.ts`), the job loop's
   refilling pool and early wake, the brief's jitter, one TTL cache, the sitemap cached, the
   listing form lazy, the Ls. The god modules' splits (M28) are left for a block of their own.
+- 2026-10-11 — Review block 6, cards that ask and what's owed: `ASKING_STATES` and `cardAsks`
+  make a card a request until answered; `dueCards` puts a Pay card or an invoice on its due day
+  for the calendar, the feed and Cai; exports carry the offer, the checkout, the listings, the
+  customer's organization and Cai's follow-ups; `apps.changed` and `booking.changed` keep every
+  device in step; the ICS and the app agree on a booking's length; Bookings names the customer's
+  organization and the three calendars bridge each other; a text message takes no client
+  payload. The design and accessibility Ms: mirrored pointing icons, radii from the tokens,
+  roles on every labelled View, no characters on security screens, axe in four languages.

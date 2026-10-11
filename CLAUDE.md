@@ -642,9 +642,10 @@ These are rules, not preferences.
   `toBeChecked()` and friends rather than by styling. `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA)
   over the primary screens in both languages and every visitor page, and fails on a serious or
   critical violation: a name for a screen reader goes on a `View` with a role (`accessible`,
-  `accessibilityRole="image"` for a mark, a dot or an icon's meaning), never on an `Svg`, an
-  icon or a bare `View`, where the web puts it on an element with no role; and a state said by
-  colour (presence) says it in words through `tr` too. A new primary screen joins the spec's
+  `accessibilityRole="image"` for a mark, a dot or an icon's meaning, `text` for a line read as
+  one, `radiogroup` or `toolbar` for a row of chips, `summary` for a card), never on an `Svg`,
+  an icon or a bare `View`, where the web puts it on an element with no role; and a state said
+  by colour (presence) says it in words through `tr` too. A new primary screen joins the spec's
   list.
 - A kit's field checks (`prepareKitFields`) run in the app before sending and again on the
   server over what was sent, so they must be idempotent: a checked value checks the same.
@@ -804,6 +805,27 @@ These are rules, not preferences.
   `packages/core/src/location.ts`, no zod, so the app can import it). The app's
   `LiveLocationSharer` (mounted in the signed-in layout) moves this device's shares from
   `state/liveShares.ts` and shows the "Sharing your location live" pill.
+- What's connected or listed for someone changes on every device at once (M15): a grant made or
+  ended, the calendar feed made or stopped, a listing changed by its developer or reviewed by
+  the operator publishes `apps.changed` (to the developer and, for a listing under an
+  organization, its owner and admins: `listingWatchers` in `lib/oauth.ts`), and a host's offer
+  saved publishes `booking.changed` (`{ orgId }` to the team, `{ orgId: null }` to the person);
+  `realtime/apply.ts` invalidates Connected, Developer, Discover, the feed and the listings for
+  the one, the offer and the slots for the other. A new thing shown about apps or an offer rides
+  those, never an event of its own. The three calendar entrances bridge each other (M17): the
+  Actions calendar (`/actions?view=calendar`, which the tab reads) lists each team's Bookings
+  and the feed below the days, and the Bookings view (`/o/<handle>/inbox?view=bookings`) opens
+  on a link and offers the person's own calendar at its top.
+- The icons that point go through `ui/directional` (R73): `Back`, `Chevron`, `Send`, `Reply`,
+  `ReplyArrow` (the action), `Forward`, `Panel` (the details pane) and `Leave`, each one lucide
+  icon mirrored by the layout's direction; a new pointing icon is added there, never imported
+  bare where it's used. Radii come from the tokens (`t.radii.sm`, `md`, `lg`; a screen
+  without the theme, the call layer, takes `radii` from `@caime/brand/tokens`), never a number
+  of their own; a section's label is `SectionTitle` (`ui/ListRow.tsx`, with `count` and
+  `testID`), Attention's included. A security screen (reset, recover, forgot) passes
+  `security` to `AuthLayout`, so the brand panel beside it carries no characters (B2).
+  `e2e/a11y.spec.ts` runs axe over the phone screens in all four interface languages (Arabic on
+  every one), and a new primary screen joins its list.
 - A `Segmented` control scrolls sideways when its segments don't fit (a 390-px phone with five):
   never shorten its words to fit, and never give it more than a screen's worth of segments. A
   setting in a panel is one row that opens its choice in a `Sheet` (disappearing messages,
@@ -970,10 +992,17 @@ These are rules, not preferences.
   jsonb columns (`CATALOG_COLUMNS`) with every presence change, sender and person in a view:
   `columns.test.ts` holds the lists to the tables and allows `selectAll()` only where the
   catalog is the point (the public pages, an export, the organization's own view and summary, a
-  profile, an item's photo). A meeting's or an appointment's start is `messages.card_start_at`
-  (migration 0066, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card
-  by hand writes it too): the calendar, the slots, the briefs and search read cards by it,
-  never `payload->'fields'->'start'`. A booking from the catalog is checked once before the
+  profile, an item's photo). When a card is for is `messages.card_start_at` (migration 0066 and
+  0067, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card by hand
+  writes it too): a meeting's or an appointment's start, a Pay card's or an invoice's due day
+  (M14, midnight UTC of the date). The calendar, the slots, the briefs and search read cards by
+  it, never `payload->'fields'->'start'`; `lib/upcoming.ts` is the one reader of a person's
+  cards (`visibleCards`: `cardsAhead` for what's planned, `dueCards` for what's owed, the same
+  visibility and the team member's "theirs to do"), and `calendarItems`, the ICS and Cai's
+  coming-up list all take both, so a new dated card joins there once. A card that asks (core
+  `ASKING_STATES`, `cardAsks` in `kit-states.ts`: a proposal, a request, an invoice sent, an order
+  placed) is `is_request` on send and `afterCardMove` clears or sets it with each move, so the
+  inbox says "Asked you to do something" until the move that answers it. A booking from the catalog is checked once before the
   transaction (fast refusals) and again inside it under `pg_advisory_xact_lock` on the host
   (`slotAsk` in `sendMessage`): two bookings of the last place at once leave one refused.
 - A route module imports no other module and `lib/` never imports a module (`modules.test.ts`

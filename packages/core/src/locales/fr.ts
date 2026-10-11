@@ -3638,4 +3638,13 @@ export const fr: Catalog = {
     'Découvrir nomme {name} comme leur éditeur, vérifié comme il l’est. Chacune est gérée par son développeur dans ses propres réglages Développeur ; la fin d’un siège reprend le nom.',
   'Someone moves a card on in a customer conversation (its own, or one of Caime’s)':
     'Quelqu’un fait avancer une carte dans une conversation client (la sienne, ou l’une de celles de Caime)',
+  'Your own calendar': 'Votre propre calendrier',
+  'The bookings you do, with your meetings and actions':
+    'Les réservations que vous assurez, avec vos réunions et vos actions',
+  '{name} bookings': 'Réservations de {name}',
+  'The appointments its customers asked for or confirmed':
+    'Les rendez-vous que ses clients ont demandés ou confirmés',
+  'In your calendar app': 'Dans votre application de calendrier',
+  'A feed of this calendar, from Settings · Apps':
+    'Un flux de ce calendrier, depuis Réglages · Applications',
 };

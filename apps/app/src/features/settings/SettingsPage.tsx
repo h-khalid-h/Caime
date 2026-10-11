@@ -115,7 +115,7 @@ export function Choice<T extends string>({
               gap: 12,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              minHeight: 52,
+              minHeight: 56,
               borderTopWidth: i === 0 ? 0 : 1,
               borderTopColor: t.c.border,
               backgroundColor: hovered ? t.c.surfaceHover : 'transparent',

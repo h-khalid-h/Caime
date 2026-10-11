@@ -199,6 +199,7 @@ export function AutomationSheet({
         <Overline>{tr('Sends')}</Overline>
         <View
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+          accessibilityRole="toolbar"
           accessibilityLabel={tr('What they send')}
         >
           {SAVE_KINDS.map((k) => (

@@ -100,7 +100,7 @@ export function RewriteSheet({
           style={{
             marginTop: 14,
             padding: 14,
-            borderRadius: 16,
+            borderRadius: t.radii.lg,
             gap: 8,
             backgroundColor: t.c.surfaceMuted,
             minHeight: 88,

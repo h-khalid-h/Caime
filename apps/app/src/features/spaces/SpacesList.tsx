@@ -54,7 +54,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
             paddingHorizontal: 16,
             paddingVertical: 10,
             marginHorizontal: 6,
-            borderRadius: 14,
+            borderRadius: t.radii.md,
             backgroundColor:
               selected || pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : 'transparent',
           }}
@@ -63,7 +63,7 @@ function SpaceRow({ s, selected }: { s: SpaceSummaryView; selected: boolean }) {
             style={{
               width: 46,
               height: 46,
-              borderRadius: 14,
+              borderRadius: t.radii.md,
               backgroundColor: t.c.accentSoft,
               alignItems: 'center',
               justifyContent: 'center',

@@ -3509,4 +3509,13 @@ export const turkish: Catalog = {
     'Keşfet, yayımcıları olarak {name} adını gösterir, doğrulandığı gibi. Her birini geliştiricisi kendi Geliştirici ayarlarından yönetir; koltuk sona erince ad geri alınır.',
   'Someone moves a card on in a customer conversation (its own, or one of Caime’s)':
     'Biri bir müşteri sohbetinde bir kartı ilerletir (kendi kartı ya da Caime’inkilerden biri)',
+  'Your own calendar': 'Kendi takviminiz',
+  'The bookings you do, with your meetings and actions':
+    'Yaptığınız rezervasyonlar, toplantılarınız ve eylemlerinizle birlikte',
+  '{name} bookings': '{name} rezervasyonları',
+  'The appointments its customers asked for or confirmed':
+    'Müşterilerinin istediği veya onaylanan randevular',
+  'In your calendar app': 'Takvim uygulamanızda',
+  'A feed of this calendar, from Settings · Apps':
+    'Bu takvimin bir akışı, Ayarlar · Uygulamalar’dan',
 };

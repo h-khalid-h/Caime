@@ -93,6 +93,8 @@ export function VerifiedLine({
   return (
     <View
       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+      accessible
+      accessibilityRole="text"
       accessibilityLabel={tr('Verified, {verifiedDomain}', { verifiedDomain: org.verifiedDomain })}
       testID="org-verified"
     >

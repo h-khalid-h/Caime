@@ -14,17 +14,21 @@ import type {
 } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
+import { ORG_COLUMNS } from '../db/schema';
 import { orgRef } from './business';
 import { overdueAtSql } from './due';
 import { personViewsFor } from './people-batch';
 import { activeRelationships, relationshipView } from './relations';
-import { cardsAhead } from './upcoming';
+import { cardsAhead, dueCards } from './upcoming';
 
 /** A meeting without a length holds an hour. */
 const MEETING_MINUTES = 60;
 
-/** How long a card holds: as booked (R58), as its field says, else an hour. */
-function minutesOf(c: {
+/**
+ * How long a card holds: as booked (R58), as its field says, else an hour. The app's calendar
+ * and the feed both read it (review 2026-10-09 M16), so a booking ends at the same minute in each.
+ */
+export function minutesOf(c: {
   at: Date;
   durationMinutes: number | null;
   booking: AppointmentBooking | null;
@@ -36,6 +40,7 @@ function minutesOf(c: {
   return c.durationMinutes ?? MEETING_MINUTES;
 }
 const MAX_ITEMS = 500;
+const dayOf = (at: Date) => new Date(Math.floor(at.getTime() / 86_400_000) * 86_400_000);
 
 export interface Window {
   from: Date;
@@ -110,19 +115,23 @@ export async function calendarItems(
   window: Window,
   taskViews: (rows: Awaited<ReturnType<typeof overdueTasks>>) => Promise<TaskView[]>,
 ): Promise<CalendarItemView[]> {
-  const [tasks, cards] = await Promise.all([
+  const [tasks, cards, owed] = await Promise.all([
     overdueTasks(ctx, userId, window),
     cardsAhead(ctx, userId, { ...window, limit: MAX_ITEMS, agreedOnly: false }),
+    // A due day is kept as its midnight UTC: a window that starts later in the day still has it.
+    dueCards(ctx, userId, { ...window, from: dayOf(window.from), limit: MAX_ITEMS }),
   ]);
   const views = await taskViews(tasks);
   const conversationIds = [
     ...cards.map((c) => c.conversationId),
+    ...owed.map((c) => c.conversationId),
     ...views.flatMap((t) => (t.conversationId ? [t.conversationId] : [])),
   ];
   const about = await conversationsFor(ctx, userId, conversationIds);
   const now = ctx.now();
   const peopleIds = [
     ...cards.flatMap((c) => about.get(c.conversationId)?.otherId ?? []),
+    ...owed.flatMap((c) => about.get(c.conversationId)?.otherId ?? []),
     ...views.flatMap((t) => {
       if (t.direction === 'asked_me') return [t.owner.id];
       if (t.assignee.id && t.assignee.id !== userId) return [t.assignee.id];
@@ -153,11 +162,31 @@ export async function calendarItems(
       hasTime: c.hasTime,
       endAt: c.hasTime ? new Date(c.at.getTime() + minutes * 60_000).toISOString() : null,
       place: c.place,
+      amount: null,
       conversationId: c.conversationId,
       ...withOf(a?.otherId ?? null),
       org: a?.org ?? null,
       conversationTitle: a?.title ?? null,
       state: c.agreed ? 'agreed' : 'asked',
+    });
+  }
+  // What's owed by a day (M14): on its day, all day, overdue only when said so.
+  for (const c of owed) {
+    const a = about.get(c.conversationId);
+    items.push({
+      kind: c.kit,
+      id: c.messageId,
+      title: c.title,
+      at: c.at.toISOString(),
+      hasTime: false,
+      endAt: null,
+      place: null,
+      amount: c.amount,
+      conversationId: c.conversationId,
+      ...withOf(a?.otherId ?? null),
+      org: a?.org ?? null,
+      conversationTitle: a?.title ?? null,
+      state: c.overdue ? 'overdue' : 'open',
     });
   }
   for (const t of views) {
@@ -174,6 +203,7 @@ export async function calendarItems(
       hasTime: t.dueHasTime,
       endAt: null,
       place: null,
+      amount: null,
       conversationId: t.conversationId,
       ...withOf(other && other !== userId ? other : null),
       org: a?.org ?? null,
@@ -233,7 +263,14 @@ export async function orgBookings(
     .selectFrom('messages as m')
     .innerJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
     .leftJoin('users as c', 'c.id', 't.customer_id')
-    .select(['m.id', 'm.conversation_id', 'm.payload', 'c.id as customer_id', 'c.display_name'])
+    .select([
+      'm.id',
+      'm.conversation_id',
+      'm.payload',
+      'c.id as customer_id',
+      'c.display_name',
+      't.customer_org_id',
+    ])
     .where('t.org_id', '=', orgId)
     .where('m.kind', '=', 'kit')
     .where('m.deleted_at', 'is', null)
@@ -244,6 +281,17 @@ export async function orgBookings(
     .orderBy('m.card_start_at', 'asc')
     .limit(opts.limit ?? MAX_ITEMS)
     .execute();
+  // The organizations customers book for (R64, M17), in one query.
+  const forOrgIds = [
+    ...new Set(rows.map((r) => r.customer_org_id).filter((x): x is string => Boolean(x))),
+  ];
+  const forOrgs = forOrgIds.length
+    ? await ctx.db
+        .selectFrom('organizations')
+        .select(ORG_COLUMNS)
+        .where('id', 'in', forOrgIds)
+        .execute()
+    : [];
   const out: OrgBookingView[] = [];
   for (const row of rows) {
     const payload = (row.payload ?? {}) as {
@@ -253,12 +301,16 @@ export async function orgBookings(
     };
     const at = payload.fields?.start?.at;
     if (!at) continue;
+    const forOrg = row.customer_org_id
+      ? forOrgs.find((o) => o.id === row.customer_org_id)
+      : undefined;
     out.push({
       messageId: row.id,
       conversationId: row.conversation_id,
       customer: row.customer_id
         ? { id: row.customer_id, displayName: row.display_name ?? '' }
         : null,
+      customerOrg: forOrg ? orgRef(forOrg) : null,
       title: typeof payload.fields?.title === 'string' ? payload.fields.title : 'Appointment',
       at,
       hasTime: payload.fields?.start?.hasTime !== false,

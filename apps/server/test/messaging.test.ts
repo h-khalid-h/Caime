@@ -87,6 +87,24 @@ describe('delivery guarantees (PRD §80)', () => {
     expect(Number(count.n)).toBe(1);
   });
 
+  it('a text message takes no payload from a client (review 2026-10-09 L9)', async () => {
+    const refused = await hassan.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'text',
+      body: 'Hello',
+      payload: { anything: { nested: true } },
+    });
+    expect(refused.statusCode).toBe(400);
+    const fine = await hassan.req('POST', `/v1/conversations/${convo}/messages`, {
+      clientId: uuidv4(),
+      kind: 'text',
+      body: 'Hello',
+      payload: {},
+    });
+    expect(fine.statusCode).toBe(201);
+    expect(fine.json().message.payload).toEqual({});
+  });
+
   it('concurrent sends get unique, contiguous sequence numbers', async () => {
     const before = (await hassan.get(`/v1/conversations/${convo}`)).conversation.lastSeq;
     const sent = await Promise.all(

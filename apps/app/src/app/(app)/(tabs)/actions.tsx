@@ -1,8 +1,9 @@
 import type { TaskView } from '@caime/core/api';
 import { msg, tr } from '@caime/core/i18n';
+import { useLocalSearchParams } from 'expo-router';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import Plus from 'lucide-react-native/icons/plus';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import type { TaskViewFilter } from '@/api/endpoints';
 import { endpoints } from '@/api/endpoints';
@@ -62,7 +63,15 @@ export default function Actions() {
   const t = useTheme();
   const me = useMe();
   const { desktop } = useLayout();
-  const [view, setView] = useState<TaskViewFilter | 'calendar'>('todo');
+  // Opened on its calendar from elsewhere (`/actions?view=calendar`: an organization's Bookings,
+  // the calendar feed): the segment follows the link, and a later link changes it again.
+  const { view: asked } = useLocalSearchParams<{ view?: string }>();
+  const [view, setView] = useState<TaskViewFilter | 'calendar'>(
+    asked === 'calendar' ? 'calendar' : 'todo',
+  );
+  useEffect(() => {
+    if (asked === 'calendar') setView('calendar');
+  }, [asked]);
   const [adding, setAdding] = useState(false);
   // The action whose due date is being chosen, in the person's own days and times.
   const [dueFor, setDueFor] = useState<TaskView | null>(null);

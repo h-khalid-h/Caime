@@ -49,6 +49,7 @@ import {
   takeBackUpdate,
 } from '../lib/moderation';
 import { notify } from '../lib/notify';
+import { listingWatchers } from '../lib/oauth';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -605,6 +606,11 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     });
     const after = await listingById(ctx, id);
     if (!after) throw notFound(tr('That app'));
+    // Developer, Discover and the organization's setup screen show the decision (M15).
+    await ctx.bus.publish(await listingWatchers(ctx, after), {
+      type: 'apps.changed',
+      data: { appId: id },
+    });
     return { listing: listingReviewView(after) };
   });
 }

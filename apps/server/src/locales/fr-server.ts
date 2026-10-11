@@ -1148,4 +1148,5 @@ export const frServer: Catalog = {
   '{name} wasn’t listed': '{name} n’a pas été répertorié',
   'Anyone on Caime can find and connect it now.':
     'Tout le monde sur Caime peut maintenant le trouver et le connecter.',
+  'A text message carries no payload.': 'Un message texte ne porte pas de charge utile.',
 };

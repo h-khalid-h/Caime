@@ -1231,6 +1231,8 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       await assertCanWrite(ctx, conversationId, auth.userId);
       await assertCanSend(ctx, auth.userId, conversationId, copy(conversationId), {
         forwardedFromId: id,
+        // Its payload is a message's own copy, never typed (L9).
+        serverPayload: true,
       });
     }
     // Each copy is a message sent, and counts as one.
@@ -1240,6 +1242,8 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     for (const conversationId of targets) {
       const result = await sendMessage(ctx, auth.userId, conversationId, copy(conversationId), {
         forwardedFromId: id,
+        // Its payload is a message's own copy, never typed (L9).
+        serverPayload: true,
       });
       out.push(result.message.id);
       if (result.created) {

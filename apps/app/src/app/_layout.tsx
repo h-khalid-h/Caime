@@ -142,6 +142,8 @@ function Boot() {
         justifyContent: 'center',
         backgroundColor: t.c.canvas,
       }}
+      accessibilityRole="progressbar"
+      accessibilityState={{ busy: true }}
       accessibilityLabel={tr('Caime is starting')}
     >
       <IconMark size={64} />

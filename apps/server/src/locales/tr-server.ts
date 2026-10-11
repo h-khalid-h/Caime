@@ -1095,4 +1095,5 @@ export const turkishServer: Catalog = {
   '{name} is listed in Discover': '{name} artık Keşfet’te',
   '{name} wasn’t listed': '{name} listelenmedi',
   'Anyone on Caime can find and connect it now.': 'Caime’deki herkes artık onu bulup bağlayabilir.',
+  'A text message carries no payload.': 'Bir metin mesajı yük taşımaz.',
 };

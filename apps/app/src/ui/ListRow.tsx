@@ -114,7 +114,19 @@ export function ListRow({
   );
 }
 
-export function SectionTitle({ children, action }: { children: string; action?: ReactNode }) {
+/** A section's label (BRAND.md: overline, sentence case), with a count beside it when there is one. */
+export function SectionTitle({
+  children,
+  count,
+  action,
+  testID,
+}: {
+  children: string;
+  /** How many are in it, shown after the label ("Needs you · 3"). */
+  count?: number;
+  action?: ReactNode;
+  testID?: string;
+}) {
   return (
     <View
       style={{
@@ -125,9 +137,10 @@ export function SectionTitle({ children, action }: { children: string; action?: 
         paddingTop: 18,
         paddingBottom: 6,
       }}
+      testID={testID}
     >
       <Text variant="overline" color="textTertiary" accessibilityRole="header">
-        {children}
+        {count ? `${children} · ${count}` : children}
       </Text>
       {action}
     </View>

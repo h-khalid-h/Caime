@@ -291,7 +291,7 @@ export function CodeChangedBanner({
         marginBottom: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: 12,
+        borderRadius: t.radii.sm,
         backgroundColor: alarm ? t.c.dangerSoft : t.c.warningSoft,
       }}
     >
@@ -321,7 +321,7 @@ export function Downgraded() {
         marginBottom: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        borderRadius: 12,
+        borderRadius: t.radii.sm,
         backgroundColor: t.c.dangerSoft,
       }}
     >

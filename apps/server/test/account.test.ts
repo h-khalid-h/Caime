@@ -557,6 +557,45 @@ describe('your data', () => {
       expect(text).not.toContain(theirs);
   });
 
+  it('has what they offer, what they handed to Cai and what they told Cai to forget (M13)', async () => {
+    const who = await signup(t, { displayName: 'Dina Offer', handle: 'dina.offer' });
+    const other = await signup(t, { displayName: 'Eli Offer', handle: 'eli.offer' });
+    const r = await who.post('/v1/connections/requests', { toUserId: other.user.id });
+    await other.post(`/v1/connections/requests/${r.requestId}/accept`, {});
+    const set = await who.req('PUT', '/v1/me/booking', {
+      booking: null,
+      items: [],
+      ordering: { fulfilment: ['pickup'], note: 'Ask at the desk.' },
+      payments: { methods: [{ id: 'cash', kind: 'cash', label: 'Cash', audience: 'public' }] },
+    });
+    expect(set.statusCode).toBe(200);
+    const wait = (
+      await who.post('/v1/tasks', {
+        title: 'Send the photos',
+        assigneeId: other.user.id,
+        shared: true,
+      })
+    ).task;
+    await who.patch(`/v1/tasks/${wait.id}`, { caiFollowUp: true });
+    await who.post('/v1/cai/forget', { kind: 'task' });
+    const archive = (await who.req('GET', '/v1/me/export')).json();
+    expect(archive.account).toMatchObject({
+      booking: { hours: null, items: [] },
+      collections: [],
+      ordering: { fulfilment: ['pickup'], note: 'Ask at the desk.' },
+      payments: { methods: [expect.objectContaining({ id: 'cash', kind: 'cash' })] },
+      caiForgot: { task: expect.any(String) },
+    });
+    expect(archive.actions).toEqual([
+      expect.objectContaining({ title: 'Send the photos', yours: true, caiFollowUp: true }),
+    ]);
+    // Eli's copy of the same wait is Dina's to follow up, not his: the flag isn't his to see.
+    const his = (await other.req('GET', '/v1/me/export')).json();
+    expect(his.actions).toEqual([
+      expect.objectContaining({ title: 'Send the photos', yours: false, caiFollowUp: null }),
+    ]);
+  });
+
   it('says only what the app shows: not what others did in their name, nor what changed after', async () => {
     const db = t.ctx.db;
     const karim = await signup(t, { displayName: 'Karim Adel' });

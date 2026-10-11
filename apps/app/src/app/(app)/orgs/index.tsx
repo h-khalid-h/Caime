@@ -72,7 +72,7 @@ export default function Organizations() {
                 alignItems: 'center',
                 gap: 12,
                 padding: 12,
-                borderRadius: 16,
+                borderRadius: t.radii.lg,
                 borderWidth: 1,
                 borderColor: t.c.border,
                 backgroundColor: hovered ? t.c.surfaceHover : t.c.surface,

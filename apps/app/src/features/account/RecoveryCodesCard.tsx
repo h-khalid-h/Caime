@@ -35,7 +35,7 @@ export function RecoveryCodesCard() {
           marginBottom: 8,
           padding: 14,
           gap: 10,
-          borderRadius: 16,
+          borderRadius: t.radii.lg,
           backgroundColor: t.c.surfaceMuted,
         }}
         testID="codes-card"

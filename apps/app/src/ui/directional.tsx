@@ -1,5 +1,11 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import CornerUpLeft from 'lucide-react-native/icons/corner-up-left';
+import ForwardIcon from 'lucide-react-native/icons/forward';
+import LogOut from 'lucide-react-native/icons/log-out';
+import PanelRight from 'lucide-react-native/icons/panel-right';
+import ReplyIcon from 'lucide-react-native/icons/reply';
+import SendHorizontal from 'lucide-react-native/icons/send-horizontal';
 import { View } from 'react-native';
 import { useRtl } from '@/lib/direction';
 import type { IconComponent } from './Button';
@@ -20,3 +26,12 @@ function mirrored(rtl: boolean, icon: React.ReactElement) {
 export const Back: IconComponent = (props) => mirrored(useRtl(), <ArrowLeft {...props} />);
 
 export const Chevron: IconComponent = (props) => mirrored(useRtl(), <ChevronRight {...props} />);
+
+// The rest that point (review 2026-10-09): sending goes the way the words run, a reply or a
+// forward curves back or on, the details panel sits at the end, and leaving walks out that way.
+export const Send: IconComponent = (props) => mirrored(useRtl(), <SendHorizontal {...props} />);
+export const Reply: IconComponent = (props) => mirrored(useRtl(), <ReplyIcon {...props} />);
+export const ReplyArrow: IconComponent = (props) => mirrored(useRtl(), <CornerUpLeft {...props} />);
+export const Forward: IconComponent = (props) => mirrored(useRtl(), <ForwardIcon {...props} />);
+export const Panel: IconComponent = (props) => mirrored(useRtl(), <PanelRight {...props} />);
+export const Leave: IconComponent = (props) => mirrored(useRtl(), <LogOut {...props} />);

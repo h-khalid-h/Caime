@@ -67,7 +67,12 @@ export function AssistTools({ conversationId }: { conversationId: string }) {
         <View
           accessibilityLiveRegion="polite"
           testID="assist-summary"
-          style={{ padding: 12, borderRadius: 14, gap: 6, backgroundColor: t.c.surfaceMuted }}
+          style={{
+            padding: 12,
+            borderRadius: t.radii.md,
+            gap: 6,
+            backgroundColor: t.c.surfaceMuted,
+          }}
         >
           {result.state === 'failed' ? (
             <Text variant="body" color="danger">

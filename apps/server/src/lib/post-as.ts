@@ -16,7 +16,7 @@ export async function postAs(
   senderId: string,
   conversationId: string,
   what: string | { kind: 'text' | 'kit' | 'sticker'; body?: string; payload?: unknown },
-  opts: { clientId?: string; echo?: boolean } = {},
+  opts: { clientId?: string; echo?: boolean; serverPayload?: boolean } = {},
 ): Promise<{ message: Message; created: boolean }> {
   const clientId = opts.clientId ?? `agent:${uuidv4()}`;
   const result = await sendMessage(
@@ -27,6 +27,8 @@ export async function postAs(
       clientId,
       ...(typeof what === 'string' ? { body: what } : what),
     }),
+    // A text of Caime's own may carry what it keeps on it (Cai's follow-up offer).
+    { serverPayload: opts.serverPayload },
   );
   if (!result.created) return { message: result.message, created: false };
   const [view] = await messageViews(ctx.db, [result.message], senderId);

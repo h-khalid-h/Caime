@@ -236,7 +236,7 @@ export function OrgApps({ org }: { org: OrgView }) {
       <View
         style={{
           marginHorizontal: 16,
-          borderRadius: 16,
+          borderRadius: t.radii.lg,
           borderWidth: 1,
           borderColor: t.c.border,
           backgroundColor: t.c.surface,
@@ -290,7 +290,7 @@ export function OrgApps({ org }: { org: OrgView }) {
           <View
             style={{
               marginHorizontal: 16,
-              borderRadius: 16,
+              borderRadius: t.radii.lg,
               borderWidth: 1,
               borderColor: t.c.border,
               backgroundColor: t.c.surface,
