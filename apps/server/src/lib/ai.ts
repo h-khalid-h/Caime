@@ -112,6 +112,8 @@ export interface AgentInput {
 
 export interface AiAssist {
   readonly model: string;
+  /** The API's cheapest authenticated read (R78: the provider probe). Throws when it fails. */
+  ping(): Promise<void>;
   rewrite(input: { text: string; style: RewriteStyle; tone: AiTone }): Promise<AiResult<string>>;
   translate(input: { text: string; to: string }): Promise<AiResult<string>>;
   catchUp(input: {
@@ -443,6 +445,9 @@ export function createAiAssist(config: Config): AiAssist | null {
 
   return {
     model,
+    async ping() {
+      await client.models.list({ limit: 1 }, { timeout: 10_000, maxRetries: 0 });
+    },
     async rewrite({ text: draft, style, tone }) {
       return unquoted(
         await text(REWRITE_SYSTEM(style, tone), `<message>\n${draft}\n</message>`, 'low', 8192),

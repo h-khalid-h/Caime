@@ -1,0 +1,29 @@
+{
+  "name": "@caime/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Caime as tools for an AI agent you run: an MCP server over @caime/sdk's person methods, with a personal token (Node 22+).",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "bin": {
+    "caime-mcp": "dist/caime-mcp.mjs"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "esbuild src/bin.ts --bundle --platform=node --target=node22 --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/caime-mcp.mjs"
+  },
+  "dependencies": {
+    "@caime/core": "workspace:*",
+    "@caime/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "esbuild": "^0.28.2",
+    "vitest": "^5.0.2"
+  }
+}

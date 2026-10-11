@@ -9,8 +9,11 @@ import {
   APP_CATEGORIES,
   APP_CATEGORY_LABELS,
   APP_DESCRIPTION_MAX,
+  APP_PROVIDES,
+  APP_PROVIDES_LABELS,
   APP_TAGLINE_MAX,
   type AppCategory,
+  type AppProvides,
   appIconPath,
 } from '@caime/core/app-directory';
 import { tr } from '@caime/core/i18n';
@@ -73,6 +76,7 @@ export function AppListing({
   const [tagline, setTagline] = useState(app.listing.tagline ?? '');
   const [description, setDescription] = useState(app.listing.description ?? '');
   const [category, setCategory] = useState<Category>(app.listing.category ?? 'none');
+  const [provides, setProvides] = useState<AppProvides[]>(app.listing.provides);
   const [loginUrl, setLoginUrl] = useState(app.listing.loginUrl ?? '');
   const [orgId, setOrgId] = useState<string>(app.listing.orgId ?? 'me');
   const [listed, setListed] = useState(app.listing.state !== 'none');
@@ -110,6 +114,7 @@ export function AppListing({
         tagline: tagline.trim() || null,
         description: description.trim() || null,
         category: category === 'none' ? null : category,
+        provides,
         loginUrl: loginUrl.trim() || null,
         ...(icon ? { iconFileId: icon.id } : {}),
         orgId: orgId === 'me' ? null : orgId,
@@ -184,6 +189,23 @@ export function AppListing({
           })),
         ]}
       />
+      <ChoiceChips<AppProvides>
+        label={tr('Gives Caime')}
+        multiple
+        value={provides}
+        onChange={setProvides}
+        wrap
+        options={APP_PROVIDES.map((p) => ({
+          value: p,
+          label: tr(APP_PROVIDES_LABELS[p]),
+          testID: `listing-provides-${p}`,
+        }))}
+      />
+      <Text variant="caption" color="textTertiary">
+        {tr(
+          'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.',
+        )}
+      </Text>
       <TextField
         label={tr('Where Connect goes')}
         value={loginUrl}

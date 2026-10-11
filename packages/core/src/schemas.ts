@@ -9,6 +9,7 @@ import { MARKETING_PAGES, SITE_PAGES } from './api';
 import {
   APP_CATEGORIES,
   APP_DESCRIPTION_MAX,
+  APP_PROVIDES,
   APP_TAGLINE_MAX,
   DIRECTORY_PAGE,
   DIRECTORY_PAGE_MAX,
@@ -319,6 +320,8 @@ export const ListOAuthAppBody = z
     tagline: z.string().trim().max(APP_TAGLINE_MAX).nullable().optional(),
     description: z.string().trim().max(APP_DESCRIPTION_MAX).nullable().optional(),
     category: z.enum(APP_CATEGORIES).nullable().optional(),
+    /** What it gives Caime (R78): any of `APP_PROVIDES`, each once. */
+    provides: z.array(z.enum(APP_PROVIDES)).max(APP_PROVIDES.length).optional(),
     loginUrl: z
       .string()
       .trim()

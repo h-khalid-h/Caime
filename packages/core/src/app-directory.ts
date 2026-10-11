@@ -23,6 +23,19 @@ export const APP_CATEGORIES = [
 ] as const;
 export type AppCategory = (typeof APP_CATEGORIES)[number];
 
+/**
+ * What an app gives Caime (R78): a closed list, said on the listing and reviewed with it. A
+ * category says what an app does for the person; `provides` what it does for Caime, which is
+ * how a calendar sync or a mail connector is found (R75 phase 3). No adapter: an app talks
+ * OAuth and the person's routes as any other.
+ */
+export const APP_PROVIDES = ['calendar_sync', 'mail'] as const;
+export type AppProvides = (typeof APP_PROVIDES)[number];
+export const APP_PROVIDES_LABELS: Record<AppProvides, string> = {
+  calendar_sync: msg('Calendar sync'),
+  mail: msg('Mail'),
+};
+
 /** Each category as Discover names it (keys: show them through `tr`). */
 export const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
   automation: msg('Automation'),

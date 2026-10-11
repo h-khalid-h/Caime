@@ -3512,6 +3512,12 @@ export const fr: Catalog = {
   'Your app’s own sign-in, at an https address on a site it returns to or its website. From there it sends people to Caime for what it needs.':
     'La connexion de votre application elle-même, à une adresse https sur un site où elle revient ou sur son site web. De là, elle envoie les gens à Caime pour ce dont elle a besoin.',
   'Published by': 'Publiée par',
+  'Gives Caime': 'Apporte à Caime',
+  'Gives Caime: {what}': 'Apporte à Caime : {what}',
+  'Calendar sync': 'Synchronisation du calendrier',
+  Mail: 'Courrier',
+  'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.':
+    'Ce que votre app apporte à Caime, le cas échéant : un calendrier qu’elle garde à jour, ou du courrier qu’elle achemine. Vérifié avec la fiche.',
   'Listed in Discover': 'Listée dans Découvrir',
   'Needs a tagline, a category and where Connect goes. Caime looks once.':
     'Il faut une accroche, une catégorie et où mène Connecter. Caime regarde une fois.',

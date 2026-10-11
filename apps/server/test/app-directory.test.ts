@@ -130,6 +130,7 @@ describe('Discover and Connected (R74)', () => {
       tagline: null,
       description: null,
       category: null,
+      provides: [],
       iconFileId: null,
       loginUrl: null,
       orgId: null,
@@ -724,5 +725,48 @@ describe('Discover and Connected (R74)', () => {
       .where('id', '=', dev.user.id)
       .execute();
     expect((await directory(noor, '?q=digest')).apps.map((a) => a.name)).toContain('Weekly digest');
+  });
+
+  it('says what an app gives Caime (R78): a closed list on the listing, reviewed with it, shown in Discover', async () => {
+    const sync = (await register(dev, 'Calendar bridge', 'https://sync.example')).app;
+    const bad = await dev.req('PATCH', `/v1/me/oauth-apps/${sync.id}`, { provides: ['payments'] });
+    expect(bad.statusCode).toBe(400);
+    const asked = await dev.patch(`/v1/me/oauth-apps/${sync.id}`, {
+      tagline: 'Your calendar, in step',
+      category: 'calendars',
+      provides: ['calendar_sync', 'calendar_sync'],
+      loginUrl: 'https://sync.example/login',
+      listed: true,
+    });
+    expect(asked.app.listing).toMatchObject({
+      state: 'waiting',
+      provides: ['calendar_sync'],
+      revision: 1,
+    });
+    expect((await review(sync.id, 'list')).statusCode).toBe(200);
+    const shown = (await noor.get(`/v1/directory/${sync.id}`)).app as { provides: string[] };
+    expect(shown.provides).toEqual(['calendar_sync']);
+    // A change to what it gives is a change to what's shown: it asks again, as a new tagline would.
+    const more = await dev.patch(`/v1/me/oauth-apps/${sync.id}`, {
+      provides: ['calendar_sync', 'mail'],
+    });
+    expect(more.app.listing).toMatchObject({
+      state: 'waiting',
+      provides: ['calendar_sync', 'mail'],
+      revision: 2,
+    });
+    expect((await noor.req('GET', `/v1/directory/${sync.id}`)).statusCode).toBe(404);
+    // The same list again changes nothing.
+    expect((await review(sync.id, 'list')).statusCode).toBe(200);
+    const same = await dev.patch(`/v1/me/oauth-apps/${sync.id}`, {
+      provides: ['calendar_sync', 'mail'],
+    });
+    expect(same.app.listing).toMatchObject({ state: 'listed', revision: 2 });
+    expect(
+      ((await noor.get(`/v1/directory/${sync.id}`)).app as { provides: string[] }).provides,
+    ).toEqual(['calendar_sync', 'mail']);
+    // Caime's own carry none.
+    const own = (await noor.get('/v1/directory/calendar')).app as { provides: string[] };
+    expect(own.provides).toEqual([]);
   });
 });

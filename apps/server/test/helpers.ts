@@ -42,6 +42,7 @@ export async function createTestApp(
     DATA_DIR: `/tmp/${name}`,
     WORKERS: 'false',
     BACKUP_ENABLED: 'false',
+    PROVIDER_HEALTH_ENABLED: 'false',
     ...env,
   });
   let queries = 0;

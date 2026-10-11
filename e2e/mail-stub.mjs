@@ -32,5 +32,8 @@ createServer(async (req, res) => {
     sent.push({ ...JSON.parse(raw || '{}'), MessageID });
     return json(res, 200, { MessageID, ErrorCode: 0, Message: 'OK' });
   }
+  // The provider probe's cheapest read (R78): the server, as Postmark names it.
+  if (req.method === 'GET' && url.pathname === '/server')
+    return json(res, 200, { ID: 1, Name: 'stub', DeliveryType: 'Live' });
   json(res, 404, { error: 'not here' });
 }).listen(PORT, '127.0.0.1');

@@ -1233,11 +1233,13 @@ discovers, and mail at their own address.
       with the provider; built on one connector interface with a stand-in and a health gauge.
 - [ ] R79 layer 3, a self-hosted connector engine for breadth: evaluated against what Discover's
       no-result searches say people want; decided after layers 1 and 2.
-- [ ] R78, apps as contracts (PRODUCT-REVIEW R78, with Open Connector evaluated): a
-      `provider.health` task and gauges; an OpenAPI 3.1 document generated from the schemas for
-      the token-reachable routes, served and named in API.md (done with R79); `@caime/mcp` over the SDK's
-      person methods; a hash chain on `audit_log`; a `provides` list on listings for apps that
-      give Caime something (calendar sync, mail), reviewed as the listing is.
+- [x] R78, apps as contracts (PRODUCT-REVIEW R78, with Open Connector evaluated): the
+      `provider.health` task and gauges (each configured provider's cheapest read, hourly, on
+      `/metrics` and for the operator); the OpenAPI 3.1 document (done with R79); `@caime/mcp`
+      over the SDK's person methods (nine tools, JSON-RPC over stdio, built from the repository;
+      ⛔ publishing to npm needs the owner's account); the audit log as a hash chain sealed by
+      the database at commit and verified daily; `provides` on listings (calendar sync, mail),
+      reviewed as the listing is.
 - [ ] R80, the marketplace page (PRODUCT-REVIEW R80, Slack's marketplace read as the model):
       `/marketplace` on the site with a page per listed app (`/marketplace/<slug>`, JSON-LD,
       sitemap, Connect through sign-in), categories, the built-ins and bridges first; a listing
@@ -2617,3 +2619,20 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   parsed on the device by `@caime/core/contacts`), matched by address under search's rules,
   each match a row to connect from and the rest one invite link. Personal webhooks wait for the
   polling bridges to be in use.
+- 2026-10-11 — R78, apps as contracts: `lib/provider-health.ts` probes each configured provider's
+  cheapest authenticated read hourly (a `ping` on each provider interface, `cloudflareIceRequest`
+  shared with the relay, `s3Head` on a key that isn't there, a TXT lookup) into
+  `caime_provider_up{provider}` and `caime_provider_latency_seconds{provider}`, with
+  `GET /v1/admin/providers` and `POST …/check`; migration 0072 makes the audit log a hash chain
+  (`audit_hash` in the database, `audit_log_seal` as a deferred constraint trigger under one lock
+  held for the commit alone, `seq` as the chain's order, the existing rows backfilled), verified
+  by `verifyAuditChain` (`GET /v1/admin/audit`, the daily `audit.verify` task with the head in
+  the log and `caime_audit_chain_ok` on `/metrics`), retention taking the chain's start by `seq`;
+  `packages/mcp` is `@caime/mcp`, a hand-written JSON-RPC server over stdio (`initialize`,
+  `ping`, `tools/list`, `tools/call`) with nine tools over the SDK's person methods, each with a
+  JSON Schema the server checks and a bounded projection, the token's refusals passed through
+  as tool errors, built by esbuild to `dist/caime-mcp.mjs`; `provides` (`APP_PROVIDES`:
+  `calendar_sync`, `mail`) on listings, saved by the listing route (a change asks again), shown
+  in Discover's sheet and picked with chips in the listing editor; the E2E stand-ins answer the
+  probes' reads. Tests: `audit-chain.test.ts`, `provider-health.test.ts`, the directory test's
+  provides case, `packages/mcp/src/*.test.ts`.

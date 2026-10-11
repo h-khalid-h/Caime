@@ -87,6 +87,8 @@ const Env = z.object({
   MAIL_BASE_URL: z.string().url().optional(),
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
+  /** The hourly probe of each configured provider (R78, lib/provider-health.ts); tests turn it off. */
+  PROVIDER_HEALTH_ENABLED: bool.default(true),
   /**
    * Database backups (docs/DEPLOY.md, "Backups"): a `pg_dump` by a worker instance every
    * BACKUP_EVERY_HOURS, kept BACKUP_KEEP_DAYS in BACKUP_DIR (DATA_DIR/backups unless set), each

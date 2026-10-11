@@ -721,6 +721,34 @@ These are rules, not preferences.
   search route's own rules, `personViewsFor(…, { sharesConversation: false })` so a stranger
   reads as one), from `features/people/ContactsImport.tsx` (lazy, from the Connect screen);
   nothing of the file is kept, and the rest get one invite link the person shares.
+- Provider health (R78, `lib/provider-health.ts`): every provider Caime talks to has its cheapest
+  authenticated read as a `ping` on its own interface (`AiAssist.ping`, `SpeechToText.ping`,
+  `MailProvider.ping`, `Mailer.verify`; Stripe's balance through `stripe(ctx)`, Cloudflare
+  through `cloudflareIceRequest`, a bucket through `s3Head`), and `providerProbes(ctx)` lists
+  the configured ones by a fixed id (`PROVIDERS`): the hourly `provider.health` task and
+  `POST /v1/admin/providers/check` run them in parallel, ten seconds each, into `providerState`
+  (gauges `caime_provider_up` and `caime_provider_latency_seconds` by `provider`). A new provider
+  adds its `ping` to its interface and its probe to `providerProbes`, never a fetch of its own
+  elsewhere; tests run with `PROVIDER_HEALTH_ENABLED=false` unless they're about it, and the
+  E2E stand-ins answer the reads.
+- The audit log is a chain (R78, migration 0072): `audit()` inserts as before and the database
+  seals the row at commit (`audit_log_seal`, a deferred constraint trigger under
+  `pg_advisory_xact_lock(hashtext('audit_log'))` for that moment alone: never take that lock
+  elsewhere, and never insert into `audit_log` past `audit()` outside a test). `seq` is the
+  chain's order, not `id`; `verifyAuditChain` (`GET /v1/admin/audit`, the daily `audit.verify`
+  task) recomputes the newest rows with the database's own `audit_hash`, and retention deletes
+  the chain's start by `seq`, never a row from the middle. A change to the canonical form is a
+  new function and a backfill in a new migration.
+- `@caime/mcp` (`packages/mcp`): the tools are `TOOLS` in `src/tools.ts`, one per SDK person
+  method, each a JSON Schema `checkArguments` reads and a bounded projection; the protocol is
+  `src/server.ts` (hand-written JSON-RPC, `PROTOCOL_VERSIONS`), the framing `src/stdio.ts`, the
+  binary `src/bin.ts` (`pnpm --filter @caime/mcp build`). A new person route gets its SDK method
+  first, then a tool here with a case in `server.test.ts`; the package imports core as types only.
+- What an app gives Caime is `APP_PROVIDES` (core `app-directory.ts`, labels through `tr`), on
+  `AppListingView.provides` and `DirectoryAppView.provides` (built-ins and bridges carry `[]`),
+  saved by the listing route (a change asks the operator again) and picked with `ChoiceChips
+  multiple` in `AppListing.tsx`; a new kind of thing an app provides joins the list, and whatever
+  finds such apps (R75 phase 3) reads it, never a category.
 - Who made an app is one shape, `AppPublisher` (`publisherOf` in `lib/app-directory.ts`: the
   organization it's published under, else its developer, or Caime; `CAIME_PUBLISHER` for the
   built-ins): consent (`OAuthConsentView.app`), Connected, Discover and an organization's

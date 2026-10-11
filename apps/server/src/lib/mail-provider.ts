@@ -92,6 +92,8 @@ export interface MailProvider {
   send(mail: OutboundMail): Promise<{ providerId: string }>;
   /** The delivery events a webhook delivered (none for a body that isn't one). */
   events(body: unknown): DeliveryEvent[];
+  /** The provider's cheapest authenticated read (R78: the provider probe). Throws when it fails. */
+  ping(): Promise<void>;
 }
 
 /** The provider this Caime is configured for, or null: then nothing is received or sent. */
@@ -218,6 +220,16 @@ function postmark(config: Config): MailProvider {
   const base = (config.MAIL_BASE_URL ?? DEFAULT_BASE.postmark).replace(/\/+$/, '');
   return {
     name: 'postmark',
+    async ping() {
+      const res = await fetch(`${base}/server`, {
+        headers: {
+          accept: 'application/json',
+          'x-postmark-server-token': config.MAIL_PROVIDER_TOKEN ?? '',
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`Postmark answered ${res.status}`);
+    },
     inbound(body) {
       const m = body as PostmarkInbound | null;
       if (!m || typeof m !== 'object' || (!m.FromFull && !m.From)) return null;

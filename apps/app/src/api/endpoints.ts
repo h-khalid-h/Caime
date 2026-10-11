@@ -134,7 +134,7 @@ import type {
   UrlResponse,
   UserResponse,
 } from '@caime/core/api';
-import type { AppCategory } from '@caime/core/app-directory';
+import type { AppCategory, AppProvides } from '@caime/core/app-directory';
 import type { ApiScope, WebhookEvent } from '@caime/core/apps';
 import type { RewriteStyle } from '@caime/core/assist';
 import type { AutomationWhen } from '@caime/core/automations';
@@ -505,6 +505,7 @@ export const endpoints = {
       tagline?: string | null;
       description?: string | null;
       category?: AppCategory | null;
+      provides?: AppProvides[];
       loginUrl?: string | null;
       iconFileId?: string | null;
       orgId?: string | null;

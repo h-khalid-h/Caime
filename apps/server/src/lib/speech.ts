@@ -53,7 +53,16 @@ export interface SpeechToText {
   provider: SpeechProvider;
   model: string;
   transcribe(input: SpeechInput): Promise<AiResult<Transcript>>;
+  /** The provider's cheapest authenticated read (R78: the provider probe). Throws when it fails. */
+  ping(): Promise<void>;
 }
+
+/** One small read with the key, within the probe's time; anything but 2xx is a failure. */
+async function pingWith(url: string, headers: Record<string, string>): Promise<void> {
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(PING_MS) });
+  if (!res.ok) throw new Error(`speech provider answered ${res.status}`);
+}
+const PING_MS = 10_000;
 
 /** The adapter this Caime is configured for, or null: then nothing is transcribed. */
 export function speechFor(config: Config): SpeechToText | null {
@@ -110,6 +119,10 @@ function openaiSpeech(base: string, key: string, model: string): SpeechToText {
   return {
     provider: 'openai',
     model,
+    ping: () =>
+      pingWith(`${base}/v1/models/${encodeURIComponent(model)}`, {
+        authorization: `Bearer ${key}`,
+      }),
     async transcribe(input) {
       const form = new FormData();
       form.append(
@@ -144,6 +157,7 @@ function elevenLabsSpeech(base: string, key: string, model: string): SpeechToTex
   return {
     provider: 'elevenlabs',
     model,
+    ping: () => pingWith(`${base}/v1/user`, { 'xi-api-key': key }),
     async transcribe(input) {
       const form = new FormData();
       form.append(

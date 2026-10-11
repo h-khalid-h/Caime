@@ -20,12 +20,14 @@ import type {
   AdminPersonResponse,
   AppListingReviewResponse,
   AppListingsResponse,
+  AuditChainResponse,
   BackupResponse,
   BackupsResponse,
   OkResponse,
   OrgPlanResponse,
   PlanUsageResponse,
   ProductMetricsResponse,
+  ProvidersResponse,
   ReportResponse,
   ReportsResponse,
 } from '@caime/core/api';
@@ -35,7 +37,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { listingById, listingReviewView, waitingListings } from '../lib/app-directory';
-import { audit } from '../lib/audit';
+import { AUDIT_VERIFY_ROWS, audit, verifyAuditChain } from '../lib/audit';
 import { backupDir, lastBackup, listBackups, runBackup } from '../lib/backup';
 import { endBillingOf, paysThroughBilling } from '../lib/billing';
 import { AppError, badRequest, conflict, mailUnavailable, notFound } from '../lib/errors';
@@ -53,6 +55,7 @@ import { listingWatchers } from '../lib/oauth';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
+import { checkProviders, providersView } from '../lib/provider-health';
 import { sendResetLink } from '../lib/reset';
 import { parse } from '../lib/validate';
 
@@ -316,6 +319,41 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     await setSuspended(ctx, report.person.id, true, `Report ${id}: ${report.reason}`, by);
     await settleReport(ctx, id, 'actioned');
     return { report: await oneReport(id) };
+  });
+
+  // The audit log's chain (R78): the newest rows recomputed and relinked, the head to note down.
+  const auditQuery = z.object({ limit: z.coerce.number().int().min(1).max(100_000).optional() });
+  app.get('/admin/audit', async (req): Promise<AuditChainResponse> => {
+    const by = operator(req);
+    const { limit } = parse(auditQuery, req.query);
+    const chain = await verifyAuditChain(ctx.db, limit ?? AUDIT_VERIFY_ROWS);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.audit_verified',
+      metadata: { operator: by, checked: chain.checked, ok: chain.ok, head: chain.head },
+    });
+    return { chain };
+  });
+
+  // The providers as their last probe found them (R78), and a probe run now.
+  app.get('/admin/providers', async (req): Promise<ProvidersResponse> => {
+    const by = operator(req);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.providers_viewed',
+      metadata: { operator: by },
+    });
+    return { providers: providersView(ctx) };
+  });
+  app.post('/admin/providers/check', async (req): Promise<ProvidersResponse> => {
+    const by = operator(req);
+    const providers = await checkProviders(ctx);
+    await audit(ctx.db, {
+      actorId: null,
+      action: 'admin.providers_checked',
+      metadata: { operator: by, down: providers.filter((p) => p.up === false).map((p) => p.id) },
+    });
+    return { providers };
   });
 
   app.get('/admin/backups', async (req): Promise<BackupsResponse> => {

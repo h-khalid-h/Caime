@@ -3353,6 +3353,12 @@ export const turkish: Catalog = {
   'Your app’s own sign-in, at an https address on a site it returns to or its website. From there it sends people to Caime for what it needs.':
     'Uygulamanın kendi girişi; döndüğü bir sitedeki veya web sitesindeki bir https adresi. Oradan insanları gerekeni istemek için Caime’ye gönderir.',
   'Published by': 'Yayımlayan',
+  'Gives Caime': 'Caime’ye sunduğu',
+  'Gives Caime: {what}': 'Caime’ye sunduğu: {what}',
+  'Calendar sync': 'Takvim eşitleme',
+  Mail: 'Posta',
+  'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.':
+    'Uygulamanızın Caime’ye sunduğu, varsa: güncel tuttuğu bir takvim ya da taşıdığı posta. Listelemeyle birlikte incelenir.',
   'Listed in Discover': 'Keşfet’te listeli',
   'Needs a tagline, a category and where Connect goes. Caime looks once.':
     'Bir slogan, bir kategori ve Bağla’nın gideceği yer gerekir. Caime bir kez bakar.',

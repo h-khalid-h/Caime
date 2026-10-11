@@ -341,8 +341,10 @@ more once someone has it. An organization keeps its handle for good, closed or n
 format, per instance: requests and their duration by route (as declared, `/v1/conversations/:id`,
 never the path as requested) and status, open realtime connections, messages sent by kind,
 background jobs, webhook deliveries, AI assist calls and push notifications by outcome, the
-database pool, memory, uptime and event-loop delay. Counts and timings only: never a message, a
-name, an id or a query. A scrape job:
+database pool, memory, uptime and event-loop delay, each configured provider's health
+(`caime_provider_up{provider}`, `caime_provider_latency_seconds{provider}`, probed hourly, R78)
+and the audit chain's state (`caime_audit_chain_ok`, `caime_audit_chain_seq`, checked daily).
+Counts and timings only: never a message, a name, an id or a query. A scrape job:
 
 ```yaml
 scrape_configs:
@@ -370,6 +372,13 @@ groups:
         for: 10m
       - alert: CaimeBackupOld
         expr: time() - caime_backup_last_success_timestamp_seconds > 129600
+      # A provider's cheapest read failing for two hours in a row (R78): drift, a key gone, an outage.
+      - alert: CaimeProviderDown
+        expr: caime_provider_up == 0
+        for: 2h
+      # The audit log's chain broken at its daily check (R78): a row changed, removed or put in.
+      - alert: CaimeAuditChainBroken
+        expr: caime_audit_chain_ok == 0
       # AI spend (docs/RESOURCES.md): tokens an hour across every feature; set the line where
       # the bill would surprise you (input and output priced apart, so watch both directions).
       - alert: CaimeAiSpend
@@ -498,6 +507,19 @@ curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v
 
 **Alert** when the last success is older than a day and a half:
 `time() - caime_backup_last_success_timestamp_seconds > 129600`.
+
+**Providers and the audit log** (R78). Each configured provider is probed hourly with its
+cheapest read; the operator reads the last answers, or asks for a probe now, and verifies the
+audit log's chain (its newest 10,000 rows unless `?limit=` says otherwise; note the `head` the
+answer gives, and the daily task writes it to the log, `audit chain verified`):
+
+```sh
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/providers
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/providers/check
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://caime.example.com/v1/admin/audit
+```
+
+`PROVIDER_HEALTH_ENABLED=false` turns the hourly probe off (the operator's check still runs).
 
 **Restore drill** (do it once now, and after any change to the database's version): from the
 `caime` service's console in EasyPanel, or any host with the dump and `pg_restore` 16,

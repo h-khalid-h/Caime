@@ -6,7 +6,7 @@
  */
 import type { z } from 'zod';
 import type { AgentAction } from './agents';
-import type { AppCategory, ListingState } from './app-directory';
+import type { AppCategory, AppProvides, ListingState } from './app-directory';
 import type { ApiScope, WebhookEvent } from './apps';
 import type { AttentionReason, AttentionSection } from './attention';
 import type { AutomationWhen } from './automations';
@@ -1994,6 +1994,8 @@ export interface AppListingView {
   tagline: string | null;
   description: string | null;
   category: AppCategory | null;
+  /** What it gives Caime (R78): `APP_PROVIDES` entries, reviewed with the listing. */
+  provides: AppProvides[];
   iconFileId: string | null;
   /** Where Connect sends someone: the app's own sign-in, which asks Caime for a grant. */
   loginUrl: string | null;
@@ -2028,6 +2030,8 @@ export interface DirectoryAppView {
   tagline: string | null;
   description: string | null;
   category: AppCategory;
+  /** What it gives Caime (R78); empty for a built-in or a bridge. */
+  provides: AppProvides[];
   iconUrl: string | null;
   website: string | null;
   publisher: AppPublisher;
@@ -2721,6 +2725,35 @@ export interface BackupsResponse {
 }
 export interface BackupResponse {
   backup: BackupView;
+}
+/** The audit log's hash chain, verified over its newest rows (R78, docs/SECURITY.md). */
+export interface AuditChainView {
+  checked: number;
+  firstSeq: number | null;
+  lastSeq: number | null;
+  /** The newest row's hash: note it, and a later check shows whether the chain was rewritten. */
+  head: string | null;
+  /** Rows whose hash no longer matches their fields. */
+  altered: number[];
+  /** Rows whose link doesn't match the row before them. */
+  broken: number[];
+  ok: boolean;
+}
+export interface AuditChainResponse {
+  chain: AuditChainView;
+}
+/** A configured provider as its last probe found it (R78): null until one ran. */
+export interface ProviderHealthView {
+  id: string;
+  name: string;
+  up: boolean | null;
+  latencyMs: number | null;
+  checkedAt: string | null;
+  /** What the failure said, clipped, never a key. */
+  error: string | null;
+}
+export interface ProvidersResponse {
+  providers: ProviderHealthView[];
 }
 /** What the operator sees of someone locked out: facts, never content or an address. */
 export interface AdminPersonResponse {

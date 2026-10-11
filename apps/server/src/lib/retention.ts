@@ -55,10 +55,13 @@ export async function sweepRecords(ctx: AppContext): Promise<void> {
   const ended = before(KEPT_DAYS.endedSignIns);
   // Written out, as the indexes are, so the planner sees they fit.
   const measures = sql.join(MEASURES.map((m) => sql.lit(m)));
+  // The audit log is a chain (R78): what goes is its start, up to the last row a year old in
+  // the chain's order (the same rows, to within a transaction's length), so what stays links.
   await inLots(
     ctx,
     sql`delete from audit_log where id in (select id from audit_log
-      where created_at < ${before(KEPT_DAYS.securityRecords)}
+      where seq <= (select max(seq) from audit_log
+        where created_at < ${before(KEPT_DAYS.securityRecords)})
       limit ${LOT} for update skip locked)`,
   );
   await inLots(

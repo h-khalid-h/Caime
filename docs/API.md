@@ -206,6 +206,34 @@ ten minutes. Import it into an automation platform, an agent framework or a clie
 rather than hand-writing the routes; the responses' shapes are the ones in
 `packages/core/src/api.ts`, as described here.
 
+## Caime as tools for an AI agent: `@caime/mcp`
+
+`packages/mcp` is a Model Context Protocol server over the person methods above, for an agent
+someone runs themselves (Claude Desktop, Claude Code, any MCP client): JSON-RPC over stdio and
+nine tools, `me`, `inbox`, `search`, `tasks`, `add_task`, `update_task`, `conversation`,
+`messages` and `send_message`, each a bounded projection of its route's answer (who a
+conversation is with and its last line, never every field of a view) and each naming the
+permission its token needs. It acts as the personal token it's given and nothing more: a
+refusal comes back as the tool's error with the server's code (`token_scope`, `token_route`),
+every call is the token's and shows as such, and a private conversation's words never reach it.
+Build it from the repository (`pnpm --filter @caime/mcp build` writes
+`packages/mcp/dist/caime-mcp.mjs`; it isn't published to npm yet) and point the client at it:
+
+```json
+{
+  "mcpServers": {
+    "caime": {
+      "command": "node",
+      "args": ["/path/to/caime/packages/mcp/dist/caime-mcp.mjs"],
+      "env": { "CAIME_TOKEN": "cap_…" }
+    }
+  }
+}
+```
+
+`CAIME_BASE_URL` points it at another Caime. The server writes nothing to stdout but protocol
+messages and nothing to disk; end the token under Connected and the agent's access ends with it.
+
 ## Acting for other people: OAuth
 
 An app other people use (a digest, a planner, an assistant) asks each of them to let it in, with
@@ -305,7 +333,9 @@ Each comes with an `error_description` a developer can read.
 
 People find apps under **You → Apps → Discover**. To list yours, open it under **You →
 Developer → Your apps** and fill in the listing: a tagline (80 characters), a description, a
-category, an icon (an image you upload), and **where Connect goes**: your app's own sign-in, an
+category, an icon (an image you upload), what it gives Caime (**Gives Caime**: calendar sync,
+mail; a closed list, so a calendar sync or a mail connector is found by what it does for Caime,
+not by its name), and **where Connect goes**: your app's own sign-in, an
 https address at a site among your return addresses or your website, which starts step 1 above.
 Optionally the organization it's published under, if you're its owner or admin: a verified one
 shows as such. Turn on **Listed in Discover** and save. Caime looks at it once, then it shows,
@@ -316,7 +346,7 @@ now, never who. Whoever is asked to let it in sees the same publisher and icon D
 the organization it's published under (its owner and admins see it on their setup screen, with
 where the listing stands), else you, with a tap to that page. Signed in as yourself,
 `PATCH /v1/me/oauth-apps/:id` takes the same fields (`tagline`, `description`, `category`,
-`loginUrl`, `iconFileId`, `orgId`, `listed`); no token reaches it.
+`provides`, `loginUrl`, `iconFileId`, `orgId`, `listed`); no token reaches it.
 
 ## Your own cards
 

@@ -424,22 +424,31 @@ async function cloudflareRelay(
  * Only its turn: and turns: addresses are passed on, and none on port 53, which browsers refuse
  * and wait on: its STUN isn't STUN_URLS, and the privacy page says whose STUN a call uses.
  */
+/**
+ * The one call to Cloudflare's relay API: credentials for `ttlS`. The relay below asks for a
+ * call's worth; the provider probe (lib/provider-health.ts) for a minute's, to see it answers.
+ */
+export async function cloudflareIceRequest(ctx: AppContext, ttlS: number): Promise<Response> {
+  const cf = ctx.config.cloudflareTurn;
+  if (!cf) throw new Error('Cloudflare TURN is not configured');
+  const base = ctx.config.CLOUDFLARE_TURN_API_BASE.replace(/\/+$/, '');
+  return fetch(
+    `${base}/v1/turn/keys/${encodeURIComponent(cf.keyId)}/credentials/generate-ice-servers`,
+    {
+      method: 'POST',
+      headers: { authorization: `Bearer ${cf.token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ ttl: ttlS }),
+      signal: AbortSignal.timeout(CLOUDFLARE_TURN_WAIT_MS),
+    },
+  );
+}
+
 async function askCloudflareRelay(
   ctx: AppContext,
 ): Promise<IceConfigView['iceServers'][number] | null> {
-  const cf = ctx.config.cloudflareTurn;
-  if (!cf) return null;
-  const base = ctx.config.CLOUDFLARE_TURN_API_BASE.replace(/\/+$/, '');
+  if (!ctx.config.cloudflareTurn) return null;
   try {
-    const res = await fetch(
-      `${base}/v1/turn/keys/${encodeURIComponent(cf.keyId)}/credentials/generate-ice-servers`,
-      {
-        method: 'POST',
-        headers: { authorization: `Bearer ${cf.token}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ ttl: TURN_TTL_S }),
-        signal: AbortSignal.timeout(CLOUDFLARE_TURN_WAIT_MS),
-      },
-    );
+    const res = await cloudflareIceRequest(ctx, TURN_TTL_S);
     if (!res.ok) throw new Error(`Cloudflare answered ${res.status}`);
     const body = (await res.json()) as { iceServers?: unknown };
     const given = Array.isArray(body.iceServers) ? body.iceServers : [body.iceServers];

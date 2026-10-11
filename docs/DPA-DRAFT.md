@@ -97,7 +97,8 @@ What the product does today, from docs/SECURITY.md, which is checked against the
   blocks; app tokens reach a fixed set of routes with explicit permissions; personal tokens never
   reach an account itself.
 - An audit log of operator and organization actions (export, erasure, retention changes, team
-  changes, closing).
+  changes, closing), kept as a hash chain the database seals at each commit and verifies daily,
+  so a record changed or removed after the fact shows.
 - Daily database backups, each checked by reading it back, kept 30 days, copied off the host when
   a bucket is configured. **[owner]** the bucket is not yet configured on production.
 - Rate limits on sign-up, sign-in, exports and domain checks; abuse reports read by a person.

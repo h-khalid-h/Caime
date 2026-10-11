@@ -120,6 +120,18 @@ const SECONDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 /** The last database backup that succeeded (lib/backup.ts writes it): when, and how big. */
 export const backupState = { at: 0, bytes: 0, copiedAt: 0 };
 
+/** The audit chain's last check (lib/audit.ts writes it): when, whether it held, its head. */
+export const auditState = { checkedAt: 0, ok: true, headSeq: 0 };
+
+/** A provider's last probe (lib/provider-health.ts writes them), by its fixed id. */
+export interface ProviderHealth {
+  up: boolean;
+  latencyMs: number;
+  checkedAt: number;
+  error: string | null;
+}
+export const providerState = new Map<string, ProviderHealth>();
+
 /** What the server measures about itself. One per app, so tests don't share counts. */
 export function createMetrics(pool: pg.Pool) {
   const loop = monitorEventLoopDelay({ resolution: 20 });
@@ -190,6 +202,34 @@ export function createMetrics(pool: pg.Pool) {
       'caime_backup_last_copy_timestamp_seconds',
       'When the last backup was last copied off the host (0 when no copy is configured or none has gone).',
       () => [{ labels: {}, value: Math.round(backupState.copiedAt / 1000) }],
+    ),
+    new Gauge(
+      'caime_audit_chain_ok',
+      'Whether the audit log’s hash chain held at its last check (absent until one ran).',
+      () => (auditState.checkedAt ? [{ labels: {}, value: auditState.ok ? 1 : 0 }] : []),
+    ),
+    new Gauge('caime_audit_chain_seq', 'The audit chain’s head at its last check.', () => [
+      { labels: {}, value: auditState.headSeq },
+    ]),
+    new Gauge(
+      'caime_audit_chain_checked_timestamp_seconds',
+      'When the audit chain was last checked (0 when it hasn’t been yet).',
+      () => [{ labels: {}, value: Math.round(auditState.checkedAt / 1000) }],
+    ),
+    new Gauge(
+      'caime_provider_up',
+      'Whether a configured provider answered its cheapest read at the last probe, by provider.',
+      () =>
+        [...providerState].map(([provider, s]) => ({ labels: { provider }, value: s.up ? 1 : 0 })),
+    ),
+    new Gauge(
+      'caime_provider_latency_seconds',
+      'How long a configured provider took to answer at the last probe, by provider.',
+      () =>
+        [...providerState].map(([provider, s]) => ({
+          labels: { provider },
+          value: s.latencyMs / 1000,
+        })),
     ),
     new Gauge('process_uptime_seconds', 'Seconds since this instance started.', () => [
       { labels: {}, value: Math.round((Date.now() - started) / 1000) },

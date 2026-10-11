@@ -676,6 +676,10 @@ export interface AuditLogTable {
   user_agent: string | null;
   metadata: JsonDefaulted<Record<string, unknown>>;
   created_at: Generated<Date>;
+  /** The chain (R78, migration 0072): its place, the hash before it and its own, written as the row's transaction commits. */
+  seq: Generated<string | null>;
+  prev_hash: Generated<string | null>;
+  hash: Generated<string | null>;
 }
 
 export interface AiRunsTable {
@@ -1058,6 +1062,8 @@ export interface OAuthClientsTable {
   connected_count: Generated<number>;
   /** Counted up on each change to what Discover shows (R74). */
   listing_rev: Generated<number>;
+  /** What it gives Caime (R78): `APP_PROVIDES` entries. */
+  provides: Generated<string[]>;
 }
 
 export interface OAuthGrantsTable {

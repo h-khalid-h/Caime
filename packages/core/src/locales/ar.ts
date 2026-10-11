@@ -3858,6 +3858,12 @@ export const ar: Catalog = {
   'Your app’s own sign-in, at an https address on a site it returns to or its website. From there it sends people to Caime for what it needs.':
     'صفحة تسجيل الدخول الخاصة بتطبيقك، على عنوان https في موقع يعود إليه أو في موقعه. ومن هناك يرسل الأشخاص إلى Caime لطلب ما يحتاجه.',
   'Published by': 'ناشره',
+  'Gives Caime': 'يقدّم لـ Caime',
+  'Gives Caime: {what}': 'يقدّم لـ Caime: {what}',
+  'Calendar sync': 'مزامنة التقويم',
+  Mail: 'البريد',
+  'What your app does for Caime, if anything: a calendar it keeps in step, or mail it carries. Reviewed with the listing.':
+    'ما يقدّمه تطبيقك لـ Caime، إن وُجد: تقويم يبقيه متزامنًا، أو بريد ينقله. يُراجَع مع الإدراج.',
   'Listed in Discover': 'مدرج في «اكتشف»',
   'Needs a tagline, a category and where Connect goes. Caime looks once.':
     'يحتاج إلى سطر تعريفي وفئة ووجهة لزر «اتصال». تنظر فيه Caime مرة واحدة.',

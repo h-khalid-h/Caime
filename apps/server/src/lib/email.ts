@@ -19,6 +19,8 @@ export interface Mail {
 
 export interface Mailer {
   send(mail: Mail): Promise<void>;
+  /** Connect and sign in, send nothing (R78: the provider probe). Throws when it can't. */
+  verify(): Promise<void>;
 }
 
 export function createMailer(config: Config, log: FastifyBaseLogger): Mailer | null {
@@ -28,6 +30,9 @@ export function createMailer(config: Config, log: FastifyBaseLogger): Mailer | n
     async send(mail) {
       await transport.sendMail({ from: config.EMAIL_FROM, ...mail });
       log.info({ kind: mail.kind ?? 'other' }, 'mail sent');
+    },
+    async verify() {
+      await transport.verify();
     },
   };
 }
@@ -40,6 +45,7 @@ export function memoryMailer(): Mailer & { outbox: Mail[] } {
     async send(mail) {
       outbox.push(mail);
     },
+    async verify() {},
   };
 }
 

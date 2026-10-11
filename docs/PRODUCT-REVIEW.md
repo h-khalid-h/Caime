@@ -1132,8 +1132,16 @@ with its reason, so it isn't proposed again without new facts.
   tamper-evident as their DPA promises; and when Caime holds a person's third-party credential
   at last (R75 phase 3, calendar sync), it goes in a vault sealed with a server key, never a
   column beside the rest. Declined: becoming a broker, Composio compatibility, and AGPL code in
-  the server (its network clause would reach the whole service).
-
+  the server (its network clause would reach the whole service). *Built (2026-10-11)*: `provider.health` (nine probes at most, hourly and in parallel, ten
+  seconds each, `caime_provider_up{provider}` and `caime_provider_latency_seconds{provider}`,
+  the operator's `GET /v1/admin/providers` and `POST …/check`; the E2E stand-ins answer the
+  reads); the audit log as a hash chain the database seals at commit (migration 0072:
+  `audit_hash`, `audit_log_seal` as a deferred trigger under one lock, `seq` as the chain's
+  order), verified by `GET /v1/admin/audit` and daily with the head in the log and on
+  `/metrics`; `@caime/mcp`, a hand-written JSON-RPC server over stdio with nine tools over the
+  SDK's person methods, bounded projections and the token's refusals passed through; and
+  `provides` on listings (`calendar_sync`, `mail`), reviewed with the listing and shown in
+  Discover. The OpenAPI document came with R79. Not published to npm yet (the owner's account).
 - **R79 — A wide range of apps to connect (owner, 2026-10-09: "ensure that Caime offers a
   wide range of apps to be connected").** Discover (R74) must not open as an empty directory
   waiting for developers, and the range must be real: an app in Discover connects today, or it

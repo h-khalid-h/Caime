@@ -6,12 +6,15 @@
  * while it fades.
  */
 import type { DirectoryAppView } from '@caime/core/api';
+import { APP_PROVIDES_LABELS } from '@caime/core/app-directory';
+import { joinNames } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
 import Workflow from 'lucide-react-native/icons/workflow';
 import { useRef } from 'react';
 import { View } from 'react-native';
 import { CalendarFeed } from '@/features/settings/CalendarFeed';
 import { openLink } from '@/lib/links';
+import { useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Sheet } from '@/ui/Sheet';
@@ -23,6 +26,7 @@ import { PublisherLine } from './PublisherLine';
 export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClose: () => void }) {
   // Under 18, nothing connects (R29): the server sends no address, and the sheet says why.
   const minor = useSession((s) => s.user?.minor ?? false);
+  const { locale } = useUserClock();
   const last = useRef(app);
   if (app) last.current = app;
   const shown = app ?? last.current;
@@ -72,6 +76,17 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
           {shown.description ? (
             <Text variant="body" color="textSecondary">
               {shown.description}
+            </Text>
+          ) : null}
+          {shown.provides.length ? (
+            <Text variant="caption" color="textTertiary" testID="discover-provides">
+              {tr('Gives Caime: {what}', {
+                what: joinNames(
+                  shown.provides.map((p) => tr(APP_PROVIDES_LABELS[p])),
+                  shown.provides.length,
+                  locale,
+                ),
+              })}
             </Text>
           ) : null}
           {builtin ? (

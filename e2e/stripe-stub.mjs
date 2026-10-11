@@ -337,6 +337,9 @@ const server = createServer(async (req, res) => {
     if (req.method === 'DELETE') s.status = 'canceled';
     return json(200, s);
   }
+  // The provider probe's cheapest read (R78).
+  if (req.method === 'GET' && path === '/v1/balance')
+    return json(200, { object: 'balance', available: [], pending: [], livemode: false });
   json(404, { error: { type: 'invalid_request_error', message: `No route ${path}` } });
 });
 

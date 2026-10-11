@@ -210,6 +210,7 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         login_url: body.loginUrl === undefined ? c.login_url : body.loginUrl,
         icon_file_id: body.iconFileId === undefined ? c.icon_file_id : body.iconFileId,
         org_id: body.orgId === undefined ? c.org_id : body.orgId,
+        provides: body.provides === undefined ? c.provides : [...new Set(body.provides)],
       };
       if (next.icon_file_id && next.icon_file_id !== c.icon_file_id) {
         const mine = await trx
@@ -237,8 +238,10 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       const listed = body.listed ?? listingState(c) !== 'none';
       if (listed && !(next.tagline && next.category && next.login_url))
         throw badRequest(tr('A listing needs a tagline, a category and where Connect goes.'));
-      const shownChanged = (Object.keys(next) as Array<keyof typeof next>).some(
-        (k) => next[k] !== c[k],
+      const shownChanged = (Object.keys(next) as Array<keyof typeof next>).some((k) =>
+        Array.isArray(next[k])
+          ? JSON.stringify(next[k]) !== JSON.stringify(c[k])
+          : next[k] !== c[k],
       );
       const marks = !listed
         ? { listed_at: null, reviewed_at: null, declined_reason: null }

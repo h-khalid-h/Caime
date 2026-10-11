@@ -201,6 +201,11 @@ createServer(async (req, res) => {
   }
   let raw = '';
   for await (const chunk of req) raw += chunk;
+  // The provider probe's cheapest reads (R78): the model list, and a speech model by name.
+  if (req.method === 'GET' && req.url?.startsWith('/v1/models')) {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ data: [{ id: 'stub', type: 'model' }], has_more: false }));
+  }
   if (req.method !== 'POST' || !req.url?.startsWith('/v1/messages')) {
     res.writeHead(404, { 'content-type': 'application/json' });
     return res.end(JSON.stringify({ type: 'error', error: { type: 'not_found_error' } }));
