@@ -99,7 +99,7 @@ test.describe
       // What the server writes to Noor is in Arabic too: someone else's request, from a device
       // that says nothing of a language, reaches her as “… wants to connect with you” in Arabic.
       const other = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-      await apiSignUp(other, 'Tariq Hassan', `tariq.ar.${suffix}`);
+      const tariq = await apiSignUp(other, 'Tariq Hassan', `tariq.ar.${suffix}`);
       const asked = await other.request.post('/v1/connections/requests', {
         headers: CLIENT,
         data: { toUserId: noor.id },
@@ -112,7 +112,40 @@ test.describe
           return notifications.map((n) => n.title);
         })
         .toContain('يريد Tariq Hassan التواصل معك');
+      // Said, never guessed (R81): Tariq says he's a man; Noor accepts and calls him a friend.
+      const { requestId } = (await asked.json()) as { requestId: string };
+      const said = await other.request.patch('/v1/me', {
+        headers: CLIENT,
+        data: { gender: 'man' },
+      });
+      expect(said.ok(), await said.text()).toBe(true);
+      const accepted = await page.request.post(`/v1/connections/requests/${requestId}/accept`, {
+        headers: CLIENT,
+        data: {},
+      });
+      expect(accepted.ok(), await accepted.text()).toBe(true);
+      const labelled = await page.request.post('/v1/relationships', {
+        headers: CLIENT,
+        data: { userId: tariq.id, sphere: 'friend', role: 'friend' },
+      });
+      expect(labelled.ok(), await labelled.text()).toBe(true);
       await other.close();
+      // Noor says she's a woman, from her profile: what's said to her takes her form at once,
+      // and Tariq's label reads in his, as the relationship picker's roles do.
+      const startSpace = () => page.getByTestId('spaces-new').filter({ visible: true }).first();
+      await page.goto('/spaces');
+      await expect(startSpace()).toHaveAccessibleName('ابدأ مساحة');
+      await page.goto('/settings/profile');
+      await page.getByTestId('gender').click();
+      await page.getByRole('radio', { name: 'امرأة' }).click();
+      await page.getByRole('button', { name: 'حفظ التغييرات' }).click();
+      await expect(page.getByTestId('gender')).toContainText('امرأة');
+      await page.goto('/spaces');
+      await expect(startSpace()).toHaveAccessibleName('ابدئي مساحة');
+      await page.goto(`/p/${tariq.id}`);
+      await expect(
+        page.getByText('صديق', { exact: true }).filter({ visible: true }).first(),
+      ).toBeVisible();
       await page.goto('/settings/notifications');
       await expect(visible(page, 'الإشعارات والأولويات')).toBeVisible();
       await page.screenshot({

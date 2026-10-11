@@ -7,6 +7,7 @@ import type {
   BookingItem,
   CatalogCollection,
   CustomKitDef,
+  Gender,
   OrderingSettings,
   PaymentSettings,
 } from '@caime/core';
@@ -47,6 +48,8 @@ export interface UsersTable {
   avatar_file_id: string | null;
   bio: string | null;
   pronouns: string | null;
+  /** How they said Caime should refer to them (R81), or null: never guessed. */
+  gender: Gender | null;
   status_text: string | null;
   status_emoji: string | null;
   presence: Defaulted<'auto' | 'available' | 'busy' | 'away' | 'invisible'>;
@@ -1246,6 +1249,7 @@ export const USER_COLUMNS = [
   'avatar_file_id',
   'bio',
   'pronouns',
+  'gender',
   'status_text',
   'status_emoji',
   'presence',

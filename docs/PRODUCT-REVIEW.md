@@ -177,7 +177,9 @@ to feel right to each of them.
 - **R27 — Never assume gender.** Caime never infers gender from a name or a photo (PRD §44), and
   its copy never needs to: *"Sarah's role?"*, not *"What's her role?"* (the PRD's §11 example is
   corrected). Pronouns are an optional field the person sets for themselves, shown under their
-  own privacy rules. Where the product refers to someone, it uses their name.
+  own privacy rules. Where the product refers to someone, it uses their name. *Refined by R81*:
+  what a person says of their own gender, Caime uses, in the languages whose words have a form
+  for it; what nobody said stays unguessed.
 - **R28 — A taxonomy for every family and every job.** Neutral family roles come first (Parent,
   Child, Sibling, Partner, Spouse, Grandparent, Grandchild, Relative, Guardian); gendered ones are
   available (Mother, Father, Sister, Brother, Daughter, Son, Wife, Husband, Aunt, Uncle, Niece,
@@ -1220,3 +1222,31 @@ with its reason, so it isn't proposed again without new facts.
   the same, screenshots through the file pipeline; the operator's time per listing is the
   checklist, no new process. *What isn't done*: a billing marketplace (no), and nothing of
   layers 2 and 3 of R79 changes: the page only shows what connects today.
+- **R81 — Said, never guessed: gender as a declared fact (owner, 2026-10-11, from the Arabic
+  conversation panel reading “شريك أو شريكة” of a man).** R27 stands: Caime infers nothing from a
+  name, a photo or pronouns. What it adds is a place to *say* it. A person's profile holds
+  `gender` (woman, man, another word, or not said; null by default), set in Settings · Profile
+  beside pronouns, with its own privacy field (connections by default, hidden by the limited
+  preset, as pronouns are) and on sign-up asked for nowhere. What it changes, in Arabic and
+  French, the two interface languages whose words have a form for it (Turkish and English have
+  none): (1) *what's said to the reader* takes their form, "اختاري" to a woman who said so, where
+  before the masculine imperative stood for everyone and still does for anyone who said nothing
+  (core `ReaderForms`: a catalog entry with `toWoman`, `toMan` and `other`, the last being what
+  the catalog said before; every short imperative Caime says, 141 of them, has its forms, longer
+  sentences follow as a native reviewer reads them); (2) *what's said of someone* takes theirs,
+  as shown to the reader: a relationship's label reads "شريكة" of a woman who shared it and
+  "شريك أو شريكة" of anyone who didn't (core `GenderForms`, `woman`, `man`, `other`, on every
+  role and sphere label, in French where the word changes: "Amie", "Collaboratrice directe",
+  "Ancienne cliente"), in the chip, the panel, the inbox row, the people list, the search, a
+  space's members, the calendar and the relationship picker's own choices, and the reader's own
+  gender never leaks into a category word (a sphere named "Friend" stays "صديق"); (3) *Cai and
+  the friends* are told it with the person's language and variety, so the model addresses them
+  right, and every notification, suggestion and refusal written to them runs in their form
+  (`asReader`, and a signed-in request's own words through `adoptReader`). What it never does:
+  guess (no name, pronoun or photo reads as a gender; the free pronouns field stays a free field),
+  show it to anyone the privacy rules don't, ask for it on sign-up, use it for anything but
+  words (no defaults, no suggestions, no metrics by it), or address a minor differently. *Cost*:
+  a column, one cached lookup per signed-in request (the reader cache already there), one query
+  per write that returns a label, nothing per row in a list (the person's view already at hand).
+  *Later*: the longer Arabic sentences' feminine forms with a native reviewer; a French
+  reader-addressed form if one ever appears; the Arabic varieties' voice lines by gender.

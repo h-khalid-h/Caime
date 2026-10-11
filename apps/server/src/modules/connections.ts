@@ -310,10 +310,13 @@ export async function connectionRoutes(app: FastifyInstance, ctx: AppContext) {
       rows.map(async (u) => {
         const relation = await viewerRelation(ctx.db, u.id, auth.userId);
         const identity = await identityShownTo(ctx, u.id, auth.userId);
-        const mine = rels.filter((r) => r.subject_id === u.id).map(relationshipView);
+        const person = personView(u, relation, now, identity);
+        const mine = rels
+          .filter((r) => r.subject_id === u.id)
+          .map((r) => relationshipView(r, person.gender));
         return {
           connectionId: u.connection_id,
-          person: personView(u, relation, now, identity),
+          person,
           nickname: u.nickname,
           attention: u.attention,
           mutedUntil: u.muted_until?.toISOString() ?? null,

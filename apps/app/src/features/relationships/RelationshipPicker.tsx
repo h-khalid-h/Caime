@@ -1,5 +1,5 @@
 import type { RelationshipView } from '@caime/core/api';
-import { tr, trn } from '@caime/core/i18n';
+import { type Gender, tr, trFor, trn } from '@caime/core/i18n';
 import {
   fillName,
   primarySpheres,
@@ -40,10 +40,13 @@ export function RelationshipForm({
   name,
   value,
   onChange,
+  gender = null,
 }: {
   name: string;
   value: FormState;
   onChange: (next: FormState) => void;
+  /** The person's gender as they shared it (R81): the roles read in its form. */
+  gender?: Gender | null;
 }) {
   const t = useTheme();
   const taxonomy = useTaxonomy();
@@ -125,7 +128,7 @@ export function RelationshipForm({
             options={[
               ...[...roles.quick, ...(moreRoles ? roles.more : [])].map((r) => ({
                 value: r.id,
-                label: tr(r.label),
+                label: trFor(gender, r.label),
               })),
               ...custom.map((c) => ({ value: `own:${c.label}`, label: c.label })),
             ]}
@@ -201,7 +204,8 @@ export function RelationshipPicker({
 }: {
   open: boolean;
   onClose: () => void;
-  person: { id: string; displayName: string };
+  /** Their gender as they shared it (R81): the roles read in its form. */
+  person: { id: string; displayName: string; gender?: Gender | null };
   current?: RelationshipView | null;
   /** What it starts from when it's a new one: what Caime offered, say. */
   initial?: Partial<RelationshipDraft> | null;
@@ -293,7 +297,7 @@ export function RelationshipPicker({
         </>
       }
     >
-      <RelationshipForm name={name} value={form} onChange={setForm} />
+      <RelationshipForm gender={person.gender} name={name} value={form} onChange={setForm} />
     </Sheet>
   );
 }

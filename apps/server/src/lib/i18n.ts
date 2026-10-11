@@ -31,6 +31,8 @@ import {
 import {
   type Catalog,
   english,
+  forReader,
+  type Gender,
   type InterfaceLanguage,
   type LanguageChoice,
   languageFor,
@@ -77,7 +79,11 @@ const voices = new Map(
   ]),
 );
 
-const scope = new AsyncLocalStorage<Translator>();
+/** The work's reader: a holder, so a request that learns who it's from can change it in place. */
+interface Scope {
+  translator: Translator;
+}
+const scope = new AsyncLocalStorage<Scope>();
 
 /** The header's language, or English: a tag ("ar-EG") reads as its language, nonsense as English. */
 export function languageOfRequest(req: FastifyRequest): InterfaceLanguage {
@@ -93,9 +99,28 @@ export function inLanguage<T>(
   language: InterfaceLanguage,
   work: () => T,
   variety?: ArabicVariety | null,
+  gender?: Gender | null,
 ): T {
-  const voice = language === 'ar' && variety ? voices.get(variety) : undefined;
-  return scope.run(voice ?? translators[language], work);
+  return scope.run({ translator: translatorFor(language, variety ?? null, gender ?? null) }, work);
+}
+
+// One translator per language, voice and reader's gender (R81): made once, kept.
+const readers = new Map<string, Translator>();
+function translatorFor(
+  language: InterfaceLanguage,
+  variety: ArabicVariety | null,
+  gender: Gender | null,
+): Translator {
+  const base =
+    (language === 'ar' && variety ? voices.get(variety) : undefined) ?? translators[language];
+  if (!gender) return base;
+  const key = `${language}:${variety ?? ''}:${gender}`;
+  let t = readers.get(key);
+  if (!t) {
+    t = forReader(base, gender);
+    readers.set(key, t);
+  }
+  return t;
 }
 
 /**
@@ -104,10 +129,22 @@ export function inLanguage<T>(
  * says whose it is with `asReader`.
  */
 export function registerLanguage(app: FastifyInstance): void {
-  setTranslatorProvider(() => scope.getStore());
+  setTranslatorProvider(() => scope.getStore()?.translator);
   app.addHook('onRequest', (req, _reply, done) => {
-    scope.run(translators[languageOfRequest(req)], done);
+    scope.run({ translator: translators[languageOfRequest(req)] }, done);
   });
+}
+
+/**
+ * A request that knows who it's from (the auth plugin, a session) takes their own form from
+ * here on (R81): a refusal reads "اختاري" to a woman who said so. The request's language stays
+ * its header's; a token's request stays English, so it's never asked.
+ */
+export async function adoptReader(ctx: AppContext, userId: string): Promise<void> {
+  const holder = scope.getStore();
+  if (!holder) return;
+  const reader = await readerOf(ctx, userId);
+  if (reader.gender) holder.translator = forReader(holder.translator, reader.gender);
 }
 
 const CACHE_MS = 5 * 60_000;
@@ -129,11 +166,14 @@ export interface Reader {
   country: string | null;
   /** Their Arabic before anything they write says otherwise: chosen, else where they live. */
   variety: ArabicVariety;
+  /** How they said Caime should refer to them (R81), or null: the form of what's said to them. */
+  gender: Gender | null;
 }
 
 type Account = {
   locale: string | null;
   country: string | null;
+  gender: Gender | null;
   preferences: Record<string, unknown> | null;
 };
 
@@ -145,6 +185,7 @@ function readerOfAccount(user: Account): Reader {
     choice,
     country: user.country,
     variety: arabicVariety({ choice, country: user.country }),
+    gender: user.gender,
   };
 }
 
@@ -157,7 +198,13 @@ export function languageOfAccount(user: {
   return resolveLanguage(prefs.language, prefs.interfaceLanguage ?? user.locale);
 }
 
-const NOBODY: Reader = { language: 'en', choice: 'auto', country: null, variety: 'standard' };
+const NOBODY: Reader = {
+  language: 'en',
+  choice: 'auto',
+  country: null,
+  variety: 'standard',
+  gender: null,
+};
 
 function keep(userId: string, reader: Reader, now: number): void {
   known.set(userId, reader, now);
@@ -170,7 +217,7 @@ export async function readerOf(ctx: AppContext, userId: string): Promise<Reader>
   if (hit) return hit;
   const user = await ctx.db
     .selectFrom('users')
-    .select(['locale', 'country', 'preferences'])
+    .select(['locale', 'country', 'gender', 'preferences'])
     .where('id', '=', userId)
     .executeTakeFirst();
   const reader = user ? readerOfAccount(user) : NOBODY;
@@ -198,7 +245,7 @@ export async function languagesOf(
   if (missing.length) {
     const rows = await ctx.db
       .selectFrom('users')
-      .select(['id', 'locale', 'country', 'preferences'])
+      .select(['id', 'locale', 'country', 'gender', 'preferences'])
       .where('id', 'in', missing)
       .execute();
     for (const user of rows) {
@@ -225,5 +272,5 @@ export async function asReader<T>(
   work: () => Promise<T>,
 ): Promise<T> {
   const reader = await readerOf(ctx, userId);
-  return inLanguage(reader.language, work, reader.variety);
+  return inLanguage(reader.language, work, reader.variety, reader.gender);
 }

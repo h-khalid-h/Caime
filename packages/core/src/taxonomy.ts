@@ -1,4 +1,4 @@
-import { msg, tr } from './i18n';
+import { type Gender, msg, tr, trFor, trForms } from './i18n';
 /**
  * The relationship taxonomy: Sphere → Role → Context (PRD §7–§9).
  *
@@ -327,20 +327,28 @@ export function fillName(template: string, name: string): string {
   return template.replaceAll('{name}', name);
 }
 
-/** How a relationship reads: "Manager · DATA C", "Friend", "Former manager · DATA C". */
+/**
+ * How a relationship reads: "Manager · DATA C", "Friend", "Former manager · DATA C". In a
+ * language whose words have a gender (R81), the form is the labelled person's, where they said
+ * it and the reader may see it (`gender`); else the form for anyone.
+ */
 export function relationshipLabel(input: {
   sphere: Sphere;
   role?: string | null;
   roleLabel?: string | null;
   orgName?: string | null;
   status?: 'active' | 'ended' | 'archived';
+  gender?: Gender | null;
 }): string {
   // A label the person wrote is theirs as written; a role's or a sphere's is shown in their language.
   const role = findRole(input.sphere, input.role);
-  const base = input.roleLabel?.trim() || (role ? tr(role.label) : undefined);
-  let head = base ?? tr(SPHERE_DEFS[input.sphere].label);
+  const gender = input.gender ?? null;
+  const base = input.roleLabel?.trim() || (role ? trFor(gender, role.label) : undefined);
+  let head = base ?? trFor(gender, SPHERE_DEFS[input.sphere].label);
   if (input.status === 'ended')
-    head = tr('Former {role}', { role: `${head.charAt(0).toLowerCase()}${head.slice(1)}` });
+    head = trFor(gender, 'Former {role}', {
+      role: `${head.charAt(0).toLowerCase()}${head.slice(1)}`,
+    });
   return input.orgName ? `${head} · ${input.orgName}` : head;
 }
 
@@ -491,11 +499,12 @@ function forms(word: string): string[] {
 export function relationshipFromWord(word: string): { sphere: Sphere; role?: string } | undefined {
   const asked = forms(word);
   if (!asked[0]) return undefined;
+  // In the reader's language, any form of the word (R81: "شريكة" finds partners too).
   const named = (label: string, plural: string) =>
     [label, plural].some((l) => {
       const english = l.toLowerCase();
-      const shown = wordForm(tr(l));
-      return asked.some((w) => w === english || w === shown);
+      const shown = trForms(l).map(wordForm);
+      return asked.some((w) => w === english || shown.includes(w));
     });
   for (const sphere of SPHERES) {
     const def = SPHERE_DEFS[sphere];

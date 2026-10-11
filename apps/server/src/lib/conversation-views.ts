@@ -179,7 +179,7 @@ export async function conversationView(
         userId: m.id,
         role: m.member_role,
         person,
-        relationship: rel ? relationshipView(rel) : null,
+        relationship: rel ? relationshipView(rel, person.gender) : null,
         readSeq: m.id !== userId && receiptsVisible.has(m.id) ? Number(m.last_read_seq) : null,
         deliveredSeq: Number(m.last_delivered_seq),
         joinedAt: m.member_joined_at.toISOString(),

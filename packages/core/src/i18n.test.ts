@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   english,
   fill,
+  forReader,
   languageFor,
   languageInSearch,
   makeTranslator,
@@ -9,8 +10,10 @@ import {
   resolveLanguage,
   setTranslator,
   tr,
+  trFor,
   trn,
 } from './i18n';
+import { relationshipLabel } from './taxonomy';
 
 describe('the interface language (R54)', () => {
   it('picks a language from a device tag, or English', () => {
@@ -80,5 +83,44 @@ describe('the interface language (R54)', () => {
     setTranslator(english);
     expect(tr('Chats')).toBe('Chats');
     expect(msg('A week')).toBe('A week');
+  });
+});
+
+describe('forms by gender (R81)', () => {
+  const catalog = {
+    Partner: { woman: 'شريكة', man: 'شريك', other: 'شريك أو شريكة' },
+    'Choose a day': { toWoman: 'اختاري يومًا', toMan: 'اختر يومًا', other: 'اختر يومًا' },
+    'Former {role}': '{role} (سابقًا)',
+    Chats: 'الدردشات',
+  };
+
+  it('reads the form for anyone until the reader says, then theirs', () => {
+    const anyone = makeTranslator('ar', catalog);
+    expect(anyone.tr('Choose a day')).toBe('اختر يومًا');
+    expect(anyone.tr('Chats')).toBe('الدردشات');
+    const her = forReader(anyone, 'woman');
+    expect(her.tr('Choose a day')).toBe('اختاري يومًا');
+    expect(her.tr('Chats')).toBe('الدردشات');
+    expect(forReader(her, 'woman')).toBe(her);
+    expect(forReader(her, 'other').tr('Choose a day')).toBe('اختر يومًا');
+    expect(forReader(her, null).gender).toBeNull();
+    // A word said of someone never takes the reader's own: as a category, it's for anyone.
+    expect(her.tr('Partner')).toBe('شريك أو شريكة');
+    expect(her.trFor('woman', 'Choose a day')).toBe('اختر يومًا');
+  });
+
+  it('labels someone else by the gender they shared, never the reader’s', () => {
+    setTranslator(makeTranslator('ar', catalog, 'woman'));
+    try {
+      expect(trFor('man', 'Partner')).toBe('شريك');
+      expect(trFor(null, 'Partner')).toBe('شريك أو شريكة');
+      expect(relationshipLabel({ sphere: 'family', role: 'partner', gender: 'man' })).toBe('شريك');
+      expect(relationshipLabel({ sphere: 'family', role: 'partner' })).toBe('شريك أو شريكة');
+      expect(
+        relationshipLabel({ sphere: 'family', role: 'partner', gender: 'woman', status: 'ended' }),
+      ).toBe('شريكة (سابقًا)');
+    } finally {
+      setTranslator(english);
+    }
   });
 });

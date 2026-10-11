@@ -543,6 +543,7 @@ export const UpdateMeBody = z
     handle: Handle.optional(),
     bio: z.string().trim().max(280).nullable().optional(),
     pronouns: z.string().trim().max(40).nullable().optional(),
+    gender: z.enum(['woman', 'man', 'other']).nullable().optional(),
     statusText: z.string().trim().max(80).nullable().optional(),
     // One whole emoji, as the app's picker gives it (emoji.ts).
     statusEmoji: z.string().max(16).refine(isEmoji, msg('Choose an emoji.')).nullable().optional(),

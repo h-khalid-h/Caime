@@ -12,6 +12,7 @@ export const PRIVACY_FIELDS = [
   'profilePhoto',
   'bio',
   'pronouns',
+  'gender',
   'status',
   'onlineStatus',
   'lastSeen',
@@ -58,6 +59,7 @@ const LIMITED_HIDES: PrivacyField[] = [
   'bio',
   'location',
   'pronouns',
+  'gender',
   'busy',
   'busyDetails',
 ];
@@ -69,6 +71,8 @@ export function defaultPrivacy(opts: { minor: boolean }): PrivacySettings {
       profilePhoto: opts.minor ? connections : { kind: 'everyone' },
       bio: opts.minor ? connections : { kind: 'everyone' },
       pronouns: connections,
+      // Said for the words (R81): who may hear them in that form is who may see it.
+      gender: connections,
       status: connections,
       onlineStatus: connections,
       lastSeen: connections,

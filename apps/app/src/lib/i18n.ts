@@ -6,7 +6,10 @@
  */
 import {
   type Catalog,
+  currentTranslator,
   english,
+  forReader,
+  type Gender,
   type InterfaceLanguage,
   type LanguageChoice,
   languageInSearch,
@@ -70,13 +73,28 @@ export async function loadLanguage(choice?: LanguageChoice): Promise<InterfaceLa
   }
   const language = resolveLanguage(choice ?? usePrefs.getState().language, deviceLanguageTag());
   const catalog = language === 'en' ? null : await catalogFor(language).catch(() => null);
-  setTranslator(catalog ? makeTranslator(language, catalog) : english);
+  setTranslator(catalog ? makeTranslator(language, catalog, readerGender) : english);
   applyDirection(catalog ? language : 'en');
   useLanguage.setState((s) => ({
     language: catalog ? language : 'en',
     generation: s.language === null ? s.generation : s.generation + 1,
   }));
   return catalog ? language : 'en';
+}
+
+/**
+ * How the person said Caime should address them (R81), from their account: the forms the
+ * catalog has for a woman or a man are theirs from then on. A change remounts the app as a
+ * language change does, so every word already drawn is drawn again.
+ */
+let readerGender: Gender | null = null;
+export function setReaderGender(gender: Gender | null): void {
+  if (gender === readerGender) return;
+  readerGender = gender;
+  // Before the first load the language isn't in yet: it applies this when it comes.
+  if (useLanguage.getState().language === null) return;
+  setTranslator(forReader(currentTranslator(), gender));
+  useLanguage.setState((s) => ({ generation: s.generation + 1 }));
 }
 
 // The preference may change from the setting, or arrive with the account on sign-in

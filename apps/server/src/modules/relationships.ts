@@ -31,6 +31,7 @@ import type { Database, Relationship } from '../db/schema';
 import { suggestDuplicatesOf } from '../lib/duplicates';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { personViewsFor } from '../lib/people-batch';
 import { mutualFit, relationshipView } from '../lib/relations';
 import {
   createRelationship,
@@ -162,6 +163,10 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     return { ok: true };
   });
 
+  /** The labelled person's gender as shown to the owner (R81): the label's form. */
+  const genderOf = async (me: string, subjectId: string) =>
+    (await personViewsFor(ctx, me, [subjectId])).get(subjectId)?.gender ?? null;
+
   app.post('/relationships', async (req, reply): Promise<RelationshipResponse> => {
     const auth = requireAuth(req);
     const body = parse(CreateRelationshipBody, req.body);
@@ -180,7 +185,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
     // Labelled like someone else already is: perhaps the same person (PRD §51).
     await suggestDuplicatesOf(ctx, auth.userId, body.userId);
     reply.status(201);
-    return { relationship: relationshipView(row) };
+    return { relationship: relationshipView(row, await genderOf(auth.userId, body.userId)) };
   });
 
   app.patch('/relationships/:id', async (req): Promise<RelationshipResponse> => {
@@ -287,7 +292,9 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
         data: { ownerId: auth.userId },
       });
     }
-    return { relationship: relationshipView(result) };
+    return {
+      relationship: relationshipView(result, await genderOf(auth.userId, current.subject_id)),
+    };
   });
 
   const transition = (
@@ -341,7 +348,9 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
         type: 'relationship.changed',
         data: { subjectId: current.subject_id },
       });
-      return { relationship: relationshipView(next) };
+      return {
+        relationship: relationshipView(next, await genderOf(auth.userId, current.subject_id)),
+      };
     });
   transition('end', ['active'], 'ended', 'ended');
   transition('archive', ['active', 'ended'], 'archived', 'archived');
@@ -397,7 +406,7 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
         await event(trx, ctx, m, 'merged', snapshot(m), { into: keep.id });
       }
     });
-    return { relationship: relationshipView(keep) };
+    return { relationship: relationshipView(keep, await genderOf(auth.userId, keep.subject_id)) };
   });
 
   app.get('/people/:id/relationships', async (req): Promise<RelationshipHistoryView> => {
@@ -424,9 +433,10 @@ export async function relationshipRoutes(app: FastifyInstance, ctx: AppContext) 
           .execute()
       : [];
     const primary = rows.find((r) => r.status === 'active' && r.is_primary);
+    const theirs = await genderOf(auth.userId, id);
     return {
-      current: rows.filter((r) => r.status === 'active').map(relationshipView),
-      history: rows.map(relationshipView),
+      current: rows.filter((r) => r.status === 'active').map((r) => relationshipView(r, theirs)),
+      history: rows.map((r) => relationshipView(r, theirs)),
       events: events.map((e) => ({
         id: e.id,
         relationshipId: e.relationship_id,

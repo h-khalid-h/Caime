@@ -119,6 +119,8 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     if (body.bio !== undefined) patch.bio = body.bio;
     if (body.pronouns !== undefined) patch.pronouns = body.pronouns;
+    // Said, never guessed (R81): the form of what's written to them, from the next line on.
+    if (body.gender !== undefined) patch.gender = body.gender;
     if (body.statusText !== undefined) patch.status_text = body.statusText;
     if (body.statusEmoji !== undefined) patch.status_emoji = body.statusEmoji;
     if (body.presence !== undefined) patch.presence = body.presence;
@@ -147,7 +149,12 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     // What's written to them follows their language from the next notification (R54).
     // What's written to them, and how Cai speaks Arabic with them (R72), follow at once.
-    if (body.preferences !== undefined || body.locale !== undefined || body.country !== undefined)
+    if (
+      body.preferences !== undefined ||
+      body.locale !== undefined ||
+      body.country !== undefined ||
+      body.gender !== undefined
+    )
       forgetLanguageOf(auth.userId);
     // Cai's morning brief (R68): the next one queued once the choice is saved.
     const briefChanged =

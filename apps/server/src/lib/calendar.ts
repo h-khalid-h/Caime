@@ -145,7 +145,10 @@ export async function calendarItems(
   const relOf = new Map<string, { label: string; sphere: Sphere }>();
   for (const r of rels)
     if (!relOf.has(r.subject_id))
-      relOf.set(r.subject_id, { label: relationshipView(r).label, sphere: r.sphere as Sphere });
+      relOf.set(r.subject_id, {
+        label: relationshipView(r, people.get(r.subject_id)?.gender ?? null).label,
+        sphere: r.sphere as Sphere,
+      });
   const withOf = (id: string | null) => {
     const person = id ? (people.get(id) ?? null) : null;
     return { with: person, relationship: id ? (relOf.get(id) ?? null) : null };

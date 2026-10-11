@@ -21,6 +21,7 @@ import { assertCanWrite } from '../lib/blocks';
 import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
+import { personViewsFor } from '../lib/people-batch';
 import { isBlockedEitherWay, relationshipView } from '../lib/relations';
 import { createRelationship, mayClassify } from '../lib/relationships';
 import { suggestionView } from '../lib/suggest';
@@ -378,7 +379,10 @@ export async function acceptSuggestion(
         const r = await createRelationship(trx, ctx, auth.userId, s.subject_user_id, input, {
           source: 'suggestion',
         });
-        ref = { type: 'relationship', id: r.id, view: relationshipView(r) };
+        const them = (await personViewsFor(ctx, auth.userId, [s.subject_user_id])).get(
+          s.subject_user_id,
+        );
+        ref = { type: 'relationship', id: r.id, view: relationshipView(r, them?.gender ?? null) };
         break;
       }
       case 'task':

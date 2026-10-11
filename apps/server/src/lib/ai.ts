@@ -19,6 +19,7 @@ import {
   VARIETY_NAMES,
 } from '@caime/core';
 import { countryFacts } from '@caime/core/countries';
+import type { Gender } from '@caime/core/i18n';
 import { FILE_KINDS, SEARCH_SCOPES, type SearchUnderstanding } from '@caime/core/search';
 import { SPHERES } from '@caime/core/taxonomy';
 import { z } from 'zod';
@@ -132,6 +133,7 @@ export interface AiAssist {
     language: string;
     arabic: SpokenArabic;
     country: string | null;
+    gender: Gender | null;
     today: string;
   }): Promise<AiResult<string>>;
   /**
@@ -145,6 +147,7 @@ export interface AiAssist {
     language: string;
     arabic: SpokenArabic;
     country: string | null;
+    gender: Gender | null;
     today: string;
   }): Promise<AiResult<string>>;
 }
@@ -175,14 +178,19 @@ export interface FriendPersona {
  * it, or it's what they write in or where they live), mirrored when they write another; and the
  * country they live in, for what's near them. One or two sentences of the system prompt.
  */
-function voiceLines(arabic: SpokenArabic, country: string | null): string {
+function voiceLines(arabic: SpokenArabic, country: string | null, gender: Gender | null): string {
   const name = VARIETY_NAMES[arabic.variety];
   const line = arabic.chosen
     ? `When you write Arabic, write ${name}: it's what they chose.`
     : arabic.variety === 'standard'
       ? `When you write Arabic, write ${name}, unless they write a dialect: then write theirs.`
       : `When you write Arabic, write ${name} as it's spoken day to day, not Modern Standard Arabic, unless they write another variety: then write theirs.`;
-  return `${line}${placeLines(country, null)}`;
+  // Said, never guessed (R81): the form a gendered language addresses them in.
+  const addressed =
+    gender === 'woman' || gender === 'man'
+      ? ` They said to address them as a ${gender}: where the language has a form for that (Arabic, French), use it.`
+      : '';
+  return `${line}${addressed}${placeLines(country, null)}`;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -482,17 +490,17 @@ export function createAiAssist(config: Config): AiAssist | null {
         .slice(0, 8);
       return { value: items, usage };
     },
-    async caiChat({ transcript, context, language, arabic, country, today }) {
+    async caiChat({ transcript, context, language, arabic, country, gender, today }) {
       return text(
-        CAI_SYSTEM(language, voiceLines(arabic, country), today),
+        CAI_SYSTEM(language, voiceLines(arabic, country, gender), today),
         `<context>\n${context || '(nothing open)'}\n</context>\n<conversation>\n${transcript}\n</conversation>`,
         'low',
         1024,
       );
     },
-    async friendChat({ friend, transcript, context, language, arabic, country, today }) {
+    async friendChat({ friend, transcript, context, language, arabic, country, gender, today }) {
       return text(
-        FRIEND_SYSTEM(friend, language, voiceLines(arabic, country), today),
+        FRIEND_SYSTEM(friend, language, voiceLines(arabic, country, gender), today),
         `<context>\n${context || '(nothing open)'}\n</context>\n<conversation>\n${transcript}\n</conversation>`,
         'low',
         512,

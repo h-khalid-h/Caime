@@ -170,10 +170,11 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
           identityShownTo(ctx, u.id, auth.userId),
         ]);
         const rel = mine.find((r) => r.subject_id === u.id);
+        const person = personView(u, relation, now, identity);
         return {
-          person: personView(u, relation, now, identity),
+          person,
           connection: connectionState(b),
-          relationship: rel ? relationshipView(rel) : null,
+          relationship: rel ? relationshipView(rel, person.gender) : null,
         };
       }),
     );
@@ -470,7 +471,9 @@ export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
         : null,
       connection: connectionState(b),
       blockedByMe: b.blockedByMe,
-      relationships: mine.map(relationshipView),
+      relationships: mine.map((r) =>
+        relationshipView(r, canSee(privacySettings, 'gender', relation) ? user.gender : null),
+      ),
       mutual: primary ? await mutualFit(ctx.db, auth.userId, id, primary) : null,
       conversations: conversations.map((c) => ({
         id: c.id,

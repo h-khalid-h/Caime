@@ -961,7 +961,11 @@ export function ConversationScreen({
         <RelationshipPicker
           open={labelling}
           onClose={() => setLabelling(false)}
-          person={{ id: other.userId, displayName: other.person.displayName }}
+          person={{
+            id: other.userId,
+            displayName: other.person.displayName,
+            gender: other.person.gender,
+          }}
         />
       ) : null}
       {conversation && privately ? (

@@ -165,7 +165,7 @@ export async function runSearch(
       const rel =
         rels.find((r) => r.subject_id === id && r.is_primary) ??
         rels.find((r) => r.subject_id === id);
-      return [{ person, relationship: rel ? relationshipView(rel) : null }];
+      return [{ person, relationship: rel ? relationshipView(rel, person.gender) : null }];
     });
     // Organizations are the "org" part of relationships: "DATA C" finds everyone there.
     if (text && !parsed.relationship) {

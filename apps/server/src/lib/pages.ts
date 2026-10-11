@@ -102,8 +102,8 @@ on, their AI is told the country too, so what it suggests fits where you are. Ne
 anyone. Caime also keeps your device&rsquo;s
 language and time zone, so times and quiet hours are right, and, if you joined from someone&rsquo;s
 link, whose it was: that&rsquo;s only counted, and never shown to anyone.</li>
-<li><strong>Your profile.</strong> What you choose to show: a photo, About you, pronouns, a status
-and your presence (Automatic, Busy, Away or Invisible). Caime also keeps when you were last
+<li><strong>Your profile.</strong> What you choose to show: a photo, About you, pronouns, your
+gender if you say it (never guessed), a status and your presence (Automatic, Busy, Away or Invisible). Caime also keeps when you were last
 active.</li>
 <li><strong>The people you know.</strong> Who you&rsquo;re connected with, how you&rsquo;ve told
 Caime you know each of them (and how you described them before), what you call them, your
@@ -177,7 +177,7 @@ decline.</p>
 <ul>
 <li><strong>The people you talk with</strong> see what you send them, your name and @handle, when
 their messages reach your device, and when you&rsquo;re typing. You &rarr; Privacy decides whether
-they also see your profile photo, About you, pronouns, status, your professional details (with an
+they also see your profile photo, About you, pronouns, gender, status, your professional details (with an
 organization Caime has verified you&rsquo;re on the team of), when you&rsquo;re online, when you
 were last seen, and when you&rsquo;ve read their messages.</li>
 <li><strong>Anyone on Caime</strong> who finds you by your name or @handle (unless you turn off By
@@ -301,12 +301,12 @@ what, whether a call or a request was turned down, and what a group you&rsquo;ve
 now; reports about you, which would say who made them; secrets, which Caime keeps only as hashes
 or never shows; and the server&rsquo;s own log. To ask about anything in it, or not in it, write to
 ${mail}.</li>
-<li><strong>Correct it:</strong> change your name, @handle, photo, pronouns, About you and status
+<li><strong>Correct it:</strong> change your name, @handle, photo, pronouns, gender, About you and status
 in You &rarr; Profile at any time. To correct your email address or your date of birth, write
 to ${mail}.</li>
 <li><strong>Delete it:</strong> You &rarr; Security &rarr; Delete your account.</li>
 <li><strong>Choose who sees what:</strong> You &rarr; Privacy decides who sees your profile photo,
-About you, pronouns, status, when you&rsquo;re online, when you were last seen and when
+About you, pronouns, gender, status, when you&rsquo;re online, when you were last seen and when
 you&rsquo;ve read a message; whether people can find you by your @handle or your email; and who
 can send you a message request.</li>
 <li><strong>Keep people away:</strong> block or report someone from their page, and report a

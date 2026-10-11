@@ -1,4 +1,4 @@
-import { msg, tr } from '@caime/core/i18n';
+import { type Gender, msg, tr } from '@caime/core/i18n';
 import { displayNameError, handleError, normalizeHandle } from '@caime/core/rules';
 import AtSign from 'lucide-react-native/icons/at-sign';
 import Camera from 'lucide-react-native/icons/camera';
@@ -16,6 +16,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { Chip, ChoiceChips } from '@/ui/Chip';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { formatDay } from '@/ui/dates';
 import { EmojiSheet } from '@/ui/EmojiSheet';
 import { Pressable } from '@/ui/Pressable';
@@ -43,6 +44,7 @@ export default function Profile() {
   const [handle, setHandle] = useState(me.handle);
   const [bio, setBio] = useState(me.bio ?? '');
   const [pronouns, setPronouns] = useState(me.pronouns ?? '');
+  const [gender, setGender] = useState<Gender | 'none'>(me.gender ?? 'none');
   const [statusEmoji, setStatusEmoji] = useState(me.statusEmoji ?? '');
   const [statusText, setStatusText] = useState(me.statusText ?? '');
   const [presence, setPresence] = useState<Presence>(me.presence);
@@ -65,6 +67,7 @@ export default function Profile() {
         ...(normalizeHandle(handle) !== me.handle ? { handle: normalizeHandle(handle) } : {}),
         bio: bio.trim() || null,
         pronouns: pronouns.trim() || null,
+        gender: gender === 'none' ? null : gender,
       });
       useSession.getState().setUser(res.user);
       toast(tr('Saved'));
@@ -200,6 +203,21 @@ export default function Profile() {
               testID="pronouns"
             />
           </View>
+          <ChoiceSheet
+            label={tr('Gender')}
+            value={gender}
+            onChange={setGender}
+            options={[
+              { value: 'woman', label: tr('Woman') },
+              { value: 'man', label: tr('Man') },
+              { value: 'other', label: tr('Another word') },
+              { value: 'none', label: tr('Not said') },
+            ]}
+            detail={tr(
+              'How Caime writes to you, and how people who know you see you labelled, in Arabic and French. Never guessed.',
+            )}
+            testID="gender"
+          />
           <TextField
             label={tr('About you (optional)')}
             value={bio}

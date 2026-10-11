@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { collectKeys, keysFor } from '../../../scripts/i18n-keys.mjs';
+import { isGenderForms, isReaderForms } from './i18n';
 import { ar } from './locales/ar';
 import { fr } from './locales/fr';
 import { turkish } from './locales/tr';
@@ -23,15 +24,28 @@ describe.each([
     expect(missing).toEqual([]);
   });
 
-  it('has the plural forms where a count is shown, and a string elsewhere', () => {
+  it('has the plural forms where a count is shown, and a string or gender forms elsewhere', () => {
     const wrong = [...keys.values()]
       .filter((k) => k.text in ar)
-      .filter((k) => (typeof ar[k.text] === 'string') === k.plural)
+      .filter((k) => {
+        const entry = ar[k.text];
+        const plural = typeof entry !== 'string' && !isGenderForms(entry) && !isReaderForms(entry);
+        return plural !== k.plural;
+      })
       .map((k) => k.text);
     expect(wrong).toEqual([]);
     for (const [key, value] of Object.entries(ar)) {
       if (typeof value === 'string') continue;
       expect(value.other, key).toBeTruthy();
+      // Forms by gender (R81): all three, each its own words.
+      if (isGenderForms(value)) {
+        expect(value.woman, key).toBeTruthy();
+        expect(value.man, key).toBeTruthy();
+      }
+      if (isReaderForms(value)) {
+        expect(value.toWoman, key).toBeTruthy();
+        expect(value.toMan, key).toBeTruthy();
+      }
     }
   });
 

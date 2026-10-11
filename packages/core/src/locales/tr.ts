@@ -3567,4 +3567,10 @@ export const turkish: Catalog = {
   'Sent by email ·': 'E-postayla gönderildi ·',
   'sending by email': 'e-postayla gönderiliyor',
   'Sending by email ·': 'E-postayla gönderiliyor ·',
+  Gender: 'Cinsiyet',
+  Woman: 'Kadın',
+  Man: 'Erkek',
+  'Another word': 'Başka bir sözcük',
+  'How Caime writes to you, and how people who know you see you labelled, in Arabic and French. Never guessed.':
+    'Caime’nin size nasıl yazdığı ve sizi tanıyanların sizi nasıl etiketli gördüğü, Arapça ve Fransızcada. Asla tahmin edilmez.',
 };

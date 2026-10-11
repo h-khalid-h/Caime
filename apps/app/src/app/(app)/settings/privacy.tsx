@@ -24,6 +24,7 @@ const FIELDS: Array<{ field: PrivacyField; label: string }> = [
   { field: 'profilePhoto', label: msg('Profile photo') },
   { field: 'bio', label: msg('About you') },
   { field: 'pronouns', label: msg('Pronouns') },
+  { field: 'gender', label: msg('Gender') },
   { field: 'status', label: msg('Status') },
   { field: 'onlineStatus', label: msg('When you’re online') },
   { field: 'lastSeen', label: msg('Last seen') },

@@ -11,6 +11,7 @@ import { PERSON_ROUTES, type PersonGrant, resolvePersonalToken } from '../lib/ac
 import { API_ROUTES, resolveApiToken } from '../lib/apps';
 import { hashToken } from '../lib/crypto';
 import { AppError, unauthorized } from '../lib/errors';
+import { adoptReader } from '../lib/i18n';
 import { resolveOAuthAccess } from '../lib/oauth';
 
 export const SESSION_COOKIE = 'caime_session';
@@ -95,6 +96,8 @@ export function registerAuth(app: FastifyInstance, ctx: AppContext): void {
     if (typeof expected === 'string' && expected !== session.userId)
       throw new AppError(409, 'wrong_account', tr('Someone else is signed in here now.'));
     req.auth = { ...session, via: found.via };
+    // The words of this request take their own form (R81).
+    await adoptReader(ctx, session.userId);
   });
 }
 

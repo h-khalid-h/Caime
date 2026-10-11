@@ -4,6 +4,7 @@
  * evaluating that owner's own privacy rules and never sends them anywhere.
  */
 import {
+  type Gender,
   type MutualFit,
   type PolicyTarget,
   type RelationshipPolicy,
@@ -251,7 +252,8 @@ export async function viewerRelation(
   };
 }
 
-export function relationshipView(r: Relationship): RelationshipView {
+/** The owner's view of a relationship; `gender` is the subject's as shown to the owner (R81), for the label's form. */
+export function relationshipView(r: Relationship, gender: Gender | null = null): RelationshipView {
   return {
     id: r.id,
     sphere: r.sphere as Sphere,
@@ -265,6 +267,7 @@ export function relationshipView(r: Relationship): RelationshipView {
       roleLabel: r.role_label,
       orgName: r.org_name,
       status: r.status === 'ended' ? 'ended' : 'active',
+      gender,
     }),
     status: r.status,
     isPrimary: r.is_primary,

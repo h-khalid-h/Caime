@@ -1246,6 +1246,22 @@ discovers, and mail at their own address.
 - [ ] ⛔ R80, cai.me as the public address: parked today (a registrar's lander, 2026-10-10), so
       the owner acquires it; then DNS and the certificate at EasyPanel, `PUBLIC_URL` and
       `WEB_URL` moved, the old host answering 301, one canonical.
+- [x] R81, said, never guessed (PRODUCT-REVIEW R81, owner 2026-10-11): `users.gender` (woman,
+      man, another word, or null; migration 0070), `UpdateMeBody.gender`, `MeView.gender`,
+      `PersonView.gender` under the new `gender` privacy field (connections by default, hidden by
+      the limited preset), set in Settings · Profile (`gender`, a `ChoiceSheet` row) and listed
+      under Privacy; core `ReaderForms` and `GenderForms` in the catalogs (`tr` picks the reader's
+      own form, `trFor(gender, key)` someone else's, `trForms` every form for search), the 141
+      short Arabic imperatives and every role and sphere label in Arabic and French with their
+      forms, `relationshipLabel({ gender })` and `relationshipView(r, gender)` at every site that
+      has the person's view, the picker's roles in the person's form, the reader's gender carried
+      by the server's `Reader` (`asReader`, `inLanguage`, a signed-in request through
+      `adoptReader` in the auth plugin) and by the app's translator (`setReaderGender`, a remount
+      on change), Cai and the friends told it (`voiceLines`), the privacy page naming it, the
+      handle isolated left to right in an Arabic line (`handleOf`, U+2066). `i18n.test.ts` (core
+      and server), the catalog tests, `e2e/arabic.spec.ts`. Not done: feminine forms of the longer
+      Arabic sentences (a native reviewer's), French reader-addressed forms (none exist yet), the
+      Arabic varieties' voice lines by gender.
 - [ ] R75 phase 2: notices (no-reply senders, bulk mail) under Notices, HTML as sent in a
       sandbox, reply-all with CC, sending as the address from Gmail and Outlook through Caime's
       submission, the agent answering by mail.
@@ -2583,3 +2599,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   line) and starts the topic a written subject names. `mail.test.ts` (14 cases) and `e2e/mail.spec.ts` against the
   provider's stand-in (`e2e/mail-stub.mjs`). Not turned on in production (⛔: the domain's MX,
   DKIM, SPF and DMARC at the provider; docs/DEPLOY.md).
+- 2026-10-11 — R81, said, never guessed: gender as a declared, optional profile fact (never
+  inferred, R27 kept) that the words honour in Arabic and French: what's said to the reader in
+  their form (the short imperatives), what's said of someone in theirs as shared (every
+  relationship label, in the picker too), Cai and the friends told it; the privacy field, the
+  profile row, the server's reader scope on every write and signed-in request, the app's
+  translator remade on change. Also the handle in an Arabic line isolated left to right, after
+  the owner's screenshot showed "abdallah@".

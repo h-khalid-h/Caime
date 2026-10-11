@@ -12,6 +12,13 @@
  *   other), which Arabic needs all of.
  * - `msg(text)`: marks a string written outside a component (a table of options) so the catalog
  *   test finds it; it's translated where it's shown, with `tr(item.label)`.
+ * - Gender (R81): a catalog entry may hold forms, with `other` the one for anyone (what the
+ *   catalog said before). Said *to* the reader (an imperative in Arabic): `ReaderForms`, which
+ *   `tr` picks by the reader's own gender, carried by the translator once they said it
+ *   (`forReader`). Said *of* someone (a relationship's label): `GenderForms`, which only
+ *   `trFor(gender, text)` picks, by that person's gender as shown to the reader; `tr` reads
+ *   such an entry for anyone, so a word used as a category never takes the reader's gender.
+ *   Nobody's is ever guessed: null reads the form for anyone.
  */
 
 export const INTERFACE_LANGUAGES = ['en', 'ar', 'fr', 'tr'] as const;
@@ -20,7 +27,34 @@ export type InterfaceLanguage = (typeof INTERFACE_LANGUAGES)[number];
 export type LanguageChoice = 'auto' | InterfaceLanguage;
 
 export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
-export type Catalog = Record<string, string | PluralForms>;
+/** How someone said Caime should refer to them (R81): a word, or none (null). */
+export type Gender = 'woman' | 'man' | 'other';
+export const GENDERS: readonly Gender[] = ['woman', 'man', 'other'];
+/** A word said of someone, by their gender: `other` is the one for anyone, what the catalog said before. */
+export type GenderForms = Record<Gender, string>;
+/** A sentence said to the reader, by theirs: `other` is the one for anyone, what the catalog said before. */
+export interface ReaderForms {
+  toWoman: string;
+  toMan: string;
+  other: string;
+}
+export type Catalog = Record<string, string | PluralForms | GenderForms | ReaderForms>;
+
+export function isGenderForms(entry: Catalog[string] | undefined): entry is GenderForms {
+  return typeof entry === 'object' && entry !== null && 'woman' in entry;
+}
+
+export function isReaderForms(entry: Catalog[string] | undefined): entry is ReaderForms {
+  return typeof entry === 'object' && entry !== null && 'toWoman' in entry;
+}
+
+/** Every form a string has in the catalog, the one for anyone first: what a search may match. */
+export function formsOf(entry: Catalog[string] | undefined, text: string): string[] {
+  if (typeof entry === 'string') return [entry];
+  if (isGenderForms(entry)) return [entry.other, entry.woman, entry.man];
+  if (isReaderForms(entry)) return [entry.other, entry.toWoman, entry.toMan];
+  return [text];
+}
 
 /** A null or undefined value reads as nothing, so a missing name never shows as "null". */
 export type Vars = Record<string, string | number | null | undefined>;
@@ -28,7 +62,12 @@ export type Vars = Record<string, string | number | null | undefined>;
 export interface Translator {
   readonly language: InterfaceLanguage;
   readonly dir: 'ltr' | 'rtl';
+  /** The reader's own, once said: the form `tr` picks where a string has forms. */
+  readonly gender: Gender | null;
+  readonly catalog: Catalog;
   tr(text: string, vars?: Vars): string;
+  /** A string in the form for `gender`: someone else's, where the reader may know it. */
+  trFor(gender: Gender | null, text: string, vars?: Vars): string;
   trn(count: number, one: string, other: string, vars?: Vars): string;
 }
 
@@ -87,25 +126,50 @@ function pluralRules(language: string): Intl.PluralRules {
   return r;
 }
 
-export function makeTranslator(language: InterfaceLanguage, catalog: Catalog): Translator {
-  const tr = (text: string, vars?: Vars): string => {
+export function makeTranslator(
+  language: InterfaceLanguage,
+  catalog: Catalog,
+  gender: Gender | null = null,
+): Translator {
+  const toReader = (text: string): string => {
     const entry = catalog[text];
-    return fill(typeof entry === 'string' ? entry : text, vars);
+    if (typeof entry === 'string') return entry;
+    if (isReaderForms(entry))
+      return gender === 'woman' ? entry.toWoman : gender === 'man' ? entry.toMan : entry.other;
+    if (isGenderForms(entry)) return entry.other;
+    return text;
+  };
+  const ofSomeone = (text: string, g: Gender | null): string => {
+    const entry = catalog[text];
+    if (typeof entry === 'string') return entry;
+    if (isGenderForms(entry)) return entry[g ?? 'other'];
+    if (isReaderForms(entry)) return entry.other;
+    return text;
   };
   return {
     language,
     dir: dirOf(language),
-    tr,
+    gender,
+    catalog,
+    tr: (text, vars) => fill(toReader(text), vars),
+    trFor: (g, text, vars) => fill(ofSomeone(text, g), vars),
     trn(count, one, other, vars) {
       const all = { n: count, ...vars };
       const entry = catalog[other];
-      if (entry && typeof entry !== 'string') {
+      if (entry && typeof entry !== 'string' && !isGenderForms(entry) && !isReaderForms(entry)) {
         const category = pluralRules(language).select(count);
         return fill(entry[category] ?? entry.other, all);
       }
       return fill(count === 1 ? one : other, all);
     },
   };
+}
+
+/** The same language for a reader who said their gender: the one translator, or one more. */
+export function forReader(translator: Translator, gender: Gender | null): Translator {
+  return translator.gender === gender
+    ? translator
+    : makeTranslator(translator.language, translator.catalog, gender);
 }
 
 export const english: Translator = makeTranslator('en', {});
@@ -147,6 +211,16 @@ export function tr(text: string, vars?: Vars): string {
 
 export function trn(count: number, one: string, other: string, vars?: Vars): string {
   return currentTranslator().trn(count, one, other, vars);
+}
+
+/** A word said of someone, in the form for their gender (R81): null, or one they didn't share, reads for anyone. */
+export function trFor(gender: Gender | null | undefined, text: string, vars?: Vars): string {
+  return currentTranslator().trFor(gender ?? null, text, vars);
+}
+
+/** Every form the current language has for a string, the one for anyone first. */
+export function trForms(text: string): string[] {
+  return formsOf(currentTranslator().catalog[text], text);
 }
 
 /** Marks English written outside a component; the catalog test collects it. Identity. */

@@ -126,7 +126,7 @@ async function spaceView(ctx: AppContext, userId: string, spaceId: string): Prom
         role: m.role,
         person,
         relationship: rel
-          ? { label: relationshipView(rel).label, sphere: rel.sphere as Sphere }
+          ? { label: relationshipView(rel, person.gender).label, sphere: rel.sphere as Sphere }
           : null,
         joinedAt: m.joined_at.toISOString(),
       },

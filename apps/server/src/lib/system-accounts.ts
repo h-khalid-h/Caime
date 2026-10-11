@@ -11,6 +11,7 @@
  * what's open for them that's its to know (never a private conversation's). Without the model a
  * friend shares its tips in turn. Nothing here notifies: Cai and the friends never need anyone.
  */
+
 import {
   type ArabicVariety,
   arabicVariety,
@@ -33,6 +34,7 @@ import {
   writtenIn,
   zonedParts,
 } from '@caime/core';
+import type { Gender } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { todayForAgent } from './agent';
@@ -335,6 +337,7 @@ async function systemReply(ctx: AppContext, payload: Record<string, unknown>): P
     variety,
     chosen: reader.choice !== 'auto',
     country: reader.country,
+    gender: reader.gender,
   };
   await inLanguage(
     language,
@@ -363,6 +366,8 @@ interface Voice {
   chosen: boolean;
   /** Where they live (ISO 3166-1): told only to their own Cai and friends' model. */
   country: string | null;
+  /** How they said to be addressed (R81), told the model as it's told their language. */
+  gender: Gender | null;
 }
 
 /** The message being answered: its kind, its words and what the rules read in them. */
@@ -498,6 +503,7 @@ const spoken = (voice: Voice) => ({
   language: languageName(voice.language),
   arabic: { variety: voice.variety, chosen: voice.chosen },
   country: voice.country,
+  gender: voice.gender,
 });
 
 /**

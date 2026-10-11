@@ -17,6 +17,7 @@ import type { CatalogCollection } from './catalog';
 import type { PayKindHint } from './countries';
 import type { CustomKitDef, CustomKitIcon } from './custom-kits';
 import type { PublicJwk, SealedMessage } from './e2ee';
+import type { Gender } from './i18n';
 import type { SuggestionKind } from './intelligence';
 import type { KitField } from './kits';
 import type { Lean } from './learning';
@@ -104,6 +105,8 @@ export interface MeView {
   avatarUrl: string | null;
   bio: string | null;
   pronouns: string | null;
+  /** How they said Caime should refer to them (R81), or null: never guessed. */
+  gender: Gender | null;
   statusText: string | null;
   statusEmoji: string | null;
   presence: PresenceSetting;
@@ -124,6 +127,8 @@ export interface PersonView {
   avatarUrl: string | null;
   bio: string | null;
   pronouns: string | null;
+  /** As they said it (R81), where their privacy shows it to the viewer; else null. */
+  gender: Gender | null;
   statusText: string | null;
   statusEmoji: string | null;
   presence: PresenceState | null;

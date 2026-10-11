@@ -7,6 +7,7 @@ import { suggestDuplicatesOf } from './duplicates';
 import { notFound } from './errors';
 import { recordEvent } from './events';
 import { notify } from './notify';
+import { personViewsFor } from './people-batch';
 import { pairKey, relationshipView } from './relations';
 import { createRelationship } from './relationships';
 import { suggestRelationships } from './suggest';
@@ -167,5 +168,9 @@ export async function acceptRequest(
     { sphere: request.context_sphere, orgName: request.context_org_name },
     opts.viaInvite,
   );
-  return { ...result, relationship: mine ? relationshipView(mine) : null };
+  // The label's form is theirs as shown to the accepter (R81).
+  const them = mine
+    ? (await personViewsFor(ctx, userId, [request.from_user])).get(request.from_user)
+    : undefined;
+  return { ...result, relationship: mine ? relationshipView(mine, them?.gender ?? null) : null };
 }

@@ -17,6 +17,7 @@ import {
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { CACHE_VERSION, persister, queryClient } from '@/api/queryClient';
+import { setReaderGender } from '@/lib/i18n';
 import { readToken, writeToken } from '@/lib/secure';
 import { realtime } from '@/realtime/client';
 import { prefsPending } from '@/state/prefsPending';
@@ -228,3 +229,8 @@ export function useMe(): MeView {
 
 // The queue of actions made offline is only ever the signed-in person's (taskOutbox.ts).
 useSession.subscribe((s) => setTaskOutboxUser(s.user?.id ?? null));
+
+// The words addressed to the person follow what they said of themselves (R81), on every device.
+useSession.subscribe((state, previous) => {
+  if (state.user !== previous.user) setReaderGender(state.user?.gender ?? null);
+});

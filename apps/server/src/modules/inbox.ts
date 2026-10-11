@@ -301,7 +301,7 @@ export async function buildInbox(
       relationship: rel
         ? {
             priorityNow: currentPriority(policy, now, me.time_zone),
-            label: relationshipView(rel).label,
+            label: relationshipView(rel, other?.gender ?? null).label,
           }
         : r.kind === 'direct'
           ? { priorityNow: currentPriority(policy, now, me.time_zone), label: null }
@@ -339,7 +339,10 @@ export async function buildInbox(
       privacyClass: r.privacy_class,
       other: other ?? null,
       relationship: rel
-        ? { label: relationshipView(rel).label, sphere: rel.sphere as Sphere }
+        ? {
+            label: relationshipView(rel, other?.gender ?? null).label,
+            sphere: rel.sphere as Sphere,
+          }
         : null,
       memberCount: r.member_count,
       lastMessage: last

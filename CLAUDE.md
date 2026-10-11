@@ -71,7 +71,12 @@ These are rules, not preferences.
    schema, so a migration expands first (add a column or table, backfill) and contracts in a
    later release (drop or rename only once every instance runs code that no longer reads it).
 8. **Never assume gender or age.** Copy uses names, not pronouns; gender is never inferred (R27).
-   Under-18 protections are rules in code, with tests (R29).
+   A person may say it (R81: `users.gender`, null by default, its own privacy field), and then
+   the words take its form where the language has one: what's said *to* them through `tr`
+   (`ReaderForms` in the catalog, the reader's gender on the translator) and what's said *of*
+   them through `trFor(gender, key)` (`GenderForms`; `tr` reads such a word for anyone, so a
+   category never takes the reader's gender). Nothing else reads it. Under-18 protections are
+   rules in code, with tests (R29).
 9. **Brand on two intensities.** Characters in expressive moments (welcome, empty states,
    stickers), never on security or money surfaces (BRAND.md B2). Colours come from the theme,
    which reads contrast-checked tokens; no raw hex in components beyond white text on fills.
@@ -479,7 +484,9 @@ These are rules, not preferences.
   an English word into it as a variable (`{value}` = 's', `{who}` = 'You answer'); a count is
   `trn`, and a line that names who did something passes `by` already translated (`tr('You')`)
   and is written in each catalog as "what happened: who", which reads right for "You" and for a
-  name in every language. Arabic is written for a reader of either gender: the masculine imperative is the neutral
+  name in every language. Arabic is written for a reader of either gender (and, once they
+  said it, in their form: R81, the `toWoman` of a `ReaderForms` entry; a new short imperative
+  gets its three forms, a long sentence waits for the reviewer): the masculine imperative is the neutral
   default ("اختر", "ابدأ"), but nothing describes the reader or a third person by a gendered
   participle or pronoun where a nominal phrase works ("لا اتصال", "حين يعود الاتصال", "على
   الخط", "بينك وبين {name} تواصل", "تعيين مشرفًا", "تم التوثيق"); a count's adjective agrees

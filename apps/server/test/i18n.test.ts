@@ -4,7 +4,7 @@
  * person set it off.
  */
 import { uuidv4 } from '@caime/core';
-import { fill } from '@caime/core/i18n';
+import { fill, type PluralForms } from '@caime/core/i18n';
 import { ar } from '@caime/core/locales/ar';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { arServer } from '../src/locales/ar-server';
@@ -157,7 +157,11 @@ describe('a notification is written in its reader’s language', () => {
     const entry = arServer['{senderName} sent {n} messages{context}'];
     if (!entry || typeof entry === 'string') throw new Error('expected plural forms');
     expect(titles).toContain(
-      fill(entry.few ?? entry.other, { senderName: 'Hassan Khalid', n: 3, context: '' }),
+      fill((entry as PluralForms).few ?? entry.other, {
+        senderName: 'Hassan Khalid',
+        n: 3,
+        context: '',
+      }),
     );
     await noor.patch('/v1/me', { preferences: { language: 'en' } });
   });
@@ -191,5 +195,41 @@ describe('a suggestion is written in its reader’s language', () => {
     const mine = rows.find((r) => r.user_id === hassan.user.id && r.kind === 'reminder');
     expect(mine?.rationale).toBe('You wrote “I will send the deck on Monday.”');
     await noor.patch('/v1/me', { preferences: { language: 'en' } });
+  });
+});
+
+describe('the words take the form the person said (R81)', () => {
+  it('a label reads in the form they shared with you, a refusal in your own, and a stranger sees nothing', async () => {
+    // Noor says she's a woman: Hassan, connected, reads his "Friend" label of her as صديقة.
+    await noor.patch('/v1/me', { gender: 'woman' });
+    const arabicApp = await hassan.get('/v1/connections', {
+      headers: { 'x-caime-language': 'ar' },
+    });
+    expect(arabicApp.connections[0].relationships[0].label).toBe('صديقة');
+    expect(arabicApp.connections[0].person.gender).toBe('woman');
+    // Her own refusal addresses her as she said; Hassan's, who said nothing, reads for anyone.
+    const hers = await noor.req('PATCH', '/v1/me', { country: 'ZZ' }, { 'x-caime-language': 'ar' });
+    expect(hers.statusCode).toBe(400);
+    expect(hers.json().error.message).toBe('اختاري أين تعيشين.');
+    const his = await hassan.req(
+      'PATCH',
+      '/v1/me',
+      { country: 'ZZ' },
+      { 'x-caime-language': 'ar' },
+    );
+    expect(his.json().error.message).toBe('اختر أين تعيش.');
+    // A stranger sees nothing of it: the field is shown to connections, as pronouns are.
+    const rana = await signup(t, {
+      displayName: 'Rana Stranger',
+      email: 'rana.stranger@example.com',
+    });
+    expect((await rana.get(`/v1/people/${noor.user.id}`)).person.gender).toBeNull();
+    expect((await hassan.get(`/v1/people/${noor.user.id}`)).person.gender).toBe('woman');
+    // Taken back: the words read for anyone again.
+    await noor.patch('/v1/me', { gender: null });
+    expect(
+      (await noor.req('PATCH', '/v1/me', { country: 'ZZ' }, { 'x-caime-language': 'ar' })).json()
+        .error.message,
+    ).toBe('اختر أين تعيش.');
   });
 });

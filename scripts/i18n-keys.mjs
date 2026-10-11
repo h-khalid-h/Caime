@@ -45,7 +45,7 @@ export function collectKeys() {
   };
   for (const rel of files) {
     const src = readFileSync(join(root, rel), 'utf8');
-    if (!/\b(tr|trn|msg)\(/.test(src)) continue;
+    if (!/\b(tr|trn|trFor|msg)\(/.test(src)) continue;
     const ast = parser.parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
     traverse(ast, {
       CallExpression(path) {
@@ -54,6 +54,9 @@ export function collectKeys() {
         const args = path.node.arguments;
         if ((c.name === 'tr' || c.name === 'msg') && args[0]?.type === 'StringLiteral') {
           put(args[0].value, false, rel);
+        } else if (c.name === 'trFor' && args[1]?.type === 'StringLiteral') {
+          // A word said of someone (R81): the key is its second argument.
+          put(args[1].value, false, rel);
         } else if (c.name === 'trn' && args[2]?.type === 'StringLiteral') {
           put(args[2].value, true, rel);
         }
