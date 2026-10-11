@@ -78,3 +78,20 @@ export function personalTokenView(t: Selectable<PersonalTokensTable>): PersonalT
     expiresAt: t.expires_at?.toISOString() ?? null,
   };
 }
+
+/** Ends a personal token of someone's own, now; false when there's no live one by that id. */
+export async function revokePersonalToken(
+  ctx: AppContext,
+  userId: string,
+  tokenId: string,
+): Promise<boolean> {
+  const done = await ctx.db
+    .updateTable('personal_tokens')
+    .set({ revoked_at: ctx.now() })
+    .where('id', '=', tokenId)
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .returning('id')
+    .executeTakeFirst();
+  return Boolean(done);
+}

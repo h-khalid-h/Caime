@@ -10,6 +10,7 @@ import {
   type AppCategory,
   type AppListingReviewView,
   type AppListingView,
+  type AppPublisher,
   appIconPath,
   BUILTIN_APPS,
   type BuiltinAppId,
@@ -17,6 +18,7 @@ import {
   type DirectoryAppView,
   directoryCursor,
   type ListingState,
+  type OrgListingView,
   parseDirectoryCursor,
   tr,
 } from '@caime/core';
@@ -58,11 +60,29 @@ export interface DirectoryRow extends ClientRow {
   grant_id: string | null;
 }
 
-function publisherOf(r: DirectoryRow): DirectoryAppView['publisher'] {
+/** The columns a publisher is read from: the owner, and the organization it's under if any. */
+export type PublisherRow = Pick<
+  DirectoryRow,
+  'owner_name' | 'owner_handle' | 'org_name' | 'org_handle' | 'org_verified_at'
+>;
+
+/**
+ * Who made an app, the same on the consent screen, in Connected and in Discover (review
+ * 2026-10-09 M8): the open organization it's published under, else its developer.
+ */
+export function publisherOf(r: PublisherRow): AppPublisher {
   return r.org_name
-    ? { name: r.org_name, handle: r.org_handle, verified: r.org_verified_at !== null }
-    : { name: r.owner_name, handle: r.owner_handle, verified: false };
+    ? { kind: 'org', name: r.org_name, handle: r.org_handle, verified: r.org_verified_at !== null }
+    : { kind: 'person', name: r.owner_name, handle: r.owner_handle, verified: false };
 }
+
+/** Caime, as the publisher of its own built-ins. */
+export const CAIME_PUBLISHER: AppPublisher = {
+  kind: 'caime',
+  name: 'Caime',
+  handle: null,
+  verified: true,
+};
 
 export function directoryAppView(r: DirectoryRow): DirectoryAppView {
   return {
@@ -83,28 +103,32 @@ export function directoryAppView(r: DirectoryRow): DirectoryAppView {
 
 /** The listed apps with their publishers, joined to the viewer's own grants. */
 export function directoryQuery(ctx: AppContext, viewerId: string) {
-  return ctx.db
-    .selectFrom('oauth_clients as c')
-    .innerJoin('users as u', 'u.id', 'c.owner_id')
-    .leftJoin('organizations as o', (join) =>
-      join.onRef('o.id', '=', 'c.org_id').on('o.archived_at', 'is', null),
-    )
-    .leftJoin('oauth_grants as g', (join) =>
-      join
-        .onRef('g.client_id', '=', 'c.id')
-        .on('g.user_id', '=', viewerId)
-        .on('g.revoked_at', 'is', null),
-    )
-    .selectAll('c')
-    .select([
-      'u.display_name as owner_name',
-      'u.handle as owner_handle',
-      'o.name as org_name',
-      'o.handle as org_handle',
-      'o.verified_at as org_verified_at',
-      'g.id as grant_id',
-    ])
-    .where('c.revoked_at', 'is', null);
+  return (
+    ctx.db
+      .selectFrom('oauth_clients as c')
+      .innerJoin('users as u', 'u.id', 'c.owner_id')
+      .leftJoin('organizations as o', (join) =>
+        join.onRef('o.id', '=', 'c.org_id').on('o.archived_at', 'is', null),
+      )
+      .leftJoin('oauth_grants as g', (join) =>
+        join
+          .onRef('g.client_id', '=', 'c.id')
+          .on('g.user_id', '=', viewerId)
+          .on('g.revoked_at', 'is', null),
+      )
+      .selectAll('c')
+      .select([
+        'u.display_name as owner_name',
+        'u.handle as owner_handle',
+        'o.name as org_name',
+        'o.handle as org_handle',
+        'o.verified_at as org_verified_at',
+        'g.id as grant_id',
+      ])
+      .where('c.revoked_at', 'is', null)
+      // A suspended developer's apps leave the directory with them.
+      .where('u.suspended_at', 'is', null)
+  );
 }
 
 /** Only what's listed: asked for, let through, not declined. */
@@ -187,10 +211,7 @@ export async function builtinApps(
     .select(['created_at', 'last_read_at'])
     .where('user_id', '=', viewerId)
     .executeTakeFirst();
-  const feeds = await ctx.db
-    .selectFrom('calendar_feeds')
-    .select(sql<number>`count(*)::int`.as('n'))
-    .executeTakeFirstOrThrow();
+  const feeds = await feedsOn(ctx);
   const on: Record<BuiltinAppId, { createdAt: string; lastUsedAt: string | null } | null> = {
     calendar: feed
       ? {
@@ -209,7 +230,7 @@ export async function builtinApps(
     category: b.category,
     iconUrl: null,
     website: null,
-    publisher: { name: 'Caime', handle: null, verified: true },
+    publisher: CAIME_PUBLISHER,
     connectedCount: counts[b.id],
     connectUrl: null,
     connected: on[b.id] !== null,
@@ -228,7 +249,7 @@ export function builtinConnectedView(
     grantId: null,
     name: b.name,
     website: null,
-    owner: 'Caime',
+    publisher: CAIME_PUBLISHER,
     iconUrl: null,
     scopes: [],
     createdAt: b.on.createdAt,
@@ -286,3 +307,42 @@ export async function listingById(ctx: AppContext, id: string): Promise<Director
 
 /** A viewer nobody is, so the join to grants finds none (the operator connected nothing). */
 const NO_VIEWER = '00000000-0000-0000-0000-000000000000';
+
+/**
+ * How many have each built-in on, counted once and kept until a feed is made or ended on this
+ * instance (`builtinCountsChanged`, from those routes and an account's deletion) or a minute
+ * passes (another instance may have changed it): Discover's first page reads it on every open,
+ * and a count over every feed each time was the review's L.
+ */
+const BUILTIN_COUNT_MS = 60_000;
+const builtinCounts = new WeakMap<AppContext, { feeds: number; until: number }>();
+export function builtinCountsChanged(ctx: AppContext): void {
+  builtinCounts.delete(ctx);
+}
+async function feedsOn(ctx: AppContext): Promise<{ n: number }> {
+  const kept = builtinCounts.get(ctx);
+  if (kept && kept.until > Date.now()) return { n: kept.feeds };
+  const row = await ctx.db
+    .selectFrom('calendar_feeds')
+    .select(sql<number>`count(*)::int`.as('n'))
+    .executeTakeFirstOrThrow();
+  builtinCounts.set(ctx, { feeds: row.n, until: Date.now() + BUILTIN_COUNT_MS });
+  return row;
+}
+
+/**
+ * The apps published under an organization, for its owner and admins (M10): each as Discover
+ * would show it, with where its listing stands and who develops it, whatever the state.
+ */
+export async function orgListings(ctx: AppContext, orgId: string): Promise<OrgListingView[]> {
+  const rows = (await directoryQuery(ctx, NO_VIEWER)
+    .where('c.org_id', '=', orgId)
+    .orderBy('c.created_at', 'desc')
+    .limit(100)
+    .execute()) as DirectoryRow[];
+  return rows.map((r) => ({
+    app: directoryAppView(r),
+    listing: listingState(r),
+    developer: { displayName: r.owner_name, handle: r.owner_handle },
+  }));
+}

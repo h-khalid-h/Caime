@@ -120,9 +120,17 @@ describe('OAuth for third-party apps (PRD §74)', () => {
     const shown = (await consent(noor, request(challenge))).json();
     expect(shown).toEqual({
       app: {
+        id: expect.any(String),
         name: 'Weekly digest',
         website: 'https://digest.example',
-        owner: { displayName: 'Dana Developer', handle: dev.user.handle },
+        // The same publisher and icon Discover and Connected show (review 2026-10-09 M8).
+        publisher: {
+          kind: 'person',
+          name: 'Dana Developer',
+          handle: dev.user.handle,
+          verified: false,
+        },
+        iconUrl: null,
       },
       scopes: [
         { scope: 'messages:read', label: 'Read your conversations and search them' },
@@ -255,7 +263,7 @@ describe('OAuth for third-party apps (PRD §74)', () => {
     expect(apps).toEqual([
       expect.objectContaining({
         name: 'Weekly digest',
-        owner: 'Dana Developer',
+        publisher: expect.objectContaining({ kind: 'person', name: 'Dana Developer' }),
         scopes: ['messages:read', 'messages:write'],
       }),
     ]);

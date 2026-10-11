@@ -5,7 +5,7 @@
  * a person never reads as the interface's words (a header, an id, markup, a rule's own French,
  * an error thrown at a developer), and nothing else is.
  */
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { bareLiterals } from '../../../scripts/i18n-keys.mjs';
 
 const DATA: ReadonlyArray<[file: string, text: string]> = [
@@ -19,8 +19,13 @@ const DATA: ReadonlyArray<[file: string, text: string]> = [
 ];
 
 describe('the interface’s words all go through tr', () => {
+  // One walk of the whole tree (seconds, longer on a busy machine), read by both cases.
+  let found: ReturnType<typeof bareLiterals> = [];
+  beforeAll(() => {
+    found = bareLiterals();
+  }, 120_000);
   it('shows no English outside tr, trn or msg', () => {
-    const bare = bareLiterals().filter(
+    const bare = found.filter(
       (b) =>
         !b.text.startsWith('<svg') &&
         !DATA.some(([file, text]) => b.file === file && b.text === text),
@@ -28,7 +33,7 @@ describe('the interface’s words all go through tr', () => {
     expect(bare.map((b) => `${b.file}:${b.line} [${b.kind}] ${b.text}`)).toEqual([]);
   });
   it('keeps its list of data to what is still there', () => {
-    const seen = new Set(bareLiterals().map((b) => `${b.file} ${b.text}`));
+    const seen = new Set(found.map((b) => `${b.file} ${b.text}`));
     for (const [file, text] of DATA)
       expect(seen.has(`${file} ${text}`), `${file}: ${text}`).toBe(true);
   });

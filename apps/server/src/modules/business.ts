@@ -21,7 +21,12 @@ import {
   tr,
   uuidv7,
 } from '@caime/core';
-import type { OkResponse, OrgConversationResponse, ThreadResponse } from '@caime/core/api';
+import type {
+  OkResponse,
+  OrgConversationResponse,
+  OrgOrdersView,
+  ThreadResponse,
+} from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
@@ -35,6 +40,7 @@ import { recordEvent } from '../lib/events';
 import { afterMessage } from '../lib/message-effects';
 import { messageViews, participantsOf, sendMessage } from '../lib/messages';
 import { notify } from '../lib/notify';
+import { orgOrders } from '../lib/orders';
 import { orgById, orgSeat } from '../lib/orgs';
 import { assertStartRoom } from '../lib/plans';
 import { isBlockedEitherWay } from '../lib/relations';
@@ -425,6 +431,15 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     reply.status(created ? 201 : 200);
     return { conversationId, created, message: view! };
+  });
+
+  // The organization's orders (R60), newest first, for the team's Orders view and its apps.
+  app.get('/orgs/:id/orders', async (req): Promise<OrgOrdersView> => {
+    const auth = requireAuth(req);
+    const { id } = parse(idParam, req.params);
+    await orgById(ctx.db, id);
+    if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
+    return { orders: await orgOrders(ctx, id) };
   });
 
   app.get('/orgs/:id/inbox', async (req): Promise<BusinessInboxView> => {

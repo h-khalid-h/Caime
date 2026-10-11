@@ -40,12 +40,14 @@ import { type Selectable, sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { OAuthClientsTable } from '../db/schema';
+import { revokePersonalToken } from '../lib/access';
 import {
   builtinApps,
   builtinConnectedView,
   countConnected,
   listingState,
   listingView,
+  publisherOf,
 } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import { hashToken } from '../lib/crypto';
@@ -78,6 +80,7 @@ function appView(c: Selectable<OAuthClientsTable>): OAuthAppView {
     confidential: c.secret_hash !== null,
     createdAt: c.created_at.toISOString(),
     listing: listingView(c),
+    connectedCount: c.connected_count,
   };
 }
 
@@ -297,13 +300,20 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     const client = await ctx.db
       .selectFrom('oauth_clients as c')
       .innerJoin('users as u', 'u.id', 'c.owner_id')
+      .leftJoin('organizations as o', (join) =>
+        join.onRef('o.id', '=', 'c.org_id').on('o.archived_at', 'is', null),
+      )
       .select([
         'c.id',
         'c.name',
         'c.website',
         'c.redirect_uris',
+        'c.icon_file_id',
         'u.display_name as owner_name',
         'u.handle as owner_handle',
+        'o.name as org_name',
+        'o.handle as org_handle',
+        'o.verified_at as org_verified_at',
       ])
       .where('c.client_id', '=', r.client_id)
       .where('c.revoked_at', 'is', null)
@@ -332,9 +342,11 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirst();
     return {
       app: {
+        id: client.id,
         name: client.name,
         website: client.website,
-        owner: { displayName: client.owner_name, handle: client.owner_handle },
+        publisher: publisherOf(client),
+        iconUrl: appIconPath(client.id, client.icon_file_id),
       },
       // In the request's language: the consent screen shows it as it came.
       scopes: scopes.map((s) => ({ scope: s, label: tr(PERSONAL_SCOPE_LABELS[s]) })),
@@ -622,6 +634,9 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('oauth_grants as g')
       .innerJoin('oauth_clients as c', 'c.id', 'g.client_id')
       .innerJoin('users as u', 'u.id', 'c.owner_id')
+      .leftJoin('organizations as o', (join) =>
+        join.onRef('o.id', '=', 'c.org_id').on('o.archived_at', 'is', null),
+      )
       .select([
         'g.id',
         'g.scopes',
@@ -631,7 +646,11 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         'c.name',
         'c.website',
         'c.icon_file_id',
-        'u.display_name as owner',
+        'u.display_name as owner_name',
+        'u.handle as owner_handle',
+        'o.name as org_name',
+        'o.handle as org_handle',
+        'o.verified_at as org_verified_at',
       ])
       .where('g.user_id', '=', auth.userId)
       .where('g.revoked_at', 'is', null)
@@ -642,6 +661,20 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
     const own = (await builtinApps(ctx, auth.userId))
       .map(builtinConnectedView)
       .filter((a): a is ConnectedAppView => a !== null);
+    // A personal token acts for the person too (Developer): Connected lists it, as its claim says.
+    const me = await ctx.db
+      .selectFrom('users')
+      .select(['display_name', 'handle'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    const tokens = await ctx.db
+      .selectFrom('personal_tokens')
+      .select(['id', 'name', 'scopes', 'created_at', 'last_used_at', 'expires_at'])
+      .where('user_id', '=', auth.userId)
+      .where('revoked_at', 'is', null)
+      .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', ctx.now())]))
+      .orderBy('created_at', 'desc')
+      .execute();
     const apps: ConnectedAppView[] = [
       ...own,
       ...rows.map((r) => ({
@@ -650,11 +683,28 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
         grantId: r.id,
         name: r.name,
         website: r.website,
-        owner: r.owner,
+        publisher: publisherOf(r),
         iconUrl: appIconPath(r.client_id, r.icon_file_id),
         scopes: r.scopes,
         createdAt: r.created_at.toISOString(),
         lastUsedAt: r.last_used_at?.toISOString() ?? null,
+      })),
+      ...tokens.map((k) => ({
+        kind: 'token' as const,
+        appId: k.id,
+        grantId: null,
+        name: k.name,
+        website: null,
+        publisher: {
+          kind: 'person' as const,
+          name: me.display_name,
+          handle: me.handle,
+          verified: false,
+        },
+        iconUrl: null,
+        scopes: k.scopes,
+        createdAt: k.created_at.toISOString(),
+        lastUsedAt: k.last_used_at?.toISOString() ?? null,
       })),
     ];
     return { apps };
@@ -670,9 +720,18 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('user_id', '=', auth.userId)
       .where('revoked_at', 'is', null)
       .executeTakeFirst();
-    if (!grant) throw notFound(tr('That app'));
-    await revokeGrant(ctx, grant.id);
-    await audit(ctx.db, { actorId: auth.userId, action: 'oauth.removed', target: grant.client_id });
+    if (grant) {
+      await revokeGrant(ctx, grant.id);
+      await audit(ctx.db, {
+        actorId: auth.userId,
+        action: 'oauth.removed',
+        target: grant.client_id,
+      });
+      return { ok: true };
+    }
+    // A personal token's row in Connected ends the token, as Developer would.
+    if (!(await revokePersonalToken(ctx, auth.userId, id))) throw notFound(tr('That app'));
+    await audit(ctx.db, { actorId: auth.userId, action: 'token.revoked', target: id });
     return { ok: true };
   });
 }

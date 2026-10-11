@@ -48,6 +48,7 @@ import {
   settleReport,
   takeBackUpdate,
 } from '../lib/moderation';
+import { notify } from '../lib/notify';
 import { requireOperator } from '../lib/operator';
 import { orgPlanView, planUsage } from '../lib/plans';
 import { productMetrics } from '../lib/product-metrics';
@@ -586,6 +587,21 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       target: id,
       ip: req.ip,
       metadata: { decision: body.decision, operator: by },
+    });
+    // The developer hears the decision (M9), in their language, with the reason when declined.
+    const reason = body.reason?.trim() || null;
+    await notify(ctx, {
+      userId: before.owner_id,
+      kind: 'app',
+      level: 'attention',
+      title: () =>
+        body.decision === 'list'
+          ? tr('{name} is listed in Discover', { name: before.name })
+          : tr('{name} wasn’t listed', { name: before.name }),
+      body: () =>
+        body.decision === 'list' ? tr('Anyone on Caime can find and connect it now.') : reason,
+      data: { appId: id },
+      groupKey: `listing:${id}`,
     });
     const after = await listingById(ctx, id);
     if (!after) throw notFound(tr('That app'));

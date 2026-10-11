@@ -20,6 +20,7 @@ import type { BusinessThread, Database, Organization } from '../db/schema';
 import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
 import { currencyOf } from './geo';
+import { cardData } from './kits';
 import { messagePreview } from './messages';
 import { personViewsFor } from './people-batch';
 import { minorOf } from './users';
@@ -317,6 +318,7 @@ export async function recordBusinessMessage(
     created_at: Date;
     kind: string;
     body: string | null;
+    payload?: unknown;
   },
 ): Promise<void> {
   const at = message.created_at;
@@ -378,6 +380,8 @@ export async function recordBusinessMessage(
         body: message.body,
         createdAt: at.toISOString(),
       },
+      // A card the customer sent (a booking, an order from the catalog): what it says (M12).
+      card: message.kind === 'kit' ? cardData(message.payload) : null,
       customer: {
         id: senderId,
         displayName: sender.display_name,

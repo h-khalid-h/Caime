@@ -943,11 +943,23 @@ describe('your data', () => {
           byYou: true,
         },
       }),
-      // Her ticket: a message of hers, with no words of its own.
+      // Her ticket: a message of hers, with no words of its own, and what it says beside it.
       expect.objectContaining({
         event: 'business.message',
         message: { id: ticket.id, kind: 'kit', body: null },
         card: null,
+      }),
+      // One of Caime's cards moved by the shop: its apps hear that too (review 2026-10-09 M12).
+      expect.objectContaining({
+        event: 'kit.moved',
+        message: null,
+        card: {
+          messageId: ticket.id,
+          kit: 'Support ticket',
+          state: 'in_progress',
+          moved: { from: 'open', to: 'in_progress' },
+          byYou: false,
+        },
       }),
     ]);
 

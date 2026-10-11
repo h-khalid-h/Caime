@@ -3,6 +3,7 @@
  * due date and the meetings you agreed in Caime from a private address. Caime stays where they
  * change. The address is shown once, as it's made; a new one ends the old one.
  */
+import type { CalendarFeedResponse } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
 import { msg, tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +13,7 @@ import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
+import { patchCache } from '@/state/cache';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { CopyRow } from '@/ui/CopyRow';
@@ -44,7 +46,7 @@ export function CalendarFeed() {
       const made = await endpoints.newCalendarFeed();
       setUrl(made.url);
       setConfirming(null);
-      qc.setQueryData(qk.calendarFeed, { feed: made.feed });
+      patchCache<CalendarFeedResponse>(qc, qk.calendarFeed, () => ({ feed: made.feed }));
       // On, it's a connected app (R74): Connected lists it, Discover says so.
       void qc.invalidateQueries({ queryKey: qk.connectedApps });
       void qc.invalidateQueries({ queryKey: qk.allDirectory });

@@ -1199,6 +1199,21 @@ export interface OrgCalendarView {
   items: OrgBookingView[];
 }
 
+/** An order (R60) in one of the organization's customer conversations, for its team's Orders view. */
+export interface OrgOrderView {
+  messageId: string;
+  conversationId: string;
+  customer: { id: string; displayName: string } | null;
+  reference: string | null;
+  summary: string | null;
+  amount: { value: number; currency: string } | null;
+  state: string;
+  createdAt: string;
+}
+export interface OrgOrdersView {
+  orders: OrgOrderView[];
+}
+
 /** An organization's AI agent, for its owner and admins (PRD §74–75). */
 export interface OrgAgentView {
   name: string;
@@ -1842,6 +1857,19 @@ export interface OAuthAppView {
   createdAt: string;
   /** Its listing in Discover (R74): what it says of itself, and where it stands. */
   listing: AppListingView;
+  /** How many people have it connected now (kept by the grant's own transaction). */
+  connectedCount: number;
+}
+
+/** An app published under an organization, as its owner and admins see it (M10). */
+export interface OrgListingView {
+  app: DirectoryAppView;
+  /** Where its listing stands: unlisted, waiting for the operator, listed, or declined. */
+  listing: ListingState;
+  developer: { displayName: string; handle: string };
+}
+export interface OrgListingsResponse {
+  apps: OrgListingView[];
 }
 
 /** What an app says of itself in Discover (R74), as its developer set it. */
@@ -1864,6 +1892,18 @@ export interface AppListingView {
 }
 
 /** An app in Discover (R74): a listed one, or one of Caime's own. */
+/**
+ * Who made an app, the same wherever it's shown (consent, Connected, Discover): the organization
+ * it's published under, else its developer, or Caime for its own. A handle links to their page.
+ */
+export interface AppPublisher {
+  kind: 'person' | 'org' | 'caime';
+  name: string;
+  handle: string | null;
+  /** A verified organization (R42); Caime's own count as verified. */
+  verified: boolean;
+}
+
 export interface DirectoryAppView {
   /** An OAuth client's id, or a built-in's name (`calendar`). */
   id: string;
@@ -1874,7 +1914,7 @@ export interface DirectoryAppView {
   category: AppCategory;
   iconUrl: string | null;
   website: string | null;
-  publisher: { name: string; handle: string | null; verified: boolean };
+  publisher: AppPublisher;
   connectedCount: number;
   /** Where Connect sends someone (an OAuth app's own sign-in); a built-in connects in Caime. */
   connectUrl: string | null;
@@ -1910,7 +1950,14 @@ export interface AppListingReviewResponse {
 
 /** What someone is asked when an app wants to act for them. */
 export interface OAuthConsentView {
-  app: { name: string; website: string | null; owner: { displayName: string; handle: string } };
+  app: {
+    id: string;
+    name: string;
+    website: string | null;
+    /** As Discover and Connected name it: the same publisher and icon (review 2026-10-09 M8). */
+    publisher: AppPublisher;
+    iconUrl: string | null;
+  };
   scopes: Array<{ scope: string; label: string }>;
   redirectUri: string;
   /** They let it in before, with at least these permissions. */
@@ -1922,15 +1969,16 @@ export interface OAuthConsentView {
  * one of Caime's own built-ins that's on (the calendar address), each the same kind of row.
  */
 export interface ConnectedAppView {
-  kind: 'oauth' | 'builtin';
-  /** The directory's id for it (`DirectoryAppView.id`). */
+  /** An app let in (a grant), a built-in that's on, or a personal token of the person's own. */
+  kind: 'oauth' | 'builtin' | 'token';
+  /** The directory's id for it (`DirectoryAppView.id`); a token's own id for a token. */
   appId: string;
-  /** The grant, for an app someone let in; a built-in has none. */
+  /** The grant, for an app someone let in; a built-in or a token has none. */
   grantId: string | null;
   name: string;
   website: string | null;
-  /** Who made it: the developer, or Caime. */
-  owner: string;
+  /** Who made it: the organization or developer who published it, Caime, or the person (a token). */
+  publisher: AppPublisher;
   iconUrl: string | null;
   scopes: string[];
   createdAt: string;

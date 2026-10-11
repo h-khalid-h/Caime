@@ -673,12 +673,22 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/directory/:id/icon', async (req, reply) => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    // Listed, the owner's own, or one the viewer let in (Connected shows it either way, M8).
+    const granted = await ctx.db
+      .selectFrom('oauth_grants')
+      .select('id')
+      .where('client_id', '=', id)
+      .where('user_id', '=', auth.userId)
+      .where('revoked_at', 'is', null)
+      .executeTakeFirst();
     return appIcon(
       req,
       reply,
       id,
       (c) =>
-        Boolean(c.listed_at && c.reviewed_at && !c.declined_reason) || c.owner_id === auth.userId,
+        Boolean(c.listed_at && c.reviewed_at && !c.declined_reason) ||
+        c.owner_id === auth.userId ||
+        granted !== undefined,
     );
   });
   /** The operator sees what they're asked to let through, before it's listed. */

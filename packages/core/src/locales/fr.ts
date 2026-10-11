@@ -326,7 +326,6 @@ export const fr: Catalog = {
   'Whose answers you’d like to be reminded about':
     'Les personnes dont les réponses attendues vous seront rappelées',
   '{name} can’t act for you any more': '{name} ne peut plus agir en votre nom',
-  'Made by {owner}': 'Créée par {owner}',
   'Let in {when} · {text}': 'Autorisée {when} · {text}',
   'not used yet': 'pas encore utilisée',
   Remove: 'Retirer',
@@ -2373,7 +2372,6 @@ export const fr: Catalog = {
   'A conversation is assigned, escalated, resolved or reopened':
     'Une conversation est attribuée, remontée, résolue ou rouverte',
   'Someone on the team sends one of its cards': 'Un membre de l’équipe envoie une de ses cartes',
-  'Someone moves one of its cards on': 'Quelqu’un fait avancer une de ses cartes',
   'A message in a customer conversation is removed for everyone':
     'Un message d’une conversation client est supprimé pour tout le monde',
   'A customer conversation is erased at their request':
@@ -3446,9 +3444,6 @@ export const fr: Catalog = {
     'Connecter doit envoyer les gens à une adresse https.',
   'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
     'Jamais votre mot de passe, votre confidentialité ni votre compte. Ce qu’elle envoie porte la mention « via {name} ». Mettez-y fin à tout moment dans Vous → Applications.{You}',
-  'Made by {displayName} (@{handle}) · {website}':
-    'Créée par {displayName} (@{handle}) · {website}',
-  'Made by {displayName} (@{handle})': 'Créée par {displayName} (@{handle})',
   '{name}, {role}': '{name}, {role}',
   version: 'version',
   'the web': 'le web',
@@ -3628,4 +3623,19 @@ export const fr: Catalog = {
   'This is {what}, not a person, operated by {org}.':
     'Ceci est {what}, pas une personne, opéré par {org}.',
   'This is {what}, not a person.': 'Ceci est {what}, pas une personne.',
+  'No orders yet': 'Pas encore de commandes',
+  'Orders placed in your customer conversations show here, newest first.':
+    'Les commandes passées dans vos conversations clients s’affichent ici, les plus récentes en premier.',
+  '{name} stopped': '{name} est arrêté',
+  'Your personal token, made under Developer': 'Votre jeton personnel, créé dans Développeur',
+  'It stops at once, and so does any script that uses it. Developer makes a new one.':
+    'Il s’arrête aussitôt, et tout script qui l’utilise avec lui. Développeur en crée un nouveau.',
+  'Waiting for Caime’s look': 'En attente du regard de Caime',
+  'Not listed': 'Non répertoriée',
+  'Not in Discover': 'Pas dans Découvrir',
+  'Published under {name}': 'Publiées sous {name}',
+  'Discover names {name} as their publisher, verified as it is. Each is managed by its developer under their own Developer settings; a seat ending takes the name back.':
+    'Découvrir nomme {name} comme leur éditeur, vérifié comme il l’est. Chacune est gérée par son développeur dans ses propres réglages Développeur ; la fin d’un siège reprend le nom.',
+  'Someone moves a card on in a customer conversation (its own, or one of Caime’s)':
+    'Quelqu’un fait avancer une carte dans une conversation client (la sienne, ou l’une de celles de Caime)',
 };

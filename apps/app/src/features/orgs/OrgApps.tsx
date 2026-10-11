@@ -1,4 +1,5 @@
 import type { OrgAppSecretsView, OrgAppView, OrgView } from '@caime/core/api';
+import type { ListingState } from '@caime/core/app-directory';
 import {
   API_SCOPE_LABELS,
   API_SCOPES,
@@ -20,6 +21,7 @@ import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { AppIcon } from '@/features/apps/AppIcon';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -31,7 +33,19 @@ import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { nextOrgPlanLine } from './planLine';
 
-const key = (orgId: string) => ['org-apps', orgId] as const;
+/** Where a listing published under the organization stands (R74), for its owner and admins. */
+function listingLine(state: ListingState): string {
+  switch (state) {
+    case 'listed':
+      return tr('Listed in Discover');
+    case 'waiting':
+      return tr('Waiting for Caime’s look');
+    case 'declined':
+      return tr('Not listed');
+    default:
+      return tr('Not in Discover');
+  }
+}
 
 function toggled<T>(list: T[], v: T): T[] {
   return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
@@ -108,8 +122,14 @@ export function OrgApps({ org }: { org: OrgView }) {
   const qc = useQueryClient();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
-  const q = useQuery({ queryKey: key(org.id), queryFn: () => endpoints.orgApps(org.id) });
+  const q = useQuery({ queryKey: qk.orgApps(org.id), queryFn: () => endpoints.orgApps(org.id) });
   const apps = q.data?.apps ?? [];
+  // Developers' apps published under the organization (M10): shown here, managed by each developer.
+  const listings = useQuery({
+    queryKey: qk.orgListings(org.id),
+    queryFn: () => endpoints.orgListings(org.id),
+  });
+  const published = listings.data?.apps ?? [];
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [scopes, setScopes] = useState<ApiScope[]>(['inbox:read', 'messages:read']);
@@ -141,7 +161,11 @@ export function OrgApps({ org }: { org: OrgView }) {
     queryKey: qk.appDeliveries(app?.id ?? ''),
     queryFn: () => endpoints.appDeliveries(org.id, app?.id ?? ''),
     enabled: Boolean(open?.webhookUrl),
-    refetchInterval: open?.webhookUrl ? 3000 : false,
+    // Asked again only while one is on its way (a test delivery, a retry): never a timer at rest.
+    refetchInterval: (query) =>
+      open?.webhookUrl && query.state.data?.deliveries.some((d) => d.status === 'pending')
+        ? 3000
+        : false,
   });
 
   const run = async <T,>(work: () => Promise<T>, done?: (r: T) => void) => {
@@ -149,7 +173,7 @@ export function OrgApps({ org }: { org: OrgView }) {
     try {
       const r = await work();
       done?.(r);
-      void qc.invalidateQueries({ queryKey: key(org.id) });
+      void qc.invalidateQueries({ queryKey: qk.orgApps(org.id) });
       // Its bot joins or leaves the team shown above.
       void qc.invalidateQueries({ queryKey: qk.org(org.handle) });
       return true;
@@ -259,6 +283,39 @@ export function OrgApps({ org }: { org: OrgView }) {
           </Text>
         ) : null}
       </View>
+
+      {published.length ? (
+        <>
+          <SectionTitle>{tr('Published under {name}', { name: org.name })}</SectionTitle>
+          <View
+            style={{
+              marginHorizontal: 16,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: t.c.border,
+              backgroundColor: t.c.surface,
+              overflow: 'hidden',
+            }}
+            testID="org-listings"
+          >
+            {published.map((l) => (
+              <ListRow
+                key={l.app.id}
+                left={<AppIcon url={l.app.iconUrl} appId={l.app.id} name={l.app.name} size={32} />}
+                title={l.app.name}
+                subtitle={`${tr('By {name}', { name: l.developer.displayName })} · ${listingLine(l.listing)}`}
+                testID={`org-listing-${l.app.name}`}
+              />
+            ))}
+            <Text variant="caption" color="textSecondary" style={{ padding: 14, paddingTop: 4 }}>
+              {tr(
+                'Discover names {name} as their publisher, verified as it is. Each is managed by its developer under their own Developer settings; a seat ending takes the name back.',
+                { name: org.name },
+              )}
+            </Text>
+          </View>
+        </>
+      ) : null}
 
       <Sheet
         open={creating}
@@ -429,7 +486,11 @@ export function OrgApps({ org }: { org: OrgView }) {
                     onPress={() =>
                       void run(
                         () => endpoints.pingApp(org.id, app.id),
-                        () => toast(tr('Sent: it shows below in a moment')),
+                        () => {
+                          // The pending delivery shows at once, and is watched until it lands.
+                          void qc.invalidateQueries({ queryKey: qk.appDeliveries(app.id) });
+                          toast(tr('Sent: it shows below in a moment'));
+                        },
                       )
                     }
                     testID="org-app-ping"

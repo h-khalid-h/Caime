@@ -1,6 +1,6 @@
 # Caime apps: the API for organizations
 
-An organization's owner or admin adds an **app** on the organization's page (Apps → Add). An app
+An organization's owner or admin adds an **app** on the organization's setup screen (Setup → Apps). An app
 is how a helpdesk, a CRM or your own bot works with the organization's Business inbox. Each app:
 
 - acts as its own **bot** on the team. Customers see its replies as the organization's, always
@@ -35,6 +35,8 @@ answers `401`.
 | any | `POST /v1/apps/me/deliveries/:id/retry` | A failed delivery queued afresh, with the whole schedule again (`{ "delivery": … }`; 404 unless it's this app's and failed) |
 | any | `GET /v1/apps/me` | Who this token is: `{ "app": { "id", "name", "orgId", "orgHandle", "orgName", "botUserId", "scopes", "events" } }`. The `orgId` is what the routes below take, so the first call needs nothing but the token (`caime.me()` in the SDK) |
 | `inbox:read` | `GET /v1/orgs/:orgId/inbox?view=` | The inbox, by view: `customer_waiting`, `new`, `mine`, `waiting`, `escalated`, `resolved` |
+| `inbox:read` | `GET /v1/orgs/:orgId/calendar?from=&to=` | The organization's bookings in a window (ISO 8601, up to a year): the appointments its team confirmed or was asked (`items[]`: `messageId`, `conversationId`, `customer`, `title`, `at`, `hasTime`, `place`, `state`, `booking` with what was booked and who does it), what the Business inbox's Bookings view shows |
+| `inbox:read` | `GET /v1/orgs/:orgId/orders?limit=` | The orders in its customer conversations, newest first (`orders[]`: `messageId`, `conversationId`, `customer`, `reference`, `summary`, `amount`, `state`, `createdAt`), what its Orders view shows; the order itself is moved on in the conversation |
 | `messages:read` | `GET /v1/conversations/:id` | One conversation, with its thread (state, who has it) |
 | `messages:read` | `GET /v1/conversations/:id/messages?before=&after=&limit=` | Its messages, oldest first |
 | `messages:read` | `GET /v1/files/:id`, `GET /v1/files/:id/thumb` | A file a message carries (`message.files[].id`), as its bytes, and its thumbnail (WebP) where there is one: the same files the team sees in that conversation, nothing else |
@@ -92,7 +94,7 @@ try {
 
 | Method | Route | Permission |
 | --- | --- | --- |
-| `inbox(orgId, view)` | `GET /v1/orgs/:orgId/inbox` | `inbox:read` |
+| `inbox(orgId, view)`, `calendar(orgId, from, to)`, `orders(orgId, { limit })` | `GET /v1/orgs/:orgId/inbox`, `…/calendar`, `…/orders` | `inbox:read` |
 | `file(id)`, `thumbnail(id)` | `GET /v1/files/:id`, `…/thumb` | `messages:read` (a `Response` whose body is the file) |
 | `deliveries({ status, after, limit })`, `retryDelivery(id)` | `GET /v1/apps/me/deliveries`, `POST …/:id/retry` | any |
 | `conversation(id)`, `messages(id, { before, after, limit })` | `GET /v1/conversations/:id`, `…/messages` | `messages:read` |
@@ -100,6 +102,7 @@ try {
 | `assign(id, userId \| null)`, `resolve(id)`, `reopen(id)`, `escalate(id, note)`, `stopEscalating(id)` | `POST /v1/business/:id/…`, `DELETE …/escalation` | `threads:write` |
 | `updates(orgId, { before, limit })`, `postUpdate(orgId, body)`, `editUpdate(orgId, id, body)`, `removeUpdate(orgId, id)` | `/v1/orgs/:orgId/updates` | `updates` |
 | `kits()`, `putKit(key, definition)`, `removeKit(key)`, `moveCard(messageId, to)`, `changeCard(messageId, fields)` | `/v1/kits`, `/v1/messages/:id/kit` | `kits` |
+| `person()`, `myInbox()`, `search(q, { understand })`, `tasks(view)`, `addTask(task)`, `updateTask(id, change)` | `GET /v1/me`, `GET /v1/inbox`, `GET /v1/search`, `/v1/tasks` | A personal (`cap_`) or OAuth (`cao_`) token's routes (below); `conversation`, `messages` and `send` work for a person too |
 
 A refusal throws a `CaimeError` with the server's `status`, `code` and `message` (and
 `retryAfter`, in seconds, on a 429). `send` and `postUpdate` make up a `clientId` when none is
@@ -114,10 +117,10 @@ Caime `POST`s JSON to the app's address (https only) for the events it listens t
 
 | Event | When | `data` |
 | --- | --- | --- |
-| `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
+| `business.message` | A customer writes | `conversationId`, `message` (`id`, `seq`, `kind`, `body`, `createdAt`), `card` (what a card they sent says: `kit` with `key`, `name` and `custom`, `fields`, `state`, `booking`, `order`; `null` for words), `customer` (`id`, `displayName`, `handle`, `under18`: never market to them) |
 | `business.thread` | Someone assigns, escalates, resolves or reopens a conversation, or the organization's AI agent hands it to the team (`handed_over`) or closes it (`resolved`) | `conversationId`, `change`, `state`, `assignee`, `by` (`person`, `app` or `ai_agent`) |
-| `kit.posted` | Someone on the team sends one of the app's kinds of card | `conversationId`, `message` (`id`, `seq`, `createdAt`), `kit` (`key`, `name`, `custom`), `fields`, `state`, `by` (`person`), `customer` |
-| `kit.moved` | Someone moves one of its cards on (or a card of Caime's own its bot sent), never when the app did | as `kit.posted`, with `from` and `to`, and `by`: `person` (the team) or `customer` |
+| `kit.posted` | Someone on the team sends a card: one of the app's own kinds (that app alone hears), or one of Caime's (an appointment, an order, a Pay card: every app of the organization that listens hears, so the one that keeps the books sees the order placed) | `conversationId`, `message` (`id`, `seq`, `createdAt`), `kit` (`key`, `name`, `custom`), `fields`, `state`, `booking`, `order`, `by` (`person`), `customer` |
+| `kit.moved` | A card moves on: the team's move, the customer's, or a Pay card paid through Checkout (`to: "paid"`); the app's own card to that app alone, one of Caime's to every app that listens, never a move the app made itself | as `kit.posted`, with `from` and `to`, and `by`: `person` (the team) or `customer` |
 | `message.deleted` | A message in a customer conversation is removed for everyone (its sender's delete, or the operator's review): drop any copy of its words you kept | `conversationId`, `messageId` |
 | `conversation.erased` | A customer conversation is erased at the customer's request (every message in it is gone): drop whatever you kept of them | `conversationId`, `erased` (how many messages) |
 | `ping` | You pressed "Send a test delivery" | `appId` |
@@ -163,7 +166,10 @@ export function verify(secret, header, rawBody, toleranceSeconds = 300) {
 A person can make tokens for their own scripts in **You → Developer**: a name, what it may do,
 and how long it lasts (30 days, 90 days, a year, or until revoked). A token is shown once and
 starts `cap_`. Send it as `Authorization: Bearer cap_…`; it acts as that person, and a message
-it sends shows "via" the token's name.
+it sends shows "via" the token's name. A live token is also a row under **You → Apps →
+Connected**, beside the apps let in, and can be ended there as well. From Node, the same
+`Caime` client: `person()`, `myInbox()`, `search(q)`, `tasks(view)`, `addTask(task)`,
+`updateTask(id, change)`, with `conversation`, `messages` and `send` as for an app.
 
 | Permission | Route | What it does |
 | --- | --- | --- |
@@ -281,9 +287,13 @@ https address at a site among your return addresses or your website, which start
 Optionally the organization it's published under, if you're its owner or admin: a verified one
 shows as such. Turn on **Listed in Discover** and save. Caime looks at it once, then it shows,
 ordered by how many people connected it; declined, you see why, and changing it asks again, as
-any change to what's shown does. Signed in as yourself, `PATCH /v1/me/oauth-apps/:id` takes the
-same fields (`tagline`, `description`, `category`, `loginUrl`, `iconFileId`, `orgId`,
-`listed`); no token reaches it.
+any change to what's shown does. Caime tells you (a notification, opened on Developer) when it's
+listed or why it wasn't, and your list under Developer says how many people have it connected
+now, never who. Whoever is asked to let it in sees the same publisher and icon Discover shows:
+the organization it's published under (its owner and admins see it on their setup screen, with
+where the listing stands), else you, with a tap to that page. Signed in as yourself,
+`PATCH /v1/me/oauth-apps/:id` takes the same fields (`tagline`, `description`, `category`,
+`loginUrl`, `iconFileId`, `orgId`, `listed`); no token reaches it.
 
 ## Your own cards
 

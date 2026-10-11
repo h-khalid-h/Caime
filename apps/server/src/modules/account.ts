@@ -12,6 +12,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { builtinCountsChanged } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import { endBillingOf } from '../lib/billing';
 import { disconnect } from '../lib/checkout';
@@ -135,6 +136,8 @@ export async function accountRoutes(app: FastifyInstance, ctx: AppContext) {
       await rerootMerged(trx, me);
       // The account first (its avatar points at a file), then the files only it could see.
       await trx.deleteFrom('users').where('id', '=', me).execute();
+      // Their calendar feed went with them: Discover's count of who has it on changes.
+      builtinCountsChanged(ctx);
       // Its handle is held from everyone, so links to it never open someone else: the handle and
       // the days are all that's kept, never whose it was (lib/handles.ts).
       await releaseHandle(trx, user.handle, ctx.now());

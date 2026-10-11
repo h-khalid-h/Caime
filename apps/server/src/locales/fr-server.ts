@@ -1144,4 +1144,8 @@ export const frServer: Catalog = {
   'Yours to do: {name}': 'À vous de faire : {name}',
   '{org} named you for this booking.': '{org} vous a désigné pour cette réservation.',
   About: 'À propos',
+  '{name} is listed in Discover': '{name} est dans Découvrir',
+  '{name} wasn’t listed': '{name} n’a pas été répertorié',
+  'Anyone on Caime can find and connect it now.':
+    'Tout le monde sur Caime peut maintenant le trouver et le connecter.',
 };

@@ -5,6 +5,7 @@
  */
 import { Image } from 'expo-image';
 import CalendarDays from 'lucide-react-native/icons/calendar-days';
+import KeyRound from 'lucide-react-native/icons/key-round';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
@@ -17,7 +18,7 @@ export function AppIcon({
   size = 40,
 }: {
   url: string | null;
-  /** A built-in's name picks its mark (`calendar`); anything else is an app. */
+  /** A built-in's name picks its mark (`calendar`), `token` a personal token's; anything else is an app. */
   appId: string;
   name: string;
   size?: number;
@@ -40,7 +41,7 @@ export function AppIcon({
         }}
       />
     );
-  const Mark = appId === 'calendar' ? CalendarDays : LayoutGrid;
+  const Mark = appId === 'calendar' ? CalendarDays : appId === 'token' ? KeyRound : LayoutGrid;
   return (
     <View
       accessible

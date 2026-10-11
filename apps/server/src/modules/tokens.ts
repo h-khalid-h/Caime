@@ -13,7 +13,7 @@ import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import { newPersonalToken, personalTokenView } from '../lib/access';
+import { newPersonalToken, personalTokenView, revokePersonalToken } from '../lib/access';
 import { audit } from '../lib/audit';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { minorOf } from '../lib/users';
@@ -81,15 +81,7 @@ export async function tokenRoutes(app: FastifyInstance, ctx: AppContext) {
   app.delete('/me/tokens/:id', async (req): Promise<OkResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const done = await ctx.db
-      .updateTable('personal_tokens')
-      .set({ revoked_at: ctx.now() })
-      .where('id', '=', id)
-      .where('user_id', '=', auth.userId)
-      .where('revoked_at', 'is', null)
-      .returning('id')
-      .executeTakeFirst();
-    if (!done) throw notFound(tr('That token'));
+    if (!(await revokePersonalToken(ctx, auth.userId, id))) throw notFound(tr('That token'));
     await audit(ctx.db, { actorId: auth.userId, action: 'token.revoked', target: id });
     return { ok: true };
   });

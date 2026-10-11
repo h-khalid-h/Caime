@@ -1,5 +1,5 @@
 import type { OAuthAppView } from '@caime/core/api';
-import { msg, tr } from '@caime/core/i18n';
+import { msg, tr, trn } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import Plus from 'lucide-react-native/icons/plus';
@@ -166,7 +166,13 @@ export function OAuthApps() {
               <ListRow
                 icon={LayoutGrid}
                 title={a.name}
-                subtitle={`${a.clientId} · ${a.confidential ? tr('its own server') : tr('phones and browsers')}`}
+                subtitle={[
+                  trn(a.connectedCount, '{n} person connected it', '{n} people connected it'),
+                  a.listing.state === 'listed' ? tr('Listed in Discover') : null,
+                  a.confidential ? tr('its own server') : tr('phones and browsers'),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 chevron
                 onPress={() => {
                   setRemoving(false);

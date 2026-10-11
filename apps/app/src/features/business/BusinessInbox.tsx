@@ -33,8 +33,12 @@ import { Text } from '@/ui/Text';
 import { StateChip } from './states';
 import { WriteFirstSheet } from './WriteFirstSheet';
 
-/** The organization's bookings (R51), loaded when first shown. */
+/** The organization's bookings (R51) and orders (R60), each loaded when first shown. */
 const OrgBookings = lazyPart(() => import('./OrgBookings').then((m) => m.OrgBookings));
+const OrgOrders = lazyPart(() => import('./OrgOrders').then((m) => m.OrgOrders));
+
+/** The inbox's own views, and the two lists of cards beside them. */
+type InboxView = BusinessView | 'bookings' | 'orders';
 
 const EMPTY: Record<BusinessView, { title: string; body: string }> = {
   customer_waiting: {
@@ -174,12 +178,17 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
   const open = pathname.startsWith('/c/') ? pathname.slice(3) : null;
   const org = useOrg(handle);
   const summary = org.data?.org;
-  const [view, setView] = useState<BusinessView | 'bookings'>('customer_waiting');
+  const [view, setView] = useState<InboxView>('customer_waiting');
   const [writing, setWriting] = useState(false);
+  const cards = view === 'bookings' || view === 'orders';
   const inbox = useOrgInbox(
     summary?.myRole ? summary.id : undefined,
-    view === 'bookings' ? 'customer_waiting' : view,
+    cards ? 'customer_waiting' : view,
   );
+  const openConversation = (conversationId: string) =>
+    desktop
+      ? router.navigate({ pathname: '/c/[id]', params: { id: conversationId, inbox: handle } })
+      : router.push({ pathname: '/c/[id]', params: { id: conversationId } });
   const threads = inbox.data?.threads ?? [];
   const counts = inbox.data?.counts;
   // On several teams: each is a step away, and the rail comes back to this one.
@@ -248,7 +257,7 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
         </ScrollView>
       ) : null}
       {/* The views, one radio each: in lines on a desktop (a wheel doesn't scroll sideways). */}
-      <ChoiceChips<BusinessView | 'bookings'>
+      <ChoiceChips<InboxView>
         label={tr('Show conversations')}
         value={view}
         onChange={setView}
@@ -272,21 +281,13 @@ export function BusinessInbox({ handle, pane }: { handle: string; pane?: boolean
             };
           }),
           { value: 'bookings' as const, label: tr('Bookings'), testID: 'business-view-bookings' },
+          { value: 'orders' as const, label: tr('Orders'), testID: 'business-view-orders' },
         ]}
       />
       {view === 'bookings' ? (
-        <OrgBookings
-          orgId={summary?.id}
-          org={summary}
-          open={(conversationId) =>
-            desktop
-              ? router.navigate({
-                  pathname: '/c/[id]',
-                  params: { id: conversationId, inbox: handle },
-                })
-              : router.push({ pathname: '/c/[id]', params: { id: conversationId } })
-          }
-        />
+        <OrgBookings orgId={summary?.id} org={summary} open={openConversation} />
+      ) : view === 'orders' ? (
+        <OrgOrders orgId={summary?.id} open={openConversation} />
       ) : inbox.isPending && !inbox.data ? (
         <SkeletonRows />
       ) : (

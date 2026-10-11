@@ -135,30 +135,22 @@ export async function cardApp(
 }
 
 /**
- * Tells a card's app what someone did with it (kit.posted, kit.moved), if it asked to hear:
- * never what the app did itself, and never another app of the organization.
+ * What a card says of itself to an organization's app, the same in `business.message`,
+ * `kit.posted` and `kit.moved` (PRD §74, review 2026-10-09 M12): its kind (an app's own, or one
+ * of Caime's), its fields and state, and what was booked or ordered from the catalog (R58, R60).
+ * Null for a message that isn't a card.
  */
-export async function tellCardApp(
-  ctx: AppContext,
-  m: Pick<Message, 'id' | 'seq' | 'conversation_id' | 'sender_id' | 'payload' | 'created_at'>,
-  mask: CustomerMask,
-  actorId: string,
-  event: 'kit.posted' | 'kit.moved',
-  change: Record<string, unknown> = {},
-): Promise<void> {
-  const app = await cardApp(ctx, m);
-  if (!app || app.orgId !== mask.orgId || actorId === app.botUserId) return;
-  if (!app.hooked || !app.events.includes(event)) return;
-  const card = (m.payload ?? {}) as { kit?: string; fields?: unknown; state?: string };
-  const own = isCustomCard(m.payload) ? m.payload : null;
-  const customer = await ctx.db
-    .selectFrom('users')
-    .select(['id', 'display_name', 'handle', 'birth_date', 'time_zone'])
-    .where('id', '=', mask.customerId)
-    .executeTakeFirst();
-  await queueDelivery(ctx, app.id, mask.orgId, event, {
-    conversationId: m.conversation_id,
-    message: { id: m.id, seq: Number(m.seq), createdAt: m.created_at.toISOString() },
+export function cardData(payload: unknown): Record<string, unknown> | null {
+  const card = (payload ?? {}) as {
+    kit?: string;
+    fields?: unknown;
+    state?: string;
+    booking?: unknown;
+    order?: unknown;
+  };
+  const own = isCustomCard(payload) ? payload : null;
+  if (!own && typeof card.kit !== 'string') return null;
+  return {
     kit: own
       ? { key: own.key, name: own.label, custom: true }
       : {
@@ -168,6 +160,64 @@ export async function tellCardApp(
         },
     fields: card.fields ?? {},
     state: card.state ?? null,
+    booking: card.booking ?? null,
+    order: card.order ?? null,
+  };
+}
+
+/** The organization's apps that listen at an address, with what each asked to hear. */
+async function hookedApps(ctx: AppContext, orgId: string) {
+  return ctx.db
+    .selectFrom('org_apps')
+    .select(['id', 'org_id', 'bot_user_id', 'events'])
+    .where('org_id', '=', orgId)
+    .where('revoked_at', 'is', null)
+    .where('webhook_url', 'is not', null)
+    .execute();
+}
+
+/**
+ * Tells the organization's apps what someone did with a card (kit.posted, kit.moved), if they
+ * asked to hear. An app's own card is its business alone: only that app hears. One of Caime's
+ * cards in a customer conversation (a booking, an order, a payment) is the organization's: every
+ * app of it that listens hears, so an app that keeps the books sees the order move (M12). Never
+ * what an app did itself.
+ */
+export async function tellCardApp(
+  ctx: AppContext,
+  m: Pick<Message, 'id' | 'seq' | 'conversation_id' | 'sender_id' | 'payload' | 'created_at'>,
+  mask: CustomerMask,
+  actorId: string,
+  event: 'kit.posted' | 'kit.moved',
+  change: Record<string, unknown> = {},
+): Promise<void> {
+  const data = cardData(m.payload);
+  if (!data) return;
+  const ownApp = isCustomCard(m.payload) ? await cardApp(ctx, m) : null;
+  const apps = isCustomCard(m.payload)
+    ? ownApp?.hooked
+      ? [ownApp]
+      : []
+    : (await hookedApps(ctx, mask.orgId)).map((a) => ({
+        id: a.id,
+        orgId: a.org_id,
+        botUserId: a.bot_user_id,
+        events: a.events,
+        hooked: true,
+      }));
+  const told = apps.filter(
+    (app) => app.orgId === mask.orgId && actorId !== app.botUserId && app.events.includes(event),
+  );
+  if (!told.length) return;
+  const customer = await ctx.db
+    .selectFrom('users')
+    .select(['id', 'display_name', 'handle', 'birth_date', 'time_zone'])
+    .where('id', '=', mask.customerId)
+    .executeTakeFirst();
+  const body = {
+    conversationId: m.conversation_id,
+    message: { id: m.id, seq: Number(m.seq), createdAt: m.created_at.toISOString() },
+    ...data,
     ...change,
     by: actorId === mask.customerId ? 'customer' : 'person',
     customer: customer
@@ -179,5 +229,6 @@ export async function tellCardApp(
           under18: minorOf(customer, ctx.now()),
         }
       : null,
-  });
+  };
+  for (const app of told) await queueDelivery(ctx, app.id, mask.orgId, event, body);
 }

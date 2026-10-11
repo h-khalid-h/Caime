@@ -117,6 +117,8 @@ export function AppListing({
       });
       setIcon(null);
       void qc.invalidateQueries({ queryKey: qk.oauthApps });
+      // Discover shows the listing as it stands now (a withdrawn one leaves at once).
+      void qc.invalidateQueries({ queryKey: qk.allDirectory });
       onSaved(r.app);
       toast(
         r.app.listing.state === 'waiting'

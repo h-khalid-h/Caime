@@ -1,8 +1,9 @@
 /**
  * Connected (R74): everything that acts for someone or reads their data, each a row of the
  * same kind: an app they let in through OAuth (what it may do, when it last did, and the one
- * tap that ends it: its tokens stop at once), and Caime's own built-ins that are on (the
- * calendar address, managed in its sheet).
+ * tap that ends it: its tokens stop at once), a personal token of their own (made under
+ * Developer, ended here too), and Caime's own built-ins that are on (the calendar address,
+ * managed in its sheet).
  */
 import { PERSONAL_SCOPE_LABELS, type PersonalScope } from '@caime/core/access';
 import type { ConnectedAppView } from '@caime/core/api';
@@ -25,23 +26,32 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { AppIcon } from './AppIcon';
+import { PublisherLine } from './PublisherLine';
 
+/** An app let in, or a personal token: each ends with one tap, and stops at once. */
 function AppRow({ app }: { app: ConnectedAppView }) {
   const qc = useQueryClient();
   const now = useNow();
   const { timeZone, locale } = useUserClock();
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState(false);
+  const token = app.kind === 'token';
   const when = (iso: string) => formatWhen(iso, now, timeZone, locale);
   const remove = async () => {
-    if (!app.grantId) return;
+    // A grant ends by its own id; a token by the token's (the server tells them apart).
+    const id = token ? app.appId : app.grantId;
+    if (!id) return;
     setAsking(false);
     setBusy(true);
     try {
-      await endpoints.removeConnectedApp(app.grantId);
+      await endpoints.removeConnectedApp(id);
       void qc.invalidateQueries({ queryKey: qk.connectedApps });
-      void qc.invalidateQueries({ queryKey: qk.allDirectory });
-      toast(tr('{name} can’t act for you any more', { name: app.name }));
+      void qc.invalidateQueries({ queryKey: token ? qk.tokens : qk.allDirectory });
+      toast(
+        token
+          ? tr('{name} stopped', { name: app.name })
+          : tr('{name} can’t act for you any more', { name: app.name }),
+      );
     } catch (e) {
       toast((e as Error).message, { tone: 'danger' });
       setBusy(false);
@@ -50,14 +60,18 @@ function AppRow({ app }: { app: ConnectedAppView }) {
   return (
     <View style={{ padding: 16, gap: 8 }} testID={`connected-${app.name}`}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <AppIcon url={app.iconUrl} appId={app.appId} name={app.name} />
+        <AppIcon url={app.iconUrl} appId={token ? 'token' : app.appId} name={app.name} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="label" numberOfLines={1}>
             {app.name}
           </Text>
-          <Text variant="caption" color="textSecondary">
-            {tr('Made by {owner}', { owner: app.owner })}
-          </Text>
+          {token ? (
+            <Text variant="caption" color="textSecondary">
+              {tr('Your personal token, made under Developer')}
+            </Text>
+          ) : (
+            <PublisherLine publisher={app.publisher} />
+          )}
           <Text variant="caption" color="textSecondary">
             {tr('Let in {when} · {text}', {
               when: when(app.createdAt),
@@ -80,9 +94,15 @@ function AppRow({ app }: { app: ConnectedAppView }) {
         open={asking}
         onClose={() => setAsking(false)}
         title={tr('Remove {name}?', { name: app.name })}
-        subtitle={tr(
-          'It stops acting for you at once. To use it again, you’d let it in again from the app itself.',
-        )}
+        subtitle={
+          token
+            ? tr(
+                'It stops at once, and so does any script that uses it. Developer makes a new one.',
+              )
+            : tr(
+                'It stops acting for you at once. To use it again, you’d let it in again from the app itself.',
+              )
+        }
         footer={
           <Button
             label={tr('Remove')}

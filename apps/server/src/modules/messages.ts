@@ -12,22 +12,18 @@ import type { AppointmentBooking, AssetsResponse, MessagesPage } from '@caime/co
 import {
   applyChecklistOp,
   applySplitOp,
-  type CardKitId,
   ChecklistOpBody,
   canPin,
   canRemoveOthersMessages,
   checklistItems,
   checklistState,
   customMoves,
-  customState,
   EditMessageBody,
   ForwardBody,
   formatAmount,
   isCardKit,
   isCustomCard,
-  KITS,
   kitMoves,
-  kitStateLabel,
   type LiveLocation,
   LiveLocationUpdate,
   type LocationPayloadT,
@@ -60,8 +56,8 @@ import { dropSaved, tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
 import { orgHost, pickProvider } from '../lib/booking';
 import { humanTeam } from '../lib/booking-team';
-import { queueBrief } from '../lib/briefs';
 import { customerMask, maskFor, maskId } from '../lib/business';
+import { afterCardMove } from '../lib/card-moves';
 import { expireCheckout, stillPayableAfter } from '../lib/checkout';
 import { membership, sendSystem } from '../lib/conversation-views';
 import { lockConversation } from '../lib/conversations';
@@ -154,10 +150,12 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
     const [view] = await messageViews(ctx.db, [result.message], auth.userId);
     if (result.created) {
       reply.status(201);
-      // One of an app's cards, sent by someone on the team: the app hears of it (PRD §74).
-      if (result.message.kind === 'kit' && isCustomCard(result.message.payload)) {
+      // A card sent by someone on the team, an app's own or one of Caime's: the organization's
+      // apps hear of it (PRD §74, M12). The customer's own cards reach them in business.message.
+      if (result.message.kind === 'kit') {
         const mask = await customerMask(ctx.db, id);
-        if (mask) await tellCardApp(ctx, result.message, mask, auth.userId, 'kit.posted');
+        if (mask && auth.userId !== mask.customerId)
+          await tellCardApp(ctx, result.message, mask, auth.userId, 'kit.posted');
       }
       const members = await participantsOf(ctx.db, id);
       await ctx.bus.publish(
@@ -334,44 +332,14 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
       await expireCheckout(ctx, id).catch((e) =>
         req.log.warn({ err: (e as Error).message }, 'checkout expire'),
       );
-    // Agreed (R58): its people get a brief an hour before.
-    if (
-      (card.kit === 'meeting' && to === 'accepted') ||
-      (card.kit === 'appointment' && to === 'confirmed')
-    )
-      await queueBrief(ctx, id);
-    const members = (await participantsOf(ctx.db, m.conversation_id)).map((p) => p.user_id);
-    const [view] = await messageViews(ctx.db, [confirmed], auth.userId);
-    await recordEvent(ctx.db, 'kit.moved', auth.userId, { messageId: id, kit: card.kit, to });
-    await ctx.bus.publish(members, { type: 'message.updated', data: { ...view, clientId: null } });
-    // The card's app hears who moved it, unless it did (PRD §74).
-    if (business)
-      await tellCardApp(ctx, confirmed, business, auth.userId, 'kit.moved', { from, to });
-    const mover = await ctx.db
-      .selectFrom('users')
-      .select('display_name')
-      .where('id', '=', auth.userId)
-      .executeTakeFirstOrThrow();
-    // Everyone else hears it; an answer to what the sender asked matters more than an update.
-    // In a business conversation, the other side does: the customer hears the organization.
-    for (const userId of members) {
-      if (userId === auth.userId) continue;
-      if (business && onTeam(userId) === onTeam(auth.userId)) continue;
-      if (business && onTeam(userId) && userId !== m.sender_id) continue;
-      await notify(ctx, {
-        userId,
-        kind: 'kit',
-        level: userId === m.sender_id ? 'attention' : 'activity',
-        title: () =>
-          `${business && !onTeam(userId) ? business.orgName : mover.display_name}: ${own ? customState({ ...own, state: to }).label : tr(kitStateLabel(to))}`,
-        body: () =>
-          `${own ? own.label : tr(KITS[card.kit as CardKitId].name)} · ${card.title ?? ''}`,
-        // A card's moves are one notification, its latest.
-        groupKey: `kit:${id}`,
-        data: { conversationId: m.conversation_id, messageId: id },
-      });
-    }
-    return { message: view! };
+    // What follows any move, a payment by card's too (M11): the brief, the event, the people.
+    const view = await afterCardMove(ctx, confirmed, {
+      from,
+      to,
+      actorId: auth.userId,
+      business,
+    });
+    return { message: view };
   });
 
   async function assignOnConfirm<T extends { id: string; payload: unknown }>(

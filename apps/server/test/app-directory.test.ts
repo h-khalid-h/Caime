@@ -203,7 +203,12 @@ describe('Discover and Connected (R74)', () => {
     expect(seen.apps.map((a) => a.name)).toEqual(['Your calendar', 'Weekly digest']);
     expect(seen.apps[1]).toMatchObject({
       kind: 'oauth',
-      publisher: { name: 'Dana Developer', handle: dev.user.handle, verified: false },
+      publisher: {
+        kind: 'person',
+        name: 'Dana Developer',
+        handle: dev.user.handle,
+        verified: false,
+      },
       connectedCount: 0,
       connected: false,
       connectUrl: LOGIN,
@@ -223,11 +228,21 @@ describe('Discover and Connected (R74)', () => {
         kind: 'oauth',
         appId: app.id,
         name: 'Weekly digest',
-        owner: 'Dana Developer',
+        publisher: {
+          kind: 'person',
+          name: 'Dana Developer',
+          handle: dev.user.handle,
+          verified: false,
+        },
         iconUrl: null,
         scopes: ['messages:read'],
       }),
     ]);
+    // The developer sees how many connected it, never who (review 2026-10-09 M9).
+    expect((await dev.get('/v1/me/oauth-apps')).apps[0]).toMatchObject({
+      id: app.id,
+      connectedCount: 2,
+    });
     await noor.del(`/v1/me/connected-apps/${apps[0].grantId}`);
     expect((await directory(noor)).apps[1]).toMatchObject({ connectedCount: 1, connected: false });
     // A deleted account lets go of its grants, and the count with them.
@@ -244,7 +259,7 @@ describe('Discover and Connected (R74)', () => {
         appId: 'calendar',
         grantId: null,
         name: 'Your calendar',
-        owner: 'Caime',
+        publisher: { kind: 'caime', name: 'Caime', handle: null, verified: true },
         scopes: [],
       }),
     ]);
@@ -385,10 +400,23 @@ describe('Discover and Connected (R74)', () => {
     expect(under.app.listing.orgId).toBe(studio);
     await review(app.id, 'list');
     expect((await directory(noor)).apps[1]?.publisher).toEqual({
+      kind: 'org',
       name: 'Dana Studio',
       handle: expect.stringMatching(/^studio\./),
       verified: false,
     });
+    // Its owner and admins see what's published under it, whatever state each listing is in.
+    const under_ = await dev.get(`/v1/orgs/${studio}/listings`);
+    expect(under_.apps).toEqual([
+      {
+        app: expect.objectContaining({ id: app.id, name: 'Weekly digest' }),
+        listing: 'listed',
+        developer: { displayName: 'Dana Developer', handle: dev.user.handle },
+      },
+    ]);
+    expect(under_.apps[0].app.publisher).toMatchObject({ kind: 'org', name: 'Dana Studio' });
+    expect((await noor.req('GET', `/v1/orgs/${studio}/listings`)).statusCode).toBe(404);
+    expect((await dev.req('GET', `/v1/orgs/${theirs}/listings`)).statusCode).toBe(404);
     const queueAfter = await dev.patch(`/v1/me/oauth-apps/${app.id}`, { orgId: null });
     expect(queueAfter.app.listing.orgId).toBeNull();
     await review(app.id, 'list');
@@ -461,5 +489,124 @@ describe('Discover and Connected (R74)', () => {
     expect(none.apps.filter((a) => a.kind === 'oauth')).toEqual([]);
     expect((await noor.req('GET', '/v1/directory?before=nonsense')).statusCode).toBe(400);
     expect((await noor.req('GET', '/v1/directory?limit=500')).statusCode).toBe(400);
+  });
+  it('consent names the same publisher and icon as Discover and Connected do', async () => {
+    const { challenge } = pkce();
+    const asked = await noor.get(
+      `/v1/oauth/authorize?${new URLSearchParams({
+        response_type: 'code',
+        client_id: app.clientId,
+        redirect_uri: REDIRECT,
+        scope: 'messages:read',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+      })}`,
+    );
+    expect(asked.app).toEqual({
+      id: app.id,
+      name: 'Weekly digest',
+      website: SITE,
+      publisher: {
+        kind: 'person',
+        name: 'Dana Developer',
+        handle: dev.user.handle,
+        verified: false,
+      },
+      iconUrl: expect.stringMatching(/^\/v1\/directory\/.+\/icon\?v=/),
+    });
+    expect(asked.app).not.toHaveProperty('owner');
+  });
+
+  it('tells the developer of each look Caime took: listed, or why not', async () => {
+    const { notifications } = await dev.get('/v1/notifications');
+    const about = notifications.filter((n: { kind: string }) => n.kind === 'app');
+    // Newest first: the last review listed it; an earlier one declined it with its reason.
+    expect(about[0]).toMatchObject({
+      title: 'Weekly digest is listed in Discover',
+      body: 'Anyone on Caime can find and connect it now.',
+      data: { appId: app.id },
+    });
+    expect(about).toContainEqual(
+      expect.objectContaining({
+        title: expect.stringMatching(/ wasn’t listed$/),
+        body: 'The tagline says nothing of what it does.',
+      }),
+    );
+    expect(about.every((n: { data: { appId: unknown } }) => typeof n.data.appId === 'string')).toBe(
+      true,
+    );
+  });
+
+  it('an icon reaches whoever let the app in, listed or not; a personal token is a Connected row too', async () => {
+    const path = (await dev.get(`/v1/directory/${app.id}`)).app.iconUrl as string;
+    await allow(noor, app.clientId);
+    const withdrawn = await dev.patch(`/v1/me/oauth-apps/${app.id}`, { listed: false });
+    expect(withdrawn.app.listing.state).toBe('none');
+    // Unlisted: its owner and whoever let it in (Connected shows it) see the icon; nobody else.
+    expect((await noor.req('GET', path)).statusCode).toBe(200);
+    const tala = await signup(t, { displayName: 'Tala Ward' });
+    expect((await tala.req('GET', path)).statusCode).toBe(404);
+    // A personal token acts for its maker as an app would: Connected lists it and ends it.
+    const made = (await noor.post('/v1/me/tokens', {
+      name: 'Home script',
+      scopes: ['messages:read'],
+      days: 30,
+    })) as { token: string; view: { id: string } };
+    const { apps } = await noor.get('/v1/me/connected-apps');
+    expect(apps.map((a: { kind: string; name: string }) => [a.kind, a.name])).toEqual([
+      ['oauth', 'Weekly digest'],
+      ['token', 'Home script'],
+    ]);
+    expect(apps[1]).toMatchObject({
+      appId: made.view.id,
+      grantId: null,
+      publisher: { kind: 'person', name: 'Noor Haddad', handle: noor.user.handle, verified: false },
+      scopes: ['messages:read'],
+    });
+    await noor.del(`/v1/me/connected-apps/${made.view.id}`);
+    expect(
+      (
+        await t.app.inject({
+          method: 'GET',
+          url: '/v1/me',
+          headers: { authorization: `Bearer ${made.token}` },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (await noor.get('/v1/me/connected-apps')).apps.map((a: { kind: string }) => a.kind),
+    ).toEqual(['oauth']);
+    // Someone else's token isn't theirs to end.
+    expect((await tala.req('DELETE', `/v1/me/connected-apps/${made.view.id}`)).statusCode).toBe(
+      404,
+    );
+    await noor.del(`/v1/me/connected-apps/${apps[0].grantId}`);
+    const again = await dev.patch(`/v1/me/oauth-apps/${app.id}`, { listed: true });
+    expect(again.app.listing.state).toBe('waiting');
+    await review(app.id, 'list');
+  });
+
+  it('under 18, Discover shows apps with nothing to connect; a suspended developer’s leave it', async () => {
+    const kid = await signup(t, { displayName: 'Kid Haddad', birthDate: '2012-05-05' });
+    // (Found by name: the keyset test above filled the first page with busier apps.)
+    const seen = (await directory(kid, '?q=digest')).apps.find((a) => a.id === app.id);
+    expect(seen).toMatchObject({ name: 'Weekly digest', connectUrl: null });
+    expect((await kid.get(`/v1/directory/${app.id}`)).app.connectUrl).toBeNull();
+    expect((await noor.get(`/v1/directory/${app.id}`)).app.connectUrl).toBe(LOGIN);
+    await t.ctx.db
+      .updateTable('users')
+      .set({ suspended_at: t.clock.now })
+      .where('id', '=', dev.user.id)
+      .execute();
+    expect((await directory(noor, '?q=digest')).apps.map((a) => a.name)).not.toContain(
+      'Weekly digest',
+    );
+    expect((await noor.req('GET', `/v1/directory/${app.id}`)).statusCode).toBe(404);
+    await t.ctx.db
+      .updateTable('users')
+      .set({ suspended_at: null })
+      .where('id', '=', dev.user.id)
+      .execute();
+    expect((await directory(noor, '?q=digest')).apps.map((a) => a.name)).toContain('Weekly digest');
   });
 });

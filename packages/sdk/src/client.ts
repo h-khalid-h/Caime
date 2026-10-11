@@ -4,10 +4,19 @@ import type {
   BusinessInboxView,
   BusinessThreadView,
   ConversationView,
+  GrantUserView,
+  InboxResponse,
   MessagesPage,
   MessageView,
+  OrgCalendarView,
+  OrgOrdersView,
+  OrgOrderView,
   OrgUpdatesView,
   OrgUpdateView,
+  SearchResponse,
+  TaskResponse,
+  TasksResponse,
+  TaskView,
   WebhookDeliveryView,
 } from '@caime/core/api';
 import type { BusinessView } from '@caime/core/business';
@@ -49,6 +58,38 @@ export interface KitDefinition extends CustomKitShape {
 }
 
 type Query = Record<string, string | number | undefined>;
+
+/** A new action of the person's own, or asked of someone (`POST /v1/tasks`). */
+export interface NewTask {
+  title: string;
+  notes?: string | null;
+  /** ISO 8601; `dueHasTime` says whether the time of day counts. */
+  dueAt?: string | null;
+  dueHasTime?: boolean;
+  remindAt?: string | null;
+  /** Someone else's: with `shared` a request they see, without it a private waiting item. */
+  assigneeId?: string;
+  shared?: boolean;
+  conversationId?: string;
+  messageId?: string;
+  /** 8 to 64 characters: send the same again and the same action comes back. */
+  clientId?: string;
+}
+
+/** The lists under Actions: to do, waiting on others, asked of me, I asked, done, or all. */
+export type TaskListView = 'todo' | 'waiting' | 'asked_me' | 'i_asked' | 'done' | 'all';
+
+/** What may change on an action (`PATCH /v1/tasks/:id`). */
+export interface TaskChange {
+  title?: string;
+  notes?: string | null;
+  dueAt?: string | null;
+  dueHasTime?: boolean;
+  remindAt?: string | null;
+  status?: TaskView['status'];
+  /** Hand a wait to Cai, or take it back. */
+  caiFollowUp?: boolean;
+}
 
 /**
  * Caime's API for an organization's app. Each method is one route, with the permission it needs
@@ -120,6 +161,25 @@ export class Caime {
   /** `inbox:read`: the organization's inbox, by view. */
   inbox(orgId: string, view: BusinessView): Promise<BusinessInboxView> {
     return this.call('GET', `/orgs/${enc(orgId)}/inbox`, undefined, { view });
+  }
+
+  /**
+   * `inbox:read`: the organization's bookings in a window (ISO 8601 `from` and `to`, up to a
+   * year): the appointments its team confirmed or was asked, with who does each.
+   */
+  calendar(orgId: string, from: string, to: string): Promise<OrgCalendarView> {
+    return this.call('GET', `/orgs/${enc(orgId)}/calendar`, undefined, { from, to });
+  }
+
+  /** `inbox:read`: the orders in the organization's customer conversations, newest first. */
+  async orders(orgId: string, page: { limit?: number } = {}): Promise<OrgOrderView[]> {
+    const { orders } = await this.call<OrgOrdersView>(
+      'GET',
+      `/orgs/${enc(orgId)}/orders`,
+      undefined,
+      page,
+    );
+    return orders;
   }
 
   /** `messages:read`: one conversation, with its thread (state, who has it). */
@@ -271,6 +331,48 @@ export class Caime {
       { fields },
     );
     return message;
+  }
+
+  // --- As a person: personal (`cap_`) and OAuth (`cao_`) tokens ----------------------------------
+  // `conversation`, `messages` and `send` above work for a person too, on their own conversations.
+
+  /** `profile:read`: who the token acts for (no email, privacy or plan). */
+  async person(): Promise<GrantUserView> {
+    const { user } = await this.call<{ user: GrantUserView }>('GET', '/me');
+    return user;
+  }
+
+  /** `messages:read`: the person's inbox, in its sections, with what needs them first. */
+  myInbox(): Promise<InboxResponse> {
+    return this.call('GET', '/inbox');
+  }
+
+  /**
+   * `messages:read`: search as the person would type it ("photos from Sara last week"). The
+   * rules read it; with `understand` the model may, when the person has AI assist on.
+   */
+  search(q: string, opts: { understand?: boolean } = {}): Promise<SearchResponse> {
+    return this.call('GET', '/search', undefined, {
+      q,
+      ...(opts.understand ? { understand: 1 } : {}),
+    });
+  }
+
+  /** `actions:read`: the person's actions and what they wait for, by list (`todo` by default). */
+  tasks(view?: TaskListView): Promise<TasksResponse> {
+    return this.call('GET', '/tasks', undefined, view ? { view } : {});
+  }
+
+  /** `actions:write`: add an action. Send a `clientId` of your own and sending it again is the same one. */
+  async addTask(task: NewTask): Promise<TaskView> {
+    const { task: made } = await this.call<TaskResponse>('POST', '/tasks', task);
+    return made;
+  }
+
+  /** `actions:write`: change or finish one. */
+  async updateTask(taskId: string, change: TaskChange): Promise<TaskView> {
+    const { task } = await this.call<TaskResponse>('PATCH', `/tasks/${enc(taskId)}`, change);
+    return task;
   }
 
   // --- Under the hood ---------------------------------------------------------------------------

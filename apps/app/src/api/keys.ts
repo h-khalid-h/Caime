@@ -21,6 +21,11 @@ export const qk = {
   tokens: ['personal-tokens'] as const,
   oauthApps: ['oauth-apps'] as const,
   orgAgent: (orgId: string) => ['org-agent', orgId] as const,
+  /** An organization's own apps (its tokens and webhooks), and the listings published under it. */
+  orgApps: (orgId: string) => ['org-apps', orgId] as const,
+  orgListings: (orgId: string) => ['org-listings', orgId] as const,
+  /** The orders in its customer conversations (R60), for the Business inbox's Orders view. */
+  orgOrders: (orgId: string) => ['org-orders', orgId] as const,
   connectedApps: ['connected-apps'] as const,
   /** Discover (R74): a search and a category each page on their own. */
   directory: (search: string, category: string) => ['directory', search, category] as const,
@@ -116,6 +121,7 @@ export const qk = {
   allUpdates: ['updates'] as const,
   allCalendars: ['calendar'] as const,
   allOrgCalendars: ['org-calendar'] as const,
+  allOrgOrders: ['org-orders'] as const,
   allSlots: ['slots'] as const,
   allPoliciesFor: ['policy-for'] as const,
 };

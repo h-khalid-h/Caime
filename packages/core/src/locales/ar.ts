@@ -73,7 +73,6 @@ export const ar: Catalog = {
   'A conversation is assigned, escalated, resolved or reopened':
     'تُسند محادثة أو تُصعَّد أو تُحل أو يُعاد فتحها',
   'Someone on the team sends one of its cards': 'يرسل أحد أعضاء الفريق إحدى بطاقاته',
-  'Someone moves one of its cards on': 'ينقل أحدٌ إحدى بطاقاته إلى خطوتها التالية',
   'A message in a customer conversation is removed for everyone':
     'تُحذف رسالة في محادثة عميل لدى الجميع',
   'A customer conversation is erased at their request': 'تُمحى محادثة عميل بناءً على طلب العميل',
@@ -329,7 +328,6 @@ export const ar: Catalog = {
   'Whose messages wait for set hours': 'رسائل من تنتظر ساعات محددة',
   'Whose answers you’d like to be reminded about': 'من تودّ أن تُذكَّر بإجاباتهم',
   '{name} can’t act for you any more': 'لم يعد بإمكان {name} التصرف نيابةً عنك',
-  'Made by {owner}': 'من صنع {owner}',
   'Let in {when} · {text}': 'سُمح له {when} · {text}',
   'not used yet': 'لم يُستخدم بعد',
   Remove: 'إزالة',
@@ -3482,8 +3480,6 @@ export const ar: Catalog = {
   'Connect must send people to an https address.': 'يجب أن يرسل «اتصال» الأشخاص إلى عنوان https.',
   'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
     'لا كلمة مرورك ولا خصوصيتك ولا حسابك أبدًا. ما يرسله يُكتب عليه «عبر {name}». أنهِه متى شئت من أنت ← التطبيقات.{You}',
-  'Made by {displayName} (@{handle}) · {website}': 'من صنع {displayName} (@{handle}) · {website}',
-  'Made by {displayName} (@{handle})': 'من صنع {displayName} (@{handle})',
   '{name}, {role}': '{name}، {role}',
   version: 'الإصدار',
   'the web': 'الويب',
@@ -3759,4 +3755,19 @@ export const ar: Catalog = {
   'Use at least 10 characters.': 'استخدم 10 أحرف على الأقل.',
   'This is {what}, not a person, operated by {org}.': 'هذا {what}، لا شخص، تشغّله {org}.',
   'This is {what}, not a person.': 'هذا {what}، لا شخص.',
+  'No orders yet': 'لا طلبات بعد',
+  'Orders placed in your customer conversations show here, newest first.':
+    'تظهر هنا الطلبات المقدَّمة في محادثات عملائك، الأحدث أولًا.',
+  '{name} stopped': 'توقّف {name}',
+  'Your personal token, made under Developer': 'رمزك الشخصي، أُنشئ في «المطوّر»',
+  'It stops at once, and so does any script that uses it. Developer makes a new one.':
+    'يتوقّف فورًا، ومعه أي سكربت يستخدمه. وينشئ «المطوّر» رمزًا جديدًا.',
+  'Waiting for Caime’s look': 'في انتظار نظر Caime',
+  'Not listed': 'غير مدرج',
+  'Not in Discover': 'ليس في «اكتشف»',
+  'Published under {name}': 'منشورة باسم {name}',
+  'Discover names {name} as their publisher, verified as it is. Each is managed by its developer under their own Developer settings; a seat ending takes the name back.':
+    'يذكر «اكتشف» {name} ناشرًا لها، موثّقة كما هي. ويدير كلًّا منها مطوّرها من إعدادات «المطوّر» الخاصة به؛ وانتهاء المقعد يسترد الاسم.',
+  'Someone moves a card on in a customer conversation (its own, or one of Caime’s)':
+    'ينقل أحدهم بطاقة في محادثة عميل (بطاقته، أو إحدى بطاقات Caime)',
 };

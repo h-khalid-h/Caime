@@ -1122,4 +1122,7 @@ export const arServer: Catalog = {
   'Yours to do: {name}': 'عليك القيام به: {name}',
   '{org} named you for this booking.': 'عيّنتك {org} لهذا الحجز.',
   About: 'عن Caime',
+  '{name} is listed in Discover': '{name} مدرج الآن في «اكتشف»',
+  '{name} wasn’t listed': 'لم يُدرج {name}',
+  'Anyone on Caime can find and connect it now.': 'يمكن لأي شخص على Caime إيجاده وربطه الآن.',
 };

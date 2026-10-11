@@ -9,11 +9,26 @@ interface Delivery<E extends string, D> {
   data: D;
 }
 
+/**
+ * What a card says, as every event that carries one says it: the kind (one of Caime's, or the
+ * app's own), its fields, where it stands, and for a card from the catalog what was booked or
+ * ordered (R58, R60).
+ */
+export interface WebhookCard {
+  kit: { key: string; name: string; custom: boolean };
+  fields: Record<string, unknown>;
+  state: string | null;
+  booking: Record<string, unknown> | null;
+  order: Record<string, unknown> | null;
+}
+
 export type BusinessMessageWebhook = Delivery<
   'business.message',
   {
     conversationId: string;
     message: { id: string; seq: number; kind: string; body: string | null; createdAt: string };
+    /** A card the customer sent (a booking, an order from the catalog), else null. */
+    card: WebhookCard | null;
     /** `under18`: never market to them. */
     customer: { id: string; displayName: string; handle: string; under18: boolean };
   }
@@ -30,16 +45,19 @@ export type BusinessThreadWebhook = Delivery<
   }
 >;
 
-interface KitWebhookData {
+/**
+ * A card in a customer conversation: the app's own (its business alone), or one of Caime's (a
+ * booking, an order, a payment), which every app of the organization that listens hears.
+ */
+interface KitWebhookData extends WebhookCard {
   conversationId: string;
   message: { id: string; seq: number; createdAt: string };
-  kit: { key: string; name: string; custom: boolean };
-  fields: Record<string, unknown>;
-  state: string | null;
-  customer?: { id: string; displayName: string; handle: string } | null;
+  customer: { id: string; displayName: string; handle: string; under18: boolean } | null;
 }
 
+/** Someone on the team sent a card (its own kind, or one of Caime's). */
 export type KitPostedWebhook = Delivery<'kit.posted', KitWebhookData & { by: 'person' }>;
+/** A card moved on: by the team, by the customer, or paid through Checkout (`to: 'paid'`). */
 export type KitMovedWebhook = Delivery<
   'kit.moved',
   KitWebhookData & { from: string | null; to: string; by: 'person' | 'customer' }

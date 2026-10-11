@@ -1092,4 +1092,7 @@ export const turkishServer: Catalog = {
   'Yours to do: {name}': 'Senin yapacağın: {name}',
   '{org} named you for this booking.': '{org} bu rezervasyon için seni belirledi.',
   About: 'Hakkında',
+  '{name} is listed in Discover': '{name} artık Keşfet’te',
+  '{name} wasn’t listed': '{name} listelenmedi',
+  'Anyone on Caime can find and connect it now.': 'Caime’deki herkes artık onu bulup bağlayabilir.',
 };

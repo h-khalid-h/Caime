@@ -683,6 +683,36 @@ These are rules, not preferences.
   read. A new built-in is a row in `BUILTIN_APPS` and a case in `builtinApps` (whether it's on
   for the viewer, how many have it on); its icon is `/directory/:id/icon` (a listed app's to
   anyone signed in, else its owner's).
+- Who made an app is one shape, `AppPublisher` (`publisherOf` in `lib/app-directory.ts`: the
+  organization it's published under, else its developer, or Caime; `CAIME_PUBLISHER` for the
+  built-ins): consent (`OAuthConsentView.app`), Connected, Discover and an organization's
+  listings all carry it, and the app draws it only with `features/apps/PublisherLine.tsx` (a tap
+  opens the publisher's page). Connected lists a person's live personal tokens as `kind: 'token'`
+  rows beside the grants and the built-ins; `DELETE /me/connected-apps/:id` ends a grant or,
+  failing one, the person's token (`revokePersonalToken`), so Developer and Connected are one
+  list. Under 18 Discover's `connectUrl` is null (`withoutConnectForMinors`) and the sheet says
+  why; a suspended developer's apps leave Discover (`directoryQuery`). How many have a built-in
+  on is cached on the instance for a minute (`feedsOn`): anything that turns one on or off calls
+  `builtinCountsChanged(ctx)`. The operator's review notifies the developer (`kind: 'app'`,
+  opened on Developer), and `OAuthAppView.connectedCount` shows them their usage. An
+  organization's owner and admins see what's published under it on its setup screen
+  (`GET /orgs/:id/listings`, `orgListings`, under `qk.orgListings`); its own apps are under
+  `qk.orgApps`, and their deliveries list is polled only while a delivery is pending.
+- What follows a card's move is `afterCardMove` (`lib/card-moves.ts`): the kit move route and
+  `settleCheckout` (a Pay card paid through Checkout moves to `paid` the same way) both call it,
+  so a new way a card moves calls it too, never its own notify, publish or event. `tellCardApp`
+  (`lib/kits.ts`) tells an app's own card to that app alone and one of Caime's cards in a
+  customer conversation to every app of the organization that listens (`kit.posted` for any
+  card the team sends, `kit.moved` for any move, never what an app did itself); `cardData` is
+  the one shape of a card in a webhook, and `business.message` carries the customer's card as
+  `card`. The Business inbox's Orders view (`features/business/OrgOrders.tsx`, lazy; a card's state
+  label and tone come from core's light `kit-states.ts`, never `kit-cards`, which carried every
+  kit definition into `__common` once, 6 KB) and an
+  app's `orders(orgId)` read `GET /orgs/:id/orders` (`lib/orders.ts`, newest 200), and an app's
+  `calendar(orgId, from, to)` reads the team's `GET /orgs/:id/calendar`, both `inbox:read`;
+  `realtime/apply.ts` invalidates `['org-orders']` with the calendars on a kit event. The SDK's
+  person methods (`person`, `myInbox`, `search`, `tasks`, `addTask`, `updateTask`) are the
+  `PERSON_ROUTES`, for a `cap_` or `cao_` token on the same client.
 - OAuth apps' tokens (`cao_`) go through the same `PERSON_ROUTES`; `resolveOAuthAccess`
   (`apps/server/src/lib/oauth.ts`) checks the token, its grant, its app and its person are all
   live. `/v1/oauth/token` and `/v1/oauth/revoke` answer RFC 6749/7009 errors
@@ -1138,9 +1168,11 @@ webhooks), personal access tokens, OAuth for third-party apps, plan entitlements
 CI are built and verified, and so are an organization's AI support agent, web calls (1:1 and in
 groups of up to eight; phones built, not yet tried on one) with their history, private conversations (end to end encrypted, web; phones built, not yet tried on one),
 billing with Stripe, possible duplicates in People, and organizations' updates.
-It's live on EasyPanel at https://caime.datac.com (also its default domain,
+It runs on EasyPanel at https://caime.datac.com (also its default domain,
 https://caishy-caishy.0hqwb7.easypanel.host; `docs/DEPLOY.md`), billing included, on the live
-Stripe account (tell its owner before changing anything there: it's live); sessions in this
+Stripe account (tell its owner before changing anything there: it's live). Caime has not
+launched: that instance is the owner's own, with no public users yet, so a release is judged by
+the code's rules (CI green, migrations expand first), never by a launch's stakes; sessions in this
 environment have `EASYPANEL_URL` and `EASYPANEL_API_TOKEN` (never print them). Calls go through Cloudflare's TURN relay when they can't connect directly
 (`CLOUDFLARE_TURN_*`, set in EasyPanel). Remaining: trying calls and private conversations on a phone (a development build: Expo Go
 has no WebRTC), ringing a closed app (VoIP push), a third-party penetration test, and store builds. Production is only what passed CI: a green run

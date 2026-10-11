@@ -1266,11 +1266,17 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - [x] Block 3, words: `msg()` on the eleven label tables; the friend's line true to R71; every
       fragment and bare literal a whole key (156 keys, the three catalogs complete, 25 stale
       entries gone); `bareLiterals` in the collector, held empty by `i18n-literals.test.ts`.
-- [ ] Block 4, Apps and Developer in harmony: one publisher-and-icon helper for consent,
-      Connected and Discover; the developer told of a review and shown usage; `OrgApps` listing
-      the organization's listings; `afterCardMove` for the move route and Checkout; cards to
-      organization apps and `GET /orgs/:id/calendar` in the SDK; the SDK's person methods; the
-      review's Ls on R74.
+- [x] Block 4, Apps and Developer in harmony: one `AppPublisher` (`publisherOf`) on consent,
+      Connected, Discover and an organization's listings, drawn by `PublisherLine` (a tap to the
+      publisher's page) with the app's icon on consent; the developer told of each review
+      (`kind: 'app'`) and shown `connectedCount`; `GET /orgs/:id/listings` on the setup screen;
+      `afterCardMove` for the move route and Checkout (a card paid by card tells the asker and
+      the apps); `kit.posted` and `kit.moved` for Caime's cards to every listening app, the
+      customer's card on `business.message`; `GET /orgs/:id/calendar` and a new
+      `GET /orgs/:id/orders` for apps (`inbox:read`) and the SDK (`calendar`, `orders`), the
+      Business inbox's Orders view; the SDK's person methods; the R74 lows (tokens in Connected,
+      Connect hidden under 18, suspended developers unlisted, built-in counts cached, delivery
+      polling only while pending, `patchCache`, `qk.orgApps`).
 - [ ] Block 5, scale: `USER_COLUMNS`/`ORG_COLUMNS`; the booking lock; `card_start_at`; the module
       rule with its test; the job pool, the early NOTIFY and the brief jitter; one TTL cache;
       the sitemap cached and paged; the god modules split; `AppListing` lazy.
@@ -2451,3 +2457,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   open organization cleared when either ends, listing reviews by revision, reclaims per person,
   re-encoded images only. `task-visibility.test.ts`; cases in checkout, booking, minors,
   app-directory, orgs and item-photos.
+- 2026-10-11 — Review block 4, Apps and Developer in harmony: one publisher shape across consent,
+  Connected, Discover and an organization's listings (`AppPublisher`, `PublisherLine`); the
+  developer notified of reviews and shown usage; `afterCardMove` shared by the kit route and
+  Checkout; Caime's cards and the customer's cards to organization apps; the calendar and a new
+  orders route for apps and the SDK, with the Business inbox's Orders view; the SDK's person
+  methods; the R74 lows. Tests in `app-directory.test.ts`, `checkout.test.ts`, `sdk.test.ts`.

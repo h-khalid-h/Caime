@@ -2,12 +2,13 @@ import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import Check from 'lucide-react-native/icons/check';
-import KeyRound from 'lucide-react-native/icons/key-round';
 import { useState } from 'react';
 import { Linking, Platform, ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { Wordmark } from '@/brand/Wordmark';
+import { AppIcon } from '@/features/apps/AppIcon';
+import { PublisherLine } from '@/features/apps/PublisherLine';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
@@ -106,34 +107,18 @@ export default function Authorize() {
           ) : (
             <View style={{ gap: 16 }} testID="oauth-consent">
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 14,
-                    backgroundColor: t.c.surfaceMuted,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <KeyRound size={22} color={t.c.text} />
-                </View>
+                {/* The same icon and publisher Discover and Connected show (M8). */}
+                <AppIcon url={c.app.iconUrl} appId={c.app.id} name={c.app.name} size={48} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text variant="headline">
                     {tr('{name} wants to act for you', { name: c.app.name })}
                   </Text>
-                  <Text variant="caption" color="textSecondary">
-                    {c.app.website
-                      ? tr('Made by {displayName} (@{handle}) · {website}', {
-                          displayName: c.app.owner.displayName,
-                          handle: c.app.owner.handle,
-                          website: c.app.website,
-                        })
-                      : tr('Made by {displayName} (@{handle})', {
-                          displayName: c.app.owner.displayName,
-                          handle: c.app.owner.handle,
-                        })}
-                  </Text>
+                  <PublisherLine publisher={c.app.publisher} testID="oauth-publisher" />
+                  {c.app.website ? (
+                    <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                      {c.app.website}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
               <View style={{ gap: 8 }}>

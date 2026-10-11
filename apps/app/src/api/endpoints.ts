@@ -89,6 +89,8 @@ import type {
   OrgDoorView,
   OrgExportView,
   OrgInsightsResponse,
+  OrgListingsResponse,
+  OrgOrdersView,
   OrgReclaimView,
   OrgResponse,
   OrgSpacesResponse,
@@ -621,6 +623,8 @@ export const endpoints = {
   tryOrgAgent: (orgId: string, body: { name: string; knowledge: string; question: string }) =>
     api.post<AgentTryView>(`/orgs/${orgId}/agent/try`, body),
   orgApps: (orgId: string) => api.get<OrgAppsResponse>(`/orgs/${orgId}/apps`),
+  orgListings: (orgId: string) => api.get<OrgListingsResponse>(`/orgs/${orgId}/listings`),
+  orgOrders: (orgId: string) => api.get<OrgOrdersView>(`/orgs/${orgId}/orders`),
   orgInsights: (orgId: string, days: 7 | 30) =>
     api.get<OrgInsightsResponse>(`/orgs/${orgId}/insights?days=${days}`),
   createOrgApp: (

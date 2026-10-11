@@ -14,6 +14,8 @@ import { tr } from '@caime/core/i18n';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS } from '../db/schema';
+import { customerMask } from './business';
+import { afterCardMove } from './card-moves';
 import { checkoutAccountOf, checkoutAvailable } from './checkout-account';
 import { badRequest, conflict, forbidden, notFound } from './errors';
 import { messageViews, participantsOf } from './messages';
@@ -447,12 +449,23 @@ export async function settleCheckout(
   const said = await askSession(s, mark.sessionId, messageId);
   if (said.status === 'none' || said.status === 'open') return said.status;
   const status = said.status;
-  const updated = await ctx.db
-    .transaction()
-    .execute(async (trx) =>
-      applySaid(trx, messageId, await lockCard(trx, messageId), mark, status, ctx.now()),
-    );
-  if (updated) await tellUpdated(ctx, updated, mark.payerId);
+  const { updated, from } = await ctx.db.transaction().execute(async (trx) => {
+    const p = await lockCard(trx, messageId);
+    return {
+      from: p.state ?? '',
+      updated: await applySaid(trx, messageId, p, mark, status, ctx.now()),
+    };
+  });
+  if (!updated) return status;
+  // Paid by card: the same after-effects as a "paid" tapped by hand (M11), by the payer.
+  if (status === 'paid' && from !== 'paid')
+    await afterCardMove(ctx, updated, {
+      from,
+      to: 'paid',
+      actorId: mark.payerId,
+      business: await customerMask(ctx.db, updated.conversation_id),
+    });
+  else await tellUpdated(ctx, updated, mark.payerId);
   return status;
 }
 

@@ -52,6 +52,8 @@ export default function Notifications() {
     else if (n.kind.includes('task') || n.kind.includes('reminder')) router.navigate('/actions');
     else if (n.kind === 'update' && typeof n.data.handle === 'string')
       router.navigate({ pathname: '/o/[handle]', params: { handle: n.data.handle } });
+    // Caime's look at an app's listing (R74): its developer finds it under Developer.
+    else if (n.kind === 'app') router.navigate('/settings/developer');
   };
 
   return (

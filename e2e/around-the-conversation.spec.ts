@@ -2263,9 +2263,9 @@ test.describe
       await app.page.getByTestId('signin-submit').click();
       const asked = app.page.getByTestId('oauth-consent');
       await expect(asked).toContainText('Weekly digest wants to act for you');
-      await expect(asked).toContainText(
-        `Made by Noor Haddad (@noor.${stamp}) · https://digest.example`,
-      );
+      // The same publisher line Discover and Connected show, and the app's own address (M8).
+      await expect(asked.getByTestId('oauth-publisher')).toHaveText('By Noor Haddad');
+      await expect(asked).toContainText('https://digest.example');
       await expect(asked).toContainText('Send messages as you, marked with what sent them');
       await expect(asked).toContainText('Then you’ll go back to digest.example.');
       await app.page.screenshot({ path: 'e2e/screenshots/phone-oauth-consent.png' });
@@ -2352,9 +2352,7 @@ test.describe
 
       // Alex finds it among his connected apps and ends it; its token stops at once.
       await app.page.goto('/settings/apps');
-      await expect(app.page.getByTestId('connected-Weekly digest')).toContainText(
-        'Made by Noor Haddad',
-      );
+      await expect(app.page.getByTestId('connected-Weekly digest')).toContainText('By Noor Haddad');
       await app.page.screenshot({ path: 'e2e/screenshots/phone-connected-apps.png' });
       await app.page.getByTestId('connected-remove-Weekly digest').click();
       await app.page.getByTestId('connected-remove-confirm').click();

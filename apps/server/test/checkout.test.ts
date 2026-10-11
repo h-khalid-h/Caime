@@ -19,6 +19,7 @@ let lina: Client; // its customer
 let orgId: string;
 let convo: string;
 let card: string;
+let books: string;
 
 const ask = (amount: number) =>
   omar.req('POST', `/v1/conversations/${convo}/messages`, {
@@ -58,6 +59,7 @@ beforeAll(async () => {
     STRIPE_CONNECT_CLIENT_ID: 'ca_test_0123456789',
     STRIPE_CONNECT_WEBHOOK_SECRET: SECRET,
     PUBLIC_URL: 'https://caime.example',
+    WEBHOOKS_ALLOW_PRIVATE: 'true',
   });
   noor = await signup(t, { displayName: 'Noor Haddad' });
   omar = await signup(t, { displayName: 'Omar Farouk' });
@@ -74,6 +76,15 @@ beforeAll(async () => {
   await omar.post(`/v1/connections/requests/${r.requestId}/accept`, {});
   await noor.post(`/v1/orgs/${orgId}/members`, { userIds: [omar.user.id] });
   convo = (await lina.post(`/v1/orgs/${orgId}/conversations`, {})).conversationId;
+  // The clinic's books: an app that listens for cards, Caime's own included (M11).
+  books = (
+    await noor.post(`/v1/orgs/${orgId}/apps`, {
+      name: 'Books',
+      scopes: ['inbox:read'],
+      webhookUrl: 'http://127.0.0.1:9/caime',
+      events: ['kit.moved'],
+    })
+  ).app.id;
   stub.accounts.set('acct_nile', { chargesEnabled: false });
 });
 afterAll(async () => {
@@ -191,6 +202,20 @@ describe('paying by card (R65)', () => {
     expect(paid.message.payload.checkout.status).toBe('paid');
     // A paid card isn't paid twice.
     expect((await lina.req('POST', `/v1/messages/${card}/checkout`)).statusCode).toBe(403);
+    // Paid by card is a move like any other (M11): whoever asked hears it, the team's apps hear
+    // it, and nobody else on the team is told.
+    const told = (await omar.get('/v1/notifications')).notifications.find(
+      (n: { kind: string; data: { messageId?: string } }) =>
+        n.kind === 'kit' && n.data.messageId === card,
+    );
+    expect(told).toMatchObject({ title: 'Lina Farah: Paid', data: { conversationId: convo } });
+    expect(
+      (await noor.get('/v1/notifications')).notifications.some(
+        (n: { data: { messageId?: string } }) => n.data.messageId === card,
+      ),
+    ).toBe(false);
+    const { deliveries } = await noor.get(`/v1/orgs/${orgId}/apps/${books}/deliveries`);
+    expect(deliveries.map((d: { event: string }) => d.event)).toEqual(['kit.moved']);
   });
 
   it('one session is ever payable: a payment not yet settled is settled, never replaced; an old one ends first; a card settled otherwise ends its session', async () => {

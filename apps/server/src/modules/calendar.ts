@@ -31,6 +31,7 @@ import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { builtinCountsChanged } from '../lib/app-directory';
 import { audit } from '../lib/audit';
 import {
   assertItemPhotos,
@@ -477,6 +478,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .returning(['created_at', 'last_read_at'])
       .executeTakeFirstOrThrow();
     await audit(ctx.db, { actorId: auth.userId, action: 'calendar.feed_created', ip: req.ip });
+    builtinCountsChanged(ctx);
     const base = ctx.config.PUBLIC_URL.replace(/\/$/, '');
     return { feed: feedView(row), url: `${base}/v1/calendar/${token}.ics` };
   });
@@ -487,8 +489,10 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       .deleteFrom('calendar_feeds')
       .where('user_id', '=', auth.userId)
       .executeTakeFirst();
-    if (Number(gone.numDeletedRows) > 0)
+    if (Number(gone.numDeletedRows) > 0) {
       await audit(ctx.db, { actorId: auth.userId, action: 'calendar.feed_stopped', ip: req.ip });
+      builtinCountsChanged(ctx);
+    }
     return { ok: true };
   });
 

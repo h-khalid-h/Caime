@@ -302,7 +302,6 @@ export const turkish: Catalog = {
   'A reminder': 'Bir hatırlatıcı',
   'Whose answers you’d like to be reminded about': 'Kimin yanıtlarının hatırlatılmasını istersiniz',
   '{name} can’t act for you any more': '{name} artık sizin adınıza işlem yapamaz',
-  'Made by {owner}': 'Yapan: {owner}',
   'Let in {when} · {text}': 'İzin verildi: {when} · {text}',
   'not used yet': 'henüz kullanılmadı',
   Remove: 'Kaldır',
@@ -2268,7 +2267,6 @@ export const turkish: Catalog = {
   'A conversation is assigned, escalated, resolved or reopened':
     'Bir konuşma atanır, yöneticilere iletilir, çözülür veya yeniden açılır',
   'Someone on the team sends one of its cards': 'Ekipten biri kartlarından birini gönderir',
-  'Someone moves one of its cards on': 'Biri kartlarından birini ilerletir',
   'A message in a customer conversation is removed for everyone':
     'Bir müşteri konuşmasındaki bir mesaj herkes için kaldırılır',
   'A customer conversation is erased at their request':
@@ -3321,8 +3319,6 @@ export const turkish: Catalog = {
     'Bağla, insanları bir https adresine göndermeli.',
   'Never your password, privacy or account. What it sends says “via {name}”. End it any time in You → Apps.{You}':
     'Parolanıza, gizlilik ayarlarınıza veya hesabınıza asla erişemez. Gönderdiklerinde “{name} aracılığıyla” yazar. İstediğiniz zaman Siz → Uygulamalar bölümünden sonlandırabilirsiniz.{You}',
-  'Made by {displayName} (@{handle}) · {website}': 'Yapan: {displayName} (@{handle}) · {website}',
-  'Made by {displayName} (@{handle})': 'Yapan: {displayName} (@{handle})',
   '{name}, {role}': '{name}, {role}',
   version: 'sürüm',
   'the web': 'web',
@@ -3498,4 +3494,19 @@ export const turkish: Catalog = {
   'This is {what}, not a person, operated by {org}.':
     'Bu {what}; bir insan değil, {org} tarafından işletiliyor.',
   'This is {what}, not a person.': 'Bu {what}; bir insan değil.',
+  'No orders yet': 'Henüz sipariş yok',
+  'Orders placed in your customer conversations show here, newest first.':
+    'Müşteri sohbetlerinde verilen siparişler burada görünür, en yenisi önce.',
+  '{name} stopped': '{name} durduruldu',
+  'Your personal token, made under Developer': 'Geliştirici altında oluşturulan kişisel belirtecin',
+  'It stops at once, and so does any script that uses it. Developer makes a new one.':
+    'Hemen durur, onu kullanan her betik de durur. Geliştirici yenisini oluşturur.',
+  'Waiting for Caime’s look': 'Caime’in bakışı bekleniyor',
+  'Not listed': 'Listelenmedi',
+  'Not in Discover': 'Keşfet’te değil',
+  'Published under {name}': '{name} altında yayımlananlar',
+  'Discover names {name} as their publisher, verified as it is. Each is managed by its developer under their own Developer settings; a seat ending takes the name back.':
+    'Keşfet, yayımcıları olarak {name} adını gösterir, doğrulandığı gibi. Her birini geliştiricisi kendi Geliştirici ayarlarından yönetir; koltuk sona erince ad geri alınır.',
+  'Someone moves a card on in a customer conversation (its own, or one of Caime’s)':
+    'Biri bir müşteri sohbetinde bir kartı ilerletir (kendi kartı ya da Caime’inkilerden biri)',
 };

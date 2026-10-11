@@ -17,16 +17,27 @@ export type {
 } from '@caime/core/api';
 export type { BusinessView } from '@caime/core/business';
 export type { CustomKitShape } from '@caime/core/custom-kits';
-export { Caime, CaimeError, type CaimeOptions } from './client';
+export {
+  Caime,
+  CaimeError,
+  type CaimeOptions,
+  type KitDefinition,
+  type NewTask,
+  type TaskChange,
+  type TaskListView,
+} from './client';
 export {
   type BusinessMessageWebhook,
   type BusinessThreadWebhook,
   type CaimeWebhook,
+  type ConversationErasedWebhook,
   type KitMovedWebhook,
   type KitPostedWebhook,
+  type MessageDeletedWebhook,
   type PingWebhook,
   parseWebhook,
   signWebhook,
   verifyWebhookSignature,
+  type WebhookCard,
   WebhookError,
 } from './webhooks';

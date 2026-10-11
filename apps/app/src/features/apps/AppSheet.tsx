@@ -6,19 +6,20 @@
  */
 import type { DirectoryAppView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
-import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import { useRef } from 'react';
 import { View } from 'react-native';
 import { CalendarFeed } from '@/features/settings/CalendarFeed';
 import { openLink } from '@/lib/links';
-import { useTheme } from '@/theme/theme';
+import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { AppIcon } from './AppIcon';
+import { PublisherLine } from './PublisherLine';
 
 export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClose: () => void }) {
-  const t = useTheme();
+  // Under 18, nothing connects (R29): the server sends no address, and the sheet says why.
+  const minor = useSession((s) => s.user?.minor ?? false);
   const last = useRef(app);
   if (app) last.current = app;
   const shown = app ?? last.current;
@@ -47,24 +48,7 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <AppIcon url={shown.iconUrl} appId={shown.id} name={shown.name} size={56} />
             <View style={{ flex: 1, gap: 2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text variant="caption" color="textSecondary" numberOfLines={1}>
-                  {tr('By {name}', { name: shown.publisher.name })}
-                </Text>
-                {shown.publisher.verified ? (
-                  <View
-                    accessible
-                    accessibilityRole="image"
-                    accessibilityLabel={tr('Verified')}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
-                  >
-                    <BadgeCheck size={14} color={t.c.accentStrong} />
-                    <Text variant="caption" color="accentStrong">
-                      {tr('Verified')}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+              <PublisherLine publisher={shown.publisher} testID="discover-publisher" />
               <Text variant="caption" color="textTertiary" testID="discover-connected-count">
                 {trn(shown.connectedCount, '{n} person connected it', '{n} people connected it')}
               </Text>
@@ -84,6 +68,10 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
             <View style={{ marginHorizontal: -16 }}>
               <CalendarFeed />
             </View>
+          ) : minor ? (
+            <Text variant="caption" color="textTertiary" testID="discover-adults">
+              {tr('Apps act for people over 18.')}
+            </Text>
           ) : (
             <Text variant="caption" color="textTertiary">
               {tr(

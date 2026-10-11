@@ -42,7 +42,9 @@ export const WEBHOOK_EVENT_LABELS: Record<WebhookEvent, string> = {
   'business.message': msg('A customer writes'),
   'business.thread': msg('A conversation is assigned, escalated, resolved or reopened'),
   'kit.posted': msg('Someone on the team sends one of its cards'),
-  'kit.moved': msg('Someone moves one of its cards on'),
+  'kit.moved': msg(
+    'Someone moves a card on in a customer conversation (its own, or one of Caime’s)',
+  ),
   'message.deleted': msg('A message in a customer conversation is removed for everyone'),
   'conversation.erased': msg('A customer conversation is erased at their request'),
 };

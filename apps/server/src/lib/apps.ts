@@ -42,6 +42,8 @@ export const API_ROUTES: Readonly<Record<string, ApiScope | 'any'>> = {
   'GET /v1/apps/me/deliveries': 'any',
   'POST /v1/apps/me/deliveries/:id/retry': 'any',
   'GET /v1/orgs/:id/inbox': 'inbox:read',
+  'GET /v1/orgs/:id/calendar': 'inbox:read',
+  'GET /v1/orgs/:id/orders': 'inbox:read',
   'GET /v1/conversations/:id': 'messages:read',
   'GET /v1/conversations/:id/messages': 'messages:read',
   'GET /v1/files/:id': 'messages:read',

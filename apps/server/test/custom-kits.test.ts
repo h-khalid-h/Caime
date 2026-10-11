@@ -332,7 +332,9 @@ describe('an app’s own kinds of card (PRD §74, §86)', () => {
       expect.objectContaining({ from: 'ready', to: 'collected', by: 'customer' }),
     ]);
     // The organization's other apps hear nothing of another's cards.
-    expect(await told(apps.second.id)).toEqual([]);
+    expect(
+      (await told(apps.second.id)).filter((d) => (d.kit as { custom: boolean }).custom),
+    ).toEqual([]);
   });
 
   it('are moved and changed by their app, and by no other', async () => {
@@ -465,7 +467,11 @@ describe('an app’s own kinds of card (PRD §74, §86)', () => {
       fields: { medicine: 'Paracetamol' },
       by: 'person',
     });
-    expect(await told(apps.second.id)).toEqual([]);
+    // Another app of the organization hears nothing of the pharmacy's cards, but does hear one of
+    // Caime's (the Order the team sent above), as every app that listens for cards does (M12).
+    const second = await told(apps.second.id);
+    expect(second.filter((d) => (d.kit as { custom: boolean }).custom)).toEqual([]);
+    expect(second.map((d) => (d.kit as { key: string }).key)).toContain('order_status');
     // An app hears only what it asked to.
     await noor.patch(`/v1/orgs/${orgId}/apps/${apps.pharmacy.id}`, { events: ['kit.moved'] });
     const posted = (await told(apps.pharmacy.id, 'kit.posted')).length;

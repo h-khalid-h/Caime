@@ -16,6 +16,7 @@ let orgId: string;
 let convo: string;
 let token: string;
 let secret: string;
+let appId: string;
 let caime: Caime;
 let hook: Server;
 const received: Array<{ headers: Record<string, string | string[] | undefined>; body: string }> =
@@ -64,6 +65,7 @@ beforeAll(async () => {
     events: ['business.message', 'business.thread'],
   });
   ({ token, webhookSecret: secret } = made);
+  appId = made.app.id;
   // On Business, so a second app can be made below: plans have their own tests (plans.test.ts).
   await t.ctx.db
     .updateTable('organizations')
@@ -234,6 +236,158 @@ describe('@caime/sdk against the server (R39)', () => {
     expect((await caime.deliveries({ status: 'failed' })).deliveries).toEqual([]);
     // Not failed, or not this app's: nothing to retry.
     await expect(caime.retryDelivery(oldest.id)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('reads the organization’s bookings and orders, as the team’s own views do', async () => {
+    const tomorrow = new Date(t.clock.now.getTime() + 86_400_000);
+    tomorrow.setUTCHours(10, 0, 0, 0);
+    await noor.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'noor-appt-0001',
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: { title: 'Fitting', start: { at: tomorrow.toISOString(), hasTime: true } },
+      },
+    });
+    const from = t.clock.now.toISOString();
+    const to = new Date(t.clock.now.getTime() + 7 * 86_400_000).toISOString();
+    const { items } = await caime.calendar(orgId, from, to);
+    expect(items).toEqual([
+      expect.objectContaining({
+        conversationId: convo,
+        title: 'Fitting',
+        at: tomorrow.toISOString(),
+        state: 'requested',
+        customer: { id: lina.user.id, displayName: 'Lina Customer' },
+      }),
+    ]);
+    expect(await caime.orders(orgId)).toEqual([]);
+    await noor.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'noor-order-0001',
+      kind: 'kit',
+      payload: {
+        kit: 'order_status',
+        fields: {
+          reference: 'A-17',
+          summary: '12 blue tiles',
+          amount: { value: 240, currency: 'EGP' },
+        },
+      },
+    });
+    expect(await caime.orders(orgId)).toEqual([
+      {
+        messageId: expect.any(String),
+        conversationId: convo,
+        customer: { id: lina.user.id, displayName: 'Lina Customer' },
+        reference: 'A-17',
+        summary: '12 blue tiles',
+        amount: { value: 240, currency: 'EGP' },
+        state: 'placed',
+        createdAt: expect.any(String),
+      },
+    ]);
+  });
+
+  it('hears Caime’s own cards as well as its own: posted by the team, moved on, sent by the customer', async () => {
+    await noor.patch(`/v1/orgs/${orgId}/apps/${appId}`, {
+      events: ['business.message', 'business.thread', 'kit.posted', 'kit.moved'],
+    });
+    received.length = 0;
+    const { message } = await noor.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'noor-order-0002',
+      kind: 'kit',
+      payload: { kit: 'order_status', fields: { reference: 'A-18', summary: 'Grout' } },
+    });
+    await noor.post(`/v1/messages/${message.id}/kit`, { to: 'confirmed' });
+    await lina.post(`/v1/conversations/${convo}/messages`, {
+      clientId: 'lina-appt-0001',
+      kind: 'kit',
+      payload: {
+        kit: 'appointment',
+        fields: {
+          title: 'Measure up',
+          start: {
+            at: new Date(t.clock.now.getTime() + 2 * 86_400_000).toISOString(),
+            hasTime: true,
+          },
+        },
+      },
+    });
+    await runDueJobs(t.ctx);
+    const now = t.clock.now.getTime();
+    const events = received.map((r) => parseWebhook(secret, r.headers, r.body, { now }));
+    const posted = events.find((e) => e.event === 'kit.posted');
+    expect(posted?.event).toBe('kit.posted');
+    if (posted?.event === 'kit.posted')
+      expect(posted.data).toMatchObject({
+        conversationId: convo,
+        message: { id: message.id },
+        kit: { key: 'order_status', name: 'Order', custom: false },
+        fields: { reference: 'A-18', summary: 'Grout' },
+        state: 'placed',
+        booking: null,
+        order: null,
+        by: 'person',
+        customer: { id: lina.user.id, under18: false },
+      });
+    const moved = events.find((e) => e.event === 'kit.moved');
+    expect(moved?.event).toBe('kit.moved');
+    if (moved?.event === 'kit.moved')
+      expect(moved.data).toMatchObject({
+        message: { id: message.id },
+        kit: { key: 'order_status' },
+        from: 'placed',
+        to: 'confirmed',
+        state: 'confirmed',
+        by: 'person',
+      });
+    // The customer's card arrives as their message, with what it says beside the body.
+    const theirs = events.find(
+      (e) => e.event === 'business.message' && e.data.message.kind === 'kit',
+    );
+    expect(theirs?.event).toBe('business.message');
+    if (theirs?.event === 'business.message')
+      expect(theirs.data.card).toMatchObject({
+        kit: { key: 'appointment', name: 'Appointment', custom: false },
+        fields: { title: 'Measure up' },
+        state: 'requested',
+      });
+  });
+
+  it('acts as a person with a personal token: who, their inbox, search and actions', async () => {
+    const cap = (
+      await noor.post('/v1/me/tokens', {
+        name: 'Home script',
+        scopes: ['profile:read', 'messages:read', 'actions:read', 'actions:write'],
+        days: 30,
+      })
+    ).token as string;
+    const me = new Caime({ token: cap, baseUrl: 'http://caime.test', fetch: fetchViaInject });
+    expect(await me.person()).toMatchObject({
+      id: noor.user.id,
+      handle: noor.user.handle,
+      displayName: 'Noor Haddad',
+    });
+    // Their own inbox (a business conversation is the organization's, in its own inbox).
+    const inbox = await me.myInbox();
+    expect(inbox).toMatchObject({ sections: expect.any(Array), counts: expect.any(Object) });
+    const found = await me.search('blue tiles');
+    expect(found.understoodBy).toBe('rules');
+    expect((found.results.messages ?? []).map((m) => m.conversationId)).toContain(convo);
+    const task = await me.addTask({ title: 'Order more grout', clientId: 'script-task-0001' });
+    expect(task).toMatchObject({ title: 'Order more grout', status: 'open', direction: 'mine' });
+    expect((await me.addTask({ title: 'Order more grout', clientId: 'script-task-0001' })).id).toBe(
+      task.id,
+    );
+    expect((await me.tasks('todo')).tasks.map((x) => x.id)).toContain(task.id);
+    expect((await me.updateTask(task.id, { status: 'done' })).status).toBe('done');
+    // A person's token reaches a person's routes, never an organization's.
+    await expect(me.inbox(orgId, 'new')).rejects.toMatchObject({
+      status: 403,
+      code: 'token_route',
+    });
+    // And the app's token never a person's.
+    await expect(caime.person()).rejects.toMatchObject({ status: 403 });
   });
 
   it('reads a file the customer sent, as the team would, and nothing outside the conversation', async () => {
