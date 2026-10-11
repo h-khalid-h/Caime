@@ -233,6 +233,14 @@ export function nextBriefAt(now: Date, at: string, timeZone: string): Date {
   return new Date(now.getTime() + DAY_MS);
 }
 
+const BRIEF_SPREAD_MS = 5 * 60_000;
+/** A person's own place in the five minutes after their hour: the same every day. */
+export function briefJitterMs(userId: string): number {
+  let h = 5381;
+  for (let i = 0; i < userId.length; i++) h = (h * 33) ^ userId.charCodeAt(i);
+  return (h >>> 0) % BRIEF_SPREAD_MS;
+}
+
 /** Queue someone's next brief, if they asked for one (idempotent: one job per day and hour). */
 export async function scheduleBrief(ctx: AppContext, userId: string): Promise<void> {
   const me = await ctx.db
@@ -243,12 +251,16 @@ export async function scheduleBrief(ctx: AppContext, userId: string): Promise<vo
     .executeTakeFirst();
   const at = (me?.preferences as { caiBrief?: string | null } | undefined)?.caiBrief;
   if (!me || !at) return;
-  const runAt = nextBriefAt(ctx.now(), at, me.time_zone);
+  // Within five minutes of the hour, the same minutes for the same person (M25): a city's
+  // briefs at 08:00 were one burst on one queue.
+  const runAt = new Date(
+    nextBriefAt(ctx.now(), at, me.time_zone).getTime() + briefJitterMs(userId),
+  );
   await enqueue(
     ctx,
     BRIEF_JOB,
     { userId, at },
-    { runAt, dedupeKey: `brief:${userId}:${runAt.toISOString()}`, maxAttempts: 2 },
+    { runAt, dedupeKey: `cai-brief:${userId}:${runAt.toISOString()}`, maxAttempts: 2 },
   );
 }
 

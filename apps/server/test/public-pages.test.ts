@@ -5,6 +5,7 @@ import { bubbleThemes, themes } from '@caime/brand/tokens';
 import { BUSINESS_VIEW_LABELS, BUSINESS_VIEWS } from '@caime/core/business';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { forgetSitemaps } from '../src/lib/sitemap-cache';
 import { type Client, createTestApp, signup, type TestApp } from './helpers';
 
 let t: TestApp;
@@ -520,6 +521,8 @@ describe('the readable web (R44)', () => {
     await sql`update organizations set verified_at = now() where handle = 'nile.dental'`.execute(
       t.ctx.db,
     );
+    // Verified past the route: the route's own step, so the kept sitemap is built again.
+    forgetSitemaps();
     const sitemap = (await t.app.inject({ url: '/sitemap.xml' })).body;
     expect(sitemap).toContain('<loc>https://caime.example/o/nile.dental/teeth-whitening</loc>');
     expect(sitemap).toContain('<loc>https://caime.example/o/nile.dental/care-at-home</loc>');
@@ -588,6 +591,8 @@ describe('the readable web (R44)', () => {
     await sql`update organizations set verified_at = now() where handle = 'nile.dental'`.execute(
       t.ctx.db,
     );
+    // Verified past the route: the route's own step, so the kept sitemap is built again.
+    forgetSitemaps();
     const verified = await t.app.inject({ url: '/sitemap.xml' });
     expect(verified.body).toContain('<loc>https://caime.example/o/nile.dental</loc>');
     // People are never listed: a page is found by its handle, not in a directory.

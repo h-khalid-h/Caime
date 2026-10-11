@@ -25,6 +25,7 @@ import {
 import { type Selectable, sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { OAuthClientsTable } from '../db/schema';
+import { escapeLike } from './text';
 
 type ClientRow = Selectable<OAuthClientsTable>;
 
@@ -171,8 +172,6 @@ export async function discoverPage(
       rows.length > query.limit && last ? directoryCursor(last.connected_count, last.id) : null,
   };
 }
-
-const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /** One listed app, or the viewer's own whatever its state (a developer sees their own listing). */
 export async function directoryApp(

@@ -7,6 +7,7 @@
 import { RENDITION_EDGES } from '@caime/core/renditions';
 import sharp from 'sharp';
 import type { AppContext } from '../context';
+import { eachLimit } from './batch';
 import { enqueue, registerJob } from './jobs';
 import { type Storage, storageFor } from './storage';
 
@@ -77,7 +78,8 @@ async function backfill(ctx: AppContext, payload: unknown): Promise<void> {
   const after = (payload as { after?: string | null } | null)?.after ?? null;
   const rows = await needing(ctx, after, BACKFILL_BATCH);
   const storage = storageFor(ctx.config);
-  for (const f of rows) {
+  // Three at a time (sharp is CPU-bound; M23 had the batch of 25 one after another).
+  await eachLimit(rows, 3, async (f) => {
     const temp = `tmp/preview-${f.id}`;
     let previewKey: string | null = f.thumb_key;
     try {
@@ -93,7 +95,7 @@ async function backfill(ctx: AppContext, payload: unknown): Promise<void> {
       .set({ preview_key: previewKey })
       .where('id', '=', f.id)
       .execute();
-  }
+  });
   const last = rows.at(-1);
   if (rows.length === BACKFILL_BATCH && last)
     await enqueue(ctx, BACKFILL_JOB, { after: last.id }, { dedupeKey: `previews:${last.id}` });

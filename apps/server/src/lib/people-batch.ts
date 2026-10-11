@@ -4,7 +4,8 @@
  */
 import { type RelationshipPolicy, resolvePolicy, type Sphere } from '@caime/core';
 import type { AppContext } from '../context';
-import type { User } from '../db/schema';
+import type { UserRow } from '../db/schema';
+import { USER_COLUMNS } from '../db/schema';
 import { verifiedOrgNames } from './orgs';
 import { pairKey } from './relations';
 import { type PersonView, personView, type ViewerRelation } from './users';
@@ -20,7 +21,7 @@ export async function personViewsFor(
   const now = ctx.now();
   const [users, blocks, connections, theirRels, policies, sides, defaults, verified] =
     await Promise.all([
-      ctx.db.selectFrom('users').selectAll().where('id', 'in', ids).execute(),
+      ctx.db.selectFrom('users').select(USER_COLUMNS).where('id', 'in', ids).execute(),
       ctx.db
         .selectFrom('blocks')
         .selectAll()
@@ -71,7 +72,7 @@ export async function personViewsFor(
         .execute(),
       verifiedOrgNames(ctx.db, ids),
     ]);
-  const byId = new Map<string, User>(users.map((u) => [u.id, u]));
+  const byId = new Map<string, UserRow>(users.map((u) => [u.id, u]));
   // Each list read once into a map: a person's row is found, never searched for.
   const connectionOf = new Map(connections.map((c) => [pairKey(c.user_a, c.user_b).key, c]));
   const relsOf = new Map<string, typeof theirRels>();

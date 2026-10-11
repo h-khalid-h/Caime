@@ -18,7 +18,7 @@ import {
 } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
-import type { Database, User } from '../db/schema';
+import type { Database, User, UserRow } from '../db/schema';
 import { currencyOf } from './geo';
 
 export const ONLINE_WINDOW_MS = 2 * 60_000;
@@ -52,7 +52,7 @@ export function avatarUrl(user: Pick<User, 'id' | 'avatar_file_id'>): string | n
 
 export type { MeView, PersonView };
 
-export function meView(user: User, now: Date): MeView {
+export function meView(user: UserRow, now: Date): MeView {
   return {
     id: user.id,
     email: user.email,
@@ -108,7 +108,7 @@ export function presenceOf(
 }
 
 export function personView(
-  user: User,
+  user: UserRow,
   viewer: ViewerRelation,
   now: Date,
   identity?: { displayName: string; headline: string | null; orgName: string | null } | null,

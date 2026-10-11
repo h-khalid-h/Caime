@@ -5,6 +5,7 @@
 import { previewText, resolvePolicy, tr } from '@caime/core';
 import { sql } from 'kysely';
 import { tellSaved } from '../lib/automations';
+import { eachLimit } from '../lib/batch';
 import { offerFollowUp } from '../lib/cai';
 import { enqueue, registerJob, registerPeriodic } from '../lib/jobs';
 import { participantsOf } from '../lib/messages';
@@ -134,7 +135,8 @@ export function registerWorkers(): void {
         )
         .returning(['id', 'owner_id', 'assignee_id', 'title', 'conversation_id', 'cai_follow_up'])
         .execute();
-      for (const t of due) {
+      // Four at a time (lib/batch.ts): a batch of due reminders was offered and told one by one.
+      await eachLimit(due, 4, async (t) => {
         // Handed to Cai (R68): its offer of a follow-up, in place of a bare reminder.
         if (
           t.cai_follow_up &&
@@ -143,7 +145,7 @@ export function registerWorkers(): void {
             return false;
           }))
         )
-          continue;
+          return;
         await notify(ctx, {
           userId: t.owner_id,
           kind: 'reminder',
@@ -152,7 +154,7 @@ export function registerWorkers(): void {
           body: () => tr('Reminder'),
           data: { taskId: t.id, conversationId: t.conversation_id },
         });
-      }
+      });
     },
   });
 

@@ -27,6 +27,7 @@ import { registerPeriodic } from './jobs';
 import { insertSystemMessage, messageViews, participantsOf } from './messages';
 import { notify, replaceShown } from './notify';
 import { personViewsFor } from './people-batch';
+import { TtlCache } from './ttl-cache';
 import { avatarUrl } from './users';
 
 /** A live call stops counting when either side hasn't said it's there for this long. */
@@ -399,11 +400,11 @@ export async function iceConfig(ctx: AppContext, userId: string): Promise<IceCon
  * answered and renegotiated asks several times, and each ask is a paid API call. Checked before
  * each use, so nothing older than half the TTL is handed out.
  */
-const relayCache = new Map<
-  string,
-  { until: number; server: IceConfigView['iceServers'][number] }
->();
 const RELAY_CACHE_MAX = 10_000;
+const relayCache = new TtlCache<string, IceConfigView['iceServers'][number]>(
+  RELAY_CACHE_MAX,
+  (TURN_TTL_S * 1000) / 2,
+);
 
 async function cloudflareRelay(
   ctx: AppContext,
@@ -411,15 +412,10 @@ async function cloudflareRelay(
 ): Promise<IceConfigView['iceServers'][number] | null> {
   if (!ctx.config.cloudflareTurn) return null;
   const now = ctx.now().getTime();
-  const kept = relayCache.get(userId);
-  if (kept && kept.until > now) return kept.server;
+  const kept = relayCache.get(userId, now);
+  if (kept) return kept;
   const server = await askCloudflareRelay(ctx);
-  if (server) {
-    if (relayCache.size >= RELAY_CACHE_MAX)
-      for (const [key, v] of relayCache) if (v.until <= now) relayCache.delete(key);
-    if (relayCache.size < RELAY_CACHE_MAX)
-      relayCache.set(userId, { until: now + (TURN_TTL_S * 1000) / 2, server });
-  }
+  if (server) relayCache.set(userId, server, now);
   return server;
 }
 

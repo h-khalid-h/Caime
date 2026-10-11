@@ -237,7 +237,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         ...(mentions ? { mentions } : {}),
       })
       .where('id', '=', id)
-      .returningAll()
+      .returning(MESSAGE_COLUMNS)
       .executeTakeFirstOrThrow();
     // Someone it names now who it didn't before is told, as they would be of a new message.
     const added = mentions?.filter((u) => !m.mentions.includes(u)) ?? [];
@@ -320,7 +320,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
           payload: sql`payload || ${JSON.stringify({ state: to, history: history.slice(-50) })}::jsonb`,
         })
         .where('id', '=', id)
-        .returningAll()
+        .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
     });
     if (!updated) throw new AppError(409, 'conflict', tr('Someone just changed this card.'));
@@ -484,7 +484,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
         .updateTable('messages')
         .set({ payload: JSON.stringify(change({ ...card, live: card.live }, at)) })
         .where('id', '=', id)
-        .returningAll()
+        .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
     });
     const members = (await participantsOf(ctx.db, found.conversation_id)).map((p) => p.user_id);
@@ -560,7 +560,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
           }),
         })
         .where('id', '=', id)
-        .returningAll()
+        .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
       return { updated, before: card.state, card: { ...card, creatorId: m.sender_id } };
     });
@@ -651,7 +651,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
             }),
           })
           .where('id', '=', id)
-          .returningAll()
+          .returning(MESSAGE_COLUMNS)
           .executeTakeFirstOrThrow();
         return {
           updated,

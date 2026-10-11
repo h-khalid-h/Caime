@@ -26,6 +26,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { UserUpdate } from '../db/schema';
+import { USER_COLUMNS } from '../db/schema';
 import { scheduleBrief } from '../lib/cai';
 import { badRequest, notFound } from '../lib/errors';
 import { currentZone, isCountry } from '../lib/geo';
@@ -66,7 +67,7 @@ function zoneOrUtc(zone: string | null): string {
 
 export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
   const load = (id: string) =>
-    ctx.db.selectFrom('users').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+    ctx.db.selectFrom('users').select(USER_COLUMNS).where('id', '=', id).executeTakeFirstOrThrow();
 
   app.get('/me', async (req): Promise<MeResponse> => {
     const auth = requireAuth(req);

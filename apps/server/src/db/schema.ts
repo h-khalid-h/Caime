@@ -377,6 +377,9 @@ export interface MessagesTable {
   /** When it disappears: the conversation's setting when it was sent (0032). */
   expires_at: NullableTimestamp;
   created_at: Generated<Date>;
+  /** A meeting's or an appointment's start (`fields.start.at`), kept apart so a window over
+   * cards is an index read, never a scan of every payload (review 2026-10-09 M21). */
+  card_start_at: Date | null;
   search: ColumnType<string, never, never>;
   /** The words and what a card says of itself (title, reference, summary, booking), indexed. */
   search_all: ColumnType<string, never, never>;
@@ -1169,6 +1172,7 @@ export const MESSAGE_COLUMNS = [
   'sealed',
   'pinned_at',
   'pinned_by',
+  'card_start_at',
 ] as const satisfies ReadonlyArray<Exclude<keyof MessagesTable, 'search' | 'search_all'>>;
 export type Message = Selectable<Omit<MessagesTable, 'search' | 'search_all'>>;
 export type Space = Selectable<SpacesTable>;
@@ -1181,3 +1185,85 @@ export type OrgApp = Selectable<OrgAppsTable>;
 export type Call = Selectable<CallsTable>;
 export type Task = Selectable<TasksTable>;
 export type Suggestion = Selectable<SuggestionsTable>;
+
+/**
+ * A host's catalog (R58–R62): the hours, items, ordering, collections and ways to be paid, five
+ * jsonb columns that only the booking path, the public pages, a person's export and the
+ * organization's own view read. Every other read of a person or an organization selects
+ * `USER_COLUMNS` or `ORG_COLUMNS` (review 2026-10-09 M19: a presence change, a message's
+ * sender, every person in a view carried the catalogs with them); `columns.test.ts` holds the
+ * lists to the tables and the source to the rule.
+ */
+export const CATALOG_COLUMNS = [
+  'booking',
+  'booking_items',
+  'ordering',
+  'collections',
+  'payments',
+] as const satisfies ReadonlyArray<keyof UsersTable & keyof OrganizationsTable>;
+export const USER_COLUMNS = [
+  'id',
+  'email',
+  'email_verified_at',
+  'handle',
+  'password_hash',
+  'display_name',
+  'kind',
+  'birth_date',
+  'locale',
+  'time_zone',
+  'country',
+  'workweek',
+  'quiet_hours',
+  'plan',
+  'plan_source',
+  'avatar_file_id',
+  'bio',
+  'pronouns',
+  'status_text',
+  'status_emoji',
+  'presence',
+  'last_active_at',
+  'privacy',
+  'preferences',
+  'ai_enabled',
+  'learning_reset',
+  'onboarded_at',
+  'recovery_codes_seen_at',
+  'invited_by',
+  'invited_by_org',
+  'suspended_at',
+  'suspended_reason',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+] as const satisfies ReadonlyArray<Exclude<keyof UsersTable, (typeof CATALOG_COLUMNS)[number]>>;
+export const ORG_COLUMNS = [
+  'id',
+  'name',
+  'handle',
+  'kind',
+  'about',
+  'website',
+  'domain',
+  'verify_token',
+  'verified_at',
+  'created_by',
+  'archived_at',
+  'plan',
+  'plan_source',
+  'country',
+  'founded_year',
+  'avatar_file_id',
+  'retention_days',
+  'reclaim_by',
+  'reclaim_token',
+  'succeeded_by',
+  'created_at',
+  'updated_at',
+] as const satisfies ReadonlyArray<
+  Exclude<keyof OrganizationsTable, (typeof CATALOG_COLUMNS)[number]>
+>;
+/** A person or an organization as the app reads them: everything but the catalog. */
+export type UserRow = Pick<Selectable<UsersTable>, (typeof USER_COLUMNS)[number]>;
+export type OrgRow = Pick<Selectable<OrganizationsTable>, (typeof ORG_COLUMNS)[number]>;

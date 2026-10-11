@@ -41,11 +41,10 @@ import { membership } from '../lib/conversation-views';
 import { AppError, notFound } from '../lib/errors';
 import { assertAiAllowance } from '../lib/plans';
 import { activeRelationships, loadPolicies, policyTargetFor } from '../lib/relations';
-import { createSuggestion } from '../lib/suggest';
+import { createSuggestion, suggestionView } from '../lib/suggest';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { suggestionView } from './suggestions';
 
 /** How much of a conversation a model reads: the newest messages, within both limits. */
 const TRANSCRIPT_MESSAGES = 200;

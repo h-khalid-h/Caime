@@ -50,6 +50,7 @@ import { levantineVoice } from '../locales/ar-levantine';
 import { arServer } from '../locales/ar-server';
 import { frServer } from '../locales/fr-server';
 import { turkishServer } from '../locales/tr-server';
+import { TtlCache } from './ttl-cache';
 
 // The app's catalog, and beside it the public site's (server-only copy the app never downloads).
 const arabic = { ...ar, ...arServer };
@@ -111,7 +112,7 @@ export function registerLanguage(app: FastifyInstance): void {
 
 const CACHE_MS = 5 * 60_000;
 const CACHE_MAX = 20_000;
-const known = new Map<string, Reader & { until: number }>();
+const known = new TtlCache<string, Reader>(CACHE_MAX, CACHE_MS);
 
 interface LanguagePreferences {
   language?: LanguageChoice;
@@ -159,15 +160,14 @@ export function languageOfAccount(user: {
 const NOBODY: Reader = { language: 'en', choice: 'auto', country: null, variety: 'standard' };
 
 function keep(userId: string, reader: Reader, now: number): void {
-  if (known.size >= CACHE_MAX) known.delete(known.keys().next().value as string);
-  known.set(userId, { ...reader, until: now + CACHE_MS });
+  known.set(userId, reader, now);
 }
 
 /** How to write to someone, from their account: one small query, then five minutes cached. */
 export async function readerOf(ctx: AppContext, userId: string): Promise<Reader> {
   const now = Date.now();
-  const hit = known.get(userId);
-  if (hit && hit.until > now) return hit;
+  const hit = known.get(userId, now);
+  if (hit) return hit;
   const user = await ctx.db
     .selectFrom('users')
     .select(['locale', 'country', 'preferences'])
@@ -191,8 +191,8 @@ export async function languagesOf(
   const out = new Map<string, InterfaceLanguage>();
   const missing: string[] = [];
   for (const id of new Set(userIds)) {
-    const hit = known.get(id);
-    if (hit && hit.until > now) out.set(id, hit.language);
+    const hit = known.get(id, now);
+    if (hit) out.set(id, hit.language);
     else missing.push(id);
   }
   if (missing.length) {

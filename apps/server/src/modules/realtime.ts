@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { USER_COLUMNS } from '../db/schema';
 import { assertCanWrite } from '../lib/blocks';
 import { loadPolicies } from '../lib/relations';
 import { SESSION_ENDED, type SessionEndedData } from '../lib/sessions';
@@ -99,7 +100,7 @@ async function broadcastPresence(
 ): Promise<void> {
   const me = await ctx.db
     .selectFrom('users')
-    .selectAll()
+    .select(USER_COLUMNS)
     .where('id', '=', userId)
     .executeTakeFirst();
   if (!me || me.presence === 'invisible') return;

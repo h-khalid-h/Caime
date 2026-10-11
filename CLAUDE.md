@@ -167,8 +167,9 @@ These are rules, not preferences.
   The app on the web asks for the family and the weight (`theme/fonts.web.ts`, `fontFace`), and
   the server's pages name the same families (a page written outside the shell, the privacy
   policy or the operator's reports, takes the shell's own block through `shellFaces`). Phones
-  load a file per weight through expo-font (`theme/fonts.ts`, `fontFiles.ts`), the Arabic faces
-  too, and `fontFace(family, weight, 'arabic')` picks the paired one, since a phone can't pick
+  load a file per weight through expo-font (`theme/fonts.ts`, `fontFiles.ts`: `LATIN_FONT_FILES`
+  gate every splash, `ARABIC_FONT_FILES` an Arabic reader's, `FONT_FILES` is both), the Arabic
+  faces too, and `fontFace(family, weight, 'arabic')` picks the paired one, since a phone can't pick
   by the letters: the `Text` primitive passes it for any text holding Arabic. A new weight or
   face is a line in `FACES` there and a TTF for phones (`fonts.test.ts` holds every style of
   the type scale to a Latin, a Latin-extended and an Arabic face), and `fonts` is a reserved
@@ -964,6 +965,28 @@ These are rules, not preferences.
   whoever sent what it newly covers and the reader's own devices, never a whole group. A view
   that lists a conversation's people takes them from `personViewsFor`. `createTestApp` counts
   the server's queries (`t.queries()`): a scale test says what a path costs, with a ceiling.
+- A person or an organization is read with `.select(USER_COLUMNS)` or `.select(ORG_COLUMNS)`
+  (`db/schema.ts`; `UserRow`, `OrgRow`), never `selectAll()`, which carried the five catalog
+  jsonb columns (`CATALOG_COLUMNS`) with every presence change, sender and person in a view:
+  `columns.test.ts` holds the lists to the tables and allows `selectAll()` only where the
+  catalog is the point (the public pages, an export, the organization's own view and summary, a
+  profile, an item's photo). A meeting's or an appointment's start is `messages.card_start_at`
+  (migration 0066, `cardStartAt` in `lib/kits.ts`, written on send; a test that inserts a card
+  by hand writes it too): the calendar, the slots, the briefs and search read cards by it,
+  never `payload->'fields'->'start'`. A booking from the catalog is checked once before the
+  transaction (fast refusals) and again inside it under `pg_advisory_xact_lock` on the host
+  (`slotAsk` in `sendMessage`): two bookings of the last place at once leave one refused.
+- A route module imports no other module and `lib/` never imports a module (`modules.test.ts`
+  fails on either): what two modules share lives in `lib/` (`lib/tasks.ts` `taskViews`,
+  `lib/relationships.ts` `createRelationship` and `mayClassify`, `lib/space-members.ts`
+  `addToSpace`, `removeFromSpace`, `orgSpaceViews` and `summaries`, `lib/connections.ts`
+  `acceptRequest`, `lib/suggest.ts` `suggestionView`). A value kept for a while is a
+  `TtlCache` (`lib/ttl-cache.ts`: a ceiling, a lifetime, the oldest out first), never a `Map`
+  of its own: the business masks, the readers' languages, the relay credentials, a brief's
+  summaries and the sitemap (`lib/sitemap-cache.ts`, ten minutes, forgotten by an offer saved,
+  a domain verified or let go and an organization closed; a test that changes those past the
+  routes calls `forgetSitemaps()`). Two things three modules each wrote their own of are
+  `lib/text.ts` (`clip`, `escapeLike`), and a card's agreed state is core's `AGREED_STATES`.
 - A message is selected with `.select(MESSAGE_COLUMNS)` (`db/schema.ts`), never `selectAll()`,
   which shipped its tsvector with every row: `messaging.test.ts` holds the list to the table's
   columns and the source to the rule, so a new column joins the list. A sweep over due rows
@@ -977,8 +1000,13 @@ These are rules, not preferences.
   `product-metrics.test.ts`); new inserts whose time matters set it from `ctx.now()`.
 - The worker loop (`startWorkers`, `lib/jobs.ts`) rests until the soonest job or periodic task
   is due and wakes on `enqueue`'s NOTIFY (`ctx.bus.onNotify`, any plain channel on the one
-  listening connection); it never polls by the second. A periodic task's `everyMs` is the
-  idle floor, so nothing new sweeps more often than it must.
+  listening connection), sent for any job due within the longest rest (`IDLE_MAX_MS`), so
+  Cai's reply 800 ms out runs then, not at the next look; it never polls by the second.
+  `runDueJobs` runs `CONCURRENCY` slots over a queue that a slot refills when it runs dry
+  (one claim at a time, `BATCHES_PER_RUN` at most before the periodic tasks get their turn):
+  a slow webhook holds its slot alone. A periodic task's `everyMs` is the idle floor, so
+  nothing new sweeps more often than it must. The morning brief is queued at the person's hour
+  plus their own place in the five minutes after it (`briefJitterMs`), the same every day.
 - Renditions (R70): `lib/renditions.ts` makes an image's thumbnail and preview at upload
   (`makeRenditions`; a picture no bigger than the thumbnail is its own preview), and the
   `files.previews` job gives older images theirs a batch at a time, through a `tmp/` copy, queued

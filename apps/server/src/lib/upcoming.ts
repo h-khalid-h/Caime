@@ -9,13 +9,13 @@
  * Cai, busy times, slots) gets the same answer from here.
  */
 import type { AppointmentBooking, UpcomingView } from '@caime/core';
+import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 
 export type CardKit = 'meeting' | 'appointment';
 
 /** A card is agreed once accepted (a meeting) or confirmed (an appointment). */
-const AGREED: Record<CardKit, string> = { meeting: 'accepted', appointment: 'confirmed' };
 /** Asked, and not yet answered. */
 const ASKED: Record<CardKit, string> = { meeting: 'proposed', appointment: 'requested' };
 
@@ -35,9 +35,6 @@ export interface CardAhead {
   /** What it booked from a catalog (R58), if it did. */
   booking: AppointmentBooking | null;
 }
-
-/** A card's start, as prepareKitFields keeps it (core kit-cards.ts: `toISOString()`). */
-const START = sql<string>`m.payload->'fields'->'start'->>'at'`;
 
 export async function cardsAhead(
   ctx: Pick<AppContext, 'db'>,
@@ -106,9 +103,9 @@ export async function cardsAhead(
     )
     // When it is, as it's kept (always an ISO time, so compared as text): only what's in the
     // window, soonest first, however long ago each was planned.
-    .where(START, '>=', opts.from.toISOString())
-    .where(START, '<=', opts.until.toISOString())
-    .orderBy(START, 'asc')
+    .where('m.card_start_at', '>=', opts.from)
+    .where('m.card_start_at', '<=', opts.until)
+    .orderBy('m.card_start_at', 'asc')
     .limit(opts.limit)
     .execute();
   const ahead: CardAhead[] = [];

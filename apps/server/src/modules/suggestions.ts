@@ -2,7 +2,7 @@
  * Suggestions (PRODUCT-REVIEW R12): inferences that become facts only when accepted.
  */
 
-import type { SuggestionsAcceptedView, SuggestionView } from '@caime/core';
+import type { SuggestionsAcceptedView } from '@caime/core';
 import {
   AcceptSuggestionBody,
   type AcceptSuggestionEdits,
@@ -16,34 +16,17 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
-import type { Suggestion } from '../db/schema';
 import { createDecision, createTask } from '../lib/actions';
 import { assertCanWrite } from '../lib/blocks';
 import { membership } from '../lib/conversation-views';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { isBlockedEitherWay, relationshipView } from '../lib/relations';
+import { createRelationship, mayClassify } from '../lib/relationships';
+import { suggestionView } from '../lib/suggest';
 import { assertCanStartTopic, createTopicConversation } from '../lib/topics';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { createRelationship, mayClassify } from './relationships';
-
-export function suggestionView(s: Suggestion): SuggestionView {
-  return {
-    id: s.id,
-    kind: s.kind,
-    title: s.title,
-    rationale: s.rationale,
-    confidence: s.confidence,
-    payload: s.payload,
-    conversationId: s.conversation_id,
-    messageId: s.message_id,
-    subjectUserId: s.subject_user_id,
-    dueAt: s.due_at?.toISOString() ?? null,
-    dueText: s.due_text,
-    createdAt: s.created_at.toISOString(),
-  };
-}
 
 export async function suggestionRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/suggestions', async (req): Promise<SuggestionsResponse> => {

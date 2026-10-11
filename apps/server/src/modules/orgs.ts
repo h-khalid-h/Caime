@@ -46,6 +46,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { Organization } from '../db/schema';
+import { USER_COLUMNS } from '../db/schema';
 import { activeAgent } from '../lib/agent';
 import { audit } from '../lib/audit';
 import { tellSaved } from '../lib/automations';
@@ -81,12 +82,14 @@ import { personViewsFor } from '../lib/people-batch';
 import { assertInsights, assertTeamRoom, orgPlanView } from '../lib/plans';
 import { doorPath } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
+import { forgetSitemaps } from '../lib/sitemap-cache';
+import { addToSpace, orgSpaceViews, removeFromSpace } from '../lib/space-members';
 import { suggestFromPlace, withdrawPlaceOffers } from '../lib/suggest';
+import { escapeLike } from '../lib/text';
 import { endFollowsOf } from '../lib/updates';
 import { minorOf, personView } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { addToSpace, orgSpaceViews, removeFromSpace } from './spaces';
 
 const ROLE_ORDER: Record<OrgRole, number> = { owner: 0, admin: 1, agent: 2 };
 
@@ -142,7 +145,11 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     const others = rows.map((r) => r.user_id).filter((id) => id !== viewerId);
     const [people, me, meRelation] = await Promise.all([
       personViewsFor(ctx, viewerId, others),
-      ctx.db.selectFrom('users').selectAll().where('id', '=', viewerId).executeTakeFirstOrThrow(),
+      ctx.db
+        .selectFrom('users')
+        .select(USER_COLUMNS)
+        .where('id', '=', viewerId)
+        .executeTakeFirstOrThrow(),
       viewerRelation(ctx.db, viewerId, viewerId),
     ]);
     members = rows
@@ -302,7 +309,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .where((eb) =>
         eb.or([
           eb('handle', '=', term.toLowerCase()),
-          eb(sql`lower(name)`, 'like', `%${term.toLowerCase().replace(/[%_\\]/g, '\\$&')}%`),
+          eb(sql`lower(name)`, 'like', `%${escapeLike(term.toLowerCase())}%`),
         ]),
       )
       .orderBy(sql`verified_at is null`)
@@ -742,6 +749,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           .set({ verified_at: ctx.now(), updated_at: ctx.now() })
           .where('id', '=', id)
           .execute();
+        forgetSitemaps();
       } catch (err) {
         if ((err as { code?: string }).code === '23505')
           throw conflict('domain_taken', tr('Another organization has verified this domain.'));
@@ -880,6 +888,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
           created_by: auth.userId,
         })
         .execute();
+      forgetSitemaps();
       await trx
         .updateTable('organizations')
         .set({ succeeded_by: newId })
@@ -920,6 +929,7 @@ export async function orgRoutes(app: FastifyInstance, ctx: AppContext) {
       .set({ domain: null, verify_token: null, verified_at: null, updated_at: ctx.now() })
       .where('id', '=', id)
       .execute();
+    forgetSitemaps();
     return { org: await orgView(ctx, auth.userId, await orgById(ctx.db, id)) };
   });
 }

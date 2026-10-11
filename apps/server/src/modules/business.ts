@@ -32,6 +32,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import type { BusinessThread } from '../db/schema';
+import { USER_COLUMNS } from '../db/schema';
 import { emitWebhook } from '../lib/apps';
 import { orgBlocked } from '../lib/blocks';
 import { factsOf, orgRef, publishThread, teamOf, threadViews } from '../lib/business';
@@ -300,7 +301,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     if (handleError(wanted)) throw nobody();
     const target = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('handle', '=', wanted)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();

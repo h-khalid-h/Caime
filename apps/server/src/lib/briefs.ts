@@ -8,10 +8,13 @@
  * conversation; nothing written anywhere but the reader's own notification, in their language.
  */
 import { type BriefView, KITS, type Sphere, tr, trn } from '@caime/core';
+import { AGREED_STATES as AGREED } from '@caime/core/kit-states';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import { MESSAGE_COLUMNS, type Message } from '../db/schema';
 import { visibleTasksSql } from './task-visibility';
+import { clip } from './text';
+import { TtlCache } from './ttl-cache';
 
 /** What the reader deleted for themselves stays deleted: never in their brief, nor the model's. */
 const notHiddenBy = (userId: string, idRef: 'messages.id' | 'm.id') =>
@@ -47,11 +50,6 @@ const SUMMARY_LINES = 40;
 const SUMMARY_TTL_MS = 10 * 60_000;
 export const BRIEF_LABEL = 'AI summary';
 
-const AGREED: Record<string, string> = { meeting: 'accepted', appointment: 'confirmed' };
-
-const clip = (text: string, max: number) =>
-  text.length > max ? `${text.slice(0, max - 1)}…` : text;
-
 interface CardRow {
   id: string;
   conversation_id: string;
@@ -82,7 +80,8 @@ const startOf = (card: CardRow): Date | null => {
   return d && !Number.isNaN(d.getTime()) ? d : null;
 };
 
-const isAgreed = (card: CardRow) => card.payload.state === AGREED[card.payload.kit ?? ''];
+const isAgreed = (card: CardRow) =>
+  card.payload.state === (AGREED as Record<string, string | undefined>)[card.payload.kit ?? ''];
 
 /**
  * An agreed card ahead gets its brief an hour before (now, if it's sooner than that); one job
@@ -184,7 +183,8 @@ export function briefLine(
   return parts.length ? parts.join(' · ') : tr('Nothing open between you since last time.');
 }
 
-const summaries = new Map<string, { at: number; text: string | null }>();
+/** A card's summary for one reader, ten minutes; null is a summary that couldn't be had. */
+const summaries = new TtlCache<string, string | null>(5_000, SUMMARY_TTL_MS);
 
 /**
  * The brief as the reader sees it: their own view of the conversation (a customer's names the
@@ -205,7 +205,7 @@ export async function briefFor(
   const kit = card.payload.kit as 'meeting' | 'appointment';
   const previous = await ctx.db
     .selectFrom('messages')
-    .select(sql<string>`payload->'fields'->'start'->>'at'`.as('at'))
+    .select('card_start_at as at')
     .where('conversation_id', '=', card.conversation_id)
     .where('kind', '=', 'kit')
     .where('deleted_at', 'is', null)
@@ -223,12 +223,12 @@ export async function briefFor(
         ]),
       ]),
     )
-    .where(sql`payload->'fields'->'start'->>'at'`, '<', start.toISOString())
-    .orderBy(sql`payload->'fields'->'start'->>'at'`, 'desc')
+    .where('card_start_at', '<', start)
+    .orderBy('card_start_at', 'desc')
     .limit(1)
     .executeTakeFirst();
   const since = previous?.at
-    ? new Date(previous.at)
+    ? previous.at
     : new Date(Math.min(ctx.now().getTime(), start.getTime()) - LOOKBACK_MS);
   const others = await ctx.db
     .selectFrom('participants')
@@ -371,8 +371,8 @@ async function summaryFor(
   const ai = ctx.ai;
   if (!ai) return null;
   const key = `${userId}:${card.id}`;
-  const cached = summaries.get(key);
-  if (cached && ctx.now().getTime() - cached.at < SUMMARY_TTL_MS) return cached.text;
+  const cached = summaries.get(key, ctx.now().getTime());
+  if (cached !== undefined) return cached;
   const me = await ctx.db
     .selectFrom('users')
     .select(['ai_enabled', 'birth_date', 'time_zone', 'locale'])
@@ -424,7 +424,7 @@ async function summaryFor(
       today: ctx.now().toISOString().slice(0, 10),
     }),
   ).catch(() => null);
-  summaries.set(key, { at: ctx.now().getTime(), text });
+  summaries.set(key, text, ctx.now().getTime());
   return text;
 }
 

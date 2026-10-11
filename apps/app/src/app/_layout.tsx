@@ -26,7 +26,7 @@ import { useOutbox } from '@/state/outbox';
 import { useRememberLinks } from '@/state/pendingLink';
 import { useSession } from '@/state/session';
 import { useTaskOutbox } from '@/state/taskOutbox';
-import { FONT_FILES } from '@/theme/fontFiles';
+import { ARABIC_FONT_FILES, LATIN_FONT_FILES } from '@/theme/fontFiles';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 import { Direction } from '@/ui/Direction';
 
@@ -54,7 +54,10 @@ function onPublicPage(): boolean {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts(FONT_FILES);
+  const [latinLoaded, fontError] = useFonts(LATIN_FONT_FILES);
+  // The Arabic faces load beside them (R73): an Arabic reader's first frame waits for them,
+  // anyone else's doesn't (review 2026-10-09: every splash waited for the seven).
+  const [arabicLoaded, arabicError] = useFonts(ARABIC_FONT_FILES);
   const status = useSession((s) => s.status);
   useRememberLinks(status);
   // A slow font never holds the app hostage: after 2.5 s we render with the system font.
@@ -70,6 +73,7 @@ export default function RootLayout() {
     const timer = setTimeout(() => setFontTimeout(true), 2500);
     return () => clearTimeout(timer);
   }, []);
+  const fontsLoaded = latinLoaded && (language !== 'ar' || arabicLoaded || Boolean(arabicError));
   const ready =
     (fontsLoaded || Boolean(fontError) || fontTimeout) && status !== 'booting' && language !== null;
   // A visitor on someone's public page (R44): the page they were sent stays, readable, with its

@@ -17,10 +17,10 @@ import { membership } from '../lib/conversation-views';
 import { forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { fileUrl, notHiddenFor, participantsOf } from '../lib/messages';
+import { taskViews } from '../lib/tasks';
 import { aheadWindow, cardsAhead, upcomingView } from '../lib/upcoming';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { taskViews } from './actions';
 
 export async function memoryRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/contexts', async (req, reply): Promise<IdResponse> => {

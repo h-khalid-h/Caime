@@ -13,6 +13,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { USER_COLUMNS } from '../db/schema';
 import { isPublicItem, itemsFor, orgHost, personHost } from '../lib/booking';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { fileView } from '../lib/messages';
@@ -514,7 +515,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const user = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('id', '=', id)
       .where('deleted_at', 'is', null)
       .executeTakeFirst();

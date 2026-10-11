@@ -1277,9 +1277,19 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
       Business inbox's Orders view; the SDK's person methods; the R74 lows (tokens in Connected,
       Connect hidden under 18, suspended developers unlisted, built-in counts cached, delivery
       polling only while pending, `patchCache`, `qk.orgApps`).
-- [ ] Block 5, scale: `USER_COLUMNS`/`ORG_COLUMNS`; the booking lock; `card_start_at`; the module
-      rule with its test; the job pool, the early NOTIFY and the brief jitter; one TTL cache;
-      the sitemap cached and paged; the god modules split; `AppListing` lazy.
+- [x] Block 5, scale: `USER_COLUMNS`/`ORG_COLUMNS` held by `columns.test.ts` (33 reads off the
+      catalogs); the booking checked again under the host's advisory lock (a race test);
+      `messages.card_start_at` with its index, read by the calendar, the slots, the briefs and
+      search; the module rule with `modules.test.ts` (eight imports moved into `lib/`); the job
+      pool that refills, the NOTIFY for anything due within a rest, the brief's per-person
+      minutes; one `TtlCache` for five caches; the sitemap cached ten minutes and forgotten by
+      its writers; `AppListing` lazy; the Ls: four foreign-key indexes, `returning(MESSAGE_COLUMNS)`,
+      the shared `clip` and `escapeLike`, one `AGREED_STATES`, the brief jobs' two prefixes
+      apart, the reminder sweep four at a time, the previews three at a time, the Arabic faces
+      waited for by Arabic readers alone. Not done, for a block of their own: the god modules'
+      splits (M28: `public-pages.ts`, `lib/messages.ts`, `modules/messages.ts`, `BookingSetup`,
+      `KitForm`, `OrgScreen`), the sitemap paged past 50,000 addresses, Attention's two
+      `taskViews` calls, the friend's tip count, the import cycle.
 - [ ] Block 6, design, a11y, exports, realtime, the ICS length, the calendar bridges, cards
       that ask.
 - [ ] R76, country-aware UX (PRODUCT-REVIEW R76).
@@ -2463,3 +2473,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   Checkout; Caime's cards and the customer's cards to organization apps; the calendar and a new
   orders route for apps and the SDK, with the Business inbox's Orders view; the SDK's person
   methods; the R74 lows. Tests in `app-directory.test.ts`, `checkout.test.ts`, `sdk.test.ts`.
+- 2026-10-11 — Review block 5, scale: people and organizations read without their catalogs
+  (`USER_COLUMNS`, `ORG_COLUMNS`), `card_start_at` as a column (migration 0066), the booking's
+  second check under the host's lock, the route-module rule held by a test (`lib/tasks.ts`,
+  `lib/relationships.ts`, `lib/space-members.ts`, `lib/connections.ts`), the job loop's
+  refilling pool and early wake, the brief's jitter, one TTL cache, the sitemap cached, the
+  listing form lazy, the Ls. The god modules' splits (M28) are left for a block of their own.

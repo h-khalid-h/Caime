@@ -9,6 +9,7 @@ import {
   analyzeMessage,
   assessLink,
   BookingAskBody,
+  type BookingAskInput,
   canPostTo,
   type FileView,
   initialKitState,
@@ -38,7 +39,7 @@ import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { AssetKind, Database, Message } from '../db/schema';
-import { MESSAGE_COLUMNS } from '../db/schema';
+import { MESSAGE_COLUMNS, USER_COLUMNS } from '../db/schema';
 import { assertCanWrite } from './blocks';
 import {
   type Booker,
@@ -54,7 +55,7 @@ import { checkoutAccountOf } from './checkout-account';
 import { assertSealedForEveryone } from './e2ee';
 import { AppError, badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
-import { customCardFor } from './kits';
+import { cardStartAt, customCardFor } from './kits';
 import { isBlockedEitherWay, shareAConnection, viewerRelation } from './relations';
 import { minorOf, privacyOf } from './users';
 import { parse } from './validate';
@@ -466,7 +467,7 @@ export async function assertCanMessage(
   const [target, sender] = await Promise.all([
     ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('id', '=', targetId)
       .where('deleted_at', 'is', null)
       .executeTakeFirst(),
@@ -798,6 +799,9 @@ export async function sendMessage(
   // the card says and where it starts, and only POST /messages/:id/kit moves it on.
   let payload = body.payload ?? {};
   let kitMode: Mode | null = null;
+  // A booking from the catalog, checked again under the host's lock as the card is written.
+  let slotAsk: { host: BookingHost; booker: Booker; ask: BookingAskInput; start: Date } | null =
+    null;
   if (
     body.kind === 'kit' &&
     !opts.trusted &&
@@ -893,14 +897,15 @@ export async function sendMessage(
         throw new AppError(403, 'not_bookable', tr('That isn’t something you can book here.'));
       catalogHost = found.host;
       if (ask) {
-        const start = (card.fields.start as { at: string }).at;
+        const start = new Date((card.fields.start as { at: string }).at);
         booking = (await bookingFor(
           ctx,
           found.host,
           found.booker,
           ask,
-          new Date(start),
+          start,
         )) as unknown as Record<string, unknown>;
+        slotAsk = { host: found.host, booker: found.booker, ask, start };
         // A priced booking is a card about money whoever books it (the team for a customer too).
         if (booking.price) await assertAllAdults(tr('Paid bookings are for people over 18.'));
       }
@@ -1005,6 +1010,21 @@ export async function sendMessage(
         .returning(['last_seq', 'retention_days'])
         .executeTakeFirstOrThrow();
       const seq = bumped.last_seq;
+      // The slot once more, under the host's lock (M20): two bookings of the last place at once
+      // leave one booked and one refused, whatever each saw before; the lock ends with the
+      // transaction, so the second sees the first's card.
+      if (slotAsk) {
+        await sql`select pg_advisory_xact_lock(hashtext(${`slots:${slotAsk.host.kind}:${slotAsk.host.id}`}))`.execute(
+          trx,
+        );
+        (payload as Record<string, unknown>).booking = await bookingFor(
+          ctx,
+          slotAsk.host,
+          slotAsk.booker,
+          slotAsk.ask,
+          slotAsk.start,
+        );
+      }
       // A business conversation is kept as its organization says too (R54): the shorter wins.
       const kept =
         conversation.kind === 'business'
@@ -1021,6 +1041,7 @@ export async function sendMessage(
           kind: body.kind,
           body: text || null,
           payload: JSON.stringify(payload),
+          card_start_at: cardStartAt(payload),
           mode,
           mode_source: body.mode ? 'user' : 'auto',
           entities: JSON.stringify(entities),
@@ -1035,7 +1056,7 @@ export async function sendMessage(
           expires_at: expiresAt(ctx.now(), kept),
           created_at: ctx.now(),
         })
-        .returningAll()
+        .returning(MESSAGE_COLUMNS)
         .executeTakeFirstOrThrow();
       if (files.length) {
         await trx
@@ -1182,7 +1203,7 @@ export async function insertSystemMessage(
         expires_at: expiresAt(ctx.now(), kept),
         created_at: ctx.now(),
       })
-      .returningAll()
+      .returning(MESSAGE_COLUMNS)
       .executeTakeFirstOrThrow();
     await trx
       .updateTable('participants')

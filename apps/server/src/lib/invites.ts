@@ -10,8 +10,9 @@ import type { InviteAcceptView, InviteOpenView, InviteView, RelationshipInputT }
 import { canSee, relationshipLabel, SPHERE_DEFS, type Sphere, tr, uuidv7 } from '@caime/core';
 import type { Selectable } from 'kysely';
 import type { AppContext } from '../context';
-import type { InvitesTable, User } from '../db/schema';
-import { acceptRequest } from '../modules/connections';
+import type { InvitesTable, UserRow } from '../db/schema';
+import { USER_COLUMNS } from '../db/schema';
+import { acceptRequest } from './connections';
 import { badRequest, forbidden, notFound } from './errors';
 import { recordEvent } from './events';
 import { notify } from './notify';
@@ -129,7 +130,7 @@ export async function revokeInvite(ctx: AppContext, userId: string, id: string):
 export async function liveInvite(
   ctx: AppContext,
   token: string,
-): Promise<{ invite: Invite; inviter: User } | null> {
+): Promise<{ invite: Invite; inviter: UserRow } | null> {
   if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) return null;
   const invite = await ctx.db
     .selectFrom('invites')
@@ -141,7 +142,7 @@ export async function liveInvite(
   if (!invite) return null;
   const inviter = await ctx.db
     .selectFrom('users')
-    .selectAll()
+    .select(USER_COLUMNS)
     .where('id', '=', invite.user_id)
     .where('deleted_at', 'is', null)
     .where('suspended_at', 'is', null)
@@ -210,7 +211,7 @@ export async function acceptInvite(
   if (minorOf(inviter, now) && !b.incomingRequestId) {
     const me = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('id', '=', userId)
       .executeTakeFirstOrThrow();
     if (!minorOf(me, now) && !(await shareAConnection(ctx.db, userId, inviter.id))) {

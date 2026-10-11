@@ -11,6 +11,7 @@ import type { Database, Organization, OrgMember } from '../db/schema';
 import { orgRef } from './business';
 import { notFound } from './errors';
 import { releaseHandle } from './handles';
+import { forgetSitemaps } from './sitemap-cache';
 
 type Q = Kysely<Database> | Transaction<Database>;
 
@@ -155,6 +156,7 @@ export async function closeOrg(trx: Q, orgId: string, now: Date): Promise<void> 
     .set({ archived_at: now, reclaim_by: null, reclaim_token: null, updated_at: now })
     .where('id', '=', orgId)
     .execute();
+  forgetSitemaps();
   await trx
     .updateTable('org_members')
     .set({ left_at: now, role: 'agent' })

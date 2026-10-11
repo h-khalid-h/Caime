@@ -20,7 +20,8 @@ import { Nunito_900Black } from '@expo-google-fonts/nunito/900Black';
  * `fontFace` picks for text that holds Arabic. All are in the app's own bundle, so loading them
  * reads the device, never the network.
  */
-export const FONT_FILES = {
+/** The brand's own faces: what every reader's first frame waits for. */
+export const LATIN_FONT_FILES = {
   Nunito_600SemiBold,
   Nunito_700Bold,
   Nunito_800ExtraBold,
@@ -29,6 +30,13 @@ export const FONT_FILES = {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+};
+/**
+ * The Arabic faces paired with them (R73): an Arabic reader's first frame waits for these too;
+ * anyone else gets them behind the first screen (a message in Arabic draws with the paired
+ * face once they're in).
+ */
+export const ARABIC_FONT_FILES = {
   BalooBhaijaan2_600SemiBold,
   BalooBhaijaan2_700Bold,
   BalooBhaijaan2_800ExtraBold,
@@ -37,3 +45,4 @@ export const FONT_FILES = {
   NotoSansArabic_600SemiBold,
   NotoSansArabic_700Bold,
 };
+export const FONT_FILES = { ...LATIN_FONT_FILES, ...ARABIC_FONT_FILES };

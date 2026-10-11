@@ -56,8 +56,9 @@ export async function enqueue(
     })
     .onConflict((oc) => oc.column('dedupe_key').doNothing())
     .execute();
-  // Due now: wake the loop rather than wait for its next look. One due later runs at its time.
-  if (!opts.runAt || opts.runAt.getTime() <= ctx.now().getTime())
+  // Due before the loop's longest rest could end (M24: Cai's reply, 800 ms out, waited for the
+  // next look): wake it, and it rests again until this one. One due later runs at its time.
+  if (!opts.runAt || opts.runAt.getTime() <= ctx.now().getTime() + IDLE_MAX_MS)
     await sql`select pg_notify(${JOBS_CHANNEL}, '')`.execute(ctx.db);
 }
 
@@ -77,9 +78,58 @@ const WORKER_ID = `${hostname()}:${process.pid}`;
 /** Jobs run side by side, so one that waits on the network (a slow webhook) holds only its slot. */
 const CONCURRENCY = 8;
 
-/** Claim and run every job that is due. Returns how many ran. */
+/** How many batches one call claims before it lets the periodic tasks have their turn. */
+const BATCHES_PER_RUN = 4;
+
+/**
+ * Claim and run every job that is due, `CONCURRENCY` at a time. A slot that runs out of work
+ * claims another batch while the others are still busy (M23: the whole batch was awaited
+ * before anything new was claimed, so a slow webhook held seven idle slots), up to
+ * `BATCHES_PER_RUN`; then the loop looks at its periodic tasks and comes straight back.
+ * Returns how many ran.
+ */
 export async function runDueJobs(ctx: AppContext, limit = 50): Promise<number> {
-  const claimed = await ctx.db
+  const queue = await claimDue(ctx, limit);
+  if (!queue.length) return 0;
+  let batches = 1;
+  let ran = 0;
+  // One claim at a time, shared by every slot that finds the queue empty.
+  let refilling: Promise<boolean> | null = null;
+  const refill = () => {
+    if (!refilling)
+      refilling = (async () => {
+        if (batches >= BATCHES_PER_RUN) return false;
+        const more = await claimDue(ctx, limit);
+        batches++;
+        queue.push(...more);
+        return more.length > 0;
+      })().finally(() => {
+        refilling = null;
+      });
+    return refilling;
+  };
+  const slot = async () => {
+    for (;;) {
+      const job = queue.shift();
+      if (!job) {
+        if (await refill()) continue;
+        return;
+      }
+      await runJob(ctx, job);
+      ran++;
+    }
+  };
+  const slots = await Promise.allSettled(
+    Array.from({ length: Math.min(CONCURRENCY, queue.length) }, slot),
+  );
+  const failed = slots.find((s) => s.status === 'rejected');
+  if (failed) throw failed.reason;
+  return ran;
+}
+
+/** Every job due now that nobody holds, claimed for this worker: at most `limit`. */
+async function claimDue(ctx: AppContext, limit: number): Promise<Selectable<JobsTable>[]> {
+  return ctx.db
     .updateTable('jobs')
     .set({ locked_at: ctx.now(), locked_by: WORKER_ID, attempts: sql`attempts + 1` })
     .where(
@@ -104,16 +154,6 @@ export async function runDueJobs(ctx: AppContext, limit = 50): Promise<number> {
     )
     .returningAll()
     .execute();
-  let next = 0;
-  const slot = async () => {
-    for (let job = claimed[next++]; job; job = claimed[next++]) await runJob(ctx, job);
-  };
-  const slots = await Promise.allSettled(
-    Array.from({ length: Math.min(CONCURRENCY, claimed.length) }, slot),
-  );
-  const failed = slots.find((s) => s.status === 'rejected');
-  if (failed) throw failed.reason;
-  return claimed.length;
 }
 
 async function runJob(ctx: AppContext, job: Selectable<JobsTable>): Promise<void> {

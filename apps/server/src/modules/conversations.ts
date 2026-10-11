@@ -33,6 +33,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { USER_COLUMNS } from '../db/schema';
 import { tellSaved } from '../lib/automations';
 import { assertCanWrite } from '../lib/blocks';
 import { canEditConversation, contextEditable, contextVisible } from '../lib/contexts';
@@ -708,7 +709,7 @@ export async function conversationRoutes(app: FastifyInstance, ctx: AppContext) 
     // Read positions are private unless both sides share them (R25): decided for all at once.
     const users = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('id', 'in', [auth.userId, ...others])
       .execute();
     const reader = users.find((u) => u.id === auth.userId);

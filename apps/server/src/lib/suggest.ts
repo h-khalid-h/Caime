@@ -4,11 +4,13 @@
  * Only non-sensitive signals: how the other person described it, a team or a space both are
  * in, and a company email domain both use.
  */
+
+import type { SuggestionView } from '@caime/core';
 import { SPACE_KIND_DEFS, SPHERE_DEFS, type SpaceKind, type Sphere, uuidv7 } from '@caime/core';
 import { tr } from '@caime/core/i18n';
 import { type Insertable, sql } from 'kysely';
 import type { AppContext } from '../context';
-import type { SuggestionsTable } from '../db/schema';
+import type { Suggestion, SuggestionsTable } from '../db/schema';
 import { asReader, inLanguage, languagesOf } from './i18n';
 import { leanFor } from './learning';
 import type { Copy } from './notify';
@@ -447,4 +449,22 @@ export async function suggestRelationships(
     }
     if (place) await offer(ctx, owner.id, shown, place);
   }
+}
+
+/** A suggestion as the app shows it (the suggestions routes, and AI's answers). */
+export function suggestionView(s: Suggestion): SuggestionView {
+  return {
+    id: s.id,
+    kind: s.kind,
+    title: s.title,
+    rationale: s.rationale,
+    confidence: s.confidence,
+    payload: s.payload,
+    conversationId: s.conversation_id,
+    messageId: s.message_id,
+    subjectUserId: s.subject_user_id,
+    dueAt: s.due_at?.toISOString() ?? null,
+    dueText: s.due_text,
+    createdAt: s.created_at.toISOString(),
+  };
 }

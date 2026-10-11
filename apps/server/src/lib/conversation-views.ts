@@ -11,8 +11,8 @@ import type { ConversationBusinessView, ConversationView } from '@caime/core';
 import { PRIVATE_GROUP_MAX, tr } from '@caime/core';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-
 import type { Conversation, Participant } from '../db/schema';
+import { ORG_COLUMNS } from '../db/schema';
 import { businessClosed } from '../lib/blocks';
 import { orgRef, threadViews } from '../lib/business';
 import { isGroupTopic } from '../lib/conversations';
@@ -258,7 +258,7 @@ export async function conversationView(
     const org = thread
       ? await ctx.db
           .selectFrom('organizations')
-          .selectAll()
+          .select(ORG_COLUMNS)
           .where('id', '=', thread.org_id)
           .executeTakeFirst()
       : undefined;
@@ -272,7 +272,7 @@ export async function conversationView(
         const asOrg = thread.customer_org_id
           ? await ctx.db
               .selectFrom('organizations')
-              .selectAll()
+              .select(ORG_COLUMNS)
               .where('id', '=', thread.customer_org_id)
               .executeTakeFirst()
           : undefined;

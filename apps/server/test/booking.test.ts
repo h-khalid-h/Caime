@@ -625,6 +625,8 @@ describe('whose a booking is (review 2026-10-09)', () => {
         title: 'Walk-in',
         fields: { title: 'Walk-in', start: { at: startAt, hasTime: true } },
       }),
+      // What the server writes with every meeting or appointment (`cardStartAt`).
+      card_start_at: new Date(startAt),
       created_at: t.ctx.now(),
     });
     const dayBefore = new Date(Date.parse(taken) - 20 * 3_600_000).toISOString();
@@ -644,5 +646,38 @@ describe('whose a booking is (review 2026-10-09)', () => {
         rows.map((r) => r.id),
       )
       .execute();
+  });
+});
+
+describe('the last place, asked for twice at once (review 2026-10-09 M20)', () => {
+  it('one is booked and one refused, under the host’s lock', async () => {
+    const sam = await signup(t, { displayName: 'Sam Customer' });
+    const samConvo = (await sam.post(`/v1/orgs/${orgId}/conversations`, {})).conversationId;
+    // A slot with room for two: the last one the window offers at that quantity.
+    // Days the tests above left alone.
+    const later = 'from=2026-10-06T00:00:00Z&to=2026-10-08T00:00:00Z';
+    const open = (await lina.get(`/v1/orgs/${orgId}/slots?${later}&item=cleaning&quantity=2`))
+      .slots as string[];
+    const at = open[open.length - 1];
+    expect(at).toBeDefined();
+    const ask = (c: Client, conversationId: string) =>
+      c.req('POST', `/v1/conversations/${conversationId}/messages`, {
+        clientId: uuidv7(),
+        kind: 'kit',
+        payload: {
+          kit: 'appointment',
+          fields: { title: 'Cleaning', start: { at, hasTime: true } },
+          // Two of the two places each: only one booking fits.
+          booking: { itemId: 'cleaning', quantity: 2 },
+        },
+      });
+    const [a, b] = await Promise.all([ask(lina, convo), ask(sam, samConvo)]);
+    expect(
+      [a, b]
+        .map((r) => `${r.statusCode} ${r.statusCode === 201 ? '' : r.json().error.code}`)
+        .sort(),
+    ).toEqual(['201 ', '409 slot_taken']);
+    const refused = a.statusCode === 409 ? a : b;
+    expect(refused.json().error.code).toBe('slot_taken');
   });
 });

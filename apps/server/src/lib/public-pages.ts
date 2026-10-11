@@ -53,6 +53,8 @@ import {
   SITE_NAME,
   type SiteFacts,
 } from './site-pages';
+import { sitemaps } from './sitemap-cache';
+import { clip } from './text';
 import { avatarUrl, minorOf, privacyOf } from './users';
 
 type Q = Kysely<Database>;
@@ -497,8 +499,6 @@ function entryBody(screen: EntryScreen): string {
   </div></div></section>
 </main>`;
 }
-
-const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
 export { PROMISE, SITE_NAME };
 
@@ -1211,6 +1211,8 @@ export function robotsTxt(publicUrl: string): string {
  * a name nobody has proven).
  */
 export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]): Promise<string> {
+  const kept = sitemaps.get(publicUrl);
+  if (kept !== undefined) return kept;
   const orgs = await db
     .selectFrom('organizations')
     .select(['handle', 'updated_at', 'booking', 'booking_items', 'ordering', 'collections'])
@@ -1221,7 +1223,7 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     .execute();
   const entry = (loc: string, lastmod?: Date) =>
     `  <url><loc>${esc(loc)}</loc>${lastmod ? `<lastmod>${lastmod.toISOString().slice(0, 10)}</lastmod>` : ''}</url>`;
-  return [
+  const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     entry(`${publicUrl}/`),
@@ -1243,6 +1245,8 @@ export async function sitemapXml(db: Q, publicUrl: string, pagesHere: string[]):
     '</urlset>',
     '',
   ].join('\n');
+  sitemaps.set(publicUrl, xml);
+  return xml;
 }
 
 /** What the browser may use on Caime's pages, and nothing on anyone else's frame. */

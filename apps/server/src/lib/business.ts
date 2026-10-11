@@ -17,12 +17,14 @@ import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { BusinessThread, Database, Organization } from '../db/schema';
+import { ORG_COLUMNS } from '../db/schema';
 import { emitWebhook } from './apps';
 import type { RealtimeEvent } from './bus';
 import { currencyOf } from './geo';
 import { cardData } from './kits';
 import { messagePreview } from './messages';
 import { personViewsFor } from './people-batch';
+import { TtlCache } from './ttl-cache';
 import { minorOf } from './users';
 
 type Q = Kysely<Database> | Transaction<Database>;
@@ -65,7 +67,8 @@ export interface CustomerMask {
 
 const MASK_TTL_MS = 60_000;
 const MASK_CACHE_MAX = 5000;
-const masks = new Map<string, { mask: CustomerMask | null; at: number; business: boolean }>();
+/** A business conversation's mask for a minute; "not business" for as long as it's kept. */
+const masks = new TtlCache<string, CustomerMask | null>(MASK_CACHE_MAX, MASK_TTL_MS);
 
 /**
  * A business conversation's customer and organization, or null for any other conversation. A
@@ -74,8 +77,8 @@ const masks = new Map<string, { mask: CustomerMask | null; at: number; business:
  */
 export async function customerMask(db: Q, conversationId: string): Promise<CustomerMask | null> {
   const now = Date.now();
-  const hit = masks.get(conversationId);
-  if (hit && (!hit.business || now - hit.at < MASK_TTL_MS)) return hit.mask;
+  const hit = masks.get(conversationId, now);
+  if (hit !== undefined) return hit;
   const row = await db
     .selectFrom('conversations as c')
     .leftJoin('business_threads as t', 't.conversation_id', 'c.id')
@@ -95,8 +98,7 @@ export async function customerMask(db: Q, conversationId: string): Promise<Custo
           customerOrgId: row.customer_org_id ?? null,
         }
       : null;
-  if (masks.size >= MASK_CACHE_MAX) masks.delete(masks.keys().next().value as string);
-  masks.set(conversationId, { mask, at: now, business });
+  masks.set(conversationId, mask, now, business ? MASK_TTL_MS : Number.POSITIVE_INFINITY);
   return mask;
 }
 
@@ -436,7 +438,11 @@ export async function threadViews(
     ...new Set(threads.map((t) => t.customer_org_id).filter((x): x is string => Boolean(x))),
   ];
   const forOrgs = forOrgIds.length
-    ? await ctx.db.selectFrom('organizations').selectAll().where('id', 'in', forOrgIds).execute()
+    ? await ctx.db
+        .selectFrom('organizations')
+        .select(ORG_COLUMNS)
+        .where('id', 'in', forOrgIds)
+        .execute()
     : [];
   const [customers, names, lastMessages, mine, blocked, requests, ages] = await Promise.all([
     personViewsFor(ctx, viewerId, customerIds),

@@ -30,15 +30,14 @@ import { fileView } from '../lib/messages';
 import { personViewsFor } from '../lib/people-batch';
 import { assertAiAllowance } from '../lib/plans';
 import { relationshipView } from '../lib/relations';
+import { taskViews } from '../lib/tasks';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { taskViews } from './actions';
 
 const SNIPPET_MARKS = MATCH_START + MATCH_END;
 
 /** A card's start, as prepareKitFields keeps it (an ISO time, compared as text). */
-const CARD_START = sql<string>`m.payload->'fields'->'start'->>'at'`;
 
 const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
@@ -224,8 +223,8 @@ export async function runSearch(
               ]),
               eb.and([
                 eb('m.kind', '=', 'kit'),
-                eb(CARD_START, '>=', new Date(parsed.period!.since).toISOString()),
-                eb(CARD_START, '<', new Date(parsed.period!.until).toISOString()),
+                eb('m.card_start_at', '>=', new Date(parsed.period!.since)),
+                eb('m.card_start_at', '<', new Date(parsed.period!.until)),
               ]),
             ]),
           ),

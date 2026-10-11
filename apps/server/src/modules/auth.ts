@@ -32,6 +32,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { AppContext } from '../context';
+import { USER_COLUMNS } from '../db/schema';
 import { audit } from '../lib/audit';
 import {
   decoyHash,
@@ -270,7 +271,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (ctx.mail) await sendEmailCode(ctx, id, body.email, body.displayName);
     const user = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
     reply.status(201);
@@ -288,7 +289,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.limiter.hit(`login:id:${identifier}:${ip}`, ctx.config.isTest ? 1000 : 10, 600_000);
     const user = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where((eb) => eb.or([eb('email', '=', identifier), eb('handle', '=', identifier)]))
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
@@ -336,7 +337,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const auth = req.auth;
     const user = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where('id', '=', auth.userId)
       .executeTakeFirst();
     if (!user) throw unauthorized();
@@ -567,7 +568,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     const identifier = body.identifier.toLowerCase().replace(/^@/, '');
     const user = await ctx.db
       .selectFrom('users')
-      .selectAll()
+      .select(USER_COLUMNS)
       .where((eb) => eb.or([eb('email', '=', identifier), eb('handle', '=', identifier)]))
       .where('deleted_at', 'is', null)
       .executeTakeFirst();

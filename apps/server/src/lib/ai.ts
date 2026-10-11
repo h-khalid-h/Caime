@@ -21,6 +21,7 @@ import { FILE_KINDS, SEARCH_SCOPES, type SearchUnderstanding } from '@caime/core
 import { SPHERES } from '@caime/core/taxonomy';
 import { z } from 'zod';
 import type { Config } from '../config';
+import { clip } from './text';
 
 /** Why a model call gave nothing to show. The routes turn these into plain sentences. */
 export type AiFailure = 'declined' | 'busy' | 'unavailable';
@@ -320,8 +321,6 @@ const Found = z.object({
     }),
   ),
 });
-
-const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
 /** Unwrap a reply the model quoted despite being asked not to. */
 function unquote(text: string): string {

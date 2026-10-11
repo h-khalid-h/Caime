@@ -229,7 +229,6 @@ export async function orgBookings(
   /** A view takes a page; the slots take every card in the window (nothing read as free). */
   opts: { limit?: number } = {},
 ): Promise<OrgBookingView[]> {
-  const start = sql<string>`m.payload->'fields'->'start'->>'at'`;
   const rows = await ctx.db
     .selectFrom('messages as m')
     .innerJoin('business_threads as t', 't.conversation_id', 'm.conversation_id')
@@ -240,9 +239,9 @@ export async function orgBookings(
     .where('m.deleted_at', 'is', null)
     .where(sql`m.payload->>'kit'`, '=', 'appointment')
     .where(sql`m.payload->>'state'`, 'in', ['requested', 'confirmed'])
-    .where(start, '>=', window.from.toISOString())
-    .where(start, '<=', window.until.toISOString())
-    .orderBy(start, 'asc')
+    .where('m.card_start_at', '>=', window.from)
+    .where('m.card_start_at', '<=', window.until)
+    .orderBy('m.card_start_at', 'asc')
     .limit(opts.limit ?? MAX_ITEMS)
     .execute();
   const out: OrgBookingView[] = [];

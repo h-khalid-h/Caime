@@ -232,3 +232,17 @@ export async function tellCardApp(
   };
   for (const app of told) await queueDelivery(ctx, app.id, mask.orgId, event, body);
 }
+
+/**
+ * When a meeting or an appointment is for (`messages.card_start_at`): written with the card,
+ * so a window over cards is an index read. Null for any other message (a custom card may carry
+ * a field named `start` of its own; it isn't one of these).
+ */
+export function cardStartAt(payload: unknown): Date | null {
+  const card = payload as { kit?: unknown; fields?: { start?: { at?: unknown } } } | null;
+  if (!card || (card.kit !== 'meeting' && card.kit !== 'appointment')) return null;
+  const at = card.fields?.start?.at;
+  if (typeof at !== 'string') return null;
+  const date = new Date(at);
+  return Number.isNaN(date.getTime()) ? null : date;
+}

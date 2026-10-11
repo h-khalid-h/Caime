@@ -55,11 +55,12 @@ import { hashToken, newToken } from '../lib/crypto';
 import { badRequest, forbidden, notFound } from '../lib/errors';
 import { orgById, orgSeat } from '../lib/orgs';
 import { viewerRelation } from '../lib/relations';
+import { forgetSitemaps } from '../lib/sitemap-cache';
+import { taskViews } from '../lib/tasks';
 import { cardsAhead } from '../lib/upcoming';
 import { minorOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
-import { taskViews } from './actions';
 
 const DAY_MS = 86_400_000;
 /** What a calendar shows: from a few months back to a couple of years ahead, and never all. */
@@ -239,6 +240,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       })
       .where('id', '=', id)
       .execute();
+    forgetSitemaps();
     await audit(ctx.db, {
       actorId: auth.userId,
       action: body.booking ? 'org.booking_set' : 'org.booking_off',
@@ -389,6 +391,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
       })
       .where('id', '=', auth.userId)
       .execute();
+    forgetSitemaps();
     await audit(ctx.db, {
       actorId: auth.userId,
       action: body.booking ? 'account.booking_set' : 'account.booking_off',

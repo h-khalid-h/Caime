@@ -13,6 +13,7 @@ import { WEB_URL } from '@/lib/config';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
 import { CopyRow } from '@/ui/CopyRow';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
@@ -20,7 +21,10 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
-import { AppListing } from './AppListing';
+
+/** The listing form (R74): loaded when an app's sheet opens, never with the Developer screen. */
+const AppListing = lazyPart(() => import('./AppListing').then((m) => m.AppListing));
+
 import { Group } from './SettingsPage';
 
 type Kind = 'public' | 'confidential';

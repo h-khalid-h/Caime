@@ -72,3 +72,9 @@ export function kitStateLabel(state: string): string {
 export function kitStateTone(state: string): 'positive' | 'negative' | 'neutral' {
   return POSITIVE.has(state) ? 'positive' : NEGATIVE.has(state) ? 'negative' : 'neutral';
 }
+
+/** The state in which a meeting or an appointment is agreed: a calendar's, a brief's, the slots'. */
+export const AGREED_STATES: Record<'meeting' | 'appointment', string> = {
+  meeting: 'accepted',
+  appointment: 'confirmed',
+};

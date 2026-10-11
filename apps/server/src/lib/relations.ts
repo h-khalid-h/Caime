@@ -15,7 +15,7 @@ import {
   type Sphere,
 } from '@caime/core';
 import type { Kysely, Transaction } from 'kysely';
-import type { Database, Relationship, User } from '../db/schema';
+import type { Database, Relationship, UserRow } from '../db/schema';
 import { verifiedOrgNames } from './orgs';
 import { privacyOf, type ViewerRelation } from './users';
 
@@ -321,8 +321,8 @@ export async function mutualFit(
 export async function readReceiptVisibleTo(
   db: Q,
   now: Date,
-  reader: User,
-  viewer: User,
+  reader: UserRow,
+  viewer: UserRow,
 ): Promise<boolean> {
   return (await readReceiptsVisibleTo(db, now, reader, [viewer])).has(viewer.id);
 }
@@ -336,8 +336,8 @@ export async function readReceiptVisibleTo(
 export async function readReceiptsVisibleTo(
   db: Q,
   now: Date,
-  reader: User,
-  viewers: User[],
+  reader: UserRow,
+  viewers: UserRow[],
 ): Promise<Set<string>> {
   const visible = new Set<string>();
   const others = viewers.filter((v) => v.id !== reader.id);
@@ -376,7 +376,7 @@ export async function readReceiptsVisibleTo(
   const blockedWith = new Set<string>();
   for (const b of blocks) blockedWith.add(b.blocker_id === reader.id ? b.blocked_id : b.blocker_id);
   // How `owner` sees `viewer`, from what was loaded: one of the two is always the reader.
-  const relation = (owner: User, viewer: User): ViewerRelation => {
+  const relation = (owner: UserRow, viewer: UserRow): ViewerRelation => {
     const other = owner.id === reader.id ? viewer.id : owner.id;
     const mine = rels.filter((r) => r.owner_id === owner.id && r.subject_id === viewer.id);
     const connectionId = connections.get(other) ?? null;
