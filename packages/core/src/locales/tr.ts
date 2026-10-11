@@ -311,6 +311,64 @@ export const turkish: Catalog = {
   'What it already did stays as it is, marked as sent through it.':
     'Daha önce yaptıkları olduğu gibi kalır; onun aracılığıyla gönderildiği belirtilir.',
   'Your calendar': 'Takviminiz',
+  'What {name} can do with Caime': '{name} Caime ile neler yapabilir',
+  'Token for {name}': '{name} için belirteç',
+  'Shown this once: paste it on {name} now. {how}':
+    'Yalnızca bu kez gösterilir: şimdi {name} üzerine yapıştırın. {how}',
+  'Reading by default. Tick what your recipe does.':
+    'Varsayılan olarak okuma. Tarifinizin yaptıklarını işaretleyin.',
+  'The token {name} has stops working, and you paste the new one there.':
+    '{name} üzerindeki belirteç çalışmayı bırakır; yenisini oraya yapıştırırsınız.',
+  'Every recipe on {name} that uses the token stops.':
+    '{name} üzerinde belirteci kullanan her tarif durur.',
+  'Get a new token': 'Yeni belirteç al',
+  'Connect {name}': '{name} bağla',
+  'Asked to connect': 'Bağlantı istedi',
+  'That isn’t a contacts file. Export one from Google Contacts, iCloud or Outlook.':
+    'Bu bir kişiler dosyası değil. Google Kişiler, iCloud ya da Outlook’tan bir tane dışa aktarın.',
+  'From your contacts': 'Kişilerinizden',
+  'Who’s already here, and a link for the rest.':
+    'Kimler zaten burada ve geri kalanlar için bir bağlantı.',
+  'Find who’s on Caime': 'Caime’de kimler var, bul',
+  'Export your contacts as a vCard or CSV file (Google Contacts: Export; iCloud: Export vCard; Outlook: Export contacts) and pick it here. It’s read on this device: only the addresses are sent, to see who’s on Caime, and nothing of it is kept.':
+    'Kişilerinizi vCard ya da CSV dosyası olarak dışa aktarın (Google Kişiler: Dışa aktar; iCloud: vCard’ı dışa aktar; Outlook: Kişileri dışa aktar) ve burada seçin. Bu cihazda okunur: Caime’de kimlerin olduğunu görmek için yalnızca adresler gönderilir, dosyadan hiçbir şey saklanmaz.',
+  '{n} contacts': { one: '{n} kişi', other: '{n} kişi' },
+  '{n} with an email address': 'e-posta adresi olan {n}',
+  'none with an email address': 'e-posta adresi olan yok',
+  '{n} people are on Caime': { one: '{n} kişi Caime’de', other: '{n} kişi Caime’de' },
+  'Nobody with these addresses is on Caime yet, or they keep their address private.':
+    'Bu adreslerle henüz kimse Caime’de değil ya da adreslerini gizli tutuyorlar.',
+  '{n} aren’t on Caime yet': {
+    one: '{n} kişi henüz Caime’de değil',
+    other: '{n} kişi henüz Caime’de değil',
+  },
+  'Invite link': 'Davet bağlantısı',
+  'Send it yourself, to whoever you like: Caime never writes to anyone for you. Whoever opens it lands connected with you.':
+    'Kendiniz gönderin, dilediğinize: Caime sizin adınıza kimseye yazmaz. Açan kişi sizinle bağlantılı olarak gelir.',
+  'Make an invite link': 'Davet bağlantısı oluştur',
+  Automation: 'Otomasyon',
+  'Connect Caime to the apps on Zapier': 'Caime’i Zapier’daki uygulamalara bağlayın',
+  'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
+    'Bir Zap’te Webhooks by Zapier ekleyin: Caime’i dinlemek için Retrieve Poll, içinde iş yapmak için Custom Request; her birine “Authorization: Bearer” üstbilgisi ve belirteç.',
+  'Connect Caime to the apps on Make': 'Caime’i Make’teki uygulamalara bağlayın',
+  'In a scenario, add HTTP: Make a request, with a header “Authorization: Bearer” and the token.':
+    'Bir senaryoda HTTP: Make a request ekleyin; “Authorization: Bearer” üstbilgisi ve belirteçle.',
+  'Connect Caime to the apps on n8n, hosted or your own':
+    'Caime’i n8n’deki uygulamalara bağlayın, barındırılan ya da kendi kurulumunuz',
+  'In a workflow, add an HTTP Request node with a Header Auth credential: name “Authorization”, value “Bearer” and the token.':
+    'Bir iş akışında Header Auth kimlik bilgisiyle bir HTTP Request düğümü ekleyin: ad “Authorization”, değer “Bearer” ve belirteç.',
+  'Connect Caime to the apps on Pipedream': 'Caime’i Pipedream’deki uygulamalara bağlayın',
+  'In a workflow, add an HTTP Request step, or code, with a header “Authorization: Bearer” and the token.':
+    'Bir iş akışında bir HTTP Request adımı ya da kod ekleyin; “Authorization: Bearer” üstbilgisi ve belirteçle.',
+  'Connect Caime to the apps on IFTTT': 'Caime’i IFTTT’deki uygulamalara bağlayın',
+  'In an applet, add Webhooks: Make a web request, with “Authorization: Bearer” and the token under Additional headers.':
+    'Bir applet’te Webhooks: Make a web request ekleyin; Additional headers altında “Authorization: Bearer” ve belirteç.',
+  'Caime gives {name} a token of its own, so a recipe there can hear from Caime and act in it, as you and within what you allow. The token is shown once; stop it here any time.':
+    'Caime, {name} için kendine ait bir belirteç verir; oradaki bir tarif Caime’i dinleyebilir ve sizin adınıza, izin verdiğiniz ölçüde onda iş yapabilir. Belirteç bir kez gösterilir; dilediğiniz zaman buradan durdurun.',
+  'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).':
+    'Caime’i dinleyin: bir mesaj gelir, bir şey sizi bekler, bir eylemin vakti gelir ya da bekler (gelen kutunuzdan ve eylemlerinizden sorgulanır).',
+  'Act in Caime: send a message as you, add an action, finish one, search.':
+    'Caime’de iş yapın: sizin adınıza mesaj gönderin, eylem ekleyin, birini bitirin, arayın.',
   'Your conversation with it': 'Onunla konuşmanız',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'İzin verdiğiniz bir uygulama yalnızca izin verdiklerinize ulaşır; parolanıza, gizlilik ayarlarınıza veya hesabınıza asla. Gönderdiklerinde onun aracılığıyla geldiği yazar. Kaldırdığınız uygulama hemen durur.',

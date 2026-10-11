@@ -1031,6 +1031,8 @@ export interface PersonalTokensTable {
   last_used_at: NullableTimestamp;
   created_at: Generated<Date>;
   revoked_at: NullableTimestamp;
+  /** Made for an automation platform (R79): the bridge's id, listed as the platform. */
+  bridge: string | null;
 }
 
 export interface OAuthClientsTable {

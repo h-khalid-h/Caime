@@ -4,7 +4,8 @@
  * (`listed_at`) and was let through (`reviewed_at` without `declined_reason`); its place in
  * Discover is by how many connected it (`connected_count`, kept on the row by the grant's own
  * transaction, never counted on read), then by newness. Caime's own built-ins
- * (`BUILTIN_APPS`) are rows too, first on the first page, connected through their own routes.
+ * (`BUILTIN_APPS`) and the bridges (`BRIDGES`, R79) are rows too, first on the first page,
+ * connected through their own routes.
  */
 import {
   type AppCategory,
@@ -12,6 +13,8 @@ import {
   type AppListingView,
   type AppPublisher,
   appIconPath,
+  BRIDGE_DESCRIPTION,
+  BRIDGES,
   BUILTIN_APPS,
   type BuiltinAppId,
   type ConnectedAppView,
@@ -195,32 +198,46 @@ export async function directoryApp(
   return row ? directoryAppView(row) : null;
 }
 
+/** A built-in or a bridge as the viewer has it: on since when, last used, and (a bridge) what it may do. */
+export interface BuiltinOn {
+  createdAt: string;
+  lastUsedAt: string | null;
+  scopes: string[];
+}
+export type BuiltinRow = DirectoryAppView & { kind: 'builtin' | 'bridge'; on: BuiltinOn | null };
+
 /**
  * Caime's own apps, as Discover and Connected show them: whether each is on for the viewer,
- * and how many have it on, from the one table each keeps. A new built-in adds its case here.
+ * and how many have it on, from the one table each keeps (the calendar address from
+ * `calendar_feeds`, a bridge from its token in `personal_tokens`, R79). A new built-in adds
+ * its case here.
  */
-export async function builtinApps(
-  ctx: AppContext,
-  viewerId: string,
-): Promise<
-  Array<DirectoryAppView & { on: { createdAt: string; lastUsedAt: string | null } | null }>
-> {
-  const feed = await ctx.db
-    .selectFrom('calendar_feeds')
-    .select(['created_at', 'last_read_at'])
-    .where('user_id', '=', viewerId)
-    .executeTakeFirst();
-  const feeds = await feedsOn(ctx);
-  const on: Record<BuiltinAppId, { createdAt: string; lastUsedAt: string | null } | null> = {
+export async function builtinApps(ctx: AppContext, viewerId: string): Promise<BuiltinRow[]> {
+  const [feed, tokens, counts] = await Promise.all([
+    ctx.db
+      .selectFrom('calendar_feeds')
+      .select(['created_at', 'last_read_at'])
+      .where('user_id', '=', viewerId)
+      .executeTakeFirst(),
+    ctx.db
+      .selectFrom('personal_tokens')
+      .select(['bridge', 'scopes', 'created_at', 'last_used_at'])
+      .where('user_id', '=', viewerId)
+      .where('bridge', 'is not', null)
+      .where('revoked_at', 'is', null)
+      .execute(),
+    builtinCounts(ctx),
+  ]);
+  const on: Record<BuiltinAppId, BuiltinOn | null> = {
     calendar: feed
       ? {
           createdAt: feed.created_at.toISOString(),
           lastUsedAt: feed.last_read_at?.toISOString() ?? null,
+          scopes: [],
         }
       : null,
   };
-  const counts: Record<BuiltinAppId, number> = { calendar: feeds.n };
-  return BUILTIN_APPS.map((b) => ({
+  const own: BuiltinRow[] = BUILTIN_APPS.map((b) => ({
     id: b.id,
     kind: 'builtin' as const,
     name: tr(b.name),
@@ -230,27 +247,50 @@ export async function builtinApps(
     iconUrl: null,
     website: null,
     publisher: CAIME_PUBLISHER,
-    connectedCount: counts[b.id],
+    connectedCount: counts.feeds,
     connectUrl: null,
     connected: on[b.id] !== null,
     on: on[b.id],
   }));
+  const bridges: BuiltinRow[] = BRIDGES.map((b) => {
+    const t = tokens.find((k) => k.bridge === b.id);
+    return {
+      id: b.id,
+      kind: 'bridge' as const,
+      name: b.name,
+      tagline: tr(b.tagline),
+      description: tr(BRIDGE_DESCRIPTION, { name: b.name }),
+      category: 'automation' as const,
+      iconUrl: null,
+      website: b.website,
+      publisher: CAIME_PUBLISHER,
+      connectedCount: counts.bridges[b.id] ?? 0,
+      connectUrl: null,
+      connected: t !== undefined,
+      on: t
+        ? {
+            createdAt: t.created_at.toISOString(),
+            lastUsedAt: t.last_used_at?.toISOString() ?? null,
+            scopes: t.scopes,
+          }
+        : null,
+    };
+  });
+  return [...own, ...bridges];
 }
 
-/** A built-in that's on, as a Connected row. */
-export function builtinConnectedView(
-  b: Awaited<ReturnType<typeof builtinApps>>[number],
-): ConnectedAppView | null {
+/** A built-in or a bridge that's on, as a Connected row. */
+export function builtinConnectedView(b: BuiltinRow): ConnectedAppView | null {
   if (!b.on) return null;
   return {
-    kind: 'builtin',
+    kind: b.kind,
     appId: b.id,
     grantId: null,
     name: b.name,
-    website: null,
+    website: b.website,
     publisher: CAIME_PUBLISHER,
     iconUrl: null,
-    scopes: [],
+    scopes: b.on.scopes,
     createdAt: b.on.createdAt,
     lastUsedAt: b.on.lastUsedAt,
   };
@@ -308,25 +348,42 @@ export async function listingById(ctx: AppContext, id: string): Promise<Director
 const NO_VIEWER = '00000000-0000-0000-0000-000000000000';
 
 /**
- * How many have each built-in on, counted once and kept until a feed is made or ended on this
- * instance (`builtinCountsChanged`, from those routes and an account's deletion) or a minute
- * passes (another instance may have changed it): Discover's first page reads it on every open,
- * and a count over every feed each time was the review's L.
+ * How many have each built-in and bridge on, counted once and kept until one is made or ended
+ * on this instance (`builtinCountsChanged`, from those routes, a lockout and an account's
+ * deletion) or a minute passes (another instance may have changed it): Discover's first page
+ * reads it on every open, and a count over every feed each time was the review's L.
  */
 const BUILTIN_COUNT_MS = 60_000;
-const builtinCounts = new WeakMap<AppContext, { feeds: number; until: number }>();
-export function builtinCountsChanged(ctx: AppContext): void {
-  builtinCounts.delete(ctx);
+interface BuiltinCounts {
+  feeds: number;
+  bridges: Record<string, number>;
 }
-async function feedsOn(ctx: AppContext): Promise<{ n: number }> {
-  const kept = builtinCounts.get(ctx);
-  if (kept && kept.until > Date.now()) return { n: kept.feeds };
-  const row = await ctx.db
-    .selectFrom('calendar_feeds')
-    .select(sql<number>`count(*)::int`.as('n'))
-    .executeTakeFirstOrThrow();
-  builtinCounts.set(ctx, { feeds: row.n, until: Date.now() + BUILTIN_COUNT_MS });
-  return row;
+const builtinCountsKept = new WeakMap<AppContext, BuiltinCounts & { until: number }>();
+export function builtinCountsChanged(ctx: AppContext): void {
+  builtinCountsKept.delete(ctx);
+}
+async function builtinCounts(ctx: AppContext): Promise<BuiltinCounts> {
+  const kept = builtinCountsKept.get(ctx);
+  if (kept && kept.until > Date.now()) return kept;
+  const [feeds, perBridge] = await Promise.all([
+    ctx.db
+      .selectFrom('calendar_feeds')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .executeTakeFirstOrThrow(),
+    ctx.db
+      .selectFrom('personal_tokens')
+      .select(['bridge', sql<number>`count(*)::int`.as('n')])
+      .where('bridge', 'is not', null)
+      .where('revoked_at', 'is', null)
+      .groupBy('bridge')
+      .execute(),
+  ]);
+  const counts: BuiltinCounts = {
+    feeds: feeds.n,
+    bridges: Object.fromEntries(perBridge.map((r) => [r.bridge as string, r.n])),
+  };
+  builtinCountsKept.set(ctx, { ...counts, until: Date.now() + BUILTIN_COUNT_MS });
+  return counts;
 }
 
 /**

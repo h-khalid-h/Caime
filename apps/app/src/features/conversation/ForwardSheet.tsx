@@ -17,7 +17,7 @@ import { endpoints } from '@/api/endpoints';
 import { useInboxAll } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { knownPrivate } from '@/features/e2ee/known';
-import { toggled } from '@/features/people/PeoplePicker';
+import { toggled } from '@/lib/toggled';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { ListRow } from '@/ui/ListRow';

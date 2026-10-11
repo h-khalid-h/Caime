@@ -6,6 +6,7 @@
 import {
   AssignThreadBody,
   BUSINESS_VIEWS,
+  BusinessInboxQuery,
   type BusinessInboxView,
   type BusinessSummaryView,
   type BusinessThreadView,
@@ -359,10 +360,7 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/orgs/:id/inbox', async (req): Promise<BusinessInboxView> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    const { view } = parse(
-      z.object({ view: z.enum(BUSINESS_VIEWS).default('customer_waiting') }),
-      req.query,
-    );
+    const { view } = parse(BusinessInboxQuery, req.query);
     const org = await orgById(ctx.db, id);
     if (!(await orgSeat(ctx.db, auth.userId, id))) throw notFound(tr('That organization'));
     // A conversation shows up once someone has written in it: the customer, or the team first

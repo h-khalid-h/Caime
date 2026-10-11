@@ -14,7 +14,6 @@ import { deviceInfo } from '@/features/auth/device';
 import { CountryField } from '@/features/geo/CountryField';
 import { useCountries } from '@/features/geo/countries';
 import { LanguageField } from '@/features/geo/LanguageField';
-import { TimeZoneField } from '@/features/geo/TimeZoneField';
 import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { LANGUAGE_NAMES } from '@/lib/i18n';
@@ -22,8 +21,14 @@ import { useMe, useSession } from '@/state/session';
 import { usePrefs } from '@/theme/prefs';
 import { Button } from '@/ui/Button';
 import { ChoiceSheet } from '@/ui/ChoiceSheet';
+import { lazyPart } from '@/ui/Lazy';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const TimeZoneField = lazyPart(() =>
+  import('@/features/geo/TimeZoneField').then((m) => m.TimeZoneField),
+);
 
 export default function Region() {
   const me = useMe();

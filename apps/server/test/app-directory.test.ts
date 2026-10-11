@@ -19,6 +19,10 @@ const SITE = 'https://digest.example';
 const REDIRECT = `${SITE}/callback`;
 const LOGIN = `${SITE}/login`;
 
+/** Where a listed app sits on the first page: after the calendar and the five bridges (R79). */
+const FIRST_LISTED = 6;
+const BRIDGE_IDS = ['zapier', 'make', 'n8n', 'pipedream', 'ifttt'];
+
 const operator = (method: 'GET' | 'POST', url: string, body?: unknown) =>
   t.app.inject({
     method,
@@ -167,7 +171,7 @@ describe('Discover and Connected (R74)', () => {
 
     // Waiting, it's in nobody's Discover but its owner's own view.
     const seen = await directory(noor);
-    expect(seen.apps.map((a) => a.id)).toEqual(['calendar']);
+    expect(seen.apps.map((a) => a.id)).toEqual(['calendar', ...BRIDGE_IDS]);
     expect(seen.apps[0]).toMatchObject({
       kind: 'builtin',
       name: 'Your calendar',
@@ -200,8 +204,16 @@ describe('Discover and Connected (R74)', () => {
     expect((await noor.req('GET', '/v1/admin/listings')).statusCode).toBe(401);
 
     const seen = await directory(noor);
-    expect(seen.apps.map((a) => a.name)).toEqual(['Your calendar', 'Weekly digest']);
-    expect(seen.apps[1]).toMatchObject({
+    expect(seen.apps.map((a) => a.name)).toEqual([
+      'Your calendar',
+      'Zapier',
+      'Make',
+      'n8n',
+      'Pipedream',
+      'IFTTT',
+      'Weekly digest',
+    ]);
+    expect(seen.apps[FIRST_LISTED]).toMatchObject({
       kind: 'oauth',
       publisher: {
         kind: 'person',
@@ -217,10 +229,16 @@ describe('Discover and Connected (R74)', () => {
     // Letting it in twice is one grant, counted once; a second person is two.
     await allow(noor, app.clientId);
     await allow(noor, app.clientId);
-    expect((await directory(noor)).apps[1]).toMatchObject({ connectedCount: 1, connected: true });
+    expect((await directory(noor)).apps[FIRST_LISTED]).toMatchObject({
+      connectedCount: 1,
+      connected: true,
+    });
     await allow(sam, app.clientId);
-    expect((await directory(noor)).apps[1]).toMatchObject({ connectedCount: 2 });
-    expect((await directory(dev)).apps[1]).toMatchObject({ connectedCount: 2, connected: false });
+    expect((await directory(noor)).apps[FIRST_LISTED]).toMatchObject({ connectedCount: 2 });
+    expect((await directory(dev)).apps[FIRST_LISTED]).toMatchObject({
+      connectedCount: 2,
+      connected: false,
+    });
     // Connected shows it as a row of the same kind a built-in would be.
     const { apps } = await noor.get('/v1/me/connected-apps');
     expect(apps).toEqual([
@@ -244,10 +262,13 @@ describe('Discover and Connected (R74)', () => {
       connectedCount: 2,
     });
     await noor.del(`/v1/me/connected-apps/${apps[0].grantId}`);
-    expect((await directory(noor)).apps[1]).toMatchObject({ connectedCount: 1, connected: false });
+    expect((await directory(noor)).apps[FIRST_LISTED]).toMatchObject({
+      connectedCount: 1,
+      connected: false,
+    });
     // A deleted account lets go of its grants, and the count with them.
     await sam.req('DELETE', '/v1/me', { password: 'correct horse battery' });
-    expect((await directory(noor)).apps[1]).toMatchObject({ connectedCount: 0 });
+    expect((await directory(noor)).apps[FIRST_LISTED]).toMatchObject({ connectedCount: 0 });
   });
 
   it('the calendar is a built-in: on, it joins Connected; Discover counts who has it on', async () => {
@@ -272,6 +293,101 @@ describe('Discover and Connected (R74)', () => {
     await noor.del('/v1/calendar/feed');
     expect((await noor.get('/v1/me/connected-apps')).apps).toEqual([]);
     expect((await directory(noor)).apps[0]).toMatchObject({ connected: false, connectedCount: 0 });
+  });
+
+  it('a bridge is a token for the platform (R79): one tap, scoped, shown once, on while it lives, stopped here', async () => {
+    const automation = () => directory(noor, '?category=automation');
+    expect((await automation()).apps.map((a) => a.id)).toEqual(BRIDGE_IDS);
+    expect((await automation()).apps[0]).toMatchObject({
+      kind: 'bridge',
+      name: 'Zapier',
+      category: 'automation',
+      publisher: { kind: 'caime', name: 'Caime', handle: null, verified: true },
+      connectedCount: 0,
+      connected: false,
+      connectUrl: null,
+    });
+    expect((await automation()).apps[0]).toHaveProperty('website', 'https://zapier.com');
+    const made = await noor.req('POST', '/v1/me/bridges/zapier', {
+      scopes: ['profile:read', 'actions:read'],
+    });
+    expect(made.statusCode).toBe(201);
+    const { token, view } = made.json() as {
+      token: string;
+      view: { name: string; scopes: string[]; expiresAt: string | null };
+    };
+    expect(token).toMatch(/^cap_/);
+    expect(view).toMatchObject({
+      name: 'Zapier',
+      scopes: ['profile:read', 'actions:read'],
+      expiresAt: null,
+    });
+    // The token acts as Noor on the person routes, within what was ticked, and nowhere else.
+    const as = (tok: string, url: string) =>
+      t.app.inject({ method: 'GET', url, headers: { authorization: `Bearer ${tok}` } });
+    const me = await as(token, '/v1/me');
+    expect(me.statusCode).toBe(200);
+    expect(me.json().user.handle).toBe(noor.user.handle);
+    expect((await as(token, '/v1/tasks')).statusCode).toBe(200);
+    const inbox = await as(token, '/v1/inbox');
+    expect(inbox.statusCode).toBe(403);
+    expect(inbox.json().error.code).toBe('token_scope');
+    expect((await as(token, '/v1/me/tokens')).json().error.code).toBe('token_route');
+    // Connected lists it as the platform, with what it may do, and never as a bare token too.
+    const { apps } = await noor.get('/v1/me/connected-apps');
+    expect(apps).toEqual([
+      expect.objectContaining({
+        kind: 'bridge',
+        appId: 'zapier',
+        grantId: null,
+        name: 'Zapier',
+        website: 'https://zapier.com',
+        publisher: { kind: 'caime', name: 'Caime', handle: null, verified: true },
+        scopes: ['profile:read', 'actions:read'],
+        lastUsedAt: expect.any(String),
+      }),
+    ]);
+    expect((await automation()).apps[0]).toMatchObject({ connected: true, connectedCount: 1 });
+    expect((await directory(dev, '?category=automation')).apps[0]).toMatchObject({
+      connected: false,
+      connectedCount: 1,
+    });
+    expect((await noor.get('/v1/directory/zapier')).app).toMatchObject({
+      id: 'zapier',
+      kind: 'bridge',
+      connected: true,
+    });
+    // Discover says it in the reader's language, the platform by its own name.
+    const ar = await noor.get('/v1/directory/zapier', { headers: { 'x-caime-language': 'ar' } });
+    expect(ar.app.name).toBe('Zapier');
+    expect(ar.app.tagline).not.toBe('Connect Caime to the apps on Zapier');
+    // A new token for the same platform ends the old one: one lives, counted once.
+    const again = (await noor.post('/v1/me/bridges/zapier', {
+      scopes: ['messages:read', 'profile:read'],
+    })) as { token: string };
+    expect((await as(token, '/v1/me')).statusCode).toBe(401);
+    expect((await as(again.token, '/v1/me')).statusCode).toBe(200);
+    const after = (await noor.get('/v1/me/connected-apps')).apps;
+    expect(after).toHaveLength(1);
+    expect(after[0]).toMatchObject({ kind: 'bridge', scopes: ['messages:read', 'profile:read'] });
+    expect((await automation()).apps[0]).toMatchObject({ connectedCount: 1 });
+    // A platform that isn't one, and a permission that isn't one.
+    expect(
+      (await noor.req('POST', '/v1/me/bridges/nothing', { scopes: ['profile:read'] })).statusCode,
+    ).toBe(404);
+    expect(
+      (await noor.req('POST', '/v1/me/bridges/make', { scopes: ['everything'] })).statusCode,
+    ).toBe(400);
+    // Stopped here: the token ends at once, and Connected and Discover say so.
+    await noor.del('/v1/me/bridges/zapier');
+    expect((await as(again.token, '/v1/me')).statusCode).toBe(401);
+    expect((await noor.get('/v1/me/connected-apps')).apps).toEqual([]);
+    expect((await automation()).apps[0]).toMatchObject({ connected: false, connectedCount: 0 });
+    expect((await noor.req('DELETE', '/v1/me/bridges/zapier')).statusCode).toBe(404);
+    // Under 18, no bridge (R29), as no token.
+    const teen = await signup(t, { displayName: 'Teen Haddad', birthDate: '2011-12-31' });
+    const refused = await teen.req('POST', '/v1/me/bridges/make', { scopes: ['profile:read'] });
+    expect(refused.statusCode).toBe(403);
   });
 
   it('declining says why; a change to what’s shown asks again; unlisting takes it out', async () => {
@@ -371,7 +487,7 @@ describe('Discover and Connected (R74)', () => {
     const seen = await noor.req('GET', path);
     expect(seen.statusCode).toBe(200);
     expect(seen.headers['content-type']).toMatch(/^image\//);
-    expect((await directory(noor)).apps[1]?.iconUrl).toBe(path);
+    expect((await directory(noor)).apps[FIRST_LISTED]?.iconUrl).toBe(path);
     expect((await noor.get('/v1/me/connected-apps')).apps).toEqual([]);
     // Anonymous, nothing.
     expect((await t.app.inject({ method: 'GET', url: path })).statusCode).toBe(401);
@@ -399,7 +515,7 @@ describe('Discover and Connected (R74)', () => {
     const under = await dev.patch(`/v1/me/oauth-apps/${app.id}`, { orgId: studio });
     expect(under.app.listing.orgId).toBe(studio);
     await review(app.id, 'list');
-    expect((await directory(noor)).apps[1]?.publisher).toEqual({
+    expect((await directory(noor)).apps[FIRST_LISTED]?.publisher).toEqual({
       kind: 'org',
       name: 'Dana Studio',
       handle: expect.stringMatching(/^studio\./),

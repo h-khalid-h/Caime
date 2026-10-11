@@ -252,6 +252,21 @@ export interface PeopleSearchResult {
   relationship: RelationshipView | null;
 }
 
+/**
+ * A contacts file into People (R79): who, of the addresses in it, is on Caime and findable by
+ * address (`discoverByEmail`, as search finds them). The server keeps nothing of the file or
+ * the addresses; the app shows the rest a count and offers an invite link.
+ */
+export interface ContactMatchView {
+  /** The address as sent, lower-cased, so the app pairs it with the contact it came from. */
+  email: string;
+  person: PersonView;
+  connection: ConnectionStateView;
+}
+export interface ContactsMatchResponse {
+  matches: ContactMatchView[];
+}
+
 export interface PersonProfileView {
   person: PersonView;
   /** The organizations they're on the team of (R43), shown as their professional details are. */
@@ -2006,9 +2021,9 @@ export interface AppPublisher {
 }
 
 export interface DirectoryAppView {
-  /** An OAuth client's id, or a built-in's name (`calendar`). */
+  /** An OAuth client's id, a built-in's name (`calendar`), or a bridge's (`zapier`, R79). */
   id: string;
-  kind: 'oauth' | 'builtin';
+  kind: 'oauth' | 'builtin' | 'bridge';
   name: string;
   tagline: string | null;
   description: string | null;
@@ -2017,9 +2032,9 @@ export interface DirectoryAppView {
   website: string | null;
   publisher: AppPublisher;
   connectedCount: number;
-  /** Where Connect sends someone (an OAuth app's own sign-in); a built-in connects in Caime. */
+  /** Where Connect sends someone (an OAuth app's own sign-in); a built-in or a bridge connects in Caime. */
   connectUrl: string | null;
-  /** The viewer connected it: a live grant, or the built-in is on. */
+  /** The viewer connected it: a live grant, the built-in is on, or a bridge's token lives. */
   connected: boolean;
 }
 
@@ -2070,8 +2085,11 @@ export interface OAuthConsentView {
  * one of Caime's own built-ins that's on (the calendar address), each the same kind of row.
  */
 export interface ConnectedAppView {
-  /** An app let in (a grant), a built-in that's on, or a personal token of the person's own. */
-  kind: 'oauth' | 'builtin' | 'token';
+  /**
+   * An app let in (a grant), a built-in that's on, a bridge whose token lives (R79: a personal
+   * token made for the platform, listed as the platform), or a personal token of the person's own.
+   */
+  kind: 'oauth' | 'builtin' | 'bridge' | 'token';
   /** The directory's id for it (`DirectoryAppView.id`); a token's own id for a token. */
   appId: string;
   /** The grant, for an app someone let in; a built-in or a token has none. */
@@ -2569,6 +2587,40 @@ export interface AppKitResponse {
 
 export interface PersonalTokensResponse {
   tokens: PersonalTokenView[];
+}
+
+/**
+ * The API as a document (R79, R78): OpenAPI 3.1, written from the same schemas the routes parse
+ * with, for the token-reachable routes (`API_ROUTES`, `PERSON_ROUTES`), so an automation
+ * platform or an agent framework imports Caime rather than hand-writing it. Served at
+ * `GET /v1/openapi.json` to anyone; it says nothing a signed-in person doesn't already read in
+ * `docs/API.md`.
+ */
+export interface OpenApiDocument {
+  openapi: '3.1.0';
+  info: { title: string; version: string; description: string };
+  servers: Array<{ url: string }>;
+  paths: Record<string, Record<string, OpenApiOperation>>;
+  components: {
+    securitySchemes: Record<string, { type: 'http'; scheme: 'bearer'; description: string }>;
+    schemas: Record<string, unknown>;
+  };
+}
+export interface OpenApiOperation {
+  operationId: string;
+  summary: string;
+  description?: string;
+  tags: string[];
+  security: Array<Record<string, string[]>>;
+  parameters: Array<{
+    name: string;
+    in: 'path' | 'query';
+    required: boolean;
+    schema: unknown;
+    description?: string;
+  }>;
+  requestBody?: { required: true; content: { 'application/json': { schema: unknown } } };
+  responses: Record<string, { description: string; content?: Record<string, { schema: unknown }> }>;
 }
 export interface PersonalTokenCreatedResponse {
   token: string;

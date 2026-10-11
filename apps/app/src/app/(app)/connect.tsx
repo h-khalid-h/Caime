@@ -2,6 +2,7 @@ import type { PeopleSearchResult } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import BookUser from 'lucide-react-native/icons/book-user';
 import Search from 'lucide-react-native/icons/search';
 import UserPlus from 'lucide-react-native/icons/user-plus';
 import { useEffect, useState } from 'react';
@@ -44,6 +45,10 @@ const ConnectSheet = lazyPart(() =>
 const InviteSheet = lazyPart(() =>
   import('@/features/people/InviteSheet').then((m) => m.InviteSheet),
 );
+/** A contacts file (R79), in its sheet: loaded the first time one is brought. */
+const ContactsImport = lazyPart(() =>
+  import('@/features/people/ContactsImport').then((m) => m.ContactsImport),
+);
 
 export default function Connect() {
   const t = useTheme();
@@ -53,6 +58,7 @@ export default function Connect() {
   const debounced = useDebounced(term.trim());
   const [target, setTarget] = useState<PeopleSearchResult['person'] | null>(null);
   const [inviting, setInviting] = useState(false);
+  const [contacts, setContacts] = useState(false);
   const results = useQuery({
     queryKey: qk.peopleSearch(debounced),
     queryFn: () => endpoints.searchPeople(debounced),
@@ -252,12 +258,20 @@ export default function Connect() {
                   variant="secondary"
                   onPress={shareHandle}
                 />
+                <Button
+                  label={tr('From your contacts')}
+                  icon={BookUser}
+                  variant="secondary"
+                  onPress={() => setContacts(true)}
+                  testID="connect-contacts"
+                />
               </View>
             </View>
           )
         }
       />
       {inviting ? <InviteSheet open onClose={() => setInviting(false)} /> : null}
+      {contacts ? <ContactsImport open onClose={() => setContacts(false)} /> : null}
       {target ? (
         <ConnectSheet
           open

@@ -1222,11 +1222,12 @@ discovers, and mail at their own address.
       said by mail, the agent answering by mail, signing in with the address (sign-up claims).
 - [ ] ⛔ R75 in production: the mail domain's MX at the inbound provider, DKIM, SPF and DMARC,
       the provider's credentials and webhook secret (the owner's).
-- [ ] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
+- [x] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
       bridge built-ins in Discover (a sheet that makes a scoped personal token in one tap and
       says what each can do with Caime; on while the token lives); a contacts file into People
-      (vCard, CSV: who's here by address, invite links for the rest); personal webhooks for
-      push triggers after the polling bridges are in use.
+      (vCard, CSV: who's here by address, an invite link for the rest); the OpenAPI 3.1 document
+      from the routes' own schemas (`GET /v1/openapi.json`).
+- [ ] R79 layer 1, personal webhooks for push triggers, after the polling bridges are in use.
 - [ ] ⛔ R79 layer 2, first-party connectors: Google Calendar and Outlook calendar sync, live
       contacts, sign-in with Google, Apple and Microsoft, each needing the owner's OAuth client
       with the provider; built on one connector interface with a stand-in and a health gauge.
@@ -1234,7 +1235,7 @@ discovers, and mail at their own address.
       no-result searches say people want; decided after layers 1 and 2.
 - [ ] R78, apps as contracts (PRODUCT-REVIEW R78, with Open Connector evaluated): a
       `provider.health` task and gauges; an OpenAPI 3.1 document generated from the schemas for
-      the token-reachable routes, served and named in API.md; `@caime/mcp` over the SDK's
+      the token-reachable routes, served and named in API.md (done with R79); `@caime/mcp` over the SDK's
       person methods; a hash chain on `audit_log`; a `provides` list on listings for apps that
       give Caime something (calendar sync, mail), reviewed as the listing is.
 - [ ] R80, the marketplace page (PRODUCT-REVIEW R80, Slack's marketplace read as the model):
@@ -1242,7 +1243,7 @@ discovers, and mail at their own address.
       sitemap, Connect through sign-in), categories, the built-ins and bridges first; a listing
       with screenshots, a declared pricing model, languages, support and privacy addresses and
       an AI disclosure; the written bar on `/developers` and in API.md; "Reviewed by Caime" with
-      the operator's checklist; delisting with a note. After Block 4 and R79 layer 1.
+      the operator's checklist; delisting with a note. After Block 4 (R79 layer 1 is done).
 - [ ] ⛔ R80, cai.me as the public address: parked today (a registrar's lander, 2026-10-10), so
       the owner acquires it; then DNS and the certificate at EasyPanel, `PUBLIC_URL` and
       `WEB_URL` moved, the old host answering 301, one canonical.
@@ -2606,3 +2607,13 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   profile row, the server's reader scope on every write and signed-in request, the app's
   translator remade on change. Also the handle in an Arabic line isolated left to right, after
   the owner's screenshot showed "abdallah@".
+- 2026-10-11 — R79 layer 1: the bridges (Zapier, Make, n8n, Pipedream, IFTTT) in Discover's
+  Automation category, each a sheet in Caime that makes a scoped personal token for the platform
+  in one tap (reading by default, writing ticked, no expiry, one live per platform), shows it
+  once with the platform's own web-request step, lists it under Connected as the platform with
+  its last use and stops it there; the OpenAPI 3.1 document at `GET /v1/openapi.json`, written
+  from the schemas the routes parse with (the token routes' inline query schemas moved into core
+  for it); and a contacts file into People (vCard and CSV from Google, iCloud and Outlook,
+  parsed on the device by `@caime/core/contacts`), matched by address under search's rules,
+  each match a row to connect from and the rest one invite link. Personal webhooks wait for the
+  polling bridges to be in use.

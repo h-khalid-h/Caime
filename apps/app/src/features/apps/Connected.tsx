@@ -2,14 +2,16 @@
  * Connected (R74): everything that acts for someone or reads their data, each a row of the
  * same kind: an app they let in through OAuth (what it may do, when it last did, and the one
  * tap that ends it: its tokens stop at once), a personal token of their own (made under
- * Developer, ended here too), and Caime's own built-ins that are on (the calendar address,
- * managed in its sheet).
+ * Developer, ended here too), Caime's own built-ins that are on (the calendar address,
+ * managed in its sheet) and the bridges whose token lives (R79, as the platform, managed in
+ * theirs).
  */
 import { PERSONAL_SCOPE_LABELS, type PersonalScope } from '@caime/core/access';
 import type { ConnectedAppView } from '@caime/core/api';
 import { formatWhen } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Workflow from 'lucide-react-native/icons/workflow';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
@@ -26,6 +28,7 @@ import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { AppIcon } from './AppIcon';
+import { BridgeSheet } from './BridgeSheet';
 import { PublisherLine } from './PublisherLine';
 
 /** An app let in, or a personal token: each ends with one tap, and stops at once. */
@@ -130,19 +133,35 @@ function AppRow({ app }: { app: ConnectedAppView }) {
   );
 }
 
-/** A built-in that's on: the calendar address, managed in the sheet its row opens. */
+/**
+ * A built-in that's on (the calendar address) or a bridge whose token lives (R79), managed in
+ * the sheet its row opens: a calendar reads, a platform uses.
+ */
 function BuiltinRow({ app, onPress }: { app: ConnectedAppView; onPress: () => void }) {
   const now = useNow();
   const { timeZone, locale } = useUserClock();
+  const bridge = app.kind === 'bridge';
+  const last = app.lastUsedAt ? formatWhen(app.lastUsedAt, now, timeZone, locale) : null;
   return (
     <ListRow
-      left={<AppIcon url={app.iconUrl} appId={app.appId} name={app.name} />}
+      left={
+        <AppIcon
+          url={app.iconUrl}
+          appId={app.appId}
+          name={app.name}
+          mark={bridge ? Workflow : undefined}
+        />
+      }
       title={app.name}
       subtitle={tr('On since {formatWhen} · {text}', {
         formatWhen: formatWhen(app.createdAt, now, timeZone, locale),
-        text: app.lastUsedAt
-          ? tr('last read {when}', { when: formatWhen(app.lastUsedAt, now, timeZone, locale) })
-          : tr('not read yet'),
+        text: bridge
+          ? last
+            ? tr('last used {when}', { when: last })
+            : tr('not used yet')
+          : last
+            ? tr('last read {when}', { when: last })
+            : tr('not read yet'),
       })}
       chevron
       onPress={onPress}
@@ -151,10 +170,13 @@ function BuiltinRow({ app, onPress }: { app: ConnectedAppView; onPress: () => vo
   );
 }
 
-/** What a built-in manages in its sheet. A new built-in adds its case. */
-function BuiltinSheet({ appId }: { appId: string }) {
+/** What a built-in or a bridge manages in its sheet. A new built-in adds its case. */
+function BuiltinSheet({ app }: { app: ConnectedAppView }) {
+  if (app.kind === 'bridge') return <BridgeSheet appId={app.appId} />;
   return (
-    <View style={{ marginHorizontal: -16 }}>{appId === 'calendar' ? <CalendarFeed /> : null}</View>
+    <View style={{ marginHorizontal: -16 }}>
+      {app.appId === 'calendar' ? <CalendarFeed /> : null}
+    </View>
   );
 }
 
@@ -202,7 +224,7 @@ export function Connected({ onDiscover }: { onDiscover: () => void }) {
         apps.map((a, i) => (
           <View key={a.grantId ?? a.appId}>
             {i > 0 ? <Divider /> : null}
-            {a.kind === 'builtin' ? (
+            {a.kind === 'builtin' || a.kind === 'bridge' ? (
               <BuiltinRow app={a} onPress={() => setOpen(a)} />
             ) : (
               <AppRow app={a} />
@@ -211,7 +233,7 @@ export function Connected({ onDiscover }: { onDiscover: () => void }) {
         ))
       )}
       <Sheet open={open !== null} onClose={() => setOpen(null)} title={shown?.name}>
-        {shown ? <BuiltinSheet appId={shown.appId} /> : null}
+        {shown ? <BuiltinSheet app={shown} /> : null}
       </Sheet>
     </Group>
   );

@@ -36,8 +36,14 @@ import { identityShownTo, minorOf, personView, privacyOf } from '../lib/users';
 
 export { identityShownTo };
 
-import type { PeopleSearchResponse } from '@caime/core/api';
+import { CONTACTS_MATCH_MAX, ContactsMatchBody } from '@caime/core';
+import type {
+  ContactMatchView,
+  ContactsMatchResponse,
+  PeopleSearchResponse,
+} from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
+import { personViewsFor } from '../lib/people-batch';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
@@ -59,6 +65,78 @@ export function connectionState(b: Awaited<ReturnType<typeof between>>): Connect
 }
 
 export async function peopleRoutes(app: FastifyInstance, ctx: AppContext) {
+  /**
+   * A contacts file into People (R79): who, of these addresses, is on Caime and findable by
+   * address, as search finds them (`discoverByEmail`: an adult's choice, on unless they turned
+   * it off; never a blocked person, never under 18 to an adult who doesn't know them, never
+   * oneself). Nothing of the addresses is kept: the request log is the method and the path,
+   * and nothing here writes.
+   */
+  app.post('/people/match', async (req): Promise<ContactsMatchResponse> => {
+    const auth = requireAuth(req);
+    const { emails } = parse(ContactsMatchBody, req.body);
+    ctx.limiter.hit(`people-match:${auth.userId}`, ctx.config.isTest ? 1000 : 30, 3_600_000);
+    const me = await ctx.db
+      .selectFrom('users')
+      .select(['birth_date', 'time_zone'])
+      .where('id', '=', auth.userId)
+      .executeTakeFirstOrThrow();
+    const now = ctx.now();
+    const viewerIsMinor = minorOf(me, now);
+    const rows = await ctx.db
+      .selectFrom('users as u')
+      .leftJoin('connection_sides as s', (j) =>
+        j.onRef('s.other_id', '=', 'u.id').on('s.owner_id', '=', auth.userId),
+      )
+      .leftJoin('connections as c', (j) =>
+        j.onRef('c.id', '=', 's.connection_id').on('c.status', '=', 'active'),
+      )
+      .select(['u.id', 'u.email', 'u.birth_date', 'u.time_zone'])
+      .select(sql<boolean>`c.id is not null`.as('is_connection'))
+      .where('u.email', 'in', [...new Set(emails)])
+      .where('u.id', '<>', auth.userId)
+      .where('u.deleted_at', 'is', null)
+      .where('u.suspended_at', 'is', null)
+      .where('u.kind', '=', 'human')
+      .where(sql<boolean>`coalesce((u.privacy->>'discoverByEmail')::boolean, false)`)
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('blocks')
+              .select('blocker_id')
+              .where((b) =>
+                b.or([
+                  b.and([b('blocker_id', '=', auth.userId), b('blocked_id', '=', b.ref('u.id'))]),
+                  b.and([b('blocker_id', '=', b.ref('u.id')), b('blocked_id', '=', auth.userId)]),
+                ]),
+              ),
+          ),
+        ),
+      )
+      .limit(CONTACTS_MATCH_MAX)
+      .execute();
+    // Adults never find under-18 accounts (R29) unless already connected, by the day where they are.
+    const found = viewerIsMinor ? rows : rows.filter((u) => u.is_connection || !minorOf(u, now));
+    const people = await personViewsFor(
+      ctx,
+      auth.userId,
+      found.map((u) => u.id),
+      { sharesConversation: false },
+    );
+    const matches: ContactMatchView[] = [];
+    for (const u of found) {
+      const person = people.get(u.id);
+      if (!person || !u.email) continue;
+      matches.push({
+        email: u.email,
+        person,
+        connection: connectionState(await between(ctx.db, auth.userId, u.id)),
+      });
+    }
+    return { matches };
+  });
+
   app.get('/people/search', async (req): Promise<PeopleSearchResponse> => {
     const auth = requireAuth(req);
     const { q, limit } = parse(

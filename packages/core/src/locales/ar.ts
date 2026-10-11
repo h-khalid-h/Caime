@@ -377,6 +377,91 @@ export const ar: Catalog = {
   'What it already did stays as it is, marked as sent through it.':
     'ما فعله من قبل يبقى كما هو، معلَّمًا بأنه أُرسل عبره.',
   'Your calendar': 'تقويمك',
+  'What {name} can do with Caime': 'ما تستطيع {name} فعله مع Caime',
+  'Token for {name}': 'رمز {name}',
+  'Shown this once: paste it on {name} now. {how}':
+    'يُعرض هذه المرة فقط: الصقه في {name} الآن. {how}',
+  'Reading by default. Tick what your recipe does.': 'القراءة افتراضيًا. علّم ما تفعله وصفتك.',
+  'The token {name} has stops working, and you paste the new one there.':
+    'يتوقف الرمز الذي لدى {name} عن العمل، وتلصق الجديد هناك.',
+  'Every recipe on {name} that uses the token stops.': 'تتوقف كل وصفة على {name} تستخدم الرمز.',
+  'Get a new token': {
+    toWoman: 'احصلي على رمز جديد',
+    toMan: 'احصل على رمز جديد',
+    other: 'احصل على رمز جديد',
+  },
+  'Connect {name}': { toWoman: 'اربطي {name}', toMan: 'اربط {name}', other: 'اربط {name}' },
+  'Asked to connect': 'طلب التواصل',
+  'That isn’t a contacts file. Export one from Google Contacts, iCloud or Outlook.':
+    'هذا ليس ملف جهات اتصال. صدّر واحدًا من جهات اتصال Google أو iCloud أو Outlook.',
+  'From your contacts': 'من جهات اتصالك',
+  'Who’s already here, and a link for the rest.': 'من هنا بالفعل، ورابط للبقية.',
+  'Find who’s on Caime': {
+    toWoman: 'اعرفي من على Caime',
+    toMan: 'اعرف من على Caime',
+    other: 'اعرف من على Caime',
+  },
+  'Export your contacts as a vCard or CSV file (Google Contacts: Export; iCloud: Export vCard; Outlook: Export contacts) and pick it here. It’s read on this device: only the addresses are sent, to see who’s on Caime, and nothing of it is kept.':
+    'صدّر جهات اتصالك كملف vCard أو CSV (جهات اتصال Google: تصدير؛ iCloud: تصدير vCard؛ Outlook: تصدير جهات الاتصال) واختره هنا. يُقرأ على هذا الجهاز: لا تُرسل إلا العناوين لمعرفة من على Caime، ولا يُحتفظ بشيء منه.',
+  '{n} contacts': {
+    zero: 'لا جهات اتصال',
+    one: 'جهة اتصال واحدة',
+    two: 'جهتا اتصال',
+    few: '{n} جهات اتصال',
+    many: '{n} جهة اتصال',
+    other: '{n} جهة اتصال',
+  },
+  '{n} with an email address': '{n} بعنوان بريد',
+  'none with an email address': 'لا أحد بعنوان بريد',
+  '{n} people are on Caime': {
+    zero: 'لا أحد على Caime',
+    one: 'شخص واحد على Caime',
+    two: 'شخصان على Caime',
+    few: '{n} أشخاص على Caime',
+    many: '{n} شخصًا على Caime',
+    other: '{n} شخص على Caime',
+  },
+  'Nobody with these addresses is on Caime yet, or they keep their address private.':
+    'لا أحد بهذه العناوين على Caime بعد، أو أنهم يُبقون عنوانهم خاصًا.',
+  '{n} aren’t on Caime yet': {
+    zero: 'لا أحد خارج Caime',
+    one: 'واحد ليس على Caime بعد',
+    two: 'اثنان ليسا على Caime بعد',
+    few: '{n} ليسوا على Caime بعد',
+    many: '{n} ليسوا على Caime بعد',
+    other: '{n} ليسوا على Caime بعد',
+  },
+  'Invite link': 'رابط الدعوة',
+  'Send it yourself, to whoever you like: Caime never writes to anyone for you. Whoever opens it lands connected with you.':
+    'أرسله بنفسك لمن تشاء: لا يكتب Caime لأحد نيابةً عنك. من يفتحه يصبح متواصلًا معك.',
+  'Make an invite link': {
+    toWoman: 'أنشئي رابط دعوة',
+    toMan: 'أنشئ رابط دعوة',
+    other: 'أنشئ رابط دعوة',
+  },
+  Automation: 'الأتمتة',
+  'Connect Caime to the apps on Zapier': 'اربط Caime بالتطبيقات على Zapier',
+  'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
+    'في Zap، أضف Webhooks by Zapier: Retrieve Poll لتسمع من Caime، وCustom Request لتتصرف فيه، ولكلٍّ منهما ترويسة “Authorization: Bearer” ثم الرمز.',
+  'Connect Caime to the apps on Make': 'اربط Caime بالتطبيقات على Make',
+  'In a scenario, add HTTP: Make a request, with a header “Authorization: Bearer” and the token.':
+    'في سيناريو، أضف HTTP: Make a request، مع ترويسة “Authorization: Bearer” ثم الرمز.',
+  'Connect Caime to the apps on n8n, hosted or your own':
+    'اربط Caime بالتطبيقات على n8n، المستضاف أو نسختك الخاصة',
+  'In a workflow, add an HTTP Request node with a Header Auth credential: name “Authorization”, value “Bearer” and the token.':
+    'في سير عمل، أضف عقدة HTTP Request مع بيانات اعتماد Header Auth: الاسم “Authorization”، والقيمة “Bearer” ثم الرمز.',
+  'Connect Caime to the apps on Pipedream': 'اربط Caime بالتطبيقات على Pipedream',
+  'In a workflow, add an HTTP Request step, or code, with a header “Authorization: Bearer” and the token.':
+    'في سير عمل، أضف خطوة HTTP Request أو كودًا، مع ترويسة “Authorization: Bearer” ثم الرمز.',
+  'Connect Caime to the apps on IFTTT': 'اربط Caime بالتطبيقات على IFTTT',
+  'In an applet, add Webhooks: Make a web request, with “Authorization: Bearer” and the token under Additional headers.':
+    'في applet، أضف Webhooks: Make a web request، مع “Authorization: Bearer” ثم الرمز تحت Additional headers.',
+  'Caime gives {name} a token of its own, so a recipe there can hear from Caime and act in it, as you and within what you allow. The token is shown once; stop it here any time.':
+    'يمنح Caime منصة {name} رمزًا خاصًا بها، فتستطيع وصفة هناك أن تسمع من Caime وتتصرف فيه باسمك وضمن ما تسمح به. يُعرض الرمز مرة واحدة؛ أوقفه من هنا متى شئت.',
+  'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).':
+    'السماع من Caime: وصول رسالة، أو أمر يحتاجك، أو إجراء حان موعده أو ينتظر (يُستطلع من صندوقك وإجراءاتك).',
+  'Act in Caime: send a message as you, add an action, finish one, search.':
+    'التصرف في Caime: إرسال رسالة باسمك، وإضافة إجراء، وإنهاء إجراء، والبحث.',
   'Your conversation with it': 'محادثتك معها',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'التطبيق الذي سمحت له لا يصل إلا إلى ما أذنت به، لا إلى كلمة مرورك ولا خصوصيتك ولا حسابك، وما يرسله يُكتب عليه أنه جاء عبره. أزِله ويتوقف فورًا.',

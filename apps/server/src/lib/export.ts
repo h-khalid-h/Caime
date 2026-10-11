@@ -749,7 +749,15 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
       .execute(),
     db
       .selectFrom('personal_tokens')
-      .select(['name', 'scopes', 'created_at', 'last_used_at', 'expires_at', 'revoked_at'])
+      .select([
+        'name',
+        'scopes',
+        'bridge',
+        'created_at',
+        'last_used_at',
+        'expires_at',
+        'revoked_at',
+      ])
       .where('user_id', '=', me)
       .orderBy('created_at')
       .execute(),

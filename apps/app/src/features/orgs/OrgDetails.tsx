@@ -15,7 +15,6 @@ import { endpoints } from '@/api/endpoints';
 import { uploadFile } from '@/api/upload';
 import { deviceInfo } from '@/features/auth/device';
 import { CountryField } from '@/features/geo/CountryField';
-import { TimeZoneField } from '@/features/geo/TimeZoneField';
 import { DayPicker } from '@/features/settings/DayPicker';
 import { AVATAR_MAX_EDGE } from '@/lib/photoSize';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
@@ -28,6 +27,11 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { ORG_ICONS, OrgMark } from './kinds';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const TimeZoneField = lazyPart(() =>
+  import('@/features/geo/TimeZoneField').then((m) => m.TimeZoneField),
+);
 
 /** The year list, loaded with the form: two screens share it, and neither is the first thing loaded. */
 const YearField = lazyPart(() => import('@/ui/YearField').then((m) => m.YearField));

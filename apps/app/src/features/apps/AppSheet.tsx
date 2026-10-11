@@ -2,10 +2,12 @@
  * One app from Discover (R74): what it says of itself, who published it, how many connected
  * it, and the one way in. A developer's app connects through its own sign-in (`connectUrl`),
  * which asks Caime for what it needs; a built-in of Caime's connects right here (the calendar
- * address). The sheet keeps its last app while it fades.
+ * address), and so does a bridge (R79: a token for the platform). The sheet keeps its last app
+ * while it fades.
  */
 import type { DirectoryAppView } from '@caime/core/api';
 import { tr, trn } from '@caime/core/i18n';
+import Workflow from 'lucide-react-native/icons/workflow';
 import { useRef } from 'react';
 import { View } from 'react-native';
 import { CalendarFeed } from '@/features/settings/CalendarFeed';
@@ -15,6 +17,7 @@ import { Button } from '@/ui/Button';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { AppIcon } from './AppIcon';
+import { BridgeSheet } from './BridgeSheet';
 import { PublisherLine } from './PublisherLine';
 
 export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClose: () => void }) {
@@ -24,6 +27,7 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
   if (app) last.current = app;
   const shown = app ?? last.current;
   const builtin = shown?.kind === 'builtin';
+  const bridge = shown?.kind === 'bridge';
   return (
     <Sheet
       open={app !== null}
@@ -31,7 +35,7 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
       title={shown?.name}
       subtitle={shown?.tagline ?? undefined}
       footer={
-        shown && !builtin && shown.connectUrl ? (
+        shown && !builtin && !bridge && shown.connectUrl ? (
           <Button
             label={shown.connected ? tr('Open {name}', { name: shown.name }) : tr('Connect')}
             variant={shown.connected ? 'secondary' : 'primary'}
@@ -46,7 +50,13 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
       {shown ? (
         <View style={{ gap: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-            <AppIcon url={shown.iconUrl} appId={shown.id} name={shown.name} size={56} />
+            <AppIcon
+              url={shown.iconUrl}
+              appId={shown.id}
+              name={shown.name}
+              size={56}
+              mark={bridge ? Workflow : undefined}
+            />
             <View style={{ flex: 1, gap: 2 }}>
               <PublisherLine publisher={shown.publisher} testID="discover-publisher" />
               <Text variant="caption" color="textTertiary" testID="discover-connected-count">
@@ -68,6 +78,8 @@ export function AppSheet({ app, onClose }: { app: DirectoryAppView | null; onClo
             <View style={{ marginHorizontal: -16 }}>
               <CalendarFeed />
             </View>
+          ) : bridge ? (
+            <BridgeSheet appId={shown.id} />
           ) : minor ? (
             <Text variant="caption" color="textTertiary" testID="discover-adults">
               {tr('Apps act for people over 18.')}

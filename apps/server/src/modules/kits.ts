@@ -8,6 +8,7 @@ import {
   CUSTOM_KIT_LIMITS,
   customTitle,
   isCustomCard,
+  KitFieldsBody,
   mergeCustomFields,
   parseCustomKit,
   uuidv7,
@@ -193,7 +194,7 @@ export async function kitRoutes(app: FastifyInstance, ctx: AppContext) {
   app.patch('/messages/:id/kit', async (req): Promise<MessageResponse> => {
     const { auth, app: me } = appOf(req);
     const { id } = parse(idParam, req.params);
-    const { fields } = parse(z.object({ fields: z.record(z.string(), z.unknown()) }), req.body);
+    const { fields } = parse(KitFieldsBody, req.body);
     const m = await ctx.db
       .selectFrom('messages')
       .select(MESSAGE_COLUMNS)

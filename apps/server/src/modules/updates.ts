@@ -5,7 +5,14 @@
  * that nobody else sees, and ends when they block it.
  */
 import type { OrgUpdatesView, OrgUpdateView } from '@caime/core';
-import { canManageOrg, EditUpdateBody, FollowOrgBody, PostUpdateBody, uuidv7 } from '@caime/core';
+import {
+  canManageOrg,
+  EditUpdateBody,
+  FollowOrgBody,
+  PostUpdateBody,
+  UpdatesPageQuery,
+  uuidv7,
+} from '@caime/core';
 import type {
   FollowingResponse,
   FollowResponse,
@@ -73,13 +80,7 @@ export async function updateRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/orgs/:id/updates', async (req): Promise<OrgUpdatesView> => {
     const auth = requireAuth(req);
     const { id } = parse(idParam, req.params);
-    const { before, limit } = parse(
-      z.object({
-        before: z.string().uuid().optional(),
-        limit: z.coerce.number().int().min(1).max(50).default(20),
-      }),
-      req.query,
-    );
+    const { before, limit } = parse(UpdatesPageQuery, req.query);
     if (auth.app && auth.app.orgId !== id) throw notFound(tr('That organization'));
     const org = await orgById(ctx.db, id);
     const seat = auth.app ? null : await orgSeat(ctx.db, auth.userId, id);

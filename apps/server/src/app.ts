@@ -75,6 +75,7 @@ import { metricsRoutes } from './modules/metrics';
 import { moderationPageRoutes } from './modules/moderation-page';
 import { notificationRoutes } from './modules/notifications';
 import { oauthDiscovery, oauthRoutes } from './modules/oauth';
+import { openApiRoutes } from './modules/openapi';
 import { orgRoutes } from './modules/orgs';
 import { pageRoutes, sitePageAt } from './modules/pages';
 import { peopleRoutes } from './modules/people';
@@ -310,6 +311,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);
       await mailRoutes(v1, ctx);
+      await openApiRoutes(v1, ctx);
     },
     { prefix: '/v1' },
   );

@@ -679,6 +679,8 @@ export async function oauthRoutes(app: FastifyInstance, ctx: AppContext) {
       .selectFrom('personal_tokens')
       .select(['id', 'name', 'scopes', 'created_at', 'last_used_at', 'expires_at'])
       .where('user_id', '=', auth.userId)
+      // A bridge's token is listed as the platform (R79), among Caime's own above.
+      .where('bridge', 'is', null)
       .where('revoked_at', 'is', null)
       .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', ctx.now())]))
       .orderBy('created_at', 'desc')

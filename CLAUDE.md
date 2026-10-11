@@ -697,6 +697,30 @@ These are rules, not preferences.
   read. A new built-in is a row in `BUILTIN_APPS` and a case in `builtinApps` (whether it's on
   for the viewer, how many have it on); its icon is `/directory/:id/icon` (a listed app's to
   anyone signed in, else its owner's).
+- Bridges (R79): Zapier, Make, n8n, Pipedream and IFTTT are `BRIDGES` in `@caime/core/bridges`
+  (apart from `app-directory.ts`, which the startup chunk carries: only the sheet and the server
+  read their words; a name is the platform's own, never `tr`'d), rows of Discover's `automation`
+  category with `kind: 'bridge'`, connected in Caime by `POST /me/bridges/:id` in
+  `modules/tokens.ts`: a personal token named after the platform with `personal_tokens.bridge`,
+  no expiry, one live per platform and person (a new one revokes the old in the same
+  transaction), scoped to what was ticked (`BRIDGE_DEFAULT_SCOPES` reads only). `builtinApps`
+  reads the viewer's live bridge tokens with the calendar feed and counts both per platform in
+  `builtinCounts` (a minute); Connected lists a bridge as `kind: 'bridge'` (never as a `token`
+  row too: the token list says `bridge is null`), and `features/apps/BridgeSheet.tsx` is the
+  one sheet, opened from Discover's `AppSheet` and from the Connected row. A new platform is a
+  row in `BRIDGES` with its page and its `how` line, nothing else. The OpenAPI document is
+  `lib/openapi.ts` (`GET /v1/openapi.json`, `modules/openapi.ts`, public, cached ten minutes),
+  built once from `API_ROUTES` and `PERSON_ROUTES` with `z.toJSONSchema` over the very schemas
+  the routes parse with: a token-reachable route's query and body schemas live in core
+  (`TasksQuery`, `InboxQuery`, `MessagesPageQuery`, `SearchQuery`, `DeliveriesQuery`,
+  `UpdatesPageQuery`, `BusinessInboxQuery`, `CalendarWindowQuery`, `KitMoveBody`,
+  `KitFieldsBody`), never inline in the module, and a new token-reachable route adds its `DOCS`
+  entry there (`openapi.test.ts` fails on one left out). A contacts file is read on the device by
+  `@caime/core/contacts` (`parseContacts`: vCard and CSV; `emailsOf`), matched by
+  `POST /people/match` in `modules/people.ts` (signed-in only, `CONTACTS_MATCH_MAX` a call, the
+  search route's own rules, `personViewsFor(…, { sharesConversation: false })` so a stranger
+  reads as one), from `features/people/ContactsImport.tsx` (lazy, from the Connect screen);
+  nothing of the file is kept, and the rest get one invite link the person shares.
 - Who made an app is one shape, `AppPublisher` (`publisherOf` in `lib/app-directory.ts`: the
   organization it's published under, else its developer, or Caime; `CAIME_PUBLISHER` for the
   built-ins): consent (`OAuthConsentView.app`), Connected, Discover and an organization's
@@ -1198,8 +1222,11 @@ These are rules, not preferences.
   imported by `realtime/client.ts` as it runs; `leftConversation` is reached through the
   client), the keyboard shortcuts (the signed-in layout; their sheet's store is
   `shortcutsSheet.ts`), the You sheet's body (`YouSheetBody.tsx`; its store `youSheet.ts`) and
-  an organization's details editor (`OrgDetails`, from `OrgScreen`). A new thing shared by
-  several routes but needed by none at first joins that list rather than the startup chunk.
+  an organization's details editor (`OrgDetails`, from `OrgScreen`), and two parts several
+  screens render but none at first, each `lazyPart`ed wherever it's shown (`LAZY_EVERYWHERE` in
+  that test): `PeoplePicker` (its Set toggle is `lib/toggled.ts`, so a screen that only toggles
+  imports nothing of the picker) and `TimeZoneField`. A new thing shared by several routes but
+  needed by none at first joins that list rather than the startup chunk.
 - A module leaves the startup chunk only when every import of it is dynamic. Splitting a part
   out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
   it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The

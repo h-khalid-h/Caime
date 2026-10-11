@@ -4,16 +4,22 @@ import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { privateSupported } from '@/features/e2ee/support';
-import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
+import { toggled } from '@/lib/toggled';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const PeoplePicker = lazyPart(() =>
+  import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
+);
 
 export default function NewGroup() {
   const { desktop } = useLayout();

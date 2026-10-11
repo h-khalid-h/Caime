@@ -3,6 +3,7 @@
  * through TanStack Query; nothing else builds URLs.
  */
 
+import type { PersonalScope } from '@caime/core/access';
 import type {
   AboutView,
   AgentTryView,
@@ -33,6 +34,7 @@ import type {
   ConnectionRequestsResponse,
   ConnectionsResponse,
   ConnectResponse,
+  ContactsMatchResponse,
   ConversationDevicesView,
   ConversationIdResponse,
   ConversationResponse,
@@ -258,6 +260,8 @@ export const endpoints = {
 
   // People and relationships
   searchPeople: (term: string) => api.get<PeopleSearchResponse>(`/people/search${q({ q: term })}`),
+  /** A contacts file (R79): who, of these addresses, is here; nothing of them is kept. */
+  matchContacts: (emails: string[]) => api.post<ContactsMatchResponse>('/people/match', { emails }),
   person: (id: string) => api.get<PersonProfileView>(`/people/${id}`),
   relationshipHistory: (id: string) =>
     api.get<RelationshipHistoryView>(`/people/${id}/relationships`),
@@ -512,6 +516,10 @@ export const endpoints = {
   oauthDecide: (params: Record<string, string>, decision: 'allow' | 'deny') =>
     api.post<OAuthRedirectResponse>('/oauth/authorize', { ...params, decision }),
   connectedApps: () => api.get<ConnectedAppsResponse>('/me/connected-apps'),
+  // A bridge (R79): a token made for the platform in one tap, and stopped here.
+  connectBridge: (id: string, body: { scopes: PersonalScope[] }) =>
+    api.post<PersonalTokenCreatedResponse>(`/me/bridges/${id}`, body),
+  disconnectBridge: (id: string) => api.del<OkResponse>(`/me/bridges/${id}`),
   removeConnectedApp: (grantId: string) => api.del<OkResponse>(`/me/connected-apps/${grantId}`),
   // Discover (R74): the apps people can connect, a page at a time
   directory: (params: { before?: string; q?: string; category?: AppCategory | null }) =>

@@ -9,6 +9,7 @@ import {
   attentionHeadline,
   classifyAttention,
   currentPriority,
+  InboxQuery,
   inboxSections,
   isSystemKind,
   resolvePolicy,
@@ -17,7 +18,6 @@ import {
 } from '@caime/core';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
-import { z } from 'zod';
 import type { AppContext } from '../context';
 import { maskPayload, orgRef } from '../lib/business';
 import { overdueAtSql } from '../lib/due';
@@ -400,10 +400,7 @@ export async function buildInbox(
 export async function inboxRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/inbox', async (req): Promise<InboxResponse | InboxAllResponse> => {
     const auth = requireAuth(req);
-    const { view } = parse(
-      z.object({ view: z.enum(['attention', 'all']).default('attention') }),
-      req.query,
-    );
+    const { view } = parse(InboxQuery, req.query);
     const inbox = await buildInbox(ctx, auth.userId);
     // `all` is every conversation, each with its section and rank: the app sections them and
     // makes its All list itself (core `inboxSections`, `inboxAllList`), so one request serves both.

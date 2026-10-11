@@ -335,6 +335,66 @@ export const fr: Catalog = {
   'What it already did stays as it is, marked as sent through it.':
     'Ce qu’elle a déjà fait reste tel quel, marqué comme envoyé par elle.',
   'Your calendar': 'Votre calendrier',
+  'What {name} can do with Caime': 'Ce que {name} peut faire avec Caime',
+  'Token for {name}': 'Jeton pour {name}',
+  'Shown this once: paste it on {name} now. {how}':
+    'Montré une seule fois : collez-le sur {name} maintenant. {how}',
+  'Reading by default. Tick what your recipe does.':
+    'Lecture par défaut. Cochez ce que fait votre recette.',
+  'The token {name} has stops working, and you paste the new one there.':
+    'Le jeton que {name} détient cesse de fonctionner, et vous y collez le nouveau.',
+  'Every recipe on {name} that uses the token stops.':
+    'Chaque recette sur {name} qui utilise le jeton s’arrête.',
+  'Get a new token': 'Obtenir un nouveau jeton',
+  'Connect {name}': 'Relier {name}',
+  'Asked to connect': 'Demande reçue',
+  'That isn’t a contacts file. Export one from Google Contacts, iCloud or Outlook.':
+    'Ce n’est pas un fichier de contacts. Exportez-en un depuis Google Contacts, iCloud ou Outlook.',
+  'From your contacts': 'Depuis vos contacts',
+  'Who’s already here, and a link for the rest.': 'Qui est déjà là, et un lien pour les autres.',
+  'Find who’s on Caime': 'Voir qui est sur Caime',
+  'Export your contacts as a vCard or CSV file (Google Contacts: Export; iCloud: Export vCard; Outlook: Export contacts) and pick it here. It’s read on this device: only the addresses are sent, to see who’s on Caime, and nothing of it is kept.':
+    'Exportez vos contacts en fichier vCard ou CSV (Google Contacts : Exporter ; iCloud : Exporter la vCard ; Outlook : Exporter des contacts) et choisissez-le ici. Il est lu sur cet appareil : seules les adresses sont envoyées, pour voir qui est sur Caime, et rien n’en est conservé.',
+  '{n} contacts': { one: '{n} contact', other: '{n} contacts' },
+  '{n} with an email address': '{n} avec une adresse e-mail',
+  'none with an email address': 'aucun avec une adresse e-mail',
+  '{n} people are on Caime': {
+    one: '{n} personne est sur Caime',
+    other: '{n} personnes sont sur Caime',
+  },
+  'Nobody with these addresses is on Caime yet, or they keep their address private.':
+    'Personne avec ces adresses n’est encore sur Caime, ou ils gardent leur adresse privée.',
+  '{n} aren’t on Caime yet': {
+    one: '{n} n’est pas encore sur Caime',
+    other: '{n} ne sont pas encore sur Caime',
+  },
+  'Invite link': 'Lien d’invitation',
+  'Send it yourself, to whoever you like: Caime never writes to anyone for you. Whoever opens it lands connected with you.':
+    'Envoyez-le vous-même, à qui vous voulez : Caime n’écrit jamais à personne pour vous. Qui l’ouvre arrive relié à vous.',
+  'Make an invite link': 'Créer un lien d’invitation',
+  Automation: 'Automatisation',
+  'Connect Caime to the apps on Zapier': 'Reliez Caime aux applications sur Zapier',
+  'In a Zap, add Webhooks by Zapier: Retrieve Poll to hear from Caime, Custom Request to act in it, each with a header “Authorization: Bearer” and the token.':
+    'Dans un Zap, ajoutez Webhooks by Zapier : Retrieve Poll pour écouter Caime, Custom Request pour y agir, chacun avec un en-tête « Authorization: Bearer » et le jeton.',
+  'Connect Caime to the apps on Make': 'Reliez Caime aux applications sur Make',
+  'In a scenario, add HTTP: Make a request, with a header “Authorization: Bearer” and the token.':
+    'Dans un scénario, ajoutez HTTP : Make a request, avec un en-tête « Authorization: Bearer » et le jeton.',
+  'Connect Caime to the apps on n8n, hosted or your own':
+    'Reliez Caime aux applications sur n8n, hébergé ou chez vous',
+  'In a workflow, add an HTTP Request node with a Header Auth credential: name “Authorization”, value “Bearer” and the token.':
+    'Dans un workflow, ajoutez un nœud HTTP Request avec un identifiant Header Auth : nom « Authorization », valeur « Bearer » et le jeton.',
+  'Connect Caime to the apps on Pipedream': 'Reliez Caime aux applications sur Pipedream',
+  'In a workflow, add an HTTP Request step, or code, with a header “Authorization: Bearer” and the token.':
+    'Dans un workflow, ajoutez une étape HTTP Request, ou du code, avec un en-tête « Authorization: Bearer » et le jeton.',
+  'Connect Caime to the apps on IFTTT': 'Reliez Caime aux applications sur IFTTT',
+  'In an applet, add Webhooks: Make a web request, with “Authorization: Bearer” and the token under Additional headers.':
+    'Dans un applet, ajoutez Webhooks : Make a web request, avec « Authorization: Bearer » et le jeton sous Additional headers.',
+  'Caime gives {name} a token of its own, so a recipe there can hear from Caime and act in it, as you and within what you allow. The token is shown once; stop it here any time.':
+    'Caime donne à {name} un jeton qui lui est propre : une recette là-bas peut écouter Caime et y agir, en votre nom et dans la limite de ce que vous autorisez. Le jeton n’est montré qu’une fois ; arrêtez-le ici quand vous voulez.',
+  'Hear from Caime: a message arrives, something needs you, an action is due or waiting (polled from your inbox and actions).':
+    'Écouter Caime : un message arrive, quelque chose vous attend, une action est due ou en attente (lu depuis votre boîte et vos actions).',
+  'Act in Caime: send a message as you, add an action, finish one, search.':
+    'Agir dans Caime : envoyer un message en votre nom, ajouter une action, en terminer une, chercher.',
   'Your conversation with it': 'Votre conversation avec elle',
   'An app you let in reaches only what you allowed, never your password, privacy or account, and what it sends says it came through it. Remove one and it stops at once.':
     'Une application que vous autorisez n’atteint que ce que vous avez permis, jamais votre mot de passe, votre confidentialité ni votre compte, et ce qu’elle envoie indique qu’il passe par elle. Retirez-la et elle cesse immédiatement.',

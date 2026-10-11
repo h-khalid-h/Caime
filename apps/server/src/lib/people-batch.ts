@@ -14,6 +14,8 @@ export async function personViewsFor(
   ctx: AppContext,
   viewerId: string,
   ownerIds: string[],
+  /** A list of people the viewer shares a conversation with (the default), or strangers found (R79). */
+  opts: { sharesConversation?: boolean } = {},
 ): Promise<Map<string, PersonView>> {
   const ids = [...new Set(ownerIds.filter((id) => id !== viewerId))];
   const out = new Map<string, PersonView>();
@@ -110,7 +112,7 @@ export async function personViewsFor(
         orgId: primary?.org_id ?? null,
         connectionId: conn?.id ?? null,
       }).privacy,
-      sharesConversation: true,
+      sharesConversation: opts.sharesConversation ?? true,
       verifiedOrgName: verified.get(id) ?? null,
     };
     const side = sideOf.get(id);

@@ -1,14 +1,17 @@
 /**
  * Apps (R74): what someone connects to Caime and what they can discover. Connected is
  * everything that acts for them or reads their data, each the same kind of row whatever it is:
- * an app a developer registered (an OAuth grant), or one of Caime's own built-ins (the calendar
- * address). Discover is a directory of the apps developers listed, reviewed once by the operator,
- * paged by keyset and searched by name, so it carries thousands the way the inbox carries
- * conversations. Pure: the app reads it by subpath.
+ * an app a developer registered (an OAuth grant), one of Caime's own built-ins (the calendar
+ * address), or a bridge (R79, `bridges.ts`: an automation platform holding a token made for
+ * it). Discover is
+ * a directory of the apps developers listed, reviewed once by the operator, paged by keyset and
+ * searched by name, so it carries thousands the way the inbox carries conversations. Pure: the
+ * app reads it by subpath.
  */
 import { msg } from './i18n';
 
 export const APP_CATEGORIES = [
+  'automation',
   'calendars',
   'tasks',
   'money',
@@ -22,6 +25,7 @@ export type AppCategory = (typeof APP_CATEGORIES)[number];
 
 /** Each category as Discover names it (keys: show them through `tr`). */
 export const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
+  automation: msg('Automation'),
   calendars: msg('Calendars'),
   tasks: msg('Tasks and notes'),
   money: msg('Money'),

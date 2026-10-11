@@ -14,12 +14,12 @@ import {
   type ParsedQuery,
   parseSearchQuery,
   SearchOutcomeBody,
+  SearchQuery,
 } from '@caime/core';
 import type { OkResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
-import { z } from 'zod';
 import type { AppContext } from '../context';
 import { runAi } from '../lib/ai-run';
 import { maskId, masksFor } from '../lib/business';
@@ -595,15 +595,7 @@ export async function searchRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/search', async (req): Promise<SearchResponse> => {
     const auth = requireAuth(req);
-    const { q, limit, understand } = parse(
-      z.object({
-        q: z.string().trim().min(1).max(200),
-        limit: z.coerce.number().int().min(1).max(50).default(20),
-        /** The app says when the person has finished typing (a pause, Enter): only then a model. */
-        understand: z.enum(['0', '1']).optional(),
-      }),
-      req.query,
-    );
+    const { q, limit, understand } = parse(SearchQuery, req.query);
     ctx.limiter.hit(`search:${auth.userId}`, ctx.config.isTest ? 10_000 : 120, 60_000);
     const rules = parseSearchQuery(q, { now: ctx.now() });
     const read = understand === '1' ? await understandWithAi(ctx, auth.userId, rules) : null;

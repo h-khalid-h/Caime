@@ -2,6 +2,7 @@ import type { ReportView } from '@caime/core';
 import { tr } from '@caime/core';
 import type { AppContext } from '../context';
 import type { Message } from '../db/schema';
+import { builtinCountsChanged } from './app-directory';
 import { emitWebhook } from './apps';
 import { audit } from './audit';
 import { dropSaved, tellSaved } from './automations';
@@ -234,6 +235,8 @@ export async function endAllAccess(
     .deleteFrom('calendar_feeds')
     .where('user_id', '=', userId)
     .executeTakeFirst();
+  // Their bridges and calendar address went with their tokens: Discover's counts changed.
+  builtinCountsChanged(ctx);
   if (Number(feed.numDeletedRows) > 0)
     await audit(ctx.db, {
       actorId: who ? userId : null,

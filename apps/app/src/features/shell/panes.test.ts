@@ -26,6 +26,12 @@ const APART: Array<[module: string, importer: string]> = [
   ['@/features/orgs/OrgDetails', 'features/orgs/OrgScreen.tsx'],
 ];
 
+/**
+ * Shared by several screens and needed by none at first, so each loads it with `lazyPart`
+ * (R79's budget trim): a static import anywhere would put it back in the shared startup chunk.
+ */
+const LAZY_EVERYWHERE = ['@/features/people/PeoplePicker', '@/features/geo/TimeZoneField'];
+
 const files = readdirSync(src, { recursive: true })
   .map(String)
   .filter((f) => /\.tsx?$/.test(f) && !f.endsWith('.test.ts'));
@@ -43,6 +49,17 @@ describe('the panes stay out of the first download', () => {
         if (new RegExp(`from '${target.replaceAll('/', '\\/')}'`).test(text))
           offenders.push(`${f} imports ${target}`);
       }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('nothing imports statically what every screen loads lazily', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      const text = readFileSync(join(src, f), 'utf8');
+      for (const target of LAZY_EVERYWHERE)
+        if (new RegExp(`from '${target.replaceAll('/', '\\/')}'`).test(text))
+          offenders.push(`${f} imports ${target} statically (lazyPart it)`);
     }
     expect(offenders).toEqual([]);
   });

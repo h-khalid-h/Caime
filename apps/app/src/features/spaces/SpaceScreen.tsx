@@ -24,7 +24,7 @@ import { endpoints } from '@/api/endpoints';
 import { useSpace } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { ComingUpList } from '@/features/common/comingUpLazy';
-import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
+import { toggled } from '@/lib/toggled';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -34,6 +34,7 @@ import { ChoiceChips, RelationshipChip } from '@/ui/Chip';
 import { Back, Leave } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { useLayout } from '@/ui/layout';
 import { Pressable } from '@/ui/Pressable';
@@ -45,6 +46,11 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { SPACE_ICONS } from './kinds';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const PeoplePicker = lazyPart(() =>
+  import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
+);
 
 function useRefresh(id: string) {
   const qc = useQueryClient();

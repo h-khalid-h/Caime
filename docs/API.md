@@ -183,6 +183,29 @@ Anything else answers `403` with `token_route` (or `token_scope` without the per
 token never changes a password, privacy or sessions, makes tokens, exports or deletes an
 account. Revoked or expired, it answers `401`.
 
+### Bridges: Zapier, Make, n8n, Pipedream and IFTTT
+
+The same token, made in one tap (**You → Apps → Discover → Automation**): each platform is a
+row there, and its sheet makes a token named after it, scoped to what the person ticks (reading
+by default), with no expiry, shown once with where to paste it on the platform (the platform's
+own web-request step, a header `Authorization: Bearer cap_…`: Webhooks by Zapier's Retrieve
+Poll and Custom Request, Make's HTTP module, n8n's HTTP Request node with a Header Auth
+credential, Pipedream's HTTP Request step, IFTTT's Make a web request with Additional headers).
+One token lives per platform and person: a new one ends the old, **Stop** ends it, and the row
+under Connected shows when it was last used. A recipe polls the person's routes above (the
+inbox, the actions) and calls them; nothing is pushed to the platform yet (personal webhooks
+follow once the polling bridges are in use).
+
+## The API as a document
+
+`GET /v1/openapi.json` is an OpenAPI 3.1 document of every route above, an app's and a
+person's, written from the same schemas the routes parse their query and body with (so it
+can't drift from them), with each route's permission as a security requirement (`appToken`,
+`personalToken`) and the contract's name for each answer. It needs no token and is cached for
+ten minutes. Import it into an automation platform, an agent framework or a client generator
+rather than hand-writing the routes; the responses' shapes are the ones in
+`packages/core/src/api.ts`, as described here.
+
 ## Acting for other people: OAuth
 
 An app other people use (a digest, a planner, an assistant) asks each of them to let it in, with

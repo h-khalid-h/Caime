@@ -4,7 +4,13 @@
  * Connecting one is the app's own doing (`connectUrl`, its sign-in, which asks Caime for a grant
  * through OAuth), so nothing here writes.
  */
-import { canManageOrg, type DirectoryAppView, DirectoryQuery, isBuiltinApp } from '@caime/core';
+import {
+  canManageOrg,
+  type DirectoryAppView,
+  DirectoryQuery,
+  isBridge,
+  isBuiltinApp,
+} from '@caime/core';
 import type { DirectoryAppResponse, DirectoryResponse, OrgListingsResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance } from 'fastify';
@@ -73,7 +79,7 @@ export async function directoryRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/directory/:id', async (req): Promise<DirectoryAppResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().min(1).max(64) }), req.params);
-    if (isBuiltinApp(id)) {
+    if (isBuiltinApp(id) || isBridge(id)) {
       const b = (await builtinApps(ctx, auth.userId)).find((a) => a.id === id);
       if (!b) throw notFound(tr('That app'));
       const { on: _on, ...view } = b;

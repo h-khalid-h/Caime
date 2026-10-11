@@ -9,18 +9,24 @@ import { endpoints } from '@/api/endpoints';
 import { useOrg, useOrgs } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { OrgMark } from '@/features/orgs/kinds';
-import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { SPACE_ICONS } from '@/features/spaces/kinds';
+import { toggled } from '@/lib/toggled';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
+import { lazyPart } from '@/ui/Lazy';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const PeoplePicker = lazyPart(() =>
+  import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
+);
 
 /**
  * Start a space (PRD §40): whose it is, what it's called, what kind, and who's in it to begin

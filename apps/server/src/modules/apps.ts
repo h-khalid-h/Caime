@@ -9,6 +9,7 @@ import {
   type AppMeView,
   CreateOrgAppBody,
   canManageOrg,
+  DeliveriesQuery,
   defaultPrivacy,
   type OrgAppSecretsView,
   type OrgAppView,
@@ -129,14 +130,7 @@ export async function appRoutes(app: FastifyInstance, ctx: AppContext) {
    */
   app.get('/apps/me/deliveries', async (req): Promise<DeliveriesResponse> => {
     const me = appOnly(requireAuth(req));
-    const q = parse(
-      z.object({
-        status: z.enum(['pending', 'delivered', 'failed']).optional(),
-        after: z.string().uuid().optional(),
-        limit: z.coerce.number().int().min(1).max(100).default(50),
-      }),
-      req.query,
-    );
+    const q = parse(DeliveriesQuery, req.query);
     let query = ctx.db.selectFrom('webhook_deliveries').selectAll().where('app_id', '=', me.id);
     if (q.status) query = query.where('status', '=', q.status);
     // Ids are time-ordered (uuidv7), so "after" is "newer than".

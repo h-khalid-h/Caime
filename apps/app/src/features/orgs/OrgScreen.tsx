@@ -34,12 +34,12 @@ import { endpoints } from '@/api/endpoints';
 import { useBusinessSummary, useOrg, useOrgSpaces, useOrgs } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { useCountries } from '@/features/geo/countries';
-import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { report } from '@/features/safety/report';
 import { OrgUpdates } from '@/features/updates/OrgUpdates';
 import { handleLink } from '@/lib/config';
 import { openLink } from '@/lib/links';
 import { shareLink } from '@/lib/share';
+import { toggled } from '@/lib/toggled';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -63,6 +63,11 @@ import { OrgMark, VerifiedLine } from './kinds';
 import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine } from './planLine';
 import { setupNextLine } from './setupSteps';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const PeoplePicker = lazyPart(() =>
+  import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
+);
 
 /**
  * Where a Book or an Order lands (R58, R60, R61): the conversation, on that card's form, with

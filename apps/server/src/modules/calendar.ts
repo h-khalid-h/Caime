@@ -11,6 +11,7 @@ import {
   buildIcs,
   type CalendarFeedView,
   type CalendarView,
+  CalendarWindowQuery,
   canManageOrg,
   formatAmount,
   type IcsEvent,
@@ -178,15 +179,9 @@ export async function calendarEvents(
 }
 
 /** From one instant to another, at most a year apart: what a calendar screen asks for. */
-const WindowQuery = z
-  .object({
-    from: z.string().datetime({ offset: true }),
-    to: z.string().datetime({ offset: true }),
-  })
-  .strict();
 const MAX_WINDOW_MS = 366 * DAY_MS;
 function windowOf(query: unknown): { from: Date; until: Date } {
-  const q = parse(WindowQuery, query);
+  const q = parse(CalendarWindowQuery, query);
   const from = new Date(q.from);
   const until = new Date(q.to);
   if (until <= from || until.getTime() - from.getTime() > MAX_WINDOW_MS)
@@ -277,7 +272,7 @@ export async function calendarRoutes(app: FastifyInstance, ctx: AppContext) {
     };
   });
 
-  const SlotsQuery = WindowQuery.extend({
+  const SlotsQuery = CalendarWindowQuery.extend({
     item: z.string().max(40).optional(),
     quantity: z.coerce.number().int().min(1).max(100).optional(),
   });

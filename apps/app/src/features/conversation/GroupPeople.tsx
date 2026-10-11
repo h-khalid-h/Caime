@@ -26,7 +26,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useSpace } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
+import { toggled } from '@/lib/toggled';
 import { leftConversation } from '@/realtime/client';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
@@ -34,12 +34,18 @@ import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
 import { Leave } from '@/ui/directional';
+import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
+
+/** Loaded when it's shown: shared by several screens, needed by none at first. */
+const PeoplePicker = lazyPart(() =>
+  import('@/features/people/PeoplePicker').then((m) => m.PeoplePicker),
+);
 
 const roleOf = (role: string): SpaceRole =>
   role === 'owner' || role === 'admin' ? role : 'member';

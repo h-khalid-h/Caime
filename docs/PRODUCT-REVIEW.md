@@ -1174,7 +1174,26 @@ with its reason, so it isn't proposed again without new facts.
   as any token's); layer 2 a bounded sync job per connected account within each provider's
   quota; layer 3 a container and a database of its own. *What isn't done*: WhatsApp, Facebook
   and LinkedIn as live connections (no personal messaging APIs exist; notices by mail, R75, and
-  the WhatsApp import are the bridges there are).
+  the WhatsApp import are the bridges there are). *Built (2026-10-11), layer 1*: the five bridges
+  in Discover's new Automation category (`BRIDGES` in core, apart from the directory's module so
+  the startup chunk doesn't carry their words), each a sheet that says what the platform can do
+  with Caime, takes the permissions (reading by default, writing ticked), makes the token in one
+  tap (`POST /v1/me/bridges/:id`: a personal token named after the platform, `personal_tokens
+  .bridge`, one live per platform and person, no expiry) and shows it once with the platform's
+  own web-request step to paste it in (checked against each platform's documentation: Zapier's
+  Retrieve Poll and Custom Request take headers, IFTTT's Make a web request has Additional
+  headers on its Pro plan), listed under Connected as the platform with its last use, stopped
+  there; the OpenAPI 3.1 document (`GET /v1/openapi.json`, `lib/openapi.ts`) written from the
+  schemas the routes parse with, which meant moving the token routes' inline query schemas into
+  core (`TasksQuery`, `SearchQuery`, `MessagesPageQuery` and friends) so one schema serves the
+  route and the document; and the contacts file (`@caime/core/contacts`: vCard 2.1, 3.0 and
+  4.0 with quoted-printable names and folded lines, Google's old and new CSV headers, Outlook's
+  comma and semicolon exports) read on the device, matched by address through `POST
+  /v1/people/match` under search's own rules, each match a row to connect from, the rest one
+  invite link to share. *Not done*: personal webhooks (push triggers), by design after the
+  polling bridges are in use; a Zapier or IFTTT integration of Caime's own on their developer
+  platforms (⛔ the owner's accounts there), which would make the bridges a named app rather
+  than a web-request step; phone numbers as a way to find people (Caime has no phone field).
 - **R80 — The marketplace is a page on the web, and the rules of listing are written down
   (owner, 2026-10-10: Slack's App Marketplace, and cai.me/marketplace).** Slack's marketplace
   was read as a model (its developer guidelines, docs.slack.dev/slack-marketplace, 2026-10-10;

@@ -128,9 +128,3 @@ export function PeoplePicker({
 }
 
 /** A set-toggling helper for pickers. */
-export function toggled(set: ReadonlySet<string>, id: string): Set<string> {
-  const next = new Set(set);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  return next;
-}

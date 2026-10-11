@@ -23,11 +23,13 @@ import {
   formatAmount,
   isCardKit,
   isCustomCard,
+  KitMoveBody,
   kitMoves,
   type LiveLocation,
   LiveLocationUpdate,
   type LocationPayloadT,
   liveNow,
+  MessagesPageQuery,
   PINNED_MAX,
   PollPayload,
   ReactionBody,
@@ -84,15 +86,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/conversations/:id/messages', async (req): Promise<MessagesPage> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const q = parse(
-      z.object({
-        before: z.coerce.number().int().optional(),
-        after: z.coerce.number().int().optional(),
-        around: z.coerce.number().int().optional(),
-        limit: z.coerce.number().int().min(1).max(200).default(50),
-      }),
-      req.query,
-    );
+    const q = parse(MessagesPageQuery, req.query);
     const { conversation, me } = await membership(ctx, auth.userId, id);
     let query = ctx.db
       .selectFrom('messages')
@@ -257,7 +251,7 @@ export async function messageRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post('/messages/:id/kit', async (req): Promise<MessageResponse> => {
     const auth = requireAuth(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const { to } = parse(z.object({ to: z.string().min(1).max(40) }), req.body);
+    const { to } = parse(KitMoveBody, req.body);
     const m = await ctx.db
       .selectFrom('messages')
       .select(MESSAGE_COLUMNS)

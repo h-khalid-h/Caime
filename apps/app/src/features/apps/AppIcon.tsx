@@ -1,12 +1,13 @@
 /**
  * An app's mark (R74): its icon as the developer uploaded it, drawn at the size it's shown
  * (R70: the server sends the rendition for it), else the mark of what it is: Caime's calendar,
- * or a developer's app.
+ * a bridge, or a developer's app.
  */
 import { Image } from 'expo-image';
 import CalendarDays from 'lucide-react-native/icons/calendar-days';
 import KeyRound from 'lucide-react-native/icons/key-round';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import type { ComponentType } from 'react';
 import { View } from 'react-native';
 import { mediaHeaders, mediaUrl } from '@/api/client';
 import { useTheme } from '@/theme/theme';
@@ -16,12 +17,18 @@ export function AppIcon({
   appId,
   name,
   size = 40,
+  mark,
 }: {
   url: string | null;
   /** A built-in's name picks its mark (`calendar`), `token` a personal token's; anything else is an app. */
   appId: string;
   name: string;
   size?: number;
+  /**
+   * A mark of the caller's, drawn as Caime's own (a bridge's, R79: the Apps screens pass the
+   * icon, so it isn't in the chunk every screen with an app icon shares).
+   */
+  mark?: ComponentType<{ size: number; color: string }>;
 }) {
   const t = useTheme();
   const src = mediaUrl(url);
@@ -41,7 +48,9 @@ export function AppIcon({
         }}
       />
     );
-  const Mark = appId === 'calendar' ? CalendarDays : appId === 'token' ? KeyRound : LayoutGrid;
+  const own = appId === 'calendar' || mark !== undefined;
+  const Mark =
+    mark ?? (appId === 'calendar' ? CalendarDays : appId === 'token' ? KeyRound : LayoutGrid);
   return (
     <View
       accessible
@@ -51,15 +60,12 @@ export function AppIcon({
         width: size,
         height: size,
         borderRadius: radius,
-        backgroundColor: appId === 'calendar' ? t.c.accentSoft : t.c.surfaceMuted,
+        backgroundColor: own ? t.c.accentSoft : t.c.surfaceMuted,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Mark
-        size={Math.round(size * 0.5)}
-        color={appId === 'calendar' ? t.c.accentStrong : t.c.textSecondary}
-      />
+      <Mark size={Math.round(size * 0.5)} color={own ? t.c.accentStrong : t.c.textSecondary} />
     </View>
   );
 }

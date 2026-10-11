@@ -1,6 +1,6 @@
 /**
- * Discover (R74): the apps someone can connect to Caime, Caime's own first, then developers'
- * listed apps by how many connected them, a page at a time (a keyset page from the server, so
+ * Discover (R74): the apps someone can connect to Caime, Caime's own and the bridges (R79)
+ * first, then developers' listed apps by how many connected them, a page at a time (a keyset page from the server, so
  * thousands cost what twenty do), narrowed by a search and a category.
  */
 import type { DirectoryAppView } from '@caime/core/api';
@@ -8,6 +8,7 @@ import { APP_CATEGORIES, APP_CATEGORY_LABELS, type AppCategory } from '@caime/co
 import { tr } from '@caime/core/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import Search from 'lucide-react-native/icons/search';
+import Workflow from 'lucide-react-native/icons/workflow';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useDirectory, useDirectoryApp } from '@/api/hooks';
@@ -97,7 +98,14 @@ export function Discover({ openApp }: { openApp?: string }) {
             <View key={a.id}>
               {i > 0 ? <Divider inset={68} /> : null}
               <ListRow
-                left={<AppIcon url={a.iconUrl} appId={a.id} name={a.name} />}
+                left={
+                  <AppIcon
+                    url={a.iconUrl}
+                    appId={a.id}
+                    name={a.name}
+                    mark={a.kind === 'bridge' ? Workflow : undefined}
+                  />
+                }
                 title={a.name}
                 subtitle={line(a)}
                 right={

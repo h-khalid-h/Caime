@@ -24,8 +24,10 @@ import {
   BOOKING_ITEMS_MAX,
   ORDER_LINES_MAX,
 } from './booking';
+import { BUSINESS_VIEWS } from './business';
 import { CALL_KINDS } from './calls';
 import { COLLECTIONS_MAX, SLUG_MAX, slugError } from './catalog';
+import { CONTACTS_MATCH_MAX } from './contacts';
 import { isPublicKey, isSealed, isSignature, type PublicJwk, type SealedMessage } from './e2ee';
 import { isEmoji } from './emoji';
 import { msg } from './i18n';
@@ -342,6 +344,72 @@ export const DirectoryQuery = z.object({
   category: z.enum(APP_CATEGORIES).optional(),
   limit: z.coerce.number().int().min(1).max(DIRECTORY_PAGE_MAX).default(DIRECTORY_PAGE),
 });
+
+/**
+ * A bridge's token (R79): what the recipe on the platform may do, from the same permissions a
+ * personal token takes. Made for the platform in one tap, until it's stopped (no expiry: a
+ * recipe that died quietly after ninety days would be worse than one the person ends).
+ */
+export const BridgeBody = z
+  .object({
+    scopes: z.array(z.enum(PERSONAL_SCOPES)).min(1, msg('Choose what it may do.')).max(10),
+  })
+  .strict();
+
+/** Addresses from a contacts file (R79): up to a page of them at a time, nothing kept. */
+export const ContactsMatchBody = z
+  .object({
+    emails: z.array(Email).min(1).max(CONTACTS_MATCH_MAX),
+  })
+  .strict();
+
+/**
+ * What the token-reachable routes take in their query (PRD §73–74, R79): written here, so the
+ * route parses with the very schema the OpenAPI document is written from (`lib/openapi.ts`).
+ */
+export const TASK_LIST_VIEWS = ['todo', 'waiting', 'asked_me', 'i_asked', 'done', 'all'] as const;
+export type TaskListView = (typeof TASK_LIST_VIEWS)[number];
+export const TasksQuery = z.object({
+  view: z.enum(TASK_LIST_VIEWS).default('todo'),
+  conversationId: z.string().uuid().optional(),
+  personId: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(200),
+});
+export const InboxQuery = z.object({ view: z.enum(['attention', 'all']).default('attention') });
+export const MessagesPageQuery = z.object({
+  before: z.coerce.number().int().optional(),
+  after: z.coerce.number().int().optional(),
+  around: z.coerce.number().int().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+export const SearchQuery = z.object({
+  q: z.string().trim().min(1).max(200),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  /** The app says when the person has finished typing (a pause, Enter): only then a model. */
+  understand: z.enum(['0', '1']).optional(),
+});
+export const DeliveriesQuery = z.object({
+  status: z.enum(['pending', 'delivered', 'failed']).optional(),
+  after: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+export const UpdatesPageQuery = z.object({
+  before: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export const BusinessInboxQuery = z.object({
+  view: z.enum(BUSINESS_VIEWS).default('customer_waiting'),
+});
+/** A calendar's window (R51): up to a year, from one instant to a later one. */
+export const CalendarWindowQuery = z
+  .object({
+    from: z.string().datetime({ offset: true }),
+    to: z.string().datetime({ offset: true }),
+  })
+  .strict();
+/** A card moved on (`POST /messages/:id/kit`), and its fields changed (`PATCH`, an app's own). */
+export const KitMoveBody = z.object({ to: z.string().min(1).max(40) });
+export const KitFieldsBody = z.object({ fields: z.record(z.string(), z.unknown()) });
 
 export const AppListingReviewBody = z
   .object({

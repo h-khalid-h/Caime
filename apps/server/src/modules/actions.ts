@@ -9,6 +9,7 @@ import {
   CreateTaskBody,
   formatDue,
   systemAccountOf,
+  TasksQuery,
   tr,
   UpdateTaskBody,
   uuidv4,
@@ -121,15 +122,7 @@ async function syncRequestCard(ctx: AppContext, t: Task): Promise<void> {
 export async function actionRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/tasks', async (req): Promise<TasksResponse> => {
     const auth = requireAuth(req);
-    const q = parse(
-      z.object({
-        view: z.enum(['todo', 'waiting', 'asked_me', 'i_asked', 'done', 'all']).default('todo'),
-        conversationId: z.string().uuid().optional(),
-        personId: z.string().uuid().optional(),
-        limit: z.coerce.number().int().min(1).max(500).default(200),
-      }),
-      req.query,
-    );
+    const q = parse(TasksQuery, req.query);
     const me = auth.userId;
     const open = ['open', 'accepted'] as const;
     let query = ctx.db.selectFrom('tasks').selectAll().where(visibleTasksSql(me));
