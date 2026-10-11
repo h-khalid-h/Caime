@@ -2556,3 +2556,6 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   27 ms after the echo, and the send's own answer, a copy made before either, read after them
   and putting the message back as sent. The outbox and the card form add their answer where the
   socket hasn't and never replace what it brought; `cache.test.ts` holds the three cases.
+- 2026-10-11 — An app's sheet on the setup screen shows the app as the list has it now, not the
+  copy tapped (a list restored from the device and read again a moment later never reached the
+  open sheet; the E2E found it under load).

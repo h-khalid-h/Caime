@@ -145,14 +145,18 @@ export function OrgApps({ org }: { org: OrgView }) {
       size="lg"
       onPress={() => {
         setCreating(false);
-        setOpen(null);
+        setOpenId(null);
         forget();
       }}
       testID="org-app-secrets-done"
     />
   );
-  const [open, setOpen] = useState<OrgAppView | null>(null);
-  const lastOpen = useRef(open);
+  // The sheet shows the app as the list has it now (a copy kept on this device from before its
+  // cards were listed gains them when the list is read again), and keeps the last one while it
+  // fades.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const lastOpen = useRef<OrgAppView | null>(null);
+  const open = openId === null ? null : (apps.find((a) => a.id === openId) ?? lastOpen.current);
   if (open) lastOpen.current = open;
   const app = open ?? lastOpen.current;
   const [removing, setRemoving] = useState(false);
@@ -258,7 +262,7 @@ export function OrgApps({ org }: { org: OrgView }) {
               subtitle={summary(a)}
               onPress={() => {
                 setSecrets(null);
-                setOpen(a);
+                setOpenId(a.id);
               }}
               testID={`org-app-${a.name}`}
             />
@@ -402,7 +406,7 @@ export function OrgApps({ org }: { org: OrgView }) {
       <Sheet
         open={open !== null}
         onClose={() => {
-          setOpen(null);
+          setOpenId(null);
           setRemoving(false);
           forget();
         }}
@@ -429,7 +433,7 @@ export function OrgApps({ org }: { org: OrgView }) {
                 void run(
                   () => endpoints.removeOrgApp(org.id, app.id),
                   () => {
-                    setOpen(null);
+                    setOpenId(null);
                     setRemoving(false);
                     toast(tr('{name} removed', { name: app.name }));
                   },
@@ -447,7 +451,7 @@ export function OrgApps({ org }: { org: OrgView }) {
             <Text variant="caption" color="textSecondary">
               {app.scopes.map((s) => tr(API_SCOPE_LABELS[s])).join(' · ') || tr('No permissions')}
             </Text>
-            {/* (An app kept on this device from before this was listed has none.) */}
+            {/* (None until the list is read again, for a copy kept on this device from before.) */}
             {app.kits?.length ? (
               // The kinds of card it made, which the team sends from a customer's conversation.
               <Text variant="caption" color="textSecondary" testID="org-app-kits">
