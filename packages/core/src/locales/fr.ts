@@ -391,7 +391,6 @@ export const fr: Catalog = {
   'Work waits until it ends': 'Le travail attend la fin',
   'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.':
     'Pendant une réunion ou un rendez-vous convenu dans Caime, les messages du travail, des clients, des fournisseurs et des professionnels sont retenus jusqu’à la fin. La famille, les amis et les appels passent.',
-  'Work waits until the meeting ends': 'Le travail attend la fin de la réunion',
   'Your work week': 'Votre semaine de travail',
   'Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different.':
     'Les notifications du travail n’arrivent que ces jours-là. Réglés d’après l’endroit où vous vivez (Langue et région) ; changez-les si les vôtres diffèrent.',
@@ -442,18 +441,15 @@ export const fr: Catalog = {
   'By your name or @handle': 'Par votre nom ou @identifiant',
   'People can search for {displayName} or @{handle}, and your public page (what you show to everyone) is on the web':
     'On peut chercher {displayName} ou @{handle}, et votre page publique (ce que vous montrez à tous) est sur le web',
-  'Findable by name or handle': 'Trouvable par nom ou identifiant',
   'By your email': 'Par votre e-mail',
   'Always off under 18': 'Toujours désactivé avant 18 ans',
   'Someone who knows your email can find you':
     'Quelqu’un qui connaît votre e-mail peut vous trouver',
-  'Findable by email': 'Trouvable par e-mail',
   'Message requests': 'Demandes de message',
   'Messages from people you’re not connected with wait in Requests. Under 18, only people you share a connection with can send one.':
     'Les messages de personnes hors de vos contacts attendent dans Demandes. Avant 18 ans, seules les personnes avec qui vous avez un contact en commun peuvent en envoyer.',
   'Messages from people you’re not connected with wait in Requests. They never interrupt you.':
     'Les messages de personnes hors de vos contacts attendent dans Demandes. Ils ne vous interrompent jamais.',
-  'Who can send you a message request': 'Qui peut vous envoyer une demande de message',
   Anyone: 'Tout le monde',
   'People you share a connection with': 'Les personnes avec qui vous avez un contact en commun',
   Nobody: 'Personne',
@@ -470,6 +466,7 @@ export const fr: Catalog = {
   'In a meeting': 'En réunion',
   'On my way': 'En route',
   'Working from home': 'En télétravail',
+  Focusing: 'En concentration',
   'Off sick': 'En arrêt maladie',
   'On holiday': 'En vacances',
   'Status set': 'Statut défini',
@@ -1833,7 +1830,6 @@ export const fr: Catalog = {
   'How you know them': 'D’où vous vous connaissez',
   'Optional. {name} never sees your label.': 'Facultatif. {name} ne voit jamais votre étiquette.',
   'Show {name} the context': 'Montrer le contexte à {name}',
-  'Show the context': 'Montrer le contexte',
   'Add a note (optional)': 'Ajouter un mot (facultatif)',
   'Hi {name}, it’s…': 'Bonjour {name}, c’est…',
   '{name} can accept, decline or ignore. Declining is silent.':
@@ -3668,4 +3664,20 @@ export const fr: Catalog = {
   'Common where you are': 'Courants là où vous êtes',
   'Its time zone': 'Son fuseau horaire',
   'Days worked': 'Jours travaillés',
+  'she/her': 'elle',
+  'he/him': 'il',
+  'they/them': 'iel',
+  'Places you know people': 'Lieux où vous connaissez des gens',
+  'How to rewrite it': 'Comment le réécrire',
+  'Which of them': 'Lesquels d’entre eux',
+  Kind: 'Type',
+  'How long': 'Durée',
+  'How it’s had': 'Comment elle est remise',
+  'Choose one': 'Choisissez-en un',
+  'Opens the list of items': 'Ouvre la liste des éléments',
+  'Search items': 'Rechercher un élément',
+  'No item by that name.': 'Aucun élément de ce nom.',
+  'Find by name or handle': 'Trouver par nom ou identifiant',
+  'Nobody by that name.': 'Personne de ce nom.',
+  'Who’s in it': 'Qui y participe',
 };

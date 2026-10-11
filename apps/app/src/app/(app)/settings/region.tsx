@@ -15,12 +15,13 @@ import { CountryField } from '@/features/geo/CountryField';
 import { useCountries } from '@/features/geo/countries';
 import { LanguageField } from '@/features/geo/LanguageField';
 import { TimeZoneField } from '@/features/geo/TimeZoneField';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { LANGUAGE_NAMES } from '@/lib/i18n';
 import { useMe, useSession } from '@/state/session';
 import { usePrefs } from '@/theme/prefs';
 import { Button } from '@/ui/Button';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -100,11 +101,8 @@ export default function Region() {
           ) : null}
         </View>
       </Group>
-      <Group
-        title={tr('Language')}
-        footer={tr('Caime in the language you choose. Automatic follows your device.')}
-      >
-        <Choice
+      <Group footer={tr('Caime in the language you choose. Automatic follows your device.')}>
+        <ChoiceSheet
           label={tr('Language')}
           value={language}
           onChange={chooseLanguage}
@@ -112,6 +110,7 @@ export default function Region() {
             { value: 'auto', label: tr('Automatic'), detail: tr('Your device’s language') },
             ...INTERFACE_LANGUAGES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l] })),
           ]}
+          testID="region-language-choice"
         />
       </Group>
       <Group

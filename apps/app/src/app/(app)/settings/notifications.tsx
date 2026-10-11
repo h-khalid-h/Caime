@@ -5,22 +5,25 @@ import { findRole, ROLES, SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/
 import { workHours } from '@caime/core/time';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { DayPicker } from '@/features/settings/DayPicker';
 import { RuleFor } from '@/features/settings/RuleFor';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { useMe, useSession } from '@/state/session';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { RelationshipChip } from '@/ui/Chip';
+import { ChoiceList } from '@/ui/ChoiceList';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SpherePicker } from '@/ui/SpherePicker';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -108,30 +111,30 @@ function NewRule({
         <Text variant="overline" color="textTertiary" accessibilityRole="header">
           {tr('Who it’s for')}
         </Text>
-        <View style={{ marginHorizontal: -20 }}>
-          <Choice<Sphere>
-            label={tr('Who it’s for')}
-            value={sphere}
-            onChange={(v) => {
-              setSphere(v);
-              setRole('all');
-            }}
-            options={SPHERES.filter((s) => s !== 'other').map((s) => ({
-              value: s,
-              label: tr(SPHERE_DEFS[s].plural),
-            }))}
-          />
-        </View>
+        <SpherePicker
+          plural
+          wrap
+          flush
+          label={tr('Who it’s for')}
+          value={sphere}
+          onChange={(v) => {
+            setSphere(v);
+            setRole('all');
+          }}
+          spheres={SPHERES.filter((s) => s !== 'other')}
+          testID="rule-for"
+        />
         {ROLES[sphere].length ? (
           <>
             <Text variant="overline" color="textTertiary" accessibilityRole="header">
               {tr('Of them')}
             </Text>
             <View style={{ marginHorizontal: -20 }}>
-              <Choice<string>
+              <ChoiceList<string>
                 label={tr('Of them')}
                 value={role}
                 onChange={setRole}
+                testID="rule-role"
                 options={[
                   {
                     value: 'all',
@@ -252,23 +255,16 @@ export default function Notifications() {
         onPick={makeQuiet}
       />
       <Group title={tr('While you’re in a meeting')}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('Work waits until it ends')}</Text>
-            <Text variant="caption" color="textSecondary">
-              {tr(
-                'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.',
-              )}
-            </Text>
-          </View>
-          <Switch
-            value={Boolean(prefs.holdWhileBusy)}
-            onValueChange={(v) => savePrefs({ holdWhileBusy: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Work waits until the meeting ends')}
-            testID="hold-while-busy"
-          />
-        </View>
+        <SwitchRow
+          inset
+          label={tr('Work waits until it ends')}
+          detail={tr(
+            'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.',
+          )}
+          value={Boolean(prefs.holdWhileBusy)}
+          onChange={(v) => savePrefs({ holdWhileBusy: v })}
+          testID="hold-while-busy"
+        />
       </Group>
       <Group
         title={tr('Your work week')}

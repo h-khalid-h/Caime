@@ -1,0 +1,143 @@
+/**
+ * What the You button opens: your picture, your status, your presence and the way to everything
+ * else. Loaded the first time it's opened (R77's budget), never with the first screen.
+ */
+import { tr } from '@caime/core/i18n';
+import { type Href, router } from 'expo-router';
+import Bell from 'lucide-react-native/icons/bell';
+import Smile from 'lucide-react-native/icons/face-slightly-smiling';
+import Lock from 'lucide-react-native/icons/lock';
+import Settings from 'lucide-react-native/icons/settings';
+import { useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
+import { endpoints } from '@/api/endpoints';
+import { PresenceChoice } from '@/features/settings/PresenceChoice';
+import { useSession } from '@/state/session';
+import { useTheme } from '@/theme/theme';
+import { Avatar } from '@/ui/Avatar';
+import { Card } from '@/ui/Card';
+import { ListRow } from '@/ui/ListRow';
+import { Pressable } from '@/ui/Pressable';
+import { Sheet } from '@/ui/Sheet';
+import { Text } from '@/ui/Text';
+import { toast } from '@/ui/Toast';
+import { shownDot } from './YouButton';
+import { useYouSheet } from './youSheet';
+
+type Chosen = 'auto' | 'busy' | 'away' | 'invisible';
+
+export function YouSheetBody() {
+  const t = useTheme();
+  const me = useSession((s) => s.user);
+  const open = useYouSheet((s) => s.open);
+  const setOpen = useYouSheet((s) => s.setOpen);
+  // The presence tapped, shown at once while it's saved; one saved at a time, the last tap last.
+  const [pending, setPending] = useState<Chosen | null>(null);
+  const saving = useRef(false);
+  const next = useRef<Chosen | null>(null);
+  // Gone with the phone's layout (a window made wide): closed, not open again on the way back.
+  useEffect(() => () => setOpen(false), [setOpen]);
+  if (!me) return null;
+  const close = () => setOpen(false);
+  const go = (href: Href) => {
+    close();
+    router.navigate(href);
+  };
+  const presence: Chosen = me.presence === 'available' ? 'auto' : me.presence;
+  const save = async (choice: Chosen): Promise<void> => {
+    saving.current = true;
+    try {
+      const res = await endpoints.updateMe({ presence: choice });
+      useSession.getState().setUser(res.user);
+    } catch (e) {
+      toast((e as Error).message, { tone: 'danger' });
+    }
+    saving.current = false;
+    const then = next.current;
+    next.current = null;
+    if (then && then !== choice) return save(then);
+    setPending(null);
+  };
+  const choose = (choice: Chosen) => {
+    if (choice === (pending ?? presence)) return;
+    setPending(choice);
+    if (saving.current) next.current = choice;
+    else void save(choice);
+  };
+  const status = [me.statusEmoji, me.statusText].filter(Boolean).join(' ');
+  return (
+    <Sheet open={open} onClose={close} title={tr('You')}>
+      <View style={{ gap: 14 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tr('{displayName}, edit profile', { displayName: me.displayName })}
+          onPress={() => go('/settings/profile')}
+          style={({ hovered }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            padding: 12,
+            borderRadius: 20,
+            backgroundColor: hovered ? t.c.surfaceHover : t.c.surfaceMuted,
+          })}
+        >
+          <Avatar
+            id={me.id}
+            name={me.displayName}
+            url={me.avatarUrl}
+            size={56}
+            presence={shownDot(me)}
+          />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text variant="headline" numberOfLines={1}>
+              {me.displayName}
+            </Text>
+            <Text variant="caption" color="textSecondary" numberOfLines={1}>
+              @{me.handle}
+            </Text>
+          </View>
+        </Pressable>
+        <Card padded={false}>
+          <ListRow
+            icon={Smile}
+            title={status || tr('Set a status')}
+            subtitle={status ? tr('Your status') : undefined}
+            chevron
+            onPress={() => go('/settings/profile')}
+            testID="you-status"
+          />
+        </Card>
+        <View style={{ gap: 6 }}>
+          <Text variant="overline" color="textTertiary" accessibilityRole="header">
+            {tr('Presence')}
+          </Text>
+          <Card padded={false}>
+            <PresenceChoice value={pending ?? presence} onChange={choose} />
+          </Card>
+        </View>
+        <Card padded={false}>
+          <ListRow
+            icon={Bell}
+            title={tr('Notifications and priorities')}
+            chevron
+            onPress={() => go('/settings/notifications')}
+          />
+          <ListRow
+            icon={Lock}
+            title={tr('Privacy')}
+            chevron
+            onPress={() => go('/settings/privacy')}
+          />
+          <ListRow
+            icon={Settings}
+            title={tr('All settings')}
+            subtitle={tr('Appearance, security, your plan and more')}
+            chevron
+            onPress={() => go('/you')}
+            testID="you-all"
+          />
+        </Card>
+      </View>
+    </Sheet>
+  );
+}

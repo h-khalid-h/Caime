@@ -16,6 +16,7 @@ test('the interface follows the language chosen, and the site has a French switc
   const { page, errors } = await newPerson(phone);
   await page.goto('/settings/region');
   await expect(visible(page, 'Language and region')).toBeVisible();
+  await page.getByTestId('region-language-choice').click();
   await page.getByRole('radio', { name: 'Français' }).click();
   // The app remounts in French, still left to right, without a reload.
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');

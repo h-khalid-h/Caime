@@ -76,7 +76,7 @@ test('two people connect with private labels and talk in real time', async ({ br
   await b.page.getByTestId(`connect-${hassan}`).click();
   await b.page.getByTestId('connect-classify').click();
   await b.page.getByRole('radio', { name: 'Work' }).click();
-  await b.page.getByRole('button', { name: 'Manager' }).click();
+  await b.page.getByRole('radio', { name: 'Manager' }).click();
   await b.page.getByPlaceholder('Company, school or organization').fill('DATA C');
   await b.page.getByTestId('relationship-save').click();
   await expect(b.page.getByText('Manager · DATA C')).toBeVisible();
@@ -89,7 +89,7 @@ test('two people connect with private labels and talk in real time', async ({ br
   await expect(a.page.getByText(/Says you know each other from/)).toBeVisible();
   await a.page.getByTestId(`accept-${sarah}`).click();
   await a.page.getByRole('radio', { name: 'Work' }).click();
-  await a.page.getByRole('button', { name: 'Direct report' }).click();
+  await a.page.getByRole('radio', { name: 'Direct report' }).click();
   await a.page.getByTestId('relationship-save').click();
   await a.page.waitForURL('**/c/**');
   const conversation = new URL(a.page.url()).pathname;

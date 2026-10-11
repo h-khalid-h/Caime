@@ -387,7 +387,6 @@ export const ar: Catalog = {
   'Work waits until it ends': 'العمل ينتظر حتى ينتهي',
   'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.':
     'في اجتماع أو موعد متفق عليه في Caime، تُحجز رسائل العمل والعملاء والمورّدين والمهنيين حتى ينتهي. العائلة والأصدقاء والمكالمات تصل.',
-  'Work waits until the meeting ends': 'العمل ينتظر حتى ينتهي الاجتماع',
   'Your work week': 'أسبوع عملك',
   'Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different.':
     'إشعارات العمل تنتظر هذه الأيام. ضُبطت من مكان إقامتك (اللغة والمنطقة)؛ غيّرها إن كانت أيامك مختلفة.',
@@ -436,17 +435,14 @@ export const ar: Catalog = {
   'By your name or @handle': 'باسمك أو @معرّفك',
   'People can search for {displayName} or @{handle}, and your public page (what you show to everyone) is on the web':
     'يستطيع الناس البحث عن {displayName} أو @{handle}، وصفحتك العامة (ما تعرضه للجميع) على الويب',
-  'Findable by name or handle': 'يمكن العثور عليك بالاسم أو المعرّف',
   'By your email': 'ببريدك الإلكتروني',
   'Always off under 18': 'متوقف دائمًا لمن دون 18',
   'Someone who knows your email can find you': 'من يعرف بريدك يستطيع العثور عليك',
-  'Findable by email': 'يمكن العثور عليك بالبريد',
   'Message requests': 'طلبات المراسلة',
   'Messages from people you’re not connected with wait in Requests. Under 18, only people you share a connection with can send one.':
     'رسائل من لا تتواصل معهم تنتظر في الطلبات. دون 18، لا يرسل طلبًا إلا من تشاركهم تواصلًا.',
   'Messages from people you’re not connected with wait in Requests. They never interrupt you.':
     'رسائل من لا تتواصل معهم تنتظر في الطلبات. لا تقاطعك أبدًا.',
-  'Who can send you a message request': 'من يستطيع إرسال طلب مراسلة إليك',
   Anyone: 'أي شخص',
   'People you share a connection with': 'من تشاركهم تواصلًا',
   Nobody: 'لا أحد',
@@ -464,6 +460,7 @@ export const ar: Catalog = {
   'In a meeting': 'في اجتماع',
   'On my way': 'في الطريق',
   'Working from home': 'أعمل من المنزل',
+  Focusing: 'في حالة تركيز',
   'Off sick': 'في إجازة مرضية',
   'On holiday': 'في إجازة',
   'Status set': 'ضُبطت الحالة',
@@ -1687,7 +1684,6 @@ export const ar: Catalog = {
   'How you know them': 'كيف تعرفهم',
   'Optional. {name} never sees your label.': 'اختياري. تصنيفك لا يظهر لـ {name} أبدًا.',
   'Show {name} the context': 'أظهر لـ {name} السياق',
-  'Show the context': 'أظهر السياق',
   'Add a note (optional)': 'أضف ملاحظة (اختياري)',
   'Hi {name}, it’s…': 'مرحبًا {name}، معك…',
   '{name} can accept, decline or ignore. Declining is silent.':
@@ -3798,4 +3794,20 @@ export const ar: Catalog = {
   'Common where you are': 'شائعة حيث أنت',
   'Its time zone': 'منطقتها الزمنية',
   'Days worked': 'أيام العمل',
+  'she/her': 'هي',
+  'he/him': 'هو',
+  'they/them': 'هم',
+  'Places you know people': 'أماكن تعرف فيها أناسًا',
+  'How to rewrite it': 'كيف تُعاد صياغته',
+  'Which of them': 'أيٌّ منهم',
+  Kind: 'النوع',
+  'How long': 'المدة',
+  'How it’s had': 'طريقة التسليم',
+  'Choose one': 'اختر واحدًا',
+  'Opens the list of items': 'يفتح قائمة العناصر',
+  'Search items': 'ابحث في العناصر',
+  'No item by that name.': 'لا عنصر بهذا الاسم.',
+  'Find by name or handle': 'ابحث بالاسم أو المعرّف',
+  'Nobody by that name.': 'لا أحد بهذا الاسم.',
+  'Who’s in it': 'من فيها',
 };

@@ -15,9 +15,9 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
 import { Card, Divider } from '@/ui/Card';
+import { ChoiceChips } from '@/ui/Chip';
 import { CopyRow } from '@/ui/CopyRow';
 import { ListRow } from '@/ui/ListRow';
-import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
@@ -122,11 +122,14 @@ function NewToken({ open, onClose }: { open: boolean; onClose: () => void }) {
               />
             ))}
           </View>
-          <Segmented
+          <ChoiceChips
+            wrap
+            flush
             label={tr('How long it lasts')}
             value={lifetime}
             onChange={setLifetime}
             options={LIFETIMES.map((l) => ({ value: l.value, label: tr(l.label) }))}
+            testID="token-lifetime"
           />
           <Text variant="caption" color="textTertiary">
             {tr(

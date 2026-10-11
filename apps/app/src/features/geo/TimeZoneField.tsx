@@ -5,18 +5,16 @@
 
 import { tr } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
-import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { useTheme } from '@/theme/theme';
+import { wordsMatch } from '@/lib/find';
 import { Button } from '@/ui/Button';
 import { lazyPart } from '@/ui/Lazy';
-import { Pressable } from '@/ui/Pressable';
+import { PickerField } from '@/ui/PickerField';
 import type { SearchItem } from '@/ui/SearchSheet';
 import { Text } from '@/ui/Text';
-import { wordsMatch } from './find';
 
 /** The list, loaded the first time it's opened. */
 const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));
@@ -43,7 +41,6 @@ export function TimeZoneField({
   hint?: string;
   testID?: string;
 }) {
-  const t = useTheme();
   const [open, setOpen] = useState(false);
   // Mounted from the first time it's opened, so it can slide away as it closes.
   const [opened, setOpened] = useState(false);
@@ -66,43 +63,21 @@ export function TimeZoneField({
   const suggested = zones.data?.suggested ?? null;
   const offered = suggested && suggested !== value ? items.find((i) => i.key === suggested) : null;
   return (
-    <View style={{ gap: 6 }}>
-      <Text variant="captionStrong" color="textSecondary">
-        {label}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label}, ${shown ? `${shown.title}, ${shown.subtitle}` : value}`}
-        accessibilityHint={tr('Opens the list of time zones')}
-        onPress={() => {
-          setOpen(true);
-          setOpened(true);
-          // A list that didn't load is asked for again as it's opened.
-          if (zones.isError) void zones.refetch();
-        }}
-        testID={testID}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          minHeight: 48,
-          borderRadius: t.radii.md,
-          borderWidth: 1,
-          borderColor: t.c.border,
-          backgroundColor: t.c.surface,
-          paddingHorizontal: 14,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text variant="body">{shown?.title ?? value}</Text>
-          {shown?.subtitle ? (
-            <Text variant="caption" color="textSecondary">
-              {shown.subtitle}
-            </Text>
-          ) : null}
-        </View>
-        <ChevronDown size={18} color={t.c.textSecondary} />
-      </Pressable>
+    <PickerField
+      label={label}
+      shown={shown?.title ?? value}
+      detail={shown?.subtitle ?? null}
+      placeholder={value}
+      accessibilityHint={tr('Opens the list of time zones')}
+      onOpen={() => {
+        setOpen(true);
+        setOpened(true);
+        // A list that didn't load is asked for again as it's opened.
+        if (zones.isError) void zones.refetch();
+      }}
+      hint={offered ? undefined : hint}
+      testID={testID}
+    >
       {offered ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <Text variant="caption" color="textSecondary" style={{ flexShrink: 1 }}>
@@ -119,10 +94,6 @@ export function TimeZoneField({
             testID={testID ? `${testID}-device` : undefined}
           />
         </View>
-      ) : hint ? (
-        <Text variant="caption" color="textTertiary">
-          {hint}
-        </Text>
       ) : null}
       {opened ? (
         <SearchSheet
@@ -141,6 +112,6 @@ export function TimeZoneField({
           testID={testID}
         />
       ) : null}
-    </View>
+    </PickerField>
   );
 }

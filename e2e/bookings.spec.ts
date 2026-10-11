@@ -186,8 +186,9 @@ test.describe
       const picker = c.getByTestId('order-picker');
       await expect(picker).toBeVisible();
       await expect(picker).toContainText('Ready in about 20 minutes');
-      await picker.locator('[data-testid^="order-more-"]').first().click();
-      await picker.locator('[data-testid^="order-more-"]').first().click();
+      // Each item's count is a stepper (R77): `order-count-<id>-more`.
+      await picker.locator('[data-testid^="order-count-"][data-testid$="-more"]').first().click();
+      await picker.locator('[data-testid^="order-count-"][data-testid$="-more"]').first().click();
       await c.getByTestId('order-way-delivery').click();
       await expect(c.getByTestId('order-total')).toContainText('240');
       await c.getByTestId('kit-send').click();
@@ -271,7 +272,14 @@ test.describe
       const picker = c.getByTestId('order-picker');
       await expect(picker).toBeVisible();
       await expect(picker).toContainText('Hair care');
-      await expect(picker.locator('[data-testid^="order-count-"]').first()).toHaveText('1');
+      // The count itself (`order-count-<id>`), not its Fewer and More buttons either side.
+      await expect(
+        picker
+          .locator(
+            '[data-testid^="order-count-"]:not([data-testid$="-less"]):not([data-testid$="-more"])',
+          )
+          .first(),
+      ).toHaveText('1');
       expect(customerErrors).toEqual([]);
       await phone.close();
     });

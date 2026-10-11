@@ -9,10 +9,10 @@ import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import { useMemo, useState } from 'react';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
+import { wordsMatch } from '@/lib/find';
 import { Chip } from '@/ui/Chip';
 import { lazyPart } from '@/ui/Lazy';
 import type { SearchItem } from '@/ui/SearchSheet';
-import { wordsMatch } from './find';
 
 /** The list, loaded the first time it's opened. */
 const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));

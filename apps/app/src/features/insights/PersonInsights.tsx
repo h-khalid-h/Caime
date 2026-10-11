@@ -39,7 +39,7 @@ export function PersonInsights() {
         value={String(days)}
         onChange={(v) => setDays(Number(v) as Days)}
         options={[
-          { value: '30', label: '30 days' },
+          { value: '30', label: trn(30, '{n} day', '{n} days') },
           { value: '90', label: tr('A quarter') },
           { value: '365', label: tr('A year') },
         ]}

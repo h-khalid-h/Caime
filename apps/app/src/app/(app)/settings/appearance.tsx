@@ -1,14 +1,34 @@
 import { type BubbleTheme, bubbleThemes } from '@caime/brand/tokens';
 import { msg, tr } from '@caime/core/i18n';
 import Check from 'lucide-react-native/icons/check';
-import { Platform, Switch, View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Character } from '@/brand/Character';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
+import { useRtl } from '@/lib/direction';
 import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
+import { arrowKeyMoves, rovingTabIndex } from '@/ui/arrowKeys';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { Pressable } from '@/ui/Pressable';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
+
+const BUBBLES = Object.keys(bubbleThemes) as BubbleTheme[];
+const STYLES = [
+  {
+    value: 'playful',
+    label: msg('Playful'),
+    detail: msg('Characters, stickers, softer shapes'),
+    character: 'momo',
+  },
+  {
+    value: 'minimal',
+    label: msg('Minimal'),
+    detail: msg('Quieter, crisper, fewer flourishes'),
+    character: 'panda',
+  },
+] as const;
 
 /** The bubble themes' names (brand tokens), here so the catalog knows them. */
 const BUBBLE_NAME: Record<string, string> = {
@@ -68,6 +88,7 @@ function Preview() {
 
 export default function Appearance() {
   const t = useTheme();
+  const rtl = useRtl();
   const prefs = usePrefs();
   const enterDefault = Platform.OS === 'web';
   return (
@@ -85,8 +106,14 @@ export default function Appearance() {
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, padding: 16 }}
           accessibilityRole="radiogroup"
           accessibilityLabel={tr('Bubble colour')}
+          // A colour is its own kind of choice (a swatch, not a chip): still one group, one stop
+          // for the keyboard, the arrows walking the swatches (R77).
+          {...arrowKeyMoves({
+            rtl,
+            choose: (i) => BUBBLES[i] && savePrefs({ bubbleTheme: BUBBLES[i] }),
+          })}
         >
-          {(Object.keys(bubbleThemes) as BubbleTheme[]).map((key) => {
+          {BUBBLES.map((key, i) => {
             const b = bubbleThemes[key][t.scheme];
             const selected = prefs.bubbleTheme === key;
             return (
@@ -95,8 +122,10 @@ export default function Appearance() {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
                 accessibilityLabel={bubbleName(bubbleThemes[key].label)}
+                tabIndex={rovingTabIndex(selected, i === 0, true)}
                 onPress={() => savePrefs({ bubbleTheme: key })}
                 haptic
+                testID={`bubble-${key}`}
                 style={{ alignItems: 'center', gap: 6, width: 72 }}
               >
                 <View
@@ -125,8 +154,8 @@ export default function Appearance() {
           })}
         </View>
       </Group>
-      <Group title={tr('Theme')}>
-        <Choice
+      <Group>
+        <ChoiceSheet
           label={tr('Theme')}
           value={prefs.theme}
           onChange={(theme) => savePrefs({ theme })}
@@ -139,38 +168,34 @@ export default function Appearance() {
             { value: 'light', label: tr('Light') },
             { value: 'dark', label: tr('Dark') },
           ]}
+          testID="theme"
         />
       </Group>
       <Group
         title={tr('Style')}
         footer={tr('The same Caime either way. Minimal keeps the characters for special moments.')}
       >
-        <View style={{ flexDirection: 'row', gap: 12, padding: 16 }}>
-          {(
-            [
-              {
-                value: 'playful',
-                label: tr('Playful'),
-                detail: tr('Characters, stickers, softer shapes'),
-                character: 'momo',
-              },
-              {
-                value: 'minimal',
-                label: tr('Minimal'),
-                detail: tr('Quieter, crisper, fewer flourishes'),
-                character: 'panda',
-              },
-            ] as const
-          ).map((o) => {
+        <View
+          style={{ flexDirection: 'row', gap: 12, padding: 16 }}
+          accessibilityRole="radiogroup"
+          accessibilityLabel={tr('Style')}
+          {...arrowKeyMoves({
+            rtl,
+            choose: (i) => STYLES[i] && savePrefs({ personality: STYLES[i].value }),
+          })}
+        >
+          {STYLES.map((o, i) => {
             const selected = prefs.personality === o.value;
             return (
               <Pressable
                 key={o.value}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
-                accessibilityLabel={`${o.label}, ${o.detail}`}
+                accessibilityLabel={`${tr(o.label)}, ${tr(o.detail)}`}
+                tabIndex={rovingTabIndex(selected, i === 0, true)}
                 onPress={() => savePrefs({ personality: o.value })}
                 haptic
+                testID={`style-${o.value}`}
                 style={{
                   flex: 1,
                   alignItems: 'center',
@@ -187,9 +212,9 @@ export default function Appearance() {
                   expression={o.value === 'playful' ? 'excited' : 'happy'}
                   size={64}
                 />
-                <Text variant="label">{o.label}</Text>
+                <Text variant="label">{tr(o.label)}</Text>
                 <Text variant="caption" color="textSecondary" align="center">
-                  {o.detail}
+                  {tr(o.detail)}
                 </Text>
               </Pressable>
             );
@@ -197,43 +222,23 @@ export default function Appearance() {
         </View>
       </Group>
       <Group title={tr('Behaviour')}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('Enter sends the message')}</Text>
-            <Text variant="caption" color="textSecondary">
-              {tr('Shift + Enter for a new line')}
-            </Text>
-          </View>
-          <Switch
-            value={prefs.enterToSend ?? enterDefault}
-            onValueChange={(v) => savePrefs({ enterToSend: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Enter sends the message')}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            padding: 16,
-            borderTopWidth: 1,
-            borderTopColor: t.c.border,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('Reduce motion')}</Text>
-            <Text variant="caption" color="textSecondary">
-              {tr('Fewer animations and no shimmer')}
-            </Text>
-          </View>
-          <Switch
-            value={prefs.reduceMotion}
-            onValueChange={(v) => savePrefs({ reduceMotion: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Reduce motion')}
-          />
-        </View>
+        <SwitchRow
+          inset
+          label={tr('Enter sends the message')}
+          detail={tr('Shift + Enter for a new line')}
+          value={prefs.enterToSend ?? enterDefault}
+          onChange={(v) => savePrefs({ enterToSend: v })}
+          testID="enter-sends"
+        />
+        <SwitchRow
+          inset
+          divider
+          label={tr('Reduce motion')}
+          detail={tr('Fewer animations and no shimmer')}
+          value={prefs.reduceMotion}
+          onChange={(v) => savePrefs({ reduceMotion: v })}
+          testID="reduce-motion"
+        />
       </Group>
     </SettingsPage>
   );

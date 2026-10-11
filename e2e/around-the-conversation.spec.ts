@@ -77,7 +77,7 @@ test.describe
       await expect(visible(page, 'Colleague · DATA C')).toBeVisible();
       await expect(visible(page, 'Added “Colleague · DATA C”')).toBeVisible();
       await page.getByRole('button', { name: 'Change', exact: true }).click();
-      await page.getByRole('button', { name: 'Manager', exact: true }).click();
+      await page.getByRole('radio', { name: 'Manager', exact: true }).click();
       await page.getByTestId('relationship-save').click();
       await expect(visible(page, '“Colleague · DATA C” became “Manager · DATA C”')).toBeVisible();
       await expect(visible(page, 'Manager · DATA C')).toBeVisible();
@@ -478,7 +478,7 @@ test.describe
       await page.getByLabel('Title').fill('Venue walkthrough');
       await page.getByLabel('When', { exact: true }).fill('Friday 3pm');
       await expect(visible(page, /^Fri, .*3:00/)).toBeVisible();
-      await page.getByRole('button', { name: '45 min', exact: true }).click();
+      await page.getByRole('radio', { name: '45 min', exact: true }).click();
       await page.getByLabel('Where (optional)').fill('Cairo Opera House');
       await page.getByTestId('kit-send').click();
 
@@ -547,6 +547,23 @@ test.describe
       await page.goto('/search');
       await expect(page.getByTestId('guide-character').filter({ visible: true })).toBeVisible();
       await page.goto('/settings/appearance');
+      // A group of choices is one stop for the keyboard (R77): the arrows walk it and choose,
+      // Home and End go to the ends, and the one chosen is where Tab lands.
+      const plum = page.getByTestId('bubble-plum').filter({ visible: true });
+      await plum.focus();
+      await expect(plum).toBeChecked();
+      await page.keyboard.press('ArrowRight');
+      await expect(page.getByTestId('bubble-pink').filter({ visible: true })).toBeChecked();
+      await expect(page.getByTestId('bubble-pink').filter({ visible: true })).toBeFocused();
+      await page.keyboard.press('End');
+      await expect(page.getByTestId('bubble-sunshine').filter({ visible: true })).toBeChecked();
+      await page.keyboard.press('Home');
+      await expect(plum).toBeChecked();
+      await expect(plum).toHaveAttribute('tabindex', '0');
+      await expect(page.getByTestId('bubble-pink').filter({ visible: true })).toHaveAttribute(
+        'tabindex',
+        '-1',
+      );
       await page.getByRole('radio', { name: /^Minimal,/ }).click();
       // The account has it shortly after (savePrefs debounces), and a reload reads it back.
       await expect
@@ -941,7 +958,7 @@ test.describe
       // In the sheet: the People pane beside it names spheres and Alex's label too.
       const sheet = page.getByRole('dialog');
       await sheet.getByRole('radio', { name: 'Work', exact: true }).click();
-      await sheet.getByRole('button', { name: 'Colleague', exact: true }).click();
+      await sheet.getByRole('radio', { name: 'Colleague', exact: true }).click();
       await sheet.getByPlaceholder('Company, school or organization').fill('DATA C');
       await sheet.getByTestId('relationship-save').click();
       await expect(sheet.getByText('Colleague · DATA C')).toBeVisible();
@@ -1167,9 +1184,9 @@ test.describe
       );
       // Pro can be bought here, at Stripe's price for it.
       await expect(page.getByTestId('billing-price')).toHaveText('€6 a month');
-      await page.getByRole('tab', { name: 'Yearly' }).click();
+      await page.getByRole('radio', { name: 'Yearly' }).click();
       await expect(page.getByTestId('billing-price')).toHaveText('€60 a year');
-      await page.getByRole('tab', { name: 'Monthly' }).click();
+      await page.getByRole('radio', { name: 'Monthly' }).click();
       await page.screenshot({ path: 'e2e/screenshots/desktop-plan.png' });
 
       // Nile Dental is on Free: its one app is connected, and its team has room for one more.
@@ -1613,6 +1630,8 @@ test.describe
       const saved = page.waitForResponse(
         (r) => r.url().endsWith('/v1/me') && r.request().method() === 'PATCH',
       );
+      // The theme is one row that opens its choice (R77).
+      await page.getByTestId('theme').filter({ visible: true }).click();
       await page.getByRole('radio', { name: 'Dark', exact: true }).click();
       await expect.poll(scheme).toBe('dark');
       expect((await saved).ok()).toBe(true);
@@ -2177,7 +2196,7 @@ test.describe
       await page.getByTestId('token-new').click();
       await page.getByTestId('token-name').fill('Reminders script');
       await page.getByTestId('token-scope-messages:write').click();
-      await page.getByRole('tab', { name: '30 days' }).click();
+      await page.getByRole('radio', { name: '30 days' }).click();
       await page.getByTestId('token-create').click();
       const token = ((await page.getByTestId('token-value').textContent()) ?? '').trim();
       expect(token).toMatch(/^cap_[\w-]{32}$/);
@@ -2518,7 +2537,7 @@ test.describe
       await page.getByTestId('kit-option-location').click();
       await page.getByTestId('location-here').click();
       await expect(page.getByTestId('location-found')).toHaveText('Found you, within 15 m.');
-      await page.getByRole('tab', { name: '15 min' }).click();
+      await page.getByRole('radio', { name: '15 min' }).click();
       await page.getByTestId('kit-send').click();
 
       // Noor sees she's sharing for as long as she is, with a way to stop.

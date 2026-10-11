@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countryMatches, flagOf, folded, wordsMatch } from './find';
+import { countryMatches, flagOf, folded, wordsMatch } from '@/lib/find';
 
 const eg = { code: 'EG', name: 'Egypt' };
 const uk = { code: 'GB', name: 'United Kingdom' };

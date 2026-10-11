@@ -1,4 +1,3 @@
-import { controlHeight } from '@caime/brand/tokens';
 import { tr } from '@caime/core/i18n';
 import Eye from 'lucide-react-native/icons/eye';
 import EyeOff from 'lucide-react-native/icons/eye-off';
@@ -8,6 +7,7 @@ import { useRtl } from '@/lib/direction';
 import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import type { IconComponent } from './Button';
+import { fieldBox } from './FieldShell';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 
@@ -33,7 +33,6 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const rtl = useRtl();
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(false);
-  const border = error ? t.c.danger : focused ? t.c.focus : t.c.border;
   const body = t.type.body;
   return (
     <View style={[{ gap: 6 }, style]}>
@@ -42,19 +41,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           {label}
         </Text>
       ) : null}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          minHeight: controlHeight.field,
-          borderRadius: t.radii.md,
-          borderWidth: focused || error ? 2 : 1,
-          borderColor: border,
-          backgroundColor: t.c.surface,
-          paddingHorizontal: focused || error ? 13 : 14,
-          gap: 10,
-        }}
-      >
+      <View style={fieldBox(t, { focused, error: Boolean(error) })}>
         {Icon ? <Icon size={18} color={t.c.textTertiary} /> : null}
         <TextInput
           ref={ref}

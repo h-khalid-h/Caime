@@ -10,7 +10,6 @@ import { savePrefs } from '@/features/settings/savePrefs';
 import { NavRail } from '@/features/shell/NavRail';
 import { BusinessInbox, PeopleList, SettingsMenu, SpacesList } from '@/features/shell/panes';
 import { useInboxHandle, useSection } from '@/features/shell/sections';
-import { KeyboardShortcuts } from '@/features/shell/shortcuts';
 import { TabBar } from '@/features/shell/TabBar';
 import { useLanguage } from '@/lib/languageState';
 import { takeLink } from '@/state/pendingLink';
@@ -145,6 +144,10 @@ function DesktopShell() {
 }
 
 /** The report sheet, loaded the first time something's reported, then kept for the next. */
+// The shortcuts (listeners and their sheet) load right after the first screen, never with it.
+const KeyboardShortcuts = lazyPart(() =>
+  import('@/features/shell/shortcuts').then((m) => m.KeyboardShortcuts),
+);
 const LazyReportSheet = lazyPart(() =>
   import('@/features/safety/ReportSheet').then((m) => m.ReportSheet),
 );

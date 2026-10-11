@@ -6,22 +6,20 @@
  */
 import { COLLECTION_MAX, collectionName } from '@caime/core/automations';
 import { tr } from '@caime/core/i18n';
-import Check from 'lucide-react-native/icons/check';
 import Folder from 'lucide-react-native/icons/folder';
 import Plus from 'lucide-react-native/icons/plus';
-import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { wordsMatch } from '@/features/geo/find';
+import { wordsMatch } from '@/lib/find';
 import { useTheme } from '@/theme/theme';
-import { Pressable } from '@/ui/Pressable';
+import { ChoiceList } from '@/ui/ChoiceList';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 
 /** How many are offered before the rest are found by name. */
 const SHOWN = 6;
-
-type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+/** The choice that makes a new one; a collection's own choice is `in:` and its name. */
+const NEW = 'new';
 
 export function CollectionPicker({
   value,
@@ -60,48 +58,6 @@ export function CollectionPicker({
     text.trim() ? (theirs(collectionName(text)) ?? collectionName(text)) : null;
   const had = fresh.trim() ? theirs(collectionName(fresh)) : undefined;
 
-  const row = (o: {
-    key: string;
-    icon: Icon;
-    title: string;
-    detail?: string;
-    selected: boolean;
-    onPress: () => void;
-    first: boolean;
-    testID?: string;
-  }) => (
-    <Pressable
-      key={o.key}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: o.selected }}
-      accessibilityLabel={o.detail ? `${o.title}, ${o.detail}` : o.title}
-      onPress={o.onPress}
-      haptic
-      testID={o.testID}
-      style={({ hovered }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        paddingHorizontal: 14,
-        minHeight: 56,
-        borderTopWidth: o.first ? 0 : 1,
-        borderTopColor: t.c.border,
-        backgroundColor: o.selected ? t.c.accentSoft : hovered ? t.c.surfaceHover : 'transparent',
-      })}
-    >
-      <o.icon size={20} color={o.selected ? t.c.accentStrong : t.c.textSecondary} />
-      <View style={{ flex: 1, gap: 2, paddingVertical: 8 }}>
-        <Text variant="bodyStrong">{o.title}</Text>
-        {o.detail ? (
-          <Text variant="caption" color="textSecondary">
-            {o.detail}
-          </Text>
-        ) : null}
-      </View>
-      {o.selected ? <Check size={20} color={t.c.accentStrong} strokeWidth={2.6} /> : null}
-    </Pressable>
-  );
-
   return (
     <View style={{ gap: 10 }} testID={testID}>
       {finding ? (
@@ -115,8 +71,6 @@ export function CollectionPicker({
         />
       ) : null}
       <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel={label}
         style={{
           borderWidth: 1,
           borderColor: t.c.border,
@@ -141,37 +95,36 @@ export function CollectionPicker({
               testID={`${testID}-name`}
             />
           </View>
-        ) : (
-          row({
-            key: 'new',
-            icon: Plus,
-            title: tr('New collection'),
-            selected: false,
-            first: true,
-            testID: `${testID}-new`,
-            onPress: () => {
+        ) : null}
+        <ChoiceList<string>
+          label={label}
+          value={creating || !value ? null : `in:${value}`}
+          onChange={(key) => {
+            if (key === NEW) {
               // Named as it was looked for, if it was.
               setFresh(typed);
               setMaking(true);
               onChange(named(typed));
-            },
-          })
-        )}
-        {shown.map((n) => {
-          const count = collections.find((c) => c.name === n)?.count ?? 0;
-          return row({
-            key: n,
-            icon: Folder,
-            title: n,
-            ...(count ? { detail: tr('{count} saved', { count }) } : {}),
-            selected: !creating && value === n,
-            first: false,
-            onPress: () => {
-              setMaking(false);
-              onChange(n);
-            },
-          });
-        })}
+              return;
+            }
+            setMaking(false);
+            onChange(key.slice(3));
+          }}
+          options={[
+            ...(creating
+              ? []
+              : [{ value: NEW, label: tr('New collection'), icon: Plus, testID: `${testID}-new` }]),
+            ...shown.map((n) => {
+              const count = collections.find((c) => c.name === n)?.count ?? 0;
+              return {
+                value: `in:${n}`,
+                label: n,
+                icon: Folder,
+                ...(count ? { detail: tr('{count} saved', { count }) } : {}),
+              };
+            }),
+          ]}
+        />
       </View>
       {finding && !typed ? (
         <Text variant="caption" color="textSecondary">

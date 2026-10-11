@@ -1,18 +1,20 @@
 /**
  * A day, on a phone: the phone's own date picker. On Android its calendar (opening on the year
  * for a birthday, so decades go by in one tap); on iOS its wheels for a birthday or its calendar
- * otherwise, in a sheet with Done. Shown in the field as the person's language writes dates.
+ * otherwise, in a sheet with Done. Shown in the field as the person's language writes dates, on
+ * the one field shell.
  */
 
 import { tr } from '@caime/core/i18n';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import Calendar from 'lucide-react-native/icons/calendar';
 import { useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import { useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
 import { type DateFieldProps, dateOf, dayOf, formatDay } from './dates';
+import { FieldShell, fieldBox } from './FieldShell';
 import { Pressable } from './Pressable';
 import { Sheet } from './Sheet';
 import { Text } from './Text';
@@ -62,46 +64,22 @@ export function DateField({
     setDraft(start());
     setOpen(true);
   };
-  const ring = Boolean(error);
   return (
-    <View style={{ gap: 6 }}>
-      <Text variant="captionStrong" color="textSecondary">
-        {label}
-      </Text>
+    <FieldShell label={label} hint={hint} error={error}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${shown ?? 'not chosen'}`}
         accessibilityHint={tr('Opens a date picker')}
         onPress={choose}
         testID={testID}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-          minHeight: 48,
-          maxWidth: 280,
-          borderRadius: t.radii.md,
-          borderWidth: ring ? 2 : 1,
-          borderColor: error ? t.c.danger : t.c.border,
-          backgroundColor: t.c.surface,
-          paddingHorizontal: ring ? 13 : 14,
-        }}
+        focusRadius={t.radii.md}
+        style={[fieldBox(t, { error: Boolean(error) }), { maxWidth: 280 }]}
       >
-        <Text variant="body" color={shown ? 'text' : 'textTertiary'}>
+        <Text variant="body" color={shown ? 'text' : 'textTertiary'} style={{ flex: 1 }}>
           {shown ?? placeholder}
         </Text>
         <Calendar size={18} color={t.c.textSecondary} />
       </Pressable>
-      {error ? (
-        <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
-          {error}
-        </Text>
-      ) : hint ? (
-        <Text variant="caption" color="textTertiary">
-          {hint}
-        </Text>
-      ) : null}
       {Platform.OS === 'ios' ? (
         <Sheet
           open={open}
@@ -135,6 +113,6 @@ export function DateField({
           />
         </Sheet>
       ) : null}
-    </View>
+    </FieldShell>
   );
 }

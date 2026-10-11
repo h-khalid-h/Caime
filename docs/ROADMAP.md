@@ -1327,7 +1327,17 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
       at sign-up; a country change offers the country's main zone; a free item's structured data
       names the seller's currency. Not done: reading a local phone number by the calling code,
       plan prices in more than one currency, a date picker's first day on the web (the browser's).
-- [ ] R77, consistent pickers (PRODUCT-REVIEW R77).
+- [x] R77, consistent pickers (PRODUCT-REVIEW R77): one family in `ui/` (`ChoiceChips` with
+      `multiple`, `count`, `trailing` and `onClear`; `ChoiceList`; `ChoiceSheet`; `SpherePicker`;
+      `DayPicker` on it; `PickerField` + `SearchSheet`; `FieldShell` under every field, the web's
+      date and time inputs in the account's `lang`; `Stepper`; `SwitchRow`; a checked `ListRow`'s
+      own mark), every picker moved onto it (six chip-rows, four radio-row looks, five panels of
+      radios, five `Segmented` form values, eleven switches, the five hand-drawn field shells,
+      three sphere pickers, the people picker found by name, a catalogue above eight found by
+      name, the slot picker's memo), per-option test ids, arrow keys and one tab stop in every
+      group, `pickers.test.ts` failing on a screen's own, the E2E on the rows that now open their
+      choice. Not done: `CurrencyField` keeps its chip trigger beside the amount (it already
+      opens the finding sheet); `Segmented` for an insights period stays a tablist (a view).
 - [ ] Docs drift (BRAND.md friends, type rows, radii, five places; CLAUDE.md's page sizes, axe
       languages, auth kicker, setup list; `previewUrl` in `API_ROUTES` and API.md).
 
@@ -2527,3 +2537,10 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   organization gets its own zone and days worked; amounts, booking hours, the hours line, the
   day picker, the formatting locale, the agent's and Cai's prompts, the brief, the pay presets,
   sign-up's region hint and the zone offer all read the country.
+- 2026-10-11 — R77, consistent pickers: the family in `ui/` (`FieldShell`, `ChoiceChips`,
+  `ChoiceList`, `ChoiceSheet`, `SpherePicker`, `Stepper`, `SwitchRow`, arrow keys and a roving
+  tab index), ~40 screens moved onto it, `pickers.test.ts`; the E2E server's warnings piped into
+  the run's output. The family in the startup chunk cost 4.4 KB gzip, won back by loading apart
+  what the first screen never needs (the You sheet's body, the shortcuts, the live events'
+  applier, the organization details editor); the next budget work is M28's split of `api/hooks.ts`
+  and `api/endpoints.ts` (15.9 and 13.9 KB raw in the startup chunk, most of it for later screens).

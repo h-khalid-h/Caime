@@ -29,7 +29,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { ListRow } from '@/ui/ListRow';
@@ -181,31 +181,26 @@ export default function Saved() {
         )}
       </Text>
       {list.length ? (
-        <View
-          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-          accessibilityRole="radiogroup"
-          accessibilityLabel={tr('Collections')}
-        >
-          <Chip
-            label={tr('Everything')}
-            selected={chosen === undefined}
-            onPress={() => setChosen(undefined)}
-            testID="saved-all"
-          />
-          {list.map((c) => (
-            <Chip
-              key={c.name}
-              label={`${c.name} · ${c.count}`}
-              icon={c.automations ? Zap : Bookmark}
-              selected={chosen === c.name}
-              onPress={() => {
-                setChosen(c.name);
-                setEmptying(false);
-              }}
-              testID="saved-collection"
-            />
-          ))}
-        </View>
+        <ChoiceChips
+          wrap
+          flush
+          label={tr('Collections')}
+          value={chosen === undefined ? 'all' : `in:${chosen}`}
+          onChange={(v) => {
+            setChosen(v === 'all' ? undefined : v.slice(3));
+            setEmptying(false);
+          }}
+          options={[
+            { value: 'all', label: tr('Everything'), testID: 'saved-all' },
+            ...list.map((c) => ({
+              value: `in:${c.name}`,
+              label: c.name,
+              count: c.count,
+              icon: c.automations ? Zap : Bookmark,
+              testID: 'saved-collection',
+            })),
+          ]}
+        />
       ) : null}
       {items.isError ? (
         <Text variant="body" color="danger">

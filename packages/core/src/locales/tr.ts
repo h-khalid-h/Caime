@@ -367,7 +367,6 @@ export const turkish: Catalog = {
   'Work waits until it ends': 'İş, bitene kadar bekler',
   'In a meeting or appointment agreed in Caime, messages from work, customers, vendors and professionals are held until it ends. Family, friends and calls come through.':
     'Caime’de kararlaştırılan bir toplantı veya randevu sırasında iş, müşteri, tedarikçi ve uzmanlardan gelen mesajlar bitene kadar bekletilir. Aile, arkadaşlar ve aramalar ulaşır.',
-  'Work waits until the meeting ends': 'İş, toplantı bitene kadar bekler',
   'Your work week': 'Çalışma haftanız',
   'Work notifications wait for these days. Set from where you live (Language and region); change them if yours are different.':
     'İş bildirimleri bu günleri bekler. Yaşadığınız yere göre ayarlanır (Dil ve bölge); sizinki farklıysa değiştirin.',
@@ -417,17 +416,14 @@ export const turkish: Catalog = {
   'By your name or @handle': 'Adınız veya @kullanıcıadınızla',
   'People can search for {displayName} or @{handle}, and your public page (what you show to everyone) is on the web':
     'İnsanlar {displayName} veya @{handle} araması yapabilir ve herkese açık sayfanız (herkese gösterdikleriniz) web’dedir',
-  'Findable by name or handle': 'Ad veya kullanıcı adıyla bulunabilir',
   'By your email': 'E-postanızla',
   'Always off under 18': '18 yaş altında her zaman kapalı',
   'Someone who knows your email can find you': 'E-postanızı bilen biri sizi bulabilir',
-  'Findable by email': 'E-postayla bulunabilir',
   'Message requests': 'Mesaj istekleri',
   'Messages from people you’re not connected with wait in Requests. Under 18, only people you share a connection with can send one.':
     'Bağlı olmadığınız kişilerin mesajları İstekler’de bekler. 18 yaş altında yalnızca ortak bir bağlantınız olan kişiler gönderebilir.',
   'Messages from people you’re not connected with wait in Requests. They never interrupt you.':
     'Bağlı olmadığınız kişilerin mesajları İstekler’de bekler. Sizi asla rahatsız etmezler.',
-  'Who can send you a message request': 'Size kim mesaj isteği gönderebilir',
   Anyone: 'Herkes',
   'People you share a connection with': 'Ortak bir bağlantınız olan kişiler',
   Nobody: 'Hiç kimse',
@@ -444,6 +440,7 @@ export const turkish: Catalog = {
   'In a meeting': 'Toplantıda',
   'On my way': 'Yoldayım',
   'Working from home': 'Evden çalışıyorum',
+  Focusing: 'Odaklanıyorum',
   'Off sick': 'Hasta iznindeyim',
   'On holiday': 'Tatildeyim',
   'Status set': 'Durum ayarlandı',
@@ -1769,7 +1766,6 @@ export const turkish: Catalog = {
   'How you know them': 'Onu nereden tanıdığınız',
   'Optional. {name} never sees your label.': 'İsteğe bağlı. {name} etiketinizi asla görmez.',
   'Show {name} the context': '{name} kişisine bağlamı göster',
-  'Show the context': 'Bağlamı göster',
   'Add a note (optional)': 'Not ekle (isteğe bağlı)',
   'Hi {name}, it’s…': 'Merhaba {name}, ben…',
   '{name} can accept, decline or ignore. Declining is silent.':
@@ -3539,4 +3535,20 @@ export const turkish: Catalog = {
   'Common where you are': 'Bulunduğunuz yerde yaygın',
   'Its time zone': 'Saat dilimi',
   'Days worked': 'Çalışılan günler',
+  'she/her': 'o (dişil)',
+  'he/him': 'o (eril)',
+  'they/them': 'o (nötr)',
+  'Places you know people': 'İnsan tanıdığınız yerler',
+  'How to rewrite it': 'Nasıl yeniden yazılsın',
+  'Which of them': 'Hangileri',
+  Kind: 'Tür',
+  'How long': 'Süre',
+  'How it’s had': 'Nasıl teslim edilir',
+  'Choose one': 'Birini seçin',
+  'Opens the list of items': 'Öğe listesini açar',
+  'Search items': 'Öğe ara',
+  'No item by that name.': 'Bu adda öğe yok.',
+  'Find by name or handle': 'Ad veya kullanıcı adıyla bul',
+  'Nobody by that name.': 'Bu adda kimse yok.',
+  'Who’s in it': 'Kimler var',
 };

@@ -30,7 +30,7 @@ import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
-import { Chip, RelationshipChip } from '@/ui/Chip';
+import { ChoiceChips, RelationshipChip } from '@/ui/Chip';
 import { Back, Leave } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
@@ -433,18 +433,18 @@ export function SpaceScreen({ id }: { id: string }) {
           autoFocus
           testID="space-conversation-title"
         />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Chip
-            label={tr('Everyone in the space')}
-            selected={everyone}
-            onPress={() => setEveryone(true)}
-          />
-          <Chip
-            label={tr('Just me, until others join')}
-            selected={!everyone}
-            onPress={() => setEveryone(false)}
-          />
-        </View>
+        <ChoiceChips
+          wrap
+          flush
+          label={tr('Who’s in it')}
+          value={everyone ? 'everyone' : 'me'}
+          onChange={(v) => setEveryone(v === 'everyone')}
+          options={[
+            { value: 'everyone', label: tr('Everyone in the space') },
+            { value: 'me', label: tr('Just me, until others join') },
+          ]}
+          testID="space-conversation-who"
+        />
       </Sheet>
 
       <Sheet
@@ -600,17 +600,19 @@ export function SpaceScreen({ id }: { id: string }) {
               maxLength={80}
               testID="space-settings-name"
             />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {SPACE_KINDS.map((k) => (
-                <Chip
-                  key={k}
-                  label={tr(SPACE_KIND_DEFS[k].label)}
-                  icon={SPACE_ICONS[k]}
-                  selected={draft.kind === k}
-                  onPress={() => setDraft({ ...draft, kind: k })}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('What kind of space')}
+              value={draft.kind}
+              onChange={(k) => setDraft({ ...draft, kind: k })}
+              options={SPACE_KINDS.map((k) => ({
+                value: k,
+                label: tr(SPACE_KIND_DEFS[k].label),
+                icon: SPACE_ICONS[k],
+              }))}
+              testID="space-settings-kind"
+            />
             <TextField
               label={tr('What it’s for (optional)')}
               value={draft.purpose}

@@ -5,23 +5,23 @@ import {
   primarySpheres,
   rolesForPicker,
   SPHERE_DEFS,
-  type Sphere,
   secondarySpheres,
 } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import Lock from 'lucide-react-native/icons/lock';
 import { useEffect, useRef, useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useTaxonomy } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { wordsMatch } from '@/features/geo/find';
+import { wordsMatch } from '@/lib/find';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
-import { sphereIcon } from '@/ui/SphereIcon';
+import { SpherePicker } from '@/ui/SpherePicker';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -65,48 +65,10 @@ export function RelationshipForm({
     ? [had, ...organizations.filter((o) => o !== had)].slice(0, PLACES)
     : organizations.filter((o) => !where || wordsMatch([o.name], where)).slice(0, PLACES);
 
-  const tile = (s: Sphere) => {
-    const st = t.sphere(s);
-    const Icon = sphereIcon(st.icon);
-    const selected = value.sphere === s;
-    return (
-      <Pressable
-        key={s}
-        accessibilityRole="radio"
-        accessibilityState={{ checked: selected }}
-        accessibilityLabel={tr(SPHERE_DEFS[s].label)}
-        onPress={() => {
-          setMoreRoles(false);
-          set({ sphere: s, role: null, roleLabel: '' });
-        }}
-        haptic
-        focusRadius={14}
-        style={({ hovered }) => ({
-          width: '31.5%',
-          minHeight: 46,
-          paddingHorizontal: 10,
-          borderRadius: t.radii.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          backgroundColor: selected ? st.fill : hovered ? t.c.surfaceHover : t.c.surfaceMuted,
-          borderWidth: 2,
-          borderColor: selected ? st.strong : 'transparent',
-        })}
-      >
-        <Icon size={18} color={st.strong} strokeWidth={2.2} />
-        <Text
-          variant="captionStrong"
-          color={selected ? st.strong : 'text'}
-          numberOfLines={1}
-          style={{ flexShrink: 1 }}
-        >
-          {tr(SPHERE_DEFS[s].label)}
-        </Text>
-      </Pressable>
-    );
-  };
-
+  const spheres = [
+    ...primarySpheres().map((d) => d.id),
+    ...(more ? secondarySpheres().map((d) => d.id) : []),
+  ];
   return (
     <View style={{ gap: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -117,13 +79,19 @@ export function RelationshipForm({
           })}
         </Text>
       </View>
-      <View
-        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-        accessibilityRole="radiogroup"
-      >
-        {primarySpheres().map((d) => tile(d.id))}
-        {more ? secondarySpheres().map((d) => tile(d.id)) : null}
-      </View>
+      <SpherePicker
+        wrap
+        flush
+        tinted
+        label={tr('How you know {name}', { name })}
+        value={value.sphere}
+        onChange={(s) => {
+          setMoreRoles(false);
+          set({ sphere: s, role: null, roleLabel: '' });
+        }}
+        spheres={spheres}
+        testID="sphere"
+      />
       {!more ? (
         <Pressable
           accessibilityRole="button"
@@ -138,27 +106,36 @@ export function RelationshipForm({
       {def ? (
         <View style={{ gap: 10 }}>
           <Text variant="label">{fillName(def.roleQuestion, name)}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[...roles.quick, ...(moreRoles ? roles.more : [])].map((r) => (
-              <Chip
-                key={r.id}
-                label={tr(r.label)}
-                selected={value.role === r.id && !value.roleLabel}
-                onPress={() => set({ role: value.role === r.id ? null : r.id, roleLabel: '' })}
-              />
-            ))}
-            {custom.map((c) => (
-              <Chip
-                key={c.id}
-                label={c.label}
-                selected={value.roleLabel === c.label}
-                onPress={() => set({ roleLabel: value.roleLabel === c.label ? '' : c.label })}
-              />
-            ))}
-            {!moreRoles && roles.more.length ? (
-              <Chip label={tr('More…')} onPress={() => setMoreRoles(true)} />
-            ) : null}
-          </View>
+          <ChoiceChips
+            wrap
+            flush
+            label={fillName(def.roleQuestion, name)}
+            value={
+              value.roleLabel
+                ? custom.some((c) => c.label === value.roleLabel)
+                  ? `own:${value.roleLabel}`
+                  : null
+                : value.role
+            }
+            onChange={(v) =>
+              v.startsWith('own:')
+                ? set({ roleLabel: v.slice(4) })
+                : set({ role: v, roleLabel: '' })
+            }
+            options={[
+              ...[...roles.quick, ...(moreRoles ? roles.more : [])].map((r) => ({
+                value: r.id,
+                label: tr(r.label),
+              })),
+              ...custom.map((c) => ({ value: `own:${c.label}`, label: c.label })),
+            ]}
+            trailing={
+              !moreRoles && roles.more.length ? (
+                <Chip label={tr('More…')} onPress={() => setMoreRoles(true)} />
+              ) : null
+            }
+            testID="role"
+          />
           <TextField
             placeholder={tr('Or in your own words')}
             value={value.roleLabel}
@@ -176,43 +153,36 @@ export function RelationshipForm({
                 maxLength={120}
               />
               {places.length ? (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {places.map((o) => (
-                    <Chip
-                      key={o.name}
-                      label={o.name}
-                      selected={o === had}
-                      accessibilityLabel={
-                        o.people
-                          ? tr('{name}, where you know {person}', {
-                              name: o.name,
-                              person: trn(o.people, '{n} person', '{n} people'),
-                            })
-                          : o.name
-                      }
-                      onPress={() => set({ orgName: o === had ? '' : o.name })}
-                    />
-                  ))}
-                </View>
+                <ChoiceChips
+                  wrap
+                  flush
+                  label={tr('Places you know people')}
+                  value={had?.name ?? null}
+                  onChange={(orgName) => set({ orgName })}
+                  options={places.map((o) => ({
+                    value: o.name,
+                    label: o.name,
+                    accessibilityLabel: o.people
+                      ? tr('{name}, where you know {person}', {
+                          name: o.name,
+                          person: trn(o.people, '{n} person', '{n} people'),
+                        })
+                      : o.name,
+                  }))}
+                  testID="place"
+                />
               ) : null}
             </>
           ) : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 2 }}>
-            <View style={{ flex: 1 }}>
-              <Text variant="bodyStrong">{tr('Share with {name}', { name })}</Text>
-              <Text variant="caption" color="textSecondary">
-                {tr('If {name} shares too, each of you sees how the other described you.', {
-                  name,
-                })}
-              </Text>
-            </View>
-            <Switch
-              value={value.shared}
-              onValueChange={(shared) => set({ shared })}
-              accessibilityLabel={tr('Share with {name}', { name })}
-              trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            />
-          </View>
+          <SwitchRow
+            label={tr('Share with {name}', { name })}
+            detail={tr('If {name} shares too, each of you sees how the other described you.', {
+              name,
+            })}
+            value={value.shared}
+            onChange={(shared) => set({ shared })}
+            testID="share-label"
+          />
         </View>
       ) : null}
     </View>

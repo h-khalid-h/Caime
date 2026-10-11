@@ -60,7 +60,6 @@ import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 import { OrgMark, VerifiedLine } from './kinds';
-import { OrgDetailsSheet } from './OrgDetails';
 import { OrgInsights } from './OrgInsights';
 import { nextOrgPlanLine } from './planLine';
 import { setupNextLine } from './setupSteps';
@@ -84,6 +83,9 @@ const cardParams = (id: string, kit: CardKit | null, itemId: string | null = nul
     : { id };
 /** The cards a page opens on (R58, R60, R62). */
 type CardKit = 'appointment' | 'order_status' | 'payment_request';
+
+/** The details editor, loaded the first time it's opened: it carries the zone and year fields. */
+const OrgDetailsSheet = lazyPart(() => import('./OrgDetails').then((m) => m.OrgDetailsSheet));
 
 const ItemSheet = lazyPart(() => import('@/features/booking/ItemSheet').then((m) => m.ItemSheet));
 

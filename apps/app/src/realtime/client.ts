@@ -19,7 +19,17 @@ import { useLive } from '@/state/live';
 import { useLiveShares } from '@/state/liveShares';
 import { useOutbox } from '@/state/outbox';
 import { useTaskOutbox } from '@/state/taskOutbox';
-import { applyEvent } from './apply';
+
+/**
+ * What live events do to the cache (`./apply`), loaded as this module runs, so it's never in the
+ * first download (R77's budget) and is here long before the socket's first event.
+ */
+const applier = import('./apply');
+
+/** Just left a conversation: what was waiting to be sent about it is dropped. */
+export function leftConversation(conversationId: string): void {
+  void applier.then((m) => m.leftConversation(conversationId));
+}
 
 const PING_MS = 25_000;
 const STALE_MS = 60_000;
@@ -192,7 +202,11 @@ class RealtimeClient {
           return;
         }
         this.onHello();
-      } else if (frame.type === 'event' && this.me) applyEvent(queryClient, frame.event, this.me);
+      } else if (frame.type === 'event' && this.me) {
+        const me = this.me;
+        // Applied in the order received: each waits on the one applier, then runs at once.
+        void applier.then((m) => m.applyEvent(queryClient, frame.event, me));
+      }
     };
     ws.onclose = () => {
       if (this.ws !== ws) return;

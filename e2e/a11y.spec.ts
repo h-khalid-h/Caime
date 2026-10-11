@@ -110,6 +110,7 @@ test('the signed-in screens, phone and desktop, in every interface language', as
   // since a longer word or a different plural is what a language changes on a screen.
   const inLanguage = async (name: string, dir: 'ltr' | 'rtl', count: number, tag: string) => {
     await page.goto('/settings/region');
+    await page.getByTestId('region-language-choice').click();
     await page.getByRole('radio', { name }).click();
     await expect(page.locator('html')).toHaveAttribute('dir', dir);
     for (const [path, screen] of screens.slice(0, count)) {

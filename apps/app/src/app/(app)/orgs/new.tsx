@@ -15,7 +15,7 @@ import { ORG_ICONS } from '@/features/orgs/kinds';
 import { ReclaimCard } from '@/features/orgs/Reclaim';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
@@ -171,18 +171,19 @@ export default function NewOrganization() {
           <Text variant="captionStrong" color="textSecondary">
             {tr('What kind of organization')}
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {ORG_KINDS.map((k) => (
-              <Chip
-                key={k}
-                label={tr(ORG_KIND_LABELS[k])}
-                icon={ORG_ICONS[k]}
-                selected={kind === k}
-                onPress={() => setKind(k)}
-                testID={`org-kind-${k}`}
-              />
-            ))}
-          </View>
+          <ChoiceChips
+            wrap
+            flush
+            label={tr('What kind of organization')}
+            value={kind}
+            onChange={setKind}
+            options={ORG_KINDS.map((k) => ({
+              value: k,
+              label: tr(ORG_KIND_LABELS[k]),
+              icon: ORG_ICONS[k],
+            }))}
+            testID="org-kind"
+          />
           {errors.kind ? (
             <Text variant="caption" color="danger">
               {errors.kind}

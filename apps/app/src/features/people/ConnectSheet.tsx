@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import Lock from 'lucide-react-native/icons/lock';
 import { useEffect, useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { type FormState, initialForm, toDraft } from '@/features/relationships/form';
@@ -15,6 +15,7 @@ import { RelationshipChip } from '@/ui/Chip';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -135,24 +136,15 @@ export function ConnectSheet({
         />
       </View>
       {draft ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('Show {name} the context', { name })}</Text>
-            <Text variant="caption" color="textSecondary">
-              {tr('They’ll see “{label}”, not your label, so they know who’s asking.', {
-                label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName]
-                  .filter(Boolean)
-                  .join(' · '),
-              })}
-            </Text>
-          </View>
-          <Switch
-            value={shareContext}
-            onValueChange={setShareContext}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Show the context')}
-          />
-        </View>
+        <SwitchRow
+          label={tr('Show {name} the context', { name })}
+          detail={tr('They’ll see “{label}”, not your label, so they know who’s asking.', {
+            label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName].filter(Boolean).join(' · '),
+          })}
+          value={shareContext}
+          onChange={setShareContext}
+          testID="connect-context"
+        />
       ) : null}
       <TextField
         label={tr('Add a note (optional)')}

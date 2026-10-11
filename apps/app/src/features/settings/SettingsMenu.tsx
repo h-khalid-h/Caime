@@ -20,7 +20,7 @@ import UserRound from 'lucide-react-native/icons/user-round';
 import Zap from 'lucide-react-native/icons/zap';
 import { Platform, ScrollView, View } from 'react-native';
 import { useOrgs } from '@/api/hooks';
-import { useShortcutsSheet } from '@/features/shell/shortcuts';
+import { useShortcutsSheet } from '@/features/shell/shortcutsSheet';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';

@@ -1,19 +1,22 @@
 import { msg, tr } from '@caime/core/i18n';
 import type { Audience, PrivacyField } from '@caime/core/privacy';
-import { SPHERE_DEFS, SPHERES, type Sphere } from '@caime/core/taxonomy';
+import { SPHERE_DEFS, type Sphere } from '@caime/core/taxonomy';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useAiStatus } from '@/api/hooks';
 import { qk } from '@/api/keys';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceList } from '@/ui/ChoiceList';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SpherePicker } from '@/ui/SpherePicker';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -104,49 +107,29 @@ export default function Privacy() {
         ))}
       </Group>
       <Group title={tr('Finding you')}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('By your name or @handle')}</Text>
-            <Text variant="caption" color="textSecondary">
-              {tr(
-                'People can search for {displayName} or @{handle}, and your public page (what you show to everyone) is on the web',
-                { displayName: me.displayName, handle: me.handle },
-              )}
-            </Text>
-          </View>
-          <Switch
-            value={me.privacy.discoverByHandle}
-            onValueChange={(v) => void save({ discoverByHandle: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Findable by name or handle')}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            padding: 16,
-            borderTopWidth: 1,
-            borderTopColor: t.c.border,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('By your email')}</Text>
-            <Text variant="caption" color="textSecondary">
-              {me.minor
-                ? tr('Always off under 18')
-                : tr('Someone who knows your email can find you')}
-            </Text>
-          </View>
-          <Switch
-            value={me.privacy.discoverByEmail}
-            disabled={me.minor}
-            onValueChange={(v) => void save({ discoverByEmail: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Findable by email')}
-          />
-        </View>
+        <SwitchRow
+          inset
+          label={tr('By your name or @handle')}
+          detail={tr(
+            'People can search for {displayName} or @{handle}, and your public page (what you show to everyone) is on the web',
+            { displayName: me.displayName, handle: me.handle },
+          )}
+          value={me.privacy.discoverByHandle}
+          onChange={(v) => void save({ discoverByHandle: v })}
+          testID="find-by-handle"
+        />
+        <SwitchRow
+          inset
+          divider
+          label={tr('By your email')}
+          detail={
+            me.minor ? tr('Always off under 18') : tr('Someone who knows your email can find you')
+          }
+          value={me.privacy.discoverByEmail}
+          disabled={me.minor}
+          onChange={(v) => void save({ discoverByEmail: v })}
+          testID="find-by-email"
+        />
       </Group>
       <Group
         title={tr('Message requests')}
@@ -160,10 +143,11 @@ export default function Privacy() {
               )
         }
       >
-        <Choice
-          label={tr('Who can send you a message request')}
+        <ChoiceSheet
+          label={tr('Message requests')}
           value={me.privacy.messageRequests}
           onChange={(messageRequests) => void save({ messageRequests })}
+          testID="message-requests"
           options={[
             // Not offered under 18: the server would only turn it back (R29).
             ...(me.minor ? [] : [{ value: 'everyone' as const, label: tr('Anyone') }]),
@@ -179,24 +163,19 @@ export default function Privacy() {
             'Only when you tap an AI action, Caime sends what that action needs (your draft, the message, or the conversation you asked about) to Anthropic, its AI provider, to write a suggestion. Anthropic doesn’t use it to train models. Private conversations are never sent. What it writes is labelled and changes nothing until you choose it.',
           )}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Text variant="bodyStrong">{tr('Use AI assist')}</Text>
-              <Text variant="caption" color="textSecondary">
-                {me.minor
-                  ? tr('Available from 18')
-                  : tr('Rewrite drafts, translate messages, catch up and find follow-ups')}
-              </Text>
-            </View>
-            <Switch
-              value={me.aiEnabled && !me.minor}
-              disabled={me.minor}
-              onValueChange={(v) => void setAi(v)}
-              trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-              accessibilityLabel={tr('Use AI assist')}
-              testID="ai-toggle"
-            />
-          </View>
+          <SwitchRow
+            inset
+            label={tr('Use AI assist')}
+            detail={
+              me.minor
+                ? tr('Available from 18')
+                : tr('Rewrite drafts, translate messages, catch up and find follow-ups')
+            }
+            value={me.aiEnabled && !me.minor}
+            disabled={me.minor}
+            onChange={(v) => void setAi(v)}
+            testID="ai-toggle"
+          />
         </Group>
       ) : null}
       {editing ? (
@@ -251,13 +230,14 @@ function AudienceSheet({
       }
     >
       <View style={{ marginHorizontal: -20 }}>
-        <Choice<Kind>
+        <ChoiceList<Kind>
           label={title}
           value={kind}
           onChange={(k) => {
             setKind(k);
             if (k !== 'spheres') onSave({ kind: k } as Audience);
           }}
+          testID="audience-kind"
           options={[
             { value: 'everyone', label: tr('Everyone') },
             { value: 'connections', label: tr('Your connections') },
@@ -271,24 +251,16 @@ function AudienceSheet({
         />
       </View>
       {some ? (
-        <View
-          accessibilityRole="toolbar"
-          accessibilityLabel={tr('Who sees it')}
-          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}
-        >
-          {SPHERES.map((s) => {
-            const on = spheres.includes(s);
-            return (
-              <Chip
-                key={s}
-                label={tr(SPHERE_DEFS[s].plural)}
-                selected={on}
-                onPress={() => setSpheres((all) => (on ? all.filter((x) => x !== s) : [...all, s]))}
-                testID={`audience-${s}`}
-              />
-            );
-          })}
-        </View>
+        <SpherePicker
+          multiple
+          plural
+          wrap
+          flush
+          label={tr('Who sees it')}
+          value={spheres}
+          onChange={setSpheres}
+          testID="audience"
+        />
       ) : null}
     </Sheet>
   );

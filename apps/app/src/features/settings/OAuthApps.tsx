@@ -12,10 +12,10 @@ import { qk } from '@/api/keys';
 import { WEB_URL } from '@/lib/config';
 import { Button } from '@/ui/Button';
 import { Divider } from '@/ui/Card';
+import { ChoiceChips } from '@/ui/Chip';
 import { CopyRow } from '@/ui/CopyRow';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
-import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { SkeletonRows } from '@/ui/Skeleton';
 import { Text } from '@/ui/Text';
@@ -278,11 +278,14 @@ export function OAuthApps() {
               error={errors.redirects}
               testID="oauth-app-redirects"
             />
-            <Segmented
+            <ChoiceChips
+              wrap
+              flush
               label={tr('Where it runs')}
               value={kind}
               onChange={setKind}
               options={KINDS.map((k) => ({ value: k.value, label: tr(k.label) }))}
+              testID="oauth-app-kind"
             />
             <Text variant="caption" color="textTertiary">
               {kind === 'public'

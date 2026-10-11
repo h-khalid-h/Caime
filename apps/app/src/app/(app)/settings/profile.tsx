@@ -15,7 +15,7 @@ import { useMe, useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { formatDay } from '@/ui/dates';
 import { EmojiSheet } from '@/ui/EmojiSheet';
 import { Pressable } from '@/ui/Pressable';
@@ -23,12 +23,13 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 
-const PRONOUNS = ['she/her', 'he/him', 'they/them'];
+/** The sets people write most, as the reader's language has them; anything else is typed. */
+const PRONOUNS = [msg('she/her'), msg('he/him'), msg('they/them')];
 /** Statuses people set most, a tap each: the emoji and the words together. */
 const STATUSES: Array<{ emoji: string; text: string }> = [
   { emoji: '📅', text: msg('In a meeting') },
   { emoji: '🚌', text: msg('On my way') },
-  { emoji: '🎯', text: 'Focusing' },
+  { emoji: '🎯', text: msg('Focusing') },
   { emoji: '🏠', text: msg('Working from home') },
   { emoji: '🤒', text: msg('Off sick') },
   { emoji: '🌴', text: msg('On holiday') },
@@ -180,17 +181,16 @@ export default function Profile() {
               maxLength={40}
               placeholder={tr('Anything you like')}
             />
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {PRONOUNS.map((p) => (
-                <Chip
-                  key={p}
-                  label={p}
-                  size="sm"
-                  selected={pronouns === p}
-                  onPress={() => setPronouns(pronouns === p ? '' : p)}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              size="sm"
+              label={tr('Pronouns (optional)')}
+              value={PRONOUNS.some((p) => tr(p) === pronouns) ? pronouns : null}
+              onChange={setPronouns}
+              options={PRONOUNS.map((p) => ({ value: tr(p), label: tr(p) }))}
+              testID="pronouns"
+            />
           </View>
           <TextField
             label={tr('About you (optional)')}
@@ -272,24 +272,31 @@ export default function Profile() {
             onPick={(emoji) => void saveStatus(emoji ?? '', statusText)}
             testID="status-emoji-sheet"
           />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {STATUSES.map((st) => {
-              const on = statusEmoji === st.emoji && statusText === st.text;
-              return (
-                <Chip
-                  key={tr(st.text)}
-                  label={`${st.emoji} ${tr(st.text)}`}
-                  size="sm"
-                  selected={on}
-                  accessibilityLabel={tr(st.text)}
-                  onPress={() => void (on ? saveStatus('', '') : saveStatus(st.emoji, st.text))}
-                />
-              );
-            })}
-            {statusEmoji || statusText ? (
-              <Chip label={tr('Clear')} size="sm" onPress={() => void saveStatus('', '')} />
-            ) : null}
-          </View>
+          <ChoiceChips
+            wrap
+            flush
+            size="sm"
+            label={tr('Status')}
+            value={
+              STATUSES.find((st) => statusEmoji === st.emoji && statusText === st.text)?.text ??
+              null
+            }
+            onChange={(text) => {
+              const st = STATUSES.find((s) => s.text === text);
+              if (st) void saveStatus(st.emoji, st.text);
+            }}
+            options={STATUSES.map((st) => ({
+              value: st.text,
+              label: `${st.emoji} ${tr(st.text)}`,
+              accessibilityLabel: tr(st.text),
+            }))}
+            trailing={
+              statusEmoji || statusText ? (
+                <Chip label={tr('Clear')} size="sm" onPress={() => void saveStatus('', '')} />
+              ) : null
+            }
+            testID="status"
+          />
         </View>
       </Group>
       <Group

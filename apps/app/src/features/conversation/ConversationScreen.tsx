@@ -46,7 +46,7 @@ import { privateSupported } from '@/features/e2ee/support';
 import type { KitChoice, KitStart } from '@/features/kits/KitForm';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
 import { useNow, useUserClock } from '@/lib/time';
-import { leftConversation } from '@/realtime/apply';
+import { leftConversation } from '@/realtime/client';
 import {
   flatMessages,
   type MessagePages,

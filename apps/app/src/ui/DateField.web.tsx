@@ -1,14 +1,15 @@
 /**
  * A day, on the web: the browser's own date field, so it can be typed in the order the person's
  * language writes dates or picked from its calendar (and on a phone's browser, the phone's own
- * picker), and a screen reader knows it for what it is.
+ * picker), and a screen reader knows it for what it is. In the account's language and region
+ * (`lang`), not the browser's, where the browser honours it.
  */
 import { createElement, useId, useState } from 'react';
-import { View } from 'react-native';
+import { useUserClock } from '@/lib/time';
 import { fontFace } from '@/theme/fonts';
 import { useTheme } from '@/theme/theme';
 import type { DateFieldProps } from './dates';
-import { Text } from './Text';
+import { FieldShell, fieldInputStyle } from './FieldShell';
 
 export function DateField({
   label,
@@ -22,21 +23,25 @@ export function DateField({
 }: DateFieldProps) {
   const t = useTheme();
   const id = useId();
+  const { locale } = useUserClock();
   const [focused, setFocused] = useState(false);
-  const ring = focused || Boolean(error);
   const body = t.type.body;
   const note = error ?? hint;
   return (
-    <View style={{ gap: 6 }}>
-      <Text variant="captionStrong" color="textSecondary" nativeID={`${id}-label`}>
-        {label}
-      </Text>
+    <FieldShell
+      label={label}
+      labelID={`${id}-label`}
+      hint={hint}
+      error={error}
+      noteID={`${id}-note`}
+    >
       {createElement('input', {
         type: 'date',
         value: value ?? '',
         min,
         max,
         required: true,
+        lang: locale,
         'aria-labelledby': `${id}-label`,
         'aria-describedby': note ? `${id}-note` : undefined,
         'aria-invalid': error ? true : undefined,
@@ -47,35 +52,11 @@ export function DateField({
         onFocus: () => setFocused(true),
         onBlur: () => setFocused(false),
         style: {
-          boxSizing: 'border-box',
-          width: '100%',
-          maxWidth: 280,
-          minHeight: 48,
-          borderRadius: t.radii.md,
-          borderStyle: 'solid',
-          borderWidth: ring ? 2 : 1,
-          borderColor: error ? t.c.danger : focused ? t.c.focus : t.c.border,
-          backgroundColor: t.c.surface,
+          ...fieldInputStyle(t, { focused, error: Boolean(error) }, 280),
           color: value ? t.c.text : t.c.textTertiary,
-          paddingLeft: ring ? 13 : 14,
-          paddingRight: ring ? 13 : 14,
           ...fontFace(body.family, body.weight),
-          fontSize: 16,
-          // The border is the focus ring; the calendar button follows the theme.
-          outline: 'none',
-          colorScheme: t.scheme,
         },
       })}
-      {note ? (
-        <Text
-          variant="caption"
-          color={error ? 'danger' : 'textTertiary'}
-          nativeID={`${id}-note`}
-          accessibilityLiveRegion={error ? 'polite' : undefined}
-        >
-          {note}
-        </Text>
-      ) : null}
-    </View>
+    </FieldShell>
   );
 }

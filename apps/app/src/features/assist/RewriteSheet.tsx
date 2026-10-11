@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 
@@ -83,17 +83,15 @@ export function RewriteSheet({
         </View>
       }
     >
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {REWRITE_STYLES.map((s) => (
-          <Chip
-            key={s}
-            label={tr(REWRITE_LABELS[s])}
-            selected={style === s}
-            onPress={() => void run(s)}
-            testID={`rewrite-${s}`}
-          />
-        ))}
-      </View>
+      <ChoiceChips
+        wrap
+        flush
+        label={tr('How to rewrite it')}
+        value={style}
+        onChange={(s) => void run(s)}
+        options={REWRITE_STYLES.map((s) => ({ value: s, label: tr(REWRITE_LABELS[s]) }))}
+        testID="rewrite"
+      />
       {style ? (
         <View
           accessibilityLiveRegion="polite"

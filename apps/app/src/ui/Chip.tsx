@@ -1,7 +1,10 @@
 import { tr } from '@caime/core/i18n';
 import type { Sphere } from '@caime/core/taxonomy';
+import type { ReactNode } from 'react';
 import { ScrollView, View, type ViewStyle } from 'react-native';
+import { useRtl } from '@/lib/direction';
 import { useTheme } from '@/theme/theme';
+import { arrowKeyMoves, rovingTabIndex } from './arrowKeys';
 import type { IconComponent } from './Button';
 import { Pressable } from './Pressable';
 import { sphereIcon } from './SphereIcon';
@@ -16,10 +19,17 @@ export interface ChipProps {
   size?: 'sm' | 'md';
   style?: ViewStyle;
   testID?: string;
-  /** One choice among others (ChoiceChips): a radio, checked when it's selected. */
-  role?: 'button' | 'radio';
+  /** One choice among others (ChoiceChips): a radio, or a checkbox, checked when it's selected. */
+  role?: 'button' | 'radio' | 'checkbox';
   /** What it's called aloud, when that isn't its label ("Attention, 3 need you"). */
   accessibilityLabel?: string;
+  /** How many it stands for ("Needs a reply · 3"), after the label. */
+  count?: number;
+  /** Its place in the keyboard's order (a group with one stop: `rovingTabIndex`). */
+  tabIndex?: 0 | -1;
+  disabled?: boolean;
+  /** Its own colours when selected (a sphere's fill and strong), instead of the primary. */
+  colours?: { bg: string; fg: string };
 }
 
 export function Chip({
@@ -33,6 +43,10 @@ export function Chip({
   testID,
   role = 'button',
   accessibilityLabel,
+  count,
+  tabIndex,
+  disabled,
+  colours,
 }: ChipProps) {
   const t = useTheme();
   const tones = {
@@ -42,8 +56,8 @@ export function Chip({
     success: { bg: t.c.successSoft, fg: t.c.success },
     danger: { bg: t.c.dangerSoft, fg: t.c.danger },
   }[tone];
-  const bg = selected ? t.c.primary : tones.bg;
-  const fg = selected ? t.c.onPrimary : tones.fg;
+  const bg = selected ? (colours?.bg ?? t.c.primary) : tones.bg;
+  const fg = selected ? (colours?.fg ?? t.c.onPrimary) : tones.fg;
   const h = size === 'sm' ? 24 : 34;
   const body = (
     <>
@@ -51,6 +65,11 @@ export function Chip({
       <Text variant={size === 'sm' ? 'caption' : 'captionStrong'} color={fg} numberOfLines={1}>
         {label}
       </Text>
+      {count ? (
+        <Text variant="caption" color={fg} style={{ opacity: selected ? 0.85 : 1 }}>
+          {count}
+        </Text>
+      ) : null}
     </>
   );
   const base: ViewStyle = {
@@ -73,11 +92,14 @@ export function Chip({
     <Pressable
       testID={testID}
       accessibilityRole={role}
-      accessibilityState={
-        role === 'radio' ? { checked: Boolean(selected) } : { selected: Boolean(selected) }
-      }
-      accessibilityLabel={accessibilityLabel ?? label}
-      onPress={onPress}
+      accessibilityState={{
+        ...(role === 'button' ? { selected: Boolean(selected) } : { checked: Boolean(selected) }),
+        ...(disabled ? { disabled: true } : {}),
+      }}
+      accessibilityLabel={accessibilityLabel ?? (count ? `${label}, ${count}` : label)}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      tabIndex={tabIndex}
       haptic
       focusRadius={h / 2 + 5}
       // 34 high, and 44 to a finger, in the phone apps and a phone's browser alike (a hitSlop
@@ -100,6 +122,7 @@ export function Chip({
             base,
             { minHeight: 34, height: undefined, paddingVertical: size === 'sm' ? 4 : 0 },
             !selected && (hovered || pressed) ? { backgroundColor: t.c.surfacePressed } : null,
+            disabled ? { opacity: 0.5 } : null,
           ]}
         >
           {body}
@@ -116,63 +139,126 @@ export interface ChoiceChip<T extends string> {
   accessibilityLabel?: string;
   /** A count that needs eyes ("Needs a reply · 3") colours its chip. */
   tone?: 'neutral' | 'accent' | 'warning' | 'success' | 'danger';
+  /** How many it stands for, shown after the label (a filter). */
+  count?: number;
+  /** Its own id; else the group's with its value (`${testID}-${value}`). */
   testID?: string;
+  disabled?: boolean;
+  /** Its own colours when chosen (a sphere's). */
+  colours?: { bg: string; fg: string };
 }
 
-/**
- * One choice among a few, as chips (what Chats shows, whom People lists): announced as one
- * choice, each chip a radio. On a phone the row scrolls sideways; `wrap` lays it out in lines
- * instead, for a desktop, where a mouse's wheel doesn't scroll sideways. Each chip's 44-px target
- * reaches 5 px past its pill and its focus ring 4 px past that, so the row leaves that much room
- * inside itself, where nothing is cut off, and targets side by side never overlap.
- */
-export function ChoiceChips<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-  wrap,
-}: {
-  label: string;
-  value: T;
-  options: Array<ChoiceChip<T>>;
+type OneChoice<T extends string> = {
+  multiple?: false;
+  value: T | null;
   onChange: (value: T) => void;
+  /** Pressing the one chosen takes it back (a choice that's optional). */
+  onClear?: () => void;
+};
+type SeveralChoices<T extends string> = {
+  /** Several at once: a group of checkboxes. */
+  multiple: true;
+  value: T[];
+  onChange: (value: T[]) => void;
+  /** The last one chosen can't be taken off (the days of a week, never none). */
+  atLeastOne?: boolean;
+};
+
+/** `Omit` over each member of a union (TypeScript's own folds the union into one shape). */
+export type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+export type ChoiceChipsProps<T extends string> = {
+  label: string;
+  options: Array<ChoiceChip<T>>;
+  /** Laid out in lines rather than a row that scrolls sideways (a desktop, a form). */
   wrap?: boolean;
-}) {
-  const chips = options.map((o) => (
+  size?: 'sm' | 'md';
+  /** The group's id; each chip is `${testID}-${value}` unless it has its own. */
+  testID?: string;
+  /** No room around the row (inside a card that has its own). */
+  flush?: boolean;
+  /** After the chips, in the same row: a button that shows more of them. */
+  trailing?: ReactNode;
+} & (OneChoice<T> | SeveralChoices<T>);
+
+/**
+ * One choice among a few, or several, as chips (R77): what Chats shows, whom People lists, the
+ * days a rule runs. One choice is announced as a radio group, each chip a radio and the group
+ * one stop for the keyboard (Tab lands on the one chosen, the arrows walk the rest and choose);
+ * several is a group of checkboxes. On a phone the row scrolls sideways; `wrap` lays it out in
+ * lines instead, for a desktop, where a mouse's wheel doesn't scroll sideways, or a form. Each
+ * chip's 44-px target reaches 5 px past its pill and its focus ring 4 px past that, so the row
+ * leaves that much room inside itself, where nothing is cut off, and targets side by side never
+ * overlap.
+ */
+export function ChoiceChips<T extends string>(props: ChoiceChipsProps<T>) {
+  const { label, options, wrap, size, testID, flush, trailing } = props;
+  const rtl = useRtl();
+  const many = props.multiple === true;
+  const chosen = (v: T) => (props.multiple ? props.value.includes(v) : props.value === v);
+  const anyChosen = options.some((o) => chosen(o.value));
+  const pick = (o: ChoiceChip<T>) => {
+    if (o.disabled) return;
+    if (props.multiple) {
+      const next = props.value.includes(o.value)
+        ? props.value.filter((x) => x !== o.value)
+        : [...props.value, o.value];
+      if (next.length === 0 && props.atLeastOne) return;
+      props.onChange(next);
+    } else if (props.value === o.value && props.onClear) props.onClear();
+    else props.onChange(o.value);
+  };
+  const chips = options.map((o, i) => (
     <Chip
       key={o.value}
-      role="radio"
+      role={many ? 'checkbox' : 'radio'}
       label={o.label}
       icon={o.icon}
       tone={o.tone}
+      count={o.count}
+      size={size}
       accessibilityLabel={o.accessibilityLabel}
-      selected={o.value === value}
-      onPress={() => onChange(o.value)}
-      testID={o.testID}
+      selected={chosen(o.value)}
+      disabled={o.disabled}
+      colours={o.colours}
+      tabIndex={many ? undefined : rovingTabIndex(chosen(o.value), i === 0, anyChosen)}
+      onPress={() => pick(o)}
+      testID={o.testID ?? (testID ? `${testID}-${o.value}` : undefined)}
     />
   ));
-  const room: ViewStyle = { paddingHorizontal: 16, paddingTop: 9, paddingBottom: 10 };
+  const group = {
+    ...(many ? { role: 'group' as const } : { accessibilityRole: 'radiogroup' as const }),
+    accessibilityLabel: label,
+    testID,
+    ...arrowKeyMoves({
+      rtl,
+      choose: many ? undefined : (i) => options[i] && pick(options[i]),
+    }),
+  };
+  const room: ViewStyle = flush
+    ? { paddingVertical: 5, paddingHorizontal: 4 }
+    : { paddingHorizontal: 16, paddingTop: 9, paddingBottom: 10 };
   if (wrap)
     return (
       <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel={label}
+        {...group}
         style={[room, { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 10 }]}
       >
         {chips}
+        {trailing}
       </View>
     );
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      accessibilityRole="radiogroup"
-      accessibilityLabel={label}
-      contentContainerStyle={[room, { gap: 8 }]}
-    >
-      {chips}
-    </ScrollView>
+    <View {...group}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[room, { gap: 8 }]}
+      >
+        {chips}
+        {trailing}
+      </ScrollView>
+    </View>
   );
 }
 

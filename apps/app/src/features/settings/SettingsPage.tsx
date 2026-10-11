@@ -1,13 +1,11 @@
 import { tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
-import Check from 'lucide-react-native/icons/check';
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
-import { Pressable } from '@/ui/Pressable';
 import { Screen, TopBar } from '@/ui/Screen';
 import { Text } from '@/ui/Text';
 
@@ -84,61 +82,5 @@ export function Group({
   );
 }
 
-/** A radio list: one choice among a few, each with an optional explanation. */
-export function Choice<T extends string>({
-  value,
-  options,
-  onChange,
-  label,
-}: {
-  value: T;
-  options: Array<{ value: T; label: string; detail?: string }>;
-  onChange: (v: T) => void;
-  label: string;
-}) {
-  const t = useTheme();
-  return (
-    <View accessibilityRole="radiogroup" accessibilityLabel={label}>
-      {options.map((o, i) => {
-        const selected = o.value === value;
-        return (
-          <Pressable
-            key={o.value}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: selected }}
-            accessibilityLabel={o.detail ? `${o.label}, ${o.detail}` : o.label}
-            onPress={() => onChange(o.value)}
-            haptic
-            style={({ hovered }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              minHeight: 56,
-              borderTopWidth: i === 0 ? 0 : 1,
-              borderTopColor: t.c.border,
-              backgroundColor: hovered ? t.c.surfaceHover : 'transparent',
-            })}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="bodyStrong">{o.label}</Text>
-              {o.detail ? (
-                <Text variant="caption" color="textSecondary">
-                  {o.detail}
-                </Text>
-              ) : null}
-            </View>
-            {selected ? (
-              <Check
-                size={20}
-                color={t.scheme === 'dark' ? t.c.accent : t.c.ink}
-                strokeWidth={2.6}
-              />
-            ) : null}
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
+/** Until every screen is on ChoiceSheet (R77): the radio list, from ui. */
+export { ChoiceList as Choice } from '@/ui/ChoiceList';

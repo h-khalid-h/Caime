@@ -27,7 +27,7 @@ import { endpoints } from '@/api/endpoints';
 import { useSpace } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
-import { leftConversation } from '@/realtime/apply';
+import { leftConversation } from '@/realtime/client';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';

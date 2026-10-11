@@ -568,7 +568,10 @@ These are rules, not preferences.
   `caime_t_*` with force when a run starts: never start a one-off `vitest run` while another
   run (or `pnpm check`) is going, or the other run's files fail with "database … does not exist"
   and 500s from sign-up. The E2E server is `apps/server/dist/server.js`: a server change needs
-  `pnpm --filter @caime/server build` before the E2E sees it, not only the web export.
+  `pnpm --filter @caime/server build` before the E2E sees it, not only the web export. A run
+  stopped midway leaves its server on :8787 and the stubs on theirs, which the next local run
+  reuses (`reuseExistingServer`) with the old bundle's shell in memory, so every screen stays
+  blank: kill them by port before running again.
 - Links to Caime are built from `WEB_URL` (`lib/config.ts`), never a hardcoded domain. A path
   from outside the app goes through `appPath` (`lib/paths.ts`) before anything navigates to it.
 - The first screen is Attention (R66, `features/attention/AttentionHome.tsx`, the `/` route;
@@ -852,13 +855,31 @@ These are rules, not preferences.
   system prompts get `placeLines`; `nextBriefAt` skips days not worked; sign-up's country
   suggestion takes the device's `regionCode` first (`/countries?region=`), and each country in
   that list names its main `zone`, which Language and region offers after a country change.
-- A `Segmented` control scrolls sideways when its segments don't fit (a 390-px phone with five):
-  never shorten its words to fit, and never give it more than a screen's worth of segments. A
-  setting in a panel is one row that opens its choice in a `Sheet` (disappearing messages,
-  `disappearing-row`), never a list of radios laid out in the panel. Who a rule is for is picked
-  with `features/settings/RuleFor` (reminders under Automations, quiet hours under Notifications
-  and priorities: "Add quiet hours" beside "Add a rule"); everything about who reaches you, and
-  when, lives on that one screen.
+- Pickers are one family (R77), every one in `ui/` and `pickers.test.ts` fails on a screen's own
+  (a `Chip` that selects, a radio, checkbox, tab or switch written by hand, a field's 48-px shell
+  drawn again; what a screen may still write is listed there with its reason). `ChoiceChips`
+  (`ui/Chip.tsx`) is one choice among up to eight (a radio group; `onClear` where none is a
+  choice), or several with `multiple` (a checkbox group; `atLeastOne`), with `count` for a
+  filter, `wrap` for a form or a desktop (else the row scrolls sideways), `flush` inside a card,
+  `trailing` for a "More…" button, and each chip `${testID}-${value}` unless the option names
+  its own; `SpherePicker` is it over the spheres (`plural` for who sees something, `tinted` for
+  how someone is known); `DayPicker` is it over a week. `Segmented` switches a view only
+  (tabs: the Actions lists, a history's kinds, an insights period), never a form's value, and
+  scrolls sideways when its segments don't fit (never shorten its words, never more than a
+  screen's worth). A setting in a panel is one `ChoiceSheet` row (the value shown, a sheet of
+  radio rows, a finding sheet above fifteen; `shown` and `detail` for what the row says), never
+  a list of radios laid out in the panel; a radio list inside a sheet of its own is `ChoiceList`
+  (icons, `detail`, the chosen row filled), and a long list is `PickerField` + `SearchSheet`
+  (country, time zone, language, year, a catalogue's items above eight, `CurrencyField`'s chip).
+  Every field sits in `FieldShell` (`fieldBox` for a pressable, `fieldInputStyle` for a browser
+  input, which carries the account's `lang`); a count is a `Stepper` (`-less`, `-more`); a
+  switch is `SwitchRow` (`inset` and `divider` in a settings group, `onOpen` when the words open
+  the thing); a `ListRow` that's `checked` draws its own mark. Every group is one stop for the
+  keyboard: Tab lands on the one chosen (`rovingTabIndex`), the arrows walk the rest and choose
+  (`arrowKeyMoves`, Home and End too), on a radio group, a tablist and a swatch row alike. Who a
+  rule is for is picked with `features/settings/RuleFor` (reminders under Automations, quiet
+  hours under Notifications and priorities: "Add quiet hours" beside "Add a rule"); everything
+  about who reaches you, and when, lives on that one screen.
 - The phone's bar of places (R72, `features/shell/TabBar.tsx`) is the signed-in layout's, under
   the stack, not the tabs' (they draw none): it stays on every screen opened from a place (a
   person, a space, an organization, settings) with the place someone came from lit, and a tab
@@ -1136,6 +1157,13 @@ These are rules, not preferences.
 - Watch the web budget when a screen is used by a second route: shared modules move into the
   startup chunk. Open it through its own route instead (the desktop Business inbox is a list
   pane beside `/c/[id]`, not a screen that embeds the conversation).
+- What the first screen never needs loads apart, each by its one dynamic import, and
+  `panes.test.ts` fails on a static import of it: the live events' applier (`realtime/apply.ts`,
+  imported by `realtime/client.ts` as it runs; `leftConversation` is reached through the
+  client), the keyboard shortcuts (the signed-in layout; their sheet's store is
+  `shortcutsSheet.ts`), the You sheet's body (`YouSheetBody.tsx`; its store `youSheet.ts`) and
+  an organization's details editor (`OrgDetails`, from `OrgScreen`). A new thing shared by
+  several routes but needed by none at first joins that list rather than the startup chunk.
 - A module leaves the startup chunk only when every import of it is dynamic. Splitting a part
   out of a route's own chunk (a sheet inside the conversation screen) makes it worse: whatever
   it shares with that route moves into `__common`, which loads first (it cost 4.5 KB once). The

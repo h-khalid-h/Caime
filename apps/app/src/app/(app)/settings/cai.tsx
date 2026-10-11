@@ -16,11 +16,11 @@ import type { SuggestionKind } from '@caime/core/intelligence';
 import { CAI_ID } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { openDirectWith } from '@/features/inbox/openChat';
-import { Choice, Group, SettingsPage } from '@/features/settings/SettingsPage';
+import { Group, SettingsPage } from '@/features/settings/SettingsPage';
 import { savePrefs } from '@/features/settings/savePrefs';
 import { useLanguage } from '@/lib/languageState';
 import { useNow, useUserClock } from '@/lib/time';
@@ -29,8 +29,9 @@ import { usePrefs } from '@/theme/prefs';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { ListRow } from '@/ui/ListRow';
-import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TimeField } from '@/ui/TimeField';
 import { toast } from '@/ui/Toast';
@@ -70,13 +71,9 @@ function CaiArabic() {
   const me = useMe();
   const shown = useLanguage((s) => s.language);
   const choice = usePrefs((s) => s.arabicVariety);
-  const [open, setOpen] = useState(false);
   const home = varietyOfCountry(me.country) ?? 'standard';
   if (shown !== 'ar' && home === 'standard' && choice === 'auto') return null;
-  const choose = (next: ArabicVarietyChoice) => {
-    savePrefs({ arabicVariety: next });
-    setOpen(false);
-  };
+  const choose = (next: ArabicVarietyChoice) => savePrefs({ arabicVariety: next });
   return (
     <Group
       title={tr('How Cai speaks Arabic')}
@@ -84,34 +81,27 @@ function CaiArabic() {
         'Cai and the Caime Friends answer in Arabic as you speak it: the Arabic you write in, else the one where you live. Caime’s own screens stay in Standard Arabic.',
       )}
     >
-      <ListRow
-        title={tr('Cai’s Arabic')}
-        subtitle={
+      <ChoiceSheet
+        label={tr('Cai’s Arabic')}
+        value={choice}
+        onChange={choose}
+        shown={
           choice === 'auto'
             ? tr('As you write it, else {variety}', { variety: tr(VARIETY_LABELS[home]) })
-            : tr(VARIETY_LABELS[choice])
+            : undefined
         }
-        chevron
-        onPress={() => setOpen(true)}
+        options={[
+          {
+            value: 'auto',
+            label: tr('As you write it'),
+            detail: tr('Else as where you live: {variety}', {
+              variety: tr(VARIETY_LABELS[home]),
+            }),
+          },
+          ...ARABIC_VARIETIES.map((v) => ({ value: v, label: tr(VARIETY_LABELS[v]) })),
+        ]}
         testID="cai-arabic"
       />
-      <Sheet open={open} onClose={() => setOpen(false)} title={tr('How Cai speaks Arabic')}>
-        <Choice
-          label={tr('Cai’s Arabic')}
-          value={choice}
-          onChange={choose}
-          options={[
-            {
-              value: 'auto',
-              label: tr('As you write it'),
-              detail: tr('Else as where you live: {variety}', {
-                variety: tr(VARIETY_LABELS[home]),
-              }),
-            },
-            ...ARABIC_VARIETIES.map((v) => ({ value: v, label: tr(VARIETY_LABELS[v]) })),
-          ]}
-        />
-      </Sheet>
     </Group>
   );
 }
@@ -189,18 +179,13 @@ export default function CaiSettings() {
           'Once a day, in Cai’s chat: what’s on today and what’s open. Worked out by the rules, at no cost.',
         )}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-          <Text variant="bodyStrong" style={{ flex: 1 }}>
-            {tr('Brief me every morning')}
-          </Text>
-          <Switch
-            value={brief !== null}
-            onValueChange={(on) => savePrefs({ caiBrief: on ? BRIEF_AT : null })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Brief me every morning')}
-            testID="cai-brief"
-          />
-        </View>
+        <SwitchRow
+          inset
+          label={tr('Brief me every morning')}
+          value={brief !== null}
+          onChange={(on) => savePrefs({ caiBrief: on ? BRIEF_AT : null })}
+          testID="cai-brief"
+        />
         {brief ? (
           <View style={[{ paddingHorizontal: 16, paddingBottom: 16 }]}>
             <TimeField
@@ -255,18 +240,13 @@ export default function CaiSettings() {
           'A kind of suggestion you keep taking is offered first; one you keep passing on is set apart, with the count beside it. Nothing is hidden, and it says why. Off keeps every suggestion the same.',
         )}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-          <Text variant="bodyStrong" style={{ flex: 1 }}>
-            {tr('Learn from what I accept')}
-          </Text>
-          <Switch
-            value={learnFromChoices}
-            onValueChange={(v) => savePrefs({ learnFromChoices: v })}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Learn from what I accept')}
-            testID="learn-from-choices"
-          />
-        </View>
+        <SwitchRow
+          inset
+          label={tr('Learn from what I accept')}
+          value={learnFromChoices}
+          onChange={(v) => savePrefs({ learnFromChoices: v })}
+          testID="learn-from-choices"
+        />
         {data?.learned.map((l) => (
           <ListRow
             key={l.kind}

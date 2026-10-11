@@ -1,19 +1,21 @@
 /**
- * A field whose value is chosen from a list (a country, a year): what's chosen, or a
- * placeholder, with a chevron, opening whatever the caller renders after it (a SearchSheet).
- * One look for every such field, so the country and year fields share it.
+ * A field whose value is chosen from a list (a country, a year, a language, a time zone): what's
+ * chosen, or a placeholder, with a chevron, opening whatever the caller renders after it (a
+ * SearchSheet). One shell for every such field (`FieldShell`), so they all look the same.
  */
 
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
+import { FieldShell, fieldBox } from './FieldShell';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 
 export function PickerField({
   label,
   shown,
+  detail,
   placeholder,
   mark,
   accessibilityHint,
@@ -27,6 +29,8 @@ export function PickerField({
   label: string;
   /** What's chosen, as people read it; null while nothing is. */
   shown: string | null;
+  /** A second line under what's chosen (a zone's country and offset). */
+  detail?: string | null;
   placeholder: string;
   /** Shown before the value (a flag), hidden from screen readers. */
   mark?: string | null;
@@ -40,51 +44,37 @@ export function PickerField({
   children?: ReactNode;
 }) {
   const t = useTheme();
-  const ring = Boolean(error);
   return (
-    <View style={{ gap: 6 }}>
-      <Text variant="captionStrong" color="textSecondary">
-        {label}
-      </Text>
+    <FieldShell label={label} hint={hint} error={error}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${shown ?? 'not chosen'}`}
+        accessibilityLabel={`${label}, ${
+          shown ? (detail ? `${shown}, ${detail}` : shown) : 'not chosen'
+        }`}
         accessibilityHint={accessibilityHint}
         onPress={onOpen}
         testID={testID}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          minHeight: 48,
-          maxWidth,
-          borderRadius: t.radii.md,
-          borderWidth: ring ? 2 : 1,
-          borderColor: error ? t.c.danger : t.c.border,
-          backgroundColor: t.c.surface,
-          paddingHorizontal: ring ? 13 : 14,
-        }}
+        focusRadius={t.radii.md}
+        style={[fieldBox(t, { error: Boolean(error) }), { maxWidth }]}
       >
         {mark ? (
           <Text variant="body" accessibilityElementsHidden importantForAccessibility="no">
             {mark}
           </Text>
         ) : null}
-        <Text variant="body" color={shown ? 'text' : 'textTertiary'} style={{ flex: 1 }}>
-          {shown ?? placeholder}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text variant="body" color={shown ? 'text' : 'textTertiary'}>
+            {shown ?? placeholder}
+          </Text>
+          {shown && detail ? (
+            <Text variant="caption" color="textSecondary">
+              {detail}
+            </Text>
+          ) : null}
+        </View>
         <ChevronDown size={18} color={t.c.textSecondary} />
       </Pressable>
-      {error ? (
-        <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
-          {error}
-        </Text>
-      ) : hint ? (
-        <Text variant="caption" color="textTertiary">
-          {hint}
-        </Text>
-      ) : null}
       {children}
-    </View>
+    </FieldShell>
   );
 }

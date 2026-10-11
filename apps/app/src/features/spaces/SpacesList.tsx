@@ -13,7 +13,7 @@ import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -110,42 +110,17 @@ export function SpacesList({ pane }: { pane?: boolean }) {
       ? spaces
       : spaces.filter((s) => (chosen === 'me' ? !s.org : s.org?.id === chosen));
   const ownerRow = owners.length ? (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ flexGrow: 0 }}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}
-      accessibilityRole="tablist"
-      accessibilityLabel={tr('Whose spaces')}
+    <ChoiceChips
+      label={tr('Whose spaces')}
+      value={chosen}
+      onChange={setOwner}
+      options={[
+        { value: 'all', label: tr('All'), testID: 'spaces-owner-all' },
+        ...(mine ? [{ value: 'me', label: tr('Mine'), testID: 'spaces-owner-me' }] : []),
+        ...orgs.map((o) => ({ value: o.id, label: o.name, testID: `spaces-owner-${o.handle}` })),
+      ]}
       testID="spaces-owner"
-    >
-      <Chip
-        label={tr('All')}
-        selected={chosen === 'all'}
-        role="radio"
-        onPress={() => setOwner('all')}
-        testID="spaces-owner-all"
-      />
-      {mine ? (
-        <Chip
-          label={tr('Mine')}
-          selected={chosen === 'me'}
-          role="radio"
-          onPress={() => setOwner('me')}
-          testID="spaces-owner-me"
-        />
-      ) : null}
-      {orgs.map((o) => (
-        <Chip
-          key={o.id}
-          label={o.name}
-          selected={chosen === o.id}
-          role="radio"
-          onPress={() => setOwner(o.id)}
-          testID={`spaces-owner-${o.handle}`}
-        />
-      ))}
-    </ScrollView>
+    />
   ) : null;
   const header = (
     <PageHeader

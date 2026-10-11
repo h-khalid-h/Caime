@@ -1,13 +1,19 @@
 import { tr } from '@caime/core/i18n';
 import type { Sphere } from '@caime/core/taxonomy';
-import Check from 'lucide-react-native/icons/check';
+import Search from 'lucide-react-native/icons/search';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { useConnections } from '@/api/hooks';
+import { wordsMatch } from '@/lib/find';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { RelationshipChip } from '@/ui/Chip';
 import { ListRow } from '@/ui/ListRow';
 import { Text } from '@/ui/Text';
+import { TextField } from '@/ui/TextField';
+
+/** Above this many, a field finds someone by name or handle (R77). */
+const FIND_ABOVE = 8;
 
 /** Someone who can be picked, as the picker shows them. */
 export interface Pickable {
@@ -36,6 +42,7 @@ export function PeoplePicker({
   among?: { people: Pickable[] | undefined; empty: string };
 }) {
   const t = useTheme();
+  const [term, setTerm] = useState('');
   const connections = useConnections();
   const everyone: Pickable[] = among
     ? (among.people ?? [])
@@ -63,58 +70,59 @@ export function PeoplePicker({
             : tr('Connect with people first, then add them here.')}
       </Text>
     );
+  const finding = list.length > FIND_ABOVE;
+  const shown = term.trim()
+    ? list.filter((p) => wordsMatch([p.displayName, p.handle], term))
+    : list;
   return (
-    <View
-      style={{
-        backgroundColor: t.c.surface,
-        borderRadius: t.radii.lg,
-        borderWidth: 1,
-        borderColor: t.c.border,
-        overflow: 'hidden',
-      }}
-    >
-      {list.map((p) => {
-        const on = picked.has(p.id);
-        return (
-          <ListRow
-            key={p.id}
-            checked={on}
-            testID={`pick-${p.handle}`}
-            left={<Avatar id={p.id} name={p.displayName} url={p.avatarUrl} size={36} />}
-            title={p.displayName}
-            right={
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {p.relationship ? (
+    <View style={{ gap: 10 }}>
+      {finding ? (
+        <TextField
+          icon={Search}
+          placeholder={tr('Find by name or handle')}
+          accessibilityLabel={tr('Find by name or handle')}
+          value={term}
+          onChangeText={setTerm}
+          autoCorrect={false}
+          autoCapitalize="none"
+          testID="pick-find"
+        />
+      ) : null}
+      <View
+        role="group"
+        accessibilityLabel={tr('People')}
+        style={{
+          backgroundColor: t.c.surface,
+          borderRadius: t.radii.lg,
+          borderWidth: 1,
+          borderColor: t.c.border,
+          overflow: 'hidden',
+        }}
+      >
+        {shown.map((p) => {
+          const on = picked.has(p.id);
+          return (
+            <ListRow
+              key={p.id}
+              checked={on}
+              testID={`pick-${p.handle}`}
+              left={<Avatar id={p.id} name={p.displayName} url={p.avatarUrl} size={36} />}
+              title={p.displayName}
+              right={
+                p.relationship ? (
                   <RelationshipChip label={p.relationship.label} sphere={p.relationship.sphere} />
-                ) : null}
-                <PickMark on={on} />
-              </View>
-            }
-            onPress={() => onToggle(p.id)}
-          />
-        );
-      })}
-    </View>
-  );
-}
-
-/** The round mark beside something picked in a list (the row itself says so to a reader). */
-export function PickMark({ on }: { on: boolean }) {
-  const t = useTheme();
-  return (
-    <View
-      style={{
-        width: 24,
-        height: 24,
-        borderRadius: t.radii.sm,
-        borderWidth: 2,
-        borderColor: on ? t.c.primary : t.c.borderStrong,
-        backgroundColor: on ? t.c.primary : 'transparent',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {on ? <Check size={14} color={t.c.onPrimary} strokeWidth={3} /> : null}
+                ) : null
+              }
+              onPress={() => onToggle(p.id)}
+            />
+          );
+        })}
+        {shown.length === 0 ? (
+          <Text variant="body" color="textSecondary" style={{ padding: 16 }}>
+            {tr('Nobody by that name.')}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }

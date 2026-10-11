@@ -98,23 +98,28 @@ const appState = (s: string) => {
 
 const { realtime } = await import('./client');
 const event = { type: 'event', event: { type: 'message.created', data: {} } };
+/** The applier's import and its `.then`s, run through. */
+const settled = () => new Promise<void>((r) => setTimeout(r, 0));
 
 describe('the realtime socket', () => {
-  it('shows what arrives for the account it was opened for', () => {
+  it('shows what arrives for the account it was opened for', async () => {
     realtime.start('u-noor');
     const ws = h.sockets[0];
     ws?.say({ type: 'hello', userId: 'u-noor', serverTime: new Date().toISOString() });
     ws?.say(event);
+    // The applier is loaded apart (never in the first download): a tick, then it's applied.
+    await settled();
     expect(h.applyEvent).toHaveBeenCalledTimes(1);
     expect(h.wrongAccount).not.toHaveBeenCalled();
     realtime.stop();
   });
 
-  it('closes, shows nothing, and starts the app again when it finds someone else signed in', () => {
+  it('closes, shows nothing, and starts the app again when it finds someone else signed in', async () => {
     realtime.start('u-noor');
     const ws = h.sockets[0];
     ws?.say({ type: 'hello', userId: 'u-alex', serverTime: new Date().toISOString() });
     ws?.say(event);
+    await settled();
     expect(h.wrongAccount).toHaveBeenCalledTimes(1);
     expect(ws?.closed).toBe(true);
     expect(h.applyEvent).not.toHaveBeenCalled();

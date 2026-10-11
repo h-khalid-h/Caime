@@ -11,7 +11,7 @@ import { View } from 'react-native';
 import { useUserClock } from '@/lib/time';
 import { useMe } from '@/state/session';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { DateField } from '@/ui/DateField';
 import { formatDay } from '@/ui/dates';
 import { Sheet } from '@/ui/Sheet';
@@ -69,25 +69,22 @@ function useWhen({ value, onChange, time = 'optional', future = true, testID }: 
   };
   const body = (
     <View style={{ gap: 16 }}>
-      <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel={tr('Days')}
-        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-      >
-        {picks.map((p) => (
-          <Chip
-            key={p.label}
-            label={p.label}
-            role="radio"
-            selected={date === p.chosen.date}
-            accessibilityLabel={`${p.label}, ${formatDay(p.chosen.date, locale)}`}
-            onPress={() => {
-              setDate(p.chosen.date);
-              setError(null);
-            }}
-          />
-        ))}
-      </View>
+      <ChoiceChips
+        wrap
+        flush
+        label={tr('Days')}
+        value={date}
+        onChange={(d) => {
+          setDate(d);
+          setError(null);
+        }}
+        options={picks.map((p) => ({
+          value: p.chosen.date,
+          label: p.label,
+          accessibilityLabel: `${p.label}, ${formatDay(p.chosen.date, locale)}`,
+        }))}
+        testID={testID ? `${testID}-pick` : undefined}
+      />
       <DateField
         label={tr('Day')}
         value={date}

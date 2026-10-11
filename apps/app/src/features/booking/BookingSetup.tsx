@@ -19,7 +19,6 @@ import {
   BOOKING_CAPACITY_MAX,
   BOOKING_DAYS_MAX,
   BOOKING_ITEMS_MAX,
-  DAY_SHORT,
   describeHours,
   itemPhotoPath,
   SLOT_MINUTES,
@@ -44,25 +43,26 @@ import {
   paymentUrlError,
 } from '@caime/core/payments';
 import type { Sphere } from '@caime/core/taxonomy';
-import { weekOrder } from '@caime/core/time';
 import CalendarCheck from 'lucide-react-native/icons/calendar-check';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Layers from 'lucide-react-native/icons/layers';
-import Minus from 'lucide-react-native/icons/minus';
 import Plus from 'lucide-react-native/icons/plus';
 import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
 import Tag from 'lucide-react-native/icons/tag';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { uploadFile } from '@/api/upload';
+import { DayPicker } from '@/features/settings/DayPicker';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
-import { IconButton } from '@/ui/IconButton';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { ListRow, SectionTitle } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SpherePicker } from '@/ui/SpherePicker';
+import { Stepper } from '@/ui/Stepper';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { TimeField } from '@/ui/TimeField';
@@ -81,6 +81,8 @@ const HORIZONS: Array<{ value: number; label: string }> = [
   { value: 30, label: msg('A month') },
   { value: 60, label: msg('2 months') },
 ];
+/** Whoever on the team is free: the providers' choice that names nobody (an id is a uuid). */
+const ANYONE = 'anyone';
 /** A person's audiences beyond everyone and their connections: the spheres a rate is for. */
 const PERSON_SPHERES: Array<{ sphere: Sphere; label: string }> = [
   { sphere: 'family', label: msg('Family') },
@@ -127,47 +129,6 @@ export function audienceLabel(audience: BookingItem['audience'], kind: 'org' | '
 }
 
 const newId = () => `i${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
-
-function Stepper({
-  label,
-  value,
-  min,
-  max,
-  onChange,
-  testID,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (n: number) => void;
-  testID?: string;
-}) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <Text variant="label" style={{ flex: 1 }}>
-        {label}
-      </Text>
-      <IconButton
-        icon={Minus}
-        label={tr('Fewer')}
-        disabled={value <= min}
-        onPress={() => onChange(Math.max(min, value - 1))}
-        testID={testID ? `${testID}-less` : undefined}
-      />
-      <Text variant="bodyStrong" style={{ minWidth: 28, textAlign: 'center' }} testID={testID}>
-        {value}
-      </Text>
-      <IconButton
-        icon={Plus}
-        label={tr('More')}
-        disabled={value >= max}
-        onPress={() => onChange(Math.min(max, value + 1))}
-        testID={testID ? `${testID}-more` : undefined}
-      />
-    </View>
-  );
-}
 
 export function BookingSetup({
   host,
@@ -489,19 +450,13 @@ export function BookingSetup({
         <View style={{ gap: 16 }}>
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Days')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {weekOrder(host.weekStart).map((i) => (
-                <Chip
-                  key={i}
-                  label={tr(DAY_SHORT[i] ?? 'Sun')}
-                  selected={days.includes(i)}
-                  onPress={() =>
-                    setDays((all) => (all.includes(i) ? all.filter((x) => x !== i) : [...all, i]))
-                  }
-                  testID={`${testID}-day-${i}`}
-                />
-              ))}
-            </View>
+            <DayPicker
+              days={days}
+              onChange={setDays}
+              label={tr('Days')}
+              weekStart={host.weekStart}
+              testID={`${testID}-day`}
+            />
           </View>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
@@ -518,18 +473,15 @@ export function BookingSetup({
           </View>
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Slots every')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {SLOT_MINUTES.map((m) => (
-                <Chip
-                  key={m}
-                  label={tr('{m} min', { m })}
-                  selected={slot === m}
-                  role="radio"
-                  onPress={() => setSlot(m)}
-                  testID={`${testID}-slot-${m}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Slots every')}
+              value={String(slot)}
+              onChange={(m) => setSlot(SLOT_MINUTES.find((x) => String(x) === m) ?? slot)}
+              options={SLOT_MINUTES.map((m) => ({ value: String(m), label: tr('{m} min', { m }) }))}
+              testID={`${testID}-slot`}
+            />
             <Text variant="caption" color="textTertiary">
               {tr(
                 'The grid a day is cut into; each item in your catalogue has a length of its own.',
@@ -538,31 +490,27 @@ export function BookingSetup({
           </View>
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Bookable from')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {LEADS.map((l) => (
-                <Chip
-                  key={l.value}
-                  label={tr(l.label)}
-                  selected={lead === l.value}
-                  role="radio"
-                  onPress={() => setLead(l.value)}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Bookable from')}
+              value={String(lead)}
+              onChange={(v) => setLead(Number(v))}
+              options={LEADS.map((l) => ({ value: String(l.value), label: tr(l.label) }))}
+              testID={`${testID}-lead`}
+            />
           </View>
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Up to')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {HORIZONS.map((h) => (
-                <Chip
-                  key={h.value}
-                  label={tr(h.label)}
-                  selected={horizon === h.value}
-                  role="radio"
-                  onPress={() => setHorizon(h.value)}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Up to')}
+              value={String(horizon)}
+              onChange={(v) => setHorizon(Number(v))}
+              options={HORIZONS.map((h) => ({ value: String(h.value), label: tr(h.label) }))}
+              testID={`${testID}-horizon`}
+            />
           </View>
           {error ? (
             <Text variant="bodyStrong" color="danger" testID={`${testID}-error`}>
@@ -604,19 +552,19 @@ export function BookingSetup({
         <View style={{ gap: 16 }}>
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('How they’re had')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {(['pickup', 'delivery'] as const).map((w) => (
-                <Chip
-                  key={w}
-                  label={w === 'pickup' ? tr('Pickup') : tr('Delivery')}
-                  selected={ways.includes(w)}
-                  onPress={() =>
-                    setWays((all) => (all.includes(w) ? all.filter((x) => x !== w) : [...all, w]))
-                  }
-                  testID={`${testID}-orders-${w}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              multiple
+              wrap
+              flush
+              label={tr('How they’re had')}
+              value={ways}
+              onChange={setWays}
+              options={[
+                { value: 'pickup' as const, label: tr('Pickup') },
+                { value: 'delivery' as const, label: tr('Delivery') },
+              ]}
+              testID={`${testID}-orders`}
+            />
           </View>
           <TextField
             label={tr('A line customers read first (optional)')}
@@ -723,41 +671,55 @@ function AudiencePicker({
   noun: 'item' | 'collection' | 'way';
   testID: string;
 }) {
-  const toggleSphere = (s: Sphere) => {
-    const list = Array.isArray(audience) ? audience : [];
-    const next = list.includes(s) ? list.filter((x) => x !== s) : [...list, s];
-    onChange(next.length ? next : 'connections');
-  };
+  // "Some of them" is chosen before any sphere is: the audience stays connections until one is.
+  const [some, setSome] = useState(Array.isArray(audience));
+  const who = noun === 'item' ? tr('Who may book it') : tr('Who sees it');
   return (
     <View style={{ gap: 6 }}>
-      <Text variant="label">{noun === 'item' ? tr('Who may book it') : tr('Who sees it')}</Text>
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        <Chip
-          label={tr('Everyone')}
-          selected={audience === 'public'}
-          role="radio"
-          onPress={() => onChange('public')}
-          testID={`${testID}-public`}
+      <Text variant="label">{who}</Text>
+      <ChoiceChips
+        wrap
+        flush
+        label={who}
+        value={Array.isArray(audience) || some ? 'some' : audience}
+        onChange={(v) => {
+          setSome(v === 'some');
+          if (v !== 'some') onChange(v);
+          else if (!Array.isArray(audience)) onChange('connections');
+        }}
+        options={[
+          { value: 'public' as const, label: tr('Everyone'), testID: `${testID}-public` },
+          {
+            value: 'connections' as const,
+            label: host.kind === 'org' ? tr('Customers') : tr('Connections'),
+            testID: `${testID}-connections`,
+          },
+          ...(host.kind === 'person'
+            ? [
+                {
+                  value: 'some' as const,
+                  label: tr('Only some of your people'),
+                  testID: `${testID}-some`,
+                },
+              ]
+            : []),
+        ]}
+        testID={`${testID}-audience`}
+      />
+      {host.kind === 'person' && (some || Array.isArray(audience)) ? (
+        <SpherePicker
+          multiple
+          plural
+          wrap
+          flush
+          label={tr('Which of them')}
+          value={Array.isArray(audience) ? audience : []}
+          onChange={(next) => onChange(next.length ? next : 'connections')}
+          spheres={PERSON_SPHERES.map((p) => p.sphere)}
+          optionTestID={(sphere) => `${testID}-${sphere}`}
+          testID={`${testID}-spheres`}
         />
-        <Chip
-          label={host.kind === 'org' ? tr('Customers') : tr('Connections')}
-          selected={audience === 'connections'}
-          role="radio"
-          onPress={() => onChange('connections')}
-          testID={`${testID}-connections`}
-        />
-        {host.kind === 'person'
-          ? PERSON_SPHERES.map((p) => (
-              <Chip
-                key={p.sphere}
-                label={tr(p.label)}
-                selected={Array.isArray(audience) && audience.includes(p.sphere)}
-                onPress={() => toggleSphere(p.sphere)}
-                testID={`${testID}-${p.sphere}`}
-              />
-            ))
-          : null}
-      </View>
+      ) : null}
       <Text variant="caption" color="textTertiary">
         {audience === 'public'
           ? noun === 'item'
@@ -898,34 +860,37 @@ function WayEditor({
         {isNew && host.payKinds.length ? (
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Common where you are')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {host.payKinds.map((hint) => (
-                <Chip
-                  key={hint.label}
-                  label={tr(hint.label)}
-                  selected={kind === hint.kind && label === tr(hint.label)}
-                  onPress={() => {
-                    setKind(hint.kind);
-                    setLabel(tr(hint.label));
-                  }}
-                  testID={`${testID}-hint-${hint.label}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Common where you are')}
+              value={
+                host.payKinds.find((h) => h.kind === kind && tr(h.label) === label)?.label ?? null
+              }
+              onChange={(key) => {
+                const hint = host.payKinds.find((h) => h.label === key);
+                if (!hint) return;
+                setKind(hint.kind);
+                setLabel(tr(hint.label));
+              }}
+              options={host.payKinds.map((hint) => ({
+                value: hint.label,
+                label: tr(hint.label),
+                testID: `${testID}-hint-${hint.label}`,
+              }))}
+              testID={`${testID}-hints`}
+            />
           </View>
         ) : null}
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-          {PAYMENT_KINDS.map((k) => (
-            <Chip
-              key={k}
-              label={tr(PAYMENT_KIND_LABELS[k])}
-              selected={kind === k}
-              role="radio"
-              onPress={() => setKind(k)}
-              testID={`${testID}-${k}`}
-            />
-          ))}
-        </View>
+        <ChoiceChips
+          wrap
+          flush
+          label={tr('Kind')}
+          value={kind}
+          onChange={setKind}
+          options={PAYMENT_KINDS.map((k) => ({ value: k, label: tr(PAYMENT_KIND_LABELS[k]) }))}
+          testID={testID}
+        />
         <TextField
           label={tr('Name')}
           placeholder={tr(PAYMENT_KIND_LABELS[kind])}
@@ -1261,38 +1226,38 @@ function ItemEditor({
         {collections.length ? (
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Collection')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <Chip
-                label={tr('None')}
-                selected={collectionId === null}
-                role="radio"
-                onPress={() => setCollectionId(null)}
-              />
-              {collections.map((c) => (
-                <Chip
-                  key={c.id}
-                  label={c.name}
-                  selected={collectionId === c.id}
-                  role="radio"
-                  onPress={() => setCollectionId(c.id)}
-                  testID={`${testID}-in-${c.id}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Collection')}
+              value={collectionId ?? 'none'}
+              onChange={(v) => setCollectionId(v === 'none' ? null : v)}
+              options={[
+                { value: 'none', label: tr('None'), testID: `${testID}-no-collection` },
+                ...collections.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                  testID: `${testID}-in-${c.id}`,
+                })),
+              ]}
+              testID={`${testID}-collection-of`}
+            />
           </View>
         ) : null}
         <View style={{ gap: 6 }}>
           <Text variant="label">{tr('Price')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <Chip label={tr('Free')} selected={!paid} role="radio" onPress={() => setPaid(false)} />
-            <Chip
-              label={tr('Paid')}
-              selected={paid}
-              role="radio"
-              onPress={() => setPaid(true)}
-              testID={`${testID}-paid`}
-            />
-          </View>
+          <ChoiceChips
+            wrap
+            flush
+            label={tr('Price')}
+            value={paid ? 'paid' : 'free'}
+            onChange={(v) => setPaid(v === 'paid')}
+            options={[
+              { value: 'free', label: tr('Free'), testID: `${testID}-free` },
+              { value: 'paid', label: tr('Paid'), testID: `${testID}-paid` },
+            ]}
+            testID={`${testID}-pricing`}
+          />
           {paid ? (
             <TextField
               placeholder="200"
@@ -1318,46 +1283,36 @@ function ItemEditor({
         </View>
         <View style={{ gap: 6 }}>
           <Text variant="label">{tr('Booked by the')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <Chip
-              label={tr('Minutes')}
-              selected={unit === 'minutes'}
-              role="radio"
-              onPress={() => setUnit('minutes')}
-            />
-            <Chip
-              label={tr('Days')}
-              selected={unit === 'days'}
-              role="radio"
-              onPress={() => setUnit('days')}
-              testID={`${testID}-days`}
-            />
-            <Chip
-              label={tr('The piece')}
-              selected={unit === 'each'}
-              role="radio"
-              onPress={() => {
-                setUnit('each');
+          <ChoiceChips
+            wrap
+            flush
+            label={tr('Booked by the')}
+            value={unit}
+            onChange={(u) => {
+              setUnit(u);
+              if (u === 'each') {
                 setProviders(null);
                 // A shop sells more than one at a time: ten an order unless set otherwise.
                 if (maxQuantity === 1) setMaxQuantity(10);
-              }}
-              testID={`${testID}-each`}
-            />
-          </View>
+              }
+            }}
+            options={[
+              { value: 'minutes' as const, label: tr('Minutes'), testID: `${testID}-by-minutes` },
+              { value: 'days' as const, label: tr('Days'), testID: `${testID}-days` },
+              { value: 'each' as const, label: tr('The piece'), testID: `${testID}-each` },
+            ]}
+            testID={`${testID}-unit`}
+          />
           {unit === 'minutes' ? (
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {SLOT_MINUTES.map((m) => (
-                <Chip
-                  key={m}
-                  label={tr('{m} min', { m })}
-                  selected={minutes === m}
-                  role="radio"
-                  onPress={() => setMinutes(m)}
-                  testID={`${testID}-minutes-${m}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('How long')}
+              value={String(minutes)}
+              onChange={(m) => setMinutes(SLOT_MINUTES.find((x) => String(x) === m) ?? null)}
+              options={SLOT_MINUTES.map((m) => ({ value: String(m), label: tr('{m} min', { m }) }))}
+              testID={`${testID}-minutes`}
+            />
           ) : unit === 'days' ? (
             <Text variant="caption" color="textTertiary">
               {tr('A stay: one booking takes whole days from the day it starts.')}
@@ -1411,31 +1366,34 @@ function ItemEditor({
         {host.kind === 'org' && unit !== 'each' && host.team?.length ? (
           <View style={{ gap: 6 }}>
             <Text variant="label">{tr('Who does it')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <Chip
-                label={tr('Anyone on the team')}
-                selected={!providers?.length}
-                role="radio"
-                onPress={() => setProviders(null)}
-              />
-              {host.team.map((m) => (
-                <Chip
-                  key={m.id}
-                  label={m.name}
-                  selected={Boolean(providers?.includes(m.id))}
-                  onPress={() =>
-                    setProviders((p) => {
-                      const list = p ?? [];
-                      const next = list.includes(m.id)
-                        ? list.filter((x) => x !== m.id)
-                        : [...list, m.id];
-                      return next.length ? next : null;
-                    })
-                  }
-                  testID={`${testID}-provider-${m.id}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              multiple
+              wrap
+              flush
+              label={tr('Who does it')}
+              value={providers?.length ? providers : [ANYONE]}
+              onChange={(next) => {
+                // Anyone just chosen clears the names; a name chosen takes Anyone off.
+                if (next.includes(ANYONE) && providers?.length) setProviders(null);
+                else {
+                  const named = next.filter((id) => id !== ANYONE);
+                  setProviders(named.length ? named : null);
+                }
+              }}
+              options={[
+                {
+                  value: ANYONE,
+                  label: tr('Anyone on the team'),
+                  testID: `${testID}-provider-anyone`,
+                },
+                ...host.team.map((m) => ({
+                  value: m.id,
+                  label: m.name,
+                  testID: `${testID}-provider-${m.id}`,
+                })),
+              ]}
+              testID={`${testID}-providers`}
+            />
             <Text variant="caption" color="textTertiary">
               {tr(
                 'Decided when you confirm a booking: whoever is free with the fewest that day. Customers never see who.',
@@ -1444,10 +1402,10 @@ function ItemEditor({
           </View>
         ) : null}
         <AddressField slug={slug} name={name} onChange={setSlug} testID={testID} />
-        <Chip
+        <SwitchRow
           label={tr('They write what it’s for')}
-          selected={askTopic}
-          onPress={() => setAskTopic((v) => !v)}
+          value={askTopic}
+          onChange={setAskTopic}
           testID={`${testID}-topic`}
         />
         {error ? (

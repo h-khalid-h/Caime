@@ -13,7 +13,7 @@ import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { SPACE_ICONS } from '@/features/spaces/kinds';
 import { useSession } from '@/state/session';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
@@ -106,23 +106,21 @@ export default function NewSpace() {
         {orgs.length > 0 ? (
           <View style={{ gap: 8 }} testID="space-owner">
             <Text variant="label">{tr('Whose space')}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Chip
-                label={tr('Mine')}
-                selected={owner === 'me'}
-                onPress={() => choose('me')}
-                testID="space-owner-me"
-              />
-              {runs.map((o) => (
-                <Chip
-                  key={o.id}
-                  label={o.name}
-                  selected={owner === o.id}
-                  onPress={() => choose(o.id)}
-                  testID={`space-owner-${o.handle}`}
-                />
-              ))}
-            </View>
+            <ChoiceChips
+              wrap
+              flush
+              label={tr('Whose space')}
+              value={owner}
+              onChange={choose}
+              options={[
+                { value: 'me', label: tr('Mine'), testID: 'space-owner-me' },
+                ...runs.map((o) => ({
+                  value: o.id,
+                  label: o.name,
+                  testID: `space-owner-${o.handle}`,
+                })),
+              ]}
+            />
             <Text variant="caption" color="textSecondary">
               {owner === 'me'
                 ? tr('Yours: people you’re connected with can be in it, and it stays with you.')
@@ -168,18 +166,19 @@ export default function NewSpace() {
         />
         <View style={{ gap: 8 }}>
           <Text variant="label">{tr('What kind of space')}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {SPACE_KINDS.map((k) => (
-              <Chip
-                key={k}
-                label={tr(SPACE_KIND_DEFS[k].label)}
-                icon={SPACE_ICONS[k]}
-                selected={kind === k}
-                onPress={() => setKind(k)}
-                testID={`space-kind-${k}`}
-              />
-            ))}
-          </View>
+          <ChoiceChips
+            wrap
+            flush
+            label={tr('What kind of space')}
+            value={kind}
+            onChange={setKind}
+            options={SPACE_KINDS.map((k) => ({
+              value: k,
+              label: tr(SPACE_KIND_DEFS[k].label),
+              icon: SPACE_ICONS[k],
+            }))}
+            testID="space-kind"
+          />
           <Text variant="caption" color="textSecondary">
             {kind
               ? tr('{tr}. Its conversations offer the cards that fit it.', {

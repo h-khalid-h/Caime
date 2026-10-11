@@ -16,6 +16,7 @@ test('the interface follows Turkish when chosen, and the site has a Turkish swit
   const { page, errors } = await newPerson(phone);
   await page.goto('/settings/region');
   await expect(visible(page, 'Language and region')).toBeVisible();
+  await page.getByTestId('region-language-choice').click();
   await page.getByRole('radio', { name: 'Türkçe' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'tr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');

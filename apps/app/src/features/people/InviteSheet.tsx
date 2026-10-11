@@ -6,7 +6,7 @@ import Copy from 'lucide-react-native/icons/copy';
 import Link from 'lucide-react-native/icons/link';
 import Trash from 'lucide-react-native/icons/trash';
 import { useEffect, useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
 import { type FormState, initialForm, toDraft } from '@/features/relationships/form';
@@ -20,6 +20,7 @@ import { IconButton } from '@/ui/IconButton';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
 import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -36,7 +37,7 @@ const RelationshipForm = lazyPart(() =>
  * is shown to them only if I say so. The links I've made are here to share again or take back.
  */
 export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const t = useTheme();
+  const _t = useTheme();
   const me = useMe();
   const qc = useQueryClient();
   const [step, setStep] = useState<'details' | 'classify' | 'made'>('details');
@@ -196,24 +197,20 @@ export function InviteSheet({ open, onClose }: { open: boolean; onClose: () => v
         />
       </View>
       {draft ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">{tr('Show them the context')}</Text>
-            <Text variant="caption" color="textSecondary">
-              {tr('The page they open says “{label}”, not your label, so they know who’s asking.', {
-                label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName]
-                  .filter(Boolean)
-                  .join(' · '),
-              })}
-            </Text>
-          </View>
-          <Switch
-            value={showContext}
-            onValueChange={setShowContext}
-            trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-            accessibilityLabel={tr('Show the context')}
-          />
-        </View>
+        <SwitchRow
+          label={tr('Show them the context')}
+          detail={tr(
+            'The page they open says “{label}”, not your label, so they know who’s asking.',
+            {
+              label: [tr(SPHERE_DEFS[draft.sphere].label), draft.orgName]
+                .filter(Boolean)
+                .join(' · '),
+            },
+          )}
+          value={showContext}
+          onChange={setShowContext}
+          testID="invite-context"
+        />
       ) : null}
       <TextField
         label={tr('A line for them (optional)')}

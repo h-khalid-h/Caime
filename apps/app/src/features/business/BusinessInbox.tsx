@@ -11,7 +11,7 @@ import { router, usePathname } from 'expo-router';
 import Inbox from 'lucide-react-native/icons/inbox';
 import SquarePen from 'lucide-react-native/icons/square-pen';
 import { useEffect, useState } from 'react';
-import { FlatList, ScrollView, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import { useBusinessSummary, useOrg, useOrgInbox } from '@/api/hooks';
 import { OrgMark } from '@/features/orgs/kinds';
 import { DetailPlaceholder } from '@/features/shell/DetailPlaceholder';
@@ -20,7 +20,7 @@ import { useBusiness } from '@/state/business';
 import { useTheme } from '@/theme/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Badge } from '@/ui/Badge';
-import { Chip, ChoiceChips } from '@/ui/Chip';
+import { ChoiceChips } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { EmptyState } from '@/ui/EmptyState';
 import { IconButton } from '@/ui/IconButton';
@@ -231,39 +231,24 @@ export function BusinessInbox({
   const list = (
     <View style={{ flex: 1 }}>
       {teams.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, gap: 8 }}
-          accessibilityRole="tablist"
-          accessibilityLabel={tr('Teams')}
+        <ChoiceChips
+          label={tr('Teams')}
+          value={handle}
+          onChange={(next) =>
+            router.replace({ pathname: '/o/[handle]/inbox', params: { handle: next } })
+          }
+          options={teams.map(({ org: team, waiting }) => ({
+            value: team.handle,
+            label: team.name,
+            count: waiting && team.handle !== handle ? waiting : undefined,
+            tone: waiting && team.handle !== handle ? ('warning' as const) : ('neutral' as const),
+            accessibilityLabel: waiting
+              ? tr('{name}, {waiting} waiting', { name: team.name, waiting })
+              : tr('{name}, nobody waiting', { name: team.name }),
+            testID: `inbox-team-${team.handle}`,
+          }))}
           testID="inbox-teams"
-        >
-          {teams.map(({ org: team, waiting }) => (
-            <Chip
-              key={team.id}
-              label={waiting && team.handle !== handle ? `${team.name} · ${waiting}` : team.name}
-              selected={team.handle === handle}
-              role="radio"
-              tone={waiting && team.handle !== handle ? 'warning' : 'neutral'}
-              accessibilityLabel={
-                waiting
-                  ? tr('{name}, {waiting} waiting', { name: team.name, waiting })
-                  : tr('{name}, nobody waiting', { name: team.name })
-              }
-              onPress={() =>
-                team.handle === handle
-                  ? undefined
-                  : router.replace({
-                      pathname: '/o/[handle]/inbox',
-                      params: { handle: team.handle },
-                    })
-              }
-              testID={`inbox-team-${team.handle}`}
-            />
-          ))}
-        </ScrollView>
+        />
       ) : null}
       {/* The views, one radio each: in lines on a desktop (a wheel doesn't scroll sideways). */}
       <ChoiceChips<InboxView>

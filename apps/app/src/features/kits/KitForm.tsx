@@ -11,7 +11,6 @@ import { zonedParts } from '@caime/core/time';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Calendar from 'lucide-react-native/icons/calendar';
 import MapPin from 'lucide-react-native/icons/map-pin';
-import Minus from 'lucide-react-native/icons/minus';
 import Plus from 'lucide-react-native/icons/plus';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -21,6 +20,7 @@ import { qk } from '@/api/keys';
 import { ItemPhoto } from '@/features/booking/ItemPhoto';
 import { CurrencyField } from '@/features/geo/CurrencyField';
 import { type Chosen, instantOf } from '@/features/when/when';
+import { wordsMatch } from '@/lib/find';
 import { useUserClock } from '@/lib/time';
 import { loadReaders, type Readers, useReaders } from '@/lib/useReaders';
 import { applyMessageToInbox, upsertMessage } from '@/state/cache';
@@ -28,17 +28,26 @@ import { useLiveShares } from '@/state/liveShares';
 import { useMe } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { IconButton } from '@/ui/IconButton';
-import { lazyPart } from '@/ui/Lazy';
-import { Segmented } from '@/ui/Segmented';
+import { lazyPart, useOpened } from '@/ui/Lazy';
+import { PickerField } from '@/ui/PickerField';
+import type { SearchItem } from '@/ui/SearchSheet';
 import { Sheet } from '@/ui/Sheet';
+import { Stepper } from '@/ui/Stepper';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { exampleAmount, parseNumber } from './amounts';
 import { SlotPicker } from './SlotPicker';
 
 /** Choosing a day, loaded the first time it's opened. */
+/** Up to this many items are chips; more are found by name. */
+const ITEMS_AS_CHIPS = 8;
+const itemMatches = (i: SearchItem, term: string) => wordsMatch([i.title, i.subtitle], term);
+/** The item finder, loaded the first time a long catalogue is opened. */
+const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));
+
 const WhenSheet = lazyPart(() => import('@/features/when/WhenSheet').then((m) => m.WhenSheet));
 
 export type KitChoice = CardKitId | 'poll' | 'location';
@@ -301,6 +310,8 @@ export function KitForm({
     return formatAmount(Math.round(value * 100) / 100, priced[0]?.price?.currency ?? null, locale);
   }, [host, ordering, cart, locale]);
   const [itemId, setItemId] = useState<string | null>(null);
+  const [findingItem, setFindingItem] = useState(false);
+  const findingItemOnce = useOpened(findingItem);
   // What the form opens with (R61, R62), each time it opens: the item chosen, or a Pay card's
   // way, amount and note. A Pay card asks to be paid unless it says otherwise.
   useEffect(() => {
@@ -551,16 +562,19 @@ export function KitForm({
             </View>
           ) : null}
           {spot ? (
-            <Segmented
+            <ChoiceChips
+              wrap
+              flush
               label={tr('How long to share it')}
               value={liveFor}
               onChange={setLiveFor}
               options={[
-                { value: '0', label: tr('Just now') },
-                { value: '15', label: tr('15 min') },
-                { value: '60', label: tr('1 hour') },
-                { value: '480', label: tr('8 hours') },
+                { value: '0' as const, label: tr('Just now') },
+                { value: '15' as const, label: tr('15 min') },
+                { value: '60' as const, label: tr('1 hour') },
+                { value: '480' as const, label: tr('8 hours') },
               ]}
+              testID="live-for"
             />
           ) : (
             <Button
@@ -597,20 +611,19 @@ export function KitForm({
               onChangeText={(v) => setOptions((all) => all.map((x, j) => (j === i ? v : x)))}
             />
           ))}
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            {options.length < 12 ? (
-              <Chip
-                label={tr('Add an option')}
-                icon={Plus}
-                onPress={() => setOptions((all) => [...all, ''])}
-              />
-            ) : null}
+          {options.length < 12 ? (
             <Chip
-              label={tr('People can pick more than one')}
-              selected={multiple}
-              onPress={() => setMultiple((v) => !v)}
+              label={tr('Add an option')}
+              icon={Plus}
+              onPress={() => setOptions((all) => [...all, ''])}
             />
-          </View>
+          ) : null}
+          <SwitchRow
+            label={tr('People can pick more than one')}
+            value={multiple}
+            onChange={setMultiple}
+            testID="poll-multiple"
+          />
         </View>
       ) : def ? (
         <View style={{ gap: 12 }}>
@@ -635,67 +648,57 @@ export function KitForm({
                 ...g.items.map((i) => {
                   const n = cart[i.id] ?? 0;
                   return (
-                    <View
-                      key={i.id}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-                      testID={`order-item-${i.id}`}
-                    >
-                      <ItemPhoto path={itemPhotoPath(host.ref, i)} size={44} />
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text variant="bodyStrong" auto>
-                          {i.name}
-                        </Text>
-                        {i.description ? (
-                          <Text variant="caption" color="textSecondary" auto numberOfLines={2}>
-                            {i.description}
-                          </Text>
-                        ) : null}
-                        <Text variant="caption" color="textTertiary">
-                          {i.price
-                            ? formatAmount(i.price.value, i.price.currency, locale)
-                            : tr('Free')}
-                        </Text>
-                      </View>
-                      <IconButton
-                        icon={Minus}
-                        label={tr('Fewer')}
-                        disabled={n <= 0}
-                        onPress={() => setCart((c) => ({ ...c, [i.id]: Math.max(0, n - 1) }))}
-                        testID={`order-less-${i.id}`}
-                      />
-                      <Text
-                        variant="bodyStrong"
-                        style={{ minWidth: 24, textAlign: 'center' }}
-                        testID={`order-count-${i.id}`}
-                      >
-                        {n}
-                      </Text>
-                      <IconButton
-                        icon={Plus}
-                        label={tr('More')}
-                        disabled={n >= i.maxQuantity}
-                        onPress={() =>
-                          setCart((c) => ({ ...c, [i.id]: Math.min(i.maxQuantity, n + 1) }))
+                    <View key={i.id} testID={`order-item-${i.id}`}>
+                      <Stepper
+                        label={i.name}
+                        leading={
+                          <>
+                            <ItemPhoto path={itemPhotoPath(host.ref, i)} size={44} />
+                            <View style={{ flex: 1, gap: 2 }}>
+                              <Text variant="bodyStrong" auto>
+                                {i.name}
+                              </Text>
+                              {i.description ? (
+                                <Text
+                                  variant="caption"
+                                  color="textSecondary"
+                                  auto
+                                  numberOfLines={2}
+                                >
+                                  {i.description}
+                                </Text>
+                              ) : null}
+                              <Text variant="caption" color="textTertiary">
+                                {i.price
+                                  ? formatAmount(i.price.value, i.price.currency, locale)
+                                  : tr('Free')}
+                              </Text>
+                            </View>
+                          </>
                         }
-                        testID={`order-more-${i.id}`}
+                        value={n}
+                        min={0}
+                        max={i.maxQuantity}
+                        onChange={(next) => setCart((c) => ({ ...c, [i.id]: next }))}
+                        testID={`order-count-${i.id}`}
                       />
                     </View>
                   );
                 }),
               ])}
               {host.ways.length > 1 ? (
-                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                  {host.ways.map((w) => (
-                    <Chip
-                      key={w}
-                      label={w === 'pickup' ? tr('Pickup') : tr('Delivery')}
-                      selected={(way ?? host.ways[0]) === w}
-                      role="radio"
-                      onPress={() => setWay(w)}
-                      testID={`order-way-${w}`}
-                    />
-                  ))}
-                </View>
+                <ChoiceChips
+                  wrap
+                  flush
+                  label={tr('How it’s had')}
+                  value={way ?? host.ways[0] ?? null}
+                  onChange={setWay}
+                  options={host.ways.map((w) => ({
+                    value: w,
+                    label: w === 'pickup' ? tr('Pickup') : tr('Delivery'),
+                  }))}
+                  testID="order-way"
+                />
               ) : null}
               <Text variant="caption" color="textSecondary" testID="order-total">
                 {orderTotal
@@ -733,61 +736,114 @@ export function KitForm({
             ) : field.type === 'options' ? (
               <View key={field.key} style={{ gap: 6 }}>
                 <Text variant="label">{tr(field.label)}</Text>
-                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                  {(field.choices ?? []).map((c) => (
-                    <Chip
-                      key={String(c.value)}
-                      label={tr(c.label)}
-                      selected={picked[field.key] === c.value}
-                      // A Pay card's way is one or the other, never none (R62).
-                      role={field.key === 'direction' ? 'radio' : undefined}
-                      onPress={() =>
-                        setPicked((s) => {
-                          const next = { ...s };
-                          if (next[field.key] === c.value && field.key !== 'direction')
+                <ChoiceChips
+                  wrap
+                  flush
+                  label={tr(field.label)}
+                  value={field.key in picked ? String(picked[field.key]) : null}
+                  onChange={(key) => {
+                    const c = (field.choices ?? []).find((x) => String(x.value) === key);
+                    if (c) setPicked((s) => ({ ...s, [field.key]: c.value }));
+                  }}
+                  // A Pay card's way is one or the other, never none (R62); the rest can be none.
+                  onClear={
+                    field.key === 'direction'
+                      ? undefined
+                      : () =>
+                          setPicked((s) => {
+                            const next = { ...s };
                             delete next[field.key];
-                          else next[field.key] = c.value;
-                          return next;
-                        })
-                      }
-                      testID={`kit-${field.key}-${c.value}`}
-                    />
-                  ))}
-                </View>
+                            return next;
+                          })
+                  }
+                  options={(field.choices ?? []).map((c) => ({
+                    value: String(c.value),
+                    label: tr(c.label),
+                    testID: `kit-${field.key}-${c.value}`,
+                  }))}
+                  testID={`kit-${field.key}`}
+                />
               </View>
             ) : field.key === 'title' && host && host.items.length ? (
               <View key={field.key} style={{ gap: 10 }}>
                 <View style={{ gap: 6 }}>
                   <Text variant="label">{tr(field.label)}</Text>
-                  {grouped(host.items, host.collections).map((g) => (
-                    <View key={g.collection?.id ?? 'loose'} style={{ gap: 6 }}>
-                      {g.collection ? (
-                        <Text variant="overline" color="textTertiary" accessibilityRole="header">
-                          {g.collection.name}
-                        </Text>
+                  {host.items.length > ITEMS_AS_CHIPS ? (
+                    // A long catalogue is found by name (R77), never a wall of chips.
+                    <PickerField
+                      label={tr(field.label)}
+                      shown={item?.name ?? null}
+                      detail={
+                        item?.price
+                          ? formatAmount(item.price.value, item.price.currency, locale)
+                          : null
+                      }
+                      placeholder={tr('Choose one')}
+                      accessibilityHint={tr('Opens the list of items')}
+                      onOpen={() => setFindingItem(true)}
+                      testID="book-item"
+                    >
+                      {findingItemOnce ? (
+                        <SearchSheet
+                          open={findingItem}
+                          onClose={() => setFindingItem(false)}
+                          title={tr(field.label)}
+                          items={grouped(host.items, host.collections).flatMap((g) =>
+                            g.items.map((i) => ({
+                              key: i.id,
+                              title: i.name,
+                              subtitle: [
+                                i.price
+                                  ? formatAmount(i.price.value, i.price.currency, locale)
+                                  : tr('Free'),
+                                g.collection?.name,
+                              ]
+                                .filter(Boolean)
+                                .join(' · '),
+                            })),
+                          )}
+                          value={itemId}
+                          onPick={(id) => {
+                            setItemId(id);
+                            setQuantity(1);
+                            setSlot(null);
+                          }}
+                          matches={itemMatches}
+                          searchLabel={tr('Search items')}
+                          empty={tr('No item by that name.')}
+                          testID="book-item"
+                        />
                       ) : null}
-                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                        {g.items.map((i) => (
-                          <Chip
-                            key={i.id}
-                            label={
-                              i.price
-                                ? `${i.name} · ${formatAmount(i.price.value, i.price.currency, locale)}`
-                                : i.name
-                            }
-                            selected={item?.id === i.id}
-                            role="radio"
-                            onPress={() => {
-                              setItemId(i.id);
-                              setQuantity(1);
-                              setSlot(null);
-                            }}
-                            testID={`book-item-${i.id}`}
-                          />
-                        ))}
+                    </PickerField>
+                  ) : (
+                    grouped(host.items, host.collections).map((g) => (
+                      <View key={g.collection?.id ?? 'loose'} style={{ gap: 6 }}>
+                        {g.collection ? (
+                          <Text variant="overline" color="textTertiary" accessibilityRole="header">
+                            {g.collection.name}
+                          </Text>
+                        ) : null}
+                        <ChoiceChips
+                          wrap
+                          flush
+                          label={g.collection?.name ?? tr(field.label)}
+                          value={item?.id ?? null}
+                          onChange={(id) => {
+                            setItemId(id);
+                            setQuantity(1);
+                            setSlot(null);
+                          }}
+                          options={g.items.map((i) => ({
+                            value: i.id,
+                            label: i.price
+                              ? `${i.name} · ${formatAmount(i.price.value, i.price.currency, locale)}`
+                              : i.name,
+                          }))}
+                          testID="book-item"
+                        />
                       </View>
-                    </View>
-                  ))}
+                    ))
+                  )}
                   {item?.description ? (
                     <Text variant="caption" color="textSecondary" auto>
                       {item.description}
@@ -805,38 +861,17 @@ export function KitForm({
                   ) : null}
                 </View>
                 {item && item.maxQuantity > 1 ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Text variant="label" style={{ flex: 1 }}>
-                      {item.unit === 'days' ? tr('Days') : tr('For how many')}
-                    </Text>
-                    <IconButton
-                      icon={Minus}
-                      label={tr('Fewer')}
-                      disabled={quantity <= 1}
-                      onPress={() => {
-                        setQuantity((n) => Math.max(1, n - 1));
-                        setSlot(null);
-                      }}
-                      testID="book-quantity-less"
-                    />
-                    <Text
-                      variant="bodyStrong"
-                      style={{ minWidth: 28, textAlign: 'center' }}
-                      testID="book-quantity"
-                    >
-                      {quantity}
-                    </Text>
-                    <IconButton
-                      icon={Plus}
-                      label={tr('More')}
-                      disabled={quantity >= item.maxQuantity}
-                      onPress={() => {
-                        setQuantity((n) => Math.min(item.maxQuantity, n + 1));
-                        setSlot(null);
-                      }}
-                      testID="book-quantity-more"
-                    />
-                  </View>
+                  <Stepper
+                    label={item.unit === 'days' ? tr('Days') : tr('For how many')}
+                    value={quantity}
+                    min={1}
+                    max={item.maxQuantity}
+                    onChange={(n) => {
+                      setQuantity(n);
+                      setSlot(null);
+                    }}
+                    testID="book-quantity"
+                  />
                 ) : null}
                 {item?.askTopic ? (
                   <TextField

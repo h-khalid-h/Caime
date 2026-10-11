@@ -9,12 +9,12 @@ import { msg, tr } from '@caime/core/i18n';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
-import { create } from 'zustand';
 import { qk } from '@/api/keys';
 import { queryClient } from '@/api/queryClient';
 import { useTheme } from '@/theme/theme';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { useShortcutsSheet } from './shortcutsSheet';
 
 const mac =
   Platform.OS === 'web' && typeof navigator !== 'undefined' && /Mac|iP/.test(navigator.platform);
@@ -32,9 +32,7 @@ export const SHORTCUTS: Array<{ keys: string[]; does: string }> = [
   { keys: ['?'], does: msg('Show these shortcuts') },
 ];
 
-export const useShortcutsSheet = create<{ open: boolean; setOpen: (open: boolean) => void }>(
-  (set) => ({ open: false, setOpen: (open) => set({ open }) }),
-);
+export { useShortcutsSheet } from './shortcutsSheet';
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;

@@ -7,15 +7,11 @@ import { tr } from '@caime/core/i18n';
 import { LANGUAGES } from '@caime/core/languages';
 import { safeLocale } from '@caime/core/locale';
 import { getLocales } from 'expo-localization';
-import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
-import { useTheme } from '@/theme/theme';
+import { wordsMatch } from '@/lib/find';
 import { lazyPart } from '@/ui/Lazy';
-import { Pressable } from '@/ui/Pressable';
+import { PickerField } from '@/ui/PickerField';
 import type { SearchItem } from '@/ui/SearchSheet';
-import { Text } from '@/ui/Text';
-import { wordsMatch } from './find';
 import { namesOf } from './names';
 
 /** The list, loaded the first time it's opened. */
@@ -59,7 +55,6 @@ export function LanguageField({
   hint?: string;
   testID?: string;
 }) {
-  const t = useTheme();
   const [open, setOpen] = useState(false);
   // Mounted from the first time it's opened, so it can slide away as it closes.
   const [opened, setOpened] = useState(false);
@@ -84,44 +79,19 @@ export function LanguageField({
   }, [value]);
   const shown = items.find((i) => i.key === value);
   return (
-    <View style={{ gap: 6 }}>
-      <Text variant="captionStrong" color="textSecondary">
-        {label}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label}, ${shown?.title ?? value}`}
-        accessibilityHint={tr('Opens the list of languages')}
-        onPress={() => {
-          setOpen(true);
-          setOpened(true);
-        }}
-        testID={testID}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          minHeight: 48,
-          borderRadius: t.radii.md,
-          borderWidth: 1,
-          borderColor: t.c.border,
-          backgroundColor: t.c.surface,
-          paddingHorizontal: 14,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text variant="body">{shown?.title ?? value}</Text>
-          <Text variant="caption" color="textSecondary">
-            {sample(value)}
-          </Text>
-        </View>
-        <ChevronDown size={18} color={t.c.textSecondary} />
-      </Pressable>
-      {hint ? (
-        <Text variant="caption" color="textTertiary">
-          {hint}
-        </Text>
-      ) : null}
+    <PickerField
+      label={label}
+      shown={shown?.title ?? value}
+      detail={sample(value)}
+      placeholder={value}
+      accessibilityHint={tr('Opens the list of languages')}
+      onOpen={() => {
+        setOpen(true);
+        setOpened(true);
+      }}
+      hint={hint}
+      testID={testID}
+    >
       {opened ? (
         <SearchSheet
           open={open}
@@ -136,6 +106,6 @@ export function LanguageField({
           testID={testID}
         />
       ) : null}
-    </View>
+    </PickerField>
   );
 }

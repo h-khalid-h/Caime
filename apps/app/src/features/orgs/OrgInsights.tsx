@@ -1,5 +1,5 @@
 import { replyTimeText } from '@caime/core/business';
-import { tr } from '@caime/core/i18n';
+import { tr, trn } from '@caime/core/i18n';
 import { useQuery } from '@tanstack/react-query';
 import ChartBar from 'lucide-react-native/icons/chart-no-axes-column';
 import { useState } from 'react';
@@ -80,8 +80,8 @@ export function OrgInsights({ orgId }: { orgId: string }) {
               onChange={setDays}
               label={tr('Period')}
               options={[
-                { value: '7', label: '7 days' },
-                { value: '30', label: '30 days' },
+                { value: '7', label: trn(7, '{n} day', '{n} days') },
+                { value: '30', label: trn(30, '{n} day', '{n} days') },
               ]}
             />
           </View>

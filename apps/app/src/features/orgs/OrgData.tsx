@@ -12,12 +12,12 @@ import Download from 'lucide-react-native/icons/download';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
-import { Choice } from '@/features/settings/SettingsPage';
 import { isWeb, WEB_URL } from '@/lib/config';
 import { openLink } from '@/lib/links';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
+import { ChoiceSheet } from '@/ui/ChoiceSheet';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -100,22 +100,22 @@ export function OrgData({ org, refresh }: { org: OrgView; refresh: (o: OrgView) 
         )}
         <View style={{ height: 1, backgroundColor: t.c.border, marginVertical: 12 }} />
         {owner ? (
-          <View testID="org-retention">
-            <Choice
-              label={tr('Keep conversations for')}
-              value={KEEP.includes(current) ? current : 'off'}
-              onChange={(v) => void keep(v)}
-              options={KEEP.map((v) =>
-                v === 'off'
-                  ? {
-                      value: v,
-                      label: tr('As long as the account exists'),
-                      detail: tr('Unless a conversation’s own disappearing setting says otherwise'),
-                    }
-                  : { value: v, label: retentionText(Number(v)) },
-              )}
-            />
-          </View>
+          <ChoiceSheet
+            label={tr('Keep conversations for')}
+            value={KEEP.includes(current) ? current : 'off'}
+            onChange={(v) => void keep(v)}
+            options={KEEP.map((v) =>
+              v === 'off'
+                ? {
+                    value: v,
+                    label: tr('As long as the account exists'),
+                    detail: tr('Unless a conversation’s own disappearing setting says otherwise'),
+                  }
+                : { value: v, label: retentionText(Number(v)) },
+            )}
+            rowStyle={{ marginHorizontal: -16 }}
+            testID="org-retention"
+          />
         ) : (
           <Text variant="caption" color="textSecondary">
             {org.retentionDays

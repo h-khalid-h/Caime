@@ -6,11 +6,11 @@ import { endpoints } from '@/api/endpoints';
 import { privateSupported } from '@/features/e2ee/support';
 import { PeoplePicker, toggled } from '@/features/people/PeoplePicker';
 import { Button } from '@/ui/Button';
+import { ChoiceChips } from '@/ui/Chip';
 import { Back } from '@/ui/directional';
 import { IconButton } from '@/ui/IconButton';
 import { useLayout } from '@/ui/layout';
 import { Screen, TopBar } from '@/ui/Screen';
-import { Segmented } from '@/ui/Segmented';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -78,14 +78,17 @@ export default function NewGroup() {
         />
         {privateSupported ? (
           <>
-            <Segmented
+            <ChoiceChips
+              wrap
+              flush
               label={tr('What kind of group')}
               value={privacy}
               onChange={setPrivacy}
               options={[
-                { value: 'standard', label: tr('Standard') },
-                { value: 'private', label: tr('Private') },
+                { value: 'standard' as const, label: tr('Standard') },
+                { value: 'private' as const, label: tr('Private') },
               ]}
+              testID="group-kind"
             />
             <Text variant="caption" color="textSecondary">
               {privacy === 'private'

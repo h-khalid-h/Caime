@@ -17,7 +17,7 @@ import { endpoints } from '@/api/endpoints';
 import { useInboxAll } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { knownPrivate } from '@/features/e2ee/known';
-import { PickMark, toggled } from '@/features/people/PeoplePicker';
+import { toggled } from '@/features/people/PeoplePicker';
 import { Avatar } from '@/ui/Avatar';
 import { Button } from '@/ui/Button';
 import { ListRow } from '@/ui/ListRow';
@@ -136,7 +136,6 @@ export function ForwardSheet({ m, onClose }: { m: MessageView; onClose: () => vo
                     ) : undefined
                   }
                   icon={c.other ? undefined : Users}
-                  right={<PickMark on={on} />}
                   onPress={() =>
                     setPicked((p) => (!on && p.size >= FORWARD_MAX ? p : toggled(p, c.id)))
                   }

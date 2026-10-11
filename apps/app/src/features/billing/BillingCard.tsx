@@ -13,7 +13,7 @@ import { endpoints } from '@/api/endpoints';
 import { leaveFor } from '@/lib/links';
 import { useUserClock } from '@/lib/time';
 import { Button } from '@/ui/Button';
-import { Segmented } from '@/ui/Segmented';
+import { ChoiceChips } from '@/ui/Chip';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -102,7 +102,9 @@ export function BillingCard({
   return (
     <View style={{ gap: 12 }} testID="billing-buy">
       {billing.prices.length > 1 ? (
-        <Segmented
+        <ChoiceChips
+          wrap
+          flush
           label={tr('Billing period')}
           value={period}
           onChange={setPeriod}
@@ -110,6 +112,7 @@ export function BillingCard({
             value: p.interval,
             label: p.interval === 'month' ? tr('Monthly') : tr('Yearly'),
           }))}
+          testID="billing-period"
         />
       ) : null}
       <Text variant="bodyStrong" testID="billing-price">

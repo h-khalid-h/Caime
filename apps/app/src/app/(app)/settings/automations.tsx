@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import Clock from 'lucide-react-native/icons/clock';
 import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useAutomations, usePolicies } from '@/api/hooks';
 import { qk } from '@/api/keys';
@@ -25,7 +25,7 @@ import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
 import { lazyPart } from '@/ui/Lazy';
 import { ListRow } from '@/ui/ListRow';
-import { Pressable } from '@/ui/Pressable';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
 
@@ -71,7 +71,7 @@ const inWords = (hours: number) =>
 
 function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void }) {
   const qc = useQueryClient();
-  const t = useTheme();
+  const _t = useTheme();
   // As it's saved, here or on another device; turned here, it shows at once.
   const flip = async (enabled: boolean) => {
     const show = (on: boolean) =>
@@ -100,41 +100,17 @@ function AutomationRow({ a, onOpen }: { a: AutomationView; onOpen: () => void })
       : tr('Nothing kept yet');
   // What it does opens it; the switch beside it turns it on or off, and is never inside it.
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingEnd: 16 }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${a.description}. ${status}`}
-        onPress={onOpen}
-        style={({ hovered, pressed }) => ({
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-          minHeight: 56,
-          paddingStart: 16,
-          paddingEnd: 12,
-          paddingVertical: 10,
-          backgroundColor: pressed ? t.c.surfacePressed : hovered ? t.c.surfaceHover : undefined,
-        })}
-        testID="automation-row"
-      >
-        <Bookmark size={20} color={t.c.textSecondary} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text variant="bodyStrong">{a.description}</Text>
-          <Text variant="caption" color="textSecondary">
-            {status}
-          </Text>
-        </View>
-      </Pressable>
-      <Switch
-        value={a.enabled}
-        onValueChange={(v) => void flip(v)}
-        trackColor={{ true: t.c.primary, false: t.c.borderStrong }}
-        // Its state is the switch's own (on or off), never part of its name.
-        accessibilityLabel={a.description}
-        testID="automation-toggle"
-      />
-    </View>
+    <SwitchRow
+      inset
+      icon={Bookmark}
+      label={a.description}
+      detail={status}
+      value={a.enabled}
+      onChange={(v) => void flip(v)}
+      onOpen={onOpen}
+      rowTestID="automation-row"
+      testID="automation-toggle"
+    />
   );
 }
 

@@ -4,11 +4,9 @@
  */
 
 import { tr } from '@caime/core/i18n';
-import Check from 'lucide-react-native/icons/check';
 import Search from 'lucide-react-native/icons/search';
 import { type ReactNode, useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
-import { useTheme } from '@/theme/theme';
 import { Button } from './Button';
 import { ListRow } from './ListRow';
 import { useLayout } from './layout';
@@ -56,7 +54,6 @@ export function SearchSheet({
   empty?: string;
   testID?: string;
 }) {
-  const t = useTheme();
   const { height, desktop } = useLayout();
   const [term, setTerm] = useState('');
   const chosen = items.find((i) => i.key === value);
@@ -101,7 +98,6 @@ export function SearchSheet({
                 radio
                 checked={on}
                 selected={on}
-                right={on ? <Check size={18} color={t.c.accent} /> : null}
                 onPress={() => {
                   onPick(item.key);
                   close();

@@ -7,11 +7,11 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { qk } from '@/api/keys';
-import { Choice } from '@/features/settings/SettingsPage';
 import { useUserClock } from '@/lib/time';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/theme';
 import { Button } from '@/ui/Button';
+import { ChoiceList } from '@/ui/ChoiceList';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
@@ -190,10 +190,11 @@ export function WhatsAppImport({
               </Text>
             ) : !nothing ? (
               <>
-                <Choice
+                <ChoiceList
                   label={tr('Which name is you?')}
-                  value={chosen ?? ''}
+                  value={chosen ?? null}
                   onChange={setMine}
+                  testID="import-mine"
                   options={chat.authors.map((a) => ({
                     value: a,
                     label: a,
@@ -201,10 +202,11 @@ export function WhatsAppImport({
                   }))}
                 />
                 {chat.ambiguous ? (
-                  <Choice
+                  <ChoiceList
                     label={tr('How its dates read')}
                     value={chat.dayFirst ? 'day' : 'month'}
                     onChange={(v) => setDayFirst(v === 'day')}
+                    testID="import-dates"
                     options={[
                       { value: 'day', label: tr('Day first'), detail: '13/03/2024 is 13 March' },
                       {

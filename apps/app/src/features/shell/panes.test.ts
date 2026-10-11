@@ -12,6 +12,19 @@ const panes = readFileSync(join(__dirname, 'panes.ts'), 'utf8');
 const lazyTargets = [...panes.matchAll(/import\('(@\/features\/[^']+)'\)/g)].flatMap((m) =>
   m[1] ? [m[1]] : [],
 );
+/**
+ * Loaded apart as well (R77's budget), each by its one dynamic import: what the first screen
+ * never needs. `leftConversation` is reached through `realtime/client`, never `realtime/apply`.
+ */
+const APART: Array<[module: string, importer: string]> = [
+  ['@/realtime/apply', 'realtime/client.ts'],
+  ['./apply', 'realtime/client.ts'],
+  ['@/features/shell/shortcuts', 'app/(app)/_layout.tsx'],
+  ['./YouSheetBody', 'features/shell/YouButton.tsx'],
+  ['@/features/shell/YouSheetBody', 'features/shell/YouButton.tsx'],
+  ['./OrgDetails', 'features/orgs/OrgScreen.tsx'],
+  ['@/features/orgs/OrgDetails', 'features/orgs/OrgScreen.tsx'],
+];
 
 const files = readdirSync(src, { recursive: true })
   .map(String)
@@ -29,6 +42,20 @@ describe('the panes stay out of the first download', () => {
       for (const target of lazyTargets) {
         if (new RegExp(`from '${target.replaceAll('/', '\\/')}'`).test(text))
           offenders.push(`${f} imports ${target}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('nothing imports statically what loads apart', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      const text = readFileSync(join(src, f), 'utf8');
+      for (const [target, importer] of APART) {
+        const relative = target.startsWith('./');
+        if (relative && !f.startsWith(importer.slice(0, importer.lastIndexOf('/')))) continue;
+        if (new RegExp(`from '${target.replaceAll('/', '\\/').replace('.', '\\.')}'`).test(text))
+          offenders.push(`${f} imports ${target} (only ${importer} may, and only dynamically)`);
       }
     }
     expect(offenders).toEqual([]);

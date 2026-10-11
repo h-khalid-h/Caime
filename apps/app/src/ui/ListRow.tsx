@@ -1,3 +1,4 @@
+import Check from 'lucide-react-native/icons/check';
 import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/theme';
@@ -26,6 +27,9 @@ export interface ListRowProps {
   checked?: boolean;
   /** One of a list to choose one from (with `checked`): read as a radio, not a checkbox. */
   radio?: boolean;
+  disabled?: boolean;
+  /** Its place in the keyboard's order (a group with one stop: `rovingTabIndex`). */
+  tabIndex?: 0 | -1;
 }
 
 export function ListRow({
@@ -45,6 +49,8 @@ export function ListRow({
   accessibilityLabel,
   checked,
   radio,
+  disabled,
+  tabIndex,
 }: ListRowProps) {
   const t = useTheme();
   const content = (hovered: boolean, pressed: boolean, id?: string) => (
@@ -53,6 +59,7 @@ export function ListRow({
       style={[
         {
           minHeight: 56,
+          opacity: disabled ? 0.5 : 1,
           paddingHorizontal: 16,
           paddingVertical: 12,
           flexDirection: 'row',
@@ -95,6 +102,10 @@ export function ListRow({
         ) : null}
       </View>
       {right}
+      {checked ? (
+        // A row that's chosen says so to the eye as well (R77), not only to a screen reader.
+        <Check size={20} color={t.c.accent} strokeWidth={2.6} />
+      ) : null}
       {chevron ? <Chevron size={18} color={t.c.textTertiary} /> : null}
     </View>
   );
@@ -104,9 +115,14 @@ export function ListRow({
     <Pressable
       testID={testID}
       accessibilityRole={checked === undefined ? 'button' : radio ? 'radio' : 'checkbox'}
-      accessibilityState={checked === undefined ? undefined : { checked }}
+      accessibilityState={{
+        ...(checked === undefined ? {} : { checked }),
+        ...(disabled ? { disabled: true } : {}),
+      }}
       accessibilityLabel={accessibilityLabel ?? (subtitle ? `${title}, ${subtitle}` : title)}
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      tabIndex={tabIndex}
       focusRadius={8}
     >
       {({ hovered, pressed }) => content(hovered, pressed)}

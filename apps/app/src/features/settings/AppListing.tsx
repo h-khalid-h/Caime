@@ -28,10 +28,10 @@ import { AVATAR_MAX_EDGE } from '@/lib/photoSize';
 import { photoToUpload, pickFromLibrary } from '@/lib/photos';
 import { Button } from '@/ui/Button';
 import { ChoiceChips } from '@/ui/Chip';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
-import { SwitchRow } from './SwitchRow';
 
 type Category = 'none' | AppCategory;
 

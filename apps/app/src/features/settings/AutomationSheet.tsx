@@ -20,12 +20,12 @@ import { endpoints } from '@/api/endpoints';
 import { useSaved } from '@/api/hooks';
 import { qk } from '@/api/keys';
 import { Choice } from '@/features/settings/SettingsPage';
-import { SwitchRow } from '@/features/settings/SwitchRow';
 import { Button } from '@/ui/Button';
-import { Chip } from '@/ui/Chip';
+import { Chip, ChoiceChips } from '@/ui/Chip';
 import { lazyPart } from '@/ui/Lazy';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
+import { SwitchRow } from '@/ui/SwitchRow';
 import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
@@ -115,10 +115,6 @@ export function AutomationSheet({
       toast((e as Error).message, { tone: 'danger' });
     }
   };
-  const toggle = (k: SaveKind) =>
-    setKinds((ks) =>
-      ks.includes(k) ? (ks.length > 1 ? ks.filter((x) => x !== k) : ks) : [...ks, k],
-    );
 
   return (
     <Sheet
@@ -197,21 +193,16 @@ export function AutomationSheet({
           </View>
         ) : null}
         <Overline>{tr('Sends')}</Overline>
-        <View
-          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-          accessibilityRole="toolbar"
-          accessibilityLabel={tr('What they send')}
-        >
-          {SAVE_KINDS.map((k) => (
-            <Chip
-              key={k}
-              label={tr(KIND_LABELS[k])}
-              selected={kinds.includes(k)}
-              onPress={() => toggle(k)}
-              testID={`automation-kind-${k}`}
-            />
-          ))}
-        </View>
+        <ChoiceChips
+          multiple
+          wrap
+          flush
+          label={tr('What they send')}
+          value={kinds}
+          onChange={setKinds}
+          options={SAVE_KINDS.map((k) => ({ value: k, label: tr(KIND_LABELS[k]) }))}
+          testID="automation-kind"
+        />
         <TextField
           label={tr('With any of these words (optional)')}
           hint={tr('In its name, or in the message it comes with. Separate them with commas.')}

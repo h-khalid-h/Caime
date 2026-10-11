@@ -5,11 +5,11 @@
 
 import { tr } from '@caime/core/i18n';
 import { useMemo, useState } from 'react';
+import { countryMatches, flagOf } from '@/lib/find';
 import { lazyPart } from '@/ui/Lazy';
 import { PickerField } from '@/ui/PickerField';
 import type { SearchItem } from '@/ui/SearchSheet';
 import { useCountries } from './countries';
-import { countryMatches, flagOf } from './find';
 
 /** The list, loaded the first time it's opened. */
 const SearchSheet = lazyPart(() => import('@/ui/SearchSheet').then((m) => m.SearchSheet));

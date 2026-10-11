@@ -18,6 +18,8 @@ test.describe
       await page.goto('/settings/region');
       await expect(visible(page, 'Language and region')).toBeVisible();
       await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+      // The language is one row that opens its choice (R77).
+      await page.getByTestId('region-language-choice').click();
       await page.getByRole('radio', { name: 'العربية' }).click();
       // The app remounts in Arabic, right to left, without a reload.
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
@@ -29,6 +31,7 @@ test.describe
       await expect
         .poll(() => page.evaluate(() => document.fonts.check('16px Inter', 'عربي')))
         .toBe(true);
+      await page.getByTestId('region-language-choice').filter({ visible: true }).click();
       const english = page.getByRole('radio', { name: 'English' });
       const gap = await english.evaluate((el) => {
         const text = [...el.querySelectorAll('*')].find(
@@ -135,6 +138,7 @@ test.describe
         animations: 'disabled',
       });
       // And back to English, from there.
+      await d.getByTestId('region-language-choice').click();
       await d.getByRole('radio', { name: 'English' }).click();
       await expect(d.locator('html')).toHaveAttribute('dir', 'ltr');
       await expect(visible(d, 'Language and region')).toBeVisible();
@@ -178,6 +182,7 @@ test.describe
       expect(org.ok(), await org.text()).toBe(true);
       const { page, errors } = await newPerson(phone);
       await page.goto('/settings/region');
+      await page.getByTestId('region-language-choice').click();
       await page.getByRole('radio', { name: 'العربية' }).click();
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
       const shot = async (path: string, name: string, settled: string) => {

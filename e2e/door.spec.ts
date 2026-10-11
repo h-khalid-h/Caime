@@ -126,11 +126,10 @@ test('the team sets how long conversations are kept, exports them, and erases on
   await page.goto(`/o/${handle}/setup`);
   const data = page.getByTestId('org-data');
   await expect(data).toBeVisible();
-  // Kept for 90 days: the owner's to set, and the customer reads it where they write.
-  await data
-    .getByTestId('org-retention')
-    .getByRole('radio', { name: /^90 days/ })
-    .click();
+  // Kept for 90 days: the owner's to set (one row that opens its choice), and the customer reads
+  // it where they write.
+  await data.getByTestId('org-retention').click();
+  await page.getByRole('radio', { name: /^90 days/ }).click();
   await expect(visible(page, 'Conversations are kept for 90 days')).toBeVisible();
   const { page: c, errors: customerErrors } = await newPerson(customerContext);
   await c.goto(`/c/${conversationId}`);
