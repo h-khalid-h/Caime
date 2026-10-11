@@ -6,10 +6,14 @@ export const CLIENT = { 'x-caime-client': 'web' };
 export const PASSWORD = 'a long enough passphrase';
 /** The E2E server's operator tokens (playwright.config.ts): plans, and /metrics. */
 export const ADMIN_TOKEN = 'e2e-operator-token-0123456789abcdef';
+/** The secret the mail provider's webhooks carry (R75): the E2E server is given it too. */
+export const MAIL_WEBHOOK_SECRET = 'e2e-mail-webhook-secret-0123';
 export const METRICS_TOKEN = 'e2e-metrics-token-0123456789abcdef';
 /** The DNS stand-in (e2e/dns-stub.mjs) organizations verify their domains against. */
 export const DNS_STUB = `http://127.0.0.1:${Number(process.env.E2E_DNS_STUB_PORT ?? 8797)}`;
 export const SMTP_STUB = `http://127.0.0.1:${Number(process.env.E2E_SMTP_STUB_PORT ?? 8795)}`;
+/** The mail provider's stand-in (e2e/mail-stub.mjs): what Caime sent by mail, at `GET /sent`. */
+export const MAIL_STUB = `http://127.0.0.1:${Number(process.env.E2E_MAIL_STUB_PORT ?? 8798)}`;
 
 /** What the mail stand-in (e2e/smtp-stub.mjs) received for an address, oldest first. */
 export async function mailsTo(

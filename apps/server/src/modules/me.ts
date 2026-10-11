@@ -84,7 +84,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
           locale: user.locale,
         },
       };
-    return { user: meView(user, ctx.now()) };
+    return { user: meView(user, ctx.now(), ctx.config) };
   });
 
   /** Your plan, and what you've used of it today. */
@@ -224,7 +224,7 @@ export async function meRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.bus.publish([auth.userId], { type: 'me.updated', data: { id: auth.userId } });
     if (weekMoved) await ctx.bus.publish([auth.userId], { type: 'policies.changed', data: {} });
     if (briefChanged) await scheduleBrief(ctx, auth.userId);
-    return { user: meView(user, ctx.now()) };
+    return { user: meView(user, ctx.now(), ctx.config) };
   });
 
   app.put('/me/privacy', async (req): Promise<PrivacyResponse> => {

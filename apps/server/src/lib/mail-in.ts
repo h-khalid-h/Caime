@@ -1,0 +1,316 @@
+/**
+ * Mail in (PRODUCT-REVIEW R75, phase 1): a mail to a handle's address becomes a message in the
+ * conversation between its sender and that person, or in the sender's customer thread with that
+ * organization, and from then on it's a message like any other (read for what it promises and
+ * asks, searched, kept and erased with the rest). The rules:
+ *
+ * - Who the sender is comes from the authenticated From alone (DMARC: SPF or DKIM aligned with
+ *   the From domain, as the receiving server found), never a Reply-To, a Sender or a display
+ *   name. Mail that fails is dropped and counted; the provider's spam verdict drops the rest.
+ *   (Phase 2's notices will show unverified mail as such; nothing attributes it to a person.)
+ * - A sender with an account is that person. Anyone else is a provisional person: a users row
+ *   of kind 'provisional' holding the address and the name the mail gave, which the person they
+ *   wrote to sees and nobody can find (every lookup of people takes kind 'human'), and which
+ *   becomes an account only by signing up with that address.
+ * - A stranger's first mail is a message request, as a stranger's message is; mail keeps
+ *   coming while it waits (held in the one conversation, nothing more notified), and declining
+ *   mutes the address rather than refusing mail.
+ * - A thread is a topic: once the request is past, a mail whose References name one already
+ *   here lands in that conversation, else its subject names the topic (made on the first).
+ * - Attachments go through the files pipeline as the sender's own files; words past a message's
+ *   length ride along whole as a text file.
+ * - Under 18, an address takes mail only from people the person is connected with (R29);
+ *   anything else is dropped without a bounce, since a bounce says the address exists.
+ */
+import { defaultPrivacy, isReservedHandle, SendMessageBody, uuidv4, uuidv7 } from '@caime/core';
+import { bareSubject } from '@caime/core/mail';
+import type { AppContext } from '../context';
+import { ORG_COLUMNS, USER_COLUMNS, type UserRow } from '../db/schema';
+import { startCustomerConversation } from './business-threads';
+import { ensureDirectConversation } from './conversations';
+import { storeBytes } from './files';
+import { alignedDomains, domainOf, handleOf, mailOn, senderName } from './mail-address';
+import type { InboundMail, MailAuth } from './mail-provider';
+import { afterMessage } from './message-effects';
+import { messageViews, participantsOf, sendMessage } from './messages';
+import { assertStorage } from './plans';
+import { between, pairKey } from './relations';
+import { storageFor } from './storage';
+import { createTopicConversation } from './topics';
+import { minorOf } from './users';
+
+export type InboundOutcome =
+  | 'delivered'
+  | 'duplicate'
+  | 'unverified'
+  | 'spam'
+  | 'unknown'
+  | 'refused'
+  | 'empty';
+
+/** A message's words at most (core's SendMessageBody): the rest of a long mail rides as a file. */
+const MESSAGE_MAX = 10_000;
+/** Attachments a message carries at most (core's SendMessageBody). */
+const FILES_MAX = 10;
+
+/**
+ * Whether the receiving server vouched for the From domain: DMARC passed, or DKIM or SPF passed
+ * for a domain aligned with it (relaxed alignment, as DMARC reads it).
+ */
+export function senderVerified(fromAddress: string, auth: MailAuth): boolean {
+  const from = domainOf(fromAddress);
+  if (!from) return false;
+  if (auth.dmarc?.result === 'pass') return true;
+  if (auth.dkim.some((d) => d.result === 'pass' && alignedDomains(d.domain, from))) return true;
+  return auth.spf?.result === 'pass' && alignedDomains(auth.spf.domain, from);
+}
+
+/** Each address at our domain the mail reached, and what became of it there. */
+export async function receiveMail(
+  ctx: AppContext,
+  mail: InboundMail,
+): Promise<Array<{ to: string; outcome: InboundOutcome }>> {
+  const domain = ctx.config.MAIL_DOMAIN;
+  if (!domain || !mailOn(ctx.config) || !ctx.mailProvider) return [];
+  const ours = [...new Set(mail.to.filter((a) => handleOf(a, domain)))];
+  const count = (outcome: InboundOutcome) => ctx.metrics.mail.inc({ direction: 'in', outcome });
+  if (!ours.length) {
+    count('unknown');
+    return [];
+  }
+  const all = (outcome: InboundOutcome) => {
+    count(outcome);
+    return ours.map((to) => ({ to, outcome }));
+  };
+  if (mail.spam) return all('spam');
+  if (!senderVerified(mail.from.address, mail.auth)) return all('unverified');
+  if (!mail.text.trim() && !mail.attachments.length) return all('empty');
+  const out: Array<{ to: string; outcome: InboundOutcome }> = [];
+  for (const to of ours) {
+    const outcome = await deliverTo(ctx, mail, to, domain);
+    count(outcome);
+    out.push({ to, outcome });
+  }
+  return out;
+}
+
+type Target =
+  | { kind: 'person'; user: UserRow }
+  | { kind: 'org'; org: { id: string; name: string; verified_at: Date | null } };
+
+async function recipientOf(ctx: AppContext, handle: string): Promise<Target | null> {
+  // Caime's own names (cai, the friends, staff words) take no mail.
+  if (isReservedHandle(handle)) return null;
+  const user = await ctx.db
+    .selectFrom('users')
+    .select(USER_COLUMNS)
+    .where('handle', '=', handle)
+    .where('kind', '=', 'human')
+    .where('deleted_at', 'is', null)
+    .where('suspended_at', 'is', null)
+    .executeTakeFirst();
+  if (user) return { kind: 'person', user };
+  const org = await ctx.db
+    .selectFrom('organizations')
+    .select(ORG_COLUMNS)
+    .where('handle', '=', handle)
+    .where('archived_at', 'is', null)
+    .executeTakeFirst();
+  return org ? { kind: 'org', org } : null;
+}
+
+/** The person a mail is from: their account, or a provisional person made or found by the address. */
+async function senderOf(ctx: AppContext, mail: InboundMail): Promise<UserRow | null> {
+  const address = mail.from.address;
+  const find = () =>
+    ctx.db.selectFrom('users').select(USER_COLUMNS).where('email', '=', address).executeTakeFirst();
+  const known = await find();
+  if (known) {
+    if (known.kind === 'provisional') return known;
+    if (known.kind === 'human' && !known.deleted_at && !known.suspended_at) return known;
+    return null;
+  }
+  const id = uuidv7();
+  await ctx.db
+    .insertInto('users')
+    .values({
+      id,
+      email: address,
+      // A handle nobody can type or find (a colon is never in one); claiming gives a real one.
+      handle: `mail:${id}`,
+      password_hash: '',
+      display_name: senderName(mail.from.name, address),
+      kind: 'provisional',
+      privacy: JSON.stringify(defaultPrivacy({ minor: false })),
+      // Its own clock, as the sweep reads it (a test moves the clock).
+      created_at: ctx.now(),
+    })
+    .onConflict((oc) => oc.column('email').doNothing())
+    .execute();
+  // Two mails from a new address at once: the first one's row is theirs.
+  const row = await find();
+  return row?.kind === 'provisional' || row?.kind === 'human' ? row : null;
+}
+
+async function deliverTo(
+  ctx: AppContext,
+  mail: InboundMail,
+  toAddress: string,
+  domain: string,
+): Promise<InboundOutcome> {
+  // The provider delivering the same mail again (its retry) is the one message.
+  const seen = await ctx.db
+    .selectFrom('mail_messages')
+    .select('message_id')
+    .where('rfc_message_id', '=', mail.rfcMessageId)
+    .where('to_address', '=', toAddress)
+    .executeTakeFirst();
+  if (seen) return 'duplicate';
+  const handle = handleOf(toAddress, domain);
+  if (!handle) return 'unknown';
+  const target = await recipientOf(ctx, handle);
+  if (!target) return 'unknown';
+  const sender = await senderOf(ctx, mail);
+  if (!sender || sender.id === (target.kind === 'person' ? target.user.id : null)) return 'refused';
+  let conversationId: string;
+  if (target.kind === 'person') {
+    const person = target.user;
+    const rel = await between(ctx.db, person.id, sender.id);
+    if (rel.blockedByMe || rel.blockedMe) return 'refused';
+    if (minorOf(person, ctx.now()) && !rel.connected) return 'refused';
+    const general = await ensureDirectConversation(ctx.db, sender.id, person.id, {
+      createdBy: sender.id,
+      connectionId: rel.connectionId,
+      requestFrom: rel.connected ? null : sender.id,
+    });
+    conversationId = await threadFor(ctx, general.id, sender.id, person.id, mail);
+  } else {
+    conversationId = (await startCustomerConversation(ctx, sender, target.org, null))
+      .conversationId;
+  }
+  await deliver(ctx, sender, conversationId, mail, toAddress);
+  return 'delivered';
+}
+
+/**
+ * Where a mail lands between two people: while the person's request from this sender waits,
+ * the one conversation (nothing branches off a request); then the conversation a referenced
+ * mail is in, else the topic its subject names, made on the first mail with that subject.
+ */
+async function threadFor(
+  ctx: AppContext,
+  generalId: string,
+  senderId: string,
+  personId: string,
+  mail: InboundMail,
+): Promise<string> {
+  const theirs = await ctx.db
+    .selectFrom('participants')
+    .select('request_state')
+    .where('conversation_id', '=', generalId)
+    .where('user_id', '=', personId)
+    .executeTakeFirst();
+  if (theirs?.request_state === 'pending' || theirs?.request_state === 'declined') return generalId;
+  const { key } = pairKey(senderId, personId);
+  const ids = [...mail.references, ...(mail.inReplyTo ? [mail.inReplyTo] : [])];
+  if (ids.length) {
+    const hit = await ctx.db
+      .selectFrom('mail_messages as mm')
+      .innerJoin('messages as m', 'm.id', 'mm.message_id')
+      .innerJoin('conversations as c', 'c.id', 'm.conversation_id')
+      .select('c.id')
+      .where('mm.rfc_message_id', 'in', ids)
+      .where('c.direct_key', '=', key)
+      .orderBy('m.seq', 'desc')
+      .executeTakeFirst();
+    if (hit) return hit.id;
+  }
+  const subject = bareSubject(mail.subject);
+  if (!subject) return generalId;
+  const topic = await ctx.db
+    .selectFrom('conversations')
+    .select('id')
+    .where('direct_key', '=', key)
+    .where('is_general', '=', false)
+    .where('parent_id', '=', generalId)
+    .where('title', '=', subject)
+    .executeTakeFirst();
+  if (topic) return topic.id;
+  return createTopicConversation(ctx, senderId, generalId, subject);
+}
+
+/** The mail as a message: its attachments as the sender's files, its words, told live, then its effects. */
+async function deliver(
+  ctx: AppContext,
+  sender: UserRow,
+  conversationId: string,
+  mail: InboundMail,
+  toAddress: string,
+): Promise<void> {
+  const provider = ctx.mailProvider;
+  if (!provider) return;
+  const storage = storageFor(ctx.config);
+  const fileIds: string[] = [];
+  let images = 0;
+  const keep = async (file: { bytes: Buffer; mime: string; name: string }) => {
+    try {
+      await assertStorage(ctx, sender.id, file.bytes.length);
+      const row = await storeBytes(ctx, storage, { ownerId: sender.id, ...file });
+      if (row.kind === 'image') images++;
+      fileIds.push(row.id);
+    } catch (err) {
+      ctx.log.warn({ err, name: file.name }, 'mail attachment not kept');
+    }
+  };
+  let text = mail.text.trim();
+  if (text.length > MESSAGE_MAX) {
+    // The whole mail as a file, the start of it as the message.
+    await keep({
+      bytes: Buffer.from(text, 'utf8'),
+      mime: 'text/plain',
+      name: `${bareSubject(mail.subject) ?? 'message'}.txt`,
+    });
+    text = `${text.slice(0, MESSAGE_MAX - 1).trimEnd()}…`;
+  }
+  for (const a of mail.attachments.slice(0, FILES_MAX - fileIds.length)) await keep(a);
+  if (!text && !fileIds.length) return;
+  const kind = fileIds.length ? (images === fileIds.length ? 'media' : 'file') : 'text';
+  const result = await sendMessage(
+    ctx,
+    sender.id,
+    conversationId,
+    SendMessageBody.parse({
+      clientId: uuidv4(),
+      kind,
+      ...(text ? { body: text } : {}),
+      ...(fileIds.length ? { fileIds } : {}),
+    }),
+    { channel: 'mail' },
+  );
+  if (!result.created) return;
+  await ctx.db
+    .insertInto('mail_messages')
+    .values({
+      message_id: result.message.id,
+      direction: 'in',
+      rfc_message_id: mail.rfcMessageId,
+      in_reply_to: mail.inReplyTo,
+      references_ids: mail.references.slice(-50),
+      from_address: mail.from.address,
+      to_address: toAddress,
+      subject: mail.subject?.slice(0, 500) ?? null,
+      provider: provider.name,
+      provider_id: null,
+    })
+    .onConflict((oc) => oc.columns(['rfc_message_id', 'to_address']).doNothing())
+    .execute();
+  // Everyone else in it hears it now, as a sent message is heard; its effects run after.
+  const [view] = await messageViews(ctx.db, [result.message], sender.id);
+  const others = (await participantsOf(ctx.db, conversationId))
+    .map((p) => p.user_id)
+    .filter((u) => u !== sender.id);
+  if (view && others.length)
+    await ctx.bus.publish(others, { type: 'message.created', data: { ...view, clientId: null } });
+  const { message, analysis } = result;
+  ctx.defer('after-message', () => afterMessage(ctx, message, analysis));
+}

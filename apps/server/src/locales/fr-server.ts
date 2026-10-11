@@ -1149,4 +1149,6 @@ export const frServer: Catalog = {
   'Anyone on Caime can find and connect it now.':
     'Tout le monde sur Caime peut maintenant le trouver et le connecter.',
   'A text message carries no payload.': 'Un message texte ne porte pas de charge utile.',
+  'That isn’t from the mail provider.': 'Ceci ne vient pas du fournisseur de messagerie.',
+  'That isn’t a mail.': 'Ce n’est pas un e-mail.',
 };

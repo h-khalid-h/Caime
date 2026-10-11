@@ -988,6 +988,33 @@ These are rules, not preferences.
   (`assertAutomationRoom`, under the person's lock, `AUTOMATIONS_MAX` the ceiling). A test
   that needs a bigger team or more apps puts its organization on Business in its setup;
   `plans.test.ts` is where limits are tested.
+- Caime Mail (R75): a handle is an address at `MAIL_DOMAIN` once `MAIL_PROVIDER` is set
+  (`mailOn`, `mailAddressOf` in `lib/mail-address.ts`; on `MeView` for adults, on `OrgView` for
+  the team). The provider is one interface (`lib/mail-provider.ts`: `inbound`, `send`, `events`;
+  Postmark first, named in `MAIL_PROVIDER_NAMES` for the processors list), reached through
+  `POST /v1/mail/in/:provider` and `/events/:provider` (`modules/mail.ts`, the secret compared
+  in constant time). The rules are `lib/mail-in.ts` (`receiveMail`: the sender by the
+  authenticated From alone, `senderVerified`; a provisional person is `users.kind =
+  'provisional'` with a `mail:<id>` handle, found by nobody since every lookup of people takes
+  `kind = 'human'`, and claimed by signing up with the address; a stranger's mail is a request
+  that keeps coming, held; threads are topics by References, else by `bareSubject`; attachments
+  go through `storeBytes` in `lib/files.ts`, where the upload routes' finaliser lives too) and
+  `lib/mail-out.ts` (`queueMailOut` from `effectsOf`: a person's words and files to each
+  provisional member, the `mail.send` job from the person's or the organization's address in
+  the thread, `sent` then `delivered` or `bounced` by `applyMailEvents`; `mail.sweep` daily). A
+  message that came or went as mail has `messages.channel = 'mail'` and a `mail_messages` row
+  (`MessageView.mail`); erasure clears its subject and sender address. A provisional sender is
+  a person where a bot isn't (a thread's moves, the `automated` flag) and is never notified
+  (reached by mail instead). A customer's thread starts through `startCustomerConversation`
+  (`lib/business-threads.ts`), for the route and for mail alike. A subject's rules are core's
+  `mail.ts` (`bareSubject`, `subjectFromText`), read by the server and by the composer: in a
+  one-to-one with someone reached by mail (`mailBound` in `features/conversation/topics.ts`,
+  where `topicsFor` lives too) the general conversation's composer shows the subject a mail from
+  here carries (`composer-subject`: `ConversationView.mailSubject`, the thread's as an answer,
+  `replySubject`, else the first line) and a subject written over it starts the topic it names
+  through `endpoints.startTopic` before sending there; a reply, and a topic, carry the
+  thread's. The E2E provider stand-in is `e2e/mail-stub.mjs` (`MAIL_STUB`, port 8798; the DNS
+  stub's control port is 8797), and `e2e/mail.spec.ts` posts its webhooks.
 - Mail (R48) goes out only through `ctx.mail` (`lib/email.ts`, null without `SMTP_URL`, so a
   route that needs it throws `mailUnavailable()`), after the response with `ctx.defer`, never
   through the job queue (a reset link is a secret). Texts stay ASCII so they travel as plain

@@ -45,6 +45,7 @@ import { CodeChangedBanner, Downgraded, PrivateSheet } from '@/features/e2ee/par
 import { privateSupported } from '@/features/e2ee/support';
 import type { KitChoice, KitStart } from '@/features/kits/KitForm';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
+import { handleOf } from '@/features/people/handleLine';
 import { useNow, useUserClock } from '@/lib/time';
 import { leftConversation } from '@/realtime/client';
 import {
@@ -83,6 +84,7 @@ import { buildRows, type Row } from './rows';
 import { mayKeepFrom } from './SharedFiles';
 import { SuggestionBar } from './SuggestionBar';
 import { TypingIndicator, useTypingNames } from './TypingIndicator';
+import { mailBound } from './topics';
 
 /** "How do you know …?" for a connection never labelled (R3), loaded the first time it opens. */
 const RelationshipPicker = lazyPart(() =>
@@ -387,7 +389,7 @@ export function ConversationScreen({
               ? other.person.trust.label
               : (presence ?? other.person.presence) === 'online'
                 ? [tr('Online'), other.relationship?.label].filter(Boolean).join(' · ')
-                : (other.relationship?.label ?? `@${other.person.handle}`)
+                : (other.relationship?.label ?? handleOf(other.person))
             : conversation
               ? [
                   ofGroup,
@@ -414,8 +416,10 @@ export function ConversationScreen({
           conversation?.kind === 'direct' &&
           !conversation.request &&
           !caimes &&
+          !mailBound(conversation) &&
           callsSupported ? (
-            // Calls (PRD §47): between two people who can already write to each other.
+            // Calls (PRD §47): between two people who can already write to each other, and
+            // nothing live with someone reached by mail (R75).
             <>
               <IconButton
                 icon={Phone}

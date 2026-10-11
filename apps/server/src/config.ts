@@ -71,6 +71,20 @@ const Env = z.object({
   SPEECH_MODEL: z.string().optional(),
   /** Another endpoint for it (a gateway, or the local stand-in the tests run). */
   SPEECH_BASE_URL: z.string().url().optional(),
+  /**
+   * Caime Mail (R75): the domain every handle is an address at (handle@MAIL_DOMAIN), the
+   * provider that receives and sends it, its token, and the secret its webhooks carry. Off
+   * without the domain and the provider.
+   */
+  MAIL_DOMAIN: z
+    .string()
+    .regex(/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/)
+    .optional(),
+  MAIL_PROVIDER: z.enum(['postmark']).optional(),
+  MAIL_PROVIDER_TOKEN: z.string().optional(),
+  MAIL_WEBHOOK_SECRET: z.string().min(16).optional(),
+  /** Another endpoint for the provider's API (a gateway, or the local stand-in the tests run). */
+  MAIL_BASE_URL: z.string().url().optional(),
   /** Run background workers in this process. */
   WORKERS: bool.default(true),
   /**

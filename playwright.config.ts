@@ -5,7 +5,13 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { ADMIN_TOKEN, DNS_STUB, METRICS_TOKEN } from './e2e/helpers';
+import {
+  ADMIN_TOKEN,
+  DNS_STUB,
+  MAIL_STUB,
+  MAIL_WEBHOOK_SECRET,
+  METRICS_TOKEN,
+} from './e2e/helpers';
 
 // Going offline and routing reach the service worker's own requests too, so a test that says
 // the app opens with no network shows it did, from what the worker kept.
@@ -81,6 +87,12 @@ export default defineConfig({
           env: { PORT: new URL(SMTP_STUB).port, SMTP_PORT: String(SMTP_PORT) },
         },
         {
+          command: 'node e2e/mail-stub.mjs',
+          url: `${MAIL_STUB}/health`,
+          reuseExistingServer: !process.env.CI,
+          env: { PORT: new URL(MAIL_STUB).port },
+        },
+        {
           command: 'node e2e/stripe-stub.mjs',
           url: `${STRIPE_STUB}/health`,
           reuseExistingServer: !process.env.CI,
@@ -123,6 +135,12 @@ export default defineConfig({
             METRICS_TOKEN,
             DNS_SERVERS: `127.0.0.1:${DNS_PORT}`,
             SMTP_URL: `smtp://127.0.0.1:${SMTP_PORT}`,
+            // Caime Mail (R75): every handle an address at the test domain, through the stand-in.
+            MAIL_DOMAIN: 'caime.test',
+            MAIL_PROVIDER: 'postmark',
+            MAIL_PROVIDER_TOKEN: 'e2e-stub',
+            MAIL_WEBHOOK_SECRET,
+            MAIL_BASE_URL: MAIL_STUB,
             EMAIL_FROM: 'Caime <hello@caime.test>',
             // Calls between two browsers on this machine need no STUN server out there.
             STUN_URLS: '',

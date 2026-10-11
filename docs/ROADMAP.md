@@ -1204,14 +1204,22 @@ discovers, and mail at their own address.
       cases, 46 listed apps paged in three), the E2E paths moved from `/settings/connected` to
       `/settings/apps` with a Discover scenario (listed, reviewed, found, counted, Connect in its
       own tab).
-- [ ] R75, Caime Mail phase 1: `MAIL_DOMAIN` and the inbound interface (`lib/mail-in.ts`, a
-      provider's webhook; a stand-in in tests, `e2e/mail-stub.mjs`), the authenticated From only,
-      provisional people (visible to whoever they wrote to, found by nobody, gone with their
-      conversations or after a year), a stranger's mail as a request that keeps every message,
-      threads as topics named by the subject, attachments through files, replies out with sent,
-      delivered and bounced, claiming an account by signing up or in with the address, the
-      Business inbox for an organization's address, under-18 addresses closed to strangers,
-      export and erasure, the privacy and help pages and the processor list.
+- [x] R75, Caime Mail phase 1: `MAIL_DOMAIN` and the provider behind one interface
+      (`lib/mail-provider.ts`, Postmark first; a stand-in in tests, `e2e/mail-stub.mjs`), the
+      authenticated From only (DMARC, or DKIM or SPF aligned, from the headers the receiving
+      server wrote), provisional people (`users.kind = 'provisional'`, visible to whoever they
+      wrote to, found by nobody, swept after a year's silence or when in no conversation), a
+      stranger's mail as a request that keeps every message, threads as topics by References
+      or by subject, attachments through files (a long mail whole as a text file), replies out
+      from the person's or the organization's address in the thread with sent, delivered and
+      bounced, claiming by signing up with the address, an organization's address as a customer
+      thread, under-18 addresses closed to strangers, erasure of a mail's subject and sender,
+      the privacy and help pages and the processor list; the app says "by email" with the
+      delivery state, marks a person reached by email (no handle, no call), shows the address in
+      Settings, and its composer shows the subject a mail carries (the thread's, else the first
+      line) and starts the topic a written subject names. Not in phase 1: unverified mail shown as a notice (dropped and
+      counted, `caime_mail_total`), the hourly notification tempo for mail, a card or a sticker
+      said by mail, the agent answering by mail, signing in with the address (sign-up claims).
 - [ ] ⛔ R75 in production: the mail domain's MX at the inbound provider, DKIM, SPF and DMARC,
       the provider's credentials and webhook secret (the owner's).
 - [ ] R79 layer 1, bridges (PRODUCT-REVIEW R79): Zapier, Make, n8n, Pipedream and IFTTT as
@@ -2559,3 +2567,19 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
 - 2026-10-11 — An app's sheet on the setup screen shows the app as the list has it now, not the
   copy tapped (a list restored from the device and read again a moment later never reached the
   open sheet; the E2E found it under load).
+- 2026-10-11 — R75, Caime Mail phase 1: a handle is an address at `MAIL_DOMAIN`, mail in from
+  the authenticated From alone (DMARC, or DKIM or SPF aligned) through one provider interface
+  (`lib/mail-provider.ts`, Postmark first) behind `POST /v1/mail/in/:provider` and
+  `/events/:provider`; a stranger becomes a provisional person (`users.kind = 'provisional'`,
+  found by nobody, claimed by signing up with the address) and their mail a request that keeps
+  every message; threads are topics by References or by subject (core `mail.ts`); attachments
+  are files, a long mail rides along whole; a reply goes out from the person's or the
+  organization's address in the thread (`mail.send`) and says sent, delivered or bounced; an
+  organization's address is a customer thread; under-18 addresses take mail from connections
+  only; erasure, export, the privacy and help pages, the processor list, the DPA annex and the
+  metrics say so. The app says "by email" with the delivery state under each such message,
+  marks a person reached by email in place of a handle, shows the address under Profile, and in
+  a one-to-one reached by mail shows the subject a mail carries (the thread's, else the first
+  line) and starts the topic a written subject names. `mail.test.ts` (14 cases) and `e2e/mail.spec.ts` against the
+  provider's stand-in (`e2e/mail-stub.mjs`). Not turned on in production (⛔: the domain's MX,
+  DKIM, SPF and DMARC at the provider; docs/DEPLOY.md).

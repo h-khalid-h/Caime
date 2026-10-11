@@ -3680,4 +3680,20 @@ export const fr: Catalog = {
   'Find by name or handle': 'Trouver par nom ou identifiant',
   'Nobody by that name.': 'Personne de ce nom.',
   'Who’s in it': 'Qui y participe',
+  'Reached by email': 'Joint par e-mail',
+  'This person wrote in by email and isn’t on Caime yet. Their address was vouched for by the mail server that received it.':
+    'Cette personne a écrit par e-mail et n’est pas encore sur Caime. Son adresse a été attestée par le serveur de messagerie qui a reçu son message.',
+  Subject: 'Objet',
+  'Also your email address: {address}. Mail to it arrives here as messages.':
+    'Aussi votre adresse e-mail : {address}. Ce qui y est envoyé arrive ici en messages.',
+  'by email': 'par e-mail',
+  'by email ·': 'par e-mail ·',
+  'delivered by email': 'remis par e-mail',
+  'Delivered by email ·': 'Remis par e-mail ·',
+  'bounced, not delivered': 'rejeté, non remis',
+  'Bounced, not delivered ·': 'Rejeté, non remis ·',
+  'sent by email': 'envoyé par e-mail',
+  'Sent by email ·': 'Envoyé par e-mail ·',
+  'sending by email': 'envoi par e-mail',
+  'Sending by email ·': 'Envoi par e-mail ·',
 };

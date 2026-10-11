@@ -34,7 +34,8 @@ import type { Trust } from './trust';
 // --- People ---------------------------------------------------------------------------------
 
 /** A person, an app's bot, an organization's agent, Cai (R67) or a Caime Friend. */
-export type UserKind = 'human' | 'bot' | 'agent' | 'assistant' | 'character';
+/** A provisional person (R75) wrote in by mail and hasn't claimed an account: seen by whoever they wrote to, found by nobody. */
+export type UserKind = 'human' | 'bot' | 'agent' | 'assistant' | 'character' | 'provisional';
 export type Plan = 'personal' | 'pro' | 'business' | 'enterprise';
 /** What the account owner chose. */
 export type PresenceSetting = 'auto' | 'available' | 'busy' | 'away' | 'invisible';
@@ -79,6 +80,8 @@ export interface MeView {
   email: string;
   emailVerified: boolean;
   handle: string;
+  /** Their address at Caime's mail domain (R75): for an adult where mail is on, else null. */
+  mailAddress: string | null;
   displayName: string;
   kind: UserKind;
   /** 'YYYY-MM-DD', never shown to anyone else; none for an app or an agent. */
@@ -464,6 +467,9 @@ export interface MessageView {
   album: AlbumView | null;
   /** Sent through a token or an app its sender let act for them, not typed in Caime: its name. */
   sentVia: string | null;
+  /** Came or went as mail (R75): then `mail` says more. */
+  channel: 'mail' | null;
+  mail: MessageMailView | null;
   /**
    * In a private conversation (R18): the message as its sender's device sealed it, for this
    * device to open; `body` is null. The sender's id for it is `sealed.cid`.
@@ -474,6 +480,30 @@ export interface MessageView {
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
+}
+
+/** How far a message sent as mail got, as the provider tells it (R75): never a read by a pixel. */
+export type MailDelivery = 'sent' | 'delivered' | 'bounced';
+
+/** A message that came or went as mail (R75): the thread's subject, the other side's address, and how far one sent got. */
+export interface MessageMailView {
+  direction: 'in' | 'out';
+  subject: string | null;
+  /** The sender's address for mail in, the recipient's for mail out. */
+  address: string;
+  delivery: MailDelivery | null;
+  deliveryAt: string | null;
+}
+
+/** What the mail provider's inbound webhook is answered (R75): each address here the mail reached, and what became of it there. */
+export interface MailInboundResponse {
+  received: true;
+  outcomes: Array<{ to: string; outcome: string }>;
+}
+/** What the provider's delivery webhook is answered: how many messages it moved. */
+export interface MailEventsResponse {
+  received: true;
+  applied: number;
 }
 
 export interface ParticipantView {
@@ -524,6 +554,11 @@ export interface ConversationView {
   topics: Array<{ id: string; title: string; lastMessageAt: string | null }>;
   /** A one-to-one between two people connected now: topics start only there (PRD §58). */
   connected: boolean;
+  /**
+   * With someone reached by mail (R75): the subject a mail from here carries, the thread's
+   * ("Re: …" of the latest mail either way); null when none went yet, or nobody here is.
+   */
+  mailSubject: string | null;
   purpose: string | null;
   isGeneral: boolean;
   parentId: string | null;
@@ -1069,6 +1104,8 @@ export interface OrgView extends OrgSummaryView {
   payments: PaymentSettings | null;
   /** How long it keeps its customers' conversations (R54), in days; null keeps them. */
   retentionDays: number | null;
+  /** Its address at Caime's mail domain (R75): for its team where mail is on, else null. */
+  mailAddress: string | null;
 }
 
 /**

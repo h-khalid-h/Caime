@@ -336,7 +336,8 @@ export async function recordBusinessMessage(
     .select(['kind', 'display_name', 'handle', 'birth_date', 'time_zone'])
     .where('id', '=', senderId)
     .executeTakeFirst();
-  if (sender && sender.kind !== 'human') {
+  // A bot's or an agent's message never moves a thread; a person's does, reached by mail (R75) or not.
+  if (sender && sender.kind !== 'human' && sender.kind !== 'provisional') {
     await publishThread(ctx, thread.org_id, conversationId);
     return;
   }

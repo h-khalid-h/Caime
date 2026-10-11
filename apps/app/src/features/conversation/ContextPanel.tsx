@@ -26,6 +26,7 @@ import { useAiReady } from '@/features/assist/ready';
 import { ComingUpList } from '@/features/common/comingUpLazy';
 import { WhatsAppImport } from '@/features/import/WhatsAppImport';
 import { OrgMark, VerifiedLine } from '@/features/orgs/kinds';
+import { handleLine } from '@/features/people/handleLine';
 import { openCheckedLink, openLink } from '@/lib/links';
 import { useNow, useUserClock } from '@/lib/time';
 import { usePendingTasks, useTaskOutbox } from '@/state/taskOutbox';
@@ -43,6 +44,7 @@ import { Text } from '@/ui/Text';
 import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { SharedFiles } from './SharedFiles';
+import { topicsFor } from './topics';
 
 // Who's in a group, and running it: loaded when a group's details are first shown.
 const GroupPeople = lazyPart(() => import('./GroupPeople').then((m) => m.GroupPeople));
@@ -152,7 +154,7 @@ function BusinessCard({
             {customer.displayName}
           </Text>
           <Text variant="caption" color="textSecondary">
-            @{customer.handle} · {customer.trust.label}
+            {handleLine(customer)}
           </Text>
         </Pressable>
       ) : (
@@ -245,7 +247,7 @@ export function ContextPanel({
               {other.person.displayName}
             </Text>
             <Text variant="caption" color="textSecondary">
-              @{other.person.handle} · {other.person.trust.label}
+              {handleLine(other.person)}
             </Text>
             {other.relationship ? (
               <View style={{ alignItems: 'center', gap: 4 }}>
@@ -455,25 +457,6 @@ export function ContextPanel({
 
 /** The server's limit on a topic's name. */
 const TOPIC_MAX = 80;
-
-/**
- * Where a subject can have a conversation of its own (PRD §58): a one-to-one with someone you're
- * connected with, or a group that isn't in a space (a space has its own conversations).
- */
-function topicsFor(c: ConversationView): 'direct' | 'group' | null {
-  // Only between people connected now (a view from before says nothing, so offers nothing).
-  if (
-    c.kind === 'direct' &&
-    c.isGeneral &&
-    c.other &&
-    !c.request &&
-    c.privacyClass !== 'private' &&
-    c.connected === true
-  )
-    return 'direct';
-  if (c.kind === 'group' && !c.space && !c.parentId) return 'group';
-  return null;
-}
 
 /** A conversation's topics, and starting one: in a group, everyone in it is in it. */
 function Topics({

@@ -863,7 +863,7 @@ export async function buildExport(ctx: AppContext, me: string, now: Date) {
     exportedAt: now.toISOString(),
     note: 'Everything Caime keeps about you and by you: what you sent and set, what it worked out for you, and what it recorded of your use, for as long as it keeps each, as the app shows it to you. Other people’s words aren’t in it (their messages, their items and notes, quotes of them), nor reports others made about you, nor secrets, which Caime keeps only as hashes or never shows. Files are listed; each downloads from its link while you are signed in.',
     account: {
-      ...meView(user, now),
+      ...meView(user, now, ctx.config),
       // What they offer (R58–R62), as set: hours, catalog, collections, ordering, ways to be paid.
       booking: { hours: bookingOf(user), items: catalogOf(user).items },
       collections: catalogOf(user).collections,

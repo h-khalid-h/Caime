@@ -47,6 +47,7 @@ import { Screen, TopBar } from '@/ui/Screen';
 import { Spec } from '@/ui/Spec';
 import { Text } from '@/ui/Text';
 import { toast } from '@/ui/Toast';
+import { handleOf } from './handleLine';
 import { PersonRule } from './PersonRule';
 import { RelationshipHistory } from './RelationshipHistory';
 import { SystemProfile } from './SystemProfile';
@@ -328,7 +329,7 @@ function PersonPage({ id, book = null, slug = null }: PersonScreenProps) {
             {person.displayName}
           </Text>
           <Text variant="body" color="textSecondary" align="center">
-            @{person.handle}
+            {handleOf(person)}
             {person.pronouns ? ` · ${person.pronouns}` : ''}
           </Text>
           {person.statusText ? (

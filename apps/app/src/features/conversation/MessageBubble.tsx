@@ -1,5 +1,5 @@
 import { palette } from '@caime/brand/tokens';
-import type { MessageView } from '@caime/core/api';
+import type { MessageMailView, MessageView } from '@caime/core/api';
 import { AI_LABEL } from '@caime/core/assist';
 import { formatBytes, formatClock, formatDuration, systemText } from '@caime/core/format';
 import { tr } from '@caime/core/i18n';
@@ -162,6 +162,24 @@ function TranslationBlock({
       ) : null}
     </View>
   );
+}
+
+/**
+ * What a message that came or went as mail says of itself (R75): that it came by email, or how
+ * far one sent got as the mail servers said (sent, delivered, bounced); never a read.
+ */
+function mailLine(mail: MessageMailView, spoken: boolean): string {
+  if (mail.direction === 'in') return spoken ? tr('by email') : tr('by email ·');
+  switch (mail.delivery) {
+    case 'delivered':
+      return spoken ? tr('delivered by email') : tr('Delivered by email ·');
+    case 'bounced':
+      return spoken ? tr('bounced, not delivered') : tr('Bounced, not delivered ·');
+    case 'sent':
+      return spoken ? tr('sent by email') : tr('Sent by email ·');
+    default:
+      return spoken ? tr('sending by email') : tr('Sending by email ·');
+  }
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -521,6 +539,19 @@ export const MessageBubble = memo(function MessageBubble({
           {tr('Imported ·')}
         </Text>
       ) : null}
+      {m.mail ? (
+        // Came or went as mail (R75): where it came from, or how far it got as the mail servers
+        // said; never a read.
+        <Text
+          variant="caption"
+          color={meta}
+          style={{ fontSize: 11 }}
+          numberOfLines={1}
+          testID="message-mail"
+        >
+          {mailLine(m.mail, false)}
+        </Text>
+      ) : null}
       {m.sentVia ? (
         // Sent through a token or an app its sender let in, not typed here (PRD §74).
         <Text
@@ -563,6 +594,7 @@ export const MessageBubble = memo(function MessageBubble({
     m.forwarded && !deleted ? 'forwarded' : '',
     m.automated ? (m.aiAgent ? tr('AI agent') : tr('Automated')) : '',
     m.sentVia ? tr('sent via {sentVia}', { sentVia: m.sentVia }) : '',
+    m.mail ? mailLine(m.mail, true) : '',
     deleted ? tr('Message deleted') : (text ?? opened.note ?? sticker?.label ?? m.kind),
     time,
     delivery && mine ? delivery : '',

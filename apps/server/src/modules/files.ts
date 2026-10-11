@@ -10,92 +10,24 @@ import { canSee, uuidv7 } from '@caime/core';
 import type { FileResponse, UploadChunkResponse, UploadStartResponse } from '@caime/core/api';
 import { tr } from '@caime/core/i18n';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import sharp from 'sharp';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { USER_COLUMNS } from '../db/schema';
 import { isPublicItem, itemsFor, orgHost, personHost } from '../lib/booking';
 import { AppError, badRequest, notFound } from '../lib/errors';
+import { finalizeFile, storeFile } from '../lib/files';
 import { fileView } from '../lib/messages';
 import { requireOperator } from '../lib/operator';
 import { orgSeat } from '../lib/orgs';
 import { assertStorage } from '../lib/plans';
 import { NOBODY } from '../lib/public-pages';
 import { viewerRelation } from '../lib/relations';
-import { makeRenditions } from '../lib/renditions';
-import { sniffFile } from '../lib/sniff';
 import { type Storage, storageFor } from '../lib/storage';
 import { minorOf, privacyOf } from '../lib/users';
 import { parse } from '../lib/validate';
 import { requireAuth } from '../plugins/auth';
 
 const MAX_BYTES = 100 * 1024 * 1024;
-const REENCODE = new Set(['image/jpeg', 'image/png', 'image/webp']);
-
-function keyFor(id: string, now: Date): string {
-  return `files/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}/${id}`;
-}
-
-async function finalize(
-  ctx: AppContext,
-  storage: Storage,
-  id: string,
-  tempKey: string,
-  declaredMime: string,
-  name: string,
-  durationMs: number | null,
-) {
-  const now = ctx.now();
-  const key = keyFor(id, now);
-  const sniffed = await sniffFile(storage.path(tempKey), declaredMime, name);
-  let width: number | null = null;
-  let height: number | null = null;
-  let thumbKey: string | null = null;
-  let previewKey: string | null = null;
-  let cleaned = false;
-  if (sniffed.kind === 'image' && sniffed.mime !== 'image/gif' && sniffed.mime !== 'image/heic') {
-    try {
-      const input = storage.path(tempKey);
-      if (REENCODE.has(sniffed.mime)) {
-        // Rotate by EXIF, cap the size, and drop every metadata block (GPS included).
-        const out = storage.path(`${tempKey}.clean`);
-        const pipeline = sharp(input, { failOn: 'truncated' })
-          .rotate()
-          .resize({ width: 4096, height: 4096, fit: 'inside', withoutEnlargement: true });
-        const encoded =
-          sniffed.mime === 'image/png'
-            ? pipeline.png()
-            : sniffed.mime === 'image/webp'
-              ? pipeline.webp({ quality: 88 })
-              : pipeline.jpeg({ quality: 88, mozjpeg: true });
-        await encoded.toFile(out);
-        await storage.remove(tempKey);
-        await storage.moveFrom(`${tempKey}.clean`, tempKey);
-        cleaned = true;
-      }
-      const meta = await sharp(storage.path(tempKey)).metadata();
-      width = meta.width ?? null;
-      height = meta.height ?? null;
-      // Made beside the upload, then kept where files are kept.
-      ({ thumbKey, previewKey } = await makeRenditions(storage, tempKey, id, width, height));
-    } catch (err) {
-      ctx.log.warn({ err }, 'image processing failed');
-      thumbKey = null;
-      previewKey = null;
-      // A photo whose hidden details (where it was taken among them) couldn't be taken out is
-      // never kept as it came.
-      if (REENCODE.has(sniffed.mime) && !cleaned) {
-        await storage.remove(tempKey);
-        await storage.remove(`${tempKey}.clean`);
-        throw badRequest(tr('That photo couldn’t be read, so it wasn’t sent. Try another.'));
-      }
-    }
-  }
-  await storage.moveFrom(tempKey, key);
-  const size = (await storage.size(key)) ?? 0;
-  return { key, size, sniffed, width, height, thumbKey, previewKey, durationMs };
-}
-
 /** The file to send for an image drawn large: its preview, else the cleaned original. */
 async function largeOf(
   storage: Storage,
@@ -243,48 +175,17 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
       throw err;
     }
     const name = (part.filename || 'file').slice(0, 200);
-    const done = await finalize(
-      ctx,
-      storage,
+    const file = await storeFile(ctx, storage, {
       id,
+      ownerId: auth.userId,
       tempKey,
-      part.mimetype,
+      mime: part.mimetype,
       name,
-      q.durationMs ?? null,
-    );
-    const row: Parameters<typeof fileView>[0] = {
-      id,
-      name,
-      mime: done.sniffed.mime,
-      size: done.size,
-      kind: done.sniffed.kind,
-      width: done.width,
-      height: done.height,
-      duration_ms: done.durationMs,
-      thumb_key: done.thumbKey,
-    };
-    await ctx.db
-      .insertInto('files')
-      .values({
-        id,
-        owner_id: auth.userId,
-        storage_key: done.key,
-        name,
-        mime: done.sniffed.mime,
-        size: done.size,
-        kind: done.sniffed.kind,
-        width: done.width,
-        height: done.height,
-        duration_ms: done.durationMs,
-        sha256: hash.digest('hex'),
-        thumb_key: done.thumbKey,
-        preview_key: done.previewKey,
-        status: 'ready',
-        created_at: ctx.now(),
-      })
-      .execute();
+      durationMs: q.durationMs ?? null,
+      sha256: hash.digest('hex'),
+    });
     reply.status(201);
-    return { file: fileView(row) };
+    return { file: fileView(file) };
   });
 
   // --- Resumable uploads (tus-style): create, append chunks at an offset, resume after a drop ---
@@ -378,7 +279,7 @@ export async function fileRoutes(app: FastifyInstance, ctx: AppContext) {
         return { f, written };
       });
       if (written < Number(f.size)) return { id, offset: written, complete: false };
-      const done = await finalize(
+      const done = await finalizeFile(
         ctx,
         storage,
         id,

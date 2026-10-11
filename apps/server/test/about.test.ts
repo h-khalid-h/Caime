@@ -113,6 +113,7 @@ describe('About, and Caime’s own privacy, terms and help pages', () => {
       contactEmail: 'hi@nile.example',
       minimumAge: 13,
       publicUrl: BASE,
+      mailDomain: null,
       stun: 'google',
       relay: 'none',
     };

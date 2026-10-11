@@ -14,7 +14,6 @@ import {
   EscalateThreadBody,
   handleError,
   inBusinessView,
-  minorMayWriteToOrg,
   normalizeHandle,
   StartThreadBody,
   type StartThreadResult,
@@ -36,6 +35,7 @@ import { USER_COLUMNS } from '../db/schema';
 import { emitWebhook } from '../lib/apps';
 import { orgBlocked } from '../lib/blocks';
 import { factsOf, orgRef, publishThread, teamOf, threadViews } from '../lib/business';
+import { startCustomerConversation } from '../lib/business-threads';
 import { AppError, badRequest, forbidden, notFound } from '../lib/errors';
 import { recordEvent } from '../lib/events';
 import { afterMessage } from '../lib/message-effects';
@@ -174,99 +174,12 @@ export async function businessRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const me = await ctx.db
       .selectFrom('users')
-      .select(['birth_date', 'time_zone'])
+      .select(['id', 'birth_date', 'time_zone'])
       .where('id', '=', auth.userId)
       .executeTakeFirstOrThrow();
-    // Under 18, only an organization that has proved who it is: a school, a club, a clinic (R29).
-    if (!minorMayWriteToOrg(minorOf(me, ctx.now()), org.verified_at !== null))
-      throw forbidden(
-        tr(
-          'Under 18, you can message organizations that have verified who they are. {name} hasn’t yet.',
-          { name: org.name },
-        ),
-      );
-    if (await orgBlocked(ctx.db, auth.userId, id))
-      throw new AppError(
-        403,
-        'org_blocked',
-        tr('You blocked {name}. Unblock it to write to it again.', { name: org.name }),
-      );
-    const existing = await ctx.db
-      .selectFrom('business_threads')
-      .select('conversation_id')
-      .where('org_id', '=', id)
-      .where('customer_id', '=', auth.userId)
-      .where((eb) =>
-        asOrgId ? eb('customer_org_id', '=', asOrgId) : eb('customer_org_id', 'is', null),
-      )
-      .executeTakeFirst();
-    if (existing) {
-      // Back in it if they had archived it.
-      await ctx.db
-        .updateTable('participants')
-        .set({ archived_at: null, left_at: null })
-        .where('conversation_id', '=', existing.conversation_id)
-        .where('user_id', '=', auth.userId)
-        .execute();
-      return { conversationId: existing.conversation_id, created: false };
-    }
-    ctx.limiter.hit(`business-start:${auth.userId}`, ctx.config.isTest ? 1000 : 20, 3_600_000);
-    const conversationId = uuidv7();
-    const team = await teamOf(ctx.db, id);
-    try {
-      await ctx.db.transaction().execute(async (trx) => {
-        await trx
-          .insertInto('conversations')
-          .values({ id: conversationId, kind: 'business', org_id: id, created_by: auth.userId })
-          .execute();
-        await trx
-          .insertInto('participants')
-          .values([
-            { conversation_id: conversationId, user_id: auth.userId, role: 'member' },
-            ...team.map((userId) => ({
-              conversation_id: conversationId,
-              user_id: userId,
-              role: 'agent' as const,
-            })),
-          ])
-          .execute();
-        await trx
-          .insertInto('business_threads')
-          .values({
-            conversation_id: conversationId,
-            org_id: id,
-            customer_id: auth.userId,
-            customer_org_id: asOrgId ?? null,
-            created_at: ctx.now(),
-            updated_at: ctx.now(),
-          })
-          .execute();
-        await recordEvent(trx, 'conversation.created', auth.userId, {
-          conversationId,
-          kind: 'business',
-          orgId: org.id,
-        });
-      });
-    } catch (err) {
-      // Two taps at once: the first one's conversation is theirs.
-      if ((err as { code?: string }).code !== '23505') throw err;
-      const winner = await ctx.db
-        .selectFrom('business_threads')
-        .select('conversation_id')
-        .where('org_id', '=', id)
-        .where('customer_id', '=', auth.userId)
-        .where((eb) =>
-          asOrgId ? eb('customer_org_id', '=', asOrgId) : eb('customer_org_id', 'is', null),
-        )
-        .executeTakeFirstOrThrow();
-      return { conversationId: winner.conversation_id, created: false };
-    }
-    reply.status(201);
-    await ctx.bus.publish([auth.userId], {
-      type: 'conversation.created',
-      data: { conversationId },
-    });
-    return { conversationId, created: true };
+    const started = await startCustomerConversation(ctx, me, org, asOrgId ?? null);
+    if (started.created) reply.status(201);
+    return started;
   });
 
   /**

@@ -3551,4 +3551,20 @@ export const turkish: Catalog = {
   'Find by name or handle': 'Ad veya kullanıcı adıyla bul',
   'Nobody by that name.': 'Bu adda kimse yok.',
   'Who’s in it': 'Kimler var',
+  'Reached by email': 'E-postayla ulaşılıyor',
+  'This person wrote in by email and isn’t on Caime yet. Their address was vouched for by the mail server that received it.':
+    'Bu kişi e-postayla yazdı ve henüz Caime’de değil. Adresi, e-postayı alan posta sunucusu tarafından doğrulandı.',
+  Subject: 'Konu',
+  'Also your email address: {address}. Mail to it arrives here as messages.':
+    'Aynı zamanda e-posta adresiniz: {address}. Ona gelen postalar buraya mesaj olarak düşer.',
+  'by email': 'e-postayla',
+  'by email ·': 'e-postayla ·',
+  'delivered by email': 'e-postayla iletildi',
+  'Delivered by email ·': 'E-postayla iletildi ·',
+  'bounced, not delivered': 'geri döndü, iletilmedi',
+  'Bounced, not delivered ·': 'Geri döndü, iletilmedi ·',
+  'sent by email': 'e-postayla gönderildi',
+  'Sent by email ·': 'E-postayla gönderildi ·',
+  'sending by email': 'e-postayla gönderiliyor',
+  'Sending by email ·': 'E-postayla gönderiliyor ·',
 };

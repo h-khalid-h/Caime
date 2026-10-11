@@ -9,6 +9,7 @@ import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { useRequests } from '@/api/hooks';
 import { qk } from '@/api/keys';
+import { handleLine } from '@/features/people/handleLine';
 import type { RelationshipDraft } from '@/features/relationships/form';
 import { useNow, useUserClock } from '@/lib/time';
 import { useTheme } from '@/theme/theme';
@@ -63,8 +64,7 @@ export default function Requests() {
         <View style={{ flex: 1, gap: 4 }}>
           <Text variant="label">{r.person.displayName}</Text>
           <Text variant="caption" color="textSecondary">
-            @{r.person.handle} · {r.person.trust.label} ·{' '}
-            {formatListTime(r.createdAt, now, timeZone, locale)}
+            {handleLine(r.person)} · {formatListTime(r.createdAt, now, timeZone, locale)}
           </Text>
           {r.context ? (
             <Text variant="caption" color="textSecondary">

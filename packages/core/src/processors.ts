@@ -86,4 +86,12 @@ export const SUB_PROCESSORS: readonly SubProcessor[] = [
     receives: 'Your email address and the message, which carries no conversation.',
     when: 'configured',
   },
+  {
+    id: 'mail-in',
+    name: 'The mail provider the operator sets',
+    does: 'Receives mail sent to Caime addresses, and sends as mail the replies written on Caime.',
+    receives:
+      'Those messages as mail carries them: the addresses, the subject, the words and any attachment.',
+    when: 'configured',
+  },
 ] as const;

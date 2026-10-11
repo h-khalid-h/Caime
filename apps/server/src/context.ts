@@ -7,6 +7,7 @@ import type { PersonGrant } from './lib/access';
 import type { AiAssist } from './lib/ai';
 import type { Bus } from './lib/bus';
 import type { Mailer } from './lib/email';
+import type { MailProvider } from './lib/mail-provider';
 import type { Metrics } from './lib/metrics';
 import type { TxtResolver } from './lib/orgs';
 import type { RateLimiter } from './lib/rate-limit';
@@ -28,6 +29,8 @@ export interface AppContext {
   dns: TxtResolver;
   /** Mail out (R48), when the operator set SMTP_URL; null says so to the routes. */
   mail: Mailer | null;
+  /** Caime Mail (R75): the provider that receives at the addresses and sends replies, or null. */
+  mailProvider: MailProvider | null;
   log: FastifyBaseLogger;
   /** Injectable clock so tests can move time. */
   now(): Date;

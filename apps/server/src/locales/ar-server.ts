@@ -1126,4 +1126,6 @@ export const arServer: Catalog = {
   '{name} wasn’t listed': 'لم يُدرج {name}',
   'Anyone on Caime can find and connect it now.': 'يمكن لأي شخص على Caime إيجاده وربطه الآن.',
   'A text message carries no payload.': 'الرسالة النصية لا تحمل حمولة.',
+  'That isn’t from the mail provider.': 'هذا ليس من مزوّد البريد.',
+  'That isn’t a mail.': 'هذه ليست رسالة بريد.',
 };

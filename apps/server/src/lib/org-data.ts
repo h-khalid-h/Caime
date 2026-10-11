@@ -58,6 +58,11 @@ export async function eraseMessagesWhere(
         status = case when status = 'pending' then 'expired' else status end,
         resolved_at = coalesce(resolved_at, ${now})
       where message_id in (select id from gone)
+    ),
+    mail_gone as (
+      update mail_messages set subject = null, from_address = '', in_reply_to = null,
+        references_ids = '{}', delivery_detail = null
+      where message_id in (select id from gone)
     )
     select distinct 'saved' as what, user_id::text as id, null as conversation_id
     from saved_gone

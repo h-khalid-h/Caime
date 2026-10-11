@@ -13,7 +13,7 @@ export interface TrustInput {
   emailVerified: boolean;
   /** Verified member of a verified organization, e.g. "DATA C". */
   verifiedOrgName: string | null;
-  kind: 'human' | 'bot' | 'agent' | 'assistant' | 'character';
+  kind: 'human' | 'bot' | 'agent' | 'assistant' | 'character' | 'provisional';
 }
 
 export interface Trust {
@@ -38,6 +38,16 @@ export function trustFor(input: TrustInput): Trust {
       label: tr('Caime Friend'),
       detail: tr(
         'This is one of Caime’s friends: not a person. It answers by its rules and, with AI assist on, with a model’s help, in its own character.',
+      ),
+    };
+  // Reached by mail (R75): a person, vouched for by the server that received their mail, not
+  // yet on Caime.
+  if (input.kind === 'provisional')
+    return {
+      level: 'unknown',
+      label: tr('Reached by email'),
+      detail: tr(
+        'This person wrote in by email and isn’t on Caime yet. Their address was vouched for by the mail server that received it.',
       ),
     };
   if (input.kind !== 'human') {

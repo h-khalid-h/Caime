@@ -3810,4 +3810,20 @@ export const ar: Catalog = {
   'Find by name or handle': 'ابحث بالاسم أو المعرّف',
   'Nobody by that name.': 'لا أحد بهذا الاسم.',
   'Who’s in it': 'من فيها',
+  'Reached by email': 'عبر البريد الإلكتروني',
+  'This person wrote in by email and isn’t on Caime yet. Their address was vouched for by the mail server that received it.':
+    'هذا الشخص راسلك عبر البريد الإلكتروني وليس على Caime بعد. عنوانه شهد به خادم البريد الذي استلم الرسالة.',
+  Subject: 'الموضوع',
+  'Also your email address: {address}. Mail to it arrives here as messages.':
+    'وهو أيضًا عنوان بريدك الإلكتروني: {address}. ما يُرسل إليه يصل هنا رسائل.',
+  'by email': 'عبر البريد',
+  'by email ·': 'عبر البريد ·',
+  'delivered by email': 'وصلت عبر البريد',
+  'Delivered by email ·': 'وصلت عبر البريد ·',
+  'bounced, not delivered': 'ارتدت، لم تصل',
+  'Bounced, not delivered ·': 'ارتدت، لم تصل ·',
+  'sent by email': 'أُرسلت عبر البريد',
+  'Sent by email ·': 'أُرسلت عبر البريد ·',
+  'sending by email': 'يجري الإرسال عبر البريد',
+  'Sending by email ·': 'يجري الإرسال عبر البريد ·',
 };

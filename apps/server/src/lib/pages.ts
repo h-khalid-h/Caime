@@ -29,6 +29,8 @@ export interface PageFacts {
   minimumAge: number;
   /** Where Caime is, as people reach it: PUBLIC_URL. */
   publicUrl: string;
+  /** The domain every handle is an address at (R75), or null where mail is off. */
+  mailDomain: string | null;
   /** Whose public server tells a device its own address for calls, if any (STUN_URLS). */
   stun: 'google' | 'other' | 'none';
   /**
@@ -245,7 +247,19 @@ a year.</li>
 <li>An invite link that ran out or was taken back is kept for ${span(KEPT_DAYS.spentInvites)}, then
 forgotten; the people who joined through it stay your connections. A notification is kept for
 ${span(KEPT_DAYS.notifications)}, then goes.</li>
-<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
+${
+  f.mailDomain
+    ? `<li>Mail to your address (your @handle at ${escapeHtml(f.mailDomain)}) is a message like any
+other, kept and erased with the rest; what the mail was on the wire (its ids, its subject, the
+addresses) stays with the message, and erasing the message clears the subject and the sender&rsquo;s
+address. A sender is taken for who they are only when the receiving mail server vouched for their
+address; anything else is dropped unread. Someone who writes to you by mail and isn&rsquo;t on
+Caime is kept as a person only you can see (their address and the name their mail gave) until a
+year passes with no mail either way, or until every conversation with them is gone; signing up
+with that address makes that person, and your conversations with them, theirs.</li>
+`
+    : ''
+}<li>A handle you stop using, by changing it or deleting your account, is kept from everyone for
 ${span(KEPT_DAYS.heldHandles)}, you included, so a link to it can&rsquo;t come to open someone
 else. Only the handle and the days are kept, never whose it was, and then it&rsquo;s
 forgotten. An organization keeps its handle, even once it has closed.</li>
@@ -492,7 +506,18 @@ businesses you deal with. Here&rsquo;s how it works.</p>
 whoever opens it can sign in and ask to connect, as You &rarr; Privacy allows (Finding you, and
 Message requests). An adult can open the link of someone under 18 only once they&rsquo;re
 connected, or one has asked to connect with the other.</li>
-<li><strong>Inviting someone.</strong> In Connect, Invite someone makes a link that says who
+${
+  f.mailDomain
+    ? `<li><strong>Your email address.</strong> ${handle}@${escapeHtml(f.mailDomain)} is yours too
+(You &rarr; Profile shows it). Mail sent to it arrives as a message from whoever sent it, in your
+conversation with them: a thread is a topic named by its subject, attachments are files, and
+what you answer goes back to them as mail from your address, with &ldquo;Sent&rdquo;,
+&ldquo;Delivered&rdquo; or &ldquo;Bounced&rdquo; beside it as the mail servers say. A stranger&rsquo;s
+first mail is a message request, like anyone&rsquo;s first message; under 18, only people you&rsquo;re
+connected with reach you by mail. An organization&rsquo;s address lands in its inbox.</li>
+`
+    : ''
+}<li><strong>Inviting someone.</strong> In Connect, Invite someone makes a link that says who
 you are and, if you choose, how you know them (&ldquo;Work &middot; DATA C&rdquo;). Whoever opens
 it signs up in half a minute, on the web with nothing to install, and lands in a conversation with
 you, already connected, with your label for them applied. A link works for thirty days, for

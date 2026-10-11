@@ -167,6 +167,7 @@ export function RequestBanner({ conversation }: { conversation: ConversationView
         borderColor: t.c.border,
         gap: 10,
       }}
+      testID="request-incoming"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <ShieldCheck size={18} color={t.c.textSecondary} />

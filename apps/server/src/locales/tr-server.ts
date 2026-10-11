@@ -1096,4 +1096,6 @@ export const turkishServer: Catalog = {
   '{name} wasn’t listed': '{name} listelenmedi',
   'Anyone on Caime can find and connect it now.': 'Caime’deki herkes artık onu bulup bağlayabilir.',
   'A text message carries no payload.': 'Bir metin mesajı yük taşımaz.',
+  'That isn’t from the mail provider.': 'Bu, posta sağlayıcısından gelmiyor.',
+  'That isn’t a mail.': 'Bu bir e-posta değil.',
 };

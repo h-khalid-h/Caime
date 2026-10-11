@@ -9,6 +9,7 @@
 
 import type { ConversationBusinessView, ConversationView } from '@caime/core';
 import { PRIVATE_GROUP_MAX, tr } from '@caime/core';
+import { replySubject } from '@caime/core/mail';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
 import type { Conversation, Participant } from '../db/schema';
@@ -216,6 +217,22 @@ export async function conversationView(
             .executeTakeFirst(),
         )
       : false;
+  // Reached by mail (R75): the subject a mail from here carries, the thread's, so the composer
+  // shows it and asks for one only where a new topic would start.
+  const mailSubject =
+    conversation.kind === 'direct' && others.some((o) => o.kind === 'provisional')
+      ? replySubject(
+          (
+            await ctx.db
+              .selectFrom('mail_messages as mm')
+              .innerJoin('messages as m', 'm.id', 'mm.message_id')
+              .select('mm.subject')
+              .where('m.conversation_id', '=', conversation.id)
+              .orderBy('m.seq', 'desc')
+              .executeTakeFirst()
+          )?.subject,
+        )
+      : null;
   // A group's topic goes by the group's name, with its own as the topic (PRD §58).
   const group =
     isGroupTopic(conversation) && conversation.parent_id
@@ -332,6 +349,7 @@ export async function conversationView(
         ? conversation.title
         : null,
     connected,
+    mailSubject,
     topics: topics.map((c) => ({
       id: c.id,
       title: c.title ?? 'Topic',

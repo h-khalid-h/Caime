@@ -200,6 +200,26 @@ A card is marked paid only from what Stripe says when the server asks it (the pa
 or the webhook naming the card), never from an event's own copy. Disconnecting asks Stripe to
 forget Caime's access (`/oauth/deauthorize`).
 
+### Caime Mail (R75) ⛔ not turned on in production
+
+Every handle is an address at `MAIL_DOMAIN` (`noor@cai.me`), received and sent through the
+provider (`MAIL_PROVIDER=postmark`, `MAIL_PROVIDER_TOKEN`), whose webhooks carry
+`MAIL_WEBHOOK_SECRET` (16 characters at least). Off until the operator sets them all. Before it
+goes on:
+
+1. **Receiving.** At Postmark, an inbound server for the domain: the domain's MX record points at
+   Postmark's inbound host, and the server's webhook is
+   `https://caime:<MAIL_WEBHOOK_SECRET>@<host>/v1/mail/in/postmark` (basic auth carries the
+   secret; `?secret=` does too). A sender is attributed by the `Authentication-Results` and
+   `Received-SPF` headers the inbound server writes: check on a test mail that they're there, or
+   nothing is attributed to anyone.
+2. **Sending.** The domain verified at Postmark (DKIM and the return-path CNAME), SPF including
+   Postmark, and a DMARC record for the domain, so replies from `<handle>@<MAIL_DOMAIN>` arrive
+   rather than land in spam.
+3. **Delivery events.** A webhook on the outbound stream for Delivery and Bounce at
+   `https://caime:<MAIL_WEBHOOK_SECRET>@<host>/v1/mail/events/postmark`.
+4. Set the four variables on the service and redeploy; the privacy page then names the provider.
+
 ### 4. Continuous deployment
 
 Every push to `main` runs CI (lint, typecheck, 230+ tests on real Postgres, the web budget, the

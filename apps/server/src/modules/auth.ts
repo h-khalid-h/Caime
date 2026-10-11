@@ -195,14 +195,17 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const existing = await ctx.db
       .selectFrom('users')
-      .select('id')
+      .select(['id', 'kind'])
       .where('email', '=', body.email)
       .executeTakeFirst();
-    if (existing) {
+    if (existing && existing.kind !== 'provisional') {
       throw conflict('email_taken', tr('That email already has an account. Sign in instead?'));
     }
+    // Someone who wrote in by mail before signing up (R75) claims that provisional person:
+    // the same row, so the conversations they're already in are theirs the moment they're in.
+    const claiming = existing?.kind === 'provisional' ? existing.id : null;
     await assertHandleAvailable(ctx.db, body.handle, now);
-    const id = uuidv7();
+    const id = claiming ?? uuidv7();
     const locale = safeLocale(body.locale);
     if (!isCountry(body.country))
       throw badRequest(tr('Choose where you live.'), {
@@ -231,26 +234,32 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
         ])
       : [undefined, undefined];
     await ctx.db.transaction().execute(async (trx) => {
-      await trx
-        .insertInto('users')
-        .values({
-          id,
-          email: body.email,
-          handle: body.handle,
-          password_hash: passwordHash,
-          display_name: body.displayName,
-          birth_date: body.birthDate,
-          locale,
-          time_zone: timeZone,
-          country: body.country,
-          workweek,
-          privacy: JSON.stringify(
-            defaultPrivacy({ minor: isMinor(body.birthDate, now, timeZone) }),
-          ),
-          invited_by: inviter?.id ?? null,
-          invited_by_org: inviterOrg?.id ?? null,
-        })
-        .execute();
+      const account = {
+        email: body.email,
+        handle: body.handle,
+        password_hash: passwordHash,
+        display_name: body.displayName,
+        birth_date: body.birthDate,
+        locale,
+        time_zone: timeZone,
+        country: body.country,
+        workweek,
+        privacy: JSON.stringify(defaultPrivacy({ minor: isMinor(body.birthDate, now, timeZone) })),
+        invited_by: inviter?.id ?? null,
+        invited_by_org: inviterOrg?.id ?? null,
+      };
+      if (claiming)
+        await trx
+          .updateTable('users')
+          .set({ ...account, kind: 'human', email_verified_at: null })
+          .where('id', '=', id)
+          .where('kind', '=', 'provisional')
+          .execute();
+      else
+        await trx
+          .insertInto('users')
+          .values({ id, ...account })
+          .execute();
       await trx
         .insertInto('identities')
         .values({
@@ -275,7 +284,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
     reply.status(201);
-    return { user: meView(user, now), token, recoveryCodes: codes };
+    return { user: meView(user, now, ctx.config), token, recoveryCodes: codes };
   });
 
   app.post('/auth/login', async (req, reply): Promise<AuthResponse> => {
@@ -312,7 +321,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const token = await createSession(ctx, req, reply, user.id, body.client, body.deviceName);
     await audit(ctx.db, { actorId: user.id, action: 'auth.login', ip, userAgent });
-    return { user: meView(user, ctx.now()), token };
+    return { user: meView(user, ctx.now(), ctx.config), token };
   });
 
   app.post('/auth/logout', async (req, reply): Promise<OkResponse> => {
@@ -341,7 +350,10 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .where('id', '=', auth.userId)
       .executeTakeFirst();
     if (!user) throw unauthorized();
-    return { user: meView(user, ctx.now()), session: { id: auth.sessionId, kind: auth.kind } };
+    return {
+      user: meView(user, ctx.now(), ctx.config),
+      session: { id: auth.sessionId, kind: auth.kind },
+    };
   });
 
   app.get('/auth/sessions', async (req): Promise<SessionsResponse> => {
@@ -489,7 +501,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       action: 'auth.email_verified',
       ...clientInfo(req),
     });
-    return { user: meView(user, ctx.now()) };
+    return { user: meView(user, ctx.now(), ctx.config) };
   });
 
   /**
@@ -558,7 +570,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.db.deleteFrom('password_resets').where('user_id', '=', user.id).execute();
     const token = await createSession(ctx, req, reply, user.id, body.client);
     await audit(ctx.db, { actorId: user.id, action: 'auth.reset', ...clientInfo(req) });
-    return { user: meView(user, ctx.now()), token };
+    return { user: meView(user, ctx.now(), ctx.config), token };
   });
 
   app.post('/auth/recover', async (req, reply): Promise<RecoverResponse> => {
@@ -610,6 +622,6 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
       .executeTakeFirstOrThrow();
     const token = await createSession(ctx, req, reply, user.id, body.client);
     await audit(ctx.db, { actorId: user.id, action: 'auth.recovered', ...clientInfo(req) });
-    return { user: meView(user, ctx.now()), token, recoveryCodesLeft: remaining.n };
+    return { user: meView(user, ctx.now(), ctx.config), token, recoveryCodesLeft: remaining.n };
   });
 }

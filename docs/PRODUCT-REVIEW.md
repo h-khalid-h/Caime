@@ -1009,7 +1009,12 @@ with its reason, so it isn't proposed again without new facts.
   behind one interface (`lib/mail-in.ts`, as speech has, so the provider is a setting),
   provisional people, requests, threads as topics, attachments through the files pipeline,
   replies out with sent, delivered and bounced, claiming, the privacy and help pages, export and
-  erasure, tests with a stand-in and an E2E stub. Phase 2: notices, HTML as sent in a sandbox,
+  erasure, tests with a stand-in and an E2E stub (*built 2026-10-11*: as the roadmap's M14 line
+  says, with unverified mail dropped and counted until phase 2's notices, and a card or a sticker
+  staying on Caime until phase 2 says them in words; (b) settled in the build as the composer
+  showing the subject the mail will carry, the thread's where there is one, else the first line,
+  with only a subject someone writes starting a topic, so a reply in the general conversation
+  never opens a topic of its own). Phase 2: notices, HTML as sent in a sandbox,
   reply-all with CC, sending as the address from other clients, the agent by mail. Phase 3:
   sign-in with Google, Apple and Microsoft; calendar sync as apps; a verified organization
   receiving at its own domain. ⛔ Before production: the mail domain's MX at the inbound

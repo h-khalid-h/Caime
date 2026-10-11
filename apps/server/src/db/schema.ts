@@ -32,7 +32,7 @@ export interface UsersTable {
   handle: string;
   password_hash: string;
   display_name: string;
-  kind: Defaulted<'human' | 'bot' | 'agent' | 'assistant' | 'character'>;
+  kind: Defaulted<'human' | 'bot' | 'agent' | 'assistant' | 'character' | 'provisional'>;
   /** 'YYYY-MM-DD'; every person has one (0034), an app or an agent doesn't. */
   birth_date: string | null;
   locale: Defaulted<string>;
@@ -385,6 +385,8 @@ export interface MessagesTable {
   search_all: ColumnType<string, never, never>;
   /** What sent it when its sender didn't type it in Caime: their token's name, or an app's. */
   sent_via: string | null;
+  /** Came or went as mail (R75); `mail_messages` says more. */
+  channel: 'mail' | null;
   /** In a private conversation (R18): the message as an envelope only its devices can open. */
   sealed: Json<Record<string, unknown>> | null;
   /** Kept at the conversation's top for everyone in it (PRD §22), and by whom. */
@@ -418,6 +420,25 @@ export interface FilesTable {
   upload_offset: BigIntCol;
   created_at: Generated<Date>;
 }
+
+/** A message as mail carried it (R75): its ids for threading, who it was between, how far one sent got. */
+export interface MailMessagesTable {
+  message_id: string;
+  direction: 'in' | 'out';
+  rfc_message_id: string;
+  in_reply_to: string | null;
+  references_ids: Defaulted<string[]>;
+  from_address: string;
+  to_address: string;
+  subject: string | null;
+  provider: string;
+  provider_id: string | null;
+  delivery: 'sent' | 'delivered' | 'bounced' | null;
+  delivery_at: NullableTimestamp;
+  delivery_detail: string | null;
+  created_at: Generated<Date>;
+}
+export type MailMessage = Selectable<MailMessagesTable>;
 
 export interface MessageFilesTable {
   message_id: string;
@@ -1089,6 +1110,7 @@ export interface Database {
   reactions: ReactionsTable;
   files: FilesTable;
   message_files: MessageFilesTable;
+  mail_messages: MailMessagesTable;
   assets: AssetsTable;
   automations: AutomationsTable;
   saved_items: SavedItemsTable;
@@ -1172,6 +1194,7 @@ export const MESSAGE_COLUMNS = [
   'expires_at',
   'created_at',
   'sent_via',
+  'channel',
   'sealed',
   'pinned_at',
   'pinned_by',

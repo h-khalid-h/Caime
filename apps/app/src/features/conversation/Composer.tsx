@@ -1,10 +1,12 @@
 import type { ConversationView, CustomKitOfferView, MessageView } from '@caime/core/api';
 import { listTitle } from '@caime/core/format';
 import { tr, trn } from '@caime/core/i18n';
+import { SUBJECT_MAX, subjectFromText } from '@caime/core/mail';
 import { mentionAt, mentionCandidates, mentionedIn, mentionText } from '@caime/core/mentions';
 import { isSystemKind } from '@caime/core/system-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
+import { router } from 'expo-router';
 import FileText from 'lucide-react-native/icons/file-text';
 import ImageIcon from 'lucide-react-native/icons/image';
 import Mic from 'lucide-react-native/icons/mic';
@@ -56,8 +58,10 @@ import { ListRow } from '@/ui/ListRow';
 import { Pressable } from '@/ui/Pressable';
 import { Sheet } from '@/ui/Sheet';
 import { Text } from '@/ui/Text';
+import { TextField } from '@/ui/TextField';
 import { toast } from '@/ui/Toast';
 import { useCardAction } from './cardActions';
+import { mailBound, topicsFor } from './topics';
 
 /** The recorder loads when the microphone is pressed, never before (the audio module). */
 const Recorder = lazy(() =>
@@ -125,6 +129,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     () => stored ?? (privately ? '' : (conversation.me.draft ?? '')),
   );
   const [height, setHeight] = useState(MIN_H);
+  // Reached by mail (R75): the composer shows the subject a mail from here carries (the thread's,
+  // else the first line) and a subject written over it names the topic the mail starts; a reply,
+  // and a topic, carry the thread's.
+  const asksSubject = !privately && mailBound(conversation) && topicsFor(conversation) === 'direct';
+  const [subject, setSubject] = useState<string | null>(null);
+  const shownSubject = subject ?? conversation.mailSubject ?? subjectFromText(text) ?? '';
   const [stickers, setStickers] = useState(false);
   const [attach, setAttach] = useState(false);
   const [kit, setKit] = useState<KitChoice | null>(openKit ?? null);
@@ -275,8 +285,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     const body = text.trim();
     if (!body) return;
     const mentions = mentionable ? mentionedIn(body, people) : [];
+    // A subject written starts the topic this mail is the first of (R75); the one shown is the
+    // thread's, which the server gives the mail itself.
+    let into = id;
+    const title = asksSubject && !replyTo && subject !== null ? subject.trim() : '';
+    if (title) {
+      try {
+        into = (await endpoints.startTopic(id, title)).conversationId;
+      } catch (e) {
+        toast((e as Error).message, { tone: 'danger' });
+        return;
+      }
+    }
     useOutbox.getState().enqueue(
-      id,
+      into,
       {
         kind: 'text',
         body,
@@ -308,6 +330,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     setSettled(null);
     useDrafts.getState().clear(id);
     onClearReply();
+    setSubject(null);
+    if (into !== id) {
+      void qc.invalidateQueries({ queryKey: qk.conversation(id) });
+      void qc.invalidateQueries({ queryKey: qk.inbox });
+      router.push({ pathname: '/c/[id]', params: { id: into } });
+      return;
+    }
     input.current?.focus();
   }, [
     disabled,
@@ -322,6 +351,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     privately,
     mentionable,
     people,
+    asksSubject,
+    subject,
     onClearReply,
     onDoneEditing,
     qc,
@@ -527,6 +558,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             );
           })}
         </View>
+      ) : null}
+      {asksSubject && !editing && !replyTo && !recording ? (
+        <TextField
+          testID="composer-subject"
+          accessibilityLabel={tr('Subject')}
+          placeholder={tr('Subject')}
+          value={shownSubject}
+          onChangeText={setSubject}
+          maxLength={SUBJECT_MAX}
+          returnKeyType="next"
+          blurOnSubmit={false}
+          onSubmitEditing={() => input.current?.focus()}
+          style={{ paddingHorizontal: 12, paddingTop: 8 }}
+        />
       ) : null}
       {recording ? (
         <Suspense

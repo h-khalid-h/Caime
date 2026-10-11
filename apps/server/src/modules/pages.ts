@@ -7,6 +7,7 @@
 import { SITE_PAGES, type SitePage } from '@caime/core/api';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
+import { mailOn } from '../lib/mail-address';
 import { shellFaces } from '../lib/page-style';
 import { renderPage } from '../lib/pages';
 import { processorsFor } from '../lib/processors';
@@ -78,6 +79,7 @@ export async function pageRoutes(app: FastifyInstance, ctx: AppContext) {
     const html = renderPage(name, {
       faces,
       processors: processorsFor(config),
+      mailDomain: mailOn(config) ? (config.MAIL_DOMAIN ?? null) : null,
       legalName: config.LEGAL_NAME,
       legalAddress: config.LEGAL_ADDRESS ?? null,
       governingLaw: config.GOVERNING_LAW ?? null,

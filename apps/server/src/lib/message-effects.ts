@@ -27,6 +27,7 @@ import { busyUntilFor } from './calendar';
 import { isGroupTopic } from './conversations';
 import { asReader } from './i18n';
 import { enqueue } from './jobs';
+import { queueMailOut } from './mail-out';
 import { messagePreview } from './messages';
 import { notify } from './notify';
 import {
@@ -126,6 +127,13 @@ async function effectsOf(ctx: AppContext, message: Message, read: Analysis | nul
   }
   // A voice note is sent for its words (PRD §46), when this Caime and the sender allow it.
   if (message.kind === 'voice') await queueTranscription(ctx, message);
+  // Written to someone reached by mail (R75): it goes out as mail, from the sender's address.
+  await queueMailOut(
+    ctx,
+    message,
+    conversation,
+    members.map((m) => m.user_id),
+  );
   const replyToSender = message.reply_to_id
     ? (
         await ctx.db

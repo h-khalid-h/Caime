@@ -20,6 +20,7 @@ import type { Kysely, Transaction } from 'kysely';
 import type { AppContext } from '../context';
 import type { Database, User, UserRow } from '../db/schema';
 import { currencyOf } from './geo';
+import { type MailConfig, mailAddressOf } from './mail-address';
 
 export const ONLINE_WINDOW_MS = 2 * 60_000;
 
@@ -52,12 +53,15 @@ export function avatarUrl(user: Pick<User, 'id' | 'avatar_file_id'>): string | n
 
 export type { MeView, PersonView };
 
-export function meView(user: UserRow, now: Date): MeView {
+export function meView(user: UserRow, now: Date, config: MailConfig): MeView {
   return {
     id: user.id,
     email: user.email,
     emailVerified: user.email_verified_at !== null,
     handle: user.handle,
+    // Adults have an address where mail is on (R75); a minor's handle takes no mail.
+    mailAddress:
+      user.kind === 'human' && !minorOf(user, now) ? mailAddressOf(user.handle, config) : null,
     displayName: user.display_name,
     kind: user.kind,
     birthDate: user.birth_date,

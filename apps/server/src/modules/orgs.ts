@@ -70,6 +70,7 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/erro
 import { currencyOf, currentZone, defaultZoneOf, isCountry } from '../lib/geo';
 import { assertHandleAvailable } from '../lib/handles';
 import { orgInsights } from '../lib/insights';
+import { mailAddressOf } from '../lib/mail-address';
 import { applyOrgRetention, buildOrgExport, eraseBusinessConversation } from '../lib/org-data';
 import {
   closedOrgById,
@@ -200,6 +201,8 @@ async function orgView(ctx: AppContext, viewerId: string, org: Organization): Pr
     domain,
     plan,
     blockedByMe,
+    // Its team knows its address (R75); a customer writes to it from their own client.
+    mailAddress: seat ? mailAddressOf(org.handle, ctx.config) : null,
     // Everyone sees it answers first, before they write (PRD §75).
     agent: agent && ctx.ai ? { name: agent.name } : null,
     booking: bookingOf(org),

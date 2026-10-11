@@ -134,6 +134,18 @@ monthly minute allowances for it (Pro and Business; none free), set from the pro
 once a provider has passed the test in R52; until then the line stays unpriced here rather than
 guessed.
 
+## Mail (R75)
+
+A mail in is a message: parsed by the provider, stored and read by the rules as a sent message
+is (one send, its effects after the response), its attachments through the files pipeline under
+the sender's own storage cap, and nothing more while a request waits (held, told once). A reply
+out is one job and one provider call (a fraction of a cent at Postmark's rates), the message's
+files attached up to 10 MB, one row per message; a delivery event is one webhook and one update.
+No model call unless assist asks about the message as it would about any other. The provisional
+people a domain gathers are rows, swept daily when silent a year (`mail.sweep`, one statement).
+A conversation with someone reached by mail costs its view one more query (the thread's
+subject, `mailSubject`); every other conversation's view is as it was.
+
 ## The public site
 
 Each page of the site (`/business`, `/pricing`, `/security`, `/developers`, `/about`) is written

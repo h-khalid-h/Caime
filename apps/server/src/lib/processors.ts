@@ -5,6 +5,8 @@
 
 import { HOSTING, SUB_PROCESSORS, type SubProcessor } from '@caime/core/processors';
 import type { Config } from '../config';
+import { mailOn } from './mail-address';
+import { MAIL_PROVIDER_NAMES } from './mail-provider';
 import { SPEECH_PROVIDER_NAMES } from './speech';
 
 /** The SMTP host, as a name for the mail provider ("smtp.postmarkapp.com"). */
@@ -33,6 +35,8 @@ export function processorsFor(config: Config): SubProcessor[] {
     if (p.id === 'expo') list.push(p);
     const mail = p.id === 'mail' ? mailHost(config.SMTP_URL) : null;
     if (mail) list.push({ ...p, name: `${mail} (the email provider the operator set)` });
+    if (p.id === 'mail-in' && mailOn(config) && config.MAIL_PROVIDER)
+      list.push({ ...p, name: MAIL_PROVIDER_NAMES[config.MAIL_PROVIDER] });
   }
   return list;
 }

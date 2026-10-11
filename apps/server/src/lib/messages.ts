@@ -17,6 +17,7 @@ import {
   kitHeadline,
   kitsFor,
   LocationPayload,
+  type MessageMailView,
   type MessageView,
   type Mode,
   methodsFor,
@@ -40,7 +41,7 @@ import { cardAsks } from '@caime/core/kit-states';
 import type { Kysely, SqlBool, Transaction } from 'kysely';
 import { sql } from 'kysely';
 import type { AppContext } from '../context';
-import type { AssetKind, Database, Message } from '../db/schema';
+import type { AssetKind, Database, MailMessage, Message } from '../db/schema';
 import { MESSAGE_COLUMNS, USER_COLUMNS } from '../db/schema';
 import { assertCanWrite } from './blocks';
 import {
@@ -68,6 +69,18 @@ export type { FileView, MessageView };
 
 /** Where a file is downloaded from, by whoever may read it. */
 export const fileUrl = (id: string) => `/v1/files/${id}`;
+
+/** A mail message as the app shows it (R75): the other side's address, the subject, how far one sent got. */
+export function mailViewOf(row: MailMessage | undefined): MessageMailView | null {
+  if (!row) return null;
+  return {
+    direction: row.direction,
+    subject: row.subject,
+    address: row.direction === 'in' ? row.from_address : row.to_address,
+    delivery: row.delivery,
+    deliveryAt: row.delivery_at?.toISOString() ?? null,
+  };
+}
 
 export function fileView(f: {
   id: string;
@@ -137,7 +150,7 @@ export async function messageViews(
   const albumIds = rows
     .filter((m) => m.kind === 'kit' && (m.payload as { kit?: unknown })?.kit === 'shared_album')
     .map((m) => m.id);
-  const [reactions, files, replies, votes, senders, albums] = await Promise.all([
+  const [reactions, files, replies, votes, senders, albums, mails] = await Promise.all([
     db
       .selectFrom('reactions')
       .selectAll()
@@ -192,9 +205,15 @@ export async function messageViews(
           .orderBy('a.file_id', 'desc')
           .execute()
       : Promise.resolve([]),
+    // What a mail message was on the wire (R75), only where one is in the batch.
+    rows.some((m) => m.channel === 'mail')
+      ? db.selectFrom('mail_messages').selectAll().where('message_id', 'in', ids).execute()
+      : Promise.resolve([] as MailMessage[]),
   ]);
   // Bots and agents say so wherever their messages go (R16).
-  const automatedSenders = new Set(senders.filter((u) => u.kind !== 'human').map((u) => u.id));
+  const automatedSenders = new Set(
+    senders.filter((u) => u.kind !== 'human' && u.kind !== 'provisional').map((u) => u.id),
+  );
   // Cai is an AI as an organization's agent is (R67); a Caime Friend says a script.
   // An organization's agent, Cai and the Caime Friends answer with a model (R71): said on each.
   const agentSenders = new Set(
@@ -246,6 +265,8 @@ export async function messageViews(
         : null,
       forwarded: m.forwarded_from_id !== null,
       sentVia: m.sent_via,
+      channel: m.channel,
+      mail: mailViewOf(mails.find((x) => x.message_id === m.id)),
       sealed: deleted ? null : ((m.sealed as SealedMessage | null) ?? null),
       pinnedAt: deleted ? null : (m.pinned_at?.toISOString() ?? null),
       urgent: m.urgent,
@@ -525,6 +546,8 @@ export interface SendOptions {
   serverPayload?: boolean;
   /** The app whose token sends it: it sends only its own kinds of card (PRD §74). */
   app?: { id: string; orgId: string; scopes: string[] } | null;
+  /** It came as mail (R75): more of it may come while a request waits, and it says so. */
+  channel?: 'mail' | null;
 }
 
 /**
@@ -725,7 +748,8 @@ export async function sendMessage(
       // Declined, it reads to the sender as still unanswered, as a connection request does.
       if (other.request_state === 'declined')
         throw unanswered(tr('You can send more once they accept your message request.'));
-      if (other.request_state === 'pending') {
+      // Mail keeps coming whether or not it's answered (R75): held here, never refused.
+      if (other.request_state === 'pending' && opts.channel !== 'mail') {
         const sent = await ctx.db
           .selectFrom('messages')
           .select(sql<number>`count(*)::int`.as('n'))
@@ -1067,6 +1091,7 @@ export async function sendMessage(
           reply_to_id: body.replyToId ?? null,
           forwarded_from_id: opts.forwardedFromId ?? null,
           sent_via: opts.sentVia ?? null,
+          channel: opts.channel ?? null,
           sealed: body.sealed ? JSON.stringify(body.sealed) : null,
           urgent: body.urgent ?? false,
           is_question: analysis?.isQuestion ?? body.kind === 'poll',

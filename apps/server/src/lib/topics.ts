@@ -43,8 +43,17 @@ export async function assertCanStartTopic(
       .where('conversation_id', '=', conversation.id)
       .where('user_id', '<>', userId)
       .executeTakeFirst();
-    if (!other || !(await between(ctx.db, userId, other.user_id)).connected)
-      throw forbidden(tr('Connect first to start topics.'));
+    // Or with someone reached by mail (R75): a mail's subject is a topic, so the first mail to
+    // them may name one.
+    if (!other) throw forbidden(tr('Connect first to start topics.'));
+    if (!(await between(ctx.db, userId, other.user_id)).connected) {
+      const them = await ctx.db
+        .selectFrom('users')
+        .select('kind')
+        .where('id', '=', other.user_id)
+        .executeTakeFirst();
+      if (them?.kind !== 'provisional') throw forbidden(tr('Connect first to start topics.'));
+    }
     // A private one-to-one keeps to itself: a topic of it would be written in the clear.
     if (conversation.privacy_class === 'private')
       throw badRequest(

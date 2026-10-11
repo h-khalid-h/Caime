@@ -32,6 +32,8 @@ import { registerGroupCallSweep } from './lib/group-calls';
 import { registerLanguage } from './lib/i18n';
 import { startWorkers } from './lib/jobs';
 import { requestForLog } from './lib/log';
+import { registerMailJobs } from './lib/mail-out';
+import { mailProviderFor } from './lib/mail-provider';
 import { createMetrics } from './lib/metrics';
 import { RateLimiter } from './lib/rate-limit';
 import { registerPreviewJob, startPreviewBackfill } from './lib/renditions';
@@ -65,6 +67,7 @@ import { importRoutes } from './modules/imports';
 import { inboxRoutes } from './modules/inbox';
 import { inviteRoutes } from './modules/invites';
 import { kitRoutes } from './modules/kits';
+import { mailRoutes } from './modules/mail';
 import { meRoutes } from './modules/me';
 import { memoryRoutes } from './modules/memory';
 import { messageRoutes } from './modules/messages';
@@ -154,6 +157,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     ai: createAiAssist(config),
     speech: speechFor(config),
     mail: options.mail ?? createMailer(config, app.log),
+    mailProvider: mailProviderFor(config),
     dns: {
       resolveTxt: (hostname) => {
         const resolver = new Resolver({ timeout: 4000, tries: 2 });
@@ -305,6 +309,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       await notificationRoutes(v1, ctx);
       await safetyRoutes(v1, ctx);
       await fileRoutes(v1, ctx);
+      await mailRoutes(v1, ctx);
     },
     { prefix: '/v1' },
   );
@@ -320,6 +325,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   registerCaiJobs();
   registerBriefJob();
   registerTranscribeJob();
+  registerMailJobs();
   registerCallSweep();
   registerGroupCallSweep();
   registerPreviewJob();

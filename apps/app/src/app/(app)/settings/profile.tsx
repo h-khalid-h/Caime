@@ -173,6 +173,14 @@ export default function Profile() {
             autoCapitalize="none"
             autoCorrect={false}
           />
+          {me.mailAddress ? (
+            // It's an address too (R75): mail to it lands here, as messages from whoever wrote.
+            <Text variant="caption" color="textSecondary" testID="mail-address" selectable>
+              {tr('Also your email address: {address}. Mail to it arrives here as messages.', {
+                address: me.mailAddress,
+              })}
+            </Text>
+          ) : null}
           <View style={{ gap: 8 }}>
             <TextField
               label={tr('Pronouns (optional)')}
