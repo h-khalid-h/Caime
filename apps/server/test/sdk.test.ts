@@ -422,6 +422,7 @@ describe('@caime/sdk against the server (R39)', () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toBe('My insurance number is 12345.');
     await expect(caime.thumbnail(fileId)).rejects.toMatchObject({ status: 404 });
+    await expect(caime.preview(fileId)).rejects.toMatchObject({ status: 404 });
   });
 
   it('hears a message removed for everyone, and a conversation erased, so it drops its copies', async () => {

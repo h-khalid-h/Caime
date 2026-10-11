@@ -185,9 +185,8 @@ its fill), a dark pair and a `solid` pastel for dots and illustration.
 | Body | Inter | 15 / 22 | 400 |
 | Message | Inter | 16 / 23 | 400 |
 | Caption | Inter | 13 / 18 | 500 |
-| Section label | Inter | 13 / 18 | 600, sentence case, never uppercase, never monospace |
-| Overline | the system monospace | 12 / 16 | 500, sentence case, never uppercase: a section's label ("Needs you", "Coming up", a settings group), the same style as Mono |
-| Mono | the system monospace | 12 / 16 | 500, sentence case: labels on spec-sheet surfaces (the public pages; in the app, `Spec` rows on a person's and an organization's page, Welcome's lines, the auth screens' kicker), never running text |
+| Overline | Inter | 13 / 18 | 600, sentence case, never uppercase, never monospace: a section's label ("Needs you", "Coming up", a settings group) |
+| Mono | Inter | 13 / 18 | 500, sentence case: labels on spec-sheet surfaces (the public pages; in the app, `Spec` rows on a person's and an organization's page, Welcome's lines, the auth screens' kicker), never running text; it keeps its name, but nothing in the interface is a monospace any more (R69) |
 
 Arabic (R73) is drawn in the faces paired with these, declared under the same two names so
 nothing chooses by language: **Noto Sans Arabic** for every Inter style (neutral, open, the
@@ -200,8 +199,10 @@ letters they're in, and what someone wrote keeps its own direction inside its bu
 
 ## Shape, space, motion
 
-- **Radii:** 8 (inputs), 12 (cards), 18 (bubbles, 6 px on the tail corner), 22.5% (app mark),
-  pill (buttons, chips).
+- **Radii** (`radii` in the tokens, never a number of a screen's own): 10 (a segmented control's
+  segment, a switch row's icon tile), 14 (fields, pickers and, in Minimal, buttons), 20 (cards,
+  toasts, bubbles with 6 px on the tail corner), 32 (a sheet's top), 22.5% (app mark), pill
+  (buttons in Playful, chips).
 - **Spacing:** 4 px grid; touch targets ≥ 44 px.
 - **Elevation:** soft purple-tinted shadows (`rgba(59, 46, 91, 0.10)`) on overlays; resting UI
   separates with colour and hairlines.
@@ -213,10 +214,12 @@ letters they're in, and what someone wrote keeps its own direction inside its bu
 What the phone shows around the conversations, decided from how people already hold and read
 the messengers they use, and only where it serves Caime's promise (relationships first):
 
-- **Four places and Search.** Chats, People, Spaces and Actions sit in a floating pill at the
-  bottom, the one you're in lit behind its name (Caime Pink tint; the surface tone in dark).
-  Search is a circle of its own beside it, in a thumb's reach from each of the four. The bar
-  floats over the page's own colour with the overlay shadow, and never covers what's on the page.
+- **Five places and Search.** Attention first (R66), then Chats, People, Spaces and Actions sit
+  in a floating pill at the bottom, the one you're in lit behind its name (Caime Pink tint; the
+  surface tone in dark). Search is a circle of its own beside it, in a thumb's reach from each of
+  the five. The bar floats over the page's own colour with the overlay shadow, never covers
+  what's on the page, stays on every screen opened from a place with that place lit, and steps
+  aside where the screen has its own end (a conversation, a creation flow; R72).
 - **You is your picture.** It's at the top left of each place, with the dot the people you know
   see (none when your privacy shows your online status to nobody). It opens a sheet with what
   you change most (your status and presence) and the way to everything else, which opens over
@@ -255,10 +258,14 @@ Rules: characters appear only in expressive moments (B2), never on organization,
 security or money surfaces, and never speak for a person. They are characters, not people:
 model output is labelled "Suggested by Cai" with the sparkle icon (R16, R17, R66), and a
 friend's own messages count as AI. Each also has an account anyone can write to (@caishy,
-@momo, …, R67): it answers by its rules (a greeting, its tips in turn, its sticker now and then)
-and, for an adult with AI assist on, with a model's help in its own character (R71), never first
-and never with a notification. Cai, Caime's assistant (@cai), wears the icon mark, not a
-character.
+@momo, …, R67): it reads what's written as Cai does (a greeting, a greeting of peace answered
+in kind, thanks, "how can you help", the four questions about one's own open things, answered
+from what's open), in the language it was written in and, in Arabic, the variety the person
+chose or writes (R72); anything else, for an adult with AI assist on, with a model's help in its
+own character (R71), and without the model its tips in turn, never a sticker alone. It never
+writes first and never notifies, and its page says it's not a person. Cai, Caime's assistant
+(@cai), wears the icon mark, not a character, and is the one that writes first (a follow-up
+offer, the morning brief; R68).
 
 **Caishy Friends stickers** (free pack, "A little cuteness goes a long way."): built on the v3
 expressions and poses — hi (waving), thanks (holding a heart), love (shy), yay (excited), ok

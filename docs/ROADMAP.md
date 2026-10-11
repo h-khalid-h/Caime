@@ -2544,3 +2544,9 @@ The six-slice review's plan, in its order; a block is ticked when its tests and 
   what the first screen never needs (the You sheet's body, the shortcuts, the live events'
   applier, the organization details editor); the next budget work is M28's split of `api/hooks.ts`
   and `api/endpoints.ts` (15.9 and 13.9 KB raw in the startup chunk, most of it for later screens).
+- 2026-10-11 — Docs drift (REVIEW-2026-10-09 §7, block 9): BRAND.md's type rows (Overline and
+  Mono are Inter 13/18 since R69), its radii read from the tokens, five places with Attention
+  first, the friends' paragraph as R71, R72 and R68 have it; CLAUDE.md's pages (they carry their
+  own layout sizes), the setup list with `OrgCheckout`, the auth kicker as a mono line, axe in
+  all four languages; the preview route in `API_ROUTES`, `docs/API.md` and the SDK
+  (`preview(id)`), with its case in `sdk.test.ts`.

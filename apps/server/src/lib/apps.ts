@@ -48,6 +48,7 @@ export const API_ROUTES: Readonly<Record<string, ApiScope | 'any'>> = {
   'GET /v1/conversations/:id/messages': 'messages:read',
   'GET /v1/files/:id': 'messages:read',
   'GET /v1/files/:id/thumb': 'messages:read',
+  'GET /v1/files/:id/preview': 'messages:read',
   'POST /v1/conversations/:id/messages': 'messages:write',
   'POST /v1/business/:conversationId/assign': 'threads:write',
   'POST /v1/business/:conversationId/resolve': 'threads:write',

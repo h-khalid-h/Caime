@@ -179,8 +179,9 @@ These are rules, not preferences.
 - The server's own pages draw from the tokens, as the app does (R69): `lib/page-style.ts` writes
   the theme as CSS variables for both schemes (`THEME_VARS`, `--text-secondary` and friends),
   a style of the type scale as declarations (`type('mono')`), and radii, control heights, the
-  touch size and the desktop breakpoint (`px`). A page's CSS names those, never a colour or a
-  size of its own (`public-pages.test.ts` fails on a colour that isn't a token); a value both
+  touch size and the desktop breakpoint (`px`). A page's CSS names those for every colour, type
+  style, radius and control height, never a colour of its own (`public-pages.test.ts` fails on
+  one that isn't a token); its layout's own widths and gaps are its own; a value both
   sides need is a token in brand (`controlHeight`, `wordmarkColour`). A label (`dt`) is written
   by `label()` (`site-pages.ts`) through core's `sentence`, the same capital the app's `Spec`
   gives it; a key that starts with an acronym is written as it reads (`'AI assist'`). A sentence
@@ -222,12 +223,12 @@ These are rules, not preferences.
   encoder or a second link shape.
 - An organization's setup (R57) is `/o/[handle]/setup` (`features/orgs/OrgSetup.tsx`, owner and
   admins only; others get a line saying so): the door, `OrgVerification`, `OrgData`, `OrgBooking`,
-  `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`) is the daily
-  work (inbox, updates, spaces, team, insights) and offers the setup in one row (`org-setup`)
-  whose subtitle is `setupNextLine(org)` (`setupSteps.ts`: what's next). A new thing an
-  organization configures goes on the setup screen, never on the page; a line both need lives in
-  a small module of its own (`planLine.ts`), since a module two route chunks share moves into
-  `__common` (`nextOrgPlanLine` cost 2.1 KB there).
+  `OrgCheckout`, `OrgAgent`, `OrgApps` and `OrgPlan`, in a clinic's order. The page (`OrgScreen`)
+  is the daily work (inbox, updates, spaces, team, insights) and offers the setup in one row
+  (`org-setup`) whose subtitle is `setupNextLine(org)` (`setupSteps.ts`: what's next). A new
+  thing an organization configures goes on the setup screen, never on the page; a line both need
+  lives in a small module of its own (`planLine.ts`), since a module two route chunks share moves
+  into `__common` (`nextOrgPlanLine` cost 2.1 KB there).
 - Ending a session (sign-out, "sign out that device", a password change, a recovery, a
   suspension, removing a device for private conversations) goes through `endSessions`
   (`lib/sessions.ts`), never an update of `sessions` by hand: it publishes `session.ended` on
@@ -299,9 +300,10 @@ These are rules, not preferences.
   (`tr('handle')`): `Spec` sentence-cases it as it draws it, in the reader's language, and the
   public pages' `dt.mono` does the same in CSS. Facts are stated with `Spec` (`src/ui/Spec.tsx`: mono label, value, hairlines; a
   null row is left out): an organization's page (`org-spec`), a person's "and you" block
-  (`person-profile`), Welcome's three lines, a space's head (`space-spec`), About
-  (`about-spec`), and the auth screens' `kicker` (`AuthLayout`): a new screen that lists facts
-  uses it rather than a card of captions. Anything that starts a
+  (`person-profile`), Welcome's three lines, a space's head (`space-spec`) and About
+  (`about-spec`); the auth screens' `kicker` (`AuthLayout`) is one line in the same `mono`
+  style through `sentence`, not a row. A new screen that lists facts uses `Spec` rather than a
+  card of captions. Anything that starts a
   conversation, a group or a space is offered from the Chats "+" sheet (`NewChatSheet`) as well
   as its own tab: one place to start, and the screens it opens stay the only ones.
 - Whose tasks a person sees is one rule, `visibleTasksSql(me)` (`lib/task-visibility.ts`): their
@@ -643,8 +645,8 @@ These are rules, not preferences.
   turns it into ARIA on the web (a selected link is `aria-current="page"`, a tab or option
   `aria-selected`, a button `aria-pressed`). Use that `Pressable`, and assert state in E2E with
   `toBeChecked()` and friends rather than by styling. `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA)
-  over the primary screens in both languages and every visitor page, and fails on a serious or
-  critical violation: a name for a screen reader goes on a `View` with a role (`accessible`,
+  over the primary screens in all four interface languages and every visitor page, and fails on
+  a serious or critical violation: a name for a screen reader goes on a `View` with a role (`accessible`,
   `accessibilityRole="image"` for a mark, a dot or an icon's meaning, `text` for a line read as
   one, `radiogroup` or `toolbar` for a row of chips, `summary` for a card), never on an `Svg`,
   an icon or a bare `View`, where the web puts it on an element with no role; and a state said

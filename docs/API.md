@@ -39,7 +39,7 @@ answers `401`.
 | `inbox:read` | `GET /v1/orgs/:orgId/orders?limit=` | The orders in its customer conversations, newest first (`orders[]`: `messageId`, `conversationId`, `customer`, `reference`, `summary`, `amount`, `state`, `createdAt`), what its Orders view shows; the order itself is moved on in the conversation |
 | `messages:read` | `GET /v1/conversations/:id` | One conversation, with its thread (state, who has it) |
 | `messages:read` | `GET /v1/conversations/:id/messages?before=&after=&limit=` | Its messages, oldest first |
-| `messages:read` | `GET /v1/files/:id`, `GET /v1/files/:id/thumb` | A file a message carries (`message.files[].id`), as its bytes, and its thumbnail (WebP) where there is one: the same files the team sees in that conversation, nothing else |
+| `messages:read` | `GET /v1/files/:id`, `GET /v1/files/:id/thumb`, `GET /v1/files/:id/preview` | A file a message carries (`message.files[].id`), as its bytes, its thumbnail (WebP, 480 px at most) and its preview (1280 px at most, else the cleaned original) where the file is an image: the same files the team sees in that conversation, nothing else |
 | `messages:write` | `POST /v1/conversations/:id/messages` | Reply as the bot: `{ "clientId": "<uuid>", "body": "…" }`. A retried `clientId` returns the first message, never a second |
 | `threads:write` | `POST /v1/business/:id/assign` | `{ "userId": "<person on the team>" }`, or `null` for nobody |
 | `threads:write` | `POST /v1/business/:id/resolve`, `…/reopen`, `…/escalate` | Escalate takes an optional `{ "note": "…" }` and tells the owner and admins |
@@ -95,7 +95,7 @@ try {
 | Method | Route | Permission |
 | --- | --- | --- |
 | `inbox(orgId, view)`, `calendar(orgId, from, to)`, `orders(orgId, { limit })` | `GET /v1/orgs/:orgId/inbox`, `…/calendar`, `…/orders` | `inbox:read` |
-| `file(id)`, `thumbnail(id)` | `GET /v1/files/:id`, `…/thumb` | `messages:read` (a `Response` whose body is the file) |
+| `file(id)`, `thumbnail(id)`, `preview(id)` | `GET /v1/files/:id`, `…/thumb`, `…/preview` | `messages:read` (a `Response` whose body is the file) |
 | `deliveries({ status, after, limit })`, `retryDelivery(id)` | `GET /v1/apps/me/deliveries`, `POST …/:id/retry` | any |
 | `conversation(id)`, `messages(id, { before, after, limit })` | `GET /v1/conversations/:id`, `…/messages` | `messages:read` |
 | `send(id, body, { clientId })`, `sendCard(id, key, fields, { clientId })` | `POST /v1/conversations/:id/messages` | `messages:write` (+ `kits`) |

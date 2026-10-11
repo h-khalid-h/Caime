@@ -151,9 +151,18 @@ export class Caime {
     return this.raw(`/files/${enc(fileId)}`);
   }
 
-  /** `messages:read`: a file's thumbnail (WebP), where there is one (404 otherwise). */
+  /** `messages:read`: a file's thumbnail (WebP, 480 px at most), where there is one (404 otherwise). */
   thumbnail(fileId: string): Promise<Response> {
     return this.raw(`/files/${enc(fileId)}/thumb`);
+  }
+
+  /**
+   * `messages:read`: what's drawn large of an image (1280 px at most; the cleaned original until
+   * its preview is made), the one `message.files[].previewUrl` points at; 404 for a file that
+   * isn't an image.
+   */
+  preview(fileId: string): Promise<Response> {
+    return this.raw(`/files/${enc(fileId)}/preview`);
   }
 
   // --- The inbox and its conversations ---------------------------------------------------------
